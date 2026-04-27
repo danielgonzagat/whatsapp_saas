@@ -33,7 +33,7 @@ export function verifySharedSecretOrSignature(
 }
 
 /** Constant-time string comparison (both trimmed). */
-export function safeCompare(left: string, right: string): boolean {
+function safeCompare(left: string, right: string): boolean {
   const l = String(left || '').trim();
   const r = String(right || '').trim();
   if (!l || l.length !== r.length) return false;
@@ -41,7 +41,7 @@ export function safeCompare(left: string, right: string): boolean {
 }
 
 /** Build a stable request-id for ops alerts. */
-export function buildOpsAlertRequestId(message: string, meta: Record<string, unknown>): string {
+function buildOpsAlertRequestId(message: string, meta: Record<string, unknown>): string {
   const stableId =
     asString(meta.eventId) ||
     asString(meta.externalId) ||

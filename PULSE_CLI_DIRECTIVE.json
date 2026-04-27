@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-27T01:46:50.673Z",
+  "generatedAt": "2026-04-27T03:04:32.332Z",
   "autonomyVerdict": "SIM",
   "autonomousNextStepVerdict": "SIM",
   "zeroPromptProductionGuidanceVerdict": "NAO",
@@ -18,7 +18,7 @@
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-27T01:46:50.673Z",
+    "generatedAt": "2026-04-27T03:04:06.464Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
@@ -31,9 +31,9 @@
       "productionAutonomy": "NAO",
       "canDeclareComplete": false
     },
-    "authorityMode": "advisory-only",
-    "advisoryOnly": true,
-    "automationEligible": false,
+    "authorityMode": "autonomous-execution",
+    "advisoryOnly": false,
+    "automationEligible": true,
     "firstExecutableUnit": {
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
@@ -60,13 +60,13 @@
       },
       {
         "id": "authority_closed",
-        "status": "fail",
-        "evidence": "Evidence freshness is not closed. | 1 external adapter(s) are stale."
+        "status": "pass",
+        "evidence": "Core trust/production gates are green; autonomous execution may proceed."
       },
       {
         "id": "external_reality_fused",
-        "status": "fail",
-        "evidence": "8 signal(s), 0 missing adapter(s), 1 stale adapter(s), 0 invalid adapter(s)."
+        "status": "pass",
+        "evidence": "9 signal(s), 0 missing adapter(s), 0 stale adapter(s), 0 invalid adapter(s)."
       },
       {
         "id": "pulse_self_trust",
@@ -100,15 +100,11 @@
       }
     ],
     "blockersBeforeProductionSim": [
-      "Evidence freshness is not closed.",
-      "1 external adapter(s) are stale.",
-      "0 missing, 1 stale, and 0 invalid external adapter(s) remain.",
+      "Core trust/production gates are green; autonomous execution may proceed.",
       "1 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
       "Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s).",
       "Codacy still reports 1116 HIGH issue(s).",
-      "Codacy snapshot is stale (2687 minute(s) old).",
-      "Observed external high-impact signals remain active: 3.",
-      "External evidence is stale for 1 adapter(s)."
+      "Observed external high-impact signals remain active: 3."
     ],
     "cycleProof": {
       "requiredCycles": 3,
@@ -120,10 +116,10 @@
     "externalAdapterStatus": [
       {
         "source": "codacy",
-        "status": "stale",
+        "status": "ready",
         "executed": true,
         "signalCount": 4,
-        "reason": "PULSE_CODACY_STATE.json is stale (2687 minute(s) old)."
+        "reason": "4 Codacy hotspot signal(s) were normalized from the latest snapshot."
       },
       {
         "source": "github",
@@ -136,8 +132,8 @@
         "source": "github_actions",
         "status": "ready",
         "executed": true,
-        "signalCount": 1,
-        "reason": "1 GitHub Actions signal(s) fetched from the live adapter."
+        "signalCount": 2,
+        "reason": "2 GitHub Actions signal(s) fetched from the live adapter."
       },
       {
         "source": "codecov",
@@ -189,17 +185,16 @@
       "Record at least 3 real autonomous cycles with successful validation and no score regression."
     ]
   },
-  "authorityMode": "advisory-only",
-  "advisoryOnly": true,
-  "automationEligible": false,
+  "authorityMode": "autonomous-execution",
+  "advisoryOnly": false,
+  "automationEligible": true,
   "authorityReasons": [
-    "Evidence freshness is not closed.",
-    "1 external adapter(s) are stale."
+    "Core trust/production gates are green; autonomous execution may proceed."
   ],
   "currentCheckpoint": {
     "tier": 1,
     "status": "PARTIAL",
-    "score": 56
+    "score": 61
   },
   "targetCheckpoint": {
     "capabilityRealnessRatio": 1,
@@ -210,19 +205,19 @@
   "currentState": {
     "certificationStatus": "PARTIAL",
     "blockingTier": 1,
-    "score": 56,
+    "score": 61,
     "scopeParity": {
       "status": "pass",
       "mode": "repo_inventory_with_codacy_spotcheck",
-      "confidence": "medium",
-      "reason": "Repo inventory completed and observed Codacy files are covered, but the Codacy snapshot is stale.",
-      "inventoryFiles": 2623,
+      "confidence": "high",
+      "reason": "Repo inventory completed and all observed Codacy hotspot files are covered.",
+      "inventoryFiles": 2633,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 60,
       "missingCodacyFiles": []
     },
     "confidence": {
-      "evidenceFresh": "fail",
+      "evidenceFresh": "pass",
       "pulseSelfTrustPass": "pass"
     }
   },
@@ -259,90 +254,88 @@
   "freshness": {
     "codacy": {
       "snapshotAvailable": true,
-      "stale": true,
-      "syncedAt": "2026-04-25T04:59:13.404Z"
+      "stale": false,
+      "syncedAt": "2026-04-27T03:01:50.281Z"
     },
     "externalAdapters": [
       {
         "source": "codacy",
-        "status": "stale",
-        "syncedAt": "2026-04-25T04:59:13.404Z",
-        "freshnessMinutes": 2687
+        "status": "ready",
+        "syncedAt": "2026-04-27T03:01:50.281Z",
+        "freshnessMinutes": 2
       },
       {
         "source": "github",
         "status": "ready",
-        "syncedAt": "2026-04-27T01:47:13.460Z",
+        "syncedAt": "2026-04-27T03:04:24.198Z",
         "freshnessMinutes": 0
       },
       {
         "source": "github_actions",
         "status": "ready",
-        "syncedAt": "2026-04-27T01:47:13.460Z",
+        "syncedAt": "2026-04-27T03:04:24.198Z",
         "freshnessMinutes": 0
       },
       {
         "source": "codecov",
         "status": "ready",
-        "syncedAt": "2026-04-27T01:47:13.460Z",
+        "syncedAt": "2026-04-27T03:04:24.198Z",
         "freshnessMinutes": 0
       },
       {
         "source": "sentry",
         "status": "ready",
-        "syncedAt": "2026-04-27T01:47:13.460Z",
+        "syncedAt": "2026-04-27T03:04:24.198Z",
         "freshnessMinutes": 0
       },
       {
         "source": "datadog",
         "status": "ready",
-        "syncedAt": "2026-04-27T01:47:13.460Z",
+        "syncedAt": "2026-04-27T03:04:24.198Z",
         "freshnessMinutes": 0
       },
       {
         "source": "prometheus",
         "status": "optional_not_configured",
-        "syncedAt": "2026-04-27T01:47:13.460Z",
+        "syncedAt": "2026-04-27T03:04:24.198Z",
         "freshnessMinutes": 0
       },
       {
         "source": "dependabot",
         "status": "ready",
-        "syncedAt": "2026-04-27T01:47:13.460Z",
+        "syncedAt": "2026-04-27T03:04:24.198Z",
         "freshnessMinutes": 0
       },
       {
         "source": "gitnexus",
         "status": "ready",
-        "syncedAt": "2026-04-27T01:47:13.460Z",
+        "syncedAt": "2026-04-27T03:04:24.198Z",
         "freshnessMinutes": 0
       }
     ]
   },
   "externalSignals": {
     "summary": {
-      "totalSignals": 8,
+      "totalSignals": 9,
       "runtimeSignals": 1,
-      "changeSignals": 2,
+      "changeSignals": 3,
       "dependencySignals": 0,
       "highImpactSignals": 4,
       "mappedSignals": 6,
       "humanRequiredSignals": 1,
-      "staleAdapters": 1,
+      "staleAdapters": 0,
       "missingAdapters": 0,
       "invalidAdapters": 0,
       "optionalSkippedAdapters": 1,
       "missingAdaptersList": [],
-      "staleAdaptersList": [
-        "codacy"
-      ],
+      "staleAdaptersList": [],
       "invalidAdaptersList": [],
       "optionalSkippedList": [
         "prometheus"
       ],
       "bySource": {
         "github": 1,
-        "github_actions": 1,
+        "github_actions": 2,
         "codacy": 4,
         "codecov": 0,
         "sentry": 1,
@@ -362,7 +355,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-04-27T01:45:52.118Z",
+        "observedAt": "2026-04-27T03:03:30.629Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -406,7 +399,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-        "observedAt": "2026-04-27T01:45:52.118Z",
+        "observedAt": "2026-04-27T03:03:30.629Z",
         "relatedFiles": [
           "backend/src/auth/email.service.ts"
         ],
@@ -621,7 +614,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-        "observedAt": "2026-04-27T01:45:52.118Z",
+        "observedAt": "2026-04-27T03:03:30.629Z",
         "relatedFiles": [
           "backend/src/autopilot/autopilot.service.ts"
         ],
@@ -801,7 +794,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-27T01:45:52.118Z",
+        "observedAt": "2026-04-27T03:03:30.629Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -837,7 +830,7 @@
         ]
       },
       {
-        "id": "github-recent-commits-1777254434449",
+        "id": "github-recent-commits-1777259064893",
         "type": "code-change",
         "source": "github",
         "truthMode": "observed",
@@ -864,7 +857,7 @@
         ]
       },
       {
-        "id": "github-actions-failed-1777254436436",
+        "id": "github-actions-failed-1777259066883",
         "type": "ci-failure",
         "source": "github_actions",
         "truthMode": "observed",
@@ -872,13 +865,42 @@
         "severity": 0.4,
         "impactScore": 0.8,
         "confidence": 0.95,
-        "summary": "1 recent CI workflow failure(s): CI",
-        "observedAt": "2026-04-27T01:46:55.000Z",
+        "summary": "3 recent CI workflow failure(s): CI, Dependabot Auto Merge, CodeQL",
+        "observedAt": "2026-04-27T02:59:23.000Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
           "ci",
           "failure",
+          "build"
+        ],
+        "rawRef": null,
+        "capabilityIds": [],
+        "flowIds": [],
+        "recentChangeRefs": [],
+        "ownerLane": "platform",
+        "protectedByGovernance": false,
+        "validationTargets": [
+          "PULSE_EXTERNAL_SIGNAL_STATE.json",
+          "PULSE_CERTIFICATE.json"
+        ]
+      },
+      {
+        "id": "github-actions-success-1777259066883",
+        "type": "ci-success",
+        "source": "github_actions",
+        "truthMode": "observed",
+        "executionMode": "observation_only",
+        "severity": 1,
+        "impactScore": 0.2,
+        "confidence": 0.95,
+        "summary": "2 recent CI workflow success(es)",
+        "observedAt": "2026-04-27T02:58:43.000Z",
+        "relatedFiles": [],
+        "routePatterns": [],
+        "tags": [
+          "ci",
+          "success",
           "build"
         ],
         "rawRef": null,
@@ -928,7 +950,7 @@
         ]
       },
       {
-        "id": "gitnexus:2026-04-27T01:47:18.939Z",
+        "id": "gitnexus:2026-04-27T03:04:29.264Z",
         "type": "codegraph",
         "source": "gitnexus",
         "truthMode": "observed",
@@ -937,7 +959,7 @@
         "impactScore": 0.3,
         "confidence": 0.9,
         "summary": "GitNexus is not available (npx gitnexus@latest failed).",
-        "observedAt": "2026-04-27T01:47:18.939Z",
+        "observedAt": "2026-04-27T03:04:29.264Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -10646,7 +10668,7 @@
     "codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
     "codacy/static_hotspot: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
     "codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-    "github_actions/ci-failure: 1 recent CI workflow failure(s): CI",
+    "github_actions/ci-failure: 3 recent CI workflow failure(s): CI, Dependabot Auto Merge, CodeQL",
     "Pay: phantom surface with incomplete materialization.",
     "Privacy: phantom surface with incomplete materialization.",
     "Produtos: phantom surface with incomplete materialization.",
@@ -11057,8 +11079,17 @@
     {
       "source": "github_actions",
       "type": "ci-failure",
-      "summary": "1 recent CI workflow failure(s): CI",
+      "summary": "3 recent CI workflow failure(s): CI, Dependabot Auto Merge, CodeQL",
       "impactScore": 0.8,
+      "executionMode": "observation_only",
+      "affectedCapabilities": [],
+      "affectedFlows": []
+    },
+    {
+      "source": "github_actions",
+      "type": "ci-success",
+      "summary": "2 recent CI workflow success(es)",
+      "impactScore": 0.2,
       "executionMode": "observation_only",
       "affectedCapabilities": [],
       "affectedFlows": []
@@ -11075,98 +11106,6 @@
       "affectedFlows": [
         "workspace-delete-billing-payment-methods-payment-method-id",
         "workspace-post-billing-payment-methods-payment-method-id-default"
-      ]
-    },
-    {
-      "source": "gitnexus",
-      "type": "codegraph",
-      "summary": "GitNexus is not available (npx gitnexus@latest failed).",
-      "impactScore": 0.3,
-      "executionMode": "observation_only",
-      "affectedCapabilities": [
-        "capability:auth-verification",
-        "capability:auth-whatsapp",
-        "capability:checkout",
-        "capability:checkout-checkouts",
-        "capability:checkout-order",
-        "capability:checkout-plans",
-        "capability:checkout-product",
-        "capability:checkout-products",
-        "capability:checkout-recent",
-        "capability:checkout-social",
-        "capability:compliance-deletion"
-      ],
-      "affectedFlows": [
-        "admin-post-admin-auth-login",
-        "admin-post-admin-transactions-order-id-operate",
-        "billing-post-billing-checkout",
-        "forgot-post-auth-forgot-password",
-        "kloel-post-kloel-onboarding-workspace-id-chat-stream",
-        "marketing-patch-checkout-plans-plan-id-config",
-        "member-delete-member-areas-id-students-student-id",
-        "member-post-affiliate-request-product-id",
-        "member-post-affiliate-saved-product-id",
-        "member-post-member-areas-id-generate-structure",
-        "member-post-member-areas-id-modules",
-        "member-post-member-areas-id-modules-module-id-lessons",
-        "member-post-member-areas-id-students",
-        "member-put-member-areas-id",
-        "member-put-member-areas-id-lessons-lesson-id",
-        "member-put-member-areas-id-modules-module-id",
-        "member-put-member-areas-id-students-student-id",
-        "meta-post-meta-auth-disconnect",
-        "plan-get-checkout-plans-plan-id-config",
-        "products-delete-checkout-checkouts-id",
-        "products-delete-products-product-id-campaigns-campaign-id",
-        "products-delete-products-product-id-commissions-commission-id",
-        "products-delete-products-product-id-coupons-coupon-id",
-        "products-delete-products-product-id-reviews-review-id",
-        "products-delete-products-product-id-urls-url-id",
-        "products-get-checkout-plans-plan-id-bumps",
-        "products-get-checkout-plans-plan-id-config",
-        "products-get-products-id",
-        "products-post-checkout-checkouts-id-duplicate",
-        "products-post-checkout-products-product-id-checkouts",
-        "products-post-checkout-products-product-id-plans",
-        "products-post-products",
-        "products-post-products-product-id-campaigns-campaign-id-launch",
-        "products-post-products-product-id-campaigns-campaign-id-pause",
-        "products-post-workspace-id-jitter",
-        "products-put-checkout-bumps-id",
-        "products-put-checkout-products-id",
-        "products-put-products-product-id-affiliates-links-link-id",
-        "vendas-post-kloel-payment-workspace-id-create",
-        "vendas-post-sales-id-refund",
-        "vendas-post-sales-orders-alerts-generate",
-        "vendas-post-sales-orders-alerts-id-resolve",
-        "vendas-post-sales-subscriptions-id-cancel",
-        "vendas-post-sales-subscriptions-id-pause",
-        "vendas-post-sales-subscriptions-id-resume",
-        "vendas-put-sales-orders-id-return",
-        "vendas-put-sales-orders-id-ship",
-        "vendas-put-sales-subscriptions-id-change-plan",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-delete-api-kyc-bank",
-        "workspace-delete-billing-payment-methods-payment-method-id",
-        "workspace-delete-team-invite-id",
-        "workspace-delete-team-member-id",
-        "workspace-post-ai-kb-create",
-        "workspace-post-ai-kb-source",
-        "workspace-post-api-kyc-bank",
-        "workspace-post-api-kyc-fiscal",
-        "workspace-post-autopilot-toggle",
-        "workspace-post-billing-activate-trial",
-        "workspace-post-billing-payment-methods-payment-method-id-default",
-        "workspace-post-billing-payment-methods-setup-intent",
-        "workspace-post-kyc-status",
-        "workspace-post-meta-auth-disconnect",
-        "workspace-post-products",
-        "workspace-post-segmentation-workspace-id-auto-segment",
-        "workspace-post-team-invite",
-        "workspace-post-workspace-id-account",
-        "workspace-post-workspace-id-jitter",
-        "workspace-put-api-kyc-fiscal",
-        "workspace-put-crm-deals-id-move"
       ]
     },
     {
@@ -11190,7 +11129,7 @@
   ],
   "nextAutonomousUnits": [
     {
-      "order": 15,
+      "order": 16,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -11227,7 +11166,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -11255,11 +11193,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 16,
+      "order": 17,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -11296,7 +11233,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -11324,11 +11260,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 17,
+      "order": 18,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -11365,7 +11300,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -11393,11 +11327,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 18,
+      "order": 19,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -11434,7 +11367,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -11462,11 +11394,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 19,
+      "order": 20,
       "id": "capability-capability-autopilot-impact",
       "kind": "capability",
       "priority": "P1",
@@ -11503,7 +11434,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -11531,11 +11461,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 20,
+      "order": 21,
       "id": "capability-capability-autopilot-config",
       "kind": "capability",
       "priority": "P1",
@@ -11572,7 +11501,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -11600,11 +11528,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 21,
+      "order": 22,
       "id": "capability-capability-autopilot",
       "kind": "capability",
       "priority": "P1",
@@ -11641,7 +11568,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -11669,11 +11595,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 22,
+      "order": 23,
       "id": "capability-capability-autopilot-conversion",
       "kind": "capability",
       "priority": "P1",
@@ -11710,7 +11635,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -11738,11 +11662,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 23,
+      "order": 24,
       "id": "capability-capability-autopilot-retry",
       "kind": "capability",
       "priority": "P1",
@@ -11779,7 +11702,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -11807,11 +11729,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 24,
+      "order": 25,
       "id": "capability-capability-autopilot-money",
       "kind": "capability",
       "priority": "P1",
@@ -11848,7 +11769,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -11876,11 +11796,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 25,
+      "order": 26,
       "id": "capability-capability-autopilot-next",
       "kind": "capability",
       "priority": "P1",
@@ -11917,7 +11836,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -11945,11 +11863,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 26,
+      "order": 27,
       "id": "parity-runtime-without-product-surface-runtime-without-product-surface-marketing-skill",
       "kind": "scope",
       "priority": "P1",
@@ -11985,7 +11902,7 @@
         "Re-run runtime evidence for this capability."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work."
+        "No preconditions; safe to start."
       ],
       "allowedActions": [
         "Code generation",
@@ -12093,7 +12010,6 @@
       ],
       "preconditions": [
         "Structural evidence must be rechecked for accuracy.",
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom."
       ],
       "allowedActions": [
@@ -12118,8 +12034,7 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass customerPass"
+      ]
     },
     {
       "order": 2,
@@ -12219,7 +12134,6 @@
       ],
       "preconditions": [
         "Structural evidence must be rechecked for accuracy.",
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom."
       ],
       "allowedActions": [
@@ -12244,8 +12158,7 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass customerPass"
+      ]
     },
     {
       "order": 3,
@@ -12382,7 +12295,6 @@
       ],
       "preconditions": [
         "Structural evidence must be rechecked for accuracy.",
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom."
       ],
       "allowedActions": [
@@ -12407,8 +12319,7 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass customerPass"
+      ]
     },
     {
       "order": 4,
@@ -12507,7 +12418,6 @@
       ],
       "preconditions": [
         "Structural evidence must be rechecked for accuracy.",
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom."
       ],
       "allowedActions": [
@@ -12535,7 +12445,7 @@
       ]
     },
     {
-      "order": 15,
+      "order": 16,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -12572,7 +12482,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -12600,11 +12509,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 16,
+      "order": 17,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -12641,7 +12549,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -12669,11 +12576,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 17,
+      "order": 18,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -12710,7 +12616,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -12738,11 +12643,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 18,
+      "order": 19,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -12779,7 +12683,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -12807,13 +12710,12 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     }
   ],
   "nextExecutableUnits": [
     {
-      "order": 15,
+      "order": 16,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -12850,7 +12752,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -12878,11 +12779,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 16,
+      "order": 17,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -12919,7 +12819,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -12947,11 +12846,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 17,
+      "order": 18,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -12988,7 +12886,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -13016,11 +12913,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 18,
+      "order": 19,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -13057,7 +12953,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -13085,11 +12980,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 19,
+      "order": 20,
       "id": "capability-capability-autopilot-impact",
       "kind": "capability",
       "priority": "P1",
@@ -13126,7 +13020,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -13154,11 +13047,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 20,
+      "order": 21,
       "id": "capability-capability-autopilot-config",
       "kind": "capability",
       "priority": "P1",
@@ -13195,7 +13087,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -13223,11 +13114,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 21,
+      "order": 22,
       "id": "capability-capability-autopilot",
       "kind": "capability",
       "priority": "P1",
@@ -13264,7 +13154,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -13292,11 +13181,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 22,
+      "order": 23,
       "id": "capability-capability-autopilot-conversion",
       "kind": "capability",
       "priority": "P1",
@@ -13333,7 +13221,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -13361,13 +13248,12 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     }
   ],
   "nextWork": [
     {
-      "order": 15,
+      "order": 16,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -13404,7 +13290,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -13432,11 +13317,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 16,
+      "order": 17,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -13473,7 +13357,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -13501,11 +13384,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 17,
+      "order": 18,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -13542,7 +13424,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -13570,11 +13451,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 18,
+      "order": 19,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -13611,7 +13491,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -13639,11 +13518,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 19,
+      "order": 20,
       "id": "capability-capability-autopilot-impact",
       "kind": "capability",
       "priority": "P1",
@@ -13680,7 +13558,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -13708,11 +13585,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 20,
+      "order": 21,
       "id": "capability-capability-autopilot-config",
       "kind": "capability",
       "priority": "P1",
@@ -13749,7 +13625,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -13777,11 +13652,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 21,
+      "order": 22,
       "id": "capability-capability-autopilot",
       "kind": "capability",
       "priority": "P1",
@@ -13818,7 +13692,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -13846,11 +13719,10 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     },
     {
-      "order": 22,
+      "order": 23,
       "id": "capability-capability-autopilot-conversion",
       "kind": "capability",
       "priority": "P1",
@@ -13887,7 +13759,6 @@
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
       "preconditions": [
-        "External signal adapters are stale; consider refreshing before this work.",
         "One or more affected capabilities are still partial or phantom.",
         "Affected files have high-severity Codacy hotspots; address those first."
       ],
@@ -13915,19 +13786,18 @@
         "All affected files pass linting and typecheck.",
         "No new Codacy high/critical issues introduced.",
         "Tests passing for affected modules."
-      ],
-      "expectedGateDelta": "Pass truthExtractionPass or reduce phantom capability count"
+      ]
     }
   ],
   "blockedUnits": [
     {
-      "id": "external-github-actions-github-actions-failed-1777254436436",
+      "id": "external-github-actions-github-actions-failed-1777259066883",
       "title": "Resolve Github Actions Ci Failure",
       "executionMode": "observation_only",
       "evidenceMode": "observed",
       "confidence": "high",
       "productImpact": "diagnostic",
-      "summary": "1 recent CI workflow failure(s): CI",
+      "summary": "3 recent CI workflow failure(s): CI, Dependabot Auto Merge, CodeQL",
       "whyBlocked": "Observed signal is not mapped enough for autonomous mutation.",
       "relatedFiles": []
     },
@@ -13947,13 +13817,13 @@
   ],
   "blockedWork": [
     {
-      "id": "external-github-actions-github-actions-failed-1777254436436",
+      "id": "external-github-actions-github-actions-failed-1777259066883",
       "title": "Resolve Github Actions Ci Failure",
       "executionMode": "observation_only",
       "evidenceMode": "observed",
       "confidence": "high",
       "productImpact": "diagnostic",
-      "summary": "1 recent CI workflow failure(s): CI",
+      "summary": "3 recent CI workflow failure(s): CI, Dependabot Auto Merge, CodeQL",
       "whyBlocked": "Observed signal is not mapped enough for autonomous mutation.",
       "relatedFiles": []
     },
@@ -14034,7 +13904,7 @@
     },
     "codacy": {
       "snapshotAvailable": true,
-      "stale": true,
+      "stale": false,
       "totalIssues": 11966,
       "highIssues": 1116,
       "runtimeCriticalHotspots": 44,
@@ -14042,28 +13912,26 @@
       "humanRequiredHotspots": 2
     },
     "externalSignals": {
-      "totalSignals": 8,
+      "totalSignals": 9,
       "runtimeSignals": 1,
-      "changeSignals": 2,
+      "changeSignals": 3,
       "dependencySignals": 0,
       "highImpactSignals": 4,
       "mappedSignals": 6,
       "humanRequiredSignals": 1,
-      "staleAdapters": 1,
+      "staleAdapters": 0,
       "missingAdapters": 0,
       "invalidAdapters": 0,
       "optionalSkippedAdapters": 1,
       "missingAdaptersList": [],
-      "staleAdaptersList": [
-        "codacy"
-      ],
+      "staleAdaptersList": [],
       "invalidAdaptersList": [],
       "optionalSkippedList": [
         "prometheus"
       ],
       "bySource": {
         "github": 1,
-        "github_actions": 1,
+        "github_actions": 2,
         "codacy": 4,
         "codecov": 0,
         "sentry": 1,
@@ -14105,8 +13973,7 @@
   },
   "stopCondition": [
     "Codacy still reports 1116 HIGH issue(s).",
-    "Codacy snapshot is stale (2687 minute(s) old).",
-    "Observed external high-impact signals remain active: 3.",
-    "External evidence is stale for 1 adapter(s)."
-  ]
+    "Observed external high-impact signals remain active: 3."
+  ],
+  "runId": "e98950c2-b389-49b0-be16-46bde464f3de"
 }

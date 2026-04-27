@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "syncedAt": "2026-04-25T04:59:13.404Z",
-  "elapsedMs": 29302,
+  "syncedAt": "2026-04-27T03:01:50.281Z",
+  "elapsedMs": 28053,
   "source": "scripts/ops/sync-codacy-issues.mjs",
   "target": {
     "provider": "gh",
@@ -352,7 +352,7 @@
       "category": "Complexity",
       "severityLevel": "Error",
       "tool": "Lizard",
-      "message": "File package-lock.json has 6981 non-comment lines of code",
+      "message": "File package-lock.json has 8059 non-comment lines of code",
       "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
       "commitTimestamp": "2025-12-03T13:33:54Z"
     },

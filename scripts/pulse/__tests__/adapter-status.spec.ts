@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { describe, it, expect } from 'vitest';
 import { isAdapterStatus, ADAPTER_STATUSES, type AdapterStatus } from '../types.adapter-status';
 
 describe('adapter-status', () => {

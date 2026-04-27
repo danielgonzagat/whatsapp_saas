@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-04-27T01:47:22.516Z",
-  "authorityMode": "advisory-only",
-  "advisoryOnly": true,
+  "runId": "e98950c2-b389-49b0-be16-46bde464f3de",
+  "generatedAt": "2026-04-27T03:04:32.332Z",
+  "authorityMode": "autonomous-execution",
+  "advisoryOnly": false,
   "authorityReasons": [
-    "Evidence freshness is not closed.",
-    "1 external adapter(s) are stale."
+    "Core trust/production gates are green; autonomous execution may proceed."
   ],
   "cleanupPolicy": "enforced-single-state",
   "canonicalDir": "/Users/danielpenin/whatsapp_saas/.pulse/current",
@@ -29,7 +29,6 @@
     "PULSE_EXTERNAL_SIGNAL_STATE.json",
     "PULSE_FLOW_EVIDENCE.json",
     "PULSE_FLOW_PROJECTION.json",
-    "PULSE_GITNEXUS_EVIDENCE.json",
     "PULSE_HEALTH.json",
     "PULSE_INVARIANT_EVIDENCE.json",
     "PULSE_OBSERVABILITY_EVIDENCE.json",
@@ -56,8 +55,29 @@
     "PULSE_REPORT.md"
   ],
   "removedLegacyPulseArtifacts": [
+    "PULSE_ADMIN_EVIDENCE.json",
+    "PULSE_BROWSER_EVIDENCE.json",
+    "PULSE_CERTIFICATE.json",
+    "PULSE_CLI_DIRECTIVE.json",
+    "PULSE_CODEBASE_TRUTH.json",
+    "PULSE_CONVERGENCE_PLAN.json",
+    "PULSE_CUSTOMER_EVIDENCE.json",
+    "PULSE_EXECUTION_TRACE.json",
+    "PULSE_FLOW_EVIDENCE.json",
+    "PULSE_FLOW_PROJECTION.json",
     "PULSE_HEALTH.json",
-    "PULSE_REPORT.md"
+    "PULSE_INVARIANT_EVIDENCE.json",
+    "PULSE_OBSERVABILITY_EVIDENCE.json",
+    "PULSE_OPERATOR_EVIDENCE.json",
+    "PULSE_RECOVERY_EVIDENCE.json",
+    "PULSE_REPORT.md",
+    "PULSE_RESOLVED_MANIFEST.json",
+    "PULSE_RUNTIME_EVIDENCE.json",
+    "PULSE_RUNTIME_PROBES.json",
+    "PULSE_SCENARIO_COVERAGE.json",
+    "PULSE_SCOPE_STATE.json",
+    "PULSE_SOAK_EVIDENCE.json",
+    "PULSE_WORLD_STATE.json"
   ],
   "rootStateMode": "local-only"
 }

@@ -1,5 +1,4 @@
 import { describe, it, expect } from 'vitest';
-import { describe, it, expect } from 'vitest';
 import { NON_ACTIONABLE_PATTERNS, classifyCodacyIssues } from '../codacy-false-positive-classifier';
 import type { PulseCodacyIssue, PulseCodacySummary } from '../types.truth';
 

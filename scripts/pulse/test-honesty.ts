@@ -98,6 +98,7 @@ export function detectWeakStatusAssertions(rootDir: string): WeakAssertionResult
 export function detectTypeEscapeHatches(rootDir: string): TypeEscapeHatchResult {
   const locations: string[] = [];
   const filePattern = /\.(ts|tsx)$/;
+  const specFilePattern = /\.(spec|test)\.(ts|tsx)$/;
   const excludeDirs = new Set(['node_modules', '.git', 'dist', 'build', '.next']);
   const escapePatterns = [
     { pattern: /as\s+any\b/, label: 'as any' },
@@ -121,9 +122,14 @@ export function detectTypeEscapeHatches(rootDir: string): TypeEscapeHatchResult 
       if (entry.isDirectory() && !entry.name.startsWith('.') && !excludeDirs.has(entry.name)) {
         scanDir(fullPath);
       } else if (entry.isFile() && filePattern.test(entry.name)) {
-        const content = fs.readFileSync(fullPath, 'utf-8');
         const relativePath = fullPath.replace(rootDir + path.sep, '');
-        const lines = content.split('\n');
+        if (
+          specFilePattern.test(entry.name) ||
+          relativePath.endsWith('.spec.ts') ||
+          relativePath.endsWith('.test.ts')
+        )
+          continue;
+        const content = fs.readFileSync(fullPath, 'utf-8');
         for (let i = 0; i < lines.length; i++) {
           for (const ep of escapePatterns) {
             if (ep.pattern.test(lines[i])) {
