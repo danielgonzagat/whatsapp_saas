@@ -633,6 +633,78 @@
       "owner": "@danielgonzagat",
       "reason": "PULSE resolved-manifest builder holds the end-to-end route + flow resolution graph; only received bounded updates in this batch, split tracked separately.",
       "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_any",
+      "owner": "@danielgonzagat",
+      "reason": "PULSE test-honesty meta-check enumerates literal `any` regex patterns and label strings to detect type-safety bypasses; the literals must remain to measure the repository honestly.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "any"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_eslint_disable",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty must reference the literal eslint-disable directive to detect suppression debt.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "eslint-disable"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_ts_ignore",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty meta-check must reference @ts-ignore literal to detect it.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "@ts-ignore"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_ts_expect_error",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty meta-check must reference @ts-expect-error literal to detect it.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "@ts-expect-error"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_ts_nocheck",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty meta-check must reference @ts-nocheck literal to detect it.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "@ts-nocheck"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_biome_ignore",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty meta-check must reference biome-ignore literal to detect it.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "biome-ignore"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_nosemgrep",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty meta-check must reference nosemgrep literal to detect it.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "nosemgrep"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_codacy_disable",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty meta-check must reference codacy-disable literal to detect it.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "codacy-disable"
+    },
+    {
+      "path": "scripts/pulse/test-honesty.ts",
+      "rule": "no_new_codacy_ignore",
+      "owner": "@danielgonzagat",
+      "reason": "test-honesty meta-check must reference codacy-ignore literal to detect it.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "codacy-ignore"
     }
   ]
 }

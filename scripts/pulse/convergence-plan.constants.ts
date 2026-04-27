@@ -94,5 +94,8 @@ export const GATE_PRIORITY: Record<PulseGateName, PulseConvergenceUnitPriority> 
   evidenceFresh: 'P3',
   pulseSelfTrustPass: 'P3',
   noOverclaimPass: 'P0',
+  testHonestyPass: 'P0',
+  assertionStrengthPass: 'P0',
+  typeIntegrityPass: 'P0',
   multiCycleConvergencePass: 'P0',
 };
