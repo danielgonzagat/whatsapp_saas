@@ -28,6 +28,21 @@ export interface PulseAutonomousDirectiveUnit {
   exitCriteria?: string[];
   gateNames?: string[];
   scenarioIds?: string[];
+  /** Required validations that must ALL pass before the cycle counts as validated.
+   *  Populated by the planner based on kind/affectedCapabilities/gateNames.
+   *  Categories: 'typecheck' | 'affected-tests' | 'flow-evidence' | 'scenario-evidence' | 'browser-evidence' */
+  requiredValidations?: Array<
+    'typecheck' | 'affected-tests' | 'flow-evidence' | 'scenario-evidence' | 'browser-evidence'
+  >;
+}
+
+/** Exit criterion — programmatically evaluable condition for unit completion. */
+export interface ExitCriterion {
+  id: string;
+  type: 'command' | 'artifact-assertion' | 'flow-passed' | 'scenario-passed' | 'score-threshold';
+  target: string;
+  expected: unknown;
+  comparison: 'eq' | 'gte' | 'lte' | 'contains' | 'exists';
 }
 
 export interface PulseAutonomousDirective {
@@ -213,7 +228,25 @@ export const DEFAULT_INTERVAL_MS = 30_000;
 export const DEFAULT_PARALLEL_AGENTS = 1;
 export const DEFAULT_MAX_WORKER_RETRIES = 1;
 export const DEFAULT_PLANNER_MODEL = 'gpt-4.1';
+/**
+ * Default validation commands — progressive ladder by category.
+ *
+ * Used as fallback when the planner cannot derive `requiredValidations`
+ * from the unit's kind/affectedCapabilities/gateNames.
+ *
+ * Ladder (executed in order; first failure stops the cycle):
+ *  1. typecheck — compiles all packages.
+ *  2. affected-tests — runs specs for files touched by the unit.
+ *  3. flow-evidence — verifies declared flows against runtime.
+ *  4. scenario-evidence — runs Playwright specs for the scenario.
+ */
 export const DEFAULT_VALIDATION_COMMANDS = [
+  'npm run typecheck',
+  'npm run test:affected',
+  'node scripts/pulse/run.js --deep --fast --json',
+  'npx playwright test --config e2e/playwright.config.ts specs/',
+];
+export const MINIMAL_VALIDATION_COMMANDS = [
   'npm run typecheck',
   'node scripts/pulse/run.js --guidance',
 ];
