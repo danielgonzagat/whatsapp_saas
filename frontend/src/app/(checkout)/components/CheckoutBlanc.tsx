@@ -442,7 +442,25 @@ export default function CheckoutBlanc({
         </div>
 
         <BlancDesktopSidebar
-          {...sharedSummaryProps}
+          qty={sharedSummaryProps.qty}
+          setQty={sharedSummaryProps.setQty}
+          totalWithInterest={sharedSummaryProps.totalWithInterest}
+          subtotal={sharedSummaryProps.subtotal}
+          shippingInCents={sharedSummaryProps.shippingInCents}
+          discount={sharedSummaryProps.discount}
+          couponApplied={sharedSummaryProps.couponApplied}
+          payMethod={sharedSummaryProps.payMethod}
+          pricing={sharedSummaryProps.pricing}
+          couponCode={sharedSummaryProps.couponCode}
+          setCouponCode={sharedSummaryProps.setCouponCode}
+          couponError={sharedSummaryProps.couponError}
+          applyCoupon={sharedSummaryProps.applyCoupon}
+          productName={sharedSummaryProps.productName}
+          unitPriceInCents={sharedSummaryProps.unitPriceInCents}
+          productImage={sharedSummaryProps.productImage}
+          colors={sharedSummaryProps.colors}
+          inputTheme={sharedSummaryProps.inputTheme}
+          enableCoupon={sharedSummaryProps.enableCoupon}
           summaryOpen={summaryOpen}
           setSummaryOpen={setSummaryOpen}
           testimonials={testimonials}

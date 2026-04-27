@@ -6,6 +6,9 @@ import type { NodeFieldsProps } from './NodeProperties.types';
 /** Media URL placeholder text used as an example, not user-facing copy. */
 const MEDIA_URL_PLACEHOLDER = `${'https'}://...`;
 
+/** Accessible label for the "save to variable" input. Externalised so it is not a JSX literal. */
+const SAVE_TO_VARIABLE_ARIA_LABEL = kloelT(`Salvar em variável`);
+
 /** Start-node fields. */
 export function StartFields({ id, node, handleChange }: NodeFieldsProps) {
   return (
@@ -148,7 +151,7 @@ export function InputFields({ id, node, handleChange }: NodeFieldsProps) {
           {kloelT(`Salvar em variável`)}
         </label>
         <input
-          aria-label="Salvar em variável"
+          aria-label={SAVE_TO_VARIABLE_ARIA_LABEL}
           type="text"
           value={node.data.variableName || ''}
           onChange={(e) => handleChange('variableName', e.target.value)}

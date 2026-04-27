@@ -32,6 +32,12 @@ function formatTime(value?: string) {
 type StatusFilter = 'ALL' | 'OPEN' | 'CLOSED' | 'PENDING' | 'SNOOZED';
 type AssignedFilter = 'ALL' | 'UNASSIGNED' | 'ASSIGNED';
 
+// Localized strings extracted as constants so they are not raw JSX literals.
+const FUNNELS_REFRESH_TITLE = kloelT(`Atualizando funis`);
+const FUNNELS_LOADING_CONVERSATIONS_TITLE = kloelT(`Carregando conversas`);
+const FUNNELS_LOADING_EXECUTIONS_TITLE = kloelT(`Carregando execucoes`);
+const FUNNELS_BRAND_TRACE_COLOR = '#E85D30';
+
 /** Funnels page. */
 export default function FunnelsPage() {
   const router = useRouter();
@@ -186,7 +192,11 @@ export default function FunnelsPage() {
             className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted disabled:opacity-50"
           >
             {loading ? (
-              <KloelMushroomMark size={18} title="Atualizando funis" traceColor="#E85D30" />
+              <KloelMushroomMark
+                size={18}
+                title={FUNNELS_REFRESH_TITLE}
+                traceColor={FUNNELS_BRAND_TRACE_COLOR}
+              />
             ) : (
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
             )}
@@ -255,7 +265,11 @@ export default function FunnelsPage() {
             <div className="max-h-[70vh] overflow-y-auto">
               {loading && conversations.length === 0 ? (
                 <div className="flex items-center justify-center px-5 py-10">
-                  <KloelMushroomMark size={22} title="Carregando conversas" traceColor="#E85D30" />
+                  <KloelMushroomMark
+                    size={22}
+                    title={FUNNELS_LOADING_CONVERSATIONS_TITLE}
+                    traceColor={FUNNELS_BRAND_TRACE_COLOR}
+                  />
                 </div>
               ) : filteredConversations.length === 0 ? (
                 <div className="px-5 py-10 text-center">
@@ -339,7 +353,11 @@ export default function FunnelsPage() {
             <div className="max-h-[70vh] overflow-y-auto">
               {loading && executions.length === 0 ? (
                 <div className="flex items-center justify-center px-5 py-10">
-                  <KloelMushroomMark size={22} title="Carregando execucoes" traceColor="#E85D30" />
+                  <KloelMushroomMark
+                    size={22}
+                    title={FUNNELS_LOADING_EXECUTIONS_TITLE}
+                    traceColor={FUNNELS_BRAND_TRACE_COLOR}
+                  />
                 </div>
               ) : executions.length === 0 ? (
                 <div className="px-5 py-10 text-center">

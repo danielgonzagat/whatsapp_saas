@@ -13,6 +13,9 @@ const WEBHOOK_HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE'] as const;
 /** Webhook URL placeholder text used as an example, not user-facing copy. */
 const WEBHOOK_URL_PLACEHOLDER = `${'https'}://...`;
 
+/** Accessible label for the webhook URL input. Externalised so it is not a JSX literal. */
+const WEBHOOK_URL_ARIA_LABEL = kloelT(`URL do Webhook`);
+
 /** Action-node fields. */
 export function ActionFields({ id, node, handleChange }: NodeFieldsProps) {
   return (
@@ -77,7 +80,7 @@ export function ActionFields({ id, node, handleChange }: NodeFieldsProps) {
               {kloelT(`URL do Webhook`)}
             </label>
             <input
-              aria-label="URL do Webhook"
+              aria-label={WEBHOOK_URL_ARIA_LABEL}
               type="text"
               value={node.data.config?.webhookUrl || ''}
               onChange={(e) =>

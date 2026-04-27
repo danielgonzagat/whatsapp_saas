@@ -10,6 +10,12 @@ import {
   COOKIE_TOKENS,
 } from './cookie-data';
 
+/**
+ * Visual marker rendered next to external links and browser-link badges.
+ * Externalised so it is not a raw JSX literal — preserves the existing copy.
+ */
+const NEW_BADGE_LABEL = kloelT(`novo`);
+
 function Section({ children }: { children: React.ReactNode }) {
   return <section style={{ marginBottom: 40 }}>{children}</section>;
 }
@@ -68,7 +74,7 @@ function InlineLink({
       }}
     >
       {children}
-      {external ? <span style={{ fontSize: 10, marginLeft: 3 }}>novo</span> : null}
+      {external ? <span style={{ fontSize: 10, marginLeft: 3 }}>{NEW_BADGE_LABEL}</span> : null}
     </a>
   );
 }
@@ -397,7 +403,7 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
                 }}
               >
                 {browser.name}
-                <span style={{ fontSize: 10, color: COOKIE_TOKENS.dim }}>novo</span>
+                <span style={{ fontSize: 10, color: COOKIE_TOKENS.dim }}>{NEW_BADGE_LABEL}</span>
               </a>
             ))}
           </div>
