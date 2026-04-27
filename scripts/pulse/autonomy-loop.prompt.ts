@@ -5,6 +5,7 @@
 import type { PulseAutonomyState, PulseAutonomyUnitSnapshot } from './types';
 import type { PulseAutonomousDirective, PulseAutonomousDirectiveUnit } from './autonomy-loop.types';
 import { DEFAULT_VALIDATION_COMMANDS } from './autonomy-loop.types';
+import { buildRequiredValidationCommands } from './autonomy-loop.required-validations';
 import { compact, unique } from './autonomy-loop.utils';
 import {
   getPreferredAutomationSafeUnits,
@@ -208,44 +209,9 @@ export function buildUnitValidationCommands(
   unit: PulseAutonomousDirectiveUnit,
   fallbackCommands: string[],
 ): string[] {
-  // Use requiredValidations if populated by the planner
-  const required = unit.requiredValidations ?? [];
+  const required = buildRequiredValidationCommands(unit);
   if (required.length > 0) {
-    const commands: string[] = [];
-    for (const category of new Set(required)) {
-      switch (category) {
-        case 'typecheck':
-          commands.push('npm run typecheck');
-          break;
-        case 'affected-tests':
-          commands.push('npx jest --findRelatedTests --passWithNoTests');
-          break;
-        case 'flow-evidence':
-          if (unit.affectedFlows && unit.affectedFlows.length > 0) {
-            commands.push(
-              `node scripts/pulse/run.js --deep --flow=${unit.affectedFlows.join(',')} --fast --json`,
-            );
-          } else {
-            commands.push('node scripts/pulse/run.js --deep --fast --json');
-          }
-          break;
-        case 'scenario-evidence':
-          if (unit.scenarioIds && unit.scenarioIds.length > 0) {
-            for (const sid of unit.scenarioIds) {
-              commands.push(
-                `npm --prefix e2e exec playwright test specs/${sid}.spec.ts --pass-with-no-tests`,
-              );
-            }
-          } else {
-            commands.push('npm --prefix e2e exec playwright test --pass-with-no-tests');
-          }
-          break;
-        case 'browser-evidence':
-          commands.push('node scripts/pulse/run.js --deep --customer --operator --admin --fast');
-          break;
-      }
-    }
-    return unique(commands.filter(Boolean));
+    return unique(required.filter(Boolean));
   }
   return buildBatchValidationCommands(directive, [unit], fallbackCommands);
 }

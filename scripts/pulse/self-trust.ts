@@ -391,6 +391,7 @@ export function runSelfTrustChecks(config: {
   lastOutput?: unknown;
   currentOutput?: unknown;
   breaks?: Break[];
+  artifactsOverride?: Record<string, Record<string, unknown>>;
 }): SelfTrustReport {
   const checks: SelfTrustCheckpoint[] = [
     checkManifestIntegrity(config.manifestPath),

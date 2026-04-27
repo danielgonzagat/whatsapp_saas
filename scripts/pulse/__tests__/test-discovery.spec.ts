@@ -10,8 +10,8 @@ describe('findTestsForChangedFiles', () => {
   const rootDir = process.cwd();
 
   it('discovers .spec.ts next to the source file', () => {
-    // checkout-social-lead.service.ts has a .spec next to it
-    const changed = ['backend/src/checkout/checkout-social-lead.service.ts'];
+    // split.controller.ts has split.controller.spec.ts next to it
+    const changed = ['backend/src/payments/split/split.controller.ts'];
     const tests = findTestsForChangedFiles(rootDir, changed);
     const specPaths = tests.filter((t) => t.includes('.spec.'));
     expect(specPaths.length).toBeGreaterThan(0);
