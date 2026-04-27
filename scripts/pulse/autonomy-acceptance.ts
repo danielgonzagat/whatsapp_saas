@@ -29,8 +29,11 @@ export function evaluateExitCriterion(
           shell: true,
         });
         return { passed: true, reason: `Command '${criterion.target}' succeeded.` };
-      } catch (err: any) {
-        return { passed: false, reason: `Command '${criterion.target}' failed: ${err.message}` };
+      } catch (err: unknown) {
+        return {
+          passed: false,
+          reason: `Command '${criterion.target}' failed: ${err instanceof Error ? err.message : String(err)}`,
+        };
       }
     }
 
@@ -47,10 +50,10 @@ export function evaluateExitCriterion(
           criterion.expected as Record<string, unknown>,
           criterion.comparison,
         );
-      } catch (err: any) {
+      } catch (err: unknown) {
         return {
           passed: false,
-          reason: `Artifact '${criterion.target}' parse error: ${err.message}`,
+          reason: `Artifact '${criterion.target}' parse error: ${err instanceof Error ? err.message : String(err)}`,
         };
       }
     }
@@ -63,7 +66,7 @@ export function evaluateExitCriterion(
       try {
         const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
         const flows = raw.results || raw.flows || [];
-        const targetFlow = flows.find((f: any) => f.flowId === criterion.target);
+        const targetFlow = flows.find((f: { flowId?: string }) => f.flowId === criterion.target);
         if (!targetFlow) {
           return { passed: false, reason: `Flow '${criterion.target}' not found in evidence.` };
         }
@@ -72,8 +75,11 @@ export function evaluateExitCriterion(
           criterion.expected as Record<string, unknown>,
           criterion.comparison,
         );
-      } catch (err: any) {
-        return { passed: false, reason: `Flow evidence parse error: ${err.message}` };
+      } catch (err: unknown) {
+        return {
+          passed: false,
+          reason: `Flow evidence parse error: ${err instanceof Error ? err.message : String(err)}`,
+        };
       }
     }
 
@@ -85,7 +91,9 @@ export function evaluateExitCriterion(
       try {
         const raw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
         const scenarios = raw.results || raw.scenarios || [];
-        const target = scenarios.find((s: any) => s.scenarioId === criterion.target);
+        const target = scenarios.find(
+          (s: { scenarioId?: string }) => s.scenarioId === criterion.target,
+        );
         if (!target) {
           return { passed: false, reason: `Scenario '${criterion.target}' not found in evidence.` };
         }
@@ -94,8 +102,11 @@ export function evaluateExitCriterion(
           criterion.expected as Record<string, unknown>,
           criterion.comparison,
         );
-      } catch (err: any) {
-        return { passed: false, reason: `Scenario evidence parse error: ${err.message}` };
+      } catch (err: unknown) {
+        return {
+          passed: false,
+          reason: `Scenario evidence parse error: ${err instanceof Error ? err.message : String(err)}`,
+        };
       }
     }
 
@@ -111,13 +122,19 @@ export function evaluateExitCriterion(
           criterion.expected as Record<string, unknown>,
           criterion.comparison,
         );
-      } catch (err: any) {
-        return { passed: false, reason: `Certificate parse error: ${err.message}` };
+      } catch (err: unknown) {
+        return {
+          passed: false,
+          reason: `Certificate parse error: ${err instanceof Error ? err.message : String(err)}`,
+        };
       }
     }
 
     default:
-      return { passed: false, reason: `Unknown criterion type: ${(criterion as any).type}` };
+      return {
+        passed: false,
+        reason: `Unknown criterion type: ${(criterion as { type?: string }).type}`,
+      };
   }
 }
 
