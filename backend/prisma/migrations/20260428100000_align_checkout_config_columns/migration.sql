@@ -29,63 +29,63 @@
 
 -- Chat Kloel no checkout
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "chatEnabled" BOOLEAN NOT NULL DEFAULT FALSE;
+ADD COLUMN IF NOT EXISTS "chatEnabled" BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "chatWelcomeMessage" TEXT
-    DEFAULT 'Oi! Tem alguma duvida? Estou aqui pra ajudar';
+ADD COLUMN IF NOT EXISTS "chatWelcomeMessage" TEXT
+DEFAULT 'Oi! Tem alguma duvida? Estou aqui pra ajudar';
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "chatDelay" INTEGER DEFAULT 3000;
+ADD COLUMN IF NOT EXISTS "chatDelay" INTEGER DEFAULT 3000;
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "chatPosition" TEXT DEFAULT 'bottom-right';
+ADD COLUMN IF NOT EXISTS "chatPosition" TEXT DEFAULT 'bottom-right';
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "chatColor" TEXT;
+ADD COLUMN IF NOT EXISTS "chatColor" TEXT;
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "chatOfferDiscount" BOOLEAN NOT NULL DEFAULT FALSE;
+ADD COLUMN IF NOT EXISTS "chatOfferDiscount" BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "chatDiscountCode" TEXT;
+ADD COLUMN IF NOT EXISTS "chatDiscountCode" TEXT;
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "chatSupportPhone" TEXT;
+ADD COLUMN IF NOT EXISTS "chatSupportPhone" TEXT;
 
 -- Social Proof
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "socialProofEnabled" BOOLEAN NOT NULL DEFAULT FALSE;
+ADD COLUMN IF NOT EXISTS "socialProofEnabled" BOOLEAN NOT NULL DEFAULT FALSE;
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "socialProofAlerts" JSONB DEFAULT '[]';
+ADD COLUMN IF NOT EXISTS "socialProofAlerts" JSONB DEFAULT '[]';
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "socialProofCustomNames" TEXT;
+ADD COLUMN IF NOT EXISTS "socialProofCustomNames" TEXT;
 
 -- Etapas
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "enableSteps" BOOLEAN NOT NULL DEFAULT TRUE;
+ADD COLUMN IF NOT EXISTS "enableSteps" BOOLEAN NOT NULL DEFAULT TRUE;
 
 -- Imagens basicas
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "coverImage" TEXT;
+ADD COLUMN IF NOT EXISTS "coverImage" TEXT;
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "secondaryImage" TEXT;
+ADD COLUMN IF NOT EXISTS "secondaryImage" TEXT;
 ALTER TABLE "RAC_CheckoutConfig"
-    ADD COLUMN IF NOT EXISTS "sideImage" TEXT;
+ADD COLUMN IF NOT EXISTS "sideImage" TEXT;
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 2. RAC_ProductCampaign create-if-missing
 -- ─────────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS "RAC_ProductCampaign" (
-    "id"          TEXT NOT NULL,
-    "productId"   TEXT NOT NULL,
-    "code"        TEXT NOT NULL,
-    "name"        TEXT NOT NULL,
-    "pixelId"     TEXT,
-    "salesCount"  INTEGER NOT NULL DEFAULT 0,
-    "paidCount"   INTEGER NOT NULL DEFAULT 0,
-    "createdAt"   TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt"   TIMESTAMP(3) NOT NULL,
+    "id" TEXT NOT NULL,
+    "productId" TEXT NOT NULL,
+    "code" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "pixelId" TEXT,
+    "salesCount" INTEGER NOT NULL DEFAULT 0,
+    "paidCount" INTEGER NOT NULL DEFAULT 0,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "RAC_ProductCampaign_pkey" PRIMARY KEY ("id")
 );
 
 CREATE INDEX IF NOT EXISTS "RAC_ProductCampaign_productId_idx"
-    ON "RAC_ProductCampaign" ("productId");
+ON "RAC_ProductCampaign" ("productId");
 
 DO $$
 BEGIN
