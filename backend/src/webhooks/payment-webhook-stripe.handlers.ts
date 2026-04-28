@@ -20,17 +20,6 @@ import type { StripeHandlerDeps } from './payment-webhook-stripe.deps';
  * Every payment-webhook `$transaction` catch block must follow this contract
  * so that Stripe webhook retries receive a proper error signal.
  */
-function alertAndRethrow(
-  raw: unknown,
-  deps: StripeHandlerDeps,
-  context: { provider: string; externalId: string; eventType: string },
-): never {
-  const error =
-    raw instanceof Error ? raw : new Error(typeof raw === 'string' ? raw : 'unknown error');
-  deps.financialAlert.webhookProcessingFailed(error, context);
-  throw error;
-}
-
 export async function handleRefundCreated(
   deps: StripeHandlerDeps,
   event: StripeEventLike,
@@ -90,12 +79,14 @@ export async function handleRefundCreated(
         stakeholderReversedAmountCents: reversal.reversedAmountCents,
         marketplaceDebitCents: marketplaceDebit,
       });
-    } catch (error) {
-      alertAndRethrow(error, deps, {
-        provider: 'stripe',
-        externalId: paymentIntentId,
-        eventType: event.type,
-      });
+    } catch (error: unknown) {
+      deps.financialAlert.webhookProcessingFailed(
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error'),
+        { provider: 'stripe', externalId: paymentIntentId, eventType: event.type },
+      );
+      throw error;
     }
   }
   if (webhookEvent?.id) {
@@ -334,12 +325,14 @@ export async function handlePayoutEvent(
         status: 'paid',
       });
     }
-  } catch (error) {
-    alertAndRethrow(error, deps, {
-      provider: 'stripe',
-      externalId: payoutId || stripeExternalId,
-      eventType: event.type,
-    });
+  } catch (error: unknown) {
+    deps.financialAlert.webhookProcessingFailed(
+      error instanceof Error
+        ? error
+        : new Error(typeof error === 'string' ? error : 'unknown error'),
+      { provider: 'stripe', externalId: payoutId || stripeExternalId, eventType: event.type },
+    );
+    throw error;
   }
   if (webhookEvent?.id) {
     await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {

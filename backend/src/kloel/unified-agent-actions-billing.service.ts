@@ -234,10 +234,9 @@ export class UnifiedAgentActionsBillingService {
           'Use o client_secret para completar o cadastro do cartão no frontend usando Stripe Elements.',
       };
     } catch (error: unknown) {
-      const msg =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
-      this.logger.error(`Erro ao criar SetupIntent: ${msg}`);
-      return { success: false, error: msg };
+      const errMsg = error instanceof Error ? error.message : 'unknown error';
+      this.logger.error(`Erro ao criar SetupIntent: ${errMsg}`);
+      throw error;
     }
   }
 
@@ -266,10 +265,9 @@ export class UnifiedAgentActionsBillingService {
         },
       };
     } catch (error: unknown) {
-      const msg =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
-      this.logger.error(`Erro ao obter status de billing: ${msg}`);
-      return { success: false, error: msg };
+      const errMsg = error instanceof Error ? error.message : 'unknown error';
+      this.logger.error(`Erro ao obter status de billing: ${errMsg}`);
+      throw error;
     }
   }
 
@@ -327,10 +325,9 @@ export class UnifiedAgentActionsBillingService {
         message: `Plano alterado para ${plan} com sucesso!`,
       };
     } catch (error: unknown) {
-      const msg =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
-      this.logger.error(`Erro ao alterar plano: ${msg}`);
-      return { success: false, error: msg };
+      const errMsg = error instanceof Error ? error.message : 'unknown error';
+      this.logger.error(`Erro ao alterar plano: ${errMsg}`);
+      throw error;
     }
   }
 

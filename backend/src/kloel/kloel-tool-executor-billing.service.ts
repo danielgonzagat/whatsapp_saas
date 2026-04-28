@@ -37,33 +37,26 @@ export class KloelToolExecutorBillingService {
     args: ToolUpdateBillingInfoArgs,
   ): Promise<ToolResult> {
     const { returnUrl } = args;
-    try {
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { stripeCustomerId: true },
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { stripeCustomerId: true },
+    });
+    if (workspace?.stripeCustomerId) {
+      const stripe = new StripeRuntime(process.env.STRIPE_SECRET_KEY || '');
+      const session = await stripe.billingPortal.sessions.create({
+        customer: workspace.stripeCustomerId,
+        return_url: returnUrl || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/billing`,
       });
-      if (workspace?.stripeCustomerId) {
-        const stripe = new StripeRuntime(process.env.STRIPE_SECRET_KEY || '');
-        const session = await stripe.billingPortal.sessions.create({
-          customer: workspace.stripeCustomerId,
-          return_url: returnUrl || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/billing`,
-        });
-        return {
-          success: true,
-          url: session.url,
-          message: 'Acesse o link para atualizar seus dados de pagamento.',
-        };
-      }
       return {
-        success: false,
-        error: 'Nenhum método de pagamento configurado ainda. Acesse /billing para configurar.',
+        success: true,
+        url: session.url,
+        message: 'Acesse o link para atualizar seus dados de pagamento.',
       };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'unknown error';
-      this.logger.error('Erro ao gerar link de billing:', error);
-
-      return { success: false, error: msg };
     }
+    return {
+      success: false,
+      error: 'Nenhum método de pagamento configurado ainda. Acesse /billing para configurar.',
+    };
   }
 
   /**
@@ -71,37 +64,30 @@ export class KloelToolExecutorBillingService {
    * flag, presence of a payment method and the linked Stripe subscription id.
    */
   public async toolGetBillingStatus(workspaceId: string): Promise<ToolResult> {
-    try {
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: {
-          providerSettings: true,
-          stripeCustomerId: true,
-          subscription: { select: { plan: true, stripeId: true } },
-        },
-      });
-      if (!workspace) {
-        return { error: 'Workspace não encontrado', success: false };
-      }
-      const settings = (workspace.providerSettings as Record<string, unknown>) || {};
-      const plan = String(workspace.subscription?.plan || 'FREE');
-
-      return {
-        hasPaymentMethod: !!workspace.stripeCustomerId,
-        message: settings.billingSuspended
-          ? 'Cobrança suspensa. Regularize para continuar usando.'
-          : `Plano ${plan} ativo`,
-        plan,
-        status: settings.billingSuspended ? 'SUSPENDED' : 'ACTIVE',
-        subscriptionId: workspace.subscription?.stripeId || null,
-        success: true,
-      };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'unknown error';
-      this.logger.error('Erro ao buscar status billing:', error);
-
-      return { error: msg, success: false };
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: {
+        providerSettings: true,
+        stripeCustomerId: true,
+        subscription: { select: { plan: true, stripeId: true } },
+      },
+    });
+    if (!workspace) {
+      return { error: 'Workspace não encontrado', success: false };
     }
+    const settings = (workspace.providerSettings as Record<string, unknown>) || {};
+    const plan = String(workspace.subscription?.plan || 'FREE');
+
+    return {
+      hasPaymentMethod: !!workspace.stripeCustomerId,
+      message: settings.billingSuspended
+        ? 'Cobrança suspensa. Regularize para continuar usando.'
+        : `Plano ${plan} ativo`,
+      plan,
+      status: settings.billingSuspended ? 'SUSPENDED' : 'ACTIVE',
+      subscriptionId: workspace.subscription?.stripeId || null,
+      success: true,
+    };
   }
 
   /**
@@ -121,52 +107,45 @@ export class KloelToolExecutorBillingService {
     if (!VALID_PLANS.includes(newPlan.toLowerCase() as (typeof VALID_PLANS)[number])) {
       return { error: `Plano inválido. Opções: ${VALID_PLANS.join(', ')}`, success: false };
     }
-    try {
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { subscription: { select: { plan: true, stripeId: true } } },
-      });
-      const currentPlan = workspace?.subscription?.plan || 'FREE';
-      const targetPlan = newPlan.toUpperCase();
-      if (workspace?.subscription?.stripeId) {
-        return {
-          currentPlan,
-          message: `Para alterar de ${currentPlan} para ${targetPlan}, acesse /billing e use o portal de pagamento.`,
-          requiresAction: true,
-          success: true,
-          targetPlan,
-        };
-      }
-      if (targetPlan !== 'FREE' && currentPlan === 'FREE') {
-        return {
-          message: `Para assinar o plano ${targetPlan}, acesse /pricing e complete o checkout.`,
-          requiresCheckout: true,
-          success: true,
-          targetPlan,
-        };
-      }
-      await this.prisma.subscription.upsert({
-        where: { workspaceId },
-        update: { plan: targetPlan },
-        create: {
-          currentPeriodEnd: new Date(Date.now() + FREE_TIER_BILLING_PERIOD_DAYS * MS_PER_DAY),
-          plan: targetPlan,
-          status: 'ACTIVE',
-          workspaceId,
-        },
-      });
-
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { subscription: { select: { plan: true, stripeId: true } } },
+    });
+    const currentPlan = workspace?.subscription?.plan || 'FREE';
+    const targetPlan = newPlan.toUpperCase();
+    if (workspace?.subscription?.stripeId) {
       return {
-        message: `Plano alterado de ${currentPlan} para ${targetPlan}`,
-        newPlan: targetPlan,
-        previousPlan: currentPlan,
+        currentPlan,
+        message: `Para alterar de ${currentPlan} para ${targetPlan}, acesse /billing e use o portal de pagamento.`,
+        requiresAction: true,
         success: true,
+        targetPlan,
       };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'unknown error';
-      this.logger.error('Erro ao alterar plano:', error);
-
-      return { error: msg, success: false };
     }
+    if (targetPlan !== 'FREE' && currentPlan === 'FREE') {
+      return {
+        message: `Para assinar o plano ${targetPlan}, acesse /pricing e complete o checkout.`,
+        requiresCheckout: true,
+        success: true,
+        targetPlan,
+      };
+    }
+    await this.prisma.subscription.upsert({
+      where: { workspaceId },
+      update: { plan: targetPlan },
+      create: {
+        currentPeriodEnd: new Date(Date.now() + FREE_TIER_BILLING_PERIOD_DAYS * MS_PER_DAY),
+        plan: targetPlan,
+        status: 'ACTIVE',
+        workspaceId,
+      },
+    });
+
+    return {
+      message: `Plano alterado de ${currentPlan} para ${targetPlan}`,
+      newPlan: targetPlan,
+      previousPlan: currentPlan,
+      success: true,
+    };
   }
 }

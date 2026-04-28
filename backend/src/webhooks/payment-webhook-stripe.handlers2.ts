@@ -250,21 +250,21 @@ export async function handleCheckoutSessionCompleted(
         productName: session.metadata?.productName,
       });
     } catch (flowErr: unknown) {
-      const msg =
-        flowErr instanceof Error
-          ? flowErr
-          : new Error(typeof flowErr === 'string' ? flowErr : 'unknown error');
-      deps.logger.warn(`[STRIPE] Erro ao ativar fluxo pós-venda: ${msg?.message}`, {
+      const flowErrMsg = flowErr instanceof Error ? flowErr.message : 'unknown error';
+      deps.logger.error(`[STRIPE] Post-purchase flow activation failed: ${flowErrMsg}`, {
         workspaceId,
         eventType: 'checkout.session.completed',
-        stack: msg?.stack,
+        stack: flowErr instanceof Error ? flowErr.stack : undefined,
       });
+      throw flowErr;
     }
   }
   if (webhookEvent?.id) {
     await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch((markErr: unknown) => {
       deps.logger.error(
-        `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${markErr instanceof Error ? markErr.message : 'unknown_error'}`,
+        `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${
+          markErr instanceof Error ? markErr.message : 'unknown_error'
+        }`,
       );
     });
   }
@@ -352,10 +352,11 @@ async function sendCheckoutConfirmation(
     await deps.whatsapp.sendMessage(workspaceId, customerPhone, confirmationMessage);
     deps.logger.log(`[STRIPE] Notificação enviada para ${customerPhone}`);
   } catch (notifyErr: unknown) {
-    const msg =
-      notifyErr instanceof Error
-        ? notifyErr
-        : new Error(typeof notifyErr === 'string' ? notifyErr : 'unknown error');
-    deps.logger.warn(`[STRIPE] Falha ao notificar cliente: ${msg?.message}`);
+    const notifyErrMsg = notifyErr instanceof Error ? notifyErr.message : 'unknown error';
+    deps.logger.error(`[STRIPE] Failed to notify customer ${customerPhone}: ${notifyErrMsg}`, {
+      workspaceId,
+      sessionId: session.id,
+    });
+    throw notifyErr;
   }
 }
