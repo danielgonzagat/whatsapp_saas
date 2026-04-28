@@ -124,6 +124,7 @@ export class ReportsOrdersService {
         data.map(async (order) => {
           assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.firstPurchaseCheck');
           const paidStatus = 'PAID' as const;
+          // take: 1 — we only need to know if any prior order exists
           const priorCount = await this.prisma.checkoutOrder.count({
             where: {
               workspaceId,
@@ -131,6 +132,7 @@ export class ReportsOrdersService {
               status: paidStatus,
               createdAt: { lt: order.createdAt },
             },
+            take: 1,
           });
           return priorCount === 0;
         }),
