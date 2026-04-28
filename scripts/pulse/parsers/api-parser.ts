@@ -256,15 +256,19 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             const prevLine = lines[li];
             // const key = buildDashboardHomeUrl(...) / const key = `/path?${...}`
             const buildCall = prevLine.match(
-              new RegExp(`(?:const|let)\\s+${swrVarMatch[1]}\\s*=\\s*(\\w+)\\s*\\(`),
+              /(?:const|let)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*(\w+)\s*\(/,
             );
+            if (buildCall && buildCall[1] !== swrVarMatch[1]) {
+              continue;
+            }
             if (buildCall) {
-              const buildFnName = buildCall[1];
+              const buildFnName = buildCall[2];
               // Search the file for the build function definition
-              const buildFnDefRe = new RegExp(
-                `(?:function|const)\\s+${buildFnName}\\s*(?:[=:(]|\\s*\\()`,
+              const buildFnDefRe =
+                /(?:function|const)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*(?:[=:(]|\s*\()/g;
+              const fnMatch = [...content.matchAll(buildFnDefRe)].find(
+                (match) => match[1] === buildFnName,
               );
-              const fnMatch = buildFnDefRe.exec(content);
               if (fnMatch) {
                 const fnStartIdx = content.substring(0, fnMatch.index).split('\n').length - 1;
                 // Extract ~30 lines of the function body to find return string
@@ -280,10 +284,13 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             }
             // const key = `/path/...` or const key = `...`
             const strMatch = prevLine.match(
-              new RegExp(`(?:const|let)\\s+${varName}\\s*=\\s*\`?(/[\\w/-]+)`),
+              /(?:const|let)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*`?(\/[\w/-]+)/,
             );
+            if (strMatch && strMatch[1] !== varName) {
+              continue;
+            }
             if (strMatch) {
-              foundEndpoint = normalizeEndpoint(strMatch[1]);
+              foundEndpoint = normalizeEndpoint(strMatch[2]);
               break;
             }
           }

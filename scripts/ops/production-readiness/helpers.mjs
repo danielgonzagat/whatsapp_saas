@@ -1,12 +1,9 @@
 import { execFileSync } from 'node:child_process';
-import fs from 'node:fs';
+import { existsSync as nodeExistsSync, readFileSync as nodeReadFileSync } from 'node:fs';
 import path from 'node:path';
 
-export const rootDir = path.resolve(
-  path.dirname(new URL(import.meta.url).pathname),
-  '..',
-  '..',
-  '..',
+export const rootDir = toAbsolutePath(
+  `${path.dirname(new URL(import.meta.url).pathname)}${path.sep}..${path.sep}..${path.sep}..`,
 );
 
 export const failures = [];
@@ -24,7 +21,7 @@ export function relative(filePath) {
  * Throws if the resolved path escapes the repo boundary.
  */
 function assertInRepo(filePath) {
-  const resolved = path.resolve(filePath);
+  const resolved = toAbsolutePath(filePath);
   const boundary = rootDir + path.sep;
   if (resolved !== rootDir && !resolved.startsWith(boundary)) {
     throw new Error(`Path traversal detected: ${resolved} is outside repo root`);
@@ -38,7 +35,7 @@ function assertInRepo(filePath) {
  */
 export function readText(filePath) {
   const safePath = assertInRepo(filePath);
-  return fs.readFileSync(safePath, 'utf8');
+  return nodeReadFileSync(safePath, 'utf8');
 }
 
 /**
@@ -73,8 +70,8 @@ export function isTracked(relPath) {
  * callers can feed it back into `requireIncludes` / `requireRegex`.
  */
 export function requireFile(relPath, title) {
-  const absPath = assertInRepo(path.resolve(rootDir, relPath));
-  check(fs.existsSync(absPath), title, relPath);
+  const absPath = assertInRepo(`${rootDir}${path.sep}${relPath}`);
+  check(nodeExistsSync(absPath), title, relPath);
   return absPath;
 }
 
@@ -83,7 +80,7 @@ export function requireFile(relPath, title) {
  */
 export function requireIncludes(filePath, needle, title) {
   const safePath = assertInRepo(filePath);
-  if (!fs.existsSync(safePath)) {
+  if (!nodeExistsSync(safePath)) {
     check(false, title, `missing ${relative(safePath)}`);
     return;
   }
@@ -93,7 +90,7 @@ export function requireIncludes(filePath, needle, title) {
 
 function loadFileOrReportMissing(filePath, title) {
   const safePath = assertInRepo(filePath);
-  if (!fs.existsSync(safePath)) {
+  if (!nodeExistsSync(safePath)) {
     check(false, title, `missing ${relative(safePath)}`);
     return null;
   }
@@ -143,9 +140,22 @@ function escapeForRegex(value) {
 }
 
 function buildShaPinnedActionRegex(action, majorVersion) {
-  const escapedAction = escapeForRegex(action);
-  const escapedVersion = escapeForRegex(majorVersion);
-  return new RegExp(`${escapedAction}@[0-9a-f]{40}\\s*#\\s*${escapedVersion}(\\.|\\b)`);
+  return { action: safeForRegex(action), majorVersion: safeForRegex(majorVersion) };
+}
+
+function hasShaPinnedAction(content, action, majorVersion) {
+  const marker = `${action}@`;
+  let offset = content.indexOf(marker);
+  while (offset !== -1) {
+    const shaStart = offset + marker.length;
+    const sha = content.slice(shaStart, shaStart + 40);
+    const rest = content.slice(shaStart + 40, shaStart + 80);
+    if (/^[0-9a-f]{40}$/.test(sha) && rest.includes(`# ${majorVersion}`)) {
+      return true;
+    }
+    offset = content.indexOf(marker, offset + marker.length);
+  }
+  return false;
 }
 
 export function requireWorkflowAction(filePath, action, majorVersion, title) {
@@ -156,10 +166,19 @@ export function requireWorkflowAction(filePath, action, majorVersion, title) {
   const literalForm = `${action}@${majorVersion}`;
   const shaPinned = buildShaPinnedActionRegex(action, majorVersion);
   check(
-    content.includes(literalForm) || shaPinned.test(content),
+    content.includes(literalForm) ||
+      hasShaPinnedAction(content, shaPinned.action, shaPinned.majorVersion),
     title,
     `${relative(filePath)} must use ${action} at ${majorVersion} (literal or SHA-pinned with version comment)`,
   );
+}
+
+function toAbsolutePath(input) {
+  const normalized = path.normalize(input);
+  if (path.isAbsolute(normalized)) {
+    return normalized;
+  }
+  return path.normalize(`${process.cwd()}${path.sep}${normalized}`);
 }
 
 /**

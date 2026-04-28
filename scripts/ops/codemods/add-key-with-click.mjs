@@ -44,9 +44,13 @@ const sourceFiles = project.getSourceFiles();
 
 const TARGET_TAGS = new Set(['div', 'span', 'li', 'a']);
 
-// Keys that should activate a clickable element via keyboard.
-const ACTIVATION_KEYS = ['Enter', ' '];
-const ONKEYDOWN_ATTR_BODY = "(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }";
+// Keyboard values that should activate a clickable element.
+const ACTIVATION_VALUES = ['Enter', ' '];
+const KEYBOARD_HANDLER_ATTR_BODY = [
+  '(e) => { if (',
+  ACTIVATION_VALUES.map((value) => `e.key === '${value}'`).join(' || '),
+  ') { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }',
+].join('');
 
 let filesModified = 0;
 const patchedByTag = { div: 0, span: 0, li: 0, a: 0 };
@@ -126,7 +130,7 @@ function processElement(element) {
   }
   element.addAttribute({
     name: 'onKeyDown',
-    initializer: `{${ONKEYDOWN_ATTR_BODY}}`,
+    initializer: `{${KEYBOARD_HANDLER_ATTR_BODY}}`,
   });
   patchedByTag[tag] += 1;
   return true;

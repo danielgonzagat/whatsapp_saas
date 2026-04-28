@@ -6,6 +6,7 @@ import * as path from 'path';
 import { ensureDir, pathExists, readTextFile, renamePath, writeTextFile } from './safe-fs';
 import type { PulseArtifactRegistry } from './artifact-registry';
 import { injectRunIdentity, type PulseRunIdentity } from './run-identity';
+import { safeJoin } from './lib/safe-path';
 
 export function writeAtomic(
   targetPath: string,
@@ -14,7 +15,7 @@ export function writeAtomic(
 ): void {
   ensureDir(path.dirname(targetPath), { recursive: true });
   ensureDir(registry.tempDir, { recursive: true });
-  const tempPath = path.join(
+  const tempPath = safeJoin(
     registry.tempDir,
     `${path.basename(targetPath)}.${Date.now().toString(36)}.tmp`,
   );
@@ -30,7 +31,7 @@ export function mirrorIfNeeded(
   if (!registry.mirrors.includes(relativePath)) {
     return;
   }
-  const rootMirrorPath = path.join(registry.rootDir, relativePath);
+  const rootMirrorPath = safeJoin(registry.rootDir, relativePath);
   writeAtomic(rootMirrorPath, content, registry);
 }
 
@@ -49,7 +50,7 @@ export function writeArtifact(
   registry: PulseArtifactRegistry,
   identity?: PulseRunIdentity,
 ): string {
-  const targetPath = path.join(registry.canonicalDir, relativePath);
+  const targetPath = safeJoin(registry.canonicalDir, relativePath);
   const finalContent =
     identity && relativePath.endsWith('.json')
       ? (() => {

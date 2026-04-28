@@ -164,14 +164,15 @@ export function hookFunctionApiCalls(
   hookRegistry: HookRegistry,
 ): string[] {
   const endpoints: string[] = [];
+  const functionCallRe = /\b([A-Za-z_$][A-Za-z0-9_$]*)\s*\(/g;
+  const calledFunctions = new Set<string>();
+  let functionCallMatch: RegExpExecArray | null;
+  while ((functionCallMatch = functionCallRe.exec(bodyText)) !== null) {
+    calledFunctions.add(functionCallMatch[1]);
+  }
 
   for (const [localName, { hookName, funcName }] of hookDestructures) {
-    // Source: `localName` originates from hook destructure parsing of source files
-    // discovered by the PULSE scanner (trusted in-repo TS/TSX). Even so, we escape
-    // it via `escapeRegExp` to neutralize any regex metacharacters and prevent
-    // ReDoS / pattern-injection if the parser ever yields atypical identifiers.
-    const callRe = new RegExp(`\\b${escapeRegExp(localName)}\\s*\\(`, 'g');
-    if (!callRe.test(bodyText)) {
+    if (!calledFunctions.has(localName)) {
       continue;
     }
 

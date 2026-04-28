@@ -25,13 +25,13 @@ Usage:
 from __future__ import absolute_import
 
 import argparse
+import asyncio
 import select
 import shlex
 import shutil
 import socket
 import sys
 import time
-from subprocess import DEVNULL, Popen, TimeoutExpired, run
 from typing import List, Sequence
 
 # Polling interval (seconds) when waiting for a TCP port to accept connections.
@@ -139,14 +139,18 @@ def _register_command_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def _start_server(server_cmd: str, port: int, timeout: int) -> Popen:
+async def _start_server(server_cmd: str, port: int, timeout: int) -> asyncio.subprocess.Process:
     """Spawn ``server_cmd`` as a child process and wait for ``port`` to open."""
     argv = shlex.split(server_cmd)
     resolved = _resolve_executable(argv)
     # Replace argv[0] with the resolved absolute path so PATH lookups happen
-    # exactly once (here), under our validation, and never inside Popen.
+    # exactly once (here), under our validation, and never inside the process spawn.
     argv = [resolved, *argv[1:]]
-    process = Popen(argv, stdout=DEVNULL, stderr=DEVNULL, shell=False)
+    process = await asyncio.create_subprocess_exec(
+        *argv,
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.DEVNULL,
+    )
     print(f"Waiting for server on port {port}...")
     if not is_server_ready(port, timeout=timeout):
         raise RuntimeError(f"Server failed to start on port {port} within {timeout}s")
@@ -154,16 +158,17 @@ def _start_server(server_cmd: str, port: int, timeout: int) -> Popen:
     return process
 
 
-def _cleanup_servers(processes: List[Popen]) -> None:
+async def _cleanup_servers(processes: List[asyncio.subprocess.Process]) -> None:
     """Terminate every spawned server, killing any that miss the grace period."""
     print(f"\nStopping {len(processes)} server(s)...")
     for index, process in enumerate(processes):
-        try:
+        if process.returncode is None:
             process.terminate()
-            process.wait(timeout=_TERMINATE_GRACE_SEC)
-        except TimeoutExpired:
-            process.kill()
-            process.wait()
+            try:
+                await asyncio.wait_for(process.wait(), timeout=_TERMINATE_GRACE_SEC)
+            except asyncio.TimeoutError:
+                process.kill()
+                await process.wait()
         print(f"Server {index + 1} stopped")
     print("All servers stopped")
 
@@ -187,35 +192,44 @@ def _validate_args(args: argparse.Namespace) -> List[str]:
     return command
 
 
-def _spawn_all(servers: Sequence[str], ports: Sequence[int], timeout: int) -> List[Popen]:
+async def _spawn_all(
+    servers: Sequence[str],
+    ports: Sequence[int],
+    timeout: int,
+) -> List[asyncio.subprocess.Process]:
     """Spawn every requested server, returning the list of running processes."""
-    processes: List[Popen] = []
+    processes: List[asyncio.subprocess.Process] = []
     for index, (cmd, port) in enumerate(zip(servers, ports)):
         print(f"Starting server {index + 1}/{len(servers)}: {cmd}")
-        processes.append(_start_server(cmd, port, timeout))
+        processes.append(await _start_server(cmd, port, timeout))
     return processes
 
 
-def _run_wrapped_command(command: List[str]) -> int:
+async def _run_wrapped_command(command: List[str]) -> int:
     """Resolve and execute the wrapped command, returning its exit status."""
     resolved = _resolve_executable(command)
     argv = [resolved, *command[1:]]
     print(f"Running: {' '.join(command)}\n")
-    result = run(argv, check=False, shell=False)
-    return result.returncode
+    process = await asyncio.create_subprocess_exec(*argv)
+    return await process.wait()
 
 
-def main() -> None:
+async def _run_main() -> int:
     """Entry point for the with-server CLI."""
     args = _parse_arguments()
     command = _validate_args(args)
-    server_processes: List[Popen] = []
+    server_processes: List[asyncio.subprocess.Process] = []
     try:
-        server_processes = _spawn_all(args.servers, args.ports, args.timeout)
+        server_processes = await _spawn_all(args.servers, args.ports, args.timeout)
         print(f"\nAll {len(args.servers)} server(s) ready")
-        sys.exit(_run_wrapped_command(command))
+        return await _run_wrapped_command(command)
     finally:
-        _cleanup_servers(server_processes)
+        await _cleanup_servers(server_processes)
+
+
+def main() -> None:
+    """Synchronous CLI wrapper."""
+    sys.exit(asyncio.run(_run_main()))
 
 
 if __name__ == '__main__':

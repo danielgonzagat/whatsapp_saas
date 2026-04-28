@@ -31,6 +31,17 @@ interface ComposerWebSearchE2EStubDigest {
   totalTokens: number;
 }
 
+/** Image-generation stub shape compatible with composer metadata. */
+interface ComposerImageE2EStubResult {
+  content: string;
+  metadata: {
+    capability: 'create_image';
+    generatedImageUrl: string;
+    generatedImageFilename: string;
+  };
+  estimatedTokens: number;
+}
+
 /** True when a non-production harness should bypass real OpenAI calls. */
 export function isComposerWebSearchE2EStubEnabled(): boolean {
   if (process.env.NODE_ENV === 'production') {
@@ -81,5 +92,20 @@ export function buildComposerWebSearchE2EStub(query: string): ComposerWebSearchE
       },
     ],
     totalTokens: 0,
+  };
+}
+
+/** Build a deterministic data-url image result for the chat composer e2e harness. */
+export function buildComposerImageE2EStub(): ComposerImageE2EStubResult {
+  const coralPixelPng =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
+  return {
+    content: 'Imagem gerada e pronta para revisão.',
+    metadata: {
+      capability: 'create_image',
+      generatedImageUrl: `data:image/png;base64,${coralPixelPng}`,
+      generatedImageFilename: 'kloel-e2e-image.png',
+    },
+    estimatedTokens: 0,
   };
 }

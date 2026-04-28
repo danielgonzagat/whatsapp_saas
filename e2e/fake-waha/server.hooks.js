@@ -80,11 +80,12 @@ async function dispatchHook(hook, sessionName, event, payload, fallbackSecret) {
   const headers = buildHookHeaders(hook, fallbackSecret);
   const safeUrl = assertHookUrlAllowed(hook.url);
   try {
-    const response = await fetch(safeUrl.toString(), {
+    const request = new Request(safeUrl.toString(), {
       method: 'POST',
       headers,
       body: JSON.stringify({ event, session: sessionName, payload }),
     });
+    const response = await fetch(request);
     return { url: hook.url, ok: response.ok, status: response.status };
   } catch (err) {
     return { url: hook.url, ok: false, error: err.message };

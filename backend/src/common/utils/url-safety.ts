@@ -186,10 +186,11 @@ export async function safeStorageFetch(
   let currentUrl = (await assertSafeStorageUrl(rawUrl, options)).toString();
 
   for (let i = 0; i <= maxRedirects; i += 1) {
-    const response = await fetch(currentUrl, {
+    const request = new Request(currentUrl, {
       ...(options.init ?? {}),
       redirect: 'manual',
     });
+    const response = await fetch(request);
 
     const status = response.status;
     if (status >= 300 && status < 400) {

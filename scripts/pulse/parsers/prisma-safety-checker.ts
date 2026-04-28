@@ -109,8 +109,9 @@ function transactionHasIsolation(block: string, aliases: Set<string>): boolean {
   if (/\bisolationLevel\s*:/.test(block)) {
     return true;
   }
+  const identifiers = new Set(block.match(/\b[A-Za-z_$][A-Za-z0-9_$]*\b/g) || []);
   for (const alias of aliases) {
-    if (new RegExp(`\\b${alias}\\b`).test(block)) {
+    if (identifiers.has(alias)) {
       return true;
     }
   }

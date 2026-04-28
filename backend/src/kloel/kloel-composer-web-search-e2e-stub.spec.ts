@@ -1,4 +1,5 @@
 import {
+  buildComposerImageE2EStub,
   buildComposerWebSearchE2EStub,
   isComposerWebSearchE2EStubEnabled,
 } from './kloel-composer-web-search-e2e-stub';
@@ -92,6 +93,17 @@ describe('kloel-composer-web-search-e2e-stub', () => {
     it('returns a totalTokens of 0 so the planLimits.trackAiUsage path is skipped', () => {
       const digest = buildComposerWebSearchE2EStub('anything');
       expect(digest.totalTokens).toBe(0);
+    });
+  });
+
+  describe('buildComposerImageE2EStub', () => {
+    it('returns generated image metadata as a png data url', () => {
+      const result = buildComposerImageE2EStub();
+      expect(result.content).toContain('Imagem gerada');
+      expect(result.metadata.capability).toBe('create_image');
+      expect(result.metadata.generatedImageUrl).toMatch(/^data:image\/png;base64,/);
+      expect(result.metadata.generatedImageFilename).toBe('kloel-e2e-image.png');
+      expect(result.estimatedTokens).toBe(0);
     });
   });
 });

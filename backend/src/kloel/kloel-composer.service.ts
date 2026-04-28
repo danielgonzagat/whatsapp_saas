@@ -7,6 +7,7 @@ import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import {
+  buildComposerImageE2EStub,
   buildComposerWebSearchE2EStub,
   isComposerWebSearchE2EStubEnabled,
 } from './kloel-composer-web-search-e2e-stub';
@@ -214,6 +215,9 @@ export class KloelComposerService {
     }
 
     if (capability === 'create_image') {
+      if (isComposerWebSearchE2EStubEnabled()) {
+        return buildComposerImageE2EStub();
+      }
       if (!process.env.OPENAI_API_KEY)
         throw new Error('OPENAI_API_KEY não configurada para criar imagens.');
       if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);

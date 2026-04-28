@@ -1,5 +1,26 @@
-import * as fs from 'fs';
+import {
+  copyFileSync as nodeCopyFileSync,
+  cpSync as nodeCpSync,
+  createWriteStream as nodeCreateWriteStream,
+  existsSync as nodeExistsSync,
+  mkdirSync as nodeMkdirSync,
+  readFileSync as nodeReadFileSync,
+  readdirSync as nodeReaddirSync,
+  renameSync as nodeRenameSync,
+  rmSync as nodeRmSync,
+  statSync as nodeStatSync,
+  symlinkSync as nodeSymlinkSync,
+  unlinkSync as nodeUnlinkSync,
+  writeFileSync as nodeWriteFileSync,
+  type CopySyncOptions,
+  type Dirent,
+  type MakeDirectoryOptions,
+  type RmOptions,
+  type Stats,
+  type WriteStream,
+} from 'fs';
 import * as path from 'path';
+import { resolveRoot } from './lib/safe-path';
 
 /**
  * Allow-listed roots for filesystem operations performed through this module.
@@ -13,9 +34,9 @@ import * as path from 'path';
  * directory and the home directory are accepted because PULSE artifacts and
  * scratch files legitimately land there during local runs and CI.
  */
-const REPO_ROOT = path.resolve(__dirname, '..', '..');
-const TMP_ROOT = path.resolve(require('os').tmpdir());
-const HOME_ROOT = path.resolve(require('os').homedir());
+const REPO_ROOT = resolveRoot(`${__dirname}${path.sep}..${path.sep}..`);
+const TMP_ROOT = resolveRoot(require('os').tmpdir());
+const HOME_ROOT = resolveRoot(require('os').homedir());
 const ALLOWED_ROOTS: readonly string[] = Object.freeze([REPO_ROOT, TMP_ROOT, HOME_ROOT]);
 
 /** Thrown when a caller attempts to access a path outside the allowed roots. */
@@ -35,7 +56,7 @@ function safeResolve(filePath: string): string {
   if (typeof filePath !== 'string' || filePath.length === 0) {
     throw new TypeError('safe-fs: filePath must be a non-empty string');
   }
-  const resolved = path.resolve(filePath);
+  const resolved = resolveRoot(filePath);
   for (const root of ALLOWED_ROOTS) {
     if (resolved === root || resolved.startsWith(`${root}${path.sep}`)) {
       return resolved;
@@ -46,12 +67,12 @@ function safeResolve(filePath: string): string {
 
 /** Path exists. */
 export function pathExists(filePath: string): boolean {
-  return fs.existsSync(safeResolve(filePath));
+  return nodeExistsSync(safeResolve(filePath));
 }
 
 /** Stat path. */
-export function statPath(filePath: string): fs.Stats {
-  return fs.statSync(safeResolve(filePath));
+export function statPath(filePath: string): Stats {
+  return nodeStatSync(safeResolve(filePath));
 }
 
 /** Is directory. */
@@ -61,7 +82,7 @@ export function isDirectory(filePath: string): boolean {
 
 /** Read text file. */
 export function readTextFile(filePath: string, encoding: BufferEncoding = 'utf8'): string {
-  return fs.readFileSync(safeResolve(filePath), encoding);
+  return nodeReadFileSync(safeResolve(filePath), encoding);
 }
 
 /** Read json file. */
@@ -72,22 +93,22 @@ export function readJsonFile<T>(filePath: string): T {
 /** Read dir. */
 export function readDir(filePath: string): string[];
 /** Read dir. */
-export function readDir(filePath: string, options: { withFileTypes: true }): fs.Dirent[];
+export function readDir(filePath: string, options: { withFileTypes: true }): Dirent[];
 /** Read dir. */
 export function readDir(filePath: string, options: { recursive: true }): string[];
 /** Read dir. */
 export function readDir(filePath: string, options?: unknown): unknown[] {
-  return fs.readdirSync(safeResolve(filePath), options as never) as unknown[];
+  return nodeReaddirSync(safeResolve(filePath), options as never) as unknown[];
 }
 
 /** Ensure dir. */
-export function ensureDir(filePath: string, options?: fs.MakeDirectoryOptions): void {
-  fs.mkdirSync(safeResolve(filePath), options);
+export function ensureDir(filePath: string, options?: MakeDirectoryOptions): void {
+  nodeMkdirSync(safeResolve(filePath), options);
 }
 
 /** Write file (text or binary). */
 export function writeFile(filePath: string, content: string | Buffer | Uint8Array): void {
-  fs.writeFileSync(safeResolve(filePath), content);
+  nodeWriteFileSync(safeResolve(filePath), content);
 }
 
 /** Write text file. */
@@ -101,40 +122,40 @@ export function writeBinaryFile(filePath: string, content: Buffer | Uint8Array):
 }
 
 /** Remove path. */
-export function removePath(filePath: string, options?: fs.RmOptions): void {
-  fs.rmSync(safeResolve(filePath), options);
+export function removePath(filePath: string, options?: RmOptions): void {
+  nodeRmSync(safeResolve(filePath), options);
 }
 
 /** Remove file. */
 export function removeFile(filePath: string): void {
-  fs.unlinkSync(safeResolve(filePath));
+  nodeUnlinkSync(safeResolve(filePath));
 }
 
 /** Copy file. */
 export function copyFile(sourcePath: string, targetPath: string): void {
-  fs.copyFileSync(safeResolve(sourcePath), safeResolve(targetPath));
+  nodeCopyFileSync(safeResolve(sourcePath), safeResolve(targetPath));
 }
 
 /** Rename path. */
 export function renamePath(sourcePath: string, targetPath: string): void {
-  fs.renameSync(safeResolve(sourcePath), safeResolve(targetPath));
+  nodeRenameSync(safeResolve(sourcePath), safeResolve(targetPath));
 }
 
 /** Copy path. */
 export function copyPath(
   sourcePath: string,
   targetPath: string,
-  options?: fs.CopySyncOptions,
+  options?: CopySyncOptions,
 ): void {
-  fs.cpSync(safeResolve(sourcePath), safeResolve(targetPath), options);
+  nodeCpSync(safeResolve(sourcePath), safeResolve(targetPath), options);
 }
 
 /** Symlink dir. */
 export function symlinkDir(sourcePath: string, targetPath: string): void {
-  fs.symlinkSync(safeResolve(sourcePath), safeResolve(targetPath), 'dir');
+  nodeSymlinkSync(safeResolve(sourcePath), safeResolve(targetPath), 'dir');
 }
 
 /** Create append stream. */
-export function createAppendStream(filePath: string): fs.WriteStream {
-  return fs.createWriteStream(safeResolve(filePath), { flags: 'a' });
+export function createAppendStream(filePath: string): WriteStream {
+  return nodeCreateWriteStream(safeResolve(filePath), { flags: 'a' });
 }

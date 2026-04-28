@@ -20,6 +20,7 @@ import {
 } from './structural-family';
 import { buildObservationFootprint, footprintMatchesFamilies } from './execution-observation';
 import { readTextFile } from './safe-fs';
+import { safeJoin } from './lib/safe-path';
 import type { PulseCapabilityDoD, PulseDoDStatus } from './types.capabilities';
 import {
   evaluateDone,
@@ -208,7 +209,7 @@ function buildStaticValidationSources(
     .map((file) => {
       const filePath = file.path.replace(/\\/g, '/');
       try {
-        const source = readTextFile(path.join(scopeState.rootDir, filePath)).slice(0, 500_000);
+        const source = readTextFile(safeJoin(scopeState.rootDir, filePath)).slice(0, 500_000);
         return {
           filePath,
           normalizedText: normalizeForValidation(source),

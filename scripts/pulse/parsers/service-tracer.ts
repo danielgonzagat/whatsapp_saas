@@ -10,13 +10,11 @@ import { readTextFile } from '../safe-fs';
 // 4. prismaAny.modelName.operation() (local alias)
 // 5. tx.modelName.operation() (inside $transaction callbacks)
 // 6. prisma.modelName.operation() (parameter in functions)
-const PRISMA_OPS =
-  'create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany';
 const PRISMA_ACCESS_PATTERNS = [
-  new RegExp(`this\\.(?:prisma|prismaAny)\\.([a-z]\\w+)\\.\\s*(?:${PRISMA_OPS})\\s*\\(`, 'g'),
-  new RegExp(`\\(this\\.prisma\\s+as\\s+any\\)\\.([a-z]\\w+)\\.\\s*(?:${PRISMA_OPS})\\s*\\(`, 'g'),
-  new RegExp(`(?:prismaAny|prismaExt|prisma)\\.([a-z]\\w+)\\.\\s*(?:${PRISMA_OPS})\\s*\\(`, 'g'),
-  new RegExp(`\\btx\\.([a-z]\\w+)\\.\\s*(?:${PRISMA_OPS})\\s*\\(`, 'g'),
+  /this\.(?:prisma|prismaAny)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
+  /\(this\.prisma\s+as\s+any\)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
+  /(?:prismaAny|prismaExt|prisma)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
+  /\btx\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
 ];
 
 const NON_METHOD_NAMES = new Set([

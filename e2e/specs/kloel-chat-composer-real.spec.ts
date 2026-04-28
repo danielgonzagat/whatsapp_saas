@@ -253,7 +253,7 @@ test.describe.serial('Kloel chat real e2e validation', () => {
     await openAuthenticatedChat(page, auth);
     await openComposerPopover(page);
     await page.getByRole('button', { name: 'Vincular Produto' }).hover();
-    await page.getByRole('button', { name: new RegExp(product.name) }).click();
+    await page.getByRole('button', { name: product.name }).click();
 
     await expect(page.getByLabel(`Remover vínculo com ${product.name}`)).toBeVisible();
 

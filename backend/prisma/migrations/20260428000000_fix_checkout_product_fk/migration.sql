@@ -17,6 +17,6 @@ ALTER TABLE "RAC_CheckoutProductPlan"
 ALTER TABLE "RAC_CheckoutProductPlan"
     ADD CONSTRAINT "RAC_CheckoutProductPlan_productId_fkey"
     FOREIGN KEY ("productId")
-    REFERENCES "RAC_Product" (id)
+    REFERENCES "RAC_Product" ("id")
     ON DELETE CASCADE
     ON UPDATE CASCADE;

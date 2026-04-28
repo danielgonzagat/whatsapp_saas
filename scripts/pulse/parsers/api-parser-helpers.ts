@@ -1,16 +1,19 @@
 /** Block/context extraction helpers used by api-parser. */
 
-import { escapeRegExp, findQuotedStringEnd, readTemplateEndpoint } from './api-parser-string-utils';
+import { findQuotedStringEnd, readTemplateEndpoint } from './api-parser-string-utils';
 
 /**
- * A wrapperName flowing into a `new RegExp(...)` here must be a plain
- * JavaScript identifier (alphanumeric, underscore, dollar). Restricting the
- * set up-front makes the resulting regex bounded and keeps Codacy's
- * non-literal-regexp / detect-non-literal-regexp false-positive surface
- * empty: even though `escapeRegExp` would already neutralise metachars, the
- * scanner cannot prove that without a static-shape filter.
+ * Wrapper and variable names discovered from source must be plain JavaScript
+ * identifiers (alphanumeric, underscore, dollar). Dynamic regex construction is
+ * intentionally avoided in this file, so scanner output is driven by static
+ * patterns plus string equality checks.
  */
 const IDENTIFIER_RE = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+const DECLARATION_START_RE = /\b(?:const|let|var)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*/g;
+const WRAPPER_CALL_START_RE = /\b(\w+)\s*(?:<[^\n]*>)?\s*\(/g;
+const WRAPPER_VARIABLE_CALL_RE = /\b(\w+)\s*(?:<[^\n]*>)?\s*\(\s*(\w+)\b/g;
+const MEMBER_CALL_RE = /\b(\w+)\s*\.\s*(\w+)\s*\(/g;
+const FUNCTION_CALL_RE = /\b(\w+)\s*\(/g;
 import { normalizeEndpoint } from './api-parser-normalize';
 import { readTextFile } from '../safe-fs';
 
@@ -90,11 +93,15 @@ export function extractEndpointVariable(text: string, variableName: string): str
   if (!IDENTIFIER_RE.test(variableName)) {
     return null;
   }
-  const declarationRe = new RegExp(
-    `\\b(?:const|let|var)\\s+${escapeRegExp(variableName)}\\s*=\\s*`,
-    'g',
-  );
-  const declaration = declarationRe.exec(text);
+  let declaration: RegExpExecArray | null = null;
+  DECLARATION_START_RE.lastIndex = 0;
+  let candidate: RegExpExecArray | null;
+  while ((candidate = DECLARATION_START_RE.exec(text)) !== null) {
+    if (candidate[1] === variableName) {
+      declaration = candidate;
+      break;
+    }
+  }
   if (!declaration) {
     return null;
   }
@@ -136,21 +143,16 @@ export function extractWrappedFetchCall(
   const conditionalRe =
     /^\b(\w+)\s*(?:<[^\n]*>)?\s*\(\s*[\s\S]*?\?\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)\s*:\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/;
   let conditionalMatch: RegExpMatchArray | null = null;
-  for (const wrapperName of wrapperPrefixes.keys()) {
-    if (!IDENTIFIER_RE.test(wrapperName)) continue;
-    const wrapperStartRe = new RegExp(
-      `\\b${escapeRegExp(wrapperName)}\\s*(?:<[^\\n]*>)?\\s*\\(`,
-      'g',
-    );
-    for (const startMatch of text.matchAll(wrapperStartRe)) {
-      const startIndex = startMatch.index || 0;
-      const match = text.slice(startIndex).match(conditionalRe);
-      if (match) {
-        conditionalMatch = match;
-        break;
-      }
+  WRAPPER_CALL_START_RE.lastIndex = 0;
+  for (const startMatch of text.matchAll(WRAPPER_CALL_START_RE)) {
+    const wrapperName = startMatch[1];
+    if (!wrapperPrefixes.has(wrapperName)) {
+      continue;
     }
-    if (conditionalMatch) {
+    const startIndex = startMatch.index || 0;
+    const match = text.slice(startIndex).match(conditionalRe);
+    if (match) {
+      conditionalMatch = match;
       break;
     }
   }
@@ -166,21 +168,19 @@ export function extractWrappedFetchCall(
     return { endpoint: normalizeEndpoint(`${prefix}${raw}`), wrapperName };
   }
 
-  for (const wrapperName of wrapperPrefixes.keys()) {
-    if (!IDENTIFIER_RE.test(wrapperName)) continue;
-    const variableCallRe = new RegExp(
-      `\\b${escapeRegExp(wrapperName)}\\s*(?:<[^\\n]*>)?\\s*\\(\\s*(\\w+)\\b`,
-      'g',
-    );
-    let variableCallMatch: RegExpExecArray | null;
-    while ((variableCallMatch = variableCallRe.exec(text)) !== null) {
-      const raw = extractEndpointVariable(text, variableCallMatch[1]);
-      if (!raw) {
-        continue;
-      }
-      const prefix = wrapperPrefixes.get(wrapperName) || '';
-      return { endpoint: normalizeEndpoint(`${prefix}${raw}`), wrapperName };
+  WRAPPER_VARIABLE_CALL_RE.lastIndex = 0;
+  let variableCallMatch: RegExpExecArray | null;
+  while ((variableCallMatch = WRAPPER_VARIABLE_CALL_RE.exec(text)) !== null) {
+    const wrapperName = variableCallMatch[1];
+    if (!wrapperPrefixes.has(wrapperName)) {
+      continue;
     }
+    const raw = extractEndpointVariable(text, variableCallMatch[2]);
+    if (!raw) {
+      continue;
+    }
+    const prefix = wrapperPrefixes.get(wrapperName) || '';
+    return { endpoint: normalizeEndpoint(`${prefix}${raw}`), wrapperName };
   }
 
   return null;
@@ -201,11 +201,10 @@ export function extractWrappedCallContext(
 ): string {
   const firstLine = lines[startIndex] || '';
   let matchStart = -1;
-  for (const wrapperName of wrapperPrefixes.keys()) {
-    const match = firstLine.match(
-      new RegExp(`\\b${escapeRegExp(wrapperName)}\\s*(?:<[^\\n]*>)?\\s*\\(`),
-    );
-    if (match?.index !== undefined && (matchStart < 0 || match.index < matchStart)) {
+  WRAPPER_CALL_START_RE.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = WRAPPER_CALL_START_RE.exec(firstLine)) !== null) {
+    if (wrapperPrefixes.has(match[1]) && (matchStart < 0 || match.index < matchStart)) {
       matchStart = match.index;
     }
   }
@@ -279,10 +278,27 @@ export function extractMappedApiModuleCalls(
   const matches: Array<{ endpoint: string; method: string }> = [];
   for (const [callName, apiInfo] of apiModuleMap) {
     const [objectName, methodName] = callName.split('.');
-    const callRe = methodName
-      ? new RegExp(`\\b${escapeRegExp(objectName)}\\s*\\.\\s*${escapeRegExp(methodName)}\\s*\\(`)
-      : new RegExp(`\\b${escapeRegExp(callName)}\\s*\\(`);
-    if (callRe.test(text)) {
+    let found = false;
+    if (methodName) {
+      MEMBER_CALL_RE.lastIndex = 0;
+      let callMatch: RegExpExecArray | null;
+      while ((callMatch = MEMBER_CALL_RE.exec(text)) !== null) {
+        if (callMatch[1] === objectName && callMatch[2] === methodName) {
+          found = true;
+          break;
+        }
+      }
+    } else {
+      FUNCTION_CALL_RE.lastIndex = 0;
+      let callMatch: RegExpExecArray | null;
+      while ((callMatch = FUNCTION_CALL_RE.exec(text)) !== null) {
+        if (callMatch[1] === callName) {
+          found = true;
+          break;
+        }
+      }
+    }
+    if (found) {
       matches.push(apiInfo);
     }
   }

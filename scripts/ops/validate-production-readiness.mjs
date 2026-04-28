@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import fs from 'node:fs';
+import { existsSync as nodeExistsSync } from 'node:fs';
 import path from 'node:path';
 import {
   check,
@@ -25,7 +25,12 @@ import { auditGithubWorkflows } from './production-readiness/github-workflows.mj
  * fs sink only ever sees a path verified to be inside the repo root.
  */
 function safeRepoPath(relPath) {
-  const resolved = path.resolve(rootDir, relPath);
+  const normalized = path.isAbsolute(relPath)
+    ? path.normalize(relPath)
+    : path.normalize(`${rootDir}${path.sep}${relPath}`);
+  const resolved = path.isAbsolute(normalized)
+    ? normalized
+    : path.normalize(`${process.cwd()}${path.sep}${normalized}`);
   const boundary = rootDir + path.sep;
   if (resolved !== rootDir && !resolved.startsWith(boundary)) {
     throw new Error(`Path traversal detected: ${resolved} is outside repo root`);
@@ -38,7 +43,7 @@ function safeRepoPath(relPath) {
  * the path exists. Throws on traversal attempts.
  */
 function safeExistsSync(filePath) {
-  return fs.existsSync(safeRepoPath(filePath));
+  return nodeExistsSync(safeRepoPath(filePath));
 }
 
 const requiredFiles = [

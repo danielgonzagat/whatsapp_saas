@@ -127,9 +127,7 @@ export function checkFinancialArithmetic(config: PulseConfig): Break[] {
         const divisorName = divisorMatch ? divisorMatch[1] : '';
         const divisorIsSafe = /safe|nonzero|non_zero|clamp|limit/i.test(divisorName);
         const sameLineDivisorGuard = divisorName
-          ? new RegExp(
-              `\\b${divisorName}\\s*(?:(?:>|!==|!=)\\s*0|>=\\s*1)|0\\s*(?:<|!==|!=)\\s*${divisorName}\\b|1\\s*<=\\s*${divisorName}\\b`,
-            ).test(trimmed)
+          ? hasSameLineDivisorGuard(trimmed, divisorName)
           : false;
         const hasGuard =
           ZERO_GUARD_RE.test(contextBefore) ||
@@ -153,4 +151,18 @@ export function checkFinancialArithmetic(config: PulseConfig): Break[] {
   }
 
   return breaks;
+}
+
+function hasSameLineDivisorGuard(line: string, divisorName: string): boolean {
+  const compact = line.replace(/\s+/g, '');
+  return (
+    compact.includes(`${divisorName}>0`) ||
+    compact.includes(`${divisorName}!==0`) ||
+    compact.includes(`${divisorName}!=0`) ||
+    compact.includes(`${divisorName}>=1`) ||
+    compact.includes(`0<${divisorName}`) ||
+    compact.includes(`0!==${divisorName}`) ||
+    compact.includes(`0!=${divisorName}`) ||
+    compact.includes(`1<=${divisorName}`)
+  );
 }

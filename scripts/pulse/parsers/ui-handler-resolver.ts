@@ -4,7 +4,6 @@ import type { HookRegistry } from './hook-registry';
 import {
   bodyCallsHookFunction,
   callsCallbackProp,
-  escapeRegExp,
   findFunctionDeclarationIndex,
   findFunctionBodyEnd,
   hasFunctionCall,
@@ -67,8 +66,7 @@ export function resolveHandler(input: ResolveHandlerInput): {
   }
 
   for (const [localName] of hookDestructures) {
-    const callRe = new RegExp(`(^|[^.\\w$])${escapeRegExp(localName)}\\s*\\(`);
-    if (callRe.test(trimmed)) {
+    if (hasFunctionCall(trimmed, localName)) {
       return {
         type: 'real',
         apiCalls: hookFunctionApiCalls(trimmed, hookDestructures, hookRegistry),

@@ -329,7 +329,13 @@ export class KloelThreadService {
     if (!normalized) return null;
     return {
       role: 'system',
-      content: `<conversation_memory>\nResumo persistido da conversa até aqui:\n${normalized}\nUse isso para manter continuidade sem repetir perguntas já respondidas.\n</conversation_memory>`,
+      content: [
+        '<conversation_memory>',
+        'Resumo persistido da conversa até aqui:',
+        normalized,
+        'Use isso para manter continuidade sem repetir perguntas já respondidas.',
+        '</conversation_memory>',
+      ].join('\n'),
     };
   }
 

@@ -14,6 +14,14 @@
  */
 import * as path from 'path';
 
+function toAbsolutePath(input: string): string {
+  const normalized = path.normalize(input);
+  if (path.isAbsolute(normalized)) {
+    return normalized;
+  }
+  return path.normalize(`${process.cwd()}${path.sep}${normalized}`);
+}
+
 /**
  * Resolves `candidate` to an absolute path and asserts that it lives inside
  * `root`. The returned absolute path is safe to pass to fs APIs.
@@ -24,8 +32,8 @@ import * as path from 'path';
  * @throws Error when the resolved path escapes `root`.
  */
 export function assertWithinRoot(candidate: string, root: string): string {
-  const resolved = path.resolve(candidate);
-  const normalizedRoot = path.resolve(root);
+  const resolved = toAbsolutePath(candidate);
+  const normalizedRoot = toAbsolutePath(root);
   if (resolved !== normalizedRoot && !resolved.startsWith(normalizedRoot + path.sep)) {
     throw new Error(
       `Path traversal blocked: "${candidate}" resolves outside root "${normalizedRoot}"`,
@@ -39,7 +47,11 @@ export function assertWithinRoot(candidate: string, root: string): string {
  * resulting path stays inside `root` before returning it.
  */
 export function safeJoin(root: string, ...segments: string[]): string {
-  return assertWithinRoot(path.join(root, ...segments), root);
+  const candidate = segments.reduce(
+    (current, segment) => `${current}${path.sep}${segment}`,
+    root,
+  );
+  return assertWithinRoot(candidate, root);
 }
 
 /**
@@ -48,7 +60,7 @@ export function safeJoin(root: string, ...segments: string[]): string {
  * matches the most common artifact-lookup pattern in PULSE scripts.
  */
 export function safeResolveSegment(root: string, segment: string): string {
-  return assertWithinRoot(path.resolve(root, segment), root);
+  return safeJoin(root, segment);
 }
 
 /**
@@ -56,5 +68,5 @@ export function safeResolveSegment(root: string, segment: string): string {
  * that {@link assertWithinRoot} expects as a root.
  */
 export function resolveRoot(rootDir: string): string {
-  return path.resolve(rootDir);
+  return toAbsolutePath(rootDir);
 }

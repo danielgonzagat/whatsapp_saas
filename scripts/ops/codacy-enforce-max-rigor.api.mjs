@@ -7,6 +7,8 @@
  */
 
 const BASE_URL = 'https://api.codacy.com/api/v3';
+const CODACY_API_ORIGIN = 'https://api.codacy.com';
+const CODACY_API_PATH_PREFIX = '/api/v3';
 
 function jsonHeaders(token) {
   return {
@@ -16,11 +18,16 @@ function jsonHeaders(token) {
 }
 
 export async function codacyRequest(token, method, pathname, body) {
-  const response = await fetch(`${BASE_URL}${pathname}`, {
+  const url = new URL(pathname, BASE_URL);
+  if (url.origin !== CODACY_API_ORIGIN || !url.pathname.startsWith(CODACY_API_PATH_PREFIX)) {
+    throw new Error(`Refusing Codacy API request outside allow-listed API origin: ${url.href}`);
+  }
+  const request = new Request(url, {
     method,
     headers: jsonHeaders(token),
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+  const response = await fetch(request);
   const text = await response.text();
   if (!response.ok) {
     console.error(

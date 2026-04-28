@@ -3,7 +3,6 @@
  * Heavy logic lives in artifacts.io, artifacts.queue, artifacts.report,
  * artifacts.autonomy, and artifacts.directive sub-modules.
  */
-import * as path from 'path';
 import {
   buildPulseAutonomyMemoryState,
   buildPulseAgentOrchestrationStateSeed,
@@ -17,6 +16,7 @@ import { buildReport, buildCertificate } from './artifacts.report';
 import { buildDirective, buildArtifactIndex } from './artifacts.directive';
 import { deriveAuthorityState } from './artifacts.autonomy';
 import { createRunIdentity, type PulseRunIdentity } from './run-identity';
+import { safeResolveSegment } from './lib/safe-path';
 import type {
   PulseAgentOrchestrationState,
   PulseAutonomyState,
@@ -93,13 +93,7 @@ export type { PulseArtifactRegistry };
  * attempts so the path that reaches readOptionalJson is provably bounded.
  */
 function resolveInsideCanonicalDir(registry: PulseArtifactRegistry, fileName: string): string {
-  const root = path.resolve(registry.canonicalDir);
-  const resolved = path.resolve(root, fileName);
-  const boundary = root + path.sep;
-  if (resolved !== root && !resolved.startsWith(boundary)) {
-    throw new Error(`Path traversal detected: ${resolved} is outside ${root}`);
-  }
-  return resolved;
+  return safeResolveSegment(registry.canonicalDir, fileName);
 }
 
 /** Generate artifacts. */

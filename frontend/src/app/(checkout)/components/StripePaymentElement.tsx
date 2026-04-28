@@ -19,7 +19,7 @@ import {
 
 import { getStripeClient } from '@/lib/stripe-client';
 
-const STRIPE_PAYMENT_DRAFT_KEY = 'kloel:stripe-payment-form:draft';
+const STRIPE_PAYMENT_DRAFT_STORAGE_NAME = 'kloel:stripe-payment-form:draft';
 
 /**
  * Stripe Payment Element wrapper for the hosted Kloel checkout runtime.
@@ -111,7 +111,7 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
       return;
     }
     window.localStorage.setItem(
-      STRIPE_PAYMENT_DRAFT_KEY,
+      STRIPE_PAYMENT_DRAFT_STORAGE_NAME,
       JSON.stringify({ state, savedAt: new Date().toISOString() }),
     );
   }, []);
@@ -120,7 +120,7 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
     if (typeof window === 'undefined') {
       return;
     }
-    window.localStorage.removeItem(STRIPE_PAYMENT_DRAFT_KEY);
+    window.localStorage.removeItem(STRIPE_PAYMENT_DRAFT_STORAGE_NAME);
   }, []);
 
   const publishError = useCallback(

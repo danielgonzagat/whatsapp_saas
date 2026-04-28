@@ -2,6 +2,7 @@
 
 import * as path from 'path';
 import { pathExists, readTextFile } from './safe-fs';
+import { safeJoin } from './lib/safe-path';
 import type { PulseConvergenceOwnerLane, PulseScopeFileKind, PulseScopeSurface } from './types';
 import {
   SCANNABLE_EXTENSIONS,
@@ -77,7 +78,7 @@ export function loadGovernanceBoundary(rootDir: string): GovernanceBoundary {
     protectedExact: new Set<string>(),
     protectedPrefixes: [],
   };
-  const boundaryPath = path.join(rootDir, 'ops', 'protected-governance-files.json');
+  const boundaryPath = safeJoin(rootDir, 'ops', 'protected-governance-files.json');
   if (!pathExists(boundaryPath)) {
     return defaultBoundary;
   }

@@ -1,6 +1,7 @@
 import * as path from 'path';
 import { buildArtifactRegistry } from './artifact-registry';
 import { pathExists, readDir, readTextFile } from './safe-fs';
+import { safeJoin } from './lib/safe-path';
 import type {
   PulseCodacySummary,
   PulseScopeExcludedFile,
@@ -21,13 +22,7 @@ import { buildCodacySummary, normalizePath } from './scope-state.codacy';
  * is verified before reaching pathExists/readDir/readTextFile.
  */
 function resolveInside(rootDir: string, ...segments: string[]): string {
-  const resolved = path.resolve(rootDir, ...segments);
-  const root = path.resolve(rootDir);
-  const boundary = root + path.sep;
-  if (resolved !== root && !resolved.startsWith(boundary)) {
-    throw new Error(`Path traversal detected: ${resolved} is outside ${root}`);
-  }
-  return resolved;
+  return safeJoin(rootDir, ...segments);
 }
 import {
   classifyExcludeReason,

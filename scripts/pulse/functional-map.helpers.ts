@@ -6,7 +6,6 @@ import type { PageEntry } from './functional-map-types';
 import { normalizeForMatch } from './graph';
 import { pathExists } from './safe-fs';
 import { normalizeEndpoint } from './parsers/api-parser';
-import { escapeRegExp } from './parsers/ui-handler-resolver-utils';
 
 function isIdentifierChar(value: string | undefined): boolean {
   return Boolean(value && /[\w$]/.test(value));
@@ -94,11 +93,11 @@ function handlerCallsApiModule(handler: string, callName: string): boolean {
 }
 
 function extractFunctionBody(fileContent: string, funcName: string, maxLines = 90): string {
-  const funcDefRe = new RegExp(
-    `(?:const|let|function|async function)\\s+${escapeRegExp(funcName)}\\s*(?:=|\\()`,
-    'g',
+  const funcDefRe =
+    /(?:const|let|function|async function)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*(?:=|\()/g;
+  const defMatch = [...fileContent.matchAll(funcDefRe)].find(
+    (match) => match[1] === funcName,
   );
-  const defMatch = funcDefRe.exec(fileContent);
   if (!defMatch) {
     return '';
   }

@@ -20,6 +20,7 @@ import {
 } from './cross-artifact-consistency-check/loaders';
 import { checkConsistency } from './cross-artifact-consistency-check/comparators';
 import { formatConsistencyResult } from './cross-artifact-consistency-check/formatter';
+import { safeJoin } from './lib/safe-path';
 
 // Re-export types for backward compatibility
 export type {
@@ -53,7 +54,7 @@ export function runCrossArtifactConsistencyCheck(
   const loaded: LoadedArtifact[] = [];
 
   for (const rel of DEFAULT_ARTIFACT_PATHS) {
-    const filePath = path.isAbsolute(rel) ? rel : path.join(root, rel);
+    const filePath = path.isAbsolute(rel) ? rel : safeJoin(root, rel);
     let data: Record<string, unknown> | null;
 
     if (artifactsOverride && rel in artifactsOverride) {

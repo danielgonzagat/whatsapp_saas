@@ -91,5 +91,5 @@ ALTER TABLE "RAC_ProductCampaign"
 DROP CONSTRAINT IF EXISTS "RAC_ProductCampaign_productId_fkey";
 ALTER TABLE "RAC_ProductCampaign"
 ADD CONSTRAINT "RAC_ProductCampaign_productId_fkey"
-FOREIGN KEY ("productId") REFERENCES "RAC_Product" (id)
+FOREIGN KEY ("productId") REFERENCES "RAC_Product" ("id")
 ON DELETE CASCADE ON UPDATE CASCADE;

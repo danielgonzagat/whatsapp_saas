@@ -38,7 +38,8 @@ async function main() {
     } catch (err: unknown) {
       // PULSE:OK — Per-job requeue failure is non-critical; other jobs still processed
       console.error(
-        `✖ Failed to requeue ${job.id}:`,
+        'Failed to requeue DLQ job',
+        { jobId: job.id },
         err instanceof Error ? err.message : String(err),
       );
     }

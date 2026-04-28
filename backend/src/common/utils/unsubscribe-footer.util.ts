@@ -56,11 +56,9 @@ export function buildListUnsubscribeMailto(opts: UnsubscribeUrlOptions): string 
     campaignId: opts.campaignId,
   });
   const fromAddress = process.env.EMAIL_FROM || 'noreply@kloel.com';
-  const encodedToken = encodeURIComponent(token);
-  // RFC 8058 mailto header value is wrapped in angle brackets (URL bracket
-  // syntax, NOT HTML). Built via template literal so static-analysis heuristics
-  // see a templated value (with ${...}) and do not flag the body parameter.
-  return `<mailto:${fromAddress}?subject=unsubscribe&body=t=${encodedToken}>`;
+  const sanitizedFromAddress = fromAddress.replace(/[<>\r\n]/g, '').trim() || 'noreply@kloel.com';
+  const query = new URLSearchParams({ subject: 'unsubscribe', body: `t=${token}` }).toString();
+  return ['<mailto:', sanitizedFromAddress, '?', query, '>'].join('');
 }
 
 /**
