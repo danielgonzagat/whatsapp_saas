@@ -157,10 +157,10 @@ export class ReportsOrdersService {
       }),
       this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
       (assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getVendasSummary'),
-      ((filterStatus: string) =>
+      ((filterStatus: OrderStatus) =>
         this.prisma.checkoutOrder.count({
           where: { ...where, workspaceId, status: filterStatus },
-        }))('PAID')),
+        }))('PAID' as OrderStatus)),
     ]);
 
     return {
