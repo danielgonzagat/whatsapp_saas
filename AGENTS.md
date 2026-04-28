@@ -285,43 +285,17 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-04-27 6:47pm GMT-3
+# [whatsapp_saas] recent context, 2026-04-28 10:09am GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (20,837t read) | 775,217t work | 97% savings
+Stats: 50 obs (19,586t read) | 985,011t work | 98% savings
 
 ### Apr 21, 2026
 
-1076 12:43a 🟣 ConnectController — POST /:workspaceId/accounts/:accountType/activate Endpoint Added
-1078 12:44a 🟣 ConnectOnboardingService Spec — 3 Tests Covering PF Sync, PJ Account Creation, and Terms Rejection
-1080 " 🟣 ConnectController Spec — activateAccount Endpoint Test Added with x-forwarded-for IP Parsing
-1081 " 🟣 useConnectOnboardingActions Hook — Frontend Activation API for Kloel-Native Onboarding
-1085 12:45a 🟣 ConnectFinanceSettingsSection — Activation Form State and handleActivateAccount Added
-1089 12:46a 🟣 ConnectFinanceSettingsSection — Activation Card UI Rendered for Unverified or Missing Accounts
-1090 " 🟣 ConnectFinanceSettingsSection Test — Activation Flow E2E Test Added with Per-Test Account Fixtures
-1093 " 🔴 ConnectOnboardingService — TS2702 Namespace Error Fixed for Stripe Type Aliases
-1095 12:47a 🔵 ConnectOnboardingService Spec — 2 Test Failures: Document Upload Order + createCustomAccount Not Called
-1099 12:50a 🔵 CERTIFICATION_RUNBOOK.md — Current Block Status: Blocks 3/4/5 Complete, Block 2 In Progress
-1107 12:54a 🟣 Block 2 Commit Landed — Kloel-Native Connect Onboarding Activation
-1108 " 🔴 ESLint `no-base-to-string` Blocking Pre-Commit Hook Fixed in normalizeDigits
-1109 " ✅ CERTIFICATION_RUNBOOK.md — Block 2 Evidence and Risk Entries Added
-1110 " 🔵 PartnershipsService — Affiliates and Collaborators Are Kloel-Native, Not Connect-Aware
-1111 12:55a 🟣 connect-finance-section Test — Supplier Role Activation from Finance Panel
-1113 " 🟣 connect-finance-section — 3 Tests Green After Supplier Role Test Addition
-1114 " 🟣 Block 2 — Missing Finance Role Activation Committed (Fornecedor Certified)
-1116 12:56a 🔵 No Invite-Acceptance Frontend Page Found for Affiliate/Collaborator Block 2 Gap
-1120 12:57a 🔵 EmailService Has sendTeamInviteEmail — Invite Infrastructure Partially Built
-1122 " 🔵 Auth signUp Flow Has No Invite Token Support — Block 2 Afiliado Onboarding Requires Extension
-1126 12:58a 🟣 connect-finance-section — COPRODUCER and MANAGER Roles Covered via Parameterized Test
-1130 1:02a 🔵 InviteModal in ParceriasView — Calls inviteCollaborator But No Token Consumption Route Exists
-1131 " 🔵 AuthService Constructor + Auth Module — Full DI Graph for Invite Endpoint Planning
-1132 " ⚖️ Afiliado Invite Flow — Implementation Plan: 3-File Additive Build
-1133 1:03a 🟣 AuthService — Affiliate Invite Token Acceptance Wired into register()
-1134 " 🟣 PartnershipsService Spec — Invite Token Tests Added for createAffiliate
-1137 " 🟣 AuthService Spec — Affiliate Invite Token Tests Added to register() Suite
+1137 1:03a 🟣 AuthService Spec — Affiliate Invite Token Tests Added to register() Suite
 1138 " 🟣 Frontend Affiliate Invite Token Propagation — Full Stack Pass-Through Wired
 1140 1:04a 🟣 KloelAuthScreen — Affiliate Invite Token Auto-Detection from URL Query Params
 1142 1:05a 🔵 AuthService Spec — Direct new AuthService() Instantiations Need ConnectService Parameter
@@ -351,6 +325,35 @@ Stats: 50 obs (20,837t read) | 775,217t work | 97% savings
 3166 " 🔵 KLOEL Repo Governance Boundaries Confirmed for Autopilot Session
 3167 11:55a 🔵 Codacy HIGH Issues Catalogued for Autopilot + Auth + Migration Files
 3168 " 🔵 autopilot.service.ts Codacy Line 878 Issue Is a Stale Reference
+3169 6:49p 🔵 capability-autopilot-ask Convergence Unit — Current State Before Fix Cycle
+3176 6:52p 🔵 capability:autopilot-ask — Missing Roles Cleared, Two Maturity Gaps Remain
+3177 " 🔵 PULSE System Health — 71% Score, 87 CRIT/HIGH Breaks, autopilot Rate-Limit Gap
+3178 " 🔵 PULSE Runtime Evidence Collection Mechanism — Scan Mode Skips, Deep/Total Mode Executes
 
-Access 775k tokens of past work via get_observations([IDs]) or mem-search skill.
+### Apr 28, 2026
+
+3180 9:56a 🔵 Codex Global Skills Manifest Already Exists at ~/.codex/skills-import-manifest.json
+3181 9:57a 🔵 oh-my-codex Git Clone Stalled — No Output After 15+ Seconds
+3184 " 🔵 ~/.codex/config.toml Full State Captured — Plugins, MCP Servers, Features
+3186 9:58a 🔵 gitnexus@1.6.3 Already Installed Globally via Homebrew
+3187 " ✅ oh-my-codex Installed Globally via npm
+3188 9:59a 🟣 oh-my-codex v0.15.0 and gitnexus v1.6.3 Confirmed Installed and Operational
+3189 " ✅ oh-my-codex Setup Completed in Plugin Mode (User Scope)
+3190 10:00a ✅ Gitnexus and Beads MCP Servers Wired into ~/.codex/config.toml
+3191 " 🔵 oh-my-codex Doctor State — 8 Passed, 6 Warnings, OMX Config Not Yet Applied
+3192 " 🔵 Codex CLI MCP List — beads and gitnexus Confirmed Enabled
+3193 " ✅ omx setup --scope user --force Completed — HUD Config Created, Hooks Refreshed
+3194 " 🔵 oh-my-codex v0.15.0 Repo Structure — Prompts, Docs, Skills Architecture
+3198 10:01a ✅ Gitnexus MCP Server Updated to npx -y gitnexus@latest for Dynamic Version Resolution
+3199 10:03a 🔵 PR #198 State — UNSTABLE Merge Status, 1 Commit Ahead of Origin
+3200 " 🔵 ADR 0001 — Worker Hardcodes "meta-cloud" in 6 Places, Cannot Route to WAHA
+3201 " 🔵 kloel.com Landing Page — Live on Vercel, Served by KloelLanding Component
+3202 10:04a 🔵 kloel.com Landing Animations Confirmed Working in Production Browser Snapshot
+3203 " 🔵 usePrefersReducedMotion Hook Duplicated in 3 Files — Refactor Opportunity
+3204 " 🔵 ThanosSection — Canvas Particle Disintegration System with PHI-Based Layout
+3205 " 🔵 KloelLanding.helpers.ts — Typewriter Delay Calculator Extracted to Reduce Cyclomatic Complexity
+3209 10:06a 🔵 Frontend Build Succeeds — 82 Static Pages, Full Route Map Confirmed
+3211 10:08a 🔵 Landing Page Animation Integration Test — All 3 Motion Modes Verified Against Local Build
+
+Access 985k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

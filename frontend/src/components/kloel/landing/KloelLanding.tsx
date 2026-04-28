@@ -107,8 +107,16 @@ function buildGlitchSlices(): HeroLoopGlitchSlice[] {
   }));
 }
 
+function getPrefersReducedMotion() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return false;
+  }
+
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(getPrefersReducedMotion);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -119,8 +127,13 @@ function usePrefersReducedMotion() {
     const apply = () => setPrefersReducedMotion(mediaQuery.matches);
 
     apply();
-    mediaQuery.addEventListener?.('change', apply);
-    return () => mediaQuery.removeEventListener?.('change', apply);
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', apply);
+      return () => mediaQuery.removeEventListener('change', apply);
+    }
+
+    mediaQuery.addListener?.(apply);
+    return () => mediaQuery.removeListener?.(apply);
   }, []);
 
   return prefersReducedMotion;
