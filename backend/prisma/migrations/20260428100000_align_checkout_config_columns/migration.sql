@@ -71,36 +71,25 @@ ADD COLUMN IF NOT EXISTS "sideImage" TEXT;
 -- ─────────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS "RAC_ProductCampaign" (
-    "id" TEXT NOT NULL,
+    id TEXT NOT NULL,
     "productId" TEXT NOT NULL,
-    "code" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
+    code TEXT NOT NULL,
+    name TEXT NOT NULL,
     "pixelId" TEXT,
     "salesCount" INTEGER NOT NULL DEFAULT 0,
     "paidCount" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "RAC_ProductCampaign_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "RAC_ProductCampaign_pkey" PRIMARY KEY (id)
 );
 
 CREATE INDEX IF NOT EXISTS "RAC_ProductCampaign_productId_idx"
 ON "RAC_ProductCampaign" ("productId");
 
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1
-        FROM   information_schema.table_constraints
-        WHERE  constraint_name = 'RAC_ProductCampaign_productId_fkey'
-        AND    table_name = 'RAC_ProductCampaign'
-    ) THEN
-        ALTER TABLE "RAC_ProductCampaign"
-            ADD CONSTRAINT "RAC_ProductCampaign_productId_fkey"
-            FOREIGN KEY ("productId")
-            REFERENCES "RAC_Product" ("id")
-            ON DELETE CASCADE
-            ON UPDATE CASCADE;
-    END IF;
-END;
-$$;
+ALTER TABLE "RAC_ProductCampaign"
+DROP CONSTRAINT IF EXISTS "RAC_ProductCampaign_productId_fkey";
+ALTER TABLE "RAC_ProductCampaign"
+ADD CONSTRAINT "RAC_ProductCampaign_productId_fkey"
+FOREIGN KEY ("productId") REFERENCES "RAC_Product" (id)
+ON DELETE CASCADE ON UPDATE CASCADE;
