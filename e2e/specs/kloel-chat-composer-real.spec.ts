@@ -356,13 +356,16 @@ test.describe.serial('Kloel chat real e2e validation', () => {
     const generatedImage = page.locator('img[alt="Imagem criada pelo Kloel"]').first();
     await expect(generatedImage).toBeVisible({ timeout: 180_000 });
 
-    const [popup] = await Promise.all([
-      page.waitForEvent('popup'),
-      page.getByRole('link', { name: 'Abrir' }).click(),
-    ]);
-    await popup.waitForLoadState('domcontentloaded');
-    expect(popup.url()).toBeTruthy();
-    await popup.close();
+    const openImageLink = page.getByRole('link', { name: 'Abrir' });
+    await expect(openImageLink).toHaveAttribute('href', generatedImageUrl);
+    await expect(openImageLink).toHaveAttribute('target', '_blank');
+
+    if (!generatedImageUrl.startsWith('data:')) {
+      const [popup] = await Promise.all([page.waitForEvent('popup'), openImageLink.click()]);
+      await popup.waitForLoadState('domcontentloaded');
+      expect(popup.url()).toBe(generatedImageUrl);
+      await popup.close();
+    }
 
     const [download] = await Promise.all([
       page.waitForEvent('download'),
