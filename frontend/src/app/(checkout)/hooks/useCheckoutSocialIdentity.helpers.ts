@@ -2,7 +2,7 @@ import {
   type CheckoutSocialIdentitySnapshot,
   type CheckoutSocialProvider,
   type PrefillResponse,
-} from './useCheckoutSocialIdentity';
+} from './useCheckoutSocialIdentity.types';
 
 const DEVICE_STORAGE_SLOT = 'kloel.checkout.device-id.v1';
 const IDENTITY_STORAGE_SLOT = 'kloel.checkout.identity.v1';

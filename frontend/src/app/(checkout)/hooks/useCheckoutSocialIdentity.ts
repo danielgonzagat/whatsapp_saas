@@ -11,6 +11,16 @@ import {
   readResponseMessage,
   readStoredIdentity,
 } from './useCheckoutSocialIdentity.helpers';
+import {
+  type CheckoutSocialIdentitySnapshot,
+  type CheckoutSocialProvider,
+  type PrefillResponse,
+} from './useCheckoutSocialIdentity.types';
+
+export type {
+  CheckoutSocialIdentitySnapshot,
+  CheckoutSocialProvider,
+} from './useCheckoutSocialIdentity.types';
 
 const GOOGLE_IDENTITY_SCRIPT_ID = 'google-identity-services';
 const GOOGLE_IDENTITY_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
@@ -20,43 +30,6 @@ const GOOGLE_PEOPLE_SCOPES = [
   'https://www.googleapis.com/auth/user.phonenumbers.read',
   'https://www.googleapis.com/auth/user.addresses.read',
 ].join(' ');
-/** Checkout social provider type. */
-export type CheckoutSocialProvider = 'google' | 'facebook' | 'apple';
-
-/** Checkout social identity snapshot shape. */
-export interface CheckoutSocialIdentitySnapshot {
-  /** Lead id property. */
-  leadId?: string;
-  /** Provider property. */
-  provider: CheckoutSocialProvider;
-  /** Name property. */
-  name: string;
-  /** Email property. */
-  email: string;
-  /** Avatar url property. */
-  avatarUrl?: string | null;
-  /** Device fingerprint property. */
-  deviceFingerprint: string;
-  /** Phone property. */
-  phone?: string | null;
-  /** Cpf property. */
-  cpf?: string | null;
-  /** Cep property. */
-  cep?: string | null;
-  /** Street property. */
-  street?: string | null;
-  /** Number property. */
-  number?: string | null;
-  /** Neighborhood property. */
-  neighborhood?: string | null;
-  /** City property. */
-  city?: string | null;
-  /** State property. */
-  state?: string | null;
-  /** Complement property. */
-  complement?: string | null;
-}
-
 type CaptureResponse = {
   leadId: string;
   provider: CheckoutSocialProvider;
@@ -64,24 +37,6 @@ type CaptureResponse = {
   email: string;
   avatarUrl?: string | null;
   deviceFingerprint?: string | null;
-};
-
-export type PrefillResponse = {
-  leadId: string;
-  provider: CheckoutSocialProvider;
-  name?: string | null;
-  email?: string | null;
-  avatarUrl?: string | null;
-  deviceFingerprint?: string | null;
-  phone?: string | null;
-  cpf?: string | null;
-  cep?: string | null;
-  street?: string | null;
-  number?: string | null;
-  neighborhood?: string | null;
-  city?: string | null;
-  state?: string | null;
-  complement?: string | null;
 };
 
 type UseCheckoutSocialIdentityOptions = {
