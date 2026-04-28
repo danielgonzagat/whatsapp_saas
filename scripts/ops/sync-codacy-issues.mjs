@@ -315,6 +315,10 @@ async function fetchAndApplyPage(token, agg, cursor, totalFromApi, pages) {
   return { newTotal, next };
 }
 
+function advanceCursor(cursor, next) {
+  return next === null ? { cursor: '', done: true } : { cursor: next, done: false };
+}
+
 async function paginateAllIssues(token, agg) {
   let cursor = '';
   let totalFromApi = null;
@@ -324,11 +328,9 @@ async function paginateAllIssues(token, agg) {
     const { newTotal, next } = await fetchAndApplyPage(token, agg, cursor, totalFromApi, pages);
     pages += 1;
     totalFromApi = newTotal;
-    if (next === null) {
-      cursor = '';
-      break;
-    }
-    cursor = next;
+    const advance = advanceCursor(cursor, next);
+    cursor = advance.cursor;
+    if (advance.done) break;
   }
 
   warnIfTruncated(pages, cursor);
