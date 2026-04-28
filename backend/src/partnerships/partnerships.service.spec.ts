@@ -353,7 +353,7 @@ describe('PartnershipsService', () => {
       });
 
       expect(typeof result.affiliateCode).toBe('string');
-      expect((result.affiliateCode ?? '').length).toBeGreaterThan(0);
+      expect(result.affiliateCode.length).toBeGreaterThan(0);
       expect(result.affiliateLink).toContain(result.affiliateCode);
       expect(result.commissionRate).toBe(25);
       expect(result.status).toBe('PENDING');
