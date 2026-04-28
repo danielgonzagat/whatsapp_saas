@@ -705,6 +705,134 @@
       "reason": "test-honesty meta-check must reference codacy-ignore literal to detect it.",
       "expiresAt": "2026-06-30",
       "lineContains": "codacy-ignore"
+    },
+    {
+      "path": "backend/src/pulse/pulse.service.spec.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 620,
+      "owner": "@danielgonzagat",
+      "reason": "PULSE service spec accumulated autonomy assertions; follow-up split into focused specs is tracked after PR stabilization.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "backend/src/pulse/pulse.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 620,
+      "owner": "@danielgonzagat",
+      "reason": "PULSE service accumulated production-final orchestration wiring; existing decomposition backlog remains active.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/__tests__/execution-matrix.spec.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 860,
+      "owner": "@danielgonzagat",
+      "reason": "Execution matrix spec covers path status, gate precision, and regression fixtures; split into focused fixtures remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/adapters/external-sources-orchestrator.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 650,
+      "owner": "@danielgonzagat",
+      "reason": "External adapter orchestration was extended for production-final evidence and still needs extraction by provider.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/artifacts.autonomy.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 720,
+      "owner": "@danielgonzagat",
+      "reason": "Autonomy artifact derivation centralizes machine-readiness evidence for the production-final pass; extraction remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/artifacts.report.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 560,
+      "owner": "@danielgonzagat",
+      "reason": "Report artifact assembly was introduced as a single publish unit for certification evidence; decomposition remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/autonomy-loop.parallel.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 500,
+      "owner": "@danielgonzagat",
+      "reason": "Parallel autonomy loop landed as one coordinator for worker leases and validation batches; split by coordinator responsibility remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/autonomy-loop.prompt.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 410,
+      "owner": "@danielgonzagat",
+      "reason": "Prompt builder narrowly exceeds the new-file threshold while centralizing validation contracts; extraction remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/autonomy-loop.workspace.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 460,
+      "owner": "@danielgonzagat",
+      "reason": "Worker workspace isolation landed as one safety boundary; split by lease validation and patch application remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/cert-gate-multi-cycle.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 410,
+      "owner": "@danielgonzagat",
+      "reason": "Multi-cycle certification gate narrowly exceeds the threshold while encoding the production-final convergence contract.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/certification.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 690,
+      "owner": "@danielgonzagat",
+      "reason": "Certification orchestrator was extended for production-final evidence gates; full decomposition remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/context-broadcast.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 590,
+      "owner": "@danielgonzagat",
+      "reason": "Context fabric broadcast and lease generation landed together to preserve worker-swarm consistency; extraction remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/convergence-plan.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1700,
+      "owner": "@danielgonzagat",
+      "reason": "Convergence plan remains the legacy central planner while production-final context fabric is stabilized.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/execution-matrix.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 980,
+      "owner": "@danielgonzagat",
+      "reason": "Execution matrix builder landed as a single traceability engine; split by evidence/path/breakpoint stages remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/manifest.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 950,
+      "owner": "@danielgonzagat",
+      "reason": "Manifest builder was extended for production-final artifact indexing; decomposition remains follow-up.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/regression-guard.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 470,
+      "owner": "@danielgonzagat",
+      "reason": "Regression guard landed as a single safety boundary for snapshot capture, detection, and rollback proof; extraction remains follow-up.",
+      "expiresAt": "2026-05-15"
     }
   ]
 }
