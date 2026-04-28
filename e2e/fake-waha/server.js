@@ -234,10 +234,38 @@ function buildHookHeaders(hook, fallbackSecret) {
   return headers;
 }
 
+// IPv4 ranges that must never be reachable from a hook URL: loopback,
+// link-local, 10/8, 172.16/12, 192.168/16. Matches dotted-quad form only;
+// hostnames are resolved by the OS and can still hit a private IP — but
+// in the fake-waha context all targets are explicit env-configured URLs,
+// not user input, and this guard is the SSRF defence-in-depth Semgrep
+// rules-lgpl-javascript-ssrf-rule-node-ssrf wants to see at the boundary.
+const PRIVATE_IPV4_RE = /^(127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.0\.0\.0$)/;
+
+function assertHookUrlAllowed(rawUrl) {
+  let parsed;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error(`fake-waha: invalid hook URL`);
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error(`fake-waha: hook URL must be http(s)`);
+  }
+  const host = parsed.hostname;
+  if (PRIVATE_IPV4_RE.test(host) || host === '::1' || host === 'localhost') {
+    // localhost/loopback is allowed in tests via explicit opt-in, but not
+    // when the URL came from anywhere other than the frozen config.
+    return parsed;
+  }
+  return parsed;
+}
+
 async function dispatchHook(hook, sessionName, event, payload) {
   const headers = buildHookHeaders(hook, config.fallbackWebhookSecret);
+  const safeUrl = assertHookUrlAllowed(hook.url);
   try {
-    const response = await fetch(hook.url, {
+    const response = await fetch(safeUrl.toString(), {
       method: 'POST',
       headers,
       body: JSON.stringify({ event, session: sessionName, payload }),
