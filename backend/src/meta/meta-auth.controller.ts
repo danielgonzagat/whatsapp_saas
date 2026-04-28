@@ -296,9 +296,9 @@ export class MetaAuthController {
         }),
       );
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.error(`Meta OAuth callback failed: ${errInstanceofError.message}`);
+      this.logger.error(
+        `Meta OAuth callback failed: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
       return res.redirect(
         this.buildFrontendRedirect(returnTo, parsedState.channel, {
           meta: 'error',

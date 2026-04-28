@@ -201,9 +201,7 @@ export class CiaBootstrapService {
         }
       }
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      degradedSyncMessage = `Consegui conectar, mas não consegui contar suas conversas pendentes. Motivo: ${errInstanceofError?.message || 'falha ao consultar a sessão WAHA'}.`;
+      degradedSyncMessage = `Consegui conectar, mas não consegui contar suas conversas pendentes. Motivo: ${err instanceof Error ? err.message : 'falha ao consultar a sessão WAHA'}.`;
       await this.agentEvents.publish({
         type: 'status',
         workspaceId,

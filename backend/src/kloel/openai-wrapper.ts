@@ -123,14 +123,11 @@ export async function callOpenAIWithRetry<T>(
     try {
       return await fn();
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-
       if (!isRetryableError(err)) {
         if (!isTestEnv) {
           logger.error(
-            `OpenAI error (não retryable): ${errInstanceofError.message}`,
-            errInstanceofError.stack,
+            `OpenAI error (não retryable): ${err instanceof Error ? err.message : 'unknown_error'}`,
+            err instanceof Error ? err.stack : undefined,
           );
         }
         throw err;
@@ -139,7 +136,7 @@ export async function callOpenAIWithRetry<T>(
       if (attempt === opts.maxRetries) {
         if (!isTestEnv) {
           logger.error(
-            `OpenAI falhou após ${opts.maxRetries} tentativas: ${errInstanceofError.message}`,
+            `OpenAI falhou após ${opts.maxRetries} tentativas: ${err instanceof Error ? err.message : 'unknown_error'}`,
           );
         }
         throw err;
@@ -150,7 +147,7 @@ export async function callOpenAIWithRetry<T>(
         const statusOrCode = readRetryStatusOrCode(err);
         logger.warn(
           `OpenAI retry ${attempt + 1}/${opts.maxRetries} em ${Math.round(delay)}ms ` +
-            `(${statusOrCode}): ${errInstanceofError.message}`,
+            `(${statusOrCode}): ${err instanceof Error ? err.message : 'unknown_error'}`,
         );
       }
 
@@ -356,11 +353,11 @@ export async function chatCompletionWithFallback(
   try {
     return await chatCompletionWithRetry(client, normalizedParams, options, requestOptions);
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     // Se falhar mesmo após retries, tentar com modelo menor
     if (!isTestEnv) {
-      logger.warn(`Fallback para ${fallbackModel} após erro: ${errInstanceofError.message}`);
+      logger.warn(
+        `Fallback para ${fallbackModel} após erro: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
     }
 
     return chatCompletionWithRetry(

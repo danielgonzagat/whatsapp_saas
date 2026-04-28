@@ -75,13 +75,9 @@ export class AuditService {
         },
       });
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error(
-        `CRITICAL: Audit log failed — ${errorInstanceofError?.message}`,
-        errorInstanceofError?.stack,
+        `CRITICAL: Audit log failed — ${error instanceof Error ? error.message : 'unknown_error'}`,
+        error instanceof Error ? error.stack : undefined,
       );
       // Attempt one retry
       try {

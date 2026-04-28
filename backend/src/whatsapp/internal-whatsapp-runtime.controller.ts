@@ -111,12 +111,10 @@ export class InternalWhatsAppRuntimeController {
 
       return { success: true, workspaceId, autopilotEnabled: true };
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       this.logger.warn(
-        `Failed to auto-activate autopilot for ${workspaceId}: ${errInstanceofError?.message}`,
+        `Failed to auto-activate autopilot for ${workspaceId}: ${err instanceof Error ? err.message : 'unknown_error'}`,
       );
-      return { success: false, reason: errInstanceofError?.message };
+      return { success: false, reason: err instanceof Error ? err.message : 'unknown_error' };
     }
   }
 
@@ -295,10 +293,10 @@ export class InternalWhatsAppRuntimeController {
         phone: normalizedPhone,
       };
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.warn(`Contact sync failed: ${errInstanceofError?.message}`);
-      return { success: false, reason: errInstanceofError?.message };
+      this.logger.warn(
+        `Contact sync failed: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
+      return { success: false, reason: err instanceof Error ? err.message : 'unknown_error' };
     }
   }
 

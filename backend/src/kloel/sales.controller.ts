@@ -195,10 +195,8 @@ export class SalesController {
           );
         }
       } catch (err: unknown) {
-        const errInstanceofError =
-          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
         throw new BadRequestException(
-          `Falha ao processar estorno no gateway: ${errInstanceofError.message}`,
+          `Falha ao processar estorno no gateway: ${err instanceof Error ? err.message : 'unknown_error'}`,
         );
       }
     }

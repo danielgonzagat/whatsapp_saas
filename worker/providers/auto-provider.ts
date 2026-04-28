@@ -27,12 +27,8 @@ export const autoProvider = {
       }
       return result;
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
       providerStatus.error(providerName);
-      return { error: errorInstanceofError?.message || 'meta_send_failed' };
+      return { error: error instanceof Error ? error.message : 'meta_send_failed' };
     }
   },
 
@@ -60,12 +56,8 @@ export const autoProvider = {
       }
       return result;
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
       providerStatus.error(providerName);
-      return { error: errorInstanceofError?.message || 'meta_media_failed' };
+      return { error: error instanceof Error ? error.message : 'meta_media_failed' };
     }
   },
 

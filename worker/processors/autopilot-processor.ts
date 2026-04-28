@@ -303,9 +303,9 @@ async function notifyBillingSuspended(workspaceId?: string) {
       signal: AbortSignal.timeout(10000),
     });
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-    log.warn('billing_suspend_notify_failed', { error: errInstanceofError?.message });
+    log.warn('billing_suspend_notify_failed', {
+      error: err instanceof Error ? err.message : 'unknown_error',
+    });
   }
 }
 
@@ -638,9 +638,9 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
           // Compatibilidade legada: scan-message vira processamento consolidado por contato
           return await runScanContact(job.data);
         } catch (err: unknown) {
-          const errInstanceofError =
-            err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-          log.error('autopilot_error', { error: errInstanceofError.message });
+          log.error('autopilot_error', {
+            error: err instanceof Error ? err.message : 'unknown_error',
+          });
           autopilotDecisionCounter.inc({
             workspaceId: job.data?.workspaceId || 'unknown',
             intent: 'ERROR',
@@ -749,9 +749,9 @@ Responda somente o JSON.`;
       usedKb: !!kbContext,
     };
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-    log.warn('autopilot_ai_fallback', { error: errInstanceofError.message });
+    log.warn('autopilot_ai_fallback', {
+      error: err instanceof Error ? err.message : 'unknown_error',
+    });
     return { intent: 'IDLE', action: 'NONE', reason: 'ai_error', confidence: 0.3 };
   }
 }
@@ -2215,11 +2215,7 @@ async function scheduleCatalogContactsJob(
     );
     return { scheduled: true };
   } catch (error: unknown) {
-    const errorInstanceofError =
-      error instanceof Error
-        ? error
-        : new Error(typeof error === 'string' ? error : 'unknown error');
-    const message = String(errorInstanceofError?.message || '');
+    const message = String(error instanceof Error ? error.message : '');
     if (message.includes('Job is already waiting')) {
       return { scheduled: false, reason: 'already_waiting' };
     }
@@ -2455,15 +2451,11 @@ async function scheduleBacklogContinuation(input: {
     });
     return { scheduled: true as const, runId, limit: payload.limit };
   } catch (error: unknown) {
-    const errorInstanceofError =
-      error instanceof Error
-        ? error
-        : new Error(typeof error === 'string' ? error : 'unknown error');
     return {
       scheduled: false as const,
       runId,
       limit: payload.limit,
-      reason: String(errorInstanceofError?.message || 'schedule_failed'),
+      reason: String(error instanceof Error ? error.message : 'schedule_failed'),
     };
   }
 }
@@ -3111,9 +3103,9 @@ export async function runScanContact(data: UnknownRecord) {
           },
         });
       } catch (err: unknown) {
-        const errInstanceofError =
-          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-        log.warn('autopilot_event_billing_skip_failed', { error: errInstanceofError?.message });
+        log.warn('autopilot_event_billing_skip_failed', {
+          error: err instanceof Error ? err.message : 'unknown_error',
+        });
       }
       await notifyBillingSuspended(workspaceId);
       autopilotDecisionCounter.inc({
@@ -3829,10 +3821,8 @@ export async function runScanContact(data: UnknownRecord) {
         ? `Ação ${decision.action} executada com sucesso.`
         : `Ação ${decision.action} pulada por política operacional.`;
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     finalStatus = 'failed';
-    finalSummary = errInstanceofError?.message || 'Erro ao processar contato';
+    finalSummary = err instanceof Error ? err.message : 'Erro ao processar contato';
     throw err;
   } finally {
     if (finalStatus === 'sent') {
@@ -4049,9 +4039,7 @@ async function getKbContext(workspaceId?: string, text?: string, apiKey?: string
       .join('\n---\n')
       .slice(0, 1500);
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-    log.warn('kb_context_error', { error: errInstanceofError.message });
+    log.warn('kb_context_error', { error: err instanceof Error ? err.message : 'unknown_error' });
     return '';
   }
 }
@@ -4069,9 +4057,9 @@ async function generatePitchSafe(messageContent: string, settings: UnknownRecord
       pitchPrompt,
     );
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-    log.warn('autopilot_pitch_fallback', { error: errInstanceofError.message });
+    log.warn('autopilot_pitch_fallback', {
+      error: err instanceof Error ? err.message : 'unknown_error',
+    });
     return 'Posso te fazer uma oferta exclusiva. Quer fechar agora?';
   }
 }
@@ -4189,11 +4177,9 @@ Se a mensagem permitir, termine com um gancho curto que convide resposta.`;
 
     return detectAndFixAntiPatterns(String(response || '').trim());
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     log.warn('autopilot_generic_fallback_ai_error', {
       workspaceId,
-      error: errInstanceofError?.message,
+      error: err instanceof Error ? err.message : 'unknown_error',
     });
     return detectAndFixAntiPatterns(
       matchedProducts.length > 0
@@ -5156,10 +5142,10 @@ async function executeAction(
       );
     }
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-    log.error('autopilot_send_error', { err: errInstanceofError.message });
-    sendError = errInstanceofError?.message || 'send_error';
+    log.error('autopilot_send_error', {
+      err: err instanceof Error ? err.message : 'unknown_error',
+    });
+    sendError = err instanceof Error ? err.message : 'send_error';
     await logAutopilotAction({
       workspaceId: input.workspaceId,
       contactId: input.contactId,
@@ -5167,7 +5153,7 @@ async function executeAction(
       action,
       intent: input.intent,
       status: 'error',
-      reason: errInstanceofError?.message || 'send_error',
+      reason: err instanceof Error ? err.message : 'send_error',
       intentConfidence: input.intentConfidence,
       meta: {
         usedHistory: input.usedHistory,
@@ -5242,9 +5228,7 @@ async function executeAction(
         });
         sent = true;
       } catch (err: unknown) {
-        const errInstanceofError =
-          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-        logFallback('email', 'error', errInstanceofError?.message);
+        logFallback('email', 'error', err instanceof Error ? err.message : 'unknown_error');
       }
     }
   }
@@ -5763,10 +5747,8 @@ async function sendDirectAutopilotText(input: {
     });
     return 'executed';
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     await finishAutonomyExecution(execution.record?.id, 'FAILED', {
-      error: errInstanceofError?.message || 'send_error',
+      error: err instanceof Error ? err.message : 'send_error',
       response: {
         channel: 'FLOW_SEND_MESSAGE',
         message,
@@ -5781,7 +5763,7 @@ async function sendDirectAutopilotText(input: {
       action,
       intent: input.intent,
       status: 'error',
-      reason: errInstanceofError?.message || 'send_error',
+      reason: err instanceof Error ? err.message : 'send_error',
       intentConfidence: input.intentConfidence,
       meta: {
         usedHistory: input.usedHistory,
@@ -5806,7 +5788,7 @@ async function sendDirectAutopilotText(input: {
       contactId: input.contactId,
       phone: targetPhone,
       action,
-      error: errInstanceofError?.message || 'direct_send_failed',
+      error: err instanceof Error ? err.message : 'direct_send_failed',
     });
     throw err;
   }
@@ -5981,13 +5963,9 @@ async function buildMessage(action: string, content: string, settings: UnknownRe
         return cleaned;
       }
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
       log.warn('build_message_ai_failed', {
         action,
-        error: errorInstanceofError?.message || 'unknown_error',
+        error: error instanceof Error ? error.message : 'unknown_error',
       });
     }
   }
@@ -6431,9 +6409,9 @@ async function logAutopilotAction(input: {
       });
     }
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-    log.warn('autopilot_audit_error', { error: errInstanceofError.message });
+    log.warn('autopilot_audit_error', {
+      error: err instanceof Error ? err.message : 'unknown_error',
+    });
   }
 }
 
@@ -6450,8 +6428,6 @@ async function acquireCiaContactLock(contactId?: string, phone?: string) {
     ).set(key, '1', 'EX', CIA_CONTACT_LOCK_TTL_SECONDS, 'NX');
     return result ? key : null;
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     // Invariant I6: lock not acquired implies operation does NOT run.
     // Previously this returned the key on Redis failure, causing the
     // caller to believe the lock was acquired and proceed without
@@ -6459,7 +6435,7 @@ async function acquireCiaContactLock(contactId?: string, phone?: string) {
     // so the contact is skipped for this cycle.
     log.warn('acquireCiaContactLock redis failure', {
       key,
-      error: errInstanceofError?.message || String(err),
+      error: err instanceof Error ? err.message : String(err),
     });
     return null;
   }
@@ -6877,11 +6853,9 @@ async function maybeScoreContactWithAi(input: {
       },
     };
   } catch (error: unknown) {
-    const errorInstanceofError =
-      error instanceof Error
-        ? error
-        : new Error(typeof error === 'string' ? error : 'unknown error');
-    log.warn('catalog_ai_score_failed', { error: errorInstanceofError?.message || error });
+    log.warn('catalog_ai_score_failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -7379,11 +7353,7 @@ async function runCatalogContacts(data: UnknownRecord) {
       );
       scoredQueued += 1;
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      const message = String(errorInstanceofError?.message || '');
+      const message = String(error instanceof Error ? error.message : '');
       if (!message.includes('Job is already waiting')) {
         log.warn('catalog_score_enqueue_failed', {
           workspaceId,
@@ -8304,8 +8274,6 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: Unknow
       });
     }
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     await publishAgentEvent({
       type: 'error',
       workspaceId,
@@ -8314,7 +8282,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: Unknow
       message:
         'Detectei uma violação interna de contrato no ciclo CIA e bloqueei o despacho automático deste tick.',
       meta: {
-        error: errInstanceofError?.message || 'cia_contract_violation',
+        error: err instanceof Error ? err.message : 'cia_contract_violation',
         guaranteeReport,
         exhaustionReport,
         cycleProofId,
@@ -8326,7 +8294,9 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: Unknow
       type: 'CIA_CONTRACT_VIOLATION',
       title: 'Ciclo CIA bloqueado por contrato interno',
       description:
-        errInstanceofError?.message || 'Uma garantia operacional obrigatória falhou no ciclo.',
+        err instanceof Error
+          ? err.message
+          : 'Uma garantia operacional obrigatória falhou no ciclo.',
       severity: 'CRITICAL',
       metadata: {
         cycleProofId,
@@ -8743,10 +8713,8 @@ async function runCiaAction(data: UnknownRecord) {
       }
     }
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     outcome = 'FAILED';
-    errorMessage = errInstanceofError?.message || 'cia_action_failed';
+    errorMessage = err instanceof Error ? err.message : 'cia_action_failed';
   } finally {
     if (!conversationProofId && data?.conversationId) {
       const fallbackProof = await createConversationProofSnapshotDraft({
@@ -9441,11 +9409,11 @@ async function sendAudioResponse(
     });
     return true;
   } catch (error: unknown) {
-    const errorInstanceofError =
-      error instanceof Error
-        ? error
-        : new Error(typeof error === 'string' ? error : 'unknown error');
-    log.error('send_audio_error', { error: errorInstanceofError.message, workspaceId, phone });
+    log.error('send_audio_error', {
+      error: error instanceof Error ? error.message : 'unknown_error',
+      workspaceId,
+      phone,
+    });
     return false;
   }
 }

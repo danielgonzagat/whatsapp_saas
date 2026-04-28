@@ -332,13 +332,9 @@ export class WebhooksController {
       const result = await this.webhooksService.processInstagramMessage(workspaceId, body);
       return { status: 'success', result };
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error(
-        `[INSTAGRAM] Webhook failed: ${errorInstanceofError.message}`,
-        errorInstanceofError.stack,
+        `[INSTAGRAM] Webhook failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw new HttpException('Instagram webhook processing failed', HttpStatus.BAD_REQUEST);
     }

@@ -289,10 +289,10 @@ export class PaymentService {
       if (err instanceof BadRequestException) {
         throw err;
       }
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.error(`Stripe indisponível: ${errInstanceofError?.message}`);
-      this.financialAlert.paymentFailed(errInstanceofError, {
+      const errInstance =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown_error');
+      this.logger.error(`Stripe indisponível: ${errInstance.message}`);
+      this.financialAlert.paymentFailed(errInstance, {
         workspaceId: data.workspaceId,
       });
       throw new ServiceUnavailableException(

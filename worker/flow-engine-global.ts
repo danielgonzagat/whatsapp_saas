@@ -1030,10 +1030,10 @@ export class FlowEngineGlobal {
             finalPitch = await ai.generateResponse(sys, user);
           }
         } catch (err: unknown) {
-          const errInstanceofError =
-            err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
           // PULSE:OK — AI pitch generation non-critical; falls back to static template below
-          this.log.warn('auto_pitch_ai_fallback', { error: errInstanceofError?.message });
+          this.log.warn('auto_pitch_ai_fallback', {
+            error: err instanceof Error ? err.message : 'unknown_error',
+          });
         }
 
         // Fallback simples se não houver AI ou erro

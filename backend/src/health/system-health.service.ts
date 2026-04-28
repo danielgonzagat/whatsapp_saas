@@ -114,9 +114,7 @@ export class SystemHealthService {
       await this.redis.ping();
       return { status: 'UP' };
     } catch (e: unknown) {
-      const eInstanceofError =
-        e instanceof Error ? e : new Error(typeof e === 'string' ? e : 'unknown error');
-      return { status: 'DOWN', error: eInstanceofError.message };
+      return { status: 'DOWN', error: e instanceof Error ? e.message : 'unknown_error' };
     }
   }
 
@@ -124,9 +122,11 @@ export class SystemHealthService {
     try {
       return await this.storageService.healthCheck();
     } catch (e: unknown) {
-      const eInstanceofError =
-        e instanceof Error ? e : new Error(typeof e === 'string' ? e : 'unknown error');
-      return { status: 'DOWN', driver: 'unknown', error: eInstanceofError.message };
+      return {
+        status: 'DOWN',
+        driver: 'unknown',
+        error: e instanceof Error ? e.message : 'unknown_error',
+      };
     }
   }
 
@@ -210,13 +210,11 @@ export class SystemHealthService {
         details: payload,
       };
     } catch (e: unknown) {
-      const eInstanceofError =
-        e instanceof Error ? e : new Error(typeof e === 'string' ? e : 'unknown error');
       clearTimeout(timeout);
       return {
         status: 'DOWN',
         url: this.maskUrl(workerHealthUrl),
-        error: eInstanceofError.message,
+        error: e instanceof Error ? e.message : 'unknown_error',
       };
     }
   }

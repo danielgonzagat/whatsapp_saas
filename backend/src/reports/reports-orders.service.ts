@@ -121,11 +121,13 @@ export class ReportsOrdersService {
       assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getVendas (isFirstPurchase)');
       const firstPurchaseChecks = await Promise.all(
         data.map(async (order) => {
+          assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.firstPurchaseCheck');
+          const paidStatus = 'PAID' as const;
           const priorCount = await this.prisma.checkoutOrder.count({
             where: {
               workspaceId,
               customerEmail: order.customerEmail,
-              status: 'PAID',
+              status: paidStatus,
               createdAt: { lt: order.createdAt },
             },
           });
@@ -154,7 +156,9 @@ export class ReportsOrdersService {
       }),
       this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
       (assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getVendasSummary'),
-      this.prisma.checkoutOrder.count({ where: { ...where, workspaceId, status: 'PAID' } })),
+      this.prisma.checkoutOrder.count({
+        where: { ...where, workspaceId, status: 'PAID' as const },
+      })),
     ]);
 
     return {

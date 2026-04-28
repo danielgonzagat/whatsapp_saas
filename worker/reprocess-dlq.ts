@@ -36,10 +36,11 @@ async function main() {
       await job.remove();
       console.log(`✔ Requeued ${job.id} -> ${targetQueueName}:${name}`);
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // PULSE:OK — Per-job requeue failure is non-critical; other jobs still processed
-      console.error(`✖ Failed to requeue ${job.id}:`, errInstanceofError?.message || err);
+      console.error(
+        `✖ Failed to requeue ${job.id}:`,
+        err instanceof Error ? err.message : String(err),
+      );
     }
   });
 

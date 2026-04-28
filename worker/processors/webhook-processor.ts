@@ -43,10 +43,10 @@ export const webhookWorker = new Worker(
         },
       );
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // BullMQ will handle retries based on queue options
-      console.error(`[Webhook] Failed to send to ${url}: ${errInstanceofError.message}`);
+      console.error(
+        `[Webhook] Failed to send to ${url}: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
       throw err;
     }
   },

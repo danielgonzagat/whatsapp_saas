@@ -573,11 +573,7 @@ export class WhatsAppCatchupService {
         overflow: hadOverflow,
       };
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      const errorMessage = String(errorInstanceofError?.message || 'erro desconhecido');
+      const errorMessage = String(error instanceof Error ? error.message : 'erro desconhecido');
       const sessionMissing = this.isSessionMissingError(error);
       const recoveryBlockedReason =
         !sessionMissing && this.isNowebStoreMisconfigured(error)

@@ -86,10 +86,8 @@ export class EmailCampaignService {
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
       } catch (err: unknown) {
-        const errInstanceofError =
-          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
         failed++;
-        errors.push(`${recipient.email}: ${errInstanceofError.message}`);
+        errors.push(`${recipient.email}: ${err instanceof Error ? err.message : 'unknown_error'}`);
       }
     });
 
@@ -172,9 +170,9 @@ export class EmailCampaignService {
           return true;
       }
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.error(`Email send error: ${errInstanceofError.message}`);
+      this.logger.error(
+        `Email send error: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
       return false;
     }
   }

@@ -237,9 +237,9 @@ export class AutopilotCycleExecutorService {
           message: responseText,
         });
       } catch (err: unknown) {
-        const errInstanceofError =
-          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-        this.logger.warn(`[Autopilot] Falha ao enfileirar envio: ${errInstanceofError?.message}`);
+        this.logger.warn(
+          `[Autopilot] Falha ao enfileirar envio: ${err instanceof Error ? err.message : 'unknown_error'}`,
+        );
       }
     }
   }

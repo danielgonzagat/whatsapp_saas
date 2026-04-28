@@ -51,9 +51,7 @@ async function getContext(workspaceId: string, query: string, topK = 3): Promise
       .map((r, idx) => `#${idx + 1} (dist=${r.distance?.toFixed?.(3) ?? ''})\n${r.content}`)
       .join('\n\n');
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-    console.warn('[RAG] Context fetch failed:', errInstanceofError?.message || err);
+    console.warn('[RAG] Context fetch failed:', err instanceof Error ? err.message : String(err));
     return '';
   }
 }

@@ -203,12 +203,10 @@ export class CalendarService {
           return externalEvent;
         }
       } catch (error: unknown) {
-        const errorInstanceofError =
-          error instanceof Error
-            ? error
-            : new Error(typeof error === 'string' ? error : 'unknown error');
         // PULSE:OK — Google Calendar sync is non-critical; falls back to internal save below
-        this.logger.error(`[Calendar] Erro Google Calendar: ${errorInstanceofError.message}`);
+        this.logger.error(
+          `[Calendar] Erro Google Calendar: ${error instanceof Error ? error.message : 'unknown_error'}`,
+        );
       }
     }
 
@@ -256,12 +254,8 @@ export class CalendarService {
         meetingLink: appointment.meetingUrl || undefined,
       };
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error(
-        `[Calendar] Erro ao salvar evento interno: ${errorInstanceofError.message}`,
+        `[Calendar] Erro ao salvar evento interno: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );
 
       // Se tabela não existe, retornar evento simulado
@@ -329,11 +323,9 @@ export class CalendarService {
         meetingLink: createdEvent.hangoutLink || event.meetingLink,
       };
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.error(`[Calendar] Google Calendar API error: ${errorInstanceofError.message}`);
+      this.logger.error(
+        `[Calendar] Google Calendar API error: ${error instanceof Error ? error.message : 'unknown_error'}`,
+      );
       return null;
     }
   }
@@ -383,11 +375,9 @@ export class CalendarService {
         meetingLink: apt.meetingUrl || undefined,
       }));
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.error(`Failed to fetch events: ${errorInstanceofError?.message}`);
+      this.logger.error(
+        `Failed to fetch events: ${error instanceof Error ? error.message : 'unknown_error'}`,
+      );
       throw error;
     }
   }
@@ -408,11 +398,9 @@ export class CalendarService {
       });
       return true;
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.error(`[Calendar] Erro ao cancelar evento: ${errorInstanceofError.message}`);
+      this.logger.error(
+        `[Calendar] Erro ao cancelar evento: ${error instanceof Error ? error.message : 'unknown_error'}`,
+      );
       return false;
     }
   }

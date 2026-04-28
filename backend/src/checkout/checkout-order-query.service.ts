@@ -277,8 +277,9 @@ export class CheckoutOrderQueryService {
   /** Get recent paid orders. */
   async getRecentPaidOrders(limit: number) {
     assertValidOrderStatusFilter('PAID', 'CheckoutOrderQueryService.getRecentPaidOrders');
+    const paidStatus = 'PAID' as const;
     return this.prisma.checkoutOrder.findMany({
-      where: { status: 'PAID' },
+      where: { status: paidStatus },
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: {

@@ -214,12 +214,8 @@ export class KloelStreamWriter {
       try {
         stream = await openWriterStream(resolveBackendOpenAIModel('writer'));
       } catch (error: unknown) {
-        const errorInstanceofError =
-          error instanceof Error
-            ? error
-            : new Error(typeof error === 'string' ? error : 'unknown error');
         this.options.logger.warn(
-          `Writer stream fallback para ${resolveBackendOpenAIModel('writer_fallback')}: ${errorInstanceofError?.message || 'unknown_error'}`,
+          `Writer stream fallback para ${resolveBackendOpenAIModel('writer_fallback')}: ${error instanceof Error ? error.message : 'unknown_error'}`,
         );
         stream = await openWriterStream(resolveBackendOpenAIModel('writer_fallback'));
       }

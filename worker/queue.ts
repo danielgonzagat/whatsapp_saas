@@ -171,13 +171,11 @@ function attachDlq(queue: BullQueue) {
           reason: failedReason,
         });
       } catch (err: unknown) {
-        const errInstanceofError =
-          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
         console.error(
           '[DLQ] Falha ao mover job %s da fila %s: %s',
           jobId,
           queue.name,
-          errInstanceofError?.message || err,
+          err instanceof Error ? err.message : String(err),
         );
       }
     })();

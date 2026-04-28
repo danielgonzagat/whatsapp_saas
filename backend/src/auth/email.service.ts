@@ -177,11 +177,9 @@ export class EmailService {
           return true;
       }
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.error(`Erro ao enviar email: ${errorInstanceofError.message}`);
+      this.logger.error(
+        `Erro ao enviar email: ${error instanceof Error ? error.message : 'unknown_error'}`,
+      );
       return false;
     }
   }
