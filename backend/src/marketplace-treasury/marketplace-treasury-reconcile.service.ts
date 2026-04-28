@@ -191,6 +191,7 @@ export class MarketplaceTreasuryReconcileService {
    */
   static readonly reconcileInvariantMarker = 'I-ADMIN-W6';
   /** Reconcile invariant prisma property. */
-  static readonly reconcileInvariantPrisma: unknown =
-    null as unknown as Prisma.MarketplaceTreasuryLedgerGroupByOutputType;
+  // Marker for the invariant scanner — value never read at runtime.
+  static readonly reconcileInvariantPrisma: Prisma.MarketplaceTreasuryLedgerGroupByOutputType | null =
+    null;
 }

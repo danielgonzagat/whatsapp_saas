@@ -437,7 +437,9 @@ export class WalletService {
       // Batch-fetch wallets for all pending transactions
       const walletIds = [
         ...new Set(
-          pendingTxs.map((tx: { walletId?: string | null }) => tx.walletId).filter(Boolean),
+          pendingTxs
+            .map((tx: { walletId?: string | null }) => tx.walletId)
+            .filter((id): id is string => typeof id === 'string' && id.length > 0),
         ),
       ];
       const walletsList = await this.prisma.kloelWallet.findMany({

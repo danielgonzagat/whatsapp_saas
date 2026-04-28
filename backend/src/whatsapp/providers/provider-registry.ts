@@ -220,6 +220,9 @@ export class WhatsAppProviderRegistry {
     await this.getProviderType(workspaceId);
 
     if (this.isWahaMode()) {
+      if (!this.wahaProvider) {
+        throw new Error('WAHA provider not configured');
+      }
       const result = await this.wahaProvider.startSession(workspaceId);
       await this.persistSessionSnapshot(workspaceId, {
         status: result.message === 'already_connected' ? 'connected' : 'connecting',

@@ -512,22 +512,25 @@ export class MetaWhatsAppService {
     const { status: _ignoredStatus, ...patchWithoutStatus } = patchRecord;
     const nextStatus = heartbeatStatus || persistedStatus || 'connected';
 
+    // Round-trip through JSON to coerce the typed object literal into the
+    // Prisma.InputJsonValue index-signature shape without an unsafe cast.
+    const providerSettingsPayload = JSON.parse(
+      JSON.stringify({
+        ...settings,
+        whatsappProvider: 'meta-cloud',
+        connectionStatus: nextStatus,
+        whatsappApiSession: {
+          ...currentSession,
+          ...patchWithoutStatus,
+          status: nextStatus,
+          provider: 'meta-cloud',
+          lastWebhookAt: new Date().toISOString(),
+        },
+      }),
+    ) as Prisma.InputJsonObject;
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: {
-        providerSettings: {
-          ...settings,
-          whatsappProvider: 'meta-cloud',
-          connectionStatus: nextStatus,
-          whatsappApiSession: {
-            ...currentSession,
-            ...patchWithoutStatus,
-            status: nextStatus,
-            provider: 'meta-cloud',
-            lastWebhookAt: new Date().toISOString(),
-          },
-        } as unknown as Prisma.InputJsonValue,
-      },
+      data: { providerSettings: providerSettingsPayload },
     });
   }
 

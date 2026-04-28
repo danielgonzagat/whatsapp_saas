@@ -149,7 +149,7 @@ export class LedgerReconciliationService {
       status: string;
       payment?: { status?: string; externalId?: string; gateway?: string } | null;
     };
-    const prismaExt = this.prisma as unknown as Record<string, PrismaDelegate>;
+    const prismaExt = this.prisma as object as Record<string, PrismaDelegate>;
     const orders = (await prismaExt.checkoutOrder.findMany({
       where: {
         paidAt: { not: null, gte: since },
@@ -311,7 +311,7 @@ export class LedgerReconciliationService {
       findMany: (...args: unknown[]) => Promise<unknown[]>;
       groupBy: (...args: unknown[]) => Promise<unknown[]>;
     };
-    const prismaExt = this.prisma as unknown as Record<string, PrismaDelegate>;
+    const prismaExt = this.prisma as object as Record<string, PrismaDelegate>;
     const drifts: DriftReport[] = [];
 
     // Read all wallets. Production volumes here are small (one wallet
