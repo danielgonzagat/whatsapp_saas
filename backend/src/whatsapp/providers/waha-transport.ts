@@ -216,15 +216,15 @@ export class WahaTransport {
 
       clearTimeout(timeout);
       return res;
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      let diagnosis = errInstanceofError.message;
-      if (errInstanceofError.name === 'AbortError') {
+    } catch (rawErr: unknown) {
+      const err =
+        rawErr instanceof Error
+          ? rawErr
+          : new Error(typeof rawErr === 'string' ? rawErr : 'unknown error');
+      let diagnosis = err.message;
+      if (err.name === 'AbortError') {
         diagnosis = `TIMEOUT after ${timeoutMs}ms connecting to ${this.baseUrl}`;
-      } else if (
-        (errInstanceofError as Error & { cause?: { code?: string } }).cause?.code === 'ECONNREFUSED'
-      ) {
+      } else if ((err as Error & { cause?: { code?: string } }).cause?.code === 'ECONNREFUSED') {
         diagnosis = `ECONNREFUSED — WAHA at ${this.baseUrl} is not reachable.`;
       }
       const shouldLogQuietly = Array.from(this.quietErrorPaths).some((suffix) =>
