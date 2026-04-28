@@ -18,7 +18,8 @@ function jsonHeaders(token) {
 }
 
 export async function codacyRequest(token, method, pathname, body) {
-  const url = new URL(pathname, BASE_URL);
+  const normalizedPathname = pathname.startsWith('/') ? pathname : `/${pathname}`;
+  const url = new URL(`${CODACY_API_PATH_PREFIX}${normalizedPathname}`, CODACY_API_ORIGIN);
   if (url.origin !== CODACY_API_ORIGIN || !url.pathname.startsWith(CODACY_API_PATH_PREFIX)) {
     throw new Error(`Refusing Codacy API request outside allow-listed API origin: ${url.href}`);
   }
