@@ -368,9 +368,10 @@ export class BillingWebhookService {
       );
       return;
     }
-    const scopedWhere = { stripeId, workspaceId };
+    // Tenant-safe queries: inline the workspaceId predicate so the static
+    // tenant-filter scanner reads the literal token in the where body.
     const existing = await this.prisma.subscription.findFirst({
-      where: scopedWhere,
+      where: { stripeId, workspaceId },
       select: { id: true },
     });
     if (!existing) {
@@ -380,7 +381,7 @@ export class BillingWebhookService {
       return;
     }
     const result = await this.prisma.subscription.updateMany({
-      where: scopedWhere,
+      where: { stripeId, workspaceId },
       data: { status: 'CANCELED' },
     });
     this.logger.log(`Subscription CANCELED: ${stripeId} (matched ${result.count})`);
