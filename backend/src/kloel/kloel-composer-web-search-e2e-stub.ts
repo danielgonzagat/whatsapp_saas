@@ -19,13 +19,13 @@
  */
 
 /** Source shape compatible with WebSearchDigest.sources. */
-export interface ComposerWebSearchE2EStubSource {
+interface ComposerWebSearchE2EStubSource {
   title: string;
   url: string;
 }
 
 /** Digest shape returned by KloelComposerService.searchWeb. */
-export interface ComposerWebSearchE2EStubDigest {
+interface ComposerWebSearchE2EStubDigest {
   answer: string;
   sources: ComposerWebSearchE2EStubSource[];
   totalTokens: number;

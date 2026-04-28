@@ -42,7 +42,7 @@ export function isCheckoutPaymentE2EStubEnabled(): boolean {
 }
 
 /** Shape returned by the stub, mirroring CheckoutPaymentService.processPayment. */
-export type CheckoutPaymentE2EStubResult = {
+type CheckoutPaymentE2EStubResult = {
   payment: null;
   type: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
   approved: boolean;
