@@ -39,7 +39,7 @@ describe('WorkspaceGuard', () => {
     expect(req.workspaceId).toBeUndefined();
   });
 
-  it('propaga workspaceId do token para req e body quando ausente', () => {
+  it('propaga workspaceId do token para req mas não muta o body', () => {
     const req: WorkspaceRequest = {
       user: { id: 'u1', workspaceId: 'ws-1' },
       headers: {},
@@ -51,10 +51,12 @@ describe('WorkspaceGuard', () => {
     const result = guard.canActivate(createContext(req));
     expect(result).toBe(true);
     expect(req.workspaceId).toBe('ws-1');
-    expect(req.body.workspaceId).toBe('ws-1');
+    // body permanece intocado para não colidir com `forbidNonWhitelisted`
+    // do ValidationPipe global; consumidores devem usar req.user.workspaceId.
+    expect(req.body.workspaceId).toBeUndefined();
   });
 
-  it('não sobrescreve body.workspaceId quando já existe e é igual', () => {
+  it('aceita body.workspaceId redundante igual ao token sem reescrever', () => {
     const req: WorkspaceRequest = {
       user: { id: 'u1', workspaceId: 'ws-1' },
       headers: {},

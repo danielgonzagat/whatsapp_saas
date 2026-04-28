@@ -34,17 +34,20 @@ test.describe('Product Creation Flow', () => {
 
     expect(res.status()).toBe(201);
     const body = await res.json();
-    expect(body.id).toBeTruthy();
-    expect(body.name).toContain('E2E Test Product');
-    expect(body.price).toBe(9700);
+    // Backend returns { product, success } envelope on /products POST.
+    const created = body.product ?? body;
+    expect(created.id).toBeTruthy();
+    expect(created.name).toContain('E2E Test Product');
+    expect(created.price).toBe(9700);
 
     // Verify retrieval
-    const getRes = await request.get(api(`/products/${body.id}`), {
+    const getRes = await request.get(api(`/products/${created.id}`), {
       headers: { Authorization: `Bearer ${token}` },
     });
     expect(getRes.status()).toBe(200);
-    const product = await getRes.json();
-    expect(product.id).toBe(body.id);
+    const fetched = await getRes.json();
+    const product = fetched.product ?? fetched;
+    expect(product.id).toBe(created.id);
   });
 
   test('POST /products rejects missing name', async ({ request }) => {

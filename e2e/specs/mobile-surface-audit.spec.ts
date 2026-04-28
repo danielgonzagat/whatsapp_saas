@@ -128,7 +128,9 @@ test.describe('Mobile Surface Audit', () => {
         path: '/marketing',
         slug: 'marketing',
         assert: async () => {
-          await expect(page.getByRole('button', { name: /visao geral/i })).toBeVisible();
+          // MarketingView default tab is "conversas"; assert the tab button is
+          // visible to prove the surface rendered (visual contract preserved).
+          await expect(page.getByRole('button', { name: /conversas/i })).toBeVisible();
         },
       },
       {
