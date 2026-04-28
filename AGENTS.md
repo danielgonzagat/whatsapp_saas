@@ -285,39 +285,17 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-04-28 10:19am GMT-3
+# [whatsapp_saas] recent context, 2026-04-28 10:51am GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (19,397t read) | 961,326t work | 98% savings
-
-### Apr 21, 2026
-
-1149 1:07a 🔵 PartnershipsService.createAffiliate — Full Invite Flow Already Implemented Including Email Dispatch
-1155 1:11a ⚖️ Kloel Financial System — Full 12-Block Production Readiness Mandate Re-Issued (Session Continuation)
-1158 " 🟣 ParceriasView AffiliateInviteModal — Full UI Integration Complete
-1159 " 🟣 usePartnerships Test Suite Created — Normalization + createAffiliate Contract
-1162 1:12a 🔴 Vitest vi.hoisted() Fix — swrMutateMock and createAffiliateMock TDZ Errors
-1164 " 🟣 Frontend Test Suite Green — 5/5 Tests Passing After vi.hoisted Fix
-1165 " 🔴 TypeCheck Failures in usePartnerships.test.ts — ApiResponse Type + SWR Mutate Callable
-1167 1:13a 🔴 usePartnerships.test.ts TypeScript Fixes — ApiResponse Shape + SWR Mutate Predicate Narrowing
-1170 " 🔵 ConnectService — Manual Payout Schedule + BR Fallback + Legacy accountLinks Endpoint Architecture
-1171 " 🔵 CERTIFICATION_RUNBOOK.md — Current Block Status and Evidence Index Snapshot
-1172 1:15a 🔴 RISK-0004 Fixed — Manual Payout Schedule BR Fallback Replaced With Hard Error
-1173 " 🔴 RISK-0004/RISK-0005 — ConnectController + Spec Updated for Hard Error + accountLinks Removal
-1174 1:16a 🟣 ConnectController + ConnectOnboardingService Specs — Manual Payout Hard-Error Coverage Added
-1175 " 🔄 stripe-types.ts — StripeAccountLink Type Export Removed
-
-### Apr 25, 2026
-
-2333 1:14a ⚖️ PR #198 PULSE Absolute Convergence — Full Push Initiated
+Stats: 50 obs (19,731t read) | 756,050t work | 97% savings
 
 ### Apr 27, 2026
 
 3165 11:53a 🔵 capability:autopilot-ask State Analysis — Missing Persistence + Codacy HIGH
-3166 " 🔵 KLOEL Repo Governance Boundaries Confirmed for Autopilot Session
 3167 11:55a 🔵 Codacy HIGH Issues Catalogued for Autopilot + Auth + Migration Files
 3168 " 🔵 autopilot.service.ts Codacy Line 878 Issue Is a Stale Reference
 3169 6:49p 🔵 capability-autopilot-ask Convergence Unit — Current State Before Fix Cycle
@@ -354,6 +332,22 @@ Stats: 50 obs (19,397t read) | 961,326t work | 98% savings
 3218 " 🔵 Pre-Push Hook Gate Results — ESLint, Visual Contract, TypeCheck, and Vitest All Passing
 3219 10:12a 🔵 Frontend Vitest Suite — 46 Files, 205 Tests All Passing in 18.35s
 3220 10:14a ✅ PR #198 Push Succeeded — Commit 804cb9df Pushed After Full Pre-Push Gate
+3222 10:20a 🔵 PR #198 Local Branch 1 Commit Ahead of Remote — Push Incomplete
+3223 " 🔵 PR #198 CI Status Snapshot — 3 Failures, 4 Successes, 2 In-Progress
+3224 " ✅ AGENTS.md Committed and PR #198 Push Initiated with Pre-Push Hook Running
+3225 10:22a 🔵 PR #198 Pre-Push Guards All Passing — Backend Typecheck Running
+3226 " 🔵 PR #198 Push Blocked — nest build Fails with ENOTEMPTY on backend/dist/src/checkout
+3230 10:28a 🔵 PR #198 Second Push Attempt Blocked — frontend:build:clean Exceeds 180s Timeout
+3231 10:29a 🔴 Third PR #198 Push Attempt — Both frontend/.next and backend/dist Cleared Before Retry
+3234 10:33a 🔵 PR #198 Third Push Blocked — Backend Build Silently Failed, bootstrap.js Not Produced
+3235 " 🔵 Backend Manually Rebuilt Before Fourth Push Attempt — bootstrap.js Confirmed Present
+3236 10:34a 🔵 Root Cause Confirmed — `nest build` Cleans dist Then Silently Fails, Destroying Pre-Built bootstrap.js
+3237 10:35a 🔵 `nest-cli.json` Has `deleteOutDir: true` — Confirms Root Cause of Missing bootstrap.js
+3239 10:36a 🔵 Backend CI-Env Build Reproducibly Fails — Only tsbuildinfo Produced, No JS Output
+3241 10:38a 🔵 Stale tsbuildinfo Outside dist/ Was Causing Silent CI-Env Build Failure
+3243 10:42a 🔵 PR #198 Pre-Push Hook — All Stages Passing Through Frontend Vitest
+3244 10:46a 🔵 PR #198 Push Failed — frontend:build:clean Exceeded 180s Timeout
+3245 10:49a 🔵 Next.js Build Trace — Actual Stage Timings Reveal Why 180s Timeout Fires
 
-Access 961k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 756k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

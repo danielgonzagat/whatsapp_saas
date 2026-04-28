@@ -36,6 +36,11 @@ export function isComposerWebSearchE2EStubEnabled(): boolean {
   if (process.env.NODE_ENV === 'production') {
     return false;
   }
+  // Jest unit-test workers must run the real service path so
+  // KloelComposerService.searchWeb specs assert against the dependencies.
+  if (process.env.JEST_WORKER_ID) {
+    return false;
+  }
   if (process.env.E2E_TEST_MODE === 'true') {
     return true;
   }

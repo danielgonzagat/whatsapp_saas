@@ -26,6 +26,12 @@ export function isCheckoutPaymentE2EStubEnabled(): boolean {
   if (process.env.NODE_ENV === 'production') {
     return false;
   }
+  // Jest unit-test workers must run the real service path so
+  // CheckoutPaymentService.processPayment specs assert against the
+  // dependencies (Stripe charge service, fraud engine, etc.).
+  if (process.env.JEST_WORKER_ID) {
+    return false;
+  }
   if (process.env.E2E_TEST_MODE === 'true') {
     return true;
   }
