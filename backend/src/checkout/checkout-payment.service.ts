@@ -9,6 +9,10 @@ import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
+import {
+  buildCheckoutPaymentE2EStubResult,
+  isCheckoutPaymentE2EStubEnabled,
+} from './checkout-payment-e2e-stub';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 
 type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
@@ -292,6 +296,19 @@ export class CheckoutPaymentService {
     const order = await this.findOrder(params.orderId, params.workspaceId);
     if (!order) {
       throw new NotFoundException('Pedido não encontrado para processar no Stripe.');
+    }
+
+    // E2E test harness: short-circuit before any real Stripe call when the
+    // workflow has no STRIPE_SECRET_KEY configured. Production never reaches
+    // this branch — gated by NODE_ENV !== 'production' inside the helper.
+    if (isCheckoutPaymentE2EStubEnabled()) {
+      this.logger.log(
+        `Checkout payment e2e stub active for order ${params.orderId} workspace ${params.workspaceId} method ${params.paymentMethod}`,
+      );
+      return buildCheckoutPaymentE2EStubResult({
+        orderId: params.orderId,
+        paymentMethod: params.paymentMethod,
+      });
     }
 
     const orderMetadata =

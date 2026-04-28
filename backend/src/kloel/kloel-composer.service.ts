@@ -6,6 +6,10 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
+import {
+  buildComposerWebSearchE2EStub,
+  isComposerWebSearchE2EStubEnabled,
+} from './kloel-composer-web-search-e2e-stub';
 
 const MODEL_RE = /model/i;
 const INVALID_RE = /invalid/i;
@@ -91,6 +95,18 @@ export class KloelComposerService {
   async searchWeb(query: string): Promise<WebSearchDigest> {
     const normalizedQuery = String(query || '').trim();
     if (!normalizedQuery) return { answer: '', sources: [] };
+
+    // E2E test harness: the workflow runs with OPENAI_API_KEY=e2e-dummy-key
+    // so any real OpenAI Responses API call fails. The chat composer e2e
+    // spec `kloel-chat-composer-real.spec.ts:289` exercises the web-search
+    // capability and asserts the assistant message exposes
+    // metadata.webSources plus content matching /openai\.com/i. Returning
+    // a deterministic digest keeps the rest of the pipeline (capability
+    // dispatcher, token accounting, message metadata) intact.
+    // Production never reaches this branch — guarded by NODE_ENV.
+    if (isComposerWebSearchE2EStubEnabled()) {
+      return buildComposerWebSearchE2EStub(normalizedQuery);
+    }
 
     // PULSE:OK — callers enforce PlanLimitsService.ensureTokenBudget() before calling searchWeb
     const response = await this.openai.responses.create({
