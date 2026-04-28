@@ -9,10 +9,8 @@ import {
   isTracked,
   passes,
   readText,
-  relative,
   requireFile,
   requireIncludes,
-  requireNotRegex,
   requireRegex,
   rootDir,
 } from './production-readiness/helpers.mjs';
@@ -28,14 +26,22 @@ function safeRepoPath(relPath) {
   const normalized = path.isAbsolute(relPath)
     ? path.normalize(relPath)
     : path.normalize(`${rootDir}${path.sep}${relPath}`);
-  const resolved = path.isAbsolute(normalized)
+  const resolved = toAbsolutePath(normalized);
+  assertRepoPath(resolved);
+  return resolved;
+}
+
+function toAbsolutePath(normalized) {
+  return path.isAbsolute(normalized)
     ? normalized
     : path.normalize(`${process.cwd()}${path.sep}${normalized}`);
+}
+
+function assertRepoPath(resolved) {
   const boundary = rootDir + path.sep;
   if (resolved !== rootDir && !resolved.startsWith(boundary)) {
     throw new Error(`Path traversal detected: ${resolved} is outside repo root`);
   }
-  return resolved;
 }
 
 /**

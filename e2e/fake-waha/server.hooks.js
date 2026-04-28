@@ -4,27 +4,37 @@
 // orchestrator below the 600-line max_touched_file_lines guardrail.
 // Pure functions: no module-level state; the caller threads in `config`
 // (fallbackWebhookUrl/Secret) and the `ensureSession` lookup.
+const INVALID_HOOK_URL_MESSAGE = 'fake-waha: invalid hook URL';
+const INVALID_HOOK_PROTOCOL_MESSAGE = 'fake-waha: hook URL must be http(s)';
 
 function hookMatchesEvent(hook, event) {
-  if (!hook?.url) return false;
+  if (!hook?.url) {
+    return false;
+  }
   const events = Array.isArray(hook.events) ? hook.events : [];
   return events.length === 0 || events.includes(event);
 }
 
 function selectConfiguredHooks(session, event) {
-  if (!Array.isArray(session.config?.webhooks)) return [];
+  if (!Array.isArray(session.config?.webhooks)) {
+    return [];
+  }
   return session.config.webhooks.filter((hook) => hookMatchesEvent(hook, event));
 }
 
 function buildFallbackHook(event, fallbackUrl, fallbackSecret) {
-  if (!fallbackUrl) return null;
+  if (!fallbackUrl) {
+    return null;
+  }
   const customHeaders = fallbackSecret ? [{ name: 'X-Api-Key', value: fallbackSecret }] : [];
   return { url: fallbackUrl, events: [event], customHeaders };
 }
 
 function resolveHooksToFire(session, event, config) {
   const configured = selectConfiguredHooks(session, event);
-  if (configured.length > 0) return configured;
+  if (configured.length > 0) {
+    return configured;
+  }
   const fallback = buildFallbackHook(
     event,
     config.fallbackWebhookUrl,
@@ -35,12 +45,16 @@ function resolveHooksToFire(session, event, config) {
 
 function applyCustomHeaders(headers, customHeaders) {
   for (const header of customHeaders || []) {
-    if (header?.name) headers[header.name] = header.value || '';
+    if (header?.name) {
+      headers[header.name] = header.value || '';
+    }
   }
 }
 
 function applyFallbackApiKey(headers, fallbackSecret) {
-  if (fallbackSecret && !headers['X-Api-Key']) headers['X-Api-Key'] = fallbackSecret;
+  if (fallbackSecret && !headers['X-Api-Key']) {
+    headers['X-Api-Key'] = fallbackSecret;
+  }
 }
 
 function buildHookHeaders(hook, fallbackSecret) {
@@ -63,10 +77,10 @@ function assertHookUrlAllowed(rawUrl) {
   try {
     parsed = new URL(rawUrl);
   } catch {
-    throw new Error('fake-waha: invalid hook URL');
+    throw new Error(INVALID_HOOK_URL_MESSAGE);
   }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new Error('fake-waha: hook URL must be http(s)');
+    throw new Error(INVALID_HOOK_PROTOCOL_MESSAGE);
   }
   const host = parsed.hostname;
   if (PRIVATE_IPV4_RE.test(host) || host === '::1' || host === 'localhost') {
@@ -80,12 +94,11 @@ async function dispatchHook(hook, sessionName, event, payload, fallbackSecret) {
   const headers = buildHookHeaders(hook, fallbackSecret);
   const safeUrl = assertHookUrlAllowed(hook.url);
   try {
-    const request = new Request(safeUrl.toString(), {
+    const response = await fetch(safeUrl.toString(), {
       method: 'POST',
       headers,
       body: JSON.stringify({ event, session: sessionName, payload }),
     });
-    const response = await fetch(request);
     return { url: hook.url, ok: response.ok, status: response.status };
   } catch (err) {
     return { url: hook.url, ok: false, error: err.message };

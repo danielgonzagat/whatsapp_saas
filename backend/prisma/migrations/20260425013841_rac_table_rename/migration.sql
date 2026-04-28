@@ -54,9 +54,12 @@ ALTER TABLE IF EXISTS "AutonomyRun" RENAME TO "RAC_AutonomyRun";
 ALTER TABLE IF EXISTS "AutonomyExecution" RENAME TO "RAC_AutonomyExecution";
 ALTER TABLE IF EXISTS "AgentWorkItem" RENAME TO "RAC_AgentWorkItem";
 ALTER TABLE IF EXISTS "ApprovalRequest" RENAME TO "RAC_ApprovalRequest";
-ALTER TABLE IF EXISTS "InputCollectionSession" RENAME TO "RAC_InputCollectionSession";
-ALTER TABLE IF EXISTS "AccountProofSnapshot" RENAME TO "RAC_AccountProofSnapshot";
-ALTER TABLE IF EXISTS "ConversationProofSnapshot" RENAME TO "RAC_ConversationProofSnapshot";
+ALTER TABLE IF EXISTS "InputCollectionSession"
+RENAME TO "RAC_InputCollectionSession";
+ALTER TABLE IF EXISTS "AccountProofSnapshot"
+RENAME TO "RAC_AccountProofSnapshot";
+ALTER TABLE IF EXISTS "ConversationProofSnapshot"
+RENAME TO "RAC_ConversationProofSnapshot";
 ALTER TABLE IF EXISTS "WebhookSubscription" RENAME TO "RAC_WebhookSubscription";
 ALTER TABLE IF EXISTS "WebhookEvent" RENAME TO "RAC_WebhookEvent";
 ALTER TABLE IF EXISTS "ApiKey" RENAME TO "RAC_ApiKey";
@@ -70,7 +73,8 @@ ALTER TABLE IF EXISTS "ChatThread" RENAME TO "RAC_ChatThread";
 ALTER TABLE IF EXISTS "ChatMessage" RENAME TO "RAC_ChatMessage";
 ALTER TABLE IF EXISTS "KloelSale" RENAME TO "RAC_KloelSale";
 ALTER TABLE IF EXISTS "KloelWallet" RENAME TO "RAC_KloelWallet";
-ALTER TABLE IF EXISTS "KloelWalletTransaction" RENAME TO "RAC_KloelWalletTransaction";
+ALTER TABLE IF EXISTS "KloelWalletTransaction"
+RENAME TO "RAC_KloelWalletTransaction";
 ALTER TABLE IF EXISTS "KloelWalletLedger" RENAME TO "RAC_KloelWalletLedger";
 ALTER TABLE IF EXISTS "Document" RENAME TO "RAC_Document";
 ALTER TABLE IF EXISTS "FollowUp" RENAME TO "RAC_FollowUp";
@@ -93,7 +97,8 @@ ALTER TABLE IF EXISTS "AffiliateRequest" RENAME TO "RAC_AffiliateRequest";
 ALTER TABLE IF EXISTS "AffiliateLink" RENAME TO "RAC_AffiliateLink";
 ALTER TABLE IF EXISTS "KloelSite" RENAME TO "RAC_KloelSite";
 ALTER TABLE IF EXISTS "KloelDesign" RENAME TO "RAC_KloelDesign";
-ALTER TABLE IF EXISTS "CustomerSubscription" RENAME TO "RAC_CustomerSubscription";
+ALTER TABLE IF EXISTS "CustomerSubscription"
+RENAME TO "RAC_CustomerSubscription";
 -- not in migration history
 ALTER TABLE IF EXISTS "AdRule" RENAME TO "RAC_AdRule";
 ALTER TABLE IF EXISTS "PhysicalOrder" RENAME TO "RAC_PhysicalOrder";

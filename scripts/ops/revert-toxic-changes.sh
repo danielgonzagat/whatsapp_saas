@@ -37,7 +37,7 @@ if grep -q '"strict": false' backend/tsconfig.json 2>/dev/null; then
   echo "⚠️  DETECTED: strict: false in backend/tsconfig.json"
   echo "   This disables all type checking rigor."
   echo "   Fix: restore all strict options to true."
-  if $DRY_RUN; then
+  if [[ "$DRY_RUN" == "true" ]]; then
     echo "   (dry run) would restore:"
     echo "     strict: true"
     echo "     strictNullChecks: true"

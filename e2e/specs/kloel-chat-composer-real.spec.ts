@@ -356,7 +356,10 @@ test.describe.serial('Kloel chat real e2e validation', () => {
     const generatedImage = page.locator('img[alt="Imagem criada pelo Kloel"]').first();
     await expect(generatedImage).toBeVisible({ timeout: 180_000 });
 
-    const [popup] = await Promise.all([page.waitForEvent('popup'), generatedImage.click()]);
+    const [popup] = await Promise.all([
+      page.waitForEvent('popup'),
+      page.getByRole('link', { name: 'Abrir' }).click(),
+    ]);
     await popup.waitForLoadState('domcontentloaded');
     expect(popup.url()).toBeTruthy();
     await popup.close();

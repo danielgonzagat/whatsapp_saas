@@ -63,10 +63,6 @@ function safeJoinRepo(base, segment) {
   return safeResolveRepo(`${safeResolveRepo(base)}${path.sep}${segment}`);
 }
 
-function assertInRepo(filePath) {
-  safeResolveRepo(filePath);
-}
-
 const tsCandidates = [
   safeResolveRepo('backend/node_modules/typescript'),
   safeResolveRepo('frontend/node_modules/typescript'),
@@ -88,7 +84,9 @@ function walk(d, o = []) {
     const f = safeJoinRepo(safeDir, n);
     const s = nodeStatSync(f);
     if (s.isDirectory()) {
-      if (['node_modules', 'dist', '.next', 'coverage', '.turbo'].includes(n)) continue;
+      if (['node_modules', 'dist', '.next', 'coverage', '.turbo'].includes(n)) {
+        continue;
+      }
       walk(f, o);
     } else if (/\.(ts|tsx|mjs|mts|cts)$/.test(n) && !n.endsWith('.d.ts')) {
       o.push(f);
@@ -132,29 +130,41 @@ function createSourceFile(safeFile, src) {
     src,
     ts.ScriptTarget.Latest,
     true,
-    /\.tsx$/.test(safeFile) ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    safeFile.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
   );
 }
 
 const PATH_FN_REPLACEMENTS = { join: 'safeJoin', resolve: 'safeResolve' };
 
 function isPathPropertyAccess(node) {
-  if (!ts.isCallExpression(node)) return false;
+  if (!ts.isCallExpression(node)) {
+    return false;
+  }
   return ts.isPropertyAccessExpression(node.expression);
 }
 
 function extractPathMethodName(node) {
   const { expression, name } = node.expression;
-  if (!ts.isIdentifier(expression)) return null;
-  if (expression.text !== 'path') return null;
-  if (!ts.isIdentifier(name)) return null;
+  if (!ts.isIdentifier(expression)) {
+    return null;
+  }
+  if (expression.text !== 'path') {
+    return null;
+  }
+  if (!ts.isIdentifier(name)) {
+    return null;
+  }
   return name.text;
 }
 
 function pathCallReplacement(node) {
-  if (!isPathPropertyAccess(node)) return null;
+  if (!isPathPropertyAccess(node)) {
+    return null;
+  }
   const methodName = extractPathMethodName(node);
-  if (methodName === null) return null;
+  if (methodName === null) {
+    return null;
+  }
   return PATH_FN_REPLACEMENTS[methodName] ?? null;
 }
 
@@ -198,8 +208,12 @@ function findImportPrologue(source) {
   return match ? match[0] : '';
 }
 
+function alreadyImportsSafePath(source) {
+  return source.split('\n').some((line) => line.includes(' from ') && line.includes('safe-path'));
+}
+
 function injectImport(out, importLine) {
-  if (/from\s+['"][^'"]*safe-path['"]/.test(out)) {
+  if (alreadyImportsSafePath(out)) {
     return out;
   }
   const prefix = findImportPrologue(out);

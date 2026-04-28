@@ -53,11 +53,15 @@ function isWithinRepoRoot(resolved) {
   return resolved === repoRoot || resolved.startsWith(repoRoot + path.sep);
 }
 
-function safeRepoReportPath(relPath) {
-  const resolved = path.resolve(repoRoot, relPath);
+function assertWithinRepoRoot(resolved) {
   if (!isWithinRepoRoot(resolved)) {
     throw new Error(`Path traversal detected: ${resolved} is outside repo root`);
   }
+}
+
+function safeRepoReportPath(relPath) {
+  const resolved = path.resolve(repoRoot, relPath);
+  assertWithinRepoRoot(resolved);
   return resolved;
 }
 

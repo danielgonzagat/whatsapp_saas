@@ -86,8 +86,16 @@ function formatRailwayErrors(errors) {
     return String(errors);
   }
   return errors
-    .map((e) => (e && typeof e === 'object' ? e.message || String(e) : String(e)))
+    .map((e) => e && typeof e === 'object' ? e.message || String(e) : String(e))
     .join('; ');
+}
+
+async function readRailwayJson(res) {
+  const json = await res.json();
+  if (json.errors) {
+    throw new Error(`Railway API: ${formatRailwayErrors(json.errors)}`);
+  }
+  return json.data;
 }
 
 async function railway(query, variables = {}) {
@@ -99,11 +107,7 @@ async function railway(query, variables = {}) {
     },
     body: buildRailwayBody(query, variables),
   });
-  const json = await res.json();
-  if (json.errors) {
-    throw new Error(`Railway API: ${formatRailwayErrors(json.errors)}`);
-  }
-  return json.data;
+  return readRailwayJson(res);
 }
 
 async function fetchProjectToken() {
@@ -128,13 +132,15 @@ async function assertTokenMatchesProject() {
 
 async function resolvePostgresVolume() {
   const envOverride = process.env.POSTGRES_VOLUME_INSTANCE_ID;
-  if (envOverride) return { volumeInstanceId: envOverride, volumeName: 'postgres-volume' };
+  if (envOverride) {
+    return { volumeInstanceId: envOverride, volumeName: 'postgres-volume' };
+  }
   const data = await railway(
     'query Pid($id: String!) { project(id: $id) { volumes { edges { node { id name volumeInstances { edges { node { id state } } } } } } } }',
     { id: projectId },
   );
   const candidates = (data?.project?.volumes?.edges || []).map((e) => e.node);
-  const postgres = candidates.find((v) => /postgres/i.test(v?.name || ''));
+  const postgres = candidates.find((v) => String(v?.name || '').toLowerCase().includes('postgres'));
   const instance = postgres?.volumeInstances?.edges?.[0]?.node;
   if (!instance?.id) {
     console.error(MSG_NO_POSTGRES_VOLUME);
@@ -187,7 +193,9 @@ function pickLatestFreshBackup(backups) {
 }
 
 function readExistingManifest() {
-  if (!existsSync(manifestPath)) return {};
+  if (!existsSync(manifestPath)) {
+    return {};
+  }
   try {
     return JSON.parse(readFileSync(manifestPath, 'utf8'));
   } catch {
@@ -219,12 +227,28 @@ function pickManifestField(manifest, key) {
   return current === undefined || current === null ? MANIFEST_DEFAULTS[key] : current;
 }
 
-function withManifestDefaults(manifest) {
-  const out = {};
-  for (const key of Object.keys(MANIFEST_DEFAULTS)) {
-    out[key] = pickManifestField(manifest, key);
+function sortJsonValue(value) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => sortJsonValue(entry));
   }
-  return out;
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, sortJsonValue(entry)]),
+    );
+  }
+  return value;
+}
+
+function stringifyStable(value) {
+  return JSON.stringify(sortJsonValue(value), null, 2);
+}
+
+function withManifestDefaults(manifest) {
+  return Object.fromEntries(
+    Object.keys(MANIFEST_DEFAULTS).map((key) => [key, pickManifestField(manifest, key)]),
+  );
 }
 
 function buildUpdatedManifest(manifest, latest, volumeName, volumeInstanceId) {
@@ -243,7 +267,7 @@ function writeManifest(latest, volumeName, volumeInstanceId) {
   const manifest = readExistingManifest();
   const updated = buildUpdatedManifest(manifest, latest, volumeName, volumeInstanceId);
   try {
-    writeFileSync(manifestPath, `${JSON.stringify(updated, null, 2)}\n`);
+    writeFileSync(manifestPath, `${stringifyStable(updated)}\n`);
   } catch (err) {
     console.error(`${MSG_MANIFEST_WRITE_FAILED_PREFIX}${err.message}`);
     process.exit(4);
@@ -255,8 +279,7 @@ function formatHours(hours) {
 }
 
 function buildLogEntry({ stamp, latest, volumeName, volumeInstanceId, ageHours }) {
-  return (
-    `${stamp} backup-validation PASS\n` +
+  return `${stamp} backup-validation PASS\n` +
     `backupId=${latest.id}\n` +
     `backupService=${volumeName}\n` +
     `backupVolumeInstanceId=${volumeInstanceId}\n` +
@@ -264,8 +287,7 @@ function buildLogEntry({ stamp, latest, volumeName, volumeInstanceId, ageHours }
     `backupExternalId=${latest.externalId}\n` +
     `backupCheckedAt=${stamp}\n` +
     `backupAgeHours=${ageHours}\n` +
-    `verifiedBy=Railway GraphQL via project-access-token (projectId=${projectId})\n\n`
-  );
+    `verifiedBy=Railway GraphQL via project-access-token (projectId=${projectId})\n\n`;
 }
 
 function appendValidationLog({ latest, volumeName, volumeInstanceId, ageMs }) {

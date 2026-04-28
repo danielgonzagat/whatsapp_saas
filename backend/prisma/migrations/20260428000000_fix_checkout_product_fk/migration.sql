@@ -12,11 +12,11 @@
     2. Creates the correct FK to RAC_Product
 */
 ALTER TABLE "RAC_CheckoutProductPlan"
-    DROP CONSTRAINT IF EXISTS "CheckoutProductPlan_productId_fkey";
+DROP CONSTRAINT IF EXISTS "CheckoutProductPlan_productId_fkey";
 
 ALTER TABLE "RAC_CheckoutProductPlan"
-    ADD CONSTRAINT "RAC_CheckoutProductPlan_productId_fkey"
-    FOREIGN KEY ("productId")
-    REFERENCES "RAC_Product" ("id")
-    ON DELETE CASCADE
-    ON UPDATE CASCADE;
+ADD CONSTRAINT "RAC_CheckoutProductPlan_productId_fkey"
+FOREIGN KEY ("productId")
+REFERENCES "RAC_Product" (id)
+ON DELETE CASCADE
+ON UPDATE CASCADE;

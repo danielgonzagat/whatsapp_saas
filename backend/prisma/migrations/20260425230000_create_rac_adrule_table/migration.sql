@@ -8,9 +8,9 @@
 CREATE TABLE IF NOT EXISTS "RAC_AdRule" (
     id TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
-    "condition" TEXT NOT NULL,
-    "action" TEXT NOT NULL,
+    name TEXT NOT NULL,
+    condition TEXT NOT NULL,
+    action TEXT NOT NULL,
     "alertMethod" TEXT,
     "alertTarget" TEXT,
     active BOOLEAN NOT NULL DEFAULT true,
@@ -22,4 +22,5 @@ CREATE TABLE IF NOT EXISTS "RAC_AdRule" (
     CONSTRAINT "RAC_AdRule_pkey" PRIMARY KEY (id)
 );
 
-CREATE INDEX IF NOT EXISTS "RAC_AdRule_workspaceId_idx" ON "RAC_AdRule" ("workspaceId");
+CREATE INDEX IF NOT EXISTS "RAC_AdRule_workspaceId_idx"
+ON "RAC_AdRule" ("workspaceId");

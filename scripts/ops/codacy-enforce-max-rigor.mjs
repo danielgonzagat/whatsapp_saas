@@ -115,8 +115,12 @@ async function ensureDeprecatedToolsDisabled(codingStandardId, standardTools) {
   const actions = [];
   for (const deprecated of DEPRECATED_DISABLED_TOOLS) {
     const entry = standardTools.find((tool) => tool.uuid === deprecated.uuid);
-    if (!entry) continue;
-    if (entry.isEnabled === false || entry.enabled === false) continue;
+    if (!entry) {
+      continue;
+    }
+    if (entry.isEnabled === false || entry.enabled === false) {
+      continue;
+    }
     await api.patchCodingStandardTool(codingStandardId, deprecated.uuid, { isEnabled: false });
     actions.push(deprecated.name);
   }
@@ -187,10 +191,14 @@ function pickCanonicalStandard(standards) {
   const sorted = [...standards].sort((left, right) => {
     const leftTools = Number(left.meta?.enabledToolsCount || 0);
     const rightTools = Number(right.meta?.enabledToolsCount || 0);
-    if (rightTools !== leftTools) return rightTools - leftTools;
+    if (rightTools !== leftTools) {
+      return rightTools - leftTools;
+    }
     const leftPatterns = Number(left.meta?.enabledPatternsCount || 0);
     const rightPatterns = Number(right.meta?.enabledPatternsCount || 0);
-    if (rightPatterns !== leftPatterns) return rightPatterns - leftPatterns;
+    if (rightPatterns !== leftPatterns) {
+      return rightPatterns - leftPatterns;
+    }
     return Number(right.id) - Number(left.id);
   });
   return sorted[0] || null;
@@ -207,7 +215,9 @@ async function verifyCanonicalStandard(codingStandard) {
   );
   let totalOrganizationPatterns = 0;
   for (const tool of orgTools) {
-    if (deprecatedUuidsForPatternCount.has(tool.uuid)) continue;
+    if (deprecatedUuidsForPatternCount.has(tool.uuid)) {
+      continue;
+    }
     // Pattern inventory uses tool UUIDs from Codacy; the API returns
     // pagination.total even when limit=1, so one request per tool is enough.
     totalOrganizationPatterns += await api.getToolPatternTotal(tool.uuid);
@@ -228,7 +238,9 @@ async function verifyCanonicalStandard(codingStandard) {
   const targetEnabledToolsCount = orgToolCount - DEPRECATED_DISABLED_TOOLS.length;
   const deprecatedActuallyDisabled = DEPRECATED_DISABLED_TOOLS.every((entry) => {
     const tool = standardTools.find((candidate) => candidate.uuid === entry.uuid);
-    if (!tool) return true; // not present in the standard, treated as disabled
+    if (!tool) {
+      return true;
+    }
     return tool.isEnabled === false || tool.enabled === false;
   });
   const enabledNonDeprecatedTools = enabledStandardTools.filter(

@@ -17,7 +17,6 @@ import {
   S_______S_RE,
   WHITESPACE_G_RE,
   WHITESPACE_RE,
-  safeForRegex,
 } from './unified-agent-response.regex';
 
 /**
@@ -114,7 +113,9 @@ export class UnifiedAgentResponseService {
     if (!normalized) return undefined;
 
     const budget = this.computeReplyStyleBudget(customerMessage, historyTurns);
-    const allowEmoji = P_EXTENDED_PICTOGRAPHIC_RE.test(safeForRegex(customerMessage));
+    const allowEmoji = Array.from(customerMessage).some((character) =>
+      P_EXTENDED_PICTOGRAPHIC_RE.test(character),
+    );
     const withoutEmoji = allowEmoji
       ? normalized
       : normalized.replace(P_EXTENDED_PICTOGRAPHIC_G_RE, '').trim();

@@ -1,5 +1,22 @@
 # KLOEL Repository Governance
 
+## Acronym Glossary
+
+- ADR: Architecture Decision Record.
+- CLI: Command-line interface.
+- CODEX: OpenAI Codex coding agent.
+- CRIT: Critical severity.
+- DI: Dependency injection.
+- HIGH: High severity.
+- HUD: Heads-up display.
+- KYC: Know Your Customer.
+- MCP: Model Context Protocol.
+- OMX: oh-my-codex.
+- PHI: Golden-ratio constant used by the landing animation layout.
+- PULSE: Production-readiness and autonomy certification system.
+- SSR: Server-side rendering.
+- WAHA: WhatsApp HTTP API provider.
+
 ## Governance Boundary
 
 Arquivos de governance e infraestrutura sao `read-only` para qualquer IA CLI
@@ -283,9 +300,9 @@ O estado de rigor maximo do Codacy faz parte da governance.
   reaplicar o lock maximo via script oficial do repositorio.
 
 <claude-mem-context>
-# Memory Context
+## Memory Context
 
-# [whatsapp_saas] recent context, 2026-04-28 10:51am GMT-3
+## [whatsapp_saas] recent context, 2026-04-28 10:51am GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE

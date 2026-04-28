@@ -66,11 +66,7 @@ function hasAttr(element, name) {
 }
 
 function hasSpreadAttr(element) {
-  const attributes = element.getAttributes();
-  for (const attr of attributes) {
-    if (attr.getKind() === SyntaxKind.JsxSpreadAttribute) return true;
-  }
-  return false;
+  return element.getAttributes().some((attr) => attr.getKind() === SyntaxKind.JsxSpreadAttribute);
 }
 
 function getTagName(element) {
@@ -79,23 +75,21 @@ function getTagName(element) {
 }
 
 function isUnsupportedClickableTag(element, tag) {
-  if (!tag || !TARGET_TAGS.has(tag)) {
-    return true;
-  }
-  return !hasAttr(element, 'onClick');
+  return !tag || !TARGET_TAGS.has(tag) || !hasAttr(element, 'onClick');
 }
 
 function classifyAttrSkip(element, tag) {
-  if (hasSpreadAttr(element)) {
-    return 'hasSpread';
-  }
-  if (tag === 'a' && hasAttr(element, 'href')) {
-    return 'anchorHasHref';
-  }
-  if (hasAttr(element, 'role')) {
-    return 'roleAlreadySet';
-  }
-  return null;
+  return (
+    (hasSpreadAttr(element) && 'hasSpread') ||
+    (tag === 'a' && hasAttr(element, 'href') && 'anchorHasHref') ||
+    (hasAttr(element, 'role') && 'roleAlreadySet') ||
+    null
+  );
+}
+
+function recordSkip(reason) {
+  skipReasons[reason] += 1;
+  return true;
 }
 
 function shouldSkipElement(element, tag) {
@@ -103,11 +97,7 @@ function shouldSkipElement(element, tag) {
     return true;
   }
   const skipReason = classifyAttrSkip(element, tag);
-  if (skipReason) {
-    skipReasons[skipReason] += 1;
-    return true;
-  }
-  return false;
+  return skipReason ? recordSkip(skipReason) : false;
 }
 
 function applyRoleAndTabIndex(element) {
@@ -119,7 +109,9 @@ function applyRoleAndTabIndex(element) {
 
 function processElement(element) {
   const tag = getTagName(element);
-  if (shouldSkipElement(element, tag)) return false;
+  if (shouldSkipElement(element, tag)) {
+    return false;
+  }
   applyRoleAndTabIndex(element);
   patchedByTag[tag] += 1;
   return true;

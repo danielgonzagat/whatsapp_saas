@@ -36,6 +36,11 @@ function composeAbortSignal(
 const KLOEL_SITE_MODEL = resolveKloelCapabilityModel('create_site');
 
 const ERR_UNSUPPORTED_CAPABILITY = 'Capacidade do composer não suportada.';
+const ERR_IMAGE_API_KEY_MISSING = 'OPENAI_API_KEY não configurada para criar imagens.';
+const ERR_IMAGE_GENERATION_RETRY = 'Não foi possível gerar a imagem agora. Tente novamente.';
+const ERR_IMAGE_GENERATION_FAILED = 'Não foi possível gerar a imagem. Tente novamente.';
+const ERR_SITE_API_KEY_MISSING = 'ANTHROPIC_API_KEY não configurada para criar sites.';
+const ERR_SITE_EMPTY_HTML = 'A geração do site não retornou HTML.';
 
 export type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 
@@ -218,9 +223,12 @@ export class KloelComposerService {
       if (isComposerWebSearchE2EStubEnabled()) {
         return buildComposerImageE2EStub();
       }
-      if (!process.env.OPENAI_API_KEY)
-        throw new Error('OPENAI_API_KEY não configurada para criar imagens.');
-      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+      if (!process.env.OPENAI_API_KEY) {
+        throw new Error(ERR_IMAGE_API_KEY_MISSING);
+      }
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
       let response: ImagesResponse;
       try {
         const imageRequest: ImageGenerateParamsNonStreaming = {
@@ -240,9 +248,10 @@ export class KloelComposerService {
           MODEL_RE.test(errorMessage) ||
           MODEL_RE.test(errorCode) ||
           INVALID_RE.test(errorMessage)
-        )
-          throw new Error('Não foi possível gerar a imagem agora. Tente novamente.');
-        throw new Error('Não foi possível gerar a imagem. Tente novamente.');
+        ) {
+          throw new Error(ERR_IMAGE_GENERATION_RETRY);
+        }
+        throw new Error(ERR_IMAGE_GENERATION_FAILED);
       }
 
       const rawImageUrl = String(
@@ -251,7 +260,9 @@ export class KloelComposerService {
             ? `data:image/png;base64,${response.data[0].b64_json}`
             : ''),
       ).trim();
-      if (!rawImageUrl) throw new Error('Não foi possível gerar a imagem. Tente novamente.');
+      if (!rawImageUrl) {
+        throw new Error(ERR_IMAGE_GENERATION_FAILED);
+      }
 
       const generatedImageFilename = `kloel-image-${workspaceId || 'workspace'}-${Date.now()}.png`;
       let imageUrl = rawImageUrl;
@@ -261,7 +272,9 @@ export class KloelComposerService {
           workspaceId,
           filename: generatedImageFilename,
         });
-        if (persistedImageUrl) imageUrl = persistedImageUrl;
+        if (persistedImageUrl) {
+          imageUrl = persistedImageUrl;
+        }
       } catch (error: unknown) {
         const reason =
           error instanceof Error
@@ -284,9 +297,12 @@ export class KloelComposerService {
     }
 
     if (capability === 'create_site') {
-      if (!process.env.ANTHROPIC_API_KEY)
-        throw new Error('ANTHROPIC_API_KEY não configurada para criar sites.');
-      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+      if (!process.env.ANTHROPIC_API_KEY) {
+        throw new Error(ERR_SITE_API_KEY_MISSING);
+      }
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
 
       const timeoutSignal = AbortSignal.timeout(60_000);
       const requestSignal = composeAbortSignal(signal, timeoutSignal);
@@ -323,7 +339,9 @@ export class KloelComposerService {
 
       const result = await response.json();
       const html = String(result?.content?.[0]?.text || '').trim();
-      if (!html) throw new Error('A geração do site não retornou HTML.');
+      if (!html) {
+        throw new Error(ERR_SITE_EMPTY_HTML);
+      }
 
       const usageTokens =
         Number(result?.usage?.input_tokens || 0) + Number(result?.usage?.output_tokens || 0);

@@ -94,27 +94,20 @@ function getTagName(element) {
 }
 
 function classifyTagAndClick(element, tag) {
-  if (!tag || !TARGET_TAGS.has(tag)) {
-    return 'notTargetTag';
-  }
-  if (!hasAttr(element, 'onClick')) {
-    return 'noOnClick';
-  }
-  return null;
+  return (
+    ((!tag || !TARGET_TAGS.has(tag)) && 'notTargetTag') ||
+    (!hasAttr(element, 'onClick') && 'noOnClick') ||
+    null
+  );
 }
 
 function classifyExistingHandlers(element) {
-  if (hasAttr(element, 'onKeyDown')) {
-    return 'alreadyHasOnKeyDown';
-  }
-  if (hasSpreadAttribute(element)) {
-    return 'hasSpreadAttribute';
-  }
-  // Already remediated: has role="button" AND tabIndex
-  if (hasAttr(element, 'role') && hasAttr(element, 'tabIndex')) {
-    return 'alreadyRemediated';
-  }
-  return null;
+  return (
+    (hasAttr(element, 'onKeyDown') && 'alreadyHasOnKeyDown') ||
+    (hasSpreadAttribute(element) && 'hasSpreadAttribute') ||
+    (hasAttr(element, 'role') && hasAttr(element, 'tabIndex') && 'alreadyRemediated') ||
+    null
+  );
 }
 
 function classifySkip(element, tag) {

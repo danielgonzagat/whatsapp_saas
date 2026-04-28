@@ -6,7 +6,6 @@
  * live here; those stay in codacy-enforce-max-rigor.mjs.
  */
 
-const BASE_URL = 'https://api.codacy.com/api/v3';
 const CODACY_API_ORIGIN = 'https://api.codacy.com';
 const CODACY_API_PATH_PREFIX = '/api/v3';
 
@@ -23,19 +22,26 @@ export async function codacyRequest(token, method, pathname, body) {
   if (url.origin !== CODACY_API_ORIGIN || !url.pathname.startsWith(CODACY_API_PATH_PREFIX)) {
     throw new Error(`Refusing Codacy API request outside allow-listed API origin: ${url.href}`);
   }
-  const request = new Request(url, {
+  const response = await fetch(url.href, {
     method,
     headers: jsonHeaders(token),
     body: body === undefined ? undefined : JSON.stringify(body),
   });
-  const response = await fetch(request);
   const text = await response.text();
+  assertOkResponse(response, method, pathname, text);
+  return parseJsonBody(text, method, pathname);
+}
+
+function assertOkResponse(response, method, pathname, text) {
   if (!response.ok) {
     console.error(
       `[codacy-max-rigor] ${method} ${pathname} -> ${response.status} ${text || response.statusText}`,
     );
     throw new Error(`Codacy API ${method} ${pathname} failed (${response.status}).`);
   }
+}
+
+function parseJsonBody(text, method, pathname) {
   if (!text || text.trim().length === 0) {
     return null;
   }

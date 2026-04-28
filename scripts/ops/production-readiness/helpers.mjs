@@ -135,10 +135,6 @@ function safeForRegex(value) {
   return str.length > REGEX_INPUT_MAX_LEN ? str.slice(0, REGEX_INPUT_MAX_LEN) : str;
 }
 
-function escapeForRegex(value) {
-  return safeForRegex(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function buildShaPinnedActionRegex(action, majorVersion) {
   return { action: safeForRegex(action), majorVersion: safeForRegex(majorVersion) };
 }

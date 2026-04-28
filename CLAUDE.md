@@ -7,6 +7,26 @@
 
 ---
 
+## Acronym Glossary
+
+- ADR: Architecture Decision Record.
+- BIG: Big-picture planning marker.
+- COM: Communication marker.
+- DADOS: Data module marker.
+- DEMO: Demonstration or non-production mode.
+- DI: Dependency injection.
+- DTO: Data transfer object.
+- ES: Elasticsearch.
+- INVEN: Inventory module marker.
+- KYC: Know Your Customer.
+- MCP: Model Context Protocol.
+- PULSE: Production-readiness and autonomy certification system.
+- RIA: Rich internet application.
+- START: Session-start marker.
+- SWR: Stale-while-revalidate data-fetching strategy.
+- TASK: Task marker.
+- VIVA: Viva module marker.
+
 ## REGRA DE AUTONOMIA (2026-04-18)
 
 Quando Daniel pedir para trabalhar autonomamente (ex.: "trabalhe autonomamente",
@@ -551,6 +571,9 @@ production-grade.
 ## SESSION START PROTOCOL
 
 At the beginning of every session, Claude Code must silently establish:
+
+If a required fact cannot be established from the local repository/session,
+record it as unavailable instead of guessing.
 
 1. Current branch.
 2. Git status.

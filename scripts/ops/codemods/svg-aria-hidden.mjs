@@ -178,7 +178,9 @@ function addAriaHidden(element) {
 }
 
 function tryPatchLucide(element, lucideNames) {
-  if (lucideNames.size === 0 || !isLucideElement(element, lucideNames)) return null;
+  if (lucideNames.size === 0 || !isLucideElement(element, lucideNames)) {
+    return null;
+  }
   if (hasAttr(element, 'aria-hidden')) {
     skipReasons.lucideAlreadyAriaHidden += 1;
     return 'skipped';
@@ -189,16 +191,12 @@ function tryPatchLucide(element, lucideNames) {
 }
 
 function classifyInlineSvgAttrs(element) {
-  if (hasAttr(element, 'aria-hidden')) {
-    return 'inlineSvgAlreadyAriaHidden';
-  }
-  if (hasAttr(element, 'aria-label')) {
-    return 'inlineSvgHasAriaLabel';
-  }
-  if (getRoleValue(element) === 'img') {
-    return 'inlineSvgHasRoleImg';
-  }
-  return null;
+  return (
+    (hasAttr(element, 'aria-hidden') && 'inlineSvgAlreadyAriaHidden') ||
+    (hasAttr(element, 'aria-label') && 'inlineSvgHasAriaLabel') ||
+    (getRoleValue(element) === 'img' && 'inlineSvgHasRoleImg') ||
+    null
+  );
 }
 
 function classifyInlineSvgChildren(element) {
@@ -216,7 +214,9 @@ function classifyInlineSvgSkip(element) {
 }
 
 function tryPatchInlineSvg(element) {
-  if (!isSvgElement(element)) return null;
+  if (!isSvgElement(element)) {
+    return null;
+  }
   const skipKey = classifyInlineSvgSkip(element);
   if (skipKey) {
     skipReasons[skipKey] += 1;
@@ -229,8 +229,12 @@ function tryPatchInlineSvg(element) {
 
 function processElement(element, lucideNames) {
   const lucide = tryPatchLucide(element, lucideNames);
-  if (lucide === 'patched') return 1;
-  if (lucide === 'skipped') return 0;
+  if (lucide === 'patched') {
+    return 1;
+  }
+  if (lucide === 'skipped') {
+    return 0;
+  }
   return tryPatchInlineSvg(element) === 'patched' ? 1 : 0;
 }
 

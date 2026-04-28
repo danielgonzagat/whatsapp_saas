@@ -305,7 +305,7 @@ function warnIfTruncated(pages, cursor) {
   }
 }
 
-async function fetchAndApplyPage(token, agg, cursor, totalFromApi, pages) {
+async function fetchAndApplyPage({ token, agg, cursor, totalFromApi, pages }) {
   const page = await fetchIssuesPage(token.value, cursor);
   const { rows, pagination } = extractPageData(page);
   const newTotal = extractApiTotal(totalFromApi, pagination);
@@ -325,12 +325,20 @@ async function paginateAllIssues(token, agg) {
   let pages = 0;
 
   while (pages < MAX_PAGES) {
-    const { newTotal, next } = await fetchAndApplyPage(token, agg, cursor, totalFromApi, pages);
+    const { newTotal, next } = await fetchAndApplyPage({
+      token,
+      agg,
+      cursor,
+      totalFromApi,
+      pages,
+    });
     pages += 1;
     totalFromApi = newTotal;
     const advance = advanceCursor(cursor, next);
     cursor = advance.cursor;
-    if (advance.done) break;
+    if (advance.done) {
+      break;
+    }
   }
 
   warnIfTruncated(pages, cursor);
@@ -338,9 +346,7 @@ async function paginateAllIssues(token, agg) {
 }
 
 function isPartialResponse(seen, totalFromApi) {
-  return (
-    typeof totalFromApi === 'number' && totalFromApi > 0 && seen > 0 && seen < totalFromApi * 0.9
-  );
+  return typeof totalFromApi === 'number' && totalFromApi > 0 && seen > 0 && seen < totalFromApi * 0.9;
 }
 
 function failOnPartialResponse(seen, totalFromApi) {
@@ -354,7 +360,7 @@ function failOnPartialResponse(seen, totalFromApi) {
   if (!isPartialResponse(seen, totalFromApi)) {
     return;
   }
-  const percentSeen = Math.round((seen / totalFromApi) * 100);
+  const percentSeen = Math.round((seen * 100) / totalFromApi);
   console.warn(
     `[codacy-sync] PARTIAL RESPONSE DETECTED: seen=${seen} apiTotal=${totalFromApi} ` +
       `${percentSeen}%. Refusing to write the truncated snapshot.`,
@@ -451,13 +457,11 @@ function persistStateAtomically(state) {
 }
 
 function logSyncCompletion({ state, agg, totalFromApi, pages, startedAt }) {
+  const elapsedSeconds = ((Date.now() - startedAt) / 1000).toFixed(1);
   console.log(
     `[codacy-sync] Wrote ${path.relative(repoRoot, outputPath)} — totalIssues=${agg.seen}, apiTotal=${
       totalFromApi ?? 'n/a'
-    }, duplicates=${agg.duplicateCount}, HIGH=${state.bySeverity.HIGH}, MEDIUM=${state.bySeverity.MEDIUM}, LOW=${state.bySeverity.LOW}, pages=${pages}, elapsed=${(
-      (Date.now() - startedAt) /
-      1000
-    ).toFixed(1)}s.`,
+    }, duplicates=${agg.duplicateCount}, HIGH=${state.bySeverity.HIGH}, MEDIUM=${state.bySeverity.MEDIUM}, LOW=${state.bySeverity.LOW}, pages=${pages}, elapsed=${elapsedSeconds}s.`,
   );
 }
 
@@ -510,17 +514,25 @@ function stripSurroundingQuotes(value) {
 
 function parseEnvLine(rawLine) {
   const line = rawLine.trim();
-  if (!line || line.startsWith('#')) return null;
+  if (!line || line.startsWith('#')) {
+    return null;
+  }
   const eq = line.indexOf('=');
-  if (eq <= 0) return null;
+  if (eq <= 0) {
+    return null;
+  }
   const key = line.slice(0, eq).trim();
   const value = stripSurroundingQuotes(line.slice(eq + 1).trim());
   return { key, value };
 }
 
 function applyEnvPair(entry) {
-  if (!entry) return;
-  if (entry.key in process.env) return;
+  if (!entry) {
+    return;
+  }
+  if (entry.key in process.env) {
+    return;
+  }
   process.env[entry.key] = entry.value;
 }
 
@@ -528,9 +540,13 @@ async function loadLocalEnvFile() {
   // When run locally outside CI we opportunistically read .env.pulse.local so
   // the developer experience matches the nightly workflow without requiring
   // them to export vars into their shell. This is no-op in CI.
-  if (process.env.CI === 'true') return;
+  if (process.env.CI === 'true') {
+    return;
+  }
   const envPath = path.join(repoRoot, '.env.pulse.local');
-  if (!existsSync(envPath)) return;
+  if (!existsSync(envPath)) {
+    return;
+  }
   const content = readFileSync(envPath, 'utf8');
   for (const rawLine of content.split('\n')) {
     applyEnvPair(parseEnvLine(rawLine));
