@@ -192,14 +192,12 @@ function selectConfiguredHooks(session, event) {
   return session.config.webhooks.filter((hook) => hookMatchesEvent(hook, event));
 }
 
-function buildFallbackHook(event) {
-  if (!config.fallbackWebhookUrl) {
+function buildFallbackHook(event, fallbackUrl, fallbackSecret) {
+  if (!fallbackUrl) {
     return null;
   }
-  const customHeaders = config.fallbackWebhookSecret
-    ? [{ name: 'X-Api-Key', value: config.fallbackWebhookSecret }]
-    : [];
-  return { url: config.fallbackWebhookUrl, events: [event], customHeaders };
+  const customHeaders = fallbackSecret ? [{ name: 'X-Api-Key', value: fallbackSecret }] : [];
+  return { url: fallbackUrl, events: [event], customHeaders };
 }
 
 function resolveHooksToFire(session, event) {
@@ -207,7 +205,11 @@ function resolveHooksToFire(session, event) {
   if (configured.length > 0) {
     return configured;
   }
-  const fallback = buildFallbackHook(event);
+  const fallback = buildFallbackHook(
+    event,
+    config.fallbackWebhookUrl,
+    config.fallbackWebhookSecret,
+  );
   return fallback ? [fallback] : [];
 }
 
@@ -219,21 +221,21 @@ function applyCustomHeaders(headers, customHeaders) {
   }
 }
 
-function applyFallbackApiKey(headers) {
-  if (config.fallbackWebhookSecret && !headers['X-Api-Key']) {
-    headers['X-Api-Key'] = config.fallbackWebhookSecret;
+function applyFallbackApiKey(headers, fallbackSecret) {
+  if (fallbackSecret && !headers['X-Api-Key']) {
+    headers['X-Api-Key'] = fallbackSecret;
   }
 }
 
-function buildHookHeaders(hook) {
+function buildHookHeaders(hook, fallbackSecret) {
   const headers = { 'Content-Type': 'application/json' };
   applyCustomHeaders(headers, hook.customHeaders);
-  applyFallbackApiKey(headers);
+  applyFallbackApiKey(headers, fallbackSecret);
   return headers;
 }
 
 async function dispatchHook(hook, sessionName, event, payload) {
-  const headers = buildHookHeaders(hook);
+  const headers = buildHookHeaders(hook, config.fallbackWebhookSecret);
   try {
     const response = await fetch(hook.url, {
       method: 'POST',
