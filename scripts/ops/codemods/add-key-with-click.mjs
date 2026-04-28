@@ -46,7 +46,7 @@ const TARGET_TAGS = new Set(['div', 'span', 'li', 'a']);
 
 // Keys that should activate a clickable element via keyboard.
 const ACTIVATION_KEYS = ['Enter', ' '];
-const ONKEYDOWN_ATTR_BODY = `(e) => { if (${ACTIVATION_KEYS.map((k) => `e.key === ${JSON.stringify(k)}`).join(' || ')}) { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }`;
+const ONKEYDOWN_ATTR_BODY = "(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }";
 
 let filesModified = 0;
 const patchedByTag = { div: 0, span: 0, li: 0, a: 0 };
