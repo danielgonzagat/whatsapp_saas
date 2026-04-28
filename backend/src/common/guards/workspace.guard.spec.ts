@@ -19,11 +19,13 @@ describe('WorkspaceGuard', () => {
   });
 
   function createContext(request: WorkspaceRequest): ExecutionContext {
-    return {
-      switchToHttp: () => ({
-        getRequest: () => request,
-      }),
-    } as unknown as ExecutionContext;
+    const partial: Partial<ExecutionContext> = {
+      switchToHttp: () =>
+        ({
+          getRequest: () => request,
+        }) as ReturnType<ExecutionContext['switchToHttp']>,
+    };
+    return partial as ExecutionContext;
   }
 
   it('permite quando não há workspaceId no token', () => {
