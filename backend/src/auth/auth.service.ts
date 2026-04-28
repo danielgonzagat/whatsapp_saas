@@ -112,7 +112,9 @@ export class AuthService {
 
   /** Login with apple credential. */
   async loginWithAppleCredential(data: {
-    identityToken: string;
+    identityToken?: string;
+    authorizationCode?: string;
+    redirectUri?: string;
     user?: { name?: { firstName?: string; lastName?: string }; email?: string };
     ip?: string;
   }) {

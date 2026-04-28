@@ -5,7 +5,9 @@ import { getBackendUrl } from '../../../_lib/backend-url';
 import { setSharedAuthCookies } from '../../_lib/shared-auth-cookies';
 
 type AppleCallbackPayload = {
-  identityToken: string;
+  identityToken?: string;
+  authorizationCode?: string;
+  redirectUri: string;
   user?: {
     name?: {
       firstName?: string;
@@ -33,24 +35,30 @@ async function readAppleCallbackPayload(
 ): Promise<AppleCallbackPayload | null> {
   if (request.method === 'GET') {
     const identityToken = request.nextUrl.searchParams.get('id_token')?.trim() || '';
-    if (!identityToken) {
+    const authorizationCode = request.nextUrl.searchParams.get('code')?.trim() || '';
+    if (!identityToken && !authorizationCode) {
       return null;
     }
 
     return {
-      identityToken,
+      identityToken: identityToken || undefined,
+      authorizationCode: authorizationCode || undefined,
+      redirectUri: new URL(request.nextUrl.pathname, request.nextUrl.origin).toString(),
       user: parseAppleUser(request.nextUrl.searchParams.get('user')),
     };
   }
 
   const formData = await request.formData();
   const identityToken = String(formData.get('id_token') || '').trim();
-  if (!identityToken) {
+  const authorizationCode = String(formData.get('code') || '').trim();
+  if (!identityToken && !authorizationCode) {
     return null;
   }
 
   return {
-    identityToken,
+    identityToken: identityToken || undefined,
+    authorizationCode: authorizationCode || undefined,
+    redirectUri: new URL(request.nextUrl.pathname, request.nextUrl.origin).toString(),
     user: parseAppleUser(formData.get('user')),
   };
 }
@@ -65,7 +73,7 @@ function buildErrorRedirect(request: NextRequest, reason: string) {
 
 async function handleAppleCallback(request: NextRequest) {
   const payload = await readAppleCallbackPayload(request);
-  if (!payload?.identityToken) {
+  if (!payload?.identityToken && !payload?.authorizationCode) {
     return buildErrorRedirect(request, 'missing_identity_token');
   }
 

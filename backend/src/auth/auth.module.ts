@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { PaymentsModule } from '../payments/payments.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthController } from './auth.controller';
+import { AppleAuthService } from './apple-auth.service';
 import { AuthOAuthResolverService } from './auth-oauth-resolver.service';
 import { AuthOAuthService } from './auth-oauth.service';
 import { AuthPartnerService } from './auth-partner.service';
@@ -46,6 +47,7 @@ import { RateLimitService } from './rate-limit.service';
     AuthTokenService,
     AuthVerificationService,
     AuthWhatsappPasswordService,
+    AppleAuthService,
     EmailService,
     GoogleAuthService,
     FacebookAuthService,
@@ -60,6 +62,7 @@ import { RateLimitService } from './rate-limit.service';
     AuthVerificationService,
     AuthWhatsappPasswordService,
     JwtModule,
+    AppleAuthService,
     EmailService,
     GoogleAuthService,
     FacebookAuthService,

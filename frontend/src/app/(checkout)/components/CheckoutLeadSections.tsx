@@ -35,8 +35,10 @@ type IdentityColumnProps = SharedProps & {
   socialLoadingProvider: CheckoutSocialProvider | null;
   socialError: string;
   facebookAvailable: boolean;
+  appleAvailable: boolean;
   facebookSdkReady: boolean;
   triggerFacebookSignIn: () => Promise<void>;
+  triggerAppleSignIn: () => void;
   googleAvailable: boolean;
   googleButtonRef: RefObject<HTMLDivElement | null>;
   shippingInCents: number;
@@ -59,8 +61,10 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
     socialLoadingProvider,
     socialError,
     facebookAvailable,
+    appleAvailable,
     facebookSdkReady,
     triggerFacebookSignIn,
+    triggerAppleSignIn,
     googleAvailable,
     googleButtonRef,
     shippingInCents,
@@ -152,8 +156,10 @@ export function CheckoutLeadSections(props: IdentityColumnProps) {
             socialLoadingProvider={socialLoadingProvider}
             socialError={socialError}
             facebookAvailable={facebookAvailable}
+            appleAvailable={appleAvailable}
             facebookSdkReady={facebookSdkReady}
             triggerFacebookSignIn={triggerFacebookSignIn}
+            triggerAppleSignIn={triggerAppleSignIn}
             googleAvailable={googleAvailable}
             googleButtonRef={googleButtonRef}
             labelStyle={labelStyle}

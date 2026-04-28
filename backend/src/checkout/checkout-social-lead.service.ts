@@ -6,6 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { CheckoutSocialLeadStatus, CheckoutSocialProvider, Prisma } from '@prisma/client';
+import { AppleAuthService } from '../auth/apple-auth.service';
 import { FacebookAuthService } from '../auth/facebook-auth.service';
 import { GoogleAuthService } from '../auth/google-auth.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -66,6 +67,7 @@ export class CheckoutSocialLeadService {
     private readonly prisma: PrismaService,
     private readonly googleAuthService: GoogleAuthService,
     private readonly facebookAuthService: FacebookAuthService,
+    private readonly appleAuthService: AppleAuthService,
   ) {}
 
   /** Capture lead. */
@@ -73,14 +75,7 @@ export class CheckoutSocialLeadService {
     const plan = await this.resolvePlanBySlug(dto.slug);
     const provider = this.parseProvider(dto.provider);
 
-    if (provider === CheckoutSocialProvider.APPLE) {
-      throw new ServiceUnavailableException('Apple entra nas próximas iterações.');
-    }
-
-    const verified =
-      provider === CheckoutSocialProvider.FACEBOOK
-        ? await this.facebookAuthService.verifyAccessToken(dto.accessToken || '', dto.userId)
-        : await this.googleAuthService.verifyCredential(dto.credential || '');
+    const verified = await this.verifySocialProvider(provider, dto);
     const lead = await this.prisma.checkoutSocialLead.create({
       data: {
         workspaceId: plan.workspaceId,
@@ -493,6 +488,21 @@ export class CheckoutSocialLeadService {
       return 'facebook';
     }
     return 'apple';
+  }
+
+  private async verifySocialProvider(provider: CheckoutSocialProvider, dto: CaptureSocialLeadDto) {
+    if (provider === CheckoutSocialProvider.FACEBOOK) {
+      return this.facebookAuthService.verifyAccessToken(dto.accessToken || '', dto.userId);
+    }
+    if (provider === CheckoutSocialProvider.APPLE) {
+      return this.appleAuthService.verifyCredential({
+        identityToken: dto.identityToken,
+        authorizationCode: dto.authorizationCode,
+        redirectUri: dto.redirectUri,
+        user: dto.user,
+      });
+    }
+    return this.googleAuthService.verifyCredential(dto.credential || '');
   }
 
   private async enqueueEnrichment(leadId: string) {

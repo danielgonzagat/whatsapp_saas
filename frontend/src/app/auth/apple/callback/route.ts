@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const searchParams = url.searchParams.toString();
 
-  const correctPath = `/api/auth/callback/apple${searchParams ? `?${searchParams}` : ''}`;
+  const correctPath = `/api/auth/apple/callback${searchParams ? `?${searchParams}` : ''}`;
 
   return NextResponse.rewrite(new URL(correctPath, request.url));
 }
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   const url = new URL(request.url);
   const searchParams = url.searchParams.toString();
 
-  const correctPath = `/api/auth/callback/apple${searchParams ? `?${searchParams}` : ''}`;
+  const correctPath = `/api/auth/apple/callback${searchParams ? `?${searchParams}` : ''}`;
 
   return NextResponse.rewrite(new URL(correctPath, request.url));
 }

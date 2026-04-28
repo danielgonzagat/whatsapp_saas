@@ -119,6 +119,7 @@ export function useCheckoutSocialIdentity({
     process.env.NEXT_PUBLIC_META_APP_ID?.trim() ||
     '';
   const metaGraphVersion = process.env.NEXT_PUBLIC_META_GRAPH_API_VERSION?.trim() || 'v21.0';
+  const appleClientId = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID?.trim() || '';
   const googlePeopleScopesEnabled =
     (
       process.env.NEXT_PUBLIC_KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL ||
@@ -499,7 +500,29 @@ export function useCheckoutSocialIdentity({
   return {
     deviceFingerprint,
     facebookAvailable: enabled && Boolean(metaAppId),
+    appleAvailable: enabled && Boolean(appleClientId),
     googleButtonRef,
+    triggerAppleSignIn: () => {
+      if (!enabled || !appleClientId || !slug) {
+        setError('Apple indisponível no momento.');
+        return;
+      }
+
+      setError('');
+      setLoadingProvider('apple');
+      const currentFingerprint = deviceFingerprint || ensureDeviceFingerprint();
+      const destination = new URL('/api/checkout/social/apple/start', window.location.origin);
+      destination.searchParams.set('slug', slug);
+      destination.searchParams.set('deviceFingerprint', currentFingerprint);
+      destination.searchParams.set(
+        'returnTo',
+        `${window.location.pathname}${window.location.search}`,
+      );
+      if (checkoutCode?.trim()) {
+        destination.searchParams.set('checkoutCode', checkoutCode.trim());
+      }
+      window.location.assign(destination.toString());
+    },
     triggerFacebookSignIn: async () => {
       if (!enabled || !metaAppId || !facebookSdkReady || !window.FB) {
         setError('Facebook indisponível no momento.');

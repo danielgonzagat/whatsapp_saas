@@ -558,8 +558,10 @@ export function useCheckoutExperienceSocial({
     socialLoadingProvider: social.loadingProvider,
     socialError: social.socialError,
     facebookAvailable: social.facebookAvailable,
+    appleAvailable: social.appleAvailable,
     facebookSdkReady: social.facebookSdkReady,
     triggerFacebookSignIn: social.triggerFacebookSignIn,
+    triggerAppleSignIn: social.triggerAppleSignIn,
     googleAvailable: social.googleAvailable,
     googleButtonRef: social.googleButtonRef,
   };

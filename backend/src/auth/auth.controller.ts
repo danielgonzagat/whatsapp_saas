@@ -154,6 +154,8 @@ export class AuthController {
   async appleOAuthLogin(@Req() req: Request, @Body() body: AppleOAuthDto) {
     return this.auth.loginWithAppleCredential({
       identityToken: body.identityToken,
+      authorizationCode: body.authorizationCode,
+      redirectUri: body.redirectUri,
       user: body.user,
       ip: req.ip,
     });

@@ -11,6 +11,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthOAuthResolverService } from './auth-oauth-resolver.service';
 import { DbInitErrorService } from './db-init-error.service';
+import { AppleAuthService } from './apple-auth.service';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service';
 import { RateLimitService } from './rate-limit.service';
@@ -29,6 +30,7 @@ export class AuthOAuthService {
     private readonly prisma: PrismaService,
     private readonly googleAuthService: GoogleAuthService,
     private readonly facebookAuthService: FacebookAuthService,
+    private readonly appleAuthService: AppleAuthService,
     private readonly tikTokAuthService: TikTokAuthService,
     private readonly config: ConfigService,
     private readonly rateLimitService: RateLimitService,
@@ -116,39 +118,14 @@ export class AuthOAuthService {
 
   /** Verify an Apple identity token and return a normalised profile. */
   async verifyAppleIdentityToken(data: {
-    identityToken: string;
+    identityToken?: string;
+    authorizationCode?: string;
+    redirectUri?: string;
     user?: { name?: { firstName?: string; lastName?: string }; email?: string };
     ip?: string;
   }): Promise<GoogleVerifiedProfile> {
     await this.rateLimitService.checkRateLimit(`oauth:apple:${data.ip || 'ip-unknown'}`);
-
-    const jwt = await import('jsonwebtoken');
-    const decoded = jwt.decode(data.identityToken);
-    const decodedPayload =
-      decoded && typeof decoded === 'object'
-        ? (decoded as { sub?: string; email?: string; email_verified?: boolean })
-        : {};
-    if (!decodedPayload.sub) {
-      throw new BadRequestException({
-        error: 'invalid_apple_token',
-        message: 'Apple identity token invalido ou expirado.',
-      });
-    }
-
-    const email =
-      decodedPayload.email || data.user?.email || `${decodedPayload.sub}@privaterelay.appleid.com`;
-    const name = data.user?.name
-      ? `${data.user.name.firstName || ''} ${data.user.name.lastName || ''}`.trim()
-      : email.split('@')[0];
-
-    return {
-      provider: 'apple' as const,
-      providerId: decodedPayload.sub,
-      email,
-      name: name || 'Apple User',
-      image: null as string | null,
-      emailVerified: !!decodedPayload.email_verified,
-    };
+    return this.appleAuthService.verifyCredential(data);
   }
 
   /** Verify a TikTok authorization code and return a normalised profile. */

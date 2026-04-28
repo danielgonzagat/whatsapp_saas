@@ -164,8 +164,10 @@ interface IdentityPanelProps {
   socialLoadingProvider: CheckoutSocialProvider | null;
   socialError: string;
   facebookAvailable: boolean;
+  appleAvailable: boolean;
   facebookSdkReady: boolean;
   triggerFacebookSignIn: () => Promise<void>;
+  triggerAppleSignIn: () => void;
   googleAvailable: boolean;
   googleButtonRef: RefObject<HTMLDivElement | null>;
   labelStyle: React.CSSProperties;
@@ -188,8 +190,10 @@ export function IdentityPanel({
   socialLoadingProvider,
   socialError,
   facebookAvailable,
+  appleAvailable,
   facebookSdkReady,
   triggerFacebookSignIn,
+  triggerAppleSignIn,
   googleAvailable,
   googleButtonRef,
   labelStyle,
@@ -202,10 +206,12 @@ export function IdentityPanel({
       <CheckoutSocialIdentitySection
         theme={theme}
         facebookAvailable={facebookAvailable}
+        appleAvailable={appleAvailable}
         facebookSdkReady={facebookSdkReady}
         googleAvailable={googleAvailable}
         googleButtonRef={googleButtonRef}
         onFacebookClick={triggerFacebookSignIn}
+        onAppleClick={triggerAppleSignIn}
         socialIdentity={socialIdentity}
         loadingProvider={socialLoadingProvider}
         error={socialError}
