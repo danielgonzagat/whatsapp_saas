@@ -4,6 +4,32 @@
  */
 import type { Prisma } from '@prisma/client';
 
+const PLAN_LINK_CHECKOUT_SELECT = {
+  id: true,
+  name: true,
+  isActive: true,
+  checkoutConfig: {
+    select: {
+      theme: true,
+      enableCreditCard: true,
+      enablePix: true,
+      enableBoleto: true,
+    },
+  },
+} as const;
+
+const CHECKOUT_LINK_PLAN_SELECT = {
+  id: true,
+  name: true,
+  priceInCents: true,
+  isActive: true,
+} as const;
+
+const PRIMARY_THEN_CREATED_ORDER = [
+  { isPrimary: 'desc' },
+  { createdAt: 'asc' },
+] as const satisfies ReadonlyArray<Prisma.CheckoutPlanLinkOrderByWithRelationInput>;
+
 /** Build the deeply-nested include shape used to fetch a product with its plans. */
 export function buildProductWithPlansInclude(): Prisma.ProductInclude {
   return {
@@ -13,37 +39,12 @@ export function buildProductWithPlansInclude(): Prisma.ProductInclude {
         orderBumps: true,
         upsells: true,
         planLinks: {
-          include: {
-            checkout: {
-              select: {
-                id: true,
-                name: true,
-                isActive: true,
-                checkoutConfig: {
-                  select: {
-                    theme: true,
-                    enableCreditCard: true,
-                    enablePix: true,
-                    enableBoleto: true,
-                  },
-                },
-              },
-            },
-          },
-          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+          include: { checkout: { select: PLAN_LINK_CHECKOUT_SELECT } },
+          orderBy: [...PRIMARY_THEN_CREATED_ORDER],
         },
         checkoutLinks: {
-          include: {
-            plan: {
-              select: {
-                id: true,
-                name: true,
-                priceInCents: true,
-                isActive: true,
-              },
-            },
-          },
-          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+          include: { plan: { select: CHECKOUT_LINK_PLAN_SELECT } },
+          orderBy: [...PRIMARY_THEN_CREATED_ORDER],
         },
       },
     },

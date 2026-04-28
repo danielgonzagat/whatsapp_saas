@@ -104,7 +104,7 @@ export function MessageFields({ id, node, handleChange }: NodeFieldsProps) {
           {kloelT(`URL da Mídia (opcional)`)}
         </label>
         <input
-          aria-label="URL da Mídia"
+          aria-label={kloelT(`URL da Mídia`)}
           type="text"
           value={node.data.mediaUrl || ''}
           onChange={(e) => handleChange('mediaUrl', e.target.value)}

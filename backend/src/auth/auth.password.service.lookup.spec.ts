@@ -15,6 +15,33 @@ jest.mock('./db-init-error.service', () => ({
   },
 }));
 
+type TokenOverrides = {
+  workspaceId?: string;
+  workspaceName?: string;
+  userName?: string;
+  userEmail?: string;
+  isNewUser?: boolean;
+};
+
+function buildIssueTokensResult(overrides: TokenOverrides = {}) {
+  const workspaceId = overrides.workspaceId ?? 'workspace-123';
+  const workspaceName = overrides.workspaceName ?? 'Guest Workspace';
+  return {
+    access_token: 'token123',
+    refresh_token: 'refresh123',
+    user: {
+      id: 'agent-123',
+      name: overrides.userName ?? 'Guest',
+      email: overrides.userEmail ?? mockAgent.email,
+      workspaceId,
+      role: 'ADMIN',
+    },
+    workspace: { id: workspaceId, name: workspaceName },
+    workspaces: [{ id: workspaceId, name: workspaceName }],
+    isNewUser: overrides.isNewUser ?? false,
+  };
+}
+
 describe('AuthPasswordService — lookup, anonymous, register', () => {
   let ctx: AuthPasswordSpecContext;
 
@@ -57,20 +84,7 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
       ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValueOnce(undefined);
       ctx.prismaMock.workspace.create.mockResolvedValueOnce(mockWorkspace);
       ctx.prismaMock.agent.create.mockResolvedValueOnce(mockAgent);
-      ctx.tokenServiceMock.issueTokens.mockResolvedValueOnce({
-        access_token: 'token123',
-        refresh_token: 'refresh123',
-        user: {
-          id: 'agent-123',
-          name: 'Guest',
-          email: mockAgent.email,
-          workspaceId: 'workspace-123',
-          role: 'ADMIN',
-        },
-        workspace: { id: 'workspace-123', name: 'Guest Workspace' },
-        workspaces: [{ id: 'workspace-123', name: 'Guest Workspace' }],
-        isNewUser: false,
-      });
+      ctx.tokenServiceMock.issueTokens.mockResolvedValueOnce(buildIssueTokensResult());
 
       const result = await ctx.service.createAnonymous('127.0.0.1');
 
@@ -107,20 +121,14 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
       ctx.prismaMock.agent.findFirst.mockResolvedValueOnce(null);
       ctx.prismaMock.workspace.create.mockResolvedValueOnce(mockWorkspace);
       ctx.prismaMock.agent.create.mockResolvedValueOnce(mockAgent);
-      ctx.tokenServiceMock.issueTokens.mockResolvedValueOnce({
-        access_token: 'token123',
-        refresh_token: 'refresh123',
-        user: {
-          id: 'agent-123',
-          name: 'Test User',
-          email: 'test@example.com',
-          workspaceId: 'workspace-123',
-          role: 'ADMIN',
-        },
-        workspace: { id: 'workspace-123', name: 'Test Workspace' },
-        workspaces: [{ id: 'workspace-123', name: 'Test Workspace' }],
-        isNewUser: true,
-      });
+      ctx.tokenServiceMock.issueTokens.mockResolvedValueOnce(
+        buildIssueTokensResult({
+          userName: 'Test User',
+          userEmail: 'test@example.com',
+          workspaceName: 'Test Workspace',
+          isNewUser: true,
+        }),
+      );
 
       const result = await ctx.service.register({
         name: 'Test User',

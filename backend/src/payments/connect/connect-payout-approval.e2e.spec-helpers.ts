@@ -1,5 +1,38 @@
 import { ConnectPayoutApprovalService } from './connect-payout-approval.service';
 
+const SELLER_PAYOUT_PAYLOAD = Object.freeze({
+  version: 1,
+  workspaceId: 'ws-1',
+  accountBalanceId: 'cab_seller',
+  accountType: 'SELLER',
+  stripeAccountId: 'acct_seller',
+  amountCents: '500',
+  currency: 'BRL',
+  requestId: 'po_req_1',
+  requestedByType: 'workspace',
+});
+
+type ApprovalUpdateArgs = {
+  where: { id: string };
+  data: Record<string, unknown>;
+};
+
+function buildUpdateApprovalRequestMock(now: Date) {
+  return ({ where, data }: ApprovalUpdateArgs) => ({
+    id: where.id,
+    workspaceId: 'ws-1',
+    kind: 'connect_payout',
+    state: data.state,
+    title: 'Aprovar saque SELLER',
+    prompt: 'prompt',
+    payload: SELLER_PAYOUT_PAYLOAD,
+    response: data.response ?? null,
+    respondedAt: data.respondedAt ?? null,
+    createdAt: now,
+    updatedAt: now,
+  });
+}
+
 /**
  * Shared `buildService` factory for the ConnectPayoutApprovalService e2e
  * spec suite.
@@ -46,33 +79,7 @@ export function buildService(overrides?: {
         createdAt: now,
         updatedAt: now,
       })),
-      update: jest
-        .fn()
-        .mockImplementation(
-          ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => ({
-            id: where.id,
-            workspaceId: 'ws-1',
-            kind: 'connect_payout',
-            state: data.state,
-            title: 'Aprovar saque SELLER',
-            prompt: 'prompt',
-            payload: {
-              version: 1,
-              workspaceId: 'ws-1',
-              accountBalanceId: 'cab_seller',
-              accountType: 'SELLER',
-              stripeAccountId: 'acct_seller',
-              amountCents: '500',
-              currency: 'BRL',
-              requestId: 'po_req_1',
-              requestedByType: 'workspace',
-            },
-            response: data.response ?? null,
-            respondedAt: data.respondedAt ?? null,
-            createdAt: now,
-            updatedAt: now,
-          }),
-        ),
+      update: jest.fn().mockImplementation(buildUpdateApprovalRequestMock(now)),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     adminAuditLog: {

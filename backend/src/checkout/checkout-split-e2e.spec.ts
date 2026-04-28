@@ -19,6 +19,19 @@ import {
   makeOrder,
 } from './checkout-payment.service.fixtures';
 
+const SELLER_ACCOUNT_BALANCE = Object.freeze({
+  id: 'cab_seller_1',
+  stripeAccountId: 'acct_seller_1',
+  accountType: 'SELLER',
+  workspaceId: 'ws-1',
+});
+
+const SELLER_WORKSPACE = Object.freeze({
+  agents: [{ email: 'owner@example.com' }],
+  id: 'ws-1',
+  name: 'Workspace Teste',
+});
+
 describe('Checkout E2E Split Chain', () => {
   let service: CheckoutPaymentService;
   let prisma: CheckoutPaymentPrismaMock;
@@ -41,19 +54,10 @@ describe('Checkout E2E Split Chain', () => {
         create: jest.fn(),
       },
       connectAccountBalance: {
-        findFirst: jest.fn().mockResolvedValue({
-          id: 'cab_seller_1',
-          stripeAccountId: 'acct_seller_1',
-          accountType: 'SELLER',
-          workspaceId: 'ws-1',
-        }),
+        findFirst: jest.fn().mockResolvedValue(SELLER_ACCOUNT_BALANCE),
       },
       workspace: {
-        findUnique: jest.fn().mockResolvedValue({
-          agents: [{ email: 'owner@example.com' }],
-          id: 'ws-1',
-          name: 'Workspace Teste',
-        }),
+        findUnique: jest.fn().mockResolvedValue(SELLER_WORKSPACE),
       },
       $transaction: jest.fn(),
     };

@@ -179,7 +179,7 @@ export function AiFields({ id, node, handleChange }: NodeFieldsProps) {
           {kloelT(`Salvar resposta em`)}
         </label>
         <input
-          aria-label="Salvar resposta em"
+          aria-label={kloelT(`Salvar resposta em`)}
           type="text"
           value={node.data.saveResponseTo || ''}
           onChange={(e) => handleChange('saveResponseTo', e.target.value)}

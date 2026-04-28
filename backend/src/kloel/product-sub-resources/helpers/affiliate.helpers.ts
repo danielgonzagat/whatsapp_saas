@@ -33,18 +33,24 @@ function normalizeCommissionRole(value: unknown): string | null {
   return (COMMISSION_ROLE_VALUES as readonly string[]).includes(role) ? role : null;
 }
 
-export function buildCommissionPayload(body: LooseObject, current?: LooseObject) {
+function resolveCommissionRole(body: LooseObject, current?: LooseObject): string {
   const role = normalizeCommissionRole(body.role ?? current?.role);
   if (!role) {
     throw new BadRequestException('Role da comissão é obrigatório e precisa ser válido');
   }
+  return role;
+}
 
+function resolveCommissionPercentage(body: LooseObject, current?: LooseObject): number {
   const percentage = parseNumber(body.percentage ?? current?.percentage);
   if (percentage === undefined) {
     throw new BadRequestException('Percentual da comissão é obrigatório');
   }
   assertPercentageRange(percentage, 'O percentual da comissão');
+  return percentage;
+}
 
+function resolveCommissionPartner(body: LooseObject, current?: LooseObject) {
   const agentName = normalizeOptionalText(body.agentName ?? current?.agentName);
   const agentEmail = normalizeOptionalEmail(body.agentEmail ?? current?.agentEmail);
 
@@ -56,12 +62,15 @@ export function buildCommissionPayload(body: LooseObject, current?: LooseObject)
     throw new BadRequestException('E-mail do parceiro é inválido');
   }
 
-  return {
-    role,
-    percentage,
-    agentName,
-    agentEmail,
-  };
+  return { agentName, agentEmail };
+}
+
+export function buildCommissionPayload(body: LooseObject, current?: LooseObject) {
+  const role = resolveCommissionRole(body, current);
+  const percentage = resolveCommissionPercentage(body, current);
+  const { agentName, agentEmail } = resolveCommissionPartner(body, current);
+
+  return { role, percentage, agentName, agentEmail };
 }
 
 export async function ensureNoDuplicateCommission(
@@ -89,16 +98,19 @@ export async function ensureNoDuplicateCommission(
 
   const normalizedName = normalizeOptionalText(payload.agentName);
   const normalizedEmail = normalizeOptionalEmail(payload.agentEmail);
+  const matchesByEmail = (entryEmail: string | null) =>
+    Boolean(normalizedEmail && entryEmail === normalizedEmail);
+  const matchesByName = (entryName: string | null) =>
+    Boolean(
+      !normalizedEmail &&
+      normalizedName &&
+      entryName &&
+      entryName.toLowerCase() === normalizedName.toLowerCase(),
+    );
   const duplicate = existing.find((entry) => {
     const entryEmail = normalizeOptionalEmail(entry.agentEmail);
     const entryName = normalizeOptionalText(entry.agentName);
-    return Boolean(
-      (normalizedEmail && entryEmail === normalizedEmail) ||
-      (!normalizedEmail &&
-        normalizedName &&
-        entryName &&
-        entryName.toLowerCase() === normalizedName.toLowerCase()),
-    );
+    return matchesByEmail(entryEmail) || matchesByName(entryName);
   });
 
   if (duplicate) {
@@ -186,6 +198,25 @@ export function buildAffiliateProductData(product: LooseObject) {
   };
 }
 
+type AffiliateLinkCounter = {
+  affiliateWorkspaceId: string | null;
+  active: boolean | null;
+  sales: number | null;
+  revenue: number | null;
+};
+
+function computeAffiliateCounters(links: AffiliateLinkCounter[]) {
+  const totalAffiliates = new Set(
+    links
+      .filter((link) => link.active)
+      .map((link) => link.affiliateWorkspaceId)
+      .filter(Boolean),
+  ).size;
+  const totalSales = links.reduce((sum, link) => sum + Number(link.sales || 0), 0);
+  const totalRevenue = links.reduce((sum, link) => sum + Number(link.revenue || 0), 0);
+  return { totalAffiliates, totalSales, totalRevenue };
+}
+
 export async function recalculateAffiliateProductCounters(
   prisma: PrismaService,
   affiliateProductId: string,
@@ -200,23 +231,9 @@ export async function recalculateAffiliateProductCounters(
     },
   });
 
-  const totalAffiliates = new Set(
-    links
-      .filter((link) => link.active)
-      .map((link) => link.affiliateWorkspaceId)
-      .filter(Boolean),
-  ).size;
-
-  const totalSales = links.reduce((sum, link) => sum + Number(link.sales || 0), 0);
-  const totalRevenue = links.reduce((sum, link) => sum + Number(link.revenue || 0), 0);
-
   await prisma.affiliateProduct.update({
     where: { id: affiliateProductId },
-    data: {
-      totalAffiliates,
-      totalSales,
-      totalRevenue,
-    },
+    data: computeAffiliateCounters(links),
   });
 }
 

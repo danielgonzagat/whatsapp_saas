@@ -114,19 +114,21 @@ function buildShippingPatches(
   };
 }
 
+function applyDefinedPatches(target: LooseObject, patches: LooseObject) {
+  for (const [key, entry] of Object.entries(patches)) {
+    if (entry !== undefined) {
+      target[key] = entry;
+    }
+  }
+}
+
 export function buildShippingConfig(body: LooseObject, current: LooseObject) {
   const next = { ...current };
   const freightType = resolveFreightType(body, current);
   const fixedFreight = parseNumber(body.fixedFreight) ?? parseNumber(body.shippingPrice);
   const shippingCostNumber = fixedFreight ?? parseNumber(body.shippingCost);
   const patches = buildShippingPatches(body, freightType, shippingCostNumber);
-
-  for (const [key, entry] of Object.entries(patches)) {
-    if (entry !== undefined) {
-      next[key] = entry;
-    }
-  }
-
+  applyDefinedPatches(next, patches);
   return next;
 }
 
@@ -210,15 +212,20 @@ function serializePlanIdentity(plan: LooseObject) {
   };
 }
 
+function isFreeShipping(shipping: LooseObject, freightType: string): boolean {
+  return freightType.toLowerCase() === 'free' || shipping.freeShipping === true;
+}
+
 function serializePlanShipping(shipping: LooseObject, freightType: string) {
+  const carriers = Array.isArray(shipping.carriers) ? shipping.carriers : [];
   return {
-    freeShipping: freightType.toLowerCase() === 'free' || shipping.freeShipping === true,
+    freeShipping: isFreeShipping(shipping, freightType),
     shippingPrice: shipping.fixedFreight ?? shipping.shippingValue ?? null,
     whoShips: shipping.shipper || '',
     shipper: shipping.shipper || '',
     shipFrom: shipping.shipFrom || '',
     dispatchTime: shipping.dispatchTime || '',
-    carriers: Array.isArray(shipping.carriers) ? shipping.carriers : [],
+    carriers,
     freightType,
     fixedFreight: shipping.fixedFreight ?? '',
     tracking: shipping.tracking || '',
@@ -262,13 +269,12 @@ const DEFAULT_PAYMENT_METHODS = Object.freeze({
   pix: true,
 });
 
+const PLAN_CHECKOUT_FLAGS_USING_OR = new Set(['imageUrl', 'redirectUrl']);
+
 function resolvePlanCheckoutFlag(extra: LooseObject, key: string, fallback: unknown): unknown {
   const value = extra[key];
   // `imageUrl` and `redirectUrl` treat empty string as "no value"; others only coalesce null/undefined.
-  if (key === 'imageUrl' || key === 'redirectUrl') {
-    return value || fallback;
-  }
-  return value ?? fallback;
+  return PLAN_CHECKOUT_FLAGS_USING_OR.has(key) ? value || fallback : (value ?? fallback);
 }
 
 function serializePlanCheckoutFlags(extra: LooseObject) {

@@ -92,24 +92,21 @@ type FinancialAlertMock = {
   withdrawalFailed: jest.Mock;
 };
 
-async function buildService({
-  prisma,
-  stripe,
-  ledger,
-  financialAlert,
-}: {
+type BuildServiceDeps = {
   prisma: PrismaMock;
   stripe: StripeMock;
   ledger: LedgerMock;
   financialAlert: FinancialAlertMock;
-}) {
+};
+
+async function buildService(deps: BuildServiceDeps) {
   const moduleRef: TestingModule = await Test.createTestingModule({
     providers: [
       ConnectPayoutService,
-      { provide: PrismaService, useValue: prisma },
-      { provide: StripeService, useValue: stripe },
-      { provide: LedgerService, useValue: ledger },
-      { provide: FinancialAlertService, useValue: financialAlert },
+      { provide: PrismaService, useValue: deps.prisma },
+      { provide: StripeService, useValue: deps.stripe },
+      { provide: LedgerService, useValue: deps.ledger },
+      { provide: FinancialAlertService, useValue: deps.financialAlert },
     ],
   }).compile();
 
