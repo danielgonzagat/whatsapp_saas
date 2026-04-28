@@ -19,9 +19,7 @@ function signJwt(input: {
 }
 
 function buildService(config: Record<string, string>): AppleAuthService {
-  return new AppleAuthService({
-    get: jest.fn((key: string) => config[key]),
-  } as unknown as ConfigService);
+  return new AppleAuthService(new ConfigService(config));
 }
 
 describe('AppleAuthService', () => {
@@ -34,12 +32,12 @@ describe('AppleAuthService', () => {
     const pair = generateKeyPairSync('rsa', { modulusLength: 2048 });
     privateKey = pair.privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
     publicJwk = pair.publicKey.export({ format: 'jwk' });
-    global.fetch = jest.fn(async (url: string) => {
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
       if (url === 'https://appleid.apple.com/auth/keys') {
         return new Response(JSON.stringify({ keys: [{ ...publicJwk, kid: keyId, alg: 'RS256' }] }));
       }
       return new Response(JSON.stringify({ error: 'unexpected_url' }), { status: 500 });
-    }) as unknown as typeof fetch;
+    });
   });
 
   afterEach(() => {

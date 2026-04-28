@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { type NextRequest } from 'next/server';
+import { NextRequest } from 'next/server';
 
 const mocks = vi.hoisted(() => ({
   getBackendUrl: vi.fn(() => 'https://backend.example.com'),
@@ -29,24 +29,22 @@ function createPostRequest(options?: { state?: string; cookieState?: string }) {
   );
 
   const cookieState = options?.cookieState || 'state-123';
-  return {
+  const cookieValue = encodeCookie({
+    nonce: cookieState,
+    slug: 'checkout-slug',
+    checkoutCode: 'CHK123',
+    deviceFingerprint: 'device-123',
+    returnTo: '/r/CHK123',
+    sourceUrl: 'https://pay.kloel.com/r/CHK123',
+  });
+
+  return new NextRequest('https://pay.kloel.com/api/checkout/social/apple/callback', {
     method: 'POST',
-    headers: new Headers({ host: 'pay.kloel.com' }),
-    nextUrl: new URL('https://pay.kloel.com/api/checkout/social/apple/callback'),
-    formData: vi.fn(async () => form),
-    cookies: {
-      get: vi.fn(() => ({
-        value: encodeCookie({
-          nonce: cookieState,
-          slug: 'checkout-slug',
-          checkoutCode: 'CHK123',
-          deviceFingerprint: 'device-123',
-          returnTo: '/r/CHK123',
-          sourceUrl: 'https://pay.kloel.com/r/CHK123',
-        }),
-      })),
+    headers: {
+      cookie: `kloel_checkout_apple_state=${cookieValue}`,
     },
-  } as unknown as NextRequest;
+    body: form,
+  });
 }
 
 describe('checkout Apple callback route', () => {
