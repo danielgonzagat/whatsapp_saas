@@ -260,9 +260,13 @@ export class WhatsappService {
         name: normalizedName,
       });
     } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.warn(
         `Falha ao sincronizar contato ${normalizedPhone} no provider de WhatsApp: ${String(
-          error instanceof Error ? error.message : 'unknown_error',
+          errorInstanceofError?.message || 'unknown_error',
         )}`,
       );
       return false;
@@ -1925,10 +1929,10 @@ export class WhatsappService {
         await this.optOutContact(workspaceId, from.replace(D_RE, ''));
         this.slog.info('auto_optout', { workspaceId, from });
       } catch (err: unknown) {
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
         // PULSE:OK — Auto opt-out is best-effort; message still processed
-        this.logger.warn(
-          `Opt-out auto falhou: ${err instanceof Error ? err.message : 'unknown_error'}`,
-        );
+        this.logger.warn(`Opt-out auto falhou: ${errInstanceofError?.message}`);
       }
     }
 
@@ -2050,10 +2054,10 @@ export class WhatsappService {
         }
       }
     } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // PULSE:OK — Autopilot enqueue non-critical; message already persisted to inbox
-      this.logger.warn(
-        `Autopilot enqueue failed: ${err instanceof Error ? err.message : 'unknown_error'}`,
-      );
+      this.logger.warn(`Autopilot enqueue failed: ${errInstanceofError?.message}`);
     }
 
     // 4. Pipeline NeuroCRM (análise cognitiva básica)
@@ -2076,10 +2080,10 @@ export class WhatsappService {
         }),
       );
     } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // PULSE:OK — Copilot WebSocket push non-critical; inbox still receives the message
-      this.logger.warn(
-        `Copilot push failed: ${err instanceof Error ? err.message : 'unknown_error'}`,
-      );
+      this.logger.warn(`Copilot push failed: ${errInstanceofError?.message}`);
     }
 
     return { ok: true };
@@ -2434,9 +2438,11 @@ export class WhatsappService {
       await this.redis.rpush(key, message);
       await this.redis.expire(key, 60 * 60 * 24); // 24 hours
     } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // Se a conexão principal estiver em modo subscriber, cria uma conexão auxiliar
       this.logger.warn(
-        `Redis indisponível para deliverToContext, usando client ad-hoc: ${err instanceof Error ? err.message : 'unknown_error'}`,
+        `Redis indisponível para deliverToContext, usando client ad-hoc: ${errInstanceofError?.message}`,
       );
       const fallback = createRedisClient();
       try {
