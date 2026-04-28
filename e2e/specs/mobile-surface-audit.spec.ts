@@ -186,7 +186,10 @@ test.describe('Mobile Surface Audit', () => {
         path: '/chat',
         slug: 'conversations',
         assert: async () => {
-          await expect(page.getByRole('heading', { name: /conversas/i })).toBeVisible();
+          // /chat renders KloelDashboard whose root region is aria-labelled
+          // "Área de chat". Asserting on the region avoids depending on the
+          // greeting line text (which is locale + name dependent).
+          await expect(page.getByRole('region', { name: /área de chat/i })).toBeVisible();
         },
       },
     ];
