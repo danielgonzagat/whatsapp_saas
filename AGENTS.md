@@ -285,21 +285,16 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-04-28 10:09am GMT-3
+# [whatsapp_saas] recent context, 2026-04-28 10:19am GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (19,586t read) | 985,011t work | 98% savings
+Stats: 50 obs (19,397t read) | 961,326t work | 98% savings
 
 ### Apr 21, 2026
 
-1137 1:03a 🟣 AuthService Spec — Affiliate Invite Token Tests Added to register() Suite
-1138 " 🟣 Frontend Affiliate Invite Token Propagation — Full Stack Pass-Through Wired
-1140 1:04a 🟣 KloelAuthScreen — Affiliate Invite Token Auto-Detection from URL Query Params
-1142 1:05a 🔵 AuthService Spec — Direct new AuthService() Instantiations Need ConnectService Parameter
-1143 " 🔵 EmailService and PartnershipsService — Affiliate Invite Infrastructure Already Implemented
 1149 1:07a 🔵 PartnershipsService.createAffiliate — Full Invite Flow Already Implemented Including Email Dispatch
 1155 1:11a ⚖️ Kloel Financial System — Full 12-Block Production Readiness Mandate Re-Issued (Session Continuation)
 1158 " 🟣 ParceriasView AffiliateInviteModal — Full UI Integration Complete
@@ -354,6 +349,11 @@ Stats: 50 obs (19,586t read) | 985,011t work | 98% savings
 3205 " 🔵 KloelLanding.helpers.ts — Typewriter Delay Calculator Extracted to Reduce Cyclomatic Complexity
 3209 10:06a 🔵 Frontend Build Succeeds — 82 Static Pages, Full Route Map Confirmed
 3211 10:08a 🔵 Landing Page Animation Integration Test — All 3 Motion Modes Verified Against Local Build
+3216 10:10a 🔴 usePrefersReducedMotion — Fixed SSR Default Causing Animations to Stay Disabled in Production
+3217 10:11a ✅ Commit 804cb9df Pushed to PR #198 — Animation Fix + .omx Config Files
+3218 " 🔵 Pre-Push Hook Gate Results — ESLint, Visual Contract, TypeCheck, and Vitest All Passing
+3219 10:12a 🔵 Frontend Vitest Suite — 46 Files, 205 Tests All Passing in 18.35s
+3220 10:14a ✅ PR #198 Push Succeeded — Commit 804cb9df Pushed After Full Pre-Push Gate
 
-Access 985k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 961k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
