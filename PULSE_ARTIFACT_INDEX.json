@@ -1,10 +1,10 @@
 {
-  "runId": "cf4a2def-042f-4147-a979-46215b4d8de7",
-  "generatedAt": "2026-04-28T01:26:04.715Z",
+  "runId": "7d4d403e-d855-4e14-81ef-3ce62aef9852",
+  "generatedAt": "2026-04-28T02:45:40.515Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
-    "4 high-impact external signal(s) remain active."
+    "5 high-impact external signal(s) remain active."
   ],
   "cleanupPolicy": "enforced-single-state",
   "canonicalDir": "/Users/danielpenin/whatsapp_saas/.pulse/current",

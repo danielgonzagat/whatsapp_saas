@@ -1,6 +1,6 @@
 {
-  "score": 75,
-  "totalNodes": 2723,
+  "score": 77,
+  "totalNodes": 2710,
   "breaks": [
     {
       "type": "BACKUP_MISSING",
@@ -24,54 +24,54 @@
       "type": "RACE_CONDITION_DATA_CORRUPTION",
       "severity": "critical",
       "file": "backend/src/checkout/checkout-catalog.service.ts",
-      "line": 54,
+      "line": 55,
       "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 54 followed by update at line 61 without $transaction or version check",
+      "detail": "findFirst/findUnique at line 55 followed by update at line 62 without $transaction or version check",
       "source": "concurrency-tester"
     },
     {
       "type": "RACE_CONDITION_DATA_CORRUPTION",
       "severity": "critical",
       "file": "backend/src/checkout/checkout-catalog.service.ts",
-      "line": 146,
+      "line": 147,
       "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 146 followed by update at line 150 without $transaction or version check",
+      "detail": "findFirst/findUnique at line 147 followed by update at line 151 without $transaction or version check",
       "source": "concurrency-tester"
     },
     {
       "type": "RACE_CONDITION_DATA_CORRUPTION",
       "severity": "critical",
       "file": "backend/src/checkout/checkout-catalog.service.ts",
-      "line": 338,
+      "line": 339,
       "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 338 followed by update at line 345 without $transaction or version check",
+      "detail": "findFirst/findUnique at line 339 followed by update at line 346 without $transaction or version check",
       "source": "concurrency-tester"
     },
     {
       "type": "RACE_CONDITION_DATA_CORRUPTION",
       "severity": "critical",
       "file": "backend/src/checkout/checkout-product.service.ts",
-      "line": 68,
+      "line": 69,
       "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 68 followed by update at line 75 without $transaction or version check",
+      "detail": "findFirst/findUnique at line 69 followed by update at line 76 without $transaction or version check",
       "source": "concurrency-tester"
     },
     {
       "type": "RACE_CONDITION_DATA_CORRUPTION",
       "severity": "critical",
       "file": "backend/src/checkout/checkout-product.service.ts",
-      "line": 194,
+      "line": 195,
       "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 194 followed by update at line 201 without $transaction or version check",
+      "detail": "findFirst/findUnique at line 195 followed by update at line 202 without $transaction or version check",
       "source": "concurrency-tester"
     },
     {
       "type": "RACE_CONDITION_DATA_CORRUPTION",
       "severity": "critical",
       "file": "backend/src/checkout/checkout-product.service.ts",
-      "line": 232,
+      "line": 233,
       "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 232 followed by update at line 239 without $transaction or version check",
+      "detail": "findFirst/findUnique at line 233 followed by update at line 240 without $transaction or version check",
       "source": "concurrency-tester"
     },
     {
@@ -91,96 +91,6 @@
       "description": "Backup frequency 1440 min exceeds RPO target of 60 min — up to 1440 min of financial data at risk",
       "detail": "Increase backup frequency; enable continuous WAL archiving on PostgreSQL for near-zero RPO",
       "source": "disaster-recovery-checker"
-    },
-    {
-      "type": "IDEMPOTENCY_FINANCIAL",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout-catalog.service.ts",
-      "line": 0,
-      "description": "Payment creation endpoint without idempotency key — network retry causes double charge",
-      "detail": "Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key",
-      "source": "idempotency-checker"
-    },
-    {
-      "type": "IDEMPOTENCY_FINANCIAL",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout-product-config.service.ts",
-      "line": 0,
-      "description": "Payment creation endpoint without idempotency key — network retry causes double charge",
-      "detail": "Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key",
-      "source": "idempotency-checker"
-    },
-    {
-      "type": "IDEMPOTENCY_FINANCIAL",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout-product.service.ts",
-      "line": 0,
-      "description": "Payment creation endpoint without idempotency key — network retry causes double charge",
-      "detail": "Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key",
-      "source": "idempotency-checker"
-    },
-    {
-      "type": "IDEMPOTENCY_FINANCIAL",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout.service.ts",
-      "line": 0,
-      "description": "Payment creation endpoint without idempotency key — network retry causes double charge",
-      "detail": "Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key",
-      "source": "idempotency-checker"
-    },
-    {
-      "type": "IDEMPOTENCY_FINANCIAL",
-      "severity": "critical",
-      "file": "backend/src/kloel/kloel-tool-dispatcher.service.ts",
-      "line": 0,
-      "description": "Payment creation endpoint without idempotency key — network retry causes double charge",
-      "detail": "Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key",
-      "source": "idempotency-checker"
-    },
-    {
-      "type": "IDEMPOTENCY_FINANCIAL",
-      "severity": "critical",
-      "file": "backend/src/kloel/unified-agent-actions.service.ts",
-      "line": 0,
-      "description": "Payment creation endpoint without idempotency key — network retry causes double charge",
-      "detail": "Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key",
-      "source": "idempotency-checker"
-    },
-    {
-      "type": "IDEMPOTENCY_FINANCIAL",
-      "severity": "critical",
-      "file": "backend/src/kloel/unified-agent.service.ts",
-      "line": 0,
-      "description": "Payment creation endpoint without idempotency key — network retry causes double charge",
-      "detail": "Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key",
-      "source": "idempotency-checker"
-    },
-    {
-      "type": "IDEMPOTENCY_FINANCIAL",
-      "severity": "critical",
-      "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 0,
-      "description": "Payment creation endpoint without idempotency key — network retry causes double charge",
-      "detail": "Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key",
-      "source": "idempotency-checker"
-    },
-    {
-      "type": "STATE_PAYMENT_INVALID",
-      "severity": "critical",
-      "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 160,
-      "description": "Payment status set to PAID without verifying PROCESSING intermediate state",
-      "detail": "where: { ...where, workspaceId, status: 'PAID' as const }, — payment must transition PENDING → PROCESSING → PAID, never jump directly",
-      "source": "state-machine-checker"
-    },
-    {
-      "type": "STATE_PAYMENT_INVALID",
-      "severity": "critical",
-      "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 197,
-      "description": "Payment status set to PAID without verifying PROCESSING intermediate state",
-      "detail": "where.status = 'PAID'; — payment must transition PENDING → PROCESSING → PAID, never jump directly",
-      "source": "state-machine-checker"
     },
     {
       "type": "AUDIT_ADMIN_NO_LOG",
@@ -231,7 +141,7 @@
       "type": "RACE_CONDITION_OVERWRITE",
       "severity": "high",
       "file": "backend/src/checkout/checkout-catalog.service.ts",
-      "line": 53,
+      "line": 54,
       "description": "Update without optimistic lock version check — concurrent updates may silently overwrite each other",
       "detail": "Add a `version` field or protect the mutation with a transaction/conditional WHERE to detect conflicts",
       "source": "concurrency-tester"
@@ -240,7 +150,7 @@
       "type": "RACE_CONDITION_OVERWRITE",
       "severity": "high",
       "file": "backend/src/checkout/checkout-product.service.ts",
-      "line": 67,
+      "line": 68,
       "description": "Update without optimistic lock version check — concurrent updates may silently overwrite each other",
       "detail": "Add a `version` field or protect the mutation with a transaction/conditional WHERE to detect conflicts",
       "source": "concurrency-tester"
@@ -321,7 +231,7 @@
       "type": "DATA_PRODUCT_NO_PLAN",
       "severity": "high",
       "file": "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-product.service.ts",
-      "line": 60,
+      "line": 61,
       "description": "Checkout/order creation without prior plan/product validation in checkout-product.service.ts",
       "detail": "Function 'createProduct' performs a write operation without a findFirst/findUnique guard. An order could be created for a non-existent or inactive plan.",
       "source": "data-consistency"
@@ -667,24 +577,6 @@
       "description": "$transaction in financial file without isolationLevel specified",
       "detail": "await deps.prisma.$transaction(async (tx) => {",
       "source": "prisma-safety-checker"
-    },
-    {
-      "type": "STATE_INVALID_TRANSITION",
-      "severity": "high",
-      "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 197,
-      "description": "Status set directly without checking current state — invalid transition possible",
-      "detail": "where.status = 'PAID'; — add a transition guard that validates the current status before updating",
-      "source": "state-machine-checker"
-    },
-    {
-      "type": "STATE_INVALID_TRANSITION",
-      "severity": "high",
-      "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 0,
-      "description": "State transitions not explicitly rejected — invalid transitions may be silently ignored",
-      "detail": "Add `throw new BadRequestException(\"Invalid state transition\")` for disallowed status changes",
-      "source": "state-machine-checker"
     },
     {
       "type": "UI_DEAD_HANDLER",
@@ -1963,7 +1855,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/calendar/calendar.service.ts",
-      "line": 320,
+      "line": 319,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "startTime: new Date(createdEvent.start?.dateTime || event.startTime), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1972,7 +1864,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/calendar/calendar.service.ts",
-      "line": 321,
+      "line": 320,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "endTime: new Date(createdEvent.end?.dateTime || event.endTime), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1981,7 +1873,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/calendar/calendar.service.ts",
-      "line": 423,
+      "line": 422,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const endTime = new Date(datetime.getTime() + durationMinutes * 60 * 1000); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2062,7 +1954,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-product-config.service.ts",
-      "line": 37,
+      "line": 38,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4330,7 +4222,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/webhooks.service.ts",
-      "line": 483,
+      "line": 485,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "update: { status: 'received', receivedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4339,7 +4231,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/webhooks/webhooks.service.ts",
-      "line": 491,
+      "line": 493,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { status: 'processed', processedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4438,7 +4330,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/account-agent.service.ts",
-      "line": 1357,
+      "line": 1361,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "? new Date(approval.lastDetectedAt) — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4447,7 +4339,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/account-agent.service.ts",
-      "line": 1368,
+      "line": 1372,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "? new Date(approval.lastDetectedAt) — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4456,7 +4348,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/account-agent.service.ts",
-      "line": 1390,
+      "line": 1394,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "completedAt: session.completedAt ? new Date(session.completedAt) : undefined, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4465,7 +4357,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/account-agent.service.ts",
-      "line": 1397,
+      "line": 1401,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "completedAt: session.completedAt ? new Date(session.completedAt) : null, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4726,7 +4618,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 597,
+      "line": 601,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "lastCatchupFailedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4735,7 +4627,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 599,
+      "line": 603,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "recoveryBlockedAt: recoveryBlockedReason ? new Date().toISOString() : null, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4744,7 +4636,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 739,
+      "line": 743,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "updatedAt: updatedAt?.toISOString() || new Date(activityTimestamp).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4753,7 +4645,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 1367,
+      "line": 1371,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "? new Date().toISOString() — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4762,7 +4654,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 1379,
+      "line": 1383,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "remotePushNameUpdatedAt: remotePushName ? new Date().toISOString() : undefined, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4771,7 +4663,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 1411,
+      "line": 1415,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "whatsappSavedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4780,7 +4672,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 1444,
+      "line": 1448,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "lastMessageAt: remoteActivityAt || new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4789,7 +4681,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 1466,
+      "line": 1470,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": ": currentLastMessageAt || new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4798,7 +4690,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 1542,
+      "line": 1546,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "nextCustomFields.remotePushNameUpdatedAt || new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4807,7 +4699,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 1544,
+      "line": 1548,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "nextCustomFields.placeholderSanitizedAt = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4897,7 +4789,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 565,
+      "line": 569,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4906,7 +4798,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 650,
+      "line": 654,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4915,7 +4807,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 714,
+      "line": 718,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4924,7 +4816,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 1524,
+      "line": 1528,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "optedOutAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4933,7 +4825,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 2030,
+      "line": 2034,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "lastEvent && Date.now() - new Date(lastEvent.createdAt).getTime() <= 72 * 60 * 60 * 1000; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4942,7 +4834,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 2368,
+      "line": 2372,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "return new Date(timestamp).toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -5113,7 +5005,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/kloel/audio.service.ts",
-      "line": 183,
+      "line": 180,
       "description": "Environment variable AUDIO_FETCH_ALLOWLIST is referenced but not documented in .env.example",
       "detail": "Add AUDIO_FETCH_ALLOWLIST= to .env.example with a description comment",
       "source": "env-checker"
@@ -5122,7 +5014,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/kloel/audio.service.ts",
-      "line": 186,
+      "line": 183,
       "description": "Environment variable R2_PUBLIC_URL is referenced but not documented in .env.example",
       "detail": "Add R2_PUBLIC_URL= to .env.example with a description comment",
       "source": "env-checker"
@@ -5274,19 +5166,10 @@
     {
       "type": "EMPTY_CATCH",
       "severity": "medium",
-      "file": "backend/src/inbox/inbox-events.service.ts",
-      "line": 74,
-      "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (err) {",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
       "file": "backend/src/kloel/kloel-conversation-store.ts",
       "line": 59,
       "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (error) {",
+      "detail": "} catch (error: unknown) {",
       "source": "error-handler-auditor"
     },
     {
@@ -5295,7 +5178,7 @@
       "file": "backend/src/kloel/kloel-conversation-store.ts",
       "line": 115,
       "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (error) {",
+      "detail": "} catch (error: unknown) {",
       "source": "error-handler-auditor"
     },
     {
@@ -5304,7 +5187,7 @@
       "file": "backend/src/kloel/kloel-lead-brain.service.ts",
       "line": 128,
       "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (error) {",
+      "detail": "} catch (error: unknown) {",
       "source": "error-handler-auditor"
     },
     {
@@ -5313,7 +5196,7 @@
       "file": "backend/src/kloel/kloel-lead-brain.service.ts",
       "line": 159,
       "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (error) {",
+      "detail": "} catch (error: unknown) {",
       "source": "error-handler-auditor"
     },
     {
@@ -5322,7 +5205,7 @@
       "file": "backend/src/kloel/kloel-thread-summary.service.ts",
       "line": 198,
       "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (error) {",
+      "detail": "} catch (error: unknown) {",
       "source": "error-handler-auditor"
     },
     {
@@ -5340,7 +5223,7 @@
       "file": "backend/src/kloel/sales-subscriptions.controller.ts",
       "line": 126,
       "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (err) {",
+      "detail": "} catch (err: unknown) {",
       "source": "error-handler-auditor"
     },
     {
@@ -5349,7 +5232,7 @@
       "file": "backend/src/kloel/sales-subscriptions.controller.ts",
       "line": 161,
       "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (err) {",
+      "detail": "} catch (err: unknown) {",
       "source": "error-handler-auditor"
     },
     {
@@ -5358,7 +5241,7 @@
       "file": "backend/src/kloel/sales-subscriptions.controller.ts",
       "line": 196,
       "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (err) {",
+      "detail": "} catch (err: unknown) {",
       "source": "error-handler-auditor"
     },
     {
@@ -5367,7 +5250,7 @@
       "file": "backend/src/kloel/sales.controller.ts",
       "line": 221,
       "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (err) {",
+      "detail": "} catch (err: unknown) {",
       "source": "error-handler-auditor"
     },
     {
@@ -5698,7 +5581,7 @@
       "type": "N_PLUS_ONE_QUERY",
       "severity": "medium",
       "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 126,
+      "line": 128,
       "description": "Prisma query inside loop — potential N+1 query problem",
       "detail": "const priorCount = await this.prisma.checkoutOrder.count({",
       "source": "performance-checker"
@@ -5797,7 +5680,7 @@
       "type": "SLOW_QUERY",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-product-config.service.ts",
-      "line": 39,
+      "line": 40,
       "description": "findMany without select or include — returns all columns from DB",
       "detail": "const feeRows = await this.prisma.marketplaceFee.findMany({ — Add a select: { ... } block to fetch only required fields, reducing payload size.",
       "source": "performance-query-profiler"
@@ -5806,7 +5689,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-product-config.service.ts",
-      "line": 236,
+      "line": 237,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "const legacyPlans = await this.prisma.checkoutProductPlan.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -5968,7 +5851,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 105,
+      "line": 106,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "this.prisma.checkoutOrder.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -5977,7 +5860,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 206,
+      "line": 213,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "this.prisma.checkoutOrder.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -5986,7 +5869,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 230,
+      "line": 237,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "this.prisma.checkoutOrder.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -5995,7 +5878,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 254,
+      "line": 261,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "const data = await this.prisma.checkoutPayment.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -10162,7 +10045,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/kloel/upload.controller.ts",
-      "line": 236,
+      "line": 244,
       "description": "POST /kloel/upload is not called by any frontend code",
       "detail": "Controller: unknown"
     },
@@ -10687,7 +10570,7 @@
       "type": "STRINGIFY_CIRCULAR_RISK",
       "severity": "low",
       "file": "backend/src/kloel/unified-agent.service.ts",
-      "line": 280,
+      "line": 281,
       "description": "JSON.stringify() on request/socket object — circular reference risk",
       "detail": "${context ? `[Contexto adicional: ${JSON.stringify(context)}]` : ''}",
       "source": "json-parse-safety"
@@ -10840,7 +10723,7 @@
       "type": "PROCESSOR_NO_PRODUCER",
       "severity": "low",
       "file": "worker/processor.ts",
-      "line": 920,
+      "line": 919,
       "description": "Worker processor handles job 'incoming-message' but no producer calls queue.add('incoming-message')",
       "detail": "Dead processor — no backend code enqueues this job name. May be renamed or removed producer.",
       "source": "queue-parser"
@@ -10849,7 +10732,7 @@
       "type": "PROCESSOR_NO_PRODUCER",
       "severity": "low",
       "file": "worker/processor.ts",
-      "line": 933,
+      "line": 932,
       "description": "Worker processor handles job 'scheduled-followup' but no producer calls queue.add('scheduled-followup')",
       "detail": "Dead processor — no backend code enqueues this job name. May be renamed or removed producer.",
       "source": "queue-parser"
@@ -10927,12 +10810,12 @@
     "proxyRoutes": 74,
     "proxyNoUpstream": 0,
     "securityIssues": 0,
-    "dataSafetyIssues": 14,
-    "qualityIssues": 1124,
+    "dataSafetyIssues": 13,
+    "qualityIssues": 1112,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-28T01:24:17.975Z",
-  "runId": "cf4a2def-042f-4147-a979-46215b4d8de7",
-  "generatedAt": "2026-04-28T01:26:04.715Z"
+  "timestamp": "2026-04-28T02:44:39.840Z",
+  "runId": "7d4d403e-d855-4e14-81ef-3ce62aef9852",
+  "generatedAt": "2026-04-28T02:45:40.515Z"
 }

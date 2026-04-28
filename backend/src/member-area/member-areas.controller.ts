@@ -215,7 +215,7 @@ export class MemberAreasController {
         error instanceof Error ? error.stack : undefined,
       );
       throw new BadRequestException(
-        error instanceof Error && (error as any).code === 'P2002'
+        error instanceof Error && (error as { code?: string }).code === 'P2002'
           ? 'A member area with this slug already exists'
           : `Failed to create member area: ${error instanceof Error ? error.message : String(error)}`,
       );

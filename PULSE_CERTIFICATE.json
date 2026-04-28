@@ -1,13 +1,13 @@
 {
   "projectId": "kloel",
   "projectName": "KLOEL",
-  "commitSha": "cfe5c96aa5ef03fe0967ff89c8201af4bf7ebb4f",
+  "commitSha": "a05aad40955c9d07adc427c001741210e7c64f5e",
   "environment": "scan",
-  "timestamp": "2026-04-28T01:25:22.180Z",
+  "timestamp": "2026-04-28T02:45:14.570Z",
   "status": "PARTIAL",
   "humanReplacementStatus": "NOT_READY",
   "score": 61,
-  "rawScore": 75,
+  "rawScore": 77,
   "certificationTarget": {
     "tier": null,
     "final": false,
@@ -29,13 +29,13 @@
     },
     "truthExtractionPass": {
       "status": "pass",
-      "reason": "Structural truth is materially coherent: 42 module(s), 120 flow group(s), and no runtime-critical product capability remains phantom or latent.",
+      "reason": "Structural truth is materially coherent: 42 module(s), 122 flow group(s), and no runtime-critical product capability remains phantom or latent.",
       "evidenceMode": "inferred",
       "confidence": "medium"
     },
     "staticPass": {
       "status": "fail",
-      "reason": "Static certification found 76 critical/high scan finding(s) and Codacy still reports 1116 HIGH issue(s).",
+      "reason": "Static certification found 64 critical/high scan finding(s) and Codacy still reports 1116 HIGH issue(s).",
       "failureClass": "product_failure"
     },
     "runtimePass": {
@@ -148,11 +148,11 @@
     },
     "typeIntegrityPass": {
       "status": "pass",
-      "reason": "Type escape hatch count (3) is below the threshold."
+      "reason": "Type escape hatch count (4) is below the threshold."
     }
   },
   "criticalFailures": [
-    "staticPass: Static certification found 76 critical/high scan finding(s) and Codacy still reports 1116 HIGH issue(s).",
+    "staticPass: Static certification found 64 critical/high scan finding(s) and Codacy still reports 1116 HIGH issue(s).",
     "invariantPass: Invariant checks are failing: financial-audit-trail.",
     "securityPass: Security certification found blocking findings. Blocking types: backend/prisma/migrations/20251209150035_init_baseline/migration.sql (37), backend/src/auth/email.service.ts, package.json.",
     "recoveryPass: Recovery certification found blocking findings. Blocking types: BACKUP_MISSING, DR_RPO_TOO_HIGH.",
@@ -169,9 +169,9 @@
     "Observed external high-impact signals remain active: 3."
   ],
   "selfTrustReport": {
-    "timestamp": "2026-04-28T01:25:22.169Z",
+    "timestamp": "2026-04-28T02:45:14.566Z",
     "overallPass": true,
-    "score": 100,
+    "score": 99,
     "checks": [
       {
         "id": "manifest-integrity",
@@ -192,10 +192,10 @@
       {
         "id": "evidence-freshness",
         "name": "Evidence Freshness",
-        "description": "Evidence is 1 minutes old",
+        "description": "Evidence is 60 minutes old",
         "pass": true,
         "severity": "high",
-        "score": 99.89812103836624
+        "score": 95.84748931263111
       },
       {
         "id": "cross-artifact-consistency",
@@ -219,31 +219,31 @@
     "recommendations": []
   },
   "scopeStateSummary": {
-    "totalFiles": 2686,
-    "totalLines": 597807,
-    "runtimeCriticalFiles": 2063,
-    "userFacingFiles": 841,
+    "totalFiles": 2693,
+    "totalLines": 598119,
+    "runtimeCriticalFiles": 2068,
+    "userFacingFiles": 842,
     "humanRequiredFiles": 113,
     "surfaceCounts": {
-      "frontend": 742,
+      "frontend": 743,
       "frontend-admin": 100,
       "backend": 1078,
       "worker": 117,
       "prisma": 0,
       "e2e": 64,
-      "scripts": 360,
+      "scripts": 362,
       "docs": 70,
-      "infra": 6,
+      "infra": 10,
       "governance": 117,
       "root-config": 22,
       "artifacts": 2,
       "misc": 8
     },
     "kindCounts": {
-      "source": 1584,
+      "source": 1585,
       "spec": 359,
       "migration": 58,
-      "config": 596,
+      "config": 602,
       "document": 87,
       "artifact": 2
     },
@@ -345,7 +345,6 @@
       "preview",
       "pricing",
       "processor",
-      "prometheus",
       "prompt",
       "protected",
       "prove",
@@ -569,7 +568,7 @@
     "snapshotAvailable": true,
     "sourcePath": "/Users/danielpenin/whatsapp_saas/PULSE_CODACY_STATE.json",
     "syncedAt": "2026-04-27T19:15:25.424Z",
-    "ageMinutes": 369,
+    "ageMinutes": 449,
     "stale": false,
     "loc": 463521,
     "totalIssues": 11966,
@@ -1676,11 +1675,11 @@
     "humanRequiredHotspots": 2
   },
   "externalSignalSummary": {
-    "totalSignals": 8,
+    "totalSignals": 10,
     "runtimeSignals": 2,
-    "changeSignals": 1,
+    "changeSignals": 3,
     "dependencySignals": 0,
-    "highImpactSignals": 4,
+    "highImpactSignals": 5,
     "mappedSignals": 7,
     "humanRequiredSignals": 1,
     "staleAdapters": 0,
@@ -1695,7 +1694,7 @@
     ],
     "bySource": {
       "github": 1,
-      "github_actions": 0,
+      "github_actions": 2,
       "codacy": 4,
       "codecov": 0,
       "sentry": 1,
@@ -1715,7 +1714,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-      "observedAt": "2026-04-28T01:24:18.817Z",
+      "observedAt": "2026-04-28T02:44:40.410Z",
       "relatedFiles": [
         "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
       ],
@@ -1759,7 +1758,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-      "observedAt": "2026-04-28T01:24:18.817Z",
+      "observedAt": "2026-04-28T02:44:40.410Z",
       "relatedFiles": [
         "backend/src/auth/email.service.ts"
       ],
@@ -1847,6 +1846,8 @@
         "ad-patch-meta-ads-campaigns-id-status",
         "admin-post-admin-auth-login",
         "admin-post-admin-chat-message",
+        "admin-post-admin-products-product-id-approve",
+        "admin-post-admin-products-product-id-reject",
         "admin-post-admin-transactions-order-id-operate",
         "analytics-post-reports-send-email",
         "autopilot-post-autopilot-ask",
@@ -1974,7 +1975,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-      "observedAt": "2026-04-28T01:24:18.817Z",
+      "observedAt": "2026-04-28T02:44:40.410Z",
       "relatedFiles": [
         "backend/src/autopilot/autopilot.service.ts"
       ],
@@ -2039,6 +2040,8 @@
       ],
       "flowIds": [
         "admin-post-admin-chat-message",
+        "admin-post-admin-products-product-id-approve",
+        "admin-post-admin-products-product-id-reject",
         "analytics-post-reports-send-email",
         "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-money-machine",
@@ -2154,7 +2157,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-      "observedAt": "2026-04-28T01:24:18.817Z",
+      "observedAt": "2026-04-28T02:44:40.410Z",
       "relatedFiles": [
         "package.json"
       ],
@@ -2190,7 +2193,7 @@
       ]
     },
     {
-      "id": "github-recent-commits-1777339552940",
+      "id": "github-recent-commits-1777344333336",
       "type": "code-change",
       "source": "github",
       "truthMode": "observed",
@@ -2217,7 +2220,65 @@
       ]
     },
     {
-      "id": "sentry-no-issues-1777339553305",
+      "id": "github-actions-failed-1777344334935",
+      "type": "ci-failure",
+      "source": "github_actions",
+      "truthMode": "observed",
+      "executionMode": "observation_only",
+      "severity": 0.4,
+      "impactScore": 0.8,
+      "confidence": 0.95,
+      "summary": "3 recent CI workflow failure(s): CodeQL, CI, Dependabot Auto Merge",
+      "observedAt": "2026-04-28T02:40:23.000Z",
+      "relatedFiles": [],
+      "routePatterns": [],
+      "tags": [
+        "ci",
+        "failure",
+        "build"
+      ],
+      "rawRef": null,
+      "capabilityIds": [],
+      "flowIds": [],
+      "recentChangeRefs": [],
+      "ownerLane": "platform",
+      "protectedByGovernance": false,
+      "validationTargets": [
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_CERTIFICATE.json"
+      ]
+    },
+    {
+      "id": "github-actions-success-1777344334935",
+      "type": "ci-success",
+      "source": "github_actions",
+      "truthMode": "observed",
+      "executionMode": "observation_only",
+      "severity": 1,
+      "impactScore": 0.2,
+      "confidence": 0.95,
+      "summary": "2 recent CI workflow success(es)",
+      "observedAt": "2026-04-28T02:39:49.000Z",
+      "relatedFiles": [],
+      "routePatterns": [],
+      "tags": [
+        "ci",
+        "success",
+        "build"
+      ],
+      "rawRef": null,
+      "capabilityIds": [],
+      "flowIds": [],
+      "recentChangeRefs": [],
+      "ownerLane": "platform",
+      "protectedByGovernance": false,
+      "validationTargets": [
+        "PULSE_EXTERNAL_SIGNAL_STATE.json",
+        "PULSE_CERTIFICATE.json"
+      ]
+    },
+    {
+      "id": "sentry-no-issues-1777344333788",
       "type": "performance-metric",
       "source": "sentry",
       "truthMode": "observed",
@@ -2226,7 +2287,7 @@
       "impactScore": 1,
       "confidence": 0.95,
       "summary": "No unresolved Sentry issues — project is clean",
-      "observedAt": "2026-04-28T01:25:53.305Z",
+      "observedAt": "2026-04-28T02:45:33.788Z",
       "relatedFiles": [],
       "routePatterns": [],
       "tags": [
@@ -2248,7 +2309,7 @@
       ]
     },
     {
-      "id": "datadog-no-monitors-1777339556703",
+      "id": "datadog-no-monitors-1777344335703",
       "type": "config-gap",
       "source": "datadog",
       "truthMode": "observed",
@@ -2257,7 +2318,7 @@
       "impactScore": 0.2,
       "confidence": 0.95,
       "summary": "No Datadog monitors configured — add monitors for production visibility",
-      "observedAt": "2026-04-28T01:25:56.703Z",
+      "observedAt": "2026-04-28T02:45:35.703Z",
       "relatedFiles": [],
       "routePatterns": [],
       "tags": [
@@ -2294,6 +2355,8 @@
       "flowIds": [
         "admin-post-admin-auth-login",
         "admin-post-admin-chat-message",
+        "admin-post-admin-products-product-id-approve",
+        "admin-post-admin-products-product-id-reject",
         "admin-post-admin-transactions-order-id-operate",
         "affiliate-post-affiliate-ai-search",
         "affiliate-post-affiliate-saved-product-id",
@@ -2411,7 +2474,7 @@
       ]
     },
     {
-      "id": "gitnexus:2026-04-28T01:25:58.727Z",
+      "id": "gitnexus:2026-04-28T02:45:37.513Z",
       "type": "codegraph",
       "source": "gitnexus",
       "truthMode": "observed",
@@ -2420,7 +2483,7 @@
       "impactScore": 0.3,
       "confidence": 0.9,
       "summary": "GitNexus is not available (npx gitnexus@latest failed).",
-      "observedAt": "2026-04-28T01:25:58.727Z",
+      "observedAt": "2026-04-28T02:45:37.513Z",
       "relatedFiles": [],
       "routePatterns": [],
       "tags": [
@@ -2443,6 +2506,8 @@
       ],
       "flowIds": [
         "admin-post-admin-auth-login",
+        "admin-post-admin-products-product-id-approve",
+        "admin-post-admin-products-product-id-reject",
         "admin-post-admin-transactions-order-id-operate",
         "billing-post-billing-checkout",
         "forgot-post-auth-forgot-password",
@@ -2554,8 +2619,8 @@
     "scenarioCoveredCapabilities": 157
   },
   "flowProjectionSummary": {
-    "totalFlows": 120,
-    "realFlows": 120,
+    "totalFlows": 122,
+    "realFlows": 122,
     "partialFlows": 0,
     "latentFlows": 0,
     "phantomFlows": 0
@@ -2599,10 +2664,10 @@
     }
   ],
   "productVision": {
-    "generatedAt": "2026-04-28T01:26:04.708Z",
+    "generatedAt": "2026-04-28T02:45:40.514Z",
     "truthMode": "aspirational",
     "evidenceBasis": {
-      "observed": 326,
+      "observed": 328,
       "inferred": 85,
       "projected": 0
     },
@@ -2617,31 +2682,30 @@
       "projectedProductionReadiness": "yellow"
     },
     "currentStateSummary": "The current product-facing system materializes 267 real capability(ies), 24 partial capability(ies), 0 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.",
-    "projectedProductSummary": "If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 291/291 capability(ies) and 120/120 flow(s) at least partially real, with readiness yellow.",
-    "inferredProductIdentity": "If the currently connected structures converge, the product resolves toward a unified operational platform centered on Billing, Checkout, CRM, Dashboard, Followups, Partnerships, Sales/Vendas, Scrapers.",
+    "projectedProductSummary": "If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 291/291 capability(ies) and 122/122 flow(s) at least partially real, with readiness yellow.",
+    "inferredProductIdentity": "If the currently connected structures converge, the product resolves toward a unified operational platform centered on Billing, Checkout, CIA/Agent, CRM, Dashboard, Followups, Partnerships, Sales/Vendas.",
     "distanceSummary": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 1 structural parity gap(s), and 1116 HIGH Codacy issue(s).",
     "promiseToProductionDelta": {
       "declaredSurfaces": 41,
-      "realSurfaces": 32,
+      "realSurfaces": 33,
       "partialSurfaces": 0,
       "latentSurfaces": 0,
-      "phantomSurfaces": 9,
+      "phantomSurfaces": 8,
       "productFacingPhantomCapabilities": 0,
       "systemPhantomCapabilities": 0,
       "criticalGaps": [
         "Pay: phantom surface with incomplete materialization.",
         "Privacy: phantom surface with incomplete materialization.",
-        "Produtos: phantom surface with incomplete materialization.",
         "Terms: phantom surface with incomplete materialization.",
         "Tools: phantom surface with incomplete materialization."
       ]
     },
     "externalSignalSummary": {
-      "totalSignals": 8,
+      "totalSignals": 10,
       "runtimeSignals": 2,
-      "changeSignals": 1,
+      "changeSignals": 3,
       "dependencySignals": 0,
-      "highImpactSignals": 4,
+      "highImpactSignals": 5,
       "mappedSignals": 7,
       "humanRequiredSignals": 1,
       "staleAdapters": 0,
@@ -2656,7 +2720,7 @@
       ],
       "bySource": {
         "github": 1,
-        "github_actions": 0,
+        "github_actions": 2,
         "codacy": 4,
         "codecov": 0,
         "sentry": 1,
@@ -2740,6 +2804,8 @@
           "/admin/auth/login",
           "/admin/carteira/connect/accounts",
           "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/admin/transactions/:orderId/operate",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
@@ -3141,6 +3207,7 @@
           "/products/categories/list",
           "/products/import",
           "/products/stats",
+          "/produtos",
           "/register",
           "/reports/send-email",
           "/s/:slug",
@@ -3245,6 +3312,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "analytics-post-reports-send-email",
           "autopilot-post-autopilot-ask",
@@ -3353,6 +3422,544 @@
         ]
       },
       {
+        "id": "surface:cia-agent",
+        "name": "CIA/Agent",
+        "declaredByManifest": true,
+        "critical": true,
+        "status": "real",
+        "truthMode": "observed",
+        "completion": 1,
+        "routePatterns": [
+          "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
+          "/affiliate/request/:productId",
+          "/affiliate/saved/:productId",
+          "/ai/assistant/analyze-sentiment",
+          "/ai/assistant/pitch",
+          "/ai/assistant/suggest",
+          "/ai/assistant/summarize",
+          "/ai/kb/create",
+          "/ai/kb/source",
+          "/analytics",
+          "/analytics/smart-time",
+          "/api/auth/register",
+          "/api/kyc/bank",
+          "/api/kyc/fiscal",
+          "/api/v1/messages",
+          "/api/whatsapp-api/agent/stream",
+          "/api/whatsapp-api/catalog/contacts",
+          "/api/whatsapp-api/catalog/ranking",
+          "/api/whatsapp-api/catalog/refresh",
+          "/api/whatsapp-api/catalog/score",
+          "/api/whatsapp-api/chats",
+          "/api/whatsapp-api/cia/intelligence",
+          "/api/whatsapp-api/live",
+          "/api/whatsapp-api/provider-status",
+          "/api/whatsapp-api/session/action",
+          "/api/whatsapp-api/session/action-turn",
+          "/api/whatsapp-api/session/backlog/start",
+          "/api/whatsapp-api/session/bootstrap",
+          "/api/whatsapp-api/session/claim",
+          "/api/whatsapp-api/session/diagnostics",
+          "/api/whatsapp-api/session/disconnect",
+          "/api/whatsapp-api/session/force-check",
+          "/api/whatsapp-api/session/force-reconnect",
+          "/api/whatsapp-api/session/link",
+          "/api/whatsapp-api/session/logout",
+          "/api/whatsapp-api/session/pause-agent",
+          "/api/whatsapp-api/session/proofs",
+          "/api/whatsapp-api/session/qr",
+          "/api/whatsapp-api/session/reconcile",
+          "/api/whatsapp-api/session/recreate-if-invalid",
+          "/api/whatsapp-api/session/repair-config",
+          "/api/whatsapp-api/session/resume-agent",
+          "/api/whatsapp-api/session/start",
+          "/api/whatsapp-api/session/status",
+          "/api/whatsapp-api/session/stream-token",
+          "/api/whatsapp-api/session/takeover",
+          "/api/whatsapp-api/session/view",
+          "/auth/forgot-password",
+          "/auth/register",
+          "/autopilot",
+          "/autopilot/actions",
+          "/autopilot/actions/export",
+          "/autopilot/ask",
+          "/autopilot/conversion",
+          "/autopilot/impact",
+          "/autopilot/insights",
+          "/autopilot/money-machine",
+          "/autopilot/money-report",
+          "/autopilot/next-best-action",
+          "/autopilot/pipeline",
+          "/autopilot/process",
+          "/autopilot/queue",
+          "/autopilot/retry",
+          "/autopilot/revenue-events",
+          "/autopilot/run",
+          "/autopilot/runtime-config",
+          "/autopilot/send",
+          "/autopilot/stats",
+          "/autopilot/test",
+          "/autopilot/toggle",
+          "/billing/activate-trial",
+          "/billing/payment-methods/:paymentMethodId",
+          "/billing/payment-methods/:paymentMethodId/default",
+          "/billing/payment-methods/setup-intent",
+          "/campaigns",
+          "/campaigns/${encodeURIComponent(campaignId)}/darwin/variants",
+          "/campaigns/:campaignId/darwin/variants",
+          "/campaigns/:id",
+          "/campaigns/:id/darwin/evaluate",
+          "/campaigns/:id/darwin/variants",
+          "/campaigns/:id/launch",
+          "/campaigns/:id/pause",
+          "/campaigns?workspaceId=${encodeURIComponent(workspaceId)}",
+          "/canvas/designs",
+          "/canvas/designs/${currentId.current}",
+          "/canvas/designs/${id}",
+          "/canvas/designs/${initialDesignIdRef.current}",
+          "/canvas/designs/:id",
+          "/canvas/designs/:param",
+          "/canvas/editor",
+          "/canvas/generate",
+          "/canvas/generate-text",
+          "/canvas/inicio",
+          "/carteira/antecipacoes",
+          "/chat",
+          "/checkout/:planId",
+          "/checkout/bumps/:id",
+          "/checkout/checkouts/:id",
+          "/checkout/checkouts/:id/duplicate",
+          "/checkout/coupons/:id",
+          "/checkout/orders/:id/status",
+          "/checkout/pixels/:id",
+          "/checkout/plans/:id",
+          "/checkout/plans/:planId/bumps",
+          "/checkout/plans/:planId/config",
+          "/checkout/products/:id",
+          "/checkout/products/:productId/checkouts",
+          "/checkout/products/:productId/plans",
+          "/checkout/upsells/:id",
+          "/cia",
+          "/cia/account-approvals/${encodeURIComponent(workspaceId)}",
+          "/cia/account-approvals/:workspaceId",
+          "/cia/account-approvals/:workspaceId/:approvalId/approve",
+          "/cia/account-approvals/:workspaceId/:approvalId/reject",
+          "/cia/account-input-sessions/${encodeURIComponent(workspaceId)}",
+          "/cia/account-input-sessions/:workspaceId",
+          "/cia/account-input-sessions/:workspaceId/:sessionId/respond",
+          "/cia/account-proof/${encodeURIComponent(workspaceId)}",
+          "/cia/account-proof/:workspaceId",
+          "/cia/account-runtime/${encodeURIComponent(workspaceId)}",
+          "/cia/account-runtime/:workspaceId",
+          "/cia/account-work-items/${encodeURIComponent(workspaceId)}",
+          "/cia/account-work-items/:workspaceId",
+          "/cia/autopilot-total/:workspaceId",
+          "/cia/capability-registry",
+          "/cia/conversation-action-registry",
+          "/cia/conversation-proof/${encodeURIComponent(workspaceId)}/${encodeURIComponent(conversationId)}",
+          "/cia/conversation-proof/:workspaceId/:conversationId",
+          "/cia/conversations/:workspaceId/:conversationId/resume",
+          "/cia/cycle-proof/${encodeURIComponent(workspaceId)}",
+          "/cia/cycle-proof/:workspaceId",
+          "/cia/human-tasks/${encodeURIComponent(workspaceId)}",
+          "/cia/human-tasks/:workspaceId",
+          "/cia/human-tasks/:workspaceId/:taskId/approve",
+          "/cia/human-tasks/:workspaceId/:taskId/reject",
+          "/cia/surface/${encodeURIComponent(workspaceId)}",
+          "/cia/surface/:workspaceId",
+          "/copilot/suggest",
+          "/copilot/suggest-multiple",
+          "/crm/contacts/:phone/tags",
+          "/crm/contacts/:phone/tags/:tag",
+          "/crm/deals/:id/move",
+          "/crm/neuro/analyze/${encodeURIComponent(contactId)}",
+          "/crm/neuro/analyze/:contactId",
+          "/crm/neuro/clusters",
+          "/crm/neuro/next-best/${encodeURIComponent(contactId)}",
+          "/crm/neuro/next-best/:contactId",
+          "/crm/neuro/simulate",
+          "/flow",
+          "/flow-templates/:id",
+          "/flow-templates/:id/download",
+          "/flows",
+          "/flows/${workspaceId}",
+          "/flows/${workspaceId}/${flowId}",
+          "/flows/${workspaceId}/${flowId}/run",
+          "/flows/${workspaceId}/${flowId}/versions",
+          "/flows/${workspaceId}/${flowId}/versions/${versionId}",
+          "/flows/${workspaceId}/from-template/${templateId}",
+          "/flows/:workspaceId",
+          "/flows/:workspaceId/:flowId",
+          "/flows/:workspaceId/:flowId/run",
+          "/flows/:workspaceId/:flowId/versions",
+          "/flows/:workspaceId/:flowId/versions/:versionId",
+          "/flows/:workspaceId/executions",
+          "/flows/:workspaceId/from-template/:templateId",
+          "/flows/ai/optimize/${encodeURIComponent(flowId)}",
+          "/flows/ai/optimize/:flowId",
+          "/flows/execution/${executionId}",
+          "/flows/execution/${executionId}/retry",
+          "/flows/execution/:executionId",
+          "/flows/execution/:executionId/retry",
+          "/flows/log/${workspaceId}/${flowId}",
+          "/flows/log/:workspaceId/:flowId",
+          "/flows/run",
+          "/flows/save/${workspaceId}/${flowId}",
+          "/flows/save/:workspaceId/:flowId",
+          "/flows/templates",
+          "/flows/version/${workspaceId}/${flowId}",
+          "/flows/version/:workspaceId/:flowId",
+          "/growth/money-machine/activate",
+          "/health/system",
+          "/hooks/catch/:workspaceId/:flowId",
+          "/hooks/email-status",
+          "/hooks/finance/:workspaceId",
+          "/hooks/instagram/:workspaceId",
+          "/hooks/message-status",
+          "/inbox",
+          "/inbox/conversations/:conversationId/assign",
+          "/inbox/conversations/:conversationId/close",
+          "/inbox/conversations/:conversationId/reply",
+          "/internal/whatsapp-runtime/chats",
+          "/internal/whatsapp-runtime/inbound",
+          "/internal/whatsapp-runtime/messages",
+          "/internal/whatsapp-runtime/read",
+          "/internal/whatsapp-runtime/send-media",
+          "/internal/whatsapp-runtime/send-text",
+          "/internal/whatsapp-runtime/session-connected",
+          "/internal/whatsapp-runtime/status",
+          "/internal/whatsapp-runtime/sync-contact",
+          "/kloel/agent/${wsId}/tools",
+          "/kloel/agent/:workspaceId/process",
+          "/kloel/agent/:workspaceId/simulate",
+          "/kloel/agent/:workspaceId/tools",
+          "/kloel/agent/:wsId/tools",
+          "/kloel/audio/:workspaceId/text-to-speech",
+          "/kloel/audio/:workspaceId/text-to-speech-base64",
+          "/kloel/audio/:workspaceId/transcribe",
+          "/kloel/audio/:workspaceId/transcribe-base64",
+          "/kloel/audio/:workspaceId/transcribe-url",
+          "/kloel/conversations/${encodeURIComponent(conversationId)}/regenerate",
+          "/kloel/conversations/:conversationId/regenerate",
+          "/kloel/conversations/:id/regenerate",
+          "/kloel/conversations/search",
+          "/kloel/conversations/search?q=${encodeURIComponent(normalizedQuery)}&limit=${Math.min(Math.max(limit, 1), 20)}",
+          "/kloel/data/export",
+          "/kloel/memory/:workspaceId/product",
+          "/kloel/memory/:workspaceId/save",
+          "/kloel/memory/save",
+          "/kloel/messages/:id",
+          "/kloel/messages/:id/feedback",
+          "/kloel/onboarding-legacy/respond/:workspaceId",
+          "/kloel/onboarding-legacy/start/:workspaceId",
+          "/kloel/onboarding-legacy/status/:workspaceId",
+          "/kloel/onboarding/${encodeURIComponent(workspaceId)}/chat",
+          "/kloel/onboarding/${encodeURIComponent(workspaceId)}/start",
+          "/kloel/onboarding/${workspaceId}/chat",
+          "/kloel/onboarding/${workspaceId}/chat/stream",
+          "/kloel/onboarding/${workspaceId}/start",
+          "/kloel/onboarding/${workspaceId}/status",
+          "/kloel/onboarding/:workspaceId/chat",
+          "/kloel/onboarding/:workspaceId/chat/stream",
+          "/kloel/onboarding/:workspaceId/start",
+          "/kloel/onboarding/:workspaceId/status",
+          "/kloel/payment/${encodeURIComponent(workspaceId)}/create",
+          "/kloel/payment/${encodeURIComponent(workspaceId)}/negotiate",
+          "/kloel/payment/:workspaceId/create",
+          "/kloel/payment/:workspaceId/negotiate",
+          "/kloel/payment/:workspaceId/recovery/:paymentId",
+          "/kloel/payment/:workspaceId/webhook/confirm",
+          "/kloel/payment/public/:paymentId",
+          "/kloel/payments/create/:workspaceId",
+          "/kloel/payments/public/:paymentId",
+          "/kloel/payments/report/:workspaceId",
+          "/kloel/payments/webhook",
+          "/kloel/pdf/:workspaceId/text",
+          "/kloel/pdf/:workspaceId/upload",
+          "/kloel/pdf/process",
+          "/kloel/site/:id",
+          "/kloel/site/generate",
+          "/kloel/site/save",
+          "/kloel/think",
+          "/kloel/think/sync",
+          "/kloel/threads/search",
+          "/kloel/upload-chat",
+          "/kloel/upload-generic",
+          "/kloel/upload/multiple",
+          "/kloel/wallet/:workspaceId/bank-accounts/:id",
+          "/kloel/wallet/:workspaceId/withdraw",
+          "/kloel/whatsapp/simulate/${encodeURIComponent(workspaceId)}",
+          "/kloel/whatsapp/simulate/:workspaceId",
+          "/kloel/whatsapp/status",
+          "/kloel/whatsapp/webhook",
+          "/kyc/documents/upload",
+          "/kyc/profile/avatar",
+          "/kyc/status",
+          "/marketing/email",
+          "/media/documents/:idOrName/file",
+          "/media/documents/upload",
+          "/media/video",
+          "/member-areas/:id",
+          "/member-areas/:id/generate-structure",
+          "/member-areas/:id/lessons/:lessonId",
+          "/member-areas/:id/modules",
+          "/member-areas/:id/modules/:moduleId",
+          "/member-areas/:id/modules/:moduleId/lessons",
+          "/member-areas/:id/students",
+          "/member-areas/:id/students/:studentId",
+          "/meta/auth/disconnect",
+          "/onboarding-chat",
+          "/preview/:planId",
+          "/products",
+          "/products/:id",
+          "/products/:id/plans/:planId",
+          "/products/:productId/affiliates/links/:linkId",
+          "/products/:productId/campaigns/:campaignId",
+          "/products/:productId/campaigns/:campaignId/launch",
+          "/products/:productId/campaigns/:campaignId/pause",
+          "/products/:productId/commissions/:commissionId",
+          "/products/:productId/coupons/:couponId",
+          "/products/:productId/reviews/:reviewId",
+          "/products/:productId/urls/:urlId",
+          "/produtos",
+          "/register",
+          "/reports/send-email",
+          "/segmentation/:workspaceId/auto-segment",
+          "/settings",
+          "/settings/api-keys/:id",
+          "/sites",
+          "/storage/access/:token",
+          "/storage/local/:token",
+          "/team/invite",
+          "/team/invite/:id",
+          "/team/member/:id",
+          "/vendas/assinaturas",
+          "/vendas/gestao-vendas",
+          "/video",
+          "/video/create",
+          "/voice/generate",
+          "/voice/profiles",
+          "/wallet/prepaid/:workspaceId/spend",
+          "/wallet/prepaid/:workspaceId/topup",
+          "/webhook/payment",
+          "/webhook/payment/paghiper",
+          "/webhook/payment/shopify",
+          "/webhook/payment/stripe",
+          "/webhook/payment/woocommerce",
+          "/webhooks/meta",
+          "/whatsapp",
+          "/whatsapp-api/agent/stream",
+          "/whatsapp-api/backlog",
+          "/whatsapp-api/backlog/rebuild",
+          "/whatsapp-api/backlog/report",
+          "/whatsapp-api/catalog/contacts",
+          "/whatsapp-api/catalog/ranking",
+          "/whatsapp-api/catalog/refresh",
+          "/whatsapp-api/catalog/score",
+          "/whatsapp-api/chats",
+          "/whatsapp-api/chats/:chatId/messages",
+          "/whatsapp-api/chats/:chatId/presence",
+          "/whatsapp-api/cia/conversations/:conversationId/resume",
+          "/whatsapp-api/cia/intelligence",
+          "/whatsapp-api/contacts",
+          "/whatsapp-api/live",
+          "/whatsapp-api/provider-status",
+          "/whatsapp-api/send/:phone",
+          "/whatsapp-api/session/action",
+          "/whatsapp-api/session/action-turn",
+          "/whatsapp-api/session/backlog/start",
+          "/whatsapp-api/session/bootstrap",
+          "/whatsapp-api/session/claim",
+          "/whatsapp-api/session/diagnostics",
+          "/whatsapp-api/session/disconnect",
+          "/whatsapp-api/session/force-check",
+          "/whatsapp-api/session/force-reconnect",
+          "/whatsapp-api/session/link",
+          "/whatsapp-api/session/logout",
+          "/whatsapp-api/session/pause-agent",
+          "/whatsapp-api/session/proofs",
+          "/whatsapp-api/session/proofs${query}",
+          "/whatsapp-api/session/qr",
+          "/whatsapp-api/session/reconcile",
+          "/whatsapp-api/session/recreate-if-invalid",
+          "/whatsapp-api/session/repair-config",
+          "/whatsapp-api/session/resume-agent",
+          "/whatsapp-api/session/start",
+          "/whatsapp-api/session/status",
+          "/whatsapp-api/session/stream-health",
+          "/whatsapp-api/session/stream-token",
+          "/whatsapp-api/session/takeover",
+          "/whatsapp-api/session/view",
+          "/whatsapp-api/sync",
+          "/whatsapp/${workspaceId}/send",
+          "/whatsapp/:workspaceId/incoming",
+          "/whatsapp/:workspaceId/opt-in/bulk",
+          "/whatsapp/:workspaceId/opt-out/bulk",
+          "/whatsapp/:workspaceId/opt-status/:phone",
+          "/whatsapp/:workspaceId/send",
+          "/workspace/${workspaceId}",
+          "/workspace/:id",
+          "/workspace/:id/account",
+          "/workspace/:id/jitter",
+          "/workspace/:id/provider",
+          "/workspace/:id/settings",
+          "/workspace/:workspaceId",
+          "cia",
+          "cron:CronExpression.EVERY_MINUTE",
+          "lifecycle:onModuleInit"
+        ],
+        "capabilityIds": [
+          "capability:ai-assistant",
+          "capability:autopilot-analytics",
+          "capability:autopilot-ask",
+          "capability:autopilot-cycle",
+          "capability:campaigns-campaign",
+          "capability:canvas-canva",
+          "capability:cia-account",
+          "capability:cia-autopilot",
+          "capability:cia-backlog",
+          "capability:cia-capability",
+          "capability:cia-conversation",
+          "capability:cia-conversations",
+          "capability:cia-cycle",
+          "capability:cia-human",
+          "capability:cia-runtime",
+          "capability:cia-surface",
+          "capability:copilot-suggest",
+          "capability:crm-neuro",
+          "capability:flows-flow",
+          "capability:i18n",
+          "capability:kloel-agent",
+          "capability:kloel-audio",
+          "capability:kloel-chat",
+          "capability:kloel-composer",
+          "capability:kloel-conversations",
+          "capability:kloel-lead",
+          "capability:kloel-onboarding",
+          "capability:kloel-payment",
+          "capability:kloel-pdf",
+          "capability:kloel-think",
+          "capability:kloel-thread",
+          "capability:kloel-tool",
+          "capability:kloel-whatsapp",
+          "capability:unified-agent",
+          "capability:webhook-payment",
+          "capability:whats-what",
+          "capability:whatsapp-backlog",
+          "capability:whatsapp-cia",
+          "capability:whatsapp-live",
+          "capability:whatsapp-runtime",
+          "capability:whatsapp-send",
+          "capability:whatsapp-session",
+          "capability:workspace"
+        ],
+        "flowIds": [
+          "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
+          "analytics-post-reports-send-email",
+          "autopilot-post-autopilot-ask",
+          "autopilot-post-autopilot-money-machine",
+          "autopilot-post-autopilot-send",
+          "autopilot-post-autopilot-test",
+          "autopilot-post-autopilot-toggle",
+          "canvas-delete-canvas-designs-id",
+          "canvas-post-canvas-generate",
+          "cia-post-cia-account-approvals-workspace-id-approval-id-approve",
+          "cia-post-cia-account-approvals-workspace-id-approval-id-reject",
+          "cia-post-cia-account-input-sessions-workspace-id-session-id-respond",
+          "cia-post-cia-autopilot-total-workspace-id",
+          "cia-post-cia-conversations-workspace-id-conversation-id-resume",
+          "cia-post-cia-human-tasks-workspace-id-task-id-approve",
+          "cia-post-cia-human-tasks-workspace-id-task-id-reject",
+          "crm-delete-crm-contacts-phone-tags-tag",
+          "crm-post-crm-contacts-phone-tags",
+          "crm-post-workspace-id-jitter",
+          "flow-post-flow-templates-id-download",
+          "flow-post-flows-ai-optimize-flow-id",
+          "flow-post-flows-execution-execution-id-retry",
+          "flow-post-flows-save-workspace-id-flow-id",
+          "forgot-post-auth-forgot-password",
+          "inbox-post-inbox-conversations-conversation-id-assign",
+          "inbox-post-inbox-conversations-conversation-id-close",
+          "kloel-delete-kloel-site-id",
+          "kloel-delete-kloel-wallet-workspace-id-bank-accounts-id",
+          "kloel-post-kloel-onboarding-workspace-id-chat-stream",
+          "kloel-post-kloel-site-generate",
+          "kloel-post-kloel-site-save",
+          "kloel-post-kloel-wallet-workspace-id-withdraw",
+          "kloel-put-kloel-site-id",
+          "marketing-patch-checkout-plans-plan-id-config",
+          "marketing-post-inbox-conversations-conversation-id-assign",
+          "marketing-post-inbox-conversations-conversation-id-close",
+          "media-post-media-video",
+          "media-post-video-create",
+          "media-post-voice-generate",
+          "media-post-voice-profiles",
+          "member-delete-member-areas-id-students-student-id",
+          "member-post-affiliate-request-product-id",
+          "member-post-affiliate-saved-product-id",
+          "member-post-member-areas-id-generate-structure",
+          "member-post-member-areas-id-modules",
+          "member-post-member-areas-id-modules-module-id-lessons",
+          "member-post-member-areas-id-students",
+          "member-put-member-areas-id",
+          "member-put-member-areas-id-lessons-lesson-id",
+          "member-put-member-areas-id-modules-module-id",
+          "member-put-member-areas-id-students-student-id",
+          "meta-post-meta-auth-disconnect",
+          "plan-get-checkout-plans-plan-id-config",
+          "products-delete-checkout-checkouts-id",
+          "products-delete-products-product-id-campaigns-campaign-id",
+          "products-delete-products-product-id-commissions-commission-id",
+          "products-delete-products-product-id-coupons-coupon-id",
+          "products-delete-products-product-id-reviews-review-id",
+          "products-delete-products-product-id-urls-url-id",
+          "products-get-checkout-plans-plan-id-bumps",
+          "products-get-checkout-plans-plan-id-config",
+          "products-get-products-id",
+          "products-post-checkout-checkouts-id-duplicate",
+          "products-post-checkout-products-product-id-checkouts",
+          "products-post-checkout-products-product-id-plans",
+          "products-post-products",
+          "products-post-products-product-id-campaigns-campaign-id-launch",
+          "products-post-products-product-id-campaigns-campaign-id-pause",
+          "products-post-workspace-id-jitter",
+          "products-put-checkout-bumps-id",
+          "products-put-checkout-products-id",
+          "products-put-products-product-id-affiliates-links-link-id",
+          "vendas-post-kloel-payment-workspace-id-create",
+          "whatsapp-post-whatsapp-api-session-action",
+          "workspace-delete-api-kyc-bank",
+          "workspace-delete-billing-payment-methods-payment-method-id",
+          "workspace-delete-team-invite-id",
+          "workspace-delete-team-member-id",
+          "workspace-post-ai-kb-create",
+          "workspace-post-ai-kb-source",
+          "workspace-post-api-kyc-bank",
+          "workspace-post-api-kyc-fiscal",
+          "workspace-post-autopilot-toggle",
+          "workspace-post-billing-activate-trial",
+          "workspace-post-billing-payment-methods-payment-method-id-default",
+          "workspace-post-billing-payment-methods-setup-intent",
+          "workspace-post-kyc-status",
+          "workspace-post-meta-auth-disconnect",
+          "workspace-post-products",
+          "workspace-post-segmentation-workspace-id-auto-segment",
+          "workspace-post-team-invite",
+          "workspace-post-workspace-id-account",
+          "workspace-post-workspace-id-jitter",
+          "workspace-put-api-kyc-fiscal",
+          "workspace-put-crm-deals-id-move"
+        ],
+        "blockers": [
+          "Missing structural roles: persistence.",
+          "Maturity is still missing: runtime_evidence, codacy_hygiene."
+        ]
+      },
+      {
         "id": "surface:crm",
         "name": "CRM",
         "declaredByManifest": true,
@@ -3361,6 +3968,8 @@
         "truthMode": "observed",
         "completion": 1,
         "routePatterns": [
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/admin/transactions/:orderId/operate",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
@@ -3464,6 +4073,7 @@
           "/products/:productId/coupons/:couponId",
           "/products/:productId/reviews/:reviewId",
           "/products/:productId/urls/:urlId",
+          "/produtos",
           "/sales/:id/refund",
           "/sales/orders/:id/return",
           "/sales/orders/:id/ship",
@@ -3500,6 +4110,8 @@
           "capability:crm-pipelines"
         ],
         "flowIds": [
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "autopilot-post-autopilot-ask",
           "autopilot-post-autopilot-money-machine",
@@ -3608,6 +4220,8 @@
           "/admin/chat/message",
           "/admin/dashboard/home",
           "/admin/marketing/overview",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/admin/reports/export/csv",
           "/admin/reports/overview",
           "/admin/sales/overview",
@@ -3625,6 +4239,7 @@
           "/marketing/connect/email/test",
           "/marketing/email",
           "/marketing/email/send",
+          "/produtos",
           "/reports/send-email",
           "/sales/:id/refund",
           "/sales/orders/:id/return",
@@ -3650,6 +4265,8 @@
         "flowIds": [
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "analytics-post-reports-send-email",
           "marketing-patch-checkout-plans-plan-id-config",
@@ -3704,6 +4321,8 @@
           "/admin/carteira/payouts",
           "/admin/carteira/reconcile",
           "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/admin/transactions",
           "/admin/transactions/:orderId/operate",
           "/affiliate/request/:productId",
@@ -4082,6 +4701,7 @@
           "/products/:productId/coupons/:couponId",
           "/products/:productId/reviews/:reviewId",
           "/products/:productId/urls/:urlId",
+          "/produtos",
           "/register",
           "/reports/send-email",
           "/s/:slug",
@@ -4244,6 +4864,8 @@
         "flowIds": [
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "analytics-post-reports-send-email",
           "autopilot-post-autopilot-ask",
@@ -4362,6 +4984,8 @@
         "truthMode": "observed",
         "completion": 1,
         "routePatterns": [
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/affiliate/ai-search",
           "/affiliate/config/${encodeURIComponent(productId)}",
           "/affiliate/config/:productId",
@@ -4532,6 +5156,7 @@
           "/products/categories/list",
           "/products/import",
           "/products/stats",
+          "/produtos",
           "/reports/send-email",
           "/segmentation/:workspaceId/auto-segment",
           "/settings",
@@ -4561,6 +5186,8 @@
           "capability:products-product"
         ],
         "flowIds": [
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "affiliate-post-affiliate-ai-search",
           "affiliate-post-affiliate-saved-product-id",
           "affiliate-post-affiliate-suggest",
@@ -4650,6 +5277,8 @@
           "/admin/chat/message",
           "/admin/dashboard/home",
           "/admin/marketing/overview",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/admin/reports/export/csv",
           "/admin/reports/overview",
           "/admin/sales/overview",
@@ -4667,6 +5296,7 @@
           "/marketing/connect/email/test",
           "/marketing/email",
           "/marketing/email/send",
+          "/produtos",
           "/reports/send-email",
           "/sales",
           "/sales${q ?",
@@ -4719,6 +5349,8 @@
         "flowIds": [
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "analytics-post-reports-send-email",
           "crm-delete-crm-contacts-phone-tags-tag",
@@ -4782,6 +5414,8 @@
           "/admin/auth/login",
           "/admin/carteira/connect/accounts",
           "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/admin/transactions/:orderId/operate",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
@@ -5228,6 +5862,7 @@
           "/products/categories/list",
           "/products/import",
           "/products/stats",
+          "/produtos",
           "/register",
           "/reports/send-email",
           "/sales/:id/refund",
@@ -5413,6 +6048,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "analytics-post-reports-send-email",
           "autopilot-post-autopilot-ask",
@@ -5532,6 +6169,8 @@
         "completion": 0.99,
         "routePatterns": [
           "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
           "/ai/assistant/analyze-sentiment",
@@ -5814,6 +6453,7 @@
           "/products/categories/list",
           "/products/import",
           "/products/stats",
+          "/produtos",
           "/register",
           "/reports/send-email",
           "/segmentation/:workspaceId/auto-segment",
@@ -5895,6 +6535,8 @@
         ],
         "flowIds": [
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "analytics-post-reports-send-email",
           "autopilot-post-autopilot-ask",
           "autopilot-post-autopilot-money-machine",
@@ -6010,6 +6652,8 @@
           "/admin/auth/login",
           "/admin/carteira/connect/accounts",
           "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/admin/transactions/:orderId/operate",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
@@ -6375,6 +7019,7 @@
           "/products/:productId/coupons/:couponId",
           "/products/:productId/reviews/:reviewId",
           "/products/:productId/urls/:urlId",
+          "/produtos",
           "/register",
           "/reports/send-email",
           "/segmentation/:workspaceId/auto-segment",
@@ -6572,6 +7217,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "analytics-post-reports-send-email",
           "autopilot-post-autopilot-ask",
@@ -6694,6 +7341,8 @@
           "/admin/auth/login",
           "/admin/carteira/connect/accounts",
           "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/admin/transactions/:orderId/operate",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
@@ -7192,6 +7841,7 @@
           "/products/categories/list",
           "/products/import",
           "/products/stats",
+          "/produtos",
           "/register",
           "/reports/send-email",
           "/sales/:id/refund",
@@ -7341,6 +7991,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "analytics-post-reports-send-email",
           "autopilot-post-autopilot-ask",
@@ -7449,539 +8101,6 @@
           "workspace-put-crm-deals-id-move"
         ],
         "blockers": [
-          "Maturity is still missing: runtime_evidence, codacy_hygiene."
-        ]
-      },
-      {
-        "id": "surface:cia-agent",
-        "name": "CIA/Agent",
-        "declaredByManifest": true,
-        "critical": true,
-        "status": "real",
-        "truthMode": "observed",
-        "completion": 0.99,
-        "routePatterns": [
-          "/admin/chat/message",
-          "/affiliate/request/:productId",
-          "/affiliate/saved/:productId",
-          "/ai/assistant/analyze-sentiment",
-          "/ai/assistant/pitch",
-          "/ai/assistant/suggest",
-          "/ai/assistant/summarize",
-          "/ai/kb/create",
-          "/ai/kb/source",
-          "/analytics",
-          "/analytics/smart-time",
-          "/api/auth/register",
-          "/api/kyc/bank",
-          "/api/kyc/fiscal",
-          "/api/v1/messages",
-          "/api/whatsapp-api/agent/stream",
-          "/api/whatsapp-api/catalog/contacts",
-          "/api/whatsapp-api/catalog/ranking",
-          "/api/whatsapp-api/catalog/refresh",
-          "/api/whatsapp-api/catalog/score",
-          "/api/whatsapp-api/chats",
-          "/api/whatsapp-api/cia/intelligence",
-          "/api/whatsapp-api/live",
-          "/api/whatsapp-api/provider-status",
-          "/api/whatsapp-api/session/action",
-          "/api/whatsapp-api/session/action-turn",
-          "/api/whatsapp-api/session/backlog/start",
-          "/api/whatsapp-api/session/bootstrap",
-          "/api/whatsapp-api/session/claim",
-          "/api/whatsapp-api/session/diagnostics",
-          "/api/whatsapp-api/session/disconnect",
-          "/api/whatsapp-api/session/force-check",
-          "/api/whatsapp-api/session/force-reconnect",
-          "/api/whatsapp-api/session/link",
-          "/api/whatsapp-api/session/logout",
-          "/api/whatsapp-api/session/pause-agent",
-          "/api/whatsapp-api/session/proofs",
-          "/api/whatsapp-api/session/qr",
-          "/api/whatsapp-api/session/reconcile",
-          "/api/whatsapp-api/session/recreate-if-invalid",
-          "/api/whatsapp-api/session/repair-config",
-          "/api/whatsapp-api/session/resume-agent",
-          "/api/whatsapp-api/session/start",
-          "/api/whatsapp-api/session/status",
-          "/api/whatsapp-api/session/stream-token",
-          "/api/whatsapp-api/session/takeover",
-          "/api/whatsapp-api/session/view",
-          "/auth/forgot-password",
-          "/auth/register",
-          "/autopilot",
-          "/autopilot/actions",
-          "/autopilot/actions/export",
-          "/autopilot/ask",
-          "/autopilot/conversion",
-          "/autopilot/impact",
-          "/autopilot/insights",
-          "/autopilot/money-machine",
-          "/autopilot/money-report",
-          "/autopilot/next-best-action",
-          "/autopilot/pipeline",
-          "/autopilot/process",
-          "/autopilot/queue",
-          "/autopilot/retry",
-          "/autopilot/revenue-events",
-          "/autopilot/run",
-          "/autopilot/runtime-config",
-          "/autopilot/send",
-          "/autopilot/stats",
-          "/autopilot/test",
-          "/autopilot/toggle",
-          "/billing/activate-trial",
-          "/billing/payment-methods/:paymentMethodId",
-          "/billing/payment-methods/:paymentMethodId/default",
-          "/billing/payment-methods/setup-intent",
-          "/campaigns",
-          "/campaigns/${encodeURIComponent(campaignId)}/darwin/variants",
-          "/campaigns/:campaignId/darwin/variants",
-          "/campaigns/:id",
-          "/campaigns/:id/darwin/evaluate",
-          "/campaigns/:id/darwin/variants",
-          "/campaigns/:id/launch",
-          "/campaigns/:id/pause",
-          "/campaigns?workspaceId=${encodeURIComponent(workspaceId)}",
-          "/canvas/designs",
-          "/canvas/designs/${currentId.current}",
-          "/canvas/designs/${id}",
-          "/canvas/designs/${initialDesignIdRef.current}",
-          "/canvas/designs/:id",
-          "/canvas/designs/:param",
-          "/canvas/editor",
-          "/canvas/generate",
-          "/canvas/generate-text",
-          "/canvas/inicio",
-          "/carteira/antecipacoes",
-          "/chat",
-          "/checkout/:planId",
-          "/checkout/bumps/:id",
-          "/checkout/checkouts/:id",
-          "/checkout/checkouts/:id/duplicate",
-          "/checkout/coupons/:id",
-          "/checkout/orders/:id/status",
-          "/checkout/pixels/:id",
-          "/checkout/plans/:id",
-          "/checkout/plans/:planId/bumps",
-          "/checkout/plans/:planId/config",
-          "/checkout/products/:id",
-          "/checkout/products/:productId/checkouts",
-          "/checkout/products/:productId/plans",
-          "/checkout/upsells/:id",
-          "/cia",
-          "/cia/account-approvals/${encodeURIComponent(workspaceId)}",
-          "/cia/account-approvals/:workspaceId",
-          "/cia/account-approvals/:workspaceId/:approvalId/approve",
-          "/cia/account-approvals/:workspaceId/:approvalId/reject",
-          "/cia/account-input-sessions/${encodeURIComponent(workspaceId)}",
-          "/cia/account-input-sessions/:workspaceId",
-          "/cia/account-input-sessions/:workspaceId/:sessionId/respond",
-          "/cia/account-proof/${encodeURIComponent(workspaceId)}",
-          "/cia/account-proof/:workspaceId",
-          "/cia/account-runtime/${encodeURIComponent(workspaceId)}",
-          "/cia/account-runtime/:workspaceId",
-          "/cia/account-work-items/${encodeURIComponent(workspaceId)}",
-          "/cia/account-work-items/:workspaceId",
-          "/cia/autopilot-total/:workspaceId",
-          "/cia/capability-registry",
-          "/cia/conversation-action-registry",
-          "/cia/conversation-proof/${encodeURIComponent(workspaceId)}/${encodeURIComponent(conversationId)}",
-          "/cia/conversation-proof/:workspaceId/:conversationId",
-          "/cia/conversations/:workspaceId/:conversationId/resume",
-          "/cia/cycle-proof/${encodeURIComponent(workspaceId)}",
-          "/cia/cycle-proof/:workspaceId",
-          "/cia/human-tasks/${encodeURIComponent(workspaceId)}",
-          "/cia/human-tasks/:workspaceId",
-          "/cia/human-tasks/:workspaceId/:taskId/approve",
-          "/cia/human-tasks/:workspaceId/:taskId/reject",
-          "/cia/surface/${encodeURIComponent(workspaceId)}",
-          "/cia/surface/:workspaceId",
-          "/copilot/suggest",
-          "/copilot/suggest-multiple",
-          "/crm/contacts/:phone/tags",
-          "/crm/contacts/:phone/tags/:tag",
-          "/crm/deals/:id/move",
-          "/crm/neuro/analyze/${encodeURIComponent(contactId)}",
-          "/crm/neuro/analyze/:contactId",
-          "/crm/neuro/clusters",
-          "/crm/neuro/next-best/${encodeURIComponent(contactId)}",
-          "/crm/neuro/next-best/:contactId",
-          "/crm/neuro/simulate",
-          "/flow",
-          "/flow-templates/:id",
-          "/flow-templates/:id/download",
-          "/flows",
-          "/flows/${workspaceId}",
-          "/flows/${workspaceId}/${flowId}",
-          "/flows/${workspaceId}/${flowId}/run",
-          "/flows/${workspaceId}/${flowId}/versions",
-          "/flows/${workspaceId}/${flowId}/versions/${versionId}",
-          "/flows/${workspaceId}/from-template/${templateId}",
-          "/flows/:workspaceId",
-          "/flows/:workspaceId/:flowId",
-          "/flows/:workspaceId/:flowId/run",
-          "/flows/:workspaceId/:flowId/versions",
-          "/flows/:workspaceId/:flowId/versions/:versionId",
-          "/flows/:workspaceId/executions",
-          "/flows/:workspaceId/from-template/:templateId",
-          "/flows/ai/optimize/${encodeURIComponent(flowId)}",
-          "/flows/ai/optimize/:flowId",
-          "/flows/execution/${executionId}",
-          "/flows/execution/${executionId}/retry",
-          "/flows/execution/:executionId",
-          "/flows/execution/:executionId/retry",
-          "/flows/log/${workspaceId}/${flowId}",
-          "/flows/log/:workspaceId/:flowId",
-          "/flows/run",
-          "/flows/save/${workspaceId}/${flowId}",
-          "/flows/save/:workspaceId/:flowId",
-          "/flows/templates",
-          "/flows/version/${workspaceId}/${flowId}",
-          "/flows/version/:workspaceId/:flowId",
-          "/growth/money-machine/activate",
-          "/health/system",
-          "/hooks/catch/:workspaceId/:flowId",
-          "/hooks/email-status",
-          "/hooks/finance/:workspaceId",
-          "/hooks/instagram/:workspaceId",
-          "/hooks/message-status",
-          "/inbox",
-          "/inbox/conversations/:conversationId/assign",
-          "/inbox/conversations/:conversationId/close",
-          "/inbox/conversations/:conversationId/reply",
-          "/internal/whatsapp-runtime/chats",
-          "/internal/whatsapp-runtime/inbound",
-          "/internal/whatsapp-runtime/messages",
-          "/internal/whatsapp-runtime/read",
-          "/internal/whatsapp-runtime/send-media",
-          "/internal/whatsapp-runtime/send-text",
-          "/internal/whatsapp-runtime/session-connected",
-          "/internal/whatsapp-runtime/status",
-          "/internal/whatsapp-runtime/sync-contact",
-          "/kloel/agent/${wsId}/tools",
-          "/kloel/agent/:workspaceId/process",
-          "/kloel/agent/:workspaceId/simulate",
-          "/kloel/agent/:workspaceId/tools",
-          "/kloel/agent/:wsId/tools",
-          "/kloel/audio/:workspaceId/text-to-speech",
-          "/kloel/audio/:workspaceId/text-to-speech-base64",
-          "/kloel/audio/:workspaceId/transcribe",
-          "/kloel/audio/:workspaceId/transcribe-base64",
-          "/kloel/audio/:workspaceId/transcribe-url",
-          "/kloel/conversations/${encodeURIComponent(conversationId)}/regenerate",
-          "/kloel/conversations/:conversationId/regenerate",
-          "/kloel/conversations/:id/regenerate",
-          "/kloel/conversations/search",
-          "/kloel/conversations/search?q=${encodeURIComponent(normalizedQuery)}&limit=${Math.min(Math.max(limit, 1), 20)}",
-          "/kloel/data/export",
-          "/kloel/memory/:workspaceId/product",
-          "/kloel/memory/:workspaceId/save",
-          "/kloel/memory/save",
-          "/kloel/messages/:id",
-          "/kloel/messages/:id/feedback",
-          "/kloel/onboarding-legacy/respond/:workspaceId",
-          "/kloel/onboarding-legacy/start/:workspaceId",
-          "/kloel/onboarding-legacy/status/:workspaceId",
-          "/kloel/onboarding/${encodeURIComponent(workspaceId)}/chat",
-          "/kloel/onboarding/${encodeURIComponent(workspaceId)}/start",
-          "/kloel/onboarding/${workspaceId}/chat",
-          "/kloel/onboarding/${workspaceId}/chat/stream",
-          "/kloel/onboarding/${workspaceId}/start",
-          "/kloel/onboarding/${workspaceId}/status",
-          "/kloel/onboarding/:workspaceId/chat",
-          "/kloel/onboarding/:workspaceId/chat/stream",
-          "/kloel/onboarding/:workspaceId/start",
-          "/kloel/onboarding/:workspaceId/status",
-          "/kloel/payment/${encodeURIComponent(workspaceId)}/create",
-          "/kloel/payment/${encodeURIComponent(workspaceId)}/negotiate",
-          "/kloel/payment/:workspaceId/create",
-          "/kloel/payment/:workspaceId/negotiate",
-          "/kloel/payment/:workspaceId/recovery/:paymentId",
-          "/kloel/payment/:workspaceId/webhook/confirm",
-          "/kloel/payment/public/:paymentId",
-          "/kloel/payments/create/:workspaceId",
-          "/kloel/payments/public/:paymentId",
-          "/kloel/payments/report/:workspaceId",
-          "/kloel/payments/webhook",
-          "/kloel/pdf/:workspaceId/text",
-          "/kloel/pdf/:workspaceId/upload",
-          "/kloel/pdf/process",
-          "/kloel/site/:id",
-          "/kloel/site/generate",
-          "/kloel/site/save",
-          "/kloel/think",
-          "/kloel/think/sync",
-          "/kloel/threads/search",
-          "/kloel/upload-chat",
-          "/kloel/upload-generic",
-          "/kloel/upload/multiple",
-          "/kloel/wallet/:workspaceId/bank-accounts/:id",
-          "/kloel/wallet/:workspaceId/withdraw",
-          "/kloel/whatsapp/simulate/${encodeURIComponent(workspaceId)}",
-          "/kloel/whatsapp/simulate/:workspaceId",
-          "/kloel/whatsapp/status",
-          "/kloel/whatsapp/webhook",
-          "/kyc/documents/upload",
-          "/kyc/profile/avatar",
-          "/kyc/status",
-          "/marketing/email",
-          "/media/documents/:idOrName/file",
-          "/media/documents/upload",
-          "/media/video",
-          "/member-areas/:id",
-          "/member-areas/:id/generate-structure",
-          "/member-areas/:id/lessons/:lessonId",
-          "/member-areas/:id/modules",
-          "/member-areas/:id/modules/:moduleId",
-          "/member-areas/:id/modules/:moduleId/lessons",
-          "/member-areas/:id/students",
-          "/member-areas/:id/students/:studentId",
-          "/meta/auth/disconnect",
-          "/onboarding-chat",
-          "/preview/:planId",
-          "/products",
-          "/products/:id",
-          "/products/:id/plans/:planId",
-          "/products/:productId/affiliates/links/:linkId",
-          "/products/:productId/campaigns/:campaignId",
-          "/products/:productId/campaigns/:campaignId/launch",
-          "/products/:productId/campaigns/:campaignId/pause",
-          "/products/:productId/commissions/:commissionId",
-          "/products/:productId/coupons/:couponId",
-          "/products/:productId/reviews/:reviewId",
-          "/products/:productId/urls/:urlId",
-          "/register",
-          "/reports/send-email",
-          "/segmentation/:workspaceId/auto-segment",
-          "/settings",
-          "/settings/api-keys/:id",
-          "/sites",
-          "/storage/access/:token",
-          "/storage/local/:token",
-          "/team/invite",
-          "/team/invite/:id",
-          "/team/member/:id",
-          "/vendas/assinaturas",
-          "/vendas/gestao-vendas",
-          "/video",
-          "/video/create",
-          "/voice/generate",
-          "/voice/profiles",
-          "/wallet/prepaid/:workspaceId/spend",
-          "/wallet/prepaid/:workspaceId/topup",
-          "/webhook/payment",
-          "/webhook/payment/paghiper",
-          "/webhook/payment/shopify",
-          "/webhook/payment/stripe",
-          "/webhook/payment/woocommerce",
-          "/webhooks/meta",
-          "/whatsapp",
-          "/whatsapp-api/agent/stream",
-          "/whatsapp-api/backlog",
-          "/whatsapp-api/backlog/rebuild",
-          "/whatsapp-api/backlog/report",
-          "/whatsapp-api/catalog/contacts",
-          "/whatsapp-api/catalog/ranking",
-          "/whatsapp-api/catalog/refresh",
-          "/whatsapp-api/catalog/score",
-          "/whatsapp-api/chats",
-          "/whatsapp-api/chats/:chatId/messages",
-          "/whatsapp-api/chats/:chatId/presence",
-          "/whatsapp-api/cia/conversations/:conversationId/resume",
-          "/whatsapp-api/cia/intelligence",
-          "/whatsapp-api/contacts",
-          "/whatsapp-api/live",
-          "/whatsapp-api/provider-status",
-          "/whatsapp-api/send/:phone",
-          "/whatsapp-api/session/action",
-          "/whatsapp-api/session/action-turn",
-          "/whatsapp-api/session/backlog/start",
-          "/whatsapp-api/session/bootstrap",
-          "/whatsapp-api/session/claim",
-          "/whatsapp-api/session/diagnostics",
-          "/whatsapp-api/session/disconnect",
-          "/whatsapp-api/session/force-check",
-          "/whatsapp-api/session/force-reconnect",
-          "/whatsapp-api/session/link",
-          "/whatsapp-api/session/logout",
-          "/whatsapp-api/session/pause-agent",
-          "/whatsapp-api/session/proofs",
-          "/whatsapp-api/session/proofs${query}",
-          "/whatsapp-api/session/qr",
-          "/whatsapp-api/session/reconcile",
-          "/whatsapp-api/session/recreate-if-invalid",
-          "/whatsapp-api/session/repair-config",
-          "/whatsapp-api/session/resume-agent",
-          "/whatsapp-api/session/start",
-          "/whatsapp-api/session/status",
-          "/whatsapp-api/session/stream-health",
-          "/whatsapp-api/session/stream-token",
-          "/whatsapp-api/session/takeover",
-          "/whatsapp-api/session/view",
-          "/whatsapp-api/sync",
-          "/whatsapp/${workspaceId}/send",
-          "/whatsapp/:workspaceId/incoming",
-          "/whatsapp/:workspaceId/opt-in/bulk",
-          "/whatsapp/:workspaceId/opt-out/bulk",
-          "/whatsapp/:workspaceId/opt-status/:phone",
-          "/whatsapp/:workspaceId/send",
-          "/workspace/${workspaceId}",
-          "/workspace/:id",
-          "/workspace/:id/account",
-          "/workspace/:id/jitter",
-          "/workspace/:id/provider",
-          "/workspace/:id/settings",
-          "/workspace/:workspaceId",
-          "cia",
-          "cron:CronExpression.EVERY_MINUTE",
-          "lifecycle:onModuleInit"
-        ],
-        "capabilityIds": [
-          "capability:ai-assistant",
-          "capability:autopilot-analytics",
-          "capability:autopilot-ask",
-          "capability:autopilot-cycle",
-          "capability:campaigns-campaign",
-          "capability:canvas-canva",
-          "capability:cia-account",
-          "capability:cia-autopilot",
-          "capability:cia-backlog",
-          "capability:cia-capability",
-          "capability:cia-conversation",
-          "capability:cia-conversations",
-          "capability:cia-cycle",
-          "capability:cia-human",
-          "capability:cia-runtime",
-          "capability:cia-surface",
-          "capability:copilot-suggest",
-          "capability:crm-neuro",
-          "capability:flows-flow",
-          "capability:i18n",
-          "capability:kloel-agent",
-          "capability:kloel-audio",
-          "capability:kloel-chat",
-          "capability:kloel-composer",
-          "capability:kloel-conversations",
-          "capability:kloel-lead",
-          "capability:kloel-onboarding",
-          "capability:kloel-payment",
-          "capability:kloel-pdf",
-          "capability:kloel-think",
-          "capability:kloel-thread",
-          "capability:kloel-tool",
-          "capability:kloel-whatsapp",
-          "capability:unified-agent",
-          "capability:webhook-payment",
-          "capability:whats-what",
-          "capability:whatsapp-backlog",
-          "capability:whatsapp-cia",
-          "capability:whatsapp-live",
-          "capability:whatsapp-runtime",
-          "capability:whatsapp-send",
-          "capability:whatsapp-session",
-          "capability:workspace"
-        ],
-        "flowIds": [
-          "admin-post-admin-chat-message",
-          "analytics-post-reports-send-email",
-          "autopilot-post-autopilot-ask",
-          "autopilot-post-autopilot-money-machine",
-          "autopilot-post-autopilot-send",
-          "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle",
-          "canvas-delete-canvas-designs-id",
-          "canvas-post-canvas-generate",
-          "cia-post-cia-account-approvals-workspace-id-approval-id-approve",
-          "cia-post-cia-account-approvals-workspace-id-approval-id-reject",
-          "cia-post-cia-account-input-sessions-workspace-id-session-id-respond",
-          "cia-post-cia-autopilot-total-workspace-id",
-          "cia-post-cia-conversations-workspace-id-conversation-id-resume",
-          "cia-post-cia-human-tasks-workspace-id-task-id-approve",
-          "cia-post-cia-human-tasks-workspace-id-task-id-reject",
-          "crm-delete-crm-contacts-phone-tags-tag",
-          "crm-post-crm-contacts-phone-tags",
-          "crm-post-workspace-id-jitter",
-          "flow-post-flow-templates-id-download",
-          "flow-post-flows-ai-optimize-flow-id",
-          "flow-post-flows-execution-execution-id-retry",
-          "flow-post-flows-save-workspace-id-flow-id",
-          "forgot-post-auth-forgot-password",
-          "inbox-post-inbox-conversations-conversation-id-assign",
-          "inbox-post-inbox-conversations-conversation-id-close",
-          "kloel-delete-kloel-site-id",
-          "kloel-delete-kloel-wallet-workspace-id-bank-accounts-id",
-          "kloel-post-kloel-onboarding-workspace-id-chat-stream",
-          "kloel-post-kloel-site-generate",
-          "kloel-post-kloel-site-save",
-          "kloel-post-kloel-wallet-workspace-id-withdraw",
-          "kloel-put-kloel-site-id",
-          "marketing-patch-checkout-plans-plan-id-config",
-          "marketing-post-inbox-conversations-conversation-id-assign",
-          "marketing-post-inbox-conversations-conversation-id-close",
-          "media-post-media-video",
-          "media-post-video-create",
-          "media-post-voice-generate",
-          "media-post-voice-profiles",
-          "member-delete-member-areas-id-students-student-id",
-          "member-post-affiliate-request-product-id",
-          "member-post-affiliate-saved-product-id",
-          "member-post-member-areas-id-generate-structure",
-          "member-post-member-areas-id-modules",
-          "member-post-member-areas-id-modules-module-id-lessons",
-          "member-post-member-areas-id-students",
-          "member-put-member-areas-id",
-          "member-put-member-areas-id-lessons-lesson-id",
-          "member-put-member-areas-id-modules-module-id",
-          "member-put-member-areas-id-students-student-id",
-          "meta-post-meta-auth-disconnect",
-          "plan-get-checkout-plans-plan-id-config",
-          "products-delete-checkout-checkouts-id",
-          "products-delete-products-product-id-campaigns-campaign-id",
-          "products-delete-products-product-id-commissions-commission-id",
-          "products-delete-products-product-id-coupons-coupon-id",
-          "products-delete-products-product-id-reviews-review-id",
-          "products-delete-products-product-id-urls-url-id",
-          "products-get-checkout-plans-plan-id-bumps",
-          "products-get-checkout-plans-plan-id-config",
-          "products-get-products-id",
-          "products-post-checkout-checkouts-id-duplicate",
-          "products-post-checkout-products-product-id-checkouts",
-          "products-post-checkout-products-product-id-plans",
-          "products-post-products",
-          "products-post-products-product-id-campaigns-campaign-id-launch",
-          "products-post-products-product-id-campaigns-campaign-id-pause",
-          "products-post-workspace-id-jitter",
-          "products-put-checkout-bumps-id",
-          "products-put-checkout-products-id",
-          "products-put-products-product-id-affiliates-links-link-id",
-          "vendas-post-kloel-payment-workspace-id-create",
-          "whatsapp-post-whatsapp-api-session-action",
-          "workspace-delete-api-kyc-bank",
-          "workspace-delete-billing-payment-methods-payment-method-id",
-          "workspace-delete-team-invite-id",
-          "workspace-delete-team-member-id",
-          "workspace-post-ai-kb-create",
-          "workspace-post-ai-kb-source",
-          "workspace-post-api-kyc-bank",
-          "workspace-post-api-kyc-fiscal",
-          "workspace-post-autopilot-toggle",
-          "workspace-post-billing-activate-trial",
-          "workspace-post-billing-payment-methods-payment-method-id-default",
-          "workspace-post-billing-payment-methods-setup-intent",
-          "workspace-post-kyc-status",
-          "workspace-post-meta-auth-disconnect",
-          "workspace-post-products",
-          "workspace-post-segmentation-workspace-id-auto-segment",
-          "workspace-post-team-invite",
-          "workspace-post-workspace-id-account",
-          "workspace-post-workspace-id-jitter",
-          "workspace-put-api-kyc-fiscal",
-          "workspace-put-crm-deals-id-move"
-        ],
-        "blockers": [
-          "Missing structural roles: persistence.",
           "Maturity is still missing: runtime_evidence, codacy_hygiene."
         ]
       },
@@ -8593,6 +8712,7 @@
           "/products/:productId/coupons/:couponId",
           "/products/:productId/reviews/:reviewId",
           "/products/:productId/urls/:urlId",
+          "/produtos",
           "/register",
           "/reports/send-email",
           "/sales/:id/refund",
@@ -8779,6 +8899,8 @@
           "ad-patch-meta-ads-campaigns-id-status",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "analytics-post-reports-send-email",
           "autopilot-post-autopilot-ask",
@@ -9429,6 +9551,7 @@
           "/products/categories/list",
           "/products/import",
           "/products/stats",
+          "/produtos",
           "/register",
           "/reports/send-email",
           "/sales/:id/refund",
@@ -9532,6 +9655,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "analytics-post-reports-send-email",
           "autopilot-post-autopilot-ask",
@@ -9650,6 +9775,8 @@
         "completion": 0.96,
         "routePatterns": [
           "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
           "/ai/assistant/analyze-sentiment",
@@ -10011,6 +10138,7 @@
           "/products/categories/list",
           "/products/import",
           "/products/stats",
+          "/produtos",
           "/register",
           "/reports/send-email",
           "/segmentation/:workspaceId/auto-segment",
@@ -10150,6 +10278,8 @@
         ],
         "flowIds": [
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "analytics-post-reports-send-email",
           "autopilot-post-autopilot-ask",
           "autopilot-post-autopilot-money-machine",
@@ -10482,6 +10612,7 @@
           "/products/:productId/coupons/:couponId",
           "/products/:productId/reviews/:reviewId",
           "/products/:productId/urls/:urlId",
+          "/produtos",
           "/register",
           "/reports/send-email",
           "/sales/:id/refund",
@@ -10570,6 +10701,8 @@
         "flowIds": [
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "analytics-post-reports-send-email",
           "autopilot-post-autopilot-ask",
@@ -10679,6 +10812,8 @@
         "truthMode": "observed",
         "completion": 1,
         "routePatterns": [
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
           "/ai/assistant/analyze-sentiment",
@@ -10760,6 +10895,7 @@
           "/products/:productId/coupons/:couponId",
           "/products/:productId/reviews/:reviewId",
           "/products/:productId/urls/:urlId",
+          "/produtos",
           "/segmentation/:workspaceId/auto-segment",
           "/settings",
           "/settings/api-keys/:id",
@@ -10778,6 +10914,8 @@
           "capability:canvas-canva"
         ],
         "flowIds": [
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "autopilot-post-autopilot-ask",
           "autopilot-post-autopilot-money-machine",
           "autopilot-post-autopilot-send",
@@ -10883,6 +11021,8 @@
           "/admin/carteira/payouts",
           "/admin/carteira/reconcile",
           "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/admin/transactions/:orderId/operate",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
@@ -10982,6 +11122,7 @@
           "/products/:productId/coupons/:couponId",
           "/products/:productId/reviews/:reviewId",
           "/products/:productId/urls/:urlId",
+          "/produtos",
           "/register",
           "/segmentation/:workspaceId/auto-segment",
           "/settings",
@@ -11016,6 +11157,8 @@
         "flowIds": [
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "forgot-post-auth-forgot-password",
           "kloel-delete-kloel-site-id",
@@ -11112,6 +11255,8 @@
         "completion": 1,
         "routePatterns": [
           "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
           "/ai/assistant/analyze-sentiment",
@@ -11277,6 +11422,7 @@
           "/products/:productId/coupons/:couponId",
           "/products/:productId/reviews/:reviewId",
           "/products/:productId/urls/:urlId",
+          "/produtos",
           "/register",
           "/segmentation/:workspaceId/auto-segment",
           "/settings",
@@ -11348,6 +11494,8 @@
         ],
         "flowIds": [
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "autopilot-post-autopilot-ask",
           "autopilot-post-autopilot-money-machine",
           "autopilot-post-autopilot-send",
@@ -11461,6 +11609,8 @@
           "/admin/auth/login",
           "/admin/carteira/connect/accounts",
           "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/admin/transactions/:orderId/operate",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
@@ -11861,6 +12011,7 @@
           "/products/categories/list",
           "/products/import",
           "/products/stats",
+          "/produtos",
           "/register",
           "/reports/send-email",
           "/sales/:id/refund",
@@ -11959,6 +12110,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "analytics-post-reports-send-email",
           "autopilot-post-autopilot-ask",
@@ -12098,6 +12251,8 @@
           "/admin/carteira/payouts",
           "/admin/carteira/reconcile",
           "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/admin/transactions/:orderId/operate",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
@@ -12273,6 +12428,7 @@
           "/products/:productId/coupons/:couponId",
           "/products/:productId/reviews/:reviewId",
           "/products/:productId/urls/:urlId",
+          "/produtos",
           "/register",
           "/segmentation/:workspaceId/auto-segment",
           "/settings",
@@ -12345,6 +12501,8 @@
         "flowIds": [
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "autopilot-post-autopilot-ask",
           "autopilot-post-autopilot-money-machine",
@@ -12453,6 +12611,8 @@
           "/admin/auth/login",
           "/admin/carteira/connect/accounts",
           "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/admin/transactions/:orderId/operate",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
@@ -12848,6 +13008,7 @@
           "/products/categories/list",
           "/products/import",
           "/products/stats",
+          "/produtos",
           "/register",
           "/reports/send-email",
           "/sales/:id/refund",
@@ -12943,6 +13104,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "analytics-post-reports-send-email",
           "autopilot-post-autopilot-ask",
@@ -13049,6 +13212,27 @@
         "blockers": []
       },
       {
+        "id": "surface:produtos",
+        "name": "Produtos",
+        "declaredByManifest": false,
+        "critical": true,
+        "status": "real",
+        "truthMode": "observed",
+        "completion": 1,
+        "routePatterns": [
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
+          "/produtos",
+          "produtos"
+        ],
+        "capabilityIds": [],
+        "flowIds": [
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject"
+        ],
+        "blockers": []
+      },
+      {
         "id": "surface:reset",
         "name": "Reset",
         "declaredByManifest": false,
@@ -13115,6 +13299,8 @@
           "/admin/auth/login",
           "/admin/carteira/connect/accounts",
           "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/admin/transactions/:orderId/operate",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
@@ -13454,6 +13640,7 @@
           "/products/:productId/coupons/:couponId",
           "/products/:productId/reviews/:reviewId",
           "/products/:productId/urls/:urlId",
+          "/produtos",
           "/register",
           "/reports/send-email",
           "/segmentation/:workspaceId/auto-segment",
@@ -13641,6 +13828,8 @@
         "flowIds": [
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "analytics-post-reports-send-email",
           "autopilot-post-autopilot-ask",
@@ -13830,21 +14019,6 @@
         "blockers": []
       },
       {
-        "id": "surface:produtos",
-        "name": "Produtos",
-        "declaredByManifest": false,
-        "critical": true,
-        "status": "phantom",
-        "truthMode": "aspirational",
-        "completion": 0,
-        "routePatterns": [
-          "produtos"
-        ],
-        "capabilityIds": [],
-        "flowIds": [],
-        "blockers": []
-      },
-      {
         "id": "surface:terms",
         "name": "Terms",
         "declaredByManifest": false,
@@ -13908,6 +14082,8 @@
           "/admin/carteira/payouts",
           "/admin/carteira/reconcile",
           "/admin/chat/message",
+          "/admin/products/:productId/approve",
+          "/admin/products/:productId/reject",
           "/admin/transactions/:orderId/operate",
           "/affiliate/request/:productId",
           "/affiliate/saved/:productId",
@@ -14101,6 +14277,7 @@
           "/products/:productId/coupons/:couponId",
           "/products/:productId/reviews/:reviewId",
           "/products/:productId/urls/:urlId",
+          "/produtos",
           "/register",
           "/reset-password",
           "/segmentation/:workspaceId/auto-segment",
@@ -14184,6 +14361,8 @@
         "flowIds": [
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "autopilot-post-autopilot-ask",
           "autopilot-post-autopilot-money-machine",
@@ -14601,6 +14780,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "affiliate-post-affiliate-ai-search",
           "affiliate-post-affiliate-saved-product-id",
@@ -14718,9 +14899,9 @@
         ],
         "blockers": [
           "Missing structural roles: interface, persistence.",
-          "Missing structural roles: orchestration, persistence, side_effect.",
-          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
           "Missing structural roles: persistence.",
+          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+          "Missing structural roles: orchestration, persistence, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence, side_effect."
         ],
@@ -14989,6 +15170,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "affiliate-post-affiliate-ai-search",
           "affiliate-post-affiliate-saved-product-id",
@@ -15105,9 +15288,9 @@
         ],
         "blockers": [
           "Missing structural roles: interface, persistence.",
-          "Missing structural roles: orchestration, persistence, side_effect.",
-          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
           "Missing structural roles: persistence.",
+          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+          "Missing structural roles: orchestration, persistence, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence, side_effect."
         ],
@@ -15371,6 +15554,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "affiliate-post-affiliate-ai-search",
           "affiliate-post-affiliate-saved-product-id",
@@ -15488,9 +15673,9 @@
         ],
         "blockers": [
           "Missing structural roles: interface, persistence.",
-          "Missing structural roles: orchestration, persistence, side_effect.",
-          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
           "Missing structural roles: persistence.",
+          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+          "Missing structural roles: orchestration, persistence, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence, side_effect."
         ],
@@ -15763,6 +15948,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "affiliate-post-affiliate-ai-search",
           "affiliate-post-affiliate-saved-product-id",
@@ -15881,9 +16068,9 @@
         ],
         "blockers": [
           "Missing structural roles: interface, persistence.",
-          "Missing structural roles: orchestration, persistence, side_effect.",
-          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
           "Missing structural roles: persistence.",
+          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+          "Missing structural roles: orchestration, persistence, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence, side_effect."
         ],
@@ -16149,6 +16336,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "affiliate-post-affiliate-ai-search",
           "affiliate-post-affiliate-saved-product-id",
@@ -16266,9 +16455,9 @@
         ],
         "blockers": [
           "Missing structural roles: interface, persistence.",
-          "Missing structural roles: orchestration, persistence, side_effect.",
-          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
           "Missing structural roles: persistence.",
+          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+          "Missing structural roles: orchestration, persistence, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence, side_effect."
         ],
@@ -16533,6 +16722,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "affiliate-post-affiliate-ai-search",
           "affiliate-post-affiliate-saved-product-id",
@@ -16649,9 +16840,9 @@
         ],
         "blockers": [
           "Missing structural roles: interface, persistence.",
-          "Missing structural roles: orchestration, persistence, side_effect.",
-          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
           "Missing structural roles: persistence.",
+          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+          "Missing structural roles: orchestration, persistence, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence, side_effect."
         ],
@@ -16915,6 +17106,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "affiliate-post-affiliate-ai-search",
           "affiliate-post-affiliate-saved-product-id",
@@ -17031,9 +17224,9 @@
         ],
         "blockers": [
           "Missing structural roles: interface, persistence.",
-          "Missing structural roles: orchestration, persistence, side_effect.",
-          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
           "Missing structural roles: persistence.",
+          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+          "Missing structural roles: orchestration, persistence, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence, side_effect."
         ],
@@ -17306,6 +17499,8 @@
           "ad-post-ad-rules-id-toggle",
           "admin-post-admin-auth-login",
           "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
           "admin-post-admin-transactions-order-id-operate",
           "affiliate-post-affiliate-ai-search",
           "affiliate-post-affiliate-saved-product-id",
@@ -17424,9 +17619,9 @@
         ],
         "blockers": [
           "Missing structural roles: interface, persistence.",
-          "Missing structural roles: orchestration, persistence, side_effect.",
-          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
           "Missing structural roles: persistence.",
+          "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+          "Missing structural roles: orchestration, persistence, side_effect.",
           "Missing structural roles: persistence, side_effect.",
           "Missing structural roles: interface, persistence, side_effect."
         ],
@@ -17437,19 +17632,19 @@
       "codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
       "codacy/static_hotspot: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
       "codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
+      "github_actions/ci-failure: 3 recent CI workflow failure(s): CodeQL, CI, Dependabot Auto Merge",
       "sentry/performance-metric: No unresolved Sentry issues — project is clean",
       "Pay: phantom surface with incomplete materialization.",
       "Privacy: phantom surface with incomplete materialization.",
-      "Produtos: phantom surface with incomplete materialization.",
       "Terms: phantom surface with incomplete materialization.",
       "Tools: phantom surface with incomplete materialization.",
       "Runtime without product surface: Marketing Skill: Capability Marketing Skill is runtime-critical or operationally important but still has no product-facing surface or routed chain attached to it."
     ]
   },
   "convergencePlan": {
-    "totalUnits": 38,
+    "totalUnits": 39,
     "humanRequiredUnits": 1,
-    "observationOnlyUnits": 1,
+    "observationOnlyUnits": 2,
     "topQueue": [
       {
         "id": "scenario-customer-auth-shell",
@@ -17659,11 +17854,11 @@
         "asyncExpectations": [],
         "breakTypes": [
           "TRANSACTION_NO_ISOLATION (14)",
-          "IDEMPOTENCY_FINANCIAL (8)",
           "RACE_CONDITION_DATA_CORRUPTION (8)",
           "MONITORING_MISSING (4)",
           "RACE_CONDITION_OVERWRITE (4)",
-          "DATA_PRODUCT_NO_PLAN (3)"
+          "DATA_PRODUCT_NO_PLAN (3)",
+          "ORDERING_WEBHOOK_OOO (3)"
         ],
         "artifactPaths": [
           "PULSE_CERTIFICATE.json",
@@ -17673,16 +17868,16 @@
           "PULSE_WORLD_STATE.json"
         ],
         "relatedFiles": [
-          "backend/src/checkout/checkout-catalog.service.ts (5)",
-          "backend/src/checkout/checkout-product.service.ts (5)",
           "backend/src/payments/ledger/ledger.service.ts (5)",
           "backend/src/webhooks/payment-webhook-stripe.handlers2.ts (5)",
+          "backend/src/checkout/checkout-catalog.service.ts (4)",
+          "backend/src/checkout/checkout-product.service.ts (4)",
           "backend/src/billing/billing-webhook.service.ts (3)",
-          "backend/src/reports/reports-orders.service.ts (3)",
           "backend/src/webhooks/payment-webhook-stripe.handlers.ts (3)",
           "backend/src/checkout/checkout-social-recovery.service.ts (2)",
           "/Users/danielpenin/whatsapp_saas/backend/src/billing/billing.service.ts",
-          "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-catalog-config.service.ts"
+          "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-catalog-config.service.ts",
+          "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-catalog.service.ts"
         ],
         "validationArtifacts": [
           "PULSE_CERTIFICATE.json",
@@ -17984,26 +18179,26 @@
         ],
         "breakTypes": [
           "TRANSACTION_NO_ISOLATION (14)",
-          "IDEMPOTENCY_FINANCIAL (8)",
           "RACE_CONDITION_DATA_CORRUPTION (8)",
           "MONITORING_MISSING (4)",
           "RACE_CONDITION_OVERWRITE (4)",
-          "DATA_PRODUCT_NO_PLAN (3)"
+          "DATA_PRODUCT_NO_PLAN (3)",
+          "ORDERING_WEBHOOK_OOO (3)"
         ],
         "artifactPaths": [
           "PULSE_CERTIFICATE.json"
         ],
         "relatedFiles": [
-          "backend/src/checkout/checkout-catalog.service.ts (5)",
-          "backend/src/checkout/checkout-product.service.ts (5)",
           "backend/src/payments/ledger/ledger.service.ts (5)",
           "backend/src/webhooks/payment-webhook-stripe.handlers2.ts (5)",
+          "backend/src/checkout/checkout-catalog.service.ts (4)",
+          "backend/src/checkout/checkout-product.service.ts (4)",
           "backend/src/billing/billing-webhook.service.ts (3)",
-          "backend/src/reports/reports-orders.service.ts (3)",
           "backend/src/webhooks/payment-webhook-stripe.handlers.ts (3)",
           "backend/src/checkout/checkout-social-recovery.service.ts (2)",
           "/Users/danielpenin/whatsapp_saas/backend/src/billing/billing.service.ts",
-          "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-catalog-config.service.ts"
+          "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-catalog-config.service.ts",
+          "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-catalog.service.ts"
         ],
         "validationArtifacts": [
           "PULSE_CERTIFICATE.json",
@@ -18017,7 +18212,7 @@
         ]
       },
       {
-        "id": "external-sentry-sentry-no-issues-1777339553305",
+        "id": "external-sentry-sentry-no-issues-1777344333788",
         "order": 5,
         "priority": "P0",
         "kind": "runtime",
@@ -18416,8 +18611,8 @@
           }
         }
       ],
-      "runId": "aa4674e4-10a2-44ac-ac36-11d6feed1da6",
-      "generatedAt": "2026-04-28T01:23:54.077Z"
+      "runId": "cf4a2def-042f-4147-a979-46215b4d8de7",
+      "generatedAt": "2026-04-28T01:26:04.715Z"
     },
     "browser": {
       "attempted": false,
@@ -18770,7 +18965,7 @@
             "PULSE_RUNTIME_EVIDENCE.json"
           ],
           "specsExecuted": [],
-          "durationMs": 1,
+          "durationMs": 0,
           "worldStateTouches": [
             "flows.execution",
             "crm.wait-state"
@@ -19200,7 +19395,7 @@
             "PULSE_RUNTIME_EVIDENCE.json"
           ],
           "specsExecuted": [],
-          "durationMs": 1,
+          "durationMs": 0,
           "worldStateTouches": [
             "whatsapp.session",
             "provider.connection"
@@ -19290,7 +19485,7 @@
         "PULSE_SCENARIO_COVERAGE.json"
       ],
       "summary": "Synthetic coverage maps 56/56 non-ops page(s) to declared scenarios.",
-      "totalPages": 125,
+      "totalPages": 126,
       "userFacingPages": 56,
       "coveredPages": 56,
       "uncoveredPages": [],
@@ -20883,6 +21078,22 @@
         },
         {
           "route": "/produtos",
+          "group": "main",
+          "moduleKey": "admin",
+          "moduleName": "Admin",
+          "classification": "ops_only",
+          "covered": true,
+          "actorKinds": [
+            "customer"
+          ],
+          "scenarioIds": [
+            "customer-onboarding-public-map"
+          ],
+          "totalInteractions": 6,
+          "persistedInteractions": 2
+        },
+        {
+          "route": "/produtos",
           "group": "admin",
           "moduleKey": "admin",
           "moduleName": "Admin",
@@ -21439,7 +21650,7 @@
       ]
     },
     "worldState": {
-      "generatedAt": "2026-04-28T01:24:52.081Z",
+      "generatedAt": "2026-04-28T02:45:00.659Z",
       "backendUrl": "https://whatsappsaas-copy-staging.up.railway.app",
       "frontendUrl": "https://kloel-frontend-plhznpy68-danielgonzagatj-gmailcoms-projects.vercel.app",
       "actorProfiles": [
@@ -21717,9 +21928,9 @@
       ]
     },
     "executionTrace": {
-      "runId": "pulse-1777339444783",
-      "generatedAt": "2026-04-28T01:24:04.783Z",
-      "updatedAt": "2026-04-28T01:25:22.664Z",
+      "runId": "pulse-1777344270582",
+      "generatedAt": "2026-04-28T02:44:30.582Z",
+      "updatedAt": "2026-04-28T02:45:14.734Z",
       "environment": "scan",
       "certificationTarget": {
         "tier": null,
@@ -21730,18 +21941,18 @@
         {
           "phase": "full-scan",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:04.796Z",
+          "startedAt": "2026-04-28T02:44:30.590Z",
           "metadata": {
             "profile": "none",
             "environment": "scan"
           },
-          "finishedAt": "2026-04-28T01:24:51.957Z",
-          "durationMs": 47161
+          "finishedAt": "2026-04-28T02:45:00.631Z",
+          "durationMs": 30041
         },
         {
           "phase": "scan:core-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:04.796Z",
+          "startedAt": "2026-04-28T02:44:30.590Z",
           "metadata": {
             "apiCalls": 698,
             "backendRoutes": 754,
@@ -21751,1194 +21962,1194 @@
             "serviceTraces": 2151,
             "uiElements": 1664
           },
-          "finishedAt": "2026-04-28T01:24:06.299Z",
-          "durationMs": 1503
+          "finishedAt": "2026-04-28T02:44:31.588Z",
+          "durationMs": 998
         },
         {
           "phase": "scan:extended-parser-inventory",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:06.299Z",
+          "startedAt": "2026-04-28T02:44:31.588Z",
           "metadata": {
             "discoveredChecks": 91,
             "loadedChecks": 91,
             "unavailableChecks": 0
           },
-          "finishedAt": "2026-04-28T01:24:09.902Z",
-          "durationMs": 3603
+          "finishedAt": "2026-04-28T02:44:33.822Z",
+          "durationMs": 2234
         },
         {
           "phase": "scan:extended-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:09.902Z",
+          "startedAt": "2026-04-28T02:44:33.822Z",
           "metadata": {
             "parserCount": 91,
-            "breakCount": 1138
+            "breakCount": 1125
           },
-          "finishedAt": "2026-04-28T01:24:17.810Z",
-          "durationMs": 7908
+          "finishedAt": "2026-04-28T02:44:39.714Z",
+          "durationMs": 5892
         },
         {
           "phase": "parser:accessibility-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:09.902Z",
+          "startedAt": "2026-04-28T02:44:33.822Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 9
           },
-          "finishedAt": "2026-04-28T01:24:09.985Z",
-          "durationMs": 83
+          "finishedAt": "2026-04-28T02:44:33.865Z",
+          "durationMs": 43
         },
         {
           "phase": "parser:ai-guardrails",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:09.986Z",
+          "startedAt": "2026-04-28T02:44:33.865Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:10.005Z",
-          "durationMs": 19
+          "finishedAt": "2026-04-28T02:44:33.874Z",
+          "durationMs": 9
         },
         {
           "phase": "parser:ai-prompt-verifier",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.005Z",
+          "startedAt": "2026-04-28T02:44:33.874Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:10.011Z",
-          "durationMs": 6
+          "finishedAt": "2026-04-28T02:44:33.876Z",
+          "durationMs": 2
         },
         {
           "phase": "parser:ai-response-quality",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.011Z",
+          "startedAt": "2026-04-28T02:44:33.876Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:10.019Z",
-          "durationMs": 8
+          "finishedAt": "2026-04-28T02:44:33.880Z",
+          "durationMs": 4
         },
         {
           "phase": "parser:anti-hardcode-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.019Z",
+          "startedAt": "2026-04-28T02:44:33.881Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:10.166Z",
-          "durationMs": 147
+          "finishedAt": "2026-04-28T02:44:33.955Z",
+          "durationMs": 74
         },
         {
           "phase": "parser:api-contract-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.166Z",
+          "startedAt": "2026-04-28T02:44:33.955Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:10.166Z",
+          "finishedAt": "2026-04-28T02:44:33.955Z",
           "durationMs": 0
         },
         {
           "phase": "parser:api-response-consistency",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.167Z",
+          "startedAt": "2026-04-28T02:44:33.955Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-28T01:24:10.187Z",
-          "durationMs": 20
+          "finishedAt": "2026-04-28T02:44:33.966Z",
+          "durationMs": 11
         },
         {
           "phase": "parser:asset-reference-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.187Z",
+          "startedAt": "2026-04-28T02:44:33.966Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:10.227Z",
-          "durationMs": 40
+          "finishedAt": "2026-04-28T02:44:33.986Z",
+          "durationMs": 20
         },
         {
           "phase": "parser:audit-trail-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.227Z",
+          "startedAt": "2026-04-28T02:44:33.986Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-28T01:24:10.321Z",
-          "durationMs": 94
+          "finishedAt": "2026-04-28T02:44:34.032Z",
+          "durationMs": 46
         },
         {
           "phase": "parser:auth-flow-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.322Z",
+          "startedAt": "2026-04-28T02:44:34.032Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:10.322Z",
+          "finishedAt": "2026-04-28T02:44:34.032Z",
           "durationMs": 0
         },
         {
           "phase": "parser:backup-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.322Z",
+          "startedAt": "2026-04-28T02:44:34.032Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-28T01:24:10.323Z",
+          "finishedAt": "2026-04-28T02:44:34.033Z",
           "durationMs": 1
         },
         {
           "phase": "parser:browser-network-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.323Z",
+          "startedAt": "2026-04-28T02:44:34.033Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 3
           },
-          "finishedAt": "2026-04-28T01:24:10.408Z",
-          "durationMs": 85
+          "finishedAt": "2026-04-28T02:44:34.077Z",
+          "durationMs": 44
         },
         {
           "phase": "parser:build-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.408Z",
+          "startedAt": "2026-04-28T02:44:34.077Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:10.408Z",
+          "finishedAt": "2026-04-28T02:44:34.077Z",
           "durationMs": 0
         },
         {
           "phase": "parser:cache-invalidation-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.408Z",
+          "startedAt": "2026-04-28T02:44:34.077Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:10.501Z",
-          "durationMs": 93
+          "finishedAt": "2026-04-28T02:44:34.119Z",
+          "durationMs": 42
         },
         {
           "phase": "parser:chaos-dependency-failure",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.502Z",
+          "startedAt": "2026-04-28T02:44:34.119Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:10.581Z",
-          "durationMs": 79
+          "finishedAt": "2026-04-28T02:44:34.157Z",
+          "durationMs": 38
         },
         {
           "phase": "parser:chaos-third-party",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.581Z",
+          "startedAt": "2026-04-28T02:44:34.157Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:10.694Z",
-          "durationMs": 113
+          "finishedAt": "2026-04-28T02:44:34.209Z",
+          "durationMs": 52
         },
         {
           "phase": "parser:cicd-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.694Z",
+          "startedAt": "2026-04-28T02:44:34.209Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-28T01:24:10.700Z",
-          "durationMs": 6
+          "finishedAt": "2026-04-28T02:44:34.213Z",
+          "durationMs": 4
         },
         {
           "phase": "parser:circular-import-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.700Z",
+          "startedAt": "2026-04-28T02:44:34.213Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:10.708Z",
-          "durationMs": 8
+          "finishedAt": "2026-04-28T02:44:34.218Z",
+          "durationMs": 5
         },
         {
           "phase": "parser:communication-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.708Z",
+          "startedAt": "2026-04-28T02:44:34.218Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-28T01:24:10.907Z",
-          "durationMs": 199
+          "finishedAt": "2026-04-28T02:44:34.316Z",
+          "durationMs": 98
         },
         {
           "phase": "parser:compliance-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.908Z",
+          "startedAt": "2026-04-28T02:44:34.316Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:10.937Z",
-          "durationMs": 29
+          "finishedAt": "2026-04-28T02:44:34.331Z",
+          "durationMs": 15
         },
         {
           "phase": "parser:concurrency-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.937Z",
+          "startedAt": "2026-04-28T02:44:34.331Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 12
           },
-          "finishedAt": "2026-04-28T01:24:10.958Z",
-          "durationMs": 21
+          "finishedAt": "2026-04-28T02:44:34.344Z",
+          "durationMs": 13
         },
         {
           "phase": "parser:console-cleaner",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:10.958Z",
+          "startedAt": "2026-04-28T02:44:34.345Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:11.098Z",
-          "durationMs": 140
+          "finishedAt": "2026-04-28T02:44:34.437Z",
+          "durationMs": 92
         },
         {
           "phase": "parser:cookie-csrf-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.098Z",
+          "startedAt": "2026-04-28T02:44:34.437Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:11.154Z",
-          "durationMs": 56
+          "finishedAt": "2026-04-28T02:44:34.474Z",
+          "durationMs": 37
         },
         {
           "phase": "parser:cost-limit-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.154Z",
+          "startedAt": "2026-04-28T02:44:34.474Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 7
           },
-          "finishedAt": "2026-04-28T01:24:11.336Z",
-          "durationMs": 182
+          "finishedAt": "2026-04-28T02:44:34.541Z",
+          "durationMs": 67
         },
         {
           "phase": "parser:cron-job-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.336Z",
+          "startedAt": "2026-04-28T02:44:34.541Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 5
           },
-          "finishedAt": "2026-04-28T01:24:11.364Z",
-          "durationMs": 28
+          "finishedAt": "2026-04-28T02:44:34.558Z",
+          "durationMs": 17
         },
         {
           "phase": "parser:crud-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.364Z",
+          "startedAt": "2026-04-28T02:44:34.558Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:11.365Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-28T02:44:34.558Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:data-consistency",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.365Z",
+          "startedAt": "2026-04-28T02:44:34.559Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 5
           },
-          "finishedAt": "2026-04-28T01:24:11.378Z",
-          "durationMs": 13
+          "finishedAt": "2026-04-28T02:44:34.566Z",
+          "durationMs": 7
         },
         {
           "phase": "parser:data-integrity",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.379Z",
+          "startedAt": "2026-04-28T02:44:34.566Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:11.379Z",
+          "finishedAt": "2026-04-28T02:44:34.566Z",
           "durationMs": 0
         },
         {
           "phase": "parser:dead-code-finder",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.379Z",
+          "startedAt": "2026-04-28T02:44:34.566Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 6
           },
-          "finishedAt": "2026-04-28T01:24:11.515Z",
-          "durationMs": 136
+          "finishedAt": "2026-04-28T02:44:34.647Z",
+          "durationMs": 81
         },
         {
           "phase": "parser:deploy-rollback-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.516Z",
+          "startedAt": "2026-04-28T02:44:34.647Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:11.544Z",
-          "durationMs": 28
+          "finishedAt": "2026-04-28T02:44:34.667Z",
+          "durationMs": 20
         },
         {
           "phase": "parser:disaster-recovery-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.544Z",
+          "startedAt": "2026-04-28T02:44:34.667Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-28T01:24:11.544Z",
+          "finishedAt": "2026-04-28T02:44:34.667Z",
           "durationMs": 0
         },
         {
           "phase": "parser:docker-build-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.545Z",
+          "startedAt": "2026-04-28T02:44:34.667Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-28T01:24:11.547Z",
+          "finishedAt": "2026-04-28T02:44:34.669Z",
           "durationMs": 2
         },
         {
           "phase": "parser:dto-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.547Z",
+          "startedAt": "2026-04-28T02:44:34.669Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:11.570Z",
-          "durationMs": 23
+          "finishedAt": "2026-04-28T02:44:34.682Z",
+          "durationMs": 13
         },
         {
           "phase": "parser:duplicate-route-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.570Z",
+          "startedAt": "2026-04-28T02:44:34.682Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:11.585Z",
-          "durationMs": 15
+          "finishedAt": "2026-04-28T02:44:34.690Z",
+          "durationMs": 8
         },
         {
           "phase": "parser:e2e-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.585Z",
+          "startedAt": "2026-04-28T02:44:34.690Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-28T01:24:11.594Z",
-          "durationMs": 9
+          "finishedAt": "2026-04-28T02:44:34.696Z",
+          "durationMs": 6
         },
         {
           "phase": "parser:e2e-payment",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.594Z",
+          "startedAt": "2026-04-28T02:44:34.696Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:11.594Z",
+          "finishedAt": "2026-04-28T02:44:34.696Z",
           "durationMs": 0
         },
         {
           "phase": "parser:e2e-product-creation",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.595Z",
+          "startedAt": "2026-04-28T02:44:34.696Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:11.595Z",
+          "finishedAt": "2026-04-28T02:44:34.696Z",
           "durationMs": 0
         },
         {
           "phase": "parser:e2e-registration",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.596Z",
+          "startedAt": "2026-04-28T02:44:34.696Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:11.596Z",
+          "finishedAt": "2026-04-28T02:44:34.696Z",
           "durationMs": 0
         },
         {
           "phase": "parser:e2e-whatsapp",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.597Z",
+          "startedAt": "2026-04-28T02:44:34.696Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:11.597Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-28T02:44:34.697Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:e2e-withdrawal",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.597Z",
+          "startedAt": "2026-04-28T02:44:34.697Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:11.598Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-28T02:44:34.697Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:edge-case-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.598Z",
+          "startedAt": "2026-04-28T02:44:34.697Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 451
           },
-          "finishedAt": "2026-04-28T01:24:11.686Z",
-          "durationMs": 88
+          "finishedAt": "2026-04-28T02:44:34.746Z",
+          "durationMs": 49
         },
         {
           "phase": "parser:env-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.687Z",
+          "startedAt": "2026-04-28T02:44:34.747Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 36
           },
-          "finishedAt": "2026-04-28T01:24:11.775Z",
-          "durationMs": 88
+          "finishedAt": "2026-04-28T02:44:34.800Z",
+          "durationMs": 53
         },
         {
           "phase": "parser:error-handler-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.775Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 13
-          },
-          "finishedAt": "2026-04-28T01:24:11.855Z",
-          "durationMs": 80
-        },
-        {
-          "phase": "parser:financial-arithmetic",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.855Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 1
-          },
-          "finishedAt": "2026-04-28T01:24:11.897Z",
-          "durationMs": 42
-        },
-        {
-          "phase": "parser:frontend-route-protection",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.897Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-28T01:24:11.897Z",
-          "durationMs": 0
-        },
-        {
-          "phase": "parser:guard-auditor",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.897Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 1
-          },
-          "finishedAt": "2026-04-28T01:24:11.916Z",
-          "durationMs": 19
-        },
-        {
-          "phase": "parser:hardcoded-url-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:11.916Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 8
-          },
-          "finishedAt": "2026-04-28T01:24:12.043Z",
-          "durationMs": 127
-        },
-        {
-          "phase": "parser:http-timeout-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.043Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 1
-          },
-          "finishedAt": "2026-04-28T01:24:12.106Z",
-          "durationMs": 63
-        },
-        {
-          "phase": "parser:hydration-tester",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.107Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 1
-          },
-          "finishedAt": "2026-04-28T01:24:12.153Z",
-          "durationMs": 46
-        },
-        {
-          "phase": "parser:idempotency-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.153Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 9
-          },
-          "finishedAt": "2026-04-28T01:24:12.208Z",
-          "durationMs": 55
-        },
-        {
-          "phase": "parser:infra-config-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.208Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-28T01:24:12.209Z",
-          "durationMs": 1
-        },
-        {
-          "phase": "parser:injection-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.210Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 0
-          },
-          "finishedAt": "2026-04-28T01:24:12.347Z",
-          "durationMs": 137
-        },
-        {
-          "phase": "parser:interval-cleanup-checker",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.347Z",
+          "startedAt": "2026-04-28T02:44:34.800Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 12
           },
-          "finishedAt": "2026-04-28T01:24:12.392Z",
-          "durationMs": 45
+          "finishedAt": "2026-04-28T02:44:34.847Z",
+          "durationMs": 47
+        },
+        {
+          "phase": "parser:financial-arithmetic",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-28T02:44:34.848Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 1
+          },
+          "finishedAt": "2026-04-28T02:44:34.874Z",
+          "durationMs": 26
+        },
+        {
+          "phase": "parser:frontend-route-protection",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-28T02:44:34.874Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-28T02:44:34.875Z",
+          "durationMs": 1
+        },
+        {
+          "phase": "parser:guard-auditor",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-28T02:44:34.875Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 1
+          },
+          "finishedAt": "2026-04-28T02:44:34.885Z",
+          "durationMs": 10
+        },
+        {
+          "phase": "parser:hardcoded-url-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-28T02:44:34.886Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 8
+          },
+          "finishedAt": "2026-04-28T02:44:34.959Z",
+          "durationMs": 73
+        },
+        {
+          "phase": "parser:http-timeout-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-28T02:44:34.959Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 1
+          },
+          "finishedAt": "2026-04-28T02:44:34.998Z",
+          "durationMs": 39
+        },
+        {
+          "phase": "parser:hydration-tester",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-28T02:44:34.998Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 1
+          },
+          "finishedAt": "2026-04-28T02:44:35.027Z",
+          "durationMs": 29
+        },
+        {
+          "phase": "parser:idempotency-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-28T02:44:35.027Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 1
+          },
+          "finishedAt": "2026-04-28T02:44:35.060Z",
+          "durationMs": 33
+        },
+        {
+          "phase": "parser:infra-config-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-28T02:44:35.061Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-28T02:44:35.061Z",
+          "durationMs": 0
+        },
+        {
+          "phase": "parser:injection-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-28T02:44:35.061Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-28T02:44:35.143Z",
+          "durationMs": 82
+        },
+        {
+          "phase": "parser:interval-cleanup-checker",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-28T02:44:35.143Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 12
+          },
+          "finishedAt": "2026-04-28T02:44:35.169Z",
+          "durationMs": 26
         },
         {
           "phase": "parser:json-parse-safety",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.392Z",
+          "startedAt": "2026-04-28T02:44:35.169Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 3
           },
-          "finishedAt": "2026-04-28T01:24:12.569Z",
-          "durationMs": 177
+          "finishedAt": "2026-04-28T02:44:35.279Z",
+          "durationMs": 110
         },
         {
           "phase": "parser:license-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.570Z",
+          "startedAt": "2026-04-28T02:44:35.279Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-28T01:24:12.576Z",
-          "durationMs": 6
+          "finishedAt": "2026-04-28T02:44:35.281Z",
+          "durationMs": 2
         },
         {
           "phase": "parser:lint-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.576Z",
+          "startedAt": "2026-04-28T02:44:35.281Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:12.577Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-28T02:44:35.281Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:locale-consistency-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.577Z",
+          "startedAt": "2026-04-28T02:44:35.281Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:12.615Z",
-          "durationMs": 38
+          "finishedAt": "2026-04-28T02:44:35.303Z",
+          "durationMs": 22
         },
         {
           "phase": "parser:middleware-chain-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.615Z",
+          "startedAt": "2026-04-28T02:44:35.303Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:12.616Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-28T02:44:35.303Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:missing-await-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.616Z",
+          "startedAt": "2026-04-28T02:44:35.303Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-28T01:24:12.670Z",
-          "durationMs": 54
+          "finishedAt": "2026-04-28T02:44:35.333Z",
+          "durationMs": 30
         },
         {
           "phase": "parser:monitoring-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.670Z",
+          "startedAt": "2026-04-28T02:44:35.334Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 4
           },
-          "finishedAt": "2026-04-28T01:24:12.734Z",
-          "durationMs": 64
+          "finishedAt": "2026-04-28T02:44:35.370Z",
+          "durationMs": 36
         },
         {
           "phase": "parser:nestjs-module-auditor",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.734Z",
+          "startedAt": "2026-04-28T02:44:35.370Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:12.770Z",
-          "durationMs": 36
+          "finishedAt": "2026-04-28T02:44:35.392Z",
+          "durationMs": 22
         },
         {
           "phase": "parser:nextjs-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.770Z",
+          "startedAt": "2026-04-28T02:44:35.393Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 4
           },
-          "finishedAt": "2026-04-28T01:24:12.904Z",
-          "durationMs": 134
+          "finishedAt": "2026-04-28T02:44:35.463Z",
+          "durationMs": 70
         },
         {
           "phase": "parser:npm-audit",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.905Z",
+          "startedAt": "2026-04-28T02:44:35.463Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:12.905Z",
+          "finishedAt": "2026-04-28T02:44:35.463Z",
           "durationMs": 0
         },
         {
           "phase": "parser:observability-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.905Z",
+          "startedAt": "2026-04-28T02:44:35.463Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 2
           },
-          "finishedAt": "2026-04-28T01:24:12.987Z",
-          "durationMs": 82
+          "finishedAt": "2026-04-28T02:44:35.509Z",
+          "durationMs": 46
         },
         {
           "phase": "parser:ordering-timing-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:12.987Z",
+          "startedAt": "2026-04-28T02:44:35.510Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 17
           },
-          "finishedAt": "2026-04-28T01:24:13.092Z",
-          "durationMs": 105
+          "finishedAt": "2026-04-28T02:44:35.569Z",
+          "durationMs": 59
         },
         {
           "phase": "parser:orphaned-file-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:13.092Z",
+          "startedAt": "2026-04-28T02:44:35.569Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 1
           },
-          "finishedAt": "2026-04-28T01:24:14.048Z",
-          "durationMs": 956
+          "finishedAt": "2026-04-28T02:44:36.217Z",
+          "durationMs": 648
         },
         {
           "phase": "parser:performance-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.048Z",
+          "startedAt": "2026-04-28T02:44:36.217Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 4
           },
-          "finishedAt": "2026-04-28T01:24:14.147Z",
-          "durationMs": 99
+          "finishedAt": "2026-04-28T02:44:36.289Z",
+          "durationMs": 72
         },
         {
           "phase": "parser:performance-memory",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.147Z",
+          "startedAt": "2026-04-28T02:44:36.289Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:14.245Z",
-          "durationMs": 98
+          "finishedAt": "2026-04-28T02:44:36.372Z",
+          "durationMs": 83
         },
         {
           "phase": "parser:performance-query-profiler",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.246Z",
+          "startedAt": "2026-04-28T02:44:36.372Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 34
           },
-          "finishedAt": "2026-04-28T01:24:14.265Z",
-          "durationMs": 19
+          "finishedAt": "2026-04-28T02:44:36.386Z",
+          "durationMs": 14
         },
         {
           "phase": "parser:performance-response-time",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.265Z",
+          "startedAt": "2026-04-28T02:44:36.386Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:14.265Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-28T02:44:36.387Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:prisma-safety-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.265Z",
+          "startedAt": "2026-04-28T02:44:36.387Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 15
           },
-          "finishedAt": "2026-04-28T01:24:14.322Z",
-          "durationMs": 57
+          "finishedAt": "2026-04-28T02:44:36.429Z",
+          "durationMs": 42
         },
         {
           "phase": "parser:queue-parser",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.322Z",
+          "startedAt": "2026-04-28T02:44:36.430Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 22
           },
-          "finishedAt": "2026-04-28T01:24:14.649Z",
-          "durationMs": 327
+          "finishedAt": "2026-04-28T02:44:36.681Z",
+          "durationMs": 251
         },
         {
           "phase": "parser:redis-key-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.649Z",
+          "startedAt": "2026-04-28T02:44:36.681Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:14.677Z",
-          "durationMs": 28
+          "finishedAt": "2026-04-28T02:44:36.703Z",
+          "durationMs": 22
         },
         {
           "phase": "parser:responsive-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.677Z",
+          "startedAt": "2026-04-28T02:44:36.703Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:14.704Z",
-          "durationMs": 27
+          "finishedAt": "2026-04-28T02:44:36.725Z",
+          "durationMs": 22
         },
         {
           "phase": "parser:schema-drift",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.704Z",
+          "startedAt": "2026-04-28T02:44:36.725Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:14.704Z",
+          "finishedAt": "2026-04-28T02:44:36.725Z",
           "durationMs": 0
         },
         {
           "phase": "parser:security-auth-bypass",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.704Z",
+          "startedAt": "2026-04-28T02:44:36.725Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:14.705Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-28T02:44:36.725Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:security-cross-workspace",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.705Z",
+          "startedAt": "2026-04-28T02:44:36.725Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:14.705Z",
+          "finishedAt": "2026-04-28T02:44:36.725Z",
           "durationMs": 0
         },
         {
           "phase": "parser:security-injection",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.705Z",
+          "startedAt": "2026-04-28T02:44:36.725Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:14.705Z",
-          "durationMs": 0
+          "finishedAt": "2026-04-28T02:44:36.726Z",
+          "durationMs": 1
         },
         {
           "phase": "parser:security-rate-limit",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.705Z",
+          "startedAt": "2026-04-28T02:44:36.726Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:14.706Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-28T02:44:36.726Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:security-xss",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.706Z",
+          "startedAt": "2026-04-28T02:44:36.726Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:14.706Z",
+          "finishedAt": "2026-04-28T02:44:36.726Z",
           "durationMs": 0
         },
         {
           "phase": "parser:sensitive-data-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.706Z",
+          "startedAt": "2026-04-28T02:44:36.726Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:14.748Z",
-          "durationMs": 42
+          "finishedAt": "2026-04-28T02:44:36.756Z",
+          "durationMs": 30
         },
         {
           "phase": "parser:ssr-render-tester",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:14.748Z",
+          "startedAt": "2026-04-28T02:44:36.756Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:17.496Z",
-          "durationMs": 2748
+          "finishedAt": "2026-04-28T02:44:39.452Z",
+          "durationMs": 2696
         },
         {
           "phase": "parser:state-machine-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:17.496Z",
-          "metadata": {
-            "timeoutMs": 30000,
-            "breakCount": 4
-          },
-          "finishedAt": "2026-04-28T01:24:17.513Z",
-          "durationMs": 17
-        },
-        {
-          "phase": "parser:test-coverage",
-          "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:17.514Z",
+          "startedAt": "2026-04-28T02:44:39.453Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:17.514Z",
+          "finishedAt": "2026-04-28T02:44:39.479Z",
+          "durationMs": 26
+        },
+        {
+          "phase": "parser:test-coverage",
+          "phaseStatus": "passed",
+          "startedAt": "2026-04-28T02:44:39.480Z",
+          "metadata": {
+            "timeoutMs": 30000,
+            "breakCount": 0
+          },
+          "finishedAt": "2026-04-28T02:44:39.480Z",
           "durationMs": 0
         },
         {
           "phase": "parser:test-quality",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:17.514Z",
+          "startedAt": "2026-04-28T02:44:39.480Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 55
           },
-          "finishedAt": "2026-04-28T01:24:17.547Z",
+          "finishedAt": "2026-04-28T02:44:39.513Z",
           "durationMs": 33
         },
         {
           "phase": "parser:test-runner",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:17.547Z",
+          "startedAt": "2026-04-28T02:44:39.514Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:17.547Z",
+          "finishedAt": "2026-04-28T02:44:39.514Z",
           "durationMs": 0
         },
         {
           "phase": "parser:type-safety-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:17.547Z",
+          "startedAt": "2026-04-28T02:44:39.514Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:17.602Z",
-          "durationMs": 55
+          "finishedAt": "2026-04-28T02:44:39.555Z",
+          "durationMs": 41
         },
         {
           "phase": "parser:visual-design-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:17.602Z",
+          "startedAt": "2026-04-28T02:44:39.555Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 381
           },
-          "finishedAt": "2026-04-28T01:24:17.721Z",
-          "durationMs": 119
+          "finishedAt": "2026-04-28T02:44:39.645Z",
+          "durationMs": 90
         },
         {
           "phase": "parser:webhook-simulator",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:17.721Z",
+          "startedAt": "2026-04-28T02:44:39.646Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:17.722Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-28T02:44:39.646Z",
+          "durationMs": 0
         },
         {
           "phase": "parser:websocket-parser",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:17.722Z",
+          "startedAt": "2026-04-28T02:44:39.646Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:17.786Z",
-          "durationMs": 64
+          "finishedAt": "2026-04-28T02:44:39.697Z",
+          "durationMs": 51
         },
         {
           "phase": "parser:worker-resilience-checker",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:17.786Z",
+          "startedAt": "2026-04-28T02:44:39.697Z",
           "metadata": {
             "timeoutMs": 30000,
             "breakCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:17.810Z",
-          "durationMs": 24
+          "finishedAt": "2026-04-28T02:44:39.714Z",
+          "durationMs": 17
         },
         {
           "phase": "scan:manifest",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:17.811Z",
+          "startedAt": "2026-04-28T02:44:39.714Z",
           "metadata": {
             "issues": 0,
             "unknownSurfaces": 0,
             "unsupportedStacks": 0
           },
-          "finishedAt": "2026-04-28T01:24:17.812Z",
+          "finishedAt": "2026-04-28T02:44:39.715Z",
           "durationMs": 1
         },
         {
           "phase": "scan:graph",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:17.812Z",
+          "startedAt": "2026-04-28T02:44:39.715Z",
           "metadata": {
-            "score": 75,
-            "breakCount": 1221
+            "score": 77,
+            "breakCount": 1208
           },
-          "finishedAt": "2026-04-28T01:24:17.975Z",
-          "durationMs": 163
+          "finishedAt": "2026-04-28T02:44:39.840Z",
+          "durationMs": 125
         },
         {
           "phase": "scan:truth",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:17.975Z",
+          "startedAt": "2026-04-28T02:44:39.841Z",
           "metadata": {
-            "pages": 125,
+            "pages": 126,
             "modules": 42,
-            "flowGroups": 120,
-            "scopeFiles": 2686,
+            "flowGroups": 122,
+            "scopeFiles": 2693,
             "capabilities": 311,
-            "projectedFlows": 120
+            "projectedFlows": 122
           },
-          "finishedAt": "2026-04-28T01:24:45.876Z",
-          "durationMs": 27901
+          "finishedAt": "2026-04-28T02:44:57.527Z",
+          "durationMs": 17686
         },
         {
           "phase": "scan:certification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:45.877Z",
+          "startedAt": "2026-04-28T02:44:57.528Z",
           "metadata": {
             "status": "PARTIAL",
             "score": 54
           },
-          "finishedAt": "2026-04-28T01:24:51.956Z",
-          "durationMs": 6079
+          "finishedAt": "2026-04-28T02:45:00.631Z",
+          "durationMs": 3103
         },
         {
           "phase": "runtime-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:51.959Z",
+          "startedAt": "2026-04-28T02:45:00.632Z",
           "metadata": {
             "probeCount": 4,
             "executedChecks": 4,
             "missingEvidence": 0,
             "failedProbes": 0
           },
-          "finishedAt": "2026-04-28T01:24:51.964Z",
-          "durationMs": 5
+          "finishedAt": "2026-04-28T02:45:00.633Z",
+          "durationMs": 1
         },
         {
           "phase": "runtime:backend-health",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:51.960Z",
+          "startedAt": "2026-04-28T02:45:00.632Z",
           "metadata": {
             "probeId": "backend-health"
           },
-          "finishedAt": "2026-04-28T01:24:51.961Z",
-          "durationMs": 1
+          "finishedAt": "2026-04-28T02:45:00.632Z",
+          "durationMs": 0
         },
         {
           "phase": "runtime:auth-session",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:51.961Z",
+          "startedAt": "2026-04-28T02:45:00.632Z",
           "metadata": {
             "probeId": "auth-session"
           },
-          "finishedAt": "2026-04-28T01:24:51.961Z",
+          "finishedAt": "2026-04-28T02:45:00.632Z",
           "durationMs": 0
         },
         {
           "phase": "runtime:frontend-reachability",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:51.962Z",
+          "startedAt": "2026-04-28T02:45:00.632Z",
           "metadata": {
             "probeId": "frontend-reachability"
           },
-          "finishedAt": "2026-04-28T01:24:51.962Z",
+          "finishedAt": "2026-04-28T02:45:00.632Z",
           "durationMs": 0
         },
         {
           "phase": "runtime:db-connectivity",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:51.962Z",
+          "startedAt": "2026-04-28T02:45:00.632Z",
           "metadata": {
             "probeId": "db-connectivity"
           },
-          "finishedAt": "2026-04-28T01:24:51.963Z",
+          "finishedAt": "2026-04-28T02:45:00.633Z",
           "durationMs": 1
         },
         {
           "phase": "observability-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:51.964Z",
-          "finishedAt": "2026-04-28T01:24:51.966Z",
-          "durationMs": 2
+          "startedAt": "2026-04-28T02:45:00.633Z",
+          "finishedAt": "2026-04-28T02:45:00.633Z",
+          "durationMs": 0
         },
         {
           "phase": "recovery-evidence",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:51.966Z",
-          "finishedAt": "2026-04-28T01:24:51.967Z",
-          "durationMs": 1
+          "startedAt": "2026-04-28T02:45:00.634Z",
+          "finishedAt": "2026-04-28T02:45:00.634Z",
+          "durationMs": 0
         },
         {
           "phase": "declared-flows",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:51.968Z",
+          "startedAt": "2026-04-28T02:45:00.634Z",
           "metadata": {
             "flowCount": 0,
             "environment": "scan"
           },
-          "finishedAt": "2026-04-28T01:24:51.971Z",
-          "durationMs": 3
+          "finishedAt": "2026-04-28T02:45:00.634Z",
+          "durationMs": 0
         },
         {
           "phase": "declared-invariants",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:51.971Z",
+          "startedAt": "2026-04-28T02:45:00.634Z",
           "metadata": {
             "invariantCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:51.974Z",
-          "durationMs": 3
+          "finishedAt": "2026-04-28T02:45:00.634Z",
+          "durationMs": 0
         },
         {
           "phase": "synthetic-actors",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:24:51.975Z",
+          "startedAt": "2026-04-28T02:45:00.635Z",
           "metadata": {
             "requestedModes": "",
             "scenarioCount": 0
           },
-          "finishedAt": "2026-04-28T01:24:52.081Z",
-          "durationMs": 106
+          "finishedAt": "2026-04-28T02:45:00.659Z",
+          "durationMs": 24
         },
         {
           "phase": "self-trust-verification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:25:22.158Z",
-          "finishedAt": "2026-04-28T01:25:22.170Z",
-          "durationMs": 12
+          "startedAt": "2026-04-28T02:45:14.562Z",
+          "finishedAt": "2026-04-28T02:45:14.566Z",
+          "durationMs": 4
         },
         {
           "phase": "final-certification",
           "phaseStatus": "passed",
-          "startedAt": "2026-04-28T01:25:22.179Z",
-          "finishedAt": "2026-04-28T01:25:22.664Z",
-          "durationMs": 485
+          "startedAt": "2026-04-28T02:45:14.570Z",
+          "finishedAt": "2026-04-28T02:45:14.734Z",
+          "durationMs": 164
         }
       ],
       "summary": "Execution completed: 111 phase(s) passed.",
@@ -22958,7 +23169,7 @@
           "PULSE_CERTIFICATE.json"
         ],
         "metrics": {
-          "inventoryFiles": 2686,
+          "inventoryFiles": 2693,
           "codacyObservedFiles": 60,
           "codacyObservedFilesCovered": 60,
           "confidence": "high"
@@ -22969,7 +23180,7 @@
       {
         "kind": "truth",
         "executed": true,
-        "summary": "Resolved manifest built from 125 page(s), 42 module(s), 120 flow group(s).",
+        "summary": "Resolved manifest built from 126 page(s), 42 module(s), 122 flow group(s).",
         "artifactPaths": [
           "PULSE_CODEBASE_TRUTH.json",
           "PULSE_RESOLVED_MANIFEST.json",
@@ -22990,15 +23201,15 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "76 critical/high scan blocker(s) and 1116 Codacy HIGH issue(s) remain open.",
+        "summary": "64 critical/high scan blocker(s) and 1116 Codacy HIGH issue(s) remain open.",
         "artifactPaths": [
           "PULSE_REPORT.md",
           "PULSE_CERTIFICATE.json",
           "PULSE_CODACY_STATE.json"
         ],
         "metrics": {
-          "blockingBreaks": 76,
-          "totalBreaks": 1221,
+          "blockingBreaks": 64,
+          "totalBreaks": 1208,
           "codacyHighIssues": 1116,
           "codacyTotalIssues": 11966
         }
@@ -23304,7 +23515,7 @@
           "runner": "playwright-spec",
           "status": "passed",
           "specsExecuted": 0,
-          "durationMs": 1
+          "durationMs": 0
         }
       },
       {
@@ -23511,7 +23722,7 @@
           "runner": "playwright-spec",
           "status": "passed",
           "specsExecuted": 0,
-          "durationMs": 1
+          "durationMs": 0
         }
       },
       {
@@ -23545,7 +23756,7 @@
           "PULSE_SCENARIO_COVERAGE.json"
         ],
         "metrics": {
-          "totalPages": 125,
+          "totalPages": 126,
           "userFacingPages": 56,
           "coveredPages": 56,
           "uncoveredPages": 0
@@ -23585,7 +23796,7 @@
         ],
         "metrics": {
           "codacySnapshotAvailable": true,
-          "codacyAgeMinutes": 369,
+          "codacyAgeMinutes": 449,
           "codacyStale": false,
           "externalStaleAdapters": 0,
           "externalMissingAdapters": 2
@@ -23593,6 +23804,6 @@
       }
     ]
   },
-  "runId": "cf4a2def-042f-4147-a979-46215b4d8de7",
-  "generatedAt": "2026-04-28T01:26:04.715Z"
+  "runId": "7d4d403e-d855-4e14-81ef-3ce62aef9852",
+  "generatedAt": "2026-04-28T02:45:40.515Z"
 }

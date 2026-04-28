@@ -2278,7 +2278,7 @@ export class ProductCommissionController {
           type: payload.role,
           commissionRate: payload.percentage,
         });
-      } catch (error: unknown) {
+      } catch (error) {
         await this.prisma.productCommission
           .delete({ where: { id: commission.id } })
           .catch(() => undefined);
