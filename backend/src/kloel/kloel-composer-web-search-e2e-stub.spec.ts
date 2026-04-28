@@ -6,6 +6,16 @@ import {
 describe('kloel-composer-web-search-e2e-stub', () => {
   const originalEnv = { ...process.env };
 
+  // The stub helper short-circuits inside Jest workers (JEST_WORKER_ID
+  // is always set by Jest) so unit tests of KloelComposerService can
+  // exercise the real OpenAI Responses path. These tests assert the
+  // env-detection contract under simulated runtime conditions, so we
+  // clear that flag before each scenario and restore the original env
+  // after.
+  beforeEach(() => {
+    delete process.env.JEST_WORKER_ID;
+  });
+
   afterEach(() => {
     process.env = { ...originalEnv };
   });
@@ -14,6 +24,13 @@ describe('kloel-composer-web-search-e2e-stub', () => {
     it('returns false when NODE_ENV is production even if dummy key is set', () => {
       process.env.NODE_ENV = 'production';
       process.env.OPENAI_API_KEY = 'e2e-dummy-key';
+      expect(isComposerWebSearchE2EStubEnabled()).toBe(false);
+    });
+
+    it('returns false inside a Jest worker so unit tests run the real path', () => {
+      process.env.NODE_ENV = 'test';
+      process.env.JEST_WORKER_ID = '1';
+      process.env.E2E_TEST_MODE = 'true';
       expect(isComposerWebSearchE2EStubEnabled()).toBe(false);
     });
 

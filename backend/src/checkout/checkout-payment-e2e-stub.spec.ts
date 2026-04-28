@@ -6,6 +6,15 @@ import {
 describe('checkout-payment-e2e-stub', () => {
   const originalEnv = { ...process.env };
 
+  // The stub helper short-circuits inside Jest workers (JEST_WORKER_ID
+  // is always set by Jest) so unit tests of CheckoutPaymentService can
+  // exercise the real Stripe path. These tests assert the env-detection
+  // contract under simulated runtime conditions, so we clear that flag
+  // before each scenario and restore the original env after.
+  beforeEach(() => {
+    delete process.env.JEST_WORKER_ID;
+  });
+
   afterEach(() => {
     process.env = { ...originalEnv };
   });
@@ -15,6 +24,14 @@ describe('checkout-payment-e2e-stub', () => {
       process.env.NODE_ENV = 'production';
       process.env.E2E_TEST_MODE = 'true';
       process.env.OPENAI_API_KEY = 'e2e-dummy-key';
+      delete process.env.STRIPE_SECRET_KEY;
+      expect(isCheckoutPaymentE2EStubEnabled()).toBe(false);
+    });
+
+    it('returns false inside a Jest worker so unit tests run the real path', () => {
+      process.env.NODE_ENV = 'test';
+      process.env.JEST_WORKER_ID = '1';
+      process.env.E2E_TEST_MODE = 'true';
       delete process.env.STRIPE_SECRET_KEY;
       expect(isCheckoutPaymentE2EStubEnabled()).toBe(false);
     });
