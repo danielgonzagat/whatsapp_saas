@@ -290,7 +290,7 @@ export class CheckoutProductService {
             slug,
             referenceCode,
             ...checkoutData,
-          } as Prisma.CheckoutProductPlanUncheckedCreateInput,
+          },
         });
 
         await tx.checkoutConfig.create({

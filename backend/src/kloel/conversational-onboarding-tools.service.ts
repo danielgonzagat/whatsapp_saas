@@ -109,7 +109,7 @@ export class ConversationalOnboardingToolsService {
     const memory = await this.prismaExt.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
-    return (memory as { value?: unknown } | null)?.value;
+    return memory?.value;
   }
 
   // ---------------------------------------------------------------------------

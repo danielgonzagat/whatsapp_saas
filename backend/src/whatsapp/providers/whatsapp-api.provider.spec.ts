@@ -60,7 +60,7 @@ describe('WhatsAppApiProvider', () => {
 
     const provider = new WhatsAppApiProvider(
       prisma as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[0],
-      createConfig() as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[1],
+      createConfig(),
       metaWhatsApp as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[2],
     );
 
@@ -80,7 +80,7 @@ describe('WhatsAppApiProvider', () => {
 
     const provider = new WhatsAppApiProvider(
       prisma as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[0],
-      createConfig() as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[1],
+      createConfig(),
       metaWhatsApp as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[2],
     );
 
@@ -106,7 +106,7 @@ describe('WhatsAppApiProvider', () => {
 
     const provider = new WhatsAppApiProvider(
       prisma as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[0],
-      createConfig() as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[1],
+      createConfig(),
       metaWhatsApp as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[2],
     );
 
@@ -123,9 +123,7 @@ describe('WhatsAppApiProvider', () => {
   it('lists the configured Meta phone number as the active session', async () => {
     const provider = new WhatsAppApiProvider(
       prisma as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[0],
-      createConfig({ META_PHONE_NUMBER_ID: '1234567890' }) as unknown as ConstructorParameters<
-        typeof WhatsAppApiProvider
-      >[1],
+      createConfig({ META_PHONE_NUMBER_ID: '1234567890' }),
       metaWhatsApp as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[2],
     );
 
@@ -151,7 +149,7 @@ describe('WhatsAppApiProvider', () => {
 
     const provider = new WhatsAppApiProvider(
       prisma as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[0],
-      createConfig() as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[1],
+      createConfig(),
       metaWhatsApp as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[2],
     );
 

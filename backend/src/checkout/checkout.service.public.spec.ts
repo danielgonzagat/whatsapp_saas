@@ -87,7 +87,7 @@ describe('CheckoutService public resolution', () => {
       {} as never,
       {} as never,
     );
-    internalService = service as never as CheckoutServiceInternals;
+    internalService = service as never;
     loggerSpy = jest.spyOn(internalService.logger, 'log').mockImplementation(() => undefined);
 
     internalService.publicPayloadBuilder.build = jest

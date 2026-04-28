@@ -1,4 +1,3 @@
-import type { FinancialAlertService } from './financial-alert.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import { LedgerReconciliationService } from './ledger-reconciliation.service';
 import { makePrisma } from './ledger-reconciliation.service.spec.helpers';
@@ -233,7 +232,7 @@ describe('LedgerReconciliationService — divergence reporting & audit trail', (
     };
     const service = new LedgerReconciliationService(
       prisma as never as PrismaService,
-      financialAlert as never as FinancialAlertService,
+      financialAlert as never,
     );
 
     const result = await service.runReconciliation(24);
@@ -293,7 +292,7 @@ describe('LedgerReconciliationService — divergence reporting & audit trail', (
     };
     const service = new LedgerReconciliationService(
       prisma as never as PrismaService,
-      financialAlert as never as FinancialAlertService,
+      financialAlert as never,
     );
 
     await service.runReconciliation(24);
@@ -327,7 +326,7 @@ describe('LedgerReconciliationService — divergence reporting & audit trail', (
     };
     const service = new LedgerReconciliationService(
       prisma as never as PrismaService,
-      financialAlert as never as FinancialAlertService,
+      financialAlert as never,
     );
 
     await service.runWalletReconciliation();

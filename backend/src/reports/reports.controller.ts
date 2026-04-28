@@ -148,7 +148,7 @@ export class ReportsController {
     const summary = await this.reportsService.getVendasSummary(workspaceId, {
       startDate: body.period?.split(',')[0],
       endDate: body.period?.split(',')[1],
-    } as ReportFiltersDto);
+    });
 
     await this.emailService.sendEmail({
       to: targetEmail,

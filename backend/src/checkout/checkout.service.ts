@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH,
@@ -525,10 +524,7 @@ export class CheckoutService {
         updatedAt: _ua,
         ...configRest
       } = checkout.checkoutConfig as Record<string, unknown>;
-      await this.productService.updateConfig(
-        duplicatedId,
-        configRest as Prisma.CheckoutConfigUpdateInput,
-      );
+      await this.productService.updateConfig(duplicatedId, configRest);
 
       if (checkout.checkoutConfig.pixels?.length) {
         const createdConfig = await this.prisma.checkoutConfig.findUnique({

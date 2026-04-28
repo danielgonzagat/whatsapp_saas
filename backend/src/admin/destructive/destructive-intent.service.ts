@@ -305,7 +305,7 @@ export class DestructiveIntentService {
           resultSnapshot: {
             ...result.snapshot,
             ...(undoToken ? { undoToken } : {}),
-          } as Prisma.InputJsonValue,
+          },
           undoTokenHash: undoToken ? sha256Hex(undoToken) : null,
           undoExpiresAt,
         },

@@ -196,7 +196,7 @@ export class AutopilotService {
           ...settings,
           autopilot: autopilotCfg,
           autonomy,
-        } as Prisma.InputJsonValue,
+        },
       },
     });
     return { workspaceId, enabled };

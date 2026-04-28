@@ -96,7 +96,7 @@ export class CheckoutProductConfigService {
       ...rest,
       brandName:
         typeof rest.brandName === 'string' && rest.brandName ? rest.brandName : fallbackBrandName,
-    } as Prisma.CheckoutConfigCreateWithoutPlanInput;
+    };
   }
 
   /** Ensure a legacy checkout exists for the given plan. */
@@ -141,7 +141,7 @@ export class CheckoutProductConfigService {
             maxInstallments: plan.maxInstallments,
             installmentsFee: plan.installmentsFee,
             legacyCheckoutEnabled: false,
-          } as Prisma.CheckoutProductPlanUncheckedCreateInput,
+          },
         });
 
         await tx.checkoutConfig.create({

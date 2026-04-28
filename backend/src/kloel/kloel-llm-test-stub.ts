@@ -132,7 +132,7 @@ function buildChunk(content: string): ChatCompletionChunk {
         finish_reason: null,
       },
     ],
-  } as ChatCompletionChunk;
+  };
 }
 
 /**

@@ -52,7 +52,7 @@ export class LaunchService {
         workspaceId,
         status: 'ACTIVE',
         slug: data.slug || data.name.toLowerCase().replace(PATTERN_RE, '-'),
-      } as Parameters<typeof this.prisma.groupLauncher.create>[0]['data'],
+      },
     });
   }
 

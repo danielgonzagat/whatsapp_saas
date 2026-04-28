@@ -176,7 +176,7 @@ export class KloelToolRouter {
         tool_call_id: callId,
         name: toolName,
         content: JSON.stringify(result ?? null),
-      } as ToolMessage);
+      });
 
       input.safeWrite?.(
         createKloelStatusEvent(

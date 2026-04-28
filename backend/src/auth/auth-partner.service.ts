@@ -23,7 +23,7 @@ function asJsonObject(value: Prisma.JsonValue | null | undefined): Record<string
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {};
   }
-  return value as Record<string, unknown>;
+  return value;
 }
 
 /** Handles partner invite resolution and registration finalization. */

@@ -120,7 +120,7 @@ export class CalendarService {
       findMany?: (...args: unknown[]) => Promise<AppointmentRecord[]>;
       update?: (...args: unknown[]) => Promise<AppointmentRecord>;
     };
-    const model = Reflect.get(this.prisma as object, 'appointment') as AppointmentModel | undefined;
+    const model = Reflect.get(this.prisma, 'appointment') as AppointmentModel | undefined;
     return model ?? null;
   }
 

@@ -209,7 +209,7 @@ function buildOnboardingAccountUpdate(
     payload.metadata = metadata;
   }
 
-  return payload as StripeAccountUpdateParams;
+  return payload;
 }
 
 /**
@@ -279,7 +279,7 @@ export class ConnectService {
 
     let account: StripeAccount;
     try {
-      account = (await this.stripeService.stripe.accounts.create(accountPayload)) as StripeAccount;
+      account = await this.stripeService.stripe.accounts.create(accountPayload);
     } catch (error: unknown) {
       if (!this.shouldRetryWithoutManualPayoutSchedule(error, country)) {
         Sentry.captureException(error, {
@@ -303,9 +303,7 @@ export class ConnectService {
         ...accountPayload,
         settings: undefined,
       };
-      account = (await this.stripeService.stripe.accounts.create(
-        payloadWithoutManualPayoutSchedule,
-      )) as StripeAccount;
+      account = await this.stripeService.stripe.accounts.create(payloadWithoutManualPayoutSchedule);
     }
 
     const balance = await this.prisma.connectAccountBalance.create({

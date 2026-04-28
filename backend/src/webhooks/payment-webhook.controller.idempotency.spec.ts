@@ -23,7 +23,7 @@ describe('PaymentWebhookController — idempotency and replay safety', () => {
               metadata: { workspace_id: 'ws-1', kloel_order_id: 'order-1' },
             },
           },
-        } as never,
+        },
         rawBody: '',
         url: '/webhook/payment/stripe',
       },
@@ -39,7 +39,7 @@ describe('PaymentWebhookController — idempotency and replay safety', () => {
             metadata: { workspace_id: 'ws-1', kloel_order_id: 'order-1' },
           },
         },
-      } as never,
+      },
     );
 
     expect(redis.set).toHaveBeenCalledWith('webhook:payment:evt_dupe_1', '1', 'EX', 300, 'NX');
@@ -74,7 +74,7 @@ describe('PaymentWebhookController — idempotency and replay safety', () => {
               metadata: { workspace_id: 'ws-1', kloel_order_id: 'order-1' },
             },
           },
-        } as never,
+        },
         rawBody: '',
         url: '/webhook/payment/stripe',
       },
@@ -90,7 +90,7 @@ describe('PaymentWebhookController — idempotency and replay safety', () => {
             metadata: { workspace_id: 'ws-1', kloel_order_id: 'order-1' },
           },
         },
-      } as never,
+      },
     );
 
     expect(webhooksService.logWebhookEvent).toHaveBeenCalled();
@@ -132,7 +132,7 @@ describe('PaymentWebhookController — idempotency and replay safety', () => {
               amount: 5_000,
             },
           },
-        } as never,
+        },
         rawBody: '',
         url: '/webhook/payment/stripe',
       },
@@ -192,7 +192,7 @@ describe('PaymentWebhookController — idempotency and replay safety', () => {
               amount: 5_000,
             },
           },
-        } as never,
+        },
         rawBody: '',
         url: '/webhook/payment/stripe',
       },
@@ -239,7 +239,7 @@ describe('PaymentWebhookController — idempotency and replay safety', () => {
               amount: 5_000,
             },
           },
-        } as never,
+        },
         rawBody: '',
         url: '/webhook/payment/stripe',
       },
@@ -299,7 +299,7 @@ describe('PaymentWebhookController — idempotency and replay safety', () => {
               amount: 2_000,
             },
           },
-        } as never,
+        },
         rawBody: '',
         url: '/webhook/payment/stripe',
       },
@@ -353,7 +353,7 @@ describe('PaymentWebhookController — idempotency and replay safety', () => {
               metadata: { workspace_id: 'ws-1', kloel_order_id: 'order-1' },
             },
           },
-        } as never,
+        },
         rawBody: '',
         url: '/webhook/payment/stripe',
       },
@@ -369,7 +369,7 @@ describe('PaymentWebhookController — idempotency and replay safety', () => {
             metadata: { workspace_id: 'ws-1', kloel_order_id: 'order-1' },
           },
         },
-      } as never,
+      },
     );
 
     expect(webhooksService.logWebhookEvent).toHaveBeenCalled();

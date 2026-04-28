@@ -56,7 +56,7 @@ export class KloelWorkspaceContextLinkedProductService {
       return [
         'PRODUTO VINCULADO AO PROMPT:',
         '- Origem: catálogo próprio do workspace',
-        contextFormatter.buildWorkspaceProductContext(product as WorkspaceProductContextInput, 0),
+        contextFormatter.buildWorkspaceProductContext(product, 0),
       ].join('\n');
     }
 

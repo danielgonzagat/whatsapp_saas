@@ -326,9 +326,7 @@ export async function buildAssistantReplyImpl(
   if (mode === 'chat' && initialMsg?.tool_calls?.length && workspaceId && executeLocalTool) {
     onTraceEvent?.(createKloelStatusEvent('thinking'));
     const { toolMessages, usedSearchWeb } = await toolRouter.executeAssistantToolCalls({
-      assistantMessage: initialMsg as {
-        tool_calls?: Array<{ id?: string; function?: { name?: string; arguments?: string } }>;
-      },
+      assistantMessage: initialMsg,
       workspaceId,
       userId,
       safeWrite: onTraceEvent,

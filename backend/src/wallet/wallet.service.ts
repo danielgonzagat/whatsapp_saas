@@ -190,7 +190,7 @@ export class WalletService {
             referenceId: paymentIntent.id,
             metadata: {
               method: paymentIntent.metadata?.method ?? null,
-            } as Prisma.InputJsonValue,
+            },
           },
         });
       },
@@ -400,7 +400,7 @@ export class WalletService {
               deltaCents: deltaCents.toString(),
               originalUsageTransactionId: originalUsage.id,
               ...(input.metadata ?? {}),
-            } as Prisma.InputJsonValue,
+            },
           },
         });
       },
@@ -468,7 +468,7 @@ export class WalletService {
               reason: input.reason,
               originalUsageTransactionId: originalUsage.id,
               ...(input.metadata ?? {}),
-            } as Prisma.InputJsonValue,
+            },
           },
         });
       },

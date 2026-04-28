@@ -15,7 +15,7 @@ describe('PaymentWebhookController.handleStripe — connect and treasury payout 
       data: { object: { id: 'po_2', amount: 9_010, status: 'paid' } },
     };
 
-    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt as never);
+    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt);
 
     expect(connectPayoutService.handleFailedPayout).not.toHaveBeenCalled();
     expect(adminAudit.append).not.toHaveBeenCalled();
@@ -38,7 +38,7 @@ describe('PaymentWebhookController.handleStripe — connect and treasury payout 
       },
     };
 
-    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt as never);
+    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt);
 
     expect(connectPayoutService.handleFailedPayout).not.toHaveBeenCalled();
     expect(adminAudit.append).toHaveBeenCalledWith({
@@ -81,7 +81,7 @@ describe('PaymentWebhookController.handleStripe — connect and treasury payout 
       },
     };
 
-    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt as never);
+    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt);
 
     expect(marketplaceTreasuryPayoutService.handleFailedPayout).toHaveBeenCalledWith({
       payoutId: 'po_marketplace_treasury_123',
@@ -126,7 +126,7 @@ describe('PaymentWebhookController.handleStripe — connect and treasury payout 
       },
     };
 
-    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt as never);
+    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt);
 
     expect(marketplaceTreasuryPayoutService.handleFailedPayout).not.toHaveBeenCalled();
     expect(adminAudit.append).toHaveBeenCalledWith({
@@ -162,7 +162,7 @@ describe('PaymentWebhookController.handleStripe — connect and treasury payout 
       },
     };
 
-    await controller.handleStripe(makeReq(evt), undefined, undefined, evt as never);
+    await controller.handleStripe(makeReq(evt), undefined, undefined, evt);
 
     expect(marketplaceTreasury.append).toHaveBeenCalledWith({
       direction: 'debit',

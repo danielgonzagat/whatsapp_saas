@@ -385,7 +385,7 @@ export class AdminChatService {
           toolArgs: (call.args ?? {}) as Prisma.InputJsonValue,
           toolResult: {
             error: error instanceof Error ? error.message : 'unknown',
-          } as Prisma.InputJsonValue,
+          },
         },
       });
       return;

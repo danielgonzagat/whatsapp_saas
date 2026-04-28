@@ -156,7 +156,7 @@ export class KloelChatToolsService {
     };
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: { providerSettings: newSettings as Prisma.InputJsonValue },
+      data: { providerSettings: newSettings },
     });
     return {
       success: true,

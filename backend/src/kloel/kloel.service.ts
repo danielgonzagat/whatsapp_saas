@@ -101,7 +101,7 @@ export class KloelService {
       normalized.capability === 'create_image' ||
       normalized.capability === 'create_site' ||
       normalized.capability === 'search_web'
-        ? (normalized.capability as ComposerCapability)
+        ? normalized.capability
         : null;
     const attachments = Array.isArray(normalized.attachments)
       ? (normalized.attachments as ComposerAttachmentMetadata[])

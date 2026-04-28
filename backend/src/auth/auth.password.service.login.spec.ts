@@ -23,11 +23,11 @@ describe('AuthPasswordService — login', () => {
   });
 
   it('should login user with valid credentials', async () => {
-    ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined as never);
+    ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined);
     ctx.prismaMock.agent.findFirst.mockResolvedValueOnce({
       ...mockAgent,
       password: 'hashedPassword123',
-    } as never);
+    });
     ctx.tokenServiceMock.issueTokens.mockResolvedValueOnce({
       access_token: 'token123',
       refresh_token: 'refresh123',
@@ -41,7 +41,7 @@ describe('AuthPasswordService — login', () => {
       workspace: { id: 'workspace-123', name: 'Test Workspace' },
       workspaces: [{ id: 'workspace-123', name: 'Test Workspace' }],
       isNewUser: false,
-    } as never);
+    });
 
     bcryptMock.compare = jest.fn().mockResolvedValue(true);
 
@@ -56,8 +56,8 @@ describe('AuthPasswordService — login', () => {
   });
 
   it('should throw when user not found', async () => {
-    ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined as never);
-    ctx.prismaMock.agent.findFirst.mockResolvedValueOnce(null as never);
+    ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined);
+    ctx.prismaMock.agent.findFirst.mockResolvedValueOnce(null);
 
     await expect(
       ctx.service.login({
@@ -69,11 +69,11 @@ describe('AuthPasswordService — login', () => {
   });
 
   it('should throw when password is invalid', async () => {
-    ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined as never);
+    ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined);
     ctx.prismaMock.agent.findFirst.mockResolvedValueOnce({
       ...mockAgent,
       password: 'hashedPassword123',
-    } as never);
+    });
 
     bcryptMock.compare = jest.fn().mockResolvedValue(false);
 
@@ -88,11 +88,11 @@ describe('AuthPasswordService — login', () => {
   });
 
   it('should throw when account is deleted', async () => {
-    ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined as never);
+    ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined);
     ctx.prismaMock.agent.findFirst.mockResolvedValueOnce({
       ...mockAgent,
       deletedAt: new Date(),
-    } as never);
+    });
 
     await expect(
       ctx.service.login({
@@ -104,11 +104,11 @@ describe('AuthPasswordService — login', () => {
   });
 
   it('should throw when account is disabled', async () => {
-    ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined as never);
+    ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined);
     ctx.prismaMock.agent.findFirst.mockResolvedValueOnce({
       ...mockAgent,
       disabledAt: new Date(),
-    } as never);
+    });
 
     await expect(
       ctx.service.login({
@@ -120,12 +120,12 @@ describe('AuthPasswordService — login', () => {
   });
 
   it('should throw when account uses OAuth only', async () => {
-    ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined as never);
+    ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined);
     ctx.prismaMock.agent.findFirst.mockResolvedValueOnce({
       ...mockAgent,
       provider: 'google',
       password: null,
-    } as never);
+    });
 
     await expect(
       ctx.service.login({
@@ -137,12 +137,12 @@ describe('AuthPasswordService — login', () => {
   });
 
   it('should apply rate limiting by IP and email', async () => {
-    ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined as never);
+    ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValue(undefined);
 
     ctx.prismaMock.agent.findFirst.mockResolvedValueOnce({
       ...mockAgent,
       password: 'hashedPassword123',
-    } as never);
+    });
     ctx.tokenServiceMock.issueTokens.mockResolvedValueOnce({
       access_token: 'token123',
       refresh_token: 'refresh123',
@@ -156,7 +156,7 @@ describe('AuthPasswordService — login', () => {
       workspace: { id: 'workspace-123', name: 'Test Workspace' },
       workspaces: [{ id: 'workspace-123', name: 'Test Workspace' }],
       isNewUser: false,
-    } as never);
+    });
 
     bcryptMock.compare = jest.fn().mockResolvedValue(true);
 

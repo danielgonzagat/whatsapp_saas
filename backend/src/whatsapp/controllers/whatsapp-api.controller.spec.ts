@@ -167,19 +167,17 @@ describe('WhatsAppApiController', () => {
     };
 
     controller = new WhatsAppApiController(
-      providerRegistry as never as ConstructorParameters<typeof WhatsAppApiController>[0],
-      whatsappApi as never as ConstructorParameters<typeof WhatsAppApiController>[1],
-      catchupService as never as ConstructorParameters<typeof WhatsAppApiController>[2],
-      agentEvents as never as ConstructorParameters<typeof WhatsAppApiController>[3],
-      ciaRuntime as never as ConstructorParameters<typeof WhatsAppApiController>[4],
+      providerRegistry as never,
+      whatsappApi as never,
+      catchupService as never,
+      agentEvents as never,
+      ciaRuntime as never,
       whatsappService as never as ConstructorParameters<typeof WhatsAppApiController>[5],
-      accountAgent as never as ConstructorParameters<typeof WhatsAppApiController>[6],
-      workspaces as never as ConstructorParameters<typeof WhatsAppApiController>[7],
-      watchdog as never as ConstructorParameters<typeof WhatsAppApiController>[8],
+      accountAgent as never,
+      workspaces as never,
+      watchdog as never,
     );
-    metaCompatController = new WhatsAppMetaCompatController(
-      providerRegistry as never as ConstructorParameters<typeof WhatsAppMetaCompatController>[0],
-    );
+    metaCompatController = new WhatsAppMetaCompatController(providerRegistry as never);
     catalogController = new WhatsAppCatalogController(
       whatsappService as never as ConstructorParameters<typeof WhatsAppCatalogController>[0],
     );

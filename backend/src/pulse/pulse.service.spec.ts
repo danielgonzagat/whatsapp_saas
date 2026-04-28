@@ -345,16 +345,13 @@ describe('PulseService', () => {
   it('records frontend heartbeats into the live registry and organism state', async () => {
     const { service, redis } = createService();
 
-    await service.recordFrontendHeartbeat(
-      { workspaceId: 'ws_123' } as never,
-      {
-        sessionId: 'session_1',
-        route: '/dashboard',
-        visible: true,
-        online: true,
-        viewport: { width: 1440, height: 900 },
-      } as never,
-    );
+    await service.recordFrontendHeartbeat({ workspaceId: 'ws_123' } as never, {
+      sessionId: 'session_1',
+      route: '/dashboard',
+      visible: true,
+      online: true,
+      viewport: { width: 1440, height: 900 },
+    });
 
     const registry = await redis.hgetall('pulse:organism:registry');
     const frontendRegistry = await redis.hgetall('pulse:organism:registry:frontend');
@@ -451,7 +448,7 @@ describe('PulseService', () => {
     const { service } = createService();
     const runBackgroundTask = getInternalTaskRunner(service);
     const warn = jest.fn();
-    Object.defineProperty(service as object, 'logger', {
+    Object.defineProperty(service, 'logger', {
       value: { warn, error: jest.fn() },
       configurable: true,
     });
@@ -489,18 +486,17 @@ describe('PulseService', () => {
     setInternalValue(service, 'pruneExpiredFrontendNodes', pruneExpiredFrontendNodes);
     const runBackgroundTask = spyOnRunBackgroundTask(service);
 
-    jest.spyOn(global, 'setInterval').mockImplementation(((
-      callback: TimerHandler,
-      delay?: number,
-    ) => {
-      if (typeof callback !== 'function') {
-        throw new Error('Expected callback interval handler');
-      }
-      scheduled.push({ callback: () => callback(), delay: Number(delay) });
-      const timer = fakeTimers[timerIndex];
-      timerIndex += 1;
-      return timer as unknown as ReturnType<typeof setInterval>;
-    }) as typeof setInterval);
+    jest
+      .spyOn(global, 'setInterval')
+      .mockImplementation((callback: TimerHandler, delay?: number) => {
+        if (typeof callback !== 'function') {
+          throw new Error('Expected callback interval handler');
+        }
+        scheduled.push({ callback: () => callback(), delay: Number(delay) });
+        const timer = fakeTimers[timerIndex];
+        timerIndex += 1;
+        return timer as unknown as ReturnType<typeof setInterval>;
+      });
 
     service.onModuleInit();
     await flushMicrotasks();

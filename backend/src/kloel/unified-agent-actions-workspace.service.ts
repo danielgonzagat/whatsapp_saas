@@ -121,7 +121,7 @@ export class UnifiedAgentActionsWorkspaceService {
         };
         await tx.kloelMemory.updateMany({
           where: { id: product.id, workspaceId },
-          data: { value: updatedValue as Prisma.InputJsonValue },
+          data: { value: updatedValue },
         });
         return { success: true as const };
       },

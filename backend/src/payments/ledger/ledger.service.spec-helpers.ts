@@ -33,20 +33,19 @@ type PendingBalance = {
   updatedAt: Date;
 };
 
-export const makeBalance = (overrides: Partial<PendingBalance> = {}): ConnectAccountBalance =>
-  ({
-    id: overrides.id ?? 'cab_seller',
-    workspaceId: overrides.workspaceId ?? 'ws_1',
-    stripeAccountId: overrides.stripeAccountId ?? 'acct_seller',
-    accountType: overrides.accountType ?? 'SELLER',
-    pendingBalanceCents: overrides.pendingBalanceCents ?? 0n,
-    availableBalanceCents: overrides.availableBalanceCents ?? 0n,
-    lifetimeReceivedCents: overrides.lifetimeReceivedCents ?? 0n,
-    lifetimePaidOutCents: overrides.lifetimePaidOutCents ?? 0n,
-    lifetimeChargebacksCents: overrides.lifetimeChargebacksCents ?? 0n,
-    createdAt: overrides.createdAt ?? new Date('2026-04-17T00:00:00Z'),
-    updatedAt: overrides.updatedAt ?? new Date('2026-04-17T00:00:00Z'),
-  }) as ConnectAccountBalance;
+export const makeBalance = (overrides: Partial<PendingBalance> = {}): ConnectAccountBalance => ({
+  id: overrides.id ?? 'cab_seller',
+  workspaceId: overrides.workspaceId ?? 'ws_1',
+  stripeAccountId: overrides.stripeAccountId ?? 'acct_seller',
+  accountType: overrides.accountType ?? 'SELLER',
+  pendingBalanceCents: overrides.pendingBalanceCents ?? 0n,
+  availableBalanceCents: overrides.availableBalanceCents ?? 0n,
+  lifetimeReceivedCents: overrides.lifetimeReceivedCents ?? 0n,
+  lifetimePaidOutCents: overrides.lifetimePaidOutCents ?? 0n,
+  lifetimeChargebacksCents: overrides.lifetimeChargebacksCents ?? 0n,
+  createdAt: overrides.createdAt ?? new Date('2026-04-17T00:00:00Z'),
+  updatedAt: overrides.updatedAt ?? new Date('2026-04-17T00:00:00Z'),
+});
 
 type EntryRow = ConnectLedgerEntry;
 
@@ -89,7 +88,7 @@ export function makePrismaStub(initial: ConnectAccountBalance[] = []): PrismaStu
           id: `cle_${nextEntryId++}`,
           createdAt: new Date('2026-04-17T00:00:00Z'),
           ...data,
-        } as EntryRow;
+        };
         entries.push(row);
         return row;
       }),
@@ -98,7 +97,7 @@ export function makePrismaStub(initial: ConnectAccountBalance[] = []): PrismaStu
         if (idx === -1) {
           throw new Error(`stub: entry not found ${where.id}`);
         }
-        entries[idx] = { ...entries[idx], ...data } as EntryRow;
+        entries[idx] = { ...entries[idx], ...data };
         return entries[idx];
       }),
     },
@@ -110,7 +109,7 @@ export function makePrismaStub(initial: ConnectAccountBalance[] = []): PrismaStu
           if (!current) {
             throw new Error(`stub: balance not found ${where.id}`);
           }
-          const next = { ...current, ...data, updatedAt: new Date() } as ConnectAccountBalance;
+          const next = { ...current, ...data, updatedAt: new Date() };
           balances.set(where.id, next);
           return next;
         },

@@ -85,7 +85,7 @@ export async function activatePlanFeatures(
               enabled: true,
               monthlyLimit: limits.autopilotLimit,
             },
-          } as Prisma.InputJsonValue,
+          },
         },
       });
     },

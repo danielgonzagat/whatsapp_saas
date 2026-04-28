@@ -1,5 +1,4 @@
 import {
-  type ConversationOperationalLike,
   type ConversationOperationalState,
   buildConversationOperationalState,
 } from './agent-conversation-state.util';
@@ -97,9 +96,7 @@ export async function listChats(
 
     const existing = merged.get(phone);
     const timestamp = existing?.timestamp || conversation.lastMessageAt?.getTime() || 0;
-    const operational = buildConversationOperationalState(
-      conversation as ConversationOperationalLike,
-    );
+    const operational = buildConversationOperationalState(conversation);
     const unreadCount =
       typeof existing?.unreadCount === 'number'
         ? existing.unreadCount

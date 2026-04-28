@@ -44,7 +44,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
               },
             },
           },
-        } as never,
+        },
         rawBody: '',
         url: '/webhook/payment/stripe',
       },
@@ -63,7 +63,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
             },
           },
         },
-      } as never,
+      },
     );
 
     expect(prisma.checkoutPayment.updateMany).toHaveBeenCalledWith(
@@ -105,7 +105,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
                 },
               },
             },
-          } as never,
+          },
           rawBody: '',
           url: '/webhook/payment/stripe',
         },
@@ -125,7 +125,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
               },
             },
           },
-        } as never,
+        },
       ),
     ).rejects.toThrow('post-sale fanout failed');
 
@@ -176,7 +176,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
                 },
               },
             },
-          } as never,
+          },
           rawBody: '',
           url: '/webhook/payment/stripe',
         },
@@ -196,7 +196,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
               },
             },
           },
-        } as never,
+        },
       ),
     ).rejects.toThrow(
       'Stripe post-sale processing skipped for paymentIntent=pi_test_123: no_metadata',
@@ -240,7 +240,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
               },
             },
           },
-        } as never,
+        },
         rawBody: '',
         url: '/webhook/payment/stripe',
       },
@@ -259,7 +259,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
             },
           },
         },
-      } as never,
+      },
     );
 
     expect(prisma.checkoutPayment.updateMany).toHaveBeenCalledWith(
@@ -302,13 +302,13 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
 
     const result = await controller.handleStripe(
       {
-        body: {} as never,
+        body: {},
         rawBody: Buffer.from('{"id":"evt_signed_secondary_secret"}'),
         url: '/webhook/payment/stripe',
       },
       't=1,v1=fake',
       undefined,
-      {} as never,
+      {},
     );
 
     expect(mockConstructEvent).toHaveBeenCalledTimes(2);
@@ -360,13 +360,13 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
 
     const result = await controller.handleStripe(
       {
-        body: {} as never,
+        body: {},
         rawBody: Buffer.from('{"id":"evt_thin_account_updated"}'),
         url: '/webhook/payment/stripe',
       },
       't=1,v1=fake',
       undefined,
-      {} as never,
+      {},
     );
 
     expect(mockRetrieveEvent).toHaveBeenCalledWith('evt_thin_account_updated', {}, undefined);

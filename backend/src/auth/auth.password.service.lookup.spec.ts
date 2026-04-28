@@ -24,7 +24,7 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
 
   describe('checkEmail', () => {
     it('should return exists: true when email is found', async () => {
-      ctx.prismaMock.agent.findFirst.mockResolvedValueOnce(mockAgent as never);
+      ctx.prismaMock.agent.findFirst.mockResolvedValueOnce(mockAgent);
 
       const result = await ctx.service.checkEmail('test@example.com');
 
@@ -35,7 +35,7 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
     });
 
     it('should return exists: false when email is not found', async () => {
-      ctx.prismaMock.agent.findFirst.mockResolvedValueOnce(null as never);
+      ctx.prismaMock.agent.findFirst.mockResolvedValueOnce(null);
 
       const result = await ctx.service.checkEmail('nonexistent@example.com');
 
@@ -44,7 +44,7 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
 
     it('should throw when database error occurs', async () => {
       const dbError = new Error('Database connection failed');
-      ctx.prismaMock.agent.findFirst.mockRejectedValueOnce(dbError as never);
+      ctx.prismaMock.agent.findFirst.mockRejectedValueOnce(dbError);
 
       await expect(ctx.service.checkEmail('test@example.com')).rejects.toThrow(
         'Database connection failed',
@@ -54,9 +54,9 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
 
   describe('createAnonymous', () => {
     it('should create anonymous guest workspace and agent', async () => {
-      ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValueOnce(undefined as never);
-      ctx.prismaMock.workspace.create.mockResolvedValueOnce(mockWorkspace as never);
-      ctx.prismaMock.agent.create.mockResolvedValueOnce(mockAgent as never);
+      ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValueOnce(undefined);
+      ctx.prismaMock.workspace.create.mockResolvedValueOnce(mockWorkspace);
+      ctx.prismaMock.agent.create.mockResolvedValueOnce(mockAgent);
       ctx.tokenServiceMock.issueTokens.mockResolvedValueOnce({
         access_token: 'token123',
         refresh_token: 'refresh123',
@@ -70,7 +70,7 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
         workspace: { id: 'workspace-123', name: 'Guest Workspace' },
         workspaces: [{ id: 'workspace-123', name: 'Guest Workspace' }],
         isNewUser: false,
-      } as never);
+      });
 
       const result = await ctx.service.createAnonymous('127.0.0.1');
 
@@ -94,7 +94,7 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
 
     it('should respect rate limit for anonymous creation', async () => {
       const rateLimitError = new Error('Rate limit exceeded');
-      ctx.rateLimitServiceMock.checkRateLimit.mockRejectedValueOnce(rateLimitError as never);
+      ctx.rateLimitServiceMock.checkRateLimit.mockRejectedValueOnce(rateLimitError);
 
       await expect(ctx.service.createAnonymous('127.0.0.1')).rejects.toThrow('Rate limit exceeded');
     });
@@ -102,11 +102,11 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
 
   describe('register', () => {
     it('should register new user successfully', async () => {
-      ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValueOnce(undefined as never);
-      ctx.authPartnerServiceMock.resolvePartnerInvite.mockResolvedValueOnce(null as never);
-      ctx.prismaMock.agent.findFirst.mockResolvedValueOnce(null as never);
-      ctx.prismaMock.workspace.create.mockResolvedValueOnce(mockWorkspace as never);
-      ctx.prismaMock.agent.create.mockResolvedValueOnce(mockAgent as never);
+      ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValueOnce(undefined);
+      ctx.authPartnerServiceMock.resolvePartnerInvite.mockResolvedValueOnce(null);
+      ctx.prismaMock.agent.findFirst.mockResolvedValueOnce(null);
+      ctx.prismaMock.workspace.create.mockResolvedValueOnce(mockWorkspace);
+      ctx.prismaMock.agent.create.mockResolvedValueOnce(mockAgent);
       ctx.tokenServiceMock.issueTokens.mockResolvedValueOnce({
         access_token: 'token123',
         refresh_token: 'refresh123',
@@ -120,7 +120,7 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
         workspace: { id: 'workspace-123', name: 'Test Workspace' },
         workspaces: [{ id: 'workspace-123', name: 'Test Workspace' }],
         isNewUser: true,
-      } as never);
+      });
 
       const result = await ctx.service.register({
         name: 'Test User',
@@ -137,9 +137,9 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
     });
 
     it('should throw ConflictException when email already exists', async () => {
-      ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValueOnce(undefined as never);
-      ctx.authPartnerServiceMock.resolvePartnerInvite.mockResolvedValueOnce(null as never);
-      ctx.prismaMock.agent.findFirst.mockResolvedValueOnce({ id: 'existing-agent' } as never);
+      ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValueOnce(undefined);
+      ctx.authPartnerServiceMock.resolvePartnerInvite.mockResolvedValueOnce(null);
+      ctx.prismaMock.agent.findFirst.mockResolvedValueOnce({ id: 'existing-agent' });
 
       await expect(
         ctx.service.register({
@@ -156,7 +156,7 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
 
     it('should throw when rate limit is exceeded', async () => {
       const rateLimitError = new Error('Too many requests');
-      ctx.rateLimitServiceMock.checkRateLimit.mockRejectedValueOnce(rateLimitError as never);
+      ctx.rateLimitServiceMock.checkRateLimit.mockRejectedValueOnce(rateLimitError);
 
       await expect(
         ctx.service.register({
@@ -169,11 +169,11 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
     });
 
     it('should derive name from email when name not provided', async () => {
-      ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValueOnce(undefined as never);
-      ctx.authPartnerServiceMock.resolvePartnerInvite.mockResolvedValueOnce(null as never);
-      ctx.prismaMock.agent.findFirst.mockResolvedValueOnce(null as never);
-      ctx.prismaMock.workspace.create.mockResolvedValueOnce(mockWorkspace as never);
-      ctx.prismaMock.agent.create.mockResolvedValueOnce(mockAgent as never);
+      ctx.rateLimitServiceMock.checkRateLimit.mockResolvedValueOnce(undefined);
+      ctx.authPartnerServiceMock.resolvePartnerInvite.mockResolvedValueOnce(null);
+      ctx.prismaMock.agent.findFirst.mockResolvedValueOnce(null);
+      ctx.prismaMock.workspace.create.mockResolvedValueOnce(mockWorkspace);
+      ctx.prismaMock.agent.create.mockResolvedValueOnce(mockAgent);
       ctx.tokenServiceMock.issueTokens.mockResolvedValueOnce({
         access_token: 'token123',
         refresh_token: 'refresh123',
@@ -181,7 +181,7 @@ describe('AuthPasswordService — lookup, anonymous, register', () => {
         workspace: { id: 'workspace-123', name: 'Test Workspace' },
         workspaces: [{ id: 'workspace-123', name: 'Test Workspace' }],
         isNewUser: true,
-      } as never);
+      });
 
       await ctx.service.register({
         email: 'user@example.com',

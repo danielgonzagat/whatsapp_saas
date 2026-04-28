@@ -179,7 +179,7 @@ export class AutopilotOpsConversionService {
           where: {
             workspaceId,
             action: 'CONVERSION',
-            meta: { path: ['orderId'], equals: orderId as Prisma.InputJsonValue },
+            meta: { path: ['orderId'], equals: orderId },
           },
           select: { id: true, contactId: true },
         });

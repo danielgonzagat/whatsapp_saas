@@ -186,7 +186,7 @@ export async function regenerateThreadAssistantResponseImpl(
   const thread = await prisma.chatThread.findFirst({
     where: { id: conversationId, workspaceId },
     select: { id: true, summary: true },
-  } as never);
+  });
   if (!thread) throw new Error(ERR_THREAD_NOT_FOUND);
 
   const messages = (
@@ -202,7 +202,7 @@ export async function regenerateThreadAssistantResponseImpl(
         metadata: true,
         createdAt: true,
       },
-    } as never)
+    })
   ).reverse();
 
   const assistantIndex = messages.findIndex(
@@ -280,13 +280,13 @@ export async function regenerateThreadAssistantResponseImpl(
           },
         ),
       },
-    } as never) as Prisma.PrismaPromise<unknown>,
+    }) as Prisma.PrismaPromise<unknown>,
   ];
   if (deletedMessageIds.length > 0) {
     operations.push(
       prisma.chatMessage.deleteMany({
         where: { id: { in: deletedMessageIds } },
-      } as never) as Prisma.PrismaPromise<unknown>,
+      }) as Prisma.PrismaPromise<unknown>,
       prisma.auditLog.create({
         data: {
           workspaceId,
@@ -299,12 +299,12 @@ export async function regenerateThreadAssistantResponseImpl(
             deletedMessageIds,
           },
         },
-      } as never) as Prisma.PrismaPromise<unknown>,
+      }) as Prisma.PrismaPromise<unknown>,
     );
   }
   operations.push(threadService.touchThread(conversationId, workspaceId));
 
-  const [updatedMessage] = (await prisma.$transaction(operations as never)) as Array<{
+  const [updatedMessage] = (await prisma.$transaction(operations)) as Array<{
     id: string;
     threadId: string;
     role: string;

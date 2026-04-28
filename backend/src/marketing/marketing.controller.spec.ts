@@ -1,6 +1,4 @@
 import type { PrismaService } from '../prisma/prisma.service';
-import type { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
-import type { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { MarketingConnectController } from './marketing-connect.controller';
 
 type MarketingPrismaMock = {
@@ -65,8 +63,8 @@ describe('MarketingConnectController', () => {
 
     controller = new MarketingConnectController(
       prisma as never as PrismaService,
-      metaWhatsApp as never as MetaWhatsAppService,
-      whatsappProviders as never as WhatsAppProviderRegistry,
+      metaWhatsApp as never,
+      whatsappProviders as never,
     );
   });
 

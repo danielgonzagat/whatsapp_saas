@@ -173,7 +173,7 @@ export class MarketplaceTreasuryReconcileService {
           action: 'system.carteira.reconcile_drift',
           entityType: 'marketplace_treasury',
           entityId: details.currency,
-          details: details as Prisma.InputJsonValue,
+          details: details,
         },
       });
     } catch (error: unknown) {

@@ -51,6 +51,14 @@ function buildTxClient(
           lastMessageAt: new Date(),
           contact: { id: 'contact-1', name: null, phone: '5511999999999' },
         }),
+      updateMany: overrides.conversationUpdate ?? jest.fn().mockResolvedValue({ count: 1 }),
+      findFirstOrThrow: jest.fn().mockResolvedValue({
+        id: 'conv-1',
+        status: 'OPEN',
+        unreadCount: 1,
+        lastMessageAt: new Date(),
+        contact: { id: 'contact-1', name: null, phone: '5511999999999' },
+      }),
     },
     message: {
       create:
@@ -79,9 +87,11 @@ describe('InboxService', () => {
     prisma = {
       conversation: {
         findFirst: jest.fn(),
+        findFirstOrThrow: jest.fn(),
         findUnique: jest.fn(),
         create: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       message: { create: jest.fn() },
       $transaction: jest.fn(),
@@ -207,11 +217,11 @@ describe('InboxService', () => {
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(tx.conversation.findFirst).toHaveBeenCalled();
       expect(tx.message.create).toHaveBeenCalled();
-      expect(tx.conversation.update).toHaveBeenCalled();
+      expect(tx.conversation.updateMany).toHaveBeenCalled();
       // CRITICAL: no Prisma calls should happen OUTSIDE the transaction
       // for the DB-write portion of saveMessage.
       expect(prisma.message.create).not.toHaveBeenCalled();
-      expect(prisma.conversation.update).not.toHaveBeenCalled();
+      expect(prisma.conversation.updateMany).not.toHaveBeenCalled();
     });
 
     it('emits a WebSocket event and dispatches a webhook AFTER the transaction commits', async () => {
@@ -302,7 +312,7 @@ describe('InboxService', () => {
 
   describe('replyToConversation', () => {
     it('ignores malformed queued flags from WhatsApp send results', async () => {
-      prisma.conversation.findUnique.mockResolvedValue({
+      prisma.conversation.findFirst.mockResolvedValue({
         id: 'conv-1',
         workspaceId: 'ws-1',
         contactId: 'contact-1',
@@ -322,7 +332,7 @@ describe('InboxService', () => {
     });
 
     it('persists a pending outbound message when WhatsApp confirms queueing', async () => {
-      prisma.conversation.findUnique.mockResolvedValue({
+      prisma.conversation.findFirst.mockResolvedValue({
         id: 'conv-1',
         workspaceId: 'ws-1',
         contactId: 'contact-1',

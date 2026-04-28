@@ -337,9 +337,12 @@ export class InboxService {
     const nextLastMessageAt = this.resolveConversationLastMessageAt(conversation, messageCreatedAt);
     const conversationUpdate = this.buildConversationUpdate(data, nextLastMessageAt);
 
-    const updated = await tx.conversation.update({
-      where: { id: conversation.id },
+    await tx.conversation.updateMany({
+      where: { id: conversation.id, workspaceId: data.workspaceId },
       data: conversationUpdate,
+    });
+    const updated = await tx.conversation.findFirst({
+      where: { id: conversation.id, workspaceId: data.workspaceId },
       select: {
         id: true,
         status: true,
@@ -400,22 +403,19 @@ export class InboxService {
   async getMessages(conversationId: string, workspaceId?: string) {
     let convWorkspaceId: string | null = null;
     if (workspaceId) {
-      const conv = await this.prisma.conversation.findUnique({
-        where: { id: conversationId },
+      const conv = await this.prisma.conversation.findFirst({
+        where: { id: conversationId, workspaceId },
       });
       if (!conv) {
         throw new NotFoundException('Conversação não encontrada');
-      }
-      if (conv.workspaceId !== workspaceId) {
-        throw new ForbiddenException('Acesso negado a esta conversação');
       }
       convWorkspaceId = conv.workspaceId;
     }
 
     // Marca como lida (zera unread) ao abrir a conversa
     if (convWorkspaceId) {
-      await this.prisma.conversation.update({
-        where: { id: conversationId },
+      await this.prisma.conversation.updateMany({
+        where: { id: conversationId, workspaceId: convWorkspaceId },
         data: { unreadCount: 0 },
       });
       // Notifica front para refletir unread zero
@@ -452,18 +452,21 @@ export class InboxService {
     conversationId: string,
     status: 'OPEN' | 'CLOSED' | 'SNOOZED',
   ) {
-    const conversation = await this.prisma.conversation.findUnique({
-      where: { id: conversationId },
+    const conversation = await this.prisma.conversation.findFirst({
+      where: { id: conversationId, workspaceId },
       select: { id: true, workspaceId: true },
     });
 
-    if (!conversation || conversation.workspaceId !== workspaceId) {
+    if (!conversation) {
       throw new ForbiddenException('Acesso negado a esta conversação');
     }
 
-    const updated = await this.prisma.conversation.update({
-      where: { id: conversationId },
+    await this.prisma.conversation.updateMany({
+      where: { id: conversationId, workspaceId },
       data: { status },
+    });
+    const updated = await this.prisma.conversation.findFirstOrThrow({
+      where: { id: conversationId, workspaceId },
       include: { contact: true },
     });
     this.gateway.emitToWorkspace(updated.workspaceId, 'conversation:update', updated);
@@ -472,31 +475,34 @@ export class InboxService {
 
   /** Assign agent. */
   async assignAgent(workspaceId: string, conversationId: string, agentId: string) {
-    const conversation = await this.prisma.conversation.findUnique({
-      where: { id: conversationId },
+    const conversation = await this.prisma.conversation.findFirst({
+      where: { id: conversationId, workspaceId },
       select: { id: true, workspaceId: true },
     });
 
-    if (!conversation || conversation.workspaceId !== workspaceId) {
+    if (!conversation) {
       throw new ForbiddenException('Acesso negado a esta conversação');
     }
 
     if (agentId) {
-      const agent = await this.prisma.agent.findUnique({
-        where: { id: agentId },
+      const agent = await this.prisma.agent.findFirst({
+        where: { id: agentId, workspaceId },
         select: { workspaceId: true },
       });
-      if (!agent || agent.workspaceId !== workspaceId) {
+      if (!agent) {
         throw new ForbiddenException('Agente não pertence a este workspace');
       }
     }
 
-    const updated = await this.prisma.conversation.update({
-      where: { id: conversationId },
+    await this.prisma.conversation.updateMany({
+      where: { id: conversationId, workspaceId },
       data: {
         assignedAgentId: agentId || null,
         mode: agentId ? 'HUMAN' : 'AI',
       },
+    });
+    const updated = await this.prisma.conversation.findFirstOrThrow({
+      where: { id: conversationId, workspaceId },
       include: { assignedAgent: true },
     });
     this.gateway.emitToWorkspace(updated.workspaceId, 'conversation:update', updated);
@@ -508,16 +514,13 @@ export class InboxService {
    * Salva a mensagem outbound e dispara o envio via WhatsApp.
    */
   async replyToConversation(workspaceId: string, conversationId: string, content: string) {
-    const conversation = await this.prisma.conversation.findUnique({
-      where: { id: conversationId },
+    const conversation = await this.prisma.conversation.findFirst({
+      where: { id: conversationId, workspaceId },
       include: { contact: true },
     });
 
     if (!conversation) {
       throw new NotFoundException('Conversação não encontrada');
-    }
-    if (conversation.workspaceId !== workspaceId) {
-      throw new ForbiddenException('Acesso negado a esta conversação');
     }
 
     const phone = conversation.contact?.phone;

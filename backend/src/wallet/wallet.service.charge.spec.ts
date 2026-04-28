@@ -113,7 +113,7 @@ function makePrismaStub(
           if (!current) {
             throw new Error(`stub: wallet not found ${where.id}`);
           }
-          const next = { ...current, ...data, updatedAt: new Date() } as PrepaidWallet;
+          const next = { ...current, ...data, updatedAt: new Date() };
           wallets.set(where.id, next);
           walletsByWorkspace.set(next.workspaceId, next);
           return { count: 1 };
@@ -140,7 +140,7 @@ function makePrismaStub(
             id: `pwt_${nextTxId++}`,
             createdAt: new Date(),
             ...data,
-          } as PrepaidWalletTransaction;
+          };
           transactions.push(row);
           return row;
         },
@@ -194,16 +194,15 @@ const seedWallet = (overrides: Partial<PrepaidWallet> = {}): PrepaidWallet =>
     updatedAt: new Date(),
   }) as object as PrepaidWallet;
 
-const seedPrice = (overrides: Partial<UsagePrice> = {}): UsagePrice =>
-  ({
-    id: overrides.id ?? 'up_seed',
-    operation: overrides.operation ?? 'ai_message',
-    pricePerUnitCents: overrides.pricePerUnitCents ?? 100n,
-    unit: overrides.unit ?? 'message',
-    active: overrides.active ?? true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }) as UsagePrice;
+const seedPrice = (overrides: Partial<UsagePrice> = {}): UsagePrice => ({
+  id: overrides.id ?? 'up_seed',
+  operation: overrides.operation ?? 'ai_message',
+  pricePerUnitCents: overrides.pricePerUnitCents ?? 100n,
+  unit: overrides.unit ?? 'message',
+  active: overrides.active ?? true,
+  createdAt: new Date(),
+  updatedAt: new Date(),
+});
 
 describe('WalletService.chargeForUsage', () => {
   it('debits the wallet by units * pricePerUnit', async () => {

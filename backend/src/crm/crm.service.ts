@@ -42,7 +42,7 @@ export class CrmService {
           phone,
         },
       },
-      update: data as Prisma.ContactUpdateInput,
+      update: data,
       create: {
         phone,
         ...data,

@@ -89,7 +89,7 @@ describe('KnowledgeBaseService', () => {
     }).compile();
 
     service = module.get<KnowledgeBaseService>(KnowledgeBaseService);
-    htmlToText = Reflect.get(service as object, 'htmlToText') as (html: string) => string;
+    htmlToText = Reflect.get(service, 'htmlToText') as (html: string) => string;
   });
 
   it('should be defined', () => {

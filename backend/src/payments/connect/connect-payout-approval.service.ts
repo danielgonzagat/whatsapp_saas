@@ -105,7 +105,7 @@ export class ConnectPayoutApprovalService {
         prompt: `Aprovar saque manual de ${input.amountCents.toString()} ${currency} para ${String(
           balance.accountType,
         )} (${balance.stripeAccountId})?`,
-        payload: payload as object as Prisma.InputJsonValue,
+        payload: JSON.parse(JSON.stringify(payload)) as Prisma.InputJsonObject,
       },
     });
 
@@ -236,13 +236,15 @@ export class ConnectPayoutApprovalService {
           data: {
             state: 'APPROVED',
             respondedAt: new Date(),
-            response: {
-              approvedByAdminId: input.adminUserId,
-              payoutId: payoutResult.payoutId,
-              status: payoutResult.status,
-              amountCents: payoutResult.amountCents.toString(),
-              currency: payload.currency,
-            } as Prisma.InputJsonValue,
+            response: JSON.parse(
+              JSON.stringify({
+                approvedByAdminId: input.adminUserId,
+                payoutId: payoutResult.payoutId,
+                status: payoutResult.status,
+                amountCents: payoutResult.amountCents.toString(),
+                currency: payload.currency,
+              }),
+            ) as Prisma.InputJsonObject,
           },
         });
       },
@@ -337,12 +339,14 @@ export class ConnectPayoutApprovalService {
       data: {
         state: 'REJECTED',
         respondedAt: new Date(),
-        response: {
-          rejectedByAdminId: input.adminUserId,
-          reason: input.reason ?? null,
-          amountCents: payload.amountCents,
-          currency: payload.currency,
-        } as Prisma.InputJsonValue,
+        response: JSON.parse(
+          JSON.stringify({
+            rejectedByAdminId: input.adminUserId,
+            reason: input.reason ?? null,
+            amountCents: payload.amountCents,
+            currency: payload.currency,
+          }),
+        ) as Prisma.InputJsonObject,
       },
     });
 
@@ -413,12 +417,14 @@ export class ConnectPayoutApprovalService {
           data: {
             state: 'FAILED',
             respondedAt: new Date(),
-            response: {
-              error: errorMessage,
-              amountCents: payload.amountCents,
-              currency: payload.currency,
-              approvedByAdminId: adminUserId,
-            } as Prisma.InputJsonValue,
+            response: JSON.parse(
+              JSON.stringify({
+                error: errorMessage,
+                amountCents: payload.amountCents,
+                currency: payload.currency,
+                approvedByAdminId: adminUserId,
+              }),
+            ) as Prisma.InputJsonObject,
           },
         });
       },

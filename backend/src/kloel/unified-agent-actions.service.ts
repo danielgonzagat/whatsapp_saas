@@ -68,7 +68,7 @@ export class UnifiedAgentActionsService {
           intent: 'TOOL_CALL',
           action,
           status: r.success ? 'completed' : 'failed',
-          meta: { args, result: r } as object as Prisma.InputJsonValue,
+          meta: JSON.parse(JSON.stringify({ args, result: r })) as Prisma.InputJsonObject,
         },
       });
     } catch (err: unknown) {

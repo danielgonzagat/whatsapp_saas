@@ -221,7 +221,7 @@ export function normalizeChatCompletionParams(params: StreamingChatParams): Stre
 export function normalizeChatCompletionParams(params: AnyChatParams): AnyChatParams {
   // Intersection keeps AnyChatParams structural compatibility while allowing
   // dynamic writes to max_completion_tokens / delete max_tokens below.
-  const payload = { ...params } as AnyChatParams & Record<string, unknown>;
+  const payload = { ...params };
 
   // --- Clamp 1: max output tokens ----------------------------------
   const rawMaxTokens = payload.max_tokens ?? payload.max_completion_tokens;

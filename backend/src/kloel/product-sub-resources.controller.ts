@@ -1992,7 +1992,7 @@ export class ProductCampaignController {
       data: removeUndefined({
         name: body.name ? safeStr(body.name).trim() : undefined,
         pixelId: body.pixelId !== undefined ? safeStr(body.pixelId).trim() || null : undefined,
-      }) as Prisma.ProductCampaignUncheckedUpdateInput,
+      }),
     });
 
     const linkedCampaign = await this.ensureLinkedCampaign(
@@ -2267,7 +2267,7 @@ export class ProductCommissionController {
       data: {
         productId,
         ...payload,
-      } as Prisma.ProductCommissionUncheckedCreateInput,
+      },
     });
 
     if (payload.agentEmail && COMMISSION_PARTNER_INVITE_ROLES.has(payload.role)) {
@@ -2306,12 +2306,12 @@ export class ProductCommissionController {
       throw new NotFoundException('Comissão não encontrada');
     }
 
-    const payload = buildCommissionPayload(body, commission as LooseObject);
+    const payload = buildCommissionPayload(body, commission);
     await ensureNoDuplicateCommission(this.prisma, productId, payload, commissionId);
 
     return this.prisma.productCommission.update({
       where: { id: commissionId },
-      data: payload as Prisma.ProductCommissionUncheckedUpdateInput,
+      data: payload,
     });
   }
 

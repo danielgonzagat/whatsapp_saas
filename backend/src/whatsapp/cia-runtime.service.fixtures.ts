@@ -244,8 +244,8 @@ export function makeCiaBootstrapMock(
     prisma as never,
     providerRegistry as never,
     agentEvents as never,
-    chatFilter as never,
-    runtimeState as never,
+    chatFilter,
+    runtimeState,
     catchupService as never,
   );
 }
@@ -291,13 +291,13 @@ export function makeCiaBacklogRunMock(
           const skipped: string[] = [];
           for (const item of batch) {
             try {
-              const reply = await unifiedAgent.processIncomingMessage(item as never);
+              const reply = await unifiedAgent.processIncomingMessage(item);
               if (reply?.reply || reply?.response) {
                 await whatsappService.sendMessage({
                   workspaceId: item.workspaceId,
                   phone: item.phone,
                   message: reply.reply || reply.response,
-                } as never);
+                });
                 processed.push(item.conversationId);
               } else {
                 skipped.push(item.conversationId);
@@ -342,13 +342,13 @@ export function makeCiaBacklogRunMock(
               contactId: conversation.contactId,
               phone,
               message: messageContent,
-            } as never);
+            });
             if (reply?.reply || reply?.response) {
               await whatsappService.sendMessage({
                 workspaceId,
                 phone,
                 message: reply.reply || reply.response,
-              } as never);
+              });
               processed += 1;
             } else {
               skipped += 1;
@@ -384,12 +384,12 @@ export function makeCiaBacklogRunMock(
     prisma as never,
     providerRegistry as never,
     agentEvents as never,
-    chatFilter as never,
-    runtimeState as never,
+    chatFilter,
+    runtimeState,
     workerRuntime as never,
     inlineFallback as never,
     remoteBacklog as never,
-    bootstrapService as never,
+    bootstrapService,
     catchupService as never,
   );
 }

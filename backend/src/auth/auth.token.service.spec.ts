@@ -37,12 +37,12 @@ describe('AuthTokenService', () => {
 
   describe('issueTokens', () => {
     it('should issue access and refresh tokens for valid agent', async () => {
-      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace as never);
+      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace);
       prismaMock.refreshToken.updateMany.mockResolvedValueOnce({
         count: 0,
-      } as never);
-      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken as never);
-      jwtMock.signAsync.mockResolvedValueOnce('access-token-123' as never);
+      });
+      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken);
+      jwtMock.signAsync.mockResolvedValueOnce('access-token-123');
 
       const result = await service.issueTokens(mockAgent);
 
@@ -56,12 +56,12 @@ describe('AuthTokenService', () => {
     });
 
     it('should mark token as new user when extra.isNewUser is true', async () => {
-      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace as never);
+      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace);
       prismaMock.refreshToken.updateMany.mockResolvedValueOnce({
         count: 0,
-      } as never);
-      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken as never);
-      jwtMock.signAsync.mockResolvedValueOnce('access-token-123' as never);
+      });
+      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken);
+      jwtMock.signAsync.mockResolvedValueOnce('access-token-123');
 
       const result = await service.issueTokens(mockAgent, {
         isNewUser: true,
@@ -71,7 +71,7 @@ describe('AuthTokenService', () => {
     });
 
     it('should throw when workspace is not found', async () => {
-      prismaMock.workspace.findUnique.mockResolvedValueOnce(null as never);
+      prismaMock.workspace.findUnique.mockResolvedValueOnce(null);
 
       await expect(service.issueTokens(mockAgent)).rejects.toThrow(ServiceUnavailableException);
     });
@@ -110,12 +110,12 @@ describe('AuthTokenService', () => {
     });
 
     it('should rotate refresh tokens correctly', async () => {
-      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace as never);
+      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace);
       prismaMock.refreshToken.updateMany.mockResolvedValueOnce({
         count: 1,
-      } as never);
-      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken as never);
-      jwtMock.signAsync.mockResolvedValueOnce('access-token-123' as never);
+      });
+      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken);
+      jwtMock.signAsync.mockResolvedValueOnce('access-token-123');
 
       await service.issueTokens(mockAgent);
 
@@ -136,12 +136,12 @@ describe('AuthTokenService', () => {
     });
 
     it('should include user info in response', async () => {
-      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace as never);
+      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace);
       prismaMock.refreshToken.updateMany.mockResolvedValueOnce({
         count: 0,
-      } as never);
-      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken as never);
-      jwtMock.signAsync.mockResolvedValueOnce('access-token-123' as never);
+      });
+      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken);
+      jwtMock.signAsync.mockResolvedValueOnce('access-token-123');
 
       const result = await service.issueTokens(mockAgent);
 
@@ -157,13 +157,13 @@ describe('AuthTokenService', () => {
 
   describe('issueTokensForAgentId', () => {
     it('should issue tokens when agent exists', async () => {
-      prismaMock.agent.findUnique.mockResolvedValueOnce(mockAgent as never);
-      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace as never);
+      prismaMock.agent.findUnique.mockResolvedValueOnce(mockAgent);
+      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace);
       prismaMock.refreshToken.updateMany.mockResolvedValueOnce({
         count: 0,
-      } as never);
-      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken as never);
-      jwtMock.signAsync.mockResolvedValueOnce('access-token-123' as never);
+      });
+      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken);
+      jwtMock.signAsync.mockResolvedValueOnce('access-token-123');
 
       const result = await service.issueTokensForAgentId('agent-123');
 
@@ -183,7 +183,7 @@ describe('AuthTokenService', () => {
     });
 
     it('should throw when agent does not exist', async () => {
-      prismaMock.agent.findUnique.mockResolvedValueOnce(null as never);
+      prismaMock.agent.findUnique.mockResolvedValueOnce(null);
 
       await expect(service.issueTokensForAgentId('nonexistent')).rejects.toThrow(
         UnauthorizedException,
@@ -197,15 +197,15 @@ describe('AuthTokenService', () => {
         ...mockRefreshToken,
         agent: mockAgent,
       };
-      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored as never);
+      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored);
       // 1st updateMany: atomic claim of the inbound token
       // 2nd updateMany: rotateRefreshToken revoke-siblings step
       prismaMock.refreshToken.updateMany
-        .mockResolvedValueOnce({ count: 1 } as never)
-        .mockResolvedValueOnce({ count: 0 } as never);
-      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace as never);
-      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken as never);
-      jwtMock.signAsync.mockResolvedValueOnce('new-access-token' as never);
+        .mockResolvedValueOnce({ count: 1 })
+        .mockResolvedValueOnce({ count: 0 });
+      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace);
+      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken);
+      jwtMock.signAsync.mockResolvedValueOnce('new-access-token');
 
       const result = await service.refresh('rt-stub-1');
 
@@ -218,7 +218,7 @@ describe('AuthTokenService', () => {
     });
 
     it('should throw when refresh token not found', async () => {
-      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(null as never);
+      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(null);
 
       await expect(service.refresh('invalid-token')).rejects.toThrow(UnauthorizedException);
     });
@@ -229,10 +229,10 @@ describe('AuthTokenService', () => {
         revoked: true,
         agent: mockAgent,
       };
-      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(revokedToken as never);
+      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(revokedToken);
       prismaMock.refreshToken.updateMany.mockResolvedValueOnce({
         count: 1,
-      } as never);
+      });
 
       await expect(service.refresh('revoked-token')).rejects.toThrow(UnauthorizedException);
       expect(prismaMock.refreshToken.updateMany).toHaveBeenCalledWith({
@@ -246,7 +246,7 @@ describe('AuthTokenService', () => {
         ...mockRefreshToken,
         expiresAt: new Date(Date.now() - 1000),
       };
-      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(expiredToken as never);
+      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(expiredToken);
 
       await expect(service.refresh('expired-token')).rejects.toThrow(UnauthorizedException);
     });
@@ -257,10 +257,10 @@ describe('AuthTokenService', () => {
         revoked: true,
         agent: mockAgent,
       };
-      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(revokedToken as never);
+      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(revokedToken);
       prismaMock.refreshToken.updateMany.mockResolvedValueOnce({
         count: 2,
-      } as never);
+      });
 
       await expect(service.refresh('replayed-token')).rejects.toThrow(UnauthorizedException);
       expect(prismaMock.refreshToken.updateMany).toHaveBeenCalledWith({
@@ -274,7 +274,7 @@ describe('AuthTokenService', () => {
         ...mockRefreshToken,
         agent: { ...mockAgent, deletedAt: new Date() },
       };
-      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored as never);
+      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored);
 
       await expect(service.refresh('token')).rejects.toThrow(UnauthorizedException);
     });
@@ -284,7 +284,7 @@ describe('AuthTokenService', () => {
         ...mockRefreshToken,
         agent: { ...mockAgent, disabledAt: new Date() },
       };
-      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored as never);
+      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored);
 
       await expect(service.refresh('token')).rejects.toThrow(UnauthorizedException);
     });
@@ -294,13 +294,13 @@ describe('AuthTokenService', () => {
         ...mockRefreshToken,
         agent: mockAgent,
       };
-      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored as never);
+      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored);
       prismaMock.refreshToken.updateMany
-        .mockResolvedValueOnce({ count: 1 } as never) // atomic claim
-        .mockResolvedValueOnce({ count: 0 } as never); // rotation revoke-siblings
-      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace as never);
-      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken as never);
-      jwtMock.signAsync.mockResolvedValueOnce('new-token' as never);
+        .mockResolvedValueOnce({ count: 1 }) // atomic claim
+        .mockResolvedValueOnce({ count: 0 }); // rotation revoke-siblings
+      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace);
+      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken);
+      jwtMock.signAsync.mockResolvedValueOnce('new-token');
 
       await service.refresh('rt-stub-1');
 
@@ -320,17 +320,17 @@ describe('AuthTokenService', () => {
       };
       // Both calls observe the same active token via findUnique.
       prismaMock.refreshToken.findUnique
-        .mockResolvedValueOnce(stored as never)
-        .mockResolvedValueOnce(stored as never);
+        .mockResolvedValueOnce(stored)
+        .mockResolvedValueOnce(stored);
       // First updateMany wins the claim (count=1, then rotation siblings),
       // second updateMany loses (count=0).
       prismaMock.refreshToken.updateMany
-        .mockResolvedValueOnce({ count: 1 } as never)
-        .mockResolvedValueOnce({ count: 0 } as never)
-        .mockResolvedValueOnce({ count: 0 } as never);
-      prismaMock.workspace.findUnique.mockResolvedValue(mockWorkspace as never);
-      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken as never);
-      jwtMock.signAsync.mockResolvedValue('access-token' as never);
+        .mockResolvedValueOnce({ count: 1 })
+        .mockResolvedValueOnce({ count: 0 })
+        .mockResolvedValueOnce({ count: 0 });
+      prismaMock.workspace.findUnique.mockResolvedValue(mockWorkspace);
+      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken);
+      jwtMock.signAsync.mockResolvedValue('access-token');
 
       const [winner, loser] = await Promise.allSettled([
         service.refresh('rt-stub-1'),

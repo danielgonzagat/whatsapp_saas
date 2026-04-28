@@ -75,7 +75,7 @@ export function makePrismaStub(wallets: PrepaidWallet[] = []) {
         }) => {
           const existing = workspaceMap.get(where.workspaceId);
           if (existing) {
-            const merged = { ...existing, ...update, updatedAt: new Date() } as PrepaidWallet;
+            const merged = { ...existing, ...update, updatedAt: new Date() };
             walletMap.set(merged.id, merged);
             workspaceMap.set(merged.workspaceId, merged);
             return Promise.resolve(merged);
@@ -111,7 +111,7 @@ export function makePrismaStub(wallets: PrepaidWallet[] = []) {
         }) => {
           const current = walletMap.get(where.id);
           if (!current) return Promise.resolve({ count: 0 });
-          const next = { ...current, ...data, updatedAt: new Date() } as PrepaidWallet;
+          const next = { ...current, ...data, updatedAt: new Date() };
           walletMap.set(where.id, next);
           workspaceMap.set(next.workspaceId, next);
           return Promise.resolve({ count: 1 });
@@ -141,7 +141,7 @@ export function makePrismaStub(wallets: PrepaidWallet[] = []) {
           id: `pwt_${nextTxId++}`,
           createdAt: new Date(),
           ...data,
-        } as PrepaidWalletTransaction;
+        };
         transactions.push(row);
         return Promise.resolve(row);
       }),

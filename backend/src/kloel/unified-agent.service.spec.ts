@@ -81,7 +81,7 @@ describe('UnifiedAgentService', () => {
     } as never as ConfigService;
 
     const contextData = new UnifiedAgentContextDataService(prisma as never);
-    ctx = new UnifiedAgentContextService(contextData as never);
+    ctx = new UnifiedAgentContextService(contextData);
     response = new UnifiedAgentResponseService({} as never);
     const messaging = new UnifiedAgentActionsMessagingService(
       whatsappService as never,
@@ -89,22 +89,22 @@ describe('UnifiedAgentService', () => {
     );
     const commerce = new UnifiedAgentActionsCommerceService(
       prisma as never,
-      configMock as never,
+      configMock,
       paymentService as never,
       {} as never,
-      messaging as never,
+      messaging,
     );
     const actions = new UnifiedAgentActionsService(
       prisma as never,
       {} as never,
       whatsappService as never,
       {} as never,
-      messaging as never,
+      messaging,
       {} as never,
       {} as never,
       {} as never,
       {} as never,
-      commerce as never,
+      commerce,
       { logWithTx: jest.fn().mockResolvedValue(undefined) } as never,
     );
 
@@ -118,9 +118,9 @@ describe('UnifiedAgentService', () => {
       {} as never,
       { trackAiUsage: jest.fn().mockResolvedValue(undefined) } as never,
       { log: jest.fn().mockResolvedValue(undefined) } as never,
-      ctx as never,
-      response as never,
-      actions as never,
+      ctx,
+      response,
+      actions,
     );
   });
 

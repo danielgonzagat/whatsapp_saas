@@ -171,7 +171,7 @@ describe('safeStorageFetch (redirect re-validation)', () => {
       }
       return new Response('should-not-reach', { status: 200 });
     });
-    global.fetch = fetchMock as never as typeof fetch;
+    global.fetch = fetchMock as never;
 
     await expect(
       safeStorageFetch('https://cdn.example.com/file', {
@@ -194,7 +194,7 @@ describe('safeStorageFetch (redirect re-validation)', () => {
       }
       return new Response('OK', { status: 200 });
     });
-    global.fetch = fetchMock as never as typeof fetch;
+    global.fetch = fetchMock as never;
 
     const res = await safeStorageFetch('https://cdn.example.com/file', {
       allowedHosts: ALLOWED,
@@ -211,7 +211,7 @@ describe('safeStorageFetch (redirect re-validation)', () => {
         headers: { location: 'https://evil.example.org/x' },
       });
     });
-    global.fetch = fetchMock as never as typeof fetch;
+    global.fetch = fetchMock as never;
 
     await expect(
       safeStorageFetch('https://cdn.example.com/file', {

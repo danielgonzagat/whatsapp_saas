@@ -240,8 +240,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       incidentCount: incidents.length,
     });
     const productionSnapshot = this.getProductionSnapshot();
-    const directiveData = productionSnapshot.directive.data as { nextWork?: unknown[] } | null;
-    const convergenceData = productionSnapshot.convergencePlan.data as { queue?: unknown[] } | null;
+    const directiveData = productionSnapshot.directive.data;
+    const convergenceData = productionSnapshot.convergencePlan.data;
     const nextWork =
       Array.isArray(directiveData?.nextWork) && directiveData.nextWork.length > 0
         ? directiveData.nextWork.slice(0, 5)

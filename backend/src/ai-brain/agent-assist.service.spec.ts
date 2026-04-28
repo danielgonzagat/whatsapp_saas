@@ -6,9 +6,7 @@ jest.mock('../kloel/openai-wrapper', () => ({
 }));
 
 import { ConfigService } from '@nestjs/config';
-import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WalletService } from '../wallet/wallet.service';
 import { AgentAssistService } from './agent-assist.service';
 
 describe('AgentAssistService', () => {
@@ -56,8 +54,8 @@ describe('AgentAssistService', () => {
     service = new AgentAssistService(
       configStub as ConfigService,
       prisma as never as PrismaService,
-      planLimits as never as PlanLimitsService,
-      walletService as never as WalletService,
+      planLimits as never,
+      walletService as never,
     );
     Object.defineProperty(service, 'openai', {
       value: {},

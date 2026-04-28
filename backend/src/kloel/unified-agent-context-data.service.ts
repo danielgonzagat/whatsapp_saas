@@ -103,7 +103,7 @@ export class UnifiedAgentContextDataService {
     return messages.reverse().map((m) => ({
       role: m.direction === 'INBOUND' ? 'user' : 'assistant',
       content: m.content || '',
-    })) as ChatCompletionMessageParam[];
+    }));
   }
 
   async buildAndPersistCompressedContext(

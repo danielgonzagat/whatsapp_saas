@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
@@ -303,7 +302,7 @@ export class UnifiedAgentActionsCrmService {
                 whatsappProvider: provider,
                 connectionStatus: 'connecting',
                 connectionInitiatedAt: new Date().toISOString(),
-              } as Prisma.InputJsonValue,
+              },
             },
           });
         },

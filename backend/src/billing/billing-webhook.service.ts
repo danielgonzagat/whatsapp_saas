@@ -289,7 +289,7 @@ export class BillingWebhookService {
         select: { providerSettings: true },
       });
       const settings = (ws?.providerSettings as Record<string, unknown>) || {};
-      const nextSettings = { ...settings } as Record<string, unknown>;
+      const nextSettings = { ...settings };
       if (settings.billingSuspended) {
         delete nextSettings.billingSuspended;
       }

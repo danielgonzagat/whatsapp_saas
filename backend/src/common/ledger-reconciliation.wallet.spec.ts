@@ -1,4 +1,3 @@
-import type { FinancialAlertService } from './financial-alert.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import { LedgerReconciliationService } from './ledger-reconciliation.service';
 import { makePrisma } from './ledger-reconciliation.service.spec.helpers';
@@ -11,7 +10,7 @@ describe('LedgerReconciliationService — invariant I12 (wallet ledger consisten
     };
     const service = new LedgerReconciliationService(
       prisma as never as PrismaService,
-      financialAlert as never as FinancialAlertService,
+      financialAlert as never,
     );
     const runSpy = jest.spyOn(service, 'runWalletReconciliation').mockResolvedValue({
       scannedWallets: 0,
@@ -32,7 +31,7 @@ describe('LedgerReconciliationService — invariant I12 (wallet ledger consisten
     };
     const service = new LedgerReconciliationService(
       prisma as never as PrismaService,
-      financialAlert as never as FinancialAlertService,
+      financialAlert as never,
     );
     jest.spyOn(service, 'runWalletReconciliation').mockRejectedValue(new Error('wallet cron boom'));
 
@@ -117,7 +116,7 @@ describe('LedgerReconciliationService — invariant I12 (wallet ledger consisten
     };
     const service = new LedgerReconciliationService(
       prisma as never as PrismaService,
-      financialAlert as never as FinancialAlertService,
+      financialAlert as never,
     );
 
     const result = await service.runWalletReconciliation();

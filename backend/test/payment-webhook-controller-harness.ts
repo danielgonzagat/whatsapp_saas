@@ -171,7 +171,7 @@ export function buildPaymentWebhookController() {
     marketplaceTreasuryPayoutService as never,
     adminAudit as never,
     financialAlert as never,
-    ledger as never,
+    ledger,
   );
 
   return {

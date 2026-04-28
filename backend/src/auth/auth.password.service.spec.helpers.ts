@@ -1,9 +1,6 @@
 import type { Agent, Workspace } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AuthPasswordService } from './auth.password.service';
-import type { AuthTokenService } from './auth.token.service';
-import type { AuthPartnerService } from './auth-partner.service';
-import type { RateLimitService } from './rate-limit.service';
 import type { PrismaService } from '../prisma/prisma.service';
 
 export const bcryptMock = bcrypt as jest.Mocked<typeof bcrypt>;
@@ -85,9 +82,9 @@ export function createAuthPasswordServiceContext(): AuthPasswordSpecContext {
   // so we mirror that pattern here with explicit constructor arguments.
   const service = new AuthPasswordService(
     prismaMock as never as PrismaService,
-    tokenServiceMock as never as AuthTokenService,
-    authPartnerServiceMock as never as AuthPartnerService,
-    rateLimitServiceMock as never as RateLimitService,
+    tokenServiceMock as never,
+    authPartnerServiceMock as never,
+    rateLimitServiceMock as never,
   );
 
   return {

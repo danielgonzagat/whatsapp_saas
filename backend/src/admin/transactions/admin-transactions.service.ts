@@ -429,7 +429,7 @@ export class AdminTransactionsService {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       return {};
     }
-    return value as Record<string, unknown>;
+    return value;
   }
 
   private normalizeGateway(value?: string | null) {

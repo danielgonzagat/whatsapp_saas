@@ -126,7 +126,7 @@ export class PaymentService {
     amountInCents: number,
     idempotencyKey: string,
   ): Promise<StripePaymentIntent> {
-    return (await this.stripeService.stripe.paymentIntents.create(
+    return await this.stripeService.stripe.paymentIntents.create(
       {
         amount: amountInCents,
         currency: 'brl',
@@ -148,7 +148,7 @@ export class PaymentService {
       {
         idempotencyKey,
       },
-    )) as StripePaymentIntent;
+    );
   }
 
   private extractPixDetails(paymentIntent: StripePaymentIntent) {

@@ -177,7 +177,7 @@ export function createService({
     redis as never,
     { check: healthCheck } as never,
     configService,
-    artifacts as never,
+    artifacts,
   );
 
   return { service, redis, healthCheck, configGet, artifacts };

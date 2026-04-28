@@ -19,7 +19,7 @@ import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nes
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { forEachSequential } from '../common/async-sequence';
-import { type UploadedFileLike, detectUploadedMime } from '../common/file-signature.util';
+import { detectUploadedMime } from '../common/file-signature.util';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { StorageService } from '../common/storage/storage.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
@@ -297,7 +297,7 @@ export class UploadController {
       throw new BadRequestException('Arquivo muito grande. Máximo permitido: 10MB');
     }
 
-    const detectedMime = detectUploadedMime(file as UploadedFileLike);
+    const detectedMime = detectUploadedMime(file);
     if (!detectedMime) {
       throw new BadRequestException('Tipo de arquivo não permitido ou assinatura inválida.');
     }
@@ -359,7 +359,7 @@ export class UploadController {
         return;
       }
       try {
-        const detectedMime = detectUploadedMime(file as UploadedFileLike);
+        const detectedMime = detectUploadedMime(file);
         if (!detectedMime) {
           throw new BadRequestException('Tipo de arquivo não permitido ou assinatura inválida.');
         }

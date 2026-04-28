@@ -113,7 +113,7 @@ function makePrismaStub(
           if (!current) {
             throw new Error(`stub: wallet not found ${where.id}`);
           }
-          const next = { ...current, ...data, updatedAt: new Date() } as PrepaidWallet;
+          const next = { ...current, ...data, updatedAt: new Date() };
           wallets.set(where.id, next);
           walletsByWorkspace.set(next.workspaceId, next);
           return { count: 1 };
@@ -140,7 +140,7 @@ function makePrismaStub(
             id: `pwt_${nextTxId++}`,
             createdAt: new Date(),
             ...data,
-          } as PrepaidWalletTransaction;
+          };
           transactions.push(row);
           return row;
         },

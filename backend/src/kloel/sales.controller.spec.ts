@@ -144,7 +144,7 @@ describe('SalesController', () => {
 
     controller = new SalesController(
       prisma as never as ConstructorParameters<typeof SalesController>[0],
-      stripeService as never as ConstructorParameters<typeof SalesController>[1],
+      stripeService as never,
     );
   });
 

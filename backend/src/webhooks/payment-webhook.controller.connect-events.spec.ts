@@ -28,7 +28,7 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       },
     };
 
-    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt as never);
+    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt);
 
     expect(connectReversalService.processRefund).toHaveBeenCalledWith({
       paymentIntentId: 'pi_test_123',
@@ -131,7 +131,7 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       },
     };
 
-    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt as never);
+    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt);
 
     expect(connectReversalService.processDispute).toHaveBeenCalledWith({
       paymentIntentId: 'pi_test_123',
@@ -200,7 +200,7 @@ describe('PaymentWebhookController.handleStripe — connect reversals and payout
       },
     };
 
-    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt as never);
+    const result = await controller.handleStripe(makeReq(evt), undefined, undefined, evt);
 
     expect(connectPayoutService.handleFailedPayout).toHaveBeenCalledWith({
       payoutId: 'po_1',

@@ -79,7 +79,7 @@ export function makePrismaStub(initial: FraudBlacklist[] = []) {
               id: nextId(),
               createdAt: new Date(),
               ...create,
-            } as FraudBlacklist;
+            };
             rows.push(row);
             return row;
           },
@@ -145,16 +145,15 @@ export async function buildEngine(
   return moduleRef.get(FraudEngine);
 }
 
-export const seedRow = (overrides: Partial<FraudBlacklist>): FraudBlacklist =>
-  ({
-    id: overrides.id ?? `fb_${++fraudRowSeq}`,
-    type: overrides.type ?? 'CPF',
-    value: overrides.value ?? '12345678900',
-    reason: overrides.reason ?? 'manual_block',
-    addedBy: overrides.addedBy ?? null,
-    expiresAt: overrides.expiresAt ?? null,
-    createdAt: overrides.createdAt ?? new Date(),
-  }) as FraudBlacklist;
+export const seedRow = (overrides: Partial<FraudBlacklist>): FraudBlacklist => ({
+  id: overrides.id ?? `fb_${++fraudRowSeq}`,
+  type: overrides.type ?? 'CPF',
+  value: overrides.value ?? '12345678900',
+  reason: overrides.reason ?? 'manual_block',
+  addedBy: overrides.addedBy ?? null,
+  expiresAt: overrides.expiresAt ?? null,
+  createdAt: overrides.createdAt ?? new Date(),
+});
 
 export const baseContext = (
   overrides: Partial<FraudCheckoutContext> = {},

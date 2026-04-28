@@ -197,9 +197,7 @@ export class KloelStreamWriter {
           max_tokens: input.responseMaxTokens,
         },
         { maxRetries: 2, initialDelayMs: 300 },
-        this.options.signal
-          ? ({ signal: this.options.signal } as { signal: AbortSignal })
-          : undefined,
+        this.options.signal ? { signal: this.options.signal } : undefined,
       );
 
     // PULSE:OK — stream object itself is not a new LLM call; it is the handle returned by the

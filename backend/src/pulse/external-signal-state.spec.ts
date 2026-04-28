@@ -420,7 +420,7 @@ describe('buildExternalSignalState', () => {
     } as never as PulseResolvedManifest;
 
     const plan = buildConvergencePlan({
-      health: { breaks: [] } as { breaks: [] },
+      health: { breaks: [] },
       resolvedManifest,
       scopeState: createScopeState(rootDir),
       certification,

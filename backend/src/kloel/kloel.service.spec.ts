@@ -137,7 +137,7 @@ describe('KloelService', () => {
     };
     threadService = new KloelThreadService(
       prisma as never as ConstructorParameters<typeof KloelThreadService>[0],
-      summaryServiceMock as never as ConstructorParameters<typeof KloelThreadService>[1],
+      summaryServiceMock as never,
     );
 
     const wsContextServiceMock = {
@@ -154,10 +154,10 @@ describe('KloelService', () => {
 
     replyEngineService = new KloelReplyEngineService(
       prisma as never as ConstructorParameters<typeof KloelReplyEngineService>[0],
-      planLimitsMock as never as ConstructorParameters<typeof KloelReplyEngineService>[1],
+      planLimitsMock as never,
       threadService,
-      wsContextServiceMock as never as ConstructorParameters<typeof KloelReplyEngineService>[3],
-      unifiedAgentService as never as ConstructorParameters<typeof KloelReplyEngineService>[4],
+      wsContextServiceMock as never,
+      unifiedAgentService as never,
     );
 
     const composerServiceMock = {
@@ -168,10 +168,10 @@ describe('KloelService', () => {
 
     thinkerService = new KloelThinkerService(
       prisma as never as ConstructorParameters<typeof KloelThinkerService>[0],
-      planLimitsMock as never as ConstructorParameters<typeof KloelThinkerService>[1],
+      planLimitsMock as never,
       threadService,
-      wsContextServiceMock as never as ConstructorParameters<typeof KloelThinkerService>[3],
-      composerServiceMock as never as ConstructorParameters<typeof KloelThinkerService>[4],
+      wsContextServiceMock as never,
+      composerServiceMock as never,
       replyEngineService,
     );
 
@@ -187,17 +187,17 @@ describe('KloelService', () => {
       { createSmartPayment: jest.fn() } as never,
       whatsappService as never as ConstructorParameters<typeof KloelService>[2],
       { getSessionStatus: jest.fn(), startSession: jest.fn() } as never,
-      unifiedAgentService as never as ConstructorParameters<typeof KloelService>[4],
+      unifiedAgentService as never,
       { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as never,
       planLimitsMock as never,
       { upload: jest.fn(), uploadFromUrl: jest.fn() } as never,
       threadService, // [8] threadService
-      wsContextServiceMock as never as ConstructorParameters<typeof KloelService>[9], // [9] wsContextService
+      wsContextServiceMock as never, // [9] wsContextService
       {} as never, // [10] chatToolsService
       {} as never, // [11] bizConfigToolsService
       whatsappToolsService, // [12] whatsappToolsService
       {} as never, // [13] leadBrainService
-      composerServiceMock as never as ConstructorParameters<typeof KloelService>[14], // [14] composerService
+      composerServiceMock as never, // [14] composerService
       thinkerService,
       replyEngineService,
       {
@@ -349,7 +349,7 @@ describe('KloelService', () => {
         workspaceId: 'ws-1',
         message: 'Preciso de um diagnóstico completo da operação comercial com plano completo.',
         mode: 'chat',
-        metadata: { clientRequestId: 'req-long-1' } as never,
+        metadata: { clientRequestId: 'req-long-1' },
       },
       response as never,
     );
@@ -555,7 +555,7 @@ describe('KloelService', () => {
       conversationId: 'thread-1',
       message: 'Me responda em modo síncrono',
       mode: 'chat',
-      metadata: { clientRequestId: 'sync-1' } as never,
+      metadata: { clientRequestId: 'sync-1' },
     });
 
     expect(prisma.chatMessage.create).toHaveBeenNthCalledWith(

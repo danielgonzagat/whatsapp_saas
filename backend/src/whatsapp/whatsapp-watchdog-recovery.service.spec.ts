@@ -16,9 +16,9 @@ function buildService(redis: RedisMock): WhatsAppWatchdogRecoveryService {
   // passed as `null as never as ...` to keep the test surface minimal.
   return new WhatsAppWatchdogRecoveryService(
     null as never as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[0],
-    null as never as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[1],
-    null as never as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[2],
-    null as never as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[3],
+    null as never,
+    null as never,
+    null as never,
     redis as never as ConstructorParameters<typeof WhatsAppWatchdogRecoveryService>[4],
   );
 }

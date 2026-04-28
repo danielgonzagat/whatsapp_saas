@@ -63,7 +63,7 @@ export class KloelWorkspaceContextService {
       const verifiedBusinessDescription = safeStr(providerSettings.businessDescription).trim();
       const verifiedBusinessSegment = safeStr(providerSettings.businessSegment).trim();
       const businessHours = this.contextFormatter.buildWorkspaceBusinessHoursContext(
-        providerSettings.businessHours as Record<string, unknown> | undefined,
+        providerSettings.businessHours,
       );
 
       const affiliateProductIds = new Set<string>();

@@ -367,7 +367,7 @@ export class LedgerReconciliationService {
         const credit = sumByKey.get(`${bucket}:credit`) ?? 0n;
         const debit = sumByKey.get(`${bucket}:debit`) ?? 0n;
         const derived = credit - debit;
-        const stored = BigInt((wallet[`${bucket}BalanceInCents`] as bigint | number | null) ?? 0);
+        const stored = BigInt(wallet[`${bucket}BalanceInCents`] ?? 0);
 
         if (derived !== stored) {
           drifts.push({

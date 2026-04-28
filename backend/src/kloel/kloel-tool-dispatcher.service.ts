@@ -57,7 +57,7 @@ export class KloelToolDispatcherService {
             userId,
           );
         case 'search_web':
-          return await this.toolSearchWeb(workspaceId, args as { query?: string });
+          return await this.toolSearchWeb(workspaceId, args);
         case 'create_flow':
           return await this.chatToolsService.toolCreateFlow(workspaceId, asToolArgs(args));
         case 'list_flows':

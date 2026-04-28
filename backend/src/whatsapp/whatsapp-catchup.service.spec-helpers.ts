@@ -1,11 +1,5 @@
-import type { InboxService } from '../inbox/inbox.service';
 import type { PrismaService } from '../prisma/prisma.service';
-import type { AgentEventsService } from './agent-events.service';
-import type { CiaRuntimeService } from './cia-runtime.service';
-import type { InboundProcessorService } from './inbound-processor.service';
-import type { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import type { WorkerRuntimeService } from './worker-runtime.service';
 
 /** Catchup prisma mock type. */
 export type CatchupPrismaMock = {
@@ -191,12 +185,12 @@ export function buildCatchupMocks(): CatchupMocks {
 export function buildCatchupService(mocks: CatchupMocks): WhatsAppCatchupService {
   return new WhatsAppCatchupService(
     mocks.prisma as never as PrismaService,
-    mocks.providerRegistry as never as WhatsAppProviderRegistry,
-    mocks.inboundProcessor as never as InboundProcessorService,
-    mocks.ciaRuntime as never as CiaRuntimeService,
-    mocks.inbox as never as InboxService,
-    mocks.workerRuntime as never as WorkerRuntimeService,
+    mocks.providerRegistry as never,
+    mocks.inboundProcessor as never,
+    mocks.ciaRuntime as never,
+    mocks.inbox as never,
+    mocks.workerRuntime as never,
     mocks.redis as never,
-    mocks.agentEvents as never as AgentEventsService,
+    mocks.agentEvents as never,
   );
 }

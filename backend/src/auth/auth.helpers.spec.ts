@@ -98,7 +98,7 @@ describe('auth.helpers', () => {
 
     it('should not throw for valid agent', () => {
       expect(() => {
-        assertAgentCanAuthenticate(validAgent as Agent);
+        assertAgentCanAuthenticate(validAgent);
       }).not.toThrow();
     });
 
@@ -108,7 +108,7 @@ describe('auth.helpers', () => {
         deletedAt: new Date(),
       };
       expect(() => {
-        assertAgentCanAuthenticate(deletedAgent as Agent);
+        assertAgentCanAuthenticate(deletedAgent);
       }).toThrow(UnauthorizedException);
     });
 
@@ -118,7 +118,7 @@ describe('auth.helpers', () => {
         disabledAt: new Date(),
       };
       expect(() => {
-        assertAgentCanAuthenticate(disabledAgent as Agent);
+        assertAgentCanAuthenticate(disabledAgent);
       }).toThrow(UnauthorizedException);
     });
 
@@ -129,7 +129,7 @@ describe('auth.helpers', () => {
         disabledAt: new Date(),
       };
       expect(() => {
-        assertAgentCanAuthenticate(compromisedAgent as Agent);
+        assertAgentCanAuthenticate(compromisedAgent);
       }).toThrow(UnauthorizedException);
     });
 
@@ -140,7 +140,7 @@ describe('auth.helpers', () => {
         disabledAt: null,
       };
       expect(() => {
-        assertAgentCanAuthenticate(deletedButNotDisabled as Agent);
+        assertAgentCanAuthenticate(deletedButNotDisabled);
       }).toThrow(UnauthorizedException);
     });
 
@@ -151,7 +151,7 @@ describe('auth.helpers', () => {
         disabledAt: new Date('2024-01-01'),
       };
       expect(() => {
-        assertAgentCanAuthenticate(disabledButNotDeleted as Agent);
+        assertAgentCanAuthenticate(disabledButNotDeleted);
       }).toThrow(UnauthorizedException);
     });
   });

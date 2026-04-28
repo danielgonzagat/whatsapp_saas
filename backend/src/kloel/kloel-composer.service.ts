@@ -204,7 +204,7 @@ export class KloelComposerService {
       let response: ImagesResponse;
       try {
         const imageRequest: ImageGenerateParamsNonStreaming = {
-          model: KLOEL_IMAGE_MODEL as OpenAI.Images.ImageModel,
+          model: KLOEL_IMAGE_MODEL,
           prompt,
           size: '1024x1024',
           n: 1,

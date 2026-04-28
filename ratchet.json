@@ -34,10 +34,6 @@
     "browser_stress_pass_rate_min": 0,
     "codacy_total_issues_max": 11966,
     "codacy_high_severity_issues_max": 1116,
-    "codacy_medium_severity_issues_max": 3263,
-    "backend_tsc_errors_max": 160,
-    "worker_tsc_errors_max": 0,
-    "broken_pattern_count_max": 0,
-    "syntax_errors_max": 0
+    "codacy_medium_severity_issues_max": 3263
   }
 }

@@ -68,7 +68,7 @@ function fakeIntent(kind: DestructiveIntentKind): DestructiveIntentRecord {
     createdByAdminUserId: 'admin-1',
     ip: '127.0.0.1',
     userAgent: 'jest',
-  } as never as DestructiveIntentRecord;
+  } as never;
 }
 
 describe('ProductArchiveHandler', () => {

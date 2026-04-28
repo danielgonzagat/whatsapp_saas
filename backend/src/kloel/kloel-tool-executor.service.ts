@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
@@ -26,20 +25,10 @@ import type {
   ToolCreateFlowArgs,
   ToolDashboardSummaryArgs,
   ToolSendWhatsAppMessageArgs,
-  ToolPaginationArgs,
   ToolCreateWhatsAppContactArgs,
-  ToolGetWhatsAppMessagesArgs,
-  ToolSetWhatsAppPresenceArgs,
-  ToolSyncWhatsAppHistoryArgs,
-  ToolListLeadsArgs,
-  ToolGetLeadDetailsArgs,
-  ToolSaveBusinessInfoArgs,
-  ToolSetBusinessHoursArgs,
   ToolCreateCampaignArgs,
   ToolSendAudioArgs,
   ToolSendDocumentArgs,
-  ToolTranscribeAudioArgs,
-  ToolUpdateBillingInfoArgs,
   ToolChangePlanArgs,
 } from './kloel-tool-executor.types';
 
@@ -76,7 +65,7 @@ export class KloelToolExecutorService {
         case 'list_products':
           return await this.toolListProducts(workspaceId);
         case 'delete_product':
-          return await this.toolDeleteProduct(workspaceId, args as ToolDeleteProductArgs);
+          return await this.toolDeleteProduct(workspaceId, args);
         case 'toggle_autopilot':
           return await this.toolToggleAutopilot(workspaceId, args as ToolToggleAutopilotArgs);
         case 'set_brand_voice':
@@ -99,27 +88,18 @@ export class KloelToolExecutorService {
             (args as ToolDashboardSummaryArgs).period,
           );
         case 'save_business_info':
-          return await this.crmTools.toolSaveBusinessInfo(
-            workspaceId,
-            args as ToolSaveBusinessInfoArgs,
-          );
+          return await this.crmTools.toolSaveBusinessInfo(workspaceId, args);
         case 'set_business_hours':
-          return await this.crmTools.toolSetBusinessHours(
-            workspaceId,
-            args as ToolSetBusinessHoursArgs,
-          );
+          return await this.crmTools.toolSetBusinessHours(workspaceId, args);
         case 'create_campaign':
           return await this.crmTools.toolCreateCampaign(
             workspaceId,
             args as ToolCreateCampaignArgs,
           );
         case 'list_leads':
-          return await this.crmTools.toolListLeads(workspaceId, args as ToolListLeadsArgs);
+          return await this.crmTools.toolListLeads(workspaceId, args);
         case 'get_lead_details':
-          return await this.crmTools.toolGetLeadDetails(
-            workspaceId,
-            args as ToolGetLeadDetailsArgs,
-          );
+          return await this.crmTools.toolGetLeadDetails(workspaceId, args);
         case 'create_payment_link': {
           const paymentResult = await this.smartPaymentService.createSmartPayment({
             workspaceId,
@@ -140,37 +120,22 @@ export class KloelToolExecutorService {
             args as ToolSendWhatsAppMessageArgs,
           );
         case 'list_whatsapp_contacts':
-          return await this.whatsappTools.toolListWhatsAppContacts(
-            workspaceId,
-            args as ToolPaginationArgs,
-          );
+          return await this.whatsappTools.toolListWhatsAppContacts(workspaceId, args);
         case 'create_whatsapp_contact':
           return await this.whatsappTools.toolCreateWhatsAppContact(
             workspaceId,
             args as ToolCreateWhatsAppContactArgs,
           );
         case 'list_whatsapp_chats':
-          return await this.whatsappTools.toolListWhatsAppChats(
-            workspaceId,
-            args as ToolPaginationArgs,
-          );
+          return await this.whatsappTools.toolListWhatsAppChats(workspaceId, args);
         case 'get_whatsapp_messages':
-          return await this.whatsappTools.toolGetWhatsAppMessages(
-            workspaceId,
-            args as ToolGetWhatsAppMessagesArgs,
-          );
+          return await this.whatsappTools.toolGetWhatsAppMessages(workspaceId, args);
         case 'get_whatsapp_backlog':
           return await this.whatsappTools.toolGetWhatsAppBacklog(workspaceId);
         case 'set_whatsapp_presence':
-          return await this.whatsappTools.toolSetWhatsAppPresence(
-            workspaceId,
-            args as ToolSetWhatsAppPresenceArgs,
-          );
+          return await this.whatsappTools.toolSetWhatsAppPresence(workspaceId, args);
         case 'sync_whatsapp_history':
-          return await this.whatsappTools.toolSyncWhatsAppHistory(
-            workspaceId,
-            args as ToolSyncWhatsAppHistoryArgs,
-          );
+          return await this.whatsappTools.toolSyncWhatsAppHistory(workspaceId, args);
         case 'send_audio':
           return await this.whatsappTools.toolSendAudio(workspaceId, args as ToolSendAudioArgs);
         case 'send_document':
@@ -181,16 +146,10 @@ export class KloelToolExecutorService {
         case 'send_voice_note':
           return this.whatsappTools.toolSendAudio(workspaceId, args as ToolSendAudioArgs);
         case 'transcribe_audio':
-          return await this.whatsappTools.toolTranscribeAudio(
-            workspaceId,
-            args as ToolTranscribeAudioArgs,
-          );
+          return await this.whatsappTools.toolTranscribeAudio(workspaceId, args);
         // Billing tools — delegated to KloelToolExecutorBillingService
         case 'update_billing_info':
-          return await this.billingTools.toolUpdateBillingInfo(
-            workspaceId,
-            args as ToolUpdateBillingInfoArgs,
-          );
+          return await this.billingTools.toolUpdateBillingInfo(workspaceId, args);
         case 'get_billing_status':
           return await this.billingTools.toolGetBillingStatus(workspaceId);
         case 'change_plan':
@@ -254,7 +213,7 @@ export class KloelToolExecutorService {
     };
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: { providerSettings: newSettings as Prisma.InputJsonValue },
+      data: { providerSettings: newSettings },
     });
     return {
       success: true,

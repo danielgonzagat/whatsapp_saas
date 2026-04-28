@@ -154,13 +154,13 @@ describe('PaymentWebhookController.handleStripe latest_charge normalization', ()
 
       await controller.handleStripe(
         {
-          body: {} as never,
+          body: {},
           rawBody: Buffer.from('{"id":"evt_signed_sale_pi_expanded_charge"}'),
           url: '/webhook/payment/stripe',
         },
         't=1,v1=fake',
         undefined,
-        {} as never,
+        {},
       );
 
       expect(mockConstructEvent).toHaveBeenCalled();
@@ -212,13 +212,13 @@ describe('PaymentWebhookController.handleStripe latest_charge normalization', ()
 
       await controller.handleStripe(
         {
-          body: {} as never,
+          body: {},
           rawBody: Buffer.from('{"id":"evt_signed_sale_pi"}'),
           url: '/webhook/payment/stripe',
         },
         't=1,v1=fake',
         undefined,
-        {} as never,
+        {},
       );
 
       expect(mockConstructEvent).toHaveBeenCalled();

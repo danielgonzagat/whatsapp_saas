@@ -32,25 +32,25 @@ describe('FlowsService', () => {
     };
   } = {
     flow: {
-      upsert: jest.fn() as AsyncMock,
-      findFirst: jest.fn() as AsyncMock,
-      findMany: jest.fn() as AsyncMock,
+      upsert: jest.fn(),
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
     },
     flowVersion: {
-      create: jest.fn() as AsyncMock,
-      findMany: jest.fn() as AsyncMock,
-      findFirst: jest.fn() as AsyncMock,
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
     },
     flowExecution: {
-      findFirst: jest.fn() as AsyncMock,
-      findMany: jest.fn() as AsyncMock,
-      create: jest.fn() as AsyncMock,
-      findUnique: jest.fn() as AsyncMock,
-      update: jest.fn() as AsyncMock,
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
     },
     contact: {
-      findUnique: jest.fn() as AsyncMock,
-      create: jest.fn() as AsyncMock,
+      findUnique: jest.fn(),
+      create: jest.fn(),
     },
   };
 

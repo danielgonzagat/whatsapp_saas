@@ -21,7 +21,7 @@ describe('PaymentWebhookController.handleStripe — sale payment intents', () =>
               },
             },
           },
-        } as never,
+        },
         rawBody: '',
         url: '/webhook/payment/stripe',
       },
@@ -40,7 +40,7 @@ describe('PaymentWebhookController.handleStripe — sale payment intents', () =>
             },
           },
         },
-      } as never,
+      },
     );
 
     expect(prisma.kloelSale.updateMany).toHaveBeenCalledWith({
@@ -99,7 +99,7 @@ describe('PaymentWebhookController.handleStripe — sale payment intents', () =>
                 },
               },
             },
-          } as never,
+          },
           rawBody: '',
           url: '/webhook/payment/stripe',
         },
@@ -122,7 +122,7 @@ describe('PaymentWebhookController.handleStripe — sale payment intents', () =>
               },
             },
           },
-        } as never,
+        },
       );
 
       expect(stripeWebhookProcessor.processSaleSucceeded).toHaveBeenCalledTimes(1);

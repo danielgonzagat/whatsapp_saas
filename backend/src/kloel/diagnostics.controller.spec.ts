@@ -38,7 +38,7 @@ describe('DiagnosticsController', () => {
     };
     controller = new DiagnosticsController(
       prisma as never as ConstructorParameters<typeof DiagnosticsController>[0],
-      observabilityQueries as never as ConstructorParameters<typeof DiagnosticsController>[1],
+      observabilityQueries as never,
     );
   });
 

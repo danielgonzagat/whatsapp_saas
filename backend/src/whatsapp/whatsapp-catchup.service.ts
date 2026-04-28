@@ -1364,26 +1364,30 @@ export class WhatsAppCatchupService {
       },
       update: {
         name: contactName,
-        customFields: {
-          ...existingCustomFields,
-          remotePushName: remotePushName || undefined,
-          remotePushNameUpdatedAt: remotePushName
-            ? new Date().toISOString()
-            : existingCustomFields.remotePushNameUpdatedAt || undefined,
-          lastRemoteChatId: chatId,
-          lastResolvedChatId: resolvedChatId || chatId,
-        } satisfies Record<string, unknown> as Prisma.InputJsonValue,
+        customFields: JSON.parse(
+          JSON.stringify({
+            ...existingCustomFields,
+            remotePushName: remotePushName || undefined,
+            remotePushNameUpdatedAt: remotePushName
+              ? new Date().toISOString()
+              : existingCustomFields.remotePushNameUpdatedAt || undefined,
+            lastRemoteChatId: chatId,
+            lastResolvedChatId: resolvedChatId || chatId,
+          } satisfies Record<string, unknown>),
+        ) as Prisma.InputJsonObject,
       },
       create: {
         workspaceId,
         phone,
         name: contactName,
-        customFields: {
-          remotePushName: remotePushName || undefined,
-          remotePushNameUpdatedAt: remotePushName ? new Date().toISOString() : undefined,
-          lastRemoteChatId: chatId,
-          lastResolvedChatId: resolvedChatId || chatId,
-        } satisfies Record<string, unknown> as Prisma.InputJsonValue,
+        customFields: JSON.parse(
+          JSON.stringify({
+            remotePushName: remotePushName || undefined,
+            remotePushNameUpdatedAt: remotePushName ? new Date().toISOString() : undefined,
+            lastRemoteChatId: chatId,
+            lastResolvedChatId: resolvedChatId || chatId,
+          } satisfies Record<string, unknown>),
+        ) as Prisma.InputJsonObject,
       },
       select: {
         id: true,
@@ -1403,20 +1407,22 @@ export class WhatsAppCatchupService {
       await this.prisma.contact.updateMany({
         where: { id: contact.id, workspaceId },
         data: {
-          customFields: {
-            ...this.normalizeJsonObject(
-              (
-                await this.prisma.contact.findFirst({
-                  where: { id: contact.id, workspaceId },
-                  select: { customFields: true },
-                })
-              )?.customFields,
-            ),
-            whatsappSavedAt: new Date().toISOString(),
-            lastRemoteChatId: chatId,
-            lastResolvedChatId: resolvedChatId || chatId,
-            remotePushName: remotePushName || undefined,
-          } satisfies Record<string, unknown> as Prisma.InputJsonValue,
+          customFields: JSON.parse(
+            JSON.stringify({
+              ...this.normalizeJsonObject(
+                (
+                  await this.prisma.contact.findFirst({
+                    where: { id: contact.id, workspaceId },
+                    select: { customFields: true },
+                  })
+                )?.customFields,
+              ),
+              whatsappSavedAt: new Date().toISOString(),
+              lastRemoteChatId: chatId,
+              lastResolvedChatId: resolvedChatId || chatId,
+              remotePushName: remotePushName || undefined,
+            } satisfies Record<string, unknown>),
+          ) as Prisma.InputJsonObject,
         },
       });
     }

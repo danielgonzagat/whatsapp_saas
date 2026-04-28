@@ -106,9 +106,9 @@ describe('SystemHealthService', () => {
       prisma as never as ConstructorParameters<typeof SystemHealthService>[0],
       redis as never as ConstructorParameters<typeof SystemHealthService>[1],
       config as never as ConstructorParameters<typeof SystemHealthService>[2],
-      whatsappApi as never as ConstructorParameters<typeof SystemHealthService>[3],
-      storageService as never as ConstructorParameters<typeof SystemHealthService>[4],
-      observabilityQueries as never as ConstructorParameters<typeof SystemHealthService>[5],
+      whatsappApi as never,
+      storageService as never,
+      observabilityQueries as never,
     );
 
   it('reports meta transport and worker health in the consolidated readiness response', async () => {

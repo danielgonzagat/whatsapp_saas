@@ -91,7 +91,8 @@ export class AdRulesController {
     if (!rule) {
       throw new NotFoundException('Rule not found');
     }
-    return this.prisma.adRule.update({ where: { id }, data: dto });
+    await this.prisma.adRule.updateMany({ where: { id, workspaceId }, data: dto });
+    return this.prisma.adRule.findFirstOrThrow({ where: { id, workspaceId } });
   }
 
   /** Remove. */
@@ -111,7 +112,7 @@ export class AdRulesController {
       resourceId: id,
       details: { deletedBy: 'user', name: rule.name },
     });
-    await this.prisma.adRule.delete({ where: { id } });
+    await this.prisma.adRule.deleteMany({ where: { id, workspaceId } });
     return { success: true };
   }
 
@@ -125,9 +126,10 @@ export class AdRulesController {
     if (!rule) {
       throw new NotFoundException('Rule not found');
     }
-    return this.prisma.adRule.update({
-      where: { id },
+    await this.prisma.adRule.updateMany({
+      where: { id, workspaceId },
       data: { active: !rule.active },
     });
+    return this.prisma.adRule.findFirstOrThrow({ where: { id, workspaceId } });
   }
 }

@@ -126,7 +126,7 @@ export class PulseArtifactService {
       : missingArtifacts.length > 0 || staleArtifacts.length > 0
         ? 'degraded'
         : 'ready';
-    const certData = certificate.data as { humanReplacementStatus?: string } | null;
+    const certData = certificate.data;
     const authorityMode: RuntimeAuthorityMode =
       certData?.humanReplacementStatus === 'READY' ? 'autonomous' : 'advisory-only';
 

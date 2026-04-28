@@ -188,7 +188,7 @@ export class LedgerService {
           balanceAfterAvailableCents: newAvailable,
           referenceType: entry.referenceType,
           referenceId: entry.referenceId,
-          metadata: { promotedFromEntryId: entry.id } as Prisma.InputJsonValue,
+          metadata: { promotedFromEntryId: entry.id },
         },
       });
 
@@ -378,7 +378,7 @@ export class LedgerService {
             ...(input.metadata ?? {}),
             absorbedFromPendingCents: fromPending.toString(),
             absorbedFromAvailableCents: fromAvailable.toString(),
-          } as Prisma.InputJsonValue,
+          },
         },
       });
 
@@ -476,7 +476,7 @@ export class LedgerService {
             ...(input.metadata ?? {}),
             absorbedFromPendingCents: fromPending.toString(),
             absorbedFromAvailableCents: fromAvailable.toString(),
-          } as Prisma.InputJsonValue,
+          },
         },
       });
 

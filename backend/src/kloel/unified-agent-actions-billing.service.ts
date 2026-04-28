@@ -211,7 +211,7 @@ export class UnifiedAgentActionsBillingService {
                 providerSettings: {
                   ...latestSettings,
                   stripeCustomerId: customerId,
-                } as Prisma.InputJsonValue,
+                },
               },
             });
           },

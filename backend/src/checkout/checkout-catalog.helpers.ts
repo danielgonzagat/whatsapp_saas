@@ -74,7 +74,7 @@ export async function validateCouponHelper(
   const coupon = await prisma.checkoutCoupon.findUnique({
     where: { workspaceId_code: { workspaceId, code: code.toUpperCase() } },
   });
-  if (!coupon || !isCouponEligible(coupon as CouponLike, planId, orderValue)) {
+  if (!coupon || !isCouponEligible(coupon, planId, orderValue)) {
     return INVALID_RESULT;
   }
   return {
@@ -82,6 +82,6 @@ export async function validateCouponHelper(
     code: coupon.code,
     discountType: coupon.discountType,
     discountValue: coupon.discountValue,
-    discountAmount: computeDiscountAmount(coupon as CouponLike, orderValue),
+    discountAmount: computeDiscountAmount(coupon, orderValue),
   };
 }

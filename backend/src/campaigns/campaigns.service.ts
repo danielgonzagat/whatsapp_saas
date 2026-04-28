@@ -65,7 +65,7 @@ export class CampaignsService {
         ...(data as Prisma.CampaignCreateInput),
         workspace: { connect: { id: workspaceId } },
         status: 'DRAFT',
-        stats: { sent: 0, delivered: 0, read: 0, failed: 0 } as Prisma.InputJsonValue,
+        stats: { sent: 0, delivered: 0, read: 0, failed: 0 },
       },
     });
   }

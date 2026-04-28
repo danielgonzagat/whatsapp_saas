@@ -162,7 +162,7 @@ export class ReportsOrdersService {
       ((filterStatus: OrderStatus) =>
         this.prisma.checkoutOrder.count({
           where: { ...where, workspaceId, status: filterStatus },
-        }))('PAID' as OrderStatus)),
+        }))('PAID')),
     ]);
 
     return {
