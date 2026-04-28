@@ -1,0 +1,181 @@
+{
+  "$schema": "https://kilo.ai/schemas/agents-v1.json",
+  "version": "1.0.0",
+  "description": "KLOEL multi-agent orchestration manifest — defines available agent types, their capabilities, and coordination contracts for Hermes, OpenHands, and Claude Code CLI",
+  "agents": {
+    "claude-code": {
+      "id": "claude-code",
+      "label": "Claude Code CLI",
+      "tool": "claude",
+      "capabilities": ["implement", "debug", "refactor", "test", "analyze", "typecheck"],
+      "riskProfile": "balanced",
+      "description": "Anthropic Claude Code CLI — primary implementation agent. Handles all Risk 1-2 tasks: frontend, hooks, API clients, backend services. Reads CLAUDE.md, AGENTS.md, and CODEX.md on boot. Follows Agent Operating Protocol.",
+      "models": {
+        "default": "claude-sonnet-4-20250514",
+        "planning": "claude-opus-4-20250514"
+      },
+      "mcpServers": ["codacy", "stripe", "railway", "datadog", "sentry", "codecov", "github"],
+      "hooks": {
+        "PreToolUse": {
+          "Write|Edit": "npm run typecheck 2>&1 | head -40"
+        },
+        "PostToolUse": {
+          "Write|Edit": "npx prettier --write ${file} --ignore-unknown 2>/dev/null || true"
+        }
+      },
+      "safetyGates": {
+        "noProtectedFileEdit": true,
+        "noSecretExposure": true,
+        "noDestructiveGit": true
+      }
+    },
+    "hermes": {
+      "id": "hermes",
+      "label": "Agente Hermes",
+      "tool": "hermes",
+      "capabilities": ["review", "audit", "architecture", "security", "quality"],
+      "riskProfile": "safe",
+      "description": "Agente Hermes — specialized review and quality agent. Conducts code reviews, security audits, architecture validation, and quality gate enforcement. Runs Codacy integrity checks, ratchet measurements, and governance boundary validation. Read-only by default; can suggest fixes but must not directly edit protected files.",
+      "modes": {
+        "review": "Post-implementation code review against AGENT_RUNBOOK.md standards",
+        "audit": "Security, architecture, and governance boundary audit",
+        "quality": "Codacy max-rigor enforcement, ratchet check, dead-code analysis"
+      },
+      "mcpServers": ["codacy", "codecov", "github"],
+      "safetyGates": {
+        "readOnlyByDefault": true,
+        "noProtectedFileEdit": true,
+        "noSecretExposure": true
+      }
+    },
+    "openhands": {
+      "id": "openhands",
+      "label": "OpenHands",
+      "tool": "openhands",
+      "capabilities": ["plan", "design", "implement", "test", "deploy"],
+      "riskProfile": "balanced",
+      "description": "OpenHands — autonomous development agent with E2E planning through deployment capability. Handles multi-step feature implementation, infrastructure changes (Railway), and full-stack tasks. Scoped per worktree for isolation. Follows the same AGENT_RUNBOOK.md protocol with PULSE integration.",
+      "models": {
+        "default": "claude-sonnet-4-20250514"
+      },
+      "mcpServers": ["railway", "vercel", "stripe", "datadog", "sentry", "github"],
+      "safetyGates": {
+        "noProtectedFileEdit": true,
+        "noSecretExposure": true,
+        "noDestructiveGit": true,
+        "requireWorktree": true
+      }
+    },
+    "planner": {
+      "id": "planner",
+      "label": "PULSE Planner Agent",
+      "tool": "codex",
+      "capabilities": ["plan", "prioritize", "orchestrate"],
+      "riskProfile": "balanced",
+      "description": "PULSE autonomous planner — uses @openai/agents SDK to decompose work, rank units by readiness, and dispatch parallel agents. Runs in deterministic mode when Agents SDK is unavailable. Controls the autonomous loop: inspect → plan → dispatch → verify → commit.",
+      "mcpServers": ["codacy", "github"],
+      "isOrchestrator": true
+    },
+    "production-finalizer": {
+      "id": "production-finalizer",
+      "label": "Production Finalizer V3",
+      "tool": "kilo",
+      "capabilities": [
+        "implement",
+        "debug",
+        "refactor",
+        "test",
+        "analyze",
+        "typecheck",
+        "orchestrate",
+        "dispatch-subagents"
+      ],
+      "riskProfile": "balanced",
+      "description": "Kilo Production Finalizer V3 — full-stack autonomous agent with structured reasoning (RBA), mandatory parallel subagent dispatch, state-machine execution, JiT mutation testing, Beads cross-agent coordination, and anti-deception inoculation (INVIOLABLE_CONSTRAINTS I0–I16). Drives KLOEL from PULSE score to production-ready.",
+      "models": {
+        "default": "deepseek-v4-pro"
+      },
+      "mcpServers": ["github"],
+      "safetyGates": {
+        "noProtectedFileEdit": true,
+        "noSecretExposure": true,
+        "noDestructiveGit": true,
+        "strictModeForever": true,
+        "governanceBypassDetection": true,
+        "mandatoryReasoningBeforeAction": true,
+        "mandatoryParallelSubagents": true
+      },
+      "agentFile": ".kilo/agent/production-finalizer.md",
+      "isOrchestrator": true
+    }
+  },
+  "orchestration": {
+    "defaultMode": "sequential",
+    "parallelSlots": 12,
+    "worktreeIsolation": true,
+    "mergeStrategy": "squash-per-agent",
+    "coordinationContract": {
+      "fileLocking": "per-worktree isolation prevents merge conflicts",
+      "sharedState": "PULSE state files in scripts/pulse/.state/*.json",
+      "conflictResolution": "orchestrator applies patches serially, regression guard on each merge",
+      "communication": "Memory files at .kilo/memory/{agent-id}/*.md"
+    },
+    "dispatchRules": [
+      {
+        "when": "single unit, risk 0-1",
+        "assign": "claude-code",
+        "mode": "sequential"
+      },
+      {
+        "when": "single unit, risk 2",
+        "assign": "claude-code",
+        "reviewBy": "hermes",
+        "mode": "sequential"
+      },
+      {
+        "when": "single unit, risk 3",
+        "assign": "claude-code",
+        "reviewBy": "hermes",
+        "requireHumanApproval": true,
+        "mode": "sequential"
+      },
+      {
+        "when": "multiple independent units, risk 0-2",
+        "assign": ["claude-code", "openhands"],
+        "maxParallel": 4,
+        "mode": "parallel"
+      },
+      {
+        "when": "autonomous production sweep (bulk gate closure)",
+        "assign": "production-finalizer",
+        "maxParallel": 12,
+        "mode": "parallel",
+        "description": "Production Finalizer V3 — handles bulk code-fix gates, dispatches subagents per finding category, enforces INVIOLABLE_CONSTRAINTS I0–I16"
+      },
+      {
+        "when": "PULSE audit — command /pulse-verify or boot Camada 3",
+        "assign": "production-finalizer",
+        "mode": "parallel",
+        "description": "12-domain parallel audit via subagent dispatch (I9 boot enforcement)"
+      },
+      {
+        "when": "infrastructure or deployment",
+        "assign": "openhands",
+        "mode": "sequential"
+      },
+      {
+        "when": "architecture review or security audit",
+        "assign": "hermes",
+        "mode": "sequential"
+      }
+    ],
+    "pulseIntegration": {
+      "entrypoint": "scripts/agent-orchestrator.js",
+      "commands": {
+        "single": "npm run agent:orchestrate",
+        "dangerous": "npm run agent:dangerous",
+        "autonomous": "npm run idependente"
+      }
+    }
+  }
+}
