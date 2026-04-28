@@ -130,7 +130,7 @@ export function buildOperationalBacklogItem(
   };
 }
 
-export type BacklogItem = ReturnType<typeof buildOperationalBacklogItem>;
+type BacklogItem = ReturnType<typeof buildOperationalBacklogItem>;
 
 export function compareOperationalBacklogItems(a: BacklogItem, b: BacklogItem): number {
   if (a.pending !== b.pending) {

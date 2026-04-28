@@ -9,7 +9,7 @@ import {
 } from './whatsapp.service.chats.backlog.helpers';
 import type { ChatHelperDeps, ChatNormalized } from './whatsapp.service.chats.types';
 
-export type { ChatHelperDeps, ChatNormalized } from './whatsapp.service.chats.types';
+export type { ChatHelperDeps } from './whatsapp.service.chats.types';
 
 const isProviderMessage = (m: unknown): m is { timestamp: number } & Record<string, unknown> =>
   m !== null &&
