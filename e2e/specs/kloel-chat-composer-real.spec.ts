@@ -319,7 +319,7 @@ test.describe.serial('Kloel chat real e2e validation', () => {
     );
 
     expect(assistantMessage.metadata?.webSources).toBeTruthy();
-    await expect(page.getByText('Fontes')).toBeVisible({ timeout: 180_000 });
+    await expect(page.getByText('Fontes', { exact: true })).toBeVisible({ timeout: 180_000 });
     await expect(page.getByRole('link', { name: /OpenAI|openai/i }).first()).toBeVisible();
   });
 
