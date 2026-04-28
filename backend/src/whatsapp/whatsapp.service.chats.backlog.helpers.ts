@@ -1,5 +1,5 @@
 import type { ConversationOperationalState } from './agent-conversation-state.util';
-import type { ChatHelperDeps, ChatNormalized } from './whatsapp.service.chats.types';
+import type { ChatHelperDeps, ChatNormalized } from './whatsapp.service.chats';
 
 /**
  * Pure helpers for the operational-backlog reporting in
