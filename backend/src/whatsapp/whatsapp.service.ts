@@ -2247,7 +2247,7 @@ export class WhatsappService {
         jid: data.jid,
         name: data.name,
         inviteLink: data.inviteLink,
-        settings: (data.settings || {}) as unknown as Prisma.InputJsonValue,
+        settings: JSON.parse(JSON.stringify(data.settings || {})) as Prisma.InputJsonObject,
         workspace: { connect: { id: workspaceId } },
       },
     });

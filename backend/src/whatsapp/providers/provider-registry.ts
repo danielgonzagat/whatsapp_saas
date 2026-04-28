@@ -166,17 +166,19 @@ export class WhatsAppProviderRegistry {
     await this.prisma.workspace.update({
       where: { id: workspaceId },
       data: {
-        providerSettings: {
-          ...settings,
-          whatsappProvider: this.defaultProvider,
-          connectionStatus: update.status || currentSession.status || 'unknown',
-          whatsappApiSession: {
-            ...currentSession,
-            ...update,
-            provider: this.defaultProvider,
-            lastUpdated: new Date().toISOString(),
-          },
-        } as unknown as Prisma.InputJsonValue,
+        providerSettings: JSON.parse(
+          JSON.stringify({
+            ...settings,
+            whatsappProvider: this.defaultProvider,
+            connectionStatus: update.status || currentSession.status || 'unknown',
+            whatsappApiSession: {
+              ...currentSession,
+              ...update,
+              provider: this.defaultProvider,
+              lastUpdated: new Date().toISOString(),
+            },
+          }),
+        ) as Prisma.InputJsonObject,
       },
     });
   }
@@ -197,10 +199,12 @@ export class WhatsAppProviderRegistry {
       await this.prisma.workspace.update({
         where: { id: workspaceId },
         data: {
-          providerSettings: {
-            ...settings,
-            whatsappProvider: this.defaultProvider,
-          } as unknown as Prisma.InputJsonValue,
+          providerSettings: JSON.parse(
+            JSON.stringify({
+              ...settings,
+              whatsappProvider: this.defaultProvider,
+            }),
+          ) as Prisma.InputJsonObject,
         },
       });
     }
