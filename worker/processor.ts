@@ -205,9 +205,9 @@ if (SHOULD_SCHEDULE) {
           role: WORKER_ROLE,
         });
       } catch (err: unknown) {
-        log.warn('autopilot_cycle_schedule_failed', {
-          error: err instanceof Error ? err.message : 'unknown_error',
-        });
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+        log.warn('autopilot_cycle_schedule_failed', { error: errInstanceofError.message });
       }
     })();
   } else {
@@ -258,9 +258,9 @@ async function sendOpsAlert(message: string, meta: Record<string, unknown> = {})
       signal: AbortSignal.timeout(10000),
     });
   } catch (err: unknown) {
-    log.warn('autopilot_alert_failed', {
-      error: err instanceof Error ? err.message : 'unknown_error',
-    });
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    log.warn('autopilot_alert_failed', { error: errInstanceofError?.message });
   }
 }
 
@@ -294,9 +294,9 @@ async function checkAutopilotQueueHealth(): Promise<void> {
     await maybeAlertHighQueue(waiting, failed, now);
     await maybeAlertFailedJobs(failed, waiting, now);
   } catch (err: unknown) {
-    log.warn('autopilot_queue_monitor_error', {
-      error: err instanceof Error ? err.message : 'unknown_error',
-    });
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    log.warn('autopilot_queue_monitor_error', { error: errInstanceofError?.message });
   }
 }
 
@@ -595,10 +595,9 @@ async function handleScheduledFollowup(job: Job) {
 
     return { ok: true, sent: true };
   } catch (err: unknown) {
-    log.error('followup_error', {
-      jobId: job.id,
-      error: err instanceof Error ? err.message : 'unknown_error',
-    });
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    log.error('followup_error', { jobId: job.id, error: errInstanceofError.message });
     throw err;
   }
 }

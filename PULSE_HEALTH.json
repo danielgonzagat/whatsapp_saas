@@ -1,6 +1,6 @@
 {
   "score": 75,
-  "totalNodes": 2749,
+  "totalNodes": 2723,
   "breaks": [
     {
       "type": "BACKUP_MISSING",
@@ -168,16 +168,16 @@
       "type": "STATE_PAYMENT_INVALID",
       "severity": "critical",
       "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 159,
+      "line": 160,
       "description": "Payment status set to PAID without verifying PROCESSING intermediate state",
-      "detail": "this.prisma.checkoutOrder.count({ where: { ...where, workspaceId, status: 'PAID' as const } })), — payment must transition PENDING → PROCESSING → PAID, never jump directly",
+      "detail": "where: { ...where, workspaceId, status: 'PAID' as const }, — payment must transition PENDING → PROCESSING → PAID, never jump directly",
       "source": "state-machine-checker"
     },
     {
       "type": "STATE_PAYMENT_INVALID",
       "severity": "critical",
       "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 195,
+      "line": 197,
       "description": "Payment status set to PAID without verifying PROCESSING intermediate state",
       "detail": "where.status = 'PAID'; — payment must transition PENDING → PROCESSING → PAID, never jump directly",
       "source": "state-machine-checker"
@@ -370,15 +370,6 @@
       "description": "E2E tests exist but are not included in CI pipeline — they will never catch regressions",
       "detail": "Add an E2E test step to your GitHub Actions / CI workflow that runs on every PR",
       "source": "e2e-coverage"
-    },
-    {
-      "type": "DIVISION_BY_ZERO_RISK",
-      "severity": "high",
-      "file": "backend/src/billing/plan-limits.service.ts",
-      "line": 180,
-      "description": "Division by variable without zero-check — potential division by zero in financial code",
-      "detail": "} catch (err: unknown) {      // Em ambientes sem Redis ou em conexão subscriber, não bloqueia (modo tolerante para dev/",
-      "source": "financial-arithmetic"
     },
     {
       "type": "DIVISION_BY_ZERO_RISK",
@@ -681,7 +672,7 @@
       "type": "STATE_INVALID_TRANSITION",
       "severity": "high",
       "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 195,
+      "line": 197,
       "description": "Status set directly without checking current state — invalid transition possible",
       "detail": "where.status = 'PAID'; — add a transition guard that validates the current status before updating",
       "source": "state-machine-checker"
@@ -1909,7 +1900,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/plan-limits.service.ts",
-      "line": 263,
+      "line": 270,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1918,7 +1909,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/plan-limits.service.ts",
-      "line": 290,
+      "line": 300,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1927,7 +1918,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/plan-limits.service.ts",
-      "line": 297,
+      "line": 307,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const daysInMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 0).getDate(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1972,7 +1963,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/calendar/calendar.service.ts",
-      "line": 318,
+      "line": 320,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "startTime: new Date(createdEvent.start?.dateTime || event.startTime), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1981,7 +1972,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/calendar/calendar.service.ts",
-      "line": 319,
+      "line": 321,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "endTime: new Date(createdEvent.end?.dateTime || event.endTime), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1990,7 +1981,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/calendar/calendar.service.ts",
-      "line": 415,
+      "line": 423,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const endTime = new Date(datetime.getTime() + durationMinutes * 60 * 1000); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3151,7 +3142,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/llm-budget.service.ts",
-      "line": 155,
+      "line": 157,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3160,7 +3151,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/memory-management.service.ts",
-      "line": 181,
+      "line": 185,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const cutoffDate = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3169,7 +3160,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/memory-management.service.ts",
-      "line": 205,
+      "line": 211,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const defaultCutoff = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3178,7 +3169,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/memory-management.service.ts",
-      "line": 427,
+      "line": 439,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const cutoff = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3187,7 +3178,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/memory-management.service.ts",
-      "line": 497,
+      "line": 509,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3196,7 +3187,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/memory-management.service.ts",
-      "line": 557,
+      "line": 569,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "_prioritySetAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3232,7 +3223,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/payment.service.ts",
-      "line": 390,
+      "line": 392,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3241,7 +3232,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/payment.service.ts",
-      "line": 408,
+      "line": 410,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const startDate = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3736,7 +3727,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/meta/meta-auth.controller.ts",
-      "line": 375,
+      "line": 378,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "connection.tokenExpiresAt && new Date(connection.tokenExpiresAt) < new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4510,7 +4501,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/cia-bootstrap.service.ts",
-      "line": 264,
+      "line": 265,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "lastModeAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4519,7 +4510,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/cia-bootstrap.service.ts",
-      "line": 306,
+      "line": 307,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "lastBootstrapAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4699,7 +4690,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/internal-whatsapp-runtime.controller.ts",
-      "line": 256,
+      "line": 257,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const now = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4942,7 +4933,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 2027,
+      "line": 2030,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "lastEvent && Date.now() - new Date(lastEvent.createdAt).getTime() <= 72 * 60 * 60 * 1000; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -4951,7 +4942,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 2359,
+      "line": 2368,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "return new Date(timestamp).toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -5158,7 +5149,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/kloel/llm-budget.service.ts",
-      "line": 161,
+      "line": 163,
       "description": "Environment variable LLM_BUDGET_DEFAULT_CENTS is referenced but not documented in .env.example",
       "detail": "Add LLM_BUDGET_DEFAULT_CENTS= to .env.example with a description comment",
       "source": "env-checker"
@@ -5167,7 +5158,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/kloel/openai-wrapper.ts",
-      "line": 180,
+      "line": 181,
       "description": "Environment variable LLM_MAX_COMPLETION_TOKENS is referenced but not documented in .env.example",
       "detail": "Add LLM_MAX_COMPLETION_TOKENS= to .env.example with a description comment",
       "source": "env-checker"
@@ -5176,7 +5167,7 @@
       "type": "ENV_NOT_DOCUMENTED",
       "severity": "medium",
       "file": "backend/src/kloel/openai-wrapper.ts",
-      "line": 182,
+      "line": 183,
       "description": "Environment variable LLM_MAX_INPUT_CHARS is referenced but not documented in .env.example",
       "detail": "Add LLM_MAX_INPUT_CHARS= to .env.example with a description comment",
       "source": "env-checker"
@@ -5283,42 +5274,6 @@
     {
       "type": "EMPTY_CATCH",
       "severity": "medium",
-      "file": "backend/src/autopilot/autopilot-cycle-executor.service.ts",
-      "line": 239,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (err: unknown) {        this.logger.warn(`[Autopilot] Falha ao enfileirar envio: ${err instanceof Error ? err.me",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "backend/src/common/idempotency.guard.ts",
-      "line": 238,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (err: unknown) {      this.logger.warn(`Idempotency check failed: ${err instanceof Error ? err.message : 'unknow",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "backend/src/health/system-health.service.ts",
-      "line": 116,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (e: unknown) {      return { status: 'DOWN', error: (e instanceof Error ? e.message : 'unknown_error') };",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "backend/src/health/system-health.service.ts",
-      "line": 123,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (e: unknown) {      return { status: 'DOWN', driver: 'unknown', error: (e instanceof Error ? e.message : 'unknow",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
       "file": "backend/src/inbox/inbox-events.service.ts",
       "line": 74,
       "description": "catch block only logs without throw/return — error effectively swallowed",
@@ -5371,15 +5326,6 @@
       "source": "error-handler-auditor"
     },
     {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-tool-router.ts",
-      "line": 139,
-      "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (error: unknown) {",
-      "source": "error-handler-auditor"
-    },
-    {
       "type": "UNHANDLED_PROMISE",
       "severity": "medium",
       "file": "backend/src/kloel/kloel-workspace-context-linked-product.service.ts",
@@ -5419,90 +5365,9 @@
       "type": "EMPTY_CATCH",
       "severity": "medium",
       "file": "backend/src/kloel/sales.controller.ts",
-      "line": 220,
+      "line": 221,
       "description": "catch block only logs without throw/return — error effectively swallowed",
       "detail": "} catch (err) {",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "backend/src/prisma/prisma.service.ts",
-      "line": 41,
-      "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (error: unknown) {",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/agent-events.service.ts",
-      "line": 191,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (err: unknown) {      this.logger.warn(`Failed to parse ws:agent event: ${(err instanceof Error ? err.message : ",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/agent-events.service.ts",
-      "line": 222,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (err: unknown) {        this.logger.warn(`Failed to dispatch ws:agent listener: ${(err instanceof Error ? err.me",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/inbound-processor.service.ts",
-      "line": 441,
-      "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (err: unknown) {      // PULSE:OK — Redis queue push non-critical; flow resumption will retry on next message",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/inbound-processor.service.ts",
-      "line": 583,
-      "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (err: unknown) {      // PULSE:OK — Autopilot queue enqueue non-critical; message already saved to inbox",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 1927,
-      "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (err: unknown) {        // PULSE:OK — Auto opt-out is best-effort; message still processed",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 2049,
-      "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (err: unknown) {      // PULSE:OK — Autopilot enqueue non-critical; message already persisted to inbox",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 2072,
-      "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (err: unknown) {      // PULSE:OK — Copilot WebSocket push non-critical; inbox still receives the message",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "worker/dlq-monitor.ts",
-      "line": 38,
-      "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (err: unknown) {    // PULSE:OK — DLQ alert webhook non-critical; queue still monitored on next interval",
       "source": "error-handler-auditor"
     },
     {
@@ -5517,109 +5382,10 @@
     {
       "type": "EMPTY_CATCH",
       "severity": "medium",
-      "file": "worker/flow-engine-global.ts",
-      "line": 1032,
-      "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (err: unknown) {          // PULSE:OK — AI pitch generation non-critical; falls back to static template below",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "worker/metrics.ts",
-      "line": 107,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (err: unknown) {    return { status: 'down', error: err instanceof Error ? err.message : 'unknown_error' };",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "worker/processor.ts",
-      "line": 207,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (err: unknown) {        log.warn('autopilot_cycle_schedule_failed', { error: (err instanceof Error ? err.message",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "worker/processor.ts",
-      "line": 257,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (err: unknown) {    log.warn('autopilot_alert_failed', { error: err instanceof Error ? err.message : 'unknown_er",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "worker/processor.ts",
-      "line": 290,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (err: unknown) {    log.warn('autopilot_queue_monitor_error', { error: err instanceof Error ? err.message : 'unk",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "worker/processors/autopilot-processor.ts",
-      "line": 305,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (err: unknown) {    log.warn('billing_suspend_notify_failed', { error: err instanceof Error ? err.message : 'unk",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "worker/processors/autopilot-processor.ts",
-      "line": 3096,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (err: unknown) {        log.warn('autopilot_event_billing_skip_failed', { error: err instanceof Error ? err.mess",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "worker/processors/autopilot-processor.ts",
-      "line": 5209,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (err: unknown) {        logFallback('email', 'error', err instanceof Error ? err.message : 'unknown_error');",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "worker/processors/autopilot-processor.ts",
-      "line": 6388,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (err: unknown) {    log.warn('autopilot_audit_error', { error: (err instanceof Error ? err.message : 'unknown_er",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "worker/providers/tools-registry.ts",
-      "line": 313,
-      "description": "Empty catch block — error silently swallowed",
-      "detail": "} catch (err: unknown) {    return `Error executing tool: ${(err instanceof Error ? err.message : 'unknown_error')}`;",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
       "file": "worker/queue.ts",
-      "line": 464,
+      "line": 465,
       "description": "catch block only logs without throw/return — error effectively swallowed",
       "detail": "} catch (err) {",
-      "source": "error-handler-auditor"
-    },
-    {
-      "type": "EMPTY_CATCH",
-      "severity": "medium",
-      "file": "worker/reprocess-dlq.ts",
-      "line": 38,
-      "description": "catch block only logs without throw/return — error effectively swallowed",
-      "detail": "} catch (err: unknown) {      // PULSE:OK — Per-job requeue failure is non-critical; other jobs still processed",
       "source": "error-handler-auditor"
     },
     {
@@ -6211,7 +5977,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 204,
+      "line": 206,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "this.prisma.checkoutOrder.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -6220,7 +5986,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 228,
+      "line": 230,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "this.prisma.checkoutOrder.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -6229,7 +5995,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 252,
+      "line": 254,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "const data = await this.prisma.checkoutPayment.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -10822,7 +10588,7 @@
       "type": "DEAD_EXPORT",
       "severity": "low",
       "file": "backend/src/kloel/llm-budget.service.ts",
-      "line": 183,
+      "line": 185,
       "description": "Exported symbol 'estimateChatCostCents' has no references in other files",
       "detail": "'estimateChatCostCents' is exported from llm-budget.service.ts but not imported/used anywhere in the backend. Consider removing or making it private.",
       "source": "dead-code-finder"
@@ -11074,7 +10840,7 @@
       "type": "PROCESSOR_NO_PRODUCER",
       "severity": "low",
       "file": "worker/processor.ts",
-      "line": 907,
+      "line": 920,
       "description": "Worker processor handles job 'incoming-message' but no producer calls queue.add('incoming-message')",
       "detail": "Dead processor — no backend code enqueues this job name. May be renamed or removed producer.",
       "source": "queue-parser"
@@ -11083,7 +10849,7 @@
       "type": "PROCESSOR_NO_PRODUCER",
       "severity": "low",
       "file": "worker/processor.ts",
-      "line": 920,
+      "line": 933,
       "description": "Worker processor handles job 'scheduled-followup' but no producer calls queue.add('scheduled-followup')",
       "detail": "Dead processor — no backend code enqueues this job name. May be renamed or removed producer.",
       "source": "queue-parser"
@@ -11092,7 +10858,7 @@
       "type": "PROCESSOR_NO_PRODUCER",
       "severity": "low",
       "file": "worker/processors/autopilot-processor.ts",
-      "line": 575,
+      "line": 578,
       "description": "Worker processor handles job 'cia-cycle-all' but no producer calls queue.add('cia-cycle-all')",
       "detail": "Dead processor — no backend code enqueues this job name. May be renamed or removed producer.",
       "source": "queue-parser"
@@ -11101,7 +10867,7 @@
       "type": "PROCESSOR_NO_PRODUCER",
       "severity": "low",
       "file": "worker/processors/autopilot-processor.ts",
-      "line": 580,
+      "line": 583,
       "description": "Worker processor handles job 'cycle-workspace' but no producer calls queue.add('cycle-workspace')",
       "detail": "Dead processor — no backend code enqueues this job name. May be renamed or removed producer.",
       "source": "queue-parser"
@@ -11110,7 +10876,7 @@
       "type": "PROCESSOR_NO_PRODUCER",
       "severity": "low",
       "file": "worker/processors/autopilot-processor.ts",
-      "line": 589,
+      "line": 592,
       "description": "Worker processor handles job 'cia-cycle-workspace' but no producer calls queue.add('cia-cycle-workspace')",
       "detail": "Dead processor — no backend code enqueues this job name. May be renamed or removed producer.",
       "source": "queue-parser"
@@ -11119,7 +10885,7 @@
       "type": "PROCESSOR_NO_PRODUCER",
       "severity": "low",
       "file": "worker/processors/autopilot-processor.ts",
-      "line": 622,
+      "line": 625,
       "description": "Worker processor handles job 'cia-self-improve' but no producer calls queue.add('cia-self-improve')",
       "detail": "Dead processor — no backend code enqueues this job name. May be renamed or removed producer.",
       "source": "queue-parser"
@@ -11128,7 +10894,7 @@
       "type": "PROCESSOR_NO_PRODUCER",
       "severity": "low",
       "file": "worker/processors/autopilot-processor.ts",
-      "line": 631,
+      "line": 634,
       "description": "Worker processor handles job 'cia-global-learn' but no producer calls queue.add('cia-global-learn')",
       "detail": "Dead processor — no backend code enqueues this job name. May be renamed or removed producer.",
       "source": "queue-parser"
@@ -11161,12 +10927,12 @@
     "proxyRoutes": 74,
     "proxyNoUpstream": 0,
     "securityIssues": 0,
-    "dataSafetyIssues": 40,
+    "dataSafetyIssues": 14,
     "qualityIssues": 1124,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-28T01:22:45.321Z",
-  "runId": "aa4674e4-10a2-44ac-ac36-11d6feed1da6",
-  "generatedAt": "2026-04-28T01:23:54.077Z"
+  "timestamp": "2026-04-28T01:24:17.975Z",
+  "runId": "cf4a2def-042f-4147-a979-46215b4d8de7",
+  "generatedAt": "2026-04-28T01:26:04.715Z"
 }

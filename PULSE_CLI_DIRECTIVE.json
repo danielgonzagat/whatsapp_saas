@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-28T01:23:54.077Z",
+  "generatedAt": "2026-04-28T01:26:04.715Z",
   "autonomyVerdict": "SIM",
   "autonomousNextStepVerdict": "SIM",
   "zeroPromptProductionGuidanceVerdict": "NAO",
@@ -18,7 +18,7 @@
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-28T01:23:25.150Z",
+    "generatedAt": "2026-04-28T01:25:22.180Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
@@ -226,7 +226,7 @@
     "gateReason": "All parsers loaded and no phantom capability/flow remains. 9 aspirational structure(s) remain explicitly marked as aspirational.",
     "overallPass": true,
     "confidence": "high",
-    "score": 98,
+    "score": 100,
     "crossArtifactConsistency": {
       "pass": true,
       "reason": null,
@@ -262,54 +262,54 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-27T19:15:25.424Z",
-        "freshnessMinutes": 367
+        "freshnessMinutes": 369
       },
       {
         "source": "github",
         "status": "ready",
-        "syncedAt": "2026-04-28T01:23:44.503Z",
+        "syncedAt": "2026-04-28T01:25:51.823Z",
         "freshnessMinutes": 0
       },
       {
         "source": "github_actions",
         "status": "ready",
-        "syncedAt": "2026-04-28T01:23:44.503Z",
+        "syncedAt": "2026-04-28T01:25:51.823Z",
         "freshnessMinutes": 0
       },
       {
         "source": "codecov",
         "status": "ready",
-        "syncedAt": "2026-04-28T01:23:44.503Z",
+        "syncedAt": "2026-04-28T01:25:51.823Z",
         "freshnessMinutes": 0
       },
       {
         "source": "sentry",
         "status": "ready",
-        "syncedAt": "2026-04-28T01:23:44.503Z",
+        "syncedAt": "2026-04-28T01:25:51.823Z",
         "freshnessMinutes": 0
       },
       {
         "source": "datadog",
         "status": "ready",
-        "syncedAt": "2026-04-28T01:23:44.503Z",
+        "syncedAt": "2026-04-28T01:25:51.823Z",
         "freshnessMinutes": 0
       },
       {
         "source": "prometheus",
         "status": "optional_not_configured",
-        "syncedAt": "2026-04-28T01:23:44.503Z",
+        "syncedAt": "2026-04-28T01:25:51.823Z",
         "freshnessMinutes": 0
       },
       {
         "source": "dependabot",
         "status": "ready",
-        "syncedAt": "2026-04-28T01:23:44.503Z",
+        "syncedAt": "2026-04-28T01:25:51.823Z",
         "freshnessMinutes": 0
       },
       {
         "source": "gitnexus",
         "status": "ready",
-        "syncedAt": "2026-04-28T01:23:44.503Z",
+        "syncedAt": "2026-04-28T01:25:51.823Z",
         "freshnessMinutes": 0
       }
     ]
@@ -355,7 +355,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-04-28T01:22:46.364Z",
+        "observedAt": "2026-04-28T01:24:18.817Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -399,7 +399,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-        "observedAt": "2026-04-28T01:22:46.364Z",
+        "observedAt": "2026-04-28T01:24:18.817Z",
         "relatedFiles": [
           "backend/src/auth/email.service.ts"
         ],
@@ -614,7 +614,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-        "observedAt": "2026-04-28T01:22:46.364Z",
+        "observedAt": "2026-04-28T01:24:18.817Z",
         "relatedFiles": [
           "backend/src/autopilot/autopilot.service.ts"
         ],
@@ -794,7 +794,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-28T01:22:46.364Z",
+        "observedAt": "2026-04-28T01:24:18.817Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -830,7 +830,7 @@
         ]
       },
       {
-        "id": "github-recent-commits-1777339425788",
+        "id": "github-recent-commits-1777339552940",
         "type": "code-change",
         "source": "github",
         "truthMode": "observed",
@@ -857,7 +857,7 @@
         ]
       },
       {
-        "id": "sentry-no-issues-1777339426203",
+        "id": "sentry-no-issues-1777339553305",
         "type": "performance-metric",
         "source": "sentry",
         "truthMode": "observed",
@@ -866,7 +866,7 @@
         "impactScore": 1,
         "confidence": 0.95,
         "summary": "No unresolved Sentry issues — project is clean",
-        "observedAt": "2026-04-28T01:23:46.203Z",
+        "observedAt": "2026-04-28T01:25:53.305Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -888,7 +888,7 @@
         ]
       },
       {
-        "id": "datadog-no-monitors-1777339428099",
+        "id": "datadog-no-monitors-1777339556703",
         "type": "config-gap",
         "source": "datadog",
         "truthMode": "observed",
@@ -897,7 +897,7 @@
         "impactScore": 0.2,
         "confidence": 0.95,
         "summary": "No Datadog monitors configured — add monitors for production visibility",
-        "observedAt": "2026-04-28T01:23:48.099Z",
+        "observedAt": "2026-04-28T01:25:56.703Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -1051,7 +1051,7 @@
         ]
       },
       {
-        "id": "gitnexus:2026-04-28T01:23:50.950Z",
+        "id": "gitnexus:2026-04-28T01:25:58.727Z",
         "type": "codegraph",
         "source": "gitnexus",
         "truthMode": "observed",
@@ -1060,7 +1060,7 @@
         "impactScore": 0.3,
         "confidence": 0.9,
         "summary": "GitNexus is not available (npx gitnexus@latest failed).",
-        "observedAt": "2026-04-28T01:23:50.950Z",
+        "observedAt": "2026-04-28T01:25:58.727Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -14360,7 +14360,7 @@
   ],
   "blockedUnits": [
     {
-      "id": "external-sentry-sentry-no-issues-1777339426203",
+      "id": "external-sentry-sentry-no-issues-1777339553305",
       "title": "Resolve Sentry Performance Metric",
       "executionMode": "observation_only",
       "evidenceMode": "observed",
@@ -14386,7 +14386,7 @@
   ],
   "blockedWork": [
     {
-      "id": "external-sentry-sentry-no-issues-1777339426203",
+      "id": "external-sentry-sentry-no-issues-1777339553305",
       "title": "Resolve Sentry Performance Metric",
       "executionMode": "observation_only",
       "evidenceMode": "observed",
@@ -14545,5 +14545,5 @@
     "Observed external high-impact signals remain active: 3.",
     "sentry/performance-metric: No unresolved Sentry issues — project is clean"
   ],
-  "runId": "aa4674e4-10a2-44ac-ac36-11d6feed1da6"
+  "runId": "cf4a2def-042f-4147-a979-46215b4d8de7"
 }

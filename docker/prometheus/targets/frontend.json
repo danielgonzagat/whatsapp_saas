@@ -1,0 +1,7 @@
+[
+  { "targets": ["frontend:3000"], "labels": { "service": "frontend", "module": "nextjs" } },
+  {
+    "targets": ["frontend-admin:3002"],
+    "labels": { "service": "frontend-admin", "module": "nextjs" }
+  }
+]

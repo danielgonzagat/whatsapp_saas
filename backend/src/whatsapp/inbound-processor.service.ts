@@ -439,10 +439,10 @@ export class InboundProcessorService {
       await this.redis.rpush(key, message);
       await this.redis.expire(key, 60 * 60 * 24); // 24 hours TTL
     } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // PULSE:OK — Redis queue push non-critical; flow resumption will retry on next message
-      this.logger.warn(
-        `[CTX] Redis error: ${err instanceof Error ? err.message : 'unknown_error'}`,
-      );
+      this.logger.warn(`[CTX] Redis error: ${errInstanceofError?.message}`);
     }
 
     // Notifica worker para retomar fluxos em WAIT
@@ -550,7 +550,11 @@ export class InboundProcessorService {
               },
             );
           } catch (error: unknown) {
-            const message = String(error instanceof Error ? error.message : '');
+            const errorInstanceofError =
+              error instanceof Error
+                ? error
+                : new Error(typeof error === 'string' ? error : 'unknown error');
+            const message = String(errorInstanceofError?.message || '');
             if (!message.includes('Job is already waiting')) {
               throw error;
             }
@@ -584,10 +588,10 @@ export class InboundProcessorService {
         });
       }
     } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // PULSE:OK — Autopilot queue enqueue non-critical; message already saved to inbox
-      this.logger.warn(
-        `[AUTOPILOT] Erro ao enfileirar: ${err instanceof Error ? err.message : 'unknown_error'}`,
-      );
+      this.logger.warn(`[AUTOPILOT] Erro ao enfileirar: ${errInstanceofError?.message}`);
     }
   }
 
@@ -792,8 +796,12 @@ export class InboundProcessorService {
         },
       });
     } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error(
-        `🤖 [AUTOPILOT] Inline agent failed for ${input.phone}: ${error instanceof Error ? error.message : 'unknown_error'}`,
+        `🤖 [AUTOPILOT] Inline agent failed for ${input.phone}: ${errorInstanceofError?.message || 'unknown_error'}`,
       );
     }
 
@@ -1131,8 +1139,12 @@ export class InboundProcessorService {
         },
       });
     } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.warn(
-        `[AUTOPILOT] Falha ao registrar skip inline: ${error instanceof Error ? error.message : 'unknown_error'}`,
+        `[AUTOPILOT] Falha ao registrar skip inline: ${errorInstanceofError?.message || 'unknown_error'}`,
       );
     }
   }
