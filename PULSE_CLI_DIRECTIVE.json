@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-27T21:59:16.889Z",
+  "generatedAt": "2026-04-28T01:23:54.077Z",
   "autonomyVerdict": "SIM",
   "autonomousNextStepVerdict": "SIM",
   "zeroPromptProductionGuidanceVerdict": "NAO",
@@ -18,7 +18,7 @@
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-27T21:58:40.052Z",
+    "generatedAt": "2026-04-28T01:23:25.150Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
@@ -66,7 +66,7 @@
       {
         "id": "external_reality_fused",
         "status": "pass",
-        "evidence": "9 signal(s), 0 missing adapter(s), 0 stale adapter(s), 0 invalid adapter(s)."
+        "evidence": "8 signal(s), 0 missing adapter(s), 0 stale adapter(s), 0 invalid adapter(s)."
       },
       {
         "id": "pulse_self_trust",
@@ -86,7 +86,7 @@
       {
         "id": "multi_cycle_convergence",
         "status": "fail",
-        "evidence": "0/3 successful non-regressing real autonomous cycle(s); 0 real executed cycle(s), 0 recorded cycle(s)."
+        "evidence": "0/3 successful non-regressing real autonomous cycle(s); 1 real executed cycle(s), 1 recorded cycle(s)."
       },
       {
         "id": "zero_prompt_production_guidance",
@@ -108,8 +108,8 @@
     ],
     "cycleProof": {
       "requiredCycles": 3,
-      "totalRecordedCycles": 0,
-      "realExecutedCycles": 0,
+      "totalRecordedCycles": 1,
+      "realExecutedCycles": 1,
       "successfulNonRegressingCycles": 0,
       "proven": false
     },
@@ -132,8 +132,8 @@
         "source": "github_actions",
         "status": "ready",
         "executed": true,
-        "signalCount": 1,
-        "reason": "1 GitHub Actions signal(s) fetched from the live adapter."
+        "signalCount": 0,
+        "reason": "GitHub Actions live adapter is configured but returned no actionable signals."
       },
       {
         "source": "codecov",
@@ -192,9 +192,9 @@
     "4 high-impact external signal(s) remain active."
   ],
   "currentCheckpoint": {
-    "tier": 3,
+    "tier": 1,
     "status": "PARTIAL",
-    "score": 71
+    "score": 61
   },
   "targetCheckpoint": {
     "capabilityRealnessRatio": 1,
@@ -204,14 +204,14 @@
   "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 1 structural parity gap(s), and 1116 HIGH Codacy issue(s).",
   "currentState": {
     "certificationStatus": "PARTIAL",
-    "blockingTier": 3,
-    "score": 71,
+    "blockingTier": 1,
+    "score": 61,
     "scopeParity": {
       "status": "pass",
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "high",
       "reason": "Repo inventory completed and all observed Codacy hotspot files are covered.",
-      "inventoryFiles": 2667,
+      "inventoryFiles": 2686,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 60,
       "missingCodacyFiles": []
@@ -226,7 +226,7 @@
     "gateReason": "All parsers loaded and no phantom capability/flow remains. 9 aspirational structure(s) remain explicitly marked as aspirational.",
     "overallPass": true,
     "confidence": "high",
-    "score": 100,
+    "score": 98,
     "crossArtifactConsistency": {
       "pass": true,
       "reason": null,
@@ -262,63 +262,63 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-27T19:15:25.424Z",
-        "freshnessMinutes": 162
+        "freshnessMinutes": 367
       },
       {
         "source": "github",
         "status": "ready",
-        "syncedAt": "2026-04-27T21:59:06.367Z",
+        "syncedAt": "2026-04-28T01:23:44.503Z",
         "freshnessMinutes": 0
       },
       {
         "source": "github_actions",
         "status": "ready",
-        "syncedAt": "2026-04-27T21:59:06.367Z",
+        "syncedAt": "2026-04-28T01:23:44.503Z",
         "freshnessMinutes": 0
       },
       {
         "source": "codecov",
         "status": "ready",
-        "syncedAt": "2026-04-27T21:59:06.367Z",
+        "syncedAt": "2026-04-28T01:23:44.503Z",
         "freshnessMinutes": 0
       },
       {
         "source": "sentry",
         "status": "ready",
-        "syncedAt": "2026-04-27T21:59:06.367Z",
+        "syncedAt": "2026-04-28T01:23:44.503Z",
         "freshnessMinutes": 0
       },
       {
         "source": "datadog",
         "status": "ready",
-        "syncedAt": "2026-04-27T21:59:06.367Z",
+        "syncedAt": "2026-04-28T01:23:44.503Z",
         "freshnessMinutes": 0
       },
       {
         "source": "prometheus",
         "status": "optional_not_configured",
-        "syncedAt": "2026-04-27T21:59:06.367Z",
+        "syncedAt": "2026-04-28T01:23:44.503Z",
         "freshnessMinutes": 0
       },
       {
         "source": "dependabot",
         "status": "ready",
-        "syncedAt": "2026-04-27T21:59:06.367Z",
+        "syncedAt": "2026-04-28T01:23:44.503Z",
         "freshnessMinutes": 0
       },
       {
         "source": "gitnexus",
         "status": "ready",
-        "syncedAt": "2026-04-27T21:59:06.367Z",
+        "syncedAt": "2026-04-28T01:23:44.503Z",
         "freshnessMinutes": 0
       }
     ]
   },
   "externalSignals": {
     "summary": {
-      "totalSignals": 9,
+      "totalSignals": 8,
       "runtimeSignals": 2,
-      "changeSignals": 2,
+      "changeSignals": 1,
       "dependencySignals": 0,
       "highImpactSignals": 4,
       "mappedSignals": 7,
@@ -335,7 +335,7 @@
       ],
       "bySource": {
         "github": 1,
-        "github_actions": 1,
+        "github_actions": 0,
         "codacy": 4,
         "codecov": 0,
         "sentry": 1,
@@ -355,7 +355,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-04-27T21:57:53.127Z",
+        "observedAt": "2026-04-28T01:22:46.364Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -399,7 +399,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-        "observedAt": "2026-04-27T21:57:53.127Z",
+        "observedAt": "2026-04-28T01:22:46.364Z",
         "relatedFiles": [
           "backend/src/auth/email.service.ts"
         ],
@@ -614,7 +614,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-        "observedAt": "2026-04-27T21:57:53.127Z",
+        "observedAt": "2026-04-28T01:22:46.364Z",
         "relatedFiles": [
           "backend/src/autopilot/autopilot.service.ts"
         ],
@@ -794,7 +794,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-27T21:57:53.127Z",
+        "observedAt": "2026-04-28T01:22:46.364Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -830,7 +830,7 @@
         ]
       },
       {
-        "id": "github-recent-commits-1777327147054",
+        "id": "github-recent-commits-1777339425788",
         "type": "code-change",
         "source": "github",
         "truthMode": "observed",
@@ -857,36 +857,7 @@
         ]
       },
       {
-        "id": "github-actions-success-1777327148670",
-        "type": "ci-success",
-        "source": "github_actions",
-        "truthMode": "observed",
-        "executionMode": "observation_only",
-        "severity": 1,
-        "impactScore": 0.2,
-        "confidence": 0.95,
-        "summary": "5 recent CI workflow success(es)",
-        "observedAt": "2026-04-27T21:35:19.000Z",
-        "relatedFiles": [],
-        "routePatterns": [],
-        "tags": [
-          "ci",
-          "success",
-          "build"
-        ],
-        "rawRef": null,
-        "capabilityIds": [],
-        "flowIds": [],
-        "recentChangeRefs": [],
-        "ownerLane": "platform",
-        "protectedByGovernance": false,
-        "validationTargets": [
-          "PULSE_EXTERNAL_SIGNAL_STATE.json",
-          "PULSE_CERTIFICATE.json"
-        ]
-      },
-      {
-        "id": "sentry-no-issues-1777327147510",
+        "id": "sentry-no-issues-1777339426203",
         "type": "performance-metric",
         "source": "sentry",
         "truthMode": "observed",
@@ -895,7 +866,7 @@
         "impactScore": 1,
         "confidence": 0.95,
         "summary": "No unresolved Sentry issues — project is clean",
-        "observedAt": "2026-04-27T21:59:07.510Z",
+        "observedAt": "2026-04-28T01:23:46.203Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -917,7 +888,7 @@
         ]
       },
       {
-        "id": "datadog-no-monitors-1777327149431",
+        "id": "datadog-no-monitors-1777339428099",
         "type": "config-gap",
         "source": "datadog",
         "truthMode": "observed",
@@ -926,7 +897,7 @@
         "impactScore": 0.2,
         "confidence": 0.95,
         "summary": "No Datadog monitors configured — add monitors for production visibility",
-        "observedAt": "2026-04-27T21:59:09.431Z",
+        "observedAt": "2026-04-28T01:23:48.099Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -1080,7 +1051,7 @@
         ]
       },
       {
-        "id": "gitnexus:2026-04-27T21:59:11.561Z",
+        "id": "gitnexus:2026-04-28T01:23:50.950Z",
         "type": "codegraph",
         "source": "gitnexus",
         "truthMode": "observed",
@@ -1089,7 +1060,7 @@
         "impactScore": 0.3,
         "confidence": 0.9,
         "summary": "GitNexus is not available (npx gitnexus@latest failed).",
-        "observedAt": "2026-04-27T21:59:11.561Z",
+        "observedAt": "2026-04-28T01:23:50.950Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -5240,6 +5211,7 @@
         "workspace-put-crm-deals-id-move"
       ],
       "blockers": [
+        "Missing structural roles: persistence.",
         "Maturity is still missing: runtime_evidence, codacy_hygiene."
       ]
     },
@@ -6548,6 +6520,7 @@
         "workspace-put-crm-deals-id-move"
       ],
       "blockers": [
+        "Missing structural roles: persistence.",
         "Maturity is still missing: runtime_evidence, codacy_hygiene."
       ]
     },
@@ -7842,9 +7815,9 @@
         "Missing structural roles: interface, persistence.",
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+        "Missing structural roles: persistence.",
         "Missing structural roles: persistence, side_effect.",
-        "Missing structural roles: interface, persistence, side_effect.",
-        "Missing structural roles: interface, orchestration, side_effect."
+        "Missing structural roles: interface, persistence, side_effect."
       ],
       "expectedOutcome": "Admin sintético altera dados pessoais, fiscais, bancários, billing e precisa ver persistência após reload."
     },
@@ -8229,9 +8202,9 @@
         "Missing structural roles: interface, persistence.",
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+        "Missing structural roles: persistence.",
         "Missing structural roles: persistence, side_effect.",
-        "Missing structural roles: interface, persistence, side_effect.",
-        "Missing structural roles: interface, orchestration, side_effect."
+        "Missing structural roles: interface, persistence, side_effect."
       ],
       "expectedOutcome": "Admin sintético opera sessions/providers de WhatsApp e valida reconexão e refletância de estado."
     },
@@ -8612,9 +8585,9 @@
         "Missing structural roles: interface, persistence.",
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+        "Missing structural roles: persistence.",
         "Missing structural roles: persistence, side_effect.",
-        "Missing structural roles: interface, persistence, side_effect.",
-        "Missing structural roles: interface, orchestration, side_effect."
+        "Missing structural roles: interface, persistence, side_effect."
       ],
       "expectedOutcome": "Cliente sintético registra, faz login, e valida /workspace/me com 200. Prova persistência de sessão."
     },
@@ -9005,9 +8978,9 @@
         "Missing structural roles: interface, persistence.",
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+        "Missing structural roles: persistence.",
         "Missing structural roles: persistence, side_effect.",
-        "Missing structural roles: interface, persistence, side_effect.",
-        "Missing structural roles: interface, orchestration, side_effect."
+        "Missing structural roles: interface, persistence, side_effect."
       ],
       "expectedOutcome": "Cliente sintético cria produto, POST /checkout, valida idempotency-key, confirma status PENDING."
     },
@@ -9390,9 +9363,9 @@
         "Missing structural roles: interface, persistence.",
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+        "Missing structural roles: persistence.",
         "Missing structural roles: persistence, side_effect.",
-        "Missing structural roles: interface, persistence, side_effect.",
-        "Missing structural roles: interface, orchestration, side_effect."
+        "Missing structural roles: interface, persistence, side_effect."
       ],
       "expectedOutcome": "Cliente sintético consulta /whatsapp/session, /inbox/conversations, POST /whatsapp/send — valida endpoints de chat."
     },
@@ -9773,9 +9746,9 @@
         "Missing structural roles: interface, persistence.",
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+        "Missing structural roles: persistence.",
         "Missing structural roles: persistence, side_effect.",
-        "Missing structural roles: interface, persistence, side_effect.",
-        "Missing structural roles: interface, orchestration, side_effect."
+        "Missing structural roles: interface, persistence, side_effect."
       ],
       "expectedOutcome": "Operador sintético inicia rotinas de autopilot e acompanha sinais assíncronos de worker/queue."
     },
@@ -10155,9 +10128,9 @@
         "Missing structural roles: interface, persistence.",
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+        "Missing structural roles: persistence.",
         "Missing structural roles: persistence, side_effect.",
-        "Missing structural roles: interface, persistence, side_effect.",
-        "Missing structural roles: interface, orchestration, side_effect."
+        "Missing structural roles: interface, persistence, side_effect."
       ],
       "expectedOutcome": "Operador sintético executa automações, espera eventos e retoma processamento entre módulos."
     },
@@ -10548,9 +10521,9 @@
         "Missing structural roles: interface, persistence.",
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Maturity is still missing: runtime_evidence, codacy_hygiene.",
+        "Missing structural roles: persistence.",
         "Missing structural roles: persistence, side_effect.",
-        "Missing structural roles: interface, persistence, side_effect.",
-        "Missing structural roles: interface, orchestration, side_effect."
+        "Missing structural roles: interface, persistence, side_effect."
       ],
       "expectedOutcome": "Ator sistêmico exige reconciliação entre pagamento, webhook, ledger e wallet sem dependência humana."
     }
@@ -11205,15 +11178,6 @@
       "affectedFlows": []
     },
     {
-      "source": "github_actions",
-      "type": "ci-success",
-      "summary": "5 recent CI workflow success(es)",
-      "impactScore": 0.2,
-      "executionMode": "observation_only",
-      "affectedCapabilities": [],
-      "affectedFlows": []
-    },
-    {
       "source": "sentry",
       "type": "performance-metric",
       "summary": "No unresolved Sentry issues — project is clean",
@@ -11366,6 +11330,98 @@
       ]
     },
     {
+      "source": "gitnexus",
+      "type": "codegraph",
+      "summary": "GitNexus is not available (npx gitnexus@latest failed).",
+      "impactScore": 0.3,
+      "executionMode": "observation_only",
+      "affectedCapabilities": [
+        "capability:auth-verification",
+        "capability:auth-whatsapp",
+        "capability:checkout",
+        "capability:checkout-checkouts",
+        "capability:checkout-order",
+        "capability:checkout-plans",
+        "capability:checkout-product",
+        "capability:checkout-products",
+        "capability:checkout-recent",
+        "capability:checkout-social",
+        "capability:compliance-deletion"
+      ],
+      "affectedFlows": [
+        "admin-post-admin-auth-login",
+        "admin-post-admin-transactions-order-id-operate",
+        "billing-post-billing-checkout",
+        "forgot-post-auth-forgot-password",
+        "kloel-post-kloel-onboarding-workspace-id-chat-stream",
+        "marketing-patch-checkout-plans-plan-id-config",
+        "member-delete-member-areas-id-students-student-id",
+        "member-post-affiliate-request-product-id",
+        "member-post-affiliate-saved-product-id",
+        "member-post-member-areas-id-generate-structure",
+        "member-post-member-areas-id-modules",
+        "member-post-member-areas-id-modules-module-id-lessons",
+        "member-post-member-areas-id-students",
+        "member-put-member-areas-id",
+        "member-put-member-areas-id-lessons-lesson-id",
+        "member-put-member-areas-id-modules-module-id",
+        "member-put-member-areas-id-students-student-id",
+        "meta-post-meta-auth-disconnect",
+        "plan-get-checkout-plans-plan-id-config",
+        "products-delete-checkout-checkouts-id",
+        "products-delete-products-product-id-campaigns-campaign-id",
+        "products-delete-products-product-id-commissions-commission-id",
+        "products-delete-products-product-id-coupons-coupon-id",
+        "products-delete-products-product-id-reviews-review-id",
+        "products-delete-products-product-id-urls-url-id",
+        "products-get-checkout-plans-plan-id-bumps",
+        "products-get-checkout-plans-plan-id-config",
+        "products-get-products-id",
+        "products-post-checkout-checkouts-id-duplicate",
+        "products-post-checkout-products-product-id-checkouts",
+        "products-post-checkout-products-product-id-plans",
+        "products-post-products",
+        "products-post-products-product-id-campaigns-campaign-id-launch",
+        "products-post-products-product-id-campaigns-campaign-id-pause",
+        "products-post-workspace-id-jitter",
+        "products-put-checkout-bumps-id",
+        "products-put-checkout-products-id",
+        "products-put-products-product-id-affiliates-links-link-id",
+        "vendas-post-kloel-payment-workspace-id-create",
+        "vendas-post-sales-id-refund",
+        "vendas-post-sales-orders-alerts-generate",
+        "vendas-post-sales-orders-alerts-id-resolve",
+        "vendas-post-sales-subscriptions-id-cancel",
+        "vendas-post-sales-subscriptions-id-pause",
+        "vendas-post-sales-subscriptions-id-resume",
+        "vendas-put-sales-orders-id-return",
+        "vendas-put-sales-orders-id-ship",
+        "vendas-put-sales-subscriptions-id-change-plan",
+        "whatsapp-post-whatsapp-api-session-action",
+        "workspace-delete-api-kyc-bank",
+        "workspace-delete-billing-payment-methods-payment-method-id",
+        "workspace-delete-team-invite-id",
+        "workspace-delete-team-member-id",
+        "workspace-post-ai-kb-create",
+        "workspace-post-ai-kb-source",
+        "workspace-post-api-kyc-bank",
+        "workspace-post-api-kyc-fiscal",
+        "workspace-post-autopilot-toggle",
+        "workspace-post-billing-activate-trial",
+        "workspace-post-billing-payment-methods-payment-method-id-default",
+        "workspace-post-billing-payment-methods-setup-intent",
+        "workspace-post-kyc-status",
+        "workspace-post-meta-auth-disconnect",
+        "workspace-post-products",
+        "workspace-post-segmentation-workspace-id-auto-segment",
+        "workspace-post-team-invite",
+        "workspace-post-workspace-id-account",
+        "workspace-post-workspace-id-jitter",
+        "workspace-put-api-kyc-fiscal",
+        "workspace-put-crm-deals-id-move"
+      ]
+    },
+    {
       "source": "pulse",
       "type": "product_blocker_1",
       "summary": "codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
@@ -11386,7 +11442,7 @@
   ],
   "nextAutonomousUnits": [
     {
-      "order": 14,
+      "order": 16,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -11398,7 +11454,7 @@
       "productImpact": "material",
       "ownerLane": "customer",
       "title": "Materialize capability Ai Assistant",
-      "summary": "Capability Ai Assistant is partial. Maturity is operational (80%). Maturity is still missing: runtime_evidence, codacy_hygiene. Codacy still reports 1 HIGH issue(s) inside this capability.",
+      "summary": "Capability Ai Assistant is partial. Maturity is operational (62%). Missing structural roles: persistence. Maturity is still missing: persistence, runtime_evidence, codacy_hygiene. Codacy still reports 1 HIGH issue(s) inside this capability.",
       "whyNow": "Moves capability Ai Assistant from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Ai Assistant from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Ai Assistant must become materially real or at least structurally partial with no illusion-only path.",
@@ -11460,7 +11516,7 @@
       ]
     },
     {
-      "order": 15,
+      "order": 17,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -11534,7 +11590,7 @@
       ]
     },
     {
-      "order": 16,
+      "order": 18,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -11608,7 +11664,7 @@
       ]
     },
     {
-      "order": 17,
+      "order": 19,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -11682,7 +11738,7 @@
       ]
     },
     {
-      "order": 18,
+      "order": 20,
       "id": "capability-capability-autopilot-impact",
       "kind": "capability",
       "priority": "P1",
@@ -11756,7 +11812,7 @@
       ]
     },
     {
-      "order": 19,
+      "order": 21,
       "id": "capability-capability-autopilot-config",
       "kind": "capability",
       "priority": "P1",
@@ -11830,7 +11886,7 @@
       ]
     },
     {
-      "order": 20,
+      "order": 22,
       "id": "capability-capability-autopilot",
       "kind": "capability",
       "priority": "P1",
@@ -11904,7 +11960,7 @@
       ]
     },
     {
-      "order": 21,
+      "order": 23,
       "id": "capability-capability-autopilot-conversion",
       "kind": "capability",
       "priority": "P1",
@@ -11978,7 +12034,7 @@
       ]
     },
     {
-      "order": 22,
+      "order": 24,
       "id": "capability-capability-autopilot-retry",
       "kind": "capability",
       "priority": "P1",
@@ -12052,7 +12108,7 @@
       ]
     },
     {
-      "order": 23,
+      "order": 25,
       "id": "capability-capability-autopilot-money",
       "kind": "capability",
       "priority": "P1",
@@ -12126,7 +12182,7 @@
       ]
     },
     {
-      "order": 24,
+      "order": 26,
       "id": "capability-capability-autopilot-next",
       "kind": "capability",
       "priority": "P1",
@@ -12200,7 +12256,7 @@
       ]
     },
     {
-      "order": 25,
+      "order": 27,
       "id": "parity-runtime-without-product-surface-runtime-without-product-surface-marketing-skill",
       "kind": "scope",
       "priority": "P1",
@@ -12271,18 +12327,266 @@
   "nextDecisionUnits": [
     {
       "order": 1,
+      "id": "scenario-customer-auth-shell",
+      "kind": "scenario",
+      "priority": "P0",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "critical",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Recover Customer Auth Shell",
+      "summary": "Scenario customer-auth-shell depends on flow evidence for auth-login, but none was attached.",
+      "whyNow": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
+      "visionDelta": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
+      "targetState": "Scenario customer-auth-shell must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:admin-auth",
+        "capability:admin-dashboard",
+        "capability:admin-marketing",
+        "capability:admin-reports",
+        "capability:admin-sales",
+        "capability:analytics-analytic",
+        "capability:auth",
+        "capability:auth-anonymous",
+        "capability:auth-callback",
+        "capability:auth-check",
+        "capability:auth-facebook",
+        "capability:auth-forgot",
+        "capability:auth-google",
+        "capability:auth-login",
+        "capability:auth-logout",
+        "capability:auth-magic",
+        "capability:auth-oauth",
+        "capability:auth-partner",
+        "capability:auth-password",
+        "capability:auth-refresh",
+        "capability:auth-register",
+        "capability:auth-resend",
+        "capability:auth-reset",
+        "capability:auth-resolver",
+        "capability:auth-send",
+        "capability:auth-tiktok",
+        "capability:auth-verification",
+        "capability:auth-verify",
+        "capability:auth-whatsapp",
+        "capability:dashboard-home",
+        "capability:dashboard-stats",
+        "capability:get",
+        "capability:kloel-payments",
+        "capability:meta-auth",
+        "capability:unsubscribe",
+        "capability:user-data"
+      ],
+      "affectedFlows": [
+        "auth-login"
+      ],
+      "gateNames": [
+        "customerPass"
+      ],
+      "expectedGateShift": "Pass customerPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Scenario customer-auth-shell reports status=passed in synthetic evidence."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "requiredValidations": [
+        "typecheck",
+        "affected-tests",
+        "scenario-evidence",
+        "flow-evidence"
+      ]
+    },
+    {
+      "order": 2,
+      "id": "scenario-customer-product-and-checkout",
+      "kind": "scenario",
+      "priority": "P0",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "critical",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
+      "productImpact": "transformational",
+      "ownerLane": "customer",
+      "title": "Recover Customer Product And Checkout",
+      "summary": "Scenario customer-product-and-checkout depends on flow evidence for product-create, checkout-payment, but none was attached.",
+      "whyNow": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
+      "visionDelta": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
+      "targetState": "Scenario customer-product-and-checkout must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:ad-rules",
+        "capability:admin-products",
+        "capability:affiliate-my",
+        "capability:analytics-analytic",
+        "capability:audit-interceptor",
+        "capability:autopilot-cycle",
+        "capability:autopilot-process",
+        "capability:autopilot-run",
+        "capability:billing-activate",
+        "capability:billing-cancel",
+        "capability:billing-checkout",
+        "capability:billing-payment",
+        "capability:billing-status",
+        "capability:billing-subscription",
+        "capability:billing-usage",
+        "capability:billing-webhook",
+        "capability:campaigns-campaign",
+        "capability:canvas-canva",
+        "capability:checkout",
+        "capability:checkout-bumps",
+        "capability:checkout-catalog",
+        "capability:checkout-checkouts",
+        "capability:checkout-config",
+        "capability:checkout-coupons",
+        "capability:checkout-order",
+        "capability:checkout-orders",
+        "capability:checkout-payment",
+        "capability:checkout-pixels",
+        "capability:checkout-plans",
+        "capability:checkout-post",
+        "capability:checkout-product",
+        "capability:checkout-products",
+        "capability:checkout-recent",
+        "capability:checkout-shipping",
+        "capability:checkout-social",
+        "capability:checkout-upsell",
+        "capability:checkout-upsells",
+        "capability:checkout-validate",
+        "capability:crm-deals",
+        "capability:flows-flow",
+        "capability:gdpr-delete",
+        "capability:get",
+        "capability:kloel-site",
+        "capability:kloel-wallet",
+        "capability:kyc-documents",
+        "capability:member-areas",
+        "capability:ops-queues",
+        "capability:partnerships-partnership",
+        "capability:products-product",
+        "capability:settings-setting",
+        "capability:team-invite",
+        "capability:team-member",
+        "capability:webinars-webinar"
+      ],
+      "affectedFlows": [
+        "checkout-payment",
+        "product-create"
+      ],
+      "gateNames": [
+        "customerPass"
+      ],
+      "expectedGateShift": "Pass customerPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Scenario customer-product-and-checkout reports status=passed in synthetic evidence."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "requiredValidations": [
+        "typecheck",
+        "affected-tests",
+        "scenario-evidence",
+        "flow-evidence"
+      ]
+    },
+    {
+      "order": 3,
       "id": "scenario-customer-whatsapp-and-inbox",
       "kind": "scenario",
       "priority": "P0",
       "source": "pulse",
       "executionMode": "ai_safe",
       "riskLevel": "critical",
-      "evidenceMode": "observed",
-      "confidence": "high",
+      "evidenceMode": "inferred",
+      "confidence": "medium",
       "productImpact": "transformational",
       "ownerLane": "customer",
       "title": "Recover Customer Whatsapp And Inbox",
-      "summary": "Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
+      "summary": "Scenario customer-whatsapp-and-inbox depends on flow evidence for whatsapp-message-send, but none was attached. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
       "whyNow": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
       "visionDelta": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
       "targetState": "Scenario customer-whatsapp-and-inbox must pass end-to-end and leave no pending async expectations in world state.",
@@ -12389,23 +12693,24 @@
         "PULSE_CERTIFICATE.json",
         "PULSE_CUSTOMER_EVIDENCE.json",
         "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json",
-        "e2e/"
+        "PULSE_WORLD_STATE.json"
       ],
       "validationArtifacts": [
         "PULSE_CERTIFICATE.json",
         "PULSE_CUSTOMER_EVIDENCE.json",
         "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json",
-        "e2e/"
+        "PULSE_WORLD_STATE.json"
       ],
       "exitCriteria": [
         "Async expectations settle to satisfied: conversation-reload, message-persistence.",
         "Scenario customer-whatsapp-and-inbox reports status=passed in synthetic evidence."
       ],
       "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
         "One or more affected capabilities are still partial or phantom."
       ],
       "allowedActions": [
@@ -12439,7 +12744,7 @@
       ]
     },
     {
-      "order": 2,
+      "order": 4,
       "id": "scenario-system-payment-reconciliation",
       "kind": "scenario",
       "priority": "P0",
@@ -12569,140 +12874,7 @@
       ]
     },
     {
-      "order": 13,
-      "id": "scenario-admin-settings-kyc-banking",
-      "kind": "scenario",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "material",
-      "ownerLane": "operator-admin",
-      "title": "Recover Admin Settings Kyc Banking",
-      "summary": "Async expectations still pending: kyc-doc-processing=missing_evidence, withdrawal-ledger-consistency=missing_evidence.",
-      "whyNow": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
-      "visionDelta": "Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.",
-      "targetState": "Scenario admin-settings-kyc-banking must pass end-to-end and leave no pending async expectations in world state.",
-      "affectedCapabilities": [
-        "capability:ad-rules",
-        "capability:admin-transactions",
-        "capability:audit-interceptor",
-        "capability:billing-activate",
-        "capability:billing-cancel",
-        "capability:billing-checkout",
-        "capability:billing-payment",
-        "capability:billing-status",
-        "capability:billing-subscription",
-        "capability:billing-usage",
-        "capability:billing-webhook",
-        "capability:campaigns-campaign",
-        "capability:canvas-canva",
-        "capability:checkout-bumps",
-        "capability:checkout-catalog",
-        "capability:checkout-checkouts",
-        "capability:checkout-coupons",
-        "capability:checkout-order",
-        "capability:checkout-orders",
-        "capability:checkout-payment",
-        "capability:checkout-pixels",
-        "capability:checkout-plans",
-        "capability:checkout-product",
-        "capability:checkout-products",
-        "capability:checkout-upsell",
-        "capability:checkout-upsells",
-        "capability:crm-deals",
-        "capability:flows-flow",
-        "capability:gdpr-delete",
-        "capability:get",
-        "capability:kloel-chat",
-        "capability:kloel-lead",
-        "capability:kloel-payment",
-        "capability:kloel-payments",
-        "capability:kloel-pdf",
-        "capability:kloel-site",
-        "capability:kloel-tool",
-        "capability:kloel-upload",
-        "capability:kloel-wallet",
-        "capability:kyc-documents",
-        "capability:member-areas",
-        "capability:ops-queues",
-        "capability:partnerships-partnership",
-        "capability:products-product",
-        "capability:settings-setting",
-        "capability:team-invite",
-        "capability:team-member",
-        "capability:wallet-prepaid",
-        "capability:webinars-webinar",
-        "capability:whatsapp-runtime",
-        "capability:workspace-account",
-        "capability:workspace-settings"
-      ],
-      "affectedFlows": [
-        "wallet-withdrawal"
-      ],
-      "gateNames": [
-        "adminPass",
-        "browserPass"
-      ],
-      "expectedGateShift": "Pass adminPass, browserPass",
-      "validationTargets": [
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json",
-        "e2e/"
-      ],
-      "validationArtifacts": [
-        "PULSE_ADMIN_EVIDENCE.json",
-        "PULSE_CERTIFICATE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json",
-        "e2e/"
-      ],
-      "exitCriteria": [
-        "Async expectations settle to satisfied: kyc-doc-processing, withdrawal-ledger-consistency.",
-        "Browser-required routes stay green: /billing, /settings, /wallet.",
-        "Scenario admin-settings-kyc-banking reports status=passed in synthetic evidence."
-      ],
-      "preconditions": [
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "requiredValidations": [
-        "typecheck",
-        "affected-tests",
-        "scenario-evidence",
-        "flow-evidence"
-      ]
-    },
-    {
-      "order": 14,
+      "order": 16,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -12714,7 +12886,7 @@
       "productImpact": "material",
       "ownerLane": "customer",
       "title": "Materialize capability Ai Assistant",
-      "summary": "Capability Ai Assistant is partial. Maturity is operational (80%). Maturity is still missing: runtime_evidence, codacy_hygiene. Codacy still reports 1 HIGH issue(s) inside this capability.",
+      "summary": "Capability Ai Assistant is partial. Maturity is operational (62%). Missing structural roles: persistence. Maturity is still missing: persistence, runtime_evidence, codacy_hygiene. Codacy still reports 1 HIGH issue(s) inside this capability.",
       "whyNow": "Moves capability Ai Assistant from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Ai Assistant from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Ai Assistant must become materially real or at least structurally partial with no illusion-only path.",
@@ -12776,7 +12948,7 @@
       ]
     },
     {
-      "order": 15,
+      "order": 17,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -12850,7 +13022,7 @@
       ]
     },
     {
-      "order": 16,
+      "order": 18,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -12924,7 +13096,7 @@
       ]
     },
     {
-      "order": 17,
+      "order": 19,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -12960,80 +13132,6 @@
       ],
       "exitCriteria": [
         "Validate structural chain for /autopilot/actions.",
-        "Re-run runtime evidence for this capability.",
-        "Re-sync Codacy and confirm HIGH issues dropped."
-      ],
-      "preconditions": [
-        "One or more affected capabilities are still partial or phantom.",
-        "Affected files have high-severity Codacy hotspots; address those first."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
-        "All affected routes have working backend endpoints.",
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "requiredValidations": [
-        "typecheck",
-        "affected-tests"
-      ]
-    },
-    {
-      "order": 18,
-      "id": "capability-capability-autopilot-impact",
-      "kind": "capability",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "high",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "material",
-      "ownerLane": "customer",
-      "title": "Materialize capability Autopilot Ask",
-      "summary": "Capability Autopilot Ask is partial. Maturity is operational (80%). Maturity is still missing: runtime_evidence, codacy_hygiene. Codacy still reports 1 HIGH issue(s) inside this capability.",
-      "whyNow": "Moves capability Autopilot Ask from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
-      "visionDelta": "Moves capability Autopilot Ask from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
-      "targetState": "Capability Autopilot Ask must become materially real or at least structurally partial with no illusion-only path.",
-      "affectedCapabilities": [
-        "capability:autopilot-impact"
-      ],
-      "affectedFlows": [],
-      "gateNames": [
-        "truthExtractionPass"
-      ],
-      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
-      "validationTargets": [
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "exitCriteria": [
-        "Validate structural chain for /autopilot/ask.",
         "Re-run runtime evidence for this capability.",
         "Re-sync Codacy and confirm HIGH issues dropped."
       ],
@@ -13074,7 +13172,7 @@
   ],
   "nextExecutableUnits": [
     {
-      "order": 14,
+      "order": 16,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -13086,7 +13184,7 @@
       "productImpact": "material",
       "ownerLane": "customer",
       "title": "Materialize capability Ai Assistant",
-      "summary": "Capability Ai Assistant is partial. Maturity is operational (80%). Maturity is still missing: runtime_evidence, codacy_hygiene. Codacy still reports 1 HIGH issue(s) inside this capability.",
+      "summary": "Capability Ai Assistant is partial. Maturity is operational (62%). Missing structural roles: persistence. Maturity is still missing: persistence, runtime_evidence, codacy_hygiene. Codacy still reports 1 HIGH issue(s) inside this capability.",
       "whyNow": "Moves capability Ai Assistant from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Ai Assistant from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Ai Assistant must become materially real or at least structurally partial with no illusion-only path.",
@@ -13148,7 +13246,7 @@
       ]
     },
     {
-      "order": 15,
+      "order": 17,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -13222,7 +13320,7 @@
       ]
     },
     {
-      "order": 16,
+      "order": 18,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -13296,7 +13394,7 @@
       ]
     },
     {
-      "order": 17,
+      "order": 19,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -13370,7 +13468,7 @@
       ]
     },
     {
-      "order": 18,
+      "order": 20,
       "id": "capability-capability-autopilot-impact",
       "kind": "capability",
       "priority": "P1",
@@ -13444,7 +13542,7 @@
       ]
     },
     {
-      "order": 19,
+      "order": 21,
       "id": "capability-capability-autopilot-config",
       "kind": "capability",
       "priority": "P1",
@@ -13518,7 +13616,7 @@
       ]
     },
     {
-      "order": 20,
+      "order": 22,
       "id": "capability-capability-autopilot",
       "kind": "capability",
       "priority": "P1",
@@ -13592,7 +13690,7 @@
       ]
     },
     {
-      "order": 21,
+      "order": 23,
       "id": "capability-capability-autopilot-conversion",
       "kind": "capability",
       "priority": "P1",
@@ -13668,7 +13766,7 @@
   ],
   "nextWork": [
     {
-      "order": 14,
+      "order": 16,
       "id": "capability-capability-autopilot-ask",
       "kind": "capability",
       "priority": "P1",
@@ -13680,7 +13778,7 @@
       "productImpact": "material",
       "ownerLane": "customer",
       "title": "Materialize capability Ai Assistant",
-      "summary": "Capability Ai Assistant is partial. Maturity is operational (80%). Maturity is still missing: runtime_evidence, codacy_hygiene. Codacy still reports 1 HIGH issue(s) inside this capability.",
+      "summary": "Capability Ai Assistant is partial. Maturity is operational (62%). Missing structural roles: persistence. Maturity is still missing: persistence, runtime_evidence, codacy_hygiene. Codacy still reports 1 HIGH issue(s) inside this capability.",
       "whyNow": "Moves capability Ai Assistant from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Ai Assistant from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Ai Assistant must become materially real or at least structurally partial with no illusion-only path.",
@@ -13742,7 +13840,7 @@
       ]
     },
     {
-      "order": 15,
+      "order": 17,
       "id": "capability-capability-autopilot-process",
       "kind": "capability",
       "priority": "P1",
@@ -13816,7 +13914,7 @@
       ]
     },
     {
-      "order": 16,
+      "order": 18,
       "id": "capability-capability-autopilot-actions",
       "kind": "capability",
       "priority": "P1",
@@ -13890,7 +13988,7 @@
       ]
     },
     {
-      "order": 17,
+      "order": 19,
       "id": "capability-capability-autopilot-insights",
       "kind": "capability",
       "priority": "P1",
@@ -13964,7 +14062,7 @@
       ]
     },
     {
-      "order": 18,
+      "order": 20,
       "id": "capability-capability-autopilot-impact",
       "kind": "capability",
       "priority": "P1",
@@ -14038,7 +14136,7 @@
       ]
     },
     {
-      "order": 19,
+      "order": 21,
       "id": "capability-capability-autopilot-config",
       "kind": "capability",
       "priority": "P1",
@@ -14112,7 +14210,7 @@
       ]
     },
     {
-      "order": 20,
+      "order": 22,
       "id": "capability-capability-autopilot",
       "kind": "capability",
       "priority": "P1",
@@ -14186,7 +14284,7 @@
       ]
     },
     {
-      "order": 21,
+      "order": 23,
       "id": "capability-capability-autopilot-conversion",
       "kind": "capability",
       "priority": "P1",
@@ -14262,7 +14360,7 @@
   ],
   "blockedUnits": [
     {
-      "id": "external-sentry-sentry-no-issues-1777327147510",
+      "id": "external-sentry-sentry-no-issues-1777339426203",
       "title": "Resolve Sentry Performance Metric",
       "executionMode": "observation_only",
       "evidenceMode": "observed",
@@ -14288,7 +14386,7 @@
   ],
   "blockedWork": [
     {
-      "id": "external-sentry-sentry-no-issues-1777327147510",
+      "id": "external-sentry-sentry-no-issues-1777339426203",
       "title": "Resolve Sentry Performance Metric",
       "executionMode": "observation_only",
       "evidenceMode": "observed",
@@ -14330,11 +14428,11 @@
       "phantomCapabilities": 0,
       "humanRequiredCapabilities": 0,
       "foundationalCapabilities": 3,
-      "connectedCapabilities": 184,
+      "connectedCapabilities": 155,
       "operationalCapabilities": 16,
-      "productionReadyCapabilities": 108,
+      "productionReadyCapabilities": 137,
       "runtimeObservedCapabilities": 0,
-      "scenarioCoveredCapabilities": 128
+      "scenarioCoveredCapabilities": 157
     },
     "flows": {
       "totalFlows": 120,
@@ -14360,7 +14458,7 @@
     },
     "structuralGraph": {
       "totalNodes": 5706,
-      "totalEdges": 8318,
+      "totalEdges": 8317,
       "roleCounts": {
         "interface": 2362,
         "orchestration": 2979,
@@ -14383,9 +14481,9 @@
       "humanRequiredHotspots": 2
     },
     "externalSignals": {
-      "totalSignals": 9,
+      "totalSignals": 8,
       "runtimeSignals": 2,
-      "changeSignals": 2,
+      "changeSignals": 1,
       "dependencySignals": 0,
       "highImpactSignals": 4,
       "mappedSignals": 7,
@@ -14402,7 +14500,7 @@
       ],
       "bySource": {
         "github": 1,
-        "github_actions": 1,
+        "github_actions": 0,
         "codacy": 4,
         "codecov": 0,
         "sentry": 1,
@@ -14413,8 +14511,8 @@
       }
     },
     "evidenceBasis": {
-      "observed": 305,
-      "inferred": 106,
+      "observed": 326,
+      "inferred": 85,
       "projected": 0
     }
   },
@@ -14447,5 +14545,5 @@
     "Observed external high-impact signals remain active: 3.",
     "sentry/performance-metric: No unresolved Sentry issues — project is clean"
   ],
-  "runId": "f5d3449b-c21f-48e5-a356-04f9768589a4"
+  "runId": "aa4674e4-10a2-44ac-ac36-11d6feed1da6"
 }

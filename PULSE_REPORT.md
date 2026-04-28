@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-27T21:58:40.052Z
+# PULSE REPORT — 2026-04-28T01:23:25.150Z
 
 ## PULSE VERDICT
 
@@ -8,38 +8,38 @@
 - Self-trust: PASS
 - No-overclaim: PASS
 - Principal blocker: codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
-- Proxima acao: Recover Customer Whatsapp And Inbox
+- Proxima acao: Recover Customer Auth Shell
 
 ## Current State
 
 - Certification: PARTIAL
 - Human replacement: NOT_READY
-- Score: 71/100
-- Blocking tier: 3
+- Score: 61/100
+- Blocking tier: 1
 - Scope parity: PASS (high)
 - Structural chains: 772/2362 complete
 - Capabilities: real=277, partial=24, latent=10, phantom=0
-- Capability maturity: foundational=3, connected=184, operational=16, productionReady=108
+- Capability maturity: foundational=3, connected=155, operational=16, productionReady=137
 - Flows: real=120, partial=0, latent=0, phantom=0
 - Structural parity gaps: total=1, critical=0, high=1
 - Codacy HIGH issues: 1116
 - GitNexus Code Graph: GitNexus is not available (npx gitnexus@latest failed).
-- External signals: total=9, runtime=2, change=2, dependency=0, high-impact=4
+- External signals: total=8, runtime=2, change=1, dependency=0, high-impact=4
 
 ## Coverage Truth
 
 - Inventory Coverage: 100%
 - Classification Coverage: 100%
-- Structural Graph Coverage: 37% (795/2128 connected)
-  Reason: 795/2128 structural files connected.
+- Structural Graph Coverage: 37% (796/2130 connected)
+  Reason: 796/2130 structural files connected.
 - Test Coverage: 11%
-  Reason: 168/1584 source modules have spec files.
+  Reason: 169/1584 source modules have spec files.
 - Scenario Coverage: 100% (declared=100%, executed=100%, passed=100%)
 - Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
   Reason: 0/4 probes fresh.
 - Production Proof Coverage: 89%
   Reason: 277/311 capabilities real.
-- Unknown Files: 1
+- Unknown Files: 8
 - Orphan Files: 200
 - Excluded Directories: 20
 - Manifest role: semantic overlay, NOT scope boundary
@@ -49,7 +49,7 @@
 
 ### Observed (direct evidence)
 - Runtime probes executed: 4
-- External signals: 9 total
+- External signals: 8 total
 - Self-trust: PASS
 - No-overclaim: PASS
 
@@ -69,9 +69,9 @@
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=51, mappedFlows=95, summary=1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=7, summary=1 HIGH Codacy issue(s) remain in package.json.
 - github/code-change: impact=40%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=20 recent commits detected; latest: chore(deps): bump nodemailer in /worker in the worker-prod-p
-- github_actions/ci-success: impact=20%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=5 recent CI workflow success(es)
 - sentry/performance-metric: impact=100%, mode=observation_only, mappedCapabilities=1, mappedFlows=0, summary=No unresolved Sentry issues — project is clean
 - datadog/config-gap: impact=20%, mode=observation_only, mappedCapabilities=23, mappedFlows=107, summary=No Datadog monitors configured — add monitors for production visibility
+- gitnexus/codegraph: impact=30%, mode=observation_only, mappedCapabilities=11, mappedFlows=70, summary=GitNexus is not available (npx gitnexus@latest failed).
 
 ## Product Identity
 
@@ -92,7 +92,7 @@
 - Scrapers: status=real, completion=100%, capabilities=1, flows=0
 - Settings: status=real, completion=100%, capabilities=64, flows=111
 - Analytics: status=real, completion=99%, capabilities=13, flows=93, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- Anuncios/Ads: status=real, completion=99%, capabilities=78, flows=103, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
+- Anuncios/Ads: status=real, completion=99%, capabilities=78, flows=103, blocker=Missing structural roles: persistence.
 - Campaigns: status=real, completion=99%, capabilities=57, flows=111, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
 
 ## Experience Projection
@@ -152,14 +152,14 @@
 
 ## Next Work
 
-- [P0] Recover Customer Whatsapp And Inbox | impact=transformational | mode=ai_safe | evidence=observed/high | risk=critical | Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.
+- [P0] Recover Customer Auth Shell | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.
+- [P0] Recover Customer Product And Checkout | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.
+- [P0] Recover Customer Whatsapp And Inbox | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.
 - [P0] Recover System Payment Reconciliation | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.
-- [P1] Recover Admin Settings Kyc Banking | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Restores operator/admin execution confidence for Admin Settings Kyc Banking so the product can be operated without hidden manual gaps.
 - [P1] Materialize capability Ai Assistant | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Ai Assistant from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
 - [P1] Materialize capability Analytics Analytic | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Analytics Analytic from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
 - [P1] Materialize capability Autopilot Actions | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Autopilot Actions from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
 - [P1] Materialize capability Autopilot Actions | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Autopilot Actions from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
-- [P1] Materialize capability Autopilot Ask | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Autopilot Ask from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
 
 ## Cross-Artifact Consistency
 
@@ -169,7 +169,7 @@
 
 - Canonical dir: /Users/danielpenin/whatsapp_saas/.pulse/current
 - Mirrors: PULSE_HEALTH.json, PULSE_CERTIFICATE.json, PULSE_CLI_DIRECTIVE.json, PULSE_ARTIFACT_INDEX.json, PULSE_REPORT.md
-- Removed legacy artifacts this run: 4
+- Removed legacy artifacts this run: 5
 
 ## Truth Model
 

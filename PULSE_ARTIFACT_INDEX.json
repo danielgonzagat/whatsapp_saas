@@ -1,6 +1,6 @@
 {
-  "runId": "f5d3449b-c21f-48e5-a356-04f9768589a4",
-  "generatedAt": "2026-04-27T21:59:16.889Z",
+  "runId": "aa4674e4-10a2-44ac-ac36-11d6feed1da6",
+  "generatedAt": "2026-04-28T01:23:54.077Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
@@ -58,7 +58,8 @@
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
     "PULSE_HEALTH.json",
-    "PULSE_REPORT.md"
+    "PULSE_REPORT.md",
+    "PULSE_WORLD_STATE.json"
   ],
   "rootStateMode": "local-only"
 }
