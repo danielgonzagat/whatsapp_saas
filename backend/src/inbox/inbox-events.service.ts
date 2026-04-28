@@ -72,7 +72,7 @@ export class InboxEventsService implements OnModuleInit, OnModuleDestroy {
           break;
       }
     } catch (err) {
-      this.logger.warn(`Failed to handle ws:inbox event: ${err?.message || err}`);
+      this.logger.warn(`Failed to handle ws:inbox event: ${err?.message || err}`); // Intencional: ws event failure is non-critical; logged and contained.
     }
   }
 }

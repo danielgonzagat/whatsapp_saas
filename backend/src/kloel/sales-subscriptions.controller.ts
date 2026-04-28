@@ -124,7 +124,7 @@ export class SalesSubscriptionsController {
         },
       });
     } catch (err) {
-      this.logger.error(`Failed to create audit log for subscription_pause: ${err}`);
+      this.logger.error(`Failed to create audit log for subscription_pause: ${err}`); // Intencional: audit log is best-effort.
     }
 
     return { subscription: { ...sub, status: 'PAUSED', pausedAt: new Date() }, success: true };
@@ -159,7 +159,7 @@ export class SalesSubscriptionsController {
         },
       });
     } catch (err) {
-      this.logger.error(`Failed to create audit log for subscription_resume: ${err}`);
+      this.logger.error(`Failed to create audit log for subscription_resume: ${err}`); // Intencional: audit log is best-effort.
     }
 
     return { subscription: { ...sub, status: 'ACTIVE', pausedAt: null }, success: true };
@@ -194,7 +194,7 @@ export class SalesSubscriptionsController {
         },
       });
     } catch (err) {
-      this.logger.error(`Failed to create audit log for subscription_cancel: ${err}`);
+      this.logger.error(`Failed to create audit log for subscription_cancel: ${err}`); // Intencional: audit log is best-effort.
     }
 
     return {

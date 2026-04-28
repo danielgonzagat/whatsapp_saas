@@ -126,7 +126,7 @@ export class KloelLeadBrainService {
     try {
       await this.prisma.kloelConversation.create({ data: { leadId, role, content } });
     } catch (error) {
-      this.logger.warn('Erro ao salvar mensagem do lead:', error);
+      this.logger.warn('Erro ao salvar mensagem do lead:', error); // Intencional: lead message persistence is non-critical.
     }
   }
 
@@ -157,7 +157,7 @@ export class KloelLeadBrainService {
         data: updateData,
       });
     } catch (error) {
-      this.logger.warn('Erro ao atualizar lead:', error);
+      this.logger.warn('Erro ao atualizar lead:', error); // Intencional: lead update failure is non-critical.
     }
   }
 

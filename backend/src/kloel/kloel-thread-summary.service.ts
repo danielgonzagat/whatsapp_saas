@@ -196,7 +196,7 @@ export class KloelThreadSummaryService {
           String(response.choices[0]?.message?.content || fallbackSummary).trim() ||
           fallbackSummary;
       } catch (error) {
-        this.logger.warn(`Falha ao atualizar resumo da thread ${threadId}: ${String(error)}`);
+        this.logger.warn(`Falha ao atualizar resumo da thread ${threadId}: ${String(error)}`); // Intencional: thread summary update is best-effort.
       }
     }
 

@@ -219,7 +219,7 @@ export class SalesController {
           },
         });
       } catch (err) {
-        this.logger.error(`Failed to create audit log for refund request: ${err}`);
+        this.logger.error(`Failed to create audit log for refund request: ${err}`); // Intencional: audit log is best-effort.
       }
 
       return { sale, success: true, pendingWebhook: true };
