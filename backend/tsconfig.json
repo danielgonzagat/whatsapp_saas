@@ -14,11 +14,25 @@
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
-    "strictNullChecks": false,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "strict": true,
+    "strictFunctionTypes": true,
+    "alwaysStrict": true,
+    "noImplicitReturns": true,
+    "useUnknownInCatchVariables": true
   },
-  "exclude": ["node_modules", "dist", "prisma.config.ts"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "prisma.config.ts",
+    "**/*spec.ts",
+    "**/*.fixtures.ts",
+    "src/pulse/*.spec.ts",
+    "src/pulse/**/*.spec.ts",
+    "src/pulse/**/*.fixtures.ts"
+  ]
 }
