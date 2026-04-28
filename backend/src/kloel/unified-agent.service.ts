@@ -118,6 +118,7 @@ export interface ActionEntry {
  * here. The constructor, processMessage, and executeToolAction router are the
  * only concerns of this file.
  */
+/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class UnifiedAgentService {
   private readonly logger = new Logger(UnifiedAgentService.name);

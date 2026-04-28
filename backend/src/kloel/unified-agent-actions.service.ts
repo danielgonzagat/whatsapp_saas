@@ -21,6 +21,7 @@ type UnknownRecord = Record<string, unknown>;
  * Delegates to domain-specific sub-services.
  * Keeps only: logAutopilotEvent and actionSendDocument (need Prisma+WhatsApp+Storage together).
  */
+/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class UnifiedAgentActionsService {
   private readonly logger = new Logger(UnifiedAgentActionsService.name);

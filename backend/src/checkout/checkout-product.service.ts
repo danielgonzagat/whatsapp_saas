@@ -16,6 +16,7 @@ import type {
 } from './checkout-product.types';
 
 /** Checkout product service — handles Product and Plan CRUD. */
+/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class CheckoutProductService {
   private readonly logger = new Logger(CheckoutProductService.name);

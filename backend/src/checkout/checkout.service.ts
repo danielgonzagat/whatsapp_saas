@@ -19,6 +19,7 @@ export type { CheckoutOrderStatusValue } from './checkout-order.service';
  * focused sub-services and owns the public-lookup (slug / code) flows that
  * must coordinate across all sub-domains.
  */
+/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class CheckoutService {
   private readonly logger = new Logger(CheckoutService.name);

@@ -7,6 +7,7 @@ import { CheckoutPlanLinkManager } from './checkout-plan-link.manager';
 const DEFAULT_MARKETPLACE_FEE_PERCENT = 9.9;
 
 /** Helpers for default config, marketplace fee resolution, and legacy checkout provisioning. */
+/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class CheckoutProductConfigService {
   constructor(private readonly prisma: PrismaService) {}

@@ -14,6 +14,7 @@ type UnknownRecord = Record<string, unknown>;
  * to keep the orchestrator file under the size limit and to host the
  * transactional audit log for financial tool calls (e.g. create_payment_link).
  */
+/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class KloelToolDispatcherService {
   private readonly logger = new Logger(KloelToolDispatcherService.name);

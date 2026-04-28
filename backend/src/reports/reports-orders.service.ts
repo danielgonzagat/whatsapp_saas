@@ -69,6 +69,7 @@ export function applyCommonOrderFilters(
  * Handles CheckoutOrder and CheckoutPayment report queries:
  * vendas, afterpay, abandonos, recusa, origem, estornos, chargeback.
  */
+/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class ReportsOrdersService {
   private readonly logger = new Logger(ReportsOrdersService.name);

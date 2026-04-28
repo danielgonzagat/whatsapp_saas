@@ -11,6 +11,7 @@ import {
 } from './checkout-catalog.helpers';
 
 /** Manages order bumps, upsells, coupons, pixels, shipping and config reset. */
+/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class CheckoutCatalogService {
   private readonly logger = new Logger(CheckoutCatalogService.name);
