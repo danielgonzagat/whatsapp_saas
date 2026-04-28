@@ -83,7 +83,7 @@ export class BillingWebhookService {
     let event: StripeEvent;
     try {
       event = this.stripe.webhooks.constructEvent(rawBody, signature, endpointSecret);
-    } catch (err) {
+    } catch (err: unknown) {
       const errMsg = err instanceof Error ? err.message : String(err);
       this.logger.error(
         `Webhook signature verification failed: ${JSON.stringify({ error: errMsg, signatureLength: signature?.length, bodyLength: rawBody?.length })}`,
@@ -129,7 +129,7 @@ export class BillingWebhookService {
         default:
           break;
       }
-    } catch (err) {
+    } catch (err: unknown) {
       this.financialAlert?.webhookProcessingFailed(
         err instanceof Error ? err : new Error(String(err)),
         { provider: 'stripe', eventType: event.type, externalId: event.id },

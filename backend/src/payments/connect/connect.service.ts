@@ -280,7 +280,7 @@ export class ConnectService {
     let account: StripeAccount;
     try {
       account = (await this.stripeService.stripe.accounts.create(accountPayload)) as StripeAccount;
-    } catch (error) {
+    } catch (error: unknown) {
       if (!this.shouldRetryWithoutManualPayoutSchedule(error, country)) {
         Sentry.captureException(error, {
           tags: { type: 'financial_alert', operation: 'connect_account_create' },

@@ -116,7 +116,7 @@ export class CiaSendHelpersService {
         await this.releaseDailyMessageLimit(workspaceId);
       }
       return sendResult;
-    } catch (error) {
+    } catch (error: unknown) {
       await this.releaseDailyMessageLimit(workspaceId);
       throw error;
     }

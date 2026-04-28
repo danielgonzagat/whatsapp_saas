@@ -169,7 +169,7 @@ export class KloelWorkspaceContextService {
         contextParts.unshift(`PERFIL DO USUÁRIO ATUAL:\n${raw.userProfile.content}`);
 
       return contextParts.filter(Boolean).join('\n\n');
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn('Erro ao buscar contexto:', error);
       return '';
     }

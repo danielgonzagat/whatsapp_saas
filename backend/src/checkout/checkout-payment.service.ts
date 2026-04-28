@@ -398,7 +398,7 @@ export class CheckoutPaymentService {
         boletoBarcode: null,
         boletoExpiresAt: null,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Stripe payment processing failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
       );

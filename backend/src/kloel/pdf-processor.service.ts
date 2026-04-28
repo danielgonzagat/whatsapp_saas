@@ -67,8 +67,10 @@ export class PdfProcessorService {
       const analysisResult = await this.analyzeWithAI(workspaceId, text, sourceName, true);
       await this.saveToMemory(workspaceId, sourceName, analysisResult.analysis);
       return analysisResult;
-    } catch (error) {
-      this.logger.error(`Erro processando: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Erro processando: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw error;
     }
   }
@@ -103,8 +105,10 @@ export class PdfProcessorService {
         analysis: JSON.parse(cleanJson) as Record<string, unknown>,
         usage: (response.usage ?? null) as PdfProcessorUsage,
       };
-    } catch (error) {
-      this.logger.error(`Erro na análise: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Erro na análise: ${error instanceof Error ? error.message : String(error)}`,
+      );
       if (strict) {
         throw error;
       }

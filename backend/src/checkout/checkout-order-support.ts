@@ -292,7 +292,7 @@ export class CheckoutOrderSupport {
         synced: true,
         skipped: false,
       } as const;
-    } catch (error) {
+    } catch (error: unknown) {
       const message = String((error as Error)?.message || error);
       this.logger.warn(`Checkout contact sync failed for ${input.workspaceId}: ${message}`);
       Sentry.captureException(error, {

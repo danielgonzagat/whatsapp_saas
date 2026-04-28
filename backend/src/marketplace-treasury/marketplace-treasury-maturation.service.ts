@@ -126,7 +126,7 @@ export class MarketplaceTreasuryMaturationService {
         );
 
         matured += 1;
-      } catch (error) {
+      } catch (error: unknown) {
         failed += 1;
         const message = error instanceof Error ? error.message : String(error);
         this.logger.error(`marketplace_treasury_maturation_failed entry=${credit.id}: ${message}`);

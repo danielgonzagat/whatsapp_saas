@@ -314,7 +314,7 @@ export class KloelService {
         content: m.content,
         timestamp: m.createdAt,
       }));
-    } catch (_error) {
+    } catch (_error: unknown) {
       return [];
     }
   }
@@ -341,7 +341,7 @@ export class KloelService {
       });
       await this.saveMemory(workspaceId, 'pdf_analysis', analysis, { source: 'pdf' });
       return analysis;
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('Erro ao processar PDF:', error);
       throw error;
     }

@@ -357,7 +357,7 @@ export class AdminCarteiraController {
         requestId,
         currency,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       await this.audit.append({
         adminUserId: admin.id,
         action: 'admin.carteira.payout_request_failed',

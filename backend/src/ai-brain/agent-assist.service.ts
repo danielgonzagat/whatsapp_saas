@@ -87,7 +87,7 @@ export class AgentAssistService {
       }
       await this.trackUsage(workspaceId, completion?.usage?.total_tokens);
       return handler(completion);
-    } catch (error) {
+    } catch (error: unknown) {
       if (!(error instanceof AgentAssistWalletAccessError)) {
         await refundAiUsageIfNeeded({
           walletService: this.prepaidWalletService,

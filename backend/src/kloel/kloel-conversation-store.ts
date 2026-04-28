@@ -56,7 +56,7 @@ export class KloelConversationStore {
           content,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn('Erro ao salvar mensagem:', error); // Intencional: message persistence failure is non-critical.
     }
   }
@@ -112,7 +112,7 @@ export class KloelConversationStore {
           metadata: safeMetadata,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('Erro ao salvar memória:', error); // Intencional: memory persistence failure is non-critical.
     }
   }

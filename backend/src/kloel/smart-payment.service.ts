@@ -200,8 +200,11 @@ export class SmartPaymentService {
           .trackAiUsage(workspaceId, aiResponse?.usage?.total_tokens ?? 500)
           .catch(() => {});
         // PULSE:OK — AI message is optional enrichment; static fallback message is used when AI fails
-      } catch (err) {
-        this.logger.warn('AI message generation failed', err.message);
+      } catch (err: unknown) {
+        this.logger.warn(
+          'AI message generation failed',
+          err instanceof Error ? err.message : String(err),
+        );
         Sentry.captureException(err, {
           tags: { type: 'ai_alert', operation: 'smart_payment_message' },
           extra: { workspaceId, contactId: context.contactId, amount },
@@ -230,8 +233,9 @@ export class SmartPaymentService {
         billingType: 'PIX',
         suggestedMessage: suggestedMessage || buildPixReadyMessage(customerName, amount),
       };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err);
       this.logger.error(`Stripe payment failed: ${message}`);
       Sentry.captureException(err, {
         tags: { type: 'financial_alert', operation: 'smart_payment_create' },
@@ -342,8 +346,8 @@ export class SmartPaymentService {
         approved: parsed.approved !== false,
       };
       // PULSE:OK — AI negotiation is an optional enrichment layer; static 5% fallback discount is the safe default when AI is unavailable
-    } catch (err) {
-      this.logger.error('AI negotiation failed', err.message);
+    } catch (err: unknown) {
+      this.logger.error('AI negotiation failed', err instanceof Error ? err.message : String(err));
       Sentry.captureException(err, {
         tags: { type: 'ai_alert', operation: 'smart_payment_negotiation' },
         extra: { workspaceId, contactId, originalAmount },

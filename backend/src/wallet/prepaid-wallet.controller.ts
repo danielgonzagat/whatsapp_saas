@@ -223,7 +223,7 @@ export class PrepaidWalletController {
         costCents: result.costCents.toString(),
         transactionId: result.transaction.id,
       };
-    } catch (err) {
+    } catch (err: unknown) {
       if (err instanceof InsufficientWalletBalanceError) {
         Sentry.captureException(err, {
           extra: {

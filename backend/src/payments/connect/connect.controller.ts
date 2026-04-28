@@ -137,7 +137,7 @@ export class ConnectController {
             ? body.displayName.trim()
             : undefined,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ConnectAccountAlreadyExistsError) {
         throw new ConflictException(error.message);
       }
@@ -464,7 +464,7 @@ export class ConnectController {
         requestId,
         currency: body.currency,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       await this.appendPayoutAudit({
         action: 'system.connect.payout_request_failed',
         accountBalanceId: balance.id,

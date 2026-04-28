@@ -105,10 +105,14 @@ export class UploadController {
 
     try {
       await this.storageService.delete(relativePath);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Falha ao remover upload parcial ${relativePath}: ${
-          error instanceof Error ? error.message : String(error)
+          error instanceof Error
+            ? error instanceof Error
+              ? error.message
+              : String(error)
+            : String(error)
         }`,
       );
     }
@@ -123,7 +127,7 @@ export class UploadController {
           { role: 'user', content: buildPdfAnalysisPrompt(text, sourceName) },
         ],
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof UnknownProviderPricingModelError) {
         return undefined;
       }
@@ -158,7 +162,7 @@ export class UploadController {
         },
       });
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof UsagePriceNotFoundError) {
         return false;
       }
@@ -195,7 +199,7 @@ export class UploadController {
           sourceName: input.sourceName,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (!(error instanceof UnknownProviderPricingModelError)) {
         throw error;
       }
@@ -220,10 +224,14 @@ export class UploadController {
           sourceName,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Failed to refund upload pdf_analysis workspace=${workspaceId} request=${requestId}: ${
-          error instanceof Error ? error.message : String(error)
+          error instanceof Error
+            ? error instanceof Error
+              ? error.message
+              : String(error)
+            : String(error)
         }`,
       );
     }
@@ -370,11 +378,11 @@ export class UploadController {
           type: file.mimetype,
           ...result,
         });
-      } catch (error) {
+      } catch (error: unknown) {
         results.push({
           success: false,
           filename: file.originalname,
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     });
@@ -401,8 +409,10 @@ export class UploadController {
         }>;
         const textResult = await pdfParse(file.buffer);
         extractedText = textResult.text;
-      } catch (error) {
-        this.logger.error(`Erro ao extrair PDF do upload ${originalname}: ${error.message}`);
+      } catch (error: unknown) {
+        this.logger.error(
+          `Erro ao extrair PDF do upload ${originalname}: ${error instanceof Error ? error.message : String(error)}`,
+        );
         throw new BadRequestException(
           'Não foi possível extrair texto do PDF. Verifique se o arquivo é um PDF válido.',
         );
@@ -469,7 +479,7 @@ export class UploadController {
             objections: countAnalysisItems(result.analysis.objections),
           },
         };
-      } catch (error) {
+      } catch (error: unknown) {
         await this.deleteStoredFileIfNeeded(stored?.path);
         if (usageCharged) {
           await this.refundPdfAnalysisIfNeeded(

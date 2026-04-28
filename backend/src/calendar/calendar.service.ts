@@ -115,13 +115,12 @@ export class CalendarService {
     findMany?: (...args: unknown[]) => Promise<AppointmentRecord[]>;
     update?: (...args: unknown[]) => Promise<AppointmentRecord>;
   } | null {
-    const model = (this.prisma as unknown as Record<string, unknown>)?.appointment as
-      | {
-          create?: (...args: unknown[]) => Promise<AppointmentRecord>;
-          findMany?: (...args: unknown[]) => Promise<AppointmentRecord[]>;
-          update?: (...args: unknown[]) => Promise<AppointmentRecord>;
-        }
-      | undefined;
+    type AppointmentModel = {
+      create?: (...args: unknown[]) => Promise<AppointmentRecord>;
+      findMany?: (...args: unknown[]) => Promise<AppointmentRecord[]>;
+      update?: (...args: unknown[]) => Promise<AppointmentRecord>;
+    };
+    const model = Reflect.get(this.prisma as object, 'appointment') as AppointmentModel | undefined;
     return model ?? null;
   }
 
@@ -442,9 +441,9 @@ export class CalendarService {
             data: { contactId },
           });
         }
-      } catch (err) {
+      } catch (err: unknown) {
         this.logger.warn(
-          `Failed to link appointment ${created.id} to contact ${contactId}: ${err instanceof Error ? err.message : err}`,
+          `Failed to link appointment ${created.id} to contact ${contactId}: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
     }

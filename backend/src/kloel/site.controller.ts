@@ -82,7 +82,7 @@ export class SiteController {
         messages: [{ role: 'user', content: input.prompt }],
         maxOutputTokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof UnknownProviderPricingModelError) {
         return undefined;
       }
@@ -121,7 +121,7 @@ export class SiteController {
         },
       });
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof UsagePriceNotFoundError) {
         return false;
       }
@@ -177,7 +177,7 @@ export class SiteController {
           model: input.model,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (!(error instanceof UnknownProviderPricingModelError)) {
         throw error;
       }
@@ -204,7 +204,7 @@ export class SiteController {
           capability: 'site_generation',
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Failed to refund site_generation workspace=${workspaceId} request=${requestId}: ${
           error instanceof Error ? error.message : String(error)

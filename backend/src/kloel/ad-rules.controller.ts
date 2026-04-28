@@ -36,7 +36,7 @@ export class AdRulesController {
         where: { workspaceId },
         orderBy: { createdAt: 'desc' },
       });
-    } catch (e) {
+    } catch (e: unknown) {
       this.logger.warn(`AdRule table may not exist yet: ${(e as Error).message}`);
       return [];
     }

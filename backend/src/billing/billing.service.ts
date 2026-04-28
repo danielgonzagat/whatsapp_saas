@@ -309,8 +309,8 @@ export class BillingService {
         await this.stripe.subscriptions.update(sub.stripeId, {
           cancel_at_period_end: true,
         });
-      } catch (err) {
-        this.logger.error(`Stripe cancel error: ${err}`);
+      } catch (err: unknown) {
+        this.logger.error(`Stripe cancel error: ${String(err)}`);
         this.financialAlert?.paymentFailed(err instanceof Error ? err : new Error(String(err)), {
           workspaceId,
           gateway: 'stripe',

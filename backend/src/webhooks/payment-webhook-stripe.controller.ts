@@ -132,7 +132,7 @@ export class PaymentWebhookStripeController {
         try {
           verified = stripe.webhooks.constructEvent(req.rawBody, stripeSignature, secret);
           break;
-        } catch (err) {
+        } catch (err: unknown) {
           lastSignatureError = err;
         }
       }

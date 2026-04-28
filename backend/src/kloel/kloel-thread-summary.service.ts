@@ -96,7 +96,7 @@ export class KloelThreadSummaryService {
           .catch(() => {});
       }
       return this.sanitizeGeneratedThreadTitle(response.choices[0]?.message?.content);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(`Falha ao gerar título da conversa: ${String(error)}`);
       return fallbackTitle;
     }
@@ -195,7 +195,7 @@ export class KloelThreadSummaryService {
         summary =
           String(response.choices[0]?.message?.content || fallbackSummary).trim() ||
           fallbackSummary;
-      } catch (error) {
+      } catch (error: unknown) {
         this.logger.warn(`Falha ao atualizar resumo da thread ${threadId}: ${String(error)}`); // Intencional: thread summary update is best-effort.
       }
     }

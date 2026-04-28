@@ -83,8 +83,10 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
       }
       void client.join(`workspace:${workspaceId}`);
       this.logger.log(`Client connected: ${client.id} to workspace:${workspaceId}`);
-    } catch (err) {
-      this.logger.warn(`Client ${client.id} disconnected: invalid token (${err?.message || err})`);
+    } catch (err: unknown) {
+      this.logger.warn(
+        `Client ${client.id} disconnected: invalid token (${(err instanceof Error ? err.message : 'unknown') || String(err)})`,
+      );
       client.disconnect(true);
     }
   }

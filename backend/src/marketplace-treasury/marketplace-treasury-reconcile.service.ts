@@ -176,7 +176,7 @@ export class MarketplaceTreasuryReconcileService {
           details: details as Prisma.InputJsonValue,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(
         `marketplace_treasury_reconcile_audit_failed currency=${details.currency}: ${
           error instanceof Error ? error.message : String(error)

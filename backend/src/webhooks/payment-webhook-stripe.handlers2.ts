@@ -116,7 +116,7 @@ export async function handlePaymentIntentEvent(
           }, FINANCIAL_TRANSACTION_OPTIONS)
           .catch(() => undefined);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       deps.financialAlert.webhookProcessingFailed(error as Error, {
         provider: 'stripe',
         externalId: intent.id || stripeExternalId,

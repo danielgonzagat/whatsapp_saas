@@ -209,12 +209,15 @@ export class MemberAreasController {
       this.logger.log(`Member area created: ${area.id} - ${area.name}`);
 
       return { area: serializeArea(req, area), success: true };
-    } catch (error) {
-      this.logger.error(`Failed to create member area: ${error.message}`, error.stack);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Failed to create member area: ${error instanceof Error ? error.message : String(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new BadRequestException(
-        error.code === 'P2002'
+        error instanceof Error && (error as any).code === 'P2002'
           ? 'A member area with this slug already exists'
-          : `Failed to create member area: ${error.message}`,
+          : `Failed to create member area: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
   }

@@ -32,8 +32,8 @@ export class ReportsAffiliateService {
         take: 50,
       });
       return partners;
-    } catch (err) {
-      this.logger.error(`getAfiliados query failed: ${err}`);
+    } catch (err: unknown) {
+      this.logger.error(`getAfiliados query failed: ${String(err)}`);
       return [];
     }
   }
@@ -53,8 +53,8 @@ export class ReportsAffiliateService {
         },
       });
       return partners;
-    } catch (err) {
-      this.logger.error(`getIndicadores query failed: ${err}`);
+    } catch (err: unknown) {
+      this.logger.error(`getIndicadores query failed: ${String(err)}`);
       return [];
     }
   }
@@ -86,8 +86,8 @@ export class ReportsAffiliateService {
           AND co."createdAt" >= ${start} AND co."createdAt" <= ${end}
         GROUP BY DATE(co."createdAt") ORDER BY day ASC
       `;
-    } catch (err) {
-      this.logger.error(`getIndicadoresProduto query failed: ${err}`);
+    } catch (err: unknown) {
+      this.logger.error(`getIndicadoresProduto query failed: ${String(err)}`);
       return [];
     }
   }

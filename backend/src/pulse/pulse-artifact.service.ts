@@ -218,7 +218,7 @@ export class PulseArtifactService {
           ? 'fresh'
           : 'stale';
       return { artifact: artifactName, path: targetPath, freshness, generatedAt, staleMs, data };
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         artifact: artifactName,
         path: targetPath,

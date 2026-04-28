@@ -81,8 +81,8 @@ export class WhatsAppBrainController {
     try {
       await this.whatsappBrain.processWebhook(payload, workspaceId);
       return { status: 'ok' };
-    } catch (error) {
-      return { status: 'error', message: error.message };
+    } catch (error: unknown) {
+      return { status: 'error', message: error instanceof Error ? error.message : String(error) };
     }
   }
 

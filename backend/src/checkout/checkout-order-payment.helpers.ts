@@ -86,7 +86,7 @@ export async function processOrderPostPayment(
         data: { usedCount: { increment: 1 } },
       });
     }
-  } catch (e) {
+  } catch (e: unknown) {
     logOrderEvent('checkout_order_payment_failed', {
       correlationId,
       orderId: order.id,

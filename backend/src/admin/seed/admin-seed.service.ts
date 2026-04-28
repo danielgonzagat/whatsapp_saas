@@ -38,7 +38,7 @@ export class AdminSeedService implements OnModuleInit {
 
     try {
       await this.seedOwner();
-    } catch (error) {
+    } catch (error: unknown) {
       // Never crash boot on seed failure — the admin module still boots and
       // the error is recorded.
       this.logger.error(

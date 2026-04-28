@@ -133,9 +133,9 @@ export class ReportsService {
         GROUP BY TO_CHAR("cancelledAt", 'Mon'), DATE_TRUNC('month', "cancelledAt")
         ORDER BY DATE_TRUNC('month', "cancelledAt") ASC LIMIT 12
       `;
-    } catch (err) {
+    } catch (err: unknown) {
       // PULSE:OK — Monthly churn query failure returns partial data; not a blocking operation
-      this.logger.error(`getChurn monthly query failed: ${err}`);
+      this.logger.error(`getChurn monthly query failed: ${String(err)}`);
     }
 
     return { total, data, monthly };
@@ -294,8 +294,8 @@ export class ReportsService {
         totalAdSpend,
         roas,
       };
-    } catch (err) {
-      this.logger.error(`getMetricas query failed: ${err}`);
+    } catch (err: unknown) {
+      this.logger.error(`getMetricas query failed: ${String(err)}`);
       return {
         totalSales: 0,
         paidSales: 0,

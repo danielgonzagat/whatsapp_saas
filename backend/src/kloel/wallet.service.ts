@@ -334,7 +334,7 @@ export class WalletService {
         },
         { isolationLevel: 'ReadCommitted' },
       );
-    } catch (err) {
+    } catch (err: unknown) {
       this.financialAlert.withdrawalFailed(err instanceof Error ? err : new Error(String(err)), {
         workspaceId,
         amount,
@@ -518,7 +518,7 @@ export class WalletService {
           );
 
           this.logger.log(`Settled tx ${tx.id}: ${formatBrlAmount(tx.amount)} -> available`);
-        } catch (err) {
+        } catch (err: unknown) {
           const message = err instanceof Error ? err.message : String(err);
           const isFirstFailure = perTxFailures.length === 0;
           perTxFailures.push({ txId: tx.id, error: message });
@@ -540,8 +540,8 @@ export class WalletService {
         );
       }
       // PULSE:OK — cron job top-level catch prevents crashing the scheduler on transient DB failures
-    } catch (err) {
-      this.logger.error(`Reconciliation error: ${err}`);
+    } catch (err: unknown) {
+      this.logger.error(`Reconciliation error: ${String(err)}`);
       this.financialAlert.reconciliationAlert('wallet reconciliation cron crashed', {
         details: { error: err instanceof Error ? err.message : String(err) },
       });

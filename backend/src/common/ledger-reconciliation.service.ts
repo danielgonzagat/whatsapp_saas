@@ -100,7 +100,7 @@ export class LedgerReconciliationService {
   async runCheckoutCron(): Promise<void> {
     try {
       await this.runReconciliation(24);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `ledger_reconciliation_cron_failed: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -117,7 +117,7 @@ export class LedgerReconciliationService {
   async runWalletCron(): Promise<void> {
     try {
       await this.runWalletReconciliation();
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `wallet_ledger_reconciliation_cron_failed: ${
           error instanceof Error ? error.message : String(error)
@@ -449,7 +449,7 @@ export class LedgerReconciliationService {
           details: input.details as Prisma.JsonObject,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(
         `ledger_reconcile_audit_failed action=${input.action}: ${
           error instanceof Error ? error.message : String(error)

@@ -218,8 +218,8 @@ export class SalesController {
             details: { amount: sale.amount, status: 'pending_webhook' },
           },
         });
-      } catch (err) {
-        this.logger.error(`Failed to create audit log for refund request: ${err}`); // Intencional: audit log is best-effort.
+      } catch (err: unknown) {
+        this.logger.error(`Failed to create audit log for refund request: ${String(err)}`); // Intencional: audit log is best-effort.
       }
 
       return { sale, success: true, pendingWebhook: true };
@@ -242,9 +242,9 @@ export class SalesController {
           details: { amount: sale.amount, status: 'completed' },
         },
       });
-    } catch (err) {
+    } catch (err: unknown) {
       // PULSE:OK — AuditLog write failure is non-critical; refund already processed above
-      this.logger.error(`Failed to create audit log for refund: ${err}`);
+      this.logger.error(`Failed to create audit log for refund: ${String(err)}`);
     }
 
     return { sale: updated, success: true };

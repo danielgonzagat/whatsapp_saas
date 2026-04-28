@@ -40,9 +40,11 @@ export class CopilotGateway implements OnGatewayConnection, OnGatewayDisconnect,
         } else {
           this.server.emit('copilot:suggestion', payload);
         }
-      } catch (err) {
+      } catch (err: unknown) {
         // PULSE:OK — Redis pub/sub parse error; cannot propagate from event handler
-        this.logger.warn(`CopilotGateway parse error: ${err?.message}`);
+        this.logger.warn(
+          `CopilotGateway parse error: ${err instanceof Error ? err.message : 'unknown'}`,
+        );
       }
     });
   }

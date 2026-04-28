@@ -191,7 +191,7 @@ export class StripeWebhookLedgerService {
   ): Promise<void> {
     try {
       await this.marketplaceTreasury.append(input);
-    } catch (error) {
+    } catch (error: unknown) {
       if ((error as { code?: string } | null)?.code === 'P2002') {
         this.logger.debug(
           `Marketplace treasury entry already recorded orderId=${orderId} kind=${kind}`,

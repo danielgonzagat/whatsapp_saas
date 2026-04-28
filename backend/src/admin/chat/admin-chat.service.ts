@@ -372,7 +372,7 @@ export class AdminChatService {
     let result: Record<string, unknown>;
     try {
       result = await tool.execute(call.args, { adminUserId, adminRole });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(
         `Tool ${tool.name} threw: ${error instanceof Error ? error.message : String(error)}`,
       );

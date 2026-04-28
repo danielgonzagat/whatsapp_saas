@@ -185,8 +185,8 @@ export class ReportsOrdersService {
           AND "createdAt" >= ${start} AND "createdAt" <= ${end}
         GROUP BY DATE("createdAt") ORDER BY day ASC
       `;
-    } catch (err) {
-      this.logger.error(`getVendasDaily query failed: ${err}`);
+    } catch (err: unknown) {
+      this.logger.error(`getVendasDaily query failed: ${String(err)}`);
       return [];
     }
   }
@@ -287,8 +287,8 @@ export class ReportsOrdersService {
         },
       });
       return { data, total, page: f.page || 1 };
-    } catch (err) {
-      this.logger.error(`getRecusa query failed: ${err}`);
+    } catch (err: unknown) {
+      this.logger.error(`getRecusa query failed: ${String(err)}`);
       return { data: [], total: 0 };
     }
   }
@@ -304,8 +304,8 @@ export class ReportsOrdersService {
           AND "createdAt" >= ${start} AND "createdAt" <= ${end}
         GROUP BY source ORDER BY vendas DESC
       `;
-    } catch (err) {
-      this.logger.error(`getOrigem query failed: ${err}`);
+    } catch (err: unknown) {
+      this.logger.error(`getOrigem query failed: ${String(err)}`);
       return [];
     }
   }
@@ -352,8 +352,8 @@ export class ReportsOrdersService {
         where: { status: 'CHARGEBACK', order: { workspaceId } },
       });
       return { data, total };
-    } catch (err) {
-      this.logger.error(`getChargeback query failed: ${err}`);
+    } catch (err: unknown) {
+      this.logger.error(`getChargeback query failed: ${String(err)}`);
       return { data: [], total: 0 };
     }
   }

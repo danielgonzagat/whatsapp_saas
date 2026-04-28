@@ -126,7 +126,7 @@ async function runStartupDbCheck(app: NestExpressApplication): Promise<void> {
     } catch (schemaErr: unknown) {
       handleSchemaError(schemaErr);
     }
-  } catch (dbErr) {
+  } catch (dbErr: unknown) {
     if (process.env.NODE_ENV === 'production') {
       console.error('[STARTUP] FATAL: DB connection failed in production.', dbErr);
       process.exit(1);

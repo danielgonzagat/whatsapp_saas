@@ -107,8 +107,8 @@ export class CheckoutPostPaymentEffectsService {
           userAgent: order.userAgent || undefined,
         });
       });
-    } catch (error) {
-      this.logger.error(`Facebook CAPI lookup error: ${error}`);
+    } catch (error: unknown) {
+      this.logger.error(`Facebook CAPI lookup error: ${String(error)}`);
       Sentry.captureException(error, {
         tags: { type: 'financial_post_payment_effect', channel: 'facebook_capi' },
         extra: { orderId: order.id, orderNumber: order.orderNumber },
@@ -128,8 +128,8 @@ export class CheckoutPostPaymentEffectsService {
         subject: `Pagamento confirmado — ${order.plan?.product?.name || 'Seu pedido'}`,
         html: this.buildPaymentConfirmationHtml(order, chargedAmount),
       });
-    } catch (error) {
-      this.logger.warn(`Payment confirmation email failed: ${error}`);
+    } catch (error: unknown) {
+      this.logger.warn(`Payment confirmation email failed: ${String(error)}`);
       Sentry.captureException(error, {
         tags: { type: 'financial_post_payment_effect', channel: 'email' },
         extra: { orderId: order.id, orderNumber: order.orderNumber },

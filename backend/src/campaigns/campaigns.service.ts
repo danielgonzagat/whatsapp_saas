@@ -231,8 +231,8 @@ export class CampaignsService {
           `Campaign ${campaign.name}: no channel available for ${contact.name || contact.id}`,
         );
         sent++; // Count as "processed" even if no channel
-      } catch (e) {
-        this.logger.error(`Campaign send failed for contact ${contact.id}: ${e}`);
+      } catch (e: unknown) {
+        this.logger.error(`Campaign send failed for contact ${contact.id}: ${String(e)}`);
         failed++;
       }
     });

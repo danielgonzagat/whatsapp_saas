@@ -290,7 +290,7 @@ export class StripeWebhookProcessor {
         },
       );
       return transfer.id;
-    } catch (err) {
+    } catch (err: unknown) {
       // Re-throw so the webhook handler returns non-2xx and Stripe retries.
       // Stripe's idempotencyKey ensures retries don't duplicate transfers.
       const error = err instanceof Error ? err : new Error(String(err));

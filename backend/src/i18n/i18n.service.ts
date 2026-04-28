@@ -257,9 +257,9 @@ export class I18nService {
       if (detected && ['pt-BR', 'en-US', 'es-ES'].includes(detected)) {
         return detected as SupportedLanguage;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       // PULSE:OK — Language detection non-critical; falls back to pt-BR default
-      this.logger.error(`Error detecting language: ${error}`);
+      this.logger.error(`Error detecting language: ${String(error)}`);
     }
 
     return 'pt-BR';
@@ -336,8 +336,8 @@ Respond ONLY with the translated text, no explanations.`,
       );
 
       return response.choices[0]?.message?.content?.trim() || text;
-    } catch (error) {
-      this.logger.error(`Translation error: ${error}`);
+    } catch (error: unknown) {
+      this.logger.error(`Translation error: ${String(error)}`);
       return text;
     }
   }

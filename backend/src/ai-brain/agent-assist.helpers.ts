@@ -40,7 +40,7 @@ export function readWorkspaceId(value: unknown): string | undefined {
 export function estimateOpenAiQuote(model: string, messages: unknown): bigint | undefined {
   try {
     return estimateOpenAiChatQuoteCostCents({ model, messages });
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof UnknownProviderPricingModelError) {
       return undefined;
     }
@@ -84,7 +84,7 @@ export async function chargeAiUsageIfNeeded(args: ChargeAiUsageArgs): Promise<bo
       },
     });
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     return handleChargeError(error);
   }
 }
@@ -134,7 +134,7 @@ export async function settleAiUsageIfNeeded(args: SettleAiUsageArgs): Promise<vo
         model,
       },
     });
-  } catch (error) {
+  } catch (error: unknown) {
     if (!(error instanceof UnknownProviderPricingModelError)) {
       throw error;
     }

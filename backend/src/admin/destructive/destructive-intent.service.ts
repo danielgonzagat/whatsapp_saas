@@ -215,7 +215,7 @@ export class DestructiveIntentService {
         },
       });
       return toDestructiveIntentView(patched);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof UnsupportedUndoError) {
         throw adminErrors.destructiveInvalidState(intent.id, error.message);
       }
@@ -311,7 +311,7 @@ export class DestructiveIntentService {
         },
       });
       return patched;
-    } catch (error) {
+    } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       return this.prisma.destructiveIntent.update({
         where: { id: intent.id },

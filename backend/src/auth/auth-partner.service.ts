@@ -131,7 +131,7 @@ export class AuthPartnerService {
         },
         select: { id: true, workspaceId: true },
       });
-    } catch (_error) {
+    } catch (_error: unknown) {
       const cause = _error instanceof Error ? _error : new Error(String(_error));
       this.logger.error(cause, {
         operation: 'partnerRegistration',

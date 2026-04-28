@@ -131,7 +131,7 @@ const isProd = process.env.NODE_ENV === 'production';
         let url = 'redis://localhost:6379';
         try {
           url = getRedisUrl();
-        } catch (err) {
+        } catch (err: unknown) {
           if (isProd) {
             throw err;
           }

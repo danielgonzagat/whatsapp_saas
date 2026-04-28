@@ -182,9 +182,11 @@ export class WebhooksService {
           },
         },
       });
-    } catch (err) {
+    } catch (err: unknown) {
       // PULSE:OK — Finance event logging non-critical; flow trigger already queued
-      this.logger.warn(`Failed to log finance event: ${err?.message}`);
+      this.logger.warn(
+        `Failed to log finance event: ${err instanceof Error ? err.message : 'unknown'}`,
+      );
     }
 
     return { executionId: job.id, status, flowId };

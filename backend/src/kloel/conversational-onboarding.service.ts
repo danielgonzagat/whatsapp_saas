@@ -115,7 +115,7 @@ export class ConversationalOnboardingService {
       return typeof parsed === 'object' && parsed !== null
         ? (parsed as Record<string, unknown>)
         : {};
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(
         `Invalid onboarding tool arguments for ${functionName}: ${this.toolsService.toErrorMessage(error)}`,
       );

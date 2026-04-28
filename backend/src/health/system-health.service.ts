@@ -104,8 +104,8 @@ export class SystemHealthService {
     try {
       await this.prisma.$queryRaw`SELECT 1`;
       return { status: 'UP', latency: 'OK' };
-    } catch (e) {
-      return { status: 'DOWN', error: e.message };
+    } catch (e: unknown) {
+      return { status: 'DOWN', error: e instanceof Error ? e.message : String(e) };
     }
   }
 
@@ -114,7 +114,10 @@ export class SystemHealthService {
       await this.redis.ping();
       return { status: 'UP' };
     } catch (e: unknown) {
-      return { status: 'DOWN', error: e instanceof Error ? e.message : 'unknown_error' };
+      return {
+        status: 'DOWN',
+        error: e instanceof Error ? (e instanceof Error ? e.message : String(e)) : 'unknown_error',
+      };
     }
   }
 
@@ -125,7 +128,7 @@ export class SystemHealthService {
       return {
         status: 'DOWN',
         driver: 'unknown',
-        error: e instanceof Error ? e.message : 'unknown_error',
+        error: e instanceof Error ? (e instanceof Error ? e.message : String(e)) : 'unknown_error',
       };
     }
   }
@@ -214,7 +217,7 @@ export class SystemHealthService {
       return {
         status: 'DOWN',
         url: this.maskUrl(workerHealthUrl),
-        error: e instanceof Error ? e.message : 'unknown_error',
+        error: e instanceof Error ? (e instanceof Error ? e.message : String(e)) : 'unknown_error',
       };
     }
   }

@@ -180,7 +180,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
           storageStatus: String(detail.storage?.status || 'unknown'),
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Failed to capture backend heartbeat: ${(error as Error)?.message || 'unknown error'}`,
       );
@@ -530,7 +530,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       if (!response.ok) {
         this.logger.warn(`Pulse alert webhook returned HTTP ${response.status}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn(
         `Pulse alert webhook failed: ${(error as Error)?.message || 'unknown error'}`,
       );

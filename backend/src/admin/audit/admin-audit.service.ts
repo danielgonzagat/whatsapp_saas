@@ -69,7 +69,7 @@ export class AdminAuditService {
           userAgent: input.userAgent ?? null,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       // We intentionally swallow audit-append failures so that a transient
       // DB hiccup doesn't block legitimate admin activity. Failures are
       // logged at WARN so ops can detect sustained audit outages. A future

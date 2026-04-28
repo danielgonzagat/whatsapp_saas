@@ -155,7 +155,7 @@ export class KnowledgeBaseService {
         metadata: input.metadata,
       });
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof UsagePriceNotFoundError) {
         this.logger.debug(
           `Skipping prepaid wallet debit for kb_ingestion workspace=${input.workspaceId}: no UsagePrice configured`,
@@ -185,7 +185,7 @@ export class KnowledgeBaseService {
         reason,
         metadata,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Failed to refund prepaid wallet usage for kb_ingestion workspace=${workspaceId} request=${requestId}: ${
           error instanceof Error ? error.message : String(error)
@@ -363,7 +363,7 @@ export class KnowledgeBaseService {
       );
 
       return source; // Retorna imediatamente com status PENDING
-    } catch (error) {
+    } catch (error: unknown) {
       if (usageCharged) {
         await this.refundUsageIfNeeded(
           workspaceId,
@@ -372,7 +372,7 @@ export class KnowledgeBaseService {
           usageMetadata,
         );
       }
-      this.logger.error(`Error dispatching source ingestion: ${error}`);
+      this.logger.error(`Error dispatching source ingestion: ${String(error)}`);
       await this.prisma.knowledgeSource.update({
         where: { id: source.id },
         data: { status: 'FAILED' },
@@ -434,8 +434,8 @@ export class KnowledgeBaseService {
       }
 
       return results.map((r) => r.content).join('\n\n');
-    } catch (err) {
-      this.logger.error(`RAG Search Error: ${err}`);
+    } catch (err: unknown) {
+      this.logger.error(`RAG Search Error: ${String(err)}`);
       return '';
     }
   }

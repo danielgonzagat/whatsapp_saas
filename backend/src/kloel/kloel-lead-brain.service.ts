@@ -117,7 +117,7 @@ export class KloelLeadBrainService {
         select: { role: true, content: true },
       });
       return messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
-    } catch (_error) {
+    } catch (_error: unknown) {
       return [];
     }
   }
@@ -125,7 +125,7 @@ export class KloelLeadBrainService {
   async saveLeadMessage(leadId: string, role: string, content: string): Promise<void> {
     try {
       await this.prisma.kloelConversation.create({ data: { leadId, role, content } });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn('Erro ao salvar mensagem do lead:', error); // Intencional: lead message persistence is non-critical.
     }
   }
@@ -156,7 +156,7 @@ export class KloelLeadBrainService {
         where: { id: leadId, workspaceId },
         data: updateData,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.warn('Erro ao atualizar lead:', error); // Intencional: lead update failure is non-critical.
     }
   }
@@ -192,7 +192,7 @@ export class KloelLeadBrainService {
         }
       }
       return null;
-    } catch (_error) {
+    } catch (_error: unknown) {
       return null;
     }
   }

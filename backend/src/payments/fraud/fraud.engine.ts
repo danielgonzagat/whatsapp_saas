@@ -221,7 +221,7 @@ export class FraudEngine {
         this.logDecision(ctx, decision);
         return decision;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `Velocity antifraud check failed for workspace=${ctx.workspaceId}: ${
           error instanceof Error ? error.message : String(error)

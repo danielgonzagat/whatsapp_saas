@@ -98,7 +98,7 @@ export class ConnectLedgerReconciliationService {
   async runCron(): Promise<void> {
     try {
       await this.reconcile();
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         `connect_ledger_reconciliation_cron_failed: ${
           error instanceof Error ? error.message : String(error)
@@ -319,7 +319,7 @@ export class ConnectLedgerReconciliationService {
           details: JSON.parse(JSON.stringify(details)) as JsonObject,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`connect_ledger_reconcile_audit_failed: ${message}`);
       this.financialAlert?.reconciliationAlert('connect ledger reconciliation audit failed', {

@@ -311,7 +311,7 @@ const buildWebhookBody = (
   if (type === 'teams') {
     return buildTeamsBody(payload);
   }
-  return payload as unknown as Record<string, unknown>;
+  return JSON.parse(JSON.stringify(payload)) as Record<string, unknown>;
 };
 
 const resolveFetch = (): typeof globalThis.fetch | undefined =>

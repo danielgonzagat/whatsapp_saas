@@ -318,7 +318,7 @@ export class CheckoutProductService {
   async syncCheckoutLinks(checkoutId: string, planIds: string[]) {
     try {
       return await this.planLinkManager.syncCheckoutLinks(checkoutId, planIds);
-    } catch (error) {
+    } catch (error: unknown) {
       Sentry.captureException(error, {
         tags: { type: 'checkout_alert', operation: 'checkout_link_sync' },
         extra: { checkoutId, planIds },

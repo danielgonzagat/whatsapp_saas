@@ -75,8 +75,10 @@ export class MemoryService {
 
       this.logger.log(`Memória salva: ${key} (${category})`);
       return memory;
-    } catch (error) {
-      this.logger.error(`Erro salvando memória: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Erro salvando memória: ${error instanceof Error ? error.message : String(error)}`,
+      );
       throw error;
     }
   }
@@ -127,8 +129,8 @@ export class MemoryService {
         totalFound: memories.length,
         searchTime: Date.now() - startTime,
       };
-    } catch (error) {
-      this.logger.error(`Erro na busca: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(`Erro na busca: ${error instanceof Error ? error.message : String(error)}`);
       return {
         memories: [],
         totalFound: 0,
@@ -170,8 +172,10 @@ export class MemoryService {
       }
 
       return contextParts.join('\n');
-    } catch (error) {
-      this.logger.error(`Erro buscando contexto: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Erro buscando contexto: ${error instanceof Error ? error.message : String(error)}`,
+      );
       return '';
     }
   }
@@ -266,7 +270,7 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
         where: { workspaceId_key: { workspaceId, key } },
       });
       return true;
-    } catch (_error) {
+    } catch (_error: unknown) {
       return false;
     }
   }

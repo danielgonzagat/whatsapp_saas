@@ -140,7 +140,7 @@ export class AuthTokenService {
         workspaces: workspaceMeta ? [workspaceMeta] : [],
         isNewUser: extra?.isNewUser === true,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       DbInitErrorService.throwFriendlyDbInitError(error);
     }
   }
@@ -206,7 +206,7 @@ export class AuthTokenService {
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
-    } catch (error) {
+    } catch (error: unknown) {
       DbInitErrorService.throwFriendlyDbInitError(error);
     }
 

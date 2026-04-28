@@ -89,12 +89,9 @@ export class AudioService {
           language,
           response_format: 'verbose_json',
         });
-      } catch (primaryError) {
-        this.logger.warn(
-          `Primary audio model failed, retrying with fallback: ${
-            (primaryError as Error)?.message || primaryError
-          }`,
-        );
+      } catch (primaryError: unknown) {
+        const errMsg = primaryError instanceof Error ? primaryError.message : String(primaryError);
+        this.logger.warn(`Primary audio model failed, retrying with fallback: ${errMsg}`);
         // tokenBudget: caller responsible for pre-flight budget check
         transcription = await this.openai.audio.transcriptions.create({
           file: fs.createReadStream(tempFile),
@@ -115,7 +112,7 @@ export class AudioService {
         duration: transcription.duration,
         language: transcription.language || language,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('Transcription failed:', error);
       throw error;
     } finally {
@@ -167,7 +164,7 @@ export class AudioService {
       const buffer = Buffer.from(arrayBuffer);
 
       return this.transcribe(buffer, language, workspaceId);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(`Failed to transcribe from URL: ${audioUrl}`, error);
       throw error;
     }
@@ -280,7 +277,7 @@ export class AudioService {
 
       const arrayBuffer = await response.arrayBuffer();
       return Buffer.from(arrayBuffer);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('Text-to-speech failed:', error);
       throw error;
     }
@@ -311,7 +308,7 @@ export class AudioService {
 
       const arrayBuffer = await response.arrayBuffer();
       return Buffer.from(arrayBuffer);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('Text-to-speech HD failed:', error);
       throw error;
     }

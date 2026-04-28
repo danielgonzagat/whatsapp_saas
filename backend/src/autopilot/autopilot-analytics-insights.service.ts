@@ -304,7 +304,7 @@ export class AutopilotAnalyticsInsightsService {
         .catch(() => {});
 
       return { answer, detail: insights };
-    } catch (error) {
+    } catch (error: unknown) {
       await this.prisma.autopilotEvent
         .create({
           data: {

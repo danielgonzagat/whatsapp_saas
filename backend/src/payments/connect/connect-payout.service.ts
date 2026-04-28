@@ -155,7 +155,7 @@ export class ConnectPayoutService {
           idempotencyKey: input.requestId,
         },
       );
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('connect payout failed', (error as Error).stack, {
         workspaceId: balance.workspaceId,
         accountBalanceId: balance.id,

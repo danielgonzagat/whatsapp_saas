@@ -100,7 +100,7 @@ export async function getLeadConversationHistory(
       select: { role: true, content: true },
     });
     return messages.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
-  } catch (_error) {
+  } catch (_error: unknown) {
     return [];
   }
 }
@@ -114,7 +114,7 @@ export async function saveLeadMessage(
 ): Promise<void> {
   try {
     await prisma.kloelConversation.create({ data: { leadId, role, content } });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.warn('Erro ao salvar mensagem do lead:', error);
   }
 }
@@ -146,7 +146,7 @@ export async function updateLeadFromConversation(
       where: { id: leadId, workspaceId },
       data: updateData,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     logger.warn('Erro ao atualizar lead:', error);
   }
 }
@@ -181,7 +181,7 @@ export async function extractProductFromMessage(
         return { name: product.name, price: product.price };
     }
     return null;
-  } catch (_error) {
+  } catch (_error: unknown) {
     return null;
   }
 }

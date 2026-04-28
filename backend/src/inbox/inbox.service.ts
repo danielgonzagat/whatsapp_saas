@@ -118,7 +118,7 @@ export class InboxService {
             ...(initialLastMessageAt ? { lastMessageAt: initialLastMessageAt } : {}),
           },
         });
-      } catch (err) {
+      } catch (err: unknown) {
         // P2002 = unique constraint violation on the partial unique index,
         // which means another concurrent worker just created the open
         // conversation. Re-read on the next loop iteration and return it.

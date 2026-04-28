@@ -218,7 +218,7 @@ export class ConnectPayoutApprovalService {
         requestId: payload.requestId,
         currency: payload.currency.toLowerCase(),
       });
-    } catch (error) {
+    } catch (error: unknown) {
       await this.handleApprovalFailure({
         approvalId: approval.id,
         approvalWorkspaceId: approval.workspaceId,

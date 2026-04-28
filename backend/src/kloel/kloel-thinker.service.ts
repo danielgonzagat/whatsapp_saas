@@ -291,7 +291,7 @@ export class KloelThinkerService {
         fullResponse = this.replyEngine.unavailableMessage;
       }
       await finalizeSuccessfulReply(fullResponse, streamedReply.estimatedTokens, branchCtx);
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker:', error);
       if (!isClientDisconnected()) {
         const code =
@@ -327,7 +327,7 @@ export class KloelThinkerService {
           planLimits: this.planLimits,
         },
       );
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker Sync:', error);
       throw error;
     }

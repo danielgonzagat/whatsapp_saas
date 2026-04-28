@@ -313,7 +313,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
 
       this.logger.log(`NeuroCRM analysis completed for ${contact.phone}`);
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       const message = error instanceof Error ? error.message : coerceToString(error);
       this.logger.error(`NeuroCRM analysis failed: ${message}`);
       const fallback = this.buildFallbackAnalysis(contact, history);

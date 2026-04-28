@@ -158,7 +158,7 @@ export async function handleDisputeCreated(
         stakeholderReversedAmountCents: reversal.reversedAmountCents,
         marketplaceDebitCents: marketplaceDebit,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       deps.financialAlert.webhookProcessingFailed(error as Error, {
         provider: 'stripe',
         externalId: paymentIntentId,
