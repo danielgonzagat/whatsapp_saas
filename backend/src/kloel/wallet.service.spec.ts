@@ -555,4 +555,19 @@ describe('WalletService', () => {
       expect(findManyCall.where.type).toBe('withdrawal');
     });
   });
+
+  describe('reconcilePendingPayments', () => {
+    it('exits early when there are no pending transactions to reconcile', async () => {
+      prismaMock.kloelWalletTransaction.findMany.mockResolvedValue([]);
+
+      await expect(service.reconcilePendingPayments()).resolves.toBeUndefined();
+
+      expect(prismaMock.kloelWalletTransaction.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ status: 'pending', type: 'credit' }),
+          take: 100,
+        }),
+      );
+    });
+  });
 });
