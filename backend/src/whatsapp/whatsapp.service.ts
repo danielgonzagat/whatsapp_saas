@@ -19,6 +19,8 @@ import {
   type ConversationOperationalState,
   buildConversationOperationalState,
 } from './agent-conversation-state.util';
+import * as chatHelpers from './whatsapp.service.chats';
+import type { ChatHelperDeps } from './whatsapp.service.chats';
 import { CiaRuntimeService } from './cia-runtime.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
@@ -273,95 +275,28 @@ export class WhatsappService {
     }
   }
 
+  /** Build the deps object for chat helper functions. */
+  private getChatHelperDeps(): ChatHelperDeps {
+    return {
+      prisma: this.prisma,
+      providerRegistry: this.providerRegistry,
+      normalizeChats: (raw) => this.normalizeChats(raw),
+      normalizeMessages: (raw, fallbackChatId) => this.normalizeMessages(raw, fallbackChatId),
+      normalizeNumber: (num) => this.normalizeNumber(num),
+      normalizeChatId: (chatId) => this.normalizeChatId(chatId),
+      isIndividualChatId: (chatId) => this.isIndividualChatId(chatId),
+      toIsoTimestamp: (timestamp) => this.toIsoTimestamp(timestamp),
+      resolveTimestamp: (value) => this.resolveTimestamp(value),
+      resolveTrustedContactName: (phone, ...candidates) =>
+        this.resolveTrustedContactName(phone, ...candidates),
+      listOperationalConversations: (workspaceId, options) =>
+        this.listOperationalConversations(workspaceId, options),
+    };
+  }
+
   /** List chats. */
   async listChats(workspaceId: string) {
-    const remoteChats = this.normalizeChats(await this.providerRegistry.getChats(workspaceId));
-    const localConversations =
-      (await this.prisma.conversation.findMany({
-        where: { workspaceId },
-        select: {
-          id: true,
-          unreadCount: true,
-          status: true,
-          mode: true,
-          assignedAgentId: true,
-          lastMessageAt: true,
-          contact: {
-            select: {
-              id: true,
-              phone: true,
-              name: true,
-            },
-          },
-          messages: {
-            take: 5,
-            orderBy: { createdAt: 'desc' },
-            select: {
-              id: true,
-              direction: true,
-              createdAt: true,
-              content: true,
-            },
-          },
-        },
-        orderBy: { lastMessageAt: 'desc' },
-        take: 500,
-      })) || [];
-
-    const merged = new Map<string, NormalizedChat>();
-
-    for (const chat of remoteChats) {
-      const existing = merged.get(chat.phone);
-      if (!existing || Number(chat.timestamp || 0) >= Number(existing.timestamp || 0)) {
-        merged.set(chat.phone, {
-          ...existing,
-          ...chat,
-          name: chat.name || existing?.name || chat.phone,
-        });
-      }
-    }
-
-    for (const conversation of localConversations) {
-      const phone = this.normalizeNumber(conversation.contact?.phone || '');
-      if (!phone) {
-        continue;
-      }
-
-      const existing = merged.get(phone);
-      const timestamp = existing?.timestamp || conversation.lastMessageAt?.getTime() || 0;
-      const operational = buildConversationOperationalState(
-        conversation as ConversationOperationalLike,
-      );
-      const unreadCount =
-        typeof existing?.unreadCount === 'number'
-          ? existing.unreadCount
-          : conversation.unreadCount || 0;
-
-      merged.set(phone, {
-        id: existing?.id || `${phone}@c.us`,
-        phone,
-        name: existing?.name || conversation.contact?.name || conversation.contact?.phone || phone,
-        unreadCount,
-        pending: operational.pending,
-        needsReply: operational.needsReply,
-        pendingMessages: operational.pending ? Math.max(1, Number(unreadCount || 0) || 0) : 0,
-        owner: operational.owner,
-        blockedReason: operational.blockedReason,
-        lastMessageDirection: operational.lastMessageDirection,
-        timestamp,
-        lastMessageAt:
-          this.toIsoTimestamp(timestamp) || conversation.lastMessageAt?.toISOString?.() || null,
-        conversationId: conversation.id,
-        status: conversation.status || null,
-        mode: conversation.mode || null,
-        assignedAgentId: conversation.assignedAgentId || null,
-        source: existing ? 'waha+crm' : 'crm',
-      });
-    }
-
-    return Array.from(merged.values()).sort(
-      (a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0),
-    );
+    return chatHelpers.listChats(this.getChatHelperDeps(), workspaceId);
   }
 
   /** Get chat messages. */
@@ -370,160 +305,12 @@ export class WhatsappService {
     chatId: string,
     options?: { limit?: number; offset?: number; downloadMedia?: boolean },
   ) {
-    const normalizedChatId = this.normalizeChatId(chatId);
-    const providerMessages = this.normalizeMessages(
-      await this.providerRegistry.getChatMessages(workspaceId, normalizedChatId, options),
-      normalizedChatId,
-    );
-
-    if (providerMessages.length > 0) {
-      return providerMessages.sort((a, b) => a.timestamp - b.timestamp);
-    }
-
-    const phone = this.normalizeNumber(
-      this.providerRegistry.extractPhoneFromChatId(normalizedChatId),
-    );
-    if (!phone) {
-      return [];
-    }
-
-    const contact = await this.prisma.contact.findUnique({
-      where: { workspaceId_phone: { workspaceId, phone } },
-      select: { id: true },
-    });
-
-    if (!contact) {
-      return [];
-    }
-
-    const localMessages = await this.prisma.message.findMany({
-      take: Math.max(1, Math.min(200, options?.limit || 100)),
-      skip: Math.max(0, options?.offset || 0),
-      where: {
-        workspaceId,
-        contactId: contact.id,
-      },
-      select: {
-        id: true,
-        content: true,
-        direction: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        contactId: true,
-        conversationId: true,
-        mediaUrl: true,
-        externalId: true,
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    return localMessages.map((message) => {
-      const timestamp = message.createdAt?.getTime?.() || 0;
-      return {
-        id: message.id,
-        chatId: normalizedChatId,
-        phone,
-        body: message.content || '',
-        direction: message.direction,
-        fromMe: message.direction === 'OUTBOUND',
-        type: String(message.mediaUrl ? 'MEDIA' : 'TEXT').toLowerCase(),
-        hasMedia: !!message.mediaUrl,
-        mediaUrl: message.mediaUrl || null,
-        mimetype: null,
-        timestamp,
-        isoTimestamp: this.toIsoTimestamp(timestamp),
-        source: 'crm',
-      };
-    });
+    return chatHelpers.getChatMessages(this.getChatHelperDeps(), workspaceId, chatId, options);
   }
 
   /** Get backlog. */
   async getBacklog(workspaceId: string) {
-    const status = await this.providerRegistry.getSessionStatus(workspaceId);
-    const chats = await this.listChats(workspaceId);
-    const pendingChats = chats.filter((chat) => chat.pending === true);
-    const pendingMessages = pendingChats.reduce(
-      (sum, chat) => sum + Math.max(1, Number(chat.pendingMessages || chat.unreadCount || 0) || 0),
-      0,
-    );
-
-    return {
-      connected: status.connected,
-      status: status.status,
-      pendingConversations: pendingChats.length,
-      pendingMessages,
-      latestMessageAt: pendingChats[0]?.lastMessageAt || null,
-      chats: pendingChats,
-    };
-  }
-
-  private indexRemoteChatsByPhone(remoteChats: NormalizedChat[]): Map<string, NormalizedChat> {
-    const remoteByPhone = new Map<string, NormalizedChat>();
-    for (const chat of remoteChats) {
-      const existing = remoteByPhone.get(chat.phone);
-      if (!existing || Number(chat.timestamp || 0) >= Number(existing.timestamp || 0)) {
-        remoteByPhone.set(chat.phone, chat);
-      }
-    }
-    return remoteByPhone;
-  }
-
-  private indexLocalConversationsByPhone(
-    localConversations: ConversationOperationalState[],
-  ): Map<string, ConversationOperationalState> {
-    const localByPhone = new Map<string, ConversationOperationalState>();
-    for (const conversation of localConversations) {
-      const phone = this.normalizeNumber(conversation.phone || '');
-      if (!phone) {
-        continue;
-      }
-
-      const existing = localByPhone.get(phone);
-      const currentTimestamp = this.resolveTimestamp({ createdAt: conversation.lastMessageAt });
-      const existingTimestamp = this.resolveTimestamp({ createdAt: existing?.lastMessageAt });
-
-      if (!existing || currentTimestamp >= existingTimestamp) {
-        localByPhone.set(phone, conversation);
-      }
-    }
-    return localByPhone;
-  }
-
-  private compareOperationalBacklogItems(
-    a: ReturnType<WhatsappService['buildOperationalBacklogItem']>,
-    b: ReturnType<WhatsappService['buildOperationalBacklogItem']>,
-  ): number {
-    if (a.pending !== b.pending) {
-      return Number(b.pending) - Number(a.pending);
-    }
-    if (a.lastMessageTimestamp !== b.lastMessageTimestamp) {
-      return b.lastMessageTimestamp - a.lastMessageTimestamp;
-    }
-    if (a.remoteUnreadCount !== b.remoteUnreadCount) {
-      return b.remoteUnreadCount - a.remoteUnreadCount;
-    }
-    return String(a.name || a.phone).localeCompare(String(b.name || b.phone));
-  }
-
-  private buildOperationalBacklogSummary(
-    items: ReturnType<WhatsappService['buildOperationalBacklogItem']>[],
-    pendingItems: ReturnType<WhatsappService['buildOperationalBacklogItem']>[],
-  ) {
-    return {
-      remotePendingConversations: items.filter((item) => item.remotePending).length,
-      remotePendingMessages: items.reduce((sum, item) => sum + item.remoteUnreadCount, 0),
-      localPendingConversations: items.filter((item) => item.localPending).length,
-      localPendingMessages: items.reduce(
-        (sum, item) => sum + (item.localPending ? Math.max(item.localUnreadCount, 1) : 0),
-        0,
-      ),
-      effectivePendingConversations: pendingItems.length,
-      effectivePendingMessages: pendingItems.reduce((sum, item) => sum + item.pendingMessages, 0),
-      remoteOnlyPendingConversations: items.filter((item) => item.remoteOnlyPending).length,
-      localOnlyPendingConversations: items.filter((item) => item.localOnlyPending).length,
-      latestPendingMessageAt: pendingItems[0]?.lastMessageAt || null,
-    };
+    return chatHelpers.getBacklog(this.getChatHelperDeps(), workspaceId);
   }
 
   /** Get operational backlog report. */
@@ -531,100 +318,7 @@ export class WhatsappService {
     workspaceId: string,
     options?: { limit?: number; includeResolved?: boolean },
   ) {
-    const limit = Math.max(1, Math.min(500, Number(options?.limit || 100) || 100));
-    const includeResolved = options?.includeResolved === true;
-
-    const [status, remoteChatsRaw, localConversations] = await Promise.all([
-      this.providerRegistry.getSessionStatus(workspaceId),
-      this.providerRegistry.getChats(workspaceId),
-      this.listOperationalConversations(workspaceId, {
-        limit: Math.max(limit * 5, 500),
-        pendingOnly: false,
-      }),
-    ]);
-
-    const remoteChats = this.normalizeChats(remoteChatsRaw).filter((chat) =>
-      this.isIndividualChatId(chat.id),
-    );
-
-    const remoteByPhone = this.indexRemoteChatsByPhone(remoteChats);
-    const localByPhone = this.indexLocalConversationsByPhone(localConversations);
-
-    const phoneSet = new Set<string>([
-      ...Array.from(remoteByPhone.keys()),
-      ...Array.from(localByPhone.keys()),
-    ]);
-
-    const items = Array.from(phoneSet)
-      .map((phone) =>
-        this.buildOperationalBacklogItem(phone, remoteByPhone.get(phone), localByPhone.get(phone)),
-      )
-      .sort((a, b) => this.compareOperationalBacklogItems(a, b));
-
-    const visibleItems = items.filter((item) => includeResolved || item.pending).slice(0, limit);
-    const pendingItems = items.filter((item) => item.pending);
-
-    return {
-      workspaceId,
-      generatedAt: new Date().toISOString(),
-      sourceOfTruth: await this.providerRegistry.getProviderType(workspaceId),
-      connected: status.connected,
-      status: status.status,
-      includeResolved,
-      summary: this.buildOperationalBacklogSummary(items, pendingItems),
-      items: visibleItems,
-    };
-  }
-
-  private buildOperationalBacklogItem(
-    phone: string,
-    remote: NormalizedChat | undefined,
-    local: ConversationOperationalState | undefined,
-  ) {
-    const remoteUnreadCount = Math.max(0, Number(remote?.unreadCount || 0) || 0);
-    const localUnreadCount = Math.max(0, Number(local?.unreadCount || 0) || 0);
-    const localPendingMessages = Math.max(0, Number(local?.pendingMessages || 0) || 0);
-    const remotePending = remoteUnreadCount > 0;
-    const localPending = local?.pending === true;
-    const pending = remotePending || localPending;
-    const lastMessageTimestamp = Math.max(
-      this.resolveTimestamp(remote),
-      this.resolveTimestamp({ createdAt: local?.lastMessageAt }),
-    );
-    const pendingMessages = pending
-      ? Math.max(remoteUnreadCount, localPendingMessages, localUnreadCount, 1)
-      : 0;
-    const source = remote && local ? 'waha+crm' : remote ? 'waha' : 'crm';
-    const lastMessageAt =
-      this.toIsoTimestamp(lastMessageTimestamp) ||
-      remote?.lastMessageAt ||
-      local?.lastMessageAt ||
-      null;
-
-    return {
-      phone,
-      chatId: remote?.id || (phone ? `${phone}@c.us` : null),
-      name: this.resolveTrustedContactName(phone, remote?.name, local?.contactName) || null,
-      conversationId: local?.conversationId || null,
-      source,
-      pending,
-      needsReply: remotePending || local?.needsReply === true,
-      remotePending,
-      localPending,
-      remoteUnreadCount,
-      localUnreadCount,
-      pendingMessages,
-      blockedReason: pending ? null : local?.blockedReason || null,
-      owner: local?.owner || 'AGENT',
-      lastMessageDirection: local?.lastMessageDirection || null,
-      lastMessageAt,
-      lastMessageTimestamp,
-      remoteOnlyPending: remotePending && !localPending,
-      localOnlyPending: localPending && !remotePending,
-      conversationStatus: local?.status || null,
-      conversationMode: local?.mode || null,
-      assignedAgentId: local?.assignedAgentId || null,
-    };
+    return chatHelpers.getOperationalBacklogReport(this.getChatHelperDeps(), workspaceId, options);
   }
 
   /** List catalog contacts. */
@@ -1949,7 +1643,7 @@ export class WhatsappService {
 
     // 3. Enfileira Autopilot (worker) para avaliação/ação assíncrona
     try {
-      const settings = ws.providerSettings || {};
+      const settings = this.normalizeJsonObject(ws.providerSettings);
       if (this.isAutonomousEnabled(settings) && saved?.contactId) {
         const scanKey = `autopilot:scan-contact:${workspaceId}:${saved.contactId}`;
         const reserved = await this.redis.set(
@@ -1984,7 +1678,9 @@ export class WhatsappService {
       }
 
       // Sinais de compra em tempo real -> dispara flow quente, se configurado
-      const hotFlowId = settings?.autopilot?.hotFlowId;
+      const autopilotConfig = this.normalizeJsonObject(settings.autopilot);
+      const hotFlowIdRaw = autopilotConfig.hotFlowId;
+      const hotFlowId = typeof hotFlowIdRaw === 'string' ? hotFlowIdRaw : null;
       const lower = (message || '').toLowerCase();
       const buyKeywords = [
         'preco',
@@ -2445,6 +2141,9 @@ export class WhatsappService {
         `Redis indisponível para deliverToContext, usando client ad-hoc: ${errInstanceofError?.message}`,
       );
       const fallback = createRedisClient();
+      if (!fallback) {
+        throw new Error('Redis client unavailable');
+      }
       try {
         await fallback.rpush(key, message);
         await fallback.expire(key, 60 * 60 * 24);
