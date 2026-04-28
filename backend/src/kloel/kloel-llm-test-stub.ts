@@ -80,7 +80,7 @@ function findPriceInBlock(block: string): string | null {
   return match ? match[0] : null;
 }
 
-export interface KloelStubExtraction {
+interface KloelStubExtraction {
   productName: string | null;
   productPrice: string | null;
 }
