@@ -111,16 +111,8 @@ const EMPTY_MESSAGES: Record<ChannelKey, SalesMessage[]> = {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function getPrefersReducedMotion() {
-  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-    return false;
-  }
-
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
 function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(getPrefersReducedMotion);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -131,13 +123,8 @@ function usePrefersReducedMotion() {
     const apply = () => setPrefersReducedMotion(mediaQuery.matches);
 
     apply();
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', apply);
-      return () => mediaQuery.removeEventListener('change', apply);
-    }
-
-    mediaQuery.addListener?.(apply);
-    return () => mediaQuery.removeListener?.(apply);
+    mediaQuery.addEventListener?.('change', apply);
+    return () => mediaQuery.removeEventListener?.('change', apply);
   }, []);
 
   return prefersReducedMotion;
