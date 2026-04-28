@@ -1,6 +1,17 @@
 import { ConfigService } from '@nestjs/config';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
 
+type PrismaArg = ConstructorParameters<typeof WhatsAppApiProvider>[0];
+type MetaArg = ConstructorParameters<typeof WhatsAppApiProvider>[2];
+
+function asPrismaArg(v: object): PrismaArg {
+  return v as PrismaArg;
+}
+
+function asMetaArg(v: object): MetaArg {
+  return v as MetaArg;
+}
+
 describe('WhatsAppApiProvider', () => {
   let prisma: {
     workspace: {
@@ -59,9 +70,9 @@ describe('WhatsAppApiProvider', () => {
     });
 
     const provider = new WhatsAppApiProvider(
-      prisma as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[0],
+      asPrismaArg(prisma),
       createConfig(),
-      metaWhatsApp as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[2],
+      asMetaArg(metaWhatsApp),
     );
 
     await expect(provider.startSession('ws-1')).resolves.toEqual({
@@ -79,9 +90,9 @@ describe('WhatsAppApiProvider', () => {
     });
 
     const provider = new WhatsAppApiProvider(
-      prisma as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[0],
+      asPrismaArg(prisma),
       createConfig(),
-      metaWhatsApp as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[2],
+      asMetaArg(metaWhatsApp),
     );
 
     await expect(provider.startSession('ws-1')).resolves.toEqual({
@@ -105,9 +116,9 @@ describe('WhatsAppApiProvider', () => {
     });
 
     const provider = new WhatsAppApiProvider(
-      prisma as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[0],
+      asPrismaArg(prisma),
       createConfig(),
-      metaWhatsApp as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[2],
+      asMetaArg(metaWhatsApp),
     );
 
     await expect(provider.getSessionStatus('ws-1')).resolves.toEqual({
@@ -122,9 +133,9 @@ describe('WhatsAppApiProvider', () => {
 
   it('lists the configured Meta phone number as the active session', async () => {
     const provider = new WhatsAppApiProvider(
-      prisma as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[0],
+      asPrismaArg(prisma),
       createConfig({ META_PHONE_NUMBER_ID: '1234567890' }),
-      metaWhatsApp as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[2],
+      asMetaArg(metaWhatsApp),
     );
 
     await expect(provider.listSessions()).resolves.toEqual([
@@ -148,9 +159,9 @@ describe('WhatsAppApiProvider', () => {
     });
 
     const provider = new WhatsAppApiProvider(
-      prisma as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[0],
+      asPrismaArg(prisma),
       createConfig(),
-      metaWhatsApp as unknown as ConstructorParameters<typeof WhatsAppApiProvider>[2],
+      asMetaArg(metaWhatsApp),
     );
 
     await expect(provider.sendMessage('ws-1', '5511999999999', 'Oi')).resolves.toEqual({

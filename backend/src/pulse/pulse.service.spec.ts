@@ -466,7 +466,7 @@ describe('PulseService', () => {
 
   it('schedules and dispatches pulse background tasks on module init outside tests', async () => {
     const { service } = createService();
-    const fakeTimers = [{ id: 'heartbeat' }, { id: 'stale' }, { id: 'frontend-prune' }];
+    const fakeTimers: object[] = [{ id: 'heartbeat' }, { id: 'stale' }, { id: 'frontend-prune' }];
     const scheduled: Array<{ callback: () => void; delay: number }> = [];
     const captureBackendHeartbeat = jest
       .spyOn(service, 'captureBackendHeartbeat')
@@ -495,7 +495,7 @@ describe('PulseService', () => {
         scheduled.push({ callback: () => callback(), delay: Number(delay) });
         const timer = fakeTimers[timerIndex];
         timerIndex += 1;
-        return timer as unknown as ReturnType<typeof setInterval>;
+        return timer as ReturnType<typeof setInterval>;
       });
 
     service.onModuleInit();
