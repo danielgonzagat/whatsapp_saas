@@ -183,9 +183,13 @@ export class ProductAffiliateController {
     const context = buildAffiliateConfigContext(body, currentProduct);
     const productPayload = buildProductPayload(body, currentProduct, context);
 
-    const updatedProduct = await this.prisma.product.update({
-      where: { id: productId },
+    const workspaceId = getWorkspaceId(req);
+    await this.prisma.product.updateMany({
+      where: { id: productId, workspaceId },
       data: productPayload as Prisma.ProductUncheckedUpdateInput,
+    });
+    const updatedProduct = await this.prisma.product.findFirstOrThrow({
+      where: { id: productId, workspaceId },
     });
 
     const existingAffiliateProduct = await this.prisma.affiliateProduct.findUnique({

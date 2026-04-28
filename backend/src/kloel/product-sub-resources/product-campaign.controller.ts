@@ -99,14 +99,18 @@ export class ProductCampaignController {
     const nextStrategy = safeStr(body?.aiStrategy || linkedCampaign?.aiStrategy, 'BALANCED').trim();
 
     if (linkedCampaign) {
-      return this.prisma.campaign.update({
-        where: { id: safeStr(linkedCampaign.id) },
+      const linkedCampaignId = safeStr(linkedCampaign.id);
+      await this.prisma.campaign.updateMany({
+        where: { id: linkedCampaignId, workspaceId },
         data: {
           name: safeStr(body?.name || productCampaign.name),
           messageTemplate: nextMessage,
           filters: nextFilters,
           aiStrategy: nextStrategy,
         },
+      });
+      return this.prisma.campaign.findFirstOrThrow({
+        where: { id: linkedCampaignId, workspaceId },
       });
     }
 
@@ -293,9 +297,10 @@ export class ProductCampaignController {
       details: { deletedBy: 'user', productId },
     });
 
+    const workspaceId = getWorkspaceId(req);
     if (linkedCampaign) {
-      await this.prisma.campaign.delete({
-        where: { id: safeStr(linkedCampaign.id) },
+      await this.prisma.campaign.deleteMany({
+        where: { id: safeStr(linkedCampaign.id), workspaceId },
       });
     }
 
