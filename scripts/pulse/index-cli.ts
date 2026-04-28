@@ -86,6 +86,12 @@ if (flags.profile === 'core-critical') {
   inferredSyntheticModes.add('operator');
   inferredSyntheticModes.add('admin');
 }
+if (flags.profile === 'pulse-core-final') {
+  inferredSyntheticModes.add('customer');
+  inferredSyntheticModes.add('operator');
+  inferredSyntheticModes.add('admin');
+  inferredSyntheticModes.add('soak');
+}
 if (flags.profile === 'full-product') {
   inferredSyntheticModes.add('customer');
   inferredSyntheticModes.add('operator');

@@ -84,17 +84,26 @@ export function isBalancedAutomationSafe(unit: QueueUnit): boolean {
 }
 
 export function getAutomationKindPenalty(unit: QueueUnit): number {
-  if (unit.kind === 'capability') {
+  if (unit.kind === 'scenario') {
     return 0;
   }
-  if (unit.kind === 'flow') {
+  if (unit.kind === 'runtime' || unit.kind === 'change') {
+    return 1;
+  }
+  if (unit.kind === 'dependency') {
     return 2;
   }
-  if (unit.kind === 'gate') {
+  if (unit.kind === 'capability') {
     return 4;
   }
-  if (unit.kind === 'scope' || unit.kind === 'static') {
+  if (unit.kind === 'flow') {
+    return 5;
+  }
+  if (unit.kind === 'gate') {
     return 6;
+  }
+  if (unit.kind === 'scope' || unit.kind === 'static') {
+    return 8;
   }
   return 8;
 }
@@ -114,28 +123,28 @@ export function buildAutonomyQueue(convergencePlan: PulseConvergencePlan): Queue
   return buildDecisionQueue(convergencePlan)
     .filter(isBalancedAutomationSafe)
     .sort((left, right) => {
-      const impactDelta =
-        PRODUCT_IMPACT_RANK[left.productImpact] - PRODUCT_IMPACT_RANK[right.productImpact];
-      if (impactDelta !== 0) {
-        return impactDelta;
-      }
       const priorityDelta = PRIORITY_RANK[left.priority] - PRIORITY_RANK[right.priority];
       if (priorityDelta !== 0) {
         return priorityDelta;
-      }
-      const productSurfaceDelta =
-        Number(hasProductSurface(right)) - Number(hasProductSurface(left));
-      if (productSurfaceDelta !== 0) {
-        return productSurfaceDelta;
       }
       const kindDelta = KIND_RANK[left.kind] - KIND_RANK[right.kind];
       if (kindDelta !== 0) {
         return kindDelta;
       }
+      const impactDelta =
+        PRODUCT_IMPACT_RANK[left.productImpact] - PRODUCT_IMPACT_RANK[right.productImpact];
+      if (impactDelta !== 0) {
+        return impactDelta;
+      }
       const evidenceDelta =
         getTruthModeRank(left.evidenceMode) - getTruthModeRank(right.evidenceMode);
       if (evidenceDelta !== 0) {
         return evidenceDelta;
+      }
+      const productSurfaceDelta =
+        Number(hasProductSurface(right)) - Number(hasProductSurface(left));
+      if (productSurfaceDelta !== 0) {
+        return productSurfaceDelta;
       }
       const costDelta = getAutomationUnitCost(left) - getAutomationUnitCost(right);
       if (costDelta !== 0) {

@@ -2,9 +2,14 @@
  * Pulse artifact report and certificate builders.
  */
 import { compact } from './artifacts.io';
-import { buildDecisionQueue } from './artifacts.queue';
-import type { PulseArtifactSnapshot } from './artifacts';
-import type { PulseConvergencePlan } from './types';
+import { buildDecisionQueue, buildAutonomyQueue } from './artifacts.queue';
+import { buildAutonomyCycleProof } from './artifacts.autonomy';
+import type {
+  PulseArtifactSnapshot,
+  PulseMachineReadiness,
+  PulseMachineReadinessCriterion,
+} from './artifacts.types';
+import type { PulseAutonomyState, PulseConvergencePlan } from './types';
 import type { PulseArtifactCleanupReport } from './artifact-gc';
 import { calculateCoverage } from './coverage-calculator';
 
@@ -17,12 +22,166 @@ export function getProductFacingCapabilities(
   return productFacing.length > 0 ? productFacing : snapshot.capabilityState.capabilities;
 }
 
+function statusFromBoolean(pass: boolean): PulseMachineReadinessCriterion['status'] {
+  return pass ? 'pass' : 'fail';
+}
+
+export function buildPulseMachineReadiness(
+  snapshot: PulseArtifactSnapshot,
+  convergencePlan: PulseConvergencePlan,
+  previousAutonomyState: PulseAutonomyState | null = null,
+): PulseMachineReadiness {
+  const autonomyQueue = buildAutonomyQueue(convergencePlan);
+  const boundedExecutableUnits = autonomyQueue.slice(0, 8);
+  const boundedRunPass = boundedExecutableUnits.length > 0 && boundedExecutableUnits.length <= 8;
+  const consistencyCheck = snapshot.certification.selfTrustReport?.checks?.find(
+    (check) => check.id === 'cross-artifact-consistency',
+  );
+  const artifactConsistencyPass = consistencyCheck?.pass === true;
+  const executionMatrixGate = snapshot.certification.gates.executionMatrixCompletePass;
+  const criticalPathGate = snapshot.certification.gates.criticalPathObservedPass;
+  const breakpointGate = snapshot.certification.gates.breakpointPrecisionPass;
+  const externalSummary = snapshot.externalSignalState.summary;
+  const externalRealityPass =
+    externalSummary.missingAdapters === 0 &&
+    externalSummary.staleAdapters === 0 &&
+    externalSummary.invalidAdapters === 0;
+  const selfTrustGate = snapshot.certification.gates.pulseSelfTrustPass;
+  const selfTrustPass = selfTrustGate.status === 'pass';
+  const multiCycleGate = snapshot.certification.gates.multiCycleConvergencePass;
+  const cycleProof = buildAutonomyCycleProof(previousAutonomyState);
+  const multiCyclePass = multiCycleGate.status === 'pass' && cycleProof.proven;
+
+  const criteria: PulseMachineReadinessCriterion[] = [
+    {
+      id: 'bounded_run',
+      status: statusFromBoolean(boundedRunPass),
+      reason: boundedRunPass
+        ? `Bounded next autonomous cycle exposes ${boundedExecutableUnits.length} ai_safe unit(s).`
+        : `No bounded ai_safe unit is available for the next PULSE-machine cycle.`,
+      evidence: {
+        nextExecutableUnitLimit: 8,
+        boundedExecutableUnits: boundedExecutableUnits.length,
+        totalAutonomousUnits: autonomyQueue.length,
+        totalConvergenceUnits: convergencePlan.summary.totalUnits,
+      },
+    },
+    {
+      id: 'artifact_consistency',
+      status: statusFromBoolean(artifactConsistencyPass),
+      reason:
+        consistencyCheck?.reason ??
+        (artifactConsistencyPass
+          ? 'Cross-artifact consistency passed.'
+          : 'Cross-artifact consistency has not produced a passing check.'),
+      evidence: {
+        selfTrustOverallPass: snapshot.certification.selfTrustReport?.overallPass ?? null,
+        selfTrustScore: snapshot.certification.selfTrustReport?.score ?? null,
+      },
+    },
+    {
+      id: 'execution_matrix',
+      status: executionMatrixGate.status,
+      reason: executionMatrixGate.reason,
+      evidence: {
+        totalPaths: snapshot.executionMatrix.summary.totalPaths,
+        unknownPaths: snapshot.executionMatrix.summary.unknownPaths,
+        criticalUnobservedPaths: snapshot.executionMatrix.summary.criticalUnobservedPaths,
+        impreciseBreakpoints: snapshot.executionMatrix.summary.impreciseBreakpoints,
+        coveragePercent: snapshot.executionMatrix.summary.coveragePercent,
+      },
+    },
+    {
+      id: 'critical_path_terminal',
+      status: criticalPathGate.status,
+      reason: criticalPathGate.reason,
+      evidence: {
+        criticalUnobservedPaths: snapshot.executionMatrix.summary.criticalUnobservedPaths,
+        observedPass: snapshot.executionMatrix.summary.observedPass,
+        observedFail: snapshot.executionMatrix.summary.observedFail,
+        blockedHumanRequired: snapshot.executionMatrix.summary.blockedHumanRequired,
+      },
+    },
+    {
+      id: 'breakpoint_precision',
+      status: breakpointGate.status,
+      reason: breakpointGate.reason,
+      evidence: {
+        impreciseBreakpoints: snapshot.executionMatrix.summary.impreciseBreakpoints,
+        observedFail: snapshot.executionMatrix.summary.observedFail,
+      },
+    },
+    {
+      id: 'external_reality',
+      status: statusFromBoolean(externalRealityPass),
+      reason: externalRealityPass
+        ? 'Required external adapters are fresh and available for PULSE-machine decisions.'
+        : `${externalSummary.missingAdapters} missing, ${externalSummary.staleAdapters} stale, and ${externalSummary.invalidAdapters} invalid external adapter(s) remain.`,
+      evidence: {
+        totalSignals: externalSummary.totalSignals,
+        mappedSignals: externalSummary.mappedSignals,
+        missingAdapters: externalSummary.missingAdapters,
+        staleAdapters: externalSummary.staleAdapters,
+        invalidAdapters: externalSummary.invalidAdapters,
+        highImpactSignals: externalSummary.highImpactSignals,
+      },
+    },
+    {
+      id: 'self_trust',
+      status: selfTrustGate.status,
+      reason: selfTrustGate.reason,
+      evidence: {
+        overallPass: snapshot.certification.selfTrustReport?.overallPass ?? null,
+        confidence: snapshot.certification.selfTrustReport?.confidence ?? null,
+        score: snapshot.certification.selfTrustReport?.score ?? null,
+      },
+    },
+    {
+      id: 'multi_cycle',
+      status: statusFromBoolean(multiCyclePass),
+      reason: multiCyclePass
+        ? multiCycleGate.reason
+        : `${multiCycleGate.reason} Cycle proof: ${cycleProof.successfulNonRegressingCycles}/${cycleProof.requiredCycles} successful non-regressing real cycle(s).`,
+      evidence: {
+        gateStatus: multiCycleGate.status,
+        requiredCycles: cycleProof.requiredCycles,
+        totalRecordedCycles: cycleProof.totalRecordedCycles,
+        realExecutedCycles: cycleProof.realExecutedCycles,
+        successfulNonRegressingCycles: cycleProof.successfulNonRegressingCycles,
+        proven: cycleProof.proven,
+      },
+    },
+  ];
+  const blockers = criteria
+    .filter((criterion) => criterion.status !== 'pass')
+    .map((criterion) => `${criterion.id}: ${criterion.reason}`);
+  const ready = blockers.length === 0;
+
+  return {
+    scope: 'pulse_machine_not_kloel_product',
+    status: ready ? 'READY' : 'NOT_READY',
+    generatedAt: snapshot.certification.timestamp,
+    productCertificationStatus: snapshot.certification.status,
+    productCertificationExcludedFromVerdict: true,
+    canRunBoundedAutonomousCycle: boundedRunPass && artifactConsistencyPass && selfTrustPass,
+    canDeclareKloelProductCertified: snapshot.certification.status === 'CERTIFIED',
+    criteria,
+    blockers,
+  };
+}
+
 export function buildReport(
   snapshot: PulseArtifactSnapshot,
   convergencePlan: PulseConvergencePlan,
   cleanupReport: PulseArtifactCleanupReport,
+  previousAutonomyState: PulseAutonomyState | null = null,
 ): string {
   const decisionQueue = buildDecisionQueue(convergencePlan);
+  const pulseMachineReadiness = buildPulseMachineReadiness(
+    snapshot,
+    convergencePlan,
+    previousAutonomyState,
+  );
   const runtimeEvidence = snapshot.certification?.evidenceSummary?.runtime;
   const runtimeProbes = runtimeEvidence?.probes ?? [];
   const coverage = calculateCoverage({
@@ -60,6 +219,24 @@ export function buildReport(
   lines.push(`- Proxima acao: ${nextAction}`);
   lines.push('');
 
+  lines.push('## PULSE Machine Readiness');
+  lines.push('');
+  lines.push(`- Machine readiness: ${pulseMachineReadiness.status}`);
+  lines.push(`- Scope: ${pulseMachineReadiness.scope}`);
+  lines.push(
+    `- Product certification excluded from machine verdict: ${pulseMachineReadiness.productCertificationExcludedFromVerdict ? 'SIM' : 'NAO'} (${pulseMachineReadiness.productCertificationStatus})`,
+  );
+  lines.push(
+    `- Can run bounded autonomous cycle: ${pulseMachineReadiness.canRunBoundedAutonomousCycle ? 'SIM' : 'NAO'}`,
+  );
+  lines.push(
+    `- Can declare Kloel product certified: ${pulseMachineReadiness.canDeclareKloelProductCertified ? 'SIM' : 'NAO'}`,
+  );
+  for (const criterion of pulseMachineReadiness.criteria) {
+    lines.push(`- ${criterion.id}: ${criterion.status.toUpperCase()} - ${criterion.reason}`);
+  }
+  lines.push('');
+
   lines.push('## Current State');
   lines.push('');
   lines.push(`- Certification: ${snapshot.certification.status}`);
@@ -80,6 +257,9 @@ export function buildReport(
   );
   lines.push(
     `- Flows: real=${snapshot.flowProjection.summary.realFlows}, partial=${snapshot.flowProjection.summary.partialFlows}, latent=${snapshot.flowProjection.summary.latentFlows}, phantom=${snapshot.flowProjection.summary.phantomFlows}`,
+  );
+  lines.push(
+    `- Execution matrix: paths=${snapshot.executionMatrix.summary.totalPaths}, observedPass=${snapshot.executionMatrix.summary.observedPass}, observedFail=${snapshot.executionMatrix.summary.observedFail}, criticalUnobserved=${snapshot.executionMatrix.summary.criticalUnobservedPaths}, unknown=${snapshot.executionMatrix.summary.unknownPaths}`,
   );
   lines.push(
     `- Structural parity gaps: total=${snapshot.parityGaps.summary.totalGaps}, critical=${snapshot.parityGaps.summary.criticalGaps}, high=${snapshot.parityGaps.summary.highGaps}`,
@@ -214,6 +394,21 @@ export function buildReport(
     }
     lines.push('');
   }
+  if (snapshot.executionMatrix.paths.length > 0) {
+    lines.push('## Execution Matrix');
+    lines.push('');
+    lines.push(
+      `- Coverage: ${snapshot.executionMatrix.summary.coveragePercent}% classified, unknown=${snapshot.executionMatrix.summary.unknownPaths}, criticalUnobserved=${snapshot.executionMatrix.summary.criticalUnobservedPaths}`,
+    );
+    for (const path of snapshot.executionMatrix.paths
+      .filter((entry) => entry.status !== 'observed_pass')
+      .slice(0, 10)) {
+      lines.push(
+        `- ${path.pathId}: status=${path.status}, truth=${path.truthMode}, mode=${path.executionMode}, route=${path.routePatterns[0] ?? 'n/a'}${path.breakpoint ? `, breakpoint=${compact(path.breakpoint.reason, 160)}` : ''}`,
+      );
+    }
+    lines.push('');
+  }
   if (snapshot.capabilityState.capabilities.length > 0) {
     lines.push('## Capability Maturity');
     lines.push('');
@@ -302,7 +497,13 @@ export function buildReport(
 export function buildCertificate(
   snapshot: PulseArtifactSnapshot,
   convergencePlan: PulseConvergencePlan,
+  previousAutonomyState: PulseAutonomyState | null = null,
 ): string {
+  const pulseMachineReadiness = buildPulseMachineReadiness(
+    snapshot,
+    convergencePlan,
+    previousAutonomyState,
+  );
   return JSON.stringify(
     {
       projectId: snapshot.manifest?.projectId || 'unknown',
@@ -312,6 +513,8 @@ export function buildCertificate(
       timestamp: snapshot.certification.timestamp,
       status: snapshot.certification.status,
       humanReplacementStatus: snapshot.certification.humanReplacementStatus,
+      profile: snapshot.certification.certificationTarget.profile ?? null,
+      certificationScope: snapshot.certification.certificationScope,
       score: snapshot.certification.score,
       rawScore: snapshot.certification.rawScore,
       certificationTarget: snapshot.certification.certificationTarget,
@@ -339,6 +542,7 @@ export function buildCertificate(
       },
       evidenceSummary: snapshot.certification.evidenceSummary,
       gateEvidence: snapshot.certification.gateEvidence,
+      pulseMachineReadiness,
     },
     null,
     2,

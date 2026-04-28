@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import type { PulseScenarioResult } from '../types';
+import type { PulseActorEvidence, PulseScenarioResult } from '../types';
 
 const localRequire = createRequire(__filename);
 
@@ -13,6 +13,16 @@ const localRequire = createRequire(__filename);
  * results unchanged.
  */
 export interface DiskScenarioEvidence {
+  /** Customer scenario evidence loaded from disk. */
+  customer?: PulseActorEvidence | null;
+  /** Operator scenario evidence loaded from disk. */
+  operator?: PulseActorEvidence | null;
+  /** Admin scenario evidence loaded from disk. */
+  admin?: PulseActorEvidence | null;
+  /** Soak scenario evidence loaded from disk. */
+  soak?: PulseActorEvidence | null;
+  /** Human-readable load summary. */
+  summary?: string;
   /** Scenario results loaded from on-disk artifacts (if any). */
   results: PulseScenarioResult[];
 }

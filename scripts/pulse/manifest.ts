@@ -68,6 +68,14 @@ const VALID_GATE_NAMES = new Set([
   'syntheticCoveragePass',
   'evidenceFresh',
   'pulseSelfTrustPass',
+  'noOverclaimPass',
+  'executionMatrixCompletePass',
+  'criticalPathObservedPass',
+  'breakpointPrecisionPass',
+  'multiCycleConvergencePass',
+  'testHonestyPass',
+  'assertionStrengthPass',
+  'typeIntegrityPass',
 ]);
 
 function manifestBreak(

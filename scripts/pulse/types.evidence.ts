@@ -14,6 +14,7 @@ import type {
   PulseFlowProjectionSummary,
   PulseExternalSignalSummary,
 } from './types.capabilities';
+import type { PulseExecutionMatrixSummary } from './types.execution-matrix';
 import type { PulseResolvedManifestSummary } from './types.resolved-manifest';
 import type {
   PulseCodebaseTruthSummary,
@@ -178,6 +179,8 @@ export interface PulseCertificationTarget {
   final: boolean;
   /** Profile property. */
   profile?: PulseCertificationProfile | null;
+  /** Certification scope property. */
+  certificationScope?: PulseCertificationProfile | null;
 }
 
 /** Pulse execution trace shape. */
@@ -302,6 +305,8 @@ export interface PulseSelfTrustReport {
 
 /** Pulse certification shape. */
 export interface PulseCertification {
+  /** Certification scope property. */
+  certificationScope?: PulseCertificationProfile | null;
   /** Version property. */
   version: string;
   /** Status property. */
@@ -342,6 +347,8 @@ export interface PulseCertification {
   codacyEvidenceSummary?: PulseCodacyEvidenceSummary | null;
   /** External signal summary property. */
   externalSignalSummary?: PulseExternalSignalSummary | null;
+  /** Execution matrix summary property. */
+  executionMatrixSummary?: PulseExecutionMatrixSummary | null;
   /** Resolved manifest summary property. */
   resolvedManifestSummary: PulseResolvedManifestSummary;
   /** Structural graph summary property. */

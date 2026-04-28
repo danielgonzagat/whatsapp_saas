@@ -40,7 +40,9 @@ describe('PulseService', () => {
   });
 
   it('returns a stale organism state when no live nodes are registered', async () => {
-    const { service } = createService();
+    const { service } = createService({
+      configGet: jest.fn((key: string) => (key === 'PULSE_ARTIFACT_ROOT' ? artifactRootDir : '')),
+    });
 
     await expect(service.getOrganismState()).resolves.toMatchObject({
       status: 'STALE',
@@ -64,11 +66,18 @@ describe('PulseService', () => {
     expect(service.getProductionSnapshot()).toMatchObject({
       status: 'empty',
       authorityMode: 'advisory-only',
+      machineReadiness: {
+        status: 'unknown',
+        authorityMode: 'advisory-only',
+        autonomyVerdict: 'UNKNOWN',
+        executionMatrixSummary: null,
+      },
       missingArtifacts: expect.arrayContaining([
         'PULSE_CLI_DIRECTIVE.json',
         'PULSE_CERTIFICATE.json',
         'PULSE_PRODUCT_VISION.json',
         'PULSE_PARITY_GAPS.json',
+        'PULSE_EXECUTION_MATRIX.json',
         'PULSE_EXTERNAL_SIGNAL_STATE.json',
         'PULSE_AUTONOMY_STATE.json',
         'PULSE_AGENT_ORCHESTRATION_STATE.json',
@@ -87,6 +96,30 @@ describe('PulseService', () => {
       JSON.stringify(
         {
           generatedAt,
+          authorityMode: 'autonomous-execution',
+          advisoryOnly: false,
+          automationEligible: true,
+          autonomyVerdict: 'SIM',
+          autonomousNextStepVerdict: 'SIM',
+          productionAutonomyVerdict: 'NAO',
+          zeroPromptProductionGuidanceVerdict: 'NAO',
+          canWorkUntilProductionReady: false,
+          autonomyReadiness: {
+            verdict: 'SIM',
+            canWorkNow: true,
+            canDeclareComplete: false,
+            warnings: ['1 human-required unit remains.'],
+          },
+          autonomyProof: {
+            authorityMode: 'autonomous-execution',
+            blockersBeforeProductionSim: ['Codacy HIGH issues remain.'],
+            verdicts: {
+              nextStepAutonomy: 'SIM',
+              productionAutonomy: 'NAO',
+              zeroPromptProductionGuidance: 'NAO',
+              canDeclareComplete: false,
+            },
+          },
           currentCheckpoint: { tier: 0, status: 'NOT_CERTIFIED', score: 38 },
           nextWork: [
             { id: 'scenario-auth', title: 'Recover Auth', productImpact: 'transformational' },
@@ -98,7 +131,16 @@ describe('PulseService', () => {
     );
     fs.writeFileSync(
       path.join(canonicalDir, 'PULSE_CERTIFICATE.json'),
-      JSON.stringify({ timestamp: generatedAt, status: 'NOT_CERTIFIED', score: 38 }, null, 2),
+      JSON.stringify(
+        {
+          timestamp: generatedAt,
+          status: 'NOT_CERTIFIED',
+          humanReplacementStatus: 'NOT_READY',
+          score: 38,
+        },
+        null,
+        2,
+      ),
     );
     fs.writeFileSync(
       path.join(canonicalDir, 'PULSE_PRODUCT_VISION.json'),
@@ -131,6 +173,17 @@ describe('PulseService', () => {
     fs.writeFileSync(
       path.join(canonicalDir, 'PULSE_FLOW_PROJECTION.json'),
       JSON.stringify({ generatedAt, summary: { totalFlows: 5, realFlows: 3 } }, null, 2),
+    );
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_EXECUTION_MATRIX.json'),
+      JSON.stringify(
+        {
+          generatedAt,
+          summary: { totalPaths: 7, observedPass: 3, observedFail: 1, unknownPaths: 0 },
+        },
+        null,
+        2,
+      ),
     );
     fs.writeFileSync(
       path.join(canonicalDir, 'PULSE_EXTERNAL_SIGNAL_STATE.json'),
@@ -203,9 +256,31 @@ describe('PulseService', () => {
 
     expect(service.getProductionSnapshot()).toMatchObject({
       status: 'ready',
+      authorityMode: 'autonomous-execution',
       canonicalDir,
       missingArtifacts: [],
       staleArtifacts: [],
+      machineReadiness: {
+        status: 'ready',
+        authorityMode: 'autonomous-execution',
+        advisoryOnly: false,
+        automationEligible: true,
+        autonomyVerdict: 'SIM',
+        autonomousNextStepVerdict: 'SIM',
+        productionAutonomyVerdict: 'NAO',
+        zeroPromptProductionGuidanceVerdict: 'NAO',
+        canWorkNow: true,
+        canDeclareComplete: false,
+        canWorkUntilProductionReady: false,
+        score: 38,
+        certificationStatus: 'NOT_CERTIFIED',
+        humanReplacementStatus: 'NOT_READY',
+        blockers: ['Codacy HIGH issues remain.'],
+        warnings: ['1 human-required unit remains.'],
+        executionMatrixSummary: {
+          totalPaths: 7,
+        },
+      },
       directive: {
         freshness: 'fresh',
         data: {
@@ -264,6 +339,14 @@ describe('PulseService', () => {
           },
         },
       },
+      executionMatrix: {
+        freshness: 'fresh',
+        data: {
+          summary: {
+            totalPaths: 7,
+          },
+        },
+      },
       externalSignalState: {
         freshness: 'fresh',
         data: {
@@ -302,6 +385,10 @@ describe('PulseService', () => {
     await expect(service.getOrganismState()).resolves.toMatchObject({
       productionSnapshot: {
         status: 'ready',
+        machineReadiness: {
+          status: 'ready',
+          authorityMode: 'autonomous-execution',
+        },
         convergenceGeneratedAt: generatedAt,
         topActions: [{ id: 'scenario-auth' }],
       },

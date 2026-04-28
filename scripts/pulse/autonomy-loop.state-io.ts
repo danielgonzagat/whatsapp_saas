@@ -55,6 +55,11 @@ export function directiveDigest(directive: PulseAutonomousDirective): string {
 export function getDirectiveSnapshot(
   directive: PulseAutonomousDirective,
 ): PulseAutonomySummarySnapshot {
+  const executionMatrixSummary =
+    directive.executionMatrix?.summary ??
+    ((directive.currentState as { executionMatrixSummary?: PulseAutonomySummarySnapshot['executionMatrixSummary'] } | null)
+      ?.executionMatrixSummary ?? null);
+
   return {
     certificationStatus: directive.currentState?.certificationStatus || null,
     blockingTier:
@@ -63,6 +68,7 @@ export function getDirectiveSnapshot(
         : null,
     score: typeof directive.currentState?.score === 'number' ? directive.currentState.score : null,
     visionGap: directive.visionGap || null,
+    executionMatrixSummary,
   };
 }
 

@@ -38,6 +38,7 @@ export function getCertificationTarget(input?: PulseCertificationTarget): PulseC
     tier: typeof input?.tier === 'number' ? input.tier : null,
     final: Boolean(input?.final),
     profile: input?.profile || null,
+    certificationScope: input?.certificationScope || input?.profile || null,
   };
 }
 

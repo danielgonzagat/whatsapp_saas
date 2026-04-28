@@ -1,6 +1,8 @@
 // PULSE — Live Codebase Nervous System
 // Autonomous execution, agent orchestration, execution chains, and product graph types
 
+import type { PulseExecutionMatrixSummary } from './types.execution-matrix';
+
 // ===== NEW LAYER: Autonomous Execution =====
 /** Snapshot of a convergence unit selected for autonomous work. */
 export interface PulseAutonomyUnitSnapshot {
@@ -66,6 +68,7 @@ export interface PulseAutonomyIterationRecord {
     blockingTier: number | null;
     score: number | null;
     visionGap: string | null;
+    executionMatrixSummary?: PulseExecutionMatrixSummary | null;
   };
   /** Directive state after mutation property. */
   directiveAfter: {
@@ -73,7 +76,12 @@ export interface PulseAutonomyIterationRecord {
     blockingTier: number | null;
     score: number | null;
     visionGap: string | null;
+    executionMatrixSummary?: PulseExecutionMatrixSummary | null;
   } | null;
+  /** Execution matrix snapshot before mutation. */
+  executionMatrixSummaryBefore?: PulseExecutionMatrixSummary | null;
+  /** Execution matrix snapshot after mutation. */
+  executionMatrixSummaryAfter?: PulseExecutionMatrixSummary | null;
   /** Codex execution result property. */
   codex: {
     executed: boolean;

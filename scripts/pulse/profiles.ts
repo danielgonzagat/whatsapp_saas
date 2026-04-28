@@ -75,13 +75,25 @@ function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
+function isFullWorkspaceProfile(profile: PulseCertificationProfile): boolean {
+  return profile === 'full-product';
+}
+
+function isPulseCoreFinalProfile(profile: PulseCertificationProfile): boolean {
+  return profile === 'pulse-core-final';
+}
+
 function deriveRequestedModesFromScenarios(
   manifest: PulseManifest | null,
   scenarioIds: string[],
   profile: PulseCertificationProfile,
 ): Array<'customer' | 'operator' | 'admin' | 'shift' | 'soak'> {
+  if (isPulseCoreFinalProfile(profile)) {
+    return [];
+  }
+
   if (!manifest) {
-    return profile === 'full-product'
+    return isFullWorkspaceProfile(profile)
       ? ['customer', 'operator', 'admin', 'soak']
       : ['customer', 'operator', 'admin'];
   }
@@ -107,7 +119,7 @@ function deriveRequestedModesFromScenarios(
   }
 
   if (modes.size === 0) {
-    return profile === 'full-product'
+    return isFullWorkspaceProfile(profile)
       ? ['customer', 'operator', 'admin', 'soak']
       : ['customer', 'operator', 'admin'];
   }
@@ -123,7 +135,11 @@ function deriveScenarioIds(
     return [];
   }
 
-  if (profile === 'full-product') {
+  if (isPulseCoreFinalProfile(profile)) {
+    return [];
+  }
+
+  if (isFullWorkspaceProfile(profile)) {
     return manifest.scenarioSpecs.map((scenario) => scenario.id);
   }
 
@@ -139,7 +155,7 @@ function deriveFlowIds(
     return [];
   }
 
-  if (profile === 'full-product') {
+  if (isFullWorkspaceProfile(profile)) {
     return manifest.flowSpecs.map((spec) => spec.id);
   }
 
@@ -159,7 +175,7 @@ function deriveInvariantIds(
     return [];
   }
 
-  if (profile === 'full-product') {
+  if (isFullWorkspaceProfile(profile)) {
     return manifest.invariantSpecs.map((spec) => spec.id);
   }
 
@@ -185,7 +201,7 @@ function deriveRuntimeProbeIds(
     return selectedProbeIds;
   }
 
-  if (profile === 'full-product') {
+  if (isFullWorkspaceProfile(profile)) {
     const allProbeIds = unique(
       manifest.scenarioSpecs.flatMap((scenario) => scenario.runtimeProbes),
     );
@@ -202,7 +218,10 @@ export function parseCertificationProfile(
   if (!value) {
     return null;
   }
-  if (value === 'core-critical' || value === 'full-product') {
+  if (value === 'production-final') {
+    return 'full-product';
+  }
+  if (value === 'core-critical' || value === 'pulse-core-final' || value === 'full-product') {
     return value;
   }
   return null;
@@ -227,6 +246,7 @@ export function getProfileSelection(
         tier: 3,
         final: false,
         profile,
+        certificationScope: profile,
       },
       requestedModes,
       runtimeProbeIds,
@@ -241,6 +261,29 @@ export function getProfileSelection(
     };
   }
 
+  if (profile === 'pulse-core-final') {
+    return {
+      profile,
+      environment: 'total',
+      certificationTarget: {
+        tier: 4,
+        final: true,
+        profile,
+        certificationScope: profile,
+      },
+      requestedModes,
+      runtimeProbeIds,
+      flowIds,
+      invariantIds,
+      scenarioIds,
+      parserTimeoutMs: 90_000,
+      phaseTimeoutMs: 600_000,
+      includeParser(): boolean {
+        return true;
+      },
+    };
+  }
+
   return {
     profile,
     environment: 'total',
@@ -248,14 +291,15 @@ export function getProfileSelection(
       tier: 4,
       final: true,
       profile,
+      certificationScope: profile,
     },
     requestedModes,
     runtimeProbeIds,
     flowIds,
     invariantIds,
     scenarioIds,
-    parserTimeoutMs: 30_000,
-    phaseTimeoutMs: 180_000,
+    parserTimeoutMs: 90_000,
+    phaseTimeoutMs: 600_000,
     includeParser(): boolean {
       return true;
     },

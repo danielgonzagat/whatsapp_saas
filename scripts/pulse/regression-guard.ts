@@ -8,6 +8,7 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import type { PulseExecutionMatrixSummary } from './types.execution-matrix';
 
 /** Snapshot of key Pulse health metrics captured at a point in time. */
 export interface PulseSnapshot {
@@ -32,6 +33,8 @@ export interface PulseSnapshot {
   scenarioPass: Record<string, boolean>;
   /** Count of HIGH-severity runtime signals. Must never increase. */
   runtimeHighSignals: number;
+  /** Execution matrix summary. One-way metrics must not regress when present. */
+  executionMatrixSummary?: Partial<PulseExecutionMatrixSummary>;
 }
 
 /** Detailed result of a before/after regression comparison. */
@@ -54,7 +57,55 @@ export interface RegressionResult {
     scenariosRegressed: string[];
     /** after.runtimeHighSignals - before.runtimeHighSignals  (positive = regression). */
     runtimeHighDelta: number;
+    /** Execution matrix metric regressions. */
+    executionMatrixRegressions: string[];
   };
+}
+
+type MatrixRegressionMetric =
+  | 'observedPass'
+  | 'observedFail'
+  | 'untested'
+  | 'blockedHumanRequired'
+  | 'unreachable'
+  | 'inferredOnly'
+  | 'unknownPaths'
+  | 'criticalUnobservedPaths'
+  | 'impreciseBreakpoints';
+
+const MATRIX_REGRESSION_RULES: Array<{
+  key: MatrixRegressionMetric;
+  direction: 'increase' | 'decrease';
+}> = [
+  { key: 'observedPass', direction: 'increase' },
+  { key: 'observedFail', direction: 'decrease' },
+  { key: 'untested', direction: 'decrease' },
+  { key: 'blockedHumanRequired', direction: 'decrease' },
+  { key: 'unreachable', direction: 'decrease' },
+  { key: 'inferredOnly', direction: 'decrease' },
+  { key: 'unknownPaths', direction: 'decrease' },
+  { key: 'criticalUnobservedPaths', direction: 'decrease' },
+  { key: 'impreciseBreakpoints', direction: 'decrease' },
+];
+
+function detectExecutionMatrixRegressions(
+  before: Partial<PulseExecutionMatrixSummary>,
+  after: Partial<PulseExecutionMatrixSummary>,
+): string[] {
+  const regressions: string[] = [];
+  for (const rule of MATRIX_REGRESSION_RULES) {
+    const beforeValue = before[rule.key];
+    const afterValue = after[rule.key];
+    if (typeof beforeValue !== 'number' || typeof afterValue !== 'number') {
+      continue;
+    }
+    const regressed =
+      rule.direction === 'increase' ? afterValue < beforeValue : afterValue > beforeValue;
+    if (regressed) {
+      regressions.push(`${rule.key}:${beforeValue}->${afterValue}`);
+    }
+  }
+  return regressions;
 }
 
 /**
@@ -127,6 +178,14 @@ export function detectRegression(before: PulseSnapshot, after: PulseSnapshot): R
     );
   }
 
+  const executionMatrixRegressions = detectExecutionMatrixRegressions(
+    before.executionMatrixSummary ?? {},
+    after.executionMatrixSummary ?? {},
+  );
+  if (executionMatrixRegressions.length > 0) {
+    reasons.push(`Execution matrix regressed: ${executionMatrixRegressions.join(', ')}.`);
+  }
+
   return {
     regressed: reasons.length > 0,
     reasons,
@@ -137,6 +196,7 @@ export function detectRegression(before: PulseSnapshot, after: PulseSnapshot): R
       gatesRegressed,
       scenariosRegressed,
       runtimeHighDelta,
+      executionMatrixRegressions,
     },
   };
 }
@@ -200,6 +260,7 @@ export function captureRegressionSnapshot(rootDir: string): PulseSnapshot {
   const certPath = findArtifact(rootDir, 'PULSE_CERTIFICATE.json');
   const codacyPath = findArtifact(rootDir, 'PULSE_CODACY_STATE.json');
   const healthPath = findArtifact(rootDir, 'PULSE_HEALTH.json');
+  const executionMatrixPath = findArtifact(rootDir, 'PULSE_EXECUTION_MATRIX.json');
 
   const certificate = certPath
     ? readJsonArtifact<{
@@ -214,6 +275,9 @@ export function captureRegressionSnapshot(rootDir: string): PulseSnapshot {
     : null;
   const health = healthPath
     ? readJsonArtifact<{ breaks?: Array<{ severity?: string }> }>(healthPath)
+    : null;
+  const executionMatrix = executionMatrixPath
+    ? readJsonArtifact<{ summary?: PulseExecutionMatrixSummary }>(executionMatrixPath)
     : null;
 
   const gatesPass: Record<string, boolean> = {};
@@ -241,6 +305,7 @@ export function captureRegressionSnapshot(rootDir: string): PulseSnapshot {
     gatesPass,
     scenarioPass,
     runtimeHighSignals,
+    executionMatrixSummary: executionMatrix?.summary ?? {},
   };
 }
 

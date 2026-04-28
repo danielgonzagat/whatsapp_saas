@@ -4,6 +4,7 @@
  */
 import type { JsonSchemaDefinition } from '@openai/agents';
 import type { ExecutorKind } from './executor';
+import type { PulseExecutionMatrixSummary } from './types.execution-matrix';
 
 export interface PulseAutonomousDirectiveUnit {
   id: string;
@@ -26,6 +27,16 @@ export interface PulseAutonomousDirectiveUnit {
   expectedGateShift?: Record<string, string>;
   validationTargets?: string[];
   validationArtifacts?: string[];
+  relatedFiles?: string[];
+  ownedFiles?: string[];
+  readOnlyFiles?: string[];
+  forbiddenFiles?: string[];
+  contextDigest?: string;
+  leaseId?: string;
+  leaseStatus?: string;
+  leaseExpiresAt?: string;
+  validationContract?: string[];
+  stopConditions?: string[];
   exitCriteria?: string[];
   gateNames?: string[];
   scenarioIds?: string[];
@@ -66,6 +77,9 @@ export interface PulseAutonomousDirective {
     blockingTier?: number | null;
     score?: number | null;
   } | null;
+  executionMatrix?: {
+    summary?: PulseExecutionMatrixSummary;
+  } | null;
   topBlockers?: string[];
   topProblems?: Array<{
     source?: string;
@@ -91,6 +105,18 @@ export interface PulseAutonomousDirective {
     artifacts?: string[];
   };
   stopCondition?: string[];
+  contextFabric?: {
+    broadcastRef?: string;
+    leasesRef?: string;
+    contextDigest?: string;
+    workerEnvelopeCount?: number;
+    contextBroadcastPass?: boolean;
+    ownershipConflictPass?: boolean;
+    protectedFilesForbiddenPass?: boolean;
+    workerContextCompletenessPass?: boolean;
+    staleContextBlocksExecution?: boolean;
+    blockers?: string[];
+  };
 }
 
 export interface PulseAutonomyDecision {
@@ -148,6 +174,7 @@ export interface PulseAutonomySummarySnapshot {
   blockingTier: number | null;
   score: number | null;
   visionGap: string | null;
+  executionMatrixSummary?: PulseExecutionMatrixSummary | null;
 }
 
 export interface PulseRollbackGuard {

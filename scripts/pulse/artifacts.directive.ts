@@ -4,14 +4,14 @@
  */
 import { compact, unique } from './artifacts.io';
 import { buildDecisionQueue, buildAutonomyQueue } from './artifacts.queue';
-import { getProductFacingCapabilities } from './artifacts.report';
+import { buildPulseMachineReadiness, getProductFacingCapabilities } from './artifacts.report';
 import {
   deriveAuthorityState,
   buildAutonomyReadiness,
   buildAutonomyProof,
 } from './artifacts.autonomy';
 import { deriveRequiredValidations } from './autonomy-decision';
-import type { PulseArtifactSnapshot } from './artifacts.types';
+import type { PulseArtifactSnapshot, PulseMachineReadiness } from './artifacts.types';
 import type { PulseArtifactRegistry } from './artifact-registry';
 import type { PulseArtifactCleanupReport } from './artifact-gc';
 import type { PulseAutonomyState, PulseConvergencePlan } from './types';
@@ -78,6 +78,7 @@ function buildDirectiveUnit(snapshot: PulseArtifactSnapshot, unit: QueueUnit) {
     expectedGateShift: unit.expectedGateShift,
     validationTargets: unit.validationArtifacts,
     validationArtifacts: unit.validationArtifacts,
+    relatedFiles: unit.relatedFiles,
     exitCriteria: unit.exitCriteria.length > 0 ? unit.exitCriteria : buildDefaultExitCriteria(unit),
     preconditions: buildPreconditions(snapshot, unit),
     allowedActions: buildAllowedActions(unit),
@@ -98,9 +99,13 @@ export function buildDirective(
   snapshot: PulseArtifactSnapshot,
   convergencePlan: PulseConvergencePlan,
   previousAutonomyState: PulseAutonomyState | null,
+  providedPulseMachineReadiness?: PulseMachineReadiness,
 ): string {
   const decisionQueue = buildDecisionQueue(convergencePlan);
   const autonomyQueue = buildAutonomyQueue(convergencePlan);
+  const pulseMachineReadiness =
+    providedPulseMachineReadiness ??
+    buildPulseMachineReadiness(snapshot, convergencePlan, previousAutonomyState);
   const autonomyReadiness = buildAutonomyReadiness(snapshot, convergencePlan, autonomyQueue);
   const authority = deriveAuthorityState(snapshot, convergencePlan);
   const autonomyProof = buildAutonomyProof(
@@ -187,6 +192,9 @@ export function buildDirective(
   return JSON.stringify(
     {
       generatedAt: snapshot.certification.timestamp,
+      profile: snapshot.certification.certificationTarget.profile ?? null,
+      certificationScope: snapshot.certification.certificationScope,
+      pulseMachineReadiness,
       autonomyVerdict: autonomyReadiness.verdict,
       autonomousNextStepVerdict: autonomyReadiness.verdict,
       zeroPromptProductionGuidanceVerdict: autonomyProof.verdicts.zeroPromptProductionGuidance,
@@ -245,6 +253,21 @@ export function buildDirective(
       parityGaps: {
         summary: snapshot.parityGaps.summary,
         top: snapshot.parityGaps.gaps.slice(0, 12),
+      },
+      executionMatrix: {
+        summary: snapshot.executionMatrix.summary,
+        topFailures: snapshot.executionMatrix.paths
+          .filter((path) => path.status === 'observed_fail')
+          .slice(0, 8),
+        topUnobservedCritical: snapshot.executionMatrix.paths
+          .filter(
+            (path) =>
+              path.risk === 'high' &&
+              !['observed_pass', 'observed_fail', 'blocked_human_required'].includes(
+                path.status,
+              ),
+          )
+          .slice(0, 8),
       },
       surfaces: (snapshot.productVision.surfaces || []).slice(0, 15),
       experiences: (snapshot.productVision.experiences || []).slice(0, 12),
@@ -309,8 +332,15 @@ export function buildDirective(
           '.pulse/current/PULSE_PRODUCT_VISION.json',
           '.pulse/current/PULSE_CAPABILITY_STATE.json',
           '.pulse/current/PULSE_FLOW_PROJECTION.json',
+          '.pulse/current/PULSE_EXECUTION_MATRIX.json',
           '.pulse/current/PULSE_EXTERNAL_SIGNAL_STATE.json',
         ],
+      },
+      contextFabric: {
+        broadcastRef: 'PULSE_CONTEXT_BROADCAST.json',
+        leasesRef: 'PULSE_WORKER_LEASES.json',
+        requiredForParallelWorkers: true,
+        status: 'pending_artifact_generation',
       },
       stopCondition,
     },
@@ -324,6 +354,7 @@ export function buildArtifactIndex(
   cleanupReport: PulseArtifactCleanupReport,
   authority: ReturnType<typeof deriveAuthorityState>,
   identity?: PulseRunIdentity,
+  pulseMachineReadiness?: PulseMachineReadiness,
 ): string {
   return JSON.stringify(
     {
@@ -332,6 +363,17 @@ export function buildArtifactIndex(
       authorityMode: authority.mode,
       advisoryOnly: authority.advisoryOnly,
       authorityReasons: authority.reasons,
+      pulseMachineReadiness: pulseMachineReadiness
+        ? {
+            status: pulseMachineReadiness.status,
+            scope: pulseMachineReadiness.scope,
+            canRunBoundedAutonomousCycle:
+              pulseMachineReadiness.canRunBoundedAutonomousCycle,
+            canDeclareKloelProductCertified:
+              pulseMachineReadiness.canDeclareKloelProductCertified,
+            blockers: pulseMachineReadiness.blockers.slice(0, 12),
+          }
+        : null,
       cleanupPolicy: cleanupReport.cleanupMode,
       canonicalDir: registry.canonicalDir,
       tempDir: registry.tempDir,

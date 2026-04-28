@@ -124,6 +124,8 @@ export function buildIterationRecord(
     directiveDigestAfter: directiveDigest(directiveAfter),
     directiveBefore: beforeSnapshot,
     directiveAfter: afterSnapshot,
+    executionMatrixSummaryBefore: beforeSnapshot.executionMatrixSummary ?? null,
+    executionMatrixSummaryAfter: afterSnapshot.executionMatrixSummary ?? null,
     codex: {
       executed: !dryRun,
       command:

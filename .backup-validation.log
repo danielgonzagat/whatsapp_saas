@@ -30,3 +30,4 @@ backupCheckedAt=2026-04-24T23:59:31.390Z
 backupAgeHours=0.04
 verifiedBy=Railway GraphQL via project-access-token (projectId=a30c8458-fd36-4b01-a13d-ee342a276865)
 
+2026-04-28T15:39:54.886Z PASS Railway GraphQL verified Postgres backup pulse-recovery-2026-04-28T15-38-11-498Z (408bac25-1e68-4c41-8531-43a126b9a708) createdAt=2026-04-28T15:38:21.577Z; scheduleKinds=DAILY,WEEKLY; rpo60=fail

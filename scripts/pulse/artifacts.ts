@@ -3,6 +3,7 @@
  * Heavy logic lives in artifacts.io, artifacts.queue, artifacts.report,
  * artifacts.autonomy, and artifacts.directive sub-modules.
  */
+import * as path from 'path';
 import {
   buildPulseAutonomyMemoryState,
   buildPulseAgentOrchestrationStateSeed,
@@ -12,11 +13,14 @@ import { buildArtifactRegistry, type PulseArtifactRegistry } from './artifact-re
 import { cleanupPulseArtifacts } from './artifact-gc';
 import { buildConvergencePlan } from './convergence-plan';
 import { readOptionalJson, writeArtifact } from './artifacts.io';
-import { buildReport, buildCertificate } from './artifacts.report';
+import { buildReport, buildCertificate, buildPulseMachineReadiness } from './artifacts.report';
 import { buildDirective, buildArtifactIndex } from './artifacts.directive';
 import { deriveAuthorityState } from './artifacts.autonomy';
 import { createRunIdentity, type PulseRunIdentity } from './run-identity';
-import { safeResolveSegment } from './lib/safe-path';
+import {
+  buildDirectiveContextFabricPatch,
+  buildPulseContextFabricBundle,
+} from './context-broadcast';
 import type {
   PulseAgentOrchestrationState,
   PulseAutonomyState,
@@ -26,6 +30,7 @@ import type {
   PulseCodacyEvidence,
   PulseConvergencePlan,
   PulseExecutionChainSet,
+  PulseExecutionMatrix,
   PulseExternalSignalState,
   PulseFlowProjection,
   PulseHealth,
@@ -56,6 +61,8 @@ export interface PulseArtifactSnapshot {
   structuralGraph: PulseStructuralGraph;
   /** Execution chains property. */
   executionChains: PulseExecutionChainSet;
+  /** Execution matrix property. */
+  executionMatrix: PulseExecutionMatrix;
   /** Product graph property. */
   productGraph: PulseProductGraph;
   /** Capability state property. */
@@ -78,6 +85,8 @@ export interface PulseArtifactPaths {
   reportPath: string;
   /** Canonical certificate path property. */
   certificatePath: string;
+  /** Canonical machine-readiness path property. */
+  machineReadinessPath: string;
   /** Canonical directive path property. */
   cliDirectivePath: string;
   /** Canonical artifact index path property. */
@@ -93,7 +102,13 @@ export type { PulseArtifactRegistry };
  * attempts so the path that reaches readOptionalJson is provably bounded.
  */
 function resolveInsideCanonicalDir(registry: PulseArtifactRegistry, fileName: string): string {
-  return safeResolveSegment(registry.canonicalDir, fileName);
+  const root = path.resolve(registry.canonicalDir);
+  const resolved = path.resolve(root, fileName);
+  const boundary = root + path.sep;
+  if (resolved !== root && !resolved.startsWith(boundary)) {
+    throw new Error(`Path traversal detected: ${resolved} is outside ${root}`);
+  }
+  return resolved;
 }
 
 /** Generate artifacts. */
@@ -123,27 +138,127 @@ export function generateArtifacts(
     flowProjection: snapshot.flowProjection,
     parityGaps: snapshot.parityGaps,
     externalSignalState: snapshot.externalSignalState,
+    executionMatrix: snapshot.executionMatrix,
   });
   const authority = deriveAuthorityState(snapshot, convergencePlan);
+  const machineReadiness = buildPulseMachineReadiness(
+    snapshot,
+    convergencePlan,
+    previousAutonomyState,
+  );
 
   const reportPath = writeArtifact(
     'PULSE_REPORT.md',
-    buildReport(snapshot, convergencePlan, cleanupReport),
+    buildReport(snapshot, convergencePlan, cleanupReport, previousAutonomyState),
     registry,
   );
+  const certificateContent = buildCertificate(snapshot, convergencePlan, previousAutonomyState);
   const certificatePath = writeArtifact(
     'PULSE_CERTIFICATE.json',
-    buildCertificate(snapshot, convergencePlan),
+    certificateContent,
     registry,
     identity,
   );
-  const directiveContent = buildDirective(snapshot, convergencePlan, previousAutonomyState);
+  const machineReadinessPath = writeArtifact(
+    'PULSE_MACHINE_READINESS.json',
+    JSON.stringify(machineReadiness, null, 2),
+    registry,
+    identity,
+  );
+  const directiveContent = buildDirective(
+    snapshot,
+    convergencePlan,
+    previousAutonomyState,
+    machineReadiness,
+  );
   const cliDirectivePath = writeArtifact(
     'PULSE_CLI_DIRECTIVE.json',
     directiveContent,
     registry,
     identity,
   );
+  const contextBundle = buildPulseContextFabricBundle({
+    rootDir,
+    registry,
+    convergencePlan,
+    runId: identity.runId,
+    directiveContent,
+    certificateContent,
+  });
+  writeArtifact(
+    'PULSE_GITNEXUS_STATE.json',
+    JSON.stringify(contextBundle.gitnexusState, null, 2),
+    registry,
+    identity,
+  );
+  writeArtifact(
+    'PULSE_BEADS_STATE.json',
+    JSON.stringify(contextBundle.beadsState, null, 2),
+    registry,
+    identity,
+  );
+  writeArtifact(
+    'PULSE_CONTEXT_BROADCAST.json',
+    JSON.stringify(contextBundle.broadcast, null, 2),
+    registry,
+    identity,
+  );
+  writeArtifact(
+    'PULSE_WORKER_LEASES.json',
+    JSON.stringify(contextBundle.leases, null, 2),
+    registry,
+    identity,
+  );
+  writeArtifact(
+    'PULSE_CONTEXT_DELTA.json',
+    JSON.stringify(contextBundle.delta, null, 2),
+    registry,
+    identity,
+  );
+  const augmentedDirectiveContent = (() => {
+    try {
+      const directive = JSON.parse(directiveContent) as Record<string, unknown>;
+      const byUnitId = new Map(
+        contextBundle.broadcast.workers.map((worker) => [worker.unitId, worker]),
+      );
+      const augmentUnits = (value: unknown): unknown => {
+        if (!Array.isArray(value)) {
+          return value;
+        }
+        return value.map((entry) => {
+          if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+            return entry;
+          }
+          const unit = entry as Record<string, unknown>;
+          const unitId = typeof unit.id === 'string' ? unit.id : null;
+          const worker = unitId ? byUnitId.get(unitId) : null;
+          if (!worker) {
+            return unit;
+          }
+          return {
+            ...unit,
+            leaseId: worker.leaseId,
+            leaseStatus: worker.leaseStatus,
+            leaseExpiresAt: worker.leaseExpiresAt,
+            contextDigest: worker.contextDigest,
+            ownedFiles: worker.ownedFiles,
+            readOnlyFiles: worker.readOnlyFiles,
+            forbiddenFiles: worker.forbiddenFiles,
+            validationContract: worker.validationContract,
+            stopConditions: worker.stopConditions,
+          };
+        });
+      };
+      directive.nextAutonomousUnits = augmentUnits(directive.nextAutonomousUnits);
+      directive.nextExecutableUnits = augmentUnits(directive.nextExecutableUnits);
+      directive.nextWork = augmentUnits(directive.nextWork);
+      directive.contextFabric = buildDirectiveContextFabricPatch(contextBundle);
+      return JSON.stringify(directive, null, 2);
+    } catch {
+      return directiveContent;
+    }
+  })();
+  writeArtifact('PULSE_CLI_DIRECTIVE.json', augmentedDirectiveContent, registry, identity);
   const directivePayload =
     readOptionalJson<Parameters<typeof buildPulseAutonomyStateSeed>[0]['directive']>(
       cliDirectivePath,
@@ -156,7 +271,7 @@ export function generateArtifacts(
   );
   const artifactIndexPath = writeArtifact(
     'PULSE_ARTIFACT_INDEX.json',
-    buildArtifactIndex(registry, cleanupReport, authority),
+    buildArtifactIndex(registry, cleanupReport, authority, identity, machineReadiness),
     registry,
     identity,
   );
@@ -183,6 +298,12 @@ export function generateArtifacts(
   writeArtifact(
     'PULSE_EXECUTION_CHAINS.json',
     JSON.stringify(snapshot.executionChains, null, 2),
+    registry,
+    identity,
+  );
+  writeArtifact(
+    'PULSE_EXECUTION_MATRIX.json',
+    JSON.stringify(snapshot.executionMatrix, null, 2),
     registry,
     identity,
   );
@@ -367,6 +488,7 @@ export function generateArtifacts(
   return {
     reportPath,
     certificatePath,
+    machineReadinessPath,
     cliDirectivePath,
     artifactIndexPath,
   };

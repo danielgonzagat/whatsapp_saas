@@ -9,6 +9,7 @@ export type * from './types.scenario-result';
 export type * from './types.structural';
 export type * from './types.product-vision';
 export type * from './types.product-graph';
+export type * from './types.execution-matrix';
 export type * from './types.resolved-manifest';
 
 // Core layer (re-exports BreakType — excluded here to avoid duplicate)

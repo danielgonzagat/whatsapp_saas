@@ -4,7 +4,7 @@
  * Proves that:
  *  - Cycles with only `typecheck` do NOT count toward convergence.
  *  - Cycles with runtime-touching validation (playwright, --deep) DO count.
- *  - REQUIRED_NON_REGRESSING_CYCLES is >= 2.
+ *  - REQUIRED_NON_REGRESSING_CYCLES is 3.
  */
 import { describe, expect, it } from 'vitest';
 
@@ -12,70 +12,85 @@ import {
   REQUIRED_NON_REGRESSING_CYCLES,
   evaluateMultiCycleConvergenceGate,
 } from '../cert-gate-multi-cycle';
-import type { PulseAutonomyIterationRecord } from '../types';
+import type { PulseAutonomyIterationRecord, PulseAutonomyValidationCommandResult } from '../types';
 
-const MIN_REQUIRED_CYCLES = 2;
+const REQUIRED_CYCLES = 3;
 const DEFAULT_BASELINE_SCORE = 64;
 const DEFAULT_BLOCKING_TIER = 1;
-const DEFAULT_CODEX_DURATION_MS = 1000;
 const TYPECHECK_DURATION_MS = 1000;
 const GUIDANCE_DURATION_MS = 2000;
 const PLAYWRIGHT_DURATION_MS = 5000;
 const DEEP_VALIDATION_DURATION_MS = 3000;
 const REGRESSION_BEFORE_SCORE = 70;
 const REGRESSION_AFTER_SCORE = 65;
+const MATRIX_OBSERVED_PASS_BASELINE = 12;
+const MATRIX_CRITICAL_UNOBSERVED_BASELINE = 4;
+
+type TestDirectiveSnapshot = PulseAutonomyIterationRecord['directiveBefore'];
+type TestRecordOverrides = Partial<
+  Omit<PulseAutonomyIterationRecord, 'codex' | 'directiveBefore' | 'directiveAfter' | 'validation'>
+> & {
+  codex?: Partial<PulseAutonomyIterationRecord['codex']>;
+  directiveBefore?: Partial<TestDirectiveSnapshot>;
+  directiveAfter?: Partial<TestDirectiveSnapshot>;
+  validation?: {
+    executed?: boolean;
+    commands?: PulseAutonomyValidationCommandResult[];
+  };
+};
 
 /**
  * Builds a PulseAutonomyIterationRecord populated with deterministic defaults
  * for the fields a single test does not care about, while honoring any
  * overrides the test supplies.
  */
-function makeRecord(
-  overrides: Partial<PulseAutonomyIterationRecord>,
-): PulseAutonomyIterationRecord {
+function makeRecord(overrides: TestRecordOverrides): PulseAutonomyIterationRecord {
   return {
-    acceptance: overrides.acceptance ?? { accepted: true, reason: 'test' },
     codex: {
-      agent: overrides.codex?.agent ?? 'test',
-      durationMs: overrides.codex?.durationMs ?? DEFAULT_CODEX_DURATION_MS,
+      command: overrides.codex?.command ?? 'codex exec test',
       executed: overrides.codex?.executed ?? true,
       exitCode: overrides.codex?.exitCode ?? 0,
-      model: overrides.codex?.model ?? 'test',
-      output: overrides.codex?.output ?? '',
+      finalMessage: overrides.codex?.finalMessage ?? 'test',
     },
-    cycleId: overrides.cycleId ?? 'test-cycle',
+    directiveDigestAfter: overrides.directiveDigestAfter ?? 'after',
+    directiveDigestBefore: overrides.directiveDigestBefore ?? 'before',
     directiveAfter: {
       blockingTier:
         overrides.directiveAfter?.blockingTier ??
         overrides.directiveBefore?.blockingTier ??
         DEFAULT_BLOCKING_TIER,
-      gates: overrides.directiveAfter?.gates ?? {},
+      certificationStatus: overrides.directiveAfter?.certificationStatus ?? 'PARTIAL',
+      visionGap: overrides.directiveAfter?.visionGap ?? 'test',
       score:
         overrides.directiveAfter?.score ??
         overrides.directiveBefore?.score ??
         DEFAULT_BASELINE_SCORE,
-      selectedUnit: overrides.directiveAfter?.selectedUnit ?? '',
     },
     directiveBefore: {
       blockingTier: overrides.directiveBefore?.blockingTier ?? DEFAULT_BLOCKING_TIER,
-      gates: {},
+      certificationStatus: overrides.directiveBefore?.certificationStatus ?? 'PARTIAL',
       score: overrides.directiveBefore?.score ?? DEFAULT_BASELINE_SCORE,
-      selectedUnit: overrides.directiveBefore?.selectedUnit ?? '',
+      visionGap: overrides.directiveBefore?.visionGap ?? 'test',
     },
-    iterationId: overrides.iterationId ?? 'test',
+    finishedAt: overrides.finishedAt ?? '2026-04-28T00:00:01.000Z',
+    improved: overrides.improved ?? true,
+    iteration: overrides.iteration ?? 1,
+    plannerMode: overrides.plannerMode ?? 'deterministic',
+    startedAt: overrides.startedAt ?? '2026-04-28T00:00:00.000Z',
+    status: overrides.status ?? 'validated',
+    strategyMode: overrides.strategyMode ?? null,
+    summary: overrides.summary ?? 'test cycle',
+    unit: overrides.unit ?? null,
     validation: {
-      artifactPaths: overrides.validation?.artifactPaths ?? [],
       commands: overrides.validation?.commands ?? [],
       executed: overrides.validation?.executed ?? true,
-      summary: overrides.validation?.summary ?? '',
     },
-    ...overrides,
   };
 }
 
 describe('REQUIRED_NON_REGRESSING_CYCLES', () => {
-  it('is at least 2', () => {
-    expect(REQUIRED_NON_REGRESSING_CYCLES).toBeGreaterThanOrEqual(MIN_REQUIRED_CYCLES);
+  it('requires 3 real non-regressing cycles', () => {
+    expect(REQUIRED_NON_REGRESSING_CYCLES).toBe(REQUIRED_CYCLES);
   });
 });
 
@@ -88,15 +103,13 @@ describe('typecheck-only cycle does NOT count toward convergence', () => {
             command: 'npm run typecheck',
             durationMs: TYPECHECK_DURATION_MS,
             exitCode: 0,
-            stderr: '',
-            stdout: '',
+            summary: '',
           },
           {
             command: 'node scripts/pulse/run.js --guidance',
             durationMs: GUIDANCE_DURATION_MS,
             exitCode: 0,
-            stderr: '',
-            stdout: '',
+            summary: '',
           },
         ],
         executed: true,
@@ -117,15 +130,13 @@ describe('cycle with runtime validation DOES count toward convergence', () => {
             command: 'npm run typecheck',
             durationMs: TYPECHECK_DURATION_MS,
             exitCode: 0,
-            stderr: '',
-            stdout: '',
+            summary: '',
           },
           {
             command: 'npx playwright test',
             durationMs: PLAYWRIGHT_DURATION_MS,
             exitCode: 0,
-            stderr: '',
-            stdout: '',
+            summary: '',
           },
         ],
         executed: true,
@@ -133,11 +144,11 @@ describe('cycle with runtime validation DOES count toward convergence', () => {
     });
 
     const result = evaluateMultiCycleConvergenceGate({ history: [record] });
-    // 1 cycle with runtime validation => nonRegressing=1, required=2 => still fail
+    // 1 cycle with runtime validation => nonRegressing=1, required=3 => still fail
     expect(result.status).toBe('fail');
   });
 
-  it('two cycles with playwright validation both passing = convergence achieved', () => {
+  it('three cycles with runtime validation passing = convergence achieved', () => {
     const records = [
       makeRecord({
         validation: {
@@ -146,15 +157,13 @@ describe('cycle with runtime validation DOES count toward convergence', () => {
               command: 'npm run typecheck',
               durationMs: TYPECHECK_DURATION_MS,
               exitCode: 0,
-              stderr: '',
-              stdout: '',
+              summary: '',
             },
             {
               command: 'npx playwright test',
               durationMs: PLAYWRIGHT_DURATION_MS,
               exitCode: 0,
-              stderr: '',
-              stdout: '',
+              summary: '',
             },
           ],
           executed: true,
@@ -167,15 +176,26 @@ describe('cycle with runtime validation DOES count toward convergence', () => {
               command: 'npm run typecheck',
               durationMs: TYPECHECK_DURATION_MS,
               exitCode: 0,
-              stderr: '',
-              stdout: '',
+              summary: '',
             },
             {
               command: 'node scripts/pulse/run.js --deep --customer',
               durationMs: DEEP_VALIDATION_DURATION_MS,
               exitCode: 0,
-              stderr: '',
-              stdout: '',
+              summary: '',
+            },
+          ],
+          executed: true,
+        },
+      }),
+      makeRecord({
+        validation: {
+          commands: [
+            {
+              command: 'node scripts/pulse/run.js --total --certify --json',
+              durationMs: DEEP_VALIDATION_DURATION_MS,
+              exitCode: 0,
+              summary: '',
             },
           ],
           executed: true,
@@ -193,15 +213,13 @@ describe('regression detection in multi-cycle', () => {
     const record = makeRecord({
       directiveAfter: {
         blockingTier: DEFAULT_BLOCKING_TIER,
-        gates: {},
         score: REGRESSION_AFTER_SCORE,
-        selectedUnit: 'test',
+        visionGap: 'test',
       },
       directiveBefore: {
         blockingTier: DEFAULT_BLOCKING_TIER,
-        gates: {},
         score: REGRESSION_BEFORE_SCORE,
-        selectedUnit: 'test',
+        visionGap: 'test',
       },
       validation: {
         commands: [
@@ -209,8 +227,7 @@ describe('regression detection in multi-cycle', () => {
             command: 'npx playwright test',
             durationMs: PLAYWRIGHT_DURATION_MS,
             exitCode: 0,
-            stderr: '',
-            stdout: '',
+            summary: '',
           },
         ],
         executed: true,
@@ -219,5 +236,41 @@ describe('regression detection in multi-cycle', () => {
 
     const result = evaluateMultiCycleConvergenceGate({ history: [record] });
     expect(result.status).toBe('fail');
+  });
+
+  it('cycle where execution matrix worsens does NOT count when snapshots are present', () => {
+    const record = Object.assign(
+      makeRecord({
+        validation: {
+          commands: [
+            {
+              command: 'node scripts/pulse/run.js --deep --customer',
+              durationMs: DEEP_VALIDATION_DURATION_MS,
+              exitCode: 0,
+              summary: '',
+            },
+          ],
+          executed: true,
+        },
+      }),
+      {
+        executionMatrixSummaryBefore: {
+          observedPass: MATRIX_OBSERVED_PASS_BASELINE,
+          criticalUnobservedPaths: MATRIX_CRITICAL_UNOBSERVED_BASELINE,
+          unknownPaths: 0,
+          impreciseBreakpoints: 0,
+        },
+        executionMatrixSummaryAfter: {
+          observedPass: MATRIX_OBSERVED_PASS_BASELINE - 1,
+          criticalUnobservedPaths: MATRIX_CRITICAL_UNOBSERVED_BASELINE + 1,
+          unknownPaths: 0,
+          impreciseBreakpoints: 0,
+        },
+      },
+    );
+
+    const result = evaluateMultiCycleConvergenceGate({ history: [record] });
+    expect(result.status).toBe('fail');
+    expect(result.reason).toContain('regressedExecutionMatrix=1');
   });
 });

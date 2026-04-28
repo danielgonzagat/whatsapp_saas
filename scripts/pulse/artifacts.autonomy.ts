@@ -8,6 +8,8 @@ import type { PulseArtifactSnapshot } from './artifacts';
 import type { PulseAutonomyState, PulseConvergencePlan } from './types';
 import type { QueueUnit } from './artifacts.queue';
 import type { AuthorityMode } from './types.authority-mode';
+import { isAdapterRequired } from './adapters/external-sources-orchestrator';
+import { REQUIRED_NON_REGRESSING_CYCLES } from './cert-gate-multi-cycle';
 
 export type AuthorityState = {
   mode: AuthorityMode;
@@ -32,7 +34,86 @@ export type CycleProof = {
   totalRecordedCycles: number;
   realExecutedCycles: number;
   successfulNonRegressingCycles: number;
+  runtimeTouchingCycles: number;
+  executionMatrixComparedCycles: number;
+  executionMatrixRegressedCycles: number;
   proven: boolean;
+};
+
+type MatrixSummaryKey =
+  | 'observedPass'
+  | 'observedFail'
+  | 'untested'
+  | 'blockedHumanRequired'
+  | 'unreachable'
+  | 'inferredOnly'
+  | 'unknownPaths'
+  | 'criticalUnobservedPaths'
+  | 'impreciseBreakpoints';
+
+type MatrixSummarySnapshot = Partial<Record<MatrixSummaryKey, number>>;
+
+const MATRIX_NON_REGRESSION_RULES: Array<{
+  key: MatrixSummaryKey;
+  direction: 'increase' | 'decrease';
+}> = [
+  { key: 'observedPass', direction: 'increase' },
+  { key: 'observedFail', direction: 'decrease' },
+  { key: 'untested', direction: 'decrease' },
+  { key: 'blockedHumanRequired', direction: 'decrease' },
+  { key: 'unreachable', direction: 'decrease' },
+  { key: 'inferredOnly', direction: 'decrease' },
+  { key: 'unknownPaths', direction: 'decrease' },
+  { key: 'criticalUnobservedPaths', direction: 'decrease' },
+  { key: 'impreciseBreakpoints', direction: 'decrease' },
+];
+
+const RUNTIME_VALIDATION_PATTERNS = [
+  /playwright/,
+  /--deep/,
+  /--flow=/,
+  /--customer/,
+  /--operator/,
+  /--admin/,
+  /--total/,
+  /test:?e2e/i,
+  /jest|vitest|mocha|ava/,
+] as const;
+
+export type PulseMachineReadinessGateName =
+  | 'boundedRunPass'
+  | 'artifactConsistencyPass'
+  | 'executionMatrixPass'
+  | 'criticalPathTerminalPass'
+  | 'breakpointPrecisionPass'
+  | 'externalSignalsPass'
+  | 'directiveActionabilityPass'
+  | 'selfTrustPass'
+  | 'multiCycleConvergencePass';
+
+export type PulseMachineReadinessGate = {
+  status: 'pass' | 'fail';
+  reason: string;
+};
+
+export type PulseMachineReadiness = {
+  generatedAt: string;
+  status: 'READY' | 'NOT_READY';
+  canDeclarePulseComplete: boolean;
+  authorityMode: AuthorityMode;
+  gates: Record<PulseMachineReadinessGateName, PulseMachineReadinessGate>;
+  blockers: string[];
+  summary: {
+    totalGates: number;
+    passingGates: number;
+    failingGates: number;
+    executionMatrixPaths: number;
+    criticalUnobservedPaths: number;
+    impreciseBreakpoints: number;
+    automationSafeUnits: number;
+    successfulNonRegressingCycles: number;
+    requiredCycles: number;
+  };
 };
 
 export function deriveAuthorityState(
@@ -189,26 +270,237 @@ export function buildAutonomyCycleProof(
 ): CycleProof {
   const history = previousAutonomyState?.history || [];
   const realExecutedCycles = history.filter((entry) => entry.codex.executed);
+  const runtimeTouchingCycles = realExecutedCycles.filter((entry) =>
+    entry.validation.commands.some((command) =>
+      RUNTIME_VALIDATION_PATTERNS.some((pattern) => pattern.test(command.command)),
+    ),
+  );
+  const executionMatrixComparisons = realExecutedCycles.map((entry) =>
+    evaluateCycleExecutionMatrixNonRegression(entry),
+  );
   const successfulCycles = realExecutedCycles.filter((entry) => {
     const codexPassed = entry.codex.exitCode === 0;
     const validationPassed =
       entry.validation.executed &&
       entry.validation.commands.length > 0 &&
       entry.validation.commands.every((command) => command.exitCode === 0);
+    const runtimeTouched = entry.validation.commands.some((command) =>
+      RUNTIME_VALIDATION_PATTERNS.some((pattern) => pattern.test(command.command)),
+    );
     const beforeScore =
       typeof entry.directiveBefore.score === 'number' ? entry.directiveBefore.score : null;
     const afterScore =
       typeof entry.directiveAfter?.score === 'number' ? entry.directiveAfter.score : null;
-    const nonRegressing = beforeScore === null || afterScore === null || afterScore >= beforeScore;
-    return codexPassed && validationPassed && nonRegressing;
+    const scoreNonRegressing =
+      beforeScore === null || afterScore === null || afterScore >= beforeScore;
+    const beforeTier =
+      typeof entry.directiveBefore.blockingTier === 'number'
+        ? entry.directiveBefore.blockingTier
+        : null;
+    const afterTier =
+      typeof entry.directiveAfter?.blockingTier === 'number'
+        ? entry.directiveAfter.blockingTier
+        : null;
+    const tierNonRegressing = beforeTier === null || afterTier === null || afterTier <= beforeTier;
+    const matrix = evaluateCycleExecutionMatrixNonRegression(entry);
+    return (
+      codexPassed &&
+      validationPassed &&
+      runtimeTouched &&
+      scoreNonRegressing &&
+      tierNonRegressing &&
+      matrix.nonRegressing
+    );
   });
 
   return {
-    requiredCycles: 3,
+    requiredCycles: REQUIRED_NON_REGRESSING_CYCLES,
     totalRecordedCycles: history.length,
     realExecutedCycles: realExecutedCycles.length,
     successfulNonRegressingCycles: successfulCycles.length,
-    proven: successfulCycles.length >= 3,
+    runtimeTouchingCycles: runtimeTouchingCycles.length,
+    executionMatrixComparedCycles: executionMatrixComparisons.filter((result) => result.compared)
+      .length,
+    executionMatrixRegressedCycles: executionMatrixComparisons.filter(
+      (result) => !result.nonRegressing,
+    ).length,
+    proven: successfulCycles.length >= REQUIRED_NON_REGRESSING_CYCLES,
+  };
+}
+
+function asObject(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function readMatrixSummary(candidate: unknown): MatrixSummarySnapshot | null {
+  const object = asObject(candidate);
+  if (!object) return null;
+  const summaryObject = asObject(object.summary) || object;
+  const summary: MatrixSummarySnapshot = {};
+  for (const rule of MATRIX_NON_REGRESSION_RULES) {
+    const value = summaryObject[rule.key];
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      summary[rule.key] = value;
+    }
+  }
+  return Object.keys(summary).length > 0 ? summary : null;
+}
+
+function readCycleMatrixSummary(
+  entry: PulseAutonomyState['history'][number],
+  phase: 'before' | 'after',
+): MatrixSummarySnapshot | null {
+  const object = asObject(entry);
+  const directive = phase === 'before' ? asObject(entry.directiveBefore) : asObject(entry.directiveAfter);
+  const suffix = phase === 'before' ? 'Before' : 'After';
+  const candidates = [
+    object?.[`executionMatrix${suffix}`],
+    object?.[`executionMatrixSummary${suffix}`],
+    directive?.executionMatrix,
+    directive?.executionMatrixSummary,
+    asObject(directive?.currentState)?.executionMatrixSummary,
+  ];
+  for (const candidate of candidates) {
+    const summary = readMatrixSummary(candidate);
+    if (summary) return summary;
+  }
+  return null;
+}
+
+function evaluateCycleExecutionMatrixNonRegression(entry: PulseAutonomyState['history'][number]): {
+  compared: boolean;
+  nonRegressing: boolean;
+} {
+  const before = readCycleMatrixSummary(entry, 'before');
+  const after = readCycleMatrixSummary(entry, 'after');
+  if (!before || !after) {
+    return { compared: false, nonRegressing: true };
+  }
+  for (const rule of MATRIX_NON_REGRESSION_RULES) {
+    const beforeValue = before[rule.key];
+    const afterValue = after[rule.key];
+    if (beforeValue === undefined || afterValue === undefined) continue;
+    if (rule.direction === 'increase' && afterValue < beforeValue) {
+      return { compared: true, nonRegressing: false };
+    }
+    if (rule.direction === 'decrease' && afterValue > beforeValue) {
+      return { compared: true, nonRegressing: false };
+    }
+  }
+  return { compared: true, nonRegressing: true };
+}
+
+function pass(reason: string): PulseMachineReadinessGate {
+  return { status: 'pass', reason };
+}
+
+function fail(reason: string): PulseMachineReadinessGate {
+  return { status: 'fail', reason };
+}
+
+function getCrossArtifactConsistencyGate(snapshot: PulseArtifactSnapshot): PulseMachineReadinessGate {
+  const consistency = snapshot.certification.selfTrustReport?.checks?.find(
+    (check) => check.id === 'cross-artifact-consistency',
+  );
+  if (!consistency) {
+    return fail('Cross-artifact consistency was not evaluated in this run.');
+  }
+  if (!consistency.pass) {
+    return fail(consistency.reason || 'Canonical PULSE artifacts disagree on shared fields.');
+  }
+  return pass(
+    consistency.reason || 'Canonical PULSE artifacts agree on shared machine-readiness fields.',
+  );
+}
+
+export function buildPulseMachineReadiness(
+  snapshot: PulseArtifactSnapshot,
+  convergencePlan: PulseConvergencePlan,
+  authority: AuthorityState,
+  autonomyQueue: QueueUnit[],
+  previousAutonomyState: PulseAutonomyState | null,
+): PulseMachineReadiness {
+  const cycleProof = buildAutonomyCycleProof(previousAutonomyState);
+  const invalidAdapters = snapshot.externalSignalState.summary.invalidAdapters;
+  const externalBlocked =
+    snapshot.externalSignalState.summary.missingAdapters +
+    snapshot.externalSignalState.summary.staleAdapters +
+    invalidAdapters;
+  const matrix = snapshot.executionMatrix;
+  const boundedRunGate =
+    matrix && matrix.generatedAt
+      ? pass(
+          `This run produced an execution matrix with ${matrix.summary.totalPaths} classified path(s).`,
+        )
+      : fail('This run did not produce a bounded execution-matrix artifact.');
+  const gates: Record<PulseMachineReadinessGateName, PulseMachineReadinessGate> = {
+    boundedRunPass: boundedRunGate,
+    artifactConsistencyPass: getCrossArtifactConsistencyGate(snapshot),
+    executionMatrixPass:
+      snapshot.certification.gates.executionMatrixCompletePass.status === 'pass'
+        ? pass(snapshot.certification.gates.executionMatrixCompletePass.reason)
+        : fail(snapshot.certification.gates.executionMatrixCompletePass.reason),
+    criticalPathTerminalPass:
+      snapshot.certification.gates.criticalPathObservedPass.status === 'pass'
+        ? pass(snapshot.certification.gates.criticalPathObservedPass.reason)
+        : fail(snapshot.certification.gates.criticalPathObservedPass.reason),
+    breakpointPrecisionPass:
+      snapshot.certification.gates.breakpointPrecisionPass.status === 'pass'
+        ? pass(snapshot.certification.gates.breakpointPrecisionPass.reason)
+        : fail(snapshot.certification.gates.breakpointPrecisionPass.reason),
+    externalSignalsPass:
+      externalBlocked === 0
+        ? pass('All required external adapters are fresh, available, and valid.')
+        : fail(
+            `${snapshot.externalSignalState.summary.missingAdapters} missing, ${snapshot.externalSignalState.summary.staleAdapters} stale, and ${invalidAdapters} invalid external adapter(s) remain.`,
+          ),
+    directiveActionabilityPass:
+      autonomyQueue.length > 0 ||
+      (snapshot.certification.status === 'CERTIFIED' &&
+        snapshot.certification.humanReplacementStatus === 'READY')
+        ? pass(
+            autonomyQueue.length > 0
+              ? `${autonomyQueue.length} ai_safe unit(s) are available for a fresh AI session.`
+              : 'The machine is certified and no autonomous work remains.',
+          )
+        : fail('No ai_safe unit is available and the machine is not certified complete.'),
+    selfTrustPass:
+      snapshot.certification.gates.pulseSelfTrustPass.status === 'pass'
+        ? pass(snapshot.certification.gates.pulseSelfTrustPass.reason)
+        : fail(snapshot.certification.gates.pulseSelfTrustPass.reason),
+    multiCycleConvergencePass:
+      snapshot.certification.gates.multiCycleConvergencePass.status === 'pass' && cycleProof.proven
+        ? pass(snapshot.certification.gates.multiCycleConvergencePass.reason)
+        : fail(
+            `${snapshot.certification.gates.multiCycleConvergencePass.reason} Cycle proof: ${cycleProof.successfulNonRegressingCycles}/${cycleProof.requiredCycles}.`,
+          ),
+  };
+  const blockers = Object.entries(gates)
+    .filter(([, gate]) => gate.status === 'fail')
+    .map(([name, gate]) => `${name}: ${gate.reason}`);
+  const passingGates = Object.values(gates).filter((gate) => gate.status === 'pass').length;
+  const ready = blockers.length === 0;
+
+  return {
+    generatedAt: snapshot.certification.timestamp,
+    status: ready ? 'READY' : 'NOT_READY',
+    canDeclarePulseComplete: ready,
+    authorityMode: authority.mode,
+    gates,
+    blockers,
+    summary: {
+      totalGates: Object.keys(gates).length,
+      passingGates,
+      failingGates: Object.keys(gates).length - passingGates,
+      executionMatrixPaths: matrix?.summary.totalPaths ?? 0,
+      criticalUnobservedPaths: matrix?.summary.criticalUnobservedPaths ?? 0,
+      impreciseBreakpoints: matrix?.summary.impreciseBreakpoints ?? 0,
+      automationSafeUnits: autonomyQueue.length,
+      successfulNonRegressingCycles: cycleProof.successfulNonRegressingCycles,
+      requiredCycles: cycleProof.requiredCycles,
+    },
   };
 }
 
@@ -220,18 +512,22 @@ export function buildAutonomyProof(
   previousAutonomyState: PulseAutonomyState | null,
 ) {
   const firstUnit = autonomyQueue[0] || null;
+  const profile = snapshot.certification.certificationTarget.profile || undefined;
   const invalidAdapters = snapshot.externalSignalState.adapters.filter(
-    (adapter) => adapter.status === 'invalid',
+    (adapter) => adapter.status === 'invalid' && isAdapterRequired(adapter.source, profile),
   ).length;
   const externalAdaptersClosed =
     snapshot.externalSignalState.summary.missingAdapters === 0 &&
     snapshot.externalSignalState.summary.staleAdapters === 0 &&
     invalidAdapters === 0;
-  const structuralDebtClosed =
-    snapshot.parityGaps.summary.totalGaps === 0 &&
-    snapshot.codacyEvidence.summary.highIssues === 0 &&
-    snapshot.capabilityState.summary.phantomCapabilities === 0 &&
-    snapshot.flowProjection.summary.phantomFlows === 0;
+  const isPulseCoreFinal = profile === 'pulse-core-final';
+  const structuralDebtClosed = isPulseCoreFinal
+    ? snapshot.certification.status === 'CERTIFIED' &&
+      snapshot.certification.humanReplacementStatus === 'READY'
+    : snapshot.parityGaps.summary.totalGaps === 0 &&
+      snapshot.codacyEvidence.summary.highIssues === 0 &&
+      snapshot.capabilityState.summary.phantomCapabilities === 0 &&
+      snapshot.flowProjection.summary.phantomFlows === 0;
   const cycleProof = buildAutonomyCycleProof(previousAutonomyState);
   const productionAutonomy =
     authority.mode === 'certified-autonomous' &&
@@ -274,6 +570,12 @@ export function buildAutonomyProof(
   const productionBlockers = unique(
     [
       ...authority.reasons,
+      authority.mode !== 'certified-autonomous'
+        ? `Authority mode is ${authority.mode}, not certified-autonomous.`
+        : '',
+      snapshot.certification.status !== 'CERTIFIED'
+        ? `Certification status is ${snapshot.certification.status}, not CERTIFIED.`
+        : '',
       !externalAdaptersClosed
         ? `${snapshot.externalSignalState.summary.missingAdapters} missing, ${snapshot.externalSignalState.summary.staleAdapters} stale, and ${invalidAdapters} invalid external adapter(s) remain.`
         : '',
@@ -287,6 +589,15 @@ export function buildAutonomyProof(
       ...overclaimCheck.violations,
     ].filter(Boolean),
   ).slice(0, 16);
+  const productionAutonomyReason = productionAutonomy
+    ? [
+        'SIM: authority is certified-autonomous',
+        'certification is CERTIFIED',
+        'required external adapters are closed',
+        'structural debt is closed',
+        `${cycleProof.successfulNonRegressingCycles}/${cycleProof.requiredCycles} real runtime-touching non-regressing cycle(s) are proven`,
+      ].join('; ')
+    : `NAO: ${productionBlockers.join(' | ') || 'production autonomy criteria are not closed.'}`;
 
   return {
     generatedAt: snapshot.certification.timestamp,
@@ -296,6 +607,7 @@ export function buildAutonomyProof(
     productionAutonomyQuestion:
       'Can Pulse prove unsupervised convergence to fully functional and production-safe completion?',
     productionAutonomyAnswer: productionAutonomy ? 'SIM' : 'NAO',
+    productionAutonomyReason,
     zeroPromptProductionGuidanceQuestion:
       'If a fresh AI session runs the full Pulse and is told to work autonomously, can it keep converging safely until production completion without human intervention?',
     zeroPromptProductionGuidanceAnswer: zeroPromptProductionGuidance ? 'SIM' : 'NAO',
@@ -359,7 +671,7 @@ export function buildAutonomyProof(
       {
         id: 'multi_cycle_convergence',
         status: cycleProof.proven ? 'pass' : 'fail',
-        evidence: `${cycleProof.successfulNonRegressingCycles}/${cycleProof.requiredCycles} successful non-regressing real autonomous cycle(s); ${cycleProof.realExecutedCycles} real executed cycle(s), ${cycleProof.totalRecordedCycles} recorded cycle(s).`,
+        evidence: `${cycleProof.successfulNonRegressingCycles}/${cycleProof.requiredCycles} successful runtime-touching non-regressing real autonomous cycle(s); ${cycleProof.runtimeTouchingCycles} runtime-touching cycle(s), ${cycleProof.realExecutedCycles} real executed cycle(s), ${cycleProof.totalRecordedCycles} recorded cycle(s), ${cycleProof.executionMatrixComparedCycles} execution-matrix comparison(s), ${cycleProof.executionMatrixRegressedCycles} execution-matrix regression(s).`,
       },
       {
         id: 'zero_prompt_production_guidance',
@@ -389,7 +701,7 @@ export function buildAutonomyProof(
       'Close Pulse self-trust and production decision gates.',
       'Fuse all required external adapters or provide fresh canonical snapshots.',
       'Reduce structural parity gaps, phantom capabilities/flows, and HIGH Codacy issues to the certified threshold.',
-      'Record at least 3 real autonomous cycles with successful validation and no score regression.',
+      'Record at least 3 real autonomous cycles with runtime-touching validation, no score/tier regression, and no execution-matrix regression when matrix snapshots exist.',
     ],
   };
 }

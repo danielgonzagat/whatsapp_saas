@@ -7,6 +7,7 @@ import type {
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
   PulseConvergenceUnitStatus,
+  PulseExecutionMatrix,
   PulseExternalSignalState,
   PulseParityGapsArtifact,
   PulseGateFailureClass,
@@ -38,6 +39,7 @@ interface BuildPulseConvergencePlanInput {
   flowProjection: PulseFlowProjection;
   parityGaps: PulseParityGapsArtifact;
   externalSignalState?: PulseExternalSignalState;
+  executionMatrix?: PulseExecutionMatrix;
 }
 
 interface ScenarioAccumulator {
@@ -1434,10 +1436,90 @@ function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConvergence
     }));
 }
 
+function buildExecutionMatrixUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
+  const matrix = input.executionMatrix;
+  if (!matrix) {
+    return [];
+  }
+  const actionable = matrix.paths
+    .filter(
+      (path) =>
+        path.status === 'observed_fail' ||
+        (path.risk === 'high' &&
+          !['observed_pass', 'observed_fail', 'blocked_human_required'].includes(path.status)),
+    )
+    .slice(0, 12);
+
+  return actionable.map((path) => ({
+    id: `matrix-${slugify(path.pathId)}`,
+    order: 0,
+    priority: path.status === 'observed_fail' ? 'P0' : 'P1',
+    kind: path.flowId ? ('flow' as const) : ('capability' as const),
+    status: path.executionMode === 'observation_only' ? 'watch' : 'open',
+    source: 'pulse' as const,
+    executionMode: path.executionMode,
+    ownerLane: 'platform' as const,
+    riskLevel: path.status === 'observed_fail' ? 'critical' : path.risk,
+    evidenceMode: path.truthMode,
+    confidence: confidenceFromNumeric(path.confidence),
+    productImpact: path.status === 'observed_fail' ? 'transformational' : 'material',
+    title:
+      path.status === 'observed_fail'
+        ? `Repair execution path ${path.pathId}`
+        : `Observe execution path ${path.pathId}`,
+    summary: compactText(
+      [
+        `Execution matrix status is ${path.status}.`,
+        path.breakpoint ? `Breakpoint: ${path.breakpoint.reason}.` : null,
+        `Validation: ${path.validationCommand}.`,
+      ]
+        .filter(Boolean)
+        .join(' '),
+      320,
+    ),
+    visionDelta:
+      path.status === 'observed_fail'
+        ? 'Turns an observed broken path into a precise repair target.'
+        : 'Turns a critical inferred path into observed pass/fail truth.',
+    targetState:
+      'Path is classified as observed_pass, observed_fail with precise breakpoint, or blocked_human_required.',
+    failureClass: path.status === 'observed_fail' ? 'product_failure' : 'missing_evidence',
+    actorKinds: [],
+    gateNames:
+      path.status === 'observed_fail'
+        ? ['breakpointPrecisionPass']
+        : ['criticalPathObservedPass'],
+    scenarioIds: [],
+    moduleKeys: [],
+    routePatterns: path.routePatterns,
+    flowIds: path.flowId ? [path.flowId] : [],
+    affectedCapabilityIds: path.capabilityId ? [path.capabilityId] : [],
+    affectedFlowIds: path.flowId ? [path.flowId] : [],
+    asyncExpectations: [],
+    breakTypes: [],
+    artifactPaths: ['PULSE_EXECUTION_MATRIX.json'],
+    relatedFiles: path.filePaths.slice(0, 20),
+    validationArtifacts: [
+      'PULSE_EXECUTION_MATRIX.json',
+      'PULSE_CLI_DIRECTIVE.json',
+      'PULSE_CERTIFICATE.json',
+    ],
+    expectedGateShift:
+      path.status === 'observed_fail'
+        ? 'Pass breakpointPrecisionPass and reduce observed failing matrix paths'
+        : 'Pass criticalPathObservedPass by adding observed pass/fail evidence',
+    exitCriteria: [
+      `Path ${path.pathId} is no longer ${path.status}.`,
+      'PULSE_EXECUTION_MATRIX.json is regenerated with a concrete observed classification.',
+    ],
+  }));
+}
+
 /** Build convergence plan. */
 export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): PulseConvergencePlan {
   const queue = [
     ...buildExternalUnits(input),
+    ...buildExecutionMatrixUnits(input),
     ...buildScopeUnits(input),
     ...buildParityGapUnits(input),
     ...buildCapabilityUnits(input),

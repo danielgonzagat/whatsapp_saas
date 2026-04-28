@@ -8,6 +8,7 @@ import type { FullScanResult } from './daemon';
 import type { PulseCertification, PulseConfig } from './types';
 import { buildStructuralGraph } from './structural-graph';
 import { buildExecutionChains } from './execution-chains';
+import { buildExecutionMatrix } from './execution-matrix';
 import { buildCapabilityState } from './capability-model';
 import { buildFlowProjection } from './flow-projection';
 import { buildParityGaps } from './parity-gaps';
@@ -101,6 +102,8 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
       owner: process.env.GITHUB_OWNER || '',
       repo: process.env.GITHUB_REPO || '',
     },
+    profile: config.certificationProfile || undefined,
+    certificationScope: config.certificationProfile || undefined,
   }).catch(() => null);
 
   const liveExternalState = await runPhaseWithTrace(
@@ -116,6 +119,15 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
     capabilityState,
     flowProjection,
     liveExternalState,
+  });
+  const executionMatrix = buildExecutionMatrix({
+    structuralGraph,
+    scopeState: scanResult.scopeState,
+    executionChains,
+    capabilityState,
+    flowProjection,
+    executionEvidence: certification.evidenceSummary,
+    externalSignalState,
   });
   const parityGaps = buildParityGaps({
     codebaseTruth: scanResult.codebaseTruth,
@@ -140,6 +152,7 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
     ...scanResult,
     structuralGraph,
     executionChains,
+    executionMatrix,
     productGraph,
     capabilityState,
     flowProjection,
@@ -192,6 +205,7 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
             scopeState: finalScanResult.scopeState,
             codacyEvidence: finalScanResult.codacyEvidence,
             structuralGraph: finalScanResult.structuralGraph,
+            executionMatrix: finalScanResult.executionMatrix,
             capabilityState: finalScanResult.capabilityState,
             flowProjection: finalScanResult.flowProjection,
             parityGaps: finalScanResult.parityGaps,
@@ -225,6 +239,7 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
           scopeState: finalScanResult.scopeState,
           codacyEvidence: finalScanResult.codacyEvidence,
           structuralGraph: finalScanResult.structuralGraph,
+          executionMatrix: finalScanResult.executionMatrix,
           capabilityState: finalScanResult.capabilityState,
           flowProjection: finalScanResult.flowProjection,
           parityGaps: finalScanResult.parityGaps,

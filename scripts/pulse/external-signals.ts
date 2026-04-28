@@ -1,5 +1,6 @@
 import * as path from 'path';
 import type {
+  PulseCertificationProfile,
   PulseCodacyEvidence,
   PulseExternalAdapterSnapshot,
   PulseExternalSignalSource,
@@ -25,9 +26,32 @@ import {
   isChangeSignal,
   isRuntimeSignal,
 } from './signal-mapper';
-import { isAdapterRequired } from './adapters/external-sources-orchestrator';
+import {
+  isAdapterRequired,
+  normalizeExternalSignalProfile,
+  type ConsolidatedExternalState,
+} from './adapters/external-sources-orchestrator';
 export type { BuildExternalSignalStateInput } from './signal-mapper';
 import type { BuildExternalSignalStateInput } from './signal-mapper';
+
+/** Build an empty live-state envelope that carries active profile/scope semantics. */
+export function createExternalSignalProfileState(
+  profile: PulseCertificationProfile | null | undefined,
+  certificationScope: PulseCertificationProfile | null | undefined = profile,
+): ConsolidatedExternalState {
+  const generatedAt = new Date().toISOString();
+  return {
+    generatedAt,
+    profile: profile || undefined,
+    certificationScope: certificationScope || profile || undefined,
+    sources: [],
+    allSignals: [],
+    signalsBySource: {},
+    criticalSignals: [],
+    highSignals: [],
+    totalSeverity: 0,
+  };
+}
 
 interface PulseExternalSourceConfig {
   fileName: string;
@@ -276,10 +300,16 @@ export function buildExternalSignalState(
     signals: signals.filter((signal) => signal.source === adapter.source),
   }));
 
-  // Derive the active profile from the live external state when available.
-  // Profile === 'production-final' means every profile-dependent adapter is required.
-  const profile = (input.liveExternalState as unknown as { profile?: string } | null | undefined)
-    ?.profile;
+  // Derive the active profile/scope from the live external state when available.
+  // Canonical final profiles make profile-dependent adapters required; Prometheus
+  // remains optional for pulse-core-final and required for full-product.
+  const liveProfileState = input.liveExternalState as
+    | { profile?: string; certificationScope?: string }
+    | null
+    | undefined;
+  const profile = normalizeExternalSignalProfile(
+    liveProfileState?.certificationScope || liveProfileState?.profile,
+  );
 
   // Categorize adapters using FASE 4 five-status semantics + requiredness.
   // - `optional_not_configured` is never blocking.

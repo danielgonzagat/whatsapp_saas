@@ -264,6 +264,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       advice,
       productionSnapshot: {
         status: productionSnapshot.status,
+        machineReadiness: productionSnapshot.machineReadiness,
         canonicalDir: productionSnapshot.canonicalDir,
         missingArtifacts: productionSnapshot.missingArtifacts,
         staleArtifacts: productionSnapshot.staleArtifacts,
@@ -307,6 +308,14 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
   /** Get latest PULSE flow projection artifact. */
   getLatestFlowProjection() {
     return this.artifacts.getLatestFlowProjection();
+  }
+  /** Get latest PULSE execution matrix artifact. */
+  getLatestExecutionMatrix() {
+    return this.artifacts.getLatestExecutionMatrix();
+  }
+  /** Get canonical PULSE machine-readiness state. */
+  getMachineReadiness() {
+    return this.artifacts.getMachineReadiness();
   }
   /** Get latest PULSE convergence plan artifact. */
   getLatestConvergencePlan() {

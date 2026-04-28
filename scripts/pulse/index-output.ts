@@ -65,6 +65,7 @@ export function handlePulseOutput(input: HandlePulseOutputInput): void {
             scopeState: scanResult.scopeState,
             codacyEvidence: scanResult.codacyEvidence,
             structuralGraph: scanResult.structuralGraph,
+            executionMatrix: scanResult.executionMatrix,
             capabilityState: scanResult.capabilityState,
             flowProjection: scanResult.flowProjection,
             parityGaps: scanResult.parityGaps,
@@ -90,6 +91,7 @@ export function handlePulseOutput(input: HandlePulseOutputInput): void {
 
   // 4. Output
   if (flags.json) {
+    generateArtifacts(scanResult, config.rootDir);
     console.log(
       JSON.stringify(
         {
@@ -100,6 +102,7 @@ export function handlePulseOutput(input: HandlePulseOutputInput): void {
           scopeState: scanResult.scopeState,
           codacyEvidence: scanResult.codacyEvidence,
           structuralGraph: scanResult.structuralGraph,
+          executionMatrix: scanResult.executionMatrix,
           capabilityState: scanResult.capabilityState,
           flowProjection: scanResult.flowProjection,
           parityGaps: scanResult.parityGaps,

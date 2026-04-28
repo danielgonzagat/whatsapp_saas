@@ -108,7 +108,7 @@ export class AuthWhatsappPasswordService {
     }
 
     // OTP code intentionally NOT logged: leaking it would let log-readers
-    // impersonate the user during the 5-minute verification window.
+    // access the user account during the 5-minute verification window.
     this.logger.debug(`WhatsApp Code dispatched for ${normalizedPhone}`);
 
     return {

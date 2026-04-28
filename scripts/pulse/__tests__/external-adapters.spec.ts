@@ -6,9 +6,31 @@
 
 import { describe, it, expect } from 'vitest';
 import { evaluateMultiCycleConvergenceGate } from '../cert-gate-multi-cycle';
+import {
+  isAdapterRequired,
+  normalizeExternalSignalProfile,
+} from '../adapters/external-sources-orchestrator';
 import type { PulseAutonomyStateSnapshot } from '../types';
 
 describe('external-adapters — required vs optional', () => {
+  describe('profile-scoped external signal requiredness', () => {
+    it('keeps Prometheus optional for pulse-core-final and required for full-product', () => {
+      expect(isAdapterRequired('prometheus', 'pulse-core-final')).toBe(false);
+      expect(isAdapterRequired('prometheus', 'full-product')).toBe(true);
+    });
+
+    it('requires profile-dependent adapters only for canonical final profiles', () => {
+      expect(isAdapterRequired('codecov', 'core-critical')).toBe(false);
+      expect(isAdapterRequired('codecov', 'pulse-core-final')).toBe(true);
+      expect(isAdapterRequired('codecov', 'full-product')).toBe(true);
+    });
+
+    it('normalizes the legacy production-final alias to full-product', () => {
+      expect(normalizeExternalSignalProfile('production-final')).toBe('full-product');
+      expect(isAdapterRequired('prometheus', 'production-final')).toBe(true);
+    });
+  });
+
   describe('required adapter not_available blocks certification', () => {
     it('should track missingAdapters when required adapter is not_available', () => {
       const autonomyState: PulseAutonomyStateSnapshot = {

@@ -395,6 +395,8 @@ export async function runPulseAutonomousLoop(
       directiveDigestAfter: directiveDigest(directiveAfter),
       directiveBefore: beforeSnapshot,
       directiveAfter: afterSnapshot,
+      executionMatrixSummaryBefore: beforeSnapshot.executionMatrixSummary ?? null,
+      executionMatrixSummaryAfter: afterSnapshot.executionMatrixSummary ?? null,
       codex: codexResult,
       validation: {
         executed: !options.dryRun,

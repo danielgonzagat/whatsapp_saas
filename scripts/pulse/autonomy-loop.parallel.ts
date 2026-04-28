@@ -32,10 +32,16 @@ import {
   rollbackWorkspaceToHead,
   applyWorkerPatchToRoot,
 } from './autonomy-loop.workspace';
+import {
+  captureRegressionSnapshot,
+  detectRegression,
+  rollbackRegression,
+} from './regression-guard';
 import { shouldStopForDirective } from './autonomy-loop.planner';
 import { runValidationCommands, runParallelWorkerAssignment } from './autonomy-loop.execution';
 import { buildBatchValidationCommands } from './autonomy-loop.prompt';
 import { sleep } from './autonomy-loop.utils';
+import type { PulseAutonomousDirective } from './autonomy-loop.types';
 import {
   buildBatchRecord,
   buildOrchestrationStateUpdate,
@@ -44,6 +50,37 @@ import {
   buildStopEarlyStates,
   buildDryRunWorkerResults,
 } from './autonomy-loop.parallel-helpers';
+
+export function getContextFabricBlocker(
+  directive: PulseAutonomousDirective,
+  batchUnits: Array<{ leaseId?: string; contextDigest?: string }>,
+): string | null {
+  const contextFabric = directive.contextFabric;
+  if (!contextFabric) {
+    return 'PULSE context fabric is missing from the directive.';
+  }
+  if (contextFabric.staleContextBlocksExecution) {
+    return `PULSE context fabric is stale: ${(contextFabric.blockers || []).join(', ') || 'unknown blocker'}.`;
+  }
+  if (
+    contextFabric.contextBroadcastPass === false ||
+    contextFabric.ownershipConflictPass === false ||
+    contextFabric.protectedFilesForbiddenPass === false ||
+    contextFabric.workerContextCompletenessPass === false
+  ) {
+    return 'PULSE context fabric gates are not passing for parallel worker execution.';
+  }
+  const digest = contextFabric.contextDigest;
+  if (!digest) {
+    return 'PULSE context fabric has no contextDigest.';
+  }
+  const missingLease = batchUnits.find(
+    (unit) => !unit.leaseId || !unit.contextDigest || unit.contextDigest !== digest,
+  );
+  return missingLease
+    ? 'Parallel worker selected without a valid lease and fresh contextDigest.'
+    : null;
+}
 
 export async function runParallelAutonomousLoop(
   rootDir: string,
@@ -162,6 +199,24 @@ export async function runParallelAutonomousLoop(
       writePulseAgentOrchestrationState(rootDir, orchestrationState);
       return state;
     }
+    const contextFabricBlocker = getContextFabricBlocker(directiveBefore, batchUnits);
+    if (contextFabricBlocker) {
+      state = {
+        ...state,
+        generatedAt: new Date().toISOString(),
+        status: 'blocked',
+        stopReason: contextFabricBlocker,
+      };
+      orchestrationState = {
+        ...orchestrationState,
+        generatedAt: new Date().toISOString(),
+        status: 'blocked',
+        stopReason: contextFabricBlocker,
+      };
+      writePulseAutonomyState(rootDir, state);
+      writePulseAgentOrchestrationState(rootDir, orchestrationState);
+      return state;
+    }
 
     const iterationStartedAt = new Date().toISOString();
     const validationCommands = buildBatchValidationCommands(
@@ -169,6 +224,7 @@ export async function runParallelAutonomousLoop(
       batchUnits,
       options.validateCommands,
     );
+    const regressionBefore = !options.dryRun ? captureRegressionSnapshot(rootDir) : null;
     let workerResults: PulseAgentOrchestrationWorkerResult[] = [];
     let validationResults: PulseAutonomyValidationCommandResult[] = [];
 
@@ -216,7 +272,23 @@ export async function runParallelAutonomousLoop(
         if (worker.status !== 'completed' || !worker.patchPath) {
           return worker;
         }
-        const applyResult = applyWorkerPatchToRoot(rootDir, worker.patchPath, worker.workerId);
+        const unit = batchUnits.find((candidate) => candidate.id === worker.unit?.id);
+        if (!unit) {
+          return {
+            ...worker,
+            status: 'failed' as const,
+            applyStatus: 'failed' as const,
+            applySummary: `Worker ${worker.workerId} patch could not be matched to an active lease.`,
+            summary: `Worker ${worker.workerId} failed during integration: active lease not found.`,
+          };
+        }
+        const applyResult = applyWorkerPatchToRoot(
+          rootDir,
+          worker.patchPath,
+          worker.workerId,
+          unit,
+          worker.changedFiles,
+        );
         return {
           ...worker,
           status: applyResult.status === 'applied' ? worker.status : ('failed' as const),
@@ -254,12 +326,38 @@ export async function runParallelAutonomousLoop(
         worker.status === 'failed' || (worker.codex.executed && worker.codex.exitCode !== 0),
     );
     const validationFailure = validationResults.some((result) => result.exitCode !== 0);
+    const batchChangedFiles = [
+      ...new Set(workerResults.flatMap((worker) => worker.changedFiles || [])),
+    ];
+    const regressionResult =
+      !options.dryRun && regressionBefore
+        ? detectRegression(regressionBefore, captureRegressionSnapshot(rootDir))
+        : null;
+    const regressionFailure = Boolean(regressionResult?.regressed);
     const rollbackSummary =
-      !options.dryRun && (workerFailure || validationFailure)
+      !options.dryRun && (workerFailure || validationFailure || regressionFailure)
         ? rollbackGuard.enabled
-          ? rollbackWorkspaceToHead(rootDir)
+          ? regressionFailure
+            ? rollbackRegression(
+                rootDir,
+                batchChangedFiles,
+                `RegressionGuard: ${regressionResult?.reasons.join(' | ')}`,
+              ).summary
+            : rollbackWorkspaceToHead(rootDir)
           : `Automatic rollback skipped: ${rollbackGuard.reason}`
         : null;
+    if (regressionFailure) {
+      const regressionSummary = `RegressionGuard: ${regressionResult?.reasons.join(' | ')}`;
+      workerResults = workerResults.map((worker) => ({
+        ...worker,
+        status: worker.status === 'completed' ? ('failed' as const) : worker.status,
+        applyStatus: worker.applyStatus === 'applied' ? ('failed' as const) : worker.applyStatus,
+        applySummary: worker.applySummary
+          ? `${worker.applySummary} ${regressionSummary}`
+          : regressionSummary,
+        summary: `${worker.summary} ${regressionSummary}`.trim(),
+      }));
+    }
 
     const batchRecord = buildBatchRecord(
       orchestrationState,
@@ -285,7 +383,7 @@ export async function runParallelAutonomousLoop(
         options.parallelAgents,
         options.riskProfile,
         workerFailure,
-        validationFailure,
+        validationFailure || regressionFailure,
       ),
     };
     writePulseAgentOrchestrationState(rootDir, orchestrationState);
@@ -301,7 +399,7 @@ export async function runParallelAutonomousLoop(
       improved,
       rollbackSummary,
       workerFailure,
-      validationFailure,
+      validationFailure || regressionFailure,
       options.dryRun,
       plannerMode,
     );

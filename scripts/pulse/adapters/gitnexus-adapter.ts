@@ -49,20 +49,13 @@ function makeSignal(
 export async function fetchGitNexusSignal(repoRoot: string): Promise<PulseSignal | null> {
   try {
     const p = getProvider();
-    const available = await p.isAvailable();
-    if (!available) {
-      return makeSignal(
-        'GitNexus is not available (npx gitnexus@latest failed).',
-        0.3,
-        0.4,
-        'observation_only',
-      );
-    }
-
     const status = await p.getStatus({ repoRoot });
     if (!status.indexExists) {
+      const available = await p.isAvailable();
       return makeSignal(
-        'GitNexus index missing. Run pulse:gitnexus:index to create it.',
+        available
+          ? 'GitNexus index missing. Run pulse:gitnexus:index to create it.'
+          : 'GitNexus CLI is unavailable and no local index exists.',
         0.4,
         0.5,
         'ai_safe',

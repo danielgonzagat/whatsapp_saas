@@ -16,7 +16,7 @@ import { buildWorkerPrompt } from './autonomy-loop.prompt';
 import {
   prepareIsolatedWorkerWorkspace,
   collectWorkspacePatch,
-  applyWorkerPatchToRoot,
+  validateChangedFilesAgainstLease,
 } from './autonomy-loop.workspace';
 
 export function buildCodexCommand(args: string[]): string {
@@ -209,8 +209,15 @@ export async function runParallelWorkerAssignment(
       const patch = collectWorkspacePatch(workspace.workspacePath, workspace.patchPath);
       patchPath = patch.patchPath;
       changedFiles = patch.changedFiles;
-      applyStatus = patch.patchPath ? 'planned' : 'skipped';
-      applySummary = patch.summary;
+      const leaseViolation = validateChangedFilesAgainstLease(changedFiles, unit, rootDir);
+      if (leaseViolation) {
+        finalExitCode = 1;
+        applyStatus = 'failed';
+        applySummary = leaseViolation;
+      } else {
+        applyStatus = patch.patchPath ? 'planned' : 'skipped';
+        applySummary = patch.summary;
+      }
     } catch (error) {
       finalExitCode = 1;
       applyStatus = 'failed';

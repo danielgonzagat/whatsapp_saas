@@ -87,11 +87,13 @@ function getConfidenceRank(confidence: string): number {
 }
 
 function getKindExecutionPenalty(unit: PulseAutonomousDirectiveUnit): number {
-  if (unit.kind === 'capability') return 0;
-  if (unit.kind === 'flow') return 4;
-  if (unit.kind === 'scope' || unit.kind === 'gate' || unit.kind === 'static') return 7;
-  if (unit.kind === 'runtime' || unit.kind === 'change' || unit.kind === 'dependency') return 9;
-  if (unit.kind === 'scenario') return 12;
+  if (unit.kind === 'scenario') return 0;
+  if (unit.kind === 'runtime' || unit.kind === 'change') return 1;
+  if (unit.kind === 'dependency') return 2;
+  if (unit.kind === 'capability') return 4;
+  if (unit.kind === 'flow') return 5;
+  if (unit.kind === 'gate') return 6;
+  if (unit.kind === 'scope' || unit.kind === 'static') return 8;
   return 6;
 }
 
@@ -220,9 +222,7 @@ export function getAutomationSafeUnits(
     isRiskSafeForAutomation(unit, riskProfile),
   );
 
-  return directive.nextAutonomousUnits && directive.nextAutonomousUnits.length > 0
-    ? units
-    : units.sort(compareAutomationUnits);
+  return units.sort(compareAutomationUnits);
 }
 
 export function getFreshAutomationSafeUnits(
@@ -250,12 +250,15 @@ export function hasUnitConflict(
 ): boolean {
   const capabilitySet = new Set(unit.affectedCapabilities || []);
   const flowSet = new Set(unit.affectedFlows || []);
+  const ownedFileSet = new Set(unit.ownedFiles || []);
   return selectedUnits.some((selected) => {
     const selectedCapabilities = selected.affectedCapabilities || [];
     const selectedFlows = selected.affectedFlows || [];
+    const selectedOwnedFiles = selected.ownedFiles || [];
     const capabilityConflict = selectedCapabilities.some((value) => capabilitySet.has(value));
     const flowConflict = selectedFlows.some((value) => flowSet.has(value));
-    return capabilityConflict || flowConflict;
+    const fileConflict = selectedOwnedFiles.some((value) => ownedFileSet.has(value));
+    return capabilityConflict || flowConflict || fileConflict;
   });
 }
 

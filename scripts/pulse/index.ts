@@ -34,12 +34,13 @@ import { fullScan, startDaemon } from './daemon';
 import { computeCertification } from './certification';
 import { buildStructuralGraph } from './structural-graph';
 import { buildExecutionChains } from './execution-chains';
+import { buildExecutionMatrix } from './execution-matrix';
 import { buildCapabilityState } from './capability-model';
 import { buildFlowProjection } from './flow-projection';
 import { buildParityGaps } from './parity-gaps';
 import { buildProductVision } from './product-vision';
 import { buildProductModel } from './product-model';
-import { buildExternalSignalState } from './external-signals';
+import { buildExternalSignalState, createExternalSignalProfileState } from './external-signals';
 import { runExternalSourcesOrchestrator } from './adapters/external-sources-orchestrator';
 import { runPulseAutonomousLoop } from './autonomy-loop';
 import {
@@ -55,6 +56,7 @@ import { runSelfTrustChecks } from './self-trust';
 import { runCrossArtifactConsistencyCheck } from './cross-artifact-consistency-check';
 import { runDeclaredFlows } from './flows';
 import { runDeclaredInvariants } from './invariants';
+import { loadParserInventory } from './parser-registry';
 import { loadPulseLocalEnv } from './local-env';
 import { runSyntheticActors } from './actors';
 import { getProfileSelection } from './profiles';
@@ -91,6 +93,23 @@ import { printPulseStartupSummary } from './index-preamble';
 import { handlePulseOutput } from './index-output';
 
 activateRuntimeParserEnv();
+
+function deriveFullScanTimeoutMs(
+  config: ReturnType<typeof detectConfig>,
+  includeParser: ((name: string) => boolean) | undefined,
+  parserTimeoutMs: number | undefined,
+  phaseTimeoutMs: number | undefined,
+): number | undefined {
+  if (!parserTimeoutMs || parserTimeoutMs <= 0) {
+    return phaseTimeoutMs;
+  }
+  const parserInventory = loadParserInventory(config, { includeParser });
+  const parserBudgetMs = parserInventory.loadedChecks.length * parserTimeoutMs;
+  const baseScanOverheadMs = 120_000;
+  const unavailableBudgetMs = parserInventory.unavailableChecks.length * 250;
+  const dynamicBudgetMs = parserBudgetMs + baseScanOverheadMs + unavailableBudgetMs;
+  return Math.max(phaseTimeoutMs ?? 0, dynamicBudgetMs);
+}
 
 async function main() {
   const loadedEnvFiles = loadPulseLocalEnv(process.cwd());
@@ -136,6 +155,12 @@ async function main() {
 
   const config = detectConfig(process.cwd());
   config.certificationProfile = flags.profile;
+  const fullScanTimeoutMs = deriveFullScanTimeoutMs(
+    config,
+    bootstrapProfileSelection?.includeParser,
+    bootstrapProfileSelection?.parserTimeoutMs,
+    bootstrapProfileSelection?.phaseTimeoutMs,
+  );
   const mode = effectiveEnvironment.toUpperCase();
   printPulseStartupSummary({
     humanReadableOutput,
@@ -160,10 +185,12 @@ async function main() {
         tracer,
       }),
     {
-      timeoutMs: bootstrapProfileSelection?.phaseTimeoutMs,
+      timeoutMs: fullScanTimeoutMs,
       metadata: {
         profile: flags.profile || 'none',
         environment: effectiveEnvironment,
+        parserTimeoutMs: bootstrapProfileSelection?.parserTimeoutMs ?? 0,
+        dynamicTimeoutMs: fullScanTimeoutMs ?? 0,
       },
     },
   );
@@ -392,6 +419,22 @@ async function main() {
     codacyEvidence: scanResult.codacyEvidence,
     capabilityState: derivedCapabilityState,
     flowProjection: derivedFlowProjection,
+    liveExternalState: createExternalSignalProfileState(
+      effectiveTarget.profile,
+      effectiveTarget.certificationScope,
+    ),
+  });
+  const derivedExecutionChains = buildExecutionChains({
+    structuralGraph: derivedStructuralGraph,
+  });
+  const derivedExecutionMatrix = buildExecutionMatrix({
+    structuralGraph: derivedStructuralGraph,
+    scopeState: scanResult.scopeState,
+    executionChains: derivedExecutionChains,
+    capabilityState: derivedCapabilityState,
+    flowProjection: derivedFlowProjection,
+    executionEvidence: finalExecutionEvidencePayload,
+    externalSignalState: derivedExternalSignalState,
   });
 
   // TODO(pulse-pipeline): Restructure to generate non-cert artifacts (external-signal-state,
@@ -482,6 +525,7 @@ async function main() {
           capabilityState: derivedCapabilityState,
           flowProjection: derivedFlowProjection,
           externalSignalState: derivedExternalSignalState,
+          executionMatrix: derivedExecutionMatrix,
           certificationTarget: effectiveTarget,
           executionEvidence: finalExecutionEvidencePayload,
           previousDirective,
@@ -577,6 +621,8 @@ async function main() {
       owner: process.env.GITHUB_OWNER || '',
       repo: process.env.GITHUB_REPO || '',
     },
+    profile: effectiveTarget.profile || undefined,
+    certificationScope: effectiveTarget.certificationScope || effectiveTarget.profile || undefined,
   }).catch(() => null);
 
   const liveExternalState = await runPhaseWithTrace(
@@ -595,6 +641,15 @@ async function main() {
     capabilityState,
     flowProjection,
     liveExternalState,
+  });
+  const executionMatrix = buildExecutionMatrix({
+    structuralGraph,
+    scopeState: scanResult.scopeState,
+    executionChains,
+    capabilityState,
+    flowProjection,
+    executionEvidence: certification.evidenceSummary,
+    externalSignalState,
   });
   const parityGaps = buildParityGaps({
     codebaseTruth: scanResult.codebaseTruth,
@@ -619,6 +674,7 @@ async function main() {
     ...scanResult,
     structuralGraph,
     executionChains,
+    executionMatrix,
     productGraph,
     capabilityState,
     flowProjection,

@@ -13,6 +13,7 @@ import type {
   PulseCodacyEvidence,
   PulseConvergencePlan,
   PulseExecutionChainSet,
+  PulseExecutionMatrix,
   PulseExternalSignalState,
   PulseFlowProjection,
   PulseHealth,
@@ -23,6 +24,7 @@ import type {
   PulseResolvedManifest,
   PulseScopeState,
   PulseStructuralGraph,
+  PulseGateResult,
 } from './types';
 
 /** Pulse artifact snapshot shape. */
@@ -35,6 +37,7 @@ export interface PulseArtifactSnapshot {
   codacyEvidence: PulseCodacyEvidence;
   structuralGraph: PulseStructuralGraph;
   executionChains: PulseExecutionChainSet;
+  executionMatrix: PulseExecutionMatrix;
   productGraph: PulseProductGraph;
   capabilityState: PulseCapabilityState;
   flowProjection: PulseFlowProjection;
@@ -56,6 +59,7 @@ export interface PulseArtifactPaths {
   scopeState: string;
   structuralGraph: string;
   executionChains: string;
+  executionMatrix: string;
   productGraph: string;
   capabilityState: string;
   flowProjection: string;
@@ -63,7 +67,40 @@ export interface PulseArtifactPaths {
   externalSignalState: string;
   productVision: string;
   certification: string;
+  machineReadiness: string;
   directive: string;
   report: string;
   artifactIndex: string;
+}
+
+/** PULSE-machine readiness criterion status. */
+export type PulseMachineReadinessCriterionStatus = PulseGateResult['status'];
+
+/** PULSE-machine readiness criterion shape. */
+export interface PulseMachineReadinessCriterion {
+  id:
+    | 'bounded_run'
+    | 'artifact_consistency'
+    | 'execution_matrix'
+    | 'critical_path_terminal'
+    | 'breakpoint_precision'
+    | 'external_reality'
+    | 'self_trust'
+    | 'multi_cycle';
+  status: PulseMachineReadinessCriterionStatus;
+  reason: string;
+  evidence: Record<string, number | string | boolean | null>;
+}
+
+/** PULSE-machine readiness shape, intentionally distinct from product certification. */
+export interface PulseMachineReadiness {
+  scope: 'pulse_machine_not_kloel_product';
+  status: 'READY' | 'NOT_READY';
+  generatedAt: string;
+  productCertificationStatus: PulseCertification['status'];
+  productCertificationExcludedFromVerdict: true;
+  canRunBoundedAutonomousCycle: boolean;
+  canDeclareKloelProductCertified: boolean;
+  criteria: PulseMachineReadinessCriterion[];
+  blockers: string[];
 }

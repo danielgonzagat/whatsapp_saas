@@ -1,22 +1,5 @@
 # KLOEL Repository Governance
 
-## Acronym Glossary
-
-- ADR: Architecture Decision Record.
-- CLI: Command-line interface.
-- CODEX: OpenAI Codex coding agent.
-- CRIT: Critical severity.
-- DI: Dependency injection.
-- HIGH: High severity.
-- HUD: Heads-up display.
-- KYC: Know Your Customer.
-- MCP: Model Context Protocol.
-- OMX: oh-my-codex.
-- PHI: Golden-ratio constant used by the landing animation layout.
-- PULSE: Production-readiness and autonomy certification system.
-- SSR: Server-side rendering.
-- WAHA: WhatsApp HTTP API provider.
-
 ## Governance Boundary
 
 Arquivos de governance e infraestrutura sao `read-only` para qualquer IA CLI
@@ -300,71 +283,67 @@ O estado de rigor maximo do Codacy faz parte da governance.
   reaplicar o lock maximo via script oficial do repositorio.
 
 <claude-mem-context>
-## Memory Context
+# Memory Context
 
-## [whatsapp_saas] recent context, 2026-04-28 10:51am GMT-3
+# [whatsapp_saas] recent context, 2026-04-28 8:20pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (19,731t read) | 756,050t work | 97% savings
-
-### Apr 27, 2026
-
-3165 11:53a 🔵 capability:autopilot-ask State Analysis — Missing Persistence + Codacy HIGH
-3167 11:55a 🔵 Codacy HIGH Issues Catalogued for Autopilot + Auth + Migration Files
-3168 " 🔵 autopilot.service.ts Codacy Line 878 Issue Is a Stale Reference
-3169 6:49p 🔵 capability-autopilot-ask Convergence Unit — Current State Before Fix Cycle
-3176 6:52p 🔵 capability:autopilot-ask — Missing Roles Cleared, Two Maturity Gaps Remain
-3177 " 🔵 PULSE System Health — 71% Score, 87 CRIT/HIGH Breaks, autopilot Rate-Limit Gap
-3178 " 🔵 PULSE Runtime Evidence Collection Mechanism — Scan Mode Skips, Deep/Total Mode Executes
+Stats: 50 obs (26,185t read) | 1,281,232t work | 98% savings
 
 ### Apr 28, 2026
+3671 2:48p 🔴 PULSE full-scan Phase Timeout Fixed — Dynamic Budget Replaces Static phaseTimeoutMs
+3672 " 🔵 WhatsApp SaaS Full check-all — All 19 Gates Green Including Typechecks and Tests
+3673 " 🔵 Local Infrastructure State — Redis and PostgreSQL Running, No App Servers Active
+3674 " 🔵 CI/CD E2E Pipeline — Service Startup and Health-Check Architecture Confirmed
+3675 2:49p 🔴 Apple Auth Test Unsafe Casts Eliminated — Tests Passing Locally
+3676 2:50p 🔵 Production Audit Raw Report — 463,521 LOC, 11,966 Codacy Issues, PULSE PARTIAL Score 64
+3677 2:52p 🔵 CI Quality Job Still FAILING After Unsafe-Cast Fix — Deeper Root Cause Exists
+3678 " 🔵 CI Quality Root Cause Found — Ratchet Gate Fails on `madge_cycles_max` +1
+3679 2:53p 🔵 PULSE Dynamic Timeout Working — full-scan Budget Set to 2,850,000ms for 91 Parsers
+3680 " 🔵 parser:lint-checker Times Out at 30,000ms — SIGKILL with Empty stdout/stderr
+3681 2:55p 🔄 Frontend Checkout Social Identity Types Extracted to Break Circular Dependency
+3686 7:48p ⚖️ PULSE Final Certification Plan — Multi-Agent Parallel Execution Strategy
+3687 7:49p 🔵 PULSE Multi-Cycle Convergence Gate — Full Architecture Mapped
+3688 " 🔵 PULSE Regression Anti-Drift Guard — Two-Layer Architecture Confirmed
+3689 " 🔵 PULSE Machine Readiness Artifact — Separate from Kloel Product Certification
+3690 " 🔵 PULSE Multi-Cycle Convergence — Concrete Missing Gaps Identified
+3691 " 🔵 PULSE Execution Matrix — Architecture and Classification Logic
+3692 " 🔵 PULSE Execution Matrix — Three Certification Gates
+3693 " 🔵 PULSE Scenario Evidence — Disk Fallback Architecture and Anti-Fraud Guards
+3694 " 🔵 PULSE Execution Matrix Spec — Test Coverage and Missing Gap
+3695 " 🔵 PULSE Working Tree State — Large Dirty Tree with New Untracked Files
+3696 7:51p ⚖️ PULSE Final Completion Plan — 6-Agent Parallel Architecture Defined
+3697 " 🔵 PULSE Machine Readiness Audit — Execution Matrix Evidence Closure Investigation Initiated
+3698 7:53p 🔵 PULSE pulse-core-final Profile Filtering Gap — scenarioIds Not Empty
+3699 " 🔵 PULSE Machine Readiness — Full Test Suite Baseline Confirmed
+3700 " ⚖️ PULSE Final Machine Readiness Implementation Plan — 7-Agent Parallel Architecture
+3702 7:54p 🟣 Regression Guard Extended with Execution Matrix Metrics Tracking
+3703 " 🟣 Execution Matrix Now Reads PULSE_SCENARIO_EVIDENCE.json and Adds Inferred-Path Breakpoints
+3704 " 🔄 Autonomy Unit Ranking Inverted to Prioritize Runtime Reality Over Static Scope Work
+3705 " 🔵 PULSE tsconfig.json Lists `jest` and `vitest` Types Not Available at Workspace Root
+3711 7:56p ⚖️ PULSE Final Machine Readiness — 6-Agent Parallel Execution Plan Defined
+3713 7:58p ⚖️ PULSE Final Machine Readiness — 6-Agent Parallel Execution Plan Defined
+3716 8:01p ⚖️ PULSE Final Completion Plan — 8-Agent Parallel Architecture Defined
+3717 " ⚖️ PULSE Execution Matrix Closure Strategy — Terminal Evidence Probes per Critical Path
+3718 " ⚖️ PULSE Multi-Cycle Convergence Proof Architecture — 3 Consecutive Non-Regressive Cycles Required
+3719 " ⚖️ PULSE World Reality Priority — Prometheus Gap Explicit, Runtime Signals Ranked Above Static
+3720 " ⚖️ PULSE Directive as Single Brain — Self-Contained Next Executable Unit Required
+3721 8:03p ⚖️ PULSE Final Machine Readiness — 8-Agent Parallel Execution Plan
+3724 8:06p ⚖️ PULSE Final Machine Readiness — 8-Agent Parallel Implementation Plan Dispatched
+3732 8:07p 🔵 PULSE Machine Readiness Exact State — 3 Failing Criteria with Precise Counts
+3733 " 🔵 PULSE Execution Matrix — 3926 Total Paths, 3265 Inferred-Only, 20 Observed-Pass
+3734 " 🔵 PULSE Full-Scan Health Score 74 — Critical Breaks Catalogued Across Backend
+3735 " 🔵 PULSE Directive State — autonomy=SIM But zeroPromptProductionGuidance=NAO
+3736 " 🔵 PULSE Scripts — New Files Added for Execution Matrix, Context Broadcast, and Parser Worker
+3737 " 🔵 PULSE Queue Architecture — Directive Uses Two Separate Sorted Queues (Decision vs Autonomy)
+3738 8:08p 🔄 PULSE Autonomy Queue Sort Order Refactored — Runtime/Scenario Now Beat Capability/Scope
+3739 " ✅ PULSE Test Suite — 68 Tests Across 8 Spec Files All Pass After Queue Refactor
+3744 8:11p ⚖️ PULSE Final Machine Readiness — 8-Agent Parallel Execution Plan Defined
+3746 8:15p ⚖️ PULSE Final Machine Readiness — 8-Agent Parallel Implementation Plan Dispatched
+3747 8:16p 🔵 PULSE Browser Stress Tester Hanging at Functional Map Build Phase
 
-3180 9:56a 🔵 Codex Global Skills Manifest Already Exists at ~/.codex/skills-import-manifest.json
-3181 9:57a 🔵 oh-my-codex Git Clone Stalled — No Output After 15+ Seconds
-3184 " 🔵 ~/.codex/config.toml Full State Captured — Plugins, MCP Servers, Features
-3186 9:58a 🔵 gitnexus@1.6.3 Already Installed Globally via Homebrew
-3187 " ✅ oh-my-codex Installed Globally via npm
-3188 9:59a 🟣 oh-my-codex v0.15.0 and gitnexus v1.6.3 Confirmed Installed and Operational
-3189 " ✅ oh-my-codex Setup Completed in Plugin Mode (User Scope)
-3190 10:00a ✅ Gitnexus and Beads MCP Servers Wired into ~/.codex/config.toml
-3191 " 🔵 oh-my-codex Doctor State — 8 Passed, 6 Warnings, OMX Config Not Yet Applied
-3192 " 🔵 Codex CLI MCP List — beads and gitnexus Confirmed Enabled
-3193 " ✅ omx setup --scope user --force Completed — HUD Config Created, Hooks Refreshed
-3194 " 🔵 oh-my-codex v0.15.0 Repo Structure — Prompts, Docs, Skills Architecture
-3198 10:01a ✅ Gitnexus MCP Server Updated to npx -y gitnexus@latest for Dynamic Version Resolution
-3199 10:03a 🔵 PR #198 State — UNSTABLE Merge Status, 1 Commit Ahead of Origin
-3200 " 🔵 ADR 0001 — Worker Hardcodes "meta-cloud" in 6 Places, Cannot Route to WAHA
-3201 " 🔵 kloel.com Landing Page — Live on Vercel, Served by KloelLanding Component
-3202 10:04a 🔵 kloel.com Landing Animations Confirmed Working in Production Browser Snapshot
-3203 " 🔵 usePrefersReducedMotion Hook Duplicated in 3 Files — Refactor Opportunity
-3204 " 🔵 ThanosSection — Canvas Particle Disintegration System with PHI-Based Layout
-3205 " 🔵 KloelLanding.helpers.ts — Typewriter Delay Calculator Extracted to Reduce Cyclomatic Complexity
-3209 10:06a 🔵 Frontend Build Succeeds — 82 Static Pages, Full Route Map Confirmed
-3211 10:08a 🔵 Landing Page Animation Integration Test — All 3 Motion Modes Verified Against Local Build
-3216 10:10a 🔴 usePrefersReducedMotion — Fixed SSR Default Causing Animations to Stay Disabled in Production
-3217 10:11a ✅ Commit 804cb9df Pushed to PR #198 — Animation Fix + .omx Config Files
-3218 " 🔵 Pre-Push Hook Gate Results — ESLint, Visual Contract, TypeCheck, and Vitest All Passing
-3219 10:12a 🔵 Frontend Vitest Suite — 46 Files, 205 Tests All Passing in 18.35s
-3220 10:14a ✅ PR #198 Push Succeeded — Commit 804cb9df Pushed After Full Pre-Push Gate
-3222 10:20a 🔵 PR #198 Local Branch 1 Commit Ahead of Remote — Push Incomplete
-3223 " 🔵 PR #198 CI Status Snapshot — 3 Failures, 4 Successes, 2 In-Progress
-3224 " ✅ AGENTS.md Committed and PR #198 Push Initiated with Pre-Push Hook Running
-3225 10:22a 🔵 PR #198 Pre-Push Guards All Passing — Backend Typecheck Running
-3226 " 🔵 PR #198 Push Blocked — nest build Fails with ENOTEMPTY on backend/dist/src/checkout
-3230 10:28a 🔵 PR #198 Second Push Attempt Blocked — frontend:build:clean Exceeds 180s Timeout
-3231 10:29a 🔴 Third PR #198 Push Attempt — Both frontend/.next and backend/dist Cleared Before Retry
-3234 10:33a 🔵 PR #198 Third Push Blocked — Backend Build Silently Failed, bootstrap.js Not Produced
-3235 " 🔵 Backend Manually Rebuilt Before Fourth Push Attempt — bootstrap.js Confirmed Present
-3236 10:34a 🔵 Root Cause Confirmed — `nest build` Cleans dist Then Silently Fails, Destroying Pre-Built bootstrap.js
-3237 10:35a 🔵 `nest-cli.json` Has `deleteOutDir: true` — Confirms Root Cause of Missing bootstrap.js
-3239 10:36a 🔵 Backend CI-Env Build Reproducibly Fails — Only tsbuildinfo Produced, No JS Output
-3241 10:38a 🔵 Stale tsbuildinfo Outside dist/ Was Causing Silent CI-Env Build Failure
-3243 10:42a 🔵 PR #198 Pre-Push Hook — All Stages Passing Through Frontend Vitest
-3244 10:46a 🔵 PR #198 Push Failed — frontend:build:clean Exceeded 180s Timeout
-3245 10:49a 🔵 Next.js Build Trace — Actual Stage Timings Reveal Why 180s Timeout Fires
-
-Access 756k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 1281k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>

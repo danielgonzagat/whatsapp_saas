@@ -67,9 +67,11 @@ export class GitNexusCodeGraphProvider implements CodeGraphProvider {
 
       if (indexExists) {
         const statusFile = path.join(indexPath, 'status.json');
-        if (fs.existsSync(statusFile)) {
+        const metaFile = path.join(indexPath, 'meta.json');
+        const indexStateFile = fs.existsSync(statusFile) ? statusFile : metaFile;
+        if (fs.existsSync(indexStateFile)) {
           try {
-            const raw = JSON.parse(fs.readFileSync(statusFile, 'utf8'));
+            const raw = JSON.parse(fs.readFileSync(indexStateFile, 'utf8'));
             lastIndexedCommit = raw.commit ?? raw.lastCommit ?? null;
             lastIndexedAt = raw.indexedAt ?? raw.lastIndexedAt ?? null;
           } catch {

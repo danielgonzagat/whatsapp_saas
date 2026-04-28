@@ -1,45 +1,62 @@
-# PULSE REPORT — 2026-04-28T02:45:14.570Z
+# PULSE REPORT — 2026-04-28T23:05:24.962Z
 
 ## PULSE VERDICT
 
 - Produto pronto para producao? NAO
 - IA pode trabalhar autonomamente ate producao? NAO
 - Proximo passo seguro? SIM
-- Self-trust: PASS
+- Self-trust: FAIL
 - No-overclaim: PASS
 - Principal blocker: codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
 - Proxima acao: Recover Customer Auth Shell
 
+## PULSE Machine Readiness
+
+- Machine readiness: NOT_READY
+- Scope: pulse_machine_not_kloel_product
+- Product certification excluded from machine verdict: SIM (NOT_CERTIFIED)
+- Can run bounded autonomous cycle: NAO
+- Can declare Kloel product certified: NAO
+- bounded_run: PASS - Bounded next autonomous cycle exposes 8 ai_safe unit(s).
+- artifact_consistency: PASS - Cross-artifact consistency passed.
+- execution_matrix: PASS - Execution matrix classified 3926 path(s) with zero unknown and zero non-terminal paths.
+- critical_path_terminal: FAIL - Execution matrix still has 3016 critical path(s) without observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-marketing, matrix:capability:capability:admin-permission.
+- breakpoint_precision: PASS - Every observed failure in the execution matrix has a breakpoint.
+- external_reality: PASS - Required external adapters are fresh and available for PULSE-machine decisions.
+- self_trust: FAIL - Parser self-trust failed because 1 check(s) could not load.
+- multi_cycle: FAIL - multiCycleConvergence: 0/3 non-regressing real cycles (recorded=1, realExecuted=1, nonRegressing=0/3, failedValidation=1, missingValidation=0, missingRuntimeValidation=0, regressedScore=0, regressedTier=0, executionMatrixCompared=0, regressedExecutionMatrix=0). Cycle proof: 0/3 successful non-regressing real cycle(s).
+
 ## Current State
 
-- Certification: PARTIAL
+- Certification: NOT_CERTIFIED
 - Human replacement: NOT_READY
-- Score: 61/100
+- Score: 71/100
 - Blocking tier: 1
 - Scope parity: PASS (high)
-- Structural chains: 772/2362 complete
-- Capabilities: real=277, partial=24, latent=10, phantom=0
-- Capability maturity: foundational=3, connected=155, operational=16, productionReady=137
-- Flows: real=122, partial=0, latent=0, phantom=0
-- Structural parity gaps: total=1, critical=0, high=1
+- Structural chains: 772/2364 complete
+- Capabilities: real=111, partial=189, latent=10, phantom=0
+- Capability maturity: foundational=3, connected=108, operational=178, productionReady=21
+- Flows: real=33, partial=89, latent=0, phantom=0
+- Execution matrix: paths=3926, observedPass=20, observedFail=228, criticalUnobserved=3016, unknown=0
+- Structural parity gaps: total=7, critical=0, high=5
 - Codacy HIGH issues: 1116
-- GitNexus Code Graph: GitNexus is not available (npx gitnexus@latest failed).
-- External signals: total=10, runtime=2, change=3, dependency=0, high-impact=5
+- GitNexus Code Graph: GitNexus index is stale (current: 0bd5892b, indexed: 89f6f58c).
+- External signals: total=8, runtime=2, change=1, dependency=0, high-impact=3
 
 ## Coverage Truth
 
 - Inventory Coverage: 100%
-- Classification Coverage: 100%
-- Structural Graph Coverage: 37% (796/2131 connected)
-  Reason: 796/2131 structural files connected.
+- Classification Coverage: 99%
+- Structural Graph Coverage: 38% (810/2160 connected)
+  Reason: 810/2160 structural files connected.
 - Test Coverage: 11%
-  Reason: 169/1585 source modules have spec files.
-- Scenario Coverage: 100% (declared=100%, executed=100%, passed=100%)
+  Reason: 173/1605 source modules have spec files.
+- Scenario Coverage: 100% (declared=100%, executed=100%, passed=27%)
 - Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
-  Reason: 0/4 probes fresh.
-- Production Proof Coverage: 89%
-  Reason: 277/311 capabilities real.
-- Unknown Files: 8
+  Reason: 0/2 probes fresh.
+- Production Proof Coverage: 36%
+  Reason: 111/310 capabilities real.
+- Unknown Files: 33
 - Orphan Files: 200
 - Excluded Directories: 20
 - Manifest role: semantic overlay, NOT scope boundary
@@ -48,19 +65,19 @@
 ## What is Observed vs Inferred vs Aspirational
 
 ### Observed (direct evidence)
-- Runtime probes executed: 4
-- External signals: 10 total
-- Self-trust: PASS
+- Runtime probes executed: 2
+- External signals: 8 total
+- Self-trust: FAIL
 - No-overclaim: PASS
 
 ### Inferred (structural analysis)
-- 2362 structural chains
-- 277 real capabilities
-- 122 real flows
+- 2364 structural chains
+- 111 real capabilities
+- 33 real flows
 
 ### Aspirational (product vision projection)
 - 41 projected surfaces
-- Target: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 291/291 capability(ies) and 122/122 flow(s) at least partially real, with readiness yellow.
+- Target: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 290/290 capability(ies) and 122/122 flow(s) at least partially real, with readiness yellow.
 
 ## External Reality
 
@@ -69,51 +86,54 @@
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=51, mappedFlows=97, summary=1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=7, summary=1 HIGH Codacy issue(s) remain in package.json.
 - github/code-change: impact=40%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=20 recent commits detected; latest: chore(deps): bump nodemailer in /worker in the worker-prod-p
-- github_actions/ci-failure: impact=80%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=3 recent CI workflow failure(s): CodeQL, CI, Dependabot Auto Merge
-- github_actions/ci-success: impact=20%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=2 recent CI workflow success(es)
-- sentry/performance-metric: impact=100%, mode=observation_only, mappedCapabilities=1, mappedFlows=0, summary=No unresolved Sentry issues — project is clean
+- sentry/performance-metric: impact=10%, mode=observation_only, mappedCapabilities=1, mappedFlows=0, summary=No unresolved Sentry issues — project is clean
+- datadog/config-gap: impact=20%, mode=observation_only, mappedCapabilities=23, mappedFlows=109, summary=No Datadog monitors configured — add monitors for production visibility
+- gitnexus/codegraph: impact=50%, mode=ai_safe, mappedCapabilities=12, mappedFlows=86, summary=GitNexus index is stale (current: 0bd5892b, indexed: 89f6f58c).
 
 ## Product Identity
 
-- Current checkpoint: The current product-facing system materializes 267 real capability(ies), 24 partial capability(ies), 0 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.
-- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Billing, Checkout, CIA/Agent, CRM, Dashboard, Followups, Partnerships, Sales/Vendas.
-- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 291/291 capability(ies) and 122/122 flow(s) at least partially real, with readiness yellow.
-- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 1 structural parity gap(s), and 1116 HIGH Codacy issue(s).
+- Current checkpoint: The current product-facing system materializes 101 real capability(ies), 189 partial capability(ies), 0 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.
+- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Scrapers, Onboarding, Inbox/Chat, Followups, Settings, Analytics, CIA/Agent, Autopilot.
+- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 290/290 capability(ies) and 122/122 flow(s) at least partially real, with readiness yellow.
+- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 7 structural parity gap(s), and 1116 HIGH Codacy issue(s).
 
 ## Product Surfaces
 
-- Billing: status=real, completion=100%, capabilities=8, flows=7
-- Checkout: status=real, completion=100%, capabilities=39, flows=109, blocker=Missing structural roles: interface, persistence.
-- CIA/Agent: status=real, completion=100%, capabilities=43, flows=97, blocker=Missing structural roles: persistence.
-- CRM: status=real, completion=100%, capabilities=4, flows=83
-- Dashboard: status=real, completion=100%, capabilities=6, flows=21
-- Followups: status=real, completion=100%, capabilities=67, flows=107, blocker=Missing structural roles: orchestration, persistence, side_effect.
-- Partnerships: status=real, completion=100%, capabilities=14, flows=64
-- Sales/Vendas: status=real, completion=100%, capabilities=5, flows=25
 - Scrapers: status=real, completion=100%, capabilities=1, flows=0
-- Settings: status=real, completion=100%, capabilities=64, flows=113
-- Analytics: status=real, completion=99%, capabilities=13, flows=95, blocker=Maturity is still missing: runtime_evidence, codacy_hygiene.
-- Anuncios/Ads: status=real, completion=99%, capabilities=78, flows=105, blocker=Missing structural roles: persistence.
+- Onboarding: status=real, completion=85%, capabilities=3, flows=22, blocker=Maturity is still missing: runtime_evidence.
+- Inbox/Chat: status=real, completion=77%, capabilities=7, flows=57, blocker=Maturity is still missing: runtime_evidence.
+- Followups: status=real, completion=75%, capabilities=67, flows=107, blocker=Missing structural roles: side_effect.
+- Settings: status=real, completion=74%, capabilities=64, flows=113, blocker=Maturity is still missing: runtime_evidence.
+- Analytics: status=real, completion=73%, capabilities=13, flows=95, blocker=Maturity is still missing: runtime_evidence.
+- CIA/Agent: status=real, completion=73%, capabilities=43, flows=97, blocker=Maturity is still missing: runtime_evidence.
+- Autopilot: status=real, completion=72%, capabilities=50, flows=97, blocker=Maturity is still missing: runtime_evidence.
+- Checkout: status=real, completion=72%, capabilities=39, flows=109, blocker=Maturity is still missing: runtime_evidence.
+- Marketing: status=real, completion=72%, capabilities=68, flows=110, blocker=Missing structural roles: side_effect.
+- Products: status=real, completion=72%, capabilities=38, flows=109, blocker=Maturity is still missing: runtime_evidence.
+- Anuncios/Ads: status=real, completion=71%, capabilities=78, flows=105, blocker=Maturity is still missing: runtime_evidence.
 
 ## Experience Projection
 
-- Admin Settings Kyc Banking: status=real, completion=85%, routes=/billing, /settings, /wallet, blocker=Missing structural roles: interface, persistence.
-- Admin Whatsapp Session Control: status=real, completion=85%, routes=/settings, /whatsapp, blocker=Missing structural roles: interface, persistence.
-- Customer Auth Shell: status=real, completion=85%, routes=/dashboard, blocker=Missing structural roles: interface, persistence.
-- Customer Product And Checkout: status=real, completion=85%, routes=/billing, /checkout, /products, blocker=Missing structural roles: interface, persistence.
-- Customer Whatsapp And Inbox: status=real, completion=85%, routes=/inbox, /marketing, /whatsapp, blocker=Missing structural roles: interface, persistence.
-- Operator Autopilot Run: status=real, completion=85%, routes=/analytics, /autopilot, blocker=Missing structural roles: interface, persistence.
-- Operator Campaigns And Flows: status=real, completion=85%, routes=/campaigns, /flow, /followups, blocker=Missing structural roles: interface, persistence.
-- System Payment Reconciliation: status=real, completion=85%, routes=/billing, /checkout, /wallet, blocker=Missing structural roles: interface, persistence.
+- Admin Settings Kyc Banking: status=partial, completion=78%, routes=/billing, /settings, /wallet, blocker=Maturity is still missing: runtime_evidence.
+- Customer Auth Shell: status=partial, completion=78%, routes=/dashboard, blocker=Maturity is still missing: runtime_evidence.
+- Customer Whatsapp And Inbox: status=partial, completion=78%, routes=/inbox, /marketing, /whatsapp, blocker=Maturity is still missing: runtime_evidence.
+- System Payment Reconciliation: status=partial, completion=71%, routes=/billing, /checkout, /wallet, blocker=Maturity is still missing: runtime_evidence.
+- Customer Product And Checkout: status=partial, completion=70%, routes=/billing, /checkout, /products, blocker=Maturity is still missing: runtime_evidence.
+- Operator Campaigns And Flows: status=partial, completion=64%, routes=/campaigns, /flow, /followups, blocker=Maturity is still missing: runtime_evidence.
+- Admin Whatsapp Session Control: status=partial, completion=63%, routes=/settings, /whatsapp, blocker=Maturity is still missing: runtime_evidence.
+- Operator Autopilot Run: status=partial, completion=63%, routes=/analytics, /autopilot, blocker=Maturity is still missing: runtime_evidence.
 
 ## Promise To Production Delta
 
 - Declared surfaces: 41
-- Real surfaces: 33
-- Partial surfaces: 0
+- Real surfaces: 30
+- Partial surfaces: 3
 - Latent surfaces: 0
 - Phantom surfaces: 8
 - Critical gaps:
+  - Billing: Maturity is still missing: runtime_evidence.
+  - Produtos: onApprove remains partial.
+  - Reset: Maturity is still missing: runtime_evidence.
   - Pay: phantom surface with incomplete materialization.
   - Privacy: phantom surface with incomplete materialization.
   - Terms: phantom surface with incomplete materialization.
@@ -121,7 +141,27 @@
 
 ## Structural Parity Gaps
 
+- Back without front: Auth Callback: severity=high, mode=ai_safe, route=/api/auth/callback/apple, summary=Capability Auth Callback is structurally live on backend/runtime paths but still lacks an identified product surface.
+- Back without front: Auth Magic: severity=high, mode=ai_safe, route=/api/auth/magic-link/request, summary=Capability Auth Magic is structurally live on backend/runtime paths but still lacks an identified product surface.
+- Back without front: Ops Queues: severity=high, mode=ai_safe, route=/ops/queues, summary=Capability Ops Queues is structurally live on backend/runtime paths but still lacks an identified product surface.
+- Runtime without product surface: Checkout Post: severity=high, mode=ai_safe, summary=Capability Checkout Post is runtime-critical or operationally important but still has no product-facing surface or routed chain attached to it.
 - Runtime without product surface: Marketing Skill: severity=high, mode=ai_safe, summary=Capability Marketing Skill is runtime-critical or operationally important but still has no product-facing surface or routed chain attached to it.
+- Front without back: Onboarding: severity=medium, mode=ai_safe, summary=Capability Onboarding exposes UI or interaction entry points without an orchestrated backend/materialized effect.
+- UI without persistence: Onboarding: severity=medium, mode=ai_safe, summary=Capability Onboarding has interface presence but still lacks persistence or any durable external effect.
+
+## Execution Matrix
+
+- Coverage: 100% classified, unknown=0, criticalUnobserved=3016
+- matrix:capability:capability:ad-rules: status=untested, truth=inferred, mode=ai_safe, route=/ad-rules, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
+- matrix:capability:capability:admin-accounts: status=observed_fail, truth=observed, mode=ai_safe, route=/admin/accounts, breakpoint=2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
+- matrix:capability:capability:admin-audit: status=observed_fail, truth=observed, mode=ai_safe, route=/admin/accounts/:workspaceId, breakpoint=2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
+- matrix:capability:capability:admin-auth: status=observed_fail, truth=observed, mode=ai_safe, route=/admin/accounts/:workspaceId, breakpoint=2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
+- matrix:capability:capability:admin-carteira: status=observed_fail, truth=observed, mode=ai_safe, route=/admin/accounts/:workspaceId, breakpoint=2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
+- matrix:capability:capability:admin-chat: status=inferred_only, truth=inferred, mode=ai_safe, route=/admin/chat/message, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
+- matrix:capability:capability:admin-clients: status=inferred_only, truth=inferred, mode=ai_safe, route=/admin/clients, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
+- matrix:capability:capability:admin-compliance: status=inferred_only, truth=inferred, mode=ai_safe, route=/admin/compliance/overview, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
+- matrix:capability:capability:admin-config: status=observed_fail, truth=observed, mode=ai_safe, route=/admin/accounts/:workspaceId, breakpoint=2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
+- matrix:capability:capability:admin-dashboard: status=untested, truth=inferred, mode=ai_safe, route=/admin/dashboard/home, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
 
 ## Capability Maturity
 
@@ -131,34 +171,34 @@
 - Onboarding: stage=connected, score=40%, missing=api_surface, orchestration, persistence, side_effect
 - Video: stage=connected, score=40%, missing=api_surface, orchestration, persistence, side_effect
 - Diag: stage=connected, score=46%, missing=persistence, side_effect, runtime_evidence, validation
-- Get: stage=connected, score=46%, missing=persistence, side_effect, runtime_evidence, validation
-- Lifecycle On: stage=connected, score=46%, missing=persistence, side_effect, runtime_evidence, validation
 - Audio Synthesize: stage=connected, score=56%, missing=persistence, runtime_evidence, validation, scenario_coverage
-- Auth Anonymous: stage=connected, score=56%, missing=persistence, runtime_evidence, validation, scenario_coverage
+- Campaign Start: stage=connected, score=56%, missing=persistence, runtime_evidence, validation, scenario_coverage
+- Chat Guest: stage=connected, score=56%, missing=persistence, runtime_evidence, validation, scenario_coverage
+- Health: stage=connected, score=56%, missing=persistence, runtime_evidence, validation, scenario_coverage
 
 ## Top Blockers
 
 - codacy/static_hotspot: 37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
 - codacy/static_hotspot: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
 - codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
-- github_actions/ci-failure: 3 recent CI workflow failure(s): CodeQL, CI, Dependabot Auto Merge
-- sentry/performance-metric: No unresolved Sentry issues — project is clean
+- Billing: Maturity is still missing: runtime_evidence.
+- Produtos: onApprove remains partial.
+- Reset: Maturity is still missing: runtime_evidence.
 - Pay: phantom surface with incomplete materialization.
 - Privacy: phantom surface with incomplete materialization.
 - Terms: phantom surface with incomplete materialization.
 - Tools: phantom surface with incomplete materialization.
-- Runtime without product surface: Marketing Skill: Capability Marketing Skill is runtime-critical or operationally important but still has no product-facing surface or routed chain attached to it.
 
 ## Next Work
 
-- [P0] Recover Customer Auth Shell | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.
+- [P0] Recover Customer Auth Shell | impact=transformational | mode=ai_safe | evidence=observed/high | risk=critical | Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.
+- [P0] Recover Customer Whatsapp And Inbox | impact=transformational | mode=ai_safe | evidence=observed/high | risk=critical | Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.
+- [P0] Repair execution path matrix:capability:capability:admin-accounts | impact=transformational | mode=ai_safe | evidence=observed/high | risk=critical | Turns an observed broken path into a precise repair target.
+- [P0] Repair execution path matrix:capability:capability:admin-audit | impact=transformational | mode=ai_safe | evidence=observed/high | risk=critical | Turns an observed broken path into a precise repair target.
+- [P0] Repair execution path matrix:capability:capability:admin-auth | impact=transformational | mode=ai_safe | evidence=observed/high | risk=critical | Turns an observed broken path into a precise repair target.
+- [P0] Repair execution path matrix:capability:capability:admin-carteira | impact=transformational | mode=ai_safe | evidence=observed/high | risk=critical | Turns an observed broken path into a precise repair target.
+- [P0] Repair execution path matrix:capability:capability:admin-config | impact=transformational | mode=ai_safe | evidence=observed/high | risk=critical | Turns an observed broken path into a precise repair target.
 - [P0] Recover Customer Product And Checkout | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.
-- [P0] Recover Customer Whatsapp And Inbox | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.
-- [P0] Recover System Payment Reconciliation | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Revalidates a customer-visible journey in System Payment Reconciliation and converts intended product behavior into executed proof.
-- [P1] Materialize capability Ai Assistant | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Ai Assistant from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
-- [P1] Materialize capability Analytics Analytic | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Analytics Analytic from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
-- [P1] Materialize capability Autopilot Actions | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Autopilot Actions from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
-- [P1] Materialize capability Autopilot Actions | impact=material | mode=ai_safe | evidence=observed/high | risk=high | Moves capability Autopilot Actions from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.
 
 ## Cross-Artifact Consistency
 
@@ -167,8 +207,8 @@
 ## Cleanup
 
 - Canonical dir: /Users/danielpenin/whatsapp_saas/.pulse/current
-- Mirrors: PULSE_HEALTH.json, PULSE_CERTIFICATE.json, PULSE_CLI_DIRECTIVE.json, PULSE_ARTIFACT_INDEX.json, PULSE_REPORT.md
-- Removed legacy artifacts this run: 5
+- Mirrors: PULSE_HEALTH.json, PULSE_CERTIFICATE.json, PULSE_CLI_DIRECTIVE.json, PULSE_MACHINE_READINESS.json, PULSE_ARTIFACT_INDEX.json, PULSE_GITNEXUS_STATE.json, PULSE_BEADS_STATE.json, PULSE_CONTEXT_BROADCAST.json, PULSE_WORKER_LEASES.json, PULSE_CONTEXT_DELTA.json, PULSE_REPORT.md, PULSE_WORLD_STATE.json
+- Removed legacy artifacts this run: 6
 
 ## Truth Model
 

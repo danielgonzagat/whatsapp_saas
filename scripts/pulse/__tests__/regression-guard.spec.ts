@@ -25,6 +25,13 @@ function makeSnapshot(overrides: Partial<PulseSnapshot> = {}): PulseSnapshot {
     gatesPass: { staticPass: true, runtimePass: true },
     scenarioPass: { 'customer-auth-shell': true, 'operator-checkout': true },
     runtimeHighSignals: 2,
+    executionMatrixSummary: {
+      observedPass: 10,
+      observedFail: 0,
+      criticalUnobservedPaths: 2,
+      impreciseBreakpoints: 0,
+      unknownPaths: 0,
+    },
     ...overrides,
   };
 }
@@ -280,6 +287,35 @@ describe('detectRegression', () => {
       expect(result.deltas.gatesRegressed).toHaveLength(2);
       expect(result.deltas.scenariosRegressed).toHaveLength(1);
       expect(result.deltas.runtimeHighDelta).toBe(3);
+    });
+
+    it('reports execution matrix regressions when critical evidence worsens', () => {
+      const before = makeSnapshot({
+        executionMatrixSummary: {
+          observedPass: 10,
+          criticalUnobservedPaths: 2,
+          observedFail: 0,
+          impreciseBreakpoints: 0,
+          unknownPaths: 0,
+        },
+      });
+      const after = makeSnapshot({
+        executionMatrixSummary: {
+          observedPass: 9,
+          criticalUnobservedPaths: 3,
+          observedFail: 0,
+          impreciseBreakpoints: 0,
+          unknownPaths: 0,
+        },
+      });
+
+      const result = detectRegression(before, after);
+
+      expect(result.regressed).toBe(true);
+      expect(result.deltas.executionMatrixRegressions).toContain('observedPass:10->9');
+      expect(result.deltas.executionMatrixRegressions).toContain(
+        'criticalUnobservedPaths:2->3',
+      );
     });
   });
 

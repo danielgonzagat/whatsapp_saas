@@ -12,7 +12,12 @@ import { fetchCodecovSignals } from './codecov-adapter';
 import { fetchDependabotSignals } from './dependabot-adapter';
 import { fetchGitHubActionsSignals } from './github-actions-adapter';
 import { fetchGitNexusSignal, runGitNexusAdapter } from './gitnexus-adapter';
-import type { PulseExternalAdapterStatus, PulseExternalSignalSource, PulseSignal } from '../types';
+import type {
+  PulseCertificationProfile,
+  PulseExternalAdapterStatus,
+  PulseExternalSignalSource,
+  PulseSignal,
+} from '../types';
 import { pathExists, readTextFile } from '../safe-fs';
 import { safeJoin } from '../safe-path';
 
@@ -20,15 +25,23 @@ import { safeJoin } from '../safe-path';
  * Adapter requiredness profile.
  * - `required`: must be configured for production-grade certification
  * - `optional`: never blocks certification (signal-only)
- * - `profile-dependent`: required when profile === 'production-final', optional otherwise
+ * - `profile-dependent`: required for canonical final certification profiles, optional otherwise
+ * - `full-product-required`: required only by the full-product profile
  */
-export type AdapterRequiredness = 'required' | 'optional' | 'profile-dependent';
+export type AdapterRequiredness =
+  | 'required'
+  | 'optional'
+  | 'profile-dependent'
+  | 'full-product-required';
+
+/** Profile values accepted by external-signal requiredness resolution. */
+export type ExternalSignalProfile = PulseCertificationProfile | 'production-final';
 
 /**
  * Per-adapter requiredness table.
  *
- * For profile === 'production-final', the canonical FASE 4 required set is:
- * codacy, github, github_actions, codecov, sentry, datadog, dependabot, prometheus.
+ * For canonical final profiles, the FASE 4 required set is profile-scoped.
+ * pulse-core-final keeps Prometheus optional; full-product requires it.
  *
  * Note: codacy is sourced via snapshot adapter and not part of the live orchestrator
  * adapter loop, so it is excluded from this map (handled separately upstream).
@@ -39,20 +52,36 @@ export const ADAPTER_REQUIREDNESS: Record<string, AdapterRequiredness> = {
   codecov: 'profile-dependent',
   sentry: 'profile-dependent',
   datadog: 'profile-dependent',
-  prometheus: 'profile-dependent',
+  prometheus: 'full-product-required',
   dependabot: 'profile-dependent',
   gitnexus: 'optional',
 };
+
+/** Normalize legacy profile aliases to the canonical PULSE certification profiles. */
+export function normalizeExternalSignalProfile(
+  profile: ExternalSignalProfile | string | null | undefined,
+): PulseCertificationProfile | undefined {
+  if (profile === 'production-final') return 'full-product';
+  if (profile === 'core-critical' || profile === 'pulse-core-final' || profile === 'full-product') {
+    return profile;
+  }
+  return undefined;
+}
 
 /**
  * Resolve effective requiredness for a given adapter under a profile.
  * Returns true when the adapter is required (blocking) under the active profile.
  */
-export function isAdapterRequired(source: string, profile: string | undefined): boolean {
+export function isAdapterRequired(
+  source: string,
+  profile: ExternalSignalProfile | string | null | undefined,
+): boolean {
   const declared = ADAPTER_REQUIREDNESS[source] ?? 'optional';
+  const canonicalProfile = normalizeExternalSignalProfile(profile);
   if (declared === 'required') return true;
   if (declared === 'optional') return false;
-  return profile === 'production-final';
+  if (declared === 'full-product-required') return canonicalProfile === 'full-product';
+  return canonicalProfile === 'full-product' || canonicalProfile === 'pulse-core-final';
 }
 
 /** External sources config shape. */
@@ -97,10 +126,12 @@ export interface ExternalSourcesConfig {
   };
   /**
    * Active profile.
-   * When 'production-final', profile-dependent adapters become required.
+   * When a final profile is active, profile-dependent adapters become required.
    * When undefined or any other value, profile-dependent adapters become optional.
    */
   profile?: string;
+  /** Active certification scope. Falls back to profile when omitted. */
+  certificationScope?: string;
 }
 
 /** Consolidated external state shape. */
@@ -125,6 +156,10 @@ export interface ConsolidatedExternalState {
   highSignals: PulseSignal[];
   /** Total severity property. */
   totalSeverity: number;
+  /** Active certification profile property. */
+  profile?: string;
+  /** Active certification scope property. */
+  certificationScope?: string;
 }
 
 function readEnv(key: string): string | undefined {
@@ -575,20 +610,26 @@ export async function runExternalSourcesOrchestrator(
   // Apply requiredness semantics: optional adapters that are not configured
   // must be reported as `optional_not_configured` so they do not block
   // certification. Required adapters keep `not_available` / `invalid`.
-  const profile = config.profile;
+  const profile = normalizeExternalSignalProfile(config.profile);
+  const certificationScope = normalizeExternalSignalProfile(
+    config.certificationScope || config.profile,
+  );
+  const requirednessProfile = certificationScope || profile;
   const refinedSources = sources.map((entry) => {
     if (entry.status !== 'not_available') return entry;
-    const required = isAdapterRequired(entry.source, profile);
+    const required = isAdapterRequired(entry.source, requirednessProfile);
     if (required) return entry;
     return {
       ...entry,
       status: 'optional_not_configured' as PulseExternalAdapterStatus,
-      reason: `${entry.source} adapter is optional under profile=${profile || 'default'} and was not configured.`,
+      reason: `${entry.source} adapter is optional under profile=${requirednessProfile || 'default'} and was not configured.`,
     };
   });
 
   return {
     generatedAt,
+    profile,
+    certificationScope,
     sources: refinedSources,
     allSignals,
     signalsBySource,

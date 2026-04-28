@@ -46,9 +46,14 @@ export async function handleAccountUpdated(
   }
   if (webhookEvent?.id) {
     await deps.webhooksService.markWebhookProcessed(webhookEvent.id).catch((err: unknown) => {
-      const errMsg = err instanceof Error ? err.message : 'unknown_error';
+      const error = err instanceof Error ? err : new Error('unknown_error');
+      deps.financialAlert.webhookProcessingFailed(error, {
+        provider: 'stripe',
+        externalId: event.id,
+        eventType: event.type,
+      });
       deps.logger.error(
-        `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${errMsg}`,
+        `[STRIPE] Failed to mark webhook ${webhookEvent.id} as processed: ${error.message}`,
       );
     });
   }

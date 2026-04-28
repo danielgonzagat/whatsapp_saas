@@ -13,6 +13,7 @@
 import { lookup as dnsLookupCb } from 'node:dns';
 import { promisify } from 'node:util';
 import { BadRequestException } from '@nestjs/common';
+import { getTraceHeaders } from '../trace-headers';
 import { isBlockedIpv4Range, parseIpv4Literal } from './url-ipv4-blocklist';
 import { isAllowedHostname } from './url-validator';
 
@@ -186,8 +187,16 @@ export async function safeStorageFetch(
   let currentUrl = (await assertSafeStorageUrl(rawUrl, options)).toString();
 
   for (let i = 0; i <= maxRedirects; i += 1) {
+    const headers = new Headers(options.init?.headers);
+    for (const [name, value] of Object.entries(getTraceHeaders())) {
+      if (!headers.has(name)) {
+        headers.set(name, value);
+      }
+    }
+
     const response = await fetch(currentUrl, {
       ...(options.init ?? {}),
+      headers,
       redirect: 'manual',
     });
 

@@ -27,7 +27,11 @@ export async function buildBrowserEvidenceForIndex({
   certification,
 }: BuildBrowserEvidenceInput): Promise<PulseBrowserEvidence> {
   let browserEvidence = certification.evidenceSummary.browser;
-  const shouldRunBrowserStress = effectiveEnvironment === 'total' && !profileSelection;
+  const isFullWorkspaceProfile =
+    flags.profile === 'pulse-core-final' || flags.profile === 'full-product';
+  const shouldRunBrowserStress =
+    effectiveEnvironment === 'total' && (!profileSelection || isFullWorkspaceProfile);
+  const browserTimeoutMs = isFullWorkspaceProfile ? 600_000 : 120_000;
   if (shouldRunBrowserStress) {
     if (humanReadableOutput) {
       console.log('  Executing browser certification...');
@@ -45,7 +49,7 @@ export async function buildBrowserEvidenceForIndex({
           log: true,
         }),
       {
-        timeoutMs: 120_000,
+        timeoutMs: browserTimeoutMs,
         onTimeout: () => ({
           attempted: true,
           executed: false,
@@ -57,12 +61,12 @@ export async function buildBrowserEvidenceForIndex({
           artifactPath: null,
           preflight: {
             status: 'frontend_unreachable' as const,
-            detail: 'Browser certification phase timed out before the crawler completed.',
+            detail: `Browser certification timed out after ${browserTimeoutMs}ms before the crawler completed for profile=${flags.profile || 'none'}, pageFilter=${flags.pageFilter || 'none'}, groupFilter=${flags.groupFilter || 'none'}.`,
             checkedAt: new Date().toISOString(),
           },
-          summary: 'Browser certification timed out before the crawler completed.',
+          summary: `Browser certification timed out after ${browserTimeoutMs}ms before the crawler completed.`,
           stressResult: null,
-          error: 'browser phase timeout',
+          error: `browser phase timeout after ${browserTimeoutMs}ms`,
         }),
       },
     );
@@ -100,7 +104,7 @@ export async function buildBrowserEvidenceForIndex({
     });
     tracer.finishPhase('browser-certification', 'skipped', {
       errorSummary: flags.profile
-        ? 'Profile-scoped certification uses actor/browser scenarios instead of the full browser crawler.'
+        ? 'Non-final profile-scoped certification uses actor/browser scenarios instead of the full browser crawler.'
         : undefined,
     });
   }

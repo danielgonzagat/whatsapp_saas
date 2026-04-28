@@ -24,7 +24,7 @@ export function buildRequiredValidationCommands(unit: PulseAutonomousDirectiveUn
         commands.push('npm run typecheck');
         break;
       case 'affected-tests':
-        commands.push('npx jest --findRelatedTests --passWithNoTests');
+        commands.push(buildAffectedTestsCommand(unit));
         break;
       case 'flow-evidence': {
         const flows = unit.affectedFlows ?? [];
@@ -54,4 +54,27 @@ export function buildRequiredValidationCommands(unit: PulseAutonomousDirectiveUn
     }
   }
   return commands;
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+function unitRelatedSourceFiles(unit: PulseAutonomousDirectiveUnit): string[] {
+  return [
+    ...(unit.ownedFiles || []),
+    ...(unit.relatedFiles || []),
+    ...(unit.validationTargets || []),
+  ]
+    .filter((filePath) => /\.(ts|tsx|js|jsx)$/.test(filePath))
+    .filter((filePath) => !filePath.includes('__tests__'))
+    .filter((filePath) => !/[.]spec[.]|[.]test[.]/.test(filePath));
+}
+
+function buildAffectedTestsCommand(unit: PulseAutonomousDirectiveUnit): string {
+  const files = [...new Set(unitRelatedSourceFiles(unit))];
+  if (files.length === 0) {
+    return 'node scripts/pulse/run.js --deep --fast --json';
+  }
+  return `npx jest --findRelatedTests ${files.map(shellQuote).join(' ')} --passWithNoTests`;
 }

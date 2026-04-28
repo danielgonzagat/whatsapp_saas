@@ -5,6 +5,7 @@ import type {
   PulseCapabilityState,
   PulseExecutionEvidence,
   PulseExternalSignalState,
+  PulseExecutionMatrix,
   PulseFlowProjection,
   PulseGateName,
   PulseGateResult,
@@ -85,6 +86,11 @@ import {
   type PulseAutonomyStateSnapshot,
 } from './cert-gate-multi-cycle';
 import {
+  evaluateBreakpointPrecisionGate,
+  evaluateCriticalPathObservedGate,
+  evaluateExecutionMatrixCompleteGate,
+} from './cert-gate-execution-matrix';
+import {
   detectPlaceholderTests,
   detectWeakStatusAssertions,
   detectTypeEscapeHatches,
@@ -103,6 +109,7 @@ interface ComputeCertificationInput {
   capabilityState?: PulseCapabilityState;
   flowProjection?: PulseFlowProjection;
   externalSignalState?: PulseExternalSignalState;
+  executionMatrix?: PulseExecutionMatrix;
   executionEvidence?: Partial<PulseExecutionEvidence>;
   certificationTarget?: PulseCertificationTarget;
   /** Product vision for gates to consume (optional, enriches report). */
@@ -136,6 +143,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
   const env = getEnvironment();
   const manifest: PulseManifest | null = input.manifestResult.manifest;
   const certificationTarget = getCertificationTarget(input.certificationTarget);
+  const isPulseCoreFinal = certificationTarget.profile === 'pulse-core-final';
   const certificationTiers = getCertificationTiers(input.resolvedManifest);
   const finalReadinessCriteria = getFinalReadinessCriteria(input.resolvedManifest);
   const timestamp = new Date().toISOString();
@@ -159,6 +167,45 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     input.scopeState.codacy,
     input.externalSignalState,
   );
+  if (input.executionMatrix) {
+    gateEvidence.executionMatrixCompletePass = [
+      {
+        kind: 'artifact',
+        executed: true,
+        summary: `Execution matrix classified ${input.executionMatrix.summary.totalPaths} path(s); unknown=${input.executionMatrix.summary.unknownPaths}.`,
+        artifactPaths: ['PULSE_EXECUTION_MATRIX.json'],
+        metrics: {
+          totalPaths: input.executionMatrix.summary.totalPaths,
+          unknownPaths: input.executionMatrix.summary.unknownPaths,
+          coveragePercent: input.executionMatrix.summary.coveragePercent,
+        },
+      },
+    ];
+    gateEvidence.criticalPathObservedPass = [
+      {
+        kind: 'coverage',
+        executed: true,
+        summary: `${input.executionMatrix.summary.criticalUnobservedPaths} critical path(s) lack observed pass/fail evidence.`,
+        artifactPaths: ['PULSE_EXECUTION_MATRIX.json'],
+        metrics: {
+          criticalUnobservedPaths: input.executionMatrix.summary.criticalUnobservedPaths,
+          observedPass: input.executionMatrix.summary.observedPass,
+          observedFail: input.executionMatrix.summary.observedFail,
+        },
+      },
+    ];
+    gateEvidence.breakpointPrecisionPass = [
+      {
+        kind: 'artifact',
+        executed: true,
+        summary: `${input.executionMatrix.summary.impreciseBreakpoints} observed failure(s) lack precise breakpoints.`,
+        artifactPaths: ['PULSE_EXECUTION_MATRIX.json'],
+        metrics: {
+          impreciseBreakpoints: input.executionMatrix.summary.impreciseBreakpoints,
+        },
+      },
+    ];
+  }
 
   const requiresCustomer =
     input.certificationTarget?.profile === 'core-critical' ||
@@ -309,26 +356,34 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       manifest,
       evaluateObservabilityGate(input.health, manifest, evidenceSummary),
     ),
-    customerPass: withTemporaryGateAcceptance(
-      'customerPass',
-      manifest,
-      evaluateActorGate('customer', evidenceSummary.customer, requiresCustomer),
-    ),
-    operatorPass: withTemporaryGateAcceptance(
-      'operatorPass',
-      manifest,
-      evaluateActorGate('operator', evidenceSummary.operator, requiresOperatorAdmin),
-    ),
-    adminPass: withTemporaryGateAcceptance(
-      'adminPass',
-      manifest,
-      evaluateActorGate('admin', evidenceSummary.admin, requiresOperatorAdmin),
-    ),
-    soakPass: withTemporaryGateAcceptance(
-      'soakPass',
-      manifest,
-      evaluateActorGate('soak', evidenceSummary.soak, requiresSoak),
-    ),
+    customerPass: isPulseCoreFinal
+      ? { status: 'pass', reason: 'Customer actor evidence is outside pulse-core-final scope.' }
+      : withTemporaryGateAcceptance(
+          'customerPass',
+          manifest,
+          evaluateActorGate('customer', evidenceSummary.customer, requiresCustomer),
+        ),
+    operatorPass: isPulseCoreFinal
+      ? { status: 'pass', reason: 'Operator actor evidence is outside pulse-core-final scope.' }
+      : withTemporaryGateAcceptance(
+          'operatorPass',
+          manifest,
+          evaluateActorGate('operator', evidenceSummary.operator, requiresOperatorAdmin),
+        ),
+    adminPass: isPulseCoreFinal
+      ? { status: 'pass', reason: 'Admin actor evidence is outside pulse-core-final scope.' }
+      : withTemporaryGateAcceptance(
+          'adminPass',
+          manifest,
+          evaluateActorGate('admin', evidenceSummary.admin, requiresOperatorAdmin),
+        ),
+    soakPass: isPulseCoreFinal
+      ? { status: 'pass', reason: 'Soak actor evidence is outside pulse-core-final scope.' }
+      : withTemporaryGateAcceptance(
+          'soakPass',
+          manifest,
+          evaluateActorGate('soak', evidenceSummary.soak, requiresSoak),
+        ),
     syntheticCoveragePass: withTemporaryGateAcceptance(
       'syntheticCoveragePass',
       manifest,
@@ -399,6 +454,21 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         return evaluateNoOverclaimGate(currentDirective, currentCertificate);
       })(),
     ),
+    executionMatrixCompletePass: withTemporaryGateAcceptance(
+      'executionMatrixCompletePass',
+      manifest,
+      evaluateExecutionMatrixCompleteGate(input.executionMatrix),
+    ),
+    criticalPathObservedPass: withTemporaryGateAcceptance(
+      'criticalPathObservedPass',
+      manifest,
+      evaluateCriticalPathObservedGate(input.executionMatrix),
+    ),
+    breakpointPrecisionPass: withTemporaryGateAcceptance(
+      'breakpointPrecisionPass',
+      manifest,
+      evaluateBreakpointPrecisionGate(input.executionMatrix),
+    ),
     multiCycleConvergencePass: withTemporaryGateAcceptance(
       'multiCycleConvergencePass',
       manifest,
@@ -466,7 +536,23 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     'productionDecisionPass',
     'pulseSelfTrustPass',
   ];
+  const pulseCoreRequiredGates: PulseGateName[] = [
+    ...foundationalGates,
+    'adapterSupported',
+    'specComplete',
+    'runtimePass',
+    'evidenceFresh',
+    'noOverclaimPass',
+    'executionMatrixCompletePass',
+    'criticalPathObservedPass',
+    'breakpointPrecisionPass',
+    'multiCycleConvergencePass',
+    'testHonestyPass',
+    'assertionStrengthPass',
+    'typeIntegrityPass',
+  ];
   const allPass = GATE_ORDER.every((gateName) => gates[gateName].status === 'pass');
+  const pulseCorePass = pulseCoreRequiredGates.every((gateName) => gates[gateName].status === 'pass');
   const foundationsPass = foundationalGates.every((gateName) => gates[gateName].status === 'pass');
   const tierStatus = buildTierStatuses(certificationTiers, gates, manifest, evidenceSummary);
   const blockingTier = getBlockingTier(tierStatus);
@@ -488,7 +574,9 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
   );
 
   let status: PulseCertification['status'];
-  if (!foundationsPass) {
+  if (isPulseCoreFinal) {
+    status = pulseCorePass ? 'CERTIFIED' : foundationsPass ? 'PARTIAL' : 'NOT_CERTIFIED';
+  } else if (!foundationsPass) {
     status = 'NOT_CERTIFIED';
   } else if (certificationTarget.final) {
     status = finalReadinessPass ? 'CERTIFIED' : 'PARTIAL';
@@ -528,15 +616,18 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       input.externalSignalState && input.externalSignalState.summary.staleAdapters > 0
         ? `External evidence is stale for ${input.externalSignalState.summary.staleAdapters} adapter(s).`
         : null,
+      input.executionMatrix && input.executionMatrix.summary.criticalUnobservedPaths > 0
+        ? `Execution matrix still has ${input.executionMatrix.summary.criticalUnobservedPaths} critical unobserved path(s).`
+        : null,
     ].filter(Boolean) as string[],
   );
 
   return {
+    certificationScope: certificationTarget.certificationScope || certificationTarget.profile || null,
     version: '2.5.0',
     status,
     humanReplacementStatus:
-      finalReadinessPass &&
-      allPass &&
+      (isPulseCoreFinal ? pulseCorePass : finalReadinessPass && allPass) &&
       gates.noOverclaimPass.status === 'pass' &&
       gates.multiCycleConvergencePass.status === 'pass'
         ? 'READY'
@@ -563,6 +654,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     codacySummary: input.scopeState.codacy,
     codacyEvidenceSummary: input.codacyEvidence?.summary ?? null,
     externalSignalSummary: input.externalSignalState?.summary ?? null,
+    executionMatrixSummary: input.executionMatrix?.summary ?? null,
     resolvedManifestSummary: input.resolvedManifest.summary,
     structuralGraphSummary: input.structuralGraph?.summary ?? null,
     capabilityStateSummary: input.capabilityState?.summary ?? null,

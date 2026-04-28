@@ -25,6 +25,16 @@ export interface PulseAutonomousDirectiveUnit {
   expectedGateShift?: Record<string, string>;
   validationTargets?: string[];
   validationArtifacts?: string[];
+  relatedFiles?: string[];
+  ownedFiles?: string[];
+  readOnlyFiles?: string[];
+  forbiddenFiles?: string[];
+  contextDigest?: string;
+  leaseId?: string;
+  leaseStatus?: string;
+  leaseExpiresAt?: string;
+  validationContract?: string[];
+  stopConditions?: string[];
   exitCriteria?: string[];
   gateNames?: string[];
   scenarioIds?: string[];
@@ -81,6 +91,18 @@ export interface PulseAutonomousDirective {
     artifacts?: string[];
   };
   stopCondition?: string[];
+  contextFabric?: {
+    broadcastRef?: string;
+    leasesRef?: string;
+    contextDigest?: string;
+    workerEnvelopeCount?: number;
+    contextBroadcastPass?: boolean;
+    ownershipConflictPass?: boolean;
+    protectedFilesForbiddenPass?: boolean;
+    workerContextCompletenessPass?: boolean;
+    staleContextBlocksExecution?: boolean;
+    blockers?: string[];
+  };
 }
 
 export interface PulseAutonomyDecision {

@@ -8,7 +8,10 @@ import { DEFAULT_ARTIFACT_MAX_AGE_MS, type PulseArtifactPayload } from './pulse.
  * Runtime authority mode subset for backend consumption.
  * Maps to CLI AuthorityMode but uses simplified labels for production snapshot.
  */
-type RuntimeAuthorityMode = 'advisory-only' | 'autonomous';
+type RuntimeAuthorityMode = 'advisory-only' | 'autonomous-execution' | 'certified-autonomous';
+type RuntimeMachineReadinessStatus = 'blocked' | 'certified' | 'ready' | 'unknown';
+type RuntimeReadinessVerdict = 'NAO' | 'SIM' | 'UNKNOWN';
+type JsonObject = Record<string, unknown>;
 
 /**
  * PulseArtifactService
@@ -62,6 +65,20 @@ export class PulseArtifactService {
     return this.readArtifactJson('PULSE_FLOW_PROJECTION.json');
   }
 
+  /** Get latest PULSE execution matrix artifact. */
+  getLatestExecutionMatrix() {
+    return this.readArtifactJson('PULSE_EXECUTION_MATRIX.json');
+  }
+
+  /** Get canonical PULSE machine-readiness state. */
+  getMachineReadiness() {
+    const directive = this.getLatestDirective();
+    const certificate = this.getLatestCertificate();
+    const executionMatrix = this.getLatestExecutionMatrix();
+
+    return this.buildMachineReadiness(directive, certificate, executionMatrix);
+  }
+
   /** Get latest PULSE convergence plan artifact. */
   getLatestConvergencePlan() {
     return this.readArtifactJson('PULSE_CONVERGENCE_PLAN.json');
@@ -92,6 +109,8 @@ export class PulseArtifactService {
     const codacyEvidence = this.getLatestCodacyEvidence();
     const capabilityState = this.getLatestCapabilityState();
     const flowProjection = this.getLatestFlowProjection();
+    const executionMatrix = this.getLatestExecutionMatrix();
+    const machineReadiness = this.buildMachineReadiness(directive, certificate, executionMatrix);
     const externalSignalState = this.getLatestExternalSignalState();
     const autonomyState = this.getLatestAutonomyState();
     const agentOrchestrationState = this.getLatestAgentOrchestrationState();
@@ -107,6 +126,7 @@ export class PulseArtifactService {
       codacyEvidence,
       capabilityState,
       flowProjection,
+      executionMatrix,
       externalSignalState,
       autonomyState,
       agentOrchestrationState,
@@ -126,13 +146,12 @@ export class PulseArtifactService {
       : missingArtifacts.length > 0 || staleArtifacts.length > 0
         ? 'degraded'
         : 'ready';
-    const certData = certificate.data;
-    const authorityMode: RuntimeAuthorityMode =
-      certData?.humanReplacementStatus === 'READY' ? 'autonomous' : 'advisory-only';
+    const authorityMode = machineReadiness.authorityMode;
 
     return {
       status,
       authorityMode,
+      machineReadiness,
       generatedAt: new Date().toISOString(),
       canonicalDir: this.getArtifactCanonicalDir(),
       summary:
@@ -151,6 +170,7 @@ export class PulseArtifactService {
       codacyEvidence,
       capabilityState,
       flowProjection,
+      executionMatrix,
       externalSignalState,
       autonomyState,
       agentOrchestrationState,
@@ -230,4 +250,135 @@ export class PulseArtifactService {
       };
     }
   }
+
+  private buildMachineReadiness(
+    directive: PulseArtifactPayload,
+    certificate: PulseArtifactPayload,
+    executionMatrix: PulseArtifactPayload,
+  ) {
+    const directiveData = getJsonObject(directive.data);
+    const certificateData = getJsonObject(certificate.data);
+    const matrixData = getJsonObject(executionMatrix.data);
+    const autonomyReadiness = getJsonObject(directiveData?.autonomyReadiness);
+    const autonomyProof = getJsonObject(directiveData?.autonomyProof);
+    const proofVerdicts = getJsonObject(autonomyProof?.verdicts);
+    const humanReplacementStatus = getString(certificateData, 'humanReplacementStatus');
+    const canDeclareComplete =
+      getBoolean(autonomyReadiness, 'canDeclareComplete') ??
+      getBoolean(proofVerdicts, 'canDeclareComplete') ??
+      humanReplacementStatus === 'READY';
+    const canWorkNow = getBoolean(autonomyReadiness, 'canWorkNow') ?? false;
+    const authorityMode = normalizeAuthorityMode(
+      getString(directiveData, 'authorityMode') ?? getString(autonomyProof, 'authorityMode'),
+      humanReplacementStatus,
+    );
+    const readinessStatus = this.getMachineReadinessStatus({
+      canDeclareComplete,
+      canWorkNow,
+      directiveMissing: directive.freshness === 'missing',
+      humanReplacementReady: humanReplacementStatus === 'READY',
+    });
+
+    return {
+      status: readinessStatus,
+      authorityMode,
+      advisoryOnly: getBoolean(directiveData, 'advisoryOnly') ?? authorityMode === 'advisory-only',
+      automationEligible: getBoolean(directiveData, 'automationEligible') ?? false,
+      autonomyVerdict: normalizeVerdict(
+        getString(directiveData, 'autonomyVerdict') ?? getString(autonomyReadiness, 'verdict'),
+      ),
+      autonomousNextStepVerdict: normalizeVerdict(
+        getString(directiveData, 'autonomousNextStepVerdict') ??
+          getString(proofVerdicts, 'nextStepAutonomy'),
+      ),
+      productionAutonomyVerdict: normalizeVerdict(
+        getString(directiveData, 'productionAutonomyVerdict') ??
+          getString(proofVerdicts, 'productionAutonomy'),
+      ),
+      zeroPromptProductionGuidanceVerdict: normalizeVerdict(
+        getString(directiveData, 'zeroPromptProductionGuidanceVerdict') ??
+          getString(proofVerdicts, 'zeroPromptProductionGuidance'),
+      ),
+      canWorkNow,
+      canDeclareComplete,
+      canWorkUntilProductionReady:
+        getBoolean(directiveData, 'canWorkUntilProductionReady') ??
+        normalizeVerdict(getString(proofVerdicts, 'zeroPromptProductionGuidance')) === 'SIM',
+      score: getNumber(certificateData, 'score'),
+      certificationStatus: getString(certificateData, 'status'),
+      humanReplacementStatus,
+      blockers: getStringArray(autonomyProof?.blockersBeforeProductionSim),
+      warnings: getStringArray(autonomyReadiness?.warnings),
+      executionMatrixSummary: getJsonObject(matrixData?.summary),
+      sourceArtifacts: {
+        directive: {
+          freshness: directive.freshness,
+          generatedAt: directive.generatedAt,
+        },
+        certificate: {
+          freshness: certificate.freshness,
+          generatedAt: certificate.generatedAt,
+        },
+        executionMatrix: {
+          freshness: executionMatrix.freshness,
+          generatedAt: executionMatrix.generatedAt,
+        },
+      },
+    };
+  }
+
+  private getMachineReadinessStatus(input: {
+    canDeclareComplete: boolean;
+    canWorkNow: boolean;
+    directiveMissing: boolean;
+    humanReplacementReady: boolean;
+  }): RuntimeMachineReadinessStatus {
+    if (input.humanReplacementReady || input.canDeclareComplete) return 'certified';
+    if (input.canWorkNow) return 'ready';
+    if (input.directiveMissing) return 'unknown';
+    return 'blocked';
+  }
+}
+
+function getJsonObject(value: unknown): JsonObject | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : null;
+}
+
+function getString(record: JsonObject | null | undefined, key: string): string | null {
+  const value = record?.[key];
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function getBoolean(record: JsonObject | null | undefined, key: string): boolean | null {
+  const value = record?.[key];
+  return typeof value === 'boolean' ? value : null;
+}
+
+function getNumber(record: JsonObject | null | undefined, key: string): number | null {
+  const value = record?.[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function getStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+}
+
+function normalizeAuthorityMode(
+  value: string | null,
+  humanReplacementStatus: string | null,
+): RuntimeAuthorityMode {
+  if (
+    value === 'advisory-only' ||
+    value === 'autonomous-execution' ||
+    value === 'certified-autonomous'
+  ) {
+    return value;
+  }
+  return humanReplacementStatus === 'READY' ? 'certified-autonomous' : 'advisory-only';
+}
+
+function normalizeVerdict(value: string | null): RuntimeReadinessVerdict {
+  if (value === 'SIM' || value === 'NAO') return value;
+  return 'UNKNOWN';
 }

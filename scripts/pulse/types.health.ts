@@ -104,7 +104,7 @@ export interface PulseManifestModule {
 /** Pulse environment type. */
 export type PulseEnvironment = 'scan' | 'deep' | 'total';
 /** Pulse certification profile type. */
-export type PulseCertificationProfile = 'core-critical' | 'full-product';
+export type PulseCertificationProfile = 'core-critical' | 'pulse-core-final' | 'full-product';
 /** Pulse flow runner type. */
 export type PulseFlowRunner = 'runtime-e2e' | 'browser-stress' | 'hybrid';
 /** Pulse flow oracle type. */
