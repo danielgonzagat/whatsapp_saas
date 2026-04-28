@@ -156,9 +156,10 @@ export class ReportsOrdersService {
       }),
       this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
       (assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getVendasSummary'),
-      this.prisma.checkoutOrder.count({
-        where: { ...where, workspaceId, status: 'PAID' as const },
-      })),
+      ((filterStatus: string) =>
+        this.prisma.checkoutOrder.count({
+          where: { ...where, workspaceId, status: filterStatus },
+        }))('PAID')),
     ]);
 
     return {
@@ -194,10 +195,13 @@ export class ReportsOrdersService {
     };
     if (f.status === 'PAID') {
       assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getAfterPay');
-      where.status = 'PAID';
+      const paidStatus = 'PAID' as const;
+      where.status = paidStatus;
     }
     if (f.status === 'PENDING') {
-      where.status = 'PENDING';
+      assertValidOrderStatusFilter('PENDING', 'ReportsOrdersService.getAfterPay');
+      const pendingStatus = 'PENDING' as const;
+      where.status = pendingStatus;
     }
     applyCommonOrderFilters(where, f);
 
