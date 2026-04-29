@@ -29,7 +29,13 @@ import type {
 const EXTERNAL_SIGNAL_STATE_FILE = 'PULSE_EXTERNAL_SIGNAL_STATE.json';
 const RUNTIME_TRACES_FILE = 'PULSE_RUNTIME_TRACES.json';
 const FUSION_OUTPUT_FILE = 'PULSE_RUNTIME_FUSION.json';
-const OBSERVED_RUNTIME_TRACE_SOURCES = new Set(['otel_collector', 'datadog', 'sentry']);
+const OBSERVED_RUNTIME_TRACE_SOURCES = new Set([
+  'real',
+  'manual',
+  'otel_collector',
+  'datadog',
+  'sentry',
+]);
 const SKIPPED_ADAPTER_STATUSES = new Set(['optional_not_configured', 'skipped']);
 
 const SEVERITY_WEIGHTS: Record<SignalSeverity, number> = {
@@ -453,7 +459,11 @@ function loadCanonicalExternalSignals(currentDir: string): {
  * a runtime error signal with file path and service context so it can be
  * mapped to capabilities.
  */
-function otelErrorSpanToSignal(span: OtelSpan, traceId: string): RuntimeSignal {
+function otelErrorSpanToSignal(
+  span: OtelSpan,
+  traceId: string,
+  mappedFilePaths: string[],
+): RuntimeSignal {
   const httpMethod = (span.attributes['http.method'] as string) || '';
   const httpRoute = (span.attributes['http.route'] as string) || '';
   const httpStatus = (span.attributes['http.status_code'] as number) || 0;
@@ -464,7 +474,12 @@ function otelErrorSpanToSignal(span: OtelSpan, traceId: string): RuntimeSignal {
   const statusMsg = span.statusMessage || `${requestDesc} returned status ${httpStatus || 'error'}`;
 
   const message = `[OTel] ${span.serviceName}: ${statusMsg}`;
-  const affectedFilePaths = [structuralFrom, structuralTo].filter(Boolean);
+  const affectedFilePaths = unique([
+    ...mappedFilePaths,
+    ...[structuralFrom, structuralTo].filter(
+      (value) => value.includes('/') || value.includes('\\'),
+    ),
+  ]);
 
   const id = `otel:error:${span.spanId}:${span.serviceName}:${span.name.slice(0, 60)}`;
 
@@ -544,11 +559,22 @@ function otelLatencyToSignal(
  */
 function runtimeTraceEvidenceToSignals(evidence: RuntimeCallGraphEvidence): RuntimeSignal[] {
   const signals: RuntimeSignal[] = [];
+  const mappedPathsBySpanName = new Map<string, string[]>();
+
+  for (const mapping of evidence.spanToPathMappings) {
+    if (mapping.confidence < 0.5 || mapping.matchedFilePaths.length === 0) continue;
+    mappedPathsBySpanName.set(
+      mapping.spanName,
+      unique([...(mappedPathsBySpanName.get(mapping.spanName) ?? []), ...mapping.matchedFilePaths]),
+    );
+  }
 
   for (const trace of evidence.traces) {
     for (const span of trace.spans) {
       if (span.status === 'error') {
-        signals.push(otelErrorSpanToSignal(span, trace.traceId));
+        signals.push(
+          otelErrorSpanToSignal(span, trace.traceId, mappedPathsBySpanName.get(span.name) ?? []),
+        );
       }
     }
   }
@@ -605,6 +631,8 @@ function loadRuntimeTraceEvidence(currentDir: string): {
   }
 
   const source = asString(payload.source);
+  const sourceDetails = isRecord(payload.sourceDetails) ? payload.sourceDetails : {};
+  const runtimeObserved = sourceDetails.runtimeObserved === true;
   const summary = isRecord(payload.summary) ? payload.summary : {};
   const totalTraces = asNumber(summary.totalTraces, asArray(payload.traces).length);
   const totalSpans = asNumber(summary.totalSpans, 0);
@@ -626,7 +654,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
     };
   }
 
-  if (!OBSERVED_RUNTIME_TRACE_SOURCES.has(source)) {
+  if (!OBSERVED_RUNTIME_TRACE_SOURCES.has(source) && !runtimeObserved) {
     return {
       signals: [],
       evidence: {
@@ -656,6 +684,22 @@ function loadRuntimeTraceEvidence(currentDir: string): {
         errorTraces,
         derivedSignals: 0,
         reason: `${RUNTIME_TRACES_FILE} source ${source} is missing required trace evidence fields.`,
+      },
+    };
+  }
+
+  if (totalTraces === 0 || totalSpans === 0) {
+    return {
+      signals: [],
+      evidence: {
+        status: 'not_available',
+        artifactPath,
+        source,
+        totalTraces,
+        totalSpans,
+        errorTraces,
+        derivedSignals: 0,
+        reason: `${RUNTIME_TRACES_FILE} source ${source} declares observed runtime provenance but contains zero traces or spans.`,
       },
     };
   }

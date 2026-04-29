@@ -682,7 +682,7 @@ function parseDtoSchema(
 
         let inferredType = pendingType || tsType.replace(/\[\]$/, '');
         if (inferredType === 'array') {
-          inferredType = tsType.includes('[]') ? tsType.replace(/\[\]$/, '') : 'unknown';
+          inferredType = tsType.includes('[]') ? tsType : 'array';
         }
         if (inferredType.includes('<') || inferredType.includes('{')) {
           inferredType = 'object';
@@ -738,6 +738,25 @@ function sampleValueForFieldType(type: string): unknown {
   return '__pulse_value';
 }
 
+function buildValidPayloadFromSchema(
+  schema: Record<string, { type: string; required: boolean }>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(schema).map(([fieldName, definition]) => [
+      fieldName,
+      sampleValueForFieldType(definition.type),
+    ]),
+  );
+}
+
+function wrongTypeValueForFieldType(type: string): unknown {
+  if (/boolean/i.test(type)) return 'not-bool';
+  if (/number|int|float|decimal/i.test(type)) return 'not-a-number';
+  if (/\[\]|array/i.test(type)) return '__pulse_not_array';
+  if (/object|record/i.test(type)) return '__pulse_not_object';
+  return 12345;
+}
+
 function buildMassAssignmentPayloads(endpoint: APIEndpointProbe): unknown[] {
   const schemaFields = schemaFieldsFromEndpoint(endpoint);
   const fieldEntries = Object.entries(schemaFields).slice(0, 2);
@@ -778,34 +797,9 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
 
     const fields = Object.keys(schema);
 
-    if (fields.length > 0) {
-      const validPayload: Record<string, unknown> = {};
-      for (const field of fields) {
-        const def = schema[field];
-        switch (def.type) {
-          case 'string':
-          case 'String':
-            validPayload[field] = 'test-value';
-            break;
-          case 'number':
-          case 'Number':
-            validPayload[field] = 42;
-            break;
-          case 'boolean':
-          case 'Boolean':
-            validPayload[field] = true;
-            break;
-          case 'string[]':
-            validPayload[field] = ['item1'];
-            break;
-          case 'number[]':
-            validPayload[field] = [1, 2];
-            break;
-          default:
-            validPayload[field] = {};
-        }
-      }
+    const validPayload = buildValidPayloadFromSchema(schema);
 
+    if (fields.length > 0) {
       tests.push({
         testId: `${endpoint.endpointId}-schema-valid`,
         scenario: `Valid ${dtoType} payload`,
@@ -818,24 +812,9 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
     }
 
     if (requiredFields.length > 0) {
-      const missingPayload = {
-        ...Object.fromEntries(
-          Object.entries(
-            fields.reduce(
-              (acc, f) => {
-                if (!requiredFields.includes(f)) {
-                  (acc as Record<string, unknown>)[f] = 'test';
-                }
-                return acc;
-              },
-              {} as Record<string, unknown>,
-            ),
-          ),
-        ),
-      };
-
       for (const reqField of requiredFields) {
-        const fieldPayload = { ...missingPayload };
+        const fieldPayload = { ...validPayload };
+        delete fieldPayload[reqField];
         const fieldDef = schema[reqField];
 
         tests.push({
@@ -849,23 +828,10 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
         });
 
         if (fieldDef) {
-          let wrongTypePayload: unknown;
-          switch (fieldDef.type) {
-            case 'string':
-            case 'String':
-              wrongTypePayload = { ...missingPayload, [reqField]: 12345 };
-              break;
-            case 'number':
-            case 'Number':
-              wrongTypePayload = { ...missingPayload, [reqField]: 'not-a-number' };
-              break;
-            case 'boolean':
-            case 'Boolean':
-              wrongTypePayload = { ...missingPayload, [reqField]: 'not-bool' };
-              break;
-            default:
-              wrongTypePayload = { ...missingPayload, [reqField]: null };
-          }
+          const wrongTypePayload = {
+            ...validPayload,
+            [reqField]: wrongTypeValueForFieldType(fieldDef.type),
+          };
 
           tests.push({
             testId: `${endpoint.endpointId}-schema-wrong-type-${reqField}`,
@@ -893,7 +859,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
     tests.push({
       testId: `${endpoint.endpointId}-schema-extra-fields`,
       scenario: 'Extra/unknown fields in payload',
-      payload: { unexpectedExtraField: 'should-be-rejected' },
+      payload: { ...validPayload, unexpectedExtraField: 'should-be-rejected' },
       expectedStatus: 400,
       actualStatus: null,
       validationErrors: ['Unexpected fields'],
@@ -903,7 +869,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
     tests.push({
       testId: `${endpoint.endpointId}-schema-boundary-null`,
       scenario: 'null for required field',
-      payload: { ...requiredFields.reduce((acc, f) => ({ ...acc, [f]: null }), {}) },
+      payload: { ...validPayload, ...Object.fromEntries(requiredFields.map((f) => [f, null])) },
       expectedStatus: 400,
       actualStatus: null,
       validationErrors: ['Null value for required field'],

@@ -949,17 +949,17 @@
     {
       "path": "scripts/pulse/artifacts.directive.ts",
       "rule": "max_new_file_lines",
-      "maxLines": 463,
+      "maxLines": 646,
       "owner": "@danielgonzagat",
-      "reason": "PR 198 accumulated PULSE restoration kept production behavior intact; safe decomposition requires separate tested extraction.",
+      "reason": "PR 198 accumulated PULSE machine-proof restoration kept behavior intact; safe decomposition requires separate tested extraction.",
       "expiresAt": "2026-05-15"
     },
     {
       "path": "scripts/pulse/ast-graph.ts",
       "rule": "max_new_file_lines",
-      "maxLines": 900,
+      "maxLines": 964,
       "owner": "@danielgonzagat",
-      "reason": "PR 198 accumulated PULSE restoration kept production behavior intact; safe decomposition requires separate tested extraction.",
+      "reason": "PR 198 accumulated PULSE machine-proof restoration kept behavior intact; safe decomposition requires separate tested extraction.",
       "expiresAt": "2026-05-15"
     },
     {
@@ -1109,9 +1109,9 @@
     {
       "path": "scripts/pulse/perfectness-test.ts",
       "rule": "max_new_file_lines",
-      "maxLines": 943,
+      "maxLines": 1072,
       "owner": "@danielgonzagat",
-      "reason": "PR 198 accumulated PULSE restoration kept production behavior intact; safe decomposition requires separate tested extraction.",
+      "reason": "PR 198 accumulated PULSE machine-proof restoration kept behavior intact; safe decomposition requires separate tested extraction.",
       "expiresAt": "2026-05-15"
     },
     {
@@ -1157,9 +1157,9 @@
     {
       "path": "scripts/pulse/runtime-fusion.ts",
       "rule": "max_new_file_lines",
-      "maxLines": 1056,
+      "maxLines": 1100,
       "owner": "@danielgonzagat",
-      "reason": "PR 198 accumulated PULSE restoration kept production behavior intact; safe decomposition requires separate tested extraction.",
+      "reason": "PR 198 accumulated PULSE machine-proof restoration kept behavior intact; safe decomposition requires separate tested extraction.",
       "expiresAt": "2026-05-15"
     },
     {
@@ -1216,6 +1216,22 @@
       "maxLines": 1114,
       "owner": "@danielgonzagat",
       "reason": "PR 198 accumulated PULSE restoration kept production behavior intact; safe decomposition requires separate tested extraction.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/__tests__/execution-blueprints.spec.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 434,
+      "owner": "@danielgonzagat",
+      "reason": "PR 198 accumulated PULSE machine-proof restoration kept behavior intact; safe decomposition requires separate tested extraction.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "scripts/pulse/__tests__/runtime-fusion.spec.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 422,
+      "owner": "@danielgonzagat",
+      "reason": "PR 198 accumulated PULSE machine-proof restoration kept behavior intact; safe decomposition requires separate tested extraction.",
       "expiresAt": "2026-05-15"
     }
   ]

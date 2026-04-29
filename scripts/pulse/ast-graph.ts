@@ -14,6 +14,12 @@ import type {
   AstResolvedSymbol,
 } from './types.ast-graph';
 
+type TsMorphSymbol = NonNullable<ReturnType<Node['getSymbol']>>;
+type AstTargetSymbol = TsMorphSymbol & {
+  getDeclarations?(): Node[];
+};
+type AstTypeChecker = ReturnType<Project['getTypeChecker']>;
+
 const NESTJS_DECORATORS = new Set([
   'Controller',
   'Get',
@@ -178,18 +184,31 @@ function classifyCallEdgeKind(node: Node, resolved: boolean): AstCallEdgeKind {
   return 'direct_call';
 }
 
+function resolveAliasedSymbol(
+  symbol: TsMorphSymbol | undefined,
+  typeChecker: AstTypeChecker,
+): AstTargetSymbol | null {
+  if (!symbol) return null;
+
+  try {
+    return (typeChecker.getAliasedSymbol(symbol) ?? symbol) as AstTargetSymbol;
+  } catch {
+    return symbol as AstTargetSymbol;
+  }
+}
+
 function resolveCallExpression(
   node: Node,
-  typeChecker: ReturnType<Project['getTypeChecker']>,
-): { resolved: boolean; targetSymbol: { getName(): string } | null; genericArgs: string[] } {
+  typeChecker: AstTypeChecker,
+): { resolved: boolean; targetSymbol: AstTargetSymbol | null; genericArgs: string[] } {
   const genericArgs: string[] = [];
-  let targetSymbol: { getName(): string } | null = null;
+  let targetSymbol: AstTargetSymbol | null = null;
   let resolved = false;
 
   try {
     if (Node.isCallExpression(node)) {
       const expression = node.getExpression();
-      const symbol = expression.getSymbol();
+      const symbol = resolveAliasedSymbol(expression.getSymbol(), typeChecker);
       if (symbol) {
         targetSymbol = symbol;
         resolved = true;
@@ -213,19 +232,22 @@ function resolveCallExpression(
   return { resolved, targetSymbol, genericArgs };
 }
 
-function resolveNewExpression(node: Node): {
+function resolveNewExpression(
+  node: Node,
+  typeChecker: AstTypeChecker,
+): {
   resolved: boolean;
-  targetSymbol: { getName(): string } | null;
+  targetSymbol: AstTargetSymbol | null;
   genericArgs: string[];
 } {
   const genericArgs: string[] = [];
-  let targetSymbol: { getName(): string } | null = null;
+  let targetSymbol: AstTargetSymbol | null = null;
   let resolved = false;
 
   try {
     if (Node.isNewExpression(node)) {
       const expression = node.getExpression();
-      const symbol = expression.getSymbol();
+      const symbol = resolveAliasedSymbol(expression.getSymbol(), typeChecker);
       if (symbol) {
         targetSymbol = symbol;
         resolved = true;
@@ -249,19 +271,24 @@ function resolveNewExpression(node: Node): {
   return { resolved, targetSymbol, genericArgs };
 }
 
-function resolveDecorator(node: Node): {
+function resolveDecorator(
+  node: Node,
+  typeChecker: AstTypeChecker,
+): {
   resolved: boolean;
-  targetSymbol: { getName(): string } | null;
+  targetSymbol: AstTargetSymbol | null;
   genericArgs: string[];
 } {
   const genericArgs: string[] = [];
-  let targetSymbol: { getName(): string } | null = null;
+  let targetSymbol: AstTargetSymbol | null = null;
   let resolved = false;
 
   try {
     if (Node.isDecorator(node)) {
       const expression = node.getExpression();
-      const symbol = expression.getSymbol();
+      const symbol = Node.isCallExpression(expression)
+        ? resolveAliasedSymbol(expression.getExpression().getSymbol(), typeChecker)
+        : resolveAliasedSymbol(expression.getSymbol(), typeChecker);
       if (symbol) {
         targetSymbol = symbol;
         resolved = true;
@@ -276,14 +303,15 @@ function resolveDecorator(node: Node): {
 
 function resolveJsxElement(
   node: Node & { getTagNameNode(): { getSymbol(): ReturnType<Node['getSymbol']> } },
-): { resolved: boolean; targetSymbol: { getName(): string } | null; genericArgs: string[] } {
+  typeChecker: AstTypeChecker,
+): { resolved: boolean; targetSymbol: AstTargetSymbol | null; genericArgs: string[] } {
   const genericArgs: string[] = [];
-  let targetSymbol: { getName(): string } | null = null;
+  let targetSymbol: AstTargetSymbol | null = null;
   let resolved = false;
 
   try {
     const tagNode = node.getTagNameNode();
-    const symbol = tagNode.getSymbol();
+    const symbol = resolveAliasedSymbol(tagNode.getSymbol(), typeChecker);
     if (symbol) {
       targetSymbol = symbol;
       resolved = true;
@@ -649,6 +677,7 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
       if (
         Node.isCallExpression(node) ||
         Node.isNewExpression(node) ||
+        Node.isDecorator(node) ||
         Node.isJsxOpeningElement(node) ||
         Node.isJsxSelfClosingElement(node)
       ) {
@@ -656,15 +685,16 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
       }
 
       if (!callNode) return;
+      if (Node.isCallExpression(callNode) && isInsideDecorator(callNode)) return;
 
       const line = callNode.getStartLineNumber();
-      const fromName = findEnclosingSymbol(callNode);
-      const fromId = fromName
-        ? buildSymbolId(filePath, fromName, callNode.getStartLineNumber())
+      const fromSymbol = findEnclosingSymbol(callNode);
+      const fromId = fromSymbol
+        ? buildSymbolId(fromSymbol.filePath, fromSymbol.name, fromSymbol.line)
         : buildSymbolId(filePath, '<toplevel>', line);
 
       let resolved = false;
-      let targetSymbol: { getName(): string } | null = null;
+      let targetSymbol: AstTargetSymbol | null = null;
       let genericArgs: string[] = [];
 
       try {
@@ -674,12 +704,20 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
           targetSymbol = result.targetSymbol;
           genericArgs = result.genericArgs;
         } else if (Node.isNewExpression(callNode)) {
-          const result = resolveNewExpression(callNode);
+          const result = resolveNewExpression(callNode, typeChecker);
+          resolved = result.resolved;
+          targetSymbol = result.targetSymbol;
+          genericArgs = result.genericArgs;
+        } else if (Node.isDecorator(callNode)) {
+          const result = resolveDecorator(callNode, typeChecker);
           resolved = result.resolved;
           targetSymbol = result.targetSymbol;
           genericArgs = result.genericArgs;
         } else {
-          const result = resolveJsxElement(callNode as Parameters<typeof resolveJsxElement>[0]);
+          const result = resolveJsxElement(
+            callNode as Parameters<typeof resolveJsxElement>[0],
+            typeChecker,
+          );
           resolved = result.resolved;
           targetSymbol = result.targetSymbol;
           genericArgs = result.genericArgs;
@@ -754,19 +792,43 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
   };
 }
 
-function findEnclosingSymbol(node: Node): string | null {
+function isInsideDecorator(node: Node): boolean {
+  let current = node.getParent();
+  while (current) {
+    if (Node.isDecorator(current)) return true;
+    current = current.getParent();
+  }
+  return false;
+}
+
+function findEnclosingSymbol(node: Node): { name: string; filePath: string; line: number } | null {
   let current: Node | undefined = node.getParent();
   while (current) {
     if (
       Node.isFunctionDeclaration(current) ||
       Node.isMethodDeclaration(current) ||
-      Node.isClassDeclaration(current) ||
-      Node.isArrowFunction(current as Node)
+      Node.isClassDeclaration(current)
     ) {
       const nameNode = current as unknown as { getName?(): string };
       if (typeof nameNode.getName === 'function') {
         const name = nameNode.getName();
-        if (name && name !== 'constructor') return name;
+        if (name && name !== 'constructor') {
+          return {
+            name,
+            filePath: normalizePath(current.getSourceFile().getFilePath()),
+            line: current.getStartLineNumber(),
+          };
+        }
+      }
+    }
+    if (Node.isArrowFunction(current)) {
+      const parent = current.getParent();
+      if (parent && Node.isVariableDeclaration(parent)) {
+        return {
+          name: parent.getName(),
+          filePath: normalizePath(parent.getSourceFile().getFilePath()),
+          line: parent.getStartLineNumber(),
+        };
       }
     }
     current = current.getParent();

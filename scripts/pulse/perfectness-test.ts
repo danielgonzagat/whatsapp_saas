@@ -19,6 +19,7 @@ import type {
   GateEvidenceSource,
   GateExitCondition,
   PerfectnessGate,
+  PerfectnessLongRunEvidence,
   PerfectnessPhase,
   PerfectnessResult,
   PerfectnessTestSuite,
@@ -30,6 +31,8 @@ const PULSE_CERTIFICATE_FILE = 'PULSE_CERTIFICATE.json';
 const PULSE_AUTONOMY_STATE_FILE = 'PULSE_AUTONOMY_STATE.json';
 const PULSE_SANDBOX_STATE_FILE = 'PULSE_SANDBOX_STATE.json';
 const SCENARIO_EVIDENCE_FILE = 'PULSE_SCENARIO_EVIDENCE.json';
+const REQUIRED_LONG_RUN_HOURS = 72;
+const MAX_LONG_RUN_GAP_HOURS = 6;
 
 // ────────────────────────────────────────────────────────────────────────────
 // Gate Definitions (canonical 8-gate suite)
@@ -422,10 +425,17 @@ interface PulseAutonomyState {
     rollback?: boolean;
     recovered?: boolean;
   }>;
+  startedAt?: string;
+  generatedAt?: string;
   totalIterations?: number;
   acceptedIterations?: number;
   rejectedIterations?: number;
   rollbacks?: number;
+  status?: string;
+  cycles?: Array<{
+    startedAt?: string;
+    finishedAt?: string;
+  }>;
 }
 
 interface PulseSandboxState {
@@ -684,16 +694,16 @@ export function evaluateGate(
 
     // ── Gate 8: 72h-elapsed ───────────────────────────────────────────────
     case '72h-elapsed': {
-      const elapsed = computeHoursSince(startTime);
-      const passed = elapsed >= 72;
+      const auto = readStateFile<PulseAutonomyState>(pulseDir, PULSE_AUTONOMY_STATE_FILE);
+      const longRun = evaluateLongRunEvidence(startTime, auto);
 
       return {
         name,
         description,
         target,
-        actual: `${elapsed.toFixed(1)}h elapsed`,
-        passed,
-        evidence: `System clock — startedAt=${startTime}, elapsed=${elapsed.toFixed(1)}h, remaining=${Math.max(0, 72 - elapsed).toFixed(1)}h`,
+        actual: `${longRun.observedHours.toFixed(1)}h observed, cycles=${longRun.cycleCount}, maxGap=${longRun.maxGapHours.toFixed(1)}h, status=${longRun.status}`,
+        passed: longRun.passed,
+        evidence: `PULSE_AUTONOMY_STATE.json + system clock — ${longRun.reason}`,
       };
     }
 
@@ -746,6 +756,86 @@ export function hasElapsed72h(startTime: string): boolean {
   return computeHoursSince(startTime) >= 72;
 }
 
+export function evaluateLongRunEvidence(
+  startTime: string,
+  autonomyState: PulseAutonomyState | null,
+  nowMs = Date.now(),
+): PerfectnessLongRunEvidence {
+  const base = emptyLongRunEvidence('PULSE_AUTONOMY_STATE.json missing or unreadable');
+  if (!autonomyState) {
+    return base;
+  }
+
+  const evaluationStart = parseTimestamp(startTime);
+  if (evaluationStart === null) {
+    return emptyLongRunEvidence(`invalid evaluation startTime: ${startTime}`);
+  }
+
+  const autonomyStartedAt = parseTimestamp(autonomyState.startedAt);
+  const coverageStart = Math.max(evaluationStart, autonomyStartedAt ?? evaluationStart);
+  const status = autonomyState.status ?? 'missing';
+  const cycles = (autonomyState.cycles ?? [])
+    .map((cycle) => {
+      const startedAt = parseTimestamp(cycle.startedAt);
+      const finishedAt = parseTimestamp(cycle.finishedAt);
+      if (startedAt === null || finishedAt === null || finishedAt < startedAt) {
+        return null;
+      }
+      return { startedAt, finishedAt };
+    })
+    .filter((cycle): cycle is { startedAt: number; finishedAt: number } => cycle !== null)
+    .sort((a, b) => a.startedAt - b.startedAt);
+
+  const generatedAt = parseTimestamp(autonomyState.generatedAt);
+  const latestCycleEnd = cycles.reduce((latest, cycle) => Math.max(latest, cycle.finishedAt), 0);
+  const coverageEnd = Math.min(nowMs, Math.max(generatedAt ?? 0, latestCycleEnd, coverageStart));
+  const observedHours = Math.max(0, (coverageEnd - coverageStart) / (1000 * 60 * 60));
+  const maxGapHours = computeMaxUncoveredGapHours(coverageStart, coverageEnd, cycles);
+
+  const reasons: string[] = [];
+  if (observedHours < REQUIRED_LONG_RUN_HOURS) {
+    reasons.push(`observed ${observedHours.toFixed(1)}h of ${REQUIRED_LONG_RUN_HOURS}h required`);
+  }
+  if (cycles.length === 0) {
+    reasons.push('no autonomy cycles recorded');
+  }
+  if (maxGapHours > MAX_LONG_RUN_GAP_HOURS) {
+    reasons.push(
+      `longest uncovered gap ${maxGapHours.toFixed(1)}h exceeds ${MAX_LONG_RUN_GAP_HOURS}h`,
+    );
+  }
+  if (status === 'paused' || status === 'stopped') {
+    reasons.push(`daemon status is ${status}`);
+  }
+
+  const passed = reasons.length === 0;
+  return {
+    requiredHours: REQUIRED_LONG_RUN_HOURS,
+    observedHours,
+    cycleCount: cycles.length,
+    maxGapHours,
+    allowedGapHours: MAX_LONG_RUN_GAP_HOURS,
+    status,
+    passed,
+    reason: passed
+      ? `observed ${observedHours.toFixed(1)}h with ${cycles.length} cycle(s), max uncovered gap ${maxGapHours.toFixed(1)}h, status=${status}`
+      : reasons.join('; '),
+  };
+}
+
+function emptyLongRunEvidence(reason: string): PerfectnessLongRunEvidence {
+  return {
+    requiredHours: REQUIRED_LONG_RUN_HOURS,
+    observedHours: 0,
+    cycleCount: 0,
+    maxGapHours: 0,
+    allowedGapHours: MAX_LONG_RUN_GAP_HOURS,
+    status: 'missing',
+    passed: false,
+    reason,
+  };
+}
+
 function computeHoursSince(startTime: string): number {
   const start = new Date(startTime).getTime();
   const now = Date.now();
@@ -755,6 +845,41 @@ function computeHoursSince(startTime: string): number {
   }
 
   return (now - start) / (1000 * 60 * 60);
+}
+
+function parseTimestamp(value: string | undefined): number | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function computeMaxUncoveredGapHours(
+  coverageStart: number,
+  coverageEnd: number,
+  cycles: Array<{ startedAt: number; finishedAt: number }>,
+): number {
+  if (coverageEnd <= coverageStart) {
+    return 0;
+  }
+
+  let cursor = coverageStart;
+  let maxGapMs = 0;
+
+  for (const cycle of cycles) {
+    if (cycle.finishedAt < coverageStart || cycle.startedAt > coverageEnd) {
+      continue;
+    }
+
+    const cycleStart = Math.max(cycle.startedAt, coverageStart);
+    const cycleEnd = Math.min(cycle.finishedAt, coverageEnd);
+    maxGapMs = Math.max(maxGapMs, cycleStart - cursor);
+    cursor = Math.max(cursor, cycleEnd);
+  }
+
+  maxGapMs = Math.max(maxGapMs, coverageEnd - cursor);
+  return maxGapMs / (1000 * 60 * 60);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -906,6 +1031,7 @@ export function evaluatePerfectness(rootDir: string, startTime: string): Perfect
   const acceptedIterations = auto?.acceptedIterations ?? 0;
   const rejectedIterations = auto?.rejectedIterations ?? 0;
   const rollbacks = auto?.rollbacks ?? 0;
+  const longRunEvidence = evaluateLongRunEvidence(startTime, auto);
 
   // Evaluate all eight gates
   const gates: PerfectnessGate[] = GATE_DEFINITIONS.map((def) =>
@@ -930,6 +1056,7 @@ export function evaluatePerfectness(rootDir: string, startTime: string): Perfect
     scoreEnd,
     verdict,
     gates,
+    longRunEvidence,
     summary: buildSummary(verdict, passed, GATE_DEFINITIONS.length, scoreDelta),
     recommendedActions: buildRecommendedActions(verdict, gates),
     autonomousApproved,

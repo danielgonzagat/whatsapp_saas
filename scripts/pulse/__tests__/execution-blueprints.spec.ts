@@ -126,6 +126,13 @@ describe('PULSE execution blueprints', () => {
 
           @IsBoolean()
           enabled: boolean;
+
+          @IsArray()
+          tags: string[];
+
+          @IsOptional()
+          @IsString()
+          notes?: string;
         }
       `,
     );
@@ -172,6 +179,42 @@ describe('PULSE execution blueprints', () => {
     expect(serializedSecurityPayloads).toContain('label__unexpected');
     expect(serializedSecurityPayloads).toContain('alternate-subjectKey-probe');
     expect(serializedSecurityPayloads).not.toMatch(/\b(role|admin|owner|workspaceId|provider)\b/i);
+
+    const validSchemaPayload = probe?.schemaTests.find((test) =>
+      test.testId.endsWith('-schema-valid'),
+    )?.payload as Record<string, unknown> | undefined;
+    const missingLabelPayload = probe?.schemaTests.find((test) =>
+      test.testId.endsWith('-schema-missing-label'),
+    )?.payload as Record<string, unknown> | undefined;
+    const missingEnabledPayload = probe?.schemaTests.find((test) =>
+      test.testId.endsWith('-schema-missing-enabled'),
+    )?.payload as Record<string, unknown> | undefined;
+    const wrongTagsPayload = probe?.schemaTests.find((test) =>
+      test.testId.endsWith('-schema-wrong-type-tags'),
+    )?.payload as Record<string, unknown> | undefined;
+    const extraFieldsPayload = probe?.schemaTests.find((test) =>
+      test.testId.endsWith('-schema-extra-fields'),
+    )?.payload as Record<string, unknown> | undefined;
+
+    expect(validSchemaPayload).toMatchObject({
+      label: '__pulse_value',
+      enabled: true,
+      notes: '__pulse_value',
+    });
+    expect(validSchemaPayload?.tags).toEqual(['__pulse_item']);
+    expect(missingLabelPayload).toMatchObject({ enabled: true, tags: ['__pulse_item'] });
+    expect(missingLabelPayload).not.toHaveProperty('label');
+    expect(missingEnabledPayload).toMatchObject({
+      label: '__pulse_value',
+      tags: ['__pulse_item'],
+    });
+    expect(missingEnabledPayload).not.toHaveProperty('enabled');
+    expect(wrongTagsPayload?.tags).toBe('__pulse_not_array');
+    expect(extraFieldsPayload).toMatchObject({
+      label: '__pulse_value',
+      enabled: true,
+      unexpectedExtraField: 'should-be-rejected',
+    });
   });
 
   it('derives harness context fixtures from guards, route params, and mutations without fixed roles', () => {

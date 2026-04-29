@@ -82,6 +82,26 @@ export interface PerfectnessGate {
   evidence: string;
 }
 
+/** Detailed evidence for the 72-hour long-run autonomy gate. */
+export interface PerfectnessLongRunEvidence {
+  /** Required continuous autonomous operation window in hours. */
+  requiredHours: number;
+  /** Observed autonomous operation window in hours. */
+  observedHours: number;
+  /** Number of daemon/autonomy cycles used as proof samples. */
+  cycleCount: number;
+  /** Longest uncovered gap between proof samples, in hours. */
+  maxGapHours: number;
+  /** Maximum allowed uncovered gap between proof samples, in hours. */
+  allowedGapHours: number;
+  /** Status recorded by the continuous autonomy daemon, if present. */
+  status: string;
+  /** Whether the long-run proof meets the 72-hour criteria. */
+  passed: boolean;
+  /** Plain-language reason for the long-run verdict. */
+  reason: string;
+}
+
 /**
  * Evidence collection plan for a single gate.
  *
@@ -145,6 +165,8 @@ export interface PerfectnessResult {
   verdict: PerfectnessVerdict;
   /** Detailed per-gate evaluation results. */
   gates: PerfectnessGate[];
+  /** Detailed evidence for the 72-hour autonomy window gate. */
+  longRunEvidence: PerfectnessLongRunEvidence;
   /** Plain-language summary of the perfectness evaluation. */
   summary: string;
   /** Ordered list of actions recommended based on the verdict. */

@@ -34,6 +34,7 @@ import {
 type DirectiveExecutionMatrixPath = PulseArtifactSnapshot['executionMatrix']['paths'][number];
 type DirectiveExecutionMatrixSummary = PulseArtifactSnapshot['executionMatrix']['summary'];
 type DirectiveExternalSignalSummary = PulseArtifactSnapshot['externalSignalState']['summary'];
+type PulseMachineDirectiveUnit = Record<string, string | number | boolean | string[] | null>;
 
 function normalizeMatrixStatusForDirective(status: string): string {
   return normalizeArtifactStatus(status);
@@ -108,6 +109,170 @@ function buildDefaultExitCriteria(unit: QueueUnit): string[] {
   return [];
 }
 
+function evidenceNumber(criterion: PulseMachineReadiness['criteria'][number], key: string): number {
+  const value = criterion.evidence[key];
+  return typeof value === 'number' ? value : 0;
+}
+
+function evidenceString(
+  criterion: PulseMachineReadiness['criteria'][number],
+  key: string,
+): string | null {
+  const value = criterion.evidence[key];
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+function machineUnitTitle(criterionId: string): string {
+  if (criterionId === 'external_reality') {
+    return 'Close PULSE external-reality adapters';
+  }
+  if (criterionId === 'critical_path_terminal') {
+    return 'Convert terminal critical paths into observed proof';
+  }
+  if (criterionId === 'artifact_consistency') {
+    return 'Repair PULSE cross-artifact consistency';
+  }
+  if (criterionId === 'execution_matrix') {
+    return 'Complete PULSE execution matrix classification';
+  }
+  if (criterionId === 'breakpoint_precision') {
+    return 'Repair PULSE breakpoint precision';
+  }
+  if (criterionId === 'self_trust') {
+    return 'Repair PULSE self-trust';
+  }
+  if (criterionId === 'multi_cycle') {
+    return 'Prove non-regressing autonomous PULSE cycles';
+  }
+  return 'Restore bounded PULSE autonomous execution';
+}
+
+function machineUnitFiles(criterionId: string): string[] {
+  if (criterionId === 'external_reality') {
+    return [
+      'scripts/pulse/adapters/external-sources-orchestrator.ts',
+      'scripts/pulse/external-signals.ts',
+      'scripts/pulse/runtime-fusion.ts',
+    ];
+  }
+  if (criterionId === 'critical_path_terminal' || criterionId === 'execution_matrix') {
+    return [
+      'scripts/pulse/execution-matrix.ts',
+      'scripts/pulse/path-coverage-engine.ts',
+      'scripts/pulse/execution-observation.ts',
+    ];
+  }
+  if (criterionId === 'artifact_consistency' || criterionId === 'self_trust') {
+    return [
+      'scripts/pulse/cross-artifact-consistency-check.ts',
+      'scripts/pulse/self-trust.ts',
+      'scripts/pulse/artifacts.directive.ts',
+    ];
+  }
+  if (criterionId === 'multi_cycle') {
+    return [
+      'scripts/pulse/autonomy-loop.ts',
+      'scripts/pulse/cert-gate-multi-cycle.ts',
+      'scripts/pulse/artifacts.autonomy.ts',
+    ];
+  }
+  return ['scripts/pulse/artifacts.report.ts', 'scripts/pulse/artifacts.directive.ts'];
+}
+
+function shouldEmitMachineCriterionWork(
+  criterion: PulseMachineReadiness['criteria'][number],
+): boolean {
+  if (criterion.status !== 'pass') {
+    return true;
+  }
+  if (criterion.id !== 'critical_path_terminal') {
+    return false;
+  }
+  return evidenceNumber(criterion, 'terminalWithoutObservedEvidence') > 0;
+}
+
+export function buildPulseMachineNextWork(
+  readiness: PulseMachineReadiness,
+): PulseMachineDirectiveUnit[] {
+  return readiness.criteria.filter(shouldEmitMachineCriterionWork).map((criterion, index) => {
+    const terminalPathId = evidenceString(criterion, 'firstTerminalPathId');
+    const validationCommand = evidenceString(criterion, 'nextAiSafeAction');
+    const validationArtifacts = [
+      'PULSE_MACHINE_READINESS.json',
+      'PULSE_CLI_DIRECTIVE.json',
+      'PULSE_CERTIFICATE.json',
+      ...(criterion.id === 'external_reality' ? ['PULSE_EXTERNAL_SIGNAL_STATE.json'] : []),
+      ...(criterion.id === 'critical_path_terminal'
+        ? ['PULSE_EXECUTION_MATRIX.json', 'PULSE_PATH_COVERAGE.json']
+        : []),
+    ];
+
+    return {
+      order: index + 1,
+      id: `pulse-machine-${criterion.id}`,
+      kind: 'pulse_machine',
+      priority:
+        criterion.id === 'external_reality' || criterion.id === 'critical_path_terminal'
+          ? 'P0'
+          : 'P1',
+      source: 'pulse_machine',
+      executionMode: 'ai_safe',
+      riskLevel: criterion.id === 'external_reality' ? 'medium' : 'low',
+      evidenceMode: criterion.id === 'external_reality' ? 'observed' : 'inferred',
+      confidence: 'high',
+      productImpact: 'machine',
+      ownerLane: 'pulse-core',
+      title: machineUnitTitle(criterion.id),
+      summary: criterion.reason,
+      whyNow:
+        'PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.',
+      visionDelta:
+        'Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.',
+      targetState: `PULSE machine criterion "${criterion.id}" must pass with canonical evidence.`,
+      affectedCapabilities: [],
+      affectedFlows: [],
+      gateNames: [criterion.id],
+      expectedGateShift: `Pass PULSE machine criterion ${criterion.id}`,
+      validationTargets: validationArtifacts,
+      validationArtifacts,
+      relatedFiles: machineUnitFiles(criterion.id),
+      exitCriteria: [
+        JSON.stringify({
+          id: `pulse-machine-${criterion.id}-exit-0`,
+          type: 'artifact-assertion',
+          target: 'PULSE_MACHINE_READINESS.json',
+          expected: { criterion: criterion.id, status: 'pass' },
+          comparison: 'contains',
+        }),
+        ...(terminalPathId ? [`Refresh observed proof for ${terminalPathId}.`] : []),
+        ...(validationCommand ? [validationCommand] : []),
+      ],
+      preconditions:
+        criterion.id === 'external_reality'
+          ? ['Do not add secrets; use existing local credentials or write not_available evidence.']
+          : ['Operate only on PULSE machine/proof code and generated PULSE artifacts.'],
+      allowedActions: [
+        'PULSE scanner changes',
+        'PULSE evidence generation',
+        'PULSE adapter refresh',
+        'PULSE test writing',
+      ],
+      forbiddenActions: [
+        'Do not edit SaaS product code for this unit',
+        'Do not edit governance-protected files',
+        'Do not suppress Codacy, lint, or certification findings',
+        'Do not add secrets or credentials',
+      ],
+      successCriteria: [
+        `PULSE_MACHINE_READINESS criterion ${criterion.id} is pass or has a more precise terminal blocker.`,
+        'PULSE_CLI_DIRECTIVE keeps next work focused on the PULSE machine when machine readiness is not READY.',
+        'Targeted PULSE tests pass.',
+      ],
+      requiredValidations: ['affected-tests'],
+    };
+  });
+}
+
 function buildDirectiveUnit(snapshot: PulseArtifactSnapshot, unit: QueueUnit) {
   const executionMode = normalizeArtifactExecutionMode(unit.executionMode);
   const directiveUnit = {
@@ -176,8 +341,15 @@ export function buildDirective(
   const nextDecisionUnits = decisionQueue
     .slice(0, 8)
     .map((unit) => buildDirectiveUnit(snapshot, unit));
-  const nextExecutableUnits =
+  const nextProductExecutableUnits =
     nextAutonomousUnits.length > 0 ? nextAutonomousUnits.slice(0, 8) : nextDecisionUnits;
+  const pulseMachineNextWork = buildPulseMachineNextWork(pulseMachineReadiness);
+  const machineFocusRequired =
+    pulseMachineReadiness.status !== 'READY' || pulseMachineNextWork.length > 0;
+  const nextExecutableUnits =
+    machineFocusRequired && pulseMachineNextWork.length > 0
+      ? pulseMachineNextWork.slice(0, 8)
+      : nextProductExecutableUnits;
   const blockedWork = convergencePlan.queue
     .filter((unit) => normalizeArtifactExecutionMode(unit.executionMode) === 'observation_only')
     .slice(0, 10);
@@ -367,6 +539,11 @@ export function buildDirective(
       topProblems,
       nextAutonomousUnits,
       nextDecisionUnits,
+      nextProductExecutableUnits,
+      pulseMachineNextWork,
+      machineFocusRequired,
+      nextExecutableUnitsSource:
+        machineFocusRequired && pulseMachineNextWork.length > 0 ? 'pulse_machine' : 'product',
       nextExecutableUnits,
       nextWork: nextExecutableUnits,
       blockedUnits,

@@ -183,6 +183,129 @@ describe('runtime-fusion', () => {
     expect(state.signals[0]?.evidenceMode).toBe('observed');
   });
 
+  it('maps manual OTel error spans to capabilities through span-to-path evidence', () => {
+    const { rootDir, currentDir } = createPulseRoot();
+
+    writeJson(path.join(currentDir, 'PULSE_CAPABILITY_STATE.json'), {
+      capabilities: [
+        {
+          id: 'capability:auth-runtime',
+          name: 'Auth runtime',
+          filePaths: ['backend/src/auth/auth.service.ts'],
+        },
+      ],
+    });
+    writeJson(path.join(currentDir, 'PULSE_FLOW_PROJECTION.json'), {
+      flows: [
+        {
+          id: 'flow:auth-login',
+          name: 'Auth login',
+          capabilityIds: ['capability:auth-runtime'],
+          routePatterns: ['/api/auth/login'],
+        },
+      ],
+    });
+    writeJson(path.join(currentDir, 'PULSE_EXTERNAL_SIGNAL_STATE.json'), {
+      generatedAt: '2026-04-29T19:06:52.792Z',
+      truthMode: 'observed',
+      adapters: [],
+      signals: [],
+    });
+    writeJson(path.join(currentDir, 'PULSE_RUNTIME_TRACES.json'), {
+      generatedAt: '2026-04-29T19:05:31.150Z',
+      source: 'manual',
+      sourceDetails: {
+        kind: 'manual_tracer',
+        runtimeObserved: true,
+        deterministic: false,
+        reason: null,
+      },
+      summary: {
+        totalTraces: 1,
+        totalSpans: 1,
+        errorTraces: 1,
+        endpointMap: {},
+        avgDurationMs: 100,
+        p95DurationMs: 100,
+      },
+      traces: [
+        {
+          traceId: 'trace-manual',
+          rootSpan: {
+            spanId: 'span-manual',
+            parentSpanId: null,
+            traceId: 'trace-manual',
+            name: 'POST /api/auth/login',
+            kind: 'server',
+            serviceName: 'backend',
+            attributes: {
+              'http.method': 'POST',
+              'http.route': '/api/auth/login',
+              'http.status_code': 500,
+              'pulse.structural.from': 'route:auth-login',
+              'pulse.structural.to': 'service:auth',
+            },
+            startTime: '2026-04-29T19:05:31.000Z',
+            endTime: '2026-04-29T19:05:31.100Z',
+            durationMs: 100,
+            status: 'error',
+            statusMessage: 'Internal server error',
+            events: [],
+          },
+          spans: [
+            {
+              spanId: 'span-manual',
+              parentSpanId: null,
+              traceId: 'trace-manual',
+              name: 'POST /api/auth/login',
+              kind: 'server',
+              serviceName: 'backend',
+              attributes: {
+                'http.method': 'POST',
+                'http.route': '/api/auth/login',
+                'http.status_code': 500,
+                'pulse.structural.from': 'route:auth-login',
+                'pulse.structural.to': 'service:auth',
+              },
+              startTime: '2026-04-29T19:05:31.000Z',
+              endTime: '2026-04-29T19:05:31.100Z',
+              durationMs: 100,
+              status: 'error',
+              statusMessage: 'Internal server error',
+              events: [],
+            },
+          ],
+          totalDurationMs: 100,
+          errorSpans: 1,
+          serviceBoundaries: 0,
+        },
+      ],
+      spanToPathMappings: [
+        {
+          spanName: 'POST /api/auth/login',
+          matchedNodeIds: ['route:auth-login', 'service:auth'],
+          matchedFilePaths: ['backend/src/auth/auth.service.ts'],
+          confidence: 0.9,
+        },
+      ],
+    });
+
+    const state = buildRuntimeFusionState(rootDir);
+    const signal = state.signals.find((candidate) => candidate.source === 'otel_runtime');
+
+    expect(state.evidence.runtimeTraces.status).toBe('observed');
+    expect(state.evidence.runtimeTraces.source).toBe('manual');
+    expect(signal?.affectedFilePaths).toEqual(['backend/src/auth/auth.service.ts']);
+    expect(signal?.affectedCapabilityIds).toEqual(['capability:auth-runtime']);
+    expect(signal?.affectedFlowIds).toEqual(['flow:auth-login']);
+    expect(state.priorityOverrides).toEqual([
+      expect.objectContaining({
+        capabilityId: 'capability:auth-runtime',
+        newPriority: 'P0',
+      }),
+    ]);
+  });
+
   it('normalizes runtime, change, static, and dependency signals into operational evidence', () => {
     const { rootDir, currentDir } = createPulseRoot();
 
