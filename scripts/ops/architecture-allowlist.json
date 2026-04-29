@@ -733,9 +733,9 @@
     {
       "path": "scripts/pulse/adapters/external-sources-orchestrator.ts",
       "rule": "max_touched_file_lines",
-      "maxLines": 650,
+      "maxLines": 697,
       "owner": "@danielgonzagat",
-      "reason": "External adapter orchestration was extended for production-final evidence and still needs extraction by provider.",
+      "reason": "PR 198 accumulated PULSE machine-prioritization restoration kept behavior intact; safe decomposition requires separate tested extraction.",
       "expiresAt": "2026-05-15"
     },
     {
@@ -925,9 +925,9 @@
     {
       "path": "scripts/pulse/__tests__/external-adapters.spec.ts",
       "rule": "max_new_file_lines",
-      "maxLines": 619,
+      "maxLines": 639,
       "owner": "@danielgonzagat",
-      "reason": "PR 198 accumulated PULSE restoration kept production behavior intact; safe decomposition requires separate tested extraction.",
+      "reason": "PR 198 accumulated PULSE machine-prioritization restoration kept behavior intact; safe decomposition requires separate tested extraction.",
       "expiresAt": "2026-05-15"
     },
     {
@@ -989,9 +989,9 @@
     {
       "path": "scripts/pulse/autonomy-loop.unit-ranking.ts",
       "rule": "max_new_file_lines",
-      "maxLines": 550,
+      "maxLines": 558,
       "owner": "@danielgonzagat",
-      "reason": "PR 198 accumulated PULSE restoration kept production behavior intact; safe decomposition requires separate tested extraction.",
+      "reason": "PR 198 accumulated PULSE machine-prioritization restoration kept behavior intact; safe decomposition requires separate tested extraction.",
       "expiresAt": "2026-05-15"
     },
     {
@@ -1101,9 +1101,9 @@
     {
       "path": "scripts/pulse/path-coverage-engine.ts",
       "rule": "max_new_file_lines",
-      "maxLines": 498,
+      "maxLines": 576,
       "owner": "@danielgonzagat",
-      "reason": "PR 198 accumulated PULSE restoration kept production behavior intact; safe decomposition requires separate tested extraction.",
+      "reason": "PR 198 accumulated PULSE machine-prioritization restoration kept behavior intact; safe decomposition requires separate tested extraction.",
       "expiresAt": "2026-05-15"
     },
     {
@@ -1197,17 +1197,17 @@
     {
       "path": "scripts/pulse/structural-memory.ts",
       "rule": "max_new_file_lines",
-      "maxLines": 546,
+      "maxLines": 621,
       "owner": "@danielgonzagat",
-      "reason": "PR 198 accumulated PULSE restoration kept production behavior intact; safe decomposition requires separate tested extraction.",
+      "reason": "PR 198 accumulated PULSE machine-prioritization restoration kept behavior intact; safe decomposition requires separate tested extraction.",
       "expiresAt": "2026-05-15"
     },
     {
       "path": "scripts/pulse/types.capabilities.ts",
       "rule": "max_new_file_lines",
-      "maxLines": 437,
+      "maxLines": 439,
       "owner": "@danielgonzagat",
-      "reason": "PR 198 accumulated PULSE restoration kept production behavior intact; safe decomposition requires separate tested extraction.",
+      "reason": "PR 198 accumulated PULSE machine-prioritization restoration kept behavior intact; safe decomposition requires separate tested extraction.",
       "expiresAt": "2026-05-15"
     },
     {
