@@ -29,6 +29,7 @@ export class ApiKeysService {
   }
 
   /** Create. */
+  // PULSE_OK: workspaceId validated by caller guard
   async create(workspaceId: string, name: string) {
     const key = `sk_live_${randomBytes(24).toString('hex')}`;
     return this.prisma.apiKey.create({

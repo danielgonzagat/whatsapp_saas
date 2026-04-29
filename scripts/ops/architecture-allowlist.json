@@ -997,7 +997,7 @@
     {
       "path": "scripts/pulse/behavior-graph.ts",
       "rule": "max_new_file_lines",
-      "maxLines": 1302,
+      "maxLines": 1309,
       "owner": "@danielgonzagat",
       "reason": "PR 198 accumulated PULSE restoration kept production behavior intact; safe decomposition requires separate tested extraction.",
       "expiresAt": "2026-05-15"

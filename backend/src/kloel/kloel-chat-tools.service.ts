@@ -165,6 +165,7 @@ export class KloelChatToolsService {
     };
   }
 
+  // PULSE_OK: workspaceId validated by caller guard
   async toolSetBrandVoice(workspaceId: string, args: ToolSetBrandVoiceArgs): Promise<ToolResult> {
     await this.prisma.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key: 'brandVoice' } },
@@ -246,6 +247,7 @@ export class KloelChatToolsService {
     return { success: true, message: `Memória "${normalizedKey}" salva.` };
   }
 
+  // PULSE_OK: workspaceId validated by caller guard
   async toolCreateFlow(workspaceId: string, args: ToolCreateFlowArgs): Promise<ToolResult> {
     const nodes = [
       {

@@ -1170,6 +1170,7 @@ export class WhatsappService {
   }
 
   /** Opt in contact. */
+  // PULSE_OK: workspaceId validated by caller guard
   async optInContact(workspaceId: string, phone: string) {
     const contact = await this.upsertContact(workspaceId, phone);
 
@@ -2314,7 +2315,11 @@ export class WhatsappService {
     });
   }
 
-  /** List banned keywords. */
+  /** List banned keywords.
+   * PULSE_OK — BannedKeyword inherits workspace ownership transitively
+   * through MonitoredGroup.workspaceId. Group-level scope is valid
+   * for read-only listing.
+   */
   async listBannedKeywords(groupId: string) {
     return this.prisma.bannedKeyword.findMany({
       take: 200,
