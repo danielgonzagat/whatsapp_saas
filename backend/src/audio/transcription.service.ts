@@ -2,12 +2,13 @@ import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { readFile, unlink, writeFile } from 'node:fs/promises';
 import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const OGG_MP3_WAV_M4A_OPUS_RE = /\.(ogg|mp3|wav|m4a|opus)(\?|$)/i;
 
@@ -17,7 +18,10 @@ export class TranscriptionService {
   private readonly logger = new Logger(TranscriptionService.name);
   private readonly openaiKey: string | undefined;
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {
     this.openaiKey = this.config.get<string>('OPENAI_API_KEY');
   }
 
@@ -118,6 +122,7 @@ export class TranscriptionService {
         const data = await response.json();
         return data.text || '';
       } catch (err: unknown) {
+        void this.opsAlert?.alertOnCriticalError(err, 'TranscriptionService.json');
         this.logger.warn(
           `Transcrição OpenAI falhou (tentativa ${attempt}/${maxRetries}): ${err instanceof Error ? err.message : 'unknown_error'}`,
         );
@@ -159,6 +164,7 @@ export class TranscriptionService {
       await writeFile(tempPath, buffer);
       return tempPath;
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'TranscriptionService.writeFile');
       this.logger.error(
         `Erro ao baixar áudio: ${err instanceof Error ? err.message : 'unknown_error'}`,
       );

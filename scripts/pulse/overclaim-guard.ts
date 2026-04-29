@@ -14,10 +14,17 @@ export interface OverclaimCheckInput {
     structuralDebtClosed: boolean;
     cycleProofPassed: boolean;
     externalAdaptersClosed: boolean;
-    criticalHumanRequiredOpen: boolean;
+    governedValidationEvidence: OverclaimGovernedValidationEvidence;
     authorityAutomationEligible: boolean;
     nextStepAvailable: boolean;
+    canContinueUntilReady: boolean;
   };
+}
+
+export interface OverclaimGovernedValidationEvidence {
+  openUnitCount: number;
+  openGateCount: number;
+  blockers: readonly string[];
 }
 
 export interface OverclaimResult {
@@ -25,24 +32,40 @@ export interface OverclaimResult {
   violations: string[];
 }
 
+const GOVERNED_VALIDATION_BLOCKER_PATTERN =
+  /governed[ _-]?validation|observation[ _-]?only|protected[ _-]?surface|human_required|blocked_human_required/i;
+
+export function hasOpenGovernedValidationGap(
+  evidence: OverclaimGovernedValidationEvidence,
+): boolean {
+  return (
+    evidence.openUnitCount > 0 ||
+    evidence.openGateCount > 0 ||
+    evidence.blockers.some((blocker) => GOVERNED_VALIDATION_BLOCKER_PATTERN.test(blocker))
+  );
+}
+
 export function evaluateOverclaimPass(input: OverclaimCheckInput): OverclaimResult {
   const violations: string[] = [];
+  const governedValidationGapOpen = hasOpenGovernedValidationGap(
+    input.gateStatus.governedValidationEvidence,
+  );
 
   // zeroPromptProductionGuidance requires all supporting gates to be green
   if (input.verdicts.zeroPromptProductionGuidance === 'SIM') {
-    if (!input.gateStatus.structuralDebtClosed) {
-      violations.push(
-        'zeroPromptProductionGuidance=SIM but structuralDebtClosed=false. Structural debt remains open.',
-      );
-    }
     if (!input.gateStatus.nextStepAvailable) {
       violations.push(
         'zeroPromptProductionGuidance=SIM but nextStepAvailable=false. Fresh session has no executable unit.',
       );
     }
+    if (!input.gateStatus.canContinueUntilReady) {
+      violations.push(
+        'zeroPromptProductionGuidance=SIM but canContinueUntilReady=false. Continuous convergence is not proven for a fresh session.',
+      );
+    }
     if (!input.gateStatus.authorityAutomationEligible) {
       violations.push(
-        'zeroPromptProductionGuidance=SIM but authorityAutomationEligible=false. Authority remains advisory-only.',
+        'zeroPromptProductionGuidance=SIM but authorityAutomationEligible=false. Authority is not eligible for bounded autonomous execution.',
       );
     }
     if (!input.gateStatus.externalAdaptersClosed) {
@@ -50,9 +73,9 @@ export function evaluateOverclaimPass(input: OverclaimCheckInput): OverclaimResu
         'zeroPromptProductionGuidance=SIM but externalAdaptersClosed=false. External reality is incomplete.',
       );
     }
-    if (input.gateStatus.criticalHumanRequiredOpen) {
+    if (governedValidationGapOpen) {
       violations.push(
-        'zeroPromptProductionGuidance=SIM but protectedSurfaceGapOpen=true. Legacy protected-surface labels must be normalized into governed autonomous validation before claiming zero-prompt guidance.',
+        'zeroPromptProductionGuidance=SIM but governedValidationGapOpen=true. Observation-only or protected-surface blockers must be converted into executable governed validation before claiming zero-prompt guidance.',
       );
     }
     // Critical: zeroPrompt must not claim production guidance without proven cycles
@@ -78,6 +101,11 @@ export function evaluateOverclaimPass(input: OverclaimCheckInput): OverclaimResu
     if (!input.gateStatus.externalAdaptersClosed) {
       violations.push(
         'productionAutonomy=SIM but externalAdaptersClosed=false. External reality is incomplete.',
+      );
+    }
+    if (governedValidationGapOpen) {
+      violations.push(
+        'productionAutonomy=SIM but governedValidationGapOpen=true. Governed validation blockers remain open.',
       );
     }
   }

@@ -81,9 +81,9 @@ export function isInterfaceOnlyWithoutRoutes(capability: PulseCapability): boole
 export function isOperationalReadinessCapability(capability: PulseCapability): boolean {
   return (
     capability.routePatterns.length > 0 &&
-    capability.routePatterns.some((routePattern) =>
-      /(?:^|\/)(?:health|status|metrics|ping|ready|live)(?:\/|$)/i.test(routePattern),
-    )
+    !capability.userFacing &&
+    capability.ownerLane === 'reliability' &&
+    capability.maturity.dimensions.runtimeEvidencePresent
   );
 }
 
@@ -134,17 +134,16 @@ export function isRoadmapCatalogCapability(capability: PulseCapability): boolean
     return false;
   }
 
-  const markerCount = [
-    /\broadmap\b/i,
-    /\bplanned\b/i,
-    /\bcoming soon\b|em breve|planejado/i,
-    /\bFRONTEND_CAPABILITIES\b|\bCAPABILITY_CATEGORY_META\b|\bpartitionCapabilities\b/,
-  ].filter((pattern) => pattern.test(source)).length;
   const hasApiIntent = /\bapiFetch\s*\(|\bfetch\s*\(|\buseSWR\s*\(|from\s+['"]@\/lib\/api/.test(
     source,
   );
+  const exportedCollectionCount = (
+    source.match(/\b(?:const|export\s+const)\s+[A-Z][A-Z0-9_]*\s*=\s*(?:\[|\{)/g) || []
+  ).length;
+  const handlerCount = (source.match(/\bon[A-Z][A-Za-z0-9_]*\s*=/g) || []).length;
+  const referencedRoutes = extractReferencedRoutes(source);
 
-  return markerCount >= 2 && !hasApiIntent;
+  return exportedCollectionCount > handlerCount && referencedRoutes.length === 0 && !hasApiIntent;
 }
 
 function deriveFamiliesForCapability(

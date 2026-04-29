@@ -47,19 +47,24 @@ interface BuildParityGapsInput {
   health: PulseHealth;
 }
 
-const OBSERVABILITY_GAP_TYPES = [
-  /OBSERVABILITY_/,
-  /^AUDIT_FINANCIAL_NO_TRAIL$/,
-  /^AUDIT_DELETION_NO_LOG$/,
-  /^AUDIT_ADMIN_NO_LOG$/,
-];
+function isObservabilityBreakType(type: string): boolean {
+  return /(?:observability|audit|log|trace|metric|alert)/i.test(type);
+}
 
-const INFRASTRUCTURE_ONLY_ROUTES = new Set(['/', '/health', '/diag-db']);
-
-function isInfrastructureOnlyRouteCapability(capability: PulseCapability): boolean {
+function isInfrastructureOnlyRouteCapability(
+  capability: PulseCapability,
+  productModules: PulseResolvedManifest['modules'],
+): boolean {
+  const capabilityStructuralFamilies = capabilityFamilies(capability);
+  const matchesProductModule = productModules.some((moduleEntry) =>
+    familiesOverlap(moduleFamilies(moduleEntry), capabilityStructuralFamilies),
+  );
   return (
     capability.routePatterns.length > 0 &&
-    capability.routePatterns.every((routePattern) => INFRASTRUCTURE_ONLY_ROUTES.has(routePattern))
+    !capability.userFacing &&
+    !matchesProductModule &&
+    capability.ownerLane === 'reliability' &&
+    capability.rolesPresent.every((role) => role === 'interface' || role === 'orchestration')
   );
 }
 
@@ -80,7 +85,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
       .filter(
         (item) =>
           (item.severity === 'critical' || item.severity === 'high') &&
-          OBSERVABILITY_GAP_TYPES.some((pattern) => pattern.test(item.type)),
+          isObservabilityBreakType(item.type),
       )
       .map((item) => item.file)
       .filter(Boolean),
@@ -144,7 +149,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
     (item) =>
       item.userFacing &&
       item.status !== 'real' &&
-      !isInfrastructureOnlyRouteCapability(item) &&
+      !isInfrastructureOnlyRouteCapability(item, productModules) &&
       !isFrameworkShellCapability(item) &&
       !isRoadmapCatalogCapability(item) &&
       !isCoveredByMaterializedEntryPoint(item, capabilities) &&
@@ -197,7 +202,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
       item.status !== 'real' &&
       item.truthMode !== 'aspirational' &&
       item.routePatterns.length > 0 &&
-      !isInfrastructureOnlyRouteCapability(item) &&
+      !isInfrastructureOnlyRouteCapability(item, productModules) &&
       !isCoveredByProductSurfaceRouteFamily(item, capabilities) &&
       (item.rolesPresent.includes('orchestration') ||
         item.rolesPresent.includes('persistence') ||

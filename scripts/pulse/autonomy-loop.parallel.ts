@@ -100,6 +100,7 @@ export async function runParallelAutonomousLoop(
     codexCliAvailable,
   };
   let state = buildPulseAutonomyStateSeed({
+    rootDir,
     directive: initialDirective,
     previousState,
     codexCliAvailable,

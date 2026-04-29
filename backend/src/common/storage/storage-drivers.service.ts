@@ -6,9 +6,10 @@ import {
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { safeJoin } from '../../common/safe-path';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 
 const TRAILING_SLASHES_RE = /\/+$/;
 
@@ -33,7 +34,10 @@ export class StorageDriversService {
   private readonly logger = new Logger(StorageDriversService.name);
   private r2Client: S3Client | null = null;
 
-  constructor(private config: ConfigService) {}
+  constructor(
+    private config: ConfigService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
 
   /** Upload buffer to S3, falling back to local if unconfigured. */
   async uploadToS3(
@@ -70,6 +74,7 @@ export class StorageDriversService {
       this.logger.debug(`Uploaded to S3: ${relativePath} (${buffer.length} bytes)`);
       return { url, path: relativePath, size: buffer.length };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.uploadToS3');
       const errorMsg = describeUnknownError(error);
       this.logger.error(`S3 upload failed: ${errorMsg}, falling back to local`);
       if (uploadToLocal) return uploadToLocal(buffer, relativePath);
@@ -107,6 +112,7 @@ export class StorageDriversService {
       this.logger.debug(`Uploaded to R2: ${relativePath} (${buffer.length} bytes)`);
       return { url, path: relativePath, size: buffer.length };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.uploadToR2');
       const errorMsg = describeUnknownError(error);
       this.logger.error(`R2 upload failed: ${errorMsg}, falling back to local`);
       if (uploadToLocal) return uploadToLocal(buffer, relativePath);
@@ -169,6 +175,7 @@ export class StorageDriversService {
         mimeType: response.ContentType || getMimeTypeForPath(relativePath),
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.getMimeTypeForPath');
       const errorMsg = describeUnknownError(error);
       this.logger.warn(`S3 remote read failed for "${relativePath}": ${errorMsg}`);
       return null;
@@ -192,6 +199,7 @@ export class StorageDriversService {
         mimeType: response.ContentType || getMimeTypeForPath(relativePath),
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.getMimeTypeForPath');
       const errorMsg = describeUnknownError(error);
       this.logger.warn(`R2 remote read failed for "${relativePath}": ${errorMsg}`);
       return null;
@@ -217,6 +225,7 @@ export class StorageDriversService {
       await client.send(new HeadBucketCommand({ Bucket: bucket }));
       return { status: 'UP', driver: 'r2', details: { bucket } };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.send');
       const errorMsg = describeUnknownError(error);
       const fallbackWritable = this.isLocalWritable(uploadsDir);
       return {
@@ -247,6 +256,7 @@ export class StorageDriversService {
       await client.send(new HeadBucketCommand({ Bucket: bucket }));
       return { status: 'UP', driver: 's3', details: { bucket } };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.send');
       const errorMsg = describeUnknownError(error);
       return { status: 'DOWN', driver: 's3', details: { error: errorMsg } };
     }
@@ -292,6 +302,7 @@ export class StorageDriversService {
       });
       return this.r2Client;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.getR2Client');
       const errorMsg = describeUnknownError(error);
       this.logger.error(`Failed to create R2 client: ${errorMsg}`);
       return null;

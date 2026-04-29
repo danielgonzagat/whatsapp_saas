@@ -99,6 +99,14 @@ Antes de aplicar patch:
 3. Evitar tocar em arquivos com mudanças humanas não relacionadas.
 4. Se conflito for inevitável, parar e explicar.
 5. Nunca usar reset/checkout/clean destrutivo sem autorização explícita.
+6. Nunca usar `git restore`, sob nenhuma circunstância, por risco de destruir
+   trabalho não commitado de humanos ou agentes.
+
+Comandos proibidos para IA CLI:
+
+- `git restore`
+- `git restore --source`
+- `git restore --staged`
 
 Comandos proibidos sem autorização explícita:
 
@@ -285,7 +293,7 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-04-29 5:09pm GMT-3
+# [whatsapp_saas] recent context, 2026-04-29 7:36pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE

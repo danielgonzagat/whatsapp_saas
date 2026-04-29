@@ -57,6 +57,15 @@ const STRYKER_CONF_FILES = [
   'stryker.config.mjs',
 ];
 
+type CandidateCategory = PureFunctionCandidate['category'];
+
+interface DiscoveredExport {
+  functionName: string;
+  params: string[];
+  hasReturnType: boolean;
+  categoryHint: CandidateCategory | null;
+}
+
 /**
  * Main entry point. Collects property testing, fuzz testing, and mutation
  * testing evidence. The resulting artifact is written to disk and returned.
@@ -988,9 +997,9 @@ function hashStringToSeed(str: string): number {
 const SQL_INJECTION_PATTERNS = [
   "' OR '1'='1",
   "' OR '1'='1' --",
-  "'; DROP TABLE users; --",
+  "'; DROP TABLE sample_table; --",
   "' UNION SELECT NULL, NULL --",
-  '1; DROP TABLE users; --',
+  '1; DROP TABLE sample_table; --',
   "' OR 1=1 --",
   "' OR 'a'='a",
   "admin'--",
@@ -1047,11 +1056,16 @@ export function discoverPureFunctionCandidates(rootDir: string): PureFunctionCan
   const scanned = new Set<string>();
 
   const categoryPatterns: Array<{
-    category: PureFunctionCandidate['category'];
+    category: CandidateCategory;
     regex: RegExp;
   }> = [
     { category: 'validation', regex: /\b(validate|isValid|assert|check)\w*/i },
     { category: 'parsing', regex: /\b(parse|deserialize|decode|extract)\w*/i },
+    {
+      category: 'money_handler',
+      regex:
+        /\b(?:parseCurrency|formatCurrency|parseBRL|formatBRL|currency|amount|cents|money|brl)\w*/i,
+    },
     {
       category: 'formatting',
       regex: /\b(format|serialize|encode|stringify|normalize|to[A-Z])\w*/i,
@@ -1062,16 +1076,14 @@ export function discoverPureFunctionCandidates(rootDir: string): PureFunctionCan
     },
     { category: 'transform', regex: /\b(transform|convert|map|reduce|filter)\w*/i },
     {
-      category: 'money_handler',
-      regex: /\b(?:formatBRL|formatBrl|parseBRL|cents|formatMoney|formatCurrency|money|brl)\w*/i,
-    },
-    {
       category: 'string_manipulation',
       regex: /\b(slugify|truncat|pad|sanitize|escape|unescape|camelCase|kebabCase|pascalCase)\w*/i,
     },
+    {
+      category: 'enum_handler',
+      regex: /\b(enum|status|state|type|kind|variant|mode)\w*/i,
+    },
   ];
-
-  const exportFnRe = /export\s+function\s+(\w+)\s*\(/g;
 
   function scanDir(dir: string) {
     if (!fs.existsSync(dir)) return;
@@ -1098,26 +1110,23 @@ export function discoverPureFunctionCandidates(rootDir: string): PureFunctionCan
           const content = fs.readFileSync(fullPath, 'utf-8');
           const relativePath = fullPath.replace(rootDir + path.sep, '');
 
-          let match: RegExpExecArray | null;
-          exportFnRe.lastIndex = 0;
-          while ((match = exportFnRe.exec(content)) !== null) {
-            const fnName = match[1];
-            const key = `${relativePath}:${fnName}`;
+          for (const discovered of discoverExportedPropertyCandidates(content)) {
+            const key = `${relativePath}:${discovered.functionName}`;
             if (scanned.has(key)) continue;
             scanned.add(key);
 
-            for (const { category, regex } of categoryPatterns) {
-              if (regex.test(fnName)) {
-                const paramsStr = extractFunctionParams(content, match.index);
-                candidates.push({
-                  functionName: fnName,
-                  filePath: relativePath,
-                  category,
-                  params: parseParamNames(paramsStr),
-                  hasReturnType: true,
-                });
-                break;
-              }
+            const category =
+              discovered.categoryHint ??
+              categoryPatterns.find(({ regex }) => regex.test(discovered.functionName))?.category;
+
+            if (category) {
+              candidates.push({
+                functionName: discovered.functionName,
+                filePath: relativePath,
+                category,
+                params: discovered.params,
+                hasReturnType: discovered.hasReturnType,
+              });
             }
           }
         } catch {
@@ -1128,6 +1137,58 @@ export function discoverPureFunctionCandidates(rootDir: string): PureFunctionCan
   }
 
   scanDir(rootDir);
+
+  return candidates;
+}
+
+function discoverExportedPropertyCandidates(content: string): DiscoveredExport[] {
+  const candidates: DiscoveredExport[] = [];
+
+  const exportFnRe = /export\s+function\s+(\w+)\s*(?:<[^>{}]+>)?\s*\(/g;
+  let functionMatch: RegExpExecArray | null;
+  while ((functionMatch = exportFnRe.exec(content)) !== null) {
+    candidates.push({
+      functionName: functionMatch[1],
+      params: parseParamNames(extractFunctionParams(content, functionMatch.index)),
+      hasReturnType: hasReturnAnnotation(content, functionMatch.index),
+      categoryHint: null,
+    });
+  }
+
+  const exportConstFunctionRe =
+    /export\s+const\s+(\w+)\s*(?::\s*[^=]+)?=\s*(?:async\s+)?(?:function\s*\w*\s*)?\(/g;
+  let constFunctionMatch: RegExpExecArray | null;
+  while ((constFunctionMatch = exportConstFunctionRe.exec(content)) !== null) {
+    candidates.push({
+      functionName: constFunctionMatch[1],
+      params: parseParamNames(extractFunctionParams(content, constFunctionMatch.index)),
+      hasReturnType: hasReturnAnnotation(content, constFunctionMatch.index),
+      categoryHint: null,
+    });
+  }
+
+  const exportConstSingleArgArrowRe =
+    /export\s+const\s+(\w+)\s*(?::\s*[^=]+)?=\s*(?:async\s+)?([A-Za-z_]\w*)\s*=>/g;
+  let arrowMatch: RegExpExecArray | null;
+  while ((arrowMatch = exportConstSingleArgArrowRe.exec(content)) !== null) {
+    candidates.push({
+      functionName: arrowMatch[1],
+      params: [arrowMatch[2]],
+      hasReturnType: hasReturnAnnotation(content, arrowMatch.index),
+      categoryHint: null,
+    });
+  }
+
+  const exportEnumRe = /export\s+enum\s+(\w+)\s*\{([\s\S]*?)\}/g;
+  let enumMatch: RegExpExecArray | null;
+  while ((enumMatch = exportEnumRe.exec(content)) !== null) {
+    candidates.push({
+      functionName: enumMatch[1],
+      params: parseEnumMembers(enumMatch[2]),
+      hasReturnType: true,
+      categoryHint: 'enum_handler',
+    });
+  }
 
   return candidates;
 }
@@ -1147,6 +1208,20 @@ function extractFunctionParams(content: string, fnStartIndex: number): string {
   return '';
 }
 
+function hasReturnAnnotation(content: string, fnStartIndex: number): boolean {
+  const slice = content.slice(fnStartIndex, fnStartIndex + 500);
+  const arrowIndex = slice.indexOf('=>');
+  const braceIndex = slice.indexOf('{');
+  const boundary =
+    arrowIndex === -1
+      ? braceIndex
+      : braceIndex === -1
+        ? arrowIndex
+        : Math.min(arrowIndex, braceIndex);
+
+  return boundary > -1 && /:\s*[^=({;]+/.test(slice.slice(0, boundary));
+}
+
 function parseParamNames(paramsStr: string): string[] {
   if (!paramsStr.trim()) return [];
   return paramsStr
@@ -1161,6 +1236,23 @@ function parseParamNames(paramsStr: string): string[] {
       return clean.slice(0, endIdx).trim();
     })
     .filter(Boolean);
+}
+
+function parseEnumMembers(enumBody: string): string[] {
+  return enumBody
+    .split(',')
+    .map((entry) =>
+      entry
+        .replace(/\/\/.*$/gm, '')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .trim(),
+    )
+    .map((entry) => {
+      const [namePart, valuePart] = entry.split('=').map((part) => part.trim());
+      const explicitValue = valuePart?.match(/^['"`]([^'"`]+)['"`]$/)?.[1];
+      return explicitValue ?? namePart;
+    })
+    .filter((member) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(member));
 }
 
 /**
@@ -1430,7 +1522,7 @@ function generateStringIdPropertyInputs(rng: () => number): GeneratedPropertyTes
   // Valid IDs
   const validIds = [
     'abc123',
-    'user_42',
+    'entity_42',
     'org-7f8a9b',
     'a'.repeat(10),
     'test@example.com',
@@ -1535,13 +1627,20 @@ function generateStringIdPropertyInputs(rng: () => number): GeneratedPropertyTes
 function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestInput[] {
   const inputs: GeneratedPropertyTestInput[] = [];
 
-  // Valid money values (integer cents are safe)
+  // Valid money values (integer minor units are safe)
   const validValues = [
     '0',
     '100',
     '9999',
     '42',
     '1',
+    '0.00',
+    '1.00',
+    '123.45',
+    '9999.99',
+    '0.01',
+    '0.99',
+    '1.50',
     'R$ 0,00',
     'R$ 1,00',
     'R$ 123,45',
@@ -1552,29 +1651,39 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
     '1,50',
   ];
   for (const v of validValues) {
+    const isBrl = /R\$|,/.test(v);
     inputs.push({
       value: v,
-      description: `Valid BRL string: "${v}"`,
+      description: `Valid ${isBrl ? 'BRL' : 'currency'} string: "${v}"`,
       expected: 'pass',
-      expectedBehavior: 'Should parse valid BRL currency strings to integer cents',
+      expectedBehavior: isBrl
+        ? 'Should parse valid BRL currency strings to integer cents'
+        : 'Should parse valid currency strings to integer minor units',
     });
   }
 
   // Invalid money strings
   const invalidValues = [
     '',
+    'not currency',
     'not money',
+    '-1.00',
     'R$ -1,00',
     'R$ abc',
+    'abc',
     'free',
+    '1,234,567,890.12', // excessively large
     'R$ 1.234.567.890,12', // excessively large
   ];
   for (const v of invalidValues) {
+    const isBrl = /R\$|,/.test(v);
     inputs.push({
       value: v,
-      description: `Invalid BRL string: "${v}"`,
+      description: `Invalid ${isBrl ? 'BRL' : 'currency'} string: "${v}"`,
       expected: 'fail',
-      expectedBehavior: 'Should reject unparseable BRL strings',
+      expectedBehavior: isBrl
+        ? 'Should reject unparseable BRL strings'
+        : 'Should reject unparseable currency strings',
     });
   }
 
@@ -1600,6 +1709,12 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
 
   // Round-trip: format(parse(x)) ≈ x
   const roundTripValues = [
+    '0.00',
+    '1.00',
+    '42.50',
+    '100.00',
+    '1000.00',
+    '99.99',
     'R$ 0,00',
     'R$ 1,00',
     'R$ 42,50',
@@ -1608,11 +1723,14 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
     'R$ 99,99',
   ];
   for (const v of roundTripValues) {
+    const isBrl = /R\$|,/.test(v);
     inputs.push({
       value: v,
       description: `Round-trip property: format(parse("${v}")) ≈ "${v}"`,
       expected: 'pass',
-      expectedBehavior: 'Round-trip format/parse should be idempotent for valid BRL',
+      expectedBehavior: isBrl
+        ? 'Round-trip format/parse should be idempotent for valid BRL'
+        : 'Round-trip format/parse should be idempotent for valid currency strings',
     });
   }
 
@@ -1620,7 +1738,10 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
   for (let i = 0; i < 880; i++) {
     const major = Math.floor(rng() * 1_000_000);
     const minor = Math.floor(rng() * 100);
-    const formatted = `R$ ${major.toLocaleString('pt-BR')},${minor.toString().padStart(2, '0')}`;
+    const formatted =
+      rng() < 0.5
+        ? `${major}.${minor.toString().padStart(2, '0')}`
+        : `R$ ${major.toLocaleString('pt-BR')},${minor.toString().padStart(2, '0')}`;
     const isInvalid = rng() < 0.05;
     inputs.push({
       value: isInvalid ? `invalid_${i}` : formatted,
@@ -1628,7 +1749,7 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
       expected: isInvalid ? 'fail' : 'pass',
       expectedBehavior: isInvalid
         ? 'Should reject invalid money strings'
-        : 'Should parse valid BRL with correct cent precision',
+        : 'Should parse valid currency or BRL strings with correct minor-unit precision',
     });
   }
 
@@ -1682,6 +1803,10 @@ function generateEnumValueInputs(
 }
 
 function inferEnumMembersFromCandidate(candidate: PureFunctionCandidate): string[] {
+  if (candidate.params.length > 0) {
+    return [...new Set(candidate.params)];
+  }
+
   const words = candidate.functionName
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .split(/[^a-zA-Z0-9]+/)

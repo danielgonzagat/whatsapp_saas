@@ -1,8 +1,9 @@
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import { buildConversationOperationalState } from './agent-conversation-state.util';
 import { AgentEventsService } from './agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
@@ -45,6 +46,7 @@ export class CiaBootstrapService {
     private readonly runtimeState: CiaRuntimeStateService,
     @Inject(forwardRef(() => WhatsAppCatchupService))
     private readonly catchupService: WhatsAppCatchupService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   async listPendingConversations(workspaceId: string, limit: number) {
@@ -201,6 +203,11 @@ export class CiaBootstrapService {
         }
       }
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnDegradation(
+        err instanceof Error ? err.message : 'falha ao consultar a sessão WAHA',
+        'CiaBootstrapService.listPendingConversations',
+        { workspaceId },
+      );
       degradedSyncMessage = `Consegui conectar, mas não consegui contar suas conversas pendentes. Motivo: ${err instanceof Error ? err.message : 'falha ao consultar a sessão WAHA'}.`;
       await this.agentEvents.publish({
         type: 'status',

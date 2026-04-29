@@ -121,6 +121,11 @@ describe('PULSE context broadcast and worker leases', () => {
     expect(bundle.leases.ownershipConflictPass).toBe(true);
     expect(bundle.leases.protectedFilesForbiddenPass).toBe(true);
     expect(bundle.broadcast.workers.every((worker) => worker.contextDigest)).toBe(true);
+    expect(
+      bundle.broadcast.workers.every((worker) =>
+        worker.stopConditions.every((condition) => !/human/i.test(condition)),
+      ),
+    ).toBe(true);
 
     const ownedFiles = bundle.broadcast.workers.flatMap((worker) => worker.ownedFiles);
     expect(new Set(ownedFiles).size).toBe(ownedFiles.length);
@@ -161,8 +166,12 @@ describe('PULSE context broadcast and worker leases', () => {
 
     const worker = bundle.broadcast.workers[0];
     expect(worker.forbiddenFiles).toContain('AGENTS.md');
+    expect(worker.forbiddenFiles).toContain('scripts/ops/');
     expect(worker.ownedFiles).not.toContain('AGENTS.md');
     expect(worker.readOnlyFiles).toContain('AGENTS.md');
+    expect(worker.ownedFiles.every((filePath) => !worker.forbiddenFiles.includes(filePath))).toBe(
+      true,
+    );
     expect(bundle.delta.staleContextBlocksExecution).toBe(true);
     expect(bundle.delta.blockers).toContain('gitnexus:missing');
   });
@@ -193,6 +202,16 @@ describe('PULSE context broadcast and worker leases', () => {
     expect(worker.ownedFiles.some((filePath) => path.isAbsolute(filePath))).toBe(false);
     expect(worker.ownedFiles.some((filePath) => /\s+\(\d+\)$/.test(filePath))).toBe(false);
     expect(worker.readOnlyFiles).toContain('scripts/ops/check-governance-boundary.mjs');
+    expect(worker.readOnlyFiles).toContain('.github/workflows/ci-cd.yml');
+    expect(worker.readOnlyFiles).toEqual(
+      expect.arrayContaining([
+        'PULSE_CONTEXT_BROADCAST.json',
+        'PULSE_WORKER_LEASES.json',
+        'PULSE_GITNEXUS_STATE.json',
+        'PULSE_BEADS_STATE.json',
+      ]),
+    );
+    expect(worker.ownedFiles).not.toEqual(expect.arrayContaining(worker.readOnlyFiles));
     expect(bundle.leases.protectedFilesForbiddenPass).toBe(true);
   });
 

@@ -1,7 +1,7 @@
 // PULSE Wave 5 — Production Replay Adapter types
 
-/** Supported replay data source. */
-export type ReplaySource = 'sentry_replay' | 'datadog_replay' | 'openreplay' | 'custom';
+/** Replay data source discovered from runtime/replay artifacts. */
+export type ReplaySource = string;
 
 /** Lifecycle status for a captured replay session. */
 export type ReplayStatus = 'captured' | 'converted' | 'test_failed' | 'test_passed' | 'archived';

@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import type { ToolArgs } from './unified-agent.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -18,6 +19,7 @@ export class UnifiedAgentActionsCrmService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   // ───────── helpers ─────────
@@ -143,6 +145,7 @@ export class UnifiedAgentActionsCrmService {
         jobId: `followup_${workspaceId}_${contactId}_${scheduledFor.getTime()}`,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'UnifiedAgentActionsCrmService.getTime');
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao agendar follow-up: ${msg}`);
@@ -250,6 +253,10 @@ export class UnifiedAgentActionsCrmService {
       this.logger.log(`[AGENT] Fluxo "${flow.name}" disparado para ${phone}`);
       return { success: true, flowId: flow.id, flowName: flow.name, triggered: true };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'UnifiedAgentActionsCrmService.actionTriggerFlow',
+      );
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao disparar fluxo: ${msg}`);
@@ -272,6 +279,7 @@ export class UnifiedAgentActionsCrmService {
         },
       });
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'UnifiedAgentActionsCrmService.create');
       const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       if (!isTestEnv) {
@@ -319,6 +327,7 @@ export class UnifiedAgentActionsCrmService {
         nextStep: 'Conclua a autorização oficial da Meta para ativar o canal.',
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'UnifiedAgentActionsCrmService.async');
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao conectar WhatsApp: ${msg}`);

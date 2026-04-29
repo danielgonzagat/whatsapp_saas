@@ -1,62 +1,117 @@
-import { safeJoin, safeResolve } from './safe-path';
+import { safeJoin } from './safe-path';
 import * as path from 'path';
-import type { PulseConfig, PulseParserDefinition, PulseParserInventory } from './types';
-import { pathExists, readDir } from './safe-fs';
+import type {
+  PulseConfig,
+  PulseParserContract,
+  PulseParserDefinition,
+  PulseParserInventory,
+} from './types';
+import { pathExists, readDir, readTextFile, statPath } from './safe-fs';
 
 interface LoadParserInventoryOptions {
   includeParser?: (name: string) => boolean;
 }
 
-const HELPER_PARSERS = new Set([
-  'api-parser',
-  'api-parser-helpers',
-  'api-parser-normalize',
-  'api-parser-string-utils',
-  'backend-parser',
-  'facade-detector',
-  'hook-registry',
-  'runtime-utils',
-  'schema-parser',
-  'service-tracer',
-  'ui-handler-resolver',
-  'ui-handler-resolver-utils',
-  'ui-parser',
-  'utils',
-]);
+const PARSER_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+const EXPORTED_FUNCTION_RE = /export\s+(?:async\s+)?function\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*\(/g;
+const EXPORTED_CONST_FUNCTION_RE =
+  /export\s+const\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][A-Za-z0-9_$]*)\s*=>/g;
+const DEFAULT_FUNCTION_RE = /export\s+default\s+(?:async\s+)?function\b/;
+const DEFAULT_IDENTIFIER_RE = /export\s+default\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*;?/;
+const PARSER_EXPORT_RE = /^check[A-Z0-9_]/;
 
-function discoverParserFiles(rootDir: string): { checks: string[]; helperFilesSkipped: string[] } {
+function collectMatches(source: string, pattern: RegExp): string[] {
+  const matches: string[] = [];
+  for (const match of source.matchAll(pattern)) {
+    const value = match[1];
+    if (value) {
+      matches.push(value);
+    }
+  }
+  return matches;
+}
+
+function buildParserContract(
+  rootDir: string,
+  parsersDir: string,
+  fileName: string,
+): PulseParserContract {
+  const name = fileName.replace(/\.ts$/, '');
+  const file = safeJoin(parsersDir, fileName);
+  const source = readTextFile(file, 'utf8');
+  const exportedFunctions = [
+    ...collectMatches(source, EXPORTED_FUNCTION_RE),
+    ...collectMatches(source, EXPORTED_CONST_FUNCTION_RE),
+  ].sort();
+  const explicitParserExports = exportedFunctions.filter((exportName) =>
+    PARSER_EXPORT_RE.test(exportName),
+  );
+  const defaultExportName = DEFAULT_FUNCTION_RE.test(source) ? ['default'] : [];
+  const defaultIdentifier = source.match(DEFAULT_IDENTIFIER_RE)?.[1];
+  const defaultParserExport =
+    defaultIdentifier && PARSER_EXPORT_RE.test(defaultIdentifier) ? ['default'] : [];
+  const parserExports = [
+    ...defaultExportName,
+    ...defaultParserExport,
+    ...explicitParserExports,
+  ].filter((value, index, values) => values.indexOf(value) === index);
+  const sourceMtime = pathExists(file) ? statPath(file).mtime.toISOString() : null;
+  const relFile = path.relative(rootDir, file);
+
+  if (parserExports.length > 0) {
+    return {
+      name,
+      file: relFile,
+      kind: 'active_parser',
+      parserExports,
+      exportedFunctions,
+      proof: `active parser contract: ${parserExports.join(', ')}`,
+      sourceMtime,
+    };
+  }
+
+  return {
+    name,
+    file: relFile,
+    kind: 'helper',
+    parserExports: [],
+    exportedFunctions,
+    proof:
+      exportedFunctions.length > 0
+        ? `helper module: no exported function matches ${PARSER_EXPORT_RE.source}`
+        : 'helper module: no exported parser function',
+    sourceMtime,
+  };
+}
+
+/** Discover parser module contracts without loading the modules. */
+export function discoverParserContracts(rootDir: string): PulseParserContract[] {
   const parsersDir = safeJoin(rootDir, 'scripts', 'pulse', 'parsers');
   const files = pathExists(parsersDir)
     ? readDir(parsersDir).filter((file) => file.endsWith('.ts'))
     : [];
 
-  const checks: string[] = [];
-  const helperFilesSkipped: string[] = [];
-
-  for (const file of files) {
-    const name = file.replace(/\.ts$/, '');
-    if (HELPER_PARSERS.has(name)) {
-      helperFilesSkipped.push(name);
-      continue;
-    }
-    checks.push(name);
-  }
-
-  return {
-    checks: checks.sort(),
-    helperFilesSkipped: helperFilesSkipped.sort(),
-  };
+  return files
+    .map((file) => buildParserContract(rootDir, parsersDir, file))
+    .sort((left, right) => left.name.localeCompare(right.name));
 }
 
-function resolveParserFunction(mod: Record<string, unknown>): PulseParserDefinition['fn'] | null {
-  if (typeof mod.default === 'function') {
-    return mod.default as PulseParserDefinition['fn'];
-  }
-
-  for (const value of Object.values(mod)) {
+function resolveParserFunction(
+  mod: Record<string, unknown>,
+  contract: PulseParserContract,
+): PulseParserDefinition['fn'] | null {
+  for (const exportName of contract.parserExports) {
+    const value = mod[exportName];
     if (typeof value === 'function') {
       return value as PulseParserDefinition['fn'];
     }
+  }
+
+  const namedParser = Object.entries(mod).find(
+    ([exportName, value]) => PARSER_EXPORT_RE.test(exportName) && typeof value === 'function',
+  );
+  if (namedParser) {
+    return namedParser[1] as PulseParserDefinition['fn'];
   }
 
   return null;
@@ -67,17 +122,19 @@ export function loadParserInventory(
   config: PulseConfig,
   options: LoadParserInventoryOptions = {},
 ): PulseParserInventory {
-  const { checks, helperFilesSkipped } = discoverParserFiles(config.rootDir);
+  const generatedAt = new Date().toISOString();
+  const contracts = discoverParserContracts(config.rootDir);
+  const checks = contracts
+    .filter((contract) => contract.kind === 'active_parser')
+    .map((contract) => contract.name);
+  const helperFilesSkipped = contracts
+    .filter((contract) => contract.kind === 'helper')
+    .map((contract) => contract.name);
   const loadedChecks: PulseParserDefinition[] = [];
   const unavailableChecks: PulseParserInventory['unavailableChecks'] = [];
 
-  // Restrict the dynamic require path-segment to safe filesystem identifiers
-  // (kebab/camel/snake — all observed parser file names). Anything that
-  // contains '/', '..', or other characters is rejected before reaching
-  // require(), eliminating the dynamic-import attack surface.
-  const PARSER_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
-
-  for (const name of checks) {
+  for (const contract of contracts.filter((item) => item.kind === 'active_parser')) {
+    const name = contract.name;
     if (options.includeParser && !options.includeParser(name)) {
       continue;
     }
@@ -94,8 +151,8 @@ export function loadParserInventory(
     const file = safeJoin(config.rootDir, 'scripts', 'pulse', 'parsers', `${name}.ts`);
 
     try {
-      const mod = require(`./parsers/${name}`);
-      const fn = resolveParserFunction(mod);
+      const mod = require(file);
+      const fn = resolveParserFunction(mod, contract);
 
       if (!fn) {
         unavailableChecks.push({
@@ -121,6 +178,8 @@ export function loadParserInventory(
   }
 
   return {
+    contracts,
+    generatedAt,
     discoveredChecks: checks,
     loadedChecks,
     unavailableChecks,

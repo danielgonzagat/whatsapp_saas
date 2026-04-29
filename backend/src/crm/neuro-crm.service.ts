@@ -87,14 +87,14 @@ function coerceToString(value: unknown): string {
 @Injectable()
 export class NeuroCrmService {
   private readonly logger = new Logger(NeuroCrmService.name);
-  private openai: OpenAI | null;
+  private readonly openai: OpenAI | null;
 
   constructor(
-    private prisma: PrismaService,
-    private config: ConfigService,
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService,
     private readonly planLimits: PlanLimitsService,
   ) {
-    const apiKey = this.config.get('OPENAI_API_KEY');
+    const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
   }
 
@@ -155,7 +155,7 @@ export class NeuroCrmService {
         updatedAt: true,
       },
     });
-    const points = contacts.map((c) => ({
+    const points: ClusterPoint[] = contacts.map((c) => ({
       contact: c,
       x: c.leadScore ?? 0,
       y: (Date.now() - c.updatedAt.getTime()) / 3600000,
@@ -231,10 +231,14 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     if (input.workspaceId) {
       await this.planLimits.ensureTokenBudget(input.workspaceId);
     }
-    const completion = await chatCompletionWithRetry(this.openai, {
-      model: resolveBackendOpenAIModel('writer'),
-      messages: [{ role: 'user', content: prompt }],
-    });
+    const completion = await chatCompletionWithRetry(
+      this.openai,
+      {
+        model: resolveBackendOpenAIModel('writer', this.config),
+        messages: [{ role: 'user', content: prompt }],
+      },
+      { maxRetries: 3 },
+    );
     if (input.workspaceId) {
       await this.planLimits
         .trackAiUsage(input.workspaceId, completion?.usage?.total_tokens ?? 500)
@@ -245,79 +249,118 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
   }
 
   /** Analyze contact. */
-  async analyzeContact(workspaceId: string, contactId: string) {
+  async analyzeContact(workspaceId: string, contactId: string): Promise<AnalysisResult> {
     const contact = await this.prisma.contact.findFirst({
       where: { id: contactId, workspaceId },
       include: {
-        messages: { take: 20, orderBy: { createdAt: 'desc' } },
+        messages: {
+          take: 20,
+          orderBy: { createdAt: 'desc' },
+          select: {
+            direction: true,
+            content: true,
+            createdAt: true,
+          },
+        },
         deals: true,
       },
     });
 
     if (!contact) {
-      return;
+      throw new NotFoundException('Contact not found');
     }
 
-    const history = contact.messages
+    const analysisContact: AnalysisContact = {
+      name: contact.name,
+      phone: contact.phone,
+      leadScore: contact.leadScore,
+      sentiment: contact.sentiment,
+      messages: contact.messages.map((m) => ({
+        direction: m.direction,
+        content: m.content,
+        createdAt: m.createdAt,
+      })),
+    };
+    const history = analysisContact.messages
+      .slice()
       .reverse()
-      .map((m) => `[${m.direction}] ${m.content}`)
+      .map((message) => `[${message.direction}] ${message.content}`)
       .join('\n');
 
+    const result = await this.runAiAnalysis(
+      contactId,
+      analysisContact,
+      workspaceId,
+      history,
+      contact.customFields,
+    );
+    await this.createInsightIfSignificant(contactId, workspaceId, analysisContact, result);
+    return result;
+  }
+
+  private async runAiAnalysis(
+    contactId: string,
+    contact: AnalysisContact,
+    workspaceId: string,
+    history: string,
+    currentCustomFields: Prisma.JsonValue | null | undefined,
+  ): Promise<AnalysisResult> {
     if (!this.openai) {
       const fallback = this.buildFallbackAnalysis(contact, history);
-      await this.persistAnalysis(workspaceId, contactId, contact.customFields, fallback);
+      await this.persistAnalysis(workspaceId, contactId, currentCustomFields, fallback);
       return fallback;
     }
 
-    const prompt = `
-    Analyze this WhatsApp conversation for a CRM system.
+    const prompt = `Analyze this WhatsApp conversation for a CRM system.
 
-    Workspace: ${workspaceId}
-    Contact: ${contact.name || contact.phone}
-    History:
-    ${history || '[no_message_history]'}
+Workspace: ${workspaceId}
+Contact: ${contact.name || contact.phone}
+History:
+${history || '[no_message_history]'}
 
-    Return strictly JSON with:
-    - leadScore: integer 0-100
-    - purchaseProbability: "LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH"
-    - purchaseProbabilityScore: number 0-1
-    - intent: "BUY" | "SUPPORT" | "COMPLAINT" | "INFO" | "COLD"
-    - sentiment: "POSITIVE" | "NEUTRAL" | "NEGATIVE"
-    - summary: short CRM summary
-    - nextBestAction: what the seller should do next
-    - cluster: "VIP" | "Warm" | "Cold" | "Lost"
-    - reasons: array of short reasons supporting the score
-    `;
+Return strictly JSON with:
+- leadScore: integer 0-100
+- purchaseProbability: "LOW" | "MEDIUM" | "HIGH" | "VERY_HIGH"
+- purchaseProbabilityScore: number 0-1
+- intent: "BUY" | "SUPPORT" | "COMPLAINT" | "INFO" | "COLD"
+- sentiment: "POSITIVE" | "NEUTRAL" | "NEGATIVE"
+- summary: short CRM summary
+- nextBestAction: what the seller should do next
+- cluster: "VIP" | "Warm" | "Cold" | "Lost"
+- reasons: array of short reasons supporting the score`;
 
     try {
       await this.planLimits.ensureTokenBudget(workspaceId);
-      const completion = await chatCompletionWithRetry(this.openai, {
-        model: resolveBackendOpenAIModel('brain'),
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a NeuroCRM engine. Output strictly JSON.',
-          },
-          { role: 'user', content: prompt },
-        ],
-        response_format: { type: 'json_object' },
-      });
-
+      const completion = await chatCompletionWithRetry(
+        this.openai,
+        {
+          model: resolveBackendOpenAIModel('brain', this.config),
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a NeuroCRM engine. Output strictly JSON.',
+            },
+            { role: 'user', content: prompt },
+          ],
+          response_format: { type: 'json_object' },
+        },
+        { maxRetries: 3 },
+      );
       await this.planLimits
         .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
         .catch(() => {});
-      const rawResult = JSON.parse(completion.choices[0]?.message?.content || '{}');
+
+      const rawResult = JSON.parse(completion.choices[0]?.message?.content || '{}') as RawAnalysis;
       const result = this.normalizeAnalysis(rawResult, contact, history);
 
-      await this.persistAnalysis(workspaceId, contactId, contact.customFields, result);
+      await this.persistAnalysis(workspaceId, contactId, currentCustomFields, result);
 
-      this.logger.log(`NeuroCRM analysis completed for ${contact.phone}`);
       return result;
-    } catch (error: unknown) {
+    } catch (error) {
       const message = error instanceof Error ? error.message : coerceToString(error);
       this.logger.error(`NeuroCRM analysis failed: ${message}`);
       const fallback = this.buildFallbackAnalysis(contact, history);
-      await this.persistAnalysis(workspaceId, contactId, contact.customFields, fallback);
+      await this.persistAnalysis(workspaceId, contactId, currentCustomFields, fallback);
       return fallback;
     }
   }
@@ -372,13 +415,20 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     ) {
       return normalized;
     }
+    if (normalized.includes('ALTA') || normalized.includes('HIGH')) {
+      return 'HIGH';
+    }
+    if (normalized.includes('BAIXA') || normalized.includes('LOW')) {
+      return 'LOW';
+    }
     return 'LOW';
   }
 
   private normalizeProbabilityScore(value: unknown, leadScore: number, bucket: string): number {
     const numeric = Number(value);
     if (Number.isFinite(numeric)) {
-      return Math.max(0, Math.min(1, Number(numeric.toFixed(3))));
+      const normalized = numeric > 1 ? numeric / 100 : numeric;
+      return Math.max(0, Math.min(1, Number(normalized.toFixed(3))));
     }
 
     if (bucket === 'VERY_HIGH') {
@@ -398,6 +448,12 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     if (normalized === 'POSITIVE' || normalized === 'NEUTRAL' || normalized === 'NEGATIVE') {
       return normalized;
     }
+    if (normalized.includes('POSITIV')) {
+      return 'POSITIVE';
+    }
+    if (normalized.includes('NEGATIV')) {
+      return 'NEGATIVE';
+    }
     return 'NEUTRAL';
   }
 
@@ -411,6 +467,15 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       normalized === 'COLD'
     ) {
       return normalized;
+    }
+    if (normalized.includes('COMPRA') || normalized.includes('BUY')) {
+      return 'BUY';
+    }
+    if (normalized.includes('SUPORTE') || normalized.includes('SUPPORT')) {
+      return 'SUPPORT';
+    }
+    if (normalized.includes('RECLAM')) {
+      return 'COMPLAINT';
     }
     return 'INFO';
   }
@@ -520,7 +585,15 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
 
   // ── Contact Insights ──
 
-  async listInsights(contactId: string) {
+  async listInsights(contactId: string, workspaceId: string) {
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: contactId, workspaceId },
+      select: { id: true },
+    });
+    if (!contact) {
+      return [];
+    }
+
     return this.prisma.contactInsight.findMany({
       where: { contactId },
       select: {
@@ -536,10 +609,57 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     });
   }
 
-  /** Create insight. */
-  async createInsight(contactId: string, type: string, description: string, scoreChange = 0) {
-    return this.prisma.contactInsight.create({
+  /** Create insight.
+   * PULSE:OK — ContactInsight inherits workspace ownership transitively
+   * through Contact.workspaceId. Ownership is verified by the contact
+   * lookup below before the insight is created.
+   */
+  async createInsight(
+    contactId: string,
+    workspaceId: string,
+    type: string,
+    description: string,
+    scoreChange = 0,
+  ) {
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: contactId, workspaceId },
+      select: { id: true },
+    });
+    if (!contact) {
+      throw new NotFoundException('Contact not found');
+    }
+
+    const contactInsight = this.prisma.contactInsight;
+    if (!contactInsight || typeof contactInsight.create !== 'function') {
+      return null;
+    }
+
+    return contactInsight.create({
       data: { contactId, type, description, scoreChange },
     });
+  }
+
+  private async createInsightIfSignificant(
+    contactId: string,
+    workspaceId: string,
+    contact: AnalysisContact,
+    result: AnalysisResult,
+  ) {
+    const oldSentiment = contact.sentiment || 'NEUTRAL';
+    if (oldSentiment !== result.sentiment) {
+      const description =
+        result.sentiment === 'POSITIVE'
+          ? `Sentimento melhorou de ${oldSentiment} para POSITIVE`
+          : result.sentiment === 'NEGATIVE'
+            ? `Sentimento piorou de ${oldSentiment} para NEGATIVE`
+            : `Sentimento neutralizou para ${result.sentiment}`;
+      await this.createInsight(
+        contactId,
+        workspaceId,
+        'SENTIMENT_CHANGE',
+        description,
+        result.sentiment === 'POSITIVE' ? 5 : result.sentiment === 'NEGATIVE' ? -5 : 0,
+      );
+    }
   }
 }

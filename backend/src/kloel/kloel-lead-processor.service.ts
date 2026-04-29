@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -21,6 +21,7 @@ import {
   ChatMessage,
 } from './kloel-lead-processor-helpers';
 import OpenAI from 'openai';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 export interface FollowupListItem {
   id: string;
@@ -47,6 +48,7 @@ export class KloelLeadProcessorService {
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly smartPaymentService: SmartPaymentService,
     private readonly planLimits: PlanLimitsService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   }
@@ -97,6 +99,7 @@ export class KloelLeadProcessorService {
           contactId = contact.id;
         }
       } catch (err: unknown) {
+        void this.opsAlert?.alertOnCriticalError(err, 'KloelLeadProcessorService.slice');
         const msg = err instanceof Error ? err.message : 'unknown error';
         this.logger.warn(`Falha ao upsert contact: ${msg}`);
       }
@@ -116,6 +119,10 @@ export class KloelLeadProcessorService {
           await updateLeadFromConversation(this.prisma, this.logger, workspaceId, lead.id, message);
           return agentResponse;
         } catch (agentErr: unknown) {
+          void this.opsAlert?.alertOnCriticalError(
+            agentErr,
+            'KloelLeadProcessorService.updateLeadFromConversation',
+          );
           const msg = agentErr instanceof Error ? agentErr.message : 'unknown error';
           this.logger.warn(`UnifiedAgentService falhou: ${msg}`);
         }
@@ -152,6 +159,10 @@ export class KloelLeadProcessorService {
       await updateLeadFromConversation(this.prisma, this.logger, workspaceId, lead.id, message);
       return kloelResponse;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'KloelLeadProcessorService.updateLeadFromConversation',
+      );
       const msg = error instanceof Error ? error.message : 'unknown error';
       this.logger.error(`Erro processando mensagem WhatsApp: ${msg}`);
       return 'Olá! Tive um pequeno problema técnico. Pode repetir sua mensagem?';
@@ -225,6 +236,10 @@ export class KloelLeadProcessorService {
         message: result.suggestedMessage,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'KloelLeadProcessorService.generatePaymentForLead',
+      );
       const msg = error instanceof Error ? error.message : 'unknown error';
       this.logger.error(`Erro ao gerar pagamento para lead: ${msg}`);
       return null;
@@ -265,6 +280,7 @@ export class KloelLeadProcessorService {
         }),
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KloelLeadProcessorService.meta');
       const msg = error instanceof Error ? error.message : 'unknown error';
       this.logger.error(`Erro ao listar follow-ups: ${msg}`);
       return { total: 0, followups: [] };

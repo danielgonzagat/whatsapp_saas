@@ -5,6 +5,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { createRedisClient } from '../common/redis/redis.util';
 import { pollUntil } from '../common/async-sequence';
@@ -12,6 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
 import { AutopilotOpsConversionService } from './autopilot-ops-conversion.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const D_RE_OPS = /\D/g;
 
@@ -24,6 +26,7 @@ export class AutopilotOpsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly conversion: AutopilotOpsConversionService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     this.redisClient = createRedisClient();
   }

@@ -4,14 +4,23 @@ import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildAPIFuzzCatalog } from '../api-fuzzer';
-import { generateTestHarnessCode } from '../execution-harness';
+import {
+  buildFixtureDataStructures,
+  discoverEndpoints,
+  discoverServices,
+  generateFixturesForTarget,
+  generateTestHarnessCode,
+} from '../execution-harness';
 import {
   buildPropertyTestEvidence,
+  discoverPureFunctionCandidates,
   generateFuzzCasesFromEndpoints,
+  generatePropertyTestCases,
   generatePropertyTestTargets,
   scanForExistingPropertyTests,
 } from '../property-tester';
 import type { HarnessTarget } from '../types.execution-harness';
+import type { PulseConfig } from '../types';
 
 const tempRoots: string[] = [];
 
@@ -45,6 +54,17 @@ function harnessTarget(overrides: Partial<HarnessTarget> = {}): HarnessTarget {
     generatedTests: [],
     generated: false,
     ...overrides,
+  };
+}
+
+function pulseConfig(root: string): PulseConfig {
+  return {
+    rootDir: root,
+    frontendDir: path.join(root, 'frontend'),
+    backendDir: path.join(root, 'backend', 'src'),
+    workerDir: path.join(root, 'worker'),
+    schemaPath: path.join(root, 'backend', 'prisma', 'schema.prisma'),
+    globalPrefix: '',
   };
 }
 
@@ -94,6 +114,131 @@ describe('PULSE execution blueprints', () => {
     expect(plannedStatuses.every((status) => status === 'planned')).toBe(true);
   });
 
+  it('derives API fuzz auth and assignment probes from route, guard, and DTO shape', () => {
+    const root = makeTempRoot('pulse-api-fuzz-dynamic-');
+    writeFile(
+      root,
+      'backend/src/opaque/opaque.dto.ts',
+      `
+        export class UpdateOpaqueDto {
+          @IsString()
+          label: string;
+
+          @IsBoolean()
+          enabled: boolean;
+        }
+      `,
+    );
+    writeFile(
+      root,
+      'backend/src/opaque/opaque.controller.ts',
+      `
+        @Controller('opaque/:subjectKey')
+        export class OpaqueController {
+          @UseGuards(SubjectBoundaryGuard('probe'))
+          @PolicyMarker('probe')
+          @Patch()
+          update(@Body() body: UpdateOpaqueDto) {
+            return body;
+          }
+        }
+      `,
+    );
+
+    const evidence = buildAPIFuzzCatalog(root);
+    const probe = evidence.probes.find((item) => item.path === '/opaque/:subjectKey');
+
+    expect(probe).toBeDefined();
+    expect(probe?.authProbeMetadata?.guardNames).toEqual(['SubjectBoundaryGuard']);
+    expect(probe?.authProbeMetadata?.authorizationMetadata).toEqual(['PolicyMarker']);
+    expect(probe?.authProbeMetadata?.routeParameters).toEqual(['subjectKey']);
+    expect(probe?.authTests.map((test) => test.testId)).toEqual(
+      expect.arrayContaining([
+        `${probe?.endpointId}-auth-boundary-missing-0`,
+        `${probe?.endpointId}-auth-context-mismatch-subjectKey`,
+        `${probe?.endpointId}-auth-metadata-variant-0`,
+      ]),
+    );
+
+    const serializedSecurityPayloads = JSON.stringify(
+      probe?.securityTests
+        .filter(
+          (test) =>
+            test.vulnerabilityType === 'mass_assignment' || test.vulnerabilityType === 'idor',
+        )
+        .map((test) => test.payload),
+    );
+
+    expect(serializedSecurityPayloads).toContain('label__unexpected');
+    expect(serializedSecurityPayloads).toContain('alternate-subjectKey-probe');
+    expect(serializedSecurityPayloads).not.toMatch(/\b(role|admin|owner|workspaceId|provider)\b/i);
+  });
+
+  it('derives harness context fixtures from guards, route params, and mutations without fixed roles', () => {
+    const root = makeTempRoot('pulse-harness-dynamic-');
+    writeFile(
+      root,
+      'backend/src/opaque/opaque.controller.ts',
+      `
+        @Controller('opaque/:subjectKey')
+        export class OpaqueController {
+          constructor(private readonly opaqueService: OpaqueService) {}
+
+          @UseGuards(SubjectBoundaryGuard)
+          @Patch('items/:itemKey')
+          update() {
+            return this.opaqueService.apply();
+          }
+        }
+      `,
+    );
+    writeFile(
+      root,
+      'backend/src/opaque/opaque.service.ts',
+      `
+        @Injectable()
+        export class OpaqueService
+        {
+          constructor(private readonly prisma: PrismaService) {}
+
+          async apply() {
+            return this.prisma.opaque.update({ where: { id: 'probe' }, data: {} });
+          }
+        }
+      `,
+    );
+
+    const config = pulseConfig(root);
+    const endpoint = discoverEndpoints(config).find(
+      (target) => target.routePattern === '/opaque/:subjectKey/items/:itemKey',
+    );
+    const service = discoverServices(config).find(
+      (target) => target.name === 'OpaqueService.apply',
+    );
+
+    expect(endpoint).toBeDefined();
+    expect(service).toBeDefined();
+    if (!endpoint || !service) {
+      throw new Error('Expected dynamic harness targets to be discovered.');
+    }
+
+    expect(endpoint.requiresAuth).toBe(true);
+    expect(endpoint.requiresTenant).toBe(true);
+    expect(service.requiresAuth).toBe(false);
+    expect(service.requiresTenant).toBe(true);
+    expect(service.dependencies).toContain('model:opaque');
+
+    const fixtures = generateFixturesForTarget(endpoint, root);
+    const fixtureData = buildFixtureDataStructures([{ ...endpoint, fixtures }, service]);
+    const serialized = JSON.stringify({ fixtures, fixtureData });
+
+    expect(serialized).toContain('subjectKey');
+    expect(serialized).toContain('itemKey');
+    expect(serialized).not.toMatch(
+      /\b(admin|member|role|roles|workspaceId|pulse-test-workspace)\b/i,
+    );
+  });
+
   it('does not mark scanned or generated property/fuzz plans as passed', () => {
     const root = makeTempRoot('pulse-property-');
     writeFile(
@@ -122,6 +267,9 @@ describe('PULSE execution blueprints', () => {
 
   it('generates fail-closed harness blueprints instead of weak runnable tests', () => {
     const generated = generateTestHarnessCode(harnessTarget());
+    const blueprintJson = generated[0].code.match(
+      /const pulseHarnessBlueprint = ([\s\S]*?);\n\nthrow/,
+    )?.[1];
 
     expect(generated).toHaveLength(1);
     expect(generated[0].status).toBe('planned');
@@ -131,5 +279,112 @@ describe('PULSE execution blueprints', () => {
     expect(generated[0].code).not.toContain('toBeDefined');
     expect(generated[0].code).not.toContain('toBeLessThan');
     expect(generated[0].code).not.toContain('TODO');
+    expect(blueprintJson).toBeDefined();
+
+    if (!blueprintJson) {
+      throw new Error('Expected generated harness code to embed a blueprint object');
+    }
+
+    const blueprint = JSON.parse(blueprintJson) as {
+      validationCommand: string;
+      expectedEvidence: Array<{ kind: string; required: boolean }>;
+      structuralSafetyClassification: {
+        risk: string;
+        executionMode: string;
+        safeToExecute: boolean;
+      };
+      artifactLinks: Array<{ artifactPath: string; relationship: string }>;
+      executionPlan: Array<{ step: string; required: boolean; detail: string }>;
+      requiredAssertions: string[];
+      evidenceMode: string;
+      executed: boolean;
+      coverageCountsAsObserved: boolean;
+    };
+
+    expect(JSON.stringify(blueprint)).not.toContain('human_required');
+    expect(blueprint.validationCommand).toContain('node scripts/pulse/run.js --guidance');
+    expect(blueprint.executionPlan).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ step: 'http_contract', required: true }),
+        expect.objectContaining({ step: 'auth_boundary', required: true }),
+        expect.objectContaining({ step: 'tenant_boundary', required: true }),
+      ]),
+    );
+    expect(blueprint.requiredAssertions).toEqual(
+      expect.arrayContaining([
+        'assert HTTP status, response schema, and error schema for the discovered route',
+        'assert authenticated and unauthenticated credential boundaries',
+        'assert same-context success and cross-context rejection',
+      ]),
+    );
+    expect(blueprint.evidenceMode).toBe('blueprint');
+    expect(blueprint.executed).toBe(false);
+    expect(blueprint.coverageCountsAsObserved).toBe(false);
+    expect(blueprint.expectedEvidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'runtime', required: true }),
+        expect.objectContaining({ kind: 'integration', required: true }),
+        expect.objectContaining({ kind: 'isolation', required: true }),
+      ]),
+    );
+    expect(blueprint.structuralSafetyClassification).toEqual(
+      expect.objectContaining({
+        risk: 'high',
+        executionMode: 'ai_safe',
+        safeToExecute: true,
+      }),
+    );
+    expect(blueprint.artifactLinks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          artifactPath: '.pulse/current/PULSE_HARNESS_EVIDENCE.json',
+          relationship: 'harness_evidence',
+        }),
+        expect.objectContaining({
+          artifactPath: 'backend/src/widget.controller.ts',
+          relationship: 'target_source',
+        }),
+      ]),
+    );
+  });
+
+  it('discovers const functions, enum members, and BRL money property inputs from source reality', () => {
+    const root = makeTempRoot('pulse-property-dynamic-');
+    writeFile(
+      root,
+      'src/payments/money.ts',
+      `
+        export const formatBRL = (cents: number): string => String(cents);
+
+        export enum PaymentStatus {
+          Pending = 'PENDING',
+          Paid = 'PAID',
+        }
+      `,
+    );
+
+    const candidates = discoverPureFunctionCandidates(root);
+    const generated = generatePropertyTestCases(root);
+    const money = generated.find((item) => item.functionName === 'formatBRL');
+    const status = generated.find((item) => item.functionName === 'PaymentStatus');
+
+    expect(candidates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ functionName: 'formatBRL', category: 'money_handler' }),
+        expect.objectContaining({
+          functionName: 'PaymentStatus',
+          category: 'enum_handler',
+          params: ['PENDING', 'PAID'],
+        }),
+      ]),
+    );
+    expect(money?.status).toBe('planned');
+    expect(money?.generatedInputs.map((input) => input.value)).toEqual(
+      expect.arrayContaining(['R$ 1,00', 'R$ 42,50']),
+    );
+    expect(status?.status).toBe('planned');
+    expect(status?.generatedInputs.map((input) => input.value)).toEqual(
+      expect.arrayContaining(['PENDING', 'PAID']),
+    );
   });
 });

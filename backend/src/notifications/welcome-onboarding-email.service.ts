@@ -1,7 +1,8 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { Queue, Worker } from 'bullmq';
 import { EmailService } from '../auth/email.service';
 import { getRedisUrl } from '../common/redis/redis.util';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 type OnboardingEmailJob = {
   email: string;
@@ -23,7 +24,10 @@ export class WelcomeAndOnboardingEmailService implements OnModuleInit, OnModuleD
   private queue: Queue<OnboardingEmailJob> | null = null;
   private worker: Worker<OnboardingEmailJob> | null = null;
 
-  constructor(private readonly emailService: EmailService) {}
+  constructor(
+    private readonly emailService: EmailService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
 
   onModuleInit() {
     void this.initWorker();
@@ -60,6 +64,7 @@ export class WelcomeAndOnboardingEmailService implements OnModuleInit, OnModuleD
 
       this.logger.log('Onboarding email queue worker started');
     } catch (err) {
+      void this.opsAlert?.alertOnCriticalError(err, 'WelcomeAndOnboardingEmailService.async');
       this.logger.warn(
         `Redis not available — onboarding email scheduling disabled (${(err as Error)?.message})`,
       );
@@ -76,6 +81,10 @@ export class WelcomeAndOnboardingEmailService implements OnModuleInit, OnModuleD
       await this.emailService.sendWelcomeEmail(email, agentName, workspaceName);
       this.logger.log(`Welcome email sent to ${email}`);
     } catch (err) {
+      void this.opsAlert?.alertOnCriticalError(
+        err,
+        'WelcomeAndOnboardingEmailService.sendWelcomeEmail',
+      );
       this.logger.error(`Welcome email failed for ${email}: ${(err as Error)?.message}`);
     }
   }

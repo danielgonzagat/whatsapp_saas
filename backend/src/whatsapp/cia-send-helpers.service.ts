@@ -1,6 +1,7 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import type Redis from 'ioredis';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { AgentEventsService } from './agent-events.service';
 import { WhatsappService } from './whatsapp.service';
 
@@ -42,6 +43,7 @@ export class CiaSendHelpersService {
     private readonly agentEvents: AgentEventsService,
     @Inject(forwardRef(() => WhatsappService))
     private readonly whatsappService: WhatsappService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   getSharedReplyLockKey(
@@ -117,6 +119,10 @@ export class CiaSendHelpersService {
       }
       return sendResult;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'CiaSendHelpersService.sendMessage', {
+        workspaceId,
+        metadata: { phone },
+      });
       await this.releaseDailyMessageLimit(workspaceId);
       throw error;
     }

@@ -1,7 +1,8 @@
-import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef, Optional } from '@nestjs/common';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AudioService } from './audio.service';
 import type { ToolArgs } from './unified-agent.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -17,6 +18,7 @@ export class UnifiedAgentActionsMessagingService {
     @Inject(forwardRef(() => WhatsappService))
     private readonly whatsappService: WhatsappService,
     private readonly audioService: AudioService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   // ───────── helpers ─────────
@@ -129,6 +131,10 @@ export class UnifiedAgentActionsMessagingService {
         messageId: sendResult?.messageId,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'UnifiedAgentActionsMessagingService.actionSendMessage',
+      );
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
@@ -162,6 +168,10 @@ export class UnifiedAgentActionsMessagingService {
       this.logger.log(`[AGENT] Mídia enviada com sucesso para ${phone}`);
       return { success: true, type, url, caption, sent: true };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'UnifiedAgentActionsMessagingService.actionSendMedia',
+      );
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao enviar mídia: ${msg}`);
@@ -199,6 +209,10 @@ export class UnifiedAgentActionsMessagingService {
       this.logger.log(`[AGENT] Nota de voz enviada com sucesso para ${phone}`);
       return { success: true, text, voice, sent: true, audioSize: audioBuffer.length };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'UnifiedAgentActionsMessagingService.actionSendVoiceNote',
+      );
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao enviar nota de voz: ${msg}`);
@@ -235,6 +249,10 @@ export class UnifiedAgentActionsMessagingService {
       this.logger.log(`[AGENT] Áudio enviado para ${phone}`);
       return { success: true, text, voice, sent: true, audioSize: audioBuffer.length };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'UnifiedAgentActionsMessagingService.actionSendAudio',
+      );
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao enviar áudio: ${msg}`);
@@ -265,6 +283,10 @@ export class UnifiedAgentActionsMessagingService {
         language: result.language,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'UnifiedAgentActionsMessagingService.actionTranscribeAudio',
+      );
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao transcrever áudio: ${msg}`);

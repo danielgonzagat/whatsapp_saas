@@ -1,6 +1,15 @@
 import type { PulseAutonomousDirectiveUnit } from './autonomy-loop.types';
-import * as fs from 'node:fs';
-import * as path from 'node:path';
+import type { PulseActorKind, PulseTimeWindowMode } from './types';
+import {
+  inferSyntheticModeFromToken,
+  inferSyntheticModesForScenario,
+  inferEvidenceKeyFromFileName,
+  isPulseEvidenceFileName,
+  readManifestForModeRegistry,
+  toSyntheticModeFlag,
+  uniqueValues,
+} from './scenario-mode-registry';
+import type { PulseSyntheticRunMode } from './actors/types';
 
 type RequiredValidationCategory =
   | 'typecheck'
@@ -9,63 +18,29 @@ type RequiredValidationCategory =
   | 'scenario-evidence'
   | 'browser-evidence';
 
-type SyntheticActorFlag = '--customer' | '--operator' | '--admin' | '--shift' | '--soak';
-
 interface ScenarioValidationMetadata {
   id: string;
-  actorKind?: string;
-  timeWindowModes: string[];
+  actorKind?: PulseActorKind;
+  timeWindowModes: PulseTimeWindowMode[];
   playwrightSpecs: string[];
 }
 
-function readScenarioValidationMetadata(): ScenarioValidationMetadata[] {
-  const candidates = [
-    path.join(process.cwd(), '.pulse', 'current', 'PULSE_RESOLVED_MANIFEST.json'),
-    path.join(process.cwd(), 'PULSE_RESOLVED_MANIFEST.json'),
-    path.join(process.cwd(), 'pulse.manifest.json'),
-  ];
+function isActorKind(value: unknown): value is PulseActorKind {
+  return value === 'customer' || value === 'operator' || value === 'admin' || value === 'system';
+}
 
-  for (const candidate of candidates) {
-    if (!fs.existsSync(candidate)) {
-      continue;
-    }
-    try {
-      const parsed = JSON.parse(fs.readFileSync(candidate, 'utf8')) as {
-        scenarioSpecs?: unknown;
-      };
-      if (!Array.isArray(parsed.scenarioSpecs)) {
-        continue;
-      }
-      return parsed.scenarioSpecs
-        .filter((entry): entry is Record<string, unknown> => {
-          return Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry);
-        })
-        .flatMap((entry) => {
-          if (typeof entry.id !== 'string') {
-            return [];
-          }
-          return [
-            {
-              id: entry.id,
-              actorKind: typeof entry.actorKind === 'string' ? entry.actorKind : undefined,
-              timeWindowModes: Array.isArray(entry.timeWindowModes)
-                ? entry.timeWindowModes.filter(
-                    (value): value is string => typeof value === 'string',
-                  )
-                : [],
-              playwrightSpecs: Array.isArray(entry.playwrightSpecs)
-                ? entry.playwrightSpecs.filter(
-                    (value): value is string => typeof value === 'string',
-                  )
-                : [],
-            },
-          ];
-        });
-    } catch {
-      continue;
-    }
-  }
-  return [];
+function isTimeWindowMode(value: unknown): value is PulseTimeWindowMode {
+  return value === 'total' || value === 'shift' || value === 'soak';
+}
+
+function readScenarioValidationMetadata(): ScenarioValidationMetadata[] {
+  const manifest = readManifestForModeRegistry(process.cwd());
+  return (manifest?.scenarioSpecs ?? []).map((scenario) => ({
+    id: scenario.id,
+    actorKind: isActorKind(scenario.actorKind) ? scenario.actorKind : undefined,
+    timeWindowModes: scenario.timeWindowModes.filter(isTimeWindowMode),
+    playwrightSpecs: scenario.playwrightSpecs,
+  }));
 }
 
 function getScenarioMetadataById(scenarioIds: string[]): ScenarioValidationMetadata[] {
@@ -76,17 +51,14 @@ function getScenarioMetadataById(scenarioIds: string[]): ScenarioValidationMetad
   });
 }
 
-function actorFlagsForUnit(unit: PulseAutonomousDirectiveUnit): SyntheticActorFlag[] {
-  const flags = new Set<SyntheticActorFlag>();
+function actorFlagsForUnit(unit: PulseAutonomousDirectiveUnit): string[] {
+  const modes = new Set<PulseSyntheticRunMode>();
   const scenarios = getScenarioMetadataById(unit.scenarioIds ?? []);
   for (const scenario of scenarios) {
-    if (scenario.actorKind === 'customer') flags.add('--customer');
-    if (scenario.actorKind === 'operator') flags.add('--operator');
-    if (scenario.actorKind === 'admin') flags.add('--admin');
-    if (scenario.timeWindowModes.includes('shift')) flags.add('--shift');
-    if (scenario.timeWindowModes.includes('soak') || scenario.actorKind === 'system') {
-      flags.add('--soak');
-    }
+    inferSyntheticModesForScenario({
+      actorKind: scenario.actorKind ?? 'system',
+      timeWindowModes: scenario.timeWindowModes,
+    }).forEach((mode) => modes.add(mode));
   }
 
   const hints = [
@@ -95,11 +67,19 @@ function actorFlagsForUnit(unit: PulseAutonomousDirectiveUnit): SyntheticActorFl
     ...(unit.validationArtifacts ?? []),
     ...(unit.exitCriteria ?? []),
   ].join(' ');
-  if (/\bcustomerPass\b|PULSE_CUSTOMER_EVIDENCE[.]json/.test(hints)) flags.add('--customer');
-  if (/\boperatorPass\b|PULSE_OPERATOR_EVIDENCE[.]json/.test(hints)) flags.add('--operator');
-  if (/\badminPass\b|PULSE_ADMIN_EVIDENCE[.]json/.test(hints)) flags.add('--admin');
-  if (/\bsoakPass\b|PULSE_SOAK_EVIDENCE[.]json/.test(hints)) flags.add('--soak');
-  return [...flags];
+  for (const token of hints.split(/[^A-Za-z0-9_.-]+/).filter(Boolean)) {
+    const passMode = inferSyntheticModeFromToken(token);
+    if (passMode) {
+      modes.add(passMode);
+    }
+    if (isPulseEvidenceFileName(token)) {
+      const evidenceKey = inferEvidenceKeyFromFileName(token);
+      if (evidenceKey) {
+        modes.add(evidenceKey);
+      }
+    }
+  }
+  return uniqueValues([...modes]).map(toSyntheticModeFlag);
 }
 
 /**

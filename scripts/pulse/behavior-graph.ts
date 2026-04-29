@@ -70,7 +70,7 @@ const NESTJS_GUARD_CLASSES = new Set([
 ]);
 
 const EXTERNAL_RECEIVER_PATTERN =
-  /\b(?:this\.)?([A-Za-z_$][\w$]*(?:Client|Provider|Gateway|Api|SDK|Sdk|Http|Service))\.(get|post|put|patch|delete|request|send|create|update|confirm|refund|call|emit)\s*\(/g;
+  /\b(?:this\.)?([A-Za-z_$][\w$]*(?:Client|Provider|Gateway|Api|SDK|Sdk|Http|Service))\.(get|post|put|patch|delete|request|send|create|update|confirm|refund|call|emit|transfer|charge|payout|capture|authorize|process|payment|billing|invoice|subscription|upload)\s*\(/g;
 const GENERIC_EXTERNAL_CALL_PATTERNS: Array<{ provider: string; pattern: RegExp }> = [
   { provider: 'fetch', pattern: /\bfetch\s*\(/g },
   {
@@ -78,6 +78,15 @@ const GENERIC_EXTERNAL_CALL_PATTERNS: Array<{ provider: string; pattern: RegExp 
     pattern: /\b(?:axios|httpService)\.(?:get|post|put|patch|delete|request)\s*\(/g,
   },
 ];
+const EXTERNAL_PACKAGE_IMPORT_PATTERN =
+  /\bimport\s+(?:type\s+)?(?:[\w$*\s{},]+)\s+from\s+['"]([^.'"][^'"]*)['"]|\brequire\(\s*['"]([^.'"][^'"]*)['"]\s*\)/g;
+const IMPORT_BINDING_PATTERN =
+  /\bimport\s+(?:type\s+)?(?:(\w+)|\*\s+as\s+(\w+)|\{([^}]+)\})\s+from\s+['"]([^.'"][^'"]*)['"]/g;
+const EXTERNAL_SDK_OPERATION_PATTERN =
+  /\b([A-Za-z_$][\w$]*)\.(get|post|put|patch|delete|request|send|create|update|confirm|refund|call|emit|transfer|charge|payout|capture|authorize|process|payment|billing|invoice|subscription|upload)\s*\(/g;
+const EXTERNAL_SDK_CHAIN_PATTERN =
+  /\b([A-Za-z_$][\w$]*)((?:\.[A-Za-z_$][\w$]*)+)\.(get|post|put|patch|delete|request|send|create|update|confirm|refund|call|emit|transfer|charge|payout|capture|authorize|process|payment|billing|invoice|subscription|upload)\s*\(/g;
+const CONSTRUCTOR_CALL_PATTERN = /\bnew\s+([A-Z][A-Za-z0-9_$]*)\s*\(/g;
 const LOCAL_RECEIVERS = new Set([
   'array',
   'console',
@@ -116,6 +125,11 @@ type ParsedFunc = {
   className: string | null;
   parameters: Array<{ name: string; typeText: string }>;
   bodyText: string;
+};
+
+type SourceExternalContext = {
+  packageProviders: string[];
+  importedBindings: Set<string>;
 };
 
 function extractFunctionsFromSource(filePath: string, source: string): ParsedFunc[] {
@@ -511,7 +525,88 @@ function detectStateAccess(bodyText: string): BehaviorStateAccess[] {
 }
 
 // ===== External API call detection =====
-function detectExternalCalls(bodyText: string): BehaviorExternalCall[] {
+function packageProviderName(packageName: string): string {
+  const parts = packageName.split('/').filter(Boolean);
+  if (packageName.startsWith('@') && parts.length >= 2) {
+    return `${parts[0]}/${parts[1]}`;
+  }
+  return parts[0] || packageName;
+}
+
+function parseNamedImportBindings(namedImports: string): string[] {
+  return namedImports
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map(
+      (entry) =>
+        entry
+          .split(/\s+as\s+/i)
+          .pop()
+          ?.trim() || '',
+    )
+    .filter(Boolean);
+}
+
+function collectSourceExternalContext(sourceText: string): SourceExternalContext {
+  const packageProviders = new Set<string>();
+  const importedBindings = new Set<string>();
+
+  EXTERNAL_PACKAGE_IMPORT_PATTERN.lastIndex = 0;
+  let packageMatch: RegExpExecArray | null;
+  while ((packageMatch = EXTERNAL_PACKAGE_IMPORT_PATTERN.exec(sourceText)) !== null) {
+    const packageName = packageMatch[1] ?? packageMatch[2] ?? '';
+    if (packageName) {
+      packageProviders.add(packageProviderName(packageName));
+    }
+  }
+
+  IMPORT_BINDING_PATTERN.lastIndex = 0;
+  let bindingMatch: RegExpExecArray | null;
+  while ((bindingMatch = IMPORT_BINDING_PATTERN.exec(sourceText)) !== null) {
+    const defaultBinding = bindingMatch[1];
+    const namespaceBinding = bindingMatch[2];
+    const namedBindings = bindingMatch[3];
+    if (defaultBinding) importedBindings.add(defaultBinding);
+    if (namespaceBinding) importedBindings.add(namespaceBinding);
+    if (namedBindings) {
+      for (const binding of parseNamedImportBindings(namedBindings)) {
+        importedBindings.add(binding);
+      }
+    }
+  }
+
+  return {
+    packageProviders: [...packageProviders],
+    importedBindings,
+  };
+}
+
+function pushExternalCall(
+  calls: BehaviorExternalCall[],
+  seen: Set<string>,
+  provider: string,
+  operation: string,
+  bodyText: string,
+): void {
+  const key = `${provider}:${operation}`;
+  if (seen.has(key)) return;
+  seen.add(key);
+
+  calls.push({
+    provider,
+    operation,
+    hasTimeout: /\btimeout\b/i.test(bodyText) || /\bAbortSignal\b/i.test(bodyText),
+    hasRetry: /\bretry\b/i.test(bodyText) || /\bmaxRetries\b/i.test(bodyText),
+    hasCircuitBreaker: /\bcircuitBreaker\b/i.test(bodyText),
+    hasFallback: /\bfallback\b/i.test(bodyText),
+  });
+}
+
+function detectExternalCalls(
+  bodyText: string,
+  sourceContext: SourceExternalContext,
+): BehaviorExternalCall[] {
   const calls: BehaviorExternalCall[] = [];
   const seen = new Set<string>();
 
@@ -519,23 +614,7 @@ function detectExternalCalls(bodyText: string): BehaviorExternalCall[] {
     let match: RegExpExecArray | null;
     pattern.lastIndex = 0;
     while ((match = pattern.exec(bodyText)) !== null) {
-      const key = `${provider}:generic`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      const hasTimeout = /\btimeout\b/i.test(bodyText) || /\bAbortSignal\b/i.test(bodyText);
-      const hasRetry = /\bretry\b/i.test(bodyText) || /\bmaxRetries\b/i.test(bodyText);
-      const hasCircuitBreaker = /\bcircuitBreaker\b/i.test(bodyText);
-      const hasFallback = /\bfallback\b/i.test(bodyText);
-
-      calls.push({
-        provider,
-        operation: 'call',
-        hasTimeout,
-        hasRetry,
-        hasCircuitBreaker,
-        hasFallback,
-      });
+      pushExternalCall(calls, seen, provider, 'call', bodyText);
     }
   }
 
@@ -548,18 +627,39 @@ function detectExternalCalls(bodyText: string): BehaviorExternalCall[] {
     if (LOCAL_RECEIVERS.has(normalized) || LOCAL_RECEIVERS.has(normalized.toLowerCase())) {
       continue;
     }
-    const key = `${normalized}:${operation}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
+    pushExternalCall(calls, seen, normalized, operation, bodyText);
+  }
 
-    calls.push({
-      provider: normalized,
-      operation,
-      hasTimeout: /\btimeout\b/i.test(bodyText) || /\bAbortSignal\b/i.test(bodyText),
-      hasRetry: /\bretry\b/i.test(bodyText) || /\bmaxRetries\b/i.test(bodyText),
-      hasCircuitBreaker: /\bcircuitBreaker\b/i.test(bodyText),
-      hasFallback: /\bfallback\b/i.test(bodyText),
-    });
+  EXTERNAL_SDK_OPERATION_PATTERN.lastIndex = 0;
+  let sdkMatch: RegExpExecArray | null;
+  while ((sdkMatch = EXTERNAL_SDK_OPERATION_PATTERN.exec(bodyText)) !== null) {
+    const receiver = sdkMatch[1];
+    const operation = sdkMatch[2];
+    if (!sourceContext.importedBindings.has(receiver)) continue;
+    pushExternalCall(calls, seen, receiver, operation, bodyText);
+  }
+
+  EXTERNAL_SDK_CHAIN_PATTERN.lastIndex = 0;
+  let chainMatch: RegExpExecArray | null;
+  while ((chainMatch = EXTERNAL_SDK_CHAIN_PATTERN.exec(bodyText)) !== null) {
+    const receiver = chainMatch[1];
+    const operation = chainMatch[3];
+    if (!sourceContext.importedBindings.has(receiver)) continue;
+    pushExternalCall(calls, seen, receiver, operation, bodyText);
+  }
+
+  CONSTRUCTOR_CALL_PATTERN.lastIndex = 0;
+  let constructorMatch: RegExpExecArray | null;
+  while ((constructorMatch = CONSTRUCTOR_CALL_PATTERN.exec(bodyText)) !== null) {
+    const constructorName = constructorMatch[1];
+    if (!sourceContext.importedBindings.has(constructorName)) continue;
+    pushExternalCall(calls, seen, constructorName, 'instantiate', bodyText);
+  }
+
+  if (calls.length === 0 && /\bprocess\.env\.[A-Z][A-Z0-9_]*\b/.test(bodyText)) {
+    for (const provider of sourceContext.packageProviders) {
+      pushExternalCall(calls, seen, provider, 'configured_dependency', bodyText);
+    }
   }
 
   return calls;
@@ -639,37 +739,25 @@ function determineRisk(
   return 'low';
 }
 
-// ===== Financial model detection =====
-const FINANCIAL_MODEL_PATTERN =
-  /\b(?:subscription|invoice|payment|wallet|transaction|ledger|bank|anticipation|sale|checkout|coupon|commission|charge|refund|payout|billing|balance|transfer|deposit|withdrawal|fee|plan|pricing)\b/i;
-
-function hasFinancialStateAccess(stateAccess: BehaviorStateAccess[]): boolean {
-  return stateAccess.some((a) => FINANCIAL_MODEL_PATTERN.test(a.model));
-}
-
-// ===== Message / payment sending detection =====
+// ===== Message / external mutation detection =====
 const MESSAGE_SEND_PATTERN =
-  /\b(?:sendMessage|sendText|sendMedia|sendTemplate|sendLocation|sendContact|sendPoll|sendButton|sendList|sendReaction|sendSticker|sendVoice|sendDocument|sendImage|sendVideo|sendAudio|publishMessage|dispatchMessage|whatsapp\.send|whatsappApi\.send|whatsappService\.send|emailService\.send|sendEmail|sendSMS|sendNotification|transferFunds|processPayment|createCharge|processRefund|createPayout|confirmPayment|capturePayment|authorizePayment)\b/i;
+  /\b(?:send|reply|notify|publish|dispatch)(?:[A-Z][A-Za-z0-9_$]*)?\s*\(/i;
+const MESSAGE_DELIVERY_PATTERN =
+  /\b(?:sendMessage|sendText|sendMedia|sendTemplate|sendLocation|sendContact|sendPoll|sendButton|sendList|sendReaction|sendSticker|sendVoice|sendDocument|sendImage|sendVideo|sendAudio|publishMessage|dispatchMessage|sendEmail|sendSMS|sendNotification)\s*\(/i;
+const MONEY_MUTATION_PATTERN =
+  /\b(?:transferFunds|processPayment|createCharge|processRefund|createPayout|confirmPayment|capturePayment|authorizePayment|chargePayment|refundPayment|createTransfer|createRefund|createInvoice|createSubscription|cancelSubscription)\s*\(/i;
 
-const PAYMENT_CALL_PATTERN =
-  /\b(?:asaas|stripe|paypal|mercadoPago|pagSeguro|pagarme|braintree|square)\.(?:create|charge|payment|transfer|refund|capture|authorize|process|confirm|checkout|billing|invoice|subscription)\b/i;
+const EXTERNAL_MUTATION_OPERATION_PATTERN =
+  /^(?:send|reply|notify|publish|dispatch|transfer|charge|refund|payout|capture|authorize|confirm|create|update|delete|emit|process|payment|billing|invoice|subscription|upload)$/i;
 
 function hasMessageOrPaymentSending(
   bodyText: string,
   externalCalls: BehaviorExternalCall[],
 ): boolean {
+  if (MESSAGE_DELIVERY_PATTERN.test(bodyText)) return true;
+  if (MONEY_MUTATION_PATTERN.test(bodyText)) return true;
   if (MESSAGE_SEND_PATTERN.test(bodyText)) return true;
-  if (PAYMENT_CALL_PATTERN.test(bodyText)) return true;
-
-  const messageProviders =
-    /\b(?:whatsapp|chatApi|evolutionApi|waha|wppconnect|venombot|messenger|telegram)\b/i;
-  const paymentProviders = /\b(?:asaas|stripe|paypal|mercadoPago|pagSeguro|pagarme)\b/i;
-  for (const call of externalCalls) {
-    if (messageProviders.test(call.provider)) return true;
-    if (paymentProviders.test(call.provider)) return true;
-  }
-
-  return false;
+  return externalCalls.some((call) => EXTERNAL_MUTATION_OPERATION_PATTERN.test(call.operation));
 }
 
 // ===== Pure computation detection =====
@@ -708,7 +796,6 @@ function determineExecutionMode(
   );
 
   if (hasDbWrites) {
-    if (hasFinancialStateAccess(stateAccess)) return 'ai_safe';
     return 'ai_safe';
   }
 
@@ -865,16 +952,15 @@ function parseFileWithTsMorph(
 ): BehaviorNode[] {
   try {
     let funcs: ParsedFunc[];
+    const sourceText = readTextFile(filePath);
 
     if (tsMorphAvailable) {
-      const sourceText = readTextFile(filePath);
       funcs = extractFunctionsFromSource(filePath, sourceText);
     } else {
-      const sourceText = readTextFile(filePath);
       funcs = extractFunctionsFromSource(filePath, sourceText);
     }
 
-    return buildNodesFromParsedFunctions(relPath, funcs);
+    return buildNodesFromParsedFunctions(relPath, funcs, sourceText);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[behavior-graph] Failed to parse ${relPath}: ${message}`);
@@ -886,12 +972,15 @@ function parseFileWithTsMorph(
 function buildNodesFromParsedFunctions(
   relPath: string,
   funcs: ParsedFunc[],
+  sourceText: string,
 ): BehaviorNodeArtifact[] {
+  const sourceContext = collectSourceExternalContext(sourceText);
+
   return funcs.map((func) => {
     const kind = determineKind(func);
     const inputs = extractInputs(func);
     const stateAccess = detectStateAccess(func.bodyText);
-    const externalCalls = detectExternalCalls(func.bodyText);
+    const externalCalls = detectExternalCalls(func.bodyText, sourceContext);
     const outputs = detectOutputs(func.bodyText, kind);
     const risk = determineRisk(
       kind,
@@ -1017,9 +1106,10 @@ export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
       );
     }
     const relPath = path.relative(rootDir, filePath);
+    const sourceText = readTextFile(filePath);
     const funcs = funcsByFile.get(filePath);
     const fileNodes = funcs
-      ? buildNodesFromParsedFunctions(relPath, funcs)
+      ? buildNodesFromParsedFunctions(relPath, funcs, sourceText)
       : parseFileWithTsMorph(filePath, relPath, tsMorphAvailable);
     for (let index = 0; index < fileNodes.length; index++) {
       const func = funcs?.[index];

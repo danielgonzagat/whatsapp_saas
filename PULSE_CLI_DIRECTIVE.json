@@ -1,12 +1,12 @@
 {
-  "generatedAt": "2026-04-29T19:50:07.070Z",
+  "generatedAt": "2026-04-29T21:23:51.803Z",
   "profile": null,
   "certificationScope": null,
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
-    "status": "READY",
-    "generatedAt": "2026-04-29T19:50:02.926Z",
-    "productCertificationStatus": "PARTIAL",
+    "status": "NOT_READY",
+    "generatedAt": "2026-04-29T21:23:45.927Z",
+    "productCertificationStatus": "NOT_CERTIFIED",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": true,
     "canDeclareKloelProductCertified": false,
@@ -18,7 +18,7 @@
         "evidence": {
           "nextExecutableUnitLimit": 8,
           "boundedExecutableUnits": 8,
-          "totalAutonomousUnits": 27,
+          "totalAutonomousUnits": 30,
           "totalConvergenceUnits": 74
         }
       },
@@ -34,9 +34,9 @@
       {
         "id": "execution_matrix",
         "status": "pass",
-        "reason": "Execution matrix classified 4020 path(s) with zero unknown and zero non-terminal paths.",
+        "reason": "Execution matrix classified 4034 path(s) with zero unknown and zero non-terminal paths.",
         "evidence": {
-          "totalPaths": 4020,
+          "totalPaths": 4034,
           "unknownPaths": 0,
           "criticalUnobservedPaths": 0,
           "impreciseBreakpoints": 0,
@@ -46,12 +46,16 @@
       {
         "id": "critical_path_terminal",
         "status": "pass",
-        "reason": "All critical matrix paths are observed pass/fail, human-blocked, or carry a precise terminal reason.",
+        "reason": "All critical matrix paths are observed pass/fail or carry a precise terminal reason in PULSE_EXECUTION_MATRIX.json. 2682 terminal critical path(s) still need observed proof; next ai_safe action is to run the path validation command from PULSE_EXECUTION_MATRIX.json and refresh PULSE_PATH_COVERAGE.json.",
         "evidence": {
           "criticalUnobservedPaths": 0,
           "observedPass": 17,
-          "observedFail": 229,
-          "blockedHumanRequired": 113
+          "observedFail": 232,
+          "terminalWithoutObservedEvidence": 2682,
+          "firstTerminalPathId": "matrix:capability:capability:ad-rules",
+          "terminalArtifact": "PULSE_EXECUTION_MATRIX.json",
+          "coverageArtifact": "PULSE_PATH_COVERAGE.json",
+          "nextAiSafeAction": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:ad-rules route /ad-rules"
         }
       },
       {
@@ -60,17 +64,17 @@
         "reason": "Every observed failure in the execution matrix has a breakpoint.",
         "evidence": {
           "impreciseBreakpoints": 0,
-          "observedFail": 229
+          "observedFail": 232
         }
       },
       {
         "id": "external_reality",
-        "status": "pass",
-        "reason": "Required external adapters are fresh and available for PULSE-machine decisions.",
+        "status": "fail",
+        "reason": "2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
         "evidence": {
-          "totalSignals": 8,
-          "mappedSignals": 7,
-          "missingAdapters": 0,
+          "totalSignals": 4,
+          "mappedSignals": 4,
+          "missingAdapters": 2,
           "staleAdapters": 0,
           "invalidAdapters": 0,
           "highImpactSignals": 3
@@ -79,7 +83,7 @@
       {
         "id": "self_trust",
         "status": "pass",
-        "reason": "All parsers loaded and no phantom capability/flow remains. 9 aspirational structure(s) remain explicitly marked as aspirational.",
+        "reason": "All parsers loaded and no phantom capability/flow remains. 10 aspirational structure(s) remain explicitly marked as aspirational.",
         "evidence": {
           "overallPass": true,
           "confidence": "high",
@@ -100,12 +104,16 @@
         }
       }
     ],
-    "blockers": []
+    "blockers": [
+      "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain."
+    ]
   },
   "autonomyVerdict": "SIM",
   "autonomousNextStepVerdict": "SIM",
   "zeroPromptProductionGuidanceVerdict": "NAO",
+  "zeroPromptProductionGuidanceReason": "NAO: 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 47 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
   "productionAutonomyVerdict": "NAO",
+  "productionAutonomyReason": "NAO: Authority mode is autonomous-execution, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 47 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | Codacy still reports 1116 HIGH issue(s). | Observed external high-impact signals remain active: 3.",
   "canWorkUntilProductionReady": false,
   "autonomyReadiness": {
     "verdict": "SIM",
@@ -113,21 +121,22 @@
     "verdictScope": "next_autonomous_step",
     "canWorkNow": true,
     "canDeclareComplete": false,
-    "automationSafeUnits": 27,
+    "automationSafeUnits": 30,
     "blockers": [],
     "warnings": [
-      "1 human-required unit(s) remain blocked from autonomous mutation."
+      "2 external adapter(s) are missing; production reality is incomplete but local convergence can still proceed."
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-29T19:50:02.926Z",
+    "generatedAt": "2026-04-29T21:23:45.927Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
     "productionAutonomyAnswer": "NAO",
-    "productionAutonomyReason": "NAO: Core trust/production gates are green; autonomous execution may proceed. | Authority mode is autonomous-execution, not certified-autonomous. | Certification status is PARTIAL, not CERTIFIED. | 34 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | Codacy still reports 1116 HIGH issue(s). | Observed external high-impact signals remain active: 3.",
-    "zeroPromptProductionGuidanceQuestion": "If a fresh AI session runs the full Pulse and is told to work autonomously, can it keep converging safely until production completion without human intervention?",
+    "productionAutonomyReason": "NAO: Authority mode is autonomous-execution, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 47 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | Codacy still reports 1116 HIGH issue(s). | Observed external high-impact signals remain active: 3.",
+    "zeroPromptProductionGuidanceQuestion": "If a fresh AI session runs the full Pulse and is told to work autonomously, can it keep converging safely until production completion without manual intervention?",
     "zeroPromptProductionGuidanceAnswer": "NAO",
+    "zeroPromptProductionGuidanceReason": "NAO: 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 47 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
     "verdicts": {
       "nextStepAutonomy": "SIM",
       "zeroPromptProductionGuidance": "NAO",
@@ -163,17 +172,17 @@
       {
         "id": "authority_closed",
         "status": "pass",
-        "evidence": "Core trust/production gates are green; autonomous execution may proceed."
+        "evidence": "Core trust, runtime, and production-decision gates are green; bounded autonomous execution may proceed. | Production completion remains blocked: 2 external adapter(s) are not configured."
       },
       {
         "id": "external_reality_fused",
-        "status": "pass",
-        "evidence": "8 signal(s), 0 missing adapter(s), 0 stale adapter(s), 0 invalid adapter(s)."
+        "status": "fail",
+        "evidence": "4 signal(s), 2 missing adapter(s), 0 stale adapter(s), 0 invalid adapter(s)."
       },
       {
         "id": "pulse_self_trust",
         "status": "pass",
-        "evidence": "All parsers loaded and no phantom capability/flow remains. 9 aspirational structure(s) remain explicitly marked as aspirational."
+        "evidence": "All parsers loaded and no phantom capability/flow remains. 10 aspirational structure(s) remain explicitly marked as aspirational."
       },
       {
         "id": "runtime_reality",
@@ -183,7 +192,7 @@
       {
         "id": "structural_debt_closed",
         "status": "fail",
-        "evidence": "34 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), 0 phantom flow(s)."
+        "evidence": "47 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), 0 phantom flow(s)."
       },
       {
         "id": "multi_cycle_convergence",
@@ -193,7 +202,7 @@
       {
         "id": "zero_prompt_production_guidance",
         "status": "fail",
-        "evidence": "Fresh-session production guidance remains NAO until executable guidance, closed external reality, automation-eligible authority, zero human-required units, and proven non-regressing cycles are all true."
+        "evidence": "Fresh-session production guidance remains NAO until executable guidance, closed external reality, automation-eligible authority, and proven non-regressing cycles are all true."
       },
       {
         "id": "no_overclaim",
@@ -201,11 +210,15 @@
         "evidence": "All verdicts are consistent with their supporting gates and evidence."
       }
     ],
+    "blockersBeforeZeroPromptProductionGuidanceSim": [
+      "2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
+      "47 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain."
+    ],
     "blockersBeforeProductionSim": [
-      "Core trust/production gates are green; autonomous execution may proceed.",
       "Authority mode is autonomous-execution, not certified-autonomous.",
-      "Certification status is PARTIAL, not CERTIFIED.",
-      "34 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
+      "Certification status is NOT_CERTIFIED, not CERTIFIED.",
+      "2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
+      "47 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
       "Codacy still reports 1116 HIGH issue(s).",
       "Observed external high-impact signals remain active: 3."
     ],
@@ -229,59 +242,59 @@
       },
       {
         "source": "github",
-        "status": "ready",
-        "executed": true,
-        "signalCount": 1,
-        "reason": "1 GitHub signal(s) fetched from the live adapter."
+        "status": "not_available",
+        "executed": false,
+        "signalCount": 0,
+        "reason": "PULSE_GITHUB_STATE.json is not available in the repository root."
       },
       {
         "source": "github_actions",
-        "status": "ready",
-        "executed": true,
+        "status": "not_available",
+        "executed": false,
         "signalCount": 0,
-        "reason": "GitHub Actions live adapter is configured but returned no actionable signals."
+        "reason": "PULSE_GITHUB_ACTIONS_STATE.json is not available in the repository root."
       },
       {
         "source": "codecov",
-        "status": "ready",
-        "executed": true,
+        "status": "not_available",
+        "executed": false,
         "signalCount": 0,
-        "reason": "Codecov live adapter is configured but returned no actionable signals."
+        "reason": "PULSE_CODECOV_STATE.json is not available in the repository root."
       },
       {
         "source": "sentry",
-        "status": "ready",
-        "executed": true,
-        "signalCount": 1,
-        "reason": "1 Sentry signal(s) fetched from the live adapter."
+        "status": "not_available",
+        "executed": false,
+        "signalCount": 0,
+        "reason": "PULSE_SENTRY_STATE.json is not available in the repository root."
       },
       {
         "source": "datadog",
-        "status": "ready",
-        "executed": true,
-        "signalCount": 1,
-        "reason": "1 Datadog signal(s) fetched from the live adapter."
+        "status": "not_available",
+        "executed": false,
+        "signalCount": 0,
+        "reason": "PULSE_DATADOG_STATE.json is not available in the repository root."
       },
       {
         "source": "prometheus",
-        "status": "optional_not_configured",
-        "executed": true,
+        "status": "not_available",
+        "executed": false,
         "signalCount": 0,
-        "reason": "prometheus adapter is optional under profile=default and was not configured."
+        "reason": "PULSE_PROMETHEUS_STATE.json is not available in the repository root."
       },
       {
         "source": "dependabot",
-        "status": "ready",
-        "executed": true,
+        "status": "not_available",
+        "executed": false,
         "signalCount": 0,
-        "reason": "Dependabot live adapter is configured but returned no actionable signals."
+        "reason": "PULSE_DEPENDABOT_STATE.json is not available in the repository root."
       },
       {
         "source": "gitnexus",
-        "status": "ready",
-        "executed": true,
-        "signalCount": 1,
-        "reason": "GitNexus index is fresh for commit c74dae23."
+        "status": "not_available",
+        "executed": false,
+        "signalCount": 0,
+        "reason": "PULSE_GITNEXUS_EVIDENCE.json is not available in the repository root."
       }
     ],
     "requiredBeforeSim": [
@@ -295,29 +308,30 @@
   "advisoryOnly": false,
   "automationEligible": true,
   "authorityReasons": [
-    "Core trust/production gates are green; autonomous execution may proceed."
+    "Core trust, runtime, and production-decision gates are green; bounded autonomous execution may proceed.",
+    "Production completion remains blocked: 2 external adapter(s) are not configured."
   ],
   "currentCheckpoint": {
-    "tier": 1,
-    "status": "PARTIAL",
-    "score": 75
+    "tier": 0,
+    "status": "NOT_CERTIFIED",
+    "score": 57
   },
   "targetCheckpoint": {
     "capabilityRealnessRatio": 1,
     "flowRealnessRatio": 1,
     "projectedProductionReadiness": "yellow"
   },
-  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 34 structural parity gap(s), and 1116 HIGH Codacy issue(s).",
+  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 47 structural parity gap(s), and 1116 HIGH Codacy issue(s).",
   "currentState": {
-    "certificationStatus": "PARTIAL",
-    "blockingTier": 1,
-    "score": 75,
+    "certificationStatus": "NOT_CERTIFIED",
+    "blockingTier": 0,
+    "score": 57,
     "scopeParity": {
       "status": "pass",
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "high",
       "reason": "Repo inventory completed and all observed Codacy hotspot files are covered.",
-      "inventoryFiles": 2849,
+      "inventoryFiles": 2863,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 60,
       "missingCodacyFiles": []
@@ -329,7 +343,7 @@
   },
   "selfTrust": {
     "gateStatus": "pass",
-    "gateReason": "All parsers loaded and no phantom capability/flow remains. 9 aspirational structure(s) remain explicitly marked as aspirational.",
+    "gateReason": "All parsers loaded and no phantom capability/flow remains. 10 aspirational structure(s) remain explicitly marked as aspirational.",
     "overallPass": true,
     "confidence": "high",
     "score": 100,
@@ -371,88 +385,90 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-29T17:24:36.686Z",
-        "freshnessMinutes": 143
+        "freshnessMinutes": 235
       },
       {
         "source": "github",
-        "status": "ready",
-        "syncedAt": "2026-04-29T19:49:53.865Z",
-        "freshnessMinutes": 0
+        "status": "not_available",
+        "syncedAt": null,
+        "freshnessMinutes": null
       },
       {
         "source": "github_actions",
-        "status": "ready",
-        "syncedAt": "2026-04-29T19:49:53.865Z",
-        "freshnessMinutes": 0
+        "status": "not_available",
+        "syncedAt": null,
+        "freshnessMinutes": null
       },
       {
         "source": "codecov",
-        "status": "ready",
-        "syncedAt": "2026-04-29T19:49:53.865Z",
-        "freshnessMinutes": 0
+        "status": "not_available",
+        "syncedAt": null,
+        "freshnessMinutes": null
       },
       {
         "source": "sentry",
-        "status": "ready",
-        "syncedAt": "2026-04-29T19:49:53.865Z",
-        "freshnessMinutes": 0
+        "status": "not_available",
+        "syncedAt": null,
+        "freshnessMinutes": null
       },
       {
         "source": "datadog",
-        "status": "ready",
-        "syncedAt": "2026-04-29T19:49:53.865Z",
-        "freshnessMinutes": 0
+        "status": "not_available",
+        "syncedAt": null,
+        "freshnessMinutes": null
       },
       {
         "source": "prometheus",
-        "status": "optional_not_configured",
-        "syncedAt": "2026-04-29T19:49:53.865Z",
-        "freshnessMinutes": 0
+        "status": "not_available",
+        "syncedAt": null,
+        "freshnessMinutes": null
       },
       {
         "source": "dependabot",
-        "status": "ready",
-        "syncedAt": "2026-04-29T19:49:53.865Z",
-        "freshnessMinutes": 0
+        "status": "not_available",
+        "syncedAt": null,
+        "freshnessMinutes": null
       },
       {
         "source": "gitnexus",
-        "status": "ready",
-        "syncedAt": "2026-04-29T19:49:53.865Z",
-        "freshnessMinutes": 0
+        "status": "not_available",
+        "syncedAt": null,
+        "freshnessMinutes": null
       }
     ]
   },
   "externalSignals": {
     "summary": {
-      "totalSignals": 8,
-      "runtimeSignals": 2,
-      "changeSignals": 1,
+      "totalSignals": 4,
+      "runtimeSignals": 0,
+      "changeSignals": 0,
       "dependencySignals": 0,
       "highImpactSignals": 3,
-      "mappedSignals": 7,
-      "humanRequiredSignals": 1,
+      "mappedSignals": 4,
+      "governedValidationSignals": 1,
       "staleAdapters": 0,
-      "missingAdapters": 0,
+      "missingAdapters": 2,
       "invalidAdapters": 0,
-      "optionalSkippedAdapters": 1,
-      "missingAdaptersList": [],
+      "optionalSkippedAdapters": 0,
+      "missingAdaptersList": [
+        "github",
+        "github_actions"
+      ],
       "staleAdaptersList": [],
       "invalidAdaptersList": [],
-      "optionalSkippedList": [
-        "prometheus"
-      ],
+      "optionalSkippedList": [],
       "bySource": {
-        "github": 1,
+        "github": 0,
         "github_actions": 0,
         "codacy": 4,
         "codecov": 0,
-        "sentry": 1,
-        "datadog": 1,
+        "sentry": 0,
+        "datadog": 0,
         "prometheus": 0,
         "dependabot": 0,
-        "gitnexus": 1
-      }
+        "gitnexus": 0
+      },
+      "observationOnlySignals": 0
     },
     "top": [
       {
@@ -464,7 +480,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-04-29T19:47:57.360Z",
+        "observedAt": "2026-04-29T21:19:54.756Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -508,7 +524,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-        "observedAt": "2026-04-29T19:47:57.360Z",
+        "observedAt": "2026-04-29T21:19:54.756Z",
         "relatedFiles": [
           "backend/src/auth/email.service.ts"
         ],
@@ -558,6 +574,7 @@
           "capability:auth-whatsapp",
           "capability:catch",
           "capability:checkout-payment",
+          "capability:checkout-social",
           "capability:email-status",
           "capability:finance",
           "capability:finance-recent",
@@ -582,13 +599,17 @@
           "capability:meta-instagram",
           "capability:meta-messenger",
           "capability:omnichannel",
+          "capability:partnerships-partnership",
           "capability:payments-payment",
+          "capability:products-product",
           "capability:pulse-live",
           "capability:reports-report",
           "capability:stripe-webhook",
+          "capability:team-invite",
           "capability:unsubscribe",
           "capability:user-data",
           "capability:webhooks-webhook",
+          "capability:welcome-and",
           "capability:whatsapp-incoming",
           "capability:whatsapp-runtime"
         ],
@@ -726,7 +747,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-        "observedAt": "2026-04-29T19:47:57.360Z",
+        "observedAt": "2026-04-29T21:19:54.756Z",
         "relatedFiles": [
           "backend/src/autopilot/autopilot.service.ts"
         ],
@@ -905,7 +926,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-29T19:47:57.360Z",
+        "observedAt": "2026-04-29T21:19:54.756Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -931,360 +952,13 @@
         ],
         "recentChangeRefs": [],
         "ownerLane": "customer",
-        "executionMode": "human_required",
+        "executionMode": "observation_only",
+        "governanceDisposition": "governed_validation",
         "protectedByGovernance": true,
         "validationTargets": [
           "PULSE_EXTERNAL_SIGNAL_STATE.json",
           "PULSE_CERTIFICATE.json",
-          "PULSE_CAPABILITY_STATE.json",
-          "PULSE_FLOW_PROJECTION.json"
-        ]
-      },
-      {
-        "id": "github-recent-commits-1777492194780",
-        "type": "code-change",
-        "source": "github",
-        "truthMode": "observed",
-        "executionMode": "observation_only",
-        "severity": 0.35,
-        "impactScore": 0.4,
-        "confidence": 0.95,
-        "summary": "20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#224) Bump",
-        "observedAt": "2026-04-29T07:13:39.000Z",
-        "relatedFiles": [],
-        "routePatterns": [],
-        "tags": [
-          "recent-change"
-        ],
-        "rawRef": null,
-        "capabilityIds": [],
-        "flowIds": [],
-        "recentChangeRefs": [],
-        "ownerLane": "platform",
-        "protectedByGovernance": false,
-        "validationTargets": [
-          "PULSE_EXTERNAL_SIGNAL_STATE.json",
-          "PULSE_CERTIFICATE.json"
-        ]
-      },
-      {
-        "id": "sentry-no-issues-1777492195459",
-        "type": "performance-metric",
-        "source": "sentry",
-        "truthMode": "observed",
-        "executionMode": "observation_only",
-        "severity": 0.1,
-        "impactScore": 0.1,
-        "confidence": 0.95,
-        "summary": "No unresolved Sentry issues — project is clean",
-        "observedAt": "2026-04-29T19:49:55.459Z",
-        "relatedFiles": [],
-        "routePatterns": [],
-        "tags": [
-          "healthy",
-          "no-errors"
-        ],
-        "rawRef": null,
-        "capabilityIds": [
-          "capability:diag-errors"
-        ],
-        "flowIds": [],
-        "recentChangeRefs": [],
-        "ownerLane": "customer",
-        "protectedByGovernance": false,
-        "validationTargets": [
-          "PULSE_EXTERNAL_SIGNAL_STATE.json",
-          "PULSE_CERTIFICATE.json",
-          "PULSE_CAPABILITY_STATE.json"
-        ]
-      },
-      {
-        "id": "datadog-no-monitors-1777492199326",
-        "type": "config-gap",
-        "source": "datadog",
-        "truthMode": "observed",
-        "executionMode": "observation_only",
-        "severity": 1,
-        "impactScore": 0.2,
-        "confidence": 0.95,
-        "summary": "No Datadog monitors configured — add monitors for production visibility",
-        "observedAt": "2026-04-29T19:49:59.326Z",
-        "relatedFiles": [],
-        "routePatterns": [],
-        "tags": [
-          "monitors",
-          "config-gap",
-          "missing"
-        ],
-        "rawRef": null,
-        "capabilityIds": [
-          "capability:admin-config",
-          "capability:affiliate-config",
-          "capability:autopilot-config",
-          "capability:autopilot-cycle",
-          "capability:autopilot-insights",
-          "capability:autopilot-process",
-          "capability:autopilot-run",
-          "capability:autopilot-send",
-          "capability:autopilot-toggle",
-          "capability:checkout",
-          "capability:checkout-catalog",
-          "capability:checkout-checkouts",
-          "capability:checkout-config",
-          "capability:checkout-plans",
-          "capability:checkout-product",
-          "capability:cia-surface",
-          "capability:kloel-tool",
-          "capability:products-product",
-          "capability:webhook-payment",
-          "capability:whatsapp-backlog",
-          "capability:whatsapp-cia",
-          "capability:whatsapp-session",
-          "capability:whatsapp-status"
-        ],
-        "flowIds": [
-          "admin-post-admin-auth-login",
-          "admin-post-admin-chat-message",
-          "admin-post-admin-products-product-id-approve",
-          "admin-post-admin-products-product-id-reject",
-          "admin-post-admin-transactions-order-id-operate",
-          "affiliate-post-affiliate-ai-search",
-          "affiliate-post-affiliate-saved-product-id",
-          "affiliate-post-affiliate-suggest",
-          "analytics-post-reports-send-email",
-          "auth-post-auth-forgot-password",
-          "auth-post-auth-reset-password",
-          "autopilot-post-autopilot-ask",
-          "autopilot-post-autopilot-money-machine",
-          "autopilot-post-autopilot-send",
-          "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle",
-          "billing-post-billing-checkout",
-          "cia-post-cia-account-approvals-workspace-id-approval-id-approve",
-          "cia-post-cia-account-approvals-workspace-id-approval-id-reject",
-          "cia-post-cia-account-input-sessions-workspace-id-session-id-respond",
-          "cia-post-cia-autopilot-total-workspace-id",
-          "cia-post-cia-conversations-workspace-id-conversation-id-resume",
-          "cia-post-cia-human-tasks-workspace-id-task-id-approve",
-          "cia-post-cia-human-tasks-workspace-id-task-id-reject",
-          "crm-delete-crm-contacts-phone-tags-tag",
-          "crm-post-crm-contacts-phone-tags",
-          "flow-post-flow-templates-id-download",
-          "flow-post-flows-ai-optimize-flow-id",
-          "flow-post-flows-execution-execution-id-retry",
-          "flow-post-flows-save-workspace-id-flow-id",
-          "inbox-post-inbox-conversations-conversation-id-assign",
-          "inbox-post-inbox-conversations-conversation-id-close",
-          "kloel-delete-kloel-site-id",
-          "kloel-delete-kloel-wallet-workspace-id-bank-accounts-id",
-          "kloel-post-kloel-onboarding-workspace-id-chat-stream",
-          "kloel-post-kloel-site-generate",
-          "kloel-post-kloel-site-save",
-          "kloel-post-kloel-wallet-workspace-id-withdraw",
-          "kloel-put-kloel-site-id",
-          "marketing-patch-checkout-plans-plan-id-config",
-          "marketing-post-inbox-conversations-conversation-id-assign",
-          "marketing-post-inbox-conversations-conversation-id-close",
-          "media-post-media-video",
-          "media-post-video-create",
-          "media-post-voice-generate",
-          "media-post-voice-profiles",
-          "member-delete-member-areas-id-students-student-id",
-          "member-post-affiliate-request-product-id",
-          "member-post-affiliate-saved-product-id",
-          "member-post-member-areas-id-generate-structure",
-          "member-post-member-areas-id-modules",
-          "member-post-member-areas-id-modules-module-id-lessons",
-          "member-post-member-areas-id-students",
-          "member-put-member-areas-id",
-          "member-put-member-areas-id-lessons-lesson-id",
-          "member-put-member-areas-id-modules-module-id",
-          "member-put-member-areas-id-students-student-id",
-          "meta-post-meta-auth-disconnect",
-          "products-delete-checkout-checkouts-id",
-          "products-delete-products-product-id-campaigns-campaign-id",
-          "products-delete-products-product-id-commissions-commission-id",
-          "products-delete-products-product-id-coupons-coupon-id",
-          "products-delete-products-product-id-reviews-review-id",
-          "products-delete-products-product-id-urls-url-id",
-          "products-get-products-id",
-          "products-post-checkout-checkouts-id-duplicate",
-          "products-post-checkout-products-product-id-checkouts",
-          "products-post-checkout-products-product-id-plans",
-          "products-post-products",
-          "products-post-products-product-id-campaigns-campaign-id-launch",
-          "products-post-products-product-id-campaigns-campaign-id-pause",
-          "products-post-workspace-id-jitter",
-          "products-put-checkout-bumps-id",
-          "products-put-checkout-products-id",
-          "products-put-products-product-id-affiliates-links-link-id",
-          "vendas-post-kloel-payment-workspace-id-create",
-          "vendas-post-sales-id-refund",
-          "vendas-post-sales-orders-alerts-generate",
-          "vendas-post-sales-orders-alerts-id-resolve",
-          "vendas-post-sales-subscriptions-id-cancel",
-          "vendas-post-sales-subscriptions-id-pause",
-          "vendas-post-sales-subscriptions-id-resume",
-          "vendas-put-sales-orders-id-return",
-          "vendas-put-sales-orders-id-ship",
-          "vendas-put-sales-subscriptions-id-change-plan",
-          "whatsapp-post-whatsapp-api-session-action",
-          "workspace-delete-api-kyc-bank",
-          "workspace-delete-billing-payment-methods-payment-method-id",
-          "workspace-delete-team-invite-id",
-          "workspace-delete-team-member-id",
-          "workspace-post-ai-kb-create",
-          "workspace-post-ai-kb-source",
-          "workspace-post-api-kyc-bank",
-          "workspace-post-api-kyc-fiscal",
-          "workspace-post-autopilot-toggle",
-          "workspace-post-billing-activate-trial",
-          "workspace-post-billing-payment-methods-payment-method-id-default",
-          "workspace-post-billing-payment-methods-setup-intent",
-          "workspace-post-kyc-status",
-          "workspace-post-meta-auth-disconnect",
-          "workspace-post-products",
-          "workspace-post-segmentation-workspace-id-auto-segment",
-          "workspace-post-team-invite",
-          "workspace-post-workspace-id-account",
-          "workspace-put-api-kyc-fiscal",
-          "workspace-put-crm-deals-id-move"
-        ],
-        "recentChangeRefs": [],
-        "ownerLane": "customer",
-        "protectedByGovernance": false,
-        "validationTargets": [
-          "PULSE_EXTERNAL_SIGNAL_STATE.json",
-          "PULSE_CERTIFICATE.json",
-          "PULSE_CAPABILITY_STATE.json",
-          "PULSE_FLOW_PROJECTION.json"
-        ]
-      },
-      {
-        "id": "gitnexus:2026-04-29T19:50:02.659Z",
-        "type": "codegraph",
-        "source": "gitnexus",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "severity": 0.1,
-        "impactScore": 0.1,
-        "confidence": 0.9,
-        "summary": "GitNexus index is fresh for commit c74dae23.",
-        "observedAt": "2026-04-29T19:50:02.659Z",
-        "relatedFiles": [],
-        "routePatterns": [],
-        "tags": [
-          "gitnexus",
-          "code-graph"
-        ],
-        "rawRef": null,
-        "capabilityIds": [
-          "capability:auth-verification",
-          "capability:auth-whatsapp",
-          "capability:checkout",
-          "capability:checkout-checkouts",
-          "capability:checkout-order",
-          "capability:checkout-plans",
-          "capability:checkout-product",
-          "capability:checkout-products",
-          "capability:checkout-recent",
-          "capability:checkout-social",
-          "capability:compliance-deletion"
-        ],
-        "flowIds": [
-          "ad-delete-ad-rules-id",
-          "ad-patch-meta-ads-campaigns-id-status",
-          "ad-post-ad-rules-id-toggle",
-          "admin-post-admin-auth-login",
-          "admin-post-admin-products-product-id-approve",
-          "admin-post-admin-products-product-id-reject",
-          "admin-post-admin-transactions-order-id-operate",
-          "analytics-post-reports-send-email",
-          "auth-post-auth-forgot-password",
-          "auth-post-auth-reset-password",
-          "billing-post-billing-checkout",
-          "inbox-post-inbox-conversations-conversation-id-assign",
-          "inbox-post-inbox-conversations-conversation-id-close",
-          "kloel-post-kloel-onboarding-workspace-id-chat-stream",
-          "launch-post-launch-launcher",
-          "marketing-patch-checkout-plans-plan-id-config",
-          "marketing-post-inbox-conversations-conversation-id-assign",
-          "marketing-post-inbox-conversations-conversation-id-close",
-          "marketing-post-marketing-connect-email",
-          "marketing-post-marketing-connect-email-test",
-          "marketing-post-marketing-email-send",
-          "media-post-media-video",
-          "media-post-video-create",
-          "media-post-voice-generate",
-          "media-post-voice-profiles",
-          "member-delete-member-areas-id-students-student-id",
-          "member-post-affiliate-request-product-id",
-          "member-post-affiliate-saved-product-id",
-          "member-post-member-areas-id-generate-structure",
-          "member-post-member-areas-id-modules",
-          "member-post-member-areas-id-modules-module-id-lessons",
-          "member-post-member-areas-id-students",
-          "member-put-member-areas-id",
-          "member-put-member-areas-id-lessons-lesson-id",
-          "member-put-member-areas-id-modules-module-id",
-          "member-put-member-areas-id-students-student-id",
-          "meta-post-meta-auth-disconnect",
-          "products-delete-checkout-checkouts-id",
-          "products-delete-products-product-id-campaigns-campaign-id",
-          "products-delete-products-product-id-commissions-commission-id",
-          "products-delete-products-product-id-coupons-coupon-id",
-          "products-delete-products-product-id-reviews-review-id",
-          "products-delete-products-product-id-urls-url-id",
-          "products-get-products-id",
-          "products-post-checkout-checkouts-id-duplicate",
-          "products-post-checkout-products-product-id-checkouts",
-          "products-post-checkout-products-product-id-plans",
-          "products-post-products",
-          "products-post-products-product-id-campaigns-campaign-id-launch",
-          "products-post-products-product-id-campaigns-campaign-id-pause",
-          "products-post-workspace-id-jitter",
-          "products-put-checkout-bumps-id",
-          "products-put-checkout-products-id",
-          "products-put-products-product-id-affiliates-links-link-id",
-          "vendas-post-kloel-payment-workspace-id-create",
-          "vendas-post-sales-id-refund",
-          "vendas-post-sales-orders-alerts-generate",
-          "vendas-post-sales-orders-alerts-id-resolve",
-          "vendas-post-sales-subscriptions-id-cancel",
-          "vendas-post-sales-subscriptions-id-pause",
-          "vendas-post-sales-subscriptions-id-resume",
-          "vendas-put-sales-orders-id-return",
-          "vendas-put-sales-orders-id-ship",
-          "vendas-put-sales-subscriptions-id-change-plan",
-          "webinarios-put-webinars-id",
-          "whatsapp-post-whatsapp-api-session-action",
-          "workspace-delete-api-kyc-bank",
-          "workspace-delete-billing-payment-methods-payment-method-id",
-          "workspace-delete-team-invite-id",
-          "workspace-delete-team-member-id",
-          "workspace-post-ai-kb-create",
-          "workspace-post-ai-kb-source",
-          "workspace-post-api-kyc-bank",
-          "workspace-post-api-kyc-fiscal",
-          "workspace-post-autopilot-toggle",
-          "workspace-post-billing-activate-trial",
-          "workspace-post-billing-payment-methods-payment-method-id-default",
-          "workspace-post-billing-payment-methods-setup-intent",
-          "workspace-post-kyc-status",
-          "workspace-post-meta-auth-disconnect",
-          "workspace-post-products",
-          "workspace-post-segmentation-workspace-id-auto-segment",
-          "workspace-post-team-invite",
-          "workspace-post-workspace-id-account",
-          "workspace-put-api-kyc-fiscal",
-          "workspace-put-crm-deals-id-move"
-        ],
-        "recentChangeRefs": [],
-        "ownerLane": "customer",
-        "protectedByGovernance": false,
-        "validationTargets": [
-          "PULSE_EXTERNAL_SIGNAL_STATE.json",
-          "PULSE_CERTIFICATE.json",
+          "PULSE_CONVERGENCE_PLAN.json",
           "PULSE_CAPABILITY_STATE.json",
           "PULSE_FLOW_PROJECTION.json"
         ]
@@ -1293,21 +967,123 @@
   },
   "parityGaps": {
     "summary": {
-      "totalGaps": 34,
-      "criticalGaps": 32,
-      "highGaps": 0,
+      "totalGaps": 47,
+      "criticalGaps": 44,
+      "highGaps": 3,
       "byKind": {
         "front_without_back": 1,
         "back_without_front": 0,
-        "ui_without_persistence": 1,
+        "ui_without_persistence": 2,
         "persistence_without_consumer": 0,
         "flow_without_validation": 0,
-        "integration_without_observability": 32,
+        "integration_without_observability": 44,
         "feature_declared_without_runtime": 0,
         "runtime_without_product_surface": 0
       }
     },
     "top": [
+      {
+        "id": "integration_without_observability:integration-without-observability-ad-rules",
+        "kind": "integration_without_observability",
+        "severity": "critical",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Integration without observability: Ad Rules",
+        "summary": "Capability Ad Rules depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "relatedFiles": [
+          "backend/prisma/schema.prisma",
+          "backend/src/audit/audit.service.ts",
+          "backend/src/kloel/ad-rules-engine.service.ts",
+          "backend/src/kloel/ad-rules.controller.ts",
+          "frontend/src/components/kloel/anuncios/AnunciosView.tsx",
+          "frontend/src/lib/api/misc.ts"
+        ],
+        "routePatterns": [
+          "/ad-rules",
+          "/ad-rules/${encodeURIComponent(id)}",
+          "/ad-rules/${id}",
+          "/ad-rules/${id}/toggle",
+          "/ad-rules/:id",
+          "/ad-rules/:id/toggle",
+          "/campaigns/:id/launch",
+          "/checkout/bumps/:id",
+          "/checkout/checkouts/:id",
+          "/checkout/coupons/:id",
+          "/checkout/orders/:id/status",
+          "/checkout/pixels/:id",
+          "/checkout/plans/:id",
+          "/checkout/products/:id",
+          "/checkout/products/:productId/checkouts",
+          "/checkout/products/:productId/plans",
+          "/checkout/upsells/:id",
+          "/settings/api-keys/:id",
+          "cron:CronExpression.EVERY_5_MINUTES"
+        ],
+        "affectedCapabilityIds": [
+          "capability:ad-rules"
+        ],
+        "affectedFlowIds": [
+          "ad-delete-ad-rules-id",
+          "ad-patch-meta-ads-campaigns-id-status",
+          "ad-post-ad-rules-id-toggle",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
+          "marketing-patch-checkout-plans-plan-id-config",
+          "member-delete-member-areas-id-students-student-id",
+          "member-post-affiliate-request-product-id",
+          "member-post-affiliate-saved-product-id",
+          "member-post-member-areas-id-generate-structure",
+          "member-post-member-areas-id-modules",
+          "member-post-member-areas-id-modules-module-id-lessons",
+          "member-post-member-areas-id-students",
+          "member-put-member-areas-id",
+          "member-put-member-areas-id-lessons-lesson-id",
+          "member-put-member-areas-id-modules-module-id",
+          "member-put-member-areas-id-students-student-id",
+          "products-delete-checkout-checkouts-id",
+          "products-delete-products-product-id-campaigns-campaign-id",
+          "products-delete-products-product-id-commissions-commission-id",
+          "products-delete-products-product-id-coupons-coupon-id",
+          "products-delete-products-product-id-reviews-review-id",
+          "products-delete-products-product-id-urls-url-id",
+          "products-get-products-id",
+          "products-post-checkout-checkouts-id-duplicate",
+          "products-post-checkout-products-product-id-checkouts",
+          "products-post-checkout-products-product-id-plans",
+          "products-post-products",
+          "products-post-products-product-id-campaigns-campaign-id-launch",
+          "products-post-products-product-id-campaigns-campaign-id-pause",
+          "products-post-workspace-id-jitter",
+          "products-put-checkout-bumps-id",
+          "products-put-checkout-products-id",
+          "products-put-products-product-id-affiliates-links-link-id",
+          "workspace-delete-api-kyc-bank",
+          "workspace-delete-billing-payment-methods-payment-method-id",
+          "workspace-delete-team-invite-id",
+          "workspace-delete-team-member-id",
+          "workspace-post-ai-kb-create",
+          "workspace-post-ai-kb-source",
+          "workspace-post-api-kyc-bank",
+          "workspace-post-api-kyc-fiscal",
+          "workspace-post-autopilot-toggle",
+          "workspace-post-billing-activate-trial",
+          "workspace-post-billing-payment-methods-payment-method-id-default",
+          "workspace-post-billing-payment-methods-setup-intent",
+          "workspace-post-kyc-status",
+          "workspace-post-meta-auth-disconnect",
+          "workspace-post-products",
+          "workspace-post-segmentation-workspace-id-auto-segment",
+          "workspace-post-team-invite",
+          "workspace-post-workspace-id-account",
+          "workspace-put-api-kyc-fiscal",
+          "workspace-put-crm-deals-id-move"
+        ],
+        "validationTargets": [
+          "Validate structural chain for /ad-rules.",
+          "Re-run runtime evidence for this capability.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+        ]
+      },
       {
         "id": "integration_without_observability:integration-without-observability-admin-accounts",
         "kind": "integration_without_observability",
@@ -1457,6 +1233,94 @@
         ]
       },
       {
+        "id": "integration_without_observability:integration-without-observability-admin-dashboard",
+        "kind": "integration_without_observability",
+        "severity": "critical",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Integration without observability: Admin Dashboard",
+        "summary": "Capability Admin Dashboard depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "relatedFiles": [
+          "backend/prisma/schema.prisma",
+          "backend/src/admin/dashboard/admin-dashboard.service.ts",
+          "backend/src/admin/marketing/admin-marketing.controller.ts",
+          "backend/src/admin/marketing/admin-marketing.service.ts",
+          "frontend-admin/src/app/(admin)/marketing/page.tsx",
+          "frontend-admin/src/lib/api/admin-marketing-api.ts"
+        ],
+        "routePatterns": [
+          "/admin/dashboard/home",
+          "/admin/marketing/overview",
+          "/admin/reports/overview",
+          "/admin/sales/overview"
+        ],
+        "affectedCapabilityIds": [
+          "capability:admin-marketing"
+        ],
+        "affectedFlowIds": [
+          "admin-post-admin-auth-login",
+          "admin-post-admin-chat-message",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
+          "admin-post-admin-transactions-order-id-operate",
+          "analytics-post-reports-send-email",
+          "marketing-patch-checkout-plans-plan-id-config",
+          "marketing-post-inbox-conversations-conversation-id-assign",
+          "marketing-post-inbox-conversations-conversation-id-close",
+          "marketing-post-marketing-connect-email",
+          "marketing-post-marketing-connect-email-test",
+          "marketing-post-marketing-email-send",
+          "vendas-post-sales-id-refund",
+          "vendas-post-sales-orders-alerts-generate",
+          "vendas-post-sales-orders-alerts-id-resolve",
+          "vendas-post-sales-subscriptions-id-cancel",
+          "vendas-post-sales-subscriptions-id-pause",
+          "vendas-post-sales-subscriptions-id-resume",
+          "vendas-put-sales-orders-id-return",
+          "vendas-put-sales-orders-id-ship",
+          "vendas-put-sales-subscriptions-id-change-plan"
+        ],
+        "validationTargets": [
+          "Validate structural chain for /admin/dashboard/home.",
+          "Re-run runtime evidence for this capability.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+        ]
+      },
+      {
+        "id": "integration_without_observability:integration-without-observability-affiliate-my",
+        "kind": "integration_without_observability",
+        "severity": "critical",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Integration without observability: Affiliate My",
+        "summary": "Capability Affiliate My depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "relatedFiles": [
+          "backend/prisma/schema.prisma",
+          "backend/src/affiliate/affiliate.controller.ts",
+          "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
+          "frontend/src/components/kloel/marketing/WhatsAppExperience.controller.ts",
+          "frontend/src/components/kloel/parcerias/ParceriasView.tsx",
+          "frontend/src/lib/api/misc.ts"
+        ],
+        "routePatterns": [
+          "/affiliate/my-links",
+          "/affiliate/my-products"
+        ],
+        "affectedCapabilityIds": [
+          "capability:affiliate-my"
+        ],
+        "affectedFlowIds": [
+          "affiliate-post-affiliate-ai-search",
+          "affiliate-post-affiliate-saved-product-id",
+          "affiliate-post-affiliate-suggest"
+        ],
+        "validationTargets": [
+          "Validate structural chain for /affiliate/my-links.",
+          "Re-run runtime evidence for this capability.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+        ]
+      },
+      {
         "id": "integration_without_observability:integration-without-observability-ai-assistant",
         "kind": "integration_without_observability",
         "severity": "critical",
@@ -1524,162 +1388,35 @@
         "summary": "Capability Analytics Analytic depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
         "relatedFiles": [
           "backend/prisma/schema.prisma",
+          "backend/src/analytics/advanced-analytics.service.ts",
+          "backend/src/analytics/analytics.controller.ts",
+          "backend/src/analytics/analytics.service.ts",
           "backend/src/analytics/smart-time/smart-time.service.ts",
-          "backend/src/audit/audit.service.ts",
-          "backend/src/campaigns/campaigns.service.ts",
-          "backend/src/kloel/product-sub-resources/product-affiliate.controller.ts",
-          "backend/src/kloel/product-sub-resources/product-ai-config.controller.ts",
-          "backend/src/kloel/product-sub-resources/product-campaign.controller.ts",
-          "backend/src/kloel/product-sub-resources/product-checkout.controller.ts",
-          "backend/src/kloel/product-sub-resources/product-commission.controller.ts",
-          "backend/src/kloel/product-sub-resources/product-coupon.controller.ts",
-          "backend/src/kloel/product-sub-resources/product-plan.controller.ts",
-          "backend/src/kloel/product-sub-resources/product-review.controller.ts",
-          "backend/src/kloel/product-sub-resources/product-url.controller.ts",
-          "backend/src/kloel/product.controller.ts",
-          "backend/src/partnerships/partnerships.service.ts",
-          "frontend/src/app/(main)/products/[id]/plans/[planId]/page.tsx",
-          "frontend/src/app/(main)/products/new/page.tsx",
-          "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
-          "frontend/src/components/kloel/products/ProductNerveCenter.tsx",
-          "frontend/src/components/kloel/products/ProductNerveCenterAvalTab.tsx",
-          "frontend/src/components/kloel/products/ProductNerveCenterCampanhasTab.tsx",
-          "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.afiliados.tsx",
-          "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.coprod.tsx",
-          "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.hooks.ts",
-          "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.richtext.tsx",
-          "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx",
-          "frontend/src/components/kloel/products/ProductNerveCenterIATab.tsx",
-          "frontend/src/components/kloel/produtos/ProdutosView.tsx",
-          "frontend/src/components/kloel/settings/brain-settings-section.tsx",
-          "frontend/src/components/plans/PlanAIConfigTab.tsx",
-          "frontend/src/components/plans/PlanAffiliateTab.tsx",
-          "frontend/src/components/plans/PlanPaymentTab.tsx",
-          "frontend/src/components/plans/PlanShippingTab.tsx",
-          "frontend/src/components/plans/PlanStoreTab.tsx",
-          "frontend/src/components/plans/PlanThankYouTab.tsx",
-          "frontend/src/components/products/ProductAfterPayTab.tsx",
-          "frontend/src/components/products/ProductCampaignsTab.tsx",
-          "frontend/src/components/products/ProductCheckoutsTab.tsx",
-          "frontend/src/components/products/ProductCommissionsTab.tsx",
-          "frontend/src/components/products/ProductCouponsTab.tsx",
-          "frontend/src/components/products/ProductGeneralTab.tsx",
-          "frontend/src/components/products/ProductIATab.tsx",
-          "frontend/src/components/products/ProductPlansTab.tsx",
-          "frontend/src/components/products/ProductReviewsTab.tsx",
-          "frontend/src/components/products/ProductUrlsTab.tsx",
-          "frontend/src/hooks/useProducts.ts",
-          "frontend/src/lib/api/products.ts"
+          "frontend/src/components/kloel/settings/analytics-settings-section.tsx",
+          "frontend/src/hooks/useReports.ts",
+          "frontend/src/lib/api/analytics.ts"
         ],
         "routePatterns": [
+          "/analytics/activity",
+          "/analytics/advanced",
+          "/analytics/advanced${query}",
+          "/analytics/dashboard",
+          "/analytics/flow/${flowId}",
+          "/analytics/flow/:flowId",
+          "/analytics/flow/:id",
+          "/analytics/reports",
+          "/analytics/reports${query}",
+          "/analytics/reports/ai",
           "/analytics/smart-time",
+          "/analytics/stats",
           "/autopilot/money-machine",
           "/autopilot/process",
           "/autopilot/run",
-          "/campaigns",
-          "/campaigns/:id",
-          "/campaigns/:id/darwin/evaluate",
-          "/campaigns/:id/darwin/variants",
           "/campaigns/:id/launch",
-          "/campaigns/:id/pause",
-          "/checkout/bumps/:id",
-          "/checkout/checkouts/:id",
-          "/checkout/coupons/:id",
-          "/checkout/orders/:id/status",
-          "/checkout/pixels/:id",
-          "/checkout/plans/:id",
-          "/checkout/products/:id",
-          "/checkout/products/:productId/checkouts",
-          "/checkout/products/:productId/plans",
-          "/checkout/upsells/:id",
-          "/growth/money-machine/activate",
-          "/partnerships/affiliates",
-          "/partnerships/affiliates/:id",
-          "/partnerships/affiliates/:id/approve",
-          "/partnerships/affiliates/:id/performance",
-          "/partnerships/affiliates/:id/revoke",
-          "/partnerships/affiliates/stats",
-          "/partnerships/chat/:partnerId/read",
-          "/partnerships/chat/contacts",
-          "/partnerships/collaborators",
-          "/partnerships/collaborators/invite",
-          "/partnerships/collaborators/stats",
-          "/products",
-          "/products${qs ?",
-          "/products${qs}",
-          "/products/${encodeURIComponent(id)}",
-          "/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}",
-          "/products/${id}",
-          "/products/${productId}",
-          "/products/${productId}/affiliates",
-          "/products/${productId}/affiliates/links/${linkId}",
-          "/products/${productId}/affiliates/requests/${requestId}/${action}",
-          "/products/${productId}/ai-config",
-          "/products/${productId}/campaigns",
-          "/products/${productId}/campaigns/${campaignId}${endpointSuffix}",
-          "/products/${productId}/campaigns/${id}",
-          "/products/${productId}/campaigns/${id}/launch",
-          "/products/${productId}/campaigns/${id}/pause",
-          "/products/${productId}/checkouts",
-          "/products/${productId}/checkouts/${checkoutPendingDelete.id}",
-          "/products/${productId}/checkouts/${editingCheckoutId}",
-          "/products/${productId}/commissions",
-          "/products/${productId}/commissions/${commissionPendingDelete.id}",
-          "/products/${productId}/commissions/${deleteTarget.id}",
-          "/products/${productId}/commissions/${editingId}",
-          "/products/${productId}/coupons",
-          "/products/${productId}/coupons/${couponId}",
-          "/products/${productId}/coupons/${couponPendingDelete.id}",
-          "/products/${productId}/plans",
-          "/products/${productId}/reviews",
-          "/products/${productId}/reviews/${id}",
-          "/products/${productId}/reviews/${reviewPendingDelete.id}",
-          "/products/${productId}/urls",
-          "/products/${productId}/urls/${urlPendingDelete.id}",
-          "/products/:id",
-          "/products/:productId",
-          "/products/:productId/affiliates",
-          "/products/:productId/affiliates/links/:linkId",
-          "/products/:productId/affiliates/requests/:requestId/:action",
-          "/products/:productId/affiliates/requests/:requestId/approve",
-          "/products/:productId/affiliates/requests/:requestId/reject",
-          "/products/:productId/ai-config",
-          "/products/:productId/campaigns",
-          "/products/:productId/campaigns/:campaignId",
-          "/products/:productId/campaigns/:campaignId/launch",
-          "/products/:productId/campaigns/:campaignId/pause",
-          "/products/:productId/campaigns/:campaignId:endpointSuffix",
-          "/products/:productId/campaigns/:id",
-          "/products/:productId/campaigns/:id/launch",
-          "/products/:productId/campaigns/:id/pause",
-          "/products/:productId/checkouts",
-          "/products/:productId/checkouts/:checkoutId",
-          "/products/:productId/checkouts/:editingCheckoutId",
-          "/products/:productId/checkouts/:param",
-          "/products/:productId/commissions",
-          "/products/:productId/commissions/:commissionId",
-          "/products/:productId/commissions/:editingId",
-          "/products/:productId/commissions/:param",
-          "/products/:productId/coupons",
-          "/products/:productId/coupons/:couponId",
-          "/products/:productId/coupons/:param",
-          "/products/:productId/coupons/validate",
-          "/products/:productId/plans",
-          "/products/:productId/plans/:planId",
-          "/products/:productId/reviews",
-          "/products/:productId/reviews/:id",
-          "/products/:productId/reviews/:param",
-          "/products/:productId/reviews/:reviewId",
-          "/products/:productId/urls",
-          "/products/:productId/urls/:param",
-          "/products/:productId/urls/:urlId",
-          "/products/categories/list",
-          "/products/import",
-          "/products/stats",
-          "/settings/api-keys/:id"
+          "/products/:productId/campaigns/:campaignId/launch"
         ],
         "affectedCapabilityIds": [
-          "capability:products-product"
+          "capability:analytics-analytic"
         ],
         "affectedFlowIds": [
           "admin-post-admin-products-product-id-approve",
@@ -1690,6 +1427,205 @@
           "autopilot-post-autopilot-send",
           "autopilot-post-autopilot-test",
           "autopilot-post-autopilot-toggle",
+          "member-delete-member-areas-id-students-student-id",
+          "member-post-affiliate-request-product-id",
+          "member-post-affiliate-saved-product-id",
+          "member-post-member-areas-id-generate-structure",
+          "member-post-member-areas-id-modules",
+          "member-post-member-areas-id-modules-module-id-lessons",
+          "member-post-member-areas-id-students",
+          "member-put-member-areas-id",
+          "member-put-member-areas-id-lessons-lesson-id",
+          "member-put-member-areas-id-modules-module-id",
+          "member-put-member-areas-id-students-student-id",
+          "products-delete-checkout-checkouts-id",
+          "products-delete-products-product-id-campaigns-campaign-id",
+          "products-delete-products-product-id-commissions-commission-id",
+          "products-delete-products-product-id-coupons-coupon-id",
+          "products-delete-products-product-id-reviews-review-id",
+          "products-delete-products-product-id-urls-url-id",
+          "products-get-products-id",
+          "products-post-checkout-checkouts-id-duplicate",
+          "products-post-checkout-products-product-id-checkouts",
+          "products-post-checkout-products-product-id-plans",
+          "products-post-products",
+          "products-post-products-product-id-campaigns-campaign-id-launch",
+          "products-post-products-product-id-campaigns-campaign-id-pause",
+          "products-post-workspace-id-jitter",
+          "products-put-checkout-bumps-id",
+          "products-put-checkout-products-id",
+          "products-put-products-product-id-affiliates-links-link-id",
+          "workspace-post-products"
+        ],
+        "validationTargets": [
+          "Validate structural chain for /analytics/activity.",
+          "Re-run runtime evidence for this capability.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+        ]
+      },
+      {
+        "id": "integration_without_observability:integration-without-observability-auth-anonymous",
+        "kind": "integration_without_observability",
+        "severity": "critical",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Integration without observability: Auth Anonymous",
+        "summary": "Capability Auth Anonymous depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "relatedFiles": [
+          "backend/prisma/schema.prisma",
+          "backend/src/auth/auth-oauth.service.ts",
+          "backend/src/auth/auth.controller.ts",
+          "backend/src/auth/auth.service.ts",
+          "backend/src/auth/auth.token.service.ts",
+          "backend/src/auth/rate-limit.service.ts",
+          "backend/src/compliance/compliance.controller.ts",
+          "backend/src/compliance/compliance.service.ts",
+          "frontend/src/app/api/auth/facebook/data-deletion/route.ts",
+          "frontend/src/app/api/auth/facebook/deauthorize/route.ts",
+          "frontend/src/app/api/auth/facebook/route.ts",
+          "frontend/src/lib/api/auth.ts"
+        ],
+        "routePatterns": [
+          "/api/auth/anonymous",
+          "/api/auth/callback/apple",
+          "/api/auth/callback/tiktok",
+          "/api/auth/facebook",
+          "/api/auth/facebook/data-deletion",
+          "/api/auth/facebook/deauthorize",
+          "/api/auth/forgot-password",
+          "/api/auth/google",
+          "/api/auth/login",
+          "/api/auth/magic-link/verify",
+          "/api/auth/register",
+          "/auth/anonymous",
+          "/auth/facebook/data-deletion",
+          "/auth/facebook/deauthorize",
+          "/auth/forgot-password",
+          "/auth/google/risc-events",
+          "/auth/login",
+          "/auth/magic-link/verify",
+          "/auth/oauth",
+          "/auth/oauth/apple",
+          "/auth/oauth/facebook",
+          "/auth/oauth/google",
+          "/auth/oauth/tiktok",
+          "/auth/register",
+          "/unsubscribe",
+          "/user/data-deletion"
+        ],
+        "affectedCapabilityIds": [
+          "capability:auth-facebook"
+        ],
+        "affectedFlowIds": [
+          "ad-delete-ad-rules-id",
+          "ad-patch-meta-ads-campaigns-id-status",
+          "ad-post-ad-rules-id-toggle",
+          "admin-post-admin-auth-login",
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
+          "admin-post-admin-transactions-order-id-operate",
+          "analytics-post-reports-send-email",
+          "auth-post-auth-forgot-password",
+          "auth-post-auth-reset-password",
+          "billing-post-billing-checkout",
+          "inbox-post-inbox-conversations-conversation-id-assign",
+          "inbox-post-inbox-conversations-conversation-id-close",
+          "kloel-post-kloel-onboarding-workspace-id-chat-stream",
+          "launch-post-launch-launcher",
+          "marketing-patch-checkout-plans-plan-id-config",
+          "marketing-post-inbox-conversations-conversation-id-assign",
+          "marketing-post-inbox-conversations-conversation-id-close",
+          "marketing-post-marketing-connect-email",
+          "marketing-post-marketing-connect-email-test",
+          "marketing-post-marketing-email-send",
+          "media-post-media-video",
+          "media-post-video-create",
+          "media-post-voice-generate",
+          "media-post-voice-profiles",
+          "webinarios-put-webinars-id",
+          "whatsapp-post-whatsapp-api-session-action"
+        ],
+        "validationTargets": [
+          "Validate structural chain for /api/auth/anonymous.",
+          "Re-run runtime evidence for this capability.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+        ]
+      },
+      {
+        "id": "integration_without_observability:integration-without-observability-auth-callback",
+        "kind": "integration_without_observability",
+        "severity": "critical",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Integration without observability: Auth Callback",
+        "summary": "Capability Auth Callback depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "relatedFiles": [
+          "backend/prisma/schema.prisma",
+          "backend/src/audit/audit.service.ts",
+          "backend/src/auth/email.service.ts",
+          "backend/src/partnerships/partnerships.controller.ts",
+          "backend/src/partnerships/partnerships.service.ts",
+          "frontend/src/hooks/usePartnerships.ts"
+        ],
+        "routePatterns": [
+          "/api/auth/callback/apple",
+          "/api/auth/callback/tiktok",
+          "/api/auth/facebook",
+          "/api/auth/forgot-password",
+          "/api/auth/google",
+          "/api/auth/magic-link/request",
+          "/auth/forgot-password",
+          "/auth/magic-link/request",
+          "/auth/oauth/apple",
+          "/auth/oauth/facebook",
+          "/auth/oauth/google",
+          "/auth/oauth/tiktok",
+          "/campaigns/:id/launch",
+          "/checkout/bumps/:id",
+          "/checkout/checkouts/:id",
+          "/checkout/coupons/:id",
+          "/checkout/orders/:id/status",
+          "/checkout/pixels/:id",
+          "/checkout/plans/:id",
+          "/checkout/products/:id",
+          "/checkout/products/:productId/checkouts",
+          "/checkout/products/:productId/plans",
+          "/checkout/upsells/:id",
+          "/partnerships/affiliates",
+          "/partnerships/affiliates${q ?",
+          "/partnerships/affiliates/${id}",
+          "/partnerships/affiliates/${id}/approve",
+          "/partnerships/affiliates/${id}/revoke",
+          "/partnerships/affiliates/:id",
+          "/partnerships/affiliates/:id/approve",
+          "/partnerships/affiliates/:id/performance",
+          "/partnerships/affiliates/:id/revoke",
+          "/partnerships/affiliates/stats",
+          "/partnerships/chat/${partnerId}/messages",
+          "/partnerships/chat/${partnerId}/read",
+          "/partnerships/chat/:partnerId/messages",
+          "/partnerships/chat/:partnerId/read",
+          "/partnerships/chat/contacts",
+          "/partnerships/collaborators",
+          "/partnerships/collaborators/${agentId}",
+          "/partnerships/collaborators/${agentId}/role",
+          "/partnerships/collaborators/:agentId",
+          "/partnerships/collaborators/:agentId/role",
+          "/partnerships/collaborators/invite",
+          "/partnerships/collaborators/invite/${id}",
+          "/partnerships/collaborators/invite/:id",
+          "/partnerships/collaborators/stats",
+          "/products/:productId/commissions",
+          "/settings/api-keys/:id"
+        ],
+        "affectedCapabilityIds": [
+          "capability:partnerships-partnership"
+        ],
+        "affectedFlowIds": [
+          "admin-post-admin-products-product-id-approve",
+          "admin-post-admin-products-product-id-reject",
+          "auth-post-auth-forgot-password",
+          "auth-post-auth-reset-password",
           "marketing-patch-checkout-plans-plan-id-config",
           "member-delete-member-areas-id-students-student-id",
           "member-post-affiliate-request-product-id",
@@ -1741,113 +1677,9 @@
           "workspace-put-crm-deals-id-move"
         ],
         "validationTargets": [
-          "Validate structural chain for /analytics/smart-time.",
+          "Validate structural chain for /api/auth/callback/apple.",
           "Re-run runtime evidence for this capability.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-        ]
-      },
-      {
-        "id": "integration_without_observability:integration-without-observability-auth-anonymous",
-        "kind": "integration_without_observability",
-        "severity": "critical",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Integration without observability: Auth Anonymous",
-        "summary": "Capability Auth Anonymous depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
-        "relatedFiles": [
-          "backend/prisma/schema.prisma",
-          "backend/src/auth/auth.controller.ts",
-          "backend/src/auth/auth.password.service.ts",
-          "backend/src/auth/auth.service.ts",
-          "backend/src/auth/auth.token.service.ts",
-          "backend/src/auth/rate-limit.service.ts",
-          "frontend/src/app/api/auth/anonymous/route.ts",
-          "frontend/src/lib/anonymous-session.ts"
-        ],
-        "routePatterns": [
-          "/api/auth/anonymous",
-          "/api/auth/callback/apple",
-          "/api/auth/callback/tiktok",
-          "/api/auth/facebook",
-          "/api/auth/forgot-password",
-          "/api/auth/google",
-          "/api/auth/login",
-          "/auth/anonymous",
-          "/auth/forgot-password",
-          "/auth/login",
-          "/auth/oauth/apple",
-          "/auth/oauth/facebook",
-          "/auth/oauth/google",
-          "/auth/oauth/tiktok"
-        ],
-        "affectedCapabilityIds": [
-          "capability:auth-anonymous"
-        ],
-        "affectedFlowIds": [
-          "ad-delete-ad-rules-id",
-          "ad-patch-meta-ads-campaigns-id-status",
-          "ad-post-ad-rules-id-toggle",
-          "admin-post-admin-auth-login",
-          "admin-post-admin-products-product-id-approve",
-          "admin-post-admin-products-product-id-reject",
-          "admin-post-admin-transactions-order-id-operate",
-          "analytics-post-reports-send-email",
-          "auth-post-auth-forgot-password",
-          "auth-post-auth-reset-password",
-          "billing-post-billing-checkout",
-          "inbox-post-inbox-conversations-conversation-id-assign",
-          "inbox-post-inbox-conversations-conversation-id-close",
-          "kloel-post-kloel-onboarding-workspace-id-chat-stream",
-          "launch-post-launch-launcher",
-          "marketing-patch-checkout-plans-plan-id-config",
-          "marketing-post-inbox-conversations-conversation-id-assign",
-          "marketing-post-inbox-conversations-conversation-id-close",
-          "marketing-post-marketing-connect-email",
-          "marketing-post-marketing-connect-email-test",
-          "marketing-post-marketing-email-send",
-          "media-post-media-video",
-          "media-post-video-create",
-          "media-post-voice-generate",
-          "media-post-voice-profiles",
-          "webinarios-put-webinars-id",
-          "whatsapp-post-whatsapp-api-session-action"
-        ],
-        "validationTargets": [
-          "Validate structural chain for /api/auth/anonymous.",
-          "Re-run runtime evidence for this capability.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-        ]
-      },
-      {
-        "id": "integration_without_observability:integration-without-observability-auth-check",
-        "kind": "integration_without_observability",
-        "severity": "critical",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Integration without observability: Auth Check",
-        "summary": "Capability Auth Check depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
-        "relatedFiles": [
-          "backend/prisma/schema.prisma",
-          "backend/src/auth/auth.controller.ts",
-          "backend/src/auth/auth.password.service.ts",
-          "backend/src/auth/auth.service.ts",
-          "frontend/src/app/api/auth/check-email/route.ts"
-        ],
-        "routePatterns": [
-          "/api/auth/check-email",
-          "/auth/check-email",
-          "/auth/check-email?email=${encodeURIComponent(email)}"
-        ],
-        "affectedCapabilityIds": [
-          "capability:auth-check"
-        ],
-        "affectedFlowIds": [
-          "auth-post-auth-forgot-password",
-          "auth-post-auth-reset-password"
-        ],
-        "validationTargets": [
-          "Validate structural chain for /api/auth/check-email.",
-          "Re-run runtime evidence for this capability.",
+          "Re-sync Codacy and confirm HIGH issues dropped.",
           "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
         ]
       },
@@ -1962,165 +1794,41 @@
           "Re-sync Codacy and confirm HIGH issues dropped.",
           "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
         ]
-      },
-      {
-        "id": "integration_without_observability:integration-without-observability-autopilot-conversion",
-        "kind": "integration_without_observability",
-        "severity": "critical",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Integration without observability: Autopilot Conversion",
-        "summary": "Capability Autopilot Conversion depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
-        "relatedFiles": [
-          "backend/prisma/schema.prisma",
-          "backend/src/autopilot/autopilot-ops-conversion.service.ts",
-          "backend/src/autopilot/autopilot-ops.service.ts",
-          "backend/src/autopilot/autopilot.controller.ts",
-          "backend/src/autopilot/autopilot.service.ts",
-          "frontend/src/app/(main)/autopilot/page.tsx",
-          "frontend/src/lib/api/autopilot.ts"
-        ],
-        "routePatterns": [
-          "/autopilot/conversion",
-          "/autopilot/pipeline",
-          "/autopilot/retry",
-          "/autopilot/test",
-          "/webhook/payment",
-          "/webhook/payment/paghiper",
-          "/webhook/payment/shopify",
-          "/webhook/payment/woocommerce"
-        ],
-        "affectedCapabilityIds": [
-          "capability:autopilot"
-        ],
-        "affectedFlowIds": [
-          "autopilot-post-autopilot-ask",
-          "autopilot-post-autopilot-money-machine",
-          "autopilot-post-autopilot-send",
-          "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle",
-          "cia-post-cia-autopilot-total-workspace-id",
-          "workspace-post-autopilot-toggle"
-        ],
-        "validationTargets": [
-          "Validate structural chain for /autopilot/conversion.",
-          "Re-run runtime evidence for this capability.",
-          "Re-sync Codacy and confirm HIGH issues dropped.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-        ]
-      },
-      {
-        "id": "integration_without_observability:integration-without-observability-autopilot-money",
-        "kind": "integration_without_observability",
-        "severity": "critical",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Integration without observability: Autopilot Money",
-        "summary": "Capability Autopilot Money depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
-        "relatedFiles": [
-          "backend/prisma/schema.prisma",
-          "backend/src/autopilot/autopilot-analytics-report.service.ts",
-          "backend/src/autopilot/autopilot-analytics.service.ts",
-          "backend/src/autopilot/autopilot-cycle-money.service.ts",
-          "backend/src/autopilot/autopilot-cycle.service.ts",
-          "backend/src/autopilot/autopilot.controller.ts",
-          "backend/src/autopilot/autopilot.service.ts",
-          "frontend/src/app/(main)/autopilot/page.tsx",
-          "frontend/src/lib/api/autopilot.ts"
-        ],
-        "routePatterns": [
-          "/autopilot/money-machine",
-          "/autopilot/money-report",
-          "/autopilot/next-best-action",
-          "/autopilot/process",
-          "/autopilot/run"
-        ],
-        "affectedCapabilityIds": [
-          "capability:autopilot-money"
-        ],
-        "affectedFlowIds": [
-          "autopilot-post-autopilot-ask",
-          "autopilot-post-autopilot-money-machine",
-          "autopilot-post-autopilot-send",
-          "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle"
-        ],
-        "validationTargets": [
-          "Validate structural chain for /autopilot/money-machine.",
-          "Re-run runtime evidence for this capability.",
-          "Re-sync Codacy and confirm HIGH issues dropped.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-        ]
-      },
-      {
-        "id": "integration_without_observability:integration-without-observability-autopilot-revenue",
-        "kind": "integration_without_observability",
-        "severity": "critical",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Integration without observability: Autopilot Revenue",
-        "summary": "Capability Autopilot Revenue depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
-        "relatedFiles": [
-          "backend/prisma/schema.prisma",
-          "backend/src/autopilot/autopilot-analytics-report.service.ts",
-          "backend/src/autopilot/autopilot-analytics.service.ts",
-          "backend/src/autopilot/autopilot.controller.ts",
-          "backend/src/autopilot/autopilot.service.ts"
-        ],
-        "routePatterns": [
-          "/autopilot/revenue-events"
-        ],
-        "affectedCapabilityIds": [
-          "capability:autopilot-revenue"
-        ],
-        "affectedFlowIds": [
-          "autopilot-post-autopilot-ask",
-          "autopilot-post-autopilot-money-machine",
-          "autopilot-post-autopilot-send",
-          "autopilot-post-autopilot-test",
-          "autopilot-post-autopilot-toggle"
-        ],
-        "validationTargets": [
-          "Validate structural chain for /autopilot/revenue-events.",
-          "Re-run runtime evidence for this capability.",
-          "Re-sync Codacy and confirm HIGH issues dropped.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-        ]
       }
     ]
   },
   "executionMatrix": {
     "summary": {
-      "totalPaths": 4020,
+      "totalPaths": 4034,
       "bySource": {
         "execution_chain": 0,
-        "capability": 312,
+        "capability": 314,
         "flow": 118,
         "structural_node": 1473,
-        "scope_file": 2117
+        "scope_file": 2129
       },
       "byStatus": {
         "observed_pass": 17,
-        "observed_fail": 229,
-        "untested": 106,
-        "blocked_human_required": 113,
+        "observed_fail": 232,
+        "untested": 104,
+        "observation_only": 0,
         "unreachable": 0,
-        "inferred_only": 1439,
-        "not_executable": 2116
+        "inferred_only": 1438,
+        "not_executable": 2243
       },
       "observedPass": 17,
-      "observedFail": 229,
-      "untested": 106,
-      "blockedHumanRequired": 113,
+      "observedFail": 232,
+      "untested": 104,
       "unreachable": 0,
-      "inferredOnly": 1439,
-      "notExecutable": 2116,
-      "terminalPaths": 4020,
+      "inferredOnly": 1438,
+      "notExecutable": 2243,
+      "terminalPaths": 4034,
       "nonTerminalPaths": 0,
       "unknownPaths": 0,
       "criticalUnobservedPaths": 0,
       "impreciseBreakpoints": 0,
-      "coveragePercent": 100
+      "coveragePercent": 100,
+      "observationOnly": 0
     },
     "topFailures": [
       {
@@ -2194,7 +1902,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-accounts route /admin/accounts",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 1,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -2302,7 +2010,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-audit route /admin/accounts/:workspaceId",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 1,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -2393,7 +2101,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-auth route /admin/accounts/:workspaceId",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 1,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -2490,7 +2198,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-carteira route /admin/accounts/:workspaceId",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 1,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -2599,13 +2307,6 @@
             "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts."
           },
           {
-            "source": "external",
-            "artifactPath": "PULSE_EXTERNAL_SIGNAL_STATE.json",
-            "executed": true,
-            "status": "mapped",
-            "summary": "No Datadog monitors configured — add monitors for production visibility"
-          },
-          {
             "source": "static",
             "artifactPath": "PULSE_CERTIFICATE.json",
             "executed": true,
@@ -2615,7 +2316,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-config route /admin/accounts/:workspaceId",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 1,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -2706,7 +2407,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-notifications route /admin/accounts/:workspaceId",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 1,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -2799,7 +2500,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-products route /admin/accounts/:workspaceId",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 1,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -2895,7 +2596,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-reports route /admin/accounts/:workspaceId",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 1,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -2985,7 +2686,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:ad-rules route /ad-rules",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 1,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -3074,7 +2775,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-chat route /admin/chat/message",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 1,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -3147,7 +2848,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-clients route /admin/clients",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 0.85,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -3217,7 +2918,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-compliance route /admin/compliance/overview",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 0.85,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -3287,7 +2988,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-dashboard route /admin/dashboard/home",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 1,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -3362,8 +3063,8 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-destructive route /admin/destructive-intents",
         "risk": "high",
-        "executionMode": "ai_safe",
-        "confidence": 0.85,
+        "executionMode": "governed_validation",
+        "confidence": 1,
         "filePaths": [
           "backend/prisma/schema.prisma",
           "backend/src/admin/destructive/admin-destructive.controller.ts",
@@ -3435,7 +3136,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-marketing route /admin/dashboard/home",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 1,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -3504,7 +3205,7 @@
         ],
         "validationCommand": "node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-permission route /admin/chat/message",
         "risk": "high",
-        "executionMode": "ai_safe",
+        "executionMode": "governed_validation",
         "confidence": 1,
         "filePaths": [
           "backend/prisma/schema.prisma",
@@ -3875,7 +3576,7 @@
       "blockers": [
         "Inbox Encode remains partial.",
         "Messages Message remains partial.",
-        "Missing structural roles: persistence, side_effect.",
+        "Missing structural roles: persistence.",
         "Ai Assistant remains partial.",
         "(sem texto) remains partial.",
         "relative w-32 h-16 rounded-full transition-all duration-300 remains partial."
@@ -3939,6 +3640,7 @@
         "/api/auth/forgot-password",
         "/api/auth/google",
         "/api/auth/login",
+        "/api/auth/magic-link/request",
         "/api/auth/magic-link/verify",
         "/api/auth/register",
         "/api/checkout/social/apple/callback",
@@ -3968,6 +3670,7 @@
         "/auth/anonymous",
         "/auth/forgot-password",
         "/auth/login",
+        "/auth/magic-link/request",
         "/auth/magic-link/verify",
         "/auth/oauth/apple",
         "/auth/oauth/facebook",
@@ -4583,12 +4286,12 @@
         "workspace-put-crm-deals-id-move"
       ],
       "blockers": [
-        "Missing structural roles: side_effect.",
         "Admin Accounts remains partial.",
         "Admin Carteira remains partial.",
-        "Auth Anonymous remains partial.",
+        "Maturity is still missing: codacy_hygiene.",
         "Ai Assistant remains partial.",
-        "Checkout Social remains partial."
+        "Whatsapp Agent remains partial.",
+        "Messages Message remains partial."
       ]
     },
     {
@@ -4623,6 +4326,12 @@
         "/analytics",
         "/analytics/smart-time",
         "/anuncios",
+        "/api/auth/callback/apple",
+        "/api/auth/callback/tiktok",
+        "/api/auth/facebook",
+        "/api/auth/forgot-password",
+        "/api/auth/google",
+        "/api/auth/magic-link/request",
         "/api/auth/register",
         "/api/checkout/social/apple/callback",
         "/api/kyc/bank",
@@ -4648,6 +4357,11 @@
         "/api/whatsapp-api/session/start",
         "/api/workspace/me",
         "/auth/forgot-password",
+        "/auth/magic-link/request",
+        "/auth/oauth/apple",
+        "/auth/oauth/facebook",
+        "/auth/oauth/google",
+        "/auth/oauth/tiktok",
         "/auth/register",
         "/auth/reset-password",
         "/autopilot",
@@ -5351,10 +5065,10 @@
       ],
       "blockers": [
         "Ad Rules remains partial.",
-        "Missing structural roles: side_effect.",
-        "Ai Assistant remains partial.",
-        "Admin Carteira remains partial.",
         "Campaigns Campaign remains partial.",
+        "Ai Assistant remains partial.",
+        "Checkout Social remains partial.",
+        "Admin Carteira remains partial.",
         "Inbox Encode remains partial."
       ]
     },
@@ -5391,6 +5105,12 @@
         "/analytics/reports/ai",
         "/analytics/smart-time",
         "/analytics/stats",
+        "/api/auth/callback/apple",
+        "/api/auth/callback/tiktok",
+        "/api/auth/facebook",
+        "/api/auth/forgot-password",
+        "/api/auth/google",
+        "/api/auth/magic-link/request",
         "/api/auth/register",
         "/api/kyc/bank",
         "/api/kyc/fiscal",
@@ -5411,6 +5131,11 @@
         "/api/whatsapp-api/session/repair-config",
         "/api/whatsapp-api/session/start",
         "/auth/forgot-password",
+        "/auth/magic-link/request",
+        "/auth/oauth/apple",
+        "/auth/oauth/facebook",
+        "/auth/oauth/google",
+        "/auth/oauth/tiktok",
         "/auth/register",
         "/auth/reset-password",
         "/autopilot",
@@ -5829,7 +5554,7 @@
         "Analytics Analytic remains partial.",
         "Ai Assistant remains partial.",
         "Maturity is still missing: codacy_hygiene.",
-        "Missing structural roles: side_effect.",
+        "Whatsapp Status remains partial.",
         "(sem texto) remains partial.",
         "onApprove remains partial."
       ]
@@ -5867,6 +5592,12 @@
         "/analytics/reports/ai",
         "/analytics/smart-time",
         "/analytics/stats",
+        "/api/auth/callback/apple",
+        "/api/auth/callback/tiktok",
+        "/api/auth/facebook",
+        "/api/auth/forgot-password",
+        "/api/auth/google",
+        "/api/auth/magic-link/request",
         "/api/auth/register",
         "/api/kyc/bank",
         "/api/kyc/fiscal",
@@ -5904,6 +5635,11 @@
         "/api/whatsapp-api/session/takeover",
         "/api/whatsapp-api/session/view",
         "/auth/forgot-password",
+        "/auth/magic-link/request",
+        "/auth/oauth/apple",
+        "/auth/oauth/facebook",
+        "/auth/oauth/google",
+        "/auth/oauth/tiktok",
         "/auth/register",
         "/auth/reset-password",
         "/autopilot",
@@ -7031,6 +6767,12 @@
         "/analytics/smart-time",
         "/analytics/stats",
         "/anuncios",
+        "/api/auth/callback/apple",
+        "/api/auth/callback/tiktok",
+        "/api/auth/facebook",
+        "/api/auth/forgot-password",
+        "/api/auth/google",
+        "/api/auth/magic-link/request",
         "/api/auth/register",
         "/api/checkout/social/apple/callback",
         "/api/kyc/bank",
@@ -7053,6 +6795,11 @@
         "/api/whatsapp-api/session/repair-config",
         "/api/whatsapp-api/session/start",
         "/auth/forgot-password",
+        "/auth/magic-link/request",
+        "/auth/oauth/apple",
+        "/auth/oauth/facebook",
+        "/auth/oauth/google",
+        "/auth/oauth/tiktok",
         "/auth/register",
         "/auth/reset-password",
         "/autopilot",
@@ -7766,9 +7513,9 @@
         "Ad Rules remains partial.",
         "Ai Assistant remains partial.",
         "Analytics Analytic remains partial.",
-        "Missing structural roles: side_effect.",
+        "Campaigns Campaign remains partial.",
         "Maturity is still missing: codacy_hygiene.",
-        "Admin Carteira remains partial."
+        "Checkout Social remains partial."
       ]
     },
     {
@@ -7804,6 +7551,12 @@
         "/analytics",
         "/analytics/smart-time",
         "/anuncios",
+        "/api/auth/callback/apple",
+        "/api/auth/callback/tiktok",
+        "/api/auth/facebook",
+        "/api/auth/forgot-password",
+        "/api/auth/google",
+        "/api/auth/magic-link/request",
         "/api/auth/register",
         "/api/checkout/social/apple/callback",
         "/api/checkout/social/apple/start",
@@ -7818,6 +7571,11 @@
         "/api/whatsapp-api/session/force-reconnect",
         "/api/whatsapp-api/session/start",
         "/auth/forgot-password",
+        "/auth/magic-link/request",
+        "/auth/oauth/apple",
+        "/auth/oauth/facebook",
+        "/auth/oauth/google",
+        "/auth/oauth/tiktok",
         "/auth/register",
         "/auth/reset-password",
         "/autopilot",
@@ -8401,11 +8159,11 @@
       ],
       "blockers": [
         "Ad Rules remains partial.",
-        "Missing structural roles: side_effect.",
+        "Campaigns Campaign remains partial.",
         "Billing Checkout remains partial.",
         "Ai Assistant remains partial.",
-        "Admin Carteira remains partial.",
-        "Missing structural roles: interface, persistence."
+        "Checkout Social remains partial.",
+        "Maturity is still missing: validation, scenario_coverage."
       ]
     },
     {
@@ -9286,12 +9044,12 @@
         "workspace-put-crm-deals-id-move"
       ],
       "blockers": [
-        "Missing structural roles: side_effect.",
         "Admin Accounts remains partial.",
+        "Missing structural roles: side_effect.",
+        "Campaigns Campaign remains partial.",
         "Missing structural roles: interface, persistence.",
         "Auth Anonymous remains partial.",
-        "Missing structural roles: persistence.",
-        "Admin Carteira remains partial."
+        "Missing structural roles: persistence."
       ]
     },
     {
@@ -9326,8 +9084,21 @@
         "/ai/kb/source",
         "/analytics",
         "/analytics/smart-time",
+        "/api/auth/callback/apple",
+        "/api/auth/callback/tiktok",
+        "/api/auth/facebook",
+        "/api/auth/forgot-password",
+        "/api/auth/google",
+        "/api/auth/magic-link/request",
         "/api/kyc/bank",
         "/api/kyc/fiscal",
+        "/auth/forgot-password",
+        "/auth/magic-link/request",
+        "/auth/oauth/apple",
+        "/auth/oauth/facebook",
+        "/auth/oauth/google",
+        "/auth/oauth/tiktok",
+        "/auth/reset-password",
         "/autopilot",
         "/autopilot/ask",
         "/autopilot/money-machine",
@@ -9475,7 +9246,9 @@
         "/products/import",
         "/products/stats",
         "/produtos",
+        "/register",
         "/reports/send-email",
+        "/reset-password",
         "/segmentation/:workspaceId/auto-segment",
         "/settings",
         "/settings/api-keys/:id",
@@ -9510,6 +9283,8 @@
         "affiliate-post-affiliate-saved-product-id",
         "affiliate-post-affiliate-suggest",
         "analytics-post-reports-send-email",
+        "auth-post-auth-forgot-password",
+        "auth-post-auth-reset-password",
         "autopilot-post-autopilot-ask",
         "autopilot-post-autopilot-money-machine",
         "autopilot-post-autopilot-send",
@@ -9566,12 +9341,12 @@
         "workspace-put-crm-deals-id-move"
       ],
       "blockers": [
-        "Missing structural roles: side_effect.",
-        "Campaigns Campaign remains partial.",
-        "Analytics Analytic remains partial.",
+        "Maturity is still missing: validation, scenario_coverage.",
+        "Maturity is still missing: codacy_hygiene.",
         "onApprove remains partial.",
         "onReject remains partial.",
-        "(sem texto) remains partial."
+        "(sem texto) remains partial.",
+        "onForgotPassword remains partial."
       ]
     },
     {
@@ -9631,6 +9406,12 @@
         "/analytics/smart-time",
         "/analytics/stats",
         "/anuncios",
+        "/api/auth/callback/apple",
+        "/api/auth/callback/tiktok",
+        "/api/auth/facebook",
+        "/api/auth/forgot-password",
+        "/api/auth/google",
+        "/api/auth/magic-link/request",
         "/api/auth/register",
         "/api/checkout/social/apple/callback",
         "/api/kyc/bank",
@@ -9644,6 +9425,11 @@
         "/api/whatsapp-api/session/force-reconnect",
         "/api/whatsapp-api/session/start",
         "/auth/forgot-password",
+        "/auth/magic-link/request",
+        "/auth/oauth/apple",
+        "/auth/oauth/facebook",
+        "/auth/oauth/google",
+        "/auth/oauth/tiktok",
         "/auth/register",
         "/auth/reset-password",
         "/autopilot",
@@ -10227,11 +10013,11 @@
       ],
       "blockers": [
         "Ad Rules remains partial.",
-        "Missing structural roles: side_effect.",
+        "Admin Accounts remains partial.",
         "Analytics Analytic remains partial.",
+        "Campaigns Campaign remains partial.",
         "Ai Assistant remains partial.",
-        "Maturity is still missing: codacy_hygiene.",
-        "Admin Carteira remains partial."
+        "Maturity is still missing: codacy_hygiene."
       ]
     },
     {
@@ -10273,6 +10059,7 @@
         "/api/auth/forgot-password",
         "/api/auth/google",
         "/api/auth/login",
+        "/api/auth/magic-link/request",
         "/api/auth/magic-link/verify",
         "/api/auth/register",
         "/api/auth/verify-email",
@@ -10320,6 +10107,7 @@
         "/auth/anonymous",
         "/auth/forgot-password",
         "/auth/login",
+        "/auth/magic-link/request",
         "/auth/magic-link/verify",
         "/auth/oauth/apple",
         "/auth/oauth/facebook",
@@ -10930,9 +10718,9 @@
         "Ad Rules remains partial.",
         "Ai Assistant remains partial.",
         "Admin Carteira remains partial.",
+        "Maturity is still missing: codacy_hygiene.",
         "Auth Anonymous remains partial.",
-        "Missing structural roles: persistence.",
-        "Maturity is still missing: codacy_hygiene."
+        "Missing structural roles: persistence."
       ]
     }
   ],
@@ -11153,6 +10941,7 @@
         "capability:partnerships-partnership",
         "capability:payments-payment",
         "capability:products-product",
+        "capability:reports-report",
         "capability:segmentation-auto",
         "capability:segmentation-contact",
         "capability:segmentation-preset",
@@ -11178,6 +10967,7 @@
         "capability:webhook-payment",
         "capability:webhooks-webhook",
         "capability:webinars-webinar",
+        "capability:welcome-and",
         "capability:whats-what",
         "capability:whatsapp-agent",
         "capability:whatsapp-backlog",
@@ -11327,8 +11117,8 @@
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Inbox Encode remains partial.",
         "Messages Message remains partial.",
-        "Missing structural roles: side_effect.",
-        "Admin Accounts remains partial."
+        "Admin Accounts remains partial.",
+        "Admin Carteira remains partial."
       ],
       "expectedOutcome": "Admin sintético altera dados pessoais, fiscais, bancários, billing e precisa ver persistência após reload."
     },
@@ -11547,6 +11337,7 @@
         "capability:partnerships-partnership",
         "capability:payments-payment",
         "capability:products-product",
+        "capability:reports-report",
         "capability:segmentation-auto",
         "capability:segmentation-contact",
         "capability:segmentation-preset",
@@ -11572,6 +11363,7 @@
         "capability:webhook-payment",
         "capability:webhooks-webhook",
         "capability:webinars-webinar",
+        "capability:welcome-and",
         "capability:whats-what",
         "capability:whatsapp-agent",
         "capability:whatsapp-backlog",
@@ -11720,8 +11512,8 @@
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Inbox Encode remains partial.",
         "Messages Message remains partial.",
-        "Missing structural roles: side_effect.",
-        "Admin Accounts remains partial."
+        "Admin Accounts remains partial.",
+        "Admin Carteira remains partial."
       ],
       "expectedOutcome": "Admin sintético opera sessions/providers de WhatsApp e valida reconexão e refletância de estado."
     },
@@ -11934,6 +11726,7 @@
         "capability:partnerships-partnership",
         "capability:payments-payment",
         "capability:products-product",
+        "capability:reports-report",
         "capability:sales-sale",
         "capability:segmentation-auto",
         "capability:segmentation-contact",
@@ -11960,6 +11753,7 @@
         "capability:webhook-payment",
         "capability:webhooks-webhook",
         "capability:webinars-webinar",
+        "capability:welcome-and",
         "capability:whats-what",
         "capability:whatsapp-agent",
         "capability:whatsapp-backlog",
@@ -12109,8 +11903,8 @@
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Inbox Encode remains partial.",
         "Messages Message remains partial.",
-        "Missing structural roles: side_effect.",
-        "Admin Accounts remains partial."
+        "Admin Accounts remains partial.",
+        "Admin Carteira remains partial."
       ],
       "expectedOutcome": "Cliente sintético registra, faz login, e valida /workspace/me com 200. Prova persistência de sessão."
     },
@@ -12332,6 +12126,7 @@
         "capability:partnerships-partnership",
         "capability:payments-payment",
         "capability:products-product",
+        "capability:reports-report",
         "capability:sales-sale",
         "capability:segmentation-auto",
         "capability:segmentation-contact",
@@ -12358,6 +12153,7 @@
         "capability:webhook-payment",
         "capability:webhooks-webhook",
         "capability:webinars-webinar",
+        "capability:welcome-and",
         "capability:whats-what",
         "capability:whatsapp-agent",
         "capability:whatsapp-backlog",
@@ -12506,10 +12302,10 @@
       "blockers": [
         "Inbox Encode remains partial.",
         "Messages Message remains partial.",
-        "Missing structural roles: side_effect.",
         "Admin Accounts remains partial.",
+        "Admin Carteira remains partial.",
         "Ad Rules remains partial.",
-        "Analytics Analytic remains partial."
+        "Campaigns Campaign remains partial."
       ],
       "expectedOutcome": "Cliente sintético cria produto, POST /checkout, valida idempotency-key, confirma status PENDING."
     },
@@ -12724,6 +12520,7 @@
         "capability:partnerships-partnership",
         "capability:payments-payment",
         "capability:products-product",
+        "capability:reports-report",
         "capability:sales-sale",
         "capability:segmentation-auto",
         "capability:segmentation-contact",
@@ -12750,6 +12547,7 @@
         "capability:webhook-payment",
         "capability:webhooks-webhook",
         "capability:webinars-webinar",
+        "capability:welcome-and",
         "capability:whats-what",
         "capability:whatsapp-agent",
         "capability:whatsapp-backlog",
@@ -12899,8 +12697,8 @@
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Inbox Encode remains partial.",
         "Messages Message remains partial.",
-        "Missing structural roles: side_effect.",
-        "Admin Accounts remains partial."
+        "Admin Accounts remains partial.",
+        "Admin Carteira remains partial."
       ],
       "expectedOutcome": "Cliente sintético consulta /whatsapp/session, /inbox/conversations, POST /whatsapp/send — valida endpoints de chat."
     },
@@ -13114,6 +12912,7 @@
         "capability:partnerships-partnership",
         "capability:payments-payment",
         "capability:products-product",
+        "capability:reports-report",
         "capability:sales-sale",
         "capability:segmentation-auto",
         "capability:segmentation-contact",
@@ -13140,6 +12939,7 @@
         "capability:webhook-payment",
         "capability:webhooks-webhook",
         "capability:webinars-webinar",
+        "capability:welcome-and",
         "capability:whats-what",
         "capability:whatsapp-agent",
         "capability:whatsapp-backlog",
@@ -13288,8 +13088,8 @@
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Inbox Encode remains partial.",
         "Messages Message remains partial.",
-        "Missing structural roles: side_effect.",
-        "Admin Accounts remains partial."
+        "Admin Accounts remains partial.",
+        "Admin Carteira remains partial."
       ],
       "expectedOutcome": "Operador sintético inicia rotinas de autopilot e acompanha sinais assíncronos de worker/queue."
     },
@@ -13502,6 +13302,7 @@
         "capability:partnerships-partnership",
         "capability:payments-payment",
         "capability:products-product",
+        "capability:reports-report",
         "capability:sales-sale",
         "capability:segmentation-auto",
         "capability:segmentation-contact",
@@ -13528,6 +13329,7 @@
         "capability:webhook-payment",
         "capability:webhooks-webhook",
         "capability:webinars-webinar",
+        "capability:welcome-and",
         "capability:whats-what",
         "capability:whatsapp-agent",
         "capability:whatsapp-backlog",
@@ -13676,8 +13478,8 @@
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Inbox Encode remains partial.",
         "Messages Message remains partial.",
-        "Missing structural roles: side_effect.",
-        "Admin Accounts remains partial."
+        "Admin Accounts remains partial.",
+        "Admin Carteira remains partial."
       ],
       "expectedOutcome": "Operador sintético executa automações, espera eventos e retoma processamento entre módulos."
     },
@@ -13899,6 +13701,7 @@
         "capability:partnerships-partnership",
         "capability:payments-payment",
         "capability:products-product",
+        "capability:reports-report",
         "capability:sales-sale",
         "capability:segmentation-auto",
         "capability:segmentation-contact",
@@ -13925,6 +13728,7 @@
         "capability:webhook-payment",
         "capability:webhooks-webhook",
         "capability:webinars-webinar",
+        "capability:welcome-and",
         "capability:whats-what",
         "capability:whatsapp-agent",
         "capability:whatsapp-backlog",
@@ -14075,8 +13879,8 @@
         "Missing structural roles: orchestration, persistence, side_effect.",
         "Inbox Encode remains partial.",
         "Messages Message remains partial.",
-        "Missing structural roles: side_effect.",
-        "Admin Accounts remains partial."
+        "Admin Accounts remains partial.",
+        "Admin Carteira remains partial."
       ],
       "expectedOutcome": "Ator sistêmico exige reconciliação entre pagamento, webhook, ledger e wallet sem dependência humana."
     }
@@ -14116,24 +13920,6 @@
       ],
       "executionMode": "ai_safe",
       "routePatterns": []
-    },
-    {
-      "id": "capability:diag",
-      "name": "Diag",
-      "status": "partial",
-      "stage": "connected",
-      "score": 0.4600000000000001,
-      "missing": [
-        "persistence",
-        "side_effect",
-        "runtime_evidence",
-        "validation",
-        "scenario_coverage"
-      ],
-      "executionMode": "ai_safe",
-      "routePatterns": [
-        "/diag"
-      ]
     },
     {
       "id": "capability:ferramentas-ferramenta",
@@ -14215,6 +14001,23 @@
       ]
     },
     {
+      "id": "capability:diag",
+      "name": "Diag",
+      "status": "real",
+      "stage": "connected",
+      "score": 0.56,
+      "missing": [
+        "persistence",
+        "runtime_evidence",
+        "validation",
+        "scenario_coverage"
+      ],
+      "executionMode": "ai_safe",
+      "routePatterns": [
+        "/diag"
+      ]
+    },
+    {
       "id": "capability:kloel-download",
       "name": "Kloel Download",
       "status": "real",
@@ -14251,25 +14054,8 @@
       ]
     },
     {
-      "id": "capability:welcome-and",
-      "name": "Lifecycle On",
-      "status": "real",
-      "stage": "connected",
-      "score": 0.56,
-      "missing": [
-        "persistence",
-        "runtime_evidence",
-        "validation",
-        "scenario_coverage"
-      ],
-      "executionMode": "ai_safe",
-      "routePatterns": [
-        "lifecycle:onModuleInit"
-      ]
-    },
-    {
-      "id": "capability:marketplace-treasury",
-      "name": "Admin Carteira",
+      "id": "capability:admin-clients",
+      "name": "Admin Clients",
       "status": "real",
       "stage": "connected",
       "score": 0.64,
@@ -14281,8 +14067,24 @@
       ],
       "executionMode": "ai_safe",
       "routePatterns": [
-        "/admin/carteira/payouts",
-        "cron:CronExpression.EVERY_MINUTE"
+        "/admin/clients"
+      ]
+    },
+    {
+      "id": "capability:admin-compliance",
+      "name": "Admin Compliance",
+      "status": "real",
+      "stage": "connected",
+      "score": 0.64,
+      "missing": [
+        "side_effect",
+        "runtime_evidence",
+        "validation",
+        "scenario_coverage"
+      ],
+      "executionMode": "ai_safe",
+      "routePatterns": [
+        "/admin/compliance/overview"
       ]
     }
   ],
@@ -14365,6 +14167,7 @@
         "capability:auth-whatsapp",
         "capability:catch",
         "capability:checkout-payment",
+        "capability:checkout-social",
         "capability:email-status",
         "capability:finance",
         "capability:finance-recent",
@@ -14389,13 +14192,17 @@
         "capability:meta-instagram",
         "capability:meta-messenger",
         "capability:omnichannel",
+        "capability:partnerships-partnership",
         "capability:payments-payment",
+        "capability:products-product",
         "capability:pulse-live",
         "capability:reports-report",
         "capability:stripe-webhook",
+        "capability:team-invite",
         "capability:unsubscribe",
         "capability:user-data",
         "capability:webhooks-webhook",
+        "capability:welcome-and",
         "capability:whatsapp-incoming",
         "capability:whatsapp-runtime"
       ],
@@ -14675,7 +14482,7 @@
       "type": "static_hotspot",
       "summary": "1 HIGH Codacy issue(s) remain in package.json.",
       "impactScore": 0.55,
-      "executionMode": "human_required",
+      "executionMode": "observation_only",
       "affectedCapabilities": [
         "capability:kloel-security",
         "capability:kyc-security",
@@ -14689,274 +14496,6 @@
         "kloel-post-kloel-site-save",
         "kloel-post-kloel-wallet-workspace-id-withdraw",
         "kloel-put-kloel-site-id"
-      ]
-    },
-    {
-      "source": "github",
-      "type": "code-change",
-      "summary": "20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#224) Bump",
-      "impactScore": 0.4,
-      "executionMode": "observation_only",
-      "affectedCapabilities": [],
-      "affectedFlows": []
-    },
-    {
-      "source": "sentry",
-      "type": "performance-metric",
-      "summary": "No unresolved Sentry issues — project is clean",
-      "impactScore": 0.1,
-      "executionMode": "observation_only",
-      "affectedCapabilities": [
-        "capability:diag-errors"
-      ],
-      "affectedFlows": []
-    },
-    {
-      "source": "datadog",
-      "type": "config-gap",
-      "summary": "No Datadog monitors configured — add monitors for production visibility",
-      "impactScore": 0.2,
-      "executionMode": "observation_only",
-      "affectedCapabilities": [
-        "capability:admin-config",
-        "capability:affiliate-config",
-        "capability:autopilot-config",
-        "capability:autopilot-cycle",
-        "capability:autopilot-insights",
-        "capability:autopilot-process",
-        "capability:autopilot-run",
-        "capability:autopilot-send",
-        "capability:autopilot-toggle",
-        "capability:checkout",
-        "capability:checkout-catalog",
-        "capability:checkout-checkouts",
-        "capability:checkout-config",
-        "capability:checkout-plans",
-        "capability:checkout-product",
-        "capability:cia-surface",
-        "capability:kloel-tool",
-        "capability:products-product",
-        "capability:webhook-payment",
-        "capability:whatsapp-backlog",
-        "capability:whatsapp-cia",
-        "capability:whatsapp-session",
-        "capability:whatsapp-status"
-      ],
-      "affectedFlows": [
-        "admin-post-admin-auth-login",
-        "admin-post-admin-chat-message",
-        "admin-post-admin-products-product-id-approve",
-        "admin-post-admin-products-product-id-reject",
-        "admin-post-admin-transactions-order-id-operate",
-        "affiliate-post-affiliate-ai-search",
-        "affiliate-post-affiliate-saved-product-id",
-        "affiliate-post-affiliate-suggest",
-        "analytics-post-reports-send-email",
-        "auth-post-auth-forgot-password",
-        "auth-post-auth-reset-password",
-        "autopilot-post-autopilot-ask",
-        "autopilot-post-autopilot-money-machine",
-        "autopilot-post-autopilot-send",
-        "autopilot-post-autopilot-test",
-        "autopilot-post-autopilot-toggle",
-        "billing-post-billing-checkout",
-        "cia-post-cia-account-approvals-workspace-id-approval-id-approve",
-        "cia-post-cia-account-approvals-workspace-id-approval-id-reject",
-        "cia-post-cia-account-input-sessions-workspace-id-session-id-respond",
-        "cia-post-cia-autopilot-total-workspace-id",
-        "cia-post-cia-conversations-workspace-id-conversation-id-resume",
-        "cia-post-cia-human-tasks-workspace-id-task-id-approve",
-        "cia-post-cia-human-tasks-workspace-id-task-id-reject",
-        "crm-delete-crm-contacts-phone-tags-tag",
-        "crm-post-crm-contacts-phone-tags",
-        "flow-post-flow-templates-id-download",
-        "flow-post-flows-ai-optimize-flow-id",
-        "flow-post-flows-execution-execution-id-retry",
-        "flow-post-flows-save-workspace-id-flow-id",
-        "inbox-post-inbox-conversations-conversation-id-assign",
-        "inbox-post-inbox-conversations-conversation-id-close",
-        "kloel-delete-kloel-site-id",
-        "kloel-delete-kloel-wallet-workspace-id-bank-accounts-id",
-        "kloel-post-kloel-onboarding-workspace-id-chat-stream",
-        "kloel-post-kloel-site-generate",
-        "kloel-post-kloel-site-save",
-        "kloel-post-kloel-wallet-workspace-id-withdraw",
-        "kloel-put-kloel-site-id",
-        "marketing-patch-checkout-plans-plan-id-config",
-        "marketing-post-inbox-conversations-conversation-id-assign",
-        "marketing-post-inbox-conversations-conversation-id-close",
-        "media-post-media-video",
-        "media-post-video-create",
-        "media-post-voice-generate",
-        "media-post-voice-profiles",
-        "member-delete-member-areas-id-students-student-id",
-        "member-post-affiliate-request-product-id",
-        "member-post-affiliate-saved-product-id",
-        "member-post-member-areas-id-generate-structure",
-        "member-post-member-areas-id-modules",
-        "member-post-member-areas-id-modules-module-id-lessons",
-        "member-post-member-areas-id-students",
-        "member-put-member-areas-id",
-        "member-put-member-areas-id-lessons-lesson-id",
-        "member-put-member-areas-id-modules-module-id",
-        "member-put-member-areas-id-students-student-id",
-        "meta-post-meta-auth-disconnect",
-        "products-delete-checkout-checkouts-id",
-        "products-delete-products-product-id-campaigns-campaign-id",
-        "products-delete-products-product-id-commissions-commission-id",
-        "products-delete-products-product-id-coupons-coupon-id",
-        "products-delete-products-product-id-reviews-review-id",
-        "products-delete-products-product-id-urls-url-id",
-        "products-get-products-id",
-        "products-post-checkout-checkouts-id-duplicate",
-        "products-post-checkout-products-product-id-checkouts",
-        "products-post-checkout-products-product-id-plans",
-        "products-post-products",
-        "products-post-products-product-id-campaigns-campaign-id-launch",
-        "products-post-products-product-id-campaigns-campaign-id-pause",
-        "products-post-workspace-id-jitter",
-        "products-put-checkout-bumps-id",
-        "products-put-checkout-products-id",
-        "products-put-products-product-id-affiliates-links-link-id",
-        "vendas-post-kloel-payment-workspace-id-create",
-        "vendas-post-sales-id-refund",
-        "vendas-post-sales-orders-alerts-generate",
-        "vendas-post-sales-orders-alerts-id-resolve",
-        "vendas-post-sales-subscriptions-id-cancel",
-        "vendas-post-sales-subscriptions-id-pause",
-        "vendas-post-sales-subscriptions-id-resume",
-        "vendas-put-sales-orders-id-return",
-        "vendas-put-sales-orders-id-ship",
-        "vendas-put-sales-subscriptions-id-change-plan",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-delete-api-kyc-bank",
-        "workspace-delete-billing-payment-methods-payment-method-id",
-        "workspace-delete-team-invite-id",
-        "workspace-delete-team-member-id",
-        "workspace-post-ai-kb-create",
-        "workspace-post-ai-kb-source",
-        "workspace-post-api-kyc-bank",
-        "workspace-post-api-kyc-fiscal",
-        "workspace-post-autopilot-toggle",
-        "workspace-post-billing-activate-trial",
-        "workspace-post-billing-payment-methods-payment-method-id-default",
-        "workspace-post-billing-payment-methods-setup-intent",
-        "workspace-post-kyc-status",
-        "workspace-post-meta-auth-disconnect",
-        "workspace-post-products",
-        "workspace-post-segmentation-workspace-id-auto-segment",
-        "workspace-post-team-invite",
-        "workspace-post-workspace-id-account",
-        "workspace-put-api-kyc-fiscal",
-        "workspace-put-crm-deals-id-move"
-      ]
-    },
-    {
-      "source": "gitnexus",
-      "type": "codegraph",
-      "summary": "GitNexus index is fresh for commit c74dae23.",
-      "impactScore": 0.1,
-      "executionMode": "ai_safe",
-      "affectedCapabilities": [
-        "capability:auth-verification",
-        "capability:auth-whatsapp",
-        "capability:checkout",
-        "capability:checkout-checkouts",
-        "capability:checkout-order",
-        "capability:checkout-plans",
-        "capability:checkout-product",
-        "capability:checkout-products",
-        "capability:checkout-recent",
-        "capability:checkout-social",
-        "capability:compliance-deletion"
-      ],
-      "affectedFlows": [
-        "ad-delete-ad-rules-id",
-        "ad-patch-meta-ads-campaigns-id-status",
-        "ad-post-ad-rules-id-toggle",
-        "admin-post-admin-auth-login",
-        "admin-post-admin-products-product-id-approve",
-        "admin-post-admin-products-product-id-reject",
-        "admin-post-admin-transactions-order-id-operate",
-        "analytics-post-reports-send-email",
-        "auth-post-auth-forgot-password",
-        "auth-post-auth-reset-password",
-        "billing-post-billing-checkout",
-        "inbox-post-inbox-conversations-conversation-id-assign",
-        "inbox-post-inbox-conversations-conversation-id-close",
-        "kloel-post-kloel-onboarding-workspace-id-chat-stream",
-        "launch-post-launch-launcher",
-        "marketing-patch-checkout-plans-plan-id-config",
-        "marketing-post-inbox-conversations-conversation-id-assign",
-        "marketing-post-inbox-conversations-conversation-id-close",
-        "marketing-post-marketing-connect-email",
-        "marketing-post-marketing-connect-email-test",
-        "marketing-post-marketing-email-send",
-        "media-post-media-video",
-        "media-post-video-create",
-        "media-post-voice-generate",
-        "media-post-voice-profiles",
-        "member-delete-member-areas-id-students-student-id",
-        "member-post-affiliate-request-product-id",
-        "member-post-affiliate-saved-product-id",
-        "member-post-member-areas-id-generate-structure",
-        "member-post-member-areas-id-modules",
-        "member-post-member-areas-id-modules-module-id-lessons",
-        "member-post-member-areas-id-students",
-        "member-put-member-areas-id",
-        "member-put-member-areas-id-lessons-lesson-id",
-        "member-put-member-areas-id-modules-module-id",
-        "member-put-member-areas-id-students-student-id",
-        "meta-post-meta-auth-disconnect",
-        "products-delete-checkout-checkouts-id",
-        "products-delete-products-product-id-campaigns-campaign-id",
-        "products-delete-products-product-id-commissions-commission-id",
-        "products-delete-products-product-id-coupons-coupon-id",
-        "products-delete-products-product-id-reviews-review-id",
-        "products-delete-products-product-id-urls-url-id",
-        "products-get-products-id",
-        "products-post-checkout-checkouts-id-duplicate",
-        "products-post-checkout-products-product-id-checkouts",
-        "products-post-checkout-products-product-id-plans",
-        "products-post-products",
-        "products-post-products-product-id-campaigns-campaign-id-launch",
-        "products-post-products-product-id-campaigns-campaign-id-pause",
-        "products-post-workspace-id-jitter",
-        "products-put-checkout-bumps-id",
-        "products-put-checkout-products-id",
-        "products-put-products-product-id-affiliates-links-link-id",
-        "vendas-post-kloel-payment-workspace-id-create",
-        "vendas-post-sales-id-refund",
-        "vendas-post-sales-orders-alerts-generate",
-        "vendas-post-sales-orders-alerts-id-resolve",
-        "vendas-post-sales-subscriptions-id-cancel",
-        "vendas-post-sales-subscriptions-id-pause",
-        "vendas-post-sales-subscriptions-id-resume",
-        "vendas-put-sales-orders-id-return",
-        "vendas-put-sales-orders-id-ship",
-        "vendas-put-sales-subscriptions-id-change-plan",
-        "webinarios-put-webinars-id",
-        "whatsapp-post-whatsapp-api-session-action",
-        "workspace-delete-api-kyc-bank",
-        "workspace-delete-billing-payment-methods-payment-method-id",
-        "workspace-delete-team-invite-id",
-        "workspace-delete-team-member-id",
-        "workspace-post-ai-kb-create",
-        "workspace-post-ai-kb-source",
-        "workspace-post-api-kyc-bank",
-        "workspace-post-api-kyc-fiscal",
-        "workspace-post-autopilot-toggle",
-        "workspace-post-billing-activate-trial",
-        "workspace-post-billing-payment-methods-payment-method-id-default",
-        "workspace-post-billing-payment-methods-setup-intent",
-        "workspace-post-kyc-status",
-        "workspace-post-meta-auth-disconnect",
-        "workspace-post-products",
-        "workspace-post-segmentation-workspace-id-auto-segment",
-        "workspace-post-team-invite",
-        "workspace-post-workspace-id-account",
-        "workspace-put-api-kyc-fiscal",
-        "workspace-put-crm-deals-id-move"
       ]
     },
     {
@@ -14976,11 +14515,38 @@
       "executionMode": "ai_safe",
       "affectedCapabilities": [],
       "affectedFlows": []
+    },
+    {
+      "source": "pulse",
+      "type": "product_blocker_3",
+      "summary": "codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
+      "impactScore": 0.7,
+      "executionMode": "ai_safe",
+      "affectedCapabilities": [],
+      "affectedFlows": []
+    },
+    {
+      "source": "pulse",
+      "type": "product_blocker_4",
+      "summary": "Billing: Billing Activate remains partial.",
+      "impactScore": 0.7,
+      "executionMode": "ai_safe",
+      "affectedCapabilities": [],
+      "affectedFlows": []
+    },
+    {
+      "source": "pulse",
+      "type": "product_blocker_5",
+      "summary": "Dashboard: Missing structural roles: side_effect.",
+      "impactScore": 0.7,
+      "executionMode": "ai_safe",
+      "affectedCapabilities": [],
+      "affectedFlows": []
     }
   ],
   "nextAutonomousUnits": [
     {
-      "order": 35,
+      "order": 34,
       "id": "capability-capability-ad-rules",
       "kind": "capability",
       "priority": "P1",
@@ -15060,7 +14626,7 @@
       ]
     },
     {
-      "order": 36,
+      "order": 35,
       "id": "capability-capability-admin-accounts",
       "kind": "capability",
       "priority": "P1",
@@ -15072,7 +14638,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -15145,7 +14711,7 @@
       ]
     },
     {
-      "order": 37,
+      "order": 36,
       "id": "capability-capability-admin-audit",
       "kind": "capability",
       "priority": "P1",
@@ -15157,7 +14723,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -15225,7 +14791,7 @@
       ]
     },
     {
-      "order": 38,
+      "order": 37,
       "id": "capability-capability-admin-auth",
       "kind": "capability",
       "priority": "P1",
@@ -15237,7 +14803,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -15311,7 +14877,7 @@
       ]
     },
     {
-      "order": 39,
+      "order": 38,
       "id": "capability-capability-admin-carteira",
       "kind": "capability",
       "priority": "P1",
@@ -15399,7 +14965,7 @@
       ]
     },
     {
-      "order": 40,
+      "order": 39,
       "id": "capability-capability-admin-config",
       "kind": "capability",
       "priority": "P1",
@@ -15411,7 +14977,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -15479,7 +15045,7 @@
       ]
     },
     {
-      "order": 41,
+      "order": 40,
       "id": "capability-capability-admin-notifications",
       "kind": "capability",
       "priority": "P1",
@@ -15491,7 +15057,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -15560,7 +15126,7 @@
       ]
     },
     {
-      "order": 42,
+      "order": 41,
       "id": "capability-capability-admin-products",
       "kind": "capability",
       "priority": "P1",
@@ -15572,7 +15138,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -15642,7 +15208,7 @@
       ]
     },
     {
-      "order": 43,
+      "order": 42,
       "id": "capability-capability-admin-reports",
       "kind": "capability",
       "priority": "P1",
@@ -15654,7 +15220,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -15723,7 +15289,7 @@
       ]
     },
     {
-      "order": 44,
+      "order": 43,
       "id": "capability-capability-admin-dashboard",
       "kind": "capability",
       "priority": "P1",
@@ -15804,7 +15370,7 @@
       ]
     },
     {
-      "order": 45,
+      "order": 44,
       "id": "capability-capability-admin-marketing",
       "kind": "capability",
       "priority": "P1",
@@ -15884,7 +15450,7 @@
       ]
     },
     {
-      "order": 46,
+      "order": 45,
       "id": "capability-capability-admin-sales",
       "kind": "capability",
       "priority": "P1",
@@ -15967,6 +15533,151 @@
   "nextDecisionUnits": [
     {
       "order": 1,
+      "id": "scenario-admin-settings-kyc-banking",
+      "kind": "scenario",
+      "priority": "P0",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "critical",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "transformational",
+      "ownerLane": "security",
+      "title": "Recover Admin Settings Kyc Banking",
+      "summary": "Async expectations still pending: kyc-doc-processing=missing_evidence, withdrawal-ledger-consistency=missing_evidence.",
+      "whyNow": "Closes pending asynchronous evidence for Admin Settings Kyc Banking so convergence is based on settled world-state proof.",
+      "visionDelta": "Closes pending asynchronous evidence for Admin Settings Kyc Banking so convergence is based on settled world-state proof.",
+      "targetState": "Scenario admin-settings-kyc-banking must pass end-to-end and leave no pending async expectations in world state.",
+      "affectedCapabilities": [
+        "capability:ad-rules",
+        "capability:audit-interceptor",
+        "capability:billing-activate",
+        "capability:billing-cancel",
+        "capability:billing-checkout",
+        "capability:billing-payment",
+        "capability:billing-status",
+        "capability:billing-subscription",
+        "capability:billing-usage",
+        "capability:billing-webhook",
+        "capability:campaigns-campaign",
+        "capability:canvas-canva",
+        "capability:checkout-bumps",
+        "capability:checkout-catalog",
+        "capability:checkout-checkouts",
+        "capability:checkout-coupons",
+        "capability:checkout-order",
+        "capability:checkout-orders",
+        "capability:checkout-payment",
+        "capability:checkout-pixels",
+        "capability:checkout-plans",
+        "capability:checkout-product",
+        "capability:checkout-products",
+        "capability:checkout-social",
+        "capability:checkout-upsell",
+        "capability:checkout-upsells",
+        "capability:crm-deals",
+        "capability:flows-flow",
+        "capability:gdpr-delete",
+        "capability:kloel-chat",
+        "capability:kloel-lead",
+        "capability:kloel-payment",
+        "capability:kloel-payments",
+        "capability:kloel-pdf",
+        "capability:kloel-site",
+        "capability:kloel-tool",
+        "capability:kloel-upload",
+        "capability:kloel-wallet",
+        "capability:kyc-documents",
+        "capability:member-areas",
+        "capability:ops-queues",
+        "capability:partnerships-partnership",
+        "capability:products-product",
+        "capability:settings-setting",
+        "capability:team-invite",
+        "capability:team-member",
+        "capability:wallet-ledger",
+        "capability:wallet-prepaid",
+        "capability:webinars-webinar",
+        "capability:whatsapp-runtime",
+        "capability:workspace-account",
+        "capability:workspace-settings"
+      ],
+      "affectedFlows": [
+        "wallet-withdrawal"
+      ],
+      "gateNames": [
+        "adminPass",
+        "browserPass"
+      ],
+      "expectedGateShift": "Pass adminPass, browserPass",
+      "validationTargets": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "relatedFiles": [
+        "backend/src/admin/carteira/admin-carteira.controller.ts (13)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/kloel/unified-agent-actions-workspace.service.ts (4)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-product.service.ts (3)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/wallet/wallet.service.ts (3)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/admin/auth/admin-login-attempts.service.ts (2)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/admin/permissions/admin-permissions.service.ts (2)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/billing/billing.service.ts (2)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/crm/crm.service.ts (2)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts (2)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/kyc/kyc.service.ts (2)"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: kyc-doc-processing, withdrawal-ledger-consistency.",
+        "Browser-required routes stay green: /billing, /settings, /wallet.",
+        "Scenario admin-settings-kyc-banking reports status=passed in synthetic evidence."
+      ],
+      "preconditions": [
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "requiredValidations": [
+        "typecheck",
+        "affected-tests",
+        "scenario-evidence",
+        "flow-evidence"
+      ]
+    },
+    {
+      "order": 2,
       "id": "scenario-customer-auth-shell",
       "kind": "scenario",
       "priority": "P0",
@@ -15976,11 +15687,11 @@
       "evidenceMode": "observed",
       "confidence": "high",
       "productImpact": "transformational",
-      "ownerLane": "customer",
+      "ownerLane": "security",
       "title": "Recover Customer Auth Shell",
       "summary": "Playwright scenario customer-auth-shell failed with exit code 1.",
-      "whyNow": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
-      "visionDelta": "Revalidates a customer-visible journey in Customer Auth Shell and converts intended product behavior into executed proof.",
+      "whyNow": "Turns the observed failure in Customer Auth Shell into an executed repair target with fresh proof.",
+      "visionDelta": "Turns the observed failure in Customer Auth Shell into an executed repair target with fresh proof.",
       "targetState": "Scenario customer-auth-shell must pass end-to-end and leave no pending async expectations in world state.",
       "affectedCapabilities": [
         "capability:admin-auth",
@@ -16017,8 +15728,12 @@
         "capability:dashboard-stats",
         "capability:kloel-payments",
         "capability:meta-auth",
+        "capability:partnerships-partnership",
+        "capability:reports-report",
+        "capability:team-invite",
         "capability:unsubscribe",
-        "capability:user-data"
+        "capability:user-data",
+        "capability:welcome-and"
       ],
       "affectedFlows": [
         "auth-login"
@@ -16044,22 +15759,22 @@
         "PULSE_WORLD_STATE.json"
       ],
       "relatedFiles": [
-        "backend/src/admin/auth/guards/admin-auth.guard.ts",
-        "backend/src/auth/apple-auth.support.ts",
-        "backend/src/auth/auth-partner.service.ts",
-        "backend/src/auth/auth.password.service.ts",
-        "backend/src/auth/auth.token.service.ts",
-        "backend/src/auth/email.service.ts",
-        "backend/src/auth/tiktok-auth.service.ts",
-        "backend/src/meta/meta-auth.controller.ts",
-        "frontend/src/components/kloel/auth/use-prefers-reduced-motion.ts"
+        "/Users/danielpenin/whatsapp_saas/backend/src/admin/auth/admin-login-attempts.service.ts (2)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/auth/auth.password.service.ts (2)",
+        "backend/src/auth/auth-partner.service.ts (2)",
+        "backend/src/auth/auth-whatsapp-password.service.ts (2)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/admin/auth/admin-auth.service.ts",
+        "/Users/danielpenin/whatsapp_saas/backend/src/auth/auth.service.ts",
+        "/Users/danielpenin/whatsapp_saas/backend/src/billing/billing.service.ts",
+        "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-product.service.ts",
+        "/Users/danielpenin/whatsapp_saas/backend/src/kloel/kloel-chat-tools.service.ts",
+        "/Users/danielpenin/whatsapp_saas/backend/src/kloel/unified-agent-actions-crm.service.ts"
       ],
       "exitCriteria": [
         "Scenario customer-auth-shell reports status=passed in synthetic evidence."
       ],
       "preconditions": [
-        "One or more affected capabilities are still partial or phantom.",
-        "Affected files have high-severity Codacy hotspots; address those first."
+        "One or more affected capabilities are still partial or phantom."
       ],
       "allowedActions": [
         "Code generation",
@@ -16102,11 +15817,11 @@
       "evidenceMode": "observed",
       "confidence": "high",
       "productImpact": "transformational",
-      "ownerLane": "customer",
+      "ownerLane": "security",
       "title": "Recover Customer Whatsapp And Inbox",
       "summary": "Playwright scenario customer-whatsapp-and-inbox failed with exit code 1. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
-      "whyNow": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
-      "visionDelta": "Revalidates a customer-visible journey in Customer Whatsapp And Inbox and converts intended product behavior into executed proof.",
+      "whyNow": "Turns the observed failure in Customer Whatsapp And Inbox into an executed repair target with fresh proof.",
+      "visionDelta": "Turns the observed failure in Customer Whatsapp And Inbox into an executed repair target with fresh proof.",
       "targetState": "Scenario customer-whatsapp-and-inbox must pass end-to-end and leave no pending async expectations in world state.",
       "affectedCapabilities": [
         "capability:admin-dashboard",
@@ -16224,16 +15939,16 @@
         "PULSE_WORLD_STATE.json"
       ],
       "relatedFiles": [
-        "backend/src/webhooks/payment-webhook-stripe.handlers2.ts (5)",
-        "backend/src/webhooks/payment-webhook-stripe.handlers.ts (3)",
-        "backend/src/kloel/kloel-tool-executor-whatsapp.service.ts (2)",
-        "/Users/danielpenin/whatsapp_saas/.github/workflows/ci-cd.yml",
-        "/Users/danielpenin/whatsapp_saas/backend/src/billing/billing.service.ts",
-        "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-product.service.ts",
-        "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-social-lead.service.ts",
-        "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts",
-        "/Users/danielpenin/whatsapp_saas/backend/src/wallet/wallet.service.ts",
-        "/Users/danielpenin/whatsapp_saas/docker-compose.yml"
+        "worker/processors/autopilot-processor.ts (10)",
+        "backend/src/kloel/kloel-lead-brain.service.ts (8)",
+        "backend/src/whatsapp/inbound-processor.service.ts (8)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/kloel/unified-agent-actions-workspace.service.ts (7)",
+        "backend/src/marketing/marketing.controller.ts (7)",
+        "backend/src/kloel/unified-agent-actions-sales.service.ts (6)",
+        "backend/src/webhooks/payment-webhook-stripe.handlers2.ts (6)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/crm/crm.service.ts (5)",
+        "backend/src/kloel/kloel-lead-processor.service.ts (5)",
+        "backend/src/marketing/marketing-connect.controller.ts (5)"
       ],
       "exitCriteria": [
         "Async expectations settle to satisfied: conversation-reload, message-persistence.",
@@ -16288,7 +16003,7 @@
       "summary": "Execution matrix status is observed_fail. Breakpoint: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.. Validation: node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-accounts route /admin/accounts.",
       "whyNow": "Turns an observed broken path into a precise repair target.",
       "visionDelta": "Turns an observed broken path into a precise repair target.",
-      "targetState": "Path is classified as observed_pass, observed_fail with precise breakpoint, or blocked_human_required.",
+      "targetState": "Path is classified as observed_pass or observed_fail with a precise breakpoint.",
       "affectedCapabilities": [
         "capability:admin-accounts"
       ],
@@ -16321,8 +16036,10 @@
         "frontend-admin/src/lib/api/admin-accounts-api.ts"
       ],
       "exitCriteria": [
+        "PULSE captures validation evidence before converting this surface into governed autonomous execution.",
+        "PULSE_EXECUTION_MATRIX.json is regenerated with a concrete observed classification.",
         "Path matrix:capability:capability:admin-accounts is no longer observed_fail.",
-        "PULSE_EXECUTION_MATRIX.json is regenerated with a concrete observed classification."
+        "Rollback expectation is captured before any mutation moves beyond observation."
       ],
       "preconditions": [
         "One or more affected capabilities are still partial or phantom."
@@ -16373,7 +16090,7 @@
       "summary": "Execution matrix status is observed_fail. Breakpoint: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.. Validation: node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-audit route /admin/accounts/:workspaceId.",
       "whyNow": "Turns an observed broken path into a precise repair target.",
       "visionDelta": "Turns an observed broken path into a precise repair target.",
-      "targetState": "Path is classified as observed_pass, observed_fail with precise breakpoint, or blocked_human_required.",
+      "targetState": "Path is classified as observed_pass or observed_fail with a precise breakpoint.",
       "affectedCapabilities": [
         "capability:admin-audit"
       ],
@@ -16401,8 +16118,10 @@
         "frontend-admin/src/lib/api/admin-audit-api.ts"
       ],
       "exitCriteria": [
+        "PULSE captures validation evidence before converting this surface into governed autonomous execution.",
+        "PULSE_EXECUTION_MATRIX.json is regenerated with a concrete observed classification.",
         "Path matrix:capability:capability:admin-audit is no longer observed_fail.",
-        "PULSE_EXECUTION_MATRIX.json is regenerated with a concrete observed classification."
+        "Rollback expectation is captured before any mutation moves beyond observation."
       ],
       "preconditions": [
         "One or more affected capabilities are still partial or phantom."
@@ -16453,7 +16172,7 @@
       "summary": "Execution matrix status is observed_fail. Breakpoint: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.. Validation: node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-auth route /admin/accounts/:workspaceId.",
       "whyNow": "Turns an observed broken path into a precise repair target.",
       "visionDelta": "Turns an observed broken path into a precise repair target.",
-      "targetState": "Path is classified as observed_pass, observed_fail with precise breakpoint, or blocked_human_required.",
+      "targetState": "Path is classified as observed_pass or observed_fail with a precise breakpoint.",
       "affectedCapabilities": [
         "capability:admin-auth"
       ],
@@ -16486,8 +16205,10 @@
         "frontend-admin/src/lib/api/admin-auth-api.ts"
       ],
       "exitCriteria": [
+        "PULSE captures validation evidence before converting this surface into governed autonomous execution.",
+        "PULSE_EXECUTION_MATRIX.json is regenerated with a concrete observed classification.",
         "Path matrix:capability:capability:admin-auth is no longer observed_fail.",
-        "PULSE_EXECUTION_MATRIX.json is regenerated with a concrete observed classification."
+        "Rollback expectation is captured before any mutation moves beyond observation."
       ],
       "preconditions": [
         "One or more affected capabilities are still partial or phantom."
@@ -16539,7 +16260,7 @@
       "summary": "Execution matrix status is observed_fail. Breakpoint: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.. Validation: node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-carteira route /admin/accounts/:workspaceId.",
       "whyNow": "Turns an observed broken path into a precise repair target.",
       "visionDelta": "Turns an observed broken path into a precise repair target.",
-      "targetState": "Path is classified as observed_pass, observed_fail with precise breakpoint, or blocked_human_required.",
+      "targetState": "Path is classified as observed_pass or observed_fail with a precise breakpoint.",
       "affectedCapabilities": [
         "capability:admin-carteira"
       ],
@@ -16575,8 +16296,10 @@
         "frontend-admin/src/lib/api/admin-carteira-api.ts"
       ],
       "exitCriteria": [
+        "PULSE captures validation evidence before converting this surface into governed autonomous execution.",
+        "PULSE_EXECUTION_MATRIX.json is regenerated with a concrete observed classification.",
         "Path matrix:capability:capability:admin-carteira is no longer observed_fail.",
-        "PULSE_EXECUTION_MATRIX.json is regenerated with a concrete observed classification."
+        "Rollback expectation is captured before any mutation moves beyond observation."
       ],
       "preconditions": [
         "One or more affected capabilities are still partial or phantom."
@@ -16627,7 +16350,7 @@
       "summary": "Execution matrix status is observed_fail. Breakpoint: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.. Validation: node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path matrix:capability:capability:admin-config route /admin/accounts/:workspaceId.",
       "whyNow": "Turns an observed broken path into a precise repair target.",
       "visionDelta": "Turns an observed broken path into a precise repair target.",
-      "targetState": "Path is classified as observed_pass, observed_fail with precise breakpoint, or blocked_human_required.",
+      "targetState": "Path is classified as observed_pass or observed_fail with a precise breakpoint.",
       "affectedCapabilities": [
         "capability:admin-config"
       ],
@@ -16655,8 +16378,10 @@
         "frontend-admin/src/lib/api/admin-config-api.ts"
       ],
       "exitCriteria": [
+        "PULSE captures validation evidence before converting this surface into governed autonomous execution.",
+        "PULSE_EXECUTION_MATRIX.json is regenerated with a concrete observed classification.",
         "Path matrix:capability:capability:admin-config is no longer observed_fail.",
-        "PULSE_EXECUTION_MATRIX.json is regenerated with a concrete observed classification."
+        "Rollback expectation is captured before any mutation moves beyond observation."
       ],
       "preconditions": [
         "One or more affected capabilities are still partial or phantom."
@@ -16690,156 +16415,11 @@
         "typecheck",
         "affected-tests"
       ]
-    },
-    {
-      "order": 2,
-      "id": "scenario-customer-product-and-checkout",
-      "kind": "scenario",
-      "priority": "P0",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "critical",
-      "evidenceMode": "inferred",
-      "confidence": "medium",
-      "productImpact": "transformational",
-      "ownerLane": "customer",
-      "title": "Recover Customer Product And Checkout",
-      "summary": "Scenario customer-product-and-checkout is blocked by flow failures: checkout-payment.",
-      "whyNow": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
-      "visionDelta": "Revalidates a customer-visible journey in Customer Product And Checkout and converts intended product behavior into executed proof.",
-      "targetState": "Scenario customer-product-and-checkout must pass end-to-end and leave no pending async expectations in world state.",
-      "affectedCapabilities": [
-        "capability:ad-rules",
-        "capability:admin-products",
-        "capability:affiliate-my",
-        "capability:analytics-analytic",
-        "capability:audit-interceptor",
-        "capability:autopilot-cycle",
-        "capability:autopilot-process",
-        "capability:autopilot-run",
-        "capability:billing-activate",
-        "capability:billing-cancel",
-        "capability:billing-checkout",
-        "capability:billing-payment",
-        "capability:billing-status",
-        "capability:billing-subscription",
-        "capability:billing-usage",
-        "capability:billing-webhook",
-        "capability:campaigns-campaign",
-        "capability:canvas-canva",
-        "capability:checkout",
-        "capability:checkout-bumps",
-        "capability:checkout-catalog",
-        "capability:checkout-checkouts",
-        "capability:checkout-config",
-        "capability:checkout-coupons",
-        "capability:checkout-order",
-        "capability:checkout-orders",
-        "capability:checkout-payment",
-        "capability:checkout-pixels",
-        "capability:checkout-plans",
-        "capability:checkout-post",
-        "capability:checkout-product",
-        "capability:checkout-products",
-        "capability:checkout-recent",
-        "capability:checkout-shipping",
-        "capability:checkout-social",
-        "capability:checkout-upsell",
-        "capability:checkout-upsells",
-        "capability:checkout-validate",
-        "capability:crm-deals",
-        "capability:flows-flow",
-        "capability:gdpr-delete",
-        "capability:growth-money",
-        "capability:kloel-site",
-        "capability:kloel-wallet",
-        "capability:kyc-documents",
-        "capability:member-areas",
-        "capability:ops-queues",
-        "capability:partnerships-partnership",
-        "capability:products-product",
-        "capability:settings-setting",
-        "capability:team-invite",
-        "capability:team-member",
-        "capability:webinars-webinar"
-      ],
-      "affectedFlows": [
-        "checkout-payment",
-        "product-create"
-      ],
-      "gateNames": [
-        "customerPass"
-      ],
-      "expectedGateShift": "Pass customerPass",
-      "validationTargets": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CERTIFICATE.json",
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_SCENARIO_COVERAGE.json",
-        "PULSE_WORLD_STATE.json"
-      ],
-      "relatedFiles": [
-        "backend/src/payments/ledger/ledger.service.ts (5)",
-        "backend/src/webhooks/payment-webhook-stripe.handlers2.ts (5)",
-        "backend/src/webhooks/payment-webhook-stripe.handlers.ts (3)",
-        "/Users/danielpenin/whatsapp_saas/backend/src/billing/billing.service.ts",
-        "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-product.service.ts",
-        "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-social-lead.service.ts",
-        "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts",
-        "/Users/danielpenin/whatsapp_saas/backend/src/wallet/wallet.service.ts",
-        "backend/src/billing/billing-webhook.service.ts",
-        "backend/src/billing/billing-webhook.types.ts"
-      ],
-      "exitCriteria": [
-        "Scenario customer-product-and-checkout reports status=passed in synthetic evidence."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "requiredValidations": [
-        "typecheck",
-        "affected-tests",
-        "scenario-evidence",
-        "flow-evidence"
-      ]
     }
   ],
   "nextExecutableUnits": [
     {
-      "order": 35,
+      "order": 34,
       "id": "capability-capability-ad-rules",
       "kind": "capability",
       "priority": "P1",
@@ -16919,7 +16499,7 @@
       ]
     },
     {
-      "order": 36,
+      "order": 35,
       "id": "capability-capability-admin-accounts",
       "kind": "capability",
       "priority": "P1",
@@ -16931,7 +16511,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -17004,7 +16584,7 @@
       ]
     },
     {
-      "order": 37,
+      "order": 36,
       "id": "capability-capability-admin-audit",
       "kind": "capability",
       "priority": "P1",
@@ -17016,7 +16596,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -17084,7 +16664,7 @@
       ]
     },
     {
-      "order": 38,
+      "order": 37,
       "id": "capability-capability-admin-auth",
       "kind": "capability",
       "priority": "P1",
@@ -17096,7 +16676,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -17170,7 +16750,7 @@
       ]
     },
     {
-      "order": 39,
+      "order": 38,
       "id": "capability-capability-admin-carteira",
       "kind": "capability",
       "priority": "P1",
@@ -17258,7 +16838,7 @@
       ]
     },
     {
-      "order": 40,
+      "order": 39,
       "id": "capability-capability-admin-config",
       "kind": "capability",
       "priority": "P1",
@@ -17270,7 +16850,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -17338,7 +16918,7 @@
       ]
     },
     {
-      "order": 41,
+      "order": 40,
       "id": "capability-capability-admin-notifications",
       "kind": "capability",
       "priority": "P1",
@@ -17350,7 +16930,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -17419,7 +16999,7 @@
       ]
     },
     {
-      "order": 42,
+      "order": 41,
       "id": "capability-capability-admin-products",
       "kind": "capability",
       "priority": "P1",
@@ -17431,7 +17011,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -17503,7 +17083,7 @@
   ],
   "nextWork": [
     {
-      "order": 35,
+      "order": 34,
       "id": "capability-capability-ad-rules",
       "kind": "capability",
       "priority": "P1",
@@ -17583,7 +17163,7 @@
       ]
     },
     {
-      "order": 36,
+      "order": 35,
       "id": "capability-capability-admin-accounts",
       "kind": "capability",
       "priority": "P1",
@@ -17595,7 +17175,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -17668,7 +17248,7 @@
       ]
     },
     {
-      "order": 37,
+      "order": 36,
       "id": "capability-capability-admin-audit",
       "kind": "capability",
       "priority": "P1",
@@ -17680,7 +17260,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -17748,7 +17328,7 @@
       ]
     },
     {
-      "order": 38,
+      "order": 37,
       "id": "capability-capability-admin-auth",
       "kind": "capability",
       "priority": "P1",
@@ -17760,7 +17340,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -17834,7 +17414,7 @@
       ]
     },
     {
-      "order": 39,
+      "order": 38,
       "id": "capability-capability-admin-carteira",
       "kind": "capability",
       "priority": "P1",
@@ -17922,7 +17502,7 @@
       ]
     },
     {
-      "order": 40,
+      "order": 39,
       "id": "capability-capability-admin-config",
       "kind": "capability",
       "priority": "P1",
@@ -17934,7 +17514,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -18002,7 +17582,7 @@
       ]
     },
     {
-      "order": 41,
+      "order": 40,
       "id": "capability-capability-admin-notifications",
       "kind": "capability",
       "priority": "P1",
@@ -18014,7 +17594,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -18083,7 +17663,7 @@
       ]
     },
     {
-      "order": 42,
+      "order": 41,
       "id": "capability-capability-admin-products",
       "kind": "capability",
       "priority": "P1",
@@ -18095,7 +17675,7 @@
       "productImpact": "material",
       "ownerLane": "security",
       "title": "Materialize capability Admin Accounts",
-      "summary": "Capability Admin Accounts is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect.",
+      "summary": "Capability Admin Accounts is partial. Maturity is operational (100%).",
       "whyNow": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "visionDelta": "Moves capability Admin Accounts from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
       "targetState": "Capability Admin Accounts must become materially real or at least structurally partial with no illusion-only path.",
@@ -18169,12 +17749,12 @@
     {
       "id": "codacy-package-json",
       "title": "Burn Codacy hotspot in package.json",
-      "executionMode": "human_required",
+      "executionMode": "observation_only",
       "evidenceMode": "observed",
       "confidence": "high",
       "productImpact": "diagnostic",
       "summary": "1 HIGH issue(s) currently prioritized by Codacy for package.json. Categories: Security. Patterns: Semgrep_json.npm.security.package-dependencies-check.package-dependencies-check.",
-      "whyBlocked": "Governance-protected or human-owned surface.",
+      "whyBlocked": "Signal remains in observation-only evidence gathering until mapped enough for mutation.",
       "relatedFiles": [
         "package.json"
       ]
@@ -18184,12 +17764,12 @@
     {
       "id": "codacy-package-json",
       "title": "Burn Codacy hotspot in package.json",
-      "executionMode": "human_required",
+      "executionMode": "observation_only",
       "evidenceMode": "observed",
       "confidence": "high",
       "productImpact": "diagnostic",
       "summary": "1 HIGH issue(s) currently prioritized by Codacy for package.json. Categories: Security. Patterns: Semgrep_json.npm.security.package-dependencies-check.package-dependencies-check.",
-      "whyBlocked": "Governance-protected or human-owned surface.",
+      "whyBlocked": "Signal remains in observation-only evidence gathering until mapped enough for mutation.",
       "relatedFiles": [
         "package.json"
       ]
@@ -18201,23 +17781,23 @@
   "antiGoals": [
     "Do not treat projected vision as proof of implementation.",
     "Do not spend the next cycle on diagnostic-only work while transformational or material product gaps remain open.",
-    "Do not auto-edit governance-protected surfaces.",
+    "Keep governance-protected surfaces in observation-only evidence gathering unless a governed validation path is explicitly mapped.",
     "Do not suppress Codacy or certification signals to simulate convergence."
   ],
   "productTruth": {
     "capabilities": {
-      "totalCapabilities": 312,
+      "totalCapabilities": 314,
       "realCapabilities": 112,
-      "partialCapabilities": 189,
-      "latentCapabilities": 11,
+      "partialCapabilities": 190,
+      "latentCapabilities": 12,
       "phantomCapabilities": 0,
-      "humanRequiredCapabilities": 0,
+      "governedValidationCapabilities": 0,
       "foundationalCapabilities": 4,
-      "connectedCapabilities": 72,
-      "operationalCapabilities": 183,
+      "connectedCapabilities": 71,
+      "operationalCapabilities": 186,
       "productionReadyCapabilities": 53,
-      "runtimeObservedCapabilities": 239,
-      "scenarioCoveredCapabilities": 204
+      "runtimeObservedCapabilities": 241,
+      "scenarioCoveredCapabilities": 206
     },
     "flows": {
       "totalFlows": 118,
@@ -18227,33 +17807,33 @@
       "phantomFlows": 0
     },
     "parityGaps": {
-      "totalGaps": 34,
-      "criticalGaps": 32,
-      "highGaps": 0,
+      "totalGaps": 47,
+      "criticalGaps": 44,
+      "highGaps": 3,
       "byKind": {
         "front_without_back": 1,
         "back_without_front": 0,
-        "ui_without_persistence": 1,
+        "ui_without_persistence": 2,
         "persistence_without_consumer": 0,
         "flow_without_validation": 0,
-        "integration_without_observability": 32,
+        "integration_without_observability": 44,
         "feature_declared_without_runtime": 0,
         "runtime_without_product_surface": 0
       }
     },
     "structuralGraph": {
-      "totalNodes": 5738,
-      "totalEdges": 8238,
+      "totalNodes": 5939,
+      "totalEdges": 10136,
       "roleCounts": {
         "interface": 2376,
-        "orchestration": 2994,
-        "persistence": 134,
-        "side_effect": 234,
+        "orchestration": 2998,
+        "persistence": 135,
+        "side_effect": 430,
         "simulation": 0
       },
       "interfaceChains": 2376,
-      "completeChains": 782,
-      "partialChains": 1594,
+      "completeChains": 784,
+      "partialChains": 1592,
       "simulatedChains": 0
     },
     "codacy": {
@@ -18261,51 +17841,52 @@
       "stale": false,
       "totalIssues": 11966,
       "highIssues": 1116,
-      "runtimeCriticalHotspots": 44,
+      "runtimeCriticalHotspots": 31,
       "userFacingHotspots": 11,
-      "humanRequiredHotspots": 2
+      "governedValidationHotspots": 2
     },
     "externalSignals": {
-      "totalSignals": 8,
-      "runtimeSignals": 2,
-      "changeSignals": 1,
+      "totalSignals": 4,
+      "runtimeSignals": 0,
+      "changeSignals": 0,
       "dependencySignals": 0,
       "highImpactSignals": 3,
-      "mappedSignals": 7,
-      "humanRequiredSignals": 1,
+      "mappedSignals": 4,
+      "governedValidationSignals": 1,
       "staleAdapters": 0,
-      "missingAdapters": 0,
+      "missingAdapters": 2,
       "invalidAdapters": 0,
-      "optionalSkippedAdapters": 1,
-      "missingAdaptersList": [],
+      "optionalSkippedAdapters": 0,
+      "missingAdaptersList": [
+        "github",
+        "github_actions"
+      ],
       "staleAdaptersList": [],
       "invalidAdaptersList": [],
-      "optionalSkippedList": [
-        "prometheus"
-      ],
+      "optionalSkippedList": [],
       "bySource": {
-        "github": 1,
+        "github": 0,
         "github_actions": 0,
         "codacy": 4,
         "codecov": 0,
-        "sentry": 1,
-        "datadog": 1,
+        "sentry": 0,
+        "datadog": 0,
         "prometheus": 0,
         "dependabot": 0,
-        "gitnexus": 1
+        "gitnexus": 0
       }
     },
     "evidenceBasis": {
-      "observed": 355,
-      "inferred": 54,
+      "observed": 356,
+      "inferred": 53,
       "projected": 0
     }
   },
   "operatingRules": [
     "Use observed evidence over inferred evidence whenever they conflict.",
     "Treat projected product vision as a convergence target, not as proof of implementation.",
-    "Never auto-edit governance-protected surfaces.",
-    "Treat human_required and observation_only units as blocked for autonomous code changes."
+    "Governance-protected surfaces require sandboxed, validated autonomous handling.",
+    "Treat observation_only units as evidence-gathering work until mapped enough for mutation."
   ],
   "suggestedValidation": {
     "commands": [
@@ -18331,18 +17912,20 @@
     "leasesRef": "PULSE_WORKER_LEASES.json",
     "gitnexusRef": "gitnexus:c74dae23729dce78a2f6fa0c7124a5ccb11c6e30:2026-04-29T19:39:02.306Z",
     "beadsRef": "beads:60ac6e77ca29e058",
-    "contextDigest": "4ddba77bd16413c9382a4d38cd6c65a60307595fd2e77e266c188ec953480fa1",
+    "contextDigest": "daae2d2e89faf71c02c895f27447fac7dec2b4339e9430a17d95a4692ca3bf08",
     "workerEnvelopeCount": 10,
     "contextBroadcastPass": true,
     "ownershipConflictPass": true,
     "protectedFilesForbiddenPass": true,
     "workerContextCompletenessPass": true,
-    "staleContextBlocksExecution": false,
-    "blockers": []
+    "staleContextBlocksExecution": true,
+    "blockers": [
+      "gitnexus:stale"
+    ]
   },
   "stopCondition": [
     "Codacy still reports 1116 HIGH issue(s).",
     "Observed external high-impact signals remain active: 3."
   ],
-  "runId": "6bf525fc-1e8e-4820-a5cb-90aea5fdb379"
+  "runId": "a363d145-a314-4cce-a24f-24304069a403"
 }

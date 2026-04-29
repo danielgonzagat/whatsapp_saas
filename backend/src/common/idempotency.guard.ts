@@ -13,6 +13,7 @@ import type Redis from 'ioredis';
 import { pollUntil } from './async-sequence';
 import { FeatureFlagService } from './feature-flags/feature-flag.service';
 import { bodyFingerprint, buildCacheKey, buildScopeKey } from './idempotency-fingerprint';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /** Idempotency_key. */
 export const IDEMPOTENCY_METADATA = 'idempotency';
@@ -72,6 +73,7 @@ export class IdempotencyGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     @InjectRedis() private readonly redis: Redis,
+    @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly featureFlags?: FeatureFlagService,
   ) {}
 
@@ -195,6 +197,7 @@ export class IdempotencyGuard implements CanActivate {
       request._idempotencyTtl = ttl;
       return true;
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'IdempotencyGuard.stringify');
       // Re-throw ConflictException (our 409) — do NOT degrade to "no dedup"
       // when the error is deliberate.
       if (err instanceof ConflictException) {
@@ -238,6 +241,7 @@ export class IdempotencyGuard implements CanActivate {
       request._idempotencyKey = cacheKey;
       request._idempotencyTtl = ttl;
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'IdempotencyGuard.stringify');
       this.logger.warn(
         `Idempotency check failed: ${err instanceof Error ? err.message : 'unknown_error'}`,
       );

@@ -5,7 +5,7 @@
  * This is the "reconstruction layer" that turns files into product vision.
  *
  * Key concepts:
- * - Surface: Top-level product area (Auth, Workspace, Billing, etc.)
+ * - Surface: Top-level product area discovered from manifest and code evidence
  * - Capability: Feature that spans UI, API, and persistence
  * - Flow: User journey across capabilities
  *
@@ -27,6 +27,13 @@ import type {
   PulseProductFlow,
   PulseProductSurface,
 } from './types';
+import {
+  deriveRouteFamily,
+  deriveStructuralFamilies,
+  familiesOverlap,
+  slugifyStructural,
+  titleCaseStructural,
+} from './structural-family';
 
 /** Input to product model builder */
 export interface BuildProductModelInput {
@@ -38,18 +45,16 @@ export interface BuildProductModelInput {
   resolvedManifest: PulseResolvedManifest;
 }
 
-/** Execution layer classification */
-type ArtifactLayer =
-  | 'frontend'
-  | 'api_layer'
-  | 'backend'
-  | 'persistence'
-  | 'worker'
-  | 'external'
-  | 'infrastructure';
-
 /** Extended truth mode for capability/flow classification */
 type CapabilityTruthMode = 'real' | 'partial' | 'latent' | 'phantom';
+
+type ArtifactLayer = 'frontend' | 'backend' | 'persistence' | 'worker' | 'external' | 'evidence';
+
+const MAX_PRODUCT_SURFACES = 120;
+const MAX_SURFACE_ARTIFACT_IDS = 250;
+const MAX_PRODUCT_CAPABILITIES = 400;
+const MAX_CAPABILITY_ARTIFACT_IDS = 120;
+const MAX_PRODUCT_FLOWS = 300;
 
 /**
  * Build product graph from structural graph
@@ -58,9 +63,14 @@ type CapabilityTruthMode = 'real' | 'partial' | 'latent' | 'phantom';
 export function buildProductModel(input: BuildProductModelInput): PulseProductGraph {
   const { structuralGraph, scopeState, resolvedManifest } = input;
 
-  const surfaces = discoverSurfaces(structuralGraph);
-  const capabilities = discoverCapabilities(structuralGraph, surfaces);
-  const flows = discoverFlows(capabilities);
+  const surfaces = discoverSurfaces(structuralGraph, scopeState, resolvedManifest);
+  const capabilities = discoverCapabilities(
+    structuralGraph,
+    surfaces,
+    scopeState,
+    resolvedManifest,
+  );
+  const flows = discoverFlows(capabilities, structuralGraph, resolvedManifest);
   const orphanedArtifactIds = findOrphanedArtifactIds(structuralGraph, capabilities);
 
   return {
@@ -79,81 +89,160 @@ export function buildProductModel(input: BuildProductModelInput): PulseProductGr
 
 // ============ Discovery Functions ============
 
-/** Discover product surfaces from structural graph */
-function discoverSurfaces(graph: PulseStructuralGraph): PulseProductSurface[] {
-  // Map code areas to known surfaces
-  const surfacePatterns: Record<string, { name: string; description: string }> = {
-    auth: { name: 'Authentication', description: 'User signup, login, session management' },
-    workspace: { name: 'Workspace', description: 'Workspace creation, settings, team management' },
-    billing: { name: 'Billing', description: 'Plans, invoices, subscriptions' },
-    wallet: { name: 'Wallet', description: 'Balance, transactions, withdrawals' },
-    payments: { name: 'Payments', description: 'Stripe Connect, checkout, payouts' },
-    whatsapp: { name: 'WhatsApp', description: 'Session management, messaging' },
-    inbox: { name: 'Inbox', description: 'Message inbox, chat interface' },
-    crm: { name: 'CRM', description: 'Contacts, pipeline, relationships' },
-    products: { name: 'Products', description: 'Product catalog, pricing, inventory' },
-    settings: { name: 'Settings', description: 'Workspace configuration, preferences' },
-    admin: { name: 'Admin', description: 'Admin dashboard, monitoring' },
-    analytics: { name: 'Analytics', description: 'Dashboard, reports, metrics' },
-  };
+/** Discover product surfaces from manifest promises and structural graph evidence. */
+function discoverSurfaces(
+  graph: PulseStructuralGraph,
+  scopeState: PulseScopeState,
+  manifest: PulseResolvedManifest,
+): PulseProductSurface[] {
+  const surfacesById = new Map<string, PulseProductSurface>();
+  const scopeFileCountBySurface = buildScopeFileCountBySurface(scopeState);
 
-  const surfaces: PulseProductSurface[] = [];
-
-  for (const [pattern, info] of Object.entries(surfacePatterns)) {
-    const artifactIds = findArtifactIdsByPattern(graph, pattern);
-    if (artifactIds.length === 0) {
+  for (const moduleEntry of manifest.modules.filter((item) => item.coverageStatus !== 'excluded')) {
+    const families = deriveStructuralFamilies([
+      moduleEntry.key,
+      moduleEntry.name,
+      moduleEntry.canonicalName,
+      ...moduleEntry.aliases,
+      ...moduleEntry.routeRoots,
+    ]);
+    const artifactIds = limitSorted(
+      graph.nodes
+        .filter((node) => familiesOverlap(nodeFamilies(node), families))
+        .map((node) => node.id),
+      MAX_SURFACE_ARTIFACT_IDS,
+    );
+    if (artifactIds.length === 0 && !moduleEntry.declaredByManifest) {
       continue;
     }
-
+    const surfaceId = slugifyStructural(
+      moduleEntry.key || moduleEntry.canonicalName || moduleEntry.name,
+    );
+    if (!surfaceId) {
+      continue;
+    }
     const completeness = calculateSurfaceCompleteness(graph, artifactIds);
-    const truthMode = classifyTruthModeFromScore(completeness);
-
-    surfaces.push({
-      id: pattern,
-      name: info.name,
-      description: info.description,
+    surfacesById.set(surfaceId, {
+      id: surfaceId,
+      name: moduleEntry.name || titleCaseStructural(surfaceId),
+      description: describeSurface(
+        artifactIds.length,
+        moduleEntry.routeRoots.length,
+        scopeFileCountBySurface.get(surfaceId) || 0,
+      ),
       artifactIds,
       capabilities: [],
       completeness,
-      truthMode,
+      truthMode: artifactIds.length > 0 ? classifyTruthModeFromScore(completeness) : 'aspirational',
     });
   }
 
-  return surfaces;
+  for (const aggregate of scopeState.moduleAggregates) {
+    const surfaceId = slugifyStructural(aggregate.moduleKey);
+    if (!surfaceId || surfacesById.has(surfaceId)) {
+      continue;
+    }
+    const artifactIds = limitSorted(
+      graph.nodes
+        .filter((node) => familiesOverlap(nodeFamilies(node), surfaceId))
+        .map((node) => node.id),
+      MAX_SURFACE_ARTIFACT_IDS,
+    );
+    const completeness = calculateSurfaceCompleteness(graph, artifactIds);
+    surfacesById.set(surfaceId, {
+      id: surfaceId,
+      name: titleCaseStructural(surfaceId),
+      description: describeSurface(artifactIds.length, 0, aggregate.fileCount),
+      artifactIds,
+      capabilities: [],
+      completeness,
+      truthMode: artifactIds.length > 0 ? classifyTruthModeFromScore(completeness) : 'aspirational',
+    });
+  }
+
+  const groupedArtifactIds = new Map<string, Set<string>>();
+  for (const node of graph.nodes) {
+    const surfaceId = deriveSurfaceId(node);
+    if (!surfaceId) {
+      continue;
+    }
+    if (!groupedArtifactIds.has(surfaceId)) {
+      groupedArtifactIds.set(surfaceId, new Set<string>());
+    }
+    groupedArtifactIds.get(surfaceId)!.add(node.id);
+  }
+
+  for (const [surfaceId, ids] of groupedArtifactIds) {
+    const existing = surfacesById.get(surfaceId);
+    const artifactIds = limitSorted(
+      unique([...(existing?.artifactIds || []), ...ids]),
+      MAX_SURFACE_ARTIFACT_IDS,
+    );
+    const completeness = calculateSurfaceCompleteness(graph, artifactIds);
+    surfacesById.set(surfaceId, {
+      id: surfaceId,
+      name: existing?.name || titleCaseStructural(surfaceId),
+      description:
+        existing?.description ||
+        describeSurface(artifactIds.length, 0, scopeFileCountBySurface.get(surfaceId) || 0),
+      artifactIds,
+      capabilities: existing?.capabilities || [],
+      completeness,
+      truthMode: classifyTruthModeFromScore(completeness),
+    });
+  }
+
+  return limitSorted(
+    [...surfacesById.values()].sort((left, right) => left.id.localeCompare(right.id)),
+    MAX_PRODUCT_SURFACES,
+  );
 }
 
 /** Discover capabilities from structural graph */
 function discoverCapabilities(
   graph: PulseStructuralGraph,
   surfaces: PulseProductSurface[],
+  scopeState: PulseScopeState,
+  manifest: PulseResolvedManifest,
 ): PulseProductCapability[] {
   const capabilities: PulseProductCapability[] = [];
+  const nodeById = new Map(graph.nodes.map((node) => [node.id, node] as const));
+  const adjacency = buildAdjacency(graph);
+  const criticalSurfaceIds = buildCriticalSurfaceIds(scopeState, manifest);
 
   for (const surface of surfaces) {
+    const surfaceArtifactIds = new Set(surface.artifactIds);
+    const visited = new Set<string>();
+
     for (const artifactId of surface.artifactIds) {
-      const node = graph.nodes.find((n) => n.id === artifactId);
-      if (!node) {
+      if (visited.has(artifactId)) {
         continue;
       }
 
-      const relatedIds = findRelatedNodeIds(graph, artifactId);
+      const relatedIds = limitSorted(
+        findSurfaceComponentIds(adjacency, artifactId, surfaceArtifactIds),
+        MAX_CAPABILITY_ARTIFACT_IDS,
+      );
+      relatedIds.forEach((id) => visited.add(id));
+
       if (relatedIds.length < 2) {
         continue;
       }
 
       const relatedNodes = relatedIds
-        .map((id) => graph.nodes.find((n) => n.id === id))
+        .map((id) => nodeById.get(id))
         .filter((n) => n !== undefined) as PulseStructuralNode[];
+      const labelNode = chooseCapabilityLabelNode(relatedNodes);
 
-      const hasUI = relatedNodes.some((n) => classifyLayer(n.file) === 'frontend');
-      const hasAPI = relatedNodes.some((n) => classifyLayer(n.file) === 'backend');
-      const hasStorage = relatedNodes.some((n) => classifyLayer(n.file) === 'persistence');
-      const hasRuntime = relatedNodes.some((n) => classifyLayer(n.file) === 'worker');
-      const hasValidation = relatedNodes.some(
-        (n) => n.file.includes('validator') || n.file.includes('dto'),
+      const hasUI = relatedNodes.some((node) => nodeHasLayer(node, 'frontend'));
+      const hasAPI = relatedNodes.some((node) => nodeHasLayer(node, 'backend'));
+      const hasStorage = relatedNodes.some((node) => nodeHasLayer(node, 'persistence'));
+      const hasRuntime = relatedNodes.some(
+        (node) => node.role === 'orchestration' || nodeHasLayer(node, 'worker'),
       );
+      const hasValidation = relatedNodes.some(hasValidationEvidence);
       const hasObservability = relatedNodes.some(
-        (n) => n.file.includes('logger') || n.file.includes('monitor'),
+        (node) => node.kind === 'evidence' || nodeHasLayer(node, 'evidence'),
       );
 
       const layersPresent = [
@@ -167,69 +256,165 @@ function discoverCapabilities(
       const maturityScore = Math.round((layersPresent / 6) * 100);
 
       capabilities.push({
-        id: `cap-${surface.id}-${node.id}`,
-        name: `${surface.name} - ${node.label}`,
+        id: `cap-${surface.id}-${slugifyStructural(labelNode?.label || artifactId)}`,
+        name: `${surface.name} - ${labelNode?.label || titleCaseStructural(artifactId)}`,
         surfaceId: surface.id,
         artifactIds: relatedIds,
         flowIds: [],
         maturityScore,
         truthMode: classifyCapabilityTruthMode(maturityScore),
-        criticality: inferCriticality(surface.id),
+        criticality: inferCriticality(relatedNodes, surface.id, criticalSurfaceIds),
         blockers: computeCapabilityBlockers(hasUI, hasAPI, hasStorage),
       });
     }
   }
 
-  return capabilities;
+  return limitSorted(capabilities, MAX_PRODUCT_CAPABILITIES);
 }
 
-/** Discover user flows from capabilities */
-function discoverFlows(capabilities: PulseProductCapability[]): PulseProductFlow[] {
-  // Well-known flows in KLOEL product
-  const flowPatterns = [
-    { id: 'signup', name: 'User Signup', requiredSurfaces: ['auth'] },
-    { id: 'connect-whatsapp', name: 'Connect WhatsApp', requiredSurfaces: ['whatsapp', 'auth'] },
-    { id: 'create-product', name: 'Create Product', requiredSurfaces: ['products', 'workspace'] },
-    { id: 'checkout', name: 'Checkout Flow', requiredSurfaces: ['products', 'payments', 'wallet'] },
-    { id: 'receive-lead', name: 'Receive Lead', requiredSurfaces: ['whatsapp', 'crm', 'inbox'] },
-    { id: 'send-message', name: 'Send Message', requiredSurfaces: ['whatsapp', 'inbox'] },
-  ];
+/** Discover user flows from graph connectivity and resolved scenario specs. */
+function discoverFlows(
+  capabilities: PulseProductCapability[],
+  graph: PulseStructuralGraph,
+  manifest: PulseResolvedManifest,
+): PulseProductFlow[] {
+  const flowsById = new Map<string, PulseProductFlow>();
+  const capabilityByArtifact = new Map<string, PulseProductCapability[]>();
+  const nodeById = new Map(graph.nodes.map((node) => [node.id, node] as const));
+  for (const capability of capabilities) {
+    for (const artifactId of capability.artifactIds) {
+      if (!capabilityByArtifact.has(artifactId)) {
+        capabilityByArtifact.set(artifactId, []);
+      }
+      capabilityByArtifact.get(artifactId)!.push(capability);
+    }
+  }
 
-  const flows: PulseProductFlow[] = flowPatterns
-    .filter((pattern) =>
-      pattern.requiredSurfaces.some((rs) => capabilities.some((c) => c.surfaceId === rs)),
-    )
-    .map((pattern) => {
-      const relatedCaps = capabilities.filter((c) =>
-        pattern.requiredSurfaces.includes(c.surfaceId),
+  for (const flowGroup of manifest.flowGroups) {
+    const relatedCaps = capabilities.filter((capability) =>
+      familiesOverlap(
+        deriveStructuralFamilies([
+          capability.id,
+          capability.name,
+          capability.surfaceId,
+          ...capability.artifactIds,
+        ]),
+        deriveStructuralFamilies([
+          flowGroup.id,
+          flowGroup.canonicalName,
+          flowGroup.moduleKey,
+          flowGroup.moduleName,
+          ...flowGroup.aliases,
+          ...flowGroup.moduleKeys,
+          ...flowGroup.moduleNames,
+          ...flowGroup.pageRoutes,
+          ...flowGroup.actions,
+          ...flowGroup.endpoints,
+          ...flowGroup.backendRoutes,
+        ]),
+      ),
+    );
+    if (relatedCaps.length > 0) {
+      flowsById.set(
+        flowGroup.id,
+        buildFlow(
+          flowGroup.id,
+          flowGroup.canonicalName || titleCaseStructural(flowGroup.id),
+          relatedCaps,
+        ),
       );
-      const avgCompleteness =
-        relatedCaps.length > 0
-          ? relatedCaps.reduce((acc, c) => acc + c.maturityScore, 0) / (relatedCaps.length * 100)
-          : 0;
+    }
+  }
 
-      return {
-        id: pattern.id,
-        name: pattern.name,
-        description: '',
-        entryCapability: relatedCaps[0]?.id || '',
-        capabilities: relatedCaps.map((c) => c.id),
-        completeness: avgCompleteness,
-        truthMode: determineTruthModeFromCapabilities(relatedCaps),
-        blockers: relatedCaps
-          .flatMap((c) =>
-            c.blockers.map((b) => ({
-              type: 'missing_component' as const,
-              component: c.id,
-              reason: b,
-              severity: 'blocker' as const,
-            })),
-          )
-          .slice(0, 3),
-      };
-    });
+  for (const scenario of manifest.scenarioSpecs) {
+    const scenarioFamilies = deriveStructuralFamilies([
+      scenario.id,
+      ...scenario.moduleKeys,
+      ...scenario.routePatterns,
+      ...scenario.flowSpecs,
+    ]);
+    const relatedCaps = capabilities.filter((capability) =>
+      familiesOverlap(
+        scenarioFamilies,
+        deriveStructuralFamilies([capability.id, capability.name, capability.surfaceId]),
+      ),
+    );
+    if (relatedCaps.length > 0) {
+      flowsById.set(
+        scenario.id,
+        buildFlow(scenario.id, titleCaseStructural(scenario.id), relatedCaps),
+      );
+    }
+  }
 
-  return flows;
+  for (const edge of graph.edges) {
+    const relatedCaps = unique([
+      ...(capabilityByArtifact.get(edge.from) || []),
+      ...(capabilityByArtifact.get(edge.to) || []),
+    ]);
+    if (relatedCaps.length < 2) {
+      continue;
+    }
+    const flowId = slugifyStructural(
+      relatedCaps
+        .map((capability) => capability.surfaceId)
+        .sort()
+        .join('-'),
+    );
+    if (!flowId || flowsById.has(flowId)) {
+      continue;
+    }
+    flowsById.set(flowId, buildFlow(flowId, titleCaseStructural(flowId), relatedCaps));
+  }
+
+  for (const capability of capabilities) {
+    const relatedNodes = capability.artifactIds
+      .map((id) => nodeById.get(id))
+      .filter((node) => node !== undefined) as PulseStructuralNode[];
+    if (!isStructuralFlowCandidate(relatedNodes)) {
+      continue;
+    }
+    const flowId = deriveCapabilityFlowId(capability, relatedNodes);
+    if (!flowId || flowsById.has(flowId)) {
+      continue;
+    }
+    flowsById.set(flowId, buildFlow(flowId, titleCaseStructural(flowId), [capability]));
+  }
+
+  return limitSorted(
+    [...flowsById.values()].sort((left, right) => left.id.localeCompare(right.id)),
+    MAX_PRODUCT_FLOWS,
+  );
+}
+
+function buildFlow(
+  id: string,
+  name: string,
+  relatedCaps: PulseProductCapability[],
+): PulseProductFlow {
+  const avgCompleteness =
+    relatedCaps.length > 0
+      ? relatedCaps.reduce((acc, c) => acc + c.maturityScore, 0) / (relatedCaps.length * 100)
+      : 0;
+
+  return {
+    id,
+    name,
+    entryCapability: relatedCaps[0]?.id || '',
+    capabilities: relatedCaps.map((c) => c.id),
+    completeness: avgCompleteness,
+    truthMode: determineTruthModeFromCapabilities(relatedCaps),
+    blockers: relatedCaps
+      .flatMap((c) =>
+        c.blockers.map((b) => ({
+          type: 'missing_component' as const,
+          component: c.id,
+          reason: b,
+          severity: 'blocker' as const,
+        })),
+      )
+      .slice(0, 3),
+  };
 }
 
 /** Find orphaned artifact IDs */
@@ -249,57 +434,267 @@ function findOrphanedArtifactIds(
 
 // ============ Helper Functions ============
 
-function findArtifactIdsByPattern(graph: PulseStructuralGraph, pattern: string): string[] {
-  return graph.nodes
-    .filter(
-      (n) => n.file.toLowerCase().includes(pattern) || n.label.toLowerCase().includes(pattern),
-    )
-    .map((n) => n.id);
+function unique<T>(values: T[]): T[] {
+  return [...new Set(values)];
 }
 
-function findRelatedNodeIds(graph: PulseStructuralGraph, nodeId: string): string[] {
+function limitSorted<T>(values: T[], maxItems: number): T[] {
+  return values.slice(0, maxItems);
+}
+
+function buildAdjacency(graph: PulseStructuralGraph): Map<string, Set<string>> {
+  const adjacency = new Map<string, Set<string>>();
+  for (const node of graph.nodes) {
+    adjacency.set(node.id, new Set<string>());
+  }
+  for (const edge of graph.edges) {
+    adjacency.get(edge.from)?.add(edge.to);
+    adjacency.get(edge.to)?.add(edge.from);
+  }
+  return adjacency;
+}
+
+function nodeFamilies(node: PulseStructuralNode): string[] {
+  const metadataValues = Object.values(node.metadata).flatMap((value) =>
+    Array.isArray(value) ? value.map(String) : [String(value || '')],
+  );
+  return deriveStructuralFamilies([node.id, node.label, node.file, ...metadataValues]);
+}
+
+function classifyNodeLayers(node: PulseStructuralNode): ArtifactLayer[] {
+  const lowerFile = node.file.toLowerCase();
+  const layers: ArtifactLayer[] = [];
+
+  if (node.role === 'interface' || lowerFile.includes('frontend/')) {
+    layers.push('frontend');
+  }
+  if (
+    node.kind === 'api_call' ||
+    node.kind === 'proxy_route' ||
+    node.kind === 'backend_route' ||
+    lowerFile.includes('backend/')
+  ) {
+    layers.push('backend');
+  }
+  if (
+    node.role === 'persistence' ||
+    node.kind === 'persistence_model' ||
+    lowerFile.includes('prisma/') ||
+    lowerFile.includes('schema.prisma')
+  ) {
+    layers.push('persistence');
+  }
+  if (lowerFile.includes('worker/')) {
+    layers.push('worker');
+  }
+  if (lowerFile.includes('webhook') || lowerFile.includes('provider')) {
+    layers.push('external');
+  }
+  if (
+    node.kind === 'evidence' ||
+    lowerFile.includes('logger') ||
+    lowerFile.includes('monitor') ||
+    lowerFile.includes('metric') ||
+    lowerFile.includes('observability')
+  ) {
+    layers.push('evidence');
+  }
+
+  return unique(layers);
+}
+
+function nodeHasLayer(node: PulseStructuralNode, layer: ArtifactLayer): boolean {
+  return classifyNodeLayers(node).includes(layer);
+}
+
+function hasValidationEvidence(node: PulseStructuralNode): boolean {
+  const lowerFile = node.file.toLowerCase();
+  return (
+    node.truthMode === 'observed' ||
+    lowerFile.includes('validator') ||
+    lowerFile.includes('.dto.') ||
+    lowerFile.endsWith('.dto.ts') ||
+    lowerFile.endsWith('.dto.tsx')
+  );
+}
+
+function buildCriticalSurfaceIds(
+  scopeState: PulseScopeState,
+  manifest: PulseResolvedManifest,
+): Set<string> {
+  const criticalSurfaceIds = new Set<string>();
+
+  for (const moduleEntry of manifest.modules) {
+    if (!moduleEntry.critical) {
+      continue;
+    }
+    for (const family of deriveStructuralFamilies([
+      moduleEntry.key,
+      moduleEntry.name,
+      moduleEntry.canonicalName,
+      ...moduleEntry.aliases,
+      ...moduleEntry.routeRoots,
+    ])) {
+      criticalSurfaceIds.add(family);
+    }
+  }
+
+  for (const domain of manifest.criticalDomains) {
+    const surfaceId = slugifyStructural(domain);
+    if (surfaceId) {
+      criticalSurfaceIds.add(surfaceId);
+    }
+  }
+
+  for (const aggregate of scopeState.moduleAggregates) {
+    if (aggregate.runtimeCriticalFileCount === 0 && aggregate.humanRequiredFileCount === 0) {
+      continue;
+    }
+    const surfaceId = slugifyStructural(aggregate.moduleKey);
+    if (surfaceId) {
+      criticalSurfaceIds.add(surfaceId);
+    }
+  }
+
+  return criticalSurfaceIds;
+}
+
+function isStructuralFlowCandidate(nodes: PulseStructuralNode[]): boolean {
+  if (nodes.length === 0) {
+    return false;
+  }
+  const hasEntry = nodes.some(
+    (node) =>
+      node.userFacing ||
+      nodeHasLayer(node, 'frontend') ||
+      Boolean(node.metadata.frontendPath) ||
+      Boolean(node.metadata.fullPath),
+  );
+  const hasAction = nodes.some(
+    (node) =>
+      nodeHasLayer(node, 'backend') ||
+      Boolean(node.metadata.endpoint) ||
+      Boolean(node.metadata.backendPath),
+  );
+  const hasStatefulOrSideEffect = nodes.some(
+    (node) =>
+      nodeHasLayer(node, 'persistence') ||
+      node.role === 'side_effect' ||
+      Boolean(node.metadata.backendPath) ||
+      Boolean(node.metadata.endpoint),
+  );
+  return hasEntry && hasAction && hasStatefulOrSideEffect;
+}
+
+function deriveCapabilityFlowId(
+  capability: PulseProductCapability,
+  nodes: PulseStructuralNode[],
+): string | null {
+  const routeFamilies = unique(
+    nodes
+      .flatMap((node) => [
+        node.metadata.fullPath,
+        node.metadata.frontendPath,
+        node.metadata.normalizedPath,
+        node.metadata.endpoint,
+        node.metadata.backendPath,
+      ])
+      .map((value) => deriveRouteFamily(String(value || ''), 2))
+      .filter((value): value is string => Boolean(value)),
+  ).sort((left, right) => getStructuralSpecificity(right) - getStructuralSpecificity(left));
+
+  const routeFamily = routeFamilies[0];
+
+  if (routeFamily) {
+    return `flow-${routeFamily}`;
+  }
+
+  const labelFamily = deriveStructuralFamilies([
+    capability.name,
+    capability.surfaceId,
+    ...nodes.map((node) => node.label),
+  ])[0];
+  return labelFamily ? `flow-${labelFamily}` : null;
+}
+
+function getStructuralSpecificity(value: string): number {
+  return value.split('-').filter(Boolean).length;
+}
+
+function deriveSurfaceId(node: PulseStructuralNode): string | null {
+  const routeFamily = [
+    node.metadata.fullPath,
+    node.metadata.frontendPath,
+    node.metadata.normalizedPath,
+    node.metadata.endpoint,
+    node.metadata.backendPath,
+  ]
+    .map((value) => deriveRouteFamily(String(value || ''), 1))
+    .find((value): value is string => Boolean(value));
+  if (routeFamily) {
+    return routeFamily;
+  }
+
+  const families = nodeFamilies(node);
+  const firstFamily = families[0];
+  if (!firstFamily) {
+    return null;
+  }
+  return firstFamily.split('-').filter(Boolean)[0] || null;
+}
+
+function buildScopeFileCountBySurface(scopeState: PulseScopeState): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const file of scopeState.files) {
+    const surfaceId = slugifyStructural(
+      file.moduleCandidate || deriveRouteFamily(file.path, 1) || file.surface,
+    );
+    if (!surfaceId) {
+      continue;
+    }
+    counts.set(surfaceId, (counts.get(surfaceId) || 0) + 1);
+  }
+  return counts;
+}
+
+function describeSurface(
+  artifactCount: number,
+  routeCount: number,
+  scopeFileCount: number,
+): string {
+  return `Discovered from ${artifactCount} structural artifact(s), ${routeCount} declared route root(s), and ${scopeFileCount} scoped file(s).`;
+}
+
+function findSurfaceComponentIds(
+  adjacency: Map<string, Set<string>>,
+  nodeId: string,
+  allowedIds: Set<string>,
+): string[] {
   const visited = new Set<string>();
   const queue: string[] = [nodeId];
   visited.add(nodeId);
 
-  // BFS to depth 3 to find related artifacts via edges
-  for (let depth = 0; depth < 3 && queue.length > 0; depth++) {
-    const nextQueue: string[] = [];
-    for (const currentId of queue) {
-      // Find all edges going from or to this node
-      const relatedEdges = graph.edges.filter((e) => e.from === currentId || e.to === currentId);
-      for (const edge of relatedEdges) {
-        const nextId = edge.from === currentId ? edge.to : edge.from;
-        if (!visited.has(nextId)) {
-          visited.add(nextId);
-          nextQueue.push(nextId);
-        }
+  while (queue.length > 0) {
+    const currentId = queue.shift()!;
+    for (const nextId of adjacency.get(currentId) || []) {
+      if (!allowedIds.has(nextId) || visited.has(nextId)) {
+        continue;
       }
+      visited.add(nextId);
+      queue.push(nextId);
     }
-    queue.splice(0, queue.length, ...nextQueue);
   }
 
   return Array.from(visited);
 }
 
-function classifyLayer(file: string): ArtifactLayer {
-  const lower = file.toLowerCase();
-  if (lower.includes('frontend/') || lower.includes('frontend-admin/')) {
-    return 'frontend';
-  }
-  if (lower.includes('backend/')) {
-    return 'backend';
-  }
-  if (lower.includes('worker/')) {
-    return 'worker';
-  }
-  if (lower.includes('prisma/') || lower.includes('schema.prisma')) {
-    return 'persistence';
-  }
-  if (lower.includes('webhook') || lower.includes('provider')) {
-    return 'external';
-  }
-  return 'infrastructure';
+function chooseCapabilityLabelNode(nodes: PulseStructuralNode[]): PulseStructuralNode | undefined {
+  return (
+    nodes.find((node) => node.role === 'interface') ||
+    nodes.find((node) => node.kind === 'backend_route') ||
+    nodes.find((node) => node.kind === 'api_call') ||
+    nodes[0]
+  );
 }
 
 function calculateSurfaceCompleteness(graph: PulseStructuralGraph, artifactIds: string[]): number {
@@ -310,9 +705,9 @@ function calculateSurfaceCompleteness(graph: PulseStructuralGraph, artifactIds: 
     return 0;
   }
 
-  const hasUI = nodes.some((n) => classifyLayer(n.file) === 'frontend');
-  const hasAPI = nodes.some((n) => classifyLayer(n.file) === 'backend');
-  const hasStorage = nodes.some((n) => classifyLayer(n.file) === 'persistence');
+  const hasUI = nodes.some((node) => nodeHasLayer(node, 'frontend'));
+  const hasAPI = nodes.some((node) => nodeHasLayer(node, 'backend'));
+  const hasStorage = nodes.some((node) => nodeHasLayer(node, 'persistence'));
 
   let score = 0;
   if (hasUI) {
@@ -359,11 +754,18 @@ function mapToExtendedMode(tm: PulseTruthMode): CapabilityTruthMode {
   return 'phantom';
 }
 
-function inferCriticality(surface: string): 'must_have' | 'should_have' | 'nice_to_have' {
-  if (['auth', 'payments', 'whatsapp', 'workspace'].includes(surface)) {
+function inferCriticality(
+  nodes: PulseStructuralNode[],
+  surfaceId: string,
+  criticalSurfaceIds: Set<string>,
+): 'must_have' | 'should_have' | 'nice_to_have' {
+  if (
+    criticalSurfaceIds.has(surfaceId) ||
+    nodes.some((node) => node.runtimeCritical || node.protectedByGovernance)
+  ) {
     return 'must_have';
   }
-  if (['crm', 'analytics', 'products'].includes(surface)) {
+  if (nodes.some((node) => node.userFacing || node.truthMode === 'observed')) {
     return 'should_have';
   }
   return 'nice_to_have';
@@ -397,6 +799,5 @@ function determineTruthModeFromCapabilities(caps: PulseProductCapability[]): Pul
 }
 
 function isExcludedArtifact(file: string): boolean {
-  const excluded = ['test', 'spec', 'config', 'types', 'constants'];
-  return excluded.some((e) => file.toLowerCase().includes(e));
+  return /\.(?:spec|test|d)\.[cm]?[jt]sx?$/.test(file) || file.endsWith('.config.ts');
 }

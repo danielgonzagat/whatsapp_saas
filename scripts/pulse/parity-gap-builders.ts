@@ -112,10 +112,11 @@ function chooseSeverity(
   const userFacing = someCapabilityMatches(capabilities, (c) => c.userFacing);
   const reliabilityOnly = everyCapabilityMatches(
     capabilities,
-    (c) => c.ownerLane === 'reliability',
+    (c) => !c.userFacing && c.maturity.dimensions.runtimeEvidencePresent,
   );
-  const operatorOrSecurity = someCapabilityMatches(capabilities, (c) =>
-    ['operator-admin', 'security'].includes(c.ownerLane),
+  const governedOrCritical = someCapabilityMatches(
+    capabilities,
+    (c) => c.protectedByGovernance || c.runtimeCritical,
   );
   const interfaceOnlyWithoutRoutes = everyCapabilityMatches(
     capabilities,
@@ -135,7 +136,7 @@ function chooseSeverity(
     return runtimeCritical || userFacing ? 'high' : 'medium';
   }
   if (kind === 'front_without_back' || kind === 'ui_without_persistence') {
-    if (interfaceOnlyWithoutRoutes && !operatorOrSecurity && !hasPhantom) {
+    if (interfaceOnlyWithoutRoutes && !governedOrCritical && !hasPhantom) {
       return 'medium';
     }
     return runtimeCritical || hasPhantom ? 'high' : 'medium';

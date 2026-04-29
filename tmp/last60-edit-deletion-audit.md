@@ -1,0 +1,343 @@
+# Last 60 Minute Edit Deletion Audit
+
+cutoff_utc=2026-04-29T21:25:37.013207+00:00
+records=2253
+unresolved=337
+
+- [Sagan] `scripts/pulse/__tests__/capability-product-dynamic.spec.ts` symbol=`requiredCertificationProfile` exact=False symbol_present=False line=171 removed: `requiredCertificationProfile: 'production-final',`
+- [Sagan] `scripts/pulse/__tests__/capability-product-dynamic.spec.ts` symbol=`allowTemporaryAcceptances` exact=False symbol_present=False line=171 removed: `allowTemporaryAcceptances: false,`
+- [Sagan] `scripts/pulse/__tests__/capability-product-dynamic.spec.ts` symbol=`maxAcceptedCriticalFlows` exact=False symbol_present=False line=171 removed: `maxAcceptedCriticalFlows: 0,`
+- [Sagan] `scripts/pulse/__tests__/capability-product-dynamic.spec.ts` symbol=`maxAcceptedCriticalScenarios` exact=False symbol_present=False line=171 removed: `maxAcceptedCriticalScenarios: 0,`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=195 removed: `return root?.surface === 'misc' ? null : (root?.surface ?? null);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`PackageJsonShape` exact=False symbol_present=False line=224 removed: `interface PackageJsonShape {`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`PackageRoot` exact=False symbol_present=False line=224 removed: `interface PackageRoot {`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`structureCache` exact=False symbol_present=False line=224 removed: `const structureCache = new Map<string, WorkspaceStructure>();`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`PACKAGE_SCAN_SKIP_SEGMENTS` exact=False symbol_present=False line=224 removed: `const PACKAGE_SCAN_SKIP_SEGMENTS = new Set([`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`PACKAGE_SCAN_MAX_DEPTH` exact=False symbol_present=False line=224 removed: `const PACKAGE_SCAN_MAX_DEPTH = 4;`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`LOCAL_COMMAND_PATH_PATTERN` exact=False symbol_present=False line=224 removed: `const LOCAL_COMMAND_PATH_PATTERN =`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`SOURCE_SIGNAL_EXTENSIONS` exact=False symbol_present=False line=224 removed: `const SOURCE_SIGNAL_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`readPackageJson` exact=False symbol_present=False line=224 removed: `function readPackageJson(filePath: string): PackageJsonShape | null {`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`try` exact=False symbol_present=False line=224 removed: `try {`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`parsed` exact=False symbol_present=False line=224 removed: `const parsed = JSON.parse(readFileSync(filePath, 'utf8')) as unknown;`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return parsed as PackageJsonShape;`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`dependencyNames` exact=False symbol_present=False line=224 removed: `function dependencyNames(pkg: PackageJsonShape): Set<string> {`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return new Set([`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`stringRecord` exact=False symbol_present=False line=224 removed: `function stringRecord(value: unknown): Record<string, unknown> | null {`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return value as Record<string, unknown>;`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`inferPackageSurface` exact=False symbol_present=False line=224 removed: `function inferPackageSurface(pkg: PackageJsonShape, relRoot: string): PulseScopeSurface {`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`deps` exact=False symbol_present=False line=224 removed: `const deps = dependencyNames(pkg);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`identity` exact=False symbol_present=False line=224 removed: `const identity = `${pkg.name ?? ''} ${relRoot}`.toLowerCase();`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return identity.includes('admin') ? 'frontend-admin' : 'frontend';`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return 'backend';`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return 'worker';`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return 'e2e';`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`inferSourceSurface` exact=False symbol_present=False line=224 removed: `function inferSourceSurface(source: string, basename: string): PulseScopeSurface | null {`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return 'frontend';`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return 'backend';`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return 'worker';`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return 'e2e';`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`sourceSignalRoot` exact=False symbol_present=False line=224 removed: `function sourceSignalRoot(relPath: string): string {`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`srcIndex` exact=False symbol_present=False line=224 removed: `const srcIndex = segments.indexOf('src');`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return segments.slice(0, srcIndex).join('/');`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return normalizePath(path.dirname(normalized));`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addDirectoryRoot` exact=False symbol_present=False line=224 removed: `function addDirectoryRoot(target: Set<string>, relPath: string): void {`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addRootFromPackageReference` exact=False symbol_present=False line=224 removed: `function addRootFromPackageReference(`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`target` exact=False symbol_present=False line=224 removed: `target: Set<string>,`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`packageRoot` exact=False symbol_present=False line=224 removed: `packageRoot: string,`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`reference` exact=False symbol_present=False line=224 removed: `reference: string,`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return;`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addDirectoryRoot` exact=False symbol_present=False line=224 removed: `addDirectoryRoot(target, normalizePath(path.join(packageRoot, reference)));`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addRootSegmentsToNoise` exact=False symbol_present=False line=224 removed: `function addRootSegmentsToNoise(structure: WorkspaceStructure, relRoot: string): void {`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addPackageEntrypointRoots` exact=False symbol_present=False line=224 removed: `function addPackageEntrypointRoots(`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`pkg` exact=False symbol_present=False line=224 removed: `pkg: PackageJsonShape,`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`relRoot` exact=False symbol_present=False line=224 removed: `relRoot: string,`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addRootFromPackageReference` exact=False symbol_present=False line=224 removed: `addRootFromPackageReference(structure.tsconfigRoots, relRoot, reference);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`exportsRecord` exact=False symbol_present=False line=224 removed: `const exportsRecord = stringRecord(pkg.exports);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addRootFromPackageReference` exact=False symbol_present=False line=224 removed: `addRootFromPackageReference(structure.tsconfigRoots, relRoot, pkg.exports);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return;`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addRootFromPackageReference` exact=False symbol_present=False line=224 removed: `addRootFromPackageReference(structure.tsconfigRoots, relRoot, value);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`nested` exact=False symbol_present=False line=224 removed: `const nested = stringRecord(value);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addRootFromPackageReference` exact=False symbol_present=False line=224 removed: `addRootFromPackageReference(structure.tsconfigRoots, relRoot, nestedValue);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addScriptRoots` exact=False symbol_present=False line=224 removed: `function addScriptRoots(`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`pkg` exact=False symbol_present=False line=224 removed: `pkg: PackageJsonShape,`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`relRoot` exact=False symbol_present=False line=224 removed: `relRoot: string,`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`referencedPath` exact=False symbol_present=False line=224 removed: `const referencedPath = match[1];`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addRootFromPackageReference` exact=False symbol_present=False line=224 removed: `addRootFromPackageReference(structure.scriptRoots, relRoot, referencedPath);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addPrismaRootFromPackage` exact=False symbol_present=False line=224 removed: `function addPrismaRootFromPackage(`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`pkg` exact=False symbol_present=False line=224 removed: `pkg: PackageJsonShape,`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`relRoot` exact=False symbol_present=False line=224 removed: `relRoot: string,`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`schema` exact=False symbol_present=False line=224 removed: `const schema = pkg.prisma?.schema;`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addRootFromPackageReference` exact=False symbol_present=False line=224 removed: `addRootFromPackageReference(structure.prismaRoots, relRoot, schema);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addGovernanceBoundary` exact=False symbol_present=False line=224 removed: `function addGovernanceBoundary(structure: WorkspaceStructure, rootDir: string): void {`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`boundaryPath` exact=False symbol_present=False line=224 removed: `const boundaryPath = path.join(rootDir, 'ops', 'protected-governance-files.json');`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`boundary` exact=False symbol_present=False line=224 removed: `const boundary = readPackageJson(boundaryPath);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`record` exact=False symbol_present=False line=224 removed: `const record = stringRecord(boundary);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=224 removed: `return;`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`exact` exact=False symbol_present=False line=224 removed: `const exact = Array.isArray(record.protectedExact) ? record.protectedExact : [];`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`prefixes` exact=False symbol_present=False line=224 removed: `const prefixes = Array.isArray(record.protectedPrefixes) ? record.protectedPrefixes : [];`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`walkWorkspaceStructure` exact=False symbol_present=False line=232 removed: `function walkWorkspaceStructure(`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`currentDir` exact=False symbol_present=False line=232 removed: `currentDir: string,`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`depth` exact=False symbol_present=False line=232 removed: `depth: number,`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=232 removed: `return;`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`absolute` exact=False symbol_present=False line=232 removed: `const absolute = path.join(currentDir, entry.name);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`walkWorkspaceStructure` exact=False symbol_present=False line=232 removed: `walkWorkspaceStructure(rootDir, absolute, depth + 1, structure);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`pkg` exact=False symbol_present=False line=232 removed: `const pkg = readPackageJson(absolute);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`relRoot` exact=False symbol_present=False line=232 removed: `const relRoot = normalizePath(path.dirname(relPath));`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addPackageEntrypointRoots` exact=False symbol_present=False line=232 removed: `addPackageEntrypointRoots(structure, pkg, relRoot);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addScriptRoots` exact=False symbol_present=False line=232 removed: `addScriptRoots(structure, pkg, relRoot);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addPrismaRootFromPackage` exact=False symbol_present=False line=232 removed: `addPrismaRootFromPackage(structure, pkg, relRoot);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addRootSegmentsToNoise` exact=False symbol_present=False line=232 removed: `addRootSegmentsToNoise(structure, relRoot);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addDirectoryRoot` exact=False symbol_present=False line=232 removed: `addDirectoryRoot(structure.tsconfigRoots, relPath);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addRootSegmentsToNoise` exact=False symbol_present=False line=232 removed: `addRootSegmentsToNoise(structure, path.dirname(relPath));`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addDirectoryRoot` exact=False symbol_present=False line=232 removed: `addDirectoryRoot(structure.prismaRoots, relPath);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addRootSegmentsToNoise` exact=False symbol_present=False line=232 removed: `addRootSegmentsToNoise(structure, path.dirname(relPath));`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addDirectoryRoot` exact=False symbol_present=False line=232 removed: `addDirectoryRoot(structure.documentRoots, relPath);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addRootSegmentsToNoise` exact=False symbol_present=False line=232 removed: `addRootSegmentsToNoise(structure, path.dirname(relPath));`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addRootSegmentsToNoise` exact=False symbol_present=False line=232 removed: `addRootSegmentsToNoise(structure, root);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addDirectoryRoot` exact=False symbol_present=False line=232 removed: `addDirectoryRoot(structure.infrastructureRoots, relPath);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addRootSegmentsToNoise` exact=False symbol_present=False line=232 removed: `addRootSegmentsToNoise(structure, path.dirname(relPath));`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`resolvedRoot` exact=False symbol_present=False line=232 removed: `const resolvedRoot = path.resolve(rootDir);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`cached` exact=False symbol_present=False line=232 removed: `const cached = structureCache.get(resolvedRoot);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=232 removed: `return cached;`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`walkWorkspaceStructure` exact=False symbol_present=False line=232 removed: `walkWorkspaceStructure(resolvedRoot, resolvedRoot, 0, structure);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`addGovernanceBoundary` exact=False symbol_present=False line=232 removed: `addGovernanceBoundary(structure, resolvedRoot);`
+- [Rawls] `scripts/pulse/scope-state.classify.ts` symbol=`-` exact=False symbol_present=False line=232 removed: `return structure;`
+- [Einstein] `scripts/pulse/execution-observation.ts` symbol=`actorResults` exact=False symbol_present=False line=184 removed: `function actorResults(evidence?: Partial<PulseExecutionEvidence>) {`
+- [Einstein] `scripts/pulse/execution-observation.ts` symbol=`-` exact=False symbol_present=False line=184 removed: `return actorResults(evidence).filter((result) => result.executed || result.status === 'failed');`
+- [Einstein] `scripts/pulse/execution-observation.ts` symbol=`-` exact=False symbol_present=False line=255 removed: `return scenarioResults(evidence).filter((result) => result.executed || result.status === 'failed');`
+- [Dewey] `scripts/pulse/autonomy-loop.unit-ranking.ts` symbol=`-` exact=False symbol_present=False line=105 removed: `return units.sort(compareAutomationUnits);`
+- [Dewey] `scripts/pulse/autonomy-loop.unit-ranking.ts` symbol=`-` exact=False symbol_present=False line=105 removed: `return fresh.length > 0 ? fresh : getAutomationSafeUnits(directive, riskProfile);`
+- [Dewey] `scripts/pulse/autonomy-loop.unit-ranking.ts` symbol=`mergeAdjudicationPathInfluence` exact=False symbol_present=False line=109 removed: `function mergeAdjudicationPathInfluence(`
+- [Dewey] `scripts/pulse/autonomy-loop.unit-ranking.ts` symbol=`next` exact=False symbol_present=False line=109 removed: `const next: StructuralQueueInfluence = {`
+- [Dewey] `scripts/pulse/autonomy-loop.unit-ranking.ts` symbol=`-` exact=False symbol_present=False line=109 removed: `return next;`
+- [Dewey] `scripts/pulse/autonomy-loop.unit-ranking.ts` symbol=`unitMatchesFinding` exact=False symbol_present=False line=120 removed: `function unitMatchesFinding(`
+- [Dewey] `scripts/pulse/autonomy-loop.unit-ranking.ts` symbol=`relatedPaths` exact=False symbol_present=False line=120 removed: `const relatedPaths = unique([`
+- [Dewey] `scripts/pulse/autonomy-loop.unit-ranking.ts` symbol=`-` exact=False symbol_present=False line=120 removed: `return relatedPaths.includes(finding.filePath);`
+- [Dewey] `scripts/pulse/autonomy-loop.unit-ranking.ts` symbol=`-` exact=False symbol_present=False line=120 removed: `return [...influence.suppressedUnitIds].some(`
+- [Dewey] `scripts/pulse/autonomy-loop.unit-ranking.ts` symbol=`mergeAdjudicationPathInfluence` exact=False symbol_present=False line=120 removed: `function mergeAdjudicationPathInfluence(`
+- [Dewey] `scripts/pulse/autonomy-loop.unit-ranking.ts` symbol=`next` exact=False symbol_present=False line=120 removed: `const next: StructuralQueueInfluence = {`
+- [Dewey] `scripts/pulse/autonomy-loop.unit-ranking.ts` symbol=`-` exact=False symbol_present=False line=120 removed: `return next;`
+- [James] `scripts/pulse/overclaim-guard.ts` symbol=`criticalHumanRequiredOpen` exact=False symbol_present=False line=103 removed: `criticalHumanRequiredOpen: boolean;`
+- [James] `scripts/pulse/artifacts.autonomy.ts` symbol=`criticalHumanRequiredOpen` exact=False symbol_present=False line=110 removed: `criticalHumanRequiredOpen: false,`
+- [James] `scripts/pulse/__tests__/overclaim-rules.spec.ts` symbol=`criticalHumanRequiredOpen` exact=False symbol_present=False line=122 removed: `criticalHumanRequiredOpen: true,`
+- [James] `scripts/pulse/__tests__/overclaim-rules.spec.ts` symbol=`criticalHumanRequiredOpen` exact=False symbol_present=False line=122 removed: `criticalHumanRequiredOpen: false,`
+- [James] `scripts/pulse/__tests__/overclaim-rules.spec.ts` symbol=`criticalHumanRequiredOpen` exact=False symbol_present=False line=122 removed: `criticalHumanRequiredOpen: false,`
+- [James] `scripts/pulse/__tests__/overclaim-rules.spec.ts` symbol=`criticalHumanRequiredOpen` exact=False symbol_present=False line=122 removed: `criticalHumanRequiredOpen: true,`
+- [James] `scripts/pulse/__tests__/overclaim-rules.spec.ts` symbol=`criticalHumanRequiredOpen` exact=False symbol_present=False line=122 removed: `criticalHumanRequiredOpen: false,`
+- [James] `scripts/pulse/__tests__/overclaim-rules.spec.ts` symbol=`criticalHumanRequiredOpen` exact=False symbol_present=False line=122 removed: `criticalHumanRequiredOpen: false,`
+- [James] `scripts/pulse/__tests__/overclaim-rules.spec.ts` symbol=`criticalHumanRequiredOpen` exact=False symbol_present=False line=122 removed: `criticalHumanRequiredOpen: false,`
+- [James] `scripts/pulse/__tests__/overclaim-rules.spec.ts` symbol=`criticalHumanRequiredOpen` exact=False symbol_present=False line=122 removed: `criticalHumanRequiredOpen: false,`
+- [Boole] `scripts/pulse/parser-registry.ts` symbol=`HELPER_PARSERS` exact=False symbol_present=False line=91 removed: `const HELPER_PARSERS = new Set([`
+- [Boole] `scripts/pulse/parser-registry.ts` symbol=`discoverParserFiles` exact=False symbol_present=False line=91 removed: `function discoverParserFiles(rootDir: string): { checks: string[]; helperFilesSkipped: string[] } {`
+- [Boole] `scripts/pulse/parser-registry.ts` symbol=`-` exact=False symbol_present=False line=91 removed: `return mod.default as PulseParserDefinition['fn'];`
+- [Boole] `scripts/pulse/self-trust.ts` symbol=`parserFiles` exact=False symbol_present=False line=95 removed: `const parserFiles = readDir(parsersDir).filter(`
+- [Boole] `scripts/pulse/self-trust.ts` symbol=`criticalParsers` exact=False symbol_present=False line=95 removed: `const criticalParsers = [`
+- [Bohr] `scripts/pulse/parser-registry.ts` symbol=`generatedAt` exact=False symbol_present=False line=51 removed: `generatedAt: new Date().toISOString(),`
+- [Bohr] `scripts/pulse/parser-registry.ts` symbol=`generatedAt` exact=False symbol_present=False line=66 removed: `generatedAt: new Date().toISOString(),`
+- [Lovelace] `scripts/pulse/external-sources-timeout.ts` symbol=`hasGithubConfig` exact=False symbol_present=False line=64 removed: `function hasGithubConfig(config: ExternalSourcesConfig): boolean {`
+- [Lovelace] `scripts/pulse/external-sources-timeout.ts` symbol=`-` exact=False symbol_present=False line=64 removed: `return Math.max(1, count);`
+- [Kepler] `scripts/pulse/actors/coverage.ts` symbol=`-` exact=False symbol_present=False line=96 removed: `return CUSTOMER_ARTIFACT;`
+- [Kepler] `scripts/pulse/actors/coverage.ts` symbol=`-` exact=False symbol_present=False line=96 removed: `return OPERATOR_ARTIFACT;`
+- [Kepler] `scripts/pulse/actors/coverage.ts` symbol=`-` exact=False symbol_present=False line=96 removed: `return ADMIN_ARTIFACT;`
+- [Kepler] `scripts/pulse/actors/coverage.ts` symbol=`-` exact=False symbol_present=False line=96 removed: `return SOAK_ARTIFACT;`
+- [Kepler] `scripts/pulse/actors/scenario-result.ts` symbol=`if` exact=False symbol_present=False line=96 removed: `if (scenario.timeWindowModes.includes('soak')) {`
+- [Kepler] `scripts/pulse/actors/scenario-result.ts` symbol=`-` exact=False symbol_present=False line=96 removed: `return 'soak';`
+- [Kepler] `scripts/pulse/actors/scenario-result.ts` symbol=`if` exact=False symbol_present=False line=96 removed: `if (scenario.actorKind === 'customer') {`
+- [Kepler] `scripts/pulse/actors/scenario-result.ts` symbol=`-` exact=False symbol_present=False line=96 removed: `return 'customer';`
+- [Kepler] `scripts/pulse/actors/scenario-result.ts` symbol=`if` exact=False symbol_present=False line=96 removed: `if (scenario.actorKind === 'operator') {`
+- [Kepler] `scripts/pulse/actors/scenario-result.ts` symbol=`-` exact=False symbol_present=False line=96 removed: `return 'operator';`
+- [Kepler] `scripts/pulse/actors/scenario-result.ts` symbol=`-` exact=False symbol_present=False line=96 removed: `return 'admin';`
+- [Kepler] `scripts/pulse/actors/scenario-evaluator.ts` symbol=`-` exact=False symbol_present=False line=96 removed: `return true;`
+- [Kepler] `scripts/pulse/actors/scenario-evaluator.ts` symbol=`-` exact=False symbol_present=False line=96 removed: `return true;`
+- [Kepler] `scripts/pulse/actors/scenario-evaluator.ts` symbol=`-` exact=False symbol_present=False line=96 removed: `return true;`
+- [Kepler] `scripts/pulse/actors/scenario-evaluator.ts` symbol=`-` exact=False symbol_present=False line=96 removed: `return true;`
+- [Kepler] `scripts/pulse/actors/scenario-evaluator.ts` symbol=`-` exact=False symbol_present=False line=96 removed: `return true;`
+- [Kepler] `scripts/pulse/actors/index.ts` symbol=`customerScenarios` exact=False symbol_present=False line=96 removed: `const customerScenarios = scenarios.filter((spec) => spec.actorKind === 'customer');`
+- [Kepler] `scripts/pulse/actors/index.ts` symbol=`operatorScenarios` exact=False symbol_present=False line=96 removed: `const operatorScenarios = scenarios.filter((spec) => spec.actorKind === 'operator');`
+- [Kepler] `scripts/pulse/actors/index.ts` symbol=`adminScenarios` exact=False symbol_present=False line=96 removed: `const adminScenarios = scenarios.filter((spec) => spec.actorKind === 'admin');`
+- [Kepler] `scripts/pulse/actors/index.ts` symbol=`soakScenarios` exact=False symbol_present=False line=96 removed: `const soakScenarios = scenarios.filter((spec) => spec.timeWindowModes.includes('soak'));`
+- [Kepler] `scripts/pulse/actors/index.ts` symbol=`customerResults` exact=False symbol_present=False line=96 removed: `const customerResults = results.filter((r) => r.actorKind === 'customer');`
+- [Kepler] `scripts/pulse/actors/index.ts` symbol=`operatorResults` exact=False symbol_present=False line=96 removed: `const operatorResults = results.filter((r) => r.actorKind === 'operator');`
+- [Kepler] `scripts/pulse/actors/index.ts` symbol=`adminResults` exact=False symbol_present=False line=96 removed: `const adminResults = results.filter((r) => r.actorKind === 'admin');`
+- [Kepler] `scripts/pulse/actors/index.ts` symbol=`soakResults` exact=False symbol_present=False line=96 removed: `const soakResults = results.filter(`
+- [Kepler] `scripts/pulse/actors/index.ts` symbol=`Boolean` exact=False symbol_present=False line=96 removed: `Boolean((r as { timeWindowModes?: string[] }).timeWindowModes?.includes('soak')),`
+- [Kepler] `scripts/pulse/actors/index.ts` symbol=`mergedCustomer` exact=False symbol_present=False line=96 removed: `const mergedCustomer = mergeEvidenceWithDiskFallback(customerResults, diskEvidence, 'customer');`
+- [Kepler] `scripts/pulse/actors/index.ts` symbol=`mergedOperator` exact=False symbol_present=False line=96 removed: `const mergedOperator = mergeEvidenceWithDiskFallback(operatorResults, diskEvidence, 'operator');`
+- [Kepler] `scripts/pulse/actors/index.ts` symbol=`mergedAdmin` exact=False symbol_present=False line=96 removed: `const mergedAdmin = mergeEvidenceWithDiskFallback(adminResults, diskEvidence, 'admin');`
+- [Kepler] `scripts/pulse/actors/index.ts` symbol=`mergedSoak` exact=False symbol_present=False line=96 removed: `const mergedSoak = mergeEvidenceWithDiskFallback(soakResults, diskEvidence, 'soak');`
+- [Kepler] `scripts/pulse/actors/index.ts` symbol=`promoteActors` exact=False symbol_present=False line=96 removed: `const promoteActors: Array<{ results: typeof mergedCustomer; label: string }> = [`
+- [Wegener] `scripts/pulse/replay-adapter.ts` symbol=`lowered` exact=False symbol_present=False line=91 removed: `const lowered = raw.toLowerCase();`
+- [Wegener] `scripts/pulse/replay-adapter.ts` symbol=`-` exact=False symbol_present=False line=91 removed: `return 'sentry_replay';`
+- [Wegener] `scripts/pulse/replay-adapter.ts` symbol=`-` exact=False symbol_present=False line=91 removed: `return 'datadog_replay';`
+- [Wegener] `scripts/pulse/replay-adapter.ts` symbol=`-` exact=False symbol_present=False line=91 removed: `return 'openreplay';`
+- [Wegener] `scripts/pulse/replay-adapter.ts` symbol=`-` exact=False symbol_present=False line=91 removed: `return 'custom';`
+- [Wegener] `scripts/pulse/replay-adapter.ts` symbol=`-` exact=False symbol_present=False line=91 removed: `return null;`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`BaselineContract` exact=False symbol_present=False line=95 removed: `interface BaselineContract {`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: string[];`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: string[];`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: string[];`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`PROVIDER_BASELINES` exact=False symbol_present=False line=95 removed: `const PROVIDER_BASELINES: Record<string, BaselineContract[]> = {`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: ['messaging_product', 'to', 'type', 'text.body'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['messaging_product', 'contacts[].input', 'messages[].id'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: [],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['id', 'verified_name', 'display_phone_number'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: ['messaging_product', 'file', 'type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['id'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: ['name', 'language', 'category', 'components'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['id', 'status', 'category'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: ['amount', 'currency', 'payment_method_types'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['id', 'amount', 'currency', 'status', 'client_secret'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: ['line_items', 'mode', 'success_url', 'cancel_url'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['id', 'url', 'payment_status'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: [],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['id', 'status', 'current_period_end', 'customer'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: ['cancel_at_period_end', 'metadata'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['id', 'status', 'cancel_at_period_end'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: ['model', 'messages[].role', 'messages[].content'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['choices[].message.role', 'choices[].message.content'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: ['model', 'input'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['data[].embedding', 'data[].index', 'model'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: ['model', 'voice', 'input'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: [],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: ['file', 'model'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['text'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: ['from', 'to', 'subject', 'html'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['id'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: [],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['id', 'subject', 'status', 'last_event'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: [],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['names[].displayName', 'emailAddresses[].value'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Authorization'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: [],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['keys[].kid', 'keys[].n', 'keys[].e'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: [],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=95 removed: `requestShape: ['code', 'client_id', 'client_secret', 'redirect_uri', 'grant_type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=95 removed: `responseShape: ['access_token', 'id_token', 'expires_in', 'token_type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=95 removed: `requiredHeaders: ['Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`PROVIDER_SDK_PATTERNS` exact=False symbol_present=False line=95 removed: `const PROVIDER_SDK_PATTERNS: Array<{`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`patterns` exact=False symbol_present=False line=95 removed: `patterns: RegExp[];`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`patterns` exact=False symbol_present=False line=95 removed: `patterns: [/require\(['"]stripe['"]\)/, /from\s+['"]stripe['"]/, /import\s+\*\s+as\s+Stripe\b/],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`patterns` exact=False symbol_present=False line=95 removed: `patterns: [/require\(['"]openai['"]\)/, /from\s+['"]openai['"]/, /new\s+OpenAI\s*\(/],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`patterns` exact=False symbol_present=False line=95 removed: `patterns: [`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`patterns` exact=False symbol_present=False line=95 removed: `patterns: [/require\(['"]resend['"]\)/, /from\s+['"]resend['"]/],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`patterns` exact=False symbol_present=False line=95 removed: `patterns: [`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`BaselineContract` exact=False symbol_present=False line=102 removed: `interface BaselineContract {`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: string[];`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: string[];`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: string[];`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`PROVIDER_BASELINES` exact=False symbol_present=False line=102 removed: `const PROVIDER_BASELINES: Record<string, BaselineContract[]> = {`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: ['messaging_product', 'to', 'type', 'text.body'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['messaging_product', 'contacts[].input', 'messages[].id'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: [],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['id', 'verified_name', 'display_phone_number'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: ['messaging_product', 'file', 'type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['id'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: ['name', 'language', 'category', 'components'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['id', 'status', 'category'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: ['amount', 'currency', 'payment_method_types'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['id', 'amount', 'currency', 'status', 'client_secret'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: ['line_items', 'mode', 'success_url', 'cancel_url'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['id', 'url', 'payment_status'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: [],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['id', 'status', 'current_period_end', 'customer'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: ['cancel_at_period_end', 'metadata'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['id', 'status', 'cancel_at_period_end'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: ['model', 'messages[].role', 'messages[].content'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['choices[].message.role', 'choices[].message.content'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: ['model', 'input'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['data[].embedding', 'data[].index', 'model'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: ['model', 'voice', 'input'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: [],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: ['file', 'model'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['text'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: ['from', 'to', 'subject', 'html'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['id'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization', 'Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: [],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['id', 'subject', 'status', 'last_event'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: [],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['names[].displayName', 'emailAddresses[].value'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Authorization'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: [],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['keys[].kid', 'keys[].n', 'keys[].e'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: [],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requestShape` exact=False symbol_present=False line=102 removed: `requestShape: ['code', 'client_id', 'client_secret', 'redirect_uri', 'grant_type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`responseShape` exact=False symbol_present=False line=102 removed: `responseShape: ['access_token', 'id_token', 'expires_in', 'token_type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`requiredHeaders` exact=False symbol_present=False line=102 removed: `requiredHeaders: ['Content-Type'],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`PROVIDER_SDK_PATTERNS` exact=False symbol_present=False line=102 removed: `const PROVIDER_SDK_PATTERNS: Array<{`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`patterns` exact=False symbol_present=False line=102 removed: `patterns: RegExp[];`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`patterns` exact=False symbol_present=False line=102 removed: `patterns: [/require\(['"]stripe['"]\)/, /from\s+['"]stripe['"]/, /import\s+\*\s+as\s+Stripe\b/],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`patterns` exact=False symbol_present=False line=102 removed: `patterns: [/require\(['"]openai['"]\)/, /from\s+['"]openai['"]/, /new\s+OpenAI\s*\(/],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`patterns` exact=False symbol_present=False line=102 removed: `patterns: [`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`patterns` exact=False symbol_present=False line=102 removed: `patterns: [/require\(['"]resend['"]\)/, /from\s+['"]resend['"]/],`
+- [Wegener] `scripts/pulse/contract-tester.ts` symbol=`patterns` exact=False symbol_present=False line=102 removed: `patterns: [`
+- [main] `scripts/ops/codemods/remove-prisma-dynamic.mjs` symbol=`gitRestoreFile` exact=False symbol_present=False line=933 removed: `function gitRestoreFile(absPath) {`
+- [main] `scripts/ops/codemods/remove-prisma-dynamic.mjs` symbol=`-` exact=False symbol_present=False line=933 removed: `return true;`
+- [main] `scripts/ops/codemods/remove-prisma-dynamic.mjs` symbol=`-` exact=False symbol_present=False line=933 removed: `return false;`
+- [main] `scripts/ops/codemods/remove-prisma-dynamic.mjs` symbol=`gitRestoreFile` exact=False symbol_present=False line=933 removed: `gitRestoreFile(absPath);`
+- [Zeno] `scripts/pulse/types.adapter-status.ts` symbol=`-` exact=False symbol_present=False line=110 removed: `export const ADAPTER_STATUSES = [`
+- [Zeno] `scripts/pulse/cross-artifact-consistency-check/loaders.ts` symbol=`-` exact=False symbol_present=False line=110 removed: `export const MAX_GENERATED_AT_DRIFT_MS = 10 * 60 * 1000;`
+- [Zeno] `scripts/pulse/cross-artifact-consistency-check/loaders.ts` symbol=`safePath` exact=False symbol_present=False line=110 removed: `const safePath = assertWithinRoot(filePath, REPO_ROOT);`
+- [Zeno] `scripts/pulse/manifest-audit.ts` symbol=`registryArtifactMatch` exact=False symbol_present=False line=110 removed: `const registryArtifactMatch = registryContent.match(`
+- [Zeno] `scripts/pulse/manifest-audit.ts` symbol=`lines` exact=False symbol_present=False line=110 removed: `const lines = registryArtifactMatch[1].split('\n');`
+- [Zeno] `scripts/pulse/manifest-audit.ts` symbol=`pathMatch` exact=False symbol_present=False line=110 removed: `const pathMatch = line.match(/relativePath:\s*['"]([^'"]+)['"]/);`
+- [James] `backend/src/crm/neuro-crm.service.ts` symbol=`-` exact=False symbol_present=False line=134 removed: `return this.runAiAnalysis(analysisContact, workspaceId);`
+- [Jason] `backend/src/reports/reports-orders.service.ts` symbol=`REPORT_DEFAULT_WINDOW_MS` exact=False symbol_present=False line=213 removed: `const REPORT_DEFAULT_WINDOW_MS = 30 * 86400000;`
+- [Jason] `backend/src/reports/reports-orders.service.ts` symbol=`parseReportDate` exact=False symbol_present=False line=213 removed: `function parseReportDate(value: string, field: string): Date {`
+- [Jason] `backend/src/reports/reports-orders.service.ts` symbol=`-` exact=False symbol_present=False line=213 removed: `return parsed;`
+- [Jason] `backend/src/reports/reports-orders.service.ts` symbol=`-` exact=False symbol_present=False line=231 removed: `return validatedPaidOrderStatus('ReportsOrdersService.getVendasSummary');`
+- [Jason] `backend/src/reports/reports-orders.service.ts` symbol=`-` exact=False symbol_present=False line=243 removed: `return validatedPaidOrderStatus('ReportsOrdersService.getVendasSummary');`
+- [Pauli] `frontend-admin/src/app/(admin)/clientes/page.tsx` symbol=`-` exact=False symbol_present=False line=114 removed: `return Date.now() - createdAt <= 30 * 24 * 60 * 60 * 1000;`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`-` exact=False symbol_present=False line=113 removed: `return this.runAiAnalysis(contactId, analysisContact, workspaceId);`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`Mensagens` exact=False symbol_present=False line=113 removed: `Mensagens:`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`$` exact=False symbol_present=False line=113 removed: `${contact.messages.map((m) => `- [${m.direction}] ${m.content || '(sem texto)'}`).join('\n')}`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`-` exact=False symbol_present=False line=113 removed: `await this.createInsightIfSignificant(contactId, workspaceId, contact, result);`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`normalizeScore` exact=False symbol_present=False line=113 removed: `private normalizeScore(value: unknown): number {`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`num` exact=False symbol_present=False line=113 removed: `const num = Number(value);`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`-` exact=False symbol_present=False line=113 removed: `return Number.isFinite(num) ? Math.max(0, Math.min(100, Math.round(num))) : 50;`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`upper` exact=False symbol_present=False line=113 removed: `const upper = value.toUpperCase();`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`-` exact=False symbol_present=False line=113 removed: `return upper as PurchaseProbabilityBucket;`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`-` exact=False symbol_present=False line=113 removed: `return 'MEDIUM';`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`upper` exact=False symbol_present=False line=113 removed: `const upper = value.toUpperCase();`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`upper` exact=False symbol_present=False line=113 removed: `const upper = value.toUpperCase();`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`-` exact=False symbol_present=False line=113 removed: `return upper as IntentBucket;`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`-` exact=False symbol_present=False line=139 removed: `await this.saveAnalysisResult(contactId, workspaceId, fallback);`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`-` exact=False symbol_present=False line=139 removed: `await this.saveAnalysisResult(contactId, workspaceId, result);`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`-` exact=False symbol_present=False line=139 removed: `await this.saveAnalysisResult(contactId, workspaceId, fallback);`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`saveAnalysisResult` exact=False symbol_present=False line=139 removed: `private async saveAnalysisResult(contactId: string, workspaceId: string, result: AnalysisResult) {`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`-` exact=False symbol_present=False line=143 removed: `await this.persistAnalysis(workspaceId, contactId, undefined, fallback);`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`-` exact=False symbol_present=False line=143 removed: `await this.persistAnalysis(workspaceId, contactId, undefined, result);`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`-` exact=False symbol_present=False line=143 removed: `await this.persistAnalysis(workspaceId, contactId, undefined, fallback);`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`configService` exact=False symbol_present=False line=159 removed: `private readonly configService: ConfigService,`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`lastMessage` exact=False symbol_present=False line=159 removed: `const lastMessage = contact.messages[0];`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`distance` exact=False symbol_present=False line=159 removed: `const distance = Math.hypot(point.x - centroid.x, point.y - centroid.y);`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`distance` exact=False symbol_present=False line=159 removed: `const distance = Math.hypot(point.x - centroid.x, point.y - centroid.y);`
+- [Anscombe] `backend/src/crm/neuro-crm.service.ts` symbol=`-` exact=False symbol_present=False line=190 removed: `return this.prisma.contactInsight.create({`
+- [Leibniz] `frontend-admin/src/app/(admin)/clientes/page.tsx` symbol=`-` exact=False symbol_present=False line=64 removed: `return Date.now() - createdAt <= 30 * 24 * 60 * 60 * 1000;`

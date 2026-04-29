@@ -260,6 +260,32 @@ describe('evaluateDone — truth mode mismatch', () => {
     expect(result.truthModeMet).toBe(true);
   });
 
+  it('does not let one observed role upgrade another required role that is only inferred', () => {
+    const result = evaluateDone(
+      makeInput({
+        evidence: [
+          makeEvidence('interface', true, 'observed'),
+          makeEvidence('api_surface', true, 'inferred'),
+          makeEvidence('persistence', true, 'observed'),
+        ],
+        truthModeTarget: 'observed',
+      }),
+    );
+
+    expect(result.done).toBe(false);
+    expect(result.truthModeMet).toBe(false);
+    expect(result.insufficientEvidenceRoles).toEqual(['api_surface']);
+    expect(result.governedBlockers).toEqual([
+      {
+        role: 'api_surface',
+        executionMode: 'ai_safe',
+        reason: 'Required role api_surface is below truth target observed.',
+        expectedValidation:
+          'Run governed structural evidence validation for role api_surface on capability test-capability.',
+      },
+    ]);
+  });
+
   it('returns truthModeMet=false when all evidence is present=false', () => {
     const result = evaluateDone(
       makeInput({
@@ -274,6 +300,32 @@ describe('evaluateDone — truth mode mismatch', () => {
 
     // No present evidence → bestTruthMode = 'aspirational' < 'observed'
     expect(result.truthModeMet).toBe(false);
+  });
+});
+
+describe('evaluateDone — governed ai_safe blockers', () => {
+  it('emits governed validation blockers for missing proof without human_required routing', () => {
+    const result = evaluateDone(
+      makeInput({
+        kind: 'flow',
+        id: 'flow-under-test',
+        requiredRoles: ['runtime_evidence', 'scenario_coverage'],
+        evidence: [],
+        truthModeTarget: 'observed',
+      }),
+    );
+
+    expect(result.done).toBe(false);
+    expect(result.governedBlockers).toHaveLength(2);
+    expect(result.governedBlockers.map((blocker) => blocker.executionMode)).toEqual([
+      'ai_safe',
+      'ai_safe',
+    ]);
+    expect(result.governedBlockers.map((blocker) => blocker.expectedValidation)).toEqual([
+      'Run governed runtime evidence collection for flow flow-under-test.',
+      'Run governed scenario or flow evidence for flow flow-under-test.',
+    ]);
+    expect(JSON.stringify(result.governedBlockers)).not.toMatch(/human_required|human approval/i);
   });
 });
 

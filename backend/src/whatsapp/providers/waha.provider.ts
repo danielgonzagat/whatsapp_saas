@@ -1,8 +1,9 @@
 // PULSE:OK — low-level WAHA transport only. Per-workspace daily send limits are enforced upstream
 // in WhatsAppService.sendMessage() through PlanLimitsService.trackMessageSend().
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { findFirstSequential, forEachSequential } from '../../common/async-sequence';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 import {
   extractAsciiDigits,
   isPlaceholderContactName as isPlaceholderContactNameValue,
@@ -35,8 +36,8 @@ const S_RE = /\s+/;
  */
 @Injectable()
 export class WahaProvider extends WahaSessionProvider {
-  constructor(configService: ConfigService) {
-    super(configService);
+  constructor(configService: ConfigService, @Optional() opsAlert?: OpsAlertService) {
+    super(configService, opsAlert);
   }
 
   // ─── MESSAGING ────────────────────────────────────────────

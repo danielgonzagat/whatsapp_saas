@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import * as Sentry from '@sentry/node';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -20,8 +20,8 @@ import { WalletService } from './wallet.service';
 import { InsufficientWalletBalanceError } from './wallet.types';
 
 @Controller('wallet/prepaid')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 30, ttl: 60000 } })
+@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
+@Throttle({ default: { limit: 5, ttl: 60000 } })
 export class PrepaidWalletController {
   private readonly logger = new Logger(PrepaidWalletController.name);
 

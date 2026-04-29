@@ -20,6 +20,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  Optional,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
@@ -38,6 +39,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { KloelService } from './kloel.service';
 import { KloelThreadSearchService } from './kloel-thread-search.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 // memoryStorage uploads below enforce fileSize/maxSize caps plus fileFilter/mimetype validation.
 const KLOEL_UPLOAD_GENERIC_MIME_RE =
@@ -73,6 +75,7 @@ export class KloelController {
     private readonly storageService: StorageService,
     private readonly prisma: PrismaService,
     private readonly threadSearchService: KloelThreadSearchService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private normalizeMessageMetadata(metadata: Prisma.JsonValue | null | undefined) {

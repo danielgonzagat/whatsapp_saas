@@ -1,7 +1,8 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, Optional } from '@nestjs/common';
 import type { Redis } from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 type Plan = 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE';
 
@@ -68,6 +69,7 @@ export class PlanLimitsService {
   constructor(
     private readonly prisma: PrismaService,
     @InjectRedis() private readonly redis: Redis,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private normalizeSubscriptionStatus(status: string | null | undefined): string {
@@ -183,6 +185,7 @@ export class PlanLimitsService {
       }
       // PULSE:OK — Redis rate-limit is best-effort; message is allowed to proceed when Redis is unavailable
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'PlanLimitsService.expire');
       // Em ambientes sem Redis ou em conexão subscriber, não bloqueia (modo tolerante para dev/test)
       this.logger.warn(
         `Redis indisponível para trackMessageSend: ${err instanceof Error ? err.message : 'unknown_error'}`,
@@ -222,6 +225,7 @@ export class PlanLimitsService {
       }
       // PULSE:OK — Redis rate-limit is best-effort; message is allowed to proceed when Redis is unavailable
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'PlanLimitsService.ensureMessageRate');
       if (err instanceof ForbiddenException) {
         throw err;
       }
@@ -272,6 +276,7 @@ export class PlanLimitsService {
         );
       }
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'PlanLimitsService.VALUES');
       if (err instanceof ForbiddenException) {
         throw err;
       }
@@ -304,6 +309,7 @@ export class PlanLimitsService {
       }
       // PULSE:OK — Redis unavailability for rate-limit tracking is non-fatal; allowing the operation is the safe fallback
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'PlanLimitsService.expire');
       this.logger.warn(
         `Redis indisponível para ensureFlowRunRate: ${err instanceof Error ? err.message : 'unknown_error'}`,
       );
@@ -333,6 +339,7 @@ export class PlanLimitsService {
         throw new ForbiddenException(`Limite mensal de tokens IA atingido para o plano ${plan}.`);
       }
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'PlanLimitsService.parseInt');
       if (err instanceof ForbiddenException) {
         throw err;
       }
@@ -369,6 +376,7 @@ export class PlanLimitsService {
       }
       // PULSE:OK — Redis AI token tracking is best-effort; AI call proceeds when Redis is unavailable
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'PlanLimitsService.expire');
       this.logger.warn(
         `Redis indisponível para trackAiUsage: ${err instanceof Error ? err.message : 'unknown_error'}`,
       );

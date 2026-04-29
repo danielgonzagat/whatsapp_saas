@@ -1,5 +1,5 @@
 import { Body, Controller, Logger, Param, Post, UseGuards } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
@@ -32,13 +32,13 @@ function dtoToSplitInput(dto: SplitPreviewDto): SplitInput {
 
 /** Split controller. */
 @Controller('payments/split')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
+@Throttle({ default: { limit: 5, ttl: 60000 } })
 export class SplitController {
   private readonly logger = new Logger(SplitController.name);
 
   /** Preview split. */
   @Post(':workspaceId/preview')
-  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   preview(@Param('workspaceId') workspaceId: string, @Body() dto: SplitPreviewDto) {
     const input = dtoToSplitInput(dto);
     const result = calculateSplit(input, workspaceId);

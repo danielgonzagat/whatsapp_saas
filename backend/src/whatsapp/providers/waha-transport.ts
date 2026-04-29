@@ -1,6 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getTraceHeaders } from '../../common/trace-headers';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 import { WAHA_MESSAGE_EVENT, WAHA_MESSAGE_WILDCARD_EVENT } from './waha-message-event-name';
 
 const A_Z_A_Z__A_Z_A_Z_D_RE = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//;
@@ -20,6 +21,7 @@ export class WahaTransport {
   protected readonly logger: Logger;
   protected readonly baseUrl: string;
   protected readonly apiKey: string;
+  protected opsAlert?: OpsAlertService;
   protected readonly defaultWebhookEvents = [
     'session.status',
     WAHA_MESSAGE_EVENT,
@@ -36,6 +38,10 @@ export class WahaTransport {
     this.baseUrl = this.resolveBaseUrlFromConfig();
     this.apiKey = this.resolveApiKeyFromConfig();
     this.quietErrorPaths.add('/chats/overview');
+  }
+
+  protected setOpsAlertService(opsAlert?: OpsAlertService): void {
+    this.opsAlert = opsAlert;
   }
 
   private readFirstConfigValue(keys: readonly string[]): string {
@@ -231,8 +237,14 @@ export class WahaTransport {
         path.includes(suffix),
       );
       if (shouldLogQuietly) {
+        void this.opsAlert?.alertOnDegradation(diagnosis, 'WahaTransport.rawRequest', {
+          metadata: { method, path },
+        });
         this.logger.warn(`WAHA optional request failed: ${method} ${path} -> ${diagnosis}`);
       } else {
+        void this.opsAlert?.alertOnCriticalError(err, 'WahaTransport.rawRequest', {
+          metadata: { method, path, diagnosis },
+        });
         this.logger.error(`WAHA request failed: ${method} ${path} -> ${diagnosis}`);
       }
       throw new Error(diagnosis);

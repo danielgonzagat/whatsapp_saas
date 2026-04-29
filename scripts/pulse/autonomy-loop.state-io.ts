@@ -33,8 +33,13 @@ import {
   toUnitSnapshot,
   getAiSafeUnits,
   getPreferredAutomationSafeUnits,
+  buildStructuralQueueInfluence,
+  buildRuntimeRealityQueueInfluence,
 } from './autonomy-loop.unit-ranking';
 import { buildPulseAutonomyMemoryState } from './autonomy-loop.memory';
+import type { FalsePositiveAdjudicationState } from './types.false-positive-adjudicator';
+import type { RuntimeFusionState } from './types.runtime-fusion';
+import type { StructuralMemoryState } from './types.structural-memory';
 
 export function directiveDigest(directive: PulseAutonomousDirective): string {
   const crypto = require('node:crypto') as typeof import('node:crypto');
@@ -83,6 +88,40 @@ export function readDirectiveArtifact(rootDir: string): PulseAutonomousDirective
     readOptionalArtifact<PulseAutonomousDirective>(canonicalPath) ||
     readOptionalArtifact<PulseAutonomousDirective>(mirrorPath)
   );
+}
+
+function readStructuralQueueInfluence(
+  rootDir: string,
+): ReturnType<typeof buildStructuralQueueInfluence> {
+  const currentDir = path.join(rootDir, '.pulse', 'current');
+  const memory = readOptionalArtifact<StructuralMemoryState>(
+    path.join(currentDir, 'PULSE_STRUCTURAL_MEMORY.json'),
+  );
+  const adjudication = readOptionalArtifact<FalsePositiveAdjudicationState>(
+    path.join(currentDir, 'PULSE_FP_ADJUDICATION.json'),
+  );
+  return buildStructuralQueueInfluence(memory, adjudication);
+}
+
+function readRuntimeFusionState(rootDir: string): RuntimeFusionState | null {
+  return readOptionalArtifact<RuntimeFusionState>(
+    path.join(rootDir, '.pulse', 'current', 'PULSE_RUNTIME_FUSION.json'),
+  );
+}
+
+function readQueueInfluence(
+  rootDir: string,
+  directive: PulseAutonomousDirective,
+): ReturnType<typeof buildStructuralQueueInfluence> {
+  const influence = readStructuralQueueInfluence(rootDir);
+  const runtimeInfluence = buildRuntimeRealityQueueInfluence(
+    directive,
+    readRuntimeFusionState(rootDir),
+  );
+  for (const [unitId, metadata] of runtimeInfluence.runtimeRealityByUnitId.entries()) {
+    influence.runtimeRealityByUnitId.set(unitId, metadata);
+  }
+  return influence;
 }
 
 export function runPulseGuidance(rootDir: string): PulseAutonomousDirective {
@@ -185,8 +224,14 @@ export function buildPulseAutonomyStateSeed(
   const blockedUnits = directive.blockedUnits || [];
   const history = buildSeedHistory(previousState);
   const riskProfile = input.riskProfile || previousState?.riskProfile || 'balanced';
+  const structuralInfluence = readQueueInfluence(input.rootDir ?? process.cwd(), directive);
   const nextActionableUnit = toUnitSnapshot(
-    getPreferredAutomationSafeUnits(directive, riskProfile, previousState)[0] ||
+    getPreferredAutomationSafeUnits(
+      directive,
+      riskProfile,
+      previousState,
+      structuralInfluence,
+    )[0] ||
       aiSafeUnits[0] ||
       null,
   );
@@ -245,7 +290,13 @@ export function buildPulseAgentOrchestrationStateSeed(
   const { directive, previousState } = input;
   const history = buildAgentOrchestrationSeedHistory(previousState);
   const riskProfile = input.riskProfile || previousState?.riskProfile || 'balanced';
-  const preferredUnits = getPreferredAutomationSafeUnits(directive, riskProfile);
+  const structuralInfluence = readQueueInfluence(process.cwd(), directive);
+  const preferredUnits = getPreferredAutomationSafeUnits(
+    directive,
+    riskProfile,
+    null,
+    structuralInfluence,
+  );
   const nextBatchUnits = (preferredUnits.length > 0 ? preferredUnits : getAiSafeUnits(directive))
     .slice(0, input.parallelAgents || previousState?.parallelAgents || DEFAULT_PARALLEL_AGENTS)
     .map((unit) => toUnitSnapshot(unit))

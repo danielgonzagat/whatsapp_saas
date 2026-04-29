@@ -1,12 +1,14 @@
 import {
   Injectable,
   Logger,
+  Optional,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getTraceHeaders } from '../common/trace-headers';
 import { GoogleVerifiedProfile } from './google-auth.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const TIKTOK_AUTHORIZE_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 const TIKTOK_USER_INFO_URL =
@@ -87,7 +89,10 @@ function buildSyntheticTikTokEmail(providerId: string): string {
 export class TikTokAuthService {
   private readonly logger = new Logger(TikTokAuthService.name);
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
 
   /** Verify authorization code. */
   async verifyAuthorizationCode(
@@ -220,6 +225,7 @@ export class TikTokAuthService {
     try {
       return await this.fetchUserInfo(accessToken);
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'TikTokAuthService.fetchUserInfo');
       const message = sanitizeTikTokError(error);
       this.logger.warn('tiktok_user_info_unavailable: ' + JSON.stringify({ message }));
       return null;

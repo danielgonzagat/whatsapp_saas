@@ -21,6 +21,7 @@ import type {
   SignalSeverity,
   SignalAction,
   RuntimeFusionEvidenceStatus,
+  OperationalEvidenceKind,
 } from './types.runtime-fusion';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -40,6 +41,7 @@ const SEVERITY_WEIGHTS: Record<SignalSeverity, number> = {
 };
 
 const TYPE_MAP: Record<string, SignalType> = {
+  runtime: 'runtime',
   error: 'error',
   runtime_error: 'error',
   exception: 'error',
@@ -64,6 +66,7 @@ const TYPE_MAP: Record<string, SignalType> = {
   coverage_drop: 'test_failure',
   graph_staleness: 'graph_staleness',
   stale_index: 'graph_staleness',
+  static: 'static',
   static_hotspot: 'code_quality',
   code_quality: 'code_quality',
   codacy: 'code_quality',
@@ -73,6 +76,13 @@ const TYPE_MAP: Record<string, SignalType> = {
   dependency: 'dependency',
   dependabot: 'dependency',
 };
+
+const RUNTIME_TYPE_PATTERN =
+  /runtime|error|exception|crash|latency|response|p95|p99|throughput|rps|saturation|cpu|memory|disk|incident|timeout/i;
+const CHANGE_TYPE_PATTERN = /change|pull_request|commit|deploy|build|ci_|test|coverage|regression/i;
+const STATIC_TYPE_PATTERN =
+  /static|quality|codacy|lint|smell|complexity|duplication|hotspot|graph|stale_index/i;
+const DEPENDENCY_TYPE_PATTERN = /dependency|dependabot|vuln|supply|package|lockfile/i;
 
 // ─── Numeric → Categorical Mapping ──────────────────────────────────────────
 
@@ -96,6 +106,23 @@ function mapType(rawType: string): SignalType {
     if (lower.includes(key)) return value;
   }
   return 'external';
+}
+
+function classifyOperationalEvidenceKind(
+  source: SignalSource,
+  rawType: string,
+): OperationalEvidenceKind {
+  const haystack = `${source} ${rawType}`;
+  if (DEPENDENCY_TYPE_PATTERN.test(haystack)) return 'dependency';
+  if (RUNTIME_TYPE_PATTERN.test(haystack)) return 'runtime';
+  if (CHANGE_TYPE_PATTERN.test(haystack)) return 'change';
+  if (STATIC_TYPE_PATTERN.test(haystack)) return 'static';
+  return 'external';
+}
+
+function clampScore(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(1, value));
 }
 
 /**
@@ -163,6 +190,13 @@ function resolvePulseCurrentDir(rootDir: string): string {
   return path.join(rootDir, '.pulse', 'current');
 }
 
+function syncAffectedAliases(signal: RuntimeSignal): void {
+  signal.affectedCapabilityIds = unique(signal.affectedCapabilityIds);
+  signal.affectedFlowIds = unique(signal.affectedFlowIds);
+  signal.affectedCapabilities = signal.affectedCapabilityIds;
+  signal.affectedFlows = signal.affectedFlowIds;
+}
+
 const SIGNAL_SOURCES: readonly SignalSource[] = [
   'github',
   'sentry',
@@ -208,6 +242,7 @@ interface CanonicalExternalSignal {
   relatedFiles: string[];
   capabilityIds: string[];
   flowIds: string[];
+  confidence: number;
 }
 
 interface CanonicalExternalAdapter {
@@ -241,8 +276,17 @@ function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal |
     summary: summary || `${sourceRaw} external signal`,
     observedAt: asString(value.observedAt) || null,
     relatedFiles: asStringArray(value.relatedFiles),
-    capabilityIds: asStringArray(value.capabilityIds),
-    flowIds: asStringArray(value.flowIds),
+    capabilityIds: unique([
+      ...asStringArray(value.capabilityIds),
+      ...asStringArray(value.affectedCapabilityIds),
+      ...asStringArray(value.affectedCapabilities),
+    ]),
+    flowIds: unique([
+      ...asStringArray(value.flowIds),
+      ...asStringArray(value.affectedFlowIds),
+      ...asStringArray(value.affectedFlows),
+    ]),
+    confidence: clampScore(asNumber(value.confidence, 0.8)),
   };
 }
 
@@ -293,6 +337,9 @@ function canonicalExternalSignalToRuntimeSignal(
   const severity = mapSeverity(signal.severity);
   const type = mapType(signal.type);
   const observedAt = signal.observedAt || generatedAt;
+  const evidenceKind = classifyOperationalEvidenceKind(signal.source, signal.type);
+  const affectedCapabilityIds = unique(signal.capabilityIds);
+  const affectedFlowIds = unique(signal.flowIds);
 
   return {
     id: signal.id,
@@ -301,12 +348,14 @@ function canonicalExternalSignalToRuntimeSignal(
     severity,
     action: deriveAction(severity, type),
     message: signal.summary,
-    affectedCapabilityIds: signal.capabilityIds,
-    affectedFlowIds: signal.flowIds,
+    affectedCapabilityIds,
+    affectedFlowIds,
     affectedFilePaths: signal.relatedFiles,
     frequency: 1,
     affectedUsers: 0,
-    impactScore: signal.impactScore,
+    impactScore: clampScore(signal.impactScore),
+    confidence: signal.confidence,
+    evidenceKind,
     firstSeen: observedAt,
     lastSeen: observedAt,
     count: 1,
@@ -315,6 +364,8 @@ function canonicalExternalSignalToRuntimeSignal(
     evidenceMode: signal.truthMode,
     sourceArtifact: EXTERNAL_SIGNAL_STATE_FILE,
     observedAt: signal.observedAt,
+    affectedCapabilities: affectedCapabilityIds,
+    affectedFlows: affectedFlowIds,
   };
 }
 
@@ -430,6 +481,8 @@ function otelErrorSpanToSignal(span: OtelSpan, traceId: string): RuntimeSignal {
     frequency: 1,
     affectedUsers: 0,
     impactScore: httpStatus >= 500 ? 0.9 : httpStatus >= 400 ? 0.6 : 0.3,
+    confidence: 0.9,
+    evidenceKind: 'runtime',
     firstSeen: span.startTime,
     lastSeen: span.endTime,
     count: 1,
@@ -465,6 +518,8 @@ function otelLatencyToSignal(
     frequency: traceCount,
     affectedUsers: 0,
     impactScore: severity === 'high' ? 0.6 : severity === 'medium' ? 0.3 : 0.1,
+    confidence: 0.85,
+    evidenceKind: 'runtime',
     firstSeen: new Date().toISOString(),
     lastSeen: new Date().toISOString(),
     count: traceCount,
@@ -661,6 +716,53 @@ export function mapSignalToCapabilities(
   }
 
   return Array.from(ids);
+}
+
+export function mapSignalToFlows(
+  signal: RuntimeSignal,
+  flowProjection?: {
+    flows?: Array<{
+      id: string;
+      name: string;
+      capabilityIds?: string[];
+      routePatterns?: string[];
+    }>;
+  },
+): string[] {
+  const ids = new Set(signal.affectedFlowIds);
+  if (!flowProjection?.flows) return Array.from(ids);
+
+  const messageTokens = new Set(tokenize(signal.message));
+  for (const flow of flowProjection.flows) {
+    const capabilityMatch = (flow.capabilityIds ?? []).some((capabilityId) =>
+      signal.affectedCapabilityIds.includes(capabilityId),
+    );
+    const routeMatch = (flow.routePatterns ?? []).some((routePattern) =>
+      signal.message.includes(routePattern),
+    );
+    const nameMatch = tokenize(flow.name).some(
+      (token) => token.length >= 4 && messageTokens.has(token),
+    );
+    if (capabilityMatch || routeMatch || nameMatch) {
+      ids.add(flow.id);
+    }
+  }
+
+  return Array.from(ids);
+}
+
+function mapCapabilitiesFromFlows(
+  signal: RuntimeSignal,
+  flowProjection?: {
+    flows?: Array<{ id: string; capabilityIds?: string[] }>;
+  },
+): string[] {
+  if (!flowProjection?.flows) return [];
+  return unique(
+    flowProjection.flows
+      .filter((flow) => signal.affectedFlowIds.includes(flow.id))
+      .flatMap((flow) => flow.capabilityIds ?? []),
+  );
 }
 
 // ─── Impact Score Computation ───────────────────────────────────────────────
@@ -888,15 +990,35 @@ export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
         capabilities?: Array<{ id: string; name: string; filePaths?: string[] }>;
       })
     : undefined;
+  const flowProjectionPath = path.join(currentDir, 'PULSE_FLOW_PROJECTION.json');
+  const flowProjectionPayload = safeJsonParseFile(flowProjectionPath);
+  const flowProjection = flowProjectionPayload
+    ? (flowProjectionPayload as unknown as {
+        flows?: Array<{
+          id: string;
+          name: string;
+          capabilityIds?: string[];
+          routePatterns?: string[];
+        }>;
+      })
+    : undefined;
 
   // Map signals to capabilities where not already mapped
   for (const signal of allSignals) {
     const mapped = mapSignalToCapabilities(signal, capabilityState);
-    if (mapped.length > 0 && signal.affectedCapabilityIds.length === 0) {
-      signal.affectedCapabilityIds = mapped;
-    }
+    signal.affectedCapabilityIds = unique([...signal.affectedCapabilityIds, ...mapped]);
+    const mappedFlows = mapSignalToFlows(signal, flowProjection);
+    signal.affectedFlowIds = unique([...signal.affectedFlowIds, ...mappedFlows]);
+    signal.affectedCapabilityIds = unique([
+      ...signal.affectedCapabilityIds,
+      ...mapCapabilitiesFromFlows(signal, flowProjection),
+    ]);
     // Recompute impact score using the fusion formula
-    signal.impactScore = computeImpactScore(signal);
+    signal.impactScore = Math.max(clampScore(signal.impactScore), computeImpactScore(signal));
+    signal.confidence = clampScore(signal.confidence);
+    signal.evidenceKind =
+      signal.evidenceKind || classifyOperationalEvidenceKind(signal.source, signal.type);
+    syncAffectedAliases(signal);
   }
 
   // Load convergence plan for priority context

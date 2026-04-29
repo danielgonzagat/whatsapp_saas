@@ -161,6 +161,7 @@ export async function runPulseAutonomousLoop(
   const previousOrchestrationState = loadPulseAgentOrchestrationState(rootDir);
   const initialDirective = runPulseGuidance(rootDir);
   let state = buildPulseAutonomyStateSeed({
+    rootDir,
     directive: initialDirective,
     previousState,
     codexCliAvailable,

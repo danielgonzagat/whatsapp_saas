@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -13,7 +13,7 @@ import { PaymentMethodService } from './payment-method.service';
 @ApiTags('Billing - Payment Methods')
 @ApiBearerAuth()
 @Controller('billing/payment-methods')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
 @Throttle({ default: { limit: 20, ttl: 60000 } })
 export class PaymentMethodController {
   constructor(private readonly paymentMethodService: PaymentMethodService) {}

@@ -6,6 +6,7 @@ import {
   Get,
   Logger,
   NotFoundException,
+  Optional,
   Param,
   Post,
   Put,
@@ -18,6 +19,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import {
   A_Z0_9_RE,
   CreateMemberAreaDto,
@@ -43,6 +45,7 @@ export class MemberAreasController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /**
@@ -210,6 +213,7 @@ export class MemberAreasController {
 
       return { area: serializeArea(req, area), success: true };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'MemberAreasController.serializeArea');
       this.logger.error(
         `Failed to create member area: ${error instanceof Error ? error.message : String(error)}`,
         error instanceof Error ? error.stack : undefined,

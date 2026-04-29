@@ -2,12 +2,13 @@
  * KLOEL MEMORY MANAGEMENT SERVICE — TTL expiration, dedup, priority, orphans.
  * @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
  */
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Counter, Gauge, register } from 'prom-client';
 import { AuditService } from '../audit/audit.service';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 interface MemoryCleanupResult {
   expiredRemoved: number;
@@ -64,6 +65,7 @@ export class MemoryManagementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /**
@@ -80,6 +82,7 @@ export class MemoryManagementService {
           `${result.duplicatesRemoved} duplicates, ${result.orphansRemoved} orphans`,
       );
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.runDailyCleanup');
       // PULSE:OK — Scheduled cleanup failure is non-critical; next run will retry
       this.logger.error(
         `Cleanup failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
@@ -99,6 +102,7 @@ export class MemoryManagementService {
         this.memoriesGauge.set({ category }, count);
       }
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.getStats');
       // PULSE:OK — Prometheus metric update failure is non-critical; next cron will retry
       this.logger.error(
         `Failed to update memory metrics: ${error instanceof Error ? error.message : 'unknown_error'}`,
@@ -200,6 +204,10 @@ export class MemoryManagementService {
           totalRemoved += result.count;
         }
       } catch (error: unknown) {
+        void this.opsAlert?.alertOnCriticalError(
+          error,
+          'MemoryManagementService.removeExpiredMemories',
+        );
         // PULSE:OK — Per-category cleanup failure is non-critical; other categories still processed
         this.logger.warn(
           `Failed to cleanup ${category}: ${error instanceof Error ? error.message : 'unknown_error'}`,
@@ -284,6 +292,7 @@ export class MemoryManagementService {
         }
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.removeDuplicates');
       // PULSE:OK — Deduplication is a background maintenance job; next run will retry
       this.logger.warn(
         `Deduplication failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
@@ -333,6 +342,7 @@ export class MemoryManagementService {
       );
       return result.count;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.removeOrphans');
       this.logger.warn(
         `Orphan cleanup failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );
@@ -405,6 +415,7 @@ export class MemoryManagementService {
         averageAge,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.parseFloat');
       this.logger.error(
         `Failed to get stats: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );

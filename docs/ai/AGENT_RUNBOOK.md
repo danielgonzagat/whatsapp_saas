@@ -25,6 +25,15 @@ No fake production behavior.
 If the integration is not ready, show setup-required/degraded/empty state.
 Never use mock data to make the UI look complete.
 
+## Git Safety
+
+AI agents must never run `git restore` in this repository.
+
+This includes `git restore <path>`, `git restore --source`, and
+`git restore --staged`. A failed edit must be fixed forward or reverted from an
+explicit snapshot captured before the edit. If no safe snapshot exists, stop and
+ask the human.
+
 ## Standard Commands
 
 ### Root

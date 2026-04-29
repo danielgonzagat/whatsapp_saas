@@ -426,6 +426,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         input.capabilityState,
         input.flowProjection,
         input.selfTrustReport,
+        evidenceSummary.executionTrace,
       ),
     ),
     noOverclaimPass: withTemporaryGateAcceptance(
@@ -642,6 +643,12 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       input.externalSignalState && input.externalSignalState.summary.staleAdapters > 0
         ? `External evidence is stale for ${input.externalSignalState.summary.staleAdapters} adapter(s).`
         : null,
+      input.externalSignalState && input.externalSignalState.summary.missingAdapters > 0
+        ? `Required external adapters are missing: ${input.externalSignalState.summary.missingAdapters}.`
+        : null,
+      input.externalSignalState && input.externalSignalState.summary.invalidAdapters > 0
+        ? `Required external adapters are invalid: ${input.externalSignalState.summary.invalidAdapters}.`
+        : null,
       input.executionMatrix && input.executionMatrix.summary.criticalUnobservedPaths > 0
         ? `Execution matrix still has ${input.executionMatrix.summary.criticalUnobservedPaths} critical unobserved path(s).`
         : null,
@@ -681,6 +688,10 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     codacySummary: input.scopeState.codacy,
     codacyEvidenceSummary: input.codacyEvidence?.summary ?? null,
     externalSignalSummary: input.externalSignalState?.summary ?? null,
+    missingAdaptersCount: input.externalSignalState?.summary.missingAdapters ?? 0,
+    staleAdaptersCount: input.externalSignalState?.summary.staleAdapters ?? 0,
+    invalidAdaptersCount: input.externalSignalState?.summary.invalidAdapters ?? 0,
+    blockingAdaptersCount: input.externalSignalState?.summary.blockingAdapters ?? 0,
     executionMatrixSummary: input.executionMatrix?.summary ?? null,
     resolvedManifestSummary: input.resolvedManifest.summary,
     structuralGraphSummary: input.structuralGraph?.summary ?? null,

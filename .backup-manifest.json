@@ -1,6 +1,6 @@
 {
-  "lastBackup": "2026-04-29T18:04:27.783Z",
-  "lastVerifiedAt": "2026-04-29T18:04:27.783Z",
+  "lastBackup": "2026-04-29T20:25:52.376Z",
+  "lastVerifiedAt": "2026-04-29T20:25:52.376Z",
   "postgres": true,
   "redis": true,
   "s3": true,
@@ -95,5 +95,5 @@
     }
   ],
   "generatedBy": "scripts/backup/create-backup-manifest.ts",
-  "generatedAt": "2026-04-29T18:04:27.783Z"
+  "generatedAt": "2026-04-29T20:25:52.376Z"
 }

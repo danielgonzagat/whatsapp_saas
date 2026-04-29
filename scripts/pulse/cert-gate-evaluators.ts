@@ -16,6 +16,7 @@ import type {
   PulseHealth,
   PulseManifest,
   PulseParserInventory,
+  PulseExecutionTrace,
   PulseResolvedManifest,
   PulseScopeState,
 } from './types';
@@ -195,10 +196,45 @@ export function evaluatePulseSelfTrustGate(
   capabilityState?: PulseCapabilityState,
   flowProjection?: PulseFlowProjection,
   selfTrustReport?: { checks?: Array<{ id: string; pass: boolean; reason?: string }> } | null,
+  executionTrace?: PulseExecutionTrace,
 ): PulseGateResult {
-  if (parserInventory.unavailableChecks.length > 0) {
+  const passedParserPhases = new Set(
+    (executionTrace?.phases ?? [])
+      .filter((phase) => phase.phase.startsWith('parser:') && phase.phaseStatus === 'passed')
+      .map((phase) => phase.phase.replace(/^parser:/, '')),
+  );
+  const executionFailures = (executionTrace?.phases ?? []).filter(
+    (phase) =>
+      phase.phase.startsWith('parser:') &&
+      (phase.phaseStatus === 'failed' || phase.phaseStatus === 'timed_out'),
+  );
+  const parserDiagnostics = new Map<string, { kind: string; reason: string }>();
+
+  for (const unavailable of parserInventory.unavailableChecks) {
+    if (passedParserPhases.has(unavailable.name)) {
+      continue;
+    }
+    parserDiagnostics.set(unavailable.name, {
+      kind: 'load_unavailable',
+      reason: unavailable.reason,
+    });
+  }
+
+  for (const phase of executionFailures) {
+    const parserName = phase.phase.replace(/^parser:/, '');
+    parserDiagnostics.set(parserName, {
+      kind: phase.phaseStatus === 'timed_out' ? 'execution_timeout' : 'execution_failed',
+      reason: phase.errorSummary ?? 'Parser execution failed without an error summary.',
+    });
+  }
+
+  if (parserDiagnostics.size > 0) {
+    const details = [...parserDiagnostics.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([name, diagnostic]) => `${name} [${diagnostic.kind}]: ${diagnostic.reason}`)
+      .join(' | ');
     return gateFail(
-      `Parser self-trust failed because ${parserInventory.unavailableChecks.length} check(s) could not load.`,
+      `Parser self-trust failed for ${parserDiagnostics.size} current parser check(s): ${details}`,
       'checker_gap',
     );
   }

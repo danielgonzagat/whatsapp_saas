@@ -11,29 +11,27 @@
  * 1. GET /health → expect 200 + JSON with at least { status: 'ok' }
  * 2. GET /health/detailed → expect DB status, Redis status, queue status (if endpoint exists)
  * 3. Verify health endpoint responds in < 500ms (it is the first thing load balancers check)
- * 4. GET /metrics → if Prometheus-compatible metrics endpoint exists, verify format
+ * 4. GET /metrics -> if a metrics endpoint exists, verify format
  *
- * Sentry integration:
- * 5. Check SENTRY_DSN env var is set (on backend and frontend)
- * 6. If PULSE_SENTRY_DSN set: POST a test error via Sentry SDK → verify it appears in Sentry
- * 7. Check backend has SentryInterceptor or equivalent error capture registered globally
- * 8. Check frontend has Sentry.init() called in _app.tsx or layout.tsx
- * 9. Verify Sentry captures unhandled promise rejections (not just caught errors)
+ * Error alerting:
+ * 5. Check backend has an external or durable alert sink for uncaught errors
+ * 6. Check frontend has client-side error capture or alert forwarding
+ * 7. Verify unhandled promise rejections are captured, not only caught errors
  *
  * Structured logging:
  * 10. Check that Logger (NestJS Logger) is used consistently (not console.log) in backend
  * 11. Check that log messages include context: Logger.error(msg, stack, 'ContextName')
- * 12. Check that money-like mutating operations log amount/state changes
+ * 12. Check that business-critical mutating operations log amount/state changes
  * 13. Verify logs include workspaceId for multi-tenant debugging
  *
  * Alerting:
- * 14. Check if Uptime Kuma, Better Uptime, or equivalent is configured (via webhook URL env var)
- * 15. Check if critical money-like operations have alert triggers
+ * 14. Check if uptime/alert webhook configuration exists
+ * 15. Check if critical business side effects have alert triggers
  *
  * Queue monitoring:
- * 16. GET /health/queues → check BullMQ queue depth and failed job count (if endpoint exists)
+ * 16. GET /health/queues -> check queue depth and failed job count (if endpoint exists)
  * 17. If failed job count > PULSE_QUEUE_FAILED_THRESHOLD (default 10) → MONITORING_MISSING break
- * 18. Check if BullBoard (BullMQ dashboard) is accessible at /admin/queues
+ * 18. Check if queue/job health is observable through events, health, metrics, or dashboard evidence
  *
  * Database monitoring:
  * 19. Check if slow query logging is enabled (pg_stat_statements or Prisma query events)
@@ -43,25 +41,23 @@
  * - Filesystem access for static checks (no runtime needed)
  *
  * BREAK TYPES:
- * - MONITORING_MISSING (high) — health endpoint missing or returning 5xx, Sentry not configured,
- *   structured logging absent from money-like operations, or failed job queue not monitored
+ * - MONITORING_MISSING (high) — health endpoint missing or returning 5xx, alerting not configured,
+ *   structured logging absent from critical side effects, or failed job queue not monitored
  */
 
-import { safeJoin } from '../safe-path';
 import * as path from 'path';
 import { walkFiles, readFileSafe } from './utils';
 import type { Break, PulseConfig } from '../types';
-
-const MONEY_STATE_RE =
-  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
-const DB_MUTATION_RE =
-  /prisma\.[A-Za-z_$][\w$]*\.(?:create|createMany|update|updateMany|upsert|delete|deleteMany)\s*\(/;
-const EXTERNAL_CALL_RE = /\b(?:fetch|axios|apiFetch)\s*\(|\bhttps?:\/\//i;
+import {
+  hasAlertingEvidence,
+  hasBusinessCriticalShape,
+  hasMetricsEvidence,
+  hasStructuredLogEvidence,
+  QUEUE_MONITORING_EVIDENCE_RE,
+} from './structural-evidence';
 
 function isHighRiskService(content: string): boolean {
-  return (
-    MONEY_STATE_RE.test(content) && (DB_MUTATION_RE.test(content) || EXTERNAL_CALL_RE.test(content))
-  );
+  return hasBusinessCriticalShape(content);
 }
 
 /** Check monitoring coverage. */
@@ -92,61 +88,54 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
     });
   }
 
-  // --- Check 2: Sentry integration in backend ---
-  const backendSrc = safeJoin(config.backendDir, 'src');
-  let hasSentryBackend = false;
-  let sentryBackendFile: string | null = null;
+  // --- Check 2: backend error alerting sink ---
+  let hasBackendAlerting = false;
 
   for (const file of backendFiles) {
     const content = readFileSafe(file);
-    if (
-      /from ['"]@sentry\/|import.*Sentry|captureException|SentryExceptionFilter|initSentry/i.test(
-        content,
-      )
-    ) {
-      hasSentryBackend = true;
-      sentryBackendFile = file;
+    if (hasAlertingEvidence(content)) {
+      hasBackendAlerting = true;
       break;
     }
   }
 
-  if (!hasSentryBackend) {
+  if (!hasBackendAlerting) {
     breaks.push({
       type: 'MONITORING_MISSING',
       severity: 'high',
-      file: backendSrc,
+      file: config.backendDir,
       line: 0,
-      description: 'No error tracking (Sentry) in backend',
+      description: 'No backend error alerting sink found',
       detail:
-        'Backend has no Sentry integration. Unhandled exceptions will not be captured for alerting.',
+        'Backend has no structural evidence of external error alerting. Critical exceptions will not be captured for operators.',
     });
   }
 
-  // --- Check 3: Sentry integration in frontend ---
+  // --- Check 3: frontend error alerting sink ---
   const frontendRoot =
     path.basename(config.frontendDir) === 'src'
       ? path.dirname(config.frontendDir)
       : config.frontendDir;
   const frontendFiles = walkFiles(frontendRoot, ['.ts', '.tsx']);
-  let hasSentryFrontend = false;
+  let hasFrontendAlerting = false;
 
   for (const file of frontendFiles) {
     const content = readFileSafe(file);
-    if (/from ['"]@sentry\/|Sentry\.init|withSentryConfig/i.test(content)) {
-      hasSentryFrontend = true;
+    if (hasAlertingEvidence(content)) {
+      hasFrontendAlerting = true;
       break;
     }
   }
 
-  if (!hasSentryFrontend) {
+  if (!hasFrontendAlerting) {
     breaks.push({
       type: 'MONITORING_MISSING',
       severity: 'high',
       file: config.frontendDir,
       line: 0,
-      description: 'No error tracking (Sentry) in frontend',
+      description: 'No frontend error alerting sink found',
       detail:
-        'Frontend has no Sentry.init() call. Client-side errors are not captured or reported.',
+        'Frontend has no structural evidence of client-side error capture or alert forwarding.',
     });
   }
 
@@ -180,13 +169,13 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
     });
   }
 
-  // --- Check 5: BullMQ queue monitoring ---
+  // --- Check 5: queue/job monitoring ---
   const workerFiles = walkFiles(config.workerDir, ['.ts']);
   let hasQueueEvents = false;
 
   for (const file of [...backendFiles, ...workerFiles]) {
     const content = readFileSafe(file);
-    if (/QueueEvents|on\(['"]failed['"]|on\(['"]completed['"]|queueEvents/i.test(content)) {
+    if (QUEUE_MONITORING_EVIDENCE_RE.test(content)) {
       hasQueueEvents = true;
       break;
     }
@@ -198,9 +187,24 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
       severity: 'high',
       file: config.workerDir,
       line: 0,
-      description: 'No queue monitoring (BullMQ events)',
+      description: 'No queue/job monitoring evidence found',
       detail:
-        'No QueueEvents listener or failed-job handler found. Failed jobs will not trigger alerts or be tracked.',
+        'No failed-job, queue-depth, dead-letter, or queue-health evidence found. Failed async work may go unnoticed.',
+    });
+  }
+
+  const hasMetrics = [...backendFiles, ...workerFiles].some((file) =>
+    hasMetricsEvidence(readFileSafe(file)),
+  );
+  if (!hasMetrics) {
+    breaks.push({
+      type: 'MONITORING_MISSING',
+      severity: 'high',
+      file: config.backendDir,
+      line: 0,
+      description: 'No metrics emission evidence found',
+      detail:
+        'No counters, histograms, gauges, latency, error-rate, or queue-depth metrics were detected.',
     });
   }
 
@@ -215,15 +219,17 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
 
   for (const file of highRiskServiceFiles) {
     const content = readFileSafe(file);
-    const hasLogger = /this\.logger\.(log|error|warn)\(|Logger\.(log|error|warn)\(/m.test(content);
+    const hasLogger =
+      /this\.logger\.(log|error|warn)\(|Logger\.(log|error|warn)\(/m.test(content) ||
+      hasStructuredLogEvidence(content);
     if (!hasLogger) {
       breaks.push({
         type: 'MONITORING_MISSING',
         severity: 'high',
         file,
         line: 0,
-        description: 'Money-like mutating service has no structured logging',
-        detail: `${path.basename(file)}: No Logger usage found. Money-like mutations must be logged for audit and debugging.`,
+        description: 'Business-critical mutating service has no structured logging',
+        detail: `${path.basename(file)}: No Logger or structured log evidence found. Business-critical side effects must be logged for audit and debugging.`,
       });
     }
   }

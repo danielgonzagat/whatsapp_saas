@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Injectable,
   Logger,
+  NotFoundException,
   Optional,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -2295,8 +2296,19 @@ export class WhatsappService {
     });
   }
 
-  /** Add group member. */
-  async addGroupMember(groupId: string, phone: string, isAdmin = false) {
+  /** Add group member.
+   * PULSE:OK — GroupMember inherits workspace ownership transitively
+   * through MonitoredGroup.workspaceId. Ownership is verified by the
+   * group lookup below before the member is created.
+   */
+  async addGroupMember(groupId: string, workspaceId: string, phone: string, isAdmin = false) {
+    const group = await this.prisma.monitoredGroup.findFirst({
+      where: { id: groupId, workspaceId },
+      select: { id: true },
+    });
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
     return this.prisma.groupMember.create({
       data: { groupId, phone, isAdmin },
     });
@@ -2317,8 +2329,19 @@ export class WhatsappService {
     });
   }
 
-  /** Add banned keyword. */
-  async addBannedKeyword(groupId: string, keyword: string, action: string) {
+  /** Add banned keyword.
+   * PULSE:OK — BannedKeyword inherits workspace ownership transitively
+   * through MonitoredGroup.workspaceId. Ownership is verified by the
+   * group lookup below before the keyword is created.
+   */
+  async addBannedKeyword(groupId: string, workspaceId: string, keyword: string, action: string) {
+    const group = await this.prisma.monitoredGroup.findFirst({
+      where: { id: groupId, workspaceId },
+      select: { id: true },
+    });
+    if (!group) {
+      throw new NotFoundException('Group not found');
+    }
     return this.prisma.bannedKeyword.create({
       data: { groupId, keyword, action },
     });

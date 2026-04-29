@@ -5,7 +5,11 @@ import type { PulseConvergenceOwnerLane } from './types.gate-failure';
 import type { PulseStructuralRole } from './types.structural';
 import type { PulseCodacySeverity, PulseCodacySummary } from './types.truth.codacy';
 
-/** Pulse scope surface type. */
+/**
+ * Pulse scope surface labels are kernel grammar buckets, not a fixed inventory
+ * of repository folders. Concrete path-to-surface decisions must come from the
+ * live workspace structure discovered by PULSE classifiers.
+ */
 export type PulseScopeSurface =
   | 'frontend'
   | 'frontend-admin'

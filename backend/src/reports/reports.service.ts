@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { assertValidOrderStatusFilter } from '../common/checkout-order-state-machine';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportFiltersDto } from './dto/report-filters.dto';
 import { ReportsAffiliateService } from './reports-affiliate.service';
@@ -189,6 +190,10 @@ export class ReportsService {
     },
   ) {
     const parsedDate = new Date(data.date);
+    if (Number.isNaN(parsedDate.getTime())) {
+      throw new BadRequestException('Invalid date');
+    }
+
     const existing = await this.prisma.adSpend.findFirst({
       where: {
         workspaceId,
@@ -256,6 +261,8 @@ export class ReportsService {
     applyCommonOrderFilters(where, f);
 
     try {
+      assertValidOrderStatusFilter('PAID', 'ReportsService.getMetricas');
+      const paidStatus = 'PAID' as const;
       const [total, byMethod, paid, revenueAgg, adSpendAgg] = await Promise.all([
         this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
         this.prisma.checkoutOrder.groupBy({
@@ -264,10 +271,10 @@ export class ReportsService {
           _count: true,
         }),
         this.prisma.checkoutOrder.count({
-          where: { ...where, workspaceId, status: 'PAID' },
+          where: { ...where, workspaceId, status: paidStatus },
         }),
         this.prisma.checkoutOrder.aggregate({
-          where: { ...where, workspaceId, status: 'PAID' },
+          where: { ...where, workspaceId, status: paidStatus },
           _sum: { totalInCents: true },
         }),
         this.prisma.adSpend.aggregate({

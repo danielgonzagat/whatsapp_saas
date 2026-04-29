@@ -182,4 +182,117 @@ describe('runtime-fusion', () => {
     expect(state.evidence.runtimeTraces.derivedSignals).toBe(1);
     expect(state.signals[0]?.evidenceMode).toBe('observed');
   });
+
+  it('normalizes runtime, change, static, and dependency signals into operational evidence', () => {
+    const { rootDir, currentDir } = createPulseRoot();
+
+    writeJson(path.join(currentDir, 'PULSE_CAPABILITY_STATE.json'), {
+      capabilities: [
+        {
+          id: 'capability:opaque-runtime',
+          name: 'Opaque runtime processor',
+          filePaths: ['backend/src/opaque/runtime.service.ts'],
+        },
+      ],
+    });
+    writeJson(path.join(currentDir, 'PULSE_FLOW_PROJECTION.json'), {
+      flows: [
+        {
+          id: 'flow:opaque-resolution',
+          name: 'Opaque resolution',
+          capabilityIds: ['capability:opaque-runtime'],
+          routePatterns: ['/opaque/:id'],
+        },
+      ],
+    });
+    writeJson(path.join(currentDir, 'PULSE_EXTERNAL_SIGNAL_STATE.json'), {
+      generatedAt: '2026-04-29T20:00:00.000Z',
+      truthMode: 'observed',
+      adapters: [
+        { source: 'sentry', status: 'ready' },
+        { source: 'github', status: 'ready' },
+        { source: 'codacy', status: 'ready' },
+        { source: 'dependabot', status: 'ready' },
+      ],
+      signals: [
+        {
+          id: 'runtime-opaque',
+          type: 'runtime_timeout',
+          source: 'sentry',
+          truthMode: 'observed',
+          severity: 0.9,
+          impactScore: 0.91,
+          confidence: 0.96,
+          summary: 'Opaque runtime processor timed out.',
+          relatedFiles: ['backend/src/opaque/runtime.service.ts'],
+        },
+        {
+          id: 'change-opaque',
+          type: 'pull_request_change',
+          source: 'github',
+          truthMode: 'observed',
+          severity: 0.6,
+          impactScore: 0.66,
+          confidence: 0.88,
+          summary: 'Opaque resolver changed.',
+          affectedCapabilities: ['capability:opaque-runtime'],
+        },
+        {
+          id: 'static-opaque',
+          type: 'static_complexity',
+          source: 'codacy',
+          truthMode: 'observed',
+          severity: 0.7,
+          impactScore: 0.72,
+          confidence: 0.9,
+          summary: 'Opaque resolver static complexity hotspot.',
+          affectedFlows: ['flow:opaque-resolution'],
+        },
+        {
+          id: 'dependency-opaque',
+          type: 'dependency_vulnerability',
+          source: 'dependabot',
+          truthMode: 'inferred',
+          severity: 0.8,
+          impactScore: 0.82,
+          confidence: 0.79,
+          summary: 'Opaque dependency requires update.',
+          affectedCapabilities: ['capability:opaque-runtime'],
+        },
+      ],
+    });
+
+    const state = buildRuntimeFusionState(rootDir);
+    const signalsById = new Map(state.signals.map((signal) => [signal.id, signal]));
+
+    expect(state.summary.totalSignals).toBe(4);
+    expect([...signalsById.values()].map((signal) => signal.evidenceKind).sort()).toEqual([
+      'change',
+      'dependency',
+      'runtime',
+      'static',
+    ]);
+
+    for (const signal of signalsById.values()) {
+      expect(signal.id).toBeTruthy();
+      expect(signal.type).toBeTruthy();
+      expect(signal.source).toBeTruthy();
+      expect(signal.severity).toMatch(/critical|high|medium|low|info/);
+      expect(signal.impactScore).toBeGreaterThan(0);
+      expect(signal.confidence).toBeGreaterThan(0);
+      expect(signal.evidenceMode).toMatch(/observed|inferred/);
+      expect(signal.affectedCapabilities).toEqual(signal.affectedCapabilityIds);
+      expect(signal.affectedFlows).toEqual(signal.affectedFlowIds);
+    }
+
+    expect(signalsById.get('runtime-opaque')?.affectedCapabilityIds).toEqual([
+      'capability:opaque-runtime',
+    ]);
+    expect(signalsById.get('runtime-opaque')?.affectedFlowIds).toEqual(['flow:opaque-resolution']);
+    expect(signalsById.get('change-opaque')?.affectedFlows).toEqual(['flow:opaque-resolution']);
+    expect(signalsById.get('static-opaque')?.affectedCapabilities).toEqual([
+      'capability:opaque-runtime',
+    ]);
+    expect(signalsById.get('dependency-opaque')?.evidenceMode).toBe('inferred');
+  });
 });

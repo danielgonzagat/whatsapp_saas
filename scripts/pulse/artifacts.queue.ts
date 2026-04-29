@@ -24,6 +24,12 @@ export function normalizeArtifactStatus(status: string): string {
 }
 
 export function normalizeArtifactKey(key: string): string {
+  if (key.startsWith('blockedHuman')) {
+    return `observationOnly${key.slice('blockedHuman'.length)}`;
+  }
+  if (key.startsWith('humanRequired')) {
+    return `governedValidation${key.slice('humanRequired'.length)}`;
+  }
   if (key === 'blocked_human_required') {
     return 'observation_only';
   }

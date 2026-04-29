@@ -57,6 +57,11 @@ export const ADAPTER_REQUIREDNESS: Record<string, AdapterRequiredness> = {
   gitnexus: 'optional',
 };
 
+/** Return declared adapter requiredness before active-profile resolution. */
+export function getAdapterRequiredness(source: string): AdapterRequiredness {
+  return ADAPTER_REQUIREDNESS[source] ?? 'optional';
+}
+
 /** Normalize legacy profile aliases to the canonical PULSE certification profiles. */
 export function normalizeExternalSignalProfile(
   profile: ExternalSignalProfile | string | null | undefined,

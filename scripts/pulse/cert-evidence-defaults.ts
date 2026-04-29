@@ -38,6 +38,7 @@ import {
   buildDefaultSyntheticCoverage,
   buildDefaultWorldState,
 } from './cert-evidence-actor';
+import { getActorEvidenceKeys } from './scenario-mode-registry';
 
 export {
   buildDefaultActorEvidence,
@@ -47,17 +48,23 @@ export {
 
 type ActorEvidenceKey = 'customer' | 'operator' | 'admin' | 'soak';
 
-const ACTOR_EVIDENCE_KEYS: ActorEvidenceKey[] = ['customer', 'operator', 'admin', 'soak'];
-
 function buildDefaultActorEvidenceByContract(
   resolvedManifest: PulseResolvedManifest,
 ): Record<ActorEvidenceKey, PulseActorEvidence> {
-  return Object.fromEntries(
-    ACTOR_EVIDENCE_KEYS.map((actorKind) => [
+  const manifestKeys = getActorEvidenceKeys(resolvedManifest);
+  const contractKeys = getActorEvidenceKeys();
+  const actorEvidence = Object.fromEntries(
+    manifestKeys.map((actorKind) => [
       actorKind,
       buildDefaultActorEvidence(actorKind, resolvedManifest),
     ]),
-  ) as Record<ActorEvidenceKey, PulseActorEvidence>;
+  ) as Partial<Record<ActorEvidenceKey, PulseActorEvidence>>;
+  for (const actorKind of contractKeys) {
+    if (!actorEvidence[actorKind]) {
+      actorEvidence[actorKind] = buildDefaultActorEvidence(actorKind, resolvedManifest);
+    }
+  }
+  return actorEvidence as Record<ActorEvidenceKey, PulseActorEvidence>;
 }
 
 export function buildDefaultFlowEvidence(

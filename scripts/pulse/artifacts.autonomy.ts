@@ -2,14 +2,14 @@
  * Pulse artifact autonomy authority and proof builders.
  */
 import { unique } from './artifacts.io';
-import { normalizeArtifactText } from './artifacts.queue';
+import { isBalancedAutomationSafe, normalizeArtifactText } from './artifacts.queue';
 import { isRuntimeExternalSignal } from './cert-helpers';
-import { evaluateOverclaimPass } from './overclaim-guard';
+import { evaluateOverclaimPass, hasOpenGovernedValidationGap } from './overclaim-guard';
 import type { PulseArtifactSnapshot } from './artifacts';
+import type { OverclaimGovernedValidationEvidence } from './overclaim-guard';
 import type { PulseAutonomyState, PulseConvergencePlan } from './types';
 import type { QueueUnit } from './artifacts.queue';
 import type { AuthorityMode } from './types.authority-mode';
-import { isAdapterRequired } from './adapters/external-sources-orchestrator';
 import { REQUIRED_NON_REGRESSING_CYCLES } from './cert-gate-multi-cycle';
 
 export type AuthorityState = {
@@ -24,6 +24,7 @@ export type AutonomyReadiness = {
   mode: 'complete' | 'autonomous_next_step' | 'blocked';
   verdictScope: 'production_autonomy' | 'next_autonomous_step';
   canWorkNow: boolean;
+  canContinueUntilReady: boolean;
   canDeclareComplete: boolean;
   automationSafeUnits: number;
   blockers: string[];
@@ -81,6 +82,75 @@ const RUNTIME_VALIDATION_PATTERNS = [
   /jest|vitest|mocha|ava/,
 ] as const;
 
+function hasValidatableAiSafeUnit(convergencePlan: PulseConvergencePlan): boolean {
+  return convergencePlan.queue.some(
+    (unit) =>
+      isBalancedAutomationSafe(unit) &&
+      unit.validationArtifacts.length > 0 &&
+      unit.exitCriteria.length > 0,
+  );
+}
+
+function isGovernedValidationExecutionMode(mode: QueueUnit['executionMode']): boolean {
+  return mode === 'observation_only' || mode === 'governed_validation' || mode === 'human_required';
+}
+
+function countOpenGovernedValidationUnits(
+  convergencePlan: PulseConvergencePlan,
+  previousAutonomyState: PulseAutonomyState | null,
+): number {
+  const summaryCount = Math.max(
+    convergencePlan.summary.humanRequiredUnits,
+    convergencePlan.summary.observationOnlyUnits,
+  );
+  const queueCount = convergencePlan.queue.filter(
+    (unit) =>
+      isGovernedValidationExecutionMode(unit.executionMode) &&
+      (unit.status === 'open' || unit.status === 'watch'),
+  ).length;
+  const previousStateCount = Math.max(
+    previousAutonomyState?.governedSandboxUnits ?? 0,
+    previousAutonomyState?.escalatedValidationUnits ?? 0,
+    previousAutonomyState?.observationOnlyUnits ?? 0,
+  );
+  return Math.max(summaryCount, queueCount, previousStateCount);
+}
+
+function countExecutionMatrixGovernedValidationGates(snapshot: PulseArtifactSnapshot): number {
+  const summary = snapshot.executionMatrix?.summary;
+  if (!summary) {
+    return 0;
+  }
+  const legacyBlocked = Math.max(
+    summary.blockedHumanRequired ?? 0,
+    summary.byStatus?.blocked_human_required ?? 0,
+  );
+  const observationOnly = Math.max(
+    summary.observationOnlyRequired ?? 0,
+    summary.byStatus?.observation_only ?? 0,
+  );
+  return legacyBlocked + observationOnly;
+}
+
+function buildGovernedValidationEvidence(
+  snapshot: PulseArtifactSnapshot,
+  convergencePlan: PulseConvergencePlan,
+  previousAutonomyState: PulseAutonomyState | null,
+): OverclaimGovernedValidationEvidence {
+  const openUnitCount = countOpenGovernedValidationUnits(convergencePlan, previousAutonomyState);
+  const openGateCount = countExecutionMatrixGovernedValidationGates(snapshot);
+  const blockers = snapshot.certification.dynamicBlockingReasons.filter((reason) =>
+    /governed[ _-]?validation|observation[ _-]?only|protected[ _-]?surface|human_required|blocked_human_required/i.test(
+      reason,
+    ),
+  );
+  return {
+    openUnitCount,
+    openGateCount,
+    blockers,
+  };
+}
+
 export type PulseMachineReadinessGateName =
   | 'boundedRunPass'
   | 'artifactConsistencyPass'
@@ -121,50 +191,52 @@ export function deriveAuthorityState(
   snapshot: PulseArtifactSnapshot,
   convergencePlan: PulseConvergencePlan,
 ): AuthorityState {
-  const reasons: string[] = [];
+  const coreBlockingReasons: string[] = [];
+  const productionLimitReasons: string[] = [];
   const evidenceFreshPass = snapshot.certification.gates.evidenceFresh.status === 'pass';
   const pulseSelfTrustPass = snapshot.certification.gates.pulseSelfTrustPass.status === 'pass';
   const productionDecisionPass =
     snapshot.certification.gates.productionDecisionPass.status === 'pass';
   const runtimePass = snapshot.certification.gates.runtimePass.status === 'pass';
+  const validatableAiSafeUnit = hasValidatableAiSafeUnit(convergencePlan);
   const staleExternalAdapters = snapshot.externalSignalState.summary.staleAdapters > 0;
   const missingExternalAdapters = snapshot.externalSignalState.summary.missingAdapters > 0;
   const highImpactExternalSignals = snapshot.externalSignalState.signals.some(
     (signal) => isRuntimeExternalSignal(signal) && signal.impactScore >= 0.75,
   );
   if (!evidenceFreshPass) {
-    reasons.push('Evidence freshness is not closed.');
+    coreBlockingReasons.push('Evidence freshness is not closed.');
   }
   if (!pulseSelfTrustPass) {
-    reasons.push('Pulse self-trust is still failing.');
+    coreBlockingReasons.push('Pulse self-trust is still failing.');
   }
   if (!productionDecisionPass) {
-    reasons.push('Production decision gate is not passing.');
+    productionLimitReasons.push('Production decision gate is not passing.');
   }
   if (!runtimePass) {
-    reasons.push('Runtime pass is not green with live evidence.');
+    coreBlockingReasons.push('Runtime pass is not green with live evidence.');
   }
   if (staleExternalAdapters) {
-    reasons.push(
+    productionLimitReasons.push(
       `${snapshot.externalSignalState.summary.staleAdapters} external adapter(s) are stale.`,
     );
   }
   if (missingExternalAdapters) {
-    reasons.push(
+    productionLimitReasons.push(
       `${snapshot.externalSignalState.summary.missingAdapters} external adapter(s) are not configured.`,
     );
   }
   if (highImpactExternalSignals) {
-    reasons.push(
+    productionLimitReasons.push(
       `${snapshot.externalSignalState.summary.highImpactSignals} high-impact external signal(s) remain active.`,
     );
   }
-  if (reasons.length > 0) {
+  if (coreBlockingReasons.length > 0) {
     return {
       mode: 'advisory-only',
       advisoryOnly: true,
       automationEligible: false,
-      reasons: unique(reasons),
+      reasons: unique(coreBlockingReasons),
     };
   }
 
@@ -182,12 +254,22 @@ export function deriveAuthorityState(
     };
   }
 
-  if ((snapshot.certification.blockingTier ?? 99) <= 1) {
+  if ((snapshot.certification.blockingTier ?? 99) <= 1 || validatableAiSafeUnit) {
     return {
       mode: 'autonomous-execution',
       advisoryOnly: false,
       automationEligible: true,
-      reasons: ['Core trust/production gates are green; autonomous execution may proceed.'],
+      reasons: unique(
+        [
+          'Core trust, evidence freshness, and runtime gates are green; bounded autonomous execution may proceed.',
+          validatableAiSafeUnit
+            ? 'A validatable ai_safe unit is available for bounded autonomous execution.'
+            : '',
+          ...productionLimitReasons.map(
+            (reason) => `Production completion remains blocked: ${reason}`,
+          ),
+        ].filter(Boolean),
+      ),
     };
   }
 
@@ -195,7 +277,10 @@ export function deriveAuthorityState(
     mode: 'operator-gated',
     advisoryOnly: false,
     automationEligible: false,
-    reasons: ['Core trust gates are green, but blocking tiers still require operator promotion.'],
+    reasons: unique([
+      'Core trust gates are green, but blocking tiers still require operator promotion.',
+      ...productionLimitReasons.map((reason) => `Production completion remains blocked: ${reason}`),
+    ]),
   };
 }
 
@@ -216,6 +301,7 @@ export function buildAutonomyReadiness(
       mode: 'complete',
       verdictScope: 'production_autonomy',
       canWorkNow: false,
+      canContinueUntilReady: true,
       canDeclareComplete: true,
       automationSafeUnits: 0,
       blockers,
@@ -248,6 +334,7 @@ export function buildAutonomyReadiness(
     mode: blockers.length === 0 ? 'autonomous_next_step' : 'blocked',
     verdictScope: 'next_autonomous_step',
     canWorkNow: blockers.length === 0,
+    canContinueUntilReady: false,
     canDeclareComplete: false,
     automationSafeUnits: autonomyQueue.length,
     blockers,
@@ -506,9 +593,7 @@ export function buildAutonomyProof(
 ) {
   const firstUnit = autonomyQueue[0] || null;
   const profile = snapshot.certification.certificationTarget.profile || undefined;
-  const invalidAdapters = snapshot.externalSignalState.adapters.filter(
-    (adapter) => adapter.status === 'invalid' && isAdapterRequired(adapter.source, profile),
-  ).length;
+  const invalidAdapters = snapshot.externalSignalState.summary.invalidAdapters;
   const externalAdaptersClosed =
     snapshot.externalSignalState.summary.missingAdapters === 0 &&
     snapshot.externalSignalState.summary.staleAdapters === 0 &&
@@ -522,19 +607,42 @@ export function buildAutonomyProof(
       snapshot.capabilityState.summary.phantomCapabilities === 0 &&
       snapshot.flowProjection.summary.phantomFlows === 0;
   const cycleProof = buildAutonomyCycleProof(previousAutonomyState);
+  const governedValidationEvidence = buildGovernedValidationEvidence(
+    snapshot,
+    convergencePlan,
+    previousAutonomyState,
+  );
+  const governedValidationGapOpen = hasOpenGovernedValidationGap(governedValidationEvidence);
   const productionAutonomy =
     authority.mode === 'certified-autonomous' &&
     snapshot.certification.status === 'CERTIFIED' &&
     externalAdaptersClosed &&
     structuralDebtClosed &&
+    !governedValidationGapOpen &&
     cycleProof.proven;
-  const nextStepAutonomy = Boolean(firstUnit);
-  const zeroPromptProductionGuidance =
-    nextStepAutonomy &&
-    authority.automationEligible &&
-    externalAdaptersClosed &&
-    structuralDebtClosed &&
-    cycleProof.proven;
+  const nextStepAutonomy = Boolean(
+    firstUnit && firstUnit.validationArtifacts.length > 0 && firstUnit.exitCriteria.length > 0,
+  );
+  const canWorkNow = nextStepAutonomy && authority.automationEligible;
+  const canContinueUntilReady =
+    canWorkNow && externalAdaptersClosed && !governedValidationGapOpen && cycleProof.proven;
+  const zeroPromptProductionGuidance = canContinueUntilReady;
+  const structuralDebtBlocker = !structuralDebtClosed
+    ? `${snapshot.parityGaps.summary.totalGaps} parity gap(s), ${snapshot.codacyEvidence.summary.highIssues} HIGH Codacy issue(s), ${snapshot.capabilityState.summary.phantomCapabilities} phantom capability(ies), and ${snapshot.flowProjection.summary.phantomFlows} phantom flow(s) remain.`
+    : '';
+  const externalAdapterBlocker = !externalAdaptersClosed
+    ? `${snapshot.externalSignalState.summary.missingAdapters} missing, ${snapshot.externalSignalState.summary.staleAdapters} stale, and ${invalidAdapters} invalid external adapter(s) remain.`
+    : '';
+  const cycleProofBlocker = !cycleProof.proven
+    ? `Autonomous convergence history is not proven: ${cycleProof.successfulNonRegressingCycles}/${cycleProof.requiredCycles} successful non-regressing real cycle(s).`
+    : '';
+  const governedValidationOpenCount = Math.max(
+    governedValidationEvidence.openUnitCount,
+    governedValidationEvidence.openGateCount,
+  );
+  const governedValidationBlocker = governedValidationGapOpen
+    ? `${governedValidationOpenCount} governed validation gap(s) remain observation-only or protected-surface work.`
+    : '';
 
   const overclaimCheck = evaluateOverclaimPass({
     verdicts: {
@@ -547,30 +655,41 @@ export function buildAutonomyProof(
       structuralDebtClosed,
       cycleProofPassed: cycleProof.proven,
       externalAdaptersClosed,
-      criticalHumanRequiredOpen: false,
+      governedValidationEvidence,
       authorityAutomationEligible: authority.automationEligible,
       nextStepAvailable: nextStepAutonomy,
+      canContinueUntilReady,
     },
   });
 
+  const authorityProductionBlockers = authority.automationEligible ? [] : authority.reasons;
+  const zeroPromptBlockers = unique(
+    [
+      !nextStepAutonomy ? 'No ai_safe executable unit is available for a fresh session.' : '',
+      !authority.automationEligible
+        ? `Authority is not automation-eligible: ${authority.reasons.join(' | ') || authority.mode}.`
+        : '',
+      externalAdapterBlocker,
+      governedValidationBlocker,
+      cycleProofBlocker,
+      ...overclaimCheck.violations,
+    ]
+      .filter(Boolean)
+      .map(normalizeArtifactText),
+  ).slice(0, 16);
   const productionBlockers = unique(
     [
-      ...authority.reasons,
+      ...authorityProductionBlockers,
       authority.mode !== 'certified-autonomous'
         ? `Authority mode is ${authority.mode}, not certified-autonomous.`
         : '',
       snapshot.certification.status !== 'CERTIFIED'
         ? `Certification status is ${snapshot.certification.status}, not CERTIFIED.`
         : '',
-      !externalAdaptersClosed
-        ? `${snapshot.externalSignalState.summary.missingAdapters} missing, ${snapshot.externalSignalState.summary.staleAdapters} stale, and ${invalidAdapters} invalid external adapter(s) remain.`
-        : '',
-      !structuralDebtClosed
-        ? `${snapshot.parityGaps.summary.totalGaps} parity gap(s), ${snapshot.codacyEvidence.summary.highIssues} HIGH Codacy issue(s), ${snapshot.capabilityState.summary.phantomCapabilities} phantom capability(ies), and ${snapshot.flowProjection.summary.phantomFlows} phantom flow(s) remain.`
-        : '',
-      !cycleProof.proven
-        ? `Autonomous convergence history is not proven: ${cycleProof.successfulNonRegressingCycles}/${cycleProof.requiredCycles} successful non-regressing real cycle(s).`
-        : '',
+      externalAdapterBlocker,
+      structuralDebtBlocker,
+      governedValidationBlocker,
+      cycleProofBlocker,
       ...snapshot.certification.dynamicBlockingReasons,
       ...overclaimCheck.violations,
     ]
@@ -586,6 +705,18 @@ export function buildAutonomyProof(
         `${cycleProof.successfulNonRegressingCycles}/${cycleProof.requiredCycles} real runtime-touching non-regressing cycle(s) are proven`,
       ].join('; ')
     : `NAO: ${productionBlockers.join(' | ') || 'production autonomy criteria are not closed.'}`;
+  const zeroPromptProductionGuidanceReason = zeroPromptProductionGuidance
+    ? [
+        'SIM: fresh session has an executable ai_safe unit',
+        'authority is automation-eligible',
+        'required external adapters are closed',
+        'governed validation gaps are closed',
+        `${cycleProof.successfulNonRegressingCycles}/${cycleProof.requiredCycles} real runtime-touching non-regressing cycle(s) are proven`,
+      ].join('; ')
+    : `NAO: ${
+        zeroPromptBlockers.join(' | ') ||
+        'fresh-session production guidance criteria are not closed.'
+      }`;
 
   return {
     generatedAt: snapshot.certification.timestamp,
@@ -599,10 +730,13 @@ export function buildAutonomyProof(
     zeroPromptProductionGuidanceQuestion:
       'If a fresh AI session runs the full Pulse and is told to work autonomously, can it keep converging safely until production completion without manual intervention?',
     zeroPromptProductionGuidanceAnswer: zeroPromptProductionGuidance ? 'SIM' : 'NAO',
+    zeroPromptProductionGuidanceReason,
     verdicts: {
       nextStepAutonomy: nextStepAutonomy ? 'SIM' : 'NAO',
       zeroPromptProductionGuidance: zeroPromptProductionGuidance ? 'SIM' : 'NAO',
       productionAutonomy: productionAutonomy ? 'SIM' : 'NAO',
+      canWorkNow,
+      canContinueUntilReady,
       canDeclareComplete: productionAutonomy,
     },
     authorityMode: authority.mode,
@@ -665,8 +799,8 @@ export function buildAutonomyProof(
         id: 'zero_prompt_production_guidance',
         status: zeroPromptProductionGuidance ? 'pass' : 'fail',
         evidence: zeroPromptProductionGuidance
-          ? 'A fresh session has executable guidance, closed external reality, automation-eligible authority, and proven non-regressing cycles.'
-          : 'Fresh-session production guidance remains NAO until executable guidance, closed external reality, automation-eligible authority, and proven non-regressing cycles are all true.',
+          ? 'A fresh session has executable guidance, closed external reality, closed governed validation gaps, automation-eligible authority, and proven non-regressing cycles.'
+          : 'Fresh-session production guidance remains NAO until executable guidance, closed external reality, closed governed validation gaps, automation-eligible authority, and proven non-regressing cycles are all true.',
       },
       {
         id: 'no_overclaim',
@@ -676,11 +810,17 @@ export function buildAutonomyProof(
           : overclaimCheck.violations.join(' | '),
       },
     ],
+    blockersBeforeZeroPromptProductionGuidanceSim: zeroPromptBlockers,
     blockersBeforeProductionSim: productionBlockers,
     cycleProof,
     externalAdapterStatus: snapshot.externalSignalState.adapters.map((adapter) => ({
       source: adapter.source,
       status: adapter.status,
+      requirement: adapter.requirement,
+      required: adapter.required,
+      observed: adapter.observed,
+      blocking: adapter.blocking,
+      proofBasis: adapter.proofBasis,
       executed: adapter.executed,
       signalCount: adapter.signals.length,
       reason: adapter.reason,
@@ -688,7 +828,8 @@ export function buildAutonomyProof(
     requiredBeforeSim: [
       'Close Pulse self-trust and production decision gates.',
       'Fuse all required external adapters or provide fresh canonical snapshots.',
-      'Reduce structural parity gaps, phantom capabilities/flows, and HIGH Codacy issues to the certified threshold.',
+      'Convert observation-only or protected-surface gaps into executable governed validation.',
+      'Reduce structural parity gaps, phantom capabilities/flows, and HIGH Codacy issues to the certified threshold before declaring completion.',
       'Record at least 3 real autonomous cycles with runtime-touching validation, no score/tier regression, and no execution-matrix regression when matrix snapshots exist.',
     ],
   };

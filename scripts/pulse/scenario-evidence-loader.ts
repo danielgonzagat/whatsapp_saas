@@ -6,6 +6,13 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { PulseActorEvidence, PulseScenarioResult } from './types';
 import type { DiskScenarioEvidence } from './actors/disk-evidence';
+import {
+  deriveEvidenceFilesFromManifest,
+  inferEvidenceKeyFromFileName,
+  normalizeEvidenceKey,
+  readManifestForModeRegistry,
+  isPulseEvidenceFileName,
+} from './scenario-mode-registry';
 
 type ActorEvidenceKey = 'customer' | 'operator' | 'admin' | 'soak';
 
@@ -19,55 +26,15 @@ const CONTRACT_EVIDENCE_FILES = [
 ] as const;
 
 function normalizeActorEvidenceKey(value: unknown): ActorEvidenceKey | null {
-  if (value === 'customer' || value === 'operator' || value === 'admin' || value === 'soak') {
-    return value;
-  }
-  if (value === 'system') {
-    return 'soak';
-  }
-  return null;
+  return normalizeEvidenceKey(value);
 }
 
 function inferActorEvidenceKeyFromFileName(fileName: string): ActorEvidenceKey | null {
-  const match = fileName.match(/^PULSE_([A-Z]+)_EVIDENCE[.]json$/);
-  return match ? normalizeActorEvidenceKey(match[1].toLowerCase()) : null;
+  return inferEvidenceKeyFromFileName(fileName);
 }
 
 function readEvidenceFileNamesFromManifest(rootDir: string): string[] {
-  const candidates = [
-    path.join(path.resolve(rootDir), '.pulse', 'current', 'PULSE_RESOLVED_MANIFEST.json'),
-    path.join(path.resolve(rootDir), 'PULSE_RESOLVED_MANIFEST.json'),
-    path.join(path.resolve(rootDir), 'pulse.manifest.json'),
-  ];
-  for (const candidate of candidates) {
-    if (!fs.existsSync(candidate)) {
-      continue;
-    }
-    try {
-      const parsed = JSON.parse(fs.readFileSync(candidate, 'utf8')) as {
-        scenarioSpecs?: unknown;
-      };
-      if (!Array.isArray(parsed.scenarioSpecs)) {
-        continue;
-      }
-      return parsed.scenarioSpecs
-        .filter((entry): entry is Record<string, unknown> => {
-          return Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry);
-        })
-        .flatMap((entry) =>
-          Array.isArray(entry.requiredArtifacts)
-            ? entry.requiredArtifacts.filter((artifact): artifact is string => {
-                return (
-                  typeof artifact === 'string' && /^PULSE_[A-Z_]+_EVIDENCE[.]json$/.test(artifact)
-                );
-              })
-            : [],
-        );
-    } catch {
-      continue;
-    }
-  }
-  return [];
+  return deriveEvidenceFilesFromManifest(readManifestForModeRegistry(rootDir));
 }
 
 function readExistingEvidenceFileNames(rootDir: string): string[] {
@@ -77,9 +44,7 @@ function readExistingEvidenceFileNames(rootDir: string): string[] {
     if (!fs.existsSync(dir)) {
       return [];
     }
-    return fs
-      .readdirSync(dir)
-      .filter((fileName) => /^PULSE_[A-Z_]+_EVIDENCE[.]json$/.test(fileName));
+    return fs.readdirSync(dir).filter(isPulseEvidenceFileName);
   });
 }
 
@@ -146,9 +111,12 @@ function normalizeScenarioResult(
     'checker_gap',
     'skipped',
   ];
-  const normalizedStatus = acceptedStatuses.includes(status as PulseScenarioResult['status'])
-    ? (status as PulseScenarioResult['status'])
-    : 'checker_gap';
+  const normalizedStatus =
+    status === 'not_run'
+      ? 'skipped'
+      : acceptedStatuses.includes(status as PulseScenarioResult['status'])
+        ? (status as PulseScenarioResult['status'])
+        : 'checker_gap';
   const actorKind = normalizeActorEvidenceKey(item.actorKind) ?? fallbackActorKind;
 
   return {
@@ -193,6 +161,80 @@ function normalizeScenarioResult(
     startedAt: typeof item.startedAt === 'string' ? item.startedAt : undefined,
     finishedAt: typeof item.finishedAt === 'string' ? item.finishedAt : undefined,
     environmentUrl: typeof item.environmentUrl === 'string' ? item.environmentUrl : undefined,
+  };
+}
+
+function isNonRunStatus(value: unknown): boolean {
+  return value === 'skipped' || value === 'not_run';
+}
+
+function isRefreshableNonRunEvidence(raw: unknown): boolean {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return false;
+  }
+  const data = raw as Record<string, unknown>;
+  if (!Array.isArray(data.results) || data.results.length === 0) {
+    return false;
+  }
+  const hasExecuted = normalizeStringArray(data.executed).length > 0;
+  const hasPassed = normalizeStringArray(data.passed).length > 0;
+  const hasFailed = normalizeStringArray(data.failed).length > 0;
+  if (hasExecuted || hasPassed || hasFailed) {
+    return false;
+  }
+  return data.results.every((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      return false;
+    }
+    const item = entry as Record<string, unknown>;
+    return item.executed !== true && isNonRunStatus(item.status);
+  });
+}
+
+function normalizeStaleNonRunEvidenceForRead(
+  raw: unknown,
+  fallbackActorKind: ActorEvidenceKey | null,
+): unknown {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return raw;
+  }
+  const data = raw as Record<string, unknown>;
+  const actorKind =
+    normalizeActorEvidenceKey(data.actorKind) ??
+    normalizeActorEvidenceKey(data.key) ??
+    fallbackActorKind;
+  if (!actorKind || !Array.isArray(data.results)) {
+    return raw;
+  }
+  const results = data.results.map((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      return entry;
+    }
+    const item = entry as Record<string, unknown>;
+    const scenarioId = typeof item.scenarioId === 'string' ? item.scenarioId : 'unknown-scenario';
+    return {
+      ...item,
+      actorKind: item.actorKind ?? (actorKind === 'soak' ? 'system' : actorKind),
+      status: 'skipped',
+      executed: false,
+      requested: item.requested === true,
+      summary:
+        typeof item.summary === 'string'
+          ? item.summary
+          : `Scenario ${scenarioId} was not executed in this run.`,
+    };
+  });
+  return {
+    ...data,
+    actorKind,
+    executed: [],
+    passed: [],
+    failed: [],
+    summary:
+      typeof data.summary === 'string'
+        ? data.summary
+        : 'Stale non-run evidence was normalized for read only.',
+    results,
   };
 }
 
@@ -263,7 +305,10 @@ export function loadScenarioEvidenceFromDisk(rootDir: string): DiskScenarioEvide
       continue;
     }
 
-    const fresh = isFresh(filePath);
+    let fresh = isFresh(filePath);
+    if (!fresh && isRefreshableNonRunEvidence(parsed)) {
+      parsed = normalizeStaleNonRunEvidenceForRead(parsed, fallbackKey);
+    }
     const evidence = normalizeActorEvidence(parsed, fallbackKey, fresh);
     if (!evidence) {
       summaryParts.push(`${summaryKey}: invalid structure`);

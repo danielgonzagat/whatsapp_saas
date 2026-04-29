@@ -14,7 +14,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ForbiddenException } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Redis } from 'ioredis';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
@@ -59,6 +59,7 @@ type OpsAlertMeta = Record<string, unknown>;
  * Event ordering: events carry eventDate/createdAt; out-of-order duplicates are rejected.
  */
 @Controller('hooks')
+@UseGuards(ThrottlerGuard)
 @Throttle({ default: { limit: 100, ttl: 60000 } })
 export class WebhooksController {
   private readonly logger = new Logger(WebhooksController.name);

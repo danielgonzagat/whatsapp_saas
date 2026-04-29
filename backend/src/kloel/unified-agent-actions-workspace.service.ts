@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import type { ToolArgs } from './unified-agent.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -22,6 +23,7 @@ export class UnifiedAgentActionsWorkspaceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   // ───────── helpers ─────────
@@ -93,6 +95,7 @@ export class UnifiedAgentActionsWorkspaceService {
       });
       dbProductId = dbProduct.id;
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'UnifiedAgentActionsWorkspaceService.create');
       const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
       this.logger.warn(`Produto "${args.name}" salvo apenas em memória: ${msg}`);
     }
@@ -315,6 +318,7 @@ export class UnifiedAgentActionsWorkspaceService {
         nodes: flowData.nodes?.length || 0,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'UnifiedAgentActionsWorkspaceService.create');
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao criar fluxo: ${msg}`);

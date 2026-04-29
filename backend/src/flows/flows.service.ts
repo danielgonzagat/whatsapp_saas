@@ -1,8 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const D_RE = /\D/g;
 
@@ -52,6 +53,7 @@ export class FlowsService {
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Save. */

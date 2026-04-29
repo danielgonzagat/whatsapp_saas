@@ -1,7 +1,8 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import type { Redis } from 'ioredis';
 import { InboxGateway } from './inbox.gateway';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 type WsEvent =
   | { type: 'message:new'; workspaceId: string; message: unknown }
@@ -19,6 +20,7 @@ export class InboxEventsService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @InjectRedis() private readonly redis: Redis,
     private readonly gateway: InboxGateway,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** On module init. */
@@ -72,6 +74,7 @@ export class InboxEventsService implements OnModuleInit, OnModuleDestroy {
           break;
       }
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'InboxEventsService.emitToWorkspace');
       this.logger.warn(
         `Failed to handle ws:inbox event: ${(err instanceof Error ? err.message : 'unknown') || String(err)}`,
       ); // Intencional: ws event failure is non-critical; logged and contained.

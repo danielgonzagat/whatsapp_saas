@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import type { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
@@ -6,6 +6,7 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { WalletLedgerService } from './wallet-ledger.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // All dates stored as UTC via Prisma DateTime (toISOString)
@@ -25,6 +26,7 @@ export class WalletService {
     private readonly prisma: PrismaService,
     private readonly financialAlert: FinancialAlertService,
     private readonly walletLedger: WalletLedgerService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /**
@@ -342,6 +344,7 @@ export class WalletService {
         { isolationLevel: 'ReadCommitted' },
       );
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'WalletService.appendWithinTx');
       this.financialAlert.withdrawalFailed(err instanceof Error ? err : new Error(String(err)), {
         workspaceId,
         amount,
@@ -528,6 +531,7 @@ export class WalletService {
 
           this.logger.log(`Settled tx ${tx.id}: ${formatBrlAmount(tx.amount)} -> available`);
         } catch (err: unknown) {
+          void this.opsAlert?.alertOnCriticalError(err, 'WalletService.async');
           const message = err instanceof Error ? err.message : String(err);
           const isFirstFailure = perTxFailures.length === 0;
           perTxFailures.push({ txId: tx.id, error: message });
@@ -550,6 +554,7 @@ export class WalletService {
       }
       // PULSE:OK — cron job top-level catch prevents crashing the scheduler on transient DB failures
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'WalletService.reconciliationAlert');
       this.logger.error(`Reconciliation error: ${String(err)}`);
       this.financialAlert.reconciliationAlert('wallet reconciliation cron crashed', {
         details: { error: err instanceof Error ? err.message : String(err) },

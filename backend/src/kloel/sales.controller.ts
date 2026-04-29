@@ -10,11 +10,13 @@ import {
   Query,
   Request,
   UseGuards,
+  Optional,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { StripeService } from '../billing/stripe.service';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /** Sales controller — KloelSale CRUD. */
 @UseGuards(JwtAuthGuard)
@@ -25,6 +27,7 @@ export class SalesController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stripeService: StripeService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   // ═══════════════════════════════════════
@@ -195,6 +198,7 @@ export class SalesController {
           );
         }
       } catch (err: unknown) {
+        void this.opsAlert?.alertOnCriticalError(err, 'SalesController.create');
         throw new BadRequestException(
           `Falha ao processar estorno no gateway: ${err instanceof Error ? err.message : 'unknown_error'}`,
         );
@@ -219,6 +223,7 @@ export class SalesController {
           },
         });
       } catch (err: unknown) {
+        void this.opsAlert?.alertOnCriticalError(err, 'SalesController.create');
         this.logger.error(`Failed to create audit log for refund request: ${String(err)}`); // Intencional: audit log is best-effort.
       }
 
@@ -243,6 +248,7 @@ export class SalesController {
         },
       });
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'SalesController.create');
       // PULSE:OK — AuditLog write failure is non-critical; refund already processed above
       this.logger.error(`Failed to create audit log for refund: ${String(err)}`);
     }

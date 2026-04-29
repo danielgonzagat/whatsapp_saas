@@ -4,22 +4,21 @@
  * Mode: DEEP (requires codebase scan + optional running infrastructure)
  *
  * CHECKS:
- * 1. Request tracing: verifies correlation IDs (X-Request-ID or X-Trace-ID) are:
+ * 1. Request tracing: verifies correlation IDs are:
  *    a. Generated at request entry (middleware or interceptor)
- *    b. Propagated to all outbound calls (Asaas, LLM, WhatsApp)
+ *    b. Propagated to all outbound calls
  *    c. Returned in error responses (for support debugging)
  *    d. Logged in every log line within that request context
- * 2. Error alerting: verifies that critical errors trigger external alerts:
- *    - Sentry, Datadog, or custom alerting webhook configured
- *    - Payment failures trigger immediate alert (not just logged)
- *    - WhatsApp disconnection triggers alert
+ * 2. Error alerting: verifies that critical errors trigger external or durable alerts:
+ *    - Runtime-critical failures trigger immediate alert, not just a log line
+ *    - External-session disconnections trigger alert/recovery handling
  * 3. Metrics collection: verifies key business metrics are tracked:
  *    - Request latency per endpoint (histogram)
- *    - Queue depth (BullMQ job counts)
+ *    - Queue depth and failed job counts
  *    - Error rate per endpoint
- *    - Payment success/failure rate
+ *    - Business-critical success/failure rate
  * 4. Health check endpoints exist (/health, /health/live, /health/ready)
- * 5. Logs include structured fields (not just string messages)
+ * 5. Logs include structured fields, not just string messages
  * 6. No silent errors in critical paths (catch blocks that don't log)
  *
  * REQUIRES: PULSE_DEEP=1
@@ -31,6 +30,14 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import {
+  hasAlertingEvidence,
+  hasMetricsEvidence,
+  hasRuntimeCriticalSideEffect,
+  hasStructuredLogEvidence,
+  hasTracingEvidence,
+  OUTBOUND_CALL_RE,
+} from './structural-evidence';
 
 function extractCatchBlocks(content: string): string[] {
   const blocks: string[] = [];
@@ -73,10 +80,9 @@ export function checkObservability(config: PulseConfig): Break[] {
     }
   }, '');
 
-  // CHECK 1a: Correlation ID generation middleware
+  // CHECK 1a: correlation ID generation middleware/interceptor
   const hasCorrelationMiddleware =
-    /X-Request-ID|X-Trace-ID|correlationId|requestId|traceId/i.test(allBackendContent) &&
-    /Middleware|Interceptor/i.test(allBackendContent);
+    hasTracingEvidence(allBackendContent) && /Middleware|Interceptor/i.test(allBackendContent);
 
   if (!hasCorrelationMiddleware) {
     breaks.push({
@@ -104,8 +110,8 @@ export function checkObservability(config: PulseConfig): Break[] {
     }
     const relFile = path.relative(config.rootDir, file);
 
-    if (/axios\.get|axios\.post|fetch\s*\(|httpClient/i.test(content)) {
-      if (!/X-Request-ID|X-Trace-ID|correlationId|traceId|getTraceHeaders/i.test(content)) {
+    if (OUTBOUND_CALL_RE.test(content)) {
+      if (!hasTracingEvidence(content)) {
         breaks.push({
           type: 'OBSERVABILITY_NO_TRACING',
           severity: 'high',
@@ -120,11 +126,8 @@ export function checkObservability(config: PulseConfig): Break[] {
     }
   }
 
-  // CHECK 2: Error alerting (Sentry, Datadog, custom webhook)
-  const hasAlertingIntegration =
-    /Sentry|@sentry\/node|datadog|dd-trace|newrelic|pagerduty|opsgenie|alertwebhook/i.test(
-      allBackendContent,
-    );
+  // CHECK 2: Error alerting via an external sink or durable ops channel.
+  const hasAlertingIntegration = hasAlertingEvidence(allBackendContent);
 
   if (!hasAlertingIntegration) {
     breaks.push({
@@ -132,10 +135,9 @@ export function checkObservability(config: PulseConfig): Break[] {
       severity: 'high',
       file: 'backend/src/',
       line: 0,
-      description:
-        'No error alerting integration found (Sentry, Datadog, etc.) — critical errors will go unnoticed',
+      description: 'No error alerting integration found — critical errors will go unnoticed',
       detail:
-        'Integrate @sentry/nestjs or equivalent; configure alerts for payment failures and 500 errors',
+        'Add external alerting or a durable ops alert channel for runtime-critical failures and 500 errors',
     });
   }
 
@@ -150,15 +152,10 @@ export function checkObservability(config: PulseConfig): Break[] {
     const relFile = path.relative(config.rootDir, file);
 
     const catchesRuntimeCriticalFailure = extractCatchBlocks(content).some((block) =>
-      /\b(?:fetch|axios|httpService|request)\s*(?:<[^>]*>)?\s*\(|\.(?:post|put|patch|delete)\s*\(|\b(?:prisma|repository|database)\b/i.test(
-        block,
-      ),
+      hasRuntimeCriticalSideEffect(block),
     );
 
-    if (
-      catchesRuntimeCriticalFailure &&
-      !/Sentry\.captureException|captureException|alert|notify|sendAlert/i.test(content)
-    ) {
+    if (catchesRuntimeCriticalFailure && !hasAlertingEvidence(content)) {
       breaks.push({
         type: 'OBSERVABILITY_NO_ALERTING',
         severity: 'high',
@@ -166,15 +163,14 @@ export function checkObservability(config: PulseConfig): Break[] {
         line: 0,
         description:
           'Runtime-critical error caught without external alert — failures may go unnoticed for hours',
-        detail: 'Add Sentry.captureException(err) or custom alert in runtime-critical catch blocks',
+        detail:
+          'Add external alerting or durable ops alert emission in runtime-critical catch blocks',
       });
     }
   }
 
   // CHECK 3: Metrics collection
-  const hasMetrics = /prometheus|prom-client|StatsD|metricsService|histogram|counter\./i.test(
-    allBackendContent,
-  );
+  const hasMetrics = hasMetricsEvidence(allBackendContent);
   if (!hasMetrics) {
     breaks.push({
       type: 'OBSERVABILITY_NO_ALERTING',
@@ -184,7 +180,7 @@ export function checkObservability(config: PulseConfig): Break[] {
       description:
         'No metrics collection found — cannot monitor request latency, error rate, or queue depth',
       detail:
-        'Integrate prom-client or @willsoto/nestjs-prometheus; expose /metrics endpoint for Prometheus scraping',
+        'Emit counters, histograms, gauges, latency, error-rate, and queue-depth metrics; expose them to your monitoring stack',
     });
   }
 
@@ -206,8 +202,7 @@ export function checkObservability(config: PulseConfig): Break[] {
   }
 
   // CHECK 5: Structured logging
-  const hasStructuredLogging =
-    /this\.logger\.\w+\s*\(\s*\{|Logger\.log\s*\(\s*\{|winston|pino/i.test(allBackendContent);
+  const hasStructuredLogging = hasStructuredLogEvidence(allBackendContent);
   const hasStringOnlyLogging = /this\.logger\.\w+\s*\(\s*`|this\.logger\.\w+\s*\(\s*['"]/.test(
     allBackendContent,
   );
@@ -225,8 +220,8 @@ export function checkObservability(config: PulseConfig): Break[] {
   }
 
   // TODO: Implement when infrastructure available
-  // - Verify Sentry DSN is valid and receiving events
-  // - Check Prometheus metrics are being scraped
+  // - Verify the alert sink is valid and receiving events
+  // - Check emitted metrics are being scraped
   // - Verify alert rules fire on test errors
   // - Distributed tracing (OpenTelemetry) integration check
 

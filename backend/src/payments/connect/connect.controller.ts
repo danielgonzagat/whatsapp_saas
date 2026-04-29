@@ -13,7 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { ConnectAccountType, type ConnectLedgerEntryType } from '@prisma/client';
 
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -58,8 +58,8 @@ function parseTake(value?: string): number | undefined {
 
 /** Connect controller. */
 @Controller('payments/connect')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 20, ttl: 60000 } })
+@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
+@Throttle({ default: { limit: 5, ttl: 60000 } })
 export class ConnectController {
   constructor(
     private readonly prisma: PrismaService,

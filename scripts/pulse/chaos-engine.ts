@@ -9,11 +9,12 @@
  * is marked as `not_tested` pending staging execution with Toxiproxy or
  * equivalent network fault injection.
  *
- * ## Provider detection
+ * ## Dependency detection
  *
- * The engine scans `backend/src/` and `worker/src/` for references to
- * specific external providers (Stripe, OpenAI, Meta/WhatsApp, Resend) and
- * infrastructure targets (PostgreSQL, Redis). Each provider gets:
+ * The engine scans source and PULSE artifacts for external dependencies
+ * discovered from imports, environment references, URL hosts, HTTP clients,
+ * package usage, runtime signals, and side-effect graph evidence. Each
+ * external dependency gets:
  *
  * - Multi-tier latency injection (50 / 200 / 1000 / 5000 ms)
  * - Connection-drop simulation
@@ -37,49 +38,26 @@ import { walkFiles } from './parsers/utils';
 import { readTextFile, readJsonFile, writeTextFile, ensureDir, pathExists } from './safe-fs';
 import { safeJoin } from './safe-path';
 
-// ── External provider taxonomy ────────────────────────────────────────────
+// ── External dependency taxonomy ──────────────────────────────────────────
 
 /**
- * Specific external provider detected in the codebase.
+ * External dependency detected in the codebase.
  *
- * These extend the generic {@link ChaosTarget} taxonomy with real-world
- * SaaS and infrastructure providers so that the chaos catalog can name
- * concrete failure modes (e.g. "Stripe API timeout" instead of just
- * "external_http timeout").
+ * The value is a stable, sanitized identifier derived from observed code or
+ * artifact evidence. It is intentionally open-ended so PULSE does not carry a
+ * catalog of product names.
  */
-export type ChaosProviderName =
-  | 'stripe'
-  | 'openai'
-  | 'meta_whatsapp'
-  | 'resend'
-  | 'postgres'
-  | 'redis'
-  | 'generic_http';
+export type ChaosProviderName = string;
+type ChaosOperationalConcern =
+  | 'payment_idempotency'
+  | 'whatsapp_queue_retry'
+  | 'email_retry_fallback'
+  | 'ai_model_fallback_cache';
 
-/** Maps each provider to the generic target class it exercises. */
-const PROVIDER_TO_TARGET: Record<ChaosProviderName, ChaosTarget> = {
-  stripe: 'external_http',
-  openai: 'external_http',
-  meta_whatsapp: 'external_http',
-  resend: 'external_http',
-  postgres: 'postgres',
-  redis: 'redis',
-  generic_http: 'external_http',
-};
-
-/** Human-readable labels for provider names. */
-const PROVIDER_LABELS: Record<ChaosProviderName, string> = {
-  stripe: 'Stripe API',
-  openai: 'OpenAI API',
-  meta_whatsapp: 'Meta / WhatsApp API',
-  resend: 'Resend Email API',
-  postgres: 'PostgreSQL',
-  redis: 'Redis',
-  generic_http: 'External HTTP',
-};
-
-/** Multi-tier latency values injected for each provider. */
+/** Multi-tier latency values injected for each detected dependency. */
 const LATENCY_TIERS_MS = [50, 200, 1000, 5000];
+const MAX_BLAST_RADIUS_ENTRIES = 32;
+const MAX_PROVIDER_DEPENDENCIES = 96;
 
 // ── Structural detection patterns ─────────────────────────────────────────
 
@@ -88,26 +66,20 @@ const PRISMA_OPERATION_RE =
 const QUEUE_OR_CACHE_RE =
   /\b(?:Queue|Worker|QueueEvents|createClient)\b|\.add\s*\(|\.process\s*\(|\.get\s*\(|\.set\s*\(/;
 const EXTERNAL_HTTP_RE =
-  /\b(?:fetch|axios|httpService)\.(?:get|post|put|patch|delete|request)\s*\(|\bfetch\s*\(|\b[A-Za-z_$][\w$]*(?:Client|Provider|Gateway|Api|SDK|Sdk|Http)\.(?:get|post|put|patch|delete|request|send|create|update)\s*\(/;
+  /\b(?:fetch|axios|httpService)\.(?:get|post|put|patch|delete|request)\s*\(|\bfetch\s*\(|\b[A-Za-z_$][\w$]*(?:Client|Provider|Gateway|Api|SDK|Sdk|Http)\.(?:get|post|put|patch|delete|request)\s*\(/;
 const INTERNAL_ROUTE_RE = /@Controller\s*\(|@(Get|Post|Put|Patch|Delete|All)\s*\(/;
 const WEBHOOK_RECEIVER_RE =
   /@(Post|All)\s*\([^)]*(callback|webhook|hook|event)[^)]*\)|signature|rawBody|x-[a-z-]*signature/i;
 
-/** Provider-specific detection regexes. */
-const PROVIDER_PATTERNS: Record<ChaosProviderName, RegExp> = {
-  stripe:
-    /\b(?:StripeRuntime|StripeClient|StripeApi|stripe\.(?:customers|subscriptions|checkout|invoices|paymentIntents|webhooks|billingPortal))\b|from\s+['"].*stripe/i,
-  openai:
-    /\b(?:new\s+OpenAI|openai\.(?:chat|responses|images|beta)|OPENAI_API_KEY|chatCompletion|ChatCompletion)\b|from\s+['"]openai/i,
-  meta_whatsapp:
-    /\b(?:MetaWhatsApp|WhatsAppBusiness|whatsappApiSession|meta\s*Connection|waba\s*Id|phoneNumberId|businessId|whatsapp\.send|whatsapp\.message)\b|from\s+['"].*meta.*whatsapp/i,
-  resend:
-    /\b(?:RESEND_API_KEY|api\.resend\.com|resend\.(?:emails|send)|sendViaResend|EmailService.*resend)\b/i,
-  postgres: PRISMA_OPERATION_RE,
-  redis:
-    /\b(?:InjectRedis|@InjectRedis|createRedisClient|getRedisUrl|ioredis|Redis)\b|from\s+['"]ioredis/i,
-  generic_http: EXTERNAL_HTTP_RE,
-};
+const IMPORT_SPECIFIER_RE =
+  /\b(?:import\s+(?:type\s+)?(?:[^'"]+\s+from\s+)?|export\s+[^'"]+\s+from\s+|require\s*\(|import\s*\()\s*['"]([^'"]+)['"]/g;
+const ENV_REFERENCE_RE =
+  /\bprocess\.env\.([A-Z][A-Z0-9_]{2,})\b|\b(?:configService|config)\.get(?:OrThrow)?\(\s*['"]([A-Z][A-Z0-9_]{2,})['"]\s*\)/g;
+const URL_HOST_RE = /https?:\/\/([a-z0-9.-]+\.[a-z]{2,})(?::\d+)?/gi;
+const HTTP_CLIENT_IDENTIFIER_RE =
+  /\b([A-Za-z_$][\w$]*(?:Client|Provider|Gateway|Api|SDK|Sdk|Http|Transport))\.(?:get|post|put|patch|delete|request|send|create|update)\s*\(/g;
+const EXTERNAL_PACKAGE_HINT_RE =
+  /(?:api|auth|cache|client|cloud|gateway|http|mail|mq|payment|provider|queue|sdk|sms|storage|transport)$/i;
 
 // ── Default injection configurations ──────────────────────────────────────
 
@@ -149,9 +121,217 @@ function unique(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
 }
 
-// ── Provider detection ────────────────────────────────────────────────────
+function normalizeEvidencePath(rootDir: string, filePath: string): string {
+  const absolutePath = path.isAbsolute(filePath) ? filePath : safeJoin(rootDir, filePath);
+  return path.relative(rootDir, absolutePath).split(path.sep).join('/');
+}
 
-/** Scan source files for specific external providers used in the codebase. */
+function slugDependency(value: string): string | null {
+  const slug = value
+    .trim()
+    .replace(/^@/, '')
+    .replace(/[^a-zA-Z0-9._/-]+/g, '-')
+    .replace(/[./]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+  return slug.length > 0 ? slug : null;
+}
+
+function dependencyId(source: string, value: string): ChaosProviderName | null {
+  const slug = slugDependency(value);
+  return slug ? `${source}:${slug}` : null;
+}
+
+function packageRoot(specifier: string): string | null {
+  if (
+    specifier.startsWith('.') ||
+    specifier.startsWith('/') ||
+    specifier.startsWith('node:') ||
+    specifier.startsWith('#')
+  ) {
+    return null;
+  }
+  const parts = specifier.split('/');
+  return specifier.startsWith('@') ? parts.slice(0, 2).join('/') : parts[0] || null;
+}
+
+function envDependencyName(name: string): string | null {
+  const upperName = name.toUpperCase();
+  if (!/(?:^|_)(?:URL|URI|HOST|ENDPOINT|BASE_URL|API_KEY|SECRET|TOKEN)(?:_|$)/.test(upperName)) {
+    return null;
+  }
+  const tokens = name
+    .toLowerCase()
+    .split('_')
+    .filter((token) => token && !['api', 'key', 'secret', 'token', 'url', 'uri'].includes(token));
+  return tokens.length > 0 ? tokens.join('-') : null;
+}
+
+function addDetectedDependency(
+  dependencies: Map<ChaosProviderName, string[]>,
+  dependency: ChaosProviderName | null,
+  filePath: string,
+): void {
+  if (!dependency) {
+    return;
+  }
+  const files = dependencies.get(dependency) ?? [];
+  files.push(filePath);
+  dependencies.set(dependency, unique(files).sort());
+}
+
+function compactBlastRadius(capabilityIds: string[]): string[] {
+  return unique(capabilityIds)
+    .sort((left, right) => left.length - right.length || left.localeCompare(right))
+    .slice(0, MAX_BLAST_RADIUS_ENTRIES);
+}
+
+function compactProviderDependencies(
+  providers: Map<ChaosProviderName, string[]>,
+): Map<ChaosProviderName, string[]> {
+  return new Map(
+    [...providers.entries()]
+      .sort((left, right) => right[1].length - left[1].length || left[0].localeCompare(right[0]))
+      .slice(0, MAX_PROVIDER_DEPENDENCIES),
+  );
+}
+
+function addDependenciesFromSource(
+  dependencies: Map<ChaosProviderName, string[]>,
+  rootDir: string,
+  file: string,
+  content: string,
+): void {
+  const relativeFile = normalizeEvidencePath(rootDir, file);
+  if (PRISMA_OPERATION_RE.test(content)) {
+    addDetectedDependency(dependencies, dependencyId('target', 'postgres'), relativeFile);
+  }
+  if (QUEUE_OR_CACHE_RE.test(content)) {
+    addDetectedDependency(dependencies, dependencyId('target', 'redis'), relativeFile);
+  }
+
+  for (const match of content.matchAll(URL_HOST_RE)) {
+    addDetectedDependency(dependencies, dependencyId('host', match[1] ?? ''), relativeFile);
+  }
+
+  for (const match of content.matchAll(ENV_REFERENCE_RE)) {
+    const envName = match[1] ?? match[2] ?? '';
+    addDetectedDependency(
+      dependencies,
+      dependencyId('env', envDependencyName(envName) ?? ''),
+      relativeFile,
+    );
+  }
+
+  for (const match of content.matchAll(HTTP_CLIENT_IDENTIFIER_RE)) {
+    addDetectedDependency(dependencies, dependencyId('client', match[1] ?? ''), relativeFile);
+  }
+
+  const hasExternalCallShape = EXTERNAL_HTTP_RE.test(content);
+  for (const match of content.matchAll(IMPORT_SPECIFIER_RE)) {
+    const importedPackage = packageRoot(match[1] ?? '');
+    if (!importedPackage) {
+      continue;
+    }
+    const importedSlug = slugDependency(importedPackage) ?? '';
+    if (hasExternalCallShape || EXTERNAL_PACKAGE_HINT_RE.test(importedSlug)) {
+      addDetectedDependency(dependencies, dependencyId('package', importedPackage), relativeFile);
+    }
+  }
+}
+
+function addDependenciesFromArtifactFiles(
+  dependencies: Map<ChaosProviderName, string[]>,
+  rootDir: string,
+  files: string[],
+): void {
+  for (const file of unique(files)) {
+    const absolutePath = path.isAbsolute(file) ? file : safeJoin(rootDir, file);
+    if (!pathExists(absolutePath)) {
+      continue;
+    }
+    addDependenciesFromSource(dependencies, rootDir, absolutePath, readSafe(absolutePath));
+  }
+}
+
+function loadArtifactRecords(rootDir: string, artifactName: string): Record<string, unknown>[] {
+  const artifactPath = safeJoin(rootDir, '.pulse', 'current', artifactName);
+  if (!pathExists(artifactPath)) {
+    return [];
+  }
+  try {
+    const payload = readJsonFile<Record<string, unknown>>(artifactPath);
+    const records: Record<string, unknown>[] = [];
+    for (const key of ['nodes', 'signals', 'capabilities']) {
+      const value = payload[key];
+      if (Array.isArray(value)) {
+        records.push(
+          ...value.filter(
+            (item): item is Record<string, unknown> => typeof item === 'object' && item !== null,
+          ),
+        );
+      }
+    }
+    return records;
+  } catch {
+    return [];
+  }
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : [];
+}
+
+function addDependenciesFromPulseArtifacts(
+  dependencies: Map<ChaosProviderName, string[]>,
+  rootDir: string,
+): void {
+  const behaviorNodes = loadArtifactRecords(rootDir, 'PULSE_BEHAVIOR_GRAPH.json');
+  for (const node of behaviorNodes) {
+    const filePath = typeof node.filePath === 'string' ? node.filePath : '';
+    const externalCalls = Array.isArray(node.externalCalls) ? node.externalCalls : [];
+    for (const call of externalCalls) {
+      if (!call || typeof call !== 'object') {
+        continue;
+      }
+      const provider = (call as Record<string, unknown>).provider;
+      if (typeof provider === 'string') {
+        addDetectedDependency(dependencies, dependencyId('behavior', provider), filePath);
+      }
+    }
+  }
+
+  const structuralNodes = loadArtifactRecords(rootDir, 'PULSE_STRUCTURAL_GRAPH.json');
+  const sideEffectFiles = structuralNodes
+    .filter((node) => node.kind === 'side_effect_signal')
+    .flatMap((node) => {
+      const metadata = node.metadata as Record<string, unknown> | undefined;
+      return typeof metadata?.filePath === 'string' ? [metadata.filePath] : [];
+    });
+  addDependenciesFromArtifactFiles(dependencies, rootDir, sideEffectFiles);
+
+  const productCapabilities = loadArtifactRecords(rootDir, 'PULSE_PRODUCT_GRAPH.json');
+  for (const capability of productCapabilities) {
+    for (const provider of stringArray(capability.providersInvolved)) {
+      addDetectedDependency(dependencies, dependencyId('product-graph', provider), '');
+    }
+  }
+
+  const signalFiles = [
+    ...loadArtifactRecords(rootDir, 'PULSE_EXTERNAL_SIGNAL_STATE.json'),
+    ...loadArtifactRecords(rootDir, 'PULSE_RUNTIME_FUSION.json'),
+  ].flatMap((signal) => [
+    ...stringArray(signal.relatedFiles),
+    ...stringArray(signal.affectedFilePaths),
+  ]);
+  addDependenciesFromArtifactFiles(dependencies, rootDir, signalFiles);
+}
+
+// ── Dependency detection ──────────────────────────────────────────────────
+
+/** Scan source and artifacts for external dependencies used in the codebase. */
 export function detectProviders(rootDir: string): Map<ChaosProviderName, string[]> {
   const providerFiles = new Map<ChaosProviderName, string[]>();
   const backendDirs = [
@@ -173,14 +353,10 @@ export function detectProviders(rootDir: string): Map<ChaosProviderName, string[
 
   for (const file of allFiles) {
     const content = readSafe(file);
-    for (const [provider, regex] of Object.entries(PROVIDER_PATTERNS)) {
-      if (regex.test(content)) {
-        const files = providerFiles.get(provider as ChaosProviderName) ?? [];
-        files.push(file);
-        providerFiles.set(provider as ChaosProviderName, files);
-      }
-    }
+    addDependenciesFromSource(providerFiles, rootDir, file, content);
   }
+
+  addDependenciesFromPulseArtifacts(providerFiles, rootDir);
 
   return providerFiles;
 }
@@ -297,7 +473,7 @@ export function computeProviderBlastRadius(
   providerFiles: string[],
   capabilities: PulseCapability[],
 ): string[] {
-  const target = PROVIDER_TO_TARGET[provider];
+  const target = targetForDetectedDependency(provider, providerFiles);
   const baseRadius = computeBlastRadius(target, capabilities);
   const baseIds = new Set(baseRadius);
 
@@ -309,17 +485,105 @@ export function computeProviderBlastRadius(
     if (hasOverlap) {
       baseIds.add(cap.id);
     }
-    // Heuristic: capability ID or name contains provider name.
-    const nameLower = cap.name?.toLowerCase() ?? '';
-    if (
-      nameLower.includes(provider.replace('_', '')) ||
-      nameLower.includes(provider.replace('_whatsapp', ''))
-    ) {
-      baseIds.add(cap.id);
-    }
   }
 
-  return [...baseIds].sort();
+  return compactBlastRadius([...baseIds].sort());
+}
+
+function targetForDetectedDependency(
+  dependency: ChaosProviderName,
+  dependencyFiles: string[],
+): ChaosTarget {
+  if (dependency === dependencyId('target', 'postgres')) {
+    return 'postgres';
+  }
+  if (dependency === dependencyId('target', 'redis')) {
+    return 'redis';
+  }
+  if (dependencyFiles.some((file) => file.includes('webhook'))) {
+    return 'webhook_receiver';
+  }
+  return 'external_http';
+}
+
+function dependencyLabel(dependency: ChaosProviderName): string {
+  const [, rawName = dependency] = dependency.split(/:(.*)/s);
+  const name = rawName.replace(/[-_]+/g, ' ').trim();
+  return name ? `external dependency ${name}` : 'external dependency';
+}
+
+function hasOperationalEvidence(text: string, pattern: RegExp): boolean {
+  return pattern.test(text.replace(/[-_/.:]+/g, ' '));
+}
+
+function buildOperationalEvidenceText(
+  provider: ChaosProviderName | undefined,
+  providerFiles: string[],
+  capabilities: PulseCapability[],
+): string {
+  const blastRadius = provider
+    ? new Set(computeProviderBlastRadius(provider, providerFiles, capabilities))
+    : new Set<string>();
+  const capabilityEvidence = capabilities
+    .filter((capability) => !provider || blastRadius.has(capability.id))
+    .flatMap((capability) => [
+      capability.id,
+      capability.name,
+      ...capability.filePaths,
+      ...capability.routePatterns,
+      ...capability.evidenceSources,
+      ...capability.validationTargets,
+      ...capability.rolesPresent,
+    ]);
+
+  return [provider ?? '', ...providerFiles, ...capabilityEvidence].join(' ').toLowerCase();
+}
+
+function deriveOperationalConcerns(
+  provider: ChaosProviderName | undefined,
+  providerFiles: string[],
+  capabilities: PulseCapability[],
+): Set<ChaosOperationalConcern> {
+  const evidenceText = buildOperationalEvidenceText(provider, providerFiles, capabilities);
+  const concerns = new Set<ChaosOperationalConcern>();
+
+  if (
+    hasOperationalEvidence(
+      evidenceText,
+      /\b(payment|checkout|billing|invoice|subscription|wallet|ledger|split|payout|refund|chargeback|settlement|idempotency|idempotent)\b/,
+    )
+  ) {
+    concerns.add('payment_idempotency');
+  }
+
+  if (
+    hasOperationalEvidence(
+      evidenceText,
+      /\b(whatsapp|waha|waba|phone\s*number|message|messaging|conversation|inbox|chat|queue|retry)\b/,
+    )
+  ) {
+    concerns.add('whatsapp_queue_retry');
+  }
+
+  if (
+    hasOperationalEvidence(
+      evidenceText,
+      /\b(email|mail|smtp|resend|sendgrid|postmark|verification|password\s*reset|welcome|deliverability)\b/,
+    )
+  ) {
+    concerns.add('email_retry_fallback');
+  }
+
+  if (
+    hasOperationalEvidence(
+      evidenceText,
+      /\b(ai|llm|model|prompt|completion|embedding|agent|copilot|autopilot|brain|openai|anthropic|cache)\b/,
+    )
+  ) {
+    concerns.add('ai_model_fallback_cache');
+  }
+
+  return concerns;
 }
 
 // ── Injection config generation ───────────────────────────────────────────
@@ -480,7 +744,7 @@ export function generateChaosScenarios(
   let index = 0;
 
   for (const target of detectedTargets) {
-    const blastRadius = computeBlastRadius(target, loadedCapabilities);
+    const blastRadius = compactBlastRadius(computeBlastRadius(target, loadedCapabilities));
 
     // Multi-tier latency injection.
     for (const latencyMs of LATENCY_TIERS_MS) {
@@ -530,36 +794,82 @@ export function generateProviderScenarios(
   const scenarios: ChaosScenario[] = [];
   let index = 0;
 
-  for (const [provider, providerFiles] of detectedProviders) {
-    // Skip generic_http — its scenarios are covered by the target-level
-    // generation above.
-    if (provider === 'generic_http') continue;
-    // Skip postgres and redis — they are covered by target-level generation.
-    if (provider === 'postgres' || provider === 'redis') continue;
-
-    const target = PROVIDER_TO_TARGET[provider];
+  for (const [provider, providerFiles] of compactProviderDependencies(detectedProviders)) {
+    const target = targetForDetectedDependency(provider, providerFiles);
+    if (target === 'postgres' || target === 'redis') {
+      continue;
+    }
     const blastRadius = computeProviderBlastRadius(provider, providerFiles, loadedCapabilities);
+    const operationalConcerns = deriveOperationalConcerns(
+      provider,
+      providerFiles,
+      loadedCapabilities,
+    );
 
     // Multi-tier latency per provider.
     for (const latencyMs of LATENCY_TIERS_MS) {
       scenarios.push(
-        buildProviderScenario(provider, target, 'latency', index++, blastRadius, { latencyMs }),
+        buildProviderScenario(
+          provider,
+          target,
+          'latency',
+          index++,
+          blastRadius,
+          operationalConcerns,
+          {
+            latencyMs,
+          },
+        ),
       );
     }
 
     // Connection drop.
     scenarios.push(
-      buildProviderScenario(provider, target, 'connection_drop', index++, blastRadius),
+      buildProviderScenario(
+        provider,
+        target,
+        'connection_drop',
+        index++,
+        blastRadius,
+        operationalConcerns,
+      ),
     );
 
     // Slow close / partial response.
-    scenarios.push(buildProviderScenario(provider, target, 'slow_close', index++, blastRadius));
+    scenarios.push(
+      buildProviderScenario(
+        provider,
+        target,
+        'slow_close',
+        index++,
+        blastRadius,
+        operationalConcerns,
+      ),
+    );
 
     // Packet loss.
-    scenarios.push(buildProviderScenario(provider, target, 'packet_loss', index++, blastRadius));
+    scenarios.push(
+      buildProviderScenario(
+        provider,
+        target,
+        'packet_loss',
+        index++,
+        blastRadius,
+        operationalConcerns,
+      ),
+    );
 
     // DNS failure (simulates provider endpoint unreachable).
-    scenarios.push(buildProviderScenario(provider, target, 'dns_failure', index++, blastRadius));
+    scenarios.push(
+      buildProviderScenario(
+        provider,
+        target,
+        'dns_failure',
+        index++,
+        blastRadius,
+        operationalConcerns,
+      ),
+    );
   }
 
   return scenarios;
@@ -601,13 +911,20 @@ function buildProviderScenario(
   kind: ChaosScenarioKind,
   index: number,
   blastRadius: string[],
+  operationalConcerns: Set<ChaosOperationalConcern>,
   overrides?: { latencyMs?: number },
 ): ChaosScenario {
   const config = generateInjectionConfig(kind, target, {
     params: overrides?.latencyMs ? { latencyMs: overrides.latencyMs } : undefined,
   });
   const description = buildDescription(kind, target, config, provider);
-  const expectedBehavior = buildExpectedBehavior(kind, target, config, provider);
+  const expectedBehavior = buildExpectedBehavior(
+    kind,
+    target,
+    config,
+    provider,
+    operationalConcerns,
+  );
 
   return {
     id: `chaos:provider:${provider}:${kind}:${index}`,
@@ -631,7 +948,7 @@ function buildDescription(
   provider?: ChaosProviderName,
 ): string {
   const label = provider
-    ? PROVIDER_LABELS[provider]
+    ? dependencyLabel(provider)
     : target.replace(/_/g, ' ').replace(/api/gi, 'API').toUpperCase();
 
   switch (kind) {
@@ -671,17 +988,18 @@ function buildExpectedBehavior(
   target: ChaosTarget,
   config: ReturnType<typeof generateInjectionConfig>,
   provider?: ChaosProviderName,
+  operationalConcerns = new Set<ChaosOperationalConcern>(),
 ): string {
   const latencyMs = config.params.latencyMs as number | undefined;
-  const providerLabel = provider ? PROVIDER_LABELS[provider] : target;
+  const providerLabel = provider ? dependencyLabel(provider) : target;
 
   switch (kind) {
     case 'latency': {
       const tier = classifyLatencyTier(latencyMs ?? 0);
-      let behavior = circuitBreakerPrediction(target, provider, tier);
-      behavior += '; ' + cacheFallbackPrediction(target, provider, tier);
-      behavior += '; ' + queueRetryPrediction(target, provider, tier);
-      behavior += '; ' + userImpactPrediction(target, provider, tier);
+      let behavior = circuitBreakerPrediction(tier);
+      behavior += '; ' + cacheFallbackPrediction(target, provider, tier, operationalConcerns);
+      behavior += '; ' + queueRetryPrediction(target, provider, operationalConcerns);
+      behavior += '; ' + userImpactPrediction(provider, tier, operationalConcerns);
       return behavior;
     }
 
@@ -691,6 +1009,7 @@ function buildExpectedBehavior(
       behavior += ' All in-flight requests MUST fail with 503 Service Unavailable.';
       behavior += ' Critical-path operations (payments/auth) MUST fail closed (deny).';
       behavior += ' Non-critical operations MUST use stale cache if available.';
+      behavior += ' ' + operationalRecoveryPrediction(operationalConcerns);
       behavior +=
         ' Recovery: breaker half-opens after 30s, full-open resets after 2 consecutive successes.';
       return behavior;
@@ -725,6 +1044,7 @@ function buildExpectedBehavior(
       let behavior = `${providerLabel} experiencing ${config.params.lossPercent ?? 30}% packet loss.`;
       behavior += ' HTTP retries (with exponential backoff) MUST succeed within the retry budget.';
       behavior += ' Idempotency keys MUST prevent duplicate side effects from retries.';
+      behavior += ' ' + operationalRecoveryPrediction(operationalConcerns);
       behavior += ' Circuit breaker MAY open if error rate exceeds threshold despite retries.';
       return behavior;
     }
@@ -734,6 +1054,7 @@ function buildExpectedBehavior(
       behavior += ' Connection MUST fail immediately (no long TCP timeouts).';
       behavior += ' Any cached DNS entries MUST NOT be used (avoid split-brain).';
       behavior += ' Health check MUST return critical for affected capabilities.';
+      behavior += ' ' + operationalRecoveryPrediction(operationalConcerns);
       behavior += ' Recovery: DNS resolution MUST succeed after failure window closes.';
       return behavior;
     }
@@ -759,11 +1080,7 @@ function classifyLatencyTier(ms: number): LatencyTier {
   return 'extreme';
 }
 
-function circuitBreakerPrediction(
-  target: ChaosTarget,
-  provider: ChaosProviderName | undefined,
-  tier: LatencyTier,
-): string {
+function circuitBreakerPrediction(tier: LatencyTier): string {
   if (tier === 'low') {
     return `Circuit breaker MUST NOT trip — ${tier} latency (≤100ms) is within normal variance`;
   }
@@ -777,6 +1094,7 @@ function cacheFallbackPrediction(
   target: ChaosTarget,
   provider: ChaosProviderName | undefined,
   tier: LatencyTier,
+  operationalConcerns: Set<ChaosOperationalConcern>,
 ): string {
   if (target === 'postgres') {
     return tier === 'low' || tier === 'medium'
@@ -786,17 +1104,20 @@ function cacheFallbackPrediction(
   if (target === 'redis') {
     return 'Redis unavailable — rate-limits MUST fail-open, session store MUST degrade to DB lookup';
   }
-  if (provider === 'stripe') {
-    return 'Stripe calls SHOULD be backed by idempotency keys — retry with cached session/price data if available';
+  if (operationalConcerns.has('payment_idempotency')) {
+    return 'Payment operations MUST preserve idempotency keys and reuse cached session, price, or ledger reference data when retrying';
   }
-  if (provider === 'openai') {
-    return 'OpenAI calls SHOULD return cached completions for identical prompts — fallback to simpler model or graceful error message';
+  if (operationalConcerns.has('ai_model_fallback_cache')) {
+    return 'AI calls SHOULD return cached completions for identical prompts, then fall back to a configured lower-cost model or an honest degraded response';
   }
-  if (provider === 'meta_whatsapp') {
-    return 'WhatsApp messages MUST be queued for retry — user notifications delayed but not lost';
+  if (operationalConcerns.has('whatsapp_queue_retry')) {
+    return 'WhatsApp delivery MUST be queued for retry so messages are delayed but not lost';
   }
-  if (provider === 'resend') {
-    return 'Email delivery MUST be queued — Resend API retry with exponential backoff, SMTP fallback if configured';
+  if (operationalConcerns.has('email_retry_fallback')) {
+    return 'Email delivery MUST be queued with provider retry and SMTP or secondary-provider fallback when configured';
+  }
+  if (provider) {
+    return 'External calls SHOULD use cached reference data or a graceful unavailable state when configured';
   }
   return 'Fallback to stale cache if available — serve degraded response to user';
 }
@@ -804,42 +1125,76 @@ function cacheFallbackPrediction(
 function queueRetryPrediction(
   target: ChaosTarget,
   provider: ChaosProviderName | undefined,
-  tier: LatencyTier,
+  operationalConcerns: Set<ChaosOperationalConcern>,
 ): string {
   if (target === 'redis') {
     return 'BullMQ jobs MUST retry with exponential backoff — queue processing delayed but preserved';
   }
-  if (provider === 'meta_whatsapp') {
-    return 'Outbound WhatsApp messages MUST be enqueued — delivery retried up to 5x with exponential backoff';
+  if (operationalConcerns.has('whatsapp_queue_retry')) {
+    return 'Outbound WhatsApp messages MUST be enqueued and retried with bounded exponential backoff';
   }
-  if (provider === 'resend') {
-    return 'Email send jobs MUST be retried — SMTP fallback after 3 Resend failures';
+  if (operationalConcerns.has('email_retry_fallback')) {
+    return 'Email send jobs MUST retry with bounded exponential backoff before invoking the configured fallback channel';
   }
-  if (provider === 'stripe') {
-    return 'Stripe webhooks MUST be replayed by Stripe — local operations idempotent against replay';
+  if (operationalConcerns.has('payment_idempotency')) {
+    return 'Payment webhooks and provider retries MUST remain idempotent against replay and duplicate callbacks';
+  }
+  if (operationalConcerns.has('ai_model_fallback_cache')) {
+    return 'AI jobs MUST retry only inside the model budget and MUST read-through cache before switching fallback models';
+  }
+  if (provider) {
+    return 'Outbound side effects MUST use bounded retries with idempotency protection when retryable';
   }
   return 'Retry with exponential backoff — idempotency keys prevent duplicate processing';
 }
 
 function userImpactPrediction(
-  target: ChaosTarget,
   provider: ChaosProviderName | undefined,
   tier: LatencyTier,
+  operationalConcerns: Set<ChaosOperationalConcern>,
 ): string {
   if (tier === 'low' || tier === 'medium') {
     return 'User impact minimal — slight delay in response, no visible errors';
   }
-  if (provider === 'stripe') {
-    return 'Payment flows degraded — checkout may timeout, users see retry prompt. Billing portal inaccessible.';
+  if (operationalConcerns.has('payment_idempotency')) {
+    return 'Payment flows degrade honestly with retry prompts while duplicate charges, duplicate ledger entries, and duplicate payouts remain blocked';
   }
-  if (provider === 'openai') {
-    return 'AI features degraded — KLOEL agent, campaigns, autopilot respond with fallback messages or delayed responses';
+  if (operationalConcerns.has('whatsapp_queue_retry')) {
+    return 'WhatsApp messaging degrades to delayed delivery, with real-time chat marked unavailable instead of dropping outbound messages';
   }
-  if (provider === 'meta_whatsapp') {
-    return 'WhatsApp messaging degraded — messages queued for later delivery, real-time chat affected';
+  if (operationalConcerns.has('email_retry_fallback')) {
+    return 'Email delivery is delayed, and verification, password reset, onboarding, and campaign flows surface a pending or unavailable state';
   }
-  if (provider === 'resend') {
-    return 'Email delivery delayed — verification emails, password resets, marketing emails queued';
+  if (operationalConcerns.has('ai_model_fallback_cache')) {
+    return 'AI features degrade to cached output, fallback model output, or an honest unavailable response without fabricated answers';
+  }
+  if (provider) {
+    return 'Dependent user flows degraded — users see retry prompts, delayed completion, or honest unavailable state';
   }
   return 'User-visible degradation — timeouts, retry prompts, or partial feature unavailability';
+}
+
+function operationalRecoveryPrediction(operationalConcerns: Set<ChaosOperationalConcern>): string {
+  const predictions: string[] = [];
+  if (operationalConcerns.has('payment_idempotency')) {
+    predictions.push(
+      'Payment recovery MUST reconcile provider state without duplicating charges, ledger entries, splits, or payouts.',
+    );
+  }
+  if (operationalConcerns.has('whatsapp_queue_retry')) {
+    predictions.push(
+      'WhatsApp recovery MUST drain queued messages through the normal retry worker.',
+    );
+  }
+  if (operationalConcerns.has('email_retry_fallback')) {
+    predictions.push(
+      'Email recovery MUST drain pending sends and preserve fallback audit evidence.',
+    );
+  }
+  if (operationalConcerns.has('ai_model_fallback_cache')) {
+    predictions.push(
+      'AI recovery MUST invalidate stale model-failure state while preserving cache consistency.',
+    );
+  }
+  return predictions.join(' ');
 }

@@ -16,6 +16,8 @@ import { buildProductVision } from './product-vision';
 import { buildProductModel } from './product-model';
 import { buildExternalSignalState } from './external-signals';
 import { runExternalSourcesOrchestrator } from './adapters/external-sources-orchestrator';
+import type { ExternalSourcesConfig } from './adapters/external-sources-orchestrator';
+import { deriveExternalSourcesTimeoutMs } from './external-sources-timeout';
 import { buildFunctionalMap } from './functional-map';
 import { generateFunctionalMapReport, renderFunctionalMapSummary } from './functional-map-report';
 import { PulseExecutionTracer, runPhaseWithTrace } from './execution-trace';
@@ -70,7 +72,7 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
   });
 
   // Run external sources orchestration
-  const externalSourcesTask = runExternalSourcesOrchestrator({
+  const externalSourcesConfig: ExternalSourcesConfig = {
     rootDir: config.rootDir,
     github: {
       owner: process.env.GITHUB_OWNER || '',
@@ -104,13 +106,17 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
     },
     profile: config.certificationProfile || undefined,
     certificationScope: config.certificationProfile || undefined,
-  }).catch(() => null);
+  };
+  const externalSourcesTask = runExternalSourcesOrchestrator(externalSourcesConfig).catch(
+    () => null,
+  );
+  const externalSourcesTimeoutMs = deriveExternalSourcesTimeoutMs(externalSourcesConfig);
 
   const liveExternalState = await runPhaseWithTrace(
     tracer,
     'external-sources-orchestration',
     () => externalSourcesTask,
-    { timeoutMs: 15_000, onTimeout: () => null },
+    { timeoutMs: externalSourcesTimeoutMs, onTimeout: () => null },
   );
   const externalSignalState = buildExternalSignalState({
     rootDir: config.rootDir,

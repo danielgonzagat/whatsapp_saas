@@ -712,9 +712,64 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.summary.unknownPaths).toBe(0);
   });
 
-  it('passes matrix completeness but does not treat inferred critical paths as observed proof', () => {
+  it('passes critical path gate when inferred critical paths have precise governed terminal reasons', () => {
     const matrix = buildMatrix({});
+    const path = matrix.paths[0];
+
+    expect(path.risk).toBe('high');
+    expect(path.executionMode).toBe('governed_validation');
+    expect(path.requiredEvidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: 'integration', required: true }),
+        expect.objectContaining({ kind: 'e2e', required: true }),
+        expect.objectContaining({ kind: 'runtime', required: true }),
+      ]),
+    );
+    expect(path.observedEvidence).toEqual([
+      expect.objectContaining({
+        source: 'static',
+        artifactPath: 'PULSE_CERTIFICATE.json',
+        executed: true,
+        status: 'mapped',
+      }),
+    ]);
+    expect(path.breakpoint).toEqual(
+      expect.objectContaining({
+        filePath: 'frontend/checkout.tsx',
+        nodeId: 'ui:checkout',
+        routePattern: '/api/checkout',
+      }),
+    );
+    expect(path.breakpoint?.reason).toContain('lacks observed runtime');
+    expect(path.breakpoint?.recovery).toContain('matching runtime');
+    expect(path.validationCommand).toContain('route /api/checkout');
+
     expect(evaluateExecutionMatrixCompleteGate(matrix).status).toBe('pass');
+    const observedGate = evaluateCriticalPathObservedGate(matrix);
+    expect(observedGate.status).toBe('pass');
+    expect(observedGate.evidenceMode).toBe('inferred');
+    expect(observedGate.reason).toContain('precise terminal reason');
+    expect(observedGate.reason).toContain('still need observed proof');
+  });
+
+  it('fails critical path gate when path coverage still reports critical unobserved work', () => {
+    const matrix = buildMatrix({});
+    const observedGate = evaluateCriticalPathObservedGate(matrix, {
+      summary: {
+        criticalUnobserved: 1,
+      },
+    });
+
+    expect(observedGate.status).toBe('fail');
+    expect(observedGate.reason).toContain(
+      'PULSE_PATH_COVERAGE.json still has 1 critical unobserved path',
+    );
+    expect(observedGate.reason).toContain('matching validation probe');
+  });
+
+  it('fails critical path gate when inferred critical paths lack a precise terminal reason', () => {
+    const matrix = buildMatrix({});
+    matrix.paths[0].breakpoint = null;
     const observedGate = evaluateCriticalPathObservedGate(matrix);
     expect(observedGate.status).toBe('fail');
     expect(observedGate.reason).toContain('critical path(s) without observed evidence');

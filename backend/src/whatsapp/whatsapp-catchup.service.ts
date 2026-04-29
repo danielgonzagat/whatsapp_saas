@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 // messageLimit: this service imports messages, does not send; rate limit enforced at send time
-import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import {
   AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
   buildSweepUnreadConversationsJobData,
@@ -147,6 +148,7 @@ export class WhatsAppCatchupService {
     private readonly workerRuntime: WorkerRuntimeService,
     @InjectRedis() private readonly redis: Redis,
     private readonly agentEvents: AgentEventsService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private isNowebStoreMisconfigured(error: unknown): boolean {
@@ -573,6 +575,9 @@ export class WhatsAppCatchupService {
         overflow: hadOverflow,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'WhatsAppCatchupService.runCatchup', {
+        workspaceId,
+      });
       const errorInstanceofError =
         error instanceof Error
           ? error
@@ -1297,8 +1302,18 @@ export class WhatsAppCatchupService {
       return true;
     } catch (error: unknown) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        void this.opsAlert?.alertOnDegradation(
+          error.message,
+          'WhatsAppCatchupService.persistHistoricalOutboundMessage.duplicate',
+          { workspaceId },
+        );
         return false;
       }
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'WhatsAppCatchupService.persistHistoricalOutboundMessage',
+        { workspaceId },
+      );
       throw error;
     }
   }

@@ -16,7 +16,7 @@ import type {
   PulseMachineReadiness,
   PulseMachineReadinessCriterion,
 } from './artifacts.types';
-import type { PulseAutonomyState, PulseConvergencePlan } from './types';
+import type { PulseAutonomyState, PulseConvergencePlan, PulseExecutionMatrixPath } from './types';
 import type { PulseArtifactCleanupReport } from './artifact-gc';
 import { calculateCoverage } from './coverage-calculator';
 
@@ -31,6 +31,47 @@ export function getProductFacingCapabilities(
 
 function statusFromBoolean(pass: boolean): PulseMachineReadinessCriterion['status'] {
   return pass ? 'pass' : 'fail';
+}
+
+function isCriticalMatrixPath(path: PulseExecutionMatrixPath): boolean {
+  return path.risk === 'high' || path.risk === 'critical';
+}
+
+function hasPreciseTerminalReason(path: PulseExecutionMatrixPath): boolean {
+  if (path.status === 'observed_pass' || path.status === 'observed_fail') {
+    return true;
+  }
+  if (path.status === 'blocked_human_required') {
+    return false;
+  }
+  const breakpoint = path.breakpoint;
+  if (!breakpoint) {
+    return false;
+  }
+  const hasLocation = Boolean(breakpoint.filePath || breakpoint.nodeId || breakpoint.routePattern);
+  return hasLocation && breakpoint.reason.length > 0 && breakpoint.recovery.length > 0;
+}
+
+function getTerminalCriticalPathDiagnostics(paths: PulseExecutionMatrixPath[]): {
+  terminalWithoutObservedEvidence: number;
+  firstTerminalPathId: string | null;
+  nextAiSafeAction: string;
+} {
+  const terminalOnlyPaths = paths.filter(
+    (path) =>
+      isCriticalMatrixPath(path) &&
+      path.status !== 'observed_pass' &&
+      path.status !== 'observed_fail' &&
+      hasPreciseTerminalReason(path),
+  );
+  const firstTerminalPath = terminalOnlyPaths[0] ?? null;
+  return {
+    terminalWithoutObservedEvidence: terminalOnlyPaths.length,
+    firstTerminalPathId: firstTerminalPath?.pathId ?? null,
+    nextAiSafeAction:
+      firstTerminalPath?.validationCommand ??
+      'node scripts/pulse/run.js --profile pulse-core-final --guidance --json',
+  };
 }
 
 export function buildPulseMachineReadiness(
@@ -58,6 +99,9 @@ export function buildPulseMachineReadiness(
   const multiCycleGate = snapshot.certification.gates.multiCycleConvergencePass;
   const cycleProof = buildAutonomyCycleProof(previousAutonomyState);
   const multiCyclePass = multiCycleGate.status === 'pass' && cycleProof.proven;
+  const criticalPathDiagnostics = getTerminalCriticalPathDiagnostics(
+    snapshot.executionMatrix.paths,
+  );
 
   const criteria: PulseMachineReadinessCriterion[] = [
     {
@@ -106,7 +150,11 @@ export function buildPulseMachineReadiness(
         criticalUnobservedPaths: snapshot.executionMatrix.summary.criticalUnobservedPaths,
         observedPass: snapshot.executionMatrix.summary.observedPass,
         observedFail: snapshot.executionMatrix.summary.observedFail,
-        observationOnly: snapshot.executionMatrix.summary.blockedHumanRequired,
+        terminalWithoutObservedEvidence: criticalPathDiagnostics.terminalWithoutObservedEvidence,
+        firstTerminalPathId: criticalPathDiagnostics.firstTerminalPathId,
+        terminalArtifact: 'PULSE_EXECUTION_MATRIX.json',
+        coverageArtifact: 'PULSE_PATH_COVERAGE.json',
+        nextAiSafeAction: criticalPathDiagnostics.nextAiSafeAction,
       },
     },
     {
@@ -127,6 +175,10 @@ export function buildPulseMachineReadiness(
       evidence: {
         totalSignals: externalSummary.totalSignals,
         mappedSignals: externalSummary.mappedSignals,
+        requiredAdapters: externalSummary.requiredAdapters,
+        optionalAdapters: externalSummary.optionalAdapters,
+        observedAdapters: externalSummary.observedAdapters,
+        blockingAdapters: externalSummary.blockingAdapters,
         missingAdapters: externalSummary.missingAdapters,
         staleAdapters: externalSummary.staleAdapters,
         invalidAdapters: externalSummary.invalidAdapters,

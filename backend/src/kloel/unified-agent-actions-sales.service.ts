@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import type { ToolArgs } from './unified-agent.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -27,6 +28,7 @@ export class UnifiedAgentActionsSalesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly messaging: UnifiedAgentActionsMessagingService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   async actionApplyDiscount(
@@ -91,6 +93,10 @@ export class UnifiedAgentActionsSalesService {
         messageSent: true,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'UnifiedAgentActionsSalesService.actionSendMessage',
+      );
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao aplicar desconto: ${msg}`);
@@ -152,6 +158,10 @@ export class UnifiedAgentActionsSalesService {
       await this.messaging.actionSendMessage(workspaceId, phone, { message: response }, context);
       return { success: true, objectionType, technique, messageSent: true };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'UnifiedAgentActionsSalesService.actionSendMessage',
+      );
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao tratar objeção: ${msg}`);
@@ -203,6 +213,10 @@ export class UnifiedAgentActionsSalesService {
         messageSent: true,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'UnifiedAgentActionsSalesService.actionSendMessage',
+      );
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao qualificar lead: ${msg}`);
@@ -254,6 +268,7 @@ export class UnifiedAgentActionsSalesService {
           },
         });
       } catch (err: unknown) {
+        void this.opsAlert?.alertOnCriticalError(err, 'UnifiedAgentActionsSalesService.create');
         const errMsg =
           err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
         if (!isTestEnv) {
@@ -267,6 +282,10 @@ export class UnifiedAgentActionsSalesService {
       await this.messaging.actionSendMessage(workspaceId, phone, { message }, context);
       return { success: true, meetingType, suggestedTimes, messageSent: true };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'UnifiedAgentActionsSalesService.actionSendMessage',
+      );
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao agendar reunião: ${msg}`);
@@ -311,6 +330,7 @@ export class UnifiedAgentActionsSalesService {
           },
         });
       } catch (err: unknown) {
+        void this.opsAlert?.alertOnCriticalError(err, 'UnifiedAgentActionsSalesService.create');
         const errMsg =
           err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
         if (!isTestEnv) {
@@ -324,6 +344,10 @@ export class UnifiedAgentActionsSalesService {
       await this.messaging.actionSendMessage(workspaceId, phone, { message }, context);
       return { success: true, strategy, messageSent: true };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'UnifiedAgentActionsSalesService.actionSendMessage',
+      );
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro em anti-churn: ${msg}`);
@@ -374,6 +398,10 @@ export class UnifiedAgentActionsSalesService {
       await this.messaging.actionSendMessage(workspaceId, phone, { message }, context);
       return { success: true, strategy, daysSilent, messageSent: true };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'UnifiedAgentActionsSalesService.actionSendMessage',
+      );
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao reativar ghost: ${msg}`);

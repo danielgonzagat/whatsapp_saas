@@ -1,5 +1,11 @@
 import { Prisma } from '@prisma/client';
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { Queue, Worker } from 'bullmq';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { AuditService } from '../audit/audit.service';
@@ -12,6 +18,7 @@ import {
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const NAME_RE = /\{\{name\}\}/g;
 
@@ -26,6 +33,7 @@ export class CampaignsService {
     private prisma: PrismaService,
     private audit: AuditService,
     private smartTime: SmartTimeService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     const connection = createRedisClient();
 
@@ -232,6 +240,7 @@ export class CampaignsService {
         );
         sent++; // Count as "processed" even if no channel
       } catch (e: unknown) {
+        void this.opsAlert?.alertOnCriticalError(e, 'CampaignsService.processCampaignJob');
         this.logger.error(`Campaign send failed for contact ${contact.id}: ${String(e)}`);
         failed++;
       }

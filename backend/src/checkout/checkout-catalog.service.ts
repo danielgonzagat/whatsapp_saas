@@ -1,8 +1,15 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutCatalogConfigService } from './checkout-catalog-config.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import {
   VALID_CHARGE_TYPES,
   VALID_DISCOUNT_TYPES,
@@ -20,6 +27,7 @@ export class CheckoutCatalogService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly catalogConfigService: CheckoutCatalogConfigService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   // ─── Order Bumps ──────────────────────────────────────────────────────────
@@ -55,6 +63,7 @@ export class CheckoutCatalogService {
     try {
       return await this.prisma.orderBump.update({ where: { id }, data });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'CheckoutCatalogService.update');
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
         throw new NotFoundException('OrderBump not found');
       }
@@ -147,6 +156,7 @@ export class CheckoutCatalogService {
     try {
       return await this.prisma.upsell.update({ where: { id }, data });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'CheckoutCatalogService.update');
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
         throw new NotFoundException('Upsell not found');
       }
@@ -242,6 +252,7 @@ export class CheckoutCatalogService {
         data,
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'CheckoutCatalogService.update');
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
         throw new NotFoundException('CheckoutCoupon not found');
       }
@@ -345,6 +356,7 @@ export class CheckoutCatalogService {
     try {
       return await this.prisma.checkoutPixel.update({ where: { id }, data });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'CheckoutCatalogService.update');
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
         throw new NotFoundException('CheckoutPixel not found');
       }

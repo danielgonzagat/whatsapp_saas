@@ -1,17 +1,20 @@
 {
-  "runId": "6bf525fc-1e8e-4820-a5cb-90aea5fdb379",
-  "generatedAt": "2026-04-29T19:50:07.070Z",
+  "runId": "a363d145-a314-4cce-a24f-24304069a403",
+  "generatedAt": "2026-04-29T21:23:51.803Z",
   "authorityMode": "autonomous-execution",
   "advisoryOnly": false,
   "authorityReasons": [
-    "Core trust/production gates are green; autonomous execution may proceed."
+    "Core trust, runtime, and production-decision gates are green; bounded autonomous execution may proceed.",
+    "Production completion remains blocked: 2 external adapter(s) are not configured."
   ],
   "pulseMachineReadiness": {
-    "status": "READY",
+    "status": "NOT_READY",
     "scope": "pulse_machine_not_kloel_product",
     "canRunBoundedAutonomousCycle": true,
     "canDeclareKloelProductCertified": false,
-    "blockers": []
+    "blockers": [
+      "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain."
+    ]
   },
   "cleanupPolicy": "enforced-single-state",
   "canonicalDir": "/Users/danielpenin/whatsapp_saas/.pulse/current",

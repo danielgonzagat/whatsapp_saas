@@ -27,12 +27,23 @@ import {
   isRuntimeSignal,
 } from './signal-mapper';
 import {
+  getAdapterRequiredness,
   isAdapterRequired,
   normalizeExternalSignalProfile,
   type ConsolidatedExternalState,
 } from './adapters/external-sources-orchestrator';
 export type { BuildExternalSignalStateInput } from './signal-mapper';
 import type { BuildExternalSignalStateInput } from './signal-mapper';
+import type { PulseExternalAdapterProofBasis } from './types';
+
+type AdapterClassificationFields =
+  | 'requiredness'
+  | 'requirement'
+  | 'required'
+  | 'observed'
+  | 'blocking'
+  | 'proofBasis';
+type UnclassifiedExternalAdapter = Omit<PulseExternalAdapterSnapshot, AdapterClassificationFields>;
 
 /** Build an empty live-state envelope that carries active profile/scope semantics. */
 export function createExternalSignalProfileState(
@@ -140,7 +151,7 @@ function dispatchSourceParser(
 function buildSnapshotAdapter(
   input: BuildExternalSignalStateInput,
   source: Exclude<PulseExternalSignalSource, 'codacy'>,
-): PulseExternalAdapterSnapshot {
+): UnclassifiedExternalAdapter {
   const snapshot = readSnapshot(input.rootDir, source);
   if (snapshot.error) {
     return {
@@ -199,10 +210,38 @@ function buildSnapshotAdapter(
   };
 }
 
+function getAdapterProofBasis(
+  adapter: UnclassifiedExternalAdapter,
+): PulseExternalAdapterProofBasis {
+  if (adapter.source === 'codacy') return 'codacy_snapshot';
+  return adapter.sourcePath?.startsWith('live:') ? 'live_adapter' : 'snapshot_artifact';
+}
+
+function classifyExternalAdapter(
+  adapter: UnclassifiedExternalAdapter,
+  profile: PulseCertificationProfile | undefined,
+): PulseExternalAdapterSnapshot {
+  const required = isAdapterRequired(adapter.source, profile);
+  const blocking =
+    required &&
+    (adapter.status === 'not_available' ||
+      adapter.status === 'invalid' ||
+      adapter.status === 'stale');
+  return {
+    ...adapter,
+    requiredness: getAdapterRequiredness(adapter.source),
+    requirement: required ? 'required' : 'optional',
+    required,
+    observed: adapter.executed && adapter.status !== 'not_available',
+    blocking,
+    proofBasis: getAdapterProofBasis(adapter),
+  };
+}
+
 function buildLiveAdapter(
   input: BuildExternalSignalStateInput,
   source: Exclude<PulseExternalSignalSource, 'codacy'>,
-): PulseExternalAdapterSnapshot | null {
+): UnclassifiedExternalAdapter | null {
   const liveState = input.liveExternalState;
   if (!liveState) return null;
   const sourceState = liveState.sources.find((entry) => entry.source === source);
@@ -235,11 +274,26 @@ function buildLiveAdapter(
 }
 
 function selectExternalAdapter(
-  snapshotAdapter: PulseExternalAdapterSnapshot,
-  liveAdapter: PulseExternalAdapterSnapshot | null,
-): PulseExternalAdapterSnapshot {
+  snapshotAdapter: UnclassifiedExternalAdapter,
+  liveAdapter: UnclassifiedExternalAdapter | null,
+  profile: PulseCertificationProfile | undefined,
+): UnclassifiedExternalAdapter {
   if (!liveAdapter) return snapshotAdapter;
   if (liveAdapter.status === 'ready') return liveAdapter;
+  if (liveAdapter.source === 'github' || liveAdapter.source === 'github_actions') {
+    const required = isAdapterRequired(liveAdapter.source, profile);
+    const profileLabel = profile || 'default';
+    const requirednessReason = required
+      ? `${liveAdapter.source} adapter is required under profile=${profileLabel}.`
+      : `${liveAdapter.source} adapter is optional under profile=${profileLabel}.`;
+    return {
+      ...liveAdapter,
+      reason:
+        snapshotAdapter.status === 'stale'
+          ? `${liveAdapter.reason} ${requirednessReason} Stale ${snapshotAdapter.sourcePath} exists but was not reused as live external reality.`
+          : `${liveAdapter.reason} ${requirednessReason}`,
+    };
+  }
   if (snapshotAdapter.status !== 'not_available') {
     return {
       ...snapshotAdapter,
@@ -261,6 +315,12 @@ function buildCodacyAdapter(input: BuildExternalSignalStateInput): PulseExternal
       : input.scopeState.codacy.stale
         ? 'stale'
         : 'ready',
+    requiredness: 'optional',
+    requirement: 'optional',
+    required: false,
+    observed: input.scopeState.codacy.snapshotAvailable,
+    blocking: false,
+    proofBasis: 'codacy_snapshot',
     generatedAt: new Date().toISOString(),
     syncedAt,
     freshnessMinutes: input.scopeState.codacy.ageMinutes,
@@ -277,29 +337,9 @@ function buildCodacyAdapter(input: BuildExternalSignalStateInput): PulseExternal
 export function buildExternalSignalState(
   input: BuildExternalSignalStateInput,
 ): PulseExternalSignalState {
-  const externalSources: Array<Exclude<PulseExternalSignalSource, 'codacy'>> = [
-    'github',
-    'github_actions',
-    'codecov',
-    'sentry',
-    'datadog',
-    'prometheus',
-    'dependabot',
-    'gitnexus',
-  ];
-  const initialAdapters: PulseExternalAdapterSnapshot[] = [
-    buildCodacyAdapter(input),
-    ...externalSources.map((source) =>
-      selectExternalAdapter(buildSnapshotAdapter(input, source), buildLiveAdapter(input, source)),
-    ),
-  ];
-
-  const signals = attachRecentChangeRefs(initialAdapters.flatMap((adapter) => adapter.signals));
-  const adapters = initialAdapters.map((adapter) => ({
-    ...adapter,
-    signals: signals.filter((signal) => signal.source === adapter.source),
-  }));
-
+  const externalSources = Object.keys(PULSE_EXTERNAL_SNAPSHOT_FILES) as Array<
+    Exclude<PulseExternalSignalSource, 'codacy'>
+  >;
   // Derive the active profile/scope from the live external state when available.
   // Canonical final profiles make profile-dependent adapters required; Prometheus
   // remains optional for pulse-core-final and required for full-product.
@@ -310,13 +350,34 @@ export function buildExternalSignalState(
   const profile = normalizeExternalSignalProfile(
     liveProfileState?.certificationScope || liveProfileState?.profile,
   );
+  const initialAdapters: UnclassifiedExternalAdapter[] = [
+    buildCodacyAdapter(input),
+    ...externalSources.map((source) =>
+      selectExternalAdapter(
+        buildSnapshotAdapter(input, source),
+        buildLiveAdapter(input, source),
+        profile,
+      ),
+    ),
+  ];
+
+  const signals = attachRecentChangeRefs(initialAdapters.flatMap((adapter) => adapter.signals));
+  const adapters = initialAdapters.map((adapter) =>
+    classifyExternalAdapter(
+      {
+        ...adapter,
+        signals: signals.filter((signal) => signal.source === adapter.source),
+      },
+      profile,
+    ),
+  );
 
   // Categorize adapters using FASE 4 five-status semantics + requiredness.
   // - `optional_not_configured` is never blocking.
   // - `not_available` / `invalid` count as missing only when the adapter is required
   //   under the active profile (or always-required).
   const staleAdaptersList = adapters
-    .filter((adapter) => adapter.status === 'stale')
+    .filter((adapter) => adapter.status === 'stale' && isAdapterRequired(adapter.source, profile))
     .map((adapter) => adapter.source);
   const invalidAdaptersList = adapters
     .filter((adapter) => adapter.status === 'invalid' && isAdapterRequired(adapter.source, profile))
@@ -330,6 +391,23 @@ export function buildExternalSignalState(
   const optionalSkippedList = adapters
     .filter((adapter) => adapter.status === 'optional_not_configured')
     .map((adapter) => adapter.source);
+  const optionalNotAvailableList = adapters
+    .filter((adapter) => adapter.status === 'not_available' && !adapter.required)
+    .map((adapter) => adapter.source);
+  const blockingAdaptersList = adapters
+    .filter((adapter) => adapter.blocking)
+    .map((adapter) => adapter.source);
+  const proofBasisCounts = adapters.reduce(
+    (counts, adapter) => ({
+      ...counts,
+      [adapter.proofBasis]: counts[adapter.proofBasis] + 1,
+    }),
+    {
+      codacy_snapshot: 0,
+      live_adapter: 0,
+      snapshot_artifact: 0,
+    } satisfies Record<PulseExternalAdapterProofBasis, number>,
+  );
 
   const summary = {
     totalSignals: signals.length,
@@ -349,10 +427,17 @@ export function buildExternalSignalState(
     missingAdapters: missingAdaptersList.length,
     invalidAdapters: invalidAdaptersList.length,
     optionalSkippedAdapters: optionalSkippedList.length,
+    requiredAdapters: adapters.filter((adapter) => adapter.required).length,
+    optionalAdapters: adapters.filter((adapter) => !adapter.required).length,
+    observedAdapters: adapters.filter((adapter) => adapter.observed).length,
+    blockingAdapters: blockingAdaptersList.length,
     missingAdaptersList,
     staleAdaptersList,
     invalidAdaptersList,
     optionalSkippedList,
+    optionalNotAvailableList,
+    blockingAdaptersList,
+    proofBasisCounts,
     bySource: {
       github: signals.filter((signal) => signal.source === 'github').length,
       github_actions: signals.filter((signal) => signal.source === 'github_actions').length,

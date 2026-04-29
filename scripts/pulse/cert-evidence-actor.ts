@@ -12,23 +12,23 @@ import type {
   PulseWorldState,
 } from './types';
 import { unique, routeMatches } from './cert-helpers';
+import {
+  actorKindForWorldStateSession,
+  inferActorEvidenceKeyForScenario,
+  inferEvidenceFileName,
+} from './scenario-mode-registry';
 
 export function buildDefaultActorEvidence(
   actorKind: PulseActorEvidence['actorKind'],
   resolvedManifest: PulseResolvedManifest,
 ): PulseActorEvidence {
-  const scenarios =
-    actorKind === 'soak'
-      ? resolvedManifest.scenarioSpecs.filter((spec) => spec.timeWindowModes.includes('soak'))
-      : resolvedManifest.scenarioSpecs.filter((spec) => spec.actorKind === actorKind);
+  const scenarios = resolvedManifest.scenarioSpecs.filter(
+    (spec) => inferActorEvidenceKeyForScenario(spec) === actorKind,
+  );
   const declared = scenarios.map((spec) => spec.id);
   const artifactPaths =
     declared.length > 0
-      ? [
-          `PULSE_${actorKind.toUpperCase()}_EVIDENCE.json`,
-          'PULSE_WORLD_STATE.json',
-          'PULSE_SCENARIO_COVERAGE.json',
-        ]
+      ? [inferEvidenceFileName(actorKind), 'PULSE_WORLD_STATE.json', 'PULSE_SCENARIO_COVERAGE.json']
       : [];
   return {
     actorKind,
@@ -134,16 +134,28 @@ export function buildDefaultWorldState(
       })),
     ),
     artifactsByScenario: {},
-    sessions: ['customer', 'operator', 'admin', 'system'].map((kind) => {
+    sessions: evidenceKeysFromManifest(resolvedManifest).map((key) => {
+      const kind = actorKindForWorldStateSession(key);
       const declaredScenarios = resolvedManifest.scenarioSpecs.filter(
-        (spec) => spec.actorKind === kind,
+        (spec) => inferActorEvidenceKeyForScenario(spec) === key,
       ).length;
       return {
-        kind: kind as PulseWorldState['sessions'][number]['kind'],
+        kind,
         declaredScenarios,
         executedScenarios: 0,
         passedScenarios: 0,
       };
     }),
   };
+}
+
+function evidenceKeysFromManifest(
+  resolvedManifest: PulseResolvedManifest,
+): PulseActorEvidence['actorKind'][] {
+  return unique(
+    resolvedManifest.scenarioSpecs.flatMap((spec) => {
+      const key = inferActorEvidenceKeyForScenario(spec);
+      return key ? [key] : [];
+    }),
+  );
 }

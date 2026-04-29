@@ -9,6 +9,10 @@ export interface PulseArtifactCleanupReport {
   generatedAt: string;
   /** Removed legacy pulse artifacts property. */
   removedLegacyPulseArtifacts: string[];
+  /** Removed stale root artifacts not declared as compatibility mirrors. */
+  removedStaleRootArtifacts: string[];
+  /** Removed temporary artifact write files. */
+  removedTempArtifacts: string[];
   /** Canonical dir property. */
   canonicalDir: string;
   /** Mirrors property. */
@@ -53,9 +57,15 @@ function removeIfExists(targetPath: string, removed: string[], rootDir: string) 
   removed.push(path.relative(rootDir, targetPath) || path.basename(targetPath));
 }
 
+function isRootPulseArtifact(entry: string): boolean {
+  return /^PULSE_[A-Z0-9_]+[.](JSON|MD|JSONL)$/i.test(entry);
+}
+
 /** Clean legacy and temporary PULSE artifacts before a new run. */
 export function cleanupPulseArtifacts(registry: PulseArtifactRegistry): PulseArtifactCleanupReport {
   const removed: string[] = [];
+  const removedStaleRootArtifacts: string[] = [];
+  const removedTempArtifacts: string[] = [];
 
   // Ensure canonical dirs exist without removing them
   ensureDir(path.dirname(registry.canonicalDir), { recursive: true });
@@ -70,16 +80,35 @@ export function cleanupPulseArtifacts(registry: PulseArtifactRegistry): PulseArt
     removeIfExists(targetPath, removed, registry.rootDir);
   }
 
+  for (const entry of readDir(registry.tempDir)) {
+    removeIfExists(safeJoin(registry.tempDir, entry), removedTempArtifacts, registry.rootDir);
+  }
+
+  const rootMirrors = new Set(registry.mirrors);
   for (const entry of readDir(registry.rootDir)) {
     const normalizedEntry = entry.toUpperCase();
     if (normalizedEntry.startsWith('PULSE_FLOW_') && normalizedEntry.endsWith('.JSON')) {
       removeIfExists(safeJoin(registry.rootDir, entry), removed, registry.rootDir);
+      continue;
+    }
+    if (
+      entry !== 'PULSE_CODACY_STATE.json' &&
+      isRootPulseArtifact(entry) &&
+      !rootMirrors.has(entry)
+    ) {
+      removeIfExists(
+        safeJoin(registry.rootDir, entry),
+        removedStaleRootArtifacts,
+        registry.rootDir,
+      );
     }
   }
 
   return {
     generatedAt: new Date().toISOString(),
     removedLegacyPulseArtifacts: removed.sort(),
+    removedStaleRootArtifacts: removedStaleRootArtifacts.sort(),
+    removedTempArtifacts: removedTempArtifacts.sort(),
     canonicalDir: registry.canonicalDir,
     mirrors: registry.mirrors,
     cleanupMode: 'enforced-single-state',

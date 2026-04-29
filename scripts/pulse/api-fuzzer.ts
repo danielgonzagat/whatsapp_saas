@@ -51,11 +51,11 @@ const IGNORE_DIRS = new Set([
 const SQLI_PAYLOADS = [
   "' OR '1'='1",
   "' OR '1'='1' --",
-  "'; DROP TABLE users--",
+  "'; DROP TABLE __pulse_table--",
   "' UNION SELECT NULL--",
   "1' OR '1' = '1",
   '" OR "1"="1',
-  '1; DROP TABLE users--',
+  '1; DROP TABLE __pulse_table--',
   "' OR 1=1--",
   "' WAITFOR DELAY '0:0:5'--",
   "' OR 1=1#",
@@ -79,14 +79,13 @@ const NOSQLI_PAYLOADS = [
   { $ne: null } as unknown,
   { $where: '1==1' } as unknown,
   { $regex: '.*' } as unknown,
-  { username: { $exists: true } } as unknown,
+  { __pulse_field: { $exists: true } } as unknown,
 ];
 
-const MASS_ASSIGNMENT_PAYLOADS = [
-  { role: 'admin' },
-  { isAdmin: true },
-  { plan: 'enterprise', isSuperAdmin: true },
-  { workspaceId: 'bypass', permissionLevel: 'owner' },
+const MASS_ASSIGNMENT_GRAMMAR_PAYLOADS = [
+  { __pulse_extra_boolean: true },
+  { __pulse_extra_scalar: '__pulse_extra_value' },
+  { __pulse_extra_object: { enabled: true } },
 ];
 
 const OPEN_REDIRECT_PAYLOADS = [
@@ -112,6 +111,70 @@ function uniqueId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function uniqueStrings(values: string[]): string[] {
+  return Array.from(new Set(values.filter((value) => value.length > 0)));
+}
+
+function parseRouteParameters(routePath: string): string[] {
+  const params: string[] = [];
+  const parameterPattern = /(?::|\{)([A-Za-z_]\w*)\}?/g;
+  let match = parameterPattern.exec(routePath);
+
+  while (match) {
+    params.push(match[1]);
+    match = parameterPattern.exec(routePath);
+  }
+
+  return uniqueStrings(params);
+}
+
+function extractGuardNames(decoratorArgs: string): string[] {
+  const guardNames: string[] = [];
+  const guardPattern = /(?:new\s+)?([A-Za-z_]\w*)\s*(?:[,(]|$)/g;
+  let match = guardPattern.exec(decoratorArgs);
+
+  while (match) {
+    guardNames.push(match[1]);
+    match = guardPattern.exec(decoratorArgs);
+  }
+
+  return uniqueStrings(guardNames);
+}
+
+function collectNonRouteMetadataDecorators(
+  lines: string[],
+  startLine: number,
+  endLine: number,
+): string[] {
+  const infrastructureDecorators = new Set([
+    'Body',
+    'Controller',
+    'Delete',
+    'Get',
+    'Headers',
+    'Param',
+    'Patch',
+    'Post',
+    'Public',
+    'Put',
+    'Query',
+    'Req',
+    'Res',
+    'Throttle',
+    'UseGuards',
+  ]);
+  const decorators: string[] = [];
+
+  for (let i = startLine; i < endLine; i++) {
+    const match = lines[i]?.trim().match(/^@([A-Za-z_]\w*)\(/);
+    if (match && !infrastructureDecorators.has(match[1])) {
+      decorators.push(match[1]);
+    }
+  }
+
+  return uniqueStrings(decorators);
+}
+
 /**
  * Find all @Controller blocks in a file with their positions and associated
  * class-level decorators (@UseGuards, @Public, @Throttle).
@@ -121,6 +184,7 @@ function findControllerBlocks(lines: string[]): Array<{
   startLine: number;
   endLine: number;
   classGuards: string[];
+  classMetadataDecorators: string[];
   isPublic: boolean;
   throttleConfig: { max: number; windowMs: number } | null;
 }> {
@@ -129,6 +193,7 @@ function findControllerBlocks(lines: string[]): Array<{
     startLine: number;
     endLine: number;
     classGuards: string[];
+    classMetadataDecorators: string[];
     isPublic: boolean;
     throttleConfig: { max: number; windowMs: number } | null;
   }> = [];
@@ -140,6 +205,7 @@ function findControllerBlocks(lines: string[]): Array<{
     }
 
     const classGuards: string[] = [];
+    const classMetadataDecorators: string[] = [];
     let isPublic = false;
     let throttleConfig: { max: number; windowMs: number } | null = null;
 
@@ -149,8 +215,9 @@ function findControllerBlocks(lines: string[]): Array<{
       const line = lines[j];
       const guardMatch = line.match(/@UseGuards\(([^)]+)\)/);
       if (guardMatch) {
-        classGuards.push(...guardMatch[1].split(',').map((g) => g.trim()));
+        classGuards.push(...extractGuardNames(guardMatch[1]));
       }
+      classMetadataDecorators.push(...collectNonRouteMetadataDecorators(lines, j, j + 1));
       if (/@Public\(\s*\)/.test(line)) {
         isPublic = true;
       }
@@ -169,7 +236,8 @@ function findControllerBlocks(lines: string[]): Array<{
       path: match[1] || '',
       startLine: i,
       endLine: lines.length,
-      classGuards,
+      classGuards: uniqueStrings(classGuards),
+      classMetadataDecorators: uniqueStrings(classMetadataDecorators),
       isPublic,
       throttleConfig,
     });
@@ -276,10 +344,6 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
 
       for (const block of controllerBlocks) {
         const controllerPath = block.path;
-        const hasJwtGuard =
-          block.classGuards.some((g) => /JwtAuthGuard/i.test(g)) ||
-          block.classGuards.some((g) => /AuthGuard/i.test(g));
-        const hasWorkspaceGuard = block.classGuards.some((g) => /WorkspaceGuard/i.test(g));
 
         for (let i = block.startLine; i < block.endLine; i++) {
           const line = lines[i].trim();
@@ -294,7 +358,7 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
             const methodPath = match[1] || '';
             const fullPath = buildFullPath(controllerPath, methodPath);
 
-            let methodPublic = false;
+            let methodPublic = block.isPublic;
             let methodGuards = [...block.classGuards];
             let methodThrottle = block.throttleConfig;
 
@@ -305,7 +369,7 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
               }
               const guardMatch = above.match(/@UseGuards\(([^)]+)\)/);
               if (guardMatch) {
-                methodGuards.push(...guardMatch[1].split(',').map((g) => g.trim()));
+                methodGuards.push(...extractGuardNames(guardMatch[1]));
               }
               const throttleMatch = above.match(
                 /@Throttle\(\s*(?:{\s*default:\s*{\s*limit:\s*(\d+)\s*,\s*ttl:\s*(\d+)\s*}\s*})?\s*\)/,
@@ -325,7 +389,7 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
               }
               const guardMatch = below.match(/@UseGuards\(([^)]+)\)/);
               if (guardMatch) {
-                methodGuards.push(...guardMatch[1].split(',').map((g) => g.trim()));
+                methodGuards.push(...extractGuardNames(guardMatch[1]));
               }
               const throttleMatch = below.match(
                 /@Throttle\(\s*(?:{\s*default:\s*{\s*limit:\s*(\d+)\s*,\s*ttl:\s*(\d+)\s*}\s*})?\s*\)/,
@@ -338,11 +402,22 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
               }
             }
 
-            const requiresAuth = !methodPublic && methodGuards.length > 0;
-            const requiresTenant = methodGuards.some((g) => /WorkspaceGuard/i.test(g));
-
             const methodInfo = findMethodName(lines, i, block.endLine);
             const dtoType = extractBodyDtoType(lines, methodInfo.line, block.endLine);
+            const routeParameters = parseRouteParameters(fullPath);
+            const methodMetadataDecorators = collectNonRouteMetadataDecorators(
+              lines,
+              Math.max(block.startLine, i - 8),
+              Math.min(i + 5, block.endLine),
+            );
+            methodGuards = uniqueStrings(methodGuards);
+            const authorizationMetadata = uniqueStrings([
+              ...block.classMetadataDecorators,
+              ...methodMetadataDecorators,
+            ]);
+            const requiresAuth = !methodPublic && methodGuards.length > 0;
+            const requiresTenant =
+              requiresAuth && (routeParameters.length > 0 || authorizationMetadata.length > 0);
 
             const requestSchema: Record<string, unknown> | null = dtoType
               ? { dtoType, source: 'inferred' }
@@ -358,6 +433,12 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
               filePath: relFile,
               requiresAuth,
               requiresTenant,
+              authProbeMetadata: {
+                guardNames: methodGuards,
+                authorizationMetadata,
+                routeParameters,
+                bodyDtoType: dtoType,
+              },
               rateLimit: methodThrottle,
               requestSchema,
               responseSchema: null,
@@ -389,6 +470,8 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
  * @returns Array of auth test cases.
  */
 export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
+  const metadata = endpoint.authProbeMetadata;
+
   if (!endpoint.requiresAuth) {
     return [
       {
@@ -403,29 +486,13 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
   }
 
   const tests: AuthTestCase[] = [];
+  const guardNames =
+    metadata && metadata.guardNames.length > 0 ? metadata.guardNames : ['guarded-boundary'];
 
-  if (endpoint.requiresAuth) {
+  for (const [index, guardName] of guardNames.entries()) {
     tests.push({
-      testId: `${endpoint.endpointId}-auth-missing`,
-      scenario: 'No auth token → expect 401',
-      status: 'planned',
-      expectedStatus: 401,
-      actualStatus: null,
-      error: null,
-    });
-
-    tests.push({
-      testId: `${endpoint.endpointId}-auth-invalid`,
-      scenario: 'Invalid/malformed token → expect 401',
-      status: 'planned',
-      expectedStatus: 401,
-      actualStatus: null,
-      error: null,
-    });
-
-    tests.push({
-      testId: `${endpoint.endpointId}-auth-expired`,
-      scenario: 'Expired token → expect 401',
+      testId: `${endpoint.endpointId}-auth-boundary-missing-${index}`,
+      scenario: `Guard boundary "${guardName}" without credential material`,
       status: 'planned',
       expectedStatus: 401,
       actualStatus: null,
@@ -433,19 +500,47 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     });
   }
 
-  if (endpoint.requiresTenant) {
+  tests.push({
+    testId: `${endpoint.endpointId}-auth-boundary-malformed`,
+    scenario: 'Guard boundary with malformed credential material',
+    status: 'planned',
+    expectedStatus: 401,
+    actualStatus: null,
+    error: null,
+  });
+
+  const routeParameters = metadata?.routeParameters ?? [];
+  for (const routeParameter of routeParameters) {
     tests.push({
-      testId: `${endpoint.endpointId}-auth-wrong-tenant`,
-      scenario: 'Valid token, wrong tenant/workspace → expect 403',
+      testId: `${endpoint.endpointId}-auth-context-mismatch-${routeParameter}`,
+      scenario: `Guarded route parameter "${routeParameter}" with mismatched context material`,
       status: 'planned',
       expectedStatus: 403,
       actualStatus: null,
       error: null,
     });
+  }
 
+  const authorizationMetadata = metadata?.authorizationMetadata ?? [];
+  for (const [index, decoratorName] of authorizationMetadata.entries()) {
     tests.push({
-      testId: `${endpoint.endpointId}-auth-wrong-role`,
-      scenario: 'Valid token, insufficient role → expect 403',
+      testId: `${endpoint.endpointId}-auth-metadata-variant-${index}`,
+      scenario: `Authorization metadata "${decoratorName}" with non-matching credential attributes`,
+      status: 'planned',
+      expectedStatus: 403,
+      actualStatus: null,
+      error: null,
+    });
+  }
+
+  if (
+    endpoint.requiresTenant &&
+    routeParameters.length === 0 &&
+    authorizationMetadata.length === 0
+  ) {
+    tests.push({
+      testId: `${endpoint.endpointId}-auth-guarded-context-mismatch`,
+      scenario: 'Guarded endpoint with mismatched request context material',
       status: 'planned',
       expectedStatus: 403,
       actualStatus: null,
@@ -611,6 +706,52 @@ function parseDtoSchema(
   return Object.keys(schema).length > 0 ? schema : null;
 }
 
+function isDtoFieldDefinition(value: unknown): value is { type: string; required: boolean } {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as { type?: unknown; required?: unknown };
+  return typeof candidate.type === 'string' && typeof candidate.required === 'boolean';
+}
+
+function schemaFieldsFromEndpoint(
+  endpoint: APIEndpointProbe,
+): Record<string, { type: string; required: boolean }> {
+  const fields = endpoint.requestSchema?.fields;
+  if (!fields || typeof fields !== 'object') {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(fields).filter((entry): entry is [string, { type: string; required: boolean }] =>
+      isDtoFieldDefinition(entry[1]),
+    ),
+  );
+}
+
+function sampleValueForFieldType(type: string): unknown {
+  if (/boolean/i.test(type)) return true;
+  if (/number|int|float|decimal/i.test(type)) return 42;
+  if (/\[\]|array/i.test(type)) return ['__pulse_item'];
+  if (/object|record/i.test(type)) return { value: '__pulse_nested' };
+  return '__pulse_value';
+}
+
+function buildMassAssignmentPayloads(endpoint: APIEndpointProbe): unknown[] {
+  const schemaFields = schemaFieldsFromEndpoint(endpoint);
+  const fieldEntries = Object.entries(schemaFields).slice(0, 2);
+
+  if (fieldEntries.length === 0) {
+    return MASS_ASSIGNMENT_GRAMMAR_PAYLOADS;
+  }
+
+  return fieldEntries.map(([fieldName, definition]) => ({
+    [fieldName]: sampleValueForFieldType(definition.type),
+    [`${fieldName}__unexpected`]: '__pulse_extra_value',
+  }));
+}
+
 /**
  * Generate schema validation test cases for an endpoint.
  *
@@ -630,6 +771,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
   const schema = parseDtoSchema(dtoType, rootDir);
 
   if (schema) {
+    endpoint.requestSchema = { ...endpoint.requestSchema, fields: schema };
     const requiredFields = Object.entries(schema)
       .filter(([, def]) => def.required)
       .map(([name]) => name);
@@ -836,11 +978,11 @@ export function generateSecurityPayloads(vulnerabilityType: string): unknown[] {
     case 'nosqli':
       return NOSQLI_PAYLOADS;
     case 'mass_assignment':
-      return MASS_ASSIGNMENT_PAYLOADS;
+      return MASS_ASSIGNMENT_GRAMMAR_PAYLOADS;
     case 'open_redirect':
       return OPEN_REDIRECT_PAYLOADS;
     case 'idor':
-      return ['other-user-id', '00000000-0000-0000-0000-000000000000', '1', '0'];
+      return ['__pulse_alternate_subject__', '00000000-0000-0000-0000-000000000000', '1', '0'];
     default:
       return [];
   }
@@ -899,27 +1041,37 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
     });
   }
 
-  // Mass assignment — applicable to create/update endpoints
+  // Mass assignment — applicable to create/update endpoints.
   if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
-    MASS_ASSIGNMENT_PAYLOADS.slice(0, 2).forEach((payload, idx) => {
-      tests.push({
-        testId: `${endpoint.endpointId}-sec-mass-assignment-${idx}`,
-        vulnerabilityType: 'mass_assignment',
-        payload,
-        expectedBlock: true,
-        actuallyBlocked: null,
-        status: 'planned',
-        severity: 'high',
+    buildMassAssignmentPayloads(endpoint)
+      .slice(0, 2)
+      .forEach((payload, idx) => {
+        tests.push({
+          testId: `${endpoint.endpointId}-sec-mass-assignment-${idx}`,
+          vulnerabilityType: 'mass_assignment',
+          payload,
+          expectedBlock: true,
+          actuallyBlocked: null,
+          status: 'planned',
+          severity: 'high',
+        });
       });
-    });
   }
 
-  // IDOR — applicable to endpoints with path parameters (e.g. /resource/:id)
-  if (/\/:/.test(endpoint.path) || /\{\w+\}/.test(endpoint.path)) {
+  const routeParameters =
+    endpoint.authProbeMetadata?.routeParameters ?? parseRouteParameters(endpoint.path);
+
+  // IDOR — applicable to endpoints with path parameters.
+  if (routeParameters.length > 0) {
     tests.push({
       testId: `${endpoint.endpointId}-sec-idor-0`,
       vulnerabilityType: 'idor',
-      payload: { resourceId: 'other-user-id' },
+      payload: Object.fromEntries(
+        routeParameters.map((routeParameter) => [
+          routeParameter,
+          `alternate-${routeParameter}-probe`,
+        ]),
+      ),
       expectedBlock: true,
       actuallyBlocked: null,
       status: 'planned',

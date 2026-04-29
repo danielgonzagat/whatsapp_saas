@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 type CartRecoveryMetadata = Record<string, unknown>;
@@ -18,7 +19,10 @@ function readCartRecoveryMetadata(value: unknown): CartRecoveryMetadata {
 @Injectable()
 export class CartRecoveryService {
   private readonly logger = new Logger(CartRecoveryService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
 
   /** Check abandoned carts. */
   @Cron('0 */30 * * * *') // Every 30 minutes
@@ -101,6 +105,7 @@ export class CartRecoveryService {
         }
       });
     } catch (e: unknown) {
+      void this.opsAlert?.alertOnCriticalError(e, 'CartRecoveryService.checkAbandonedCarts');
       // PULSE:OK — cart recovery is non-critical background cron; errors logged and retried next cycle
       this.logger.error(`checkAbandonedCarts cron failed: ${String(e)}`);
     }

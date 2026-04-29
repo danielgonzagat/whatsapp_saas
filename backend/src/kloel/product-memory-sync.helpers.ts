@@ -1,6 +1,5 @@
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-
 interface ProductForMemorySync {
   id: string;
   sku: string | null;

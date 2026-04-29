@@ -1,5 +1,3 @@
-import type { PulseConvergenceExecutionMode } from './types.convergence';
-
 /**
  * PULSE Wave 6 — Full Path Coverage Engine types.
  *
@@ -18,6 +16,31 @@ export type PathClassification =
   | 'unreachable'
   | 'not_executable';
 
+/** Execution modes emitted by the path coverage artifact. */
+export type PathCoverageExecutionMode = 'ai_safe' | 'governed_validation';
+
+/** Artifact reference needed to materialize or validate a generated probe. */
+export interface PathCoverageArtifactLink {
+  artifactPath: string;
+  relationship: 'source_matrix' | 'coverage_state' | 'probe_blueprint' | 'observed_evidence';
+}
+
+/** Expected proof item before a blueprint can become observed evidence. */
+export interface PathCoverageExpectedEvidence {
+  kind: 'static' | 'unit' | 'integration' | 'e2e' | 'runtime' | 'external';
+  required: boolean;
+  reason: string;
+}
+
+/** Structural safety decision used to route the next executable probe. */
+export interface PathCoverageStructuralSafetyClassification {
+  risk: 'low' | 'medium' | 'high' | 'critical';
+  safeToExecute: boolean;
+  executionMode: PathCoverageExecutionMode;
+  protectedSurface: boolean;
+  reason: string;
+}
+
 /** A single path entry in the full path coverage state. */
 export interface PathCoverageEntry {
   /** Stable path id from the execution matrix. */
@@ -27,9 +50,11 @@ export interface PathCoverageEntry {
   /** Risk level from the execution matrix. */
   risk: 'low' | 'medium' | 'high' | 'critical';
   /** Execution mode from the execution matrix; human_required is legacy input only. */
-  executionMode: PulseConvergenceExecutionMode;
+  executionMode: PathCoverageExecutionMode;
   /** Terminal classification after coverage analysis. */
   classification: PathClassification;
+  /** Precise terminal reason explaining why the path is observed, inferred, or blueprint-only. */
+  terminalReason: string;
   /** Whether a test or probe was generated for this path. */
   testGenerated: boolean;
   /** File path of the generated test, or null. */
@@ -41,7 +66,17 @@ export interface PathCoverageEntry {
   /** ISO timestamp of last probe execution, or null. */
   lastProbed: string | null;
   /** Whether this entry is only a generated plan and not runtime evidence. */
-  evidenceMode: 'observed' | 'blueprint' | 'inferred' | 'blocked';
+  evidenceMode: 'observed' | 'blueprint' | 'inferred';
+  /** How an autonomous worker may handle this path next. */
+  probeExecutionMode: PathCoverageExecutionMode;
+  /** Minimal command that refreshes the evidence surface for this path. */
+  validationCommand: string;
+  /** Proof required before this path can become observed. */
+  expectedEvidence: PathCoverageExpectedEvidence[];
+  /** Structural safety routing for the next probe worker. */
+  structuralSafetyClassification: PathCoverageStructuralSafetyClassification;
+  /** Related artifacts needed to execute or audit this path. */
+  artifactLinks: PathCoverageArtifactLink[];
 }
 
 /** Full path coverage state artifact stored at .pulse/current/PULSE_PATH_COVERAGE.json. */
@@ -56,11 +91,7 @@ export interface PathCoverageState {
     testGenerated: number;
     probeBlueprintGenerated: number;
     inferredOnly: number;
-    /** Legacy compatibility counter; new coverage states should keep this at zero. */
-    blockedHuman: number;
     criticalInferredOnly: number;
-    /** Legacy compatibility counter; risk should require probes/sandboxing, not human blocking. */
-    criticalBlockedHuman: number;
     criticalUnobserved: number;
     coveragePercent: number;
   };

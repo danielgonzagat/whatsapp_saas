@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -6,6 +6,7 @@ import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.s
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -27,6 +28,7 @@ export class KloelToolDispatcherService {
     private readonly whatsappToolsService: KloelWhatsAppToolsService,
     private readonly composerService: KloelComposerService,
     private readonly auditService: AuditService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Execute a named tool, delegating to the appropriate sub-service. */
@@ -144,6 +146,7 @@ export class KloelToolDispatcherService {
           return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
       }
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KloelToolDispatcherService.toolChangePlan');
       const msg =
         error instanceof Error
           ? error.message
@@ -188,6 +191,10 @@ export class KloelToolDispatcherService {
         { isolationLevel: 'ReadCommitted' },
       );
     } catch (auditError: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        auditError,
+        'KloelToolDispatcherService.sanitizeDetails',
+      );
       const auditMsg =
         auditError instanceof Error
           ? auditError.message
@@ -233,6 +240,7 @@ export class KloelToolDispatcherService {
         .catch(() => {});
       return { success: true, query, summary: digest.answer, sources: digest.sources };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KloelToolDispatcherService.trackAiUsage');
       const msg = error instanceof Error ? error.message : 'web_search_failed';
       this.logger.warn(`Falha em search_web para "${query}": ${msg}`);
       return { success: false, error: msg };

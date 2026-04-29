@@ -9,6 +9,7 @@ import {
   Put,
   Request,
   UseGuards,
+  Optional,
 } from '@nestjs/common';
 import { AuditService } from '../../audit/audit.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -16,6 +17,7 @@ import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../../common/interfaces';
 import { PartnershipsService } from '../../partnerships/partnerships.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 import {
   COMMISSION_PARTNER_INVITE_ROLES,
   buildCommissionPayload,
@@ -35,6 +37,7 @@ export class ProductCommissionController {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly partnershipsService: PartnershipsService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** List. */
@@ -78,6 +81,10 @@ export class ProductCommissionController {
           commissionRate: payload.percentage,
         });
       } catch (error) {
+        void this.opsAlert?.alertOnCriticalError(
+          error,
+          'ProductCommissionController.createPartner',
+        );
         await this.prisma.productCommission
           .delete({ where: { id: commission.id } })
           .catch(() => undefined);

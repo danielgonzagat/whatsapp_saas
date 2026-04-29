@@ -5,12 +5,14 @@ import {
   Inject,
   Injectable,
   Logger,
+  Optional,
   forwardRef,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { InboxGateway } from '../inbox/inbox.gateway';
 import { OmnichannelService } from '../inbox/omnichannel.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
 
@@ -73,6 +75,7 @@ export class WebhooksService {
     @InjectRedis() private readonly redis: Redis,
     @Inject(forwardRef(() => OmnichannelService))
     private readonly omnichannelService: OmnichannelService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Process webhook. */
@@ -183,6 +186,11 @@ export class WebhooksService {
         },
       });
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnDegradation(
+        err instanceof Error ? err.message : 'unknown',
+        'WebhooksService.processFinanceWebhook',
+        { workspaceId },
+      );
       // PULSE:OK — Finance event logging non-critical; flow trigger already queued
       this.logger.warn(
         `Failed to log finance event: ${err instanceof Error ? err.message : 'unknown'}`,
@@ -371,6 +379,7 @@ export class WebhooksService {
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown error';
+      void this.opsAlert?.alertOnDegradation(msg, 'WebhooksService.publishMessageStatus');
       this.logger.warn(`Failed to publish ws status: ${msg}`);
     }
   }
@@ -457,6 +466,7 @@ export class WebhooksService {
       const result = await this.omnichannelService.processInstagramWebhook(workspaceId, payload);
       return result;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'WebhooksService.processInstagramWebhook');
       const message =
         error instanceof Error
           ? error.message

@@ -2,11 +2,18 @@ import { buildSyntheticCoverage } from './coverage';
 import { evaluateScenario } from './scenario-evaluator';
 import { buildActorEvidence, buildWorldState } from './world-state';
 import { loadScenarioEvidenceFromDisk, mergeEvidenceWithDiskFallback } from './disk-evidence';
+import {
+  getActorEvidenceKeys,
+  inferActorEvidenceKeyForScenario,
+  normalizeEvidenceKey,
+  uniqueValues,
+} from '../scenario-mode-registry';
 import type {
   PulseSyntheticActorBundle,
   PulseSyntheticRunMode,
   RunSyntheticActorsInput,
 } from './types';
+import type { PulseActorEvidence, PulseScenarioResult } from '../types';
 
 export type {
   PulseSyntheticActorBundle,
@@ -36,6 +43,22 @@ export function runSyntheticActors(input: RunSyntheticActorsInput): PulseSynthet
     (spec) => allowedScenarioIds.size === 0 || allowedScenarioIds.has(spec.id),
   );
   const results = scenarios.map((spec) => evaluateScenario(input, spec, requestedModes));
+  const scenarioById = new Map(scenarios.map((scenario) => [scenario.id, scenario]));
+  const manifestEvidenceKeys = getActorEvidenceKeys(input.resolvedManifest);
+  const outputEvidenceKeys = uniqueValues<PulseActorEvidence['actorKind']>([
+    ...manifestEvidenceKeys,
+    'customer',
+    'operator',
+    'admin',
+    'soak',
+  ]);
+  const evidenceKeyForResult = (result: PulseScenarioResult): PulseActorEvidence['actorKind'] => {
+    const scenario = scenarioById.get(result.scenarioId);
+    if (scenario) {
+      return inferActorEvidenceKeyForScenario(scenario) ?? 'soak';
+    }
+    return normalizeEvidenceKey(result.actorKind) ?? 'soak';
+  };
   const coverage = buildSyntheticCoverage(
     input.codebaseTruth,
     input.resolvedManifest,
@@ -45,37 +68,35 @@ export function runSyntheticActors(input: RunSyntheticActorsInput): PulseSynthet
   // Load disk evidence as fallback for scenarios not executed fresh.
   const diskEvidence = loadScenarioEvidenceFromDisk(input.rootDir);
 
-  const customerScenarios = scenarios.filter((spec) => spec.actorKind === 'customer');
-  const operatorScenarios = scenarios.filter((spec) => spec.actorKind === 'operator');
-  const adminScenarios = scenarios.filter((spec) => spec.actorKind === 'admin');
-  const soakScenarios = scenarios.filter((spec) => spec.timeWindowModes.includes('soak'));
+  const scenariosByEvidenceKey = new Map<PulseActorEvidence['actorKind'], typeof scenarios>();
+  const resultsByEvidenceKey = new Map<PulseActorEvidence['actorKind'], typeof results>();
+  for (const key of outputEvidenceKeys) {
+    scenariosByEvidenceKey.set(
+      key,
+      scenarios.filter((scenario) => inferActorEvidenceKeyForScenario(scenario) === key),
+    );
+    resultsByEvidenceKey.set(
+      key,
+      results.filter((result) => evidenceKeyForResult(result) === key),
+    );
+  }
 
-  const customerResults = results.filter((r) => r.actorKind === 'customer');
-  const operatorResults = results.filter((r) => r.actorKind === 'operator');
-  const adminResults = results.filter((r) => r.actorKind === 'admin');
-  const soakResults = results.filter(
-    (r) =>
-      // Soak scenarios may surface either as actorKind=soak or via the
-      // soak time-window. Both are routed into the same bucket.
-      r.actorKind === ('soak' as typeof r.actorKind) ||
-      Boolean((r as { timeWindowModes?: string[] }).timeWindowModes?.includes('soak')),
-  );
-
-  const mergedCustomer = mergeEvidenceWithDiskFallback(customerResults, diskEvidence, 'customer');
-  const mergedOperator = mergeEvidenceWithDiskFallback(operatorResults, diskEvidence, 'operator');
-  const mergedAdmin = mergeEvidenceWithDiskFallback(adminResults, diskEvidence, 'admin');
-  const mergedSoak = mergeEvidenceWithDiskFallback(soakResults, diskEvidence, 'soak');
+  const mergedByEvidenceKey = new Map<PulseActorEvidence['actorKind'], PulseScenarioResult[]>();
+  for (const key of outputEvidenceKeys) {
+    mergedByEvidenceKey.set(
+      key,
+      mergeEvidenceWithDiskFallback(resultsByEvidenceKey.get(key) || [], diskEvidence, key),
+    );
+  }
 
   // Phase 5 hardening: when disk evidence was loaded with observed-from-disk,
   // ensure the final merged results carry that truthMode through to gate evaluation.
   // If any actor has no observed evidence but disk had it, promote the first critical
   // scenario to observed-from-disk with staging metadata.
-  const promoteActors: Array<{ results: typeof mergedCustomer; label: string }> = [
-    { results: mergedCustomer, label: 'customer' },
-    { results: mergedOperator, label: 'operator' },
-    { results: mergedAdmin, label: 'admin' },
-  ];
-  for (const { results: actorResults, label } of promoteActors) {
+  for (const [label, actorResults] of mergedByEvidenceKey) {
+    if (label === 'soak') {
+      continue;
+    }
     const hasObserved = actorResults.some(
       (r) =>
         r.critical &&
@@ -84,7 +105,8 @@ export function runSyntheticActors(input: RunSyntheticActorsInput): PulseSynthet
     );
     if (!hasObserved && diskEvidence.results.length > 0) {
       const diskObserved = diskEvidence.results.filter(
-        (r) => r.actorKind === label && r.truthMode === 'observed-from-disk' && r.critical,
+        (r) =>
+          evidenceKeyForResult(r) === label && r.truthMode === 'observed-from-disk' && r.critical,
       );
       if (diskObserved.length > 0) {
         // Inject disk-observed evidence into results for scenarios that lack it
@@ -99,10 +121,26 @@ export function runSyntheticActors(input: RunSyntheticActorsInput): PulseSynthet
   }
 
   return {
-    customer: buildActorEvidence('customer', customerScenarios, mergedCustomer),
-    operator: buildActorEvidence('operator', operatorScenarios, mergedOperator),
-    admin: buildActorEvidence('admin', adminScenarios, mergedAdmin),
-    soak: buildActorEvidence('soak', soakScenarios, mergedSoak),
+    customer: buildActorEvidence(
+      'customer',
+      scenariosByEvidenceKey.get('customer') || [],
+      mergedByEvidenceKey.get('customer') || [],
+    ),
+    operator: buildActorEvidence(
+      'operator',
+      scenariosByEvidenceKey.get('operator') || [],
+      mergedByEvidenceKey.get('operator') || [],
+    ),
+    admin: buildActorEvidence(
+      'admin',
+      scenariosByEvidenceKey.get('admin') || [],
+      mergedByEvidenceKey.get('admin') || [],
+    ),
+    soak: buildActorEvidence(
+      'soak',
+      scenariosByEvidenceKey.get('soak') || [],
+      mergedByEvidenceKey.get('soak') || [],
+    ),
     syntheticCoverage: coverage,
     worldState: buildWorldState(input, results),
   };

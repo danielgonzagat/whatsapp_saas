@@ -209,6 +209,22 @@ Se houver risco de perda financeira, perda de dados, quebra de produção,
 vazamento de segredo ou alteração de governança, parar e reportar o bloqueio
 objetivo.
 
+## REGRA ABSOLUTA — GIT RESTORE PROIBIDO
+
+`git restore` é proibido para qualquer IA CLI neste repositório.
+
+Proibido sem exceção:
+
+- `git restore <path>`;
+- `git restore --source ...`;
+- `git restore --staged ...`;
+- usar `git restore` dentro de script, codemod, prompt, runbook ou automação.
+
+Motivo: `git restore` pode destruir silenciosamente trabalho não commitado de
+humanos ou de outros agentes. Correções devem avançar por edição de código,
+restauração a partir de snapshot explícito capturado antes da edição, ou pausa
+para o humano decidir. Se não houver snapshot seguro, parar.
+
 ---
 
 ## REGRA DE TASK SELECTION

@@ -2,6 +2,7 @@ import * as path from 'path';
 import type { PulseConfig } from './types';
 import { PULSE_MANIFEST_FILENAME } from './manifest';
 import { PULSE_EXTERNAL_INPUT_FILES } from './external-signals';
+import { classifySurface } from './scope-state.classify';
 
 /** Pulse watch change kind type. */
 export type PulseWatchChangeKind =
@@ -22,29 +23,29 @@ export type PulseWatchChangeKind =
 /** Pulse watch refresh mode type. */
 export type PulseWatchRefreshMode = 'none' | 'derived' | 'full';
 
-const WATCH_RULES: ReadonlyArray<{
-  match: (relPath: string) => boolean;
-  kind: PulseWatchChangeKind;
-}> = [
-  { match: (rel) => rel === 'package.json' || rel === 'package-lock.json', kind: 'root-config' },
-  {
-    match: (rel) =>
-      rel === 'Dockerfile' ||
-      rel.startsWith('Dockerfile.') ||
-      rel.startsWith('docker/') ||
-      rel.startsWith('nginx/') ||
-      rel.startsWith('.github/workflows/'),
-    kind: 'container',
-  },
-  { match: (rel) => rel.startsWith('docs/') || /\.mdx?$/i.test(rel), kind: 'docs' },
-  { match: (rel) => rel.startsWith('prisma/migrations/'), kind: 'schema' },
-  { match: (rel) => rel.startsWith('frontend-admin/'), kind: 'frontend-admin' },
-  { match: (rel) => rel.startsWith('frontend/'), kind: 'frontend' },
-  { match: (rel) => rel.startsWith('backend/'), kind: 'backend' },
-  { match: (rel) => rel.startsWith('worker/'), kind: 'worker' },
-  { match: (rel) => rel.startsWith('e2e/'), kind: 'e2e' },
-  { match: (rel) => rel.startsWith('scripts/'), kind: 'scripts' },
-];
+function watchKindFromSurface(
+  surface: ReturnType<typeof classifySurface>,
+): PulseWatchChangeKind | null {
+  if (surface === 'infra' || surface === 'governance') {
+    return 'container';
+  }
+  if (surface === 'prisma') {
+    return 'schema';
+  }
+  if (
+    surface === 'frontend' ||
+    surface === 'frontend-admin' ||
+    surface === 'backend' ||
+    surface === 'worker' ||
+    surface === 'e2e' ||
+    surface === 'scripts' ||
+    surface === 'docs' ||
+    surface === 'root-config'
+  ) {
+    return surface;
+  }
+  return null;
+}
 
 export function normalizeWatchPath(filePath: string, rootDir: string): string {
   return path.relative(rootDir, filePath).replace(/\\/g, '/');
@@ -72,12 +73,7 @@ export function classifyWatchChange(
   if (PULSE_EXTERNAL_INPUT_FILES.includes(rel) && rel !== 'PULSE_CODACY_STATE.json') {
     return 'external-signal';
   }
-  for (const rule of WATCH_RULES) {
-    if (rule.match(rel)) {
-      return rule.kind;
-    }
-  }
-  return null;
+  return watchKindFromSurface(classifySurface(rel, false, config.rootDir));
 }
 
 /** Should rescan for watch change. */

@@ -10,13 +10,13 @@ export type AdapterStatus =
   | 'optional_not_configured';
 
 /** All valid adapter status values as a readonly array. */
-export const ADAPTER_STATUSES = [
+export const ADAPTER_STATUSES = Object.freeze([
   'ready',
   'not_available',
   'stale',
   'invalid',
   'optional_not_configured',
-] as const satisfies readonly AdapterStatus[];
+] as const satisfies readonly AdapterStatus[]);
 
 /**
  * Type guard to check if a value is a valid AdapterStatus.

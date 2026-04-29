@@ -11,11 +11,12 @@
  */
 
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
 import type Redis from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings, type ProviderSettings } from './provider-settings.types';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
@@ -46,6 +47,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     private readonly recovery: WhatsAppWatchdogRecoveryService,
     private readonly sessionSvc: WhatsAppWatchdogSessionService,
     @InjectRedis() private readonly redis: Redis,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private isWahaOperationallyEnabled(): boolean {
@@ -121,6 +123,10 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         }
       } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : 'unknown error';
+        void this.opsAlert?.alertOnDegradation(
+          msg,
+          'WhatsAppWatchdogService.cleanupFailedSessions',
+        );
         this.logger.warn(`Failed to delete stale FAILED WAHA session ${session.name}: ${msg}`);
       }
     });
@@ -188,6 +194,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         await this.providerRegistry.getSessionStatus(workspaceId);
       } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : 'unknown error';
+        void this.opsAlert?.alertOnDegradation(msg, 'WhatsAppWatchdogService.adoptLiveSessions', {
+          workspaceId,
+        });
         this.logger.warn(`Failed to adopt live WAHA session for ${workspaceId}: ${msg}`);
       }
     });
@@ -291,6 +300,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       });
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'unknown error';
+      void this.opsAlert?.alertOnCriticalError(error, 'WhatsAppWatchdogService.runHealthCheck');
       this.logger.error(`Health check cycle failed: ${msg}`);
     } finally {
       await this.recovery

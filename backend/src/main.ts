@@ -10,6 +10,7 @@ import { NextFunction, Request, Response } from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
+import { OpsAlertService } from './observability/ops-alert.service';
 
 const HTTPS_____KLOEL_FRONTEN_RE = /^https:\/\/kloel-frontend-.*\.vercel\.app$/;
 const HTTPS_____KLOEL_ADMIN_RE = /^https:\/\/kloel-admin-.*\.vercel\.app$/;
@@ -127,6 +128,8 @@ async function runStartupDbCheck(app: NestExpressApplication): Promise<void> {
       handleSchemaError(schemaErr);
     }
   } catch (dbErr: unknown) {
+    const opsAlert = app.get(OpsAlertService, { strict: false });
+    void opsAlert.alertOnCriticalError(dbErr, 'runStartupDbCheck');
     if (process.env.NODE_ENV === 'production') {
       console.error('[STARTUP] FATAL: DB connection failed in production.', dbErr);
       process.exit(1);

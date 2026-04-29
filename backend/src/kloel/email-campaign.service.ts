@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { forEachSequential } from '../common/async-sequence';
 import { getTraceHeaders } from '../common/trace-headers';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
@@ -19,7 +20,7 @@ export class EmailCampaignService {
   private readonly fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
   private readonly fromName = process.env.EMAIL_FROM_NAME || 'KLOEL';
 
-  constructor() {}
+  constructor(@Optional() private readonly opsAlert?: OpsAlertService) {}
 
   private getProvider(): 'resend' | 'sendgrid' | 'smtp' | 'log' {
     if (process.env.RESEND_API_KEY) {
@@ -86,6 +87,7 @@ export class EmailCampaignService {
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
       } catch (err: unknown) {
+        void this.opsAlert?.alertOnCriticalError(err, 'EmailCampaignService.push');
         failed++;
         errors.push(`${recipient.email}: ${err instanceof Error ? err.message : 'unknown_error'}`);
       }
@@ -170,6 +172,7 @@ export class EmailCampaignService {
           return true;
       }
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'EmailCampaignService.sendEmail');
       this.logger.error(
         `Email send error: ${err instanceof Error ? err.message : 'unknown_error'}`,
       );

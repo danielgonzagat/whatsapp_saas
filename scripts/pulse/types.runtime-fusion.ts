@@ -10,6 +10,7 @@ export type SignalSource =
   | 'gitnexus'
   | 'otel_runtime';
 export type SignalType =
+  | 'runtime'
   | 'error'
   | 'latency'
   | 'throughput'
@@ -18,10 +19,12 @@ export type SignalType =
   | 'deploy_failure'
   | 'test_failure'
   | 'graph_staleness'
+  | 'static'
   | 'code_quality'
   | 'change'
   | 'dependency'
   | 'external';
+export type OperationalEvidenceKind = 'runtime' | 'change' | 'static' | 'dependency' | 'external';
 export type SignalSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 export type SignalAction =
   | 'block_merge'
@@ -57,6 +60,8 @@ export interface RuntimeSignal {
   frequency: number;
   affectedUsers: number;
   impactScore: number; // 0..1
+  confidence: number; // 0..1
+  evidenceKind: OperationalEvidenceKind;
   firstSeen: string;
   lastSeen: string;
   count: number;
@@ -65,6 +70,8 @@ export interface RuntimeSignal {
   evidenceMode?: RuntimeSignalEvidenceMode;
   sourceArtifact?: string;
   observedAt?: string | null;
+  affectedCapabilities?: string[];
+  affectedFlows?: string[];
 }
 
 export interface RuntimeFusionState {

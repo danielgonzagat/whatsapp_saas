@@ -4,7 +4,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { ensureDir, pathExists, writeTextFile } from './safe-fs';
+import { ensureDir, pathExists, statPath, writeTextFile } from './safe-fs';
 import type { PluginKind, PluginRegistry, PulsePlugin } from './types.plugin-system';
 
 const ARTIFACT_FILE_NAME = 'PULSE_PLUGIN_REGISTRY.json';
@@ -162,9 +162,19 @@ export function loadPluginRegistry(rootDir: string): PluginRegistry {
 
   for (const desc of discovered) {
     const plugin = loadPlugin(desc.path);
+    const sourceMtime = pathExists(desc.path) ? statPath(desc.path).mtime.toISOString() : null;
+    const entrypoint = path.relative(rootDir, desc.path);
 
     if (plugin) {
-      plugins.push({ id: desc.id, kind: desc.kind, loaded: true, error: null });
+      plugins.push({
+        id: desc.id,
+        kind: desc.kind,
+        loaded: true,
+        error: null,
+        entrypoint,
+        sourceMtime,
+        proof: `loaded ${desc.kind} plugin from filesystem entrypoint`,
+      });
       loadedCount++;
     } else {
       plugins.push({
@@ -172,14 +182,35 @@ export function loadPluginRegistry(rootDir: string): PluginRegistry {
         kind: desc.kind,
         loaded: false,
         error: `Failed to load plugin from ${desc.path}`,
+        entrypoint,
+        sourceMtime,
+        proof: `discovered ${desc.kind} plugin entrypoint but module contract validation failed`,
       });
       failedCount++;
     }
   }
 
+  const generatedAt = new Date().toISOString();
+  const newestMtimeMs = discovered
+    .map((desc) => (pathExists(desc.path) ? statPath(desc.path).mtimeMs : 0))
+    .reduce((max, value) => Math.max(max, value), 0);
+  const freshnessMinutes =
+    newestMtimeMs > 0 ? Math.max(0, Math.round((Date.now() - newestMtimeMs) / 60000)) : 0;
+  const healthStatus = discovered.length === 0 ? 'missing' : failedCount === 0 ? 'pass' : 'partial';
+
   const registry: PluginRegistry = {
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     plugins,
+    health: {
+      status: healthStatus,
+      generatedAt,
+      discoveredAt: generatedAt,
+      freshnessMinutes,
+      proof:
+        discovered.length === 0
+          ? `No plugin entrypoints found under scripts/pulse/${PLUGINS_DIR_NAME}`
+          : `${discovered.length} plugin entrypoint(s) discovered from scripts/pulse/${PLUGINS_DIR_NAME}; ${loadedCount} loaded`,
+    },
     summary: {
       total: discovered.length,
       loaded: loadedCount,

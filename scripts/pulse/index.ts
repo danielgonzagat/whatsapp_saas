@@ -42,6 +42,8 @@ import { buildProductVision } from './product-vision';
 import { buildProductModel } from './product-model';
 import { buildExternalSignalState, createExternalSignalProfileState } from './external-signals';
 import { runExternalSourcesOrchestrator } from './adapters/external-sources-orchestrator';
+import type { ExternalSourcesConfig } from './adapters/external-sources-orchestrator';
+import { deriveExternalSourcesTimeoutMs } from './external-sources-timeout';
 import { buildPathCoverageState } from './path-coverage-engine';
 import { runPulseAutonomousLoop } from './autonomy-loop';
 import {
@@ -591,7 +593,7 @@ async function main() {
   });
 
   // Run external sources orchestration in parallel
-  const externalSourcesTask = runExternalSourcesOrchestrator({
+  const externalSourcesConfig: ExternalSourcesConfig = {
     rootDir: config.rootDir,
     github: {
       owner: process.env.GITHUB_OWNER || '',
@@ -625,14 +627,18 @@ async function main() {
     },
     profile: effectiveTarget.profile || undefined,
     certificationScope: effectiveTarget.certificationScope || effectiveTarget.profile || undefined,
-  }).catch(() => null);
+  };
+  const externalSourcesTask = runExternalSourcesOrchestrator(externalSourcesConfig).catch(
+    () => null,
+  );
+  const externalSourcesTimeoutMs = deriveExternalSourcesTimeoutMs(externalSourcesConfig);
 
   const liveExternalState = await runPhaseWithTrace(
     tracer,
     'external-sources-orchestration',
     () => externalSourcesTask,
     {
-      timeoutMs: 15_000,
+      timeoutMs: externalSourcesTimeoutMs,
       onTimeout: () => null,
     },
   );

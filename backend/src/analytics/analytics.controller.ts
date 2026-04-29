@@ -1,4 +1,13 @@
-import { Controller, Get, Param, Query, Req, Request, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Param,
+  Query,
+  Req,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -10,6 +19,13 @@ import { AuthenticatedRequest } from '../common/interfaces/authenticated-request
 function parseDateRange(startDate?: string, endDate?: string) {
   const end = endDate ? new Date(endDate) : new Date();
   const start = startDate ? new Date(startDate) : new Date(end.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  if (Number.isNaN(start.getTime())) {
+    throw new BadRequestException('Invalid startDate');
+  }
+  if (Number.isNaN(end.getTime())) {
+    throw new BadRequestException('Invalid endDate');
+  }
 
   const safeEnd = Number.isNaN(end.getTime()) ? new Date() : end;
   const safeStart = Number.isNaN(start.getTime())

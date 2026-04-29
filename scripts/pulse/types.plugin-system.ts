@@ -105,7 +105,18 @@ export interface PluginRegistry {
     kind: PluginKind;
     loaded: boolean;
     error: string | null;
+    entrypoint: string;
+    sourceMtime: string | null;
+    proof: string;
   }>;
+  /** Discovery health and freshness proof for the plugin surface. */
+  health: {
+    status: 'pass' | 'partial' | 'missing';
+    generatedAt: string;
+    discoveredAt: string;
+    freshnessMinutes: number;
+    proof: string;
+  };
   /** Aggregate counts across the registry. */
   summary: {
     total: number;

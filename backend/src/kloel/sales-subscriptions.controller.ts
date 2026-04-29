@@ -11,12 +11,14 @@ import {
   Query,
   Request,
   UseGuards,
+  Optional,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { ChangeSubscriptionPlanDto } from './dto/sales-actions.dto';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /** Customer-subscription sub-controller (mounted under /sales). */
 @UseGuards(JwtAuthGuard)
@@ -24,7 +26,10 @@ import { ChangeSubscriptionPlanDto } from './dto/sales-actions.dto';
 export class SalesSubscriptionsController {
   private readonly logger = new Logger(SalesSubscriptionsController.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
 
   private readJsonRecord(value: Prisma.JsonValue | null | undefined) {
     if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -124,6 +129,7 @@ export class SalesSubscriptionsController {
         },
       });
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'SalesSubscriptionsController.create');
       this.logger.error(`Failed to create audit log for subscription_pause: ${String(err)}`); // Intencional: audit log is best-effort.
     }
 
@@ -159,6 +165,7 @@ export class SalesSubscriptionsController {
         },
       });
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'SalesSubscriptionsController.create');
       this.logger.error(`Failed to create audit log for subscription_resume: ${String(err)}`); // Intencional: audit log is best-effort.
     }
 
@@ -194,6 +201,7 @@ export class SalesSubscriptionsController {
         },
       });
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'SalesSubscriptionsController.create');
       this.logger.error(`Failed to create audit log for subscription_cancel: ${String(err)}`); // Intencional: audit log is best-effort.
     }
 

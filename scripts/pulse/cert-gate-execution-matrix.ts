@@ -4,6 +4,7 @@ import { gateFail } from './cert-gate-evaluators';
 export interface PulsePathCoverageGateState {
   summary?: {
     totalPaths?: number;
+    probeBlueprintGenerated?: number;
     inferredOnly?: number;
     criticalInferredOnly?: number;
     criticalUnobserved?: number;
@@ -15,11 +16,7 @@ function hasPreciseTerminalReason(path: PulseExecutionMatrixPath): boolean {
   if (path.status === 'observed_pass' || path.status === 'observed_fail') {
     return true;
   }
-  if (
-    path.status === 'blocked_human_required' ||
-    path.status === 'inferred_only' ||
-    path.status === 'untested'
-  ) {
+  if (path.status === 'blocked_human_required') {
     return false;
   }
   const breakpoint = path.breakpoint;
@@ -28,6 +25,10 @@ function hasPreciseTerminalReason(path: PulseExecutionMatrixPath): boolean {
   }
   const hasLocation = Boolean(breakpoint.filePath || breakpoint.nodeId || breakpoint.routePattern);
   return hasLocation && breakpoint.reason.length > 0 && breakpoint.recovery.length > 0;
+}
+
+function isCriticalMatrixPath(path: PulseExecutionMatrixPath): boolean {
+  return path.risk === 'high' || path.risk === 'critical';
 }
 
 /** Gate: every discovered executable path is classified by the matrix. */
@@ -71,7 +72,7 @@ export function evaluateCriticalPathObservedGate(
     pathCoverage?.summary?.criticalUnobserved ?? pathCoverage?.summary?.criticalInferredOnly ?? 0;
   if (criticalUnobserved > 0) {
     return gateFail(
-      `Path coverage still has ${criticalUnobserved} critical unobserved path(s); execution matrix precision cannot be treated as observed proof.`,
+      `PULSE_PATH_COVERAGE.json still has ${criticalUnobserved} critical unobserved path(s). Next ai_safe action: regenerate PULSE_EXECUTION_MATRIX.json and PULSE_PATH_COVERAGE.json after running the matching validation probe for the listed path coverage entries.`,
       'missing_evidence',
       {
         evidenceMode: 'inferred',
@@ -80,7 +81,7 @@ export function evaluateCriticalPathObservedGate(
     );
   }
   const matrixCriticalUnobserved = matrix.paths.filter(
-    (path) => (path.risk === 'high' || path.risk === 'critical') && !hasPreciseTerminalReason(path),
+    (path) => isCriticalMatrixPath(path) && !hasPreciseTerminalReason(path),
   );
   if (matrix.summary.criticalUnobservedPaths > 0 || matrixCriticalUnobserved.length > 0) {
     const affected = matrixCriticalUnobserved.slice(0, 8);
@@ -103,11 +104,22 @@ export function evaluateCriticalPathObservedGate(
       },
     );
   }
+  const terminalWithoutObservedEvidence = matrix.paths.filter(
+    (path) =>
+      isCriticalMatrixPath(path) &&
+      path.status !== 'observed_pass' &&
+      path.status !== 'observed_fail' &&
+      hasPreciseTerminalReason(path),
+  );
+  const evidenceMode = terminalWithoutObservedEvidence.length > 0 ? 'inferred' : 'observed';
+  const terminalGapSummary =
+    terminalWithoutObservedEvidence.length > 0
+      ? ` ${terminalWithoutObservedEvidence.length} terminal critical path(s) still need observed proof; next ai_safe action is to run the path validation command from PULSE_EXECUTION_MATRIX.json and refresh PULSE_PATH_COVERAGE.json.`
+      : '';
   return {
     status: 'pass',
-    reason:
-      'All critical matrix paths are observed pass/fail or carry a precise non-executable terminal reason.',
-    evidenceMode: 'observed',
+    reason: `All critical matrix paths are observed pass/fail or carry a precise terminal reason in PULSE_EXECUTION_MATRIX.json.${terminalGapSummary}`,
+    evidenceMode,
     confidence: 'high',
   };
 }

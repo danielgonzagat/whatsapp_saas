@@ -4,7 +4,7 @@
  * Given changed files, finds related test/spec files that should be executed
  * before accepting a cycle as validated.
  */
-import { extname, dirname, basename } from 'path';
+import { extname, dirname, basename, join } from 'path';
 import { pathExists } from './safe-fs';
 import { resolveRoot, safeJoin } from './lib/safe-path';
 
@@ -17,13 +17,13 @@ function isTestFile(file: string): boolean {
 
 function buildSpecCandidates(dir: string, base: string): string[] {
   return [
-    safeJoin(dir, `${base}.spec.ts`),
-    safeJoin(dir, `${base}.spec.tsx`),
-    safeJoin(dir, `${base}.test.ts`),
-    safeJoin(dir, `${base}.test.tsx`),
-    safeJoin(dir, '__tests__', `${base}.spec.ts`),
-    safeJoin(dir, '__tests__', `${base}.test.ts`),
-    safeJoin('e2e', 'specs', `${base}.spec.ts`),
+    join(dir, `${base}.spec.ts`),
+    join(dir, `${base}.spec.tsx`),
+    join(dir, `${base}.test.ts`),
+    join(dir, `${base}.test.tsx`),
+    join(dir, '__tests__', `${base}.spec.ts`),
+    join(dir, '__tests__', `${base}.test.ts`),
+    join('e2e', 'specs', `${base}.spec.ts`),
   ];
 }
 

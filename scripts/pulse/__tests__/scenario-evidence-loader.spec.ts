@@ -96,14 +96,104 @@ describe('scenario-evidence-loader', () => {
     expect(result.operator).toBeNull();
     expect(result.admin).toBeNull();
     expect(result.soak).toBeNull();
-    expect(result.summary).toContain('no file');
+    expect(result.summary).toContain('customer: no file');
+    expect(result.summary).toContain('operator: no file');
+    expect(result.summary).toContain('admin: no file');
+    expect(result.summary).toContain('soak: no file');
+  });
+
+  it('should keep contract actor files even when manifest discovery is narrower', () => {
+    fs.writeFileSync(
+      path.join(testRootDir, 'pulse.manifest.json'),
+      JSON.stringify({
+        actorProfiles: [
+          {
+            id: 'buyer',
+            kind: 'customer',
+            description: 'buyer',
+            moduleFocus: [],
+            defaultTimeWindowModes: ['total'],
+          },
+        ],
+        scenarioSpecs: [
+          {
+            id: 'scenario-1',
+            actorKind: 'customer',
+            scenarioKind: 'single-session',
+            critical: true,
+            moduleKeys: [],
+            routePatterns: [],
+            flowSpecs: [],
+            flowGroups: [],
+            playwrightSpecs: [],
+            runtimeProbes: [],
+            requiresBrowser: true,
+            requiresPersistence: false,
+            asyncExpectations: [],
+            providerMode: 'sandbox',
+            timeWindowModes: ['total'],
+            runner: 'derived',
+            executionMode: 'derived',
+            worldStateKeys: [],
+            requiredArtifacts: ['PULSE_CUSTOMER_EVIDENCE.json'],
+            notes: 'test',
+          },
+        ],
+      }),
+    );
+
+    const result = loadScenarioEvidenceFromDisk(testRootDir);
+
+    expect(result.customer).toBeNull();
+    expect(result.summary).toContain('customer: no file');
+    expect(result.summary).toContain('operator: no file');
+    expect(result.summary).toContain('admin: no file');
+    expect(result.summary).toContain('soak: no file');
+  });
+
+  it('should normalize stale skipped evidence without upgrading it to fresh execution', () => {
+    const staleEvidence = {
+      actorKind: 'operator',
+      declared: ['scenario-skipped'],
+      executed: [],
+      missing: ['scenario-skipped'],
+      passed: [],
+      failed: [],
+      summary: 'old skipped evidence',
+      results: [
+        {
+          scenarioId: 'scenario-skipped',
+          actorKind: 'operator',
+          scenarioKind: 'single-session',
+          status: 'not_run',
+          executed: false,
+          requested: false,
+          critical: false,
+        },
+      ],
+    };
+    const filepath = path.join(evidenceDir, 'PULSE_OPERATOR_EVIDENCE.json');
+    fs.writeFileSync(filepath, JSON.stringify(staleEvidence));
+    const past = new Date(Date.now() - 25 * 60 * 60 * 1000);
+    fs.utimesSync(filepath, past, past);
+
+    const result = loadScenarioEvidenceFromDisk(testRootDir);
+    const rewritten = JSON.parse(fs.readFileSync(filepath, 'utf8')) as {
+      summary?: string;
+      results?: Array<{ status?: string; executed?: boolean }>;
+    };
+
+    expect(result.operator).not.toBeNull();
+    expect(result.operator?.results[0].status).toBe('skipped');
+    expect(result.operator?.results[0].executed).toBe(false);
+    expect(result.operator?.results[0].truthMode).toBe('inferred');
+    expect(result.summary).toContain('operator: stale');
+    expect(rewritten.summary).toBe('old skipped evidence');
+    expect(rewritten.results?.[0]).toMatchObject({ status: 'not_run', executed: false });
   });
 
   it('should handle invalid JSON gracefully', () => {
-    fs.writeFileSync(
-      path.join(evidenceDir, 'PULSE_ADMIN_EVIDENCE.json'),
-      'not valid json',
-    );
+    fs.writeFileSync(path.join(evidenceDir, 'PULSE_ADMIN_EVIDENCE.json'), 'not valid json');
 
     const result = loadScenarioEvidenceFromDisk(testRootDir);
 

@@ -9,8 +9,9 @@ import {
   Logger,
   Post,
   Req,
+  UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { RawBodyRequest } from '../common/interfaces/authenticated-request.interface';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
@@ -107,6 +108,7 @@ function describeEvent(body: TikTokWebhookPayload): string {
  * `TikTok-Signature` whenever TikTok sends one.
  */
 @Controller('webhooks/tiktok')
+@UseGuards(ThrottlerGuard)
 export class TikTokWebhookController {
   private readonly logger = new Logger(TikTokWebhookController.name);
 

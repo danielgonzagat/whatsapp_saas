@@ -85,6 +85,8 @@ const SERVICE_ALIAS_IGNORE = new Set([
 ]);
 
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const PERSISTENT_STATE_MUTATION_SHAPE_RE =
+  /\.(?:create|createMany|update|updateMany|upsert|delete|deleteMany)\s*\(/i;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -107,6 +109,19 @@ function normalizeRoute(value: string): string {
       .replace(/\/+/g, '/')
       .replace(/\/$/, '') || '/'
   );
+}
+
+function parseRouteParameters(routePath: string): string[] {
+  const params: string[] = [];
+  const parameterPattern = /(?::|\{)([A-Za-z_]\w*)\}?/g;
+  let match = parameterPattern.exec(routePath);
+
+  while (match) {
+    params.push(match[1]);
+    match = parameterPattern.exec(routePath);
+  }
+
+  return unique(params);
 }
 
 function hasPersistenceDependency(target: HarnessTarget): boolean {
@@ -583,9 +598,9 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
     target.fixtures = generateFixturesForTarget(target, rootDir);
   }
 
-  // ── 5. Generate test harness code for executable targets ──
+  // ── 5. Generate governed harness blueprints for executable targets ──
   for (const target of allTargets) {
-    if (target.feasibility === 'executable') {
+    if (target.feasibility !== 'cannot_execute') {
       target.generatedTests = generateTestHarnessCode(target);
     }
   }
@@ -687,7 +702,11 @@ export function discoverEndpoints(config: PulseConfig): HarnessTarget[] {
     const targetId = `endpoint:${route.httpMethod.toLowerCase()}:${camelToKebab(normalizedPath)}`;
 
     const requiresAuth = !route.isPublic && route.guards.length > 0;
-    const requiresTenant = /workspace|tenant|org|:wid|:workspaceId/i.test(normalizedPath);
+    const requiresTenant =
+      requiresAuth &&
+      (parseRouteParameters(normalizedPath).length > 0 ||
+        route.serviceCalls.length > 0 ||
+        MUTATING_METHODS.has(route.httpMethod.toUpperCase()));
 
     return {
       targetId,
@@ -757,20 +776,16 @@ export function discoverServices(config: PulseConfig): HarnessTarget[] {
       const targetId = `service:${camelToKebab(className)}:${camelToKebab(method.name)}`;
       const relFile = path.relative(config.rootDir, file);
 
-      const dependencies = resolveDependencyNames(file, className, method.name);
-      const depIds = dependencies.map((dep) => `service:${camelToKebab(dep.className)}`);
-
-      const requiresAuth =
-        /auth|permission|role|guard|authorize/i.test(method.name) ||
-        /auth|permission|role|guard|authorize/i.test(className);
-
-      const requiresTenant =
-        /workspace|tenant/i.test(className) || /workspace|tenant/i.test(method.name);
+      const dependencyEdges = resolveDependencyNames(file, className, method.name);
+      const serviceDependencyIds = dependencyEdges.map(
+        (dep) => `service:${camelToKebab(dep.className)}`,
+      );
 
       // Detect Prisma models accessed within the method body
       const methodRe = new RegExp(`\\b${method.name}\\s*(?:<[^>]+>)?\\s*\\(`);
       const methodMatch = content.match(methodRe);
       let prismaModels: string[] = [];
+      let methodBodyText = '';
       if (methodMatch && typeof methodMatch.index === 'number') {
         const afterMethod = content.slice(methodMatch.index);
         let braceDepth = 0;
@@ -795,8 +810,17 @@ export function discoverServices(config: PulseConfig): HarnessTarget[] {
           bodyStart !== -1 && bodyEnd !== -1
             ? afterMethod.slice(bodyStart, bodyEnd + 1)
             : afterMethod.slice(0, Math.min(2000, afterMethod.length));
+        methodBodyText = bodyText;
         prismaModels = collectPrismaModelsFromText(bodyText);
       }
+      const hasPersistentMutation =
+        prismaModels.length > 0 && PERSISTENT_STATE_MUTATION_SHAPE_RE.test(methodBodyText);
+      const requiresAuth = false;
+      const requiresTenant = hasPersistentMutation;
+      const dependencies = unique([
+        ...serviceDependencyIds,
+        ...prismaModels.map((model) => `model:${model}`),
+      ]);
 
       targets.push({
         targetId,
@@ -808,7 +832,7 @@ export function discoverServices(config: PulseConfig): HarnessTarget[] {
         httpMethod: null,
         requiresAuth,
         requiresTenant,
-        dependencies: unique(depIds),
+        dependencies,
         fixtures: [],
         feasibility: 'executable',
         feasibilityReason: '',
@@ -1006,8 +1030,8 @@ export function discoverCrons(config: PulseConfig): HarnessTarget[] {
 /**
  * Discover webhook handler targets.
  *
- * Identifies webhook endpoints by matching route paths against webhook-related
- * keywords (e.g. "webhook", "stripe", "callback"). Each handler is registered
+ * Identifies webhook endpoints from POST routes and inbound delivery markers
+ * such as callback, event, or signature handling. Each handler is registered
  * as a harness target with webhook-specific fixture requirements.
  *
  * @param config - PULSE configuration with backend directory paths
@@ -1065,8 +1089,16 @@ export function generateFixturesForTarget(
     fixtures.push({
       kind: 'auth_token',
       name: 'pulse-auth-token',
-      description: 'JWT auth token with test workspace permissions',
-      data: { workspace: 'pulse-test-workspace', roles: ['admin', 'member'] },
+      description: 'Credential context material for discovered guard boundaries',
+      data: {
+        targetId: target.targetId,
+        guardBoundaryRequired: true,
+        routeParameters: target.routePattern ? parseRouteParameters(target.routePattern) : [],
+        credentialClaims: {
+          subject: '__pulse_subject__',
+          context: target.requiresTenant ? '__pulse_context__' : null,
+        },
+      },
       required: true,
       generated: false,
     });
@@ -1102,7 +1134,7 @@ export function generateFixturesForTarget(
         queueName: target.name.split('/')[0] || 'unknown',
         jobName: target.methodName || 'unknown-job',
         payload: {
-          workspaceId: 'pulse-test-workspace',
+          context: target.requiresTenant ? '__pulse_context__' : null,
           testMode: true,
           pulseRun: 'harness-discovery',
         },
@@ -1241,16 +1273,17 @@ export function classifyExecutionFeasibility(
   if (targetSource && EXTERNAL_CALL_SHAPE_RE.test(targetSource)) {
     return {
       feasibility: 'needs_staging',
-      reason: 'Source contains an outbound HTTP call shape that requires network-controlled staging',
+      reason:
+        'Source contains an outbound HTTP call shape that requires network-controlled staging',
     };
   }
 
   // ── Check 5: queue/event infrastructure boundaries ──
   if (targetSource && INFRASTRUCTURE_BOUNDARY_SHAPE_RE.test(targetSource)) {
-      return {
-        feasibility: 'needs_staging',
-        reason: 'Source contains queue/event infrastructure shape that requires staging services',
-      };
+    return {
+      feasibility: 'needs_staging',
+      reason: 'Source contains queue/event infrastructure shape that requires staging services',
+    };
   }
 
   if (target.kind === 'worker' || target.kind === 'webhook') {
@@ -1304,31 +1337,41 @@ function readHarnessTargetSource(rootDir: string, filePath: string): string {
 // ─── Test Harness Code Generation ────────────────────────────────────────────
 
 /**
- * Generate test harness code for a given executable target.
+ * Generate test harness code for a given executable or governed-validation target.
  *
  * Produces a non-executed blueprint. The blueprint is deliberately not marked
  * runnable because fixture selection and assertions must be materialized from
  * real code behavior before this can become proof.
  */
 export function generateTestHarnessCode(target: HarnessTarget): HarnessGeneratedTest[] {
-  if (target.feasibility !== 'executable') {
+  if (target.feasibility === 'cannot_execute') {
     return [];
   }
 
   const suiteName = camelToKebab(target.name).replace(/\//g, '_');
+  const executionMode = target.feasibility === 'needs_staging' ? 'governed_validation' : 'ai_safe';
+  const terminalReason =
+    target.feasibility === 'needs_staging'
+      ? target.feasibilityReason
+      : `Target is self-contained and can be converted into an ${executionMode} executable probe.`;
 
   return [
     {
-      testName: `[PULSE] ${suiteName} — planned executable harness`,
+      testName: `[PULSE] ${suiteName} — planned ${executionMode} harness`,
       status: 'planned',
       framework: target.httpMethod ? 'supertest' : 'jest',
       canRunLocally: false,
-      code: buildHarnessBlueprintCode(target),
+      code: buildHarnessBlueprintCode(target, executionMode, terminalReason),
     },
   ];
 }
 
-function buildHarnessBlueprintCode(target: HarnessTarget): string {
+function buildHarnessBlueprintCode(
+  target: HarnessTarget,
+  executionMode: 'ai_safe' | 'governed_validation',
+  terminalReason: string,
+): string {
+  const requiredAssertions = buildHarnessRequiredAssertions(target);
   const blueprint = {
     targetId: target.targetId,
     kind: target.kind,
@@ -1339,6 +1382,35 @@ function buildHarnessBlueprintCode(target: HarnessTarget): string {
     httpMethod: target.httpMethod,
     requiresAuth: target.requiresAuth,
     requiresTenant: target.requiresTenant,
+    executionMode,
+    feasibility: target.feasibility,
+    terminalReason,
+    evidenceMode: 'blueprint',
+    executed: false,
+    coverageCountsAsObserved: false,
+    validationCommand: `node scripts/pulse/run.js --guidance # refresh harness blueprint for ${target.targetId}`,
+    executionPlan: buildHarnessExecutionPlan(target, executionMode),
+    expectedEvidence: buildHarnessExpectedEvidence(target),
+    structuralSafetyClassification: {
+      risk: isCriticalHarnessTarget(target) ? 'high' : 'medium',
+      safeToExecute: target.feasibility !== 'cannot_execute',
+      executionMode,
+      protectedSurface: false,
+      reason:
+        target.feasibility === 'needs_staging'
+          ? target.feasibilityReason
+          : 'Target has no detected external infrastructure boundary in the harness classifier.',
+    },
+    artifactLinks: [
+      {
+        artifactPath: HARNESS_ARTIFACT_PATH,
+        relationship: 'harness_evidence',
+      },
+      {
+        artifactPath: target.filePath,
+        relationship: 'target_source',
+      },
+    ],
     dependencies: target.dependencies,
     requiredFixtures: target.fixtures
       .filter((fixture) => fixture.required)
@@ -1347,13 +1419,7 @@ function buildHarnessBlueprintCode(target: HarnessTarget): string {
         name: fixture.name,
         description: fixture.description,
       })),
-    requiredAssertions: [
-      'materialize target import and dependency setup from the owning package',
-      'bind fixtures to real constructors, HTTP app, queue, or database test adapter',
-      'assert concrete output contract instead of defined/non-error placeholders',
-      'assert auth, tenant, and side-effect isolation when target metadata requires it',
-      'record attempts, timestamps, output, logs, and side effects before status can pass',
-    ],
+    requiredAssertions,
   };
 
   return [
@@ -1361,6 +1427,184 @@ function buildHarnessBlueprintCode(target: HarnessTarget): string {
     '',
     "throw new Error('PULSE_HARNESS_BLUEPRINT_NOT_EXECUTED: materialize fixtures and assertions before running this plan');",
   ].join('\n');
+}
+
+function buildHarnessExecutionPlan(
+  target: HarnessTarget,
+  executionMode: 'ai_safe' | 'governed_validation',
+): Array<{ step: string; required: boolean; detail: string }> {
+  const plan: Array<{ step: string; required: boolean; detail: string }> = [
+    {
+      step: 'materialize_target',
+      required: true,
+      detail: `Import ${target.filePath} through the owning package test adapter before invoking ${target.methodName ?? target.name}.`,
+    },
+    {
+      step: 'bind_fixtures',
+      required: true,
+      detail:
+        'Bind every required fixture from this blueprint to real constructors, HTTP app, queue, or database adapters.',
+    },
+  ];
+
+  if (target.httpMethod && target.routePattern) {
+    plan.push({
+      step: 'http_contract',
+      required: true,
+      detail: `Exercise ${target.httpMethod.toUpperCase()} ${target.routePattern} through the app adapter and assert status, response body, and error body contracts.`,
+    });
+  }
+
+  if (target.kind === 'service') {
+    plan.push({
+      step: 'service_contract',
+      required: true,
+      detail:
+        'Instantiate the service with explicit dependency doubles or test adapters and assert concrete return values and thrown errors.',
+    });
+  }
+
+  if (target.kind === 'worker') {
+    plan.push({
+      step: 'queue_contract',
+      required: true,
+      detail:
+        'Dispatch a real queue payload in an isolated queue adapter and record job completion, retry, and failure evidence.',
+    });
+  }
+
+  if (target.kind === 'webhook') {
+    plan.push({
+      step: 'webhook_contract',
+      required: true,
+      detail:
+        'Send signed and invalid inbound payloads through the webhook route and assert acknowledgement, rejection, and idempotency behavior.',
+    });
+  }
+
+  if (target.kind === 'cron') {
+    plan.push({
+      step: 'schedule_contract',
+      required: true,
+      detail:
+        'Invoke the scheduled handler through a controlled clock or direct scheduler adapter and record side effects.',
+    });
+  }
+
+  if (target.requiresAuth) {
+    plan.push({
+      step: 'auth_boundary',
+      required: true,
+      detail:
+        'Run positive, missing credential, and malformed credential attempts against the discovered guard boundary.',
+    });
+  }
+
+  if (target.requiresTenant) {
+    plan.push({
+      step: 'tenant_boundary',
+      required: true,
+      detail:
+        'Run matching-context and mismatched-context attempts before any pass/fail status can count as observed evidence.',
+    });
+  }
+
+  if (hasPersistenceDependency(target)) {
+    plan.push({
+      step: 'side_effects',
+      required: true,
+      detail:
+        'Record database reads/writes before and after execution and attach model-level side-effect evidence.',
+    });
+  }
+
+  plan.push({
+    step: 'record_evidence',
+    required: true,
+    detail: `Persist attempts, timestamps, logs, output, and side effects; ${executionMode} blueprints remain not observed until this exists.`,
+  });
+
+  return plan;
+}
+
+function buildHarnessRequiredAssertions(target: HarnessTarget): string[] {
+  const assertions = [
+    'materialize target import and dependency setup from the owning package',
+    'bind fixtures to real constructors, HTTP app, queue, or database test adapter',
+    'assert concrete output contract instead of defined/non-error placeholders',
+    'record attempts, timestamps, output, logs, and side effects before status can pass',
+  ];
+
+  if (target.httpMethod) {
+    assertions.push(
+      'assert HTTP status, response schema, and error schema for the discovered route',
+    );
+  }
+
+  if (target.requiresAuth) {
+    assertions.push('assert authenticated and unauthenticated credential boundaries');
+  }
+
+  if (target.requiresTenant) {
+    assertions.push('assert same-context success and cross-context rejection');
+  }
+
+  if (hasPersistenceDependency(target)) {
+    assertions.push('assert persistent side effects and rollback or isolation evidence');
+  }
+
+  if (target.kind === 'worker') {
+    assertions.push('assert queue job lifecycle, retry behavior, and failure handling');
+  }
+
+  if (target.kind === 'webhook') {
+    assertions.push(
+      'assert signed payload acceptance, invalid signature rejection, and duplicate delivery handling',
+    );
+  }
+
+  return assertions;
+}
+
+function buildHarnessExpectedEvidence(
+  target: HarnessTarget,
+): Array<{ kind: string; required: boolean; reason: string }> {
+  const expectedEvidence: Array<{ kind: string; required: boolean; reason: string }> = [
+    {
+      kind: 'runtime',
+      required: true,
+      reason:
+        'Harness blueprint must be executed and recorded with attempts, timestamps, and pass/fail status.',
+    },
+  ];
+
+  if (target.httpMethod) {
+    expectedEvidence.push({
+      kind: 'integration',
+      required: true,
+      reason:
+        'HTTP target must validate request, response, and status contract through the owning app adapter.',
+    });
+  }
+
+  if (target.requiresAuth || target.requiresTenant) {
+    expectedEvidence.push({
+      kind: 'isolation',
+      required: true,
+      reason:
+        'Auth or tenant metadata requires positive and negative isolation proof before observation.',
+    });
+  }
+
+  if (hasPersistenceDependency(target)) {
+    expectedEvidence.push({
+      kind: 'side_effect',
+      required: true,
+      reason: 'Persistent dependency requires recorded state access and side-effect verification.',
+    });
+  }
+
+  return expectedEvidence;
 }
 
 // ─── Fixture Data Structure Builders ─────────────────────────────────────────
@@ -1424,9 +1668,9 @@ export function buildFixtureDataStructures(targets: HarnessTarget[]): Record<str
     })),
     authFixtures: {
       testTokenPayload: {
-        sub: 'pulse-test-user',
-        workspaceId: 'pulse-test-workspace',
-        roles: ['admin', 'member'],
+        subject: '__pulse_subject__',
+        context: '__pulse_context__',
+        claims: {},
         iat: Math.floor(Date.now() / 1000),
         exp: Math.floor(Date.now() / 1000) + 3600,
       },

@@ -6,7 +6,11 @@ type FindingKind =
   | 'fixed_product_route_collection'
   | 'fixed_capability_id_collection'
   | 'fixed_flow_id_collection'
-  | 'fixed_module_decision_collection';
+  | 'fixed_module_decision_collection'
+  | 'fixed_product_catalog_collection'
+  | 'fixed_domain_catalog_collection'
+  | 'fixed_provider_catalog_collection'
+  | 'fixed_role_catalog_collection';
 
 export interface NoHardcodedRealityFinding {
   filePath: string;
@@ -46,13 +50,71 @@ const ALLOWED_CONTEXT_TOKENS = [
   'noise',
   'payload',
   'pattern',
-  'role',
+  'patterns',
   'severity',
   'status',
   'token',
   'truth',
   'validator',
 ];
+const ALLOWED_GRAMMAR_CONTEXT_TOKENS = [
+  ...ALLOWED_CONTEXT_TOKENS,
+  'ast',
+  'analysis',
+  'enum',
+  'gate',
+  'gates',
+  'grammar',
+  'kernel',
+  'lifecycle',
+  'schema',
+  'signal',
+  'source',
+  'structural',
+  'static',
+  'syntax',
+  'type',
+  'tokens',
+];
+const REALITY_CATALOG_CONTEXT_TOKENS = [
+  'allowlist',
+  'catalog',
+  'decision',
+  'default',
+  'fixed',
+  'known',
+  'list',
+  'map',
+  'maps',
+  'pack',
+  'packs',
+  'registry',
+  'required',
+  'seed',
+  'set',
+  'supported',
+];
+const PRODUCT_CONTEXT_TOKENS = ['product', 'products', 'surface', 'surfaces'];
+const DOMAIN_CONTEXT_TOKENS = ['domain', 'domains', 'module', 'modules', 'area', 'areas'];
+const PROVIDER_CONTEXT_TOKENS = [
+  'adapter',
+  'adapters',
+  'integration',
+  'integrations',
+  'provider',
+  'providers',
+  'vendor',
+  'vendors',
+];
+const ROLE_CONTEXT_TOKENS = ['actor', 'actors', 'persona', 'personas', 'role', 'roles'];
+const USER_ROLE_CONTEXT_TOKENS = ['user', 'users'];
+const STRUCTURAL_ROLE_VALUES = new Set([
+  'interface',
+  'orchestration',
+  'persistence',
+  'side_effect',
+  'simulation',
+]);
 
 const INFRASTRUCTURE_ROUTES = new Set(['/', '/health', '/diag-db']);
 const HTTP_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']);
@@ -120,6 +182,37 @@ function contextHasAllowedGrammar(context: string): boolean {
   return ALLOWED_CONTEXT_TOKENS.some((token) => normalized.includes(token));
 }
 
+function splitIdentifierTokens(value: string): Set<string> {
+  const spaced = value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .toLowerCase();
+  return new Set(spaced.split(/\s+/).filter(Boolean));
+}
+
+function contextHasToken(context: string, tokens: readonly string[]): boolean {
+  const contextTokens = splitIdentifierTokens(context);
+  return tokens.some((token) => contextTokens.has(token));
+}
+
+function contextHasAllowedRealityGrammar(context: string): boolean {
+  return contextHasToken(context, ALLOWED_GRAMMAR_CONTEXT_TOKENS);
+}
+
+function contextLooksLikeRealityCatalog(
+  context: string,
+  realityTokens: readonly string[],
+  options: { requireCatalogToken?: boolean } = {},
+): boolean {
+  if (!contextHasToken(context, realityTokens)) {
+    return false;
+  }
+  if (contextHasAllowedRealityGrammar(context)) {
+    return false;
+  }
+  return !options.requireCatalogToken || contextHasToken(context, REALITY_CATALOG_CONTEXT_TOKENS);
+}
+
 function isAllowedLiteral(value: string): boolean {
   return (
     HTTP_METHODS.has(value) ||
@@ -139,6 +232,19 @@ function isRouteLiteral(value: string): boolean {
 
 function looksLikeFixedId(value: string): boolean {
   return /^[a-z][a-z0-9]+(?:[-_:][a-z0-9]+)+$/.test(value) && !isAllowedLiteral(value);
+}
+
+function looksLikeRealityLabel(value: string): boolean {
+  return (
+    looksLikeFixedId(value) ||
+    /^[a-z][a-z0-9]+(?:[A-Z][A-Za-z0-9]+)+$/.test(value) ||
+    /^[A-Z][A-Za-z0-9 ]{2,}$/.test(value) ||
+    /^[a-z][a-z0-9]{2,}$/.test(value)
+  );
+}
+
+function realityLabelFindings(values: string[]): string[] {
+  return values.filter((value) => looksLikeRealityLabel(value));
 }
 
 function extractStringLiterals(node: ts.Node): string[] {
@@ -204,6 +310,54 @@ function moduleFindings(context: string, values: string[]): string[] {
   return values.filter((value) => /^[A-Z][A-Za-z0-9 ]{2,}$/.test(value));
 }
 
+function productCatalogFindings(context: string, values: string[]): string[] {
+  if (
+    !contextLooksLikeRealityCatalog(context, PRODUCT_CONTEXT_TOKENS, {
+      requireCatalogToken: true,
+    })
+  ) {
+    return [];
+  }
+  return realityLabelFindings(values);
+}
+
+function domainCatalogFindings(context: string, values: string[]): string[] {
+  if (
+    !contextLooksLikeRealityCatalog(context, DOMAIN_CONTEXT_TOKENS, {
+      requireCatalogToken: true,
+    })
+  ) {
+    return [];
+  }
+  return realityLabelFindings(values);
+}
+
+function providerCatalogFindings(context: string, values: string[]): string[] {
+  if (
+    !contextLooksLikeRealityCatalog(context, PROVIDER_CONTEXT_TOKENS, {
+      requireCatalogToken: true,
+    })
+  ) {
+    return [];
+  }
+  const findings = realityLabelFindings(values);
+  return findings.length >= 2 ? findings : [];
+}
+
+function roleCatalogFindings(context: string, values: string[]): string[] {
+  const hasCatalogRoleContext = contextLooksLikeRealityCatalog(context, ROLE_CONTEXT_TOKENS, {
+    requireCatalogToken: true,
+  });
+  const hasUserRoleContext =
+    contextHasToken(context, ROLE_CONTEXT_TOKENS) &&
+    contextHasToken(context, USER_ROLE_CONTEXT_TOKENS) &&
+    !contextHasAllowedRealityGrammar(context);
+  if (!hasCatalogRoleContext && !hasUserRoleContext) {
+    return [];
+  }
+  return realityLabelFindings(values).filter((value) => !STRUCTURAL_ROLE_VALUES.has(value));
+}
+
 function pushFinding(
   findings: NoHardcodedRealityFinding[],
   sourceFile: ts.SourceFile,
@@ -241,6 +395,10 @@ function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityF
     const capabilities = capabilityFindings(context, values);
     const flows = flowFindings(context, values);
     const modules = moduleFindings(context, values);
+    const products = productCatalogFindings(context, values);
+    const domains = domainCatalogFindings(context, values);
+    const providers = providerCatalogFindings(context, values);
+    const roles = roleCatalogFindings(context, values);
 
     if (routes.length > 0) {
       pushFinding(
@@ -276,6 +434,50 @@ function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityF
         'fixed_module_decision_collection',
         context,
         modules,
+      );
+    }
+    if (products.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'fixed_product_catalog_collection',
+        context,
+        products,
+      );
+    }
+    if (domains.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'fixed_domain_catalog_collection',
+        context,
+        domains,
+      );
+    }
+    if (providers.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'fixed_provider_catalog_collection',
+        context,
+        providers,
+      );
+    }
+    if (roles.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'fixed_role_catalog_collection',
+        context,
+        roles,
       );
     }
 

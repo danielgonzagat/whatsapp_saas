@@ -150,7 +150,11 @@ export class CheckoutProductService {
 
   // ─── Plans ─────────────────────────────────────────────────────────────────
 
-  /** Create plan. */
+  /** Create plan.
+   * PULSE:OK — Sub-creates (checkoutProductPlan, checkoutConfig) inherit
+   * workspace ownership transitively through Product.workspaceId, which is
+   * verified by the product lookup above before the transaction runs.
+   */
   async createPlan(productId: string, data: CreatePlanInput, workspaceId: string) {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, workspaceId },
@@ -272,7 +276,15 @@ export class CheckoutProductService {
   // ─── Checkout (CHECKOUT kind) ─────────────────────────────────────────────
 
   /** Create checkout. */
-  async createCheckout(productId: string, data: CreateCheckoutInput) {
+  async createCheckout(productId: string, data: CreateCheckoutInput, workspaceId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
+      select: { id: true },
+    });
+    if (!product) {
+      throw new NotFoundException('Product not found');
+    }
+
     const { brandName, ...checkoutData } = data;
     const slug = await this.planLinkManager.generateCheckoutSlug(
       data.slug || `${data.name}-checkout`,

@@ -13,6 +13,46 @@ interface ManifestAudit {
   };
 }
 
+function extractCanonicalArtifactPaths(registryContent: string): Set<string> {
+  const registeredPaths = new Set<string>();
+  const relativePathRegex = /relativePath:\s*['"]([^'"]+)['"]/g;
+  for (const match of registryContent.matchAll(relativePathRegex)) {
+    registeredPaths.add(match[1]);
+  }
+  const optionalEvidenceRegex = /optionalEvidence\(\s*['"][^'"]+['"]\s*,\s*['"]([^'"]+)['"]/g;
+  for (const match of registryContent.matchAll(optionalEvidenceRegex)) {
+    registeredPaths.add(match[1]);
+  }
+  return registeredPaths;
+}
+
+function extractStringLiterals(content: string): Set<string> {
+  const literals = new Set<string>();
+  const stringRegex = /['"]([^'"]+)['"]/g;
+  for (const match of content.matchAll(stringRegex)) {
+    literals.add(match[1]);
+  }
+  return literals;
+}
+
+function collectPulseSourceFiles(dir: string): string[] {
+  const files: string[] = [];
+  for (const entry of readDir(dir, { withFileTypes: true })) {
+    const fullPath = safeJoin(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '__tests__') {
+        continue;
+      }
+      files.push(...collectPulseSourceFiles(fullPath));
+      continue;
+    }
+    if (entry.isFile() && /\.(ts|tsx|js|jsx)$/.test(entry.name)) {
+      files.push(fullPath);
+    }
+  }
+  return files;
+}
+
 export function auditManifestRegistry(rootDir: string): ManifestAudit {
   const errors: string[] = [];
   const orphanArtifacts: string[] = [];
@@ -51,20 +91,11 @@ export function auditManifestRegistry(rootDir: string): ManifestAudit {
   }
 
   const registryContent = readTextFile(artifactRegPath, 'utf8');
-  const registryArtifactMatch = registryContent.match(
-    /const CANONICAL_ARTIFACTS[^=]*=\s*\[([\s\S]*?)\]/,
-  );
-  if (!registryArtifactMatch) {
-    errors.push('Could not parse CANONICAL_ARTIFACTS from artifact-registry.ts');
+  const registeredPaths = extractCanonicalArtifactPaths(registryContent);
+  if (registeredPaths.size === 0) {
+    errors.push('Could not parse canonical artifacts from artifact-registry.ts');
     return { status: 'FAILED', errors, orphans: { artifacts: [], adapters: [] } };
   }
-
-  const registeredPaths = new Set<string>();
-  const lines = registryArtifactMatch[1].split('\n');
-  lines.forEach((line) => {
-    const pathMatch = line.match(/relativePath:\s*['"]([^'"]+)['"]/);
-    if (pathMatch) registeredPaths.add(pathMatch[1]);
-  });
 
   const artifactsPath = safeJoin(safeRootDir, 'scripts/pulse/artifacts.ts');
   const artifactsContent = readTextFile(artifactsPath, 'utf8');
@@ -80,9 +111,19 @@ export function auditManifestRegistry(rootDir: string): ManifestAudit {
     }
   });
 
+  const pulseDir = safeJoin(safeRootDir, 'scripts/pulse');
+  const referencedArtifactNames = new Set<string>();
+  for (const file of collectPulseSourceFiles(pulseDir)) {
+    for (const literal of extractStringLiterals(readTextFile(file, 'utf8'))) {
+      if (/^PULSE_[A-Z0-9_]+\.(json|jsonl|md)$/.test(literal)) {
+        referencedArtifactNames.add(literal);
+      }
+    }
+  }
+
   registeredPaths.forEach((regPath) => {
-    if (!writeCalls.has(regPath)) {
-      orphanArtifacts.push(`Registered artifact "${regPath}" has no writeArtifact call`);
+    if (!writeCalls.has(regPath) && !referencedArtifactNames.has(regPath)) {
+      orphanArtifacts.push(`Registered artifact "${regPath}" has no writer or source reference`);
     }
   });
 
@@ -97,16 +138,13 @@ export function auditManifestRegistry(rootDir: string): ManifestAudit {
   }
 
   const adapterFiles = readDir(adaptersDir).filter((f) => f.endsWith('.ts'));
-  const expectedAdapters = [
-    'codecov-adapter.ts',
-    'datadog-adapter.ts',
-    'dependabot-adapter.ts',
-    'github-actions-adapter.ts',
-    'github-adapter.ts',
-    'sentry-adapter.ts',
-    'external-sources-orchestrator.ts',
-    'prometheus-adapter.ts',
-  ];
+  const orchestratorPath = safeJoin(adaptersDir, 'external-sources-orchestrator.ts');
+  const orchestratorImports = readTextFile(orchestratorPath, 'utf8');
+  const expectedAdapters = new Set<string>(['external-sources-orchestrator.ts']);
+  const adapterImportRegex = /from\s+['"]\.\/([^'"]+-adapter)['"]/g;
+  for (const match of orchestratorImports.matchAll(adapterImportRegex)) {
+    expectedAdapters.add(`${match[1]}.ts`);
+  }
 
   expectedAdapters.forEach((expected) => {
     if (!adapterFiles.includes(expected)) {
@@ -115,7 +153,7 @@ export function auditManifestRegistry(rootDir: string): ManifestAudit {
   });
 
   adapterFiles.forEach((file) => {
-    if (!expectedAdapters.includes(file)) {
+    if (!expectedAdapters.has(file)) {
       orphanAdapters.push(`Unexpected adapter ${file} found`);
     }
   });

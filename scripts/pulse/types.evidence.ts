@@ -347,6 +347,14 @@ export interface PulseCertification {
   codacyEvidenceSummary?: PulseCodacyEvidenceSummary | null;
   /** External signal summary property. */
   externalSignalSummary?: PulseExternalSignalSummary | null;
+  /** Required missing adapter count mirrored for cross-artifact comparison. */
+  missingAdaptersCount?: number;
+  /** Required stale adapter count mirrored for cross-artifact comparison. */
+  staleAdaptersCount?: number;
+  /** Required invalid adapter count mirrored for cross-artifact comparison. */
+  invalidAdaptersCount?: number;
+  /** Required blocking adapter count mirrored for cross-artifact comparison. */
+  blockingAdaptersCount?: number;
   /** Execution matrix summary property. */
   executionMatrixSummary?: PulseExecutionMatrixSummary | null;
   /** Resolved manifest summary property. */

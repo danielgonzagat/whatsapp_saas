@@ -13,6 +13,7 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
+  Optional,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
@@ -41,6 +42,7 @@ import {
   buildPdfAnalysisPrompt,
 } from './pdf-processor.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
 const IMAGE___JPEG_PNG_GIF_W_RE = /^(image\/(jpeg|png|gif|webp)|application\/pdf|text\/plain)$/;
@@ -83,6 +85,7 @@ export class UploadController {
     private readonly memoryService: MemoryService,
     private readonly storageService: StorageService,
     private readonly prepaidWalletService: WalletService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private insufficientWalletMessage() {
@@ -106,6 +109,7 @@ export class UploadController {
     try {
       await this.storageService.delete(relativePath);
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'UploadController.delete');
       this.logger.error(
         `Falha ao remover upload parcial ${relativePath}: ${
           error instanceof Error
@@ -128,6 +132,7 @@ export class UploadController {
         ],
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'UploadController.buildPdfAnalysisPrompt');
       if (error instanceof UnknownProviderPricingModelError) {
         return undefined;
       }
@@ -163,6 +168,7 @@ export class UploadController {
       });
       return true;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'UploadController.chargeForUsage');
       if (error instanceof UsagePriceNotFoundError) {
         return false;
       }
@@ -200,6 +206,7 @@ export class UploadController {
         },
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'UploadController.resolveBackendOpenAIModel');
       if (!(error instanceof UnknownProviderPricingModelError)) {
         throw error;
       }
@@ -225,6 +232,7 @@ export class UploadController {
         },
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'UploadController.refundUsageCharge');
       this.logger.error(
         `Failed to refund upload pdf_analysis workspace=${workspaceId} request=${requestId}: ${
           error instanceof Error
@@ -379,6 +387,7 @@ export class UploadController {
           ...result,
         });
       } catch (error: unknown) {
+        void this.opsAlert?.alertOnCriticalError(error, 'UploadController.push');
         results.push({
           success: false,
           filename: file.originalname,
@@ -410,6 +419,7 @@ export class UploadController {
         const textResult = await pdfParse(file.buffer);
         extractedText = textResult.text;
       } catch (error: unknown) {
+        void this.opsAlert?.alertOnCriticalError(error, 'UploadController.pdfParse');
         this.logger.error(
           `Erro ao extrair PDF do upload ${originalname}: ${error instanceof Error ? error.message : String(error)}`,
         );
@@ -480,6 +490,7 @@ export class UploadController {
           },
         };
       } catch (error: unknown) {
+        void this.opsAlert?.alertOnCriticalError(error, 'UploadController.countAnalysisItems');
         await this.deleteStoredFileIfNeeded(stored?.path);
         if (usageCharged) {
           await this.refundPdfAnalysisIfNeeded(

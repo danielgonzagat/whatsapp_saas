@@ -58,19 +58,47 @@ function resolveCategory(
 }
 
 function resolveRole(
+  surface: PulseProductSurface | null,
   endpoints: BehaviorNode[],
   capabilities: PulseProductCapability[],
 ): ScenarioRole {
+  const discoveredTokens = [
+    surface?.id,
+    surface?.name,
+    ...(surface?.artifactIds || []),
+    ...(surface?.capabilities || []),
+    ...capabilities.flatMap((capability) => [
+      capability.id,
+      capability.name,
+      ...capability.artifactIds,
+    ]),
+    ...endpoints.map((endpoint) => endpoint.filePath),
+  ]
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+    .toLowerCase();
+  if (/\badmin\b/.test(discoveredTokens)) {
+    return 'admin';
+  }
+  if (/\boperator\b/.test(discoveredTokens)) {
+    return 'operator';
+  }
+  if (/\bproducer\b/.test(discoveredTokens)) {
+    return 'producer';
+  }
+  if (/\baffiliate\b/.test(discoveredTokens)) {
+    return 'affiliate';
+  }
+  if (/\bcustomer\b/.test(discoveredTokens)) {
+    return 'customer';
+  }
   if (
     endpoints.length === 0 &&
     capabilities.every((capability) => capability.truthMode !== 'observed')
   ) {
     return 'anonymous';
   }
-  if (capabilities.some((capability) => capability.criticality === 'must_have')) {
-    return 'operator';
-  }
-  return 'customer';
+  return 'anonymous';
 }
 
 // ─── Artifact Loaders ────────────────────────────────────────────────────────
@@ -126,9 +154,15 @@ function tokenizeSurface(surface: PulseProductSurface): string[] {
       raw
         .toLowerCase()
         .split(/[^a-z0-9]+/g)
-        .filter((token) => token.length > 2),
+        .filter((token) => token.length > 2 && !isSurfaceHintNoiseToken(token)),
     ),
   ];
+}
+
+function isSurfaceHintNoiseToken(token: string): boolean {
+  return /^(api|app|backend|component|components|controller|controllers|frontend|lib|page|pages|route|routes|service|services|src|tsx?|jsx?|get|post|put|patch|delete)$/.test(
+    token,
+  );
 }
 
 function nodeMatchesSurface(node: BehaviorNode, surface: PulseProductSurface): boolean {
@@ -154,10 +188,10 @@ function getEndpointsForSurface(
 function getHttpDecorator(node: BehaviorNode): string {
   for (const d of node.decorators) {
     if (['Get', 'Post', 'Put', 'Patch', 'Delete'].includes(d)) {
-      return d;
+      return d.toUpperCase();
     }
   }
-  return 'Get';
+  return 'GET';
 }
 
 function extractRoutePattern(node: BehaviorNode): string {
@@ -324,12 +358,12 @@ function generatePlaywrightSpec(scenario: {
       case 'api_call':
         lines.push(`    // Step ${step.order}: ${step.description}`);
         lines.push(
-          `    const apiRes = await request.${getHttpMethodForStep(step)}('${step.target}', {`,
+          `    const apiRes${step.order} = await request.${getHttpMethodForStep(step)}('${getApiPathForStep(step)}', {`,
         );
         lines.push(`      data: { /* pulse-test-payload */ },`);
         lines.push(`      failOnStatusCode: false,`);
         lines.push(`    });`);
-        lines.push(`    expect(apiRes.status()).toBe(200);`);
+        lines.push(`    expect(apiRes${step.order}.status()).toBe(200);`);
         break;
 
       case 'assert':
@@ -369,11 +403,18 @@ function generatePlaywrightSpec(scenario: {
 }
 
 function getHttpMethodForStep(step: ScenarioStep): string {
-  if (step.target.startsWith('POST')) return 'post';
-  if (step.target.startsWith('PUT')) return 'put';
-  if (step.target.startsWith('PATCH')) return 'patch';
-  if (step.target.startsWith('DELETE')) return 'delete';
+  const method = step.target.trim().split(/\s+/)[0]?.toUpperCase();
+  if (method === 'POST') return 'post';
+  if (method === 'PUT') return 'put';
+  if (method === 'PATCH') return 'patch';
+  if (method === 'DELETE') return 'delete';
   return 'get';
+}
+
+function getApiPathForStep(step: ScenarioStep): string {
+  const [, ...pathParts] = step.target.trim().split(/\s+/);
+  const apiPath = pathParts.join(' ');
+  return apiPath.startsWith('/') ? apiPath : step.target;
 }
 
 // ─── Evidence Links ──────────────────────────────────────────────────────────
@@ -468,14 +509,154 @@ function buildStep(
   return { order, kind, description, target, expectedResult, timeout };
 }
 
+interface DynamicScenarioPlan {
+  needsLogin: boolean;
+  needsActionClick: boolean;
+  needsSubmit: boolean;
+  needsAsyncWait: boolean;
+  needsCleanup: boolean;
+  needsSeedData: boolean;
+  minInputSteps: number;
+}
+
+function collectScenarioTokens(
+  ctx: ScenarioBuildContext,
+  subFlowId: string,
+): { text: string; tokens: Set<string> } {
+  const surface = getSurface(ctx.productGraph, ctx.primarySurfaceId);
+  const capabilities = getCapabilitiesForSurface(ctx.productGraph, ctx.primarySurfaceId);
+  const raw = [
+    subFlowId,
+    ctx.primarySurfaceId,
+    surface?.id,
+    surface?.name,
+    surface?.description,
+    ...(surface?.artifactIds || []),
+    ...(surface?.capabilities || []),
+    ...capabilities.flatMap((capability) => [
+      capability.id,
+      capability.name,
+      ...capability.artifactIds,
+      ...capability.flowIds,
+      ...capability.blockers,
+    ]),
+    ...ctx.endpoints.flatMap((endpoint) => [
+      endpoint.name,
+      endpoint.filePath,
+      endpoint.docComment,
+      ...endpoint.inputs.map((input) => input.name),
+      ...endpoint.outputs.map((output) => output.target),
+      ...endpoint.stateAccess.map((access) => access.model),
+      ...endpoint.externalCalls.map((call) => `${call.provider} ${call.operation}`),
+    ]),
+    ...ctx.entities.map((entity) => entity.model),
+  ]
+    .filter((value): value is string => typeof value === 'string')
+    .join(' ')
+    .toLowerCase();
+
+  return {
+    text: raw,
+    tokens: new Set(raw.split(/[^a-z0-9]+/g).filter((token) => token.length > 1)),
+  };
+}
+
+function hasScenarioSignal(text: string, pattern: RegExp): boolean {
+  return pattern.test(text);
+}
+
+function buildDynamicScenarioPlan(
+  ctx: ScenarioBuildContext,
+  subFlowId: string,
+): DynamicScenarioPlan {
+  const { text, tokens } = collectScenarioTokens(ctx, subFlowId);
+  const hasMutation = ctx.endpoints.some(
+    (endpoint) =>
+      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(getHttpDecorator(endpoint)) ||
+      endpoint.outputs.some((output) => output.kind === 'db_write') ||
+      endpoint.stateAccess.some((access) => access.operation !== 'read'),
+  );
+  const hasExternalAsync = ctx.endpoints.some(
+    (endpoint) =>
+      endpoint.externalCalls.length > 0 ||
+      endpoint.outputs.some((output) => output.kind === 'event' || output.kind === 'queue_message'),
+  );
+  const needsRequestContext = ctx.endpoints.some((endpoint) =>
+    endpoint.inputs.some((input) => input.kind === 'context' || input.kind === 'headers'),
+  );
+  const isAuthEntry = hasScenarioSignal(
+    text,
+    /\b(auth|login|sign(?:up|in)|register|oauth|token|session|password)\b/,
+  );
+  const isFinancial =
+    ctx.primaryEntity?.financial === true ||
+    hasScenarioSignal(
+      text,
+      /\b(amount|price|balance|currency|ledger|wallet|checkout|payment|payout|refund|subscription|order|invoice)\b/,
+    );
+  const isMessaging = hasScenarioSignal(
+    text,
+    /\b(whatsapp|message|inbox|webhook|qr|session|provider|phone)\b/,
+  );
+  const isWorkspaceMutation =
+    hasScenarioSignal(text, /\b(workspace|tenant|member|invite|settings|account)\b/) && hasMutation;
+  const isProductMutation =
+    hasScenarioSignal(text, /\b(product|catalog|sku|item|offer|checkout)\b/) && hasMutation;
+  const isConnectionFlow = hasScenarioSignal(
+    text,
+    /\b(connect|disconnect|resume|verify|authorize|oauth|provider)\b/,
+  );
+
+  return {
+    needsLogin:
+      needsRequestContext ||
+      (!isAuthEntry &&
+        (hasMutation || isFinancial || isMessaging || isWorkspaceMutation || isProductMutation)),
+    needsActionClick:
+      hasMutation || isConnectionFlow || tokens.has('send') || tokens.has('receive'),
+    needsSubmit: hasMutation || isAuthEntry || isConnectionFlow,
+    needsAsyncWait: hasExternalAsync || isMessaging || isConnectionFlow,
+    needsCleanup:
+      hasMutation || isFinancial || isMessaging || isWorkspaceMutation || isProductMutation,
+    needsSeedData: isFinancial || isProductMutation || isWorkspaceMutation,
+    minInputSteps:
+      isFinancial || isProductMutation
+        ? 3
+        : isAuthEntry || isWorkspaceMutation || isMessaging
+          ? 2
+          : 1,
+  };
+}
+
+function normalizeSelectorToken(inputName: string, fallbackIndex: number): string {
+  const trimmed = inputName.trim();
+  if (/^[A-Za-z][A-Za-z0-9_.:-]{0,80}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const normalized = trimmed
+    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48);
+  return normalized || `pulse-field-${fallbackIndex}`;
+}
+
+function buildInputSelector(inputName: string, fallbackIndex: number): string {
+  const token = normalizeSelectorToken(inputName, fallbackIndex);
+  return `[name="${token}"], [data-testid="${token}"]`;
+}
+
 function generateStepsForSubFlow(
   category: ScenarioCategory,
   subFlowId: string,
   primarySurfaceId: string,
   endpoints: BehaviorNode[],
+  ctx: ScenarioBuildContext,
 ): ScenarioStep[] {
   const steps: ScenarioStep[] = [];
   let order = 0;
+  const plan = buildDynamicScenarioPlan(ctx, subFlowId);
 
   const routeFromSurface = primarySurfaceId.startsWith('/')
     ? primarySurfaceId
@@ -486,14 +667,29 @@ function generateStepsForSubFlow(
     endpoint.inputs.some((input) => input.kind === 'context' || input.kind === 'headers'),
   );
 
-  if (needsContext) {
+  if (needsContext || plan.needsLogin) {
     steps.push(
       buildStep(
         order++,
         'login',
-        'Authenticate because discovered endpoint input requires request context or headers',
+        needsContext
+          ? 'Authenticate because discovered endpoint input requires request context or headers'
+          : 'Authenticate because discovered scenario evidence requires protected runtime state',
         routeFromSurface,
         'Session context is available to downstream steps',
+        LONG_STEP_TIMEOUT,
+      ),
+    );
+  }
+
+  if (plan.needsSeedData) {
+    steps.push(
+      buildStep(
+        order++,
+        'seed_db',
+        'Prepare isolated fixture state required by discovered data dependencies',
+        routeFromEndpoint,
+        'Required fixture data exists in isolated test scope',
         LONG_STEP_TIMEOUT,
       ),
     );
@@ -520,17 +716,48 @@ function generateStepsForSubFlow(
         .map((input) => input.name)
         .filter(Boolean),
     ),
-  ].slice(0, 5);
+  ];
 
-  for (const inputName of inputNames) {
+  const selectedInputs =
+    inputNames.length > 0
+      ? inputNames.slice(0, Math.max(plan.minInputSteps, Math.min(inputNames.length, 5)))
+      : Array.from({ length: plan.minInputSteps }, (_, index) => `pulseField${index + 1}`);
+
+  for (const [index, inputName] of selectedInputs.entries()) {
     steps.push(
       buildStep(
         order++,
         'type',
         `Fill discovered input ${inputName}`,
-        `[name="${inputName}"], [data-testid="${inputName}"]`,
+        buildInputSelector(inputName, index),
         'Field accepts generated input or reports validation error explicitly',
         DEFAULT_STEP_TIMEOUT,
+      ),
+    );
+  }
+
+  if (plan.needsActionClick) {
+    steps.push(
+      buildStep(
+        order++,
+        'click',
+        `Trigger discovered action for ${subFlowId}`,
+        `[data-pulse-action="${normalizeSelectorToken(subFlowId, order)}"], button[type="submit"]`,
+        'Action is dispatched through the discovered user-facing path',
+        DEFAULT_STEP_TIMEOUT,
+      ),
+    );
+  }
+
+  if (plan.needsSubmit) {
+    steps.push(
+      buildStep(
+        order++,
+        'submit',
+        `Submit discovered state transition for ${subFlowId}`,
+        'button[type="submit"]',
+        'Mutation request is sent and classified without fake success fallback',
+        LONG_STEP_TIMEOUT,
       ),
     );
   }
@@ -549,6 +776,19 @@ function generateStepsForSubFlow(
     );
   }
 
+  if (plan.needsAsyncWait) {
+    steps.push(
+      buildStep(
+        order++,
+        'wait',
+        `Wait for async/provider evidence for ${subFlowId}`,
+        routeFromEndpoint,
+        'Asynchronous provider, queue, webhook, or session evidence settles',
+        LONG_STEP_TIMEOUT,
+      ),
+    );
+  }
+
   steps.push(
     buildStep(
       order++,
@@ -560,7 +800,7 @@ function generateStepsForSubFlow(
     ),
   );
 
-  if (endpoints.some((endpoint) => endpoint.outputs.some((output) => output.kind === 'db_write'))) {
+  if (plan.needsCleanup) {
     steps.push(
       buildStep(
         order++,
@@ -606,7 +846,7 @@ function resolveScenarioBuildContext(
   const harnessTargets = getHarnessTargetsForSurface(artifacts.harnessEvidence, surface);
   const entities = getEntitiesForSurface(artifacts.dataflowState, surface);
   const primaryEntity = getPrimaryEntity(entities);
-  const role = resolveRole(endpoints, capabilities);
+  const role = resolveRole(surface, endpoints, capabilities);
 
   return {
     category,
@@ -634,6 +874,7 @@ function buildScenario(
     subFlowId,
     ctx.primarySurfaceId,
     ctx.endpoints,
+    ctx,
   );
 
   const preconditions = buildPreconditions(

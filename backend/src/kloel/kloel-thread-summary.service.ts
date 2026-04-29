@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import OpenAI from 'openai';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const WHITESPACE_G_RE = /\s+/g;
 const QUOTE_TRIM_RE = /^["'""'']+|["'""'']+$/g;
@@ -23,6 +24,7 @@ export class KloelThreadSummaryService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private buildFallbackThreadTitle(message: string): string {
@@ -97,6 +99,10 @@ export class KloelThreadSummaryService {
       }
       return this.sanitizeGeneratedThreadTitle(response.choices[0]?.message?.content);
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'KloelThreadSummaryService.sanitizeGeneratedThreadTitle',
+      );
       this.logger.warn(`Falha ao gerar título da conversa: ${String(error)}`);
       return fallbackTitle;
     }
@@ -196,6 +202,7 @@ export class KloelThreadSummaryService {
           String(response.choices[0]?.message?.content || fallbackSummary).trim() ||
           fallbackSummary;
       } catch (error: unknown) {
+        void this.opsAlert?.alertOnCriticalError(error, 'KloelThreadSummaryService.trackAiUsage');
         this.logger.warn(`Falha ao atualizar resumo da thread ${threadId}: ${String(error)}`); // Intencional: thread summary update is best-effort.
       }
     }

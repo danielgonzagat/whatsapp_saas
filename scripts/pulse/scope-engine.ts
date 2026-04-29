@@ -203,7 +203,7 @@ function computeExecutionMode(
   extension: string,
   isProtected: boolean,
 ): ScopeExecutionMode {
-  if (isProtected) return 'observation_only';
+  if (isProtected) return 'human_required';
 
   const nonExecutableExtensions = new Set([
     '.md',

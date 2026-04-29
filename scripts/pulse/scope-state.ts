@@ -191,9 +191,9 @@ function walkScopeFiles(
     }
 
     const protectedByGovernance = isProtectedFile(relPath, boundary);
-    const surface = classifySurface(relPath, protectedByGovernance);
+    const surface = classifySurface(relPath, protectedByGovernance, rootDir);
     const kind = classifyKind(relPath, surface);
-    const moduleCandidate = classifyModuleCandidate(relPath);
+    const moduleCandidate = classifyModuleCandidate(relPath, rootDir);
     const ownerLane = classifyOwnerLane(relPath, surface, moduleCandidate, protectedByGovernance);
     const topFile = codacy.topFiles.find((item) => item.filePath === relPath) || null;
     const highIssues = codacy.highPriorityBatch.filter((item) => item.filePath === relPath);

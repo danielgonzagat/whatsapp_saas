@@ -4,28 +4,36 @@ import * as os from 'os';
 import * as path from 'path';
 
 import { classifyEndpointRisk } from '../api-fuzzer';
-import { classifyTargetsFromSource } from '../chaos-engine';
+import {
+  classifyTargetsFromSource,
+  detectProviders,
+  generateProviderScenarios,
+} from '../chaos-engine';
 import { isInternalEndpoint, providerFromUrl } from '../contract-tester';
 import { classifyFinancialModel } from '../dataflow-engine';
-import { isSafeToExecute } from '../path-coverage-engine';
+import { buildPathCoverageState, isSafeToExecute } from '../path-coverage-engine';
 import { discoverPlugins } from '../plugin-system';
 import { classifyEndpointRisk as classifyPropertyEndpointRisk } from '../property-tester';
 import { classifyReplaySession } from '../replay-adapter';
 import { classifyDestructiveActions } from '../safety-sandbox';
 import { detectNewFile } from '../scope-engine';
+import { classifySurface, classifyModuleCandidate } from '../scope-state.classify';
 import { classifyRoleFromRoute } from '../ui-crawler';
 import { determineRiskLevel } from '../dod-engine';
-import { isCriticalHarnessTarget } from '../execution-harness';
+import { classifyExecutionFeasibility, isCriticalHarnessTarget } from '../execution-harness';
 import { filePathToCapability, filePathToFlow, isCriticalPath } from '../gitnexus/provider';
 import { auditPulseNoHardcodedReality } from '../no-hardcoded-reality-audit';
+import { classifyWatchChange } from '../watch-classifier';
 import { ROUTE_NOISE_TOKENS } from '../codebase-truth.tokens';
 import { isUserFacingGroup } from '../codebase-truth.string-utils';
 import { isLikelyMutation } from '../codebase-truth-flows';
 import { buildScenarioCatalog } from '../scenario-engine';
+import { buildBehaviorGraph } from '../behavior-graph';
+import { buildSideEffectSignals } from '../structural-side-effects';
 import type { APIEndpointProbe } from '../types.api-fuzzer';
 import type { HarnessTarget } from '../types.execution-harness';
 import type { PulseExecutionMatrixPath } from '../types.execution-matrix';
-import type { PulseCapability, PulseProductGraph } from '../types';
+import type { PulseCapability, PulseConfig, PulseProductGraph } from '../types';
 import type { ReplaySession } from '../types.replay-adapter';
 import type { InteractionChain } from '../functional-map-types';
 
@@ -205,6 +213,10 @@ describe('PULSE no-hardcoded-reality contracts', () => {
         "const capabilityIds = ['checkout-capability'];",
         "const flowIds = ['payment-flow'];",
         "const MODULE_DECISIONS = ['Billing', 'Checkout'];",
+        "const PRODUCT_CATALOG = ['checkout-basic', 'crm-suite'];",
+        "const DOMAIN_PACKS = ['billing', 'marketing'];",
+        "const SUPPORTED_PROVIDERS = ['stripe', 'mercado-pago'];",
+        "const USER_ROLES = ['owner', 'supplier'];",
       ].join('\n'),
     );
 
@@ -213,6 +225,10 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       'fixed_capability_id_collection',
       'fixed_flow_id_collection',
       'fixed_module_decision_collection',
+      'fixed_product_catalog_collection',
+      'fixed_domain_catalog_collection',
+      'fixed_provider_catalog_collection',
+      'fixed_role_catalog_collection',
     ]);
   });
 
@@ -229,6 +245,8 @@ describe('PULSE no-hardcoded-reality contracts', () => {
         "const ARTIFACT_FILES = ['PULSE_CERTIFICATE.json', 'PULSE_CLI_DIRECTIVE.json'];",
         "const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'];",
         "const SECURITY_PAYLOAD_CLASSES = ['sql-injection', 'xss-payload'];",
+        "const PROVIDER_SCHEMA_KEYS = ['provider', 'status', 'source'];",
+        "const KERNEL_ROLE_GRAMMAR = ['interface', 'persistence', 'side_effect'];",
       ].join('\n'),
     );
 
@@ -246,6 +264,50 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     const plugins = discoverPlugins(path.join(process.cwd(), '__pulse_no_plugins__'));
 
     expect(plugins).toEqual([]);
+  });
+
+  it('classifies scope surfaces from discovered package and tsconfig signals', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-dynamic-surfaces-'));
+    const nextDir = path.join(rootDir, 'customer-ui');
+    const nestDir = path.join(rootDir, 'api-core');
+    const pulseDir = path.join(rootDir, 'tooling/pulse');
+    fs.mkdirSync(path.join(nextDir, 'src/app'), { recursive: true });
+    fs.mkdirSync(path.join(nestDir, 'src'), { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(nextDir, 'package.json'),
+      JSON.stringify({ name: 'customer-ui', dependencies: { next: '1.0.0' } }),
+    );
+    fs.writeFileSync(
+      path.join(nestDir, 'package.json'),
+      JSON.stringify({ name: 'api-core', dependencies: { '@nestjs/core': '1.0.0' } }),
+    );
+    fs.writeFileSync(path.join(pulseDir, 'tsconfig.json'), JSON.stringify({ include: ['*.ts'] }));
+    fs.writeFileSync(path.join(pulseDir, 'scanner.ts'), 'export const scanner = true;');
+
+    expect(classifySurface('customer-ui/src/app/page.tsx', false, rootDir)).toBe('frontend');
+    expect(classifySurface('api-core/src/controller.ts', false, rootDir)).toBe('backend');
+    expect(classifySurface('tooling/pulse/scanner.ts', false, rootDir)).toBe('scripts');
+    expect(classifyModuleCandidate('customer-ui/src/app/orders/page.tsx', rootDir)).toBe('orders');
+  });
+
+  it('classifies watched files from discovered workspace shape', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-dynamic-watch-'));
+    const appDir = path.join(rootDir, 'ui-shell');
+    fs.mkdirSync(path.join(appDir, 'src/app'), { recursive: true });
+    fs.writeFileSync(
+      path.join(appDir, 'package.json'),
+      JSON.stringify({ name: 'ui-shell', dependencies: { next: '1.0.0' } }),
+    );
+    const watchedFile = path.join(appDir, 'src/app/page.tsx');
+    fs.writeFileSync(watchedFile, 'export default function Page() { return null; }');
+
+    expect(
+      classifyWatchChange(watchedFile, {
+        rootDir,
+        schemaPath: path.join(rootDir, 'db/schema.prisma'),
+      } as PulseConfig),
+    ).toBe('frontend');
   });
 
   it('does not classify a model as financial from name alone', () => {
@@ -285,16 +347,137 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     ).toBe('high');
   });
 
-  it('classifies path execution safety from matrix risk instead of path words', () => {
+  it('classifies path execution safety from governance surfaces and generates governed probes for high risk', () => {
     expect(
       isSafeToExecute(
         matrixPath({ filePaths: ['backend/src/checkout/payment.controller.ts'], risk: 'medium' }),
       ),
     ).toBe(true);
 
+    const criticalPath = matrixPath({
+      pathId: 'matrix:path:opaque-critical',
+      filePaths: ['backend/src/opaque/controller.ts'],
+      risk: 'high',
+      routePatterns: ['/opaque'],
+      status: 'blocked_human_required',
+    });
+    expect(isSafeToExecute(criticalPath)).toBe(true);
+
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-path-coverage-'));
+    const coverage = buildPathCoverageState(rootDir, {
+      generatedAt: '2026-04-29T00:00:00.000Z',
+      summary: {
+        totalPaths: 1,
+        bySource: {
+          execution_chain: 1,
+          capability: 0,
+          flow: 0,
+          structural_node: 0,
+          scope_file: 0,
+        },
+        byStatus: {
+          observed_pass: 0,
+          observed_fail: 0,
+          untested: 0,
+          blocked_human_required: 0,
+          unreachable: 0,
+          inferred_only: 1,
+          not_executable: 0,
+          observation_only: 0,
+        },
+        observedPass: 0,
+        observedFail: 0,
+        untested: 0,
+        blockedHumanRequired: 0,
+        unreachable: 0,
+        inferredOnly: 1,
+        notExecutable: 0,
+        terminalPaths: 1,
+        nonTerminalPaths: 0,
+        unknownPaths: 0,
+        criticalUnobservedPaths: 1,
+        impreciseBreakpoints: 0,
+        coveragePercent: 100,
+      },
+      paths: [criticalPath],
+    });
+    const generatedPath = coverage.paths[0];
+
+    expect(generatedPath.safeToExecute).toBe(true);
+    expect(generatedPath.classification).toBe('probe_blueprint_generated');
+    expect(generatedPath.evidenceMode).toBe('blueprint');
+    expect(generatedPath.probeExecutionMode).toBe('governed_validation');
+    expect(generatedPath.terminalReason).toContain('governed_validation probe blueprint');
+    expect(generatedPath.validationCommand).toBe('node scripts/pulse/run.js --guidance');
+    expect(generatedPath.expectedEvidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'runtime',
+          required: true,
+        }),
+      ]),
+    );
+    expect(generatedPath.structuralSafetyClassification).toEqual(
+      expect.objectContaining({
+        risk: 'high',
+        executionMode: 'governed_validation',
+        safeToExecute: true,
+        protectedSurface: false,
+      }),
+    );
+    expect(generatedPath.artifactLinks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          artifactPath: '.pulse/current/PULSE_EXECUTION_MATRIX.json',
+          relationship: 'source_matrix',
+        }),
+        expect.objectContaining({
+          artifactPath: '.pulse/current/PULSE_PATH_COVERAGE.json',
+          relationship: 'coverage_state',
+        }),
+      ]),
+    );
+    expect(generatedPath.testFilePath).toMatch(/\.pulse\/frontier\/.*\.probe\.json/);
+    expect(coverage.summary.criticalUnobserved).toBe(0);
+    expect(coverage.summary.observedPass + coverage.summary.observedFail).toBe(0);
+
+    if (!generatedPath.testFilePath) {
+      throw new Error('Expected path coverage to generate a probe blueprint file');
+    }
+    const probeBlueprint = JSON.parse(
+      fs.readFileSync(path.join(rootDir, generatedPath.testFilePath), 'utf8'),
+    ) as {
+      matrixStatus: string;
+      coverageCountsAsObserved: boolean;
+      expectedEvidence: Array<{ kind: string; required: boolean }>;
+      structuralSafetyClassification: { executionMode: string; safeToExecute: boolean };
+      artifactLinks: Array<{ artifactPath: string; relationship: string }>;
+    };
+
+    expect(JSON.stringify(probeBlueprint)).not.toContain('human_required');
+    expect(probeBlueprint.matrixStatus).toBe('governed_validation_required');
+    expect(probeBlueprint.coverageCountsAsObserved).toBe(false);
+    expect(probeBlueprint.expectedEvidence).toEqual(
+      expect.arrayContaining([expect.objectContaining({ kind: 'runtime', required: true })]),
+    );
+    expect(probeBlueprint.structuralSafetyClassification).toEqual(
+      expect.objectContaining({
+        executionMode: 'governed_validation',
+        safeToExecute: true,
+      }),
+    );
+    expect(probeBlueprint.artifactLinks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          artifactPath: generatedPath.testFilePath,
+          relationship: 'probe_blueprint',
+        }),
+      ]),
+    );
+
     expect(
       isSafeToExecute(
-        matrixPath({ filePaths: ['backend/src/opaque/controller.ts'], risk: 'high' }),
+        matrixPath({ filePaths: ['scripts/ops/check-governance-boundary.mjs'], risk: 'medium' }),
       ),
     ).toBe(false);
   });
@@ -340,7 +523,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     expect(detectNewFile(rootDir, productNamedFile)?.isProtected).toBe(false);
     expect(detectNewFile(rootDir, productNamedFile)?.executionMode).toBe('ai_safe');
     expect(detectNewFile(rootDir, protectedFile)?.isProtected).toBe(true);
-    expect(detectNewFile(rootDir, protectedFile)?.executionMode).toBe('observation_only');
+    expect(detectNewFile(rootDir, protectedFile)?.executionMode).toBe('human_required');
   });
 
   it('does not classify sandbox destructive actions from product path names alone', () => {
@@ -385,6 +568,149 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     ).toBe(true);
   });
 
+  it('classifies harness staging from executable source shape instead of provider names', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-harness-shape-'));
+    const backendDir = path.join(rootDir, 'backend/src/opaque');
+    fs.mkdirSync(backendDir, { recursive: true });
+
+    const namedOnlyFile = path.join(backendDir, 'opaque-label.service.ts');
+    fs.writeFileSync(namedOnlyFile, 'export class OpaqueLabel { run() { return true; } }');
+
+    const outboundFile = path.join(backendDir, 'outbound.service.ts');
+    fs.writeFileSync(
+      outboundFile,
+      'export class Outbound { async run() { return fetch("https://example.test/probe"); } }',
+    );
+
+    expect(
+      classifyExecutionFeasibility(
+        harnessTarget({
+          kind: 'service',
+          name: 'OpaqueLabel.run',
+          filePath: path.relative(rootDir, namedOnlyFile),
+          methodName: 'run',
+        }),
+        new Map(),
+        rootDir,
+      ).feasibility,
+    ).toBe('executable');
+
+    expect(
+      classifyExecutionFeasibility(
+        harnessTarget({
+          kind: 'service',
+          name: 'Opaque.run',
+          filePath: path.relative(rootDir, outboundFile),
+          methodName: 'run',
+        }),
+        new Map(),
+        rootDir,
+      ).feasibility,
+    ).toBe('needs_staging');
+  });
+
+  it('builds behavior graph external calls from import and call shape instead of provider catalogs', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-behavior-dynamic-'));
+    const backendDir = path.join(rootDir, 'backend/src/opaque');
+    fs.mkdirSync(backendDir, { recursive: true });
+
+    fs.writeFileSync(
+      path.join(backendDir, 'provider-name-only.service.ts'),
+      ['export class StripeOpenAiWhatsappLabel {', '  run() { return true; }', '}'].join('\n'),
+    );
+    fs.writeFileSync(
+      path.join(backendDir, 'dynamic-external.service.ts'),
+      [
+        "import OpaqueClient from 'opaque-sdk';",
+        'export class DynamicExternalService {',
+        '  async run() { return OpaqueClient.create({ amountCents: 100, currency: "USD" }); }',
+        '}',
+      ].join('\n'),
+    );
+    fs.writeFileSync(
+      path.join(backendDir, 'dynamic-payment-chain.service.ts'),
+      [
+        "import OpaqueClient from 'opaque-sdk';",
+        'export class DynamicPaymentChainService {',
+        '  async run() { return OpaqueClient.checkout.sessions.create({ total: 100 }); }',
+        '}',
+      ].join('\n'),
+    );
+    fs.writeFileSync(
+      path.join(backendDir, 'semantic-payment-action.service.ts'),
+      [
+        'export class SemanticPaymentActionService {',
+        '  async run() { return processPayment({ amountCents: 100, currency: "USD" }); }',
+        '}',
+      ].join('\n'),
+    );
+
+    const graph = buildBehaviorGraph(rootDir);
+    const namedOnly = graph.nodes.find((node) =>
+      node.filePath.endsWith('provider-name-only.service.ts'),
+    );
+    const dynamicExternal = graph.nodes.find((node) =>
+      node.filePath.endsWith('dynamic-external.service.ts'),
+    );
+    const dynamicPaymentChain = graph.nodes.find((node) =>
+      node.filePath.endsWith('dynamic-payment-chain.service.ts'),
+    );
+    const semanticPaymentAction = graph.nodes.find((node) =>
+      node.filePath.endsWith('semantic-payment-action.service.ts'),
+    );
+
+    expect(namedOnly?.externalCalls).toEqual([]);
+    expect(namedOnly?.risk).toBe('low');
+    expect(dynamicExternal?.externalCalls.map((call) => call.provider)).toEqual(['OpaqueClient']);
+    expect(dynamicExternal?.risk).toBe('high');
+    expect(dynamicPaymentChain?.externalCalls).toEqual([
+      expect.objectContaining({ provider: 'OpaqueClient', operation: 'create' }),
+    ]);
+    expect(dynamicPaymentChain?.risk).toBe('high');
+    expect(semanticPaymentAction?.externalCalls).toEqual([]);
+    expect(semanticPaymentAction?.risk).toBe('high');
+  });
+
+  it('builds structural side effects from arbitrary external SDK usage instead of fixed SDK names', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-side-effect-dynamic-'));
+    const backendDir = path.join(rootDir, 'backend/src/opaque');
+    fs.mkdirSync(backendDir, { recursive: true });
+
+    fs.writeFileSync(
+      path.join(backendDir, 'named-only.ts'),
+      'export const stripeOpenAiWhatsapp = "label-only";',
+    );
+    fs.writeFileSync(
+      path.join(backendDir, 'external-sdk.ts'),
+      [
+        "import OpaqueProvider from 'opaque-provider-sdk';",
+        'export async function run() {',
+        '  return OpaqueProvider.send({ ok: true });',
+        '}',
+      ].join('\n'),
+    );
+
+    const nodes = buildSideEffectSignals(
+      rootDir,
+      ['backend/src/opaque/named-only.ts', 'backend/src/opaque/external-sdk.ts'],
+      new Map(),
+      'observed',
+    );
+
+    expect(
+      nodes.some(
+        (node) =>
+          node.file?.endsWith('named-only.ts') && node.metadata.signal === 'external_sdk_call',
+      ),
+    ).toBe(false);
+    expect(
+      nodes.some(
+        (node) =>
+          node.file?.endsWith('external-sdk.ts') && node.metadata.signal === 'external_sdk_call',
+      ),
+    ).toBe(true);
+  });
+
   it('classifies internal endpoints by URL structure instead of known product prefixes', () => {
     expect(isInternalEndpoint('/xpto')).toBe(true);
     expect(isInternalEndpoint('/payment')).toBe(true);
@@ -399,7 +725,9 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   });
 
   it('classifies chaos targets from dependency behavior instead of provider names', () => {
-    expect([...classifyTargetsFromSource('await stripe.create({ amount: 100 })')]).toEqual([]);
+    expect([
+      ...classifyTargetsFromSource('await opaqueNamedService.create({ amount: 100 })'),
+    ]).toEqual([]);
 
     expect([
       ...classifyTargetsFromSource('await billingClient.post("/opaque", payload)'),
@@ -410,6 +738,75 @@ describe('PULSE no-hardcoded-reality contracts', () => {
         '@Post("/opaque/webhook") handle(@Headers("x-signature") sig: string) {}',
       ),
     ]).toContain('webhook_receiver');
+  });
+
+  it('discovers chaos dependencies from code and artifacts without a provider catalog', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-chaos-deps-'));
+    const backendDir = path.join(rootDir, 'backend/src/opaque');
+    const pulseDir = path.join(rootDir, '.pulse/current');
+    fs.mkdirSync(backendDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: true });
+
+    const externalFile = path.join(backendDir, 'outbound.service.ts');
+    fs.writeFileSync(
+      externalFile,
+      [
+        'import { OpaqueClient } from "@vendor/opaque-sdk";',
+        'export async function send() {',
+        '  const endpoint = process.env.OPAQUE_ENDPOINT_URL;',
+        '  return fetch("https://api.opaque-provider.test/v1/events");',
+        '}',
+      ].join('\n'),
+    );
+
+    const signalFile = path.join(backendDir, 'signal.service.ts');
+    fs.writeFileSync(
+      signalFile,
+      'export async function probe() { return opaqueHttpClient.post("/events", {}); }',
+    );
+
+    fs.writeFileSync(
+      path.join(pulseDir, 'PULSE_BEHAVIOR_GRAPH.json'),
+      JSON.stringify({
+        nodes: [
+          {
+            filePath: path.relative(rootDir, signalFile),
+            externalCalls: [{ provider: 'observed-opaque-runtime' }],
+          },
+        ],
+      }),
+    );
+
+    fs.writeFileSync(
+      path.join(pulseDir, 'PULSE_STRUCTURAL_GRAPH.json'),
+      JSON.stringify({
+        nodes: [
+          {
+            kind: 'side_effect_signal',
+            metadata: { filePath: path.relative(rootDir, signalFile) },
+          },
+        ],
+      }),
+    );
+
+    const dependencies = detectProviders(rootDir);
+    expect([...dependencies.keys()]).toEqual(
+      expect.arrayContaining([
+        'host:api-opaque-provider-test',
+        'env:opaque-endpoint',
+        'package:vendor-opaque-sdk',
+        'behavior:observed-opaque-runtime',
+        'client:opaquehttpclient',
+      ]),
+    );
+
+    const scenarios = generateProviderScenarios(rootDir, dependencies, []);
+    expect(
+      scenarios.some((scenario) => scenario.id.includes('host:api-opaque-provider-test')),
+    ).toBe(true);
+    expect(scenarios.map((scenario) => scenario.description).join('\n')).not.toMatch(
+      /stripe|openai|meta|resend/i,
+    );
   });
 
   it('derives GitNexus impact labels structurally instead of a product domain catalog', () => {
@@ -598,6 +995,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     expect(state.scenarios).toHaveLength(1);
     expect(state.scenarios[0].id).toBe('flow-xpto');
     expect(state.scenarios[0].flowId).toBe('xpto/flow-xpto');
+    expect(state.scenarios[0].role).toBe('anonymous');
     expect(state.scenarios[0].steps.map((step) => step.kind)).toContain('api_call');
     expect(state.scenarios[0].steps.some((step) => step.target.includes('opaqueField'))).toBe(true);
   });

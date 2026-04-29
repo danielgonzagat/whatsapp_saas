@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import type { Prisma } from '@prisma/client';
 import { forEachSequential } from './async-sequence';
 import { FinancialAlertService } from './financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /**
  * Ledger reconciliation — enforces invariant I8.
@@ -93,6 +94,7 @@ export class LedgerReconciliationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly financialAlert?: FinancialAlertService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Run checkout cron. */
@@ -101,6 +103,10 @@ export class LedgerReconciliationService {
     try {
       await this.runReconciliation(24);
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'LedgerReconciliationService.runReconciliation',
+      );
       this.logger.error(
         `ledger_reconciliation_cron_failed: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -118,6 +124,10 @@ export class LedgerReconciliationService {
     try {
       await this.runWalletReconciliation();
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'LedgerReconciliationService.runWalletReconciliation',
+      );
       this.logger.error(
         `wallet_ledger_reconciliation_cron_failed: ${
           error instanceof Error ? error.message : String(error)
@@ -450,6 +460,7 @@ export class LedgerReconciliationService {
         },
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'LedgerReconciliationService.create');
       this.logger.warn(
         `ledger_reconcile_audit_failed action=${input.action}: ${
           error instanceof Error ? error.message : String(error)

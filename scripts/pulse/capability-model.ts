@@ -65,6 +65,29 @@ import { mergeExistingCapability } from './capability-model.merge';
 // `./capability-model.dod` so this file stays under the 600-line
 // touched-file architecture cap. Their behaviour is unchanged.
 
+type PulseScenarioResultItem = NonNullable<PulseExecutionEvidence['customer']>['results'][number];
+
+function hasScenarioResults(value: unknown): value is { results: PulseScenarioResultItem[] } {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    'results' in value &&
+    Array.isArray(value.results)
+  );
+}
+
+function collectScenarioResults(
+  executionEvidence: Partial<PulseExecutionEvidence> | undefined,
+): PulseScenarioResultItem[] {
+  if (!executionEvidence) {
+    return [];
+  }
+
+  return Object.values(executionEvidence).flatMap((evidenceBlock) =>
+    hasScenarioResults(evidenceBlock) ? evidenceBlock.results : [],
+  );
+}
+
 export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCapabilityState {
   const nodeById = new Map(input.structuralGraph.nodes.map((node) => [node.id, node] as const));
   const neighbors = new Map<string, Set<string>>();
@@ -133,12 +156,7 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
 
   const scopeByPath = new Map(input.scopeState.files.map((file) => [file.path, file] as const));
   const flowResults = input.executionEvidence?.flows?.results || [];
-  const scenarioResults = [
-    ...(input.executionEvidence?.customer?.results || []),
-    ...(input.executionEvidence?.operator?.results || []),
-    ...(input.executionEvidence?.admin?.results || []),
-    ...(input.executionEvidence?.soak?.results || []),
-  ];
+  const scenarioResults = collectScenarioResults(input.executionEvidence);
   const observationFootprint = buildObservationFootprint(
     input.resolvedManifest,
     input.executionEvidence,
@@ -433,17 +451,29 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       truthModeTarget: 'observed',
     });
     const capabilityDoD: PulseCapabilityDoD = {
-      status: toDoDStatus({ done: dodResult.done, pulseStatus: status }),
+      status: toDoDStatus({
+        done: dodResult.done,
+        pulseStatus: status === 'real' && !dodResult.done ? 'partial' : status,
+      }),
       missingRoles: dodResult.missingRoles.slice(),
       blockers: dodResult.reasons.slice(),
       truthModeMet: dodResult.truthModeMet,
+      governedBlockers: dodResult.governedBlockers.slice(),
     };
+    const visibleStatus = status === 'real' && !dodResult.done ? 'partial' : status;
+    const governedValidationTargets = dodResult.governedBlockers.map(
+      (blocker) => `Governed ai_safe validation: ${blocker.expectedValidation}`,
+    );
+    const governedBlockingReasons = dodResult.governedBlockers.map(
+      (blocker) =>
+        `Governed ai_safe blocker for ${blocker.role}: ${blocker.reason} Expected validation: ${blocker.expectedValidation}`,
+    );
 
     capabilitiesById.set(capabilityId, {
       id: capabilityId,
       name: dominantLabel,
       truthMode,
-      status,
+      status: visibleStatus,
       confidence,
       userFacing,
       runtimeCritical,
@@ -458,12 +488,13 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       evidenceSources,
       codacyIssueCount,
       highSeverityIssueCount,
-      blockingReasons,
+      blockingReasons: unique([...blockingReasons, ...governedBlockingReasons]),
       maturity,
       validationTargets: unique([
         routePatterns[0] ? `Validate structural chain for ${routePatterns[0]}.` : '',
         runtimeCritical ? 'Re-run runtime evidence for this capability.' : '',
         highSeverityIssueCount > 0 ? 'Re-sync Codacy and confirm HIGH issues dropped.' : '',
+        ...governedValidationTargets,
       ]).filter(Boolean),
       dod: capabilityDoD,
     });

@@ -1,9 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { DealStatus, Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /** Crm service. */
 @Injectable()
@@ -11,6 +12,7 @@ export class CrmService {
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   // ============================================================

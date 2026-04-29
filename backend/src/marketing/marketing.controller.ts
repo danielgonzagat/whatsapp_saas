@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Logger, Param, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Optional,
+  Param,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { forEachSequential } from '../common/async-sequence';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -10,6 +20,7 @@ import {
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const NAME_RE = /\{\{name\}\}/g;
 
@@ -32,6 +43,7 @@ export class MarketingController {
     private readonly prisma: PrismaService,
     private readonly metaWhatsApp: MetaWhatsAppService,
     private readonly whatsappProviders: WhatsAppProviderRegistry,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /**

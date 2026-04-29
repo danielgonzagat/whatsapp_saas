@@ -2,6 +2,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const S_RE = /\s+/g;
 
@@ -99,6 +100,7 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @InjectRedis() private readonly redis: Redis,
     @Optional() private readonly auditService?: AuditService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** On module init. */
@@ -175,6 +177,11 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.redis.publish('ws:agent', JSON.stringify(normalized));
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnDegradation(
+        err instanceof Error ? err.message : 'unknown_error',
+        'AgentEventsService.publish',
+        { workspaceId: normalized.workspaceId },
+      );
       this.logger.warn(
         `Falling back to local dispatch for ws:agent: ${err instanceof Error ? err.message : 'unknown_error'}`,
       );
@@ -190,6 +197,10 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
       }
       this.dispatch(event);
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnDegradation(
+        err instanceof Error ? err.message : 'unknown_error',
+        'AgentEventsService.handleIncoming',
+      );
       this.logger.warn(
         `Failed to parse ws:agent event: ${err instanceof Error ? err.message : 'unknown_error'}`,
       );
@@ -224,6 +235,11 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
       try {
         listener(event);
       } catch (err: unknown) {
+        void this.opsAlert?.alertOnDegradation(
+          err instanceof Error ? err.message : 'unknown_error',
+          'AgentEventsService.dispatch',
+          { workspaceId: event.workspaceId },
+        );
         this.logger.warn(
           `Failed to dispatch ws:agent listener: ${err instanceof Error ? err.message : 'unknown_error'}`,
         );

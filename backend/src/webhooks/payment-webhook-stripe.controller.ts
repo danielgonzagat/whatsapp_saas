@@ -9,8 +9,9 @@ import {
   Logger,
   Post,
   Req,
+  UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { type WebhookEvent } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { AdminAuditService } from '../admin/audit/admin-audit.service';
@@ -57,6 +58,7 @@ import {
  * Event handlers are split across payment-webhook-stripe.handlers.ts and handlers2.ts.
  */
 @Controller('webhook/payment')
+@UseGuards(ThrottlerGuard)
 @Throttle({ default: { limit: 100, ttl: 60000 } })
 export class PaymentWebhookStripeController {
   private readonly logger = new Logger(PaymentWebhookStripeController.name);

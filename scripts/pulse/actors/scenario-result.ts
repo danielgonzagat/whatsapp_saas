@@ -1,4 +1,5 @@
 import type { PulseActorEvidence, PulseManifestScenarioSpec, PulseScenarioResult } from '../types';
+import { inferActorEvidenceKeyForScenario } from '../scenario-mode-registry';
 import { SCENARIO_GROUP_ARTIFACT, WORLD_STATE_ARTIFACT, getArtifactName, unique } from './coverage';
 
 /** Choose the artifact set for a scenario+actor combination. */
@@ -58,14 +59,5 @@ export function buildScenarioResult(
 export function inferActorArtifact(
   scenario: PulseManifestScenarioSpec,
 ): PulseActorEvidence['actorKind'] {
-  if (scenario.timeWindowModes.includes('soak')) {
-    return 'soak';
-  }
-  if (scenario.actorKind === 'customer') {
-    return 'customer';
-  }
-  if (scenario.actorKind === 'operator') {
-    return 'operator';
-  }
-  return 'admin';
+  return inferActorEvidenceKeyForScenario(scenario) ?? 'soak';
 }

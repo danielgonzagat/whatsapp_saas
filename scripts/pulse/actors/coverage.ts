@@ -6,6 +6,7 @@ import type {
   PulseSurfaceCoverageEntry,
   PulseSyntheticCoverageEvidence,
 } from '../types';
+import { inferEvidenceFileName, normalizeEvidenceKey } from '../scenario-mode-registry';
 
 /** Customer evidence artifact filename. */
 export const CUSTOMER_ARTIFACT = 'PULSE_CUSTOMER_EVIDENCE.json';
@@ -50,16 +51,8 @@ export function matchesRoutePattern(route: string, pattern: string): boolean {
 
 /** Get artifact name for an actor kind. */
 export function getArtifactName(kind: 'customer' | 'operator' | 'admin' | 'soak' | string): string {
-  if (kind === 'customer') {
-    return CUSTOMER_ARTIFACT;
-  }
-  if (kind === 'operator') {
-    return OPERATOR_ARTIFACT;
-  }
-  if (kind === 'admin') {
-    return ADMIN_ARTIFACT;
-  }
-  return SOAK_ARTIFACT;
+  const evidenceKey = normalizeEvidenceKey(kind);
+  return evidenceKey ? inferEvidenceFileName(evidenceKey) : SOAK_ARTIFACT;
 }
 
 /** Classify a page as one of PULSE surface classifications. */

@@ -1,8 +1,7 @@
 import type { PulseActorEvidence, PulseExecutionEvidence } from './types';
+import { getActorEvidenceKeys } from './scenario-mode-registry';
 
 type ActorEvidenceKey = 'customer' | 'operator' | 'admin' | 'soak';
-
-const ACTOR_EVIDENCE_KEYS: ActorEvidenceKey[] = ['customer', 'operator', 'admin', 'soak'];
 
 function mergeActorArrayField<K extends keyof PulseActorEvidence>(
   overrides: PulseActorEvidence | undefined,
@@ -38,7 +37,7 @@ export function mergeExecutionEvidence(
 ): PulseExecutionEvidence {
   if (!overrides) return defaults;
   const actorEvidence = Object.fromEntries(
-    ACTOR_EVIDENCE_KEYS.map((key) => [key, mergeActorEvidence(key, defaults, overrides)]),
+    getActorEvidenceKeys().map((key) => [key, mergeActorEvidence(key, defaults, overrides)]),
   ) as Pick<PulseExecutionEvidence, ActorEvidenceKey>;
   return {
     runtime: {

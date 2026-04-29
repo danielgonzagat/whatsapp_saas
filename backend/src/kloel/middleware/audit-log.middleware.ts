@@ -1,9 +1,10 @@
-import { Injectable, Logger, NestMiddleware, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, NestMiddleware, OnModuleDestroy, Optional } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 import { sanitizePayload } from '../../common/sanitize-payload';
 import { getTraceHeaders } from '../../common/trace-headers';
 import { validateNoInternalAccess } from '../../common/utils/url-validator';
 import { PrismaService } from '../../prisma/prisma.service';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 
 interface AuditLogEntry {
   timestamp: Date;
@@ -78,7 +79,10 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
 
   private flushInterval?: NodeJS.Timeout;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
     // Flush buffer periodicamente
@@ -288,6 +292,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
         }).catch((err) => this.logger.warn('Failed to send audit webhook', err.message));
       }
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'AuditLogMiddleware.timeout');
       const errorMessage = err instanceof Error ? err.message : 'unknown_error';
       this.logger.error('Failed to flush audit logs', errorMessage);
       // Re-adicionar logs ao buffer para proxima tentativa
@@ -317,6 +322,7 @@ export function AuditOperation(operationType: string) {
         });
         return result;
       } catch (error: unknown) {
+        void this.opsAlert?.alertOnCriticalError(error, 'AuditLogMiddleware.now');
         logger.error({
           operation: operationType,
           method: propertyKey,

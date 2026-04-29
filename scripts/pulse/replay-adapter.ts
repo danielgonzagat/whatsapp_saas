@@ -158,20 +158,13 @@ function extractSessionsFromExternalSignals(filePath: string): ReplaySession[] {
 }
 
 function mapSignalSource(raw: string): ReplaySource | null {
-  const lowered = raw.toLowerCase();
-  if (lowered.includes('sentry')) {
-    return 'sentry_replay';
-  }
-  if (lowered.includes('datadog')) {
-    return 'datadog_replay';
-  }
-  if (lowered.includes('openreplay')) {
-    return 'openreplay';
-  }
-  if (lowered.includes('custom')) {
-    return 'custom';
-  }
-  return null;
+  const normalized = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+  return normalized.length > 0 ? normalized : null;
 }
 
 function resolveStatePath(rootDir: string): string {

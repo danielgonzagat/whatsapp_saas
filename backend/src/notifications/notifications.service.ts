@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const N_RE = /\\n/g;
 
@@ -16,6 +17,7 @@ export class NotificationsService {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly config: ConfigService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     this.initFirebase();
   }
@@ -39,6 +41,7 @@ export class NotificationsService {
         this.logger.warn('⚠️ Firebase não configurado - push notifications desabilitadas');
       }
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'NotificationsService.initFirebase');
       if ((error as { code?: string } | null)?.code === 'app/duplicate-app') {
         this.firebaseApp = admin.app();
         this.logger.log('✅ Firebase Admin SDK já inicializado');
@@ -182,6 +185,7 @@ export class NotificationsService {
         failed: response.failureCount,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'NotificationsService.sendPushNotification');
       this.logger.error(
         `❌ Erro ao enviar push: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );

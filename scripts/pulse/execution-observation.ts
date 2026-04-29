@@ -35,19 +35,32 @@ function executedFlowResults(evidence?: Partial<PulseExecutionEvidence>): PulseF
   );
 }
 
-function actorResults(evidence?: Partial<PulseExecutionEvidence>) {
-  return [
-    ...(evidence?.customer?.results || []),
-    ...(evidence?.operator?.results || []),
-    ...(evidence?.admin?.results || []),
-    ...(evidence?.soak?.results || []),
-  ];
+type PulseScenarioResultItem = PulseActorEvidence['results'][number];
+
+function hasScenarioResults(value: unknown): value is { results: PulseScenarioResultItem[] } {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    'results' in value &&
+    Array.isArray(value.results)
+  );
+}
+
+function scenarioResults(evidence?: Partial<PulseExecutionEvidence>): PulseScenarioResultItem[] {
+  if (!evidence) {
+    return [];
+  }
+  return Object.values(evidence).flatMap((evidenceBlock) =>
+    hasScenarioResults(evidenceBlock) ? evidenceBlock.results : [],
+  );
 }
 
 function executedScenarioResults(
   evidence?: Partial<PulseExecutionEvidence>,
 ): Array<PulseActorEvidence['results'][number]> {
-  return actorResults(evidence).filter((result) => result.executed || result.status === 'failed');
+  return scenarioResults(evidence).filter(
+    (result) => result.executed || result.status === 'failed',
+  );
 }
 
 function observedProbes(evidence?: Partial<PulseExecutionEvidence>): PulseRuntimeProbe[] {

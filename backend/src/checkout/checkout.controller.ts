@@ -13,7 +13,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Prisma, TimerType } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -37,7 +37,7 @@ const PATTERN_RE = /^-|-$/g;
 
 /** Checkout controller. */
 @Controller('checkout')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
 @Throttle({ default: { limit: 30, ttl: 60000 } })
 export class CheckoutController {
   constructor(
@@ -223,7 +223,7 @@ export class CheckoutController {
       dto.slug || `${product.slug || product.name || 'checkout'}-${dto.name || 'layout'}`,
     );
     dto.brandName = dto.brandName || product.name;
-    return this.checkoutService.createCheckout(productId, dto);
+    return this.checkoutService.createCheckout(productId, dto, workspaceId);
   }
 
   /** Duplicate checkout. */
@@ -231,7 +231,7 @@ export class CheckoutController {
   async duplicateCheckout(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyCheckoutOwnership(id, workspaceId);
-    return this.checkoutService.duplicateCheckout(id);
+    return this.checkoutService.duplicateCheckout(id, workspaceId);
   }
 
   /** Sync checkout links. */

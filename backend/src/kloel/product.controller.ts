@@ -12,6 +12,7 @@ import {
   Query,
   Request,
   UseGuards,
+  Optional,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -21,6 +22,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildProductMetrics } from './product-metrics.helpers';
 import { syncProductToMemory, deleteProductFromMemory } from './product-memory-sync.helpers';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 interface CreateProductDto {
   name: string;
@@ -82,7 +84,10 @@ interface UpdateProductDto extends Partial<CreateProductDto> {
 export class ProductController {
   private readonly logger = new Logger(ProductController.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
 
   private serializeProductForResponse(
     req: AuthenticatedRequest,
@@ -429,6 +434,7 @@ export class ProductController {
           });
           return { success: true, product: created };
         } catch (error: unknown) {
+          void this.opsAlert?.alertOnCriticalError(error, 'ProductController.create');
           const message = error instanceof Error ? error.message : 'unknown error';
           return { success: false, error: message, product };
         }

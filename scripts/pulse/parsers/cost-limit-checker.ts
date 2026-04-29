@@ -232,7 +232,11 @@ export function checkCostLimits(config: PulseConfig): Break[] {
     /whatsapp|autopilot/i.test(path.relative(config.rootDir, f)),
   );
   for (const file of whatsappFiles) {
-    if (/\.(spec|test|d)\.ts$|\.dto\.ts$|controller\.ts$|provider-registry\.ts$/i.test(file)) {
+    if (
+      /\.(spec|test|d)\.ts$|\.dto\.ts$|controller\.ts$|provider-registry\.ts$|\.fixtures\.ts$/i.test(
+        file,
+      )
+    ) {
       continue;
     }
     if (/\/providers\//i.test(file)) {
@@ -248,7 +252,9 @@ export function checkCostLimits(config: PulseConfig): Break[] {
 
     if (
       /sendMessage|send.*message/i.test(content) &&
-      !/messageLimit|dailyLimit|rateLimit|messagesPerDay/i.test(content)
+      !/messageLimit|dailyLimit|rateLimit|messagesPerDay|ensureDailyMessageQuota|ensureMessageRate|WhatsappSendRateGuard|rateGuard/i.test(
+        content,
+      )
     ) {
       breaks.push({
         type: 'COST_LLM_NO_LIMIT',

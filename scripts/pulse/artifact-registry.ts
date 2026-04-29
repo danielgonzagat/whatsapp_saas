@@ -8,6 +8,10 @@ export interface PulseArtifactDefinition {
   relativePath: string;
   /** Mirror to root property. */
   mirrorToRoot?: boolean;
+  /** Maximum persisted bytes before the artifact writer applies storage policy. */
+  maxBytes?: number;
+  /** Storage strategy for oversized optional artifacts. */
+  oversizedStrategy?: 'summarize-json';
 }
 
 /** Pulse artifact registry shape. */
@@ -24,6 +28,17 @@ export interface PulseArtifactRegistry {
   mirrors: string[];
   /** Run identity — set by generateArtifacts at run start. */
   runId?: string;
+}
+
+const OPTIONAL_EVIDENCE_MAX_BYTES = 1024 * 1024;
+const OPTIONAL_TRACE_MAX_BYTES = 512 * 1024;
+
+function optionalEvidence(
+  id: string,
+  relativePath: string,
+  maxBytes: number = OPTIONAL_EVIDENCE_MAX_BYTES,
+): PulseArtifactDefinition {
+  return { id, relativePath, maxBytes, oversizedStrategy: 'summarize-json' };
 }
 
 const CANONICAL_ARTIFACTS: PulseArtifactDefinition[] = [
@@ -54,24 +69,24 @@ const CANONICAL_ARTIFACTS: PulseArtifactDefinition[] = [
   { id: 'autonomy-state', relativePath: 'PULSE_AUTONOMY_STATE.json' },
   { id: 'autonomy-memory', relativePath: 'PULSE_AUTONOMY_MEMORY.json' },
   { id: 'agent-orchestration-state', relativePath: 'PULSE_AGENT_ORCHESTRATION_STATE.json' },
-  { id: 'runtime-evidence', relativePath: 'PULSE_RUNTIME_EVIDENCE.json' },
+  optionalEvidence('runtime-evidence', 'PULSE_RUNTIME_EVIDENCE.json'),
   { id: 'runtime-probes', relativePath: 'PULSE_RUNTIME_PROBES.json' },
-  { id: 'runtime-traces', relativePath: 'PULSE_RUNTIME_TRACES.json' },
+  optionalEvidence('runtime-traces', 'PULSE_RUNTIME_TRACES.json', OPTIONAL_TRACE_MAX_BYTES),
   { id: 'trace-diff', relativePath: 'PULSE_TRACE_DIFF.json' },
   { id: 'runtime-fusion', relativePath: 'PULSE_RUNTIME_FUSION.json' },
-  { id: 'browser-evidence', relativePath: 'PULSE_BROWSER_EVIDENCE.json' },
-  { id: 'flow-evidence', relativePath: 'PULSE_FLOW_EVIDENCE.json' },
-  { id: 'invariant-evidence', relativePath: 'PULSE_INVARIANT_EVIDENCE.json' },
-  { id: 'observability-evidence', relativePath: 'PULSE_OBSERVABILITY_EVIDENCE.json' },
+  optionalEvidence('browser-evidence', 'PULSE_BROWSER_EVIDENCE.json'),
+  optionalEvidence('flow-evidence', 'PULSE_FLOW_EVIDENCE.json'),
+  optionalEvidence('invariant-evidence', 'PULSE_INVARIANT_EVIDENCE.json'),
+  optionalEvidence('observability-evidence', 'PULSE_OBSERVABILITY_EVIDENCE.json'),
   { id: 'observability-coverage', relativePath: 'PULSE_OBSERVABILITY_COVERAGE.json' },
-  { id: 'recovery-evidence', relativePath: 'PULSE_RECOVERY_EVIDENCE.json' },
-  { id: 'customer-evidence', relativePath: 'PULSE_CUSTOMER_EVIDENCE.json' },
-  { id: 'operator-evidence', relativePath: 'PULSE_OPERATOR_EVIDENCE.json' },
-  { id: 'admin-evidence', relativePath: 'PULSE_ADMIN_EVIDENCE.json' },
-  { id: 'soak-evidence', relativePath: 'PULSE_SOAK_EVIDENCE.json' },
+  optionalEvidence('recovery-evidence', 'PULSE_RECOVERY_EVIDENCE.json'),
+  optionalEvidence('customer-evidence', 'PULSE_CUSTOMER_EVIDENCE.json'),
+  optionalEvidence('operator-evidence', 'PULSE_OPERATOR_EVIDENCE.json'),
+  optionalEvidence('admin-evidence', 'PULSE_ADMIN_EVIDENCE.json'),
+  optionalEvidence('soak-evidence', 'PULSE_SOAK_EVIDENCE.json'),
   { id: 'scenario-coverage', relativePath: 'PULSE_SCENARIO_COVERAGE.json' },
-  { id: 'scenario-evidence', relativePath: 'PULSE_SCENARIO_EVIDENCE.json' },
-  { id: 'harness-evidence', relativePath: 'PULSE_HARNESS_EVIDENCE.json' },
+  optionalEvidence('scenario-evidence', 'PULSE_SCENARIO_EVIDENCE.json'),
+  optionalEvidence('harness-evidence', 'PULSE_HARNESS_EVIDENCE.json'),
   { id: 'path-coverage', relativePath: 'PULSE_PATH_COVERAGE.json' },
   { id: 'production-proof', relativePath: 'PULSE_PRODUCTION_PROOF.json' },
   { id: 'perfectness-layer-state', relativePath: 'PULSE_PERFECTNESS_LAYER_STATE.json' },

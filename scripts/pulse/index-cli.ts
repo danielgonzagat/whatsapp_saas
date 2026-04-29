@@ -1,6 +1,12 @@
 import { parseCertificationProfile, getProfileSelection } from './profiles';
 import type { PulseBrowserEvidence } from './types';
 import type { PulseSyntheticRunMode, runSyntheticActors } from './actors';
+import {
+  getActorEvidenceKeys,
+  deriveSyntheticModesFromManifest,
+  explicitSyntheticModesFromArgs,
+  readManifestForModeRegistry,
+} from './scenario-mode-registry';
 
 const args = process.argv.slice(2);
 const tierArgIndex = args.indexOf('--tier');
@@ -61,43 +67,17 @@ const flags = {
       | undefined) || undefined,
   profile: requestedProfile,
 };
-const inferredSyntheticModes = new Set<PulseSyntheticRunMode>(
-  [
-    flags.customer ? 'customer' : null,
-    flags.operator ? 'operator' : null,
-    flags.admin ? 'admin' : null,
-    flags.shift ? 'shift' : null,
-    flags.soak ? 'soak' : null,
-  ].filter((value): value is PulseSyntheticRunMode => Boolean(value)),
-);
-
-if (flags.final || (typeof flags.tier === 'number' && flags.tier >= 1)) {
-  inferredSyntheticModes.add('customer');
-}
-if (flags.final || (typeof flags.tier === 'number' && flags.tier >= 2)) {
-  inferredSyntheticModes.add('operator');
-  inferredSyntheticModes.add('admin');
-}
-if (flags.final || (typeof flags.tier === 'number' && flags.tier >= 4)) {
-  inferredSyntheticModes.add('soak');
-}
-if (flags.profile === 'core-critical') {
-  inferredSyntheticModes.add('customer');
-  inferredSyntheticModes.add('operator');
-  inferredSyntheticModes.add('admin');
-}
-if (flags.profile === 'pulse-core-final') {
-  inferredSyntheticModes.add('customer');
-  inferredSyntheticModes.add('operator');
-  inferredSyntheticModes.add('admin');
-  inferredSyntheticModes.add('soak');
-}
-if (flags.profile === 'full-product') {
-  inferredSyntheticModes.add('customer');
-  inferredSyntheticModes.add('operator');
-  inferredSyntheticModes.add('admin');
-  inferredSyntheticModes.add('soak');
-}
+const registryManifest = readManifestForModeRegistry(process.cwd());
+const profileModes = flags.profile
+  ? getProfileSelection(flags.profile, registryManifest).requestedModes
+  : [];
+const targetRequestsScenarioCoverage =
+  flags.final || flags.profile !== null || (typeof flags.tier === 'number' && flags.tier >= 0);
+const inferredSyntheticModes = new Set<PulseSyntheticRunMode>([
+  ...explicitSyntheticModesFromArgs(args),
+  ...(targetRequestsScenarioCoverage ? deriveSyntheticModesFromManifest(registryManifest) : []),
+  ...profileModes,
+]);
 
 const requestedSyntheticModes = [...inferredSyntheticModes];
 const queryModeRequested = flags.guidance || flags.prove || flags.vision || flags.selfTrust;
@@ -146,12 +126,9 @@ function deriveBrowserEvidenceFromActors(
     return browserEvidence;
   }
 
-  const actorResults = [
-    ...syntheticEvidence.customer.results,
-    ...syntheticEvidence.operator.results,
-    ...syntheticEvidence.admin.results,
-    ...syntheticEvidence.soak.results,
-  ].filter((result) => result.requested && result.runner === 'playwright-spec');
+  const actorResults = getActorEvidenceKeys(registryManifest)
+    .flatMap((key) => syntheticEvidence[key].results)
+    .filter((result) => result.requested && result.runner === 'playwright-spec');
 
   if (actorResults.length === 0) {
     return browserEvidence;

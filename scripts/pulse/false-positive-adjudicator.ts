@@ -51,6 +51,15 @@ function hashFile(filePath: string): string | null {
   return createHash('sha256').update(content).digest('hex');
 }
 
+function hashFindingFile(filePath: string, rootDir?: string): string | null {
+  const absolutePath = path.isAbsolute(filePath)
+    ? filePath
+    : rootDir
+      ? path.join(rootDir, filePath)
+      : filePath;
+  return hashFile(absolutePath);
+}
+
 function codacySeverityToSeverity(severityLevel: string): AdjudicatedFinding['severity'] {
   switch (severityLevel) {
     case 'CRITICAL':
@@ -130,6 +139,7 @@ export function adjudicateFinding(
   finding: AdjudicatedFinding,
   verdict: FindingStatus,
   proof?: string,
+  rootDir?: string,
 ): AdjudicatedFinding {
   const now = new Date().toISOString();
   const isSuppression = verdict === 'false_positive' || verdict === 'accepted_risk';
@@ -140,7 +150,7 @@ export function adjudicateFinding(
     proof: proof ?? finding.proof,
     expiresOnFileChange: isSuppression,
     fileHashAtSuppression: isSuppression
-      ? (hashFile(finding.filePath) ?? finding.fileHashAtSuppression)
+      ? (hashFindingFile(finding.filePath, rootDir) ?? finding.fileHashAtSuppression)
       : finding.fileHashAtSuppression,
     suppressedAt: isSuppression ? now : finding.suppressedAt,
     lastChecked: now,

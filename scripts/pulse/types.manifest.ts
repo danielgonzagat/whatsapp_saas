@@ -175,8 +175,30 @@ export interface PulseParserDefinition {
   fn: (config: PulseConfig) => Break[] | Promise<Break[]>;
 }
 
+/** Static parser module contract discovered without executing parser code. */
+export interface PulseParserContract {
+  /** Name property. */
+  name: string;
+  /** File property. */
+  file: string;
+  /** Kind property. */
+  kind: 'active_parser' | 'helper';
+  /** Parser exports property. */
+  parserExports: string[];
+  /** Exported functions property. */
+  exportedFunctions: string[];
+  /** Proof property. */
+  proof: string;
+  /** Source mtime property. */
+  sourceMtime: string | null;
+}
+
 /** Pulse parser inventory shape. */
 export interface PulseParserInventory {
+  /** Contracts property. */
+  contracts: PulseParserContract[];
+  /** Inventory generation timestamp property. */
+  generatedAt?: string;
   /** Discovered checks property. */
   discoveredChecks: string[];
   /** Loaded checks property. */

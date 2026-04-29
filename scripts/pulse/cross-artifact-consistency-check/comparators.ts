@@ -178,6 +178,12 @@ export function checkConsistency(artifacts: LoadedArtifact[]): ConsistencyResult
   addDivergenceIfNeeded('cycleProof.proven', gatherValues('cycleProof.proven'));
 
   // ----------------------------------------------------------------
+  // Queue/blocker fields mirrored by directive, certificate, and plan artifacts.
+  // ----------------------------------------------------------------
+  addDivergenceIfNeeded('dynamicBlockingReasons', gatherValues('dynamicBlockingReasons'));
+  addDivergenceIfNeeded('nextWork.queue', gatherValues('nextWork.queue'));
+
+  // ----------------------------------------------------------------
   // Numeric counters: codacyHighCount, parityGapCount, phantomCount,
   // missingAdaptersCount, staleAdaptersCount, invalidAdaptersCount
   // ----------------------------------------------------------------
@@ -196,10 +202,11 @@ export function checkConsistency(artifacts: LoadedArtifact[]): ConsistencyResult
   // ----------------------------------------------------------------
   // generatedAt: allow drift up to MAX_GENERATED_AT_DRIFT_MS
   // ----------------------------------------------------------------
-  {
-    const entries = gatherValues('generatedAt').filter(
-      (e) => typeof e.value === 'string',
-    ) as Array<{ filePath: string; value: string }>;
+  function addTimestampDivergenceIfNeeded(field: string): void {
+    const entries = gatherValues(field).filter((e) => typeof e.value === 'string') as Array<{
+      filePath: string;
+      value: string;
+    }>;
 
     if (entries.length >= 2) {
       const timestamps = entries.map((e) => new Date(e.value).getTime()).filter((t) => !isNaN(t));
@@ -210,7 +217,7 @@ export function checkConsistency(artifacts: LoadedArtifact[]): ConsistencyResult
           const values: Record<string, unknown> = {};
           for (const e of entries) values[e.filePath] = e.value;
           divergences.push({
-            field: 'generatedAt',
+            field,
             values,
             sources: entries.map((e) => e.filePath),
           });
@@ -218,6 +225,9 @@ export function checkConsistency(artifacts: LoadedArtifact[]): ConsistencyResult
       }
     }
   }
+
+  addTimestampDivergenceIfNeeded('generatedAt');
+  addTimestampDivergenceIfNeeded('timestamp');
 
   // ----------------------------------------------------------------
   // runId: must be identical or explicitly marked as preserved.

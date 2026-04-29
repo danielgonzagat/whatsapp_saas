@@ -10,12 +10,14 @@ import {
   Put,
   Request,
   UseGuards,
+  Optional,
 } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /** Ad rules controller. */
 @Controller('ad-rules')
@@ -25,6 +27,7 @@ export class AdRulesController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** List. */
@@ -37,6 +40,7 @@ export class AdRulesController {
         orderBy: { createdAt: 'desc' },
       });
     } catch (e: unknown) {
+      void this.opsAlert?.alertOnCriticalError(e, 'AdRulesController.findMany');
       this.logger.warn(`AdRule table may not exist yet: ${(e as Error).message}`);
       return [];
     }

@@ -15,6 +15,7 @@ import { buildConvergencePlan } from './convergence-plan';
 import { readOptionalJson, writeArtifact } from './artifacts.io';
 import { buildReport, buildCertificate, buildPulseMachineReadiness } from './artifacts.report';
 import { buildDirective, buildArtifactIndex } from './artifacts.directive';
+import { normalizeCanonicalArtifactValue } from './artifacts.queue';
 import { deriveAuthorityState } from './artifacts.autonomy';
 import { buildRuntimeProbesArtifact } from './runtime-probes';
 import { createRunIdentity, type PulseRunIdentity } from './run-identity';
@@ -304,7 +305,7 @@ export function generateArtifacts(
   );
   writeArtifact(
     'PULSE_EXECUTION_MATRIX.json',
-    JSON.stringify(snapshot.executionMatrix, null, 2),
+    JSON.stringify(normalizeCanonicalArtifactValue(snapshot.executionMatrix), null, 2),
     registry,
     identity,
   );
@@ -346,11 +347,12 @@ export function generateArtifacts(
   );
   writeArtifact(
     'PULSE_CONVERGENCE_PLAN.json',
-    JSON.stringify(convergencePlan, null, 2),
+    JSON.stringify(normalizeCanonicalArtifactValue(convergencePlan), null, 2),
     registry,
     identity,
   );
   const autonomyState = buildPulseAutonomyStateSeed({
+    rootDir,
     directive: directivePayload,
     previousState: previousAutonomyState,
     orchestrationMode: previousAutonomyState?.orchestrationMode || 'single',
@@ -359,7 +361,7 @@ export function generateArtifacts(
   });
   writeArtifact(
     'PULSE_AUTONOMY_STATE.json',
-    JSON.stringify(autonomyState, null, 2),
+    JSON.stringify(normalizeCanonicalArtifactValue(autonomyState), null, 2),
     registry,
     identity,
   );

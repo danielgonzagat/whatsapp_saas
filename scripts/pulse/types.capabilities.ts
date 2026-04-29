@@ -51,6 +51,13 @@ export interface PulseCapabilityDoD {
   blockers: string[];
   /** Whether the unit's truth mode meets the configured target. */
   truthModeMet: boolean;
+  /** Governed autonomous blockers with expected validation, when proof is missing. */
+  governedBlockers?: Array<{
+    role: string;
+    executionMode: 'ai_safe';
+    reason: string;
+    expectedValidation: string;
+  }>;
 }
 
 /** Pulse capability maturity shape. */
@@ -252,6 +259,22 @@ export type PulseExternalAdapterStatus =
   | 'invalid'
   | 'optional_not_configured';
 
+/** Declared adapter requirement before active-profile resolution. */
+export type PulseExternalAdapterRequiredness =
+  | 'required'
+  | 'optional'
+  | 'profile-dependent'
+  | 'full-product-required';
+
+/** Effective adapter requirement after active-profile resolution. */
+export type PulseExternalAdapterRequirement = 'required' | 'optional';
+
+/** Basis used as adapter proof for cross-artifact decisions. */
+export type PulseExternalAdapterProofBasis =
+  | 'codacy_snapshot'
+  | 'live_adapter'
+  | 'snapshot_artifact';
+
 /** Pulse external signal type. */
 export type PulseExternalSignalType = string;
 
@@ -311,6 +334,18 @@ export interface PulseExternalAdapterSnapshot {
   executed: boolean;
   /** Status property. */
   status: PulseExternalAdapterStatus;
+  /** Declared requirement before profile resolution. */
+  requiredness: PulseExternalAdapterRequiredness;
+  /** Effective requirement after active-profile resolution. */
+  requirement: PulseExternalAdapterRequirement;
+  /** True when this adapter blocks certification under the active profile. */
+  required: boolean;
+  /** True when the adapter has observed external proof, even if stale or invalid. */
+  observed: boolean;
+  /** True when this adapter currently blocks external reality closure. */
+  blocking: boolean;
+  /** Basis used as proof for this adapter status. */
+  proofBasis: PulseExternalAdapterProofBasis;
   /** Generated at property. */
   generatedAt: string;
   /** Synced at property. */
@@ -349,6 +384,14 @@ export interface PulseExternalSignalSummary {
   invalidAdapters: number;
   /** Adapters skipped because they are optional and not configured (non-blocking). */
   optionalSkippedAdapters: number;
+  /** Required adapters under the active profile. */
+  requiredAdapters: number;
+  /** Optional adapters under the active profile. */
+  optionalAdapters: number;
+  /** Adapters with observed proof basis. */
+  observedAdapters: number;
+  /** Required adapters currently blocking external reality closure. */
+  blockingAdapters: number;
   /** Source names of missing required adapters. */
   missingAdaptersList: string[];
   /** Source names of stale required adapters. */
@@ -357,6 +400,12 @@ export interface PulseExternalSignalSummary {
   invalidAdaptersList: string[];
   /** Source names of optional adapters skipped (not_configured, not blocking). */
   optionalSkippedList: string[];
+  /** Optional adapters that are unavailable but not blocking under the active profile. */
+  optionalNotAvailableList: string[];
+  /** Required adapter sources currently blocking external reality closure. */
+  blockingAdaptersList: string[];
+  /** Adapter proof-basis counts. */
+  proofBasisCounts: Record<PulseExternalAdapterProofBasis, number>;
   /** Signals by source property. */
   bySource: Record<PulseExternalSignalSource, number>;
 }

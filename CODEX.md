@@ -180,6 +180,18 @@ Before writing a patch:
 9. Do not touch generated files manually.
 10. Do not change lockfiles unless dependencies changed.
 
+### Git Preservation Rules
+
+- `git restore` is forbidden for all AI agents in this repository.
+- Do not run `git restore`, `git restore --source`, or `git restore --staged`
+  for any path, even when a file looks generated or temporary.
+- Failed edits must be repaired by editing the code forward, or by restoring
+  from an explicit in-memory/file snapshot captured before the edit.
+- If a change might need rollback and no safe snapshot exists, stop and ask the
+  human. Do not reconstruct state with Git restore.
+- `git checkout -- <path>` and `git reset --hard` remain prohibited unless the
+  human explicitly asks for that exact destructive operation.
+
 ### TypeScript Production Rules
 
 - `any` is forbidden in new code.

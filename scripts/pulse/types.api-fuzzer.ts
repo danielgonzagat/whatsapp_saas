@@ -28,6 +28,12 @@ export interface APIEndpointProbe {
   filePath: string;
   requiresAuth: boolean;
   requiresTenant: boolean;
+  authProbeMetadata?: {
+    guardNames: string[];
+    authorizationMetadata: string[];
+    routeParameters: string[];
+    bodyDtoType: string | null;
+  };
   rateLimit: { max: number; windowMs: number } | null;
   requestSchema: Record<string, unknown> | null;
   responseSchema: Record<string, unknown> | null;

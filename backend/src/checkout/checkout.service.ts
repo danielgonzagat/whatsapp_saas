@@ -484,7 +484,7 @@ export class CheckoutService {
   }
 
   /** Duplicate checkout. */
-  async duplicateCheckout(checkoutId: string) {
+  async duplicateCheckout(checkoutId: string, workspaceId: string) {
     const checkout = await this.prisma.checkoutProductPlan.findUnique({
       where: { id: checkoutId },
       include: {
@@ -497,18 +497,22 @@ export class CheckoutService {
       throw new NotFoundException('Checkout nao encontrado');
     }
 
-    const duplicated = await this.productService.createCheckout(checkout.productId, {
-      name: `${checkout.name} (Copia)`,
-      priceInCents: checkout.priceInCents,
-      compareAtPrice: checkout.compareAtPrice ?? undefined,
-      currency: checkout.currency,
-      maxInstallments: checkout.maxInstallments,
-      installmentsFee: checkout.installmentsFee,
-      quantity: checkout.quantity,
-      freeShipping: checkout.freeShipping,
-      shippingPrice: checkout.shippingPrice ?? undefined,
-      brandName: checkout.checkoutConfig?.brandName ?? checkout.name,
-    });
+    const duplicated = await this.productService.createCheckout(
+      checkout.productId,
+      {
+        name: `${checkout.name} (Copia)`,
+        priceInCents: checkout.priceInCents,
+        compareAtPrice: checkout.compareAtPrice ?? undefined,
+        currency: checkout.currency,
+        maxInstallments: checkout.maxInstallments,
+        installmentsFee: checkout.installmentsFee,
+        quantity: checkout.quantity,
+        freeShipping: checkout.freeShipping,
+        shippingPrice: checkout.shippingPrice ?? undefined,
+        brandName: checkout.checkoutConfig?.brandName ?? checkout.name,
+      },
+      workspaceId,
+    );
 
     const duplicatedId = duplicated?.id;
     if (!duplicatedId) {

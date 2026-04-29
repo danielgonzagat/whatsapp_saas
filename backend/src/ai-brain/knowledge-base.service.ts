@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
 import { Parser } from 'htmlparser2';
 import { AuditService } from '../audit/audit.service';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
@@ -22,6 +22,7 @@ import {
   WalletNotFoundError,
 } from '../wallet/wallet.types';
 import { VectorService } from './vector.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const S_RE = /\s+/g;
 const SENTENCE_ENDINGS = ['. ', '? ', '! '];
@@ -122,6 +123,7 @@ export class KnowledgeBaseService {
     private vectorService: VectorService,
     private readonly auditService: AuditService,
     private readonly prepaidWalletService: WalletService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Create. */
@@ -156,6 +158,7 @@ export class KnowledgeBaseService {
       });
       return true;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KnowledgeBaseService.chargeForUsage');
       if (error instanceof UsagePriceNotFoundError) {
         this.logger.debug(
           `Skipping prepaid wallet debit for kb_ingestion workspace=${input.workspaceId}: no UsagePrice configured`,
@@ -186,6 +189,7 @@ export class KnowledgeBaseService {
         metadata,
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KnowledgeBaseService.refundUsageCharge');
       this.logger.error(
         `Failed to refund prepaid wallet usage for kb_ingestion workspace=${workspaceId} request=${requestId}: ${
           error instanceof Error ? error.message : String(error)
@@ -291,6 +295,7 @@ export class KnowledgeBaseService {
           clearTimeout(timer);
         }
       } catch (err: unknown) {
+        void this.opsAlert?.alertOnCriticalError(err, 'KnowledgeBaseService.clearTimeout');
         const errorMessage =
           err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown_error';
         this.logger.warn(`Falha ao buscar URL ou timeout: ${errorMessage}`);
@@ -364,6 +369,7 @@ export class KnowledgeBaseService {
 
       return source; // Retorna imediatamente com status PENDING
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KnowledgeBaseService.add');
       if (usageCharged) {
         await this.refundUsageIfNeeded(
           workspaceId,
@@ -435,6 +441,7 @@ export class KnowledgeBaseService {
 
       return results.map((r) => r.content).join('\n\n');
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'KnowledgeBaseService.map');
       this.logger.error(`RAG Search Error: ${String(err)}`);
       return '';
     }

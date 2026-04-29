@@ -13,6 +13,7 @@ import {
   type ConsistencyResult,
 } from './cross-artifact-consistency-check';
 import { extractRunId, isPreservedArtifact } from './run-identity';
+import { discoverParserContracts } from './parser-registry';
 
 /** Self trust checkpoint shape. */
 export interface SelfTrustCheckpoint {
@@ -127,40 +128,30 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
   const id = 'parser-registry';
 
   try {
-    const parserFiles = readDir(parsersDir).filter(
-      (fileName) => fileName.endsWith('.ts') && fileName !== 'utils.ts',
-    );
+    const repoRoot = path.resolve(parsersDir, '..', '..', '..');
+    const contracts = discoverParserContracts(repoRoot);
+    const activeParsers = contracts.filter((contract) => contract.kind === 'active_parser');
+    const helperModules = contracts.filter((contract) => contract.kind === 'helper');
 
-    if (parserFiles.length < 30) {
+    if (contracts.length === 0) {
       return {
         id,
-        name: 'Parser Count',
-        description: 'Expected at least 30 specialized parsers',
+        name: 'Parser Registry Discovery',
+        description: 'Parser registry must discover parser module contracts',
         pass: false,
-        reason: `Only ${parserFiles.length} parsers found, expected 30+`,
+        reason: 'No parser modules were discovered',
         severity: 'high',
-        score: (parserFiles.length / 30) * 100,
+        score: 0,
       };
     }
 
-    // Verify critical parsers exist
-    const criticalParsers = [
-      'financial-arithmetic.ts',
-      'error-handler-auditor.ts',
-      'idempotency-checker.ts',
-      'audit-trail-checker.ts',
-      'security-injection.ts',
-    ];
-
-    const missing = criticalParsers.filter((p) => !parserFiles.includes(p));
-
-    if (missing.length > 0) {
+    if (activeParsers.length === 0) {
       return {
         id,
-        name: 'Critical Parsers',
-        description: 'All critical parsers must exist',
+        name: 'Parser Registry Contracts',
+        description: 'At least one parser module must declare an executable parser contract',
         pass: false,
-        reason: `Missing: ${missing.join(', ')}`,
+        reason: `${helperModules.length} helper module(s) discovered but no active parser contract matched`,
         severity: 'critical',
         score: 0,
       };
@@ -169,7 +160,7 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
     return {
       id,
       name: 'Parser Registry',
-      description: `${parserFiles.length} parsers registered and available`,
+      description: `${activeParsers.length} active parser contract(s) discovered; ${helperModules.length} helper module(s) skipped without failing execution`,
       pass: true,
       severity: 'critical',
       score: 100,

@@ -1,8 +1,9 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue, flowQueue } from '../queue/queue';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const D_RE_CONV = /\D/g;
 
@@ -12,7 +13,10 @@ const D_RE_CONV = /\D/g;
  */
 @Injectable()
 export class AutopilotOpsConversionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
 
   private readRecord(value: unknown): Record<string, unknown> {
     return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};

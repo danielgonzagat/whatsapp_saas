@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, forwardRef, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
@@ -13,6 +13,7 @@ import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-mes
 import { UnifiedAgentActionsSalesService } from './unified-agent-actions-sales.service';
 import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-workspace.service';
 import type { ToolArgs } from './unified-agent.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -39,6 +40,7 @@ export class UnifiedAgentActionsService {
     private readonly billing: UnifiedAgentActionsBillingService,
     private readonly commerce: UnifiedAgentActionsCommerceService,
     private readonly auditService: AuditService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   str(v: unknown, fb = ''): string {
@@ -72,6 +74,7 @@ export class UnifiedAgentActionsService {
         },
       });
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'UnifiedAgentActionsService.parse');
       const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       if (isTestEnv) return;
@@ -131,6 +134,10 @@ export class UnifiedAgentActionsService {
         sent: true,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'UnifiedAgentActionsService.buildWhatsAppSendOptions',
+      );
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao enviar documento: ${msg}`);
@@ -200,6 +207,7 @@ export class UnifiedAgentActionsService {
         { isolationLevel: 'ReadCommitted' },
       );
     } catch (auditError: unknown) {
+      void this.opsAlert?.alertOnCriticalError(auditError, 'UnifiedAgentActionsService.logWithTx');
       const auditMsg =
         auditError instanceof Error
           ? auditError.message

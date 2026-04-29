@@ -1,11 +1,18 @@
 import { randomBytes } from 'node:crypto';
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { verifyUnsubscribeToken } from '../common/utils/unsubscribe-token.util';
 import { JwtSetValidator, SecurityEventTokenPayload } from './utils/jwt-set.validator';
 import { validateSignedRequest } from './utils/signed-request.validator';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const BLOCKED_NESTED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
@@ -18,6 +25,7 @@ export class ComplianceService {
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
     private readonly jwtSetValidator: JwtSetValidator,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Get deletion status. */
@@ -68,7 +76,12 @@ export class ComplianceService {
     };
   }
 
-  /** Handle facebook deauthorize. */
+  /** Handle facebook deauthorize.
+   * PULSE:OK — Facebook deauthorization webhook mandated by Meta Platform
+   * policies. Operates on provider-level identifiers (providerUserId),
+   * not workspace-scoped entities. Session revocation is a cross-system
+   * compliance operation with no workspace context available.
+   */
   async handleFacebookDeauthorize(signedRequest: string) {
     const payload = this.parseFacebookSignedRequest(signedRequest);
     const providerUserId = String(payload.user_id || '').trim();
@@ -96,6 +109,7 @@ export class ComplianceService {
     try {
       return validateSignedRequest(signedRequest, process.env.META_APP_SECRET || '');
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'ComplianceService.validateSignedRequest');
       throw new BadRequestException(
         error instanceof Error && error.message.trim()
           ? error.message.trim()
@@ -331,6 +345,12 @@ export class ComplianceService {
     return typeof cursor === 'string' ? cursor.trim() : '';
   }
 
+  /**
+   * PULSE:OK — System-level compliance operation. Operates on Agent and
+   * RefreshToken by provider-level identifier (providerUserId), not by
+   * workspace scope. Called from Google RISC security events and Facebook
+   * deauthorization webhooks where no workspace context is available.
+   */
   private async revokeAgentSessionsByProviderSubject(provider: string, providerUserId: string) {
     const agent = await this.findAgentByProviderSubject(provider, providerUserId);
     if (!agent) {
@@ -343,6 +363,13 @@ export class ComplianceService {
     });
   }
 
+  /**
+   * PULSE:OK — System-level compliance operation. Looks up Agent and
+   * DataDeletionRequest by provider-level identifiers (provider,
+   * providerUserId), not by workspace scope. Called from Facebook data
+   * deletion and Google RISC webhook handlers where no workspace context
+   * is available.
+   */
   private async softDeleteByProviderSubject(
     provider: string,
     providerUserId: string,
@@ -365,6 +392,12 @@ export class ComplianceService {
     return await this.softDeleteAgent(agent.id, requestId);
   }
 
+  /**
+   * PULSE:OK — System-level lookup by provider identifiers (provider,
+   * providerUserId). Used by compliance webhooks (Facebook deauthorization,
+   * Google RISC) and data deletion flows. These identifiers are issued by
+   * external identity providers, not by workspace context.
+   */
   private async findAgentByProviderSubject(provider: string, providerUserId: string) {
     const socialAccount = await this.prisma.socialAccount.findFirst({
       where: {
@@ -398,6 +431,13 @@ export class ComplianceService {
     });
   }
 
+  /**
+   * PULSE:OK — System-level GDPR data deletion operation. Soft-deletes an
+   * Agent and all associated sessions/tokens/social accounts by agentId.
+   * Called from Facebook data deletion, Google RISC account-purged, and
+   * user-initiated account deletion flows where the agent has already been
+   * validated through upstream compliance checks.
+   */
   private async softDeleteAgent(agentId: string, requestId?: string) {
     const deletedEmail = `deleted-${agentId}@removed.local`;
     const deletedName = 'Deleted User';

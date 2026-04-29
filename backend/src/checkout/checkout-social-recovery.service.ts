@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CheckoutSocialLeadStatus, Prisma } from '@prisma/client';
 import { EmailService } from '../auth/email.service';
@@ -6,6 +6,7 @@ import { forEachSequential } from '../common/async-sequence';
 import { FollowUpService } from '../followup/followup.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 const ONE_HOUR_MS = 60 * 60 * 1000;
@@ -20,6 +21,7 @@ export class CheckoutSocialRecoveryService {
     private readonly emailService: EmailService,
     private readonly followUpService: FollowUpService,
     private readonly socialLeadService: CheckoutSocialLeadService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Recover abandoned leads. */
@@ -65,6 +67,7 @@ export class CheckoutSocialRecoveryService {
             select: { id: true, workspaceId: true },
           });
         } catch (error: unknown) {
+          void this.opsAlert?.alertOnCriticalError(error, 'CheckoutSocialRecoveryService.update');
           if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')) {
             throw error;
           }

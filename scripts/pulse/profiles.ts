@@ -4,6 +4,8 @@ import type {
   PulseEnvironment,
   PulseManifest,
 } from './types';
+import { deriveSyntheticModesFromManifest, uniqueValues } from './scenario-mode-registry';
+import type { PulseSyntheticRunMode } from './actors/types';
 
 /** Pulse profile selection shape. */
 export interface PulseProfileSelection {
@@ -14,7 +16,7 @@ export interface PulseProfileSelection {
   /** Certification target property. */
   certificationTarget: PulseCertificationTarget;
   /** Requested modes property. */
-  requestedModes: Array<'customer' | 'operator' | 'admin' | 'shift' | 'soak'>;
+  requestedModes: PulseSyntheticRunMode[];
   /** Runtime probe ids property. */
   runtimeProbeIds: string[];
   /** Flow ids property. */
@@ -64,12 +66,6 @@ const CORE_CRITICAL_SKIPPED_PARSERS = [
 
 const CORE_CRITICAL_SKIPPED_SET = new Set<string>(CORE_CRITICAL_SKIPPED_PARSERS);
 
-type PulseRequestedMode = PulseProfileSelection['requestedModes'][number];
-
-function unique<T>(values: T[]): T[] {
-  return [...new Set(values)];
-}
-
 function isFullWorkspaceProfile(profile: PulseCertificationProfile): boolean {
   return profile === 'full-product' || profile === 'pulse-core-final';
 }
@@ -77,47 +73,8 @@ function isFullWorkspaceProfile(profile: PulseCertificationProfile): boolean {
 function deriveRequestedModesFromScenarios(
   manifest: PulseManifest | null,
   scenarioIds: string[],
-): PulseRequestedMode[] {
-  if (!manifest) {
-    return [];
-  }
-
-  const scenarios = manifest.scenarioSpecs.filter((scenario) => scenarioIds.includes(scenario.id));
-  const modes = new Set<PulseRequestedMode>();
-
-  for (const scenario of scenarios) {
-    if (scenario.actorKind === 'customer') {
-      modes.add('customer');
-    } else if (scenario.actorKind === 'operator') {
-      modes.add('operator');
-    } else if (scenario.actorKind === 'admin') {
-      modes.add('admin');
-    }
-
-    if (scenario.timeWindowModes.includes('shift')) {
-      modes.add('shift');
-    }
-    if (scenario.timeWindowModes.includes('soak') || scenario.actorKind === 'system') {
-      modes.add('soak');
-    }
-  }
-
-  if (modes.size === 0) {
-    const profileModes = manifest.actorProfiles.flatMap((actorProfile) => {
-      const syntheticModes: PulseRequestedMode[] = [];
-      if (actorProfile.kind === 'customer') syntheticModes.push('customer');
-      if (actorProfile.kind === 'operator') syntheticModes.push('operator');
-      if (actorProfile.kind === 'admin') syntheticModes.push('admin');
-      if (actorProfile.defaultTimeWindowModes.includes('shift')) syntheticModes.push('shift');
-      if (actorProfile.defaultTimeWindowModes.includes('soak') || actorProfile.kind === 'system') {
-        syntheticModes.push('soak');
-      }
-      return syntheticModes;
-    });
-    return unique(profileModes);
-  }
-
-  return [...modes];
+): PulseSyntheticRunMode[] {
+  return deriveSyntheticModesFromManifest(manifest, scenarioIds);
 }
 
 function deriveScenarioIds(
@@ -184,14 +141,16 @@ function deriveRuntimeProbeIds(
   const selectedScenarios = manifest.scenarioSpecs.filter((scenario) =>
     scenarioIds.includes(scenario.id),
   );
-  const selectedProbeIds = unique(selectedScenarios.flatMap((scenario) => scenario.runtimeProbes));
+  const selectedProbeIds = uniqueValues(
+    selectedScenarios.flatMap((scenario) => scenario.runtimeProbes),
+  );
 
   if (selectedProbeIds.length > 0) {
     return selectedProbeIds;
   }
 
   if (isFullWorkspaceProfile(profile)) {
-    const allProbeIds = unique(
+    const allProbeIds = uniqueValues(
       manifest.scenarioSpecs.flatMap((scenario) => scenario.runtimeProbes),
     );
     return allProbeIds;

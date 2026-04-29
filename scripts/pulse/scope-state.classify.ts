@@ -1,6 +1,10 @@
 import * as path from 'path';
 import type { PulseConvergenceOwnerLane, PulseScopeFileKind, PulseScopeSurface } from './types';
-import { ROOT_CONFIG_FILES, STRUCTURAL_NOISE_SEGMENTS } from './scope-state.constants';
+import {
+  ROOT_CONFIG_FILES,
+  discoverWorkspaceStructure,
+  type WorkspaceStructure,
+} from './scope-state.constants';
 import { normalizePath } from './scope-state.codacy';
 
 /**
@@ -9,54 +13,76 @@ import { normalizePath } from './scope-state.codacy';
  * its original behaviour exactly.
  */
 
-/**
- * Surface lookup table — each entry pairs a fast prefix predicate with the
- * surface label it implies. The table is consulted in order so callers can
- * preserve the historical priority (artifacts > governance > frontends > ...).
- *
- * Centralizing the rules here also drops `classifySurface`'s cyclomatic
- * complexity well below the Codacy/Lizard threshold without changing behavior.
- */
-const SURFACE_RULES: ReadonlyArray<{
-  match: (relPath: string, basename: string) => boolean;
-  surface: PulseScopeSurface;
-}> = [
-  { match: (p) => p.startsWith('PULSE_'), surface: 'artifacts' },
-  { match: (p) => p.startsWith('.github/'), surface: 'governance' },
-  // frontend-admin/ must come BEFORE frontend/ to avoid being swallowed
-  { match: (p) => p.startsWith('frontend-admin/'), surface: 'frontend-admin' },
-  { match: (p) => p.startsWith('frontend/'), surface: 'frontend' },
-  { match: (p) => p.startsWith('backend/'), surface: 'backend' },
-  { match: (p) => p.startsWith('worker/src/') || p.startsWith('worker/'), surface: 'worker' },
-  {
-    match: (p) => p.startsWith('backend/prisma/') || p.startsWith('prisma/'),
-    surface: 'prisma',
-  },
-  { match: (p) => p.startsWith('e2e/'), surface: 'e2e' },
-  { match: (p) => p.startsWith('scripts/'), surface: 'scripts' },
-  {
-    match: (p) => p.startsWith('docs/') || (!p.includes('/') && p.endsWith('.md')),
-    surface: 'docs',
-  },
-  {
-    match: (p, base) =>
-      p.startsWith('docker/') || p.startsWith('nginx/') || base.startsWith('Dockerfile'),
-    surface: 'infra',
-  },
-  {
-    match: (p, base) =>
-      ROOT_CONFIG_FILES.has(base) ||
-      p === '.codacy.yml' ||
-      p.startsWith('.husky/') ||
-      (!p.includes('/') && base.startsWith('.')),
-    surface: 'root-config',
-  },
-];
+function isInsideRoot(relPath: string, root: string): boolean {
+  return relPath === root || relPath.startsWith(`${root}/`);
+}
+
+function isProtectedByDiscoveredBoundary(relPath: string, structure: WorkspaceStructure): boolean {
+  if (structure.protectedExact.has(relPath)) {
+    return true;
+  }
+  return [...structure.protectedPrefixes].some((prefix) => relPath.startsWith(prefix));
+}
+
+function classifyPackageSurface(
+  relPath: string,
+  structure: WorkspaceStructure,
+): PulseScopeSurface | null {
+  const roots = [...structure.packageRoots, ...structure.sourceSignalRoots];
+  const root = roots.find(
+    (candidate) => candidate.surface !== 'misc' && isInsideRoot(relPath, candidate.root),
+  );
+  return root?.surface ?? null;
+}
+
+function classifyStructuralSurface(
+  relPath: string,
+  basename: string,
+  structure: WorkspaceStructure,
+): PulseScopeSurface | null {
+  if ([...structure.prismaRoots].some((root) => isInsideRoot(relPath, root))) {
+    return 'prisma';
+  }
+  if ([...structure.scriptRoots].some((root) => isInsideRoot(relPath, root))) {
+    return 'scripts';
+  }
+  if ([...structure.tsconfigRoots].some((root) => isInsideRoot(relPath, root))) {
+    return relPath.includes('/pulse/') ? 'scripts' : 'misc';
+  }
+  if ([...structure.infrastructureRoots].some((root) => isInsideRoot(relPath, root))) {
+    return 'infra';
+  }
+  if (
+    [...structure.documentRoots].some((root) => isInsideRoot(relPath, root)) ||
+    basename.endsWith('.md')
+  ) {
+    return 'docs';
+  }
+  return null;
+}
+
+function isRootConfig(relPath: string, basename: string): boolean {
+  if (relPath.includes('/')) {
+    return false;
+  }
+  return (
+    ROOT_CONFIG_FILES.has(basename) ||
+    basename.startsWith('.') ||
+    basename.endsWith('.json') ||
+    basename.endsWith('.yml') ||
+    basename.endsWith('.yaml') ||
+    basename.endsWith('.config.js') ||
+    basename.endsWith('.config.cjs') ||
+    basename.endsWith('.config.mjs') ||
+    basename.endsWith('.config.ts')
+  );
+}
 
 /** Classify the high-level surface a file belongs to (frontend / backend / etc). */
 export function classifySurface(
   relPath: string,
   protectedByGovernance: boolean,
+  rootDir: string = process.cwd(),
 ): PulseScopeSurface {
   if (relPath.startsWith('PULSE_') || relPath === 'pulse.manifest.json') {
     return 'artifacts';
@@ -65,10 +91,23 @@ export function classifySurface(
     return 'governance';
   }
   const basename = path.basename(relPath);
-  for (const rule of SURFACE_RULES) {
-    if (rule.match(relPath, basename)) {
-      return rule.surface;
-    }
+  if (relPath.startsWith('.github/')) {
+    return 'governance';
+  }
+  const structure = discoverWorkspaceStructure(rootDir);
+  if (isProtectedByDiscoveredBoundary(relPath, structure)) {
+    return 'governance';
+  }
+  const structuralSurface = classifyStructuralSurface(relPath, basename, structure);
+  if (structuralSurface && structuralSurface !== 'misc') {
+    return structuralSurface;
+  }
+  const packageSurface = classifyPackageSurface(relPath, structure);
+  if (packageSurface) {
+    return packageSurface;
+  }
+  if (isRootConfig(relPath, basename)) {
+    return 'root-config';
   }
   return 'misc';
 }
@@ -97,25 +136,20 @@ function isSpecPath(relPath: string, surface: PulseScopeSurface): boolean {
   return SPEC_FILE_SUFFIXES.some((suffix) => relPath.endsWith(suffix));
 }
 
-/** True when the file is a TS/JS source belonging to an app surface. */
-function isSourceFile(relPath: string): boolean {
+/** True when the file is a TS/JS source belonging to a runtime or tooling surface. */
+function isSourceFile(relPath: string, surface: PulseScopeSurface): boolean {
   const ext = path.extname(relPath);
   if (!SOURCE_EXTENSIONS.includes(ext as (typeof SOURCE_EXTENSIONS)[number])) {
     return false;
   }
-  return (
-    relPath.includes('/src/') || relPath.startsWith('frontend/') || relPath.startsWith('backend/')
-  );
+  return ['frontend', 'frontend-admin', 'backend', 'worker', 'e2e', 'scripts'].includes(surface);
 }
 
 export function classifyKind(relPath: string, surface: PulseScopeSurface): PulseScopeFileKind {
   if (surface === 'artifacts' || relPath.startsWith('PULSE_')) {
     return 'artifact';
   }
-  if (
-    relPath.startsWith('backend/prisma/migrations/') ||
-    relPath.startsWith('prisma/migrations/')
-  ) {
+  if (surface === 'prisma' && path.basename(relPath) === 'migration.sql') {
     return 'migration';
   }
   if (isSpecPath(relPath, surface)) {
@@ -124,7 +158,7 @@ export function classifyKind(relPath: string, surface: PulseScopeSurface): Pulse
   if (surface === 'docs' || path.extname(relPath) === '.md') {
     return 'document';
   }
-  if (isSourceFile(relPath)) {
+  if (isSourceFile(relPath, surface)) {
     return 'source';
   }
   return 'config';
@@ -134,7 +168,11 @@ export function classifyKind(relPath: string, surface: PulseScopeSurface): Pulse
  * Pick the most specific module-candidate token from a relative path,
  * skipping structural noise segments and short generic names.
  */
-export function classifyModuleCandidate(relPath: string): string | null {
+export function classifyModuleCandidate(
+  relPath: string,
+  rootDir: string = process.cwd(),
+): string | null {
+  const structure = discoverWorkspaceStructure(rootDir);
   const normalized = normalizePath(relPath).replace(/\.[^.]+$/, '');
   const segments = normalized
     .split('/')
@@ -148,7 +186,7 @@ export function classifyModuleCandidate(relPath: string): string | null {
         .toLowerCase(),
     )
     .filter(Boolean)
-    .filter((segment) => !STRUCTURAL_NOISE_SEGMENTS.has(segment))
+    .filter((segment) => !structure.structuralNoiseSegments.has(segment))
     .filter((segment) => !/^\d+$/.test(segment))
     .filter((segment) => segment.length >= 3);
 
@@ -160,7 +198,7 @@ export function classifyModuleCandidate(relPath: string): string | null {
 
   for (const segment of segments) {
     const [head] = segment.split('-');
-    if (head && !STRUCTURAL_NOISE_SEGMENTS.has(head) && head.length >= 3) {
+    if (head && !structure.structuralNoiseSegments.has(head) && head.length >= 3) {
       return head;
     }
   }

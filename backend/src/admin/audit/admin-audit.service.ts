@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 
 /** Append audit input shape. */
 export interface AppendAuditInput {
@@ -50,7 +51,10 @@ export interface ListAuditFilters {
 export class AdminAuditService {
   private readonly logger = new Logger(AdminAuditService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
 
   /** Append. */
   async append(input: AppendAuditInput): Promise<void> {
@@ -70,6 +74,7 @@ export class AdminAuditService {
         },
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AdminAuditService.create');
       // We intentionally swallow audit-append failures so that a transient
       // DB hiccup doesn't block legitimate admin activity. Failures are
       // logged at WARN so ops can detect sustained audit outages. A future

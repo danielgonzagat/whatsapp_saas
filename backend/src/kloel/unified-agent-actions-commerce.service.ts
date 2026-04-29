@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -7,6 +7,7 @@ import { PaymentService } from './payment.service';
 import { formatBrlAmount } from './money-format.util';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import type { ToolArgs } from './unified-agent.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -24,6 +25,7 @@ export class UnifiedAgentActionsCommerceService {
     private readonly paymentService: PaymentService,
     private readonly auditService: AuditService,
     private readonly messaging: UnifiedAgentActionsMessagingService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   // ───────── helpers ─────────
@@ -187,6 +189,10 @@ export class UnifiedAgentActionsCommerceService {
           { isolationLevel: 'ReadCommitted' },
         );
       } catch (auditError: unknown) {
+        void this.opsAlert?.alertOnCriticalError(
+          auditError,
+          'UnifiedAgentActionsCommerceService.logWithTx',
+        );
         const auditMsg =
           auditError instanceof Error
             ? auditError.message
@@ -204,6 +210,7 @@ export class UnifiedAgentActionsCommerceService {
         sent: true,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'UnifiedAgentActionsCommerceService.async');
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
       this.logger.error(`Erro ao criar link de pagamento: ${msg}`);

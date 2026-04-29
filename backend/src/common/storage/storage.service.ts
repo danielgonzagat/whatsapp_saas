@@ -2,12 +2,13 @@ import { safeJoin, safeResolve } from '../../common/safe-path';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuid } from 'uuid';
 import { getTraceHeaders } from '../trace-headers';
 import { validateNoInternalAccess } from '../utils/url-validator';
 import { StorageDriversService } from './storage-drivers.service';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 
 const BACKSLASH_RE = /\\/g;
 const LEADING_SLASHES_RE = /^\/+/;
@@ -24,6 +25,7 @@ export class StorageService implements OnModuleInit {
   constructor(
     private config: ConfigService,
     private readonly drivers: StorageDriversService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     this.driver = this.config.get('STORAGE_DRIVER', 'local');
     this.uploadsDir = safeJoin(__dirname, '..', '..', '..', 'uploads');
@@ -48,6 +50,7 @@ export class StorageService implements OnModuleInit {
       try {
         await this.drivers.verifyR2Connection();
       } catch (error: unknown) {
+        void this.opsAlert?.alertOnCriticalError(error, 'StorageService.verifyR2Connection');
         const errorMsg =
           error instanceof Error
             ? error.message
@@ -361,6 +364,7 @@ export class StorageService implements OnModuleInit {
           return this.deleteFromLocal(relativePath);
       }
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'StorageService.deleteFromLocal');
       const errorMsg =
         error instanceof Error
           ? error.message

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { OrderStatus, PaymentMethod, Prisma } from '@prisma/client';
 import { assertValidOrderStatusFilter } from '../common/checkout-order-state-machine';
 import { PrismaService } from '../prisma/prisma.service';
@@ -6,6 +6,12 @@ import { ReportFiltersDto } from './dto/report-filters.dto';
 
 const ORDER_STATUSES = new Set<string>(Object.values(OrderStatus));
 const PAYMENT_METHODS = new Set<string>(Object.values(PaymentMethod));
+
+function assertValidReportDate(parsed: Date, field: string): void {
+  if (Number.isNaN(parsed.getTime())) {
+    throw new BadRequestException(`Invalid ${field}`);
+  }
+}
 
 function toOrderStatus(value: string | undefined): OrderStatus | undefined {
   return value && ORDER_STATUSES.has(value) ? (value as OrderStatus) : undefined;
@@ -19,7 +25,14 @@ function toPaymentMethod(value: string | undefined): PaymentMethod | undefined {
 export function dateRange(f: ReportFiltersDto) {
   const start = f.startDate ? new Date(f.startDate) : new Date(Date.now() - 30 * 86400000);
   const end = f.endDate ? new Date(`${f.endDate}T23:59:59Z`) : new Date();
+  assertValidReportDate(start, 'startDate');
+  assertValidReportDate(end, 'endDate');
   return { start, end };
+}
+
+export function validatedPaidOrderStatus(caller: string): OrderStatus {
+  assertValidOrderStatusFilter(OrderStatus.PAID, caller);
+  return OrderStatus.PAID;
 }
 
 function paginate(f: ReportFiltersDto) {
@@ -150,6 +163,8 @@ export class ReportsOrdersService {
       createdAt: { gte: start, lte: end },
     };
     applyCommonOrderFilters(where, f);
+    assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getVendasSummary');
+    const paidStatus = 'PAID' as const;
 
     const [agg, total, paid] = await Promise.all([
       this.prisma.checkoutOrder.aggregate({
@@ -158,11 +173,13 @@ export class ReportsOrdersService {
         _avg: { totalInCents: true },
       }),
       this.prisma.checkoutOrder.count({ where: { ...where, workspaceId } }),
-      (assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getVendasSummary'),
-      ((filterStatus: OrderStatus) =>
-        this.prisma.checkoutOrder.count({
-          where: { ...where, workspaceId, status: filterStatus },
-        }))('PAID')),
+      this.prisma.checkoutOrder.count({
+        where: {
+          ...where,
+          workspaceId,
+          status: paidStatus,
+        },
+      }),
     ]);
 
     return {
@@ -295,12 +312,14 @@ export class ReportsOrdersService {
 
   async getOrigem(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = dateRange(f);
+    assertValidOrderStatusFilter('PAID', 'ReportsOrdersService.getOrigem');
+    const paidStatus = 'PAID' as const;
     try {
       return await this.prisma.$queryRaw`
         SELECT COALESCE(NULLIF("couponCode",''), 'Direto') as source,
           COUNT(*)::int as vendas, COALESCE(SUM("totalInCents"),0)::int as receita
         FROM "RAC_CheckoutOrder"
-        WHERE "workspaceId" = ${workspaceId} AND status = 'PAID'
+        WHERE "workspaceId" = ${workspaceId} AND status = ${paidStatus}
           AND "createdAt" >= ${start} AND "createdAt" <= ${end}
         GROUP BY source ORDER BY vendas DESC
       `;

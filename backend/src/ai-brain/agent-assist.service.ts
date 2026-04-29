@@ -1,10 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import {
@@ -42,6 +43,7 @@ export class AgentAssistService {
     private prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
     private readonly prepaidWalletService: WalletService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -88,6 +90,7 @@ export class AgentAssistService {
       await this.trackUsage(workspaceId, completion?.usage?.total_tokens);
       return handler(completion);
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AgentAssistService.handler');
       if (!(error instanceof AgentAssistWalletAccessError)) {
         await refundAiUsageIfNeeded({
           walletService: this.prepaidWalletService,
@@ -171,6 +174,7 @@ export class AgentAssistService {
       }
       return result;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AgentAssistService.now');
       if (workspaceId) {
         await this.prisma.autopilotEvent
           .create({

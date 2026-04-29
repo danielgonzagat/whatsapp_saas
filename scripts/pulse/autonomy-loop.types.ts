@@ -147,6 +147,7 @@ export interface PulseAutonomyRunOptions {
 }
 
 export interface PulseAutonomyArtifactSeedInput {
+  rootDir?: string;
   directive: PulseAutonomousDirective;
   previousState?: import('./types').PulseAutonomyState | null;
   codexCliAvailable?: boolean;

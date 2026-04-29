@@ -4,6 +4,7 @@ import {
   ConflictException,
   Injectable,
   Logger,
+  Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -11,6 +12,7 @@ import type { Agent, Workspace } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const PARTNER_INVITE_ACCOUNT_TYPES: Record<string, import('@prisma/client').ConnectAccountType> = {
   AFFILIATE: 'AFFILIATE',
@@ -35,6 +37,7 @@ export class AuthPartnerService {
     private readonly prisma: PrismaService,
     private readonly connectService: ConnectService,
     private readonly auditService: AuditService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private hashOpaqueToken(token: string) {
@@ -132,6 +135,7 @@ export class AuthPartnerService {
         select: { id: true, workspaceId: true },
       });
     } catch (_error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(_error, 'AuthPartnerService.update');
       const cause = _error instanceof Error ? _error : new Error(String(_error));
       this.logger.error(cause, {
         operation: 'partnerRegistration',

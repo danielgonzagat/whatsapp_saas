@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
@@ -39,6 +40,7 @@ export class CiaRuntimeStateService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly agentEvents: AgentEventsService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   async persistRuntimeSnapshot(workspaceId: string, update: Record<string, unknown>) {
@@ -128,8 +130,18 @@ export class CiaRuntimeStateService {
           : new Error(typeof error === 'string' ? error : 'unknown error');
       const message = String(err?.message || '');
       if (message.includes('Job is already waiting')) {
+        void this.opsAlert?.alertOnDegradation(
+          message,
+          'CiaRuntimeStateService.scheduleContactCatalogRefresh',
+          { workspaceId },
+        );
         return { scheduled: false, reason: 'already_waiting' };
       }
+      void this.opsAlert?.alertOnCriticalError(
+        err,
+        'CiaRuntimeStateService.scheduleContactCatalogRefresh',
+        { workspaceId },
+      );
       return { scheduled: false, reason: message || 'schedule_failed' };
     }
   }

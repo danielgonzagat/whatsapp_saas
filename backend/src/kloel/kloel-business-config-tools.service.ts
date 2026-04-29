@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { StripeRuntime } from '../billing/stripe-runtime';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const NON_DIGIT_RE = /\D/g;
 
@@ -57,7 +58,10 @@ interface ToolChangePlanArgs {
 export class KloelBusinessConfigToolsService {
   private readonly logger = new Logger(KloelBusinessConfigToolsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
 
   async toolListLeads(workspaceId: string, args: ToolListLeadsArgs): Promise<ToolResult> {
     const { limit = 10, status } = args;
@@ -240,6 +244,7 @@ export class KloelBusinessConfigToolsService {
         error: 'Nenhum método de pagamento configurado ainda. Acesse /billing para configurar.',
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KloelBusinessConfigToolsService.create');
       const msg = error instanceof Error ? error.message : 'unknown error';
       this.logger.error('Erro ao gerar link de billing:', error);
       return { success: false, error: msg };
@@ -271,6 +276,7 @@ export class KloelBusinessConfigToolsService {
           : `Plano ${plan} ativo`,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KloelBusinessConfigToolsService.settings');
       const msg = error instanceof Error ? error.message : 'unknown error';
       this.logger.error('Erro ao buscar status billing:', error);
       return { success: false, error: msg };
@@ -327,6 +333,7 @@ export class KloelBusinessConfigToolsService {
         message: `Plano alterado de ${currentPlan} para ${targetPlan}`,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KloelBusinessConfigToolsService.upsert');
       const msg = error instanceof Error ? error.message : 'unknown error';
       this.logger.error('Erro ao alterar plano:', error);
       return { success: false, error: msg };

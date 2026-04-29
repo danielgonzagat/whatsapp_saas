@@ -57,216 +57,12 @@ const DROP_COLUMN_RE = /DROP\s+COLUMN\s+(?:IF\s+EXISTS\s+)?[`"]?(\w+)[`"]?/gi;
 const ALTER_COLUMN_TYPE_RE =
   /ALTER\s+COLUMN\s+[`"]?(\w+)[`"]?\s+(?:SET\s+DATA\s+)?TYPE\s+(\w+(?:\s*\(\s*\d+\s*(?:,\s*\d+\s*)?\))?)/gi;
 
-// ---------------------------------------------------------------------------
-// Provider baseline contracts — expected API surface per provider
-// ---------------------------------------------------------------------------
-
-/** Defines a single expected endpoint for a provider. */
-interface BaselineContract {
-  endpoint: string;
-  method: string;
-  requestShape: string[];
-  responseShape: string[];
-  requiredHeaders: string[];
-  authType: ProviderContract['authType'];
-}
-
-/** Grouped provider baselines keyed by canonical hostname. */
-const PROVIDER_BASELINES: Record<string, BaselineContract[]> = {
-  'graph.facebook.com': [
-    {
-      endpoint: '/v19.0/{phone_number_id}/messages',
-      method: 'POST',
-      requestShape: ['messaging_product', 'to', 'type', 'text.body'],
-      responseShape: ['messaging_product', 'contacts[].input', 'messages[].id'],
-      requiredHeaders: ['Authorization', 'Content-Type'],
-      authType: 'bearer',
-    },
-    {
-      endpoint: '/v19.0/{phone_number_id}',
-      method: 'GET',
-      requestShape: [],
-      responseShape: ['id', 'verified_name', 'display_phone_number'],
-      requiredHeaders: ['Authorization'],
-      authType: 'bearer',
-    },
-    {
-      endpoint: '/v19.0/{phone_number_id}/media',
-      method: 'POST',
-      requestShape: ['messaging_product', 'file', 'type'],
-      responseShape: ['id'],
-      requiredHeaders: ['Authorization'],
-      authType: 'bearer',
-    },
-    {
-      endpoint: '/v19.0/{waba_id}/message_templates',
-      method: 'POST',
-      requestShape: ['name', 'language', 'category', 'components'],
-      responseShape: ['id', 'status', 'category'],
-      requiredHeaders: ['Authorization', 'Content-Type'],
-      authType: 'bearer',
-    },
-  ],
-  'api.stripe.com': [
-    {
-      endpoint: '/v1/payment_intents',
-      method: 'POST',
-      requestShape: ['amount', 'currency', 'payment_method_types'],
-      responseShape: ['id', 'amount', 'currency', 'status', 'client_secret'],
-      requiredHeaders: ['Authorization', 'Content-Type'],
-      authType: 'bearer',
-    },
-    {
-      endpoint: '/v1/checkout/sessions',
-      method: 'POST',
-      requestShape: ['line_items', 'mode', 'success_url', 'cancel_url'],
-      responseShape: ['id', 'url', 'payment_status'],
-      requiredHeaders: ['Authorization', 'Content-Type'],
-      authType: 'bearer',
-    },
-    {
-      endpoint: '/v1/subscriptions/{id}',
-      method: 'GET',
-      requestShape: [],
-      responseShape: ['id', 'status', 'current_period_end', 'customer'],
-      requiredHeaders: ['Authorization'],
-      authType: 'bearer',
-    },
-    {
-      endpoint: '/v1/subscriptions/{id}',
-      method: 'POST',
-      requestShape: ['cancel_at_period_end', 'metadata'],
-      responseShape: ['id', 'status', 'cancel_at_period_end'],
-      requiredHeaders: ['Authorization', 'Content-Type'],
-      authType: 'bearer',
-    },
-  ],
-  'api.openai.com': [
-    {
-      endpoint: '/v1/chat/completions',
-      method: 'POST',
-      requestShape: ['model', 'messages[].role', 'messages[].content'],
-      responseShape: ['choices[].message.role', 'choices[].message.content'],
-      requiredHeaders: ['Authorization', 'Content-Type'],
-      authType: 'bearer',
-    },
-    {
-      endpoint: '/v1/embeddings',
-      method: 'POST',
-      requestShape: ['model', 'input'],
-      responseShape: ['data[].embedding', 'data[].index', 'model'],
-      requiredHeaders: ['Authorization', 'Content-Type'],
-      authType: 'bearer',
-    },
-    {
-      endpoint: '/v1/audio/speech',
-      method: 'POST',
-      requestShape: ['model', 'voice', 'input'],
-      responseShape: [],
-      requiredHeaders: ['Authorization', 'Content-Type'],
-      authType: 'bearer',
-    },
-    {
-      endpoint: '/v1/audio/transcriptions',
-      method: 'POST',
-      requestShape: ['file', 'model'],
-      responseShape: ['text'],
-      requiredHeaders: ['Authorization'],
-      authType: 'bearer',
-    },
-  ],
-  'api.resend.com': [
-    {
-      endpoint: '/emails',
-      method: 'POST',
-      requestShape: ['from', 'to', 'subject', 'html'],
-      responseShape: ['id'],
-      requiredHeaders: ['Authorization', 'Content-Type'],
-      authType: 'bearer',
-    },
-    {
-      endpoint: '/emails/{id}',
-      method: 'GET',
-      requestShape: [],
-      responseShape: ['id', 'subject', 'status', 'last_event'],
-      requiredHeaders: ['Authorization'],
-      authType: 'bearer',
-    },
-  ],
-  'people.googleapis.com': [
-    {
-      endpoint: '/v1/people/me',
-      method: 'GET',
-      requestShape: [],
-      responseShape: ['names[].displayName', 'emailAddresses[].value'],
-      requiredHeaders: ['Authorization'],
-      authType: 'oauth2',
-    },
-  ],
-  'www.googleapis.com': [
-    {
-      endpoint: '/oauth2/v3/certs',
-      method: 'GET',
-      requestShape: [],
-      responseShape: ['keys[].kid', 'keys[].n', 'keys[].e'],
-      requiredHeaders: [],
-      authType: 'none',
-    },
-  ],
-  'oauth2.googleapis.com': [
-    {
-      endpoint: '/token',
-      method: 'POST',
-      requestShape: ['code', 'client_id', 'client_secret', 'redirect_uri', 'grant_type'],
-      responseShape: ['access_token', 'id_token', 'expires_in', 'token_type'],
-      requiredHeaders: ['Content-Type'],
-      authType: 'none',
-    },
-  ],
-};
-
-// ---------------------------------------------------------------------------
-// SDK import patterns for provider detection
-// ---------------------------------------------------------------------------
-
-const PROVIDER_SDK_PATTERNS: Array<{
-  provider: string;
-  patterns: RegExp[];
-  description: string;
-}> = [
-  {
-    provider: 'api.stripe.com',
-    patterns: [/require\(['"]stripe['"]\)/, /from\s+['"]stripe['"]/, /import\s+\*\s+as\s+Stripe\b/],
-    description: 'Stripe SDK direct import',
-  },
-  {
-    provider: 'api.openai.com',
-    patterns: [/require\(['"]openai['"]\)/, /from\s+['"]openai['"]/, /new\s+OpenAI\s*\(/],
-    description: 'OpenAI Node SDK direct import',
-  },
-  {
-    provider: 'graph.facebook.com',
-    patterns: [
-      /require\(['"]@whiskeysockets\/baileys['"]\)/,
-      /from\s+['"]@whiskeysockets\/baileys['"]/,
-    ],
-    description: 'WhatsApp Baileys SDK usage',
-  },
-  {
-    provider: 'api.resend.com',
-    patterns: [/require\(['"]resend['"]\)/, /from\s+['"]resend['"]/],
-    description: 'Resend SDK direct import',
-  },
-  {
-    provider: 'people.googleapis.com',
-    patterns: [
-      /require\(['"]google-auth-library['"]\)/,
-      /from\s+['"]google-auth-library['"]/,
-      /OAuth2Client/,
-    ],
-    description: 'Google Auth library SDL import',
-  },
-];
+const OPENAPI_SPEC_FILE_PATTERN = /(?:^|[/\\])(?:openapi|swagger)(?:\.[\w-]+)?\.json$/i;
+const PULSE_RUNTIME_ARTIFACT_PATTERN =
+  /^PULSE_(?:STRUCTURAL_GRAPH|BEHAVIOR_GRAPH|EXTERNAL_SIGNAL_STATE|RUNTIME_EVIDENCE|RUNTIME_FUSION|RUNTIME_TRACES|REPLAY_STATE|REPLAY_SCENARIOS|BROWSER_EVIDENCE)\.json$/;
+const EXTERNAL_URL_PATTERN = /https?:\/\/[^\s'"`<>)\\]+/gi;
+const PACKAGE_IMPORT_PATTERN =
+  /(?:import\s+(?:type\s+)?(?:[^'"]+\s+from\s+)?|require\s*\()\s*['"]([^.'"/][^'"]*)['"]/g;
 
 // ---------------------------------------------------------------------------
 // Main entry point
@@ -327,46 +123,28 @@ export function buildContractTestEvidence(rootDir: string): ContractTestEvidence
 }
 
 // ---------------------------------------------------------------------------
-// Provider baseline contract builder
+// Dynamic provider contract builder
 // ---------------------------------------------------------------------------
 
 /**
- * Builds the full set of expected provider contracts from the static baseline
- * definitions. These represent the documented API surface that the codebase
- * _should_ consume even if no usage is found yet.
+ * Builds expected provider contracts from discovered evidence: OpenAPI/schema
+ * files, runtime/replay artifacts, and structural/behavior graph metadata.
  *
  * @param rootDir  Absolute path to the repository root.
  * @returns        List of baseline provider contracts.
  */
 export function buildExpectedContracts(rootDir: string): ProviderContract[] {
-  const contracts: ProviderContract[] = [];
-  const backendDir = findBackendDir(rootDir);
-
-  for (const [hostname, baselines] of Object.entries(PROVIDER_BASELINES)) {
-    for (const baseline of baselines) {
-      contracts.push({
-        provider: hostname,
-        endpoint: baseline.endpoint,
-        method: baseline.method,
-        expectedRequestSchema: { requiredFields: baseline.requestShape },
-        expectedResponseSchema: { expectedFields: baseline.responseShape },
-        expectedHeaders: baseline.requiredHeaders,
-        authType: baseline.authType,
-        status: 'generated' as ContractStatus,
-        lastValidated: null,
-        issues: ['Baseline contract — pending live execution with real credentials'],
-      });
-    }
-  }
-
-  return contracts;
+  return dedupeContracts([
+    ...discoverContractsFromOpenApi(rootDir),
+    ...discoverContractsFromRuntimeArtifacts(rootDir),
+    ...discoverContractsFromGraphArtifacts(rootDir),
+  ]);
 }
 
 /**
- * Merges baseline provider contracts with contracts discovered from live
+ * Merges expected provider contracts with contracts discovered from live
  * codebase source scanning. A discovered contract with a matching endpoint
- * upgrades the baseline from "generated" to "untested" so operators know
- * the codebase actually calls this endpoint.
+ * upgrades schema/artifact-derived evidence from "generated" to "untested".
  */
 export function mergeContracts(
   baselines: ProviderContract[],
@@ -376,6 +154,7 @@ export function mergeContracts(
   const result: ProviderContract[] = [];
   const seen = new Set<string>();
   const baselineByKey = new Map<string, ProviderContract>();
+  const packages = new Set(sdkUsage);
 
   for (const c of baselines) {
     const key = `${c.method} ${c.provider}${c.endpoint}`;
@@ -391,9 +170,15 @@ export function mergeContracts(
     if (baseline) {
       result.push({
         ...baseline,
+        expectedHeaders: uniqueStrings([...baseline.expectedHeaders, ...dc.expectedHeaders]),
+        authType: baseline.authType === 'none' ? dc.authType : baseline.authType,
         status: 'untested',
         lastValidated: null,
-        issues: ['Discovered in codebase — pending live contract validation'],
+        issues: uniqueStrings([
+          ...baseline.issues,
+          ...dc.issues,
+          'Discovered in codebase — pending live contract validation',
+        ]),
       });
     } else {
       result.push(dc);
@@ -409,7 +194,39 @@ export function mergeContracts(
     }
   }
 
+  if (packages.size > 0) {
+    for (const packageName of [...packages].sort()) {
+      const key = `SDK ${packageName}/sdk-client`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push(buildSdkImportContract(packageName));
+      }
+    }
+
+    for (const contract of result) {
+      contract.issues = uniqueStrings([
+        ...contract.issues,
+        `SDK imports observed: ${[...packages].sort().join(', ')}`,
+      ]);
+    }
+  }
+
   return result;
+}
+
+function buildSdkImportContract(packageName: string): ProviderContract {
+  return {
+    provider: packageName,
+    endpoint: '/sdk-client',
+    method: 'SDK',
+    expectedRequestSchema: { source: 'observed_package_import', packageName },
+    expectedResponseSchema: {},
+    expectedHeaders: [],
+    authType: 'none',
+    status: 'generated',
+    lastValidated: null,
+    issues: [`SDK import observed for ${packageName} — provider URL/schema not observed yet`],
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -417,9 +234,9 @@ export function mergeContracts(
 // ---------------------------------------------------------------------------
 
 /**
- * Scans backend source files for direct SDK imports of known external
- * providers (Stripe, OpenAI, Resend, Google Auth, Baileys/WhatsApp). Returns
- * the list of provider hostnames for which SDK usage was detected.
+ * Scans backend source files for package imports that look like external SDK
+ * clients. The package names are evidence only; they are not mapped to provider
+ * hosts unless the code or runtime artifacts expose an actual URL.
  *
  * @param rootDir  Absolute path to the repository root.
  * @returns        List of provider hostnames with detected SDK imports.
@@ -438,18 +255,396 @@ export function scanProviderSdkUsage(rootDir: string): string[] {
       continue;
     }
 
-    for (const { provider, patterns } of PROVIDER_SDK_PATTERNS) {
-      if (detected.has(provider)) continue;
-      for (const pattern of patterns) {
-        if (pattern.test(content)) {
-          detected.add(provider);
-          break;
-        }
+    let match: RegExpExecArray | null;
+    PACKAGE_IMPORT_PATTERN.lastIndex = 0;
+    while ((match = PACKAGE_IMPORT_PATTERN.exec(content)) !== null) {
+      const packageName = normalizePackageName(match[1]);
+      if (packageName && looksLikeExternalSdkImport(packageName)) {
+        detected.add(packageName);
       }
     }
   }
 
   return [...detected];
+}
+
+function normalizePackageName(raw: string): string | null {
+  const trimmed = raw.trim();
+  if (!trimmed || trimmed.startsWith('.') || trimmed.startsWith('/')) {
+    return null;
+  }
+  if (trimmed.startsWith('@')) {
+    const parts = trimmed.split('/');
+    return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : trimmed;
+  }
+  return trimmed.split('/')[0] || null;
+}
+
+function looksLikeExternalSdkImport(packageName: string): boolean {
+  return (
+    !packageName.startsWith('@nestjs/') &&
+    !packageName.startsWith('@types/') &&
+    !packageName.startsWith('@prisma/') &&
+    !packageName.startsWith('node:') &&
+    ![
+      'fs',
+      'path',
+      'crypto',
+      'util',
+      'events',
+      'stream',
+      'http',
+      'https',
+      'url',
+      'zlib',
+      'os',
+    ].includes(packageName)
+  );
+}
+
+function discoverContractsFromOpenApi(rootDir: string): ProviderContract[] {
+  const contracts: ProviderContract[] = [];
+  const files = walkFiles(rootDir, ['.json']).filter((filePath) =>
+    OPENAPI_SPEC_FILE_PATTERN.test(filePath.replace(rootDir + path.sep, '')),
+  );
+
+  for (const filePath of files) {
+    let spec: unknown;
+    try {
+      spec = JSON.parse(readTextFile(filePath, 'utf8'));
+    } catch {
+      continue;
+    }
+
+    if (!spec || typeof spec !== 'object' || Array.isArray(spec)) {
+      continue;
+    }
+
+    const root = spec as Record<string, unknown>;
+    const paths = root.paths;
+    if (!paths || typeof paths !== 'object' || Array.isArray(paths)) {
+      continue;
+    }
+
+    const provider = providerFromOpenApiSpec(root) ?? 'openapi_schema';
+    for (const [endpoint, methods] of Object.entries(paths as Record<string, unknown>)) {
+      if (!methods || typeof methods !== 'object' || Array.isArray(methods)) {
+        continue;
+      }
+
+      for (const [method, operation] of Object.entries(methods as Record<string, unknown>)) {
+        const normalizedMethod = method.toUpperCase();
+        if (!HTTP_METHOD_PATTERN.test(normalizedMethod)) {
+          continue;
+        }
+
+        const operationObject =
+          operation && typeof operation === 'object' && !Array.isArray(operation)
+            ? (operation as Record<string, unknown>)
+            : {};
+
+        contracts.push({
+          provider,
+          endpoint: normalizeRoute(endpoint),
+          method: normalizedMethod,
+          expectedRequestSchema: extractOpenApiRequestSchema(operationObject),
+          expectedResponseSchema: extractOpenApiResponseSchema(operationObject),
+          expectedHeaders: [],
+          authType: inferOpenApiAuthType(root, operationObject),
+          status: 'generated',
+          lastValidated: null,
+          issues: [`Discovered from OpenAPI schema ${filePath.replace(rootDir + path.sep, '')}`],
+        });
+      }
+    }
+  }
+
+  return contracts;
+}
+
+function providerFromOpenApiSpec(spec: Record<string, unknown>): string | null {
+  const servers = Array.isArray(spec.servers) ? spec.servers : [];
+  for (const server of servers) {
+    if (!server || typeof server !== 'object') {
+      continue;
+    }
+    const url = (server as Record<string, unknown>).url;
+    if (typeof url === 'string') {
+      const provider = providerFromUrl(url);
+      if (provider) {
+        return provider;
+      }
+    }
+  }
+  return null;
+}
+
+function extractOpenApiRequestSchema(operation: Record<string, unknown>): Record<string, unknown> {
+  const requestBody = operation.requestBody;
+  if (!requestBody || typeof requestBody !== 'object' || Array.isArray(requestBody)) {
+    return {};
+  }
+  return { requestBody };
+}
+
+function extractOpenApiResponseSchema(operation: Record<string, unknown>): Record<string, unknown> {
+  const responses = operation.responses;
+  if (!responses || typeof responses !== 'object' || Array.isArray(responses)) {
+    return {};
+  }
+  return { responses };
+}
+
+function inferOpenApiAuthType(
+  spec: Record<string, unknown>,
+  operation: Record<string, unknown>,
+): ProviderContract['authType'] {
+  const security =
+    operation.security ??
+    spec.security ??
+    (spec.components as Record<string, unknown> | undefined)?.securitySchemes;
+  if (!security) {
+    return 'none';
+  }
+  const serialized = JSON.stringify(security).toLowerCase();
+  if (serialized.includes('oauth')) return 'oauth2';
+  if (serialized.includes('bearer')) return 'bearer';
+  if (serialized.includes('signature')) return 'webhook_signature';
+  if (serialized.includes('apikey') || serialized.includes('api_key')) return 'api_key';
+  return 'api_key';
+}
+
+function discoverContractsFromRuntimeArtifacts(rootDir: string): ProviderContract[] {
+  const pulseDir = safeJoin(rootDir, '.pulse', 'current');
+  if (!pathExists(pulseDir)) {
+    return [];
+  }
+
+  let entries: (string | Dirent)[];
+  try {
+    entries = readDir(pulseDir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+
+  const contracts: ProviderContract[] = [];
+  for (const entry of entries) {
+    if (
+      typeof entry === 'string' ||
+      !entry.isFile() ||
+      !PULSE_RUNTIME_ARTIFACT_PATTERN.test(entry.name)
+    ) {
+      continue;
+    }
+
+    const artifactPath = safeJoin(pulseDir, entry.name);
+    let artifact: unknown;
+    try {
+      artifact = JSON.parse(readTextFile(artifactPath, 'utf8'));
+    } catch {
+      continue;
+    }
+
+    const observations = collectUrlObservations(artifact);
+    for (const observation of observations) {
+      const provider = providerFromUrl(observation.url);
+      if (!provider) {
+        continue;
+      }
+
+      contracts.push({
+        provider,
+        endpoint: normalizeEndpoint(observation.url, provider),
+        method: observation.method ?? 'GET',
+        expectedRequestSchema: observation.requestSchema ?? {},
+        expectedResponseSchema: observation.responseSchema ?? {},
+        expectedHeaders: observation.headers,
+        authType: inferAuthTypeFromObservation(observation),
+        status: 'generated',
+        lastValidated: null,
+        issues: [`Discovered from runtime artifact ${entry.name}`],
+      });
+    }
+  }
+
+  return dedupeContracts(contracts);
+}
+
+function discoverContractsFromGraphArtifacts(rootDir: string): ProviderContract[] {
+  const graphFiles = ['PULSE_STRUCTURAL_GRAPH.json', 'PULSE_BEHAVIOR_GRAPH.json'];
+  const contracts: ProviderContract[] = [];
+
+  for (const fileName of graphFiles) {
+    const filePath = safeJoin(rootDir, '.pulse', 'current', fileName);
+    if (!pathExists(filePath)) {
+      continue;
+    }
+
+    let graph: unknown;
+    try {
+      graph = JSON.parse(readTextFile(filePath, 'utf8'));
+    } catch {
+      continue;
+    }
+
+    for (const observation of collectUrlObservations(graph)) {
+      const provider = providerFromUrl(observation.url);
+      if (!provider) {
+        continue;
+      }
+
+      contracts.push({
+        provider,
+        endpoint: normalizeEndpoint(observation.url, provider),
+        method: observation.method ?? 'GET',
+        expectedRequestSchema: observation.requestSchema ?? {},
+        expectedResponseSchema: observation.responseSchema ?? {},
+        expectedHeaders: observation.headers,
+        authType: inferAuthTypeFromObservation(observation),
+        status: 'generated',
+        lastValidated: null,
+        issues: [`Discovered from graph artifact ${fileName}`],
+      });
+    }
+  }
+
+  return dedupeContracts(contracts);
+}
+
+interface UrlObservation {
+  url: string;
+  method: string | null;
+  headers: string[];
+  requestSchema: Record<string, unknown> | null;
+  responseSchema: Record<string, unknown> | null;
+  context: string;
+}
+
+function collectUrlObservations(value: unknown): UrlObservation[] {
+  const observations: UrlObservation[] = [];
+  const seen = new Set<string>();
+
+  const visit = (current: unknown, context: Record<string, unknown>, keyPath: string): void => {
+    if (typeof current === 'string') {
+      for (const url of current.match(EXTERNAL_URL_PATTERN) ?? []) {
+        const method = readMethodFromContext(context);
+        const normalizedKey = `${method ?? 'GET'} ${url}`;
+        if (seen.has(normalizedKey)) {
+          continue;
+        }
+        seen.add(normalizedKey);
+        observations.push({
+          url,
+          method,
+          headers: readHeadersFromContext(context),
+          requestSchema: readSchemaFromContext(context, 'request'),
+          responseSchema: readSchemaFromContext(context, 'response'),
+          context: keyPath,
+        });
+      }
+      return;
+    }
+
+    if (Array.isArray(current)) {
+      current.forEach((item, index) => visit(item, context, `${keyPath}[${index}]`));
+      return;
+    }
+
+    if (current && typeof current === 'object') {
+      const objectValue = current as Record<string, unknown>;
+      for (const [key, child] of Object.entries(objectValue)) {
+        visit(child, objectValue, keyPath ? `${keyPath}.${key}` : key);
+      }
+    }
+  };
+
+  visit(value, {}, '');
+  return observations;
+}
+
+function readMethodFromContext(context: Record<string, unknown>): string | null {
+  for (const key of ['method', 'httpMethod', 'httpVerb', 'verb']) {
+    const value = context[key];
+    if (typeof value === 'string' && HTTP_METHOD_PATTERN.test(value.toUpperCase())) {
+      return value.toUpperCase();
+    }
+  }
+  return null;
+}
+
+function readHeadersFromContext(context: Record<string, unknown>): string[] {
+  const headers = context.headers;
+  if (!headers || typeof headers !== 'object' || Array.isArray(headers)) {
+    return [];
+  }
+  return Object.keys(headers).filter((header) => /^[A-Za-z0-9-]+$/.test(header));
+}
+
+function readSchemaFromContext(
+  context: Record<string, unknown>,
+  direction: 'request' | 'response',
+): Record<string, unknown> | null {
+  const keys =
+    direction === 'request'
+      ? ['requestSchema', 'bodySchema', 'requestBody', 'payloadSchema']
+      : ['responseSchema', 'responseBody', 'resultSchema'];
+
+  for (const key of keys) {
+    const value = context[key];
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return value as Record<string, unknown>;
+    }
+  }
+  return null;
+}
+
+function inferAuthTypeFromObservation(observation: UrlObservation): ProviderContract['authType'] {
+  const serialized = JSON.stringify({
+    headers: observation.headers,
+    requestSchema: observation.requestSchema,
+    responseSchema: observation.responseSchema,
+    context: observation.context,
+  }).toLowerCase();
+
+  if (serialized.includes('signature')) return 'webhook_signature';
+  if (serialized.includes('bearer') || serialized.includes('authorization')) return 'bearer';
+  if (serialized.includes('oauth')) return 'oauth2';
+  if (serialized.includes('api_key') || serialized.includes('apikey')) return 'api_key';
+  return 'none';
+}
+
+function dedupeContracts(contracts: ProviderContract[]): ProviderContract[] {
+  const byKey = new Map<string, ProviderContract>();
+
+  for (const contract of contracts) {
+    const key = `${contract.method} ${contract.provider}${contract.endpoint}`;
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, contract);
+      continue;
+    }
+
+    byKey.set(key, {
+      ...existing,
+      expectedRequestSchema:
+        Object.keys(existing.expectedRequestSchema).length > 0
+          ? existing.expectedRequestSchema
+          : contract.expectedRequestSchema,
+      expectedResponseSchema:
+        Object.keys(existing.expectedResponseSchema).length > 0
+          ? existing.expectedResponseSchema
+          : contract.expectedResponseSchema,
+      expectedHeaders: uniqueStrings([...existing.expectedHeaders, ...contract.expectedHeaders]),
+      authType: existing.authType === 'none' ? contract.authType : existing.authType,
+      issues: uniqueStrings([...existing.issues, ...contract.issues]),
+    });
+  }
+
+  return [...byKey.values()];
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.filter((value) => value.trim().length > 0))];
 }
 
 // ---------------------------------------------------------------------------

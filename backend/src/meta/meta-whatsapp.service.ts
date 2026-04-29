@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken } from './meta-token-crypto';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
@@ -33,6 +34,7 @@ export class MetaWhatsAppService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly metaSdk: MetaSdkService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private readText(value: unknown): string {
@@ -203,6 +205,11 @@ export class MetaWhatsAppService {
         verifiedName: String(firstPhone?.verified_name || '').trim() || null,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnDegradation(
+        error instanceof Error ? error.message : 'unknown_error',
+        'MetaWhatsAppService.discoverAssets',
+        { metadata: { hasAccessToken: Boolean(accessToken) } },
+      );
       this.logger.warn(
         `Meta WhatsApp asset discovery failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );
@@ -301,6 +308,11 @@ export class MetaWhatsAppService {
         degradedReason: resolved.tokenExpired ? 'meta_token_expired' : null,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnDegradation(
+        error instanceof Error ? error.message : 'unknown_error',
+        'MetaWhatsAppService.getConnectionStatus',
+        { workspaceId },
+      );
       return {
         connected: false,
         status: 'DEGRADED',

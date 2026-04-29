@@ -5,6 +5,7 @@ import type {
   PulseRuntimeEvidence,
   PulseScenarioResult,
 } from '../types';
+import { inferSyntheticModesForScenario } from '../scenario-mode-registry';
 import { matchesRoutePattern, normalizeModuleToken } from './coverage';
 import { buildScenarioResult, inferActorArtifact } from './scenario-result';
 import { executePlaywrightScenario } from './playwright-runner';
@@ -92,22 +93,7 @@ export function canExecuteScenario(
   if (requestedModes.size === 0) {
     return false;
   }
-  if (requestedModes.has('soak') && scenario.timeWindowModes.includes('soak')) {
-    return true;
-  }
-  if (requestedModes.has('shift') && scenario.timeWindowModes.includes('shift')) {
-    return true;
-  }
-  if (scenario.actorKind === 'customer' && requestedModes.has('customer')) {
-    return true;
-  }
-  if (scenario.actorKind === 'operator' && requestedModes.has('operator')) {
-    return true;
-  }
-  if (scenario.actorKind === 'admin' && requestedModes.has('admin')) {
-    return true;
-  }
-  return false;
+  return inferSyntheticModesForScenario(scenario).some((mode) => requestedModes.has(mode));
 }
 
 /** Returns true when a scenario was explicitly requested in this run. */

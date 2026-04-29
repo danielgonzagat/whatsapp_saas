@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  Optional,
   Post,
   Query,
   Req,
@@ -20,6 +21,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken, encryptMetaToken } from './meta-token-crypto';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /**
  * Meta Platform OAuth controller.
@@ -43,6 +45,7 @@ export class MetaAuthController {
     private readonly metaSdk: MetaSdkService,
     private readonly metaWhatsApp: MetaWhatsAppService,
     private readonly prisma: PrismaService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private parseState(rawState: string): {
@@ -296,6 +299,7 @@ export class MetaAuthController {
         }),
       );
     } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'MetaAuthController.callback');
       this.logger.error(
         `Meta OAuth callback failed: ${err instanceof Error ? err.message : 'unknown_error'}`,
       );

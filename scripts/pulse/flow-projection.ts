@@ -11,6 +11,7 @@ import type {
   PulseStructuralRole,
   PulseTruthMode,
 } from './types';
+import type { PulseActorEvidence } from './types.evidence';
 import {
   deriveRouteFamily,
   deriveStructuralFamilies,
@@ -110,12 +111,35 @@ interface StaticValidationSource {
   families: string[];
 }
 
+type PulseScenarioResultItem = PulseActorEvidence['results'][number];
+
 function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
 function clamp(value: number): number {
   return Math.max(0, Math.min(1, value));
+}
+
+function hasScenarioResults(value: unknown): value is { results: PulseScenarioResultItem[] } {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    'results' in value &&
+    Array.isArray(value.results)
+  );
+}
+
+function collectScenarioResults(
+  executionEvidence: Partial<PulseExecutionEvidence> | undefined,
+): PulseScenarioResultItem[] {
+  if (!executionEvidence) {
+    return [];
+  }
+
+  return Object.values(executionEvidence).flatMap((evidenceBlock) =>
+    hasScenarioResults(evidenceBlock) ? evidenceBlock.results : [],
+  );
 }
 
 function compactWords(value: string): string {
@@ -325,12 +349,7 @@ function findFlowStatus(
 /** Build flow projection from discovered flow candidates and capability graph. */
 export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowProjection {
   const executionResults = input.executionEvidence?.flows?.results || [];
-  const scenarioResults = [
-    ...(input.executionEvidence?.customer?.results || []),
-    ...(input.executionEvidence?.operator?.results || []),
-    ...(input.executionEvidence?.admin?.results || []),
-    ...(input.executionEvidence?.soak?.results || []),
-  ];
+  const scenarioResults = collectScenarioResults(input.executionEvidence);
   const observationFootprint = buildObservationFootprint(
     input.resolvedManifest,
     input.executionEvidence,
@@ -444,17 +463,29 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
       truthModeTarget: 'observed',
     });
     const flowDoD: PulseCapabilityDoD = {
-      status: flowToDoDStatus({ done: flowDoDResult.done, pulseStatus: status }),
+      status: flowToDoDStatus({
+        done: flowDoDResult.done,
+        pulseStatus: status === 'real' && !flowDoDResult.done ? 'partial' : status,
+      }),
       missingRoles: flowDoDResult.missingRoles.slice(),
       blockers: flowDoDResult.reasons.slice(),
       truthModeMet: flowDoDResult.truthModeMet,
+      governedBlockers: flowDoDResult.governedBlockers.slice(),
     };
+    const visibleStatus = status === 'real' && !flowDoDResult.done ? 'partial' : status;
+    const governedValidationTargets = flowDoDResult.governedBlockers.map(
+      (blocker) => `Governed ai_safe validation: ${blocker.expectedValidation}`,
+    );
+    const governedBlockingReasons = flowDoDResult.governedBlockers.map(
+      (blocker) =>
+        `Governed ai_safe blocker for ${blocker.role}: ${blocker.reason} Expected validation: ${blocker.expectedValidation}`,
+    );
 
     return {
       id: candidate.id,
       name: chooseFlowName(candidate),
       truthMode,
-      status,
+      status: visibleStatus,
       confidence,
       startNodeIds: relatedNodes.filter((item) => item.role === 'interface').map((item) => item.id),
       endNodeIds: relatedNodes
@@ -467,7 +498,8 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
       distanceToReal:
         missingLinks.length +
         (executedResult?.status === 'failed' ? 1 : 0) +
-        (status === 'phantom' ? 1 : 0),
+        (status === 'phantom' ? 1 : 0) +
+        (visibleStatus !== status ? 1 : 0),
       evidenceSources: unique([
         candidate.declaredFlow ? 'declared-flow' : '',
         candidate.connected ? 'connected-chain' : '',
@@ -483,6 +515,7 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
           : '',
         missingLinks.length > 0 ? `Missing structural links: ${missingLinks.join(', ')}.` : '',
         executedResult?.status === 'failed' ? executedResult.summary : '',
+        ...governedBlockingReasons,
       ]).filter(Boolean),
       validationTargets: unique([
         candidate.backendRoute ? `Validate backend chain for ${candidate.backendRoute}.` : '',
@@ -493,6 +526,7 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
               .map((source) => source.filePath)
               .join(', ')}.`
           : '',
+        ...governedValidationTargets,
       ]).filter(Boolean),
       dod: flowDoD,
     } satisfies PulseFlowProjectionItem;

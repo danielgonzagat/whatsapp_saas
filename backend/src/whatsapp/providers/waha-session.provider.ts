@@ -2,8 +2,9 @@
 // Config/diagnostics live in WahaSessionConfigProvider (waha-session-config.provider.ts).
 // Setup/QR/LID helpers live in waha-session-lifecycle.util.ts.
 // Messaging lives in WahaProvider (waha.provider.ts).
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 import {
   resolveWahaSessionState,
   type SessionStatus,
@@ -31,8 +32,12 @@ import {
 export class WahaSessionProvider extends WahaSessionConfigProvider {
   protected readonly startingSessions: Set<string> = new Set();
 
-  constructor(configService: ConfigService) {
+  constructor(
+    configService: ConfigService,
+    @Optional() private readonly sessionOpsAlert?: OpsAlertService,
+  ) {
     super(configService);
+    this.setOpsAlertService(sessionOpsAlert);
   }
 
   // ─── Session runtime guards ───────────────────────────────
@@ -149,6 +154,9 @@ export class WahaSessionProvider extends WahaSessionConfigProvider {
       ) {
         return { success: true, message: 'session_exists' };
       }
+      void this.sessionOpsAlert?.alertOnCriticalError(err, 'WahaSessionProvider.startSession', {
+        metadata: { sessionId: resolvedSessionId },
+      });
       this.logger.warn(`Failed to start session ${resolvedSessionId}: ${msg.message}`);
       return { success: false, message: msg.message };
     } finally {
@@ -177,6 +185,11 @@ export class WahaSessionProvider extends WahaSessionConfigProvider {
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      void this.sessionOpsAlert?.alertOnDegradation(
+        msg.message,
+        'WahaSessionProvider.getSessionStatus',
+        { metadata: { sessionId: resolvedSessionId } },
+      );
       return { success: false, state: null, message: msg.message };
     }
   }
@@ -210,6 +223,10 @@ export class WahaSessionProvider extends WahaSessionConfigProvider {
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      void this.sessionOpsAlert?.alertOnDegradation(
+        msg.message,
+        'WahaSessionProvider.listSessions',
+      );
       this.logger.warn(`Failed to list WAHA sessions: ${msg.message}`);
       return [];
     }
@@ -251,6 +268,11 @@ export class WahaSessionProvider extends WahaSessionConfigProvider {
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      void this.sessionOpsAlert?.alertOnDegradation(
+        msg.message,
+        'WahaSessionProvider.syncSessionConfig',
+        { metadata: { sessionId: resolvedSessionId } },
+      );
       this.logger.warn(
         `Failed to synchronize WAHA session config for ${resolvedSessionId}: ${msg.message}`,
       );
@@ -299,6 +321,9 @@ export class WahaSessionProvider extends WahaSessionConfigProvider {
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      void this.sessionOpsAlert?.alertOnCriticalError(err, 'WahaSessionProvider.terminateSession', {
+        metadata: { sessionId: resolvedSessionId },
+      });
       return { success: false, message: msg.message };
     }
   }
@@ -326,8 +351,16 @@ export class WahaSessionProvider extends WahaSessionConfigProvider {
           .toLowerCase()
           .includes('not found')
       ) {
+        void this.sessionOpsAlert?.alertOnDegradation(
+          msg.message,
+          'WahaSessionProvider.deleteSession.notFound',
+          { metadata: { sessionId: resolvedSessionId } },
+        );
         return true;
       }
+      void this.sessionOpsAlert?.alertOnCriticalError(error, 'WahaSessionProvider.deleteSession', {
+        metadata: { sessionId: resolvedSessionId },
+      });
       throw error;
     }
   }
@@ -342,6 +375,11 @@ export class WahaSessionProvider extends WahaSessionConfigProvider {
       const msg =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       try {
+        void this.sessionOpsAlert?.alertOnDegradation(
+          msg.message,
+          'WahaSessionProvider.logoutSession.primary',
+          { metadata: { sessionId: resolvedSessionId } },
+        );
         await this.request('POST', '/api/sessions/stop', { name: resolvedSessionId, logout: true });
         return { success: true, message: 'session_logged_out' };
       } catch (fallbackErr: unknown) {
@@ -349,6 +387,11 @@ export class WahaSessionProvider extends WahaSessionConfigProvider {
           fallbackErr instanceof Error
             ? fallbackErr
             : new Error(typeof fallbackErr === 'string' ? fallbackErr : 'unknown error');
+        void this.sessionOpsAlert?.alertOnCriticalError(
+          fallbackErr,
+          'WahaSessionProvider.logoutSession.fallback',
+          { metadata: { sessionId: resolvedSessionId } },
+        );
         return { success: false, message: fallbackMsg?.message || msg?.message || 'logout_failed' };
       }
     }

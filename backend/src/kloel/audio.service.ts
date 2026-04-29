@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { v4 as uuid } from 'uuid';
@@ -13,6 +13,7 @@ import {
   validateNoInternalAccess,
 } from '../common/utils/url-validator';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const DATA_AUDIO___A_Z___BASE_RE = /^data:audio\/[a-z]+;base64,/;
 
@@ -25,6 +26,7 @@ export class AudioService {
   constructor(
     private config: ConfigService,
     private readonly planLimits: PlanLimitsService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     this.openai = new OpenAI({
       apiKey: this.config.get<string>('OPENAI_API_KEY'),
@@ -90,6 +92,10 @@ export class AudioService {
           response_format: 'verbose_json',
         });
       } catch (primaryError: unknown) {
+        void this.opsAlert?.alertOnCriticalError(
+          primaryError,
+          'AudioService.resolveBackendOpenAIModel',
+        );
         const errMsg = primaryError instanceof Error ? primaryError.message : String(primaryError);
         this.logger.warn(`Primary audio model failed, retrying with fallback: ${errMsg}`);
         // tokenBudget: caller responsible for pre-flight budget check
@@ -113,6 +119,7 @@ export class AudioService {
         language: transcription.language || language,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AudioService.estimateTextTokens');
       this.logger.error('Transcription failed:', error);
       throw error;
     } finally {
@@ -165,6 +172,7 @@ export class AudioService {
 
       return this.transcribe(buffer, language, workspaceId);
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AudioService.transcribe');
       this.logger.error(`Failed to transcribe from URL: ${audioUrl}`, error);
       throw error;
     }
@@ -278,6 +286,7 @@ export class AudioService {
       const arrayBuffer = await response.arrayBuffer();
       return Buffer.from(arrayBuffer);
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AudioService.arrayBuffer');
       this.logger.error('Text-to-speech failed:', error);
       throw error;
     }
@@ -309,6 +318,7 @@ export class AudioService {
       const arrayBuffer = await response.arrayBuffer();
       return Buffer.from(arrayBuffer);
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AudioService.arrayBuffer');
       this.logger.error('Text-to-speech HD failed:', error);
       throw error;
     }

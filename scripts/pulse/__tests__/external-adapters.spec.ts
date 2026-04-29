@@ -4,13 +4,165 @@
  * Optional adapters must not block.
  */
 
+import { mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
+import * as path from 'path';
 import { describe, it, expect } from 'vitest';
 import { evaluateMultiCycleConvergenceGate } from '../cert-gate-multi-cycle';
+import { buildExternalSignalState } from '../external-signals';
 import {
   isAdapterRequired,
   normalizeExternalSignalProfile,
 } from '../adapters/external-sources-orchestrator';
-import type { PulseAutonomyStateSnapshot } from '../cert-gate-multi-cycle';
+import type { BuildExternalSignalStateInput } from '../external-signals';
+import type { ConsolidatedExternalState } from '../adapters/external-sources-orchestrator';
+
+function writeJson(filePath: string, value: unknown): void {
+  writeFileSync(filePath, JSON.stringify(value, null, 2));
+}
+
+function buildExternalInput(
+  rootDir: string,
+  liveExternalState: ConsolidatedExternalState,
+): BuildExternalSignalStateInput {
+  const generatedAt = '2026-04-29T21:00:00.000Z';
+  return {
+    rootDir,
+    liveExternalState,
+    codacyEvidence: {
+      generatedAt,
+      summary: {
+        snapshotAvailable: true,
+        stale: false,
+        totalIssues: 0,
+        highIssues: 0,
+        runtimeCriticalHotspots: 0,
+        userFacingHotspots: 0,
+        humanRequiredHotspots: 0,
+      },
+      hotspots: [],
+    },
+    capabilityState: {
+      generatedAt,
+      summary: {
+        totalCapabilities: 0,
+        realCapabilities: 0,
+        partialCapabilities: 0,
+        latentCapabilities: 0,
+        phantomCapabilities: 0,
+        humanRequiredCapabilities: 0,
+        foundationalCapabilities: 0,
+        connectedCapabilities: 0,
+        operationalCapabilities: 0,
+        productionReadyCapabilities: 0,
+        runtimeObservedCapabilities: 0,
+        scenarioCoveredCapabilities: 0,
+      },
+      capabilities: [],
+    },
+    flowProjection: {
+      generatedAt,
+      summary: {
+        totalFlows: 0,
+        realFlows: 0,
+        partialFlows: 0,
+        latentFlows: 0,
+        phantomFlows: 0,
+      },
+      flows: [],
+    },
+    scopeState: {
+      generatedAt,
+      rootDir,
+      summary: {
+        totalFiles: 0,
+        totalLines: 0,
+        runtimeCriticalFiles: 0,
+        userFacingFiles: 0,
+        humanRequiredFiles: 0,
+        surfaceCounts: {
+          frontend: 0,
+          'frontend-admin': 0,
+          backend: 0,
+          worker: 0,
+          prisma: 0,
+          e2e: 0,
+          scripts: 0,
+          docs: 0,
+          infra: 0,
+          governance: 0,
+          'root-config': 0,
+          artifacts: 0,
+          misc: 0,
+        },
+        kindCounts: {
+          source: 0,
+          spec: 0,
+          migration: 0,
+          config: 0,
+          document: 0,
+          artifact: 0,
+        },
+        unmappedModuleCandidates: [],
+        inventoryCoverage: 100,
+        classificationCoverage: 100,
+        structuralGraphCoverage: 100,
+        testCoverage: 0,
+        scenarioCoverage: 0,
+        runtimeEvidenceCoverage: 0,
+        productionProofCoverage: 0,
+        orphanFiles: [],
+        unknownFiles: [],
+      },
+      parity: {
+        status: 'pass',
+        mode: 'repo_inventory_with_codacy_spotcheck',
+        confidence: 'high',
+        reason: 'test',
+        inventoryFiles: 0,
+        codacyObservedFiles: 0,
+        codacyObservedFilesCovered: 0,
+        missingCodacyFiles: [],
+      },
+      codacy: {
+        snapshotAvailable: true,
+        sourcePath: 'PULSE_CODACY_STATE.json',
+        stale: false,
+        syncedAt: generatedAt,
+        ageMinutes: 0,
+        loc: 0,
+        totalIssues: 0,
+        severityCounts: { HIGH: 0, MEDIUM: 0, LOW: 0, UNKNOWN: 0 },
+        toolCounts: {},
+        topFiles: [],
+        highPriorityBatch: [],
+        observedFiles: [],
+      },
+      files: [],
+      moduleAggregates: [],
+      excludedFiles: [],
+      scopeSource: 'repo_filesystem',
+      manifestBoundary: false,
+      manifestRole: 'semantic_overlay',
+    },
+  };
+}
+
+function buildLiveExternalState(
+  sources: ConsolidatedExternalState['sources'],
+): ConsolidatedExternalState {
+  return {
+    generatedAt: '2026-04-29T21:00:00.000Z',
+    profile: 'pulse-core-final',
+    certificationScope: 'pulse-core-final',
+    sources,
+    allSignals: [],
+    signalsBySource: {},
+    criticalSignals: [],
+    highSignals: [],
+    totalSeverity: 0,
+  };
+}
 
 describe('external-adapters — required vs optional', () => {
   describe('profile-scoped external signal requiredness', () => {
@@ -28,6 +180,131 @@ describe('external-adapters — required vs optional', () => {
     it('normalizes the legacy production-final alias to full-product', () => {
       expect(normalizeExternalSignalProfile('production-final')).toBe('full-product');
       expect(isAdapterRequired('prometheus', 'production-final')).toBe(true);
+    });
+
+    it('classifies optional unavailable adapters without adding them to required blockers', () => {
+      const rootDir = mkdtempSync(path.join(tmpdir(), 'pulse-external-adapter-classification-'));
+      try {
+        const state = buildExternalSignalState(
+          buildExternalInput(
+            rootDir,
+            buildLiveExternalState([
+              {
+                source: 'prometheus',
+                status: 'not_available',
+                signalCount: 0,
+                syncedAt: '2026-04-29T21:00:00.000Z',
+                reason: 'Prometheus base URL was not configured for the live adapter.',
+              },
+            ]),
+          ),
+        );
+
+        const prometheus = state.adapters.find((adapter) => adapter.source === 'prometheus');
+
+        expect(prometheus).toMatchObject({
+          requirement: 'optional',
+          required: false,
+          observed: false,
+          blocking: false,
+          proofBasis: 'live_adapter',
+        });
+        expect(state.summary.optionalNotAvailableList).toContain('prometheus');
+        expect(state.summary.missingAdaptersList).not.toContain('prometheus');
+        expect(state.summary.blockingAdaptersList).not.toContain('prometheus');
+        expect(state.summary.requiredAdapters).toBeGreaterThan(0);
+        expect(state.summary.optionalAdapters).toBeGreaterThan(0);
+        expect(state.summary.blockingAdapters).toBe(state.summary.blockingAdaptersList.length);
+      } finally {
+        rmSync(rootDir, { recursive: true, force: true });
+      }
+    });
+  });
+
+  describe('GitHub live adapter precedence over stale snapshots', () => {
+    it('does not reuse stale GitHub snapshots as live evidence when live credentials are unavailable', () => {
+      const rootDir = mkdtempSync(path.join(tmpdir(), 'pulse-external-adapters-'));
+      try {
+        writeJson(path.join(rootDir, 'PULSE_GITHUB_STATE.json'), {
+          generatedAt: '2026-04-20T00:00:00.000Z',
+          signals: [{ id: 'github:old', summary: 'Old GitHub snapshot.' }],
+        });
+        writeJson(path.join(rootDir, 'PULSE_GITHUB_ACTIONS_STATE.json'), {
+          generatedAt: '2026-04-20T00:00:00.000Z',
+          runs: [{ id: 'old-run', name: 'CI', conclusion: 'failure' }],
+        });
+
+        const state = buildExternalSignalState(
+          buildExternalInput(
+            rootDir,
+            buildLiveExternalState([
+              {
+                source: 'github',
+                status: 'not_available',
+                signalCount: 0,
+                syncedAt: '2026-04-29T21:00:00.000Z',
+                reason: 'GitHub owner/repo were not configured for the live adapter.',
+              },
+              {
+                source: 'github_actions',
+                status: 'not_available',
+                signalCount: 0,
+                syncedAt: '2026-04-29T21:00:00.000Z',
+                reason: 'GitHub Actions token/owner/repo were not configured for the live adapter.',
+              },
+            ]),
+          ),
+        );
+
+        const github = state.adapters.find((adapter) => adapter.source === 'github');
+        const actions = state.adapters.find((adapter) => adapter.source === 'github_actions');
+
+        expect(github?.status).toBe('not_available');
+        expect(actions?.status).toBe('not_available');
+        expect(github?.reason).toContain('required under profile=pulse-core-final');
+        expect(actions?.reason).toContain('was not reused as live external reality');
+        expect(state.summary.staleAdaptersList).not.toContain('github');
+        expect(state.summary.staleAdaptersList).not.toContain('github_actions');
+        expect(state.summary.missingAdaptersList).toContain('github');
+        expect(state.summary.missingAdaptersList).toContain('github_actions');
+      } finally {
+        rmSync(rootDir, { recursive: true, force: true });
+      }
+    });
+
+    it('prefers fresh live GitHub Actions state over a stale snapshot when credentials are configured', () => {
+      const rootDir = mkdtempSync(path.join(tmpdir(), 'pulse-external-adapters-'));
+      try {
+        writeJson(path.join(rootDir, 'PULSE_GITHUB_ACTIONS_STATE.json'), {
+          generatedAt: '2026-04-20T00:00:00.000Z',
+          runs: [{ id: 'old-run', name: 'CI', conclusion: 'failure' }],
+        });
+
+        const state = buildExternalSignalState(
+          buildExternalInput(
+            rootDir,
+            buildLiveExternalState([
+              {
+                source: 'github_actions',
+                status: 'ready',
+                signalCount: 0,
+                syncedAt: '2026-04-29T21:00:00.000Z',
+                reason:
+                  'GitHub Actions live adapter is configured but returned no actionable signals.',
+              },
+            ]),
+          ),
+        );
+
+        const actions = state.adapters.find((adapter) => adapter.source === 'github_actions');
+
+        expect(actions?.sourcePath).toBe('live:github_actions');
+        expect(actions?.status).toBe('ready');
+        expect(actions?.freshnessMinutes).toBe(0);
+        expect(state.summary.staleAdaptersList).not.toContain('github_actions');
+      } finally {
+        rmSync(rootDir, { recursive: true, force: true });
+      }
     });
   });
 

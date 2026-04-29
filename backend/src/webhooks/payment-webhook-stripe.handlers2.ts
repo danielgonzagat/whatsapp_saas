@@ -204,6 +204,12 @@ export async function handleCheckoutSessionCompleted(
   try {
     await updatePaymentAndSaleForSession(deps, session, workspaceId);
   } catch (finErr: unknown) {
+    deps.financialAlert.webhookProcessingFailed(
+      finErr instanceof Error
+        ? finErr
+        : new Error(typeof finErr === 'string' ? finErr : 'unknown_error'),
+      { provider: 'stripe', externalId: session.id, eventType: event.type },
+    );
     deps.logger.error(
       `[STRIPE] Financial update failed for session ${session.id}: ${finErr instanceof Error ? finErr.message : 'unknown_error'}`,
       { workspaceId, sessionId: session.id },
@@ -251,6 +257,10 @@ export async function handleCheckoutSessionCompleted(
       });
     } catch (flowErr: unknown) {
       const flowErrMsg = flowErr instanceof Error ? flowErr.message : 'unknown error';
+      deps.financialAlert.webhookProcessingFailed(
+        flowErr instanceof Error ? flowErr : new Error(flowErrMsg),
+        { provider: 'stripe', externalId: session.id, eventType: event.type },
+      );
       deps.logger.error(`[STRIPE] Post-purchase flow activation failed: ${flowErrMsg}`, {
         workspaceId,
         eventType: 'checkout.session.completed',
@@ -304,6 +314,11 @@ async function updatePaymentAndSaleForSession(
       paymentErr instanceof Error
         ? paymentErr
         : new Error(typeof paymentErr === 'string' ? paymentErr : 'unknown error');
+    deps.financialAlert.webhookProcessingFailed(msg, {
+      provider: 'stripe',
+      externalId: stripePaymentExternalId,
+      eventType: 'checkout.session.completed',
+    });
     deps.logger.error(
       `[STRIPE] Failed to update payment for ${stripePaymentExternalId}: ${msg?.message}`,
       {
@@ -326,6 +341,11 @@ async function updatePaymentAndSaleForSession(
       saleErr instanceof Error
         ? saleErr
         : new Error(typeof saleErr === 'string' ? saleErr : 'unknown error');
+    deps.financialAlert.webhookProcessingFailed(msg, {
+      provider: 'stripe',
+      externalId: stripePaymentExternalId,
+      eventType: 'checkout.session.completed',
+    });
     deps.logger.error(
       `[STRIPE] Failed to update KloelSale for ${stripePaymentExternalId}: ${msg?.message}`,
       {
@@ -353,6 +373,10 @@ async function sendCheckoutConfirmation(
     deps.logger.log(`[STRIPE] Notificação enviada para ${customerPhone}`);
   } catch (notifyErr: unknown) {
     const notifyErrMsg = notifyErr instanceof Error ? notifyErr.message : 'unknown error';
+    deps.financialAlert.webhookProcessingFailed(
+      notifyErr instanceof Error ? notifyErr : new Error(notifyErrMsg),
+      { provider: 'stripe', externalId: session.id, eventType: 'checkout.session.completed' },
+    );
     deps.logger.error(`[STRIPE] Failed to notify customer ${customerPhone}: ${notifyErrMsg}`, {
       workspaceId,
       sessionId: session.id,

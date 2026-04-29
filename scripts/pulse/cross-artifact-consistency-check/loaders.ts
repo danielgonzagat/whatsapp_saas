@@ -1,9 +1,8 @@
 import * as path from 'path';
 import { pathExists, readTextFile } from '../safe-fs';
-import { assertWithinRoot } from '../lib/safe-path';
 
-/** Maximum allowed generatedAt drift in milliseconds (10 minutes). */
-export const MAX_GENERATED_AT_DRIFT_MS = 10 * 60 * 1000;
+/** Maximum allowed artifact timestamp drift in milliseconds (5 minutes). */
+export const MAX_GENERATED_AT_DRIFT_MS = 5 * 60 * 1000;
 
 /**
  * Resolves the repo root by searching upward from __dirname for package.json.
@@ -44,16 +43,12 @@ export const DEFAULT_ARTIFACT_PATHS: string[] = [
  * Returns null when the file is missing or unparseable.
  */
 export function loadArtifact(filePath: string): Record<string, unknown> | null {
-  // Validate against the trusted repo root before any fs operation. The
-  // safe-fs wrappers re-validate against the global allow-list as well, so
-  // path-traversal cannot reach the underlying syscall.
-  const safePath = assertWithinRoot(filePath, REPO_ROOT);
-  if (!pathExists(safePath)) {
+  if (!pathExists(filePath)) {
     return null;
   }
   let raw: string;
   try {
-    raw = readTextFile(safePath, 'utf8');
+    raw = readTextFile(filePath, 'utf8');
   } catch (err) {
     throw new Error(
       `PULSE cross-artifact: cannot read "${filePath}": ${err instanceof Error ? err.message : String(err)}`,

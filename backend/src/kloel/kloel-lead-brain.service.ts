@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { KloelLead, Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -8,6 +8,7 @@ import { chatCompletionWithFallback } from './openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_SALES_PROMPT } from './kloel.prompts';
 import OpenAI from 'openai';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const NON_DIGIT_RE = /\D/g;
 
@@ -42,6 +43,7 @@ export class KloelLeadBrainService {
     private readonly planLimits: PlanLimitsService,
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly smartPaymentService: SmartPaymentService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   }
@@ -126,6 +128,7 @@ export class KloelLeadBrainService {
     try {
       await this.prisma.kloelConversation.create({ data: { leadId, role, content } });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KloelLeadBrainService.create');
       this.logger.warn('Erro ao salvar mensagem do lead:', error); // Intencional: lead message persistence is non-critical.
     }
   }
@@ -157,6 +160,7 @@ export class KloelLeadBrainService {
         data: updateData,
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KloelLeadBrainService.updateMany');
       this.logger.warn('Erro ao atualizar lead:', error); // Intencional: lead update failure is non-critical.
     }
   }
@@ -193,6 +197,7 @@ export class KloelLeadBrainService {
       }
       return null;
     } catch (_error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(_error, 'KloelLeadBrainService.safeStr');
       return null;
     }
   }
@@ -223,6 +228,10 @@ export class KloelLeadBrainService {
         message: result.suggestedMessage,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'KloelLeadBrainService.generatePaymentForLead',
+      );
       const msg = error instanceof Error ? error.message : 'unknown error';
       this.logger.error(`Erro ao gerar pagamento para lead: ${msg}`);
       return null;
@@ -269,6 +278,7 @@ export class KloelLeadBrainService {
           });
           contactId = contact.id;
         } catch (err: unknown) {
+          void this.opsAlert?.alertOnCriticalError(err, 'KloelLeadBrainService.slice');
           const errMsg = err instanceof Error ? err.message : 'unknown error';
           this.logger.warn(`Falha ao upsert contact: ${errMsg}`);
         }
@@ -289,6 +299,10 @@ export class KloelLeadBrainService {
           await this.updateLeadFromConversation(workspaceId, lead.id, message, agentResponse);
           return agentResponse;
         } catch (agentErr: unknown) {
+          void this.opsAlert?.alertOnCriticalError(
+            agentErr,
+            'KloelLeadBrainService.updateLeadFromConversation',
+          );
           const agentMsg = agentErr instanceof Error ? agentErr.message : 'unknown error';
           this.logger.warn(`UnifiedAgentService falhou: ${agentMsg}`);
         }
@@ -324,6 +338,10 @@ export class KloelLeadBrainService {
       await this.updateLeadFromConversation(workspaceId, lead.id, message, kloelResponse);
       return kloelResponse;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'KloelLeadBrainService.updateLeadFromConversation',
+      );
       const msg = error instanceof Error ? error.message : 'unknown error';
       this.logger.error(`Erro processando mensagem WhatsApp: ${msg}`);
       return 'Olá! Tive um pequeno problema técnico. Pode repetir sua mensagem?';

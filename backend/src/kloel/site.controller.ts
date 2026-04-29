@@ -14,6 +14,7 @@ import {
   Request,
   ServiceUnavailableException,
   UseGuards,
+  Optional,
 } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -29,6 +30,7 @@ import {
 } from '../wallet/provider-llm-billing';
 import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
 import { WalletService } from '../wallet/wallet.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import {
   InsufficientWalletBalanceError,
   UsagePriceNotFoundError,
@@ -52,6 +54,7 @@ export class SiteController {
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
     private readonly prepaidWalletService: WalletService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private insufficientWalletMessage() {
@@ -83,6 +86,10 @@ export class SiteController {
         maxOutputTokens: SITE_GENERATION_MAX_OUTPUT_TOKENS,
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'SiteController.estimateAnthropicMessageQuoteCostCents',
+      );
       if (error instanceof UnknownProviderPricingModelError) {
         return undefined;
       }
@@ -122,6 +129,7 @@ export class SiteController {
       });
       return true;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'SiteController.chargeForUsage');
       if (error instanceof UsagePriceNotFoundError) {
         return false;
       }
@@ -178,6 +186,7 @@ export class SiteController {
         },
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'SiteController.settleUsageCharge');
       if (!(error instanceof UnknownProviderPricingModelError)) {
         throw error;
       }
@@ -205,6 +214,7 @@ export class SiteController {
         },
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'SiteController.refundUsageCharge');
       this.logger.error(
         `Failed to refund site_generation workspace=${workspaceId} request=${requestId}: ${
           error instanceof Error ? error.message : String(error)
@@ -375,6 +385,7 @@ export class SiteController {
       const html = result.content?.[0]?.text?.trim() || null;
       return { success: true, html, message: 'Generated via Anthropic' };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'SiteController.generateSite');
       if (usageCharged) {
         await this.refundSiteGenerationIfNeeded(
           workspaceId,

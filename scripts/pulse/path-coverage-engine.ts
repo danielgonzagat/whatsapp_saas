@@ -11,9 +11,13 @@
 import * as path from 'path';
 import type { PulseExecutionMatrix, PulseExecutionMatrixPath } from './types';
 import type {
+  PathCoverageArtifactLink,
   PathClassification,
+  PathCoverageExecutionMode,
+  PathCoverageExpectedEvidence,
   PathCoverageEntry,
   PathCoverageState,
+  PathCoverageStructuralSafetyClassification,
 } from './types.path-coverage-engine';
 import { readJsonFile, writeTextFile, ensureDir, pathExists } from './safe-fs';
 import { safeJoin } from './safe-path';
@@ -63,18 +67,26 @@ export function buildPathCoverageState(
 
   const entries: PathCoverageEntry[] = matrixPaths.map((mp) => {
     const safe = isSafeToExecute(mp);
-    const classification = classifyPath(mp, rootDir);
+    const protectedSurface = isProtectedGovernanceSurface(mp);
+    const inferredClassification = classifyPath(mp, rootDir);
+    const classification =
+      safe || inferredClassification !== 'probe_blueprint_generated'
+        ? inferredClassification
+        : 'inferred_only';
+    const terminalReason = buildTerminalReason(mp, classification, safe);
+    const probeExecutionMode = normalizeCoverageExecutionMode(mp.executionMode, mp.risk);
     const testInfo =
       safe && classification === 'probe_blueprint_generated'
-        ? generateTestForPath(mp, rootDir)
+        ? generateTestForPath(mp, rootDir, probeExecutionMode, terminalReason)
         : { testFilePath: null, fixtureNeeded: [] as string[] };
 
     return {
       pathId: mp.pathId,
       entrypoint: mp.entrypoint.description,
       risk: mp.risk,
-      executionMode: mp.executionMode,
+      executionMode: probeExecutionMode,
       classification,
+      terminalReason,
       testGenerated: testInfo.testFilePath !== null,
       testFilePath: testInfo.testFilePath,
       safeToExecute: safe,
@@ -84,6 +96,16 @@ export function buildPathCoverageState(
           ? new Date().toISOString()
           : null,
       evidenceMode: getEvidenceMode(classification),
+      probeExecutionMode,
+      validationCommand: mp.validationCommand,
+      expectedEvidence: buildExpectedEvidence(mp),
+      structuralSafetyClassification: buildStructuralSafetyClassification(
+        mp,
+        safe,
+        protectedSurface,
+        probeExecutionMode,
+      ),
+      artifactLinks: buildArtifactLinks(mp, testInfo.testFilePath),
     };
   });
 
@@ -94,12 +116,8 @@ export function buildPathCoverageState(
     (e) => e.classification === 'probe_blueprint_generated',
   ).length;
   const inferredOnly = entries.filter((e) => e.classification === 'inferred_only').length;
-  const blockedHuman = entries.filter((e) => e.classification === 'blocked_human_required').length;
   const criticalInferredOnly = entries.filter(
     (e) => e.classification === 'inferred_only' && isCriticalRisk(e.risk),
-  ).length;
-  const criticalBlockedHuman = entries.filter(
-    (e) => e.classification === 'blocked_human_required' && isCriticalRisk(e.risk),
   ).length;
   const criticalUnobserved = entries.filter(
     (e) =>
@@ -117,9 +135,7 @@ export function buildPathCoverageState(
       testGenerated,
       probeBlueprintGenerated,
       inferredOnly,
-      blockedHuman,
       criticalInferredOnly,
-      criticalBlockedHuman,
       criticalUnobserved,
       coveragePercent,
     },
@@ -158,7 +174,7 @@ export function classifyPath(mp: PulseExecutionMatrixPath, _rootDir: string): Pa
   }
 
   if (status === 'blocked_human_required' || status === 'inferred_only' || status === 'untested') {
-    if (hasMapped && mp.routePatterns.length > 0) {
+    if (canGenerateProbeBlueprint(mp, hasMapped)) {
       return 'probe_blueprint_generated';
     }
     return 'inferred_only';
@@ -171,6 +187,11 @@ export function classifyPath(mp: PulseExecutionMatrixPath, _rootDir: string): Pa
 export function generateTestForPath(
   mp: PulseExecutionMatrixPath,
   rootDir: string,
+  executionMode: PathCoverageExecutionMode = normalizeCoverageExecutionMode(
+    mp.executionMode,
+    mp.risk,
+  ),
+  terminalReason = buildTerminalReason(mp, 'probe_blueprint_generated', true),
 ): { testFilePath: string; fixtureNeeded: string[] } {
   const safeName = mp.pathId.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 60);
   const testDir = safeJoin(rootDir, '.pulse', 'frontier');
@@ -187,7 +208,13 @@ export function generateTestForPath(
     fixtures.push(`flow:${mp.flowId}`);
   }
 
-  const probeContent = generateProbeFileContent(mp, routeMethod, fixtures);
+  const probeContent = generateProbeFileContent(
+    mp,
+    routeMethod,
+    fixtures,
+    executionMode,
+    terminalReason,
+  );
   writeTextFile(safeJoin(rootDir, testFilePath), probeContent);
 
   return { testFilePath, fixtureNeeded: fixtures };
@@ -195,6 +222,11 @@ export function generateTestForPath(
 
 /** Determine whether an AI agent can safely execute the path autonomously. */
 export function isSafeToExecute(mp: PulseExecutionMatrixPath): boolean {
+  return !isProtectedGovernanceSurface(mp);
+}
+
+/** Determine whether a path maps to protected governance or inaccessible surfaces. */
+function isProtectedGovernanceSurface(mp: PulseExecutionMatrixPath): boolean {
   const allFilePaths = unique([
     ...mp.filePaths,
     ...(mp.entrypoint.filePath ? [mp.entrypoint.filePath] : []),
@@ -206,11 +238,11 @@ export function isSafeToExecute(mp: PulseExecutionMatrixPath): boolean {
     }
 
     if (includesAny(filePath, GOVERNANCE_PATTERNS)) {
-      return false;
+      return true;
     }
   }
 
-  return !isAutonomousExecutionBlockedRisk(mp.risk);
+  return false;
 }
 
 /** Compute coverage percentage from classified entries. */
@@ -245,27 +277,58 @@ function detectRouteMethod(mp: PulseExecutionMatrixPath): string {
   return 'GET';
 }
 
+function canGenerateProbeBlueprint(mp: PulseExecutionMatrixPath, hasMapped: boolean): boolean {
+  if (mp.routePatterns.length > 0) {
+    return true;
+  }
+
+  if (!isHighOrCriticalRisk(mp.risk)) {
+    return false;
+  }
+
+  return (
+    hasMapped || Boolean(mp.entrypoint.filePath || mp.entrypoint.nodeId || mp.filePaths.length > 0)
+  );
+}
+
 function generateProbeFileContent(
   mp: PulseExecutionMatrixPath,
   method: string,
   fixtures: string[],
+  executionMode: PathCoverageExecutionMode,
+  terminalReason: string,
 ): string {
   const route = mp.routePatterns[0] ?? '/';
+  const safeName = mp.pathId.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 60);
+  const probeFilePath = path.posix.join('.pulse', 'frontier', `${safeName}.probe.json`);
   return JSON.stringify(
     {
       kind: 'pulse_frontier_probe_blueprint',
       pathId: mp.pathId,
       entrypoint: mp.entrypoint.description,
-      matrixStatus: mp.status,
+      matrixStatus: normalizeBlueprintMatrixStatus(mp.status),
       generatedAt: new Date().toISOString(),
       evidenceMode: 'blueprint',
       executed: false,
+      coverageCountsAsObserved: false,
+      probeExecutionMode: executionMode,
+      terminalReason,
+      structuralSafetyClassification: buildStructuralSafetyClassification(
+        mp,
+        true,
+        false,
+        executionMode,
+      ),
       route: {
         method,
         pattern: route,
       },
       fixtures,
       validationCommand: mp.validationCommand,
+      expectedEvidence: buildExpectedEvidence(mp),
+      artifactLinks: buildArtifactLinks(mp, probeFilePath),
+      breakpoint: mp.breakpoint,
+      requiredEvidence: mp.requiredEvidence,
       validationRequired: [
         'runtime_harness_executes_blueprint',
         'response_contract_verified',
@@ -277,15 +340,23 @@ function generateProbeFileContent(
   );
 }
 
+function normalizeBlueprintMatrixStatus(
+  status: PulseExecutionMatrixPath['status'],
+):
+  | Exclude<PulseExecutionMatrixPath['status'], 'blocked_human_required'>
+  | 'governed_validation_required' {
+  if (status === 'blocked_human_required') {
+    return 'governed_validation_required';
+  }
+  return status;
+}
+
 function getEvidenceMode(classification: PathClassification): PathCoverageEntry['evidenceMode'] {
   if (classification === 'observed_pass' || classification === 'observed_fail') {
     return 'observed';
   }
   if (classification === 'probe_blueprint_generated') {
     return 'blueprint';
-  }
-  if (classification === 'blocked_human_required') {
-    return 'inferred';
   }
   return 'inferred';
 }
@@ -294,6 +365,133 @@ function isCriticalRisk(risk: PathCoverageEntry['risk']): boolean {
   return risk === 'critical';
 }
 
-function isAutonomousExecutionBlockedRisk(risk: PathCoverageEntry['risk']): boolean {
+function isHighOrCriticalRisk(risk: PathCoverageEntry['risk']): boolean {
   return risk === 'high' || risk === 'critical';
+}
+
+function normalizeCoverageExecutionMode(
+  mode: PulseExecutionMatrixPath['executionMode'],
+  risk: PathCoverageEntry['risk'],
+): PathCoverageExecutionMode {
+  if (mode === 'governed_validation') {
+    return 'governed_validation';
+  }
+  if (mode === 'human_required' || mode === 'observation_only') {
+    return 'governed_validation';
+  }
+  return isHighOrCriticalRisk(risk) ? 'governed_validation' : 'ai_safe';
+}
+
+function buildTerminalReason(
+  mp: PulseExecutionMatrixPath,
+  classification: PathClassification,
+  safeToExecute: boolean,
+): string {
+  if (classification === 'observed_pass') {
+    return summarizeObservedEvidence(mp, 'passed') ?? 'Path has passing observed runtime evidence.';
+  }
+  if (classification === 'observed_fail') {
+    return summarizeObservedEvidence(mp, 'failed') ?? 'Path has failing observed runtime evidence.';
+  }
+  if (classification === 'unreachable') {
+    return mp.breakpoint?.reason ?? 'Path is unreachable from the discovered execution graph.';
+  }
+  if (classification === 'not_executable') {
+    return mp.breakpoint?.reason ?? 'Path is classified as non-executable inventory.';
+  }
+  if (classification === 'probe_blueprint_generated') {
+    const mode = normalizeCoverageExecutionMode(mp.executionMode, mp.risk);
+    const routeOrEntry = mp.routePatterns[0] ?? mp.entrypoint.filePath ?? mp.entrypoint.nodeId;
+    return safeToExecute
+      ? `Unobserved ${mp.risk} path has ${routeOrEntry ?? 'a discovered entrypoint'} and is terminalized as a ${mode} probe blueprint until runtime evidence executes.`
+      : 'Unobserved path maps to a protected governance surface and remains inferred without executable coverage.';
+  }
+  if (mp.breakpoint?.reason) {
+    return mp.breakpoint.reason;
+  }
+  return 'Path lacks pass/fail runtime evidence and has no executable probe blueprint entrypoint yet.';
+}
+
+function buildExpectedEvidence(mp: PulseExecutionMatrixPath): PathCoverageExpectedEvidence[] {
+  const expected = mp.requiredEvidence.map((requirement) => ({
+    kind: requirement.kind,
+    required: requirement.required,
+    reason: requirement.reason,
+  }));
+
+  if (expected.some((item) => item.kind === 'runtime')) {
+    return expected;
+  }
+
+  return [
+    ...expected,
+    {
+      kind: 'runtime',
+      required: true,
+      reason:
+        'Generated probe blueprint must execute and publish pass/fail evidence before this path can count as observed.',
+    },
+  ];
+}
+
+function buildStructuralSafetyClassification(
+  mp: PulseExecutionMatrixPath,
+  safeToExecute: boolean,
+  protectedSurface: boolean,
+  executionMode: PathCoverageExecutionMode,
+): PathCoverageStructuralSafetyClassification {
+  const reason = protectedSurface
+    ? 'Path references protected governance infrastructure and is retained as inferred coverage.'
+    : `Path risk is ${mp.risk}; next probe route is ${executionMode} based on structural risk and entrypoint metadata.`;
+
+  return {
+    risk: mp.risk,
+    safeToExecute,
+    executionMode,
+    protectedSurface,
+    reason,
+  };
+}
+
+function buildArtifactLinks(
+  mp: PulseExecutionMatrixPath,
+  probeFilePath: string | null,
+): PathCoverageArtifactLink[] {
+  const links: PathCoverageArtifactLink[] = [
+    {
+      artifactPath: '.pulse/current/PULSE_EXECUTION_MATRIX.json',
+      relationship: 'source_matrix',
+    },
+    {
+      artifactPath: '.pulse/current/PULSE_PATH_COVERAGE.json',
+      relationship: 'coverage_state',
+    },
+  ];
+
+  if (probeFilePath) {
+    links.push({
+      artifactPath: probeFilePath,
+      relationship: 'probe_blueprint',
+    });
+  }
+
+  for (const artifactPath of unique(mp.observedEvidence.map((item) => item.artifactPath))) {
+    links.push({
+      artifactPath,
+      relationship: 'observed_evidence',
+    });
+  }
+
+  return links;
+}
+
+function summarizeObservedEvidence(
+  mp: PulseExecutionMatrixPath,
+  status: 'passed' | 'failed',
+): string | null {
+  const evidence = mp.observedEvidence.find((item) => item.status === status);
+  if (!evidence) {
+    return null;
+  }
+  return `${evidence.source} evidence in ${evidence.artifactPath}: ${evidence.summary}`;
 }

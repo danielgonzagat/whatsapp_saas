@@ -2,6 +2,7 @@
 // WhatsAppService.sendMessage() calls PlanLimitsService.trackMessageSend() before delegating here.
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-settings.types';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
@@ -75,6 +76,7 @@ export class WhatsAppProviderRegistry {
     private readonly prisma: PrismaService,
     private readonly metaCloudProvider: WhatsAppApiProvider,
     @Optional() private readonly wahaProvider?: WahaProvider,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     this.defaultProvider = resolveDefaultWhatsAppProvider();
     this.logger.log(`WhatsApp provider default: ${this.defaultProvider}`);
@@ -383,6 +385,10 @@ export class WhatsAppProviderRegistry {
       };
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'unknown error';
+      void this.opsAlert?.alertOnCriticalError(error, 'WhatsAppProviderRegistry.sendMessage', {
+        workspaceId,
+        metadata: { provider: this.isWahaMode() ? 'waha' : 'meta-cloud' },
+      });
       this.logger.error(`Send failed: ${msg}`);
       return { success: false, error: msg || 'send_failed' };
     }

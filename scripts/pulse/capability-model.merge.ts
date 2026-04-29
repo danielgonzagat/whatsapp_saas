@@ -157,16 +157,28 @@ export function mergeExistingCapability(input: MergeCapabilityInput): PulseCapab
     truthModeTarget: 'observed',
   });
   const mergedDoD: PulseCapabilityDoD = {
-    status: toDoDStatus({ done: mergedDoDResult.done, pulseStatus: mergedStatus }),
+    status: toDoDStatus({
+      done: mergedDoDResult.done,
+      pulseStatus: mergedStatus === 'real' && !mergedDoDResult.done ? 'partial' : mergedStatus,
+    }),
     missingRoles: mergedDoDResult.missingRoles.slice(),
     blockers: mergedDoDResult.reasons.slice(),
     truthModeMet: mergedDoDResult.truthModeMet,
+    governedBlockers: mergedDoDResult.governedBlockers.slice(),
   };
+  const visibleStatus = mergedStatus === 'real' && !mergedDoDResult.done ? 'partial' : mergedStatus;
+  const governedValidationTargets = mergedDoDResult.governedBlockers.map(
+    (blocker) => `Governed ai_safe validation: ${blocker.expectedValidation}`,
+  );
+  const governedBlockingReasons = mergedDoDResult.governedBlockers.map(
+    (blocker) =>
+      `Governed ai_safe blocker for ${blocker.role}: ${blocker.reason} Expected validation: ${blocker.expectedValidation}`,
+  );
 
   return {
     ...existing,
     truthMode: mergedTruthMode,
-    status: mergedStatus,
+    status: visibleStatus,
     confidence: clamp(Math.max(existing.confidence, confidence)),
     userFacing: existing.userFacing || userFacing,
     runtimeCritical: mergedRuntimeCritical,
@@ -181,22 +193,23 @@ export function mergeExistingCapability(input: MergeCapabilityInput): PulseCapab
     evidenceSources: unique([...existing.evidenceSources, ...evidenceSources]).sort(),
     codacyIssueCount: existing.codacyIssueCount + codacyIssueCount,
     highSeverityIssueCount: mergedHighSeverityIssueCount,
-    blockingReasons: mergedBlockingReasons,
+    blockingReasons: unique([...mergedBlockingReasons, ...governedBlockingReasons]),
     maturity: mergedMaturity,
     validationTargets: unique([
       ...existing.validationTargets,
       routePatterns[0] ? `Validate structural chain for ${routePatterns[0]}.` : '',
       mergedRuntimeCritical ? 'Re-run runtime evidence for this capability.' : '',
       highSeverityIssueCount > 0 ? 'Re-sync Codacy and confirm HIGH issues dropped.' : '',
+      ...governedValidationTargets,
     ]).filter(Boolean),
     dod: mergedDoD,
     statusDetail: {
       structuralStatus:
-        mergedStatus === 'real'
+        visibleStatus === 'real'
           ? 'complete'
-          : mergedStatus === 'partial'
+          : visibleStatus === 'partial'
             ? 'partial'
-            : mergedStatus === 'latent'
+            : visibleStatus === 'latent'
               ? 'latent'
               : 'phantom',
       operationalStatus:

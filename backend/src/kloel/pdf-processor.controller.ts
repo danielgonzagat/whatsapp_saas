@@ -13,6 +13,7 @@ import {
   UploadedFile,
   UseGuards,
   UseInterceptors,
+  Optional,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
@@ -24,6 +25,7 @@ import {
 } from '../wallet/provider-llm-billing';
 import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
 import { WalletService } from '../wallet/wallet.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import {
   InsufficientWalletBalanceError,
   UsagePriceNotFoundError,
@@ -52,6 +54,7 @@ export class PdfProcessorController {
   constructor(
     private readonly pdfProcessor: PdfProcessorService,
     private readonly prepaidWalletService: WalletService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private insufficientWalletMessage() {
@@ -69,6 +72,10 @@ export class PdfProcessorController {
         ],
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'PdfProcessorController.buildPdfAnalysisPrompt',
+      );
       if (error instanceof UnknownProviderPricingModelError) {
         return undefined;
       }
@@ -104,6 +111,7 @@ export class PdfProcessorController {
       });
       return true;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'PdfProcessorController.chargeForUsage');
       if (error instanceof UsagePriceNotFoundError) {
         return false;
       }
@@ -141,6 +149,10 @@ export class PdfProcessorController {
         },
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'PdfProcessorController.resolveBackendOpenAIModel',
+      );
       if (!(error instanceof UnknownProviderPricingModelError)) {
         throw error;
       }
@@ -166,6 +178,7 @@ export class PdfProcessorController {
         },
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'PdfProcessorController.refundUsageCharge');
       this.logger.error(
         `Failed to refund pdf_analysis workspace=${workspaceId} request=${requestId}: ${
           error instanceof Error
@@ -237,6 +250,7 @@ export class PdfProcessorController {
           `PDF extraído: ${textResult.numpages || 0} páginas, ${text.length} caracteres`,
         );
       } catch (error: unknown) {
+        void this.opsAlert?.alertOnCriticalError(error, 'PdfProcessorController.uploadPdf');
         this.logger.error(
           `Erro ao extrair PDF: ${error instanceof Error ? error.message : String(error)}`,
         );
@@ -293,6 +307,7 @@ export class PdfProcessorController {
         details: result.analysis,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'PdfProcessorController.countAnalysisItems');
       if (usageCharged) {
         await this.refundPdfAnalysisIfNeeded(
           workspaceId,
@@ -354,6 +369,7 @@ export class PdfProcessorController {
         details: result.analysis,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'PdfProcessorController.countAnalysisItems');
       if (usageCharged) {
         await this.refundPdfAnalysisIfNeeded(
           workspaceId,

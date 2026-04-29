@@ -60,6 +60,7 @@ export type {
   PulseManifest,
   PulseGateName,
   PulseManifestLoadResult,
+  PulseParserContract,
   PulseParserUnavailable,
   PulseParserDefinition,
   PulseParserInventory,

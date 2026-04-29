@@ -44,6 +44,18 @@ export interface CapabilityDoneInput {
   truthModeTarget: TruthMode;
 }
 
+/** Governed validation blocker emitted when proof is missing but AI can validate it. */
+export interface CapabilityGovernedValidationBlocker {
+  /** Structural role or proof class that still needs evidence. */
+  role: StructuralRole | 'codacy_hygiene' | 'phantom_signal' | 'latent_critical';
+  /** Missing proof is always routed through governed autonomous validation. */
+  executionMode: 'ai_safe';
+  /** Why this blocker exists. */
+  reason: string;
+  /** Expected validation action for an autonomous worker. */
+  expectedValidation: string;
+}
+
 /** Result of the definition-of-done evaluation for one unit. */
 export interface CapabilityDoneResult {
   /** Identifier mirrored from the input. */
@@ -54,8 +66,12 @@ export interface CapabilityDoneResult {
   reasons: string[];
   /** Required roles that had no evidence or were marked absent. */
   missingRoles: StructuralRole[];
+  /** Required roles that are present but below the configured truth target. */
+  insufficientEvidenceRoles: StructuralRole[];
   /** Whether the evidence truth mode satisfies the target. */
   truthModeMet: boolean;
+  /** Governed autonomous validation blockers for missing proof. */
+  governedBlockers: CapabilityGovernedValidationBlocker[];
 }
 
 /**
@@ -82,12 +98,53 @@ function bestTruthMode(evidence: CapabilityRoleEvidence[]): TruthMode {
   }, 'aspirational');
 }
 
+function bestRoleTruthMode(evidence: CapabilityRoleEvidence[]): TruthMode | null {
+  const presentEvidence = evidence.filter((e) => e.present);
+  if (presentEvidence.length === 0) {
+    return null;
+  }
+  return presentEvidence.reduce<TruthMode>((best, e) => {
+    return TRUTH_MODE_RANK[e.truthMode] > TRUTH_MODE_RANK[best] ? e.truthMode : best;
+  }, 'aspirational');
+}
+
+function expectedValidationForRole(input: CapabilityDoneInput, role: StructuralRole): string {
+  const subject = `${input.kind} ${input.id}`;
+  switch (role) {
+    case 'runtime_evidence':
+      return `Run governed runtime evidence collection for ${subject}.`;
+    case 'scenario_coverage':
+      return `Run governed scenario or flow evidence for ${subject}.`;
+    case 'validation':
+      return `Run targeted typecheck and tests that exercise ${subject}.`;
+    case 'observability':
+      return `Run governed observability evidence scan for ${subject}.`;
+    case 'codacy_hygiene':
+      return `Re-sync Codacy evidence and prove zero HIGH issues for ${subject}.`;
+    default:
+      return `Run governed structural evidence validation for role ${role} on ${subject}.`;
+  }
+}
+
+function makeGovernedBlocker(args: {
+  role: CapabilityGovernedValidationBlocker['role'];
+  reason: string;
+  expectedValidation: string;
+}): CapabilityGovernedValidationBlocker {
+  return {
+    role: args.role,
+    executionMode: 'ai_safe',
+    reason: args.reason,
+    expectedValidation: args.expectedValidation,
+  };
+}
+
 /**
  * Evaluates whether a single capability/flow/surface meets the definition of done.
  *
  * Rules:
  * 1. All required roles must have at least one evidence record with present=true.
- * 2. The best truth mode across all present evidence must be >= truthModeTarget.
+ * 2. Every required role's best truth mode must be >= truthModeTarget.
  * 3. codacyHighCount must be 0.
  * 4. hasPhantom must be false.
  * 5. hasLatentCritical must be false.
@@ -97,15 +154,18 @@ function bestTruthMode(evidence: CapabilityRoleEvidence[]): TruthMode {
  */
 export function evaluateDone(input: CapabilityDoneInput): CapabilityDoneResult {
   const reasons: string[] = [];
+  const governedBlockers: CapabilityGovernedValidationBlocker[] = [];
 
   // Build a lookup: role → evidence entries (present=true only)
   const presentByRole = new Map<StructuralRole, CapabilityRoleEvidence[]>();
   for (const ev of input.evidence) {
     if (ev.present) {
-      if (!presentByRole.has(ev.role)) {
-        presentByRole.set(ev.role, []);
+      const existing = presentByRole.get(ev.role);
+      if (existing) {
+        existing.push(ev);
+      } else {
+        presentByRole.set(ev.role, [ev]);
       }
-      presentByRole.get(ev.role)!.push(ev);
     }
   }
 
@@ -115,29 +175,80 @@ export function evaluateDone(input: CapabilityDoneInput): CapabilityDoneResult {
   );
 
   if (missingRoles.length > 0) {
-    reasons.push(`Missing required roles: ${missingRoles.join(', ')}`);
+    const reason = `Missing required roles: ${missingRoles.join(', ')}`;
+    reasons.push(reason);
+    for (const role of missingRoles) {
+      governedBlockers.push(
+        makeGovernedBlocker({
+          role,
+          reason: `Missing observed evidence for required role ${role}.`,
+          expectedValidation: expectedValidationForRole(input, role),
+        }),
+      );
+    }
   }
 
-  // 2. Truth mode check
+  // 2. Truth mode check. A global observed signal cannot upgrade a separate
+  // required role that is only inferred or aspirational.
   const current = bestTruthMode(input.evidence);
-  const truthModeMet = TRUTH_MODE_RANK[current] >= TRUTH_MODE_RANK[input.truthModeTarget];
+  const insufficientEvidenceRoles = input.requiredRoles.filter((role) => {
+    const roleTruthMode = bestRoleTruthMode(presentByRole.get(role) || []);
+    return (
+      roleTruthMode !== null &&
+      TRUTH_MODE_RANK[roleTruthMode] < TRUTH_MODE_RANK[input.truthModeTarget]
+    );
+  });
+  const truthModeMet = missingRoles.length === 0 && insufficientEvidenceRoles.length === 0;
   if (!truthModeMet) {
     reasons.push(`Truth mode '${current}' does not meet target '${input.truthModeTarget}'`);
+    for (const role of insufficientEvidenceRoles) {
+      governedBlockers.push(
+        makeGovernedBlocker({
+          role,
+          reason: `Required role ${role} is below truth target ${input.truthModeTarget}.`,
+          expectedValidation: expectedValidationForRole(input, role),
+        }),
+      );
+    }
   }
 
   // 3. Codacy hygiene
   if (input.codacyHighCount > 0) {
-    reasons.push(`${input.codacyHighCount} high-severity Codacy issue(s) remaining`);
+    const reason = `${input.codacyHighCount} high-severity Codacy issue(s) remaining`;
+    reasons.push(reason);
+    governedBlockers.push(
+      makeGovernedBlocker({
+        role: 'codacy_hygiene',
+        reason,
+        expectedValidation: `Run governed Codacy evidence sync for ${input.kind} ${input.id}.`,
+      }),
+    );
   }
 
   // 4. Phantom signal
   if (input.hasPhantom) {
-    reasons.push('Phantom signal detected (unreachable or dead code path)');
+    const reason = 'Phantom signal detected (unreachable or dead code path)';
+    reasons.push(reason);
+    governedBlockers.push(
+      makeGovernedBlocker({
+        role: 'phantom_signal',
+        reason,
+        expectedValidation: `Run governed structural and runtime validation to replace phantom proof for ${input.kind} ${input.id}.`,
+      }),
+    );
   }
 
   // 5. Latent critical signal
   if (input.hasLatentCritical) {
-    reasons.push('Latent critical signal detected (dormant failure path)');
+    const reason = 'Latent critical signal detected (dormant failure path)';
+    reasons.push(reason);
+    governedBlockers.push(
+      makeGovernedBlocker({
+        role: 'latent_critical',
+        reason,
+        expectedValidation: `Run governed critical-path validation for ${input.kind} ${input.id}.`,
+      }),
+    );
   }
 
   const done =
@@ -152,7 +263,9 @@ export function evaluateDone(input: CapabilityDoneInput): CapabilityDoneResult {
     done,
     reasons,
     missingRoles,
+    insufficientEvidenceRoles,
     truthModeMet,
+    governedBlockers,
   };
 }
 
