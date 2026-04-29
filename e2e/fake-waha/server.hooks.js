@@ -1,5 +1,8 @@
 'use strict';
 
+const http = require('node:http');
+const https = require('node:https');
+
 // Webhook helpers for fake-waha. Extracted from server.js to keep the
 // orchestrator below the 600-line max_touched_file_lines guardrail.
 // Pure functions: no module-level state; the caller threads in `config`
@@ -102,16 +105,27 @@ function assertHookUrlAllowed(rawUrl) {
   return parsed;
 }
 
+function postJsonToHook(url, headers, body) {
+  const client = url.protocol === 'https:' ? https : http;
+  return new Promise((resolve, reject) => {
+    const request = client.request(url, { method: 'POST', headers }, (response) => {
+      response.resume();
+      response.on('end', () => {
+        const status = response.statusCode || 0;
+        resolve({ ok: status >= 200 && status < 300, status });
+      });
+    });
+    request.on('error', reject);
+    request.end(body);
+  });
+}
+
 async function dispatchHook(hook, sessionName, event, payload, fallbackSecret) {
   const headers = buildHookHeaders(hook, fallbackSecret);
   const safeUrl = assertHookUrlAllowed(hook.url);
+  const body = JSON.stringify({ event, session: sessionName, payload });
   try {
-    const request = new Request(safeUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ event, session: sessionName, payload }),
-    });
-    const response = await fetch(request);
+    const response = await postJsonToHook(safeUrl, headers, body);
     return { url: hook.url, ok: response.ok, status: response.status };
   } catch (err) {
     return { url: hook.url, ok: false, error: err.message };
