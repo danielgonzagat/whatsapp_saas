@@ -28,7 +28,7 @@ vi.mock('@/lib/subdomains', () => ({
 import { GET, POST } from './route';
 
 function createGetRequest(
-  url = 'https://auth.kloel.com/api/auth/apple/callback?id_token=apple-token',
+  url = 'https://auth.kloel.com/api/auth/callback/apple?id_token=apple-token',
 ) {
   return {
     method: 'GET',
@@ -49,7 +49,7 @@ function createPostRequest(options?: { user?: string; idToken?: string; host?: s
   return {
     method: 'POST',
     headers: new Headers({ host: options?.host || 'auth.kloel.com' }),
-    nextUrl: new URL('https://auth.kloel.com/api/auth/apple/callback'),
+    nextUrl: new URL('https://auth.kloel.com/api/auth/callback/apple'),
     formData: vi.fn(async () => form),
   } as any;
 }
@@ -104,7 +104,7 @@ describe('apple auth callback route', () => {
         }),
         body: JSON.stringify({
           identityToken: 'apple-token',
-          redirectUri: 'https://auth.kloel.com/api/auth/apple/callback',
+          redirectUri: 'https://auth.kloel.com/api/auth/callback/apple',
           user: {
             email: 'apple@kloel.com',
             name: { firstName: 'Apple', lastName: 'User' },
@@ -137,7 +137,7 @@ describe('apple auth callback route', () => {
     );
 
     const response = await GET(
-      createGetRequest('https://auth.kloel.com/api/auth/apple/callback?id_token=invalid-token'),
+      createGetRequest('https://auth.kloel.com/api/auth/callback/apple?id_token=invalid-token'),
     );
 
     expect(response.status).toBe(307);

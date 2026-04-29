@@ -11,6 +11,7 @@ import { getRuntimeResolution } from './parsers/runtime-utils';
 import {
   runBackendHealthProbe,
   runAuthProbe,
+  runAdRulesProbe,
   runFrontendProbe,
   runDbProbe,
   type RuntimeProbeContext,
@@ -31,12 +32,14 @@ interface CollectRuntimeEvidenceOptions {
 export type PulseRuntimeProbeId =
   | 'backend-health'
   | 'auth-session'
+  | 'ad-rules'
   | 'frontend-reachability'
   | 'db-connectivity';
 
 const DEFAULT_RUNTIME_PROBE_IDS: PulseRuntimeProbeId[] = [
   'backend-health',
   'auth-session',
+  'ad-rules',
   'frontend-reachability',
   'db-connectivity',
 ];
@@ -114,9 +117,11 @@ export async function collectRuntimeProbe(
           ? `${context.backendUrl}/health/system`
           : probeId === 'auth-session'
             ? `${context.backendUrl}/auth/login`
-            : probeId === 'frontend-reachability'
-              ? context.frontendUrl
-              : context.dbSource || 'database',
+            : probeId === 'ad-rules'
+              ? `${context.backendUrl}/ad-rules`
+              : probeId === 'frontend-reachability'
+                ? context.frontendUrl
+                : context.dbSource || 'database',
       required: false,
       executed: false,
       status: 'skipped',
@@ -129,6 +134,9 @@ export async function collectRuntimeProbe(
   }
   if (probeId === 'auth-session') {
     return runAuthProbe(context) as Promise<PulseRuntimeProbe>;
+  }
+  if (probeId === 'ad-rules') {
+    return runAdRulesProbe(context) as Promise<PulseRuntimeProbe>;
   }
   if (probeId === 'frontend-reachability') {
     return runFrontendProbe(context) as Promise<PulseRuntimeProbe>;

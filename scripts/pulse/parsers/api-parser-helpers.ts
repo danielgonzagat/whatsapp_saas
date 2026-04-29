@@ -140,6 +140,17 @@ export function extractWrappedFetchCall(
     return { endpoint: normalizeEndpoint(`${prefix}${raw}`), wrapperName };
   }
 
+  const helperCallRe =
+    /\b(\w+)\s*(?:<[^\n]*>)?\s*\(\s*\w+\s*\(\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/g;
+  const helperMatches = [...text.matchAll(helperCallRe)];
+  const helperMatch = helperMatches.find((match) => wrapperPrefixes.has(match[1])) || null;
+  if (helperMatch) {
+    const wrapperName = helperMatch[1];
+    const raw = helperMatch[2] || helperMatch[3] || '';
+    const prefix = raw.startsWith('/') ? '' : wrapperPrefixes.get(wrapperName) || '';
+    return { endpoint: normalizeEndpoint(`${prefix}${raw}`), wrapperName };
+  }
+
   const conditionalRe =
     /^\b(\w+)\s*(?:<[^\n]*>)?\s*\(\s*[\s\S]*?\?\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)\s*:\s*(?:['"`]([^'"`]*)['"`]|`([^`]*)`)/;
   let conditionalMatch: RegExpMatchArray | null = null;

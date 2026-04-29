@@ -100,6 +100,7 @@ export function buildCapabilityMaturity(input: {
   routePatterns: string[];
   flowEvidenceMatches: NonNullable<PulseExecutionEvidence['flows']>['results'];
   scenarioCoverageMatches: Array<{ scenarioId: string }>;
+  runtimeObserved?: boolean;
   highSeverityIssueCount: number;
   simulationOnly: boolean;
   status: PulseCapability['status'];
@@ -110,7 +111,8 @@ export function buildCapabilityMaturity(input: {
     orchestrationPresent: input.rolesPresent.includes('orchestration'),
     persistencePresent: input.rolesPresent.includes('persistence'),
     sideEffectPresent: input.rolesPresent.includes('side_effect'),
-    runtimeEvidencePresent: input.flowEvidenceMatches.some((result) => result.executed),
+    runtimeEvidencePresent:
+      Boolean(input.runtimeObserved) || input.flowEvidenceMatches.some((result) => result.executed),
     validationPresent:
       input.flowEvidenceMatches.length > 0 || input.scenarioCoverageMatches.length > 0,
     scenarioCoveragePresent: input.scenarioCoverageMatches.length > 0,

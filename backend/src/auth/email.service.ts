@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { createConnection } from 'node:net';
+import { connect as tlsConnect } from 'node:tls';
 import { join } from 'node:path';
 import { Injectable, Logger } from '@nestjs/common';
 import { getTraceHeaders } from '../common/trace-headers';
@@ -11,7 +13,11 @@ type TemplateName =
   | 'magic-link'
   | 'data-deletion-confirmation'
   | 'team-invite'
-  | 'partner-invite';
+  | 'partner-invite'
+  | 'welcome'
+  | 'onboarding-day1'
+  | 'onboarding-day3'
+  | 'onboarding-day7';
 
 const TEMPLATE_NAMES: ReadonlyArray<TemplateName> = [
   'password-reset',
@@ -20,6 +26,10 @@ const TEMPLATE_NAMES: ReadonlyArray<TemplateName> = [
   'data-deletion-confirmation',
   'team-invite',
   'partner-invite',
+  'welcome',
+  'onboarding-day1',
+  'onboarding-day3',
+  'onboarding-day7',
 ];
 
 const TEMPLATE_DIR = join(__dirname, 'email-templates');
@@ -138,6 +148,34 @@ export class EmailService {
       roleLabel,
     });
     return this.send(email, subject, html);
+  }
+
+  /** Send welcome email on signup. */
+  async sendWelcomeEmail(
+    email: string,
+    agentName: string,
+    workspaceName: string,
+  ): Promise<boolean> {
+    const subject = 'Bem-vindo ao KLOEL!';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const html = this.renderTemplate('welcome', { agentName, workspaceName, frontendUrl });
+    return this.send(email, subject, html);
+  }
+
+  /** Send onboarding sequence email (day 1, 3, or 7). */
+  async sendOnboardingEmail(
+    email: string,
+    agentName: string,
+    template: 'onboarding-day1' | 'onboarding-day3' | 'onboarding-day7',
+  ): Promise<boolean> {
+    const subjects: Record<typeof template, string> = {
+      'onboarding-day1': 'Primeiros passos no KLOEL',
+      'onboarding-day3': 'Recursos avancados que voce precisa conhecer',
+      'onboarding-day7': 'Hora de escalar com o KLOEL!',
+    };
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const html = this.renderTemplate(template, { agentName, frontendUrl });
+    return this.send(email, subjects[template], html);
   }
 
   /**
@@ -263,14 +301,102 @@ export class EmailService {
   }
 
   /**
-   * Envio via SMTP (nodemailer)
+   * Envio via SMTP usando Node.js built-in net/tls (sem dependencia externa).
    */
-  private sendViaSMTP(to: string, subject: string, _html: string): Promise<boolean> {
-    // Para usar nodemailer, precisa instalar: npm install nodemailer @types/nodemailer
-    // Por enquanto, usamos fetch para um relay SMTP se disponível
-    this.logger.warn('SMTP não implementado no backend. Use Resend ou SendGrid.');
-    this.logger.log(`[SMTP] Email para ${to}: ${subject}`);
-    return Promise.resolve(true);
+  private sendViaSMTP(to: string, subject: string, html: string): Promise<boolean> {
+    const host = process.env.SMTP_HOST;
+    const port = Number(process.env.SMTP_PORT) || 587;
+    const secure = process.env.SMTP_SECURE === 'true';
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+
+    if (!host) {
+      this.logger.warn('SMTP_HOST not configured — cannot send via SMTP');
+      return Promise.resolve(false);
+    }
+
+    const message = this.buildSmtpMessage(to, subject, html);
+
+    return new Promise((resolve, reject) => {
+      const socket = secure
+        ? tlsConnect(port, host, { rejectUnauthorized: false })
+        : createConnection(port, host);
+
+      socket.setTimeout(30_000, () => {
+        socket.destroy();
+        reject(new Error('SMTP connection timed out'));
+      });
+
+      socket.on('error', (err: Error) => {
+        reject(err);
+      });
+
+      const sendCmd = (cmd: string): Promise<string> =>
+        new Promise((res, rej) => {
+          socket.once('data', (data: Buffer) => {
+            const response = data.toString();
+            if (response.startsWith('4') || response.startsWith('5')) {
+              rej(new Error(`SMTP error: ${response.trim()}`));
+            } else {
+              res(response);
+            }
+          });
+          socket.write(cmd + '\r\n');
+        });
+
+      void (async () => {
+        try {
+          await sendCmd(''); // wait for greeting
+          await sendCmd(`EHLO ${host}`);
+          if (user && pass) {
+            await sendCmd('AUTH LOGIN');
+            await sendCmd(Buffer.from(user).toString('base64'));
+            await sendCmd(Buffer.from(pass).toString('base64'));
+          }
+          await sendCmd(`MAIL FROM:<${this.fromEmail}>`);
+          await sendCmd(`RCPT TO:<${to}>`);
+          await sendCmd('DATA');
+          socket.write(message + '\r\n.\r\n');
+          await new Promise<void>((res, rej) => {
+            socket.once('data', (data: Buffer) => {
+              const resp = data.toString();
+              if (resp.startsWith('2')) res();
+              else rej(new Error(`SMTP DATA error: ${resp.trim()}`));
+            });
+          });
+          await sendCmd('QUIT');
+          socket.end();
+          this.logger.log(`Email enviado via SMTP para ${to}`);
+          resolve(true);
+        } catch (err: unknown) {
+          socket.end();
+          reject(err instanceof Error ? err : new Error(String(err)));
+        }
+      })();
+    });
+  }
+
+  private buildSmtpMessage(to: string, subject: string, html: string): string {
+    const boundary = `BOUNDARY_${Date.now()}`;
+    const lines = [
+      `From: ${this.fromEmail}`,
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      'MIME-Version: 1.0',
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/plain; charset=UTF-8',
+      '',
+      html.replace(/<[^>]*>/g, ''),
+      `--${boundary}`,
+      'Content-Type: text/html; charset=UTF-8',
+      '',
+      html,
+      `--${boundary}--`,
+      '',
+    ];
+    return lines.join('\r\n');
   }
 
   // ============================================

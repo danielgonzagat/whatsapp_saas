@@ -3,16 +3,6 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
-const FINANCIAL_PATHS = [
-  'checkout',
-  'wallet',
-  'billing',
-  'payment',
-  'payout',
-  'withdraw',
-  'transaction',
-];
-
 const CLASS_VALIDATOR_DECORATORS = [
   '@IsString',
   '@IsNumber',
@@ -48,11 +38,6 @@ const CLASS_VALIDATOR_DECORATORS = [
 const FINANCIAL_FIELD_NAMES =
   /\b(price|amount|fee|commission|value|total|subtotal|discount|balance|credit|debit)\b/i;
 
-function isFinancialFile(filePath: string): boolean {
-  const lower = filePath.toLowerCase();
-  return FINANCIAL_PATHS.some((p) => lower.includes(p));
-}
-
 function hasClassValidatorDecorator(lines: string[], lineIdx: number): boolean {
   // Decorators with option objects can span several lines before the property.
   const from = Math.max(0, lineIdx - 10);
@@ -75,16 +60,6 @@ export function checkDtos(config: PulseConfig): Break[] {
       return false;
     }
     if (/\.(spec|test)\.ts$/.test(f)) {
-      return false;
-    }
-    // Webhook controllers and external payload handlers receive external payloads — `body: any` is intentional there
-    if (f.includes('webhook')) {
-      return false;
-    }
-    if (f.includes('external-payment')) {
-      return false;
-    }
-    if (f.includes('whatsapp-brain')) {
       return false;
     }
     return true;
@@ -204,7 +179,6 @@ export function checkDtos(config: PulseConfig): Break[] {
 
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
-    const isFinancial = isFinancialFile(file);
 
     // Find class declarations
     for (let i = 0; i < lines.length; i++) {
@@ -257,7 +231,7 @@ export function checkDtos(config: PulseConfig): Break[] {
           }
 
           // Check for financial fields
-          if (isFinancial && FINANCIAL_FIELD_NAMES.test(propMatch[1])) {
+          if (FINANCIAL_FIELD_NAMES.test(propMatch[1])) {
             // Financial field must have @IsNumber + @Min(0)
             const decoratorBlock = lines.slice(Math.max(0, j - 5), j).join('\n');
             const hasIsNumber = /@IsNumber|@IsInt|@IsPositive/.test(decoratorBlock);

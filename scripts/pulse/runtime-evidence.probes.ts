@@ -168,6 +168,83 @@ export async function runAuthProbe(context: RuntimeProbeContext): Promise<PulseR
   }
 }
 
+export async function runAdRulesProbe(
+  context: RuntimeProbeContext,
+): Promise<PulseRuntimeProbeResult> {
+  const start = Date.now();
+  const target = `${context.backendUrl}/ad-rules`;
+  if (shouldTreatAsMissingEvidence(context.backendSource)) {
+    return {
+      probeId: 'ad-rules',
+      target,
+      required: false,
+      executed: false,
+      status: 'missing_evidence',
+      failureClass: 'missing_evidence',
+      summary: `Backend runtime resolution is still fallback-only (${context.backendUrl}); ad rules proof cannot run honestly.`,
+      latencyMs: Date.now() - start,
+      artifactPaths: PROBE_ARTIFACT_PATHS,
+    };
+  }
+
+  try {
+    const creds = await obtainAuthToken(context.backendUrl);
+    const response = await httpGet('/ad-rules', {
+      jwt: creds.token,
+      timeout: 8000,
+    });
+
+    if (!response.ok) {
+      return {
+        probeId: 'ad-rules',
+        target,
+        required: false,
+        executed: true,
+        status: 'failed',
+        failureClass: 'product_failure',
+        summary: `Ad rules runtime probe reached /ad-rules but received HTTP ${response.status}.`,
+        latencyMs: Date.now() - start,
+        artifactPaths: PROBE_ARTIFACT_PATHS,
+        metrics: {
+          status: response.status,
+          workspaceIdDetected: Boolean(creds.workspaceId),
+        },
+      };
+    }
+
+    return {
+      probeId: 'ad-rules',
+      target,
+      required: false,
+      executed: true,
+      status: 'passed',
+      summary: 'Ad rules runtime probe authenticated and reached /ad-rules successfully.',
+      latencyMs: Date.now() - start,
+      artifactPaths: PROBE_ARTIFACT_PATHS,
+      metrics: {
+        status: response.status,
+        workspaceIdDetected: Boolean(creds.workspaceId),
+      },
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'unknown ad rules failure';
+    const failureClass = shouldTreatAsMissingEvidence(context.backendSource)
+      ? 'missing_evidence'
+      : 'product_failure';
+    return {
+      probeId: 'ad-rules',
+      target,
+      required: false,
+      executed: false,
+      status: failureClass === 'missing_evidence' ? 'missing_evidence' : 'failed',
+      failureClass,
+      summary: compactReason(`Ad rules runtime probe failed: ${message}`),
+      latencyMs: Date.now() - start,
+      artifactPaths: PROBE_ARTIFACT_PATHS,
+    };
+  }
+}
+
 export async function runFrontendProbe(
   context: RuntimeProbeContext,
 ): Promise<PulseRuntimeProbeResult> {

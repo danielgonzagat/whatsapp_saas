@@ -34,6 +34,7 @@ export interface PulseProfileSelection {
 const DEFAULT_RUNTIME_PROBES = [
   'backend-health',
   'auth-session',
+  'ad-rules',
   'frontend-reachability',
   'db-connectivity',
 ] as const;

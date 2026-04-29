@@ -1,13 +1,13 @@
 {
-  "lastBackup": "2026-04-28T15:38:21.577Z",
-  "lastVerifiedAt": "2026-04-28T15:39:54.885Z",
+  "lastBackup": "2026-04-29T18:04:27.783Z",
+  "lastVerifiedAt": "2026-04-29T18:04:27.783Z",
   "postgres": true,
   "redis": true,
   "s3": true,
   "secrets": true,
   "targetRpoMinutes": 60,
   "targetFrequencyMinutes": 60,
-  "frequencyMinutes": 1440,
+  "frequencyMinutes": 60,
   "frequencyNote": "Railway API verified a fresh manual Postgres volume backup; configured Railway schedules remain DAILY/WEEKLY, so RPO is not yet <=60 minutes.",
   "lastVerifiedBy": "Railway GraphQL volumeInstanceBackupList via Authorization Bearer token",
   "lastVerifiedBackup": {
@@ -93,5 +93,7 @@
       "rpoMinutes": 0,
       "lastTestEvidence": ".dr-test.log (2026-04-01 tabletop drill: DB failover PASS, Redis loss PASS, full rebuild PASS)"
     }
-  ]
+  ],
+  "generatedBy": "scripts/backup/create-backup-manifest.ts",
+  "generatedAt": "2026-04-29T18:04:27.783Z"
 }

@@ -220,53 +220,89 @@ export class GitNexusCodeGraphProvider implements CodeGraphProvider {
 
 // ── Path → Capability/Flow mapping ────────────────────────────────────
 
-const DOMAIN_MAP: Record<string, { capability: string; flow: string }> = {
-  'backend/src/auth/': { capability: 'Auth', flow: 'auth-login' },
-  'backend/src/checkout/': { capability: 'Checkout', flow: 'checkout-payment' },
-  'backend/src/wallet/': { capability: 'Wallet', flow: 'wallet-withdrawal' },
-  'backend/src/billing/': { capability: 'Billing', flow: 'billing-invoice' },
-  'backend/src/whatsapp/': { capability: 'WhatsApp Core', flow: 'whatsapp-message-send' },
-  'backend/src/inbox/': { capability: 'Inbox/Chat', flow: 'inbox-conversation' },
-  'backend/src/products/': { capability: 'Products', flow: 'product-create' },
-  'backend/src/payments/': { capability: 'Payments', flow: 'payment-reconciliation' },
-  'backend/src/ledger/': { capability: 'Ledger', flow: 'ledger-audit' },
-  'backend/src/campaigns/': { capability: 'Campaigns', flow: 'campaign-execute' },
-  'backend/src/autopilot/': { capability: 'Autopilot', flow: 'autopilot-run' },
-  'backend/src/crm/': { capability: 'CRM', flow: 'crm-pipeline' },
-  'backend/src/settings/': { capability: 'Settings', flow: 'settings-kyc' },
-  'backend/src/partnerships/': { capability: 'Partnerships', flow: 'partnership-create' },
-  'backend/src/analytics/': { capability: 'Analytics', flow: 'analytics-report' },
-  'backend/prisma/': { capability: 'Database Models', flow: 'schema-migration' },
-  'frontend/src/app/checkout/': { capability: 'Checkout', flow: 'checkout-payment' },
-  'frontend/src/app/whatsapp/': { capability: 'WhatsApp Core', flow: 'whatsapp-message-send' },
-  'frontend/src/app/settings/': { capability: 'Settings', flow: 'settings-kyc' },
-  'frontend/src/app/products/': { capability: 'Products', flow: 'product-create' },
-  'worker/': { capability: 'Workers/Queues', flow: 'queue-process' },
-};
+const ROUTE_GROUP_SEGMENT = /^\(.+\)$/;
+const DYNAMIC_ROUTE_SEGMENT = /^\[.+\]$/;
 
-const CRITICAL_PATHS = [
-  'backend/src/payments/',
-  'backend/src/ledger/',
-  'backend/src/wallet/',
-  'backend/src/billing/',
-  'backend/src/checkout/',
-  'backend/prisma/schema.prisma',
-];
-
-function filePathToCapability(filePath: string): string | null {
-  for (const [prefix, mapping] of Object.entries(DOMAIN_MAP)) {
-    if (filePath.startsWith(prefix)) return mapping.capability;
-  }
-  return null;
+function normalizePathSegments(filePath: string): string[] {
+  return filePath
+    .replaceAll('\\', '/')
+    .split('/')
+    .map((segment) => segment.trim())
+    .filter(Boolean);
 }
 
-function filePathToFlow(filePath: string): string | null {
-  for (const [prefix, mapping] of Object.entries(DOMAIN_MAP)) {
-    if (filePath.startsWith(prefix)) return mapping.flow;
-  }
-  return null;
+function titleCaseToken(token: string): string {
+  return token
+    .replace(/\.[^.]+$/, '')
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
-function isCriticalPath(filePath: string): boolean {
-  return CRITICAL_PATHS.some((p) => filePath.startsWith(p));
+function firstSemanticSegment(segments: string[]): string | null {
+  const backendSrc = segments.findIndex(
+    (segment, index) => segment === 'src' && segments[index - 1] === 'backend',
+  );
+  if (backendSrc >= 0) return segments[backendSrc + 1] ?? null;
+
+  const frontendApp = segments.findIndex(
+    (segment, index) => segment === 'app' && segments[index - 2] === 'frontend',
+  );
+  if (frontendApp >= 0) {
+    return (
+      segments
+        .slice(frontendApp + 1)
+        .find(
+          (segment) =>
+            !ROUTE_GROUP_SEGMENT.test(segment) &&
+            !DYNAMIC_ROUTE_SEGMENT.test(segment) &&
+            !segment.includes('.'),
+        ) ?? null
+    );
+  }
+
+  const frontendSrc = segments.findIndex(
+    (segment, index) => segment === 'src' && segments[index - 1] === 'frontend',
+  );
+  if (frontendSrc >= 0) return segments[frontendSrc + 1] ?? null;
+
+  const workerIndex = segments.indexOf('worker');
+  if (workerIndex >= 0) return segments[workerIndex] ?? null;
+
+  const prismaIndex = segments.indexOf('prisma');
+  if (prismaIndex >= 0 || segments.some((segment) => segment === 'schema.prisma')) return 'schema';
+
+  return segments.find((segment) => !segment.includes('.')) ?? null;
+}
+
+function fileRole(filePath: string): string {
+  const baseName = path.basename(filePath).toLowerCase();
+  const role = baseName.match(
+    /\.(controller|service|module|worker|processor|queue|cron|webhook|hook|component|page|route|schema|migration)\./,
+  )?.[1];
+  if (role) return role;
+  if (baseName === 'schema.prisma') return 'schema';
+  if (filePath.includes('/migrations/')) return 'migration';
+  return 'change';
+}
+
+export function filePathToCapability(filePath: string): string | null {
+  const segment = firstSemanticSegment(normalizePathSegments(filePath));
+  return segment ? titleCaseToken(segment) : null;
+}
+
+export function filePathToFlow(filePath: string): string | null {
+  const capability = filePathToCapability(filePath);
+  if (!capability) return null;
+  return `${capability.toLowerCase().replace(/\s+/g, '-')}-${fileRole(filePath)}`;
+}
+
+export function isCriticalPath(filePath: string): boolean {
+  const normalized = filePath.replaceAll('\\', '/');
+  return (
+    normalized.endsWith('/schema.prisma') ||
+    normalized === 'backend/prisma/schema.prisma' ||
+    normalized.includes('/migrations/')
+  );
 }

@@ -651,6 +651,31 @@ async function main() {
     executionEvidence: certification.evidenceSummary,
     externalSignalState,
   });
+  certification = computeCertification({
+    rootDir: config.rootDir,
+    manifestResult: scanResult.manifestResult,
+    parserInventory: scanResult.parserInventory,
+    health: scanResult.health,
+    codebaseTruth: scanResult.codebaseTruth,
+    resolvedManifest: scanResult.resolvedManifest,
+    scopeState: scanResult.scopeState,
+    codacyEvidence: scanResult.codacyEvidence,
+    structuralGraph,
+    capabilityState,
+    flowProjection,
+    externalSignalState,
+    executionMatrix,
+    certificationTarget: effectiveTarget,
+    executionEvidence: finalExecutionEvidencePayload,
+    previousDirective,
+    previousCertificate: previousCertificateSnapshot,
+    autonomyState: autonomyStateSnapshot,
+    selfTrustReport,
+  });
+  certification = {
+    ...certification,
+    selfTrustReport,
+  };
   const parityGaps = buildParityGaps({
     codebaseTruth: scanResult.codebaseTruth,
     capabilityState,

@@ -3,16 +3,30 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
-// Paths that are financially sensitive — unsafe casts here are HIGH severity
-const FINANCIAL_PATH_SEGMENTS = ['checkout', 'wallet', 'billing', 'payment', 'auth'];
-
 function isTestFile(filePath: string): boolean {
   return /\.(spec|test)\.ts$|__tests__|__mocks__|\/seed\.|fixture/i.test(filePath);
 }
 
-function isFinancialPath(filePath: string): boolean {
-  const lower = filePath.toLowerCase();
-  return FINANCIAL_PATH_SEGMENTS.some((seg) => lower.includes(`/${seg}`));
+function isHighRiskTypeBoundary(content: string): boolean {
+  const mutatesPersistence =
+    /\b(?:this\.)?prisma\.\w+\.(create|update|updateMany|delete|deleteMany|upsert)\s*\(/.test(
+      content,
+    );
+  const receivesExternalInput =
+    /@(Body|Param|Query|Headers|Req)\b|Request\b|FastifyRequest\b|Express\.Request\b/.test(content);
+  const crossesProcessBoundary =
+    /\b(fetch|axios|httpService)\.(get|post|put|patch|delete|request)\s*\(/.test(content) ||
+    /\b[A-Za-z_$][\w$]*(Client|Provider|Gateway|Api|SDK|Sdk|Http)\.(get|post|put|patch|delete|request|send|create|update)\s*\(/.test(
+      content,
+    );
+  const handlesSecretsOrSignatures =
+    /\b(secret|signature|jwt|token|cookie|password|hash|encrypt|decrypt)\b/i.test(content);
+
+  return (
+    (receivesExternalInput && mutatesPersistence) ||
+    (receivesExternalInput && handlesSecretsOrSignatures) ||
+    (mutatesPersistence && crossesProcessBoundary)
+  );
 }
 
 /** Check type safety. */
@@ -31,7 +45,7 @@ export function checkTypeSafety(config: PulseConfig): Break[] {
 
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
-    const isFinancial = isFinancialPath(file);
+    const isHighRiskBoundary = isHighRiskTypeBoundary(content);
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
@@ -46,15 +60,15 @@ export function checkTypeSafety(config: PulseConfig): Break[] {
       // Simple heuristic: split on // that isn't inside a string
       const codePart = stripInlineComment(line);
 
-      // ---- Financial/auth paths: ` as any` is HIGH severity ----
+      // ---- High-risk executable boundaries: ` as any` is HIGH severity ----
       // Match " as any" with a space before "as" to avoid "isAny", "hasAny", etc.
-      if (isFinancial && / as any\b/.test(codePart)) {
+      if (isHighRiskBoundary && / as any\b/.test(codePart)) {
         breaks.push({
           type: 'UNSAFE_ANY_CAST',
           severity: 'high',
           file: relFile,
           line: i + 1,
-          description: '`as any` cast in financial/auth code — type safety bypassed',
+          description: '`as any` cast in high-risk executable boundary — type safety bypassed',
           detail: trimmed.slice(0, 120),
         });
         continue; // Don't double-report

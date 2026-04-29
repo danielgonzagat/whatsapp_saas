@@ -1,6 +1,7 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { NotificationsModule } from '../notifications/notifications.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthController } from './auth.controller';
@@ -24,6 +25,7 @@ import { RateLimitService } from './rate-limit.service';
   imports: [
     PrismaModule,
     PaymentsModule,
+    forwardRef(() => NotificationsModule),
     // RedisModule - REMOVIDO: já configurado globalmente
     JwtModule.registerAsync({
       inject: [ConfigService],

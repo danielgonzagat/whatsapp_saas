@@ -75,6 +75,7 @@ export class WhatsappSendRateGuardService implements OnModuleInit {
       const wrapped = async function (this: WhatsappService, ...args: unknown[]): Promise<unknown> {
         const workspaceId = args[0];
         if (typeof workspaceId === 'string' && workspaceId.length > 0) {
+          await planLimits.ensureDailyMessageQuota(workspaceId);
           await planLimits.ensureMessageRate(workspaceId);
         }
         return (original as (...inner: unknown[]) => unknown).apply(this, args);

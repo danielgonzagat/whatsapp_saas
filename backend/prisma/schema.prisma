@@ -3610,3 +3610,30 @@ model FraudBlacklist {
   @@index([expiresAt])
   @@map("fraud_blacklist")
 }
+
+// ============================================================================
+// DailyMessageCounter — per-workspace daily WhatsApp message quota.
+//
+// Each row tracks the number of outbound WhatsApp messages a workspace has
+// sent on a given UTC date. The counter is atomically upserted before every
+// send via INSERT ... ON CONFLICT ... DO UPDATE RETURNING (PostgreSQL).
+// PlanLimitsService.ensureDailyMessageQuota() reads the plan-based limit
+// from the subscription and compares against the running count.
+//
+// Invariants:
+//   * (workspaceId, date) is unique — one row per workspace per day.
+//   * The count is monotonically increasing; it is NEVER decremented.
+//   * Enterprise plans (messagesPerDay = null) skip the counter entirely.
+// ============================================================================
+model DailyMessageCounter {
+  id          String   @id @default(uuid())
+  workspaceId String
+  date        DateTime @db.Date
+  count       Int      @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([workspaceId, date])
+  @@index([workspaceId, date])
+  @@map("RAC_DailyMessageCounter")
+}

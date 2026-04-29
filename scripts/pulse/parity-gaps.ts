@@ -20,7 +20,9 @@ import {
   isCoveredByMaterializedAppBranch,
   isCoveredByMaterializedEntryPoint,
   isCoveredByMaterializedRouteFamily,
+  isCoveredByProductSurfaceRouteFamily,
   isFrameworkShellCapability,
+  isIncludedInRoutedCapability,
   isInterfaceOnlyWithoutRoutes,
   isMaterializedCapability,
   isOperationalReadinessCapability,
@@ -196,6 +198,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
       item.truthMode !== 'aspirational' &&
       item.routePatterns.length > 0 &&
       !isInfrastructureOnlyRouteCapability(item) &&
+      !isCoveredByProductSurfaceRouteFamily(item, capabilities) &&
       (item.rolesPresent.includes('orchestration') ||
         item.rolesPresent.includes('persistence') ||
         item.rolesPresent.includes('side_effect')),
@@ -448,6 +451,7 @@ export function buildParityGaps(input: BuildParityGapsInput): PulseParityGapsArt
       !item.userFacing &&
       item.routePatterns.length === 0 &&
       item.status !== 'real' &&
+      !isIncludedInRoutedCapability(item, capabilities) &&
       (item.maturity.dimensions.runtimeEvidencePresent || item.truthMode === 'observed'),
   )) {
     addGap(

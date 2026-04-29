@@ -175,6 +175,68 @@ export function isCoveredByMaterializedRouteFamily(
   });
 }
 
+/** Is covered by a discovered product-facing route family. */
+export function isCoveredByProductSurfaceRouteFamily(
+  capability: PulseCapability,
+  allCapabilities: PulseCapability[],
+): boolean {
+  if (capability.routePatterns.length === 0) {
+    return false;
+  }
+
+  const capabilityFamilies = deriveFamiliesForCapability(capability);
+  if (capabilityFamilies.length === 0) {
+    return false;
+  }
+
+  return allCapabilities.some((candidate) => {
+    if (
+      candidate.id === capability.id ||
+      !candidate.userFacing ||
+      candidate.routePatterns.length === 0
+    ) {
+      return false;
+    }
+
+    return familiesOverlap(capabilityFamilies, deriveFamiliesForCapability(candidate));
+  });
+}
+
+/** Is internal implementation detail of a routed capability. */
+export function isIncludedInRoutedCapability(
+  capability: PulseCapability,
+  allCapabilities: PulseCapability[],
+): boolean {
+  if (capability.routePatterns.length > 0 || capability.filePaths.length === 0) {
+    return false;
+  }
+
+  const capabilityFiles = new Set(capability.filePaths);
+  return allCapabilities.some((candidate) => {
+    if (
+      candidate.id === capability.id ||
+      candidate.routePatterns.length === 0 ||
+      candidate.filePaths.length <= capability.filePaths.length
+    ) {
+      return false;
+    }
+
+    const candidateFiles = new Set(candidate.filePaths);
+    const allFilesIncluded = capability.filePaths.every((filePath) => candidateFiles.has(filePath));
+    if (!allFilesIncluded) {
+      return false;
+    }
+
+    const candidateRoles = new Set(candidate.rolesPresent);
+    return (
+      candidateRoles.has('interface') ||
+      candidateRoles.has('orchestration') ||
+      candidateRoles.has('persistence') ||
+      candidateRoles.has('side_effect')
+    );
+  });
+}
+
 /** Is covered by materialized app branch. */
 export function isCoveredByMaterializedAppBranch(
   capability: PulseCapability,

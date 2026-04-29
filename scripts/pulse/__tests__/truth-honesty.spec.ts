@@ -45,7 +45,7 @@ describe('truthMode honesty — structural actors', () => {
 
 describe('evaluateActorGate — requires observed evidence', () => {
   function makeEvidence(
-    overrides: Partial<PulseActorEvidence['results'][0]> & { critical?: boolean }[],
+    overrides: (Partial<PulseActorEvidence['results'][0]> & { critical?: boolean })[],
   ): PulseActorEvidence {
     return {
       actorKind: 'admin',
@@ -53,7 +53,7 @@ describe('evaluateActorGate — requires observed evidence', () => {
       results: overrides.map((o, i) => ({
         scenarioId: `scenario-${i}`,
         actorKind: 'admin' as const,
-        scenarioKind: 'structural' as const,
+        scenarioKind: 'single-session' as const,
         critical: o.critical ?? true,
         requested: true,
         runner: 'playwright-spec' as const,
@@ -69,10 +69,11 @@ describe('evaluateActorGate — requires observed evidence', () => {
         routePatterns: [],
       })),
       summary: 'test',
-      executed: true,
-      totalDeclared: overrides.length,
-      totalExecuted: overrides.length,
-      totalPassed: overrides.filter((o) => (o.status ?? 'passed') === 'passed').length,
+      executed: [],
+      missing: [],
+      passed: [],
+      failed: [],
+      artifactPaths: [],
     };
   }
 

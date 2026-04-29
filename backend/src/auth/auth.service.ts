@@ -1,7 +1,8 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { BadRequestException, Injectable, Optional } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, Optional } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { Redis } from 'ioredis';
+import { WelcomeAndOnboardingEmailService } from '../notifications/welcome-onboarding-email.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthOAuthService } from './auth-oauth.service';
 import { AuthPartnerService } from './auth-partner.service';
@@ -29,6 +30,9 @@ export class AuthService {
     private readonly authPartnerService: AuthPartnerService,
     private readonly authVerificationService: AuthVerificationService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
+    @Optional()
+    @Inject(forwardRef(() => WelcomeAndOnboardingEmailService))
+    private readonly welcomeEmailService?: WelcomeAndOnboardingEmailService,
   ) {
     this.rateLimitService = new RateLimitService(this.redis || null);
     this.tokenService = new AuthTokenService(this.prisma, this.jwt);
@@ -64,7 +68,13 @@ export class AuthService {
     affiliateInviteToken?: string;
     ip?: string;
   }) {
-    return this.passwordService.register(data);
+    const result = await this.passwordService.register(data);
+    this.triggerWelcomeFlow(
+      result?.user?.email ?? data.email,
+      result?.user?.name ?? data.name ?? 'Usuario',
+      result?.workspace?.name ?? data.workspaceName ?? 'Meu Workspace',
+    );
+    return result;
   }
 
   /** Login. */
@@ -147,7 +157,15 @@ export class AuthService {
   private async completeTrustedOAuthLogin(profile: GoogleVerifiedProfile) {
     const { agent, isNewUser } = await this.authOAuthService.resolveAgentForProfile(profile);
     assertAgentCanAuthenticate(agent);
-    return this.tokenService.issueTokens(agent, { isNewUser });
+    const result = await this.tokenService.issueTokens(agent, { isNewUser });
+    if (isNewUser) {
+      this.triggerWelcomeFlow(
+        result?.user?.email ?? agent.email,
+        result?.user?.name ?? agent.name ?? 'Usuario',
+        result?.workspace?.name ?? 'Meu Workspace',
+      );
+    }
+    return result;
   }
 
   // =========================================
@@ -166,10 +184,18 @@ export class AuthService {
       ip,
     );
     assertAgentCanAuthenticate(agent);
-    return {
+    const result = {
       ...(await this.tokenService.issueTokens(agent, { isNewUser })),
       redirectTo,
     };
+    if (isNewUser) {
+      this.triggerWelcomeFlow(
+        result?.user?.email ?? agent.email,
+        result?.user?.name ?? agent.name ?? 'Usuario',
+        result?.workspace?.name ?? 'Meu Workspace',
+      );
+    }
+    return result;
   }
 
   // =========================================
@@ -218,5 +244,17 @@ export class AuthService {
   /** Resend verification email. */
   async resendVerificationEmail(email: string, ip?: string) {
     return this.authVerificationService.resendVerificationEmail(email, ip);
+  }
+
+  /**
+   * Fire-and-forget welcome email + onboarding sequence scheduling.
+   * Errors are caught and logged — never blocks the auth response.
+   */
+  private triggerWelcomeFlow(email: string, name: string, workspaceName: string) {
+    if (!this.welcomeEmailService) {
+      return;
+    }
+    void this.welcomeEmailService.sendWelcomeEmail(email, name, workspaceName);
+    void this.welcomeEmailService.scheduleOnboardingSequence(email, name);
   }
 }

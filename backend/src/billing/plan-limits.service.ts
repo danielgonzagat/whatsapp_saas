@@ -12,6 +12,7 @@ const planConfig: Record<
     campaignLimit: number | null;
     messagesPerMonth: number | null;
     messagesPerMinute: number | null;
+    messagesPerDay: number | null;
     instances: number | null;
     flowRunsPerMinute: number | null;
     aiTokensPerMonth: number | null;
@@ -22,6 +23,7 @@ const planConfig: Record<
     campaignLimit: 1,
     messagesPerMonth: 500,
     messagesPerMinute: 5,
+    messagesPerDay: 50,
     instances: 1,
     flowRunsPerMinute: 20,
     aiTokensPerMonth: 1000,
@@ -31,6 +33,7 @@ const planConfig: Record<
     campaignLimit: 5,
     messagesPerMonth: 5000,
     messagesPerMinute: 100,
+    messagesPerDay: 200,
     instances: 1,
     flowRunsPerMinute: 100,
     aiTokensPerMonth: 50000,
@@ -40,6 +43,7 @@ const planConfig: Record<
     campaignLimit: 50,
     messagesPerMonth: 50000,
     messagesPerMinute: 500,
+    messagesPerDay: 2000,
     instances: 3,
     flowRunsPerMinute: 500,
     aiTokensPerMonth: 500000,
@@ -49,6 +53,7 @@ const planConfig: Record<
     campaignLimit: null,
     messagesPerMonth: null,
     messagesPerMinute: null,
+    messagesPerDay: null,
     instances: null,
     flowRunsPerMinute: null,
     aiTokensPerMonth: null,
@@ -222,6 +227,56 @@ export class PlanLimitsService {
       }
       this.logger.warn(
         `[RateLimit] Redis unavailable for ensureMessageRate (workspaceId=${workspaceId}): ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
+    }
+  }
+
+  /**
+   * Per-workspace daily WhatsApp message quota (persistent, PostgreSQL-backed).
+   * Atomically increments the counter and throws if the plan's daily limit is
+   * exceeded. Enterprise plans (messagesPerDay = null) skip the check.
+   *
+   * Uses INSERT ... ON CONFLICT ... DO UPDATE RETURNING for atomicity without
+   * locks, guaranteeing correct counting under concurrent sends.
+   */
+  async ensureDailyMessageQuota(workspaceId: string) {
+    const plan = await this.getPlan(workspaceId);
+    const cfg = planConfig[plan];
+    if (!cfg.messagesPerDay) {
+      return;
+    }
+    const limit = cfg.messagesPerDay;
+
+    try {
+      const today = new Date();
+      const dateStr = today.toISOString().slice(0, 10);
+
+      const result = await this.prisma.$queryRawUnsafe<Array<{ count: number }>>(
+        `INSERT INTO "RAC_DailyMessageCounter" ("id", "workspaceId", "date", "count", "createdAt")
+         VALUES (gen_random_uuid()::text, $1, $2::date, 1, NOW())
+         ON CONFLICT ("workspaceId", "date")
+         DO UPDATE SET "count" = "RAC_DailyMessageCounter"."count" + 1
+         RETURNING "count"`,
+        workspaceId,
+        dateStr,
+      );
+
+      const count = result[0]?.count ?? 0;
+
+      if (count > limit) {
+        this.logger.warn(
+          `[DailyQuota] WhatsApp daily limit HIT — workspaceId=${workspaceId} count=${count} limit=${limit} plan=${plan}`,
+        );
+        throw new ForbiddenException(
+          `Limite diário de ${limit} mensagens atingido para o plano ${plan}. Tente novamente amanhã.`,
+        );
+      }
+    } catch (err: unknown) {
+      if (err instanceof ForbiddenException) {
+        throw err;
+      }
+      this.logger.warn(
+        `[DailyQuota] DB unavailable for ensureDailyMessageQuota (workspaceId=${workspaceId}): ${err instanceof Error ? err.message : 'unknown_error'}`,
       );
     }
   }

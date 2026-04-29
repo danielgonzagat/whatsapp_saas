@@ -1,4 +1,5 @@
 import {
+  appendFileSync as nodeAppendFileSync,
   copyFileSync as nodeCopyFileSync,
   cpSync as nodeCpSync,
   createWriteStream as nodeCreateWriteStream,
@@ -142,11 +143,7 @@ export function renamePath(sourcePath: string, targetPath: string): void {
 }
 
 /** Copy path. */
-export function copyPath(
-  sourcePath: string,
-  targetPath: string,
-  options?: CopySyncOptions,
-): void {
+export function copyPath(sourcePath: string, targetPath: string, options?: CopySyncOptions): void {
   nodeCpSync(safeResolve(sourcePath), safeResolve(targetPath), options);
 }
 
@@ -157,5 +154,12 @@ export function symlinkDir(sourcePath: string, targetPath: string): void {
 
 /** Create append stream. */
 export function createAppendStream(filePath: string): WriteStream {
+  ensureDir(path.dirname(filePath), { recursive: true });
   return nodeCreateWriteStream(safeResolve(filePath), { flags: 'a' });
+}
+
+/** Append text to file (synchronous). */
+export function appendTextFile(filePath: string, content: string): void {
+  ensureDir(path.dirname(filePath), { recursive: true });
+  nodeAppendFileSync(safeResolve(filePath), content, 'utf8');
 }

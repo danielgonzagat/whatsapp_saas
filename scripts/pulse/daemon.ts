@@ -25,6 +25,7 @@ import type { CoreParserData } from './functional-map-types';
 import type { PulseExecutionTracer } from './execution-trace';
 import { spawn } from 'child_process';
 import * as path from 'path';
+import { ensureDir, writeTextFile } from './safe-fs';
 import { buildCapabilityState } from './capability-model';
 import { computeCertification } from './certification';
 import { extractCodebaseTruth } from './codebase-truth';
@@ -49,6 +50,81 @@ import { parseSchema } from './parsers/schema-parser';
 import { traceServices } from './parsers/service-tracer';
 import { parseUIElements } from './parsers/ui-parser';
 import { loadPulseManifest } from './manifest';
+
+// ── Perfectness layer imports ──
+import { buildAstCallGraph } from './ast-graph';
+import { buildScopeEngineState } from './scope-engine';
+import { generateBehaviorGraph } from './behavior-graph';
+import { buildMerkleDag } from './merkle-cache';
+import { collectRuntimeTraces } from './otel-runtime';
+import { buildRuntimeFusionState } from './runtime-fusion';
+import { buildPropertyTestEvidence } from './property-tester';
+import { buildExecutionHarness } from './execution-harness';
+import { buildUICrawlerCatalog } from './ui-crawler';
+import { buildAPIFuzzCatalog } from './api-fuzzer';
+import { buildDataflowState } from './dataflow-engine';
+import { buildContractTestEvidence } from './contract-tester';
+import { buildDoDEngineState } from './dod-engine';
+import { buildObservabilityCoverage } from './observability-coverage';
+import { buildScenarioCatalog } from './scenario-engine';
+import { buildReplayState } from './replay-adapter';
+import { buildProductionProofState } from './production-proof';
+import { buildChaosCatalog } from './chaos-engine';
+import { buildPathCoverageState } from './path-coverage-engine';
+import { buildProbabilisticRisk } from './probabilistic-risk';
+import { buildStructuralMemory } from './structural-memory';
+import { buildFPAdjudicationState } from './false-positive-adjudicator';
+import { evaluateAuthorityState } from './authority-engine';
+import { buildAuditChain } from './audit-chain';
+import { checkGitNexusFreshness } from './gitnexus-freshness';
+import { loadPluginRegistry } from './plugin-system';
+import { buildSandboxState } from './safety-sandbox';
+import { evaluatePerfectness } from './perfectness-test';
+
+interface PerfectnessModuleRun {
+  module: string;
+  status: 'passed' | 'failed';
+  durationMs: number;
+  error?: string;
+}
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
+}
+
+/** Wraps a sync or async call and preserves module-level evidence. */
+async function safeRun<T>(module: string, fn: () => T | Promise<T>): Promise<PerfectnessModuleRun> {
+  const startedAt = Date.now();
+  if (process.env.PULSE_PERFECTNESS_DEBUG === '1') {
+    console.warn(`[perfectness] starting ${module}`);
+  }
+  try {
+    await Promise.resolve(fn());
+    if (process.env.PULSE_PERFECTNESS_DEBUG === '1') {
+      console.warn(`[perfectness] passed ${module} in ${Date.now() - startedAt}ms`);
+    }
+    return {
+      module,
+      status: 'passed',
+      durationMs: Date.now() - startedAt,
+    };
+  } catch (error) {
+    if (process.env.PULSE_PERFECTNESS_DEBUG === '1') {
+      console.warn(
+        `[perfectness] failed ${module} in ${Date.now() - startedAt}ms: ${errorMessage(error)}`,
+      );
+    }
+    return {
+      module,
+      status: 'failed',
+      durationMs: Date.now() - startedAt,
+      error: errorMessage(error),
+    };
+  }
+}
 
 /** Full scan result. */
 export interface FullScanResult {
@@ -537,6 +613,93 @@ export async function fullScan(
       score: certification.score,
     },
   });
+
+  // ── Perfectness scan phase ──────────────────────────────────────────────
+  // All perfectness modules produce their own artifacts in .pulse/current/.
+  // They run as a post-certification enrichment layer and preserve per-module
+  // failures as evidence instead of hiding them from the autonomy layer.
+  const perfectnessStart = Date.now();
+
+  options.tracer?.startPhase('scan:perfectness', {
+    moduleCount: 28,
+  });
+
+  const perfectnessRuns = await Promise.all([
+    // Foundation
+    safeRun('ast-call-graph', () => buildAstCallGraph(config.rootDir)),
+    safeRun('scope-engine', () => buildScopeEngineState(config.rootDir)),
+    safeRun('behavior-graph', () => generateBehaviorGraph(config.rootDir)),
+    safeRun('merkle-dag', () => buildMerkleDag(config.rootDir, structuralGraph)),
+    // Runtime
+    safeRun('otel-runtime', () => collectRuntimeTraces(config.rootDir)),
+    safeRun('runtime-fusion', () => buildRuntimeFusionState(config.rootDir)),
+    // Execution & Testing
+    safeRun('property-tester', () => buildPropertyTestEvidence(config.rootDir)),
+    safeRun('execution-harness', () => buildExecutionHarness(config.rootDir)),
+    safeRun('ui-crawler', () => buildUICrawlerCatalog(config.rootDir)),
+    safeRun('api-fuzzer', () => buildAPIFuzzCatalog(config.rootDir)),
+    // Data & State
+    safeRun('dataflow-engine', () => buildDataflowState(config.rootDir)),
+    safeRun('contract-tester', () => buildContractTestEvidence(config.rootDir)),
+    safeRun('dod-engine', () => buildDoDEngineState(config.rootDir)),
+    // Production & Observability
+    safeRun('observability-coverage', () => buildObservabilityCoverage(config.rootDir)),
+    safeRun('scenario-engine', () => buildScenarioCatalog(config.rootDir)),
+    safeRun('replay-adapter', () => buildReplayState(config.rootDir)),
+    safeRun('production-proof', () => buildProductionProofState(config.rootDir)),
+    // Chaos & Coverage
+    safeRun('chaos-engine', () => buildChaosCatalog(config.rootDir)),
+    safeRun('path-coverage-engine', () => buildPathCoverageState(config.rootDir)),
+    // Intelligence & Memory
+    safeRun('probabilistic-risk', () => buildProbabilisticRisk(config.rootDir)),
+    safeRun('structural-memory', () => buildStructuralMemory(config.rootDir)),
+    safeRun('false-positive-adjudicator', () => buildFPAdjudicationState(config.rootDir)),
+    // Authority
+    safeRun('authority-engine', () => evaluateAuthorityState(config.rootDir)),
+    safeRun('audit-chain', () => buildAuditChain(config.rootDir)),
+    // Architecture
+    safeRun('gitnexus-freshness', () => checkGitNexusFreshness(config.rootDir)),
+    safeRun('plugin-system', () => loadPluginRegistry(config.rootDir)),
+    safeRun('safety-sandbox', () => buildSandboxState(config.rootDir)),
+    safeRun('perfectness-test', () =>
+      evaluatePerfectness(config.rootDir, new Date().toISOString()),
+    ),
+  ]);
+
+  const failedPerfectnessRuns = perfectnessRuns.filter((run) => run.status === 'failed');
+  const perfectnessArtifactDir = path.join(config.rootDir, '.pulse', 'current');
+  ensureDir(perfectnessArtifactDir, { recursive: true });
+  writeTextFile(
+    path.join(perfectnessArtifactDir, 'PULSE_PERFECTNESS_LAYER_STATE.json'),
+    JSON.stringify(
+      {
+        generatedAt: new Date().toISOString(),
+        status: failedPerfectnessRuns.length === 0 ? 'pass' : 'partial',
+        moduleCount: perfectnessRuns.length,
+        passedModules: perfectnessRuns.length - failedPerfectnessRuns.length,
+        failedModules: failedPerfectnessRuns.length,
+        runs: perfectnessRuns,
+      },
+      null,
+      2,
+    ),
+  );
+
+  options.tracer?.finishPhase(
+    'scan:perfectness',
+    failedPerfectnessRuns.length === 0 ? 'passed' : 'failed',
+    {
+      errorSummary:
+        failedPerfectnessRuns.length === 0
+          ? undefined
+          : `${failedPerfectnessRuns.length} perfectness module(s) failed`,
+      metadata: {
+        durationMs: Date.now() - perfectnessStart,
+        moduleCount: 28,
+        failedModules: failedPerfectnessRuns.length,
+      },
+    },
+  );
 
   return {
     health,

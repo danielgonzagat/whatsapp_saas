@@ -23,9 +23,11 @@ export function buildTimedOutRuntimeProbe(probeId: string): PulseRuntimeProbe {
       ? `${resolution.backendUrl}/health/system`
       : probeId === 'auth-session'
         ? `${resolution.backendUrl}/auth/login`
-        : probeId === 'frontend-reachability'
-          ? resolution.frontendUrl
-          : resolution.dbSource || 'database';
+        : probeId === 'ad-rules'
+          ? `${resolution.backendUrl}/ad-rules`
+          : probeId === 'frontend-reachability'
+            ? resolution.frontendUrl
+            : resolution.dbSource || 'database';
 
   return {
     probeId,
@@ -47,9 +49,11 @@ export function buildFailedRuntimeProbe(probeId: string, error: unknown): PulseR
       ? `${resolution.backendUrl}/health/system`
       : probeId === 'auth-session'
         ? `${resolution.backendUrl}/auth/login`
-        : probeId === 'frontend-reachability'
-          ? resolution.frontendUrl
-          : resolution.dbSource || 'database';
+        : probeId === 'ad-rules'
+          ? `${resolution.backendUrl}/ad-rules`
+          : probeId === 'frontend-reachability'
+            ? resolution.frontendUrl
+            : resolution.dbSource || 'database';
 
   return {
     probeId,

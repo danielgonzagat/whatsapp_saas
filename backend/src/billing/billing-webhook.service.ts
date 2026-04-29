@@ -347,7 +347,6 @@ export class BillingWebhookService {
   }
   private async cancelSubscriptionByStripeId(stripeId: string) {
     let workspaceId: string | null = null;
-    let updatedAt: Date | null = null;
     if (this.stripe) {
       try {
         const sub = await this.stripe.subscriptions.retrieve(stripeId);
@@ -358,34 +357,52 @@ export class BillingWebhookService {
         );
       }
     }
-    if (!workspaceId) {
-      const existing = await this.prisma.subscription.findFirst({
-        where: { stripeId },
-        select: { workspaceId: true, updatedAt: true },
-      });
-      workspaceId = existing?.workspaceId ?? null;
-      updatedAt = existing?.updatedAt ?? null;
-    }
-    if (!workspaceId) {
-      this.logger.warn(
-        `cancelSubscriptionByStripeId: subscription not found for stripeId ${stripeId}`,
-      );
+
+    if (workspaceId) {
+      try {
+        await this.prisma.subscription.updateMany({
+          where: { stripeId, workspaceId },
+          data: { status: 'CANCELED' },
+        });
+        this.logger.log(`Subscription CANCELED: ${stripeId}`);
+      } catch (error: unknown) {
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')) {
+          throw error;
+        }
+        this.logger.warn(
+          `cancelSubscriptionByStripeId: subscription not found for stripeId ${stripeId}`,
+        );
+      }
       return;
     }
-    try {
-      const result = await this.prisma.subscription.updateMany({
-        where: { stripeId, workspaceId, ...(updatedAt ? { updatedAt } : {}) },
-        data: { status: 'CANCELED' },
-      });
-      this.logger.log(`Subscription CANCELED: ${stripeId} (matched ${result.count})`);
-    } catch (error: unknown) {
-      if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')) {
-        throw error;
-      }
-      this.logger.warn(
-        `cancelSubscriptionByStripeId: subscription not found for stripeId ${stripeId}`,
-      );
-    }
+
+    await this.prisma.$transaction(
+      async (tx) => {
+        const existing = await tx.subscription.findFirst({
+          where: { stripeId },
+          select: { workspaceId: true, updatedAt: true },
+        });
+
+        if (!existing) {
+          this.logger.warn(
+            `cancelSubscriptionByStripeId: subscription not found for stripeId ${stripeId}`,
+          );
+          return;
+        }
+
+        await tx.subscription.updateMany({
+          where: {
+            stripeId,
+            workspaceId: existing.workspaceId,
+            updatedAt: existing.updatedAt,
+          },
+          data: { status: 'CANCELED' },
+        });
+
+        this.logger.log(`Subscription CANCELED: ${stripeId}`);
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
   async notifyOps(event: string, payload: Record<string, unknown>): Promise<void> {
     return notifyOpsHelper(this.logger, event, payload, this.financialAlert);

@@ -365,6 +365,7 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       scenarioCoverageMatches: scenarioCoverageMatches.map((result) => ({
         scenarioId: result.scenarioId,
       })),
+      runtimeObserved,
       highSeverityIssueCount,
       simulationOnly,
       status,

@@ -32,6 +32,34 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
+function extractCatchBlocks(content: string): string[] {
+  const blocks: string[] = [];
+  const catchRe = /catch\s*(?:\([^)]*\))?\s*\{/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = catchRe.exec(content)) !== null) {
+    const start = match.index;
+    let depth = 0;
+    let end = start;
+
+    for (let i = content.indexOf('{', start); i < content.length; i++) {
+      const ch = content[i];
+      if (ch === '{') depth++;
+      if (ch === '}') {
+        depth--;
+        if (depth === 0) {
+          end = i + 1;
+          break;
+        }
+      }
+    }
+
+    blocks.push(content.slice(Math.max(0, start - 500), Math.min(content.length, end + 500)));
+  }
+
+  return blocks;
+}
+
 /** Check observability. */
 export function checkObservability(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
@@ -64,10 +92,7 @@ export function checkObservability(config: PulseConfig): Break[] {
   }
 
   // CHECK 1b: Correlation ID propagated to outbound calls
-  const httpClientFiles = backendFiles.filter((f) =>
-    /stripe|llm|openai|anthropic|whatsapp|http|axios/i.test(f),
-  );
-  for (const file of httpClientFiles) {
+  for (const file of backendFiles) {
     if (/\.(spec|test|d)\.ts$|__tests__|fixture|mock/i.test(file)) {
       continue;
     }
@@ -114,9 +139,8 @@ export function checkObservability(config: PulseConfig): Break[] {
     });
   }
 
-  // CHECK 2b: Payment failure alerting specifically
-  const paymentFiles = backendFiles.filter((f) => /payment|checkout|wallet/i.test(f));
-  for (const file of paymentFiles) {
+  // CHECK 2b: Runtime-critical caught failures must alert externally.
+  for (const file of backendFiles) {
     let content: string;
     try {
       content = readTextFile(file, 'utf8');
@@ -125,8 +149,14 @@ export function checkObservability(config: PulseConfig): Break[] {
     }
     const relFile = path.relative(config.rootDir, file);
 
+    const catchesRuntimeCriticalFailure = extractCatchBlocks(content).some((block) =>
+      /\b(?:fetch|axios|httpService|request)\s*(?:<[^>]*>)?\s*\(|\.(?:post|put|patch|delete)\s*\(|\b(?:prisma|repository|database)\b/i.test(
+        block,
+      ),
+    );
+
     if (
-      /catch\s*\(/.test(content) &&
+      catchesRuntimeCriticalFailure &&
       !/Sentry\.captureException|captureException|alert|notify|sendAlert/i.test(content)
     ) {
       breaks.push({
@@ -135,8 +165,8 @@ export function checkObservability(config: PulseConfig): Break[] {
         file: relFile,
         line: 0,
         description:
-          'Payment/financial error caught without external alert — payment failures may go unnoticed for hours',
-        detail: 'Add Sentry.captureException(err) or custom alert in payment error catch blocks',
+          'Runtime-critical error caught without external alert — failures may go unnoticed for hours',
+        detail: 'Add Sentry.captureException(err) or custom alert in runtime-critical catch blocks',
       });
     }
   }

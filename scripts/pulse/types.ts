@@ -157,3 +157,34 @@ export type {
 
 // Legacy layer types (old-style shapes, kept for backward compat)
 export type * from './types.legacy-layers';
+
+// ── Perfectness layer — AST, RUNTIME, CHAOS, MEMORY, AUTHORITY ──
+export type * from './types.ast-graph';
+export type * from './types.scope-engine';
+export type * from './types.behavior-graph';
+export type * from './types.merkle-cache';
+export type * from './types.otel-runtime';
+export type * from './types.runtime-fusion';
+export type * from './types.property-tester';
+export type * from './types.execution-harness';
+export type * from './types.ui-crawler';
+export type * from './types.api-fuzzer';
+export type * from './types.dataflow-engine';
+export type * from './types.contract-tester';
+export type * from './types.dod-engine';
+export type * from './types.observability-coverage';
+export type * from './types.scenario-engine';
+export type * from './types.replay-adapter';
+export type * from './types.production-proof';
+export type * from './types.chaos-engine';
+export type * from './types.path-coverage-engine';
+export type * from './types.probabilistic-risk';
+export type * from './types.structural-memory';
+export type * from './types.false-positive-adjudicator';
+export type * from './types.continuous-daemon';
+export type * from './types.authority-engine';
+export type * from './types.audit-chain';
+export type * from './types.gitnexus-freshness';
+export type * from './types.plugin-system';
+export type * from './types.safety-sandbox';
+export type * from './types.perfectness-test';

@@ -10,7 +10,7 @@ import {
   isAdapterRequired,
   normalizeExternalSignalProfile,
 } from '../adapters/external-sources-orchestrator';
-import type { PulseAutonomyStateSnapshot } from '../types';
+import type { PulseAutonomyStateSnapshot } from '../cert-gate-multi-cycle';
 
 describe('external-adapters — required vs optional', () => {
   describe('profile-scoped external signal requiredness', () => {
@@ -33,7 +33,7 @@ describe('external-adapters — required vs optional', () => {
 
   describe('required adapter not_available blocks certification', () => {
     it('should track missingAdapters when required adapter is not_available', () => {
-      const autonomyState: PulseAutonomyStateSnapshot = {
+      const autonomyState: any = {
         history: [
           {
             cycleId: 'cycle-1',
@@ -54,7 +54,7 @@ describe('external-adapters — required vs optional', () => {
     });
 
     it('should fail when required adapter status is invalid', () => {
-      const autonomyState: PulseAutonomyStateSnapshot = {
+      const autonomyState: any = {
         history: [
           {
             cycleId: 'cycle-1',
@@ -79,7 +79,7 @@ describe('external-adapters — required vs optional', () => {
 
   describe('optional adapter not_available does not block', () => {
     it('should pass when only optional adapters are not_available', () => {
-      const autonomyState: PulseAutonomyStateSnapshot = {
+      const autonomyState: any = {
         history: [
           {
             cycleId: 'cycle-1',
@@ -117,7 +117,7 @@ describe('external-adapters — required vs optional', () => {
     });
 
     it('should pass when optional adapter has optional_not_configured status', () => {
-      const autonomyState: PulseAutonomyStateSnapshot = {
+      const autonomyState: any = {
         history: [
           {
             cycleId: 'cycle-1',
@@ -166,7 +166,7 @@ describe('external-adapters — required vs optional', () => {
 
   describe('mixed required and optional adapters', () => {
     it('should pass when required adapters are ready and optional adapters are optional_not_configured', () => {
-      const autonomyState: PulseAutonomyStateSnapshot = {
+      const autonomyState: any = {
         history: [
           {
             cycleId: 'cycle-1',
@@ -220,7 +220,7 @@ describe('external-adapters — required vs optional', () => {
     });
 
     it('should fail when required adapter is not_available even with optional adapters ready', () => {
-      const autonomyState: PulseAutonomyStateSnapshot = {
+      const autonomyState: any = {
         history: [
           {
             cycleId: 'cycle-1',

@@ -1,0 +1,798 @@
+// PULSE — Live Codebase Nervous System
+// AST-resolved call graph builder using ts-morph Compiler API.
+// Replaces regex-based call resolution with type-aware symbol traces.
+
+import * as path from 'path';
+import { Project, Node, SyntaxKind } from 'ts-morph';
+import { pathExists } from './safe-fs';
+import type {
+  AstCallGraph,
+  AstCallEdge,
+  AstCallEdgeKind,
+  AstModuleGraph,
+  AstResolvedNodeKind,
+  AstResolvedSymbol,
+} from './types.ast-graph';
+
+const NESTJS_DECORATORS = new Set([
+  'Controller',
+  'Get',
+  'Post',
+  'Put',
+  'Delete',
+  'Patch',
+  'Options',
+  'Head',
+  'All',
+  'Cron',
+  'Interval',
+  'Timeout',
+  'MessagePattern',
+  'EventPattern',
+  'SubscribeMessage',
+  'Injectable',
+  'Module',
+  'WebSocketGateway',
+  'Resolver',
+  'Query',
+  'Mutation',
+  'Subscription',
+]);
+
+const HTTP_METHOD_DECORATORS = new Set([
+  'Get',
+  'Post',
+  'Put',
+  'Delete',
+  'Patch',
+  'Options',
+  'Head',
+  'All',
+]);
+
+const SOURCE_GLOBS = ['backend/src/**/*.ts', 'frontend/src/**/*.tsx', 'worker/src/**/*.ts'];
+
+const SKIP_PATTERNS = [
+  /[\\/]node_modules[\\/]/,
+  /[\\/]dist[\\/]/,
+  /[\\/]\.next[\\/]/,
+  /[\\/]__tests__[\\/]/,
+  /\.spec\.ts$/,
+  /\.test\.ts$/,
+  /\.d\.ts$/,
+];
+
+function shouldSkip(filePath: string): boolean {
+  return SKIP_PATTERNS.some((pattern) => pattern.test(filePath));
+}
+
+function normalizePath(input: string): string {
+  return input.split(path.sep).join('/');
+}
+
+let nextId = 0;
+
+function generateId(prefix: string): string {
+  nextId += 1;
+  return `${prefix}_${nextId}`;
+}
+
+function buildSymbolId(filePath: string, name: string, line: number): string {
+  return `${normalizePath(filePath)}:${name}:${line}`;
+}
+
+function buildEdgeId(fromId: string, toId: string): string {
+  return `${fromId}->${toId}`;
+}
+
+function resolveSymbolId(symbol: { getName(): string }, filePath: string, line: number): string {
+  return buildSymbolId(filePath, symbol.getName(), line);
+}
+
+interface NestjsMeta {
+  decorator: string | null;
+  httpMethod: string | null;
+  routePath: string | null;
+}
+
+function extractNestjsMeta(
+  decorators: Iterable<{ getName(): string; getArguments(): Array<{ getText(): string }> }>,
+): NestjsMeta {
+  let decorator: string | null = null;
+  let httpMethod: string | null = null;
+  let routePath: string | null = null;
+
+  for (const d of decorators) {
+    const name = d.getName();
+
+    if (name === 'Controller' || name === 'WebSocketGateway') {
+      decorator = name;
+      const args = d.getArguments();
+      if (args.length > 0) {
+        const raw = args[0]?.getText() ?? '';
+        routePath = raw.replace(/^['"]|['"]$/g, '');
+      }
+    }
+
+    if (HTTP_METHOD_DECORATORS.has(name)) {
+      httpMethod = name.toUpperCase();
+      const args = d.getArguments();
+      if (args.length > 0) {
+        const raw = args[0]?.getText() ?? '';
+        routePath = raw.replace(/^['"]|['"]$/g, '');
+      }
+    }
+
+    if (NESTJS_DECORATORS.has(name) && decorator === null) {
+      decorator = name;
+    }
+  }
+
+  return { decorator, httpMethod, routePath };
+}
+
+function classifySymbolKind(
+  symbolName: string,
+  decoratorMeta: NestjsMeta,
+  node: Node,
+  parentClass?: string | null,
+): AstResolvedNodeKind {
+  if (Node.isMethodDeclaration(node) || Node.isMethodSignature(node)) {
+    if (node.getName() === 'constructor') return 'constructor';
+
+    if (decoratorMeta.httpMethod) return 'api_route';
+    if (decoratorMeta.decorator === 'Cron' || decoratorMeta.decorator === 'Interval')
+      return 'cron_job';
+    if (decoratorMeta.decorator === 'MessagePattern' || decoratorMeta.decorator === 'EventPattern')
+      return 'queue_processor';
+    if (decoratorMeta.decorator === 'SubscribeMessage') return 'websocket_gateway';
+    if (decoratorMeta.decorator === 'Query' || decoratorMeta.decorator === 'Mutation')
+      return 'graphql_resolver';
+
+    return 'class_method';
+  }
+
+  if (Node.isFunctionDeclaration(node)) return 'function';
+  if (Node.isArrowFunction(node)) return 'arrow_function';
+
+  if (Node.isClassDeclaration(node)) {
+    if (decoratorMeta.decorator === 'Controller') return 'controller';
+    if (decoratorMeta.decorator === 'Resolver') return 'resolver';
+    if (decoratorMeta.decorator === 'WebSocketGateway') return 'websocket_gateway';
+    if (decoratorMeta.decorator === 'Module') return 'module';
+    if (decoratorMeta.decorator === 'Injectable') return 'service';
+    return 'provider';
+  }
+
+  return 'function';
+}
+
+function classifyCallEdgeKind(node: Node, resolved: boolean): AstCallEdgeKind {
+  if (Node.isNewExpression(node)) return 'new_expression';
+  if (Node.isDecorator(node)) return 'decorator_application';
+  if (Node.isJsxOpeningElement(node) || Node.isJsxSelfClosingElement(node)) return 'jsx_usage';
+  if (Node.isCallExpression(node)) {
+    if (!resolved) return 'indirect_call';
+    return 'direct_call';
+  }
+  return 'direct_call';
+}
+
+function resolveCallExpression(
+  node: Node,
+  typeChecker: ReturnType<Project['getTypeChecker']>,
+): { resolved: boolean; targetSymbol: { getName(): string } | null; genericArgs: string[] } {
+  const genericArgs: string[] = [];
+  let targetSymbol: { getName(): string } | null = null;
+  let resolved = false;
+
+  try {
+    if (Node.isCallExpression(node)) {
+      const expression = node.getExpression();
+      const symbol = expression.getSymbol();
+      if (symbol) {
+        targetSymbol = symbol;
+        resolved = true;
+      }
+    }
+  } catch {
+    // resolution failed, leave unresolved
+  }
+
+  try {
+    if (Node.isCallExpression(node)) {
+      const typeArgs = node.getTypeArguments();
+      for (const ta of typeArgs) {
+        genericArgs.push(ta.getText());
+      }
+    }
+  } catch {
+    // no type arguments or resolution failed
+  }
+
+  return { resolved, targetSymbol, genericArgs };
+}
+
+function resolveNewExpression(node: Node): {
+  resolved: boolean;
+  targetSymbol: { getName(): string } | null;
+  genericArgs: string[];
+} {
+  const genericArgs: string[] = [];
+  let targetSymbol: { getName(): string } | null = null;
+  let resolved = false;
+
+  try {
+    if (Node.isNewExpression(node)) {
+      const expression = node.getExpression();
+      const symbol = expression.getSymbol();
+      if (symbol) {
+        targetSymbol = symbol;
+        resolved = true;
+      }
+    }
+  } catch {
+    // resolution failed
+  }
+
+  try {
+    if (Node.isNewExpression(node)) {
+      const typeArgs = node.getTypeArguments();
+      for (const ta of typeArgs) {
+        genericArgs.push(ta.getText());
+      }
+    }
+  } catch {
+    // no type arguments
+  }
+
+  return { resolved, targetSymbol, genericArgs };
+}
+
+function resolveDecorator(node: Node): {
+  resolved: boolean;
+  targetSymbol: { getName(): string } | null;
+  genericArgs: string[];
+} {
+  const genericArgs: string[] = [];
+  let targetSymbol: { getName(): string } | null = null;
+  let resolved = false;
+
+  try {
+    if (Node.isDecorator(node)) {
+      const expression = node.getExpression();
+      const symbol = expression.getSymbol();
+      if (symbol) {
+        targetSymbol = symbol;
+        resolved = true;
+      }
+    }
+  } catch {
+    // resolution failed
+  }
+
+  return { resolved, targetSymbol, genericArgs };
+}
+
+function resolveJsxElement(
+  node: Node & { getTagNameNode(): { getSymbol(): ReturnType<Node['getSymbol']> } },
+): { resolved: boolean; targetSymbol: { getName(): string } | null; genericArgs: string[] } {
+  const genericArgs: string[] = [];
+  let targetSymbol: { getName(): string } | null = null;
+  let resolved = false;
+
+  try {
+    const tagNode = node.getTagNameNode();
+    const symbol = tagNode.getSymbol();
+    if (symbol) {
+      targetSymbol = symbol;
+      resolved = true;
+    }
+  } catch {
+    // resolution failed
+  }
+
+  return { resolved, targetSymbol, genericArgs };
+}
+
+function extractDocComment(node: Node): string | null {
+  try {
+    if (
+      'getJsDocs' in node &&
+      typeof (node as { getJsDocs?(): unknown[] }).getJsDocs === 'function'
+    ) {
+      const docs = (
+        node as unknown as { getJsDocs(): Array<{ getDescriptionText(): string }> }
+      ).getJsDocs();
+      if (docs.length > 0) {
+        return docs[0].getDescriptionText().trim() || null;
+      }
+    }
+  } catch {
+    // skip
+  }
+  return null;
+}
+
+function extractDecoratorNames(node: Node): string[] {
+  try {
+    if (
+      'getDecorators' in node &&
+      typeof (node as { getDecorators?(): unknown[] }).getDecorators === 'function'
+    ) {
+      return (node as unknown as { getDecorators(): Array<{ getName(): string }> })
+        .getDecorators()
+        .map((d) => d.getName());
+    }
+  } catch {
+    // skip
+  }
+  return [];
+}
+
+function extractParameterTypes(node: Node): string[] {
+  const types: string[] = [];
+  try {
+    if (
+      'getParameters' in node &&
+      typeof (node as { getParameters(): unknown[] }).getParameters === 'function'
+    ) {
+      const params = (
+        node as unknown as {
+          getParameters(): Array<{
+            getType(): { getText(): string };
+            getTypeNode(): { getText(): string } | undefined;
+          }>;
+        }
+      ).getParameters();
+      for (const param of params) {
+        try {
+          types.push(param.getType().getText());
+        } catch {
+          try {
+            const typeNode = param.getTypeNode();
+            if (typeNode) types.push(typeNode.getText());
+          } catch {
+            types.push('unknown');
+          }
+        }
+      }
+    }
+  } catch {
+    // skip
+  }
+  return types;
+}
+
+function extractReturnType(
+  funcNode: Node & {
+    getReturnType?(): { getText(): string };
+    getReturnTypeNode?(): { getText?(): string } | undefined;
+  },
+): string | null {
+  try {
+    if (typeof funcNode.getReturnType === 'function') {
+      return funcNode.getReturnType().getText() || null;
+    }
+  } catch {
+    try {
+      if (typeof funcNode.getReturnTypeNode === 'function') {
+        const node = funcNode.getReturnTypeNode();
+        if (node && typeof node.getText === 'function') {
+          return node.getText() || null;
+        }
+      }
+    } catch {
+      // skip
+    }
+  }
+  return null;
+}
+
+function isSymbolExported(
+  node: Node & {
+    isExported?(): boolean;
+    hasExportKeyword?(): boolean;
+  },
+): boolean {
+  try {
+    if (typeof node.isExported === 'function') return node.isExported();
+  } catch {
+    // skip
+  }
+  try {
+    if (typeof node.hasExportKeyword === 'function') return node.hasExportKeyword();
+  } catch {
+    // skip
+  }
+  return false;
+}
+
+function isDefaultExport(
+  node: Node & {
+    hasDefaultKeyword?(): boolean;
+  },
+): boolean {
+  try {
+    if (typeof node.hasDefaultKeyword === 'function') return node.hasDefaultKeyword();
+  } catch {
+    // skip
+  }
+  return false;
+}
+
+function buildModuleGraph(file: ReturnType<Project['getSourceFile']>): AstModuleGraph | null {
+  if (!file) return null;
+
+  const filePath = normalizePath(file.getFilePath());
+
+  const imports: AstModuleGraph['imports'] = [];
+  try {
+    for (const imp of file.getImportDeclarations()) {
+      const moduleSpecifier = imp.getModuleSpecifierValue();
+      const namedImports = imp.getNamedImports().map((ni) => ni.getName());
+      const isTypeOnly = imp.isTypeOnly();
+      imports.push({
+        source: moduleSpecifier,
+        symbols: namedImports,
+        isTypeOnly,
+      });
+    }
+  } catch {
+    // skip import parsing
+  }
+
+  const exports: AstModuleGraph['exports'] = [];
+  try {
+    for (const exp of file.getExportDeclarations()) {
+      const namedExports = exp.getNamedExports();
+      for (const ne of namedExports) {
+        exports.push({
+          name: ne.getName(),
+          isReExport: !exp.isTypeOnly() && exp.getModuleSpecifierValue() != null,
+          source: exp.getModuleSpecifierValue() ?? undefined,
+        });
+      }
+    }
+  } catch {
+    // skip export parsing
+  }
+
+  return { filePath, imports, exports };
+}
+
+export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> {
+  const tsconfigCandidates = [
+    path.join(rootDir, 'tsconfig.json'),
+    path.join(rootDir, 'backend', 'tsconfig.json'),
+  ];
+  const tsConfigFilePath = tsconfigCandidates.find((candidate) => pathExists(candidate));
+  const project = new Project({
+    ...(tsConfigFilePath ? { tsConfigFilePath } : {}),
+    skipFileDependencyResolution: true,
+    compilerOptions: {
+      skipLibCheck: true,
+    },
+  });
+
+  const absoluteRoot = path.resolve(rootDir);
+
+  const applicableGlobs = SOURCE_GLOBS.map((g) =>
+    path.join(absoluteRoot, g).split(path.sep).join('/'),
+  );
+
+  project.addSourceFilesAtPaths(applicableGlobs);
+
+  const sourceFiles = project.getSourceFiles().filter((sf) => !shouldSkip(sf.getFilePath()));
+
+  const typeChecker = project.getTypeChecker();
+
+  const symbols: AstResolvedSymbol[] = [];
+  const edges: AstCallEdge[] = [];
+  const moduleGraphs: AstModuleGraph[] = [];
+  const unresolvedCalls: AstCallGraph['unresolvedCalls'] = [];
+  const parseErrors: AstCallGraph['parseErrors'] = [];
+
+  const seenSymbolIds = new Set<string>();
+  const seenEdgeIds = new Set<string>();
+
+  for (const sourceFile of sourceFiles) {
+    const filePath = normalizePath(sourceFile.getFilePath());
+
+    const mg = buildModuleGraph(sourceFile);
+    if (mg) moduleGraphs.push(mg);
+
+    sourceFile.forEachDescendant((node) => {
+      if (Node.isFunctionDeclaration(node) || Node.isClassDeclaration(node)) {
+        const name = node.getName() ?? '<anonymous>';
+        const decorators = extractDecoratorNames(node);
+
+        let nestjsMeta: NestjsMeta = { decorator: null, httpMethod: null, routePath: null };
+        if (Node.isClassDeclaration(node)) {
+          const classNode = node as unknown as {
+            getDecorators(): Array<{
+              getName(): string;
+              getArguments(): Array<{ getText(): string }>;
+            }>;
+          };
+          if (typeof classNode.getDecorators === 'function') {
+            nestjsMeta = extractNestjsMeta(classNode.getDecorators());
+          }
+        }
+
+        const kind = classifySymbolKind(name, nestjsMeta, node, null);
+        const id = buildSymbolId(filePath, name, node.getStartLineNumber());
+
+        if (seenSymbolIds.has(id)) return;
+        seenSymbolIds.add(id);
+
+        symbols.push({
+          id,
+          name,
+          kind,
+          filePath,
+          line: node.getStartLineNumber(),
+          column: node.getStartLinePos(),
+          isExported: isSymbolExported(node as unknown as Parameters<typeof isSymbolExported>[0]),
+          isDefaultExport: isDefaultExport(
+            node as unknown as Parameters<typeof isDefaultExport>[0],
+          ),
+          nestjsDecorator: nestjsMeta.decorator,
+          httpMethod: nestjsMeta.httpMethod,
+          routePath: nestjsMeta.routePath,
+          parameterTypes: [],
+          returnType: null,
+          decorators,
+          docComment: extractDocComment(node),
+        });
+      }
+
+      if (Node.isClassDeclaration(node)) {
+        const classNode = node as unknown as {
+          getMethods(): Array<{
+            getName(): string;
+            getDecorators(): Array<{
+              getName(): string;
+              getArguments(): Array<{ getText(): string }>;
+            }>;
+            getStartLineNumber(): number;
+            getStartLinePos(): number;
+          }>;
+          getProperties(): Array<{
+            getName(): string;
+            getDecorators?(): Array<{
+              getName(): string;
+              getArguments(): Array<{ getText(): string }>;
+            }>;
+            getStartLineNumber(): number;
+            getStartLinePos(): number;
+          }>;
+          getName?(): string;
+        };
+
+        const parentClassName =
+          typeof classNode.getName === 'function' ? classNode.getName() : null;
+
+        for (const method of classNode.getMethods()) {
+          const methodName = method.getName();
+          const decorators =
+            (
+              method as unknown as {
+                getDecorators?(): Array<{
+                  getName(): string;
+                  getArguments(): Array<{ getText(): string }>;
+                }>;
+              }
+            ).getDecorators?.() ?? [];
+          const nestjsMeta = extractNestjsMeta(decorators);
+          const kind = classifySymbolKind(methodName, nestjsMeta, node, parentClassName);
+
+          const id = buildSymbolId(filePath, methodName, method.getStartLineNumber());
+          if (seenSymbolIds.has(id)) continue;
+          seenSymbolIds.add(id);
+
+          symbols.push({
+            id,
+            name: `${parentClassName ? parentClassName + '.' : ''}${methodName}`,
+            kind,
+            filePath,
+            line: method.getStartLineNumber(),
+            column: method.getStartLinePos(),
+            isExported: Node.isClassDeclaration(node)
+              ? isSymbolExported(node as unknown as Parameters<typeof isSymbolExported>[0])
+              : false,
+            isDefaultExport: false,
+            nestjsDecorator: nestjsMeta.decorator,
+            httpMethod: nestjsMeta.httpMethod,
+            routePath: nestjsMeta.routePath,
+            parameterTypes: extractParameterTypes(method as unknown as Node),
+            returnType: extractReturnType(
+              method as unknown as Parameters<typeof extractReturnType>[0],
+            ),
+            decorators: decorators.map((d) => d.getName()),
+            docComment: extractDocComment(method as unknown as Node),
+          });
+        }
+
+        for (const prop of classNode.getProperties()) {
+          const propName = prop.getName();
+          const id = buildSymbolId(filePath, propName, prop.getStartLineNumber());
+          if (seenSymbolIds.has(id)) continue;
+          seenSymbolIds.add(id);
+
+          const decorators =
+            (
+              prop as unknown as { getDecorators?(): Array<{ getName(): string }> }
+            ).getDecorators?.() ?? [];
+
+          symbols.push({
+            id,
+            name: `${parentClassName ? parentClassName + '.' : ''}${propName}`,
+            kind: 'provider',
+            filePath,
+            line: prop.getStartLineNumber(),
+            column: prop.getStartLinePos(),
+            isExported: false,
+            isDefaultExport: false,
+            nestjsDecorator: null,
+            httpMethod: null,
+            routePath: null,
+            parameterTypes: [],
+            returnType: null,
+            decorators: decorators.map((d) => d.getName()),
+            docComment: extractDocComment(prop as unknown as Node),
+          });
+        }
+      }
+
+      let callNode: Node | null = null;
+      if (
+        Node.isCallExpression(node) ||
+        Node.isNewExpression(node) ||
+        Node.isJsxOpeningElement(node) ||
+        Node.isJsxSelfClosingElement(node)
+      ) {
+        callNode = node;
+      }
+
+      if (!callNode) return;
+
+      const line = callNode.getStartLineNumber();
+      const fromName = findEnclosingSymbol(callNode);
+      const fromId = fromName
+        ? buildSymbolId(filePath, fromName, callNode.getStartLineNumber())
+        : buildSymbolId(filePath, '<toplevel>', line);
+
+      let resolved = false;
+      let targetSymbol: { getName(): string } | null = null;
+      let genericArgs: string[] = [];
+
+      try {
+        if (Node.isCallExpression(callNode)) {
+          const result = resolveCallExpression(callNode, typeChecker);
+          resolved = result.resolved;
+          targetSymbol = result.targetSymbol;
+          genericArgs = result.genericArgs;
+        } else if (Node.isNewExpression(callNode)) {
+          const result = resolveNewExpression(callNode);
+          resolved = result.resolved;
+          targetSymbol = result.targetSymbol;
+          genericArgs = result.genericArgs;
+        } else {
+          const result = resolveJsxElement(callNode as Parameters<typeof resolveJsxElement>[0]);
+          resolved = result.resolved;
+          targetSymbol = result.targetSymbol;
+          genericArgs = result.genericArgs;
+        }
+      } catch {
+        // resolution error
+      }
+
+      const edgeKind = classifyCallEdgeKind(callNode, resolved);
+
+      if (targetSymbol) {
+        const toName = targetSymbol.getName();
+        const targetDecl = (
+          targetSymbol as unknown as { getDeclarations?(): Node[] }
+        ).getDeclarations?.()?.[0];
+        const targetLine = targetDecl ? targetDecl.getStartLineNumber() : 0;
+        const targetFile = targetDecl
+          ? normalizePath(targetDecl.getSourceFile().getFilePath())
+          : filePath;
+        const toId = buildSymbolId(targetFile, toName, targetLine);
+
+        const edgeId = buildEdgeId(fromId, toId);
+        if (seenEdgeIds.has(edgeId)) return;
+        seenEdgeIds.add(edgeId);
+
+        edges.push({
+          id: generateId('edge'),
+          from: fromId,
+          to: toId,
+          kind: edgeKind,
+          filePath,
+          line,
+          resolved,
+          genericArguments: genericArgs,
+        });
+      } else {
+        const calleeText = extractCalleeText(callNode);
+        unresolvedCalls.push({
+          from: fromId,
+          toName: calleeText,
+          filePath,
+          line,
+          reason: 'symbol-not-resolved',
+        });
+      }
+    });
+  }
+
+  const summary: AstCallGraph['summary'] = {
+    totalSymbols: symbols.length,
+    totalEdges: edges.length,
+    resolvedEdges: edges.filter((e) => e.resolved).length,
+    unresolvedEdges: edges.filter((e) => !e.resolved).length,
+    interfaceDispatches: edges.filter((e) => e.kind === 'interface_dispatch').length,
+    decoratorApplications: edges.filter((e) => e.kind === 'decorator_application').length,
+    apiRoutesFound: symbols.filter((s) => s.kind === 'api_route').length,
+    cronJobsFound: symbols.filter((s) => s.kind === 'cron_job').length,
+    webhookHandlersFound: symbols.filter(
+      (s) => s.kind === 'webhook_handler' || s.kind === 'websocket_gateway',
+    ).length,
+    queueProcessorsFound: symbols.filter((s) => s.kind === 'queue_processor').length,
+  };
+
+  return {
+    generatedAt: new Date().toISOString(),
+    summary,
+    symbols,
+    edges,
+    moduleGraphs,
+    unresolvedCalls,
+    parseErrors,
+  };
+}
+
+function findEnclosingSymbol(node: Node): string | null {
+  let current: Node | undefined = node.getParent();
+  while (current) {
+    if (
+      Node.isFunctionDeclaration(current) ||
+      Node.isMethodDeclaration(current) ||
+      Node.isClassDeclaration(current) ||
+      Node.isArrowFunction(current as Node)
+    ) {
+      const nameNode = current as unknown as { getName?(): string };
+      if (typeof nameNode.getName === 'function') {
+        const name = nameNode.getName();
+        if (name && name !== 'constructor') return name;
+      }
+    }
+    current = current.getParent();
+  }
+  return null;
+}
+
+function extractCalleeText(node: Node): string {
+  try {
+    if (Node.isCallExpression(node) || Node.isNewExpression(node)) {
+      return node.getExpression().getText();
+    }
+    if (Node.isJsxOpeningElement(node) || Node.isJsxSelfClosingElement(node)) {
+      return node.getTagNameNode().getText();
+    }
+  } catch {
+    return '<unknown>';
+  }
+  return '<unknown>';
+}
+
+export function resolveSymbolAt(
+  callGraph: AstCallGraph,
+  filePath: string,
+  line: number,
+): AstResolvedSymbol | null {
+  const normalized = normalizePath(filePath);
+  return callGraph.symbols.find((s) => s.filePath === normalized && s.line === line) ?? null;
+}

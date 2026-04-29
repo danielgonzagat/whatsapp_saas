@@ -16,7 +16,6 @@ function makeDirective(
   overrides: Partial<PulseAutonomousDirective> = {},
 ): PulseAutonomousDirective {
   return {
-    autonomous: null,
     currentCheckpoint: null,
     currentState: null,
     visionGap: null,
@@ -48,7 +47,6 @@ describe('directiveDigest determinism', () => {
         {
           id: 'unit-1',
           title: 'Fix typecheck-only issue',
-          capabilityId: 'cap-1',
           flowId: null,
           scopeExecutionMode: 'typecheck',
           priorityScore: 0,
@@ -56,7 +54,7 @@ describe('directiveDigest determinism', () => {
           expectedArtifacts: [],
           validationCommands: ['npm run typecheck'],
           tags: [],
-        },
+        } as any,
       ],
     });
     expect(directiveDigest(a)).not.toBe(directiveDigest(b));

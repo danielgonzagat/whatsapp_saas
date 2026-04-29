@@ -324,6 +324,7 @@ export class AutopilotService {
       ? `Obrigado pela sua compra de *${purchaseInfo.productName}*. Seu acesso e os próximos passos seguem pelo canal cadastrado.`
       : `Obrigado pela sua compra. Seu acesso e os próximos passos seguem pelo canal cadastrado.`;
 
+    await this.planLimits.ensureDailyMessageQuota(workspaceId);
     await this.planLimits.ensureMessageRate(workspaceId);
 
     await flowQueue.add('send-message', {
@@ -382,6 +383,7 @@ export class AutopilotService {
       return { queued: false, reason: compliance.reason };
     }
 
+    await this.planLimits.ensureDailyMessageQuota(workspaceId);
     await this.planLimits.ensureMessageRate(workspaceId);
 
     await flowQueue.add('send-message', {

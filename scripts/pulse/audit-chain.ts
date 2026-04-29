@@ -1,0 +1,352 @@
+/**
+ * Audit Chain — signed, append-only execution trail using HMAC-SHA256.
+ *
+ * Wave 8, Module C.
+ *
+ * The audit chain provides a cryptographically verifiable history of every
+ * autonomous action PULSE takes. Each block captures a snapshot of the codebase
+ * state (treeHash), the decision that was made (decisionHash), and a signature
+ * that links it irreversibly to the previous block.
+ *
+ * Blocks are stored as an append-only JSONL file at
+ * `.pulse/audit/PULSE_AUDIT_CHAIN.jsonl`. Verification walks forward from the
+ * genesis block checking prevHash continuity and signature validity.
+ */
+import * as path from 'node:path';
+import { createHash, createHmac, randomUUID } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import { appendTextFile, ensureDir, pathExists, readTextFile, writeTextFile } from './safe-fs';
+import { resolveRoot } from './lib/safe-path';
+import type { AuditBlock, AuditChain } from './types.audit-chain';
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+const AUDIT_CHAIN_FILENAME = 'PULSE_AUDIT_CHAIN.jsonl';
+const AUDIT_CHAIN_ID_FILENAME = 'PULSE_AUDIT_CHAIN_ID.txt';
+const DEFAULT_HMAC_SECRET = 'pulse-audit-chain-internal-key';
+const HASH_ALGORITHM = 'sha256';
+
+// ── Path helpers ──────────────────────────────────────────────────────────────
+
+function auditChainPath(rootDir: string): string {
+  return path.join(rootDir, '.pulse', 'audit', AUDIT_CHAIN_FILENAME);
+}
+
+function auditChainIdPath(rootDir: string): string {
+  return path.join(rootDir, '.pulse', 'audit', AUDIT_CHAIN_ID_FILENAME);
+}
+
+function getOrCreateChainId(rootDir: string): string {
+  const idPath = auditChainIdPath(rootDir);
+  ensureDir(path.dirname(idPath), { recursive: true });
+  if (pathExists(idPath)) {
+    return readTextFile(idPath).trim();
+  }
+  const id = randomUUID();
+  writeTextFile(idPath, id);
+  return id;
+}
+
+// ── HMAC key resolution ───────────────────────────────────────────────────────
+
+function getSigningKey(): string {
+  return process.env.PULSE_AUDIT_SIGNING_KEY ?? DEFAULT_HMAC_SECRET;
+}
+
+// ── Git tree hash ─────────────────────────────────────────────────────────────
+
+function getGitTreeHash(rootDir: string): string {
+  try {
+    const result = spawnSync('git', ['rev-parse', 'HEAD:'], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      timeout: 10_000,
+    });
+    if (result.status === 0 && result.stdout.trim()) {
+      return result.stdout.trim();
+    }
+  } catch {
+    // Git not available — fall through to file hash
+  }
+  return '';
+}
+
+// ── File snapshot hash ────────────────────────────────────────────────────────
+
+function computeFilesHash(rootDir: string, files: string[]): string {
+  if (files.length === 0) return getGitTreeHash(rootDir) || '';
+
+  const hash = createHash(HASH_ALGORITHM);
+  const sorted = [...files].sort();
+
+  for (const file of sorted) {
+    hash.update(file);
+    try {
+      const content = readTextFile(path.join(rootDir, file));
+      hash.update(content);
+    } catch {
+      hash.update('unreadable');
+    }
+  }
+
+  return hash.digest('hex');
+}
+
+// ── Block serialization ───────────────────────────────────────────────────────
+
+/**
+ * Compute a deterministic SHA-256 hash of an AuditBlock's core fields.
+ *
+ * The hash covers: index, prevHash, treeHash, decisionHash, timestamp,
+ * and all metadata fields in structured order. The signature field is
+ * excluded to avoid circularity.
+ *
+ * @param block  The audit block to hash.
+ * @returns Lowercase hex-encoded SHA-256 digest.
+ */
+export function computeBlockHash(block: AuditBlock): string {
+  const hash = createHash(HASH_ALGORITHM);
+  hash.update(String(block.index));
+  hash.update(block.prevHash);
+  hash.update(block.treeHash);
+  hash.update(block.decisionHash);
+  hash.update(block.timestamp);
+  hash.update(String(block.metadata.iteration));
+  hash.update(block.metadata.unitId ?? 'null');
+  hash.update(block.metadata.agent);
+  hash.update(String(block.metadata.scoreBefore));
+  hash.update(String(block.metadata.scoreAfter));
+  for (const file of [...block.metadata.filesChanged].sort()) {
+    hash.update(file);
+  }
+  return hash.digest('hex');
+}
+
+/**
+ * Sign a block with HMAC-SHA256.
+ *
+ * The signature covers the block hash (via {@link computeBlockHash}) and
+ * uses the key from `PULSE_AUDIT_SIGNING_KEY` env var (falls back to a
+ * default key for local development).
+ *
+ * @param block  The block to sign (signature field is overwritten).
+ * @returns The block with signature populated.
+ */
+function signBlock(block: AuditBlock): AuditBlock {
+  const blockHash = computeBlockHash(block);
+  const hmac = createHmac(HASH_ALGORITHM, getSigningKey());
+  hmac.update(blockHash);
+  block.signature = hmac.digest('hex');
+  return block;
+}
+
+/**
+ * Verify a block's signature against its computed hash.
+ *
+ * @param block  The block to verify.
+ * @returns `true` if the signature matches the block content.
+ */
+function verifySignature(block: AuditBlock): boolean {
+  const blockHash = computeBlockHash(block);
+  const hmac = createHmac(HASH_ALGORITHM, getSigningKey());
+  hmac.update(blockHash);
+  const expectedSignature = hmac.digest('hex');
+  return block.signature === expectedSignature;
+}
+
+// ── JSONL I/O ─────────────────────────────────────────────────────────────────
+
+function readAllBlocks(rootDir: string): AuditBlock[] {
+  const filePath = auditChainPath(rootDir);
+  if (!pathExists(filePath)) return [];
+
+  const content = readTextFile(filePath);
+  const lines = content.split('\n').filter((line) => line.trim().length > 0);
+  const blocks: AuditBlock[] = [];
+
+  for (const line of lines) {
+    try {
+      blocks.push(JSON.parse(line) as AuditBlock);
+    } catch {
+      // Skip corrupted lines
+    }
+  }
+
+  return blocks;
+}
+
+function appendBlockToFile(rootDir: string, block: AuditBlock): void {
+  const filePath = auditChainPath(rootDir);
+  ensureDir(path.dirname(filePath), { recursive: true });
+  const line = JSON.stringify(block) + '\n';
+  appendTextFile(filePath, line);
+}
+
+// ── Chain management ──────────────────────────────────────────────────────────
+
+/**
+ * Build (or load) the full audit chain.
+ *
+ * If no chain exists, creates a genesis block and starts a new chain.
+ * Otherwise loads the existing chain from `.pulse/audit/PULSE_AUDIT_CHAIN.jsonl`
+ * and verifies its integrity.
+ *
+ * @param rootDir  Absolute or relative path to the repository root.
+ * @returns The loaded or newly created audit chain.
+ */
+export function buildAuditChain(rootDir: string): AuditChain {
+  const resolvedRoot = resolveRoot(rootDir);
+  const chainId = getOrCreateChainId(resolvedRoot);
+  let blocks = readAllBlocks(resolvedRoot);
+
+  if (blocks.length === 0) {
+    const genesisBlock: AuditBlock = {
+      index: 0,
+      prevHash: '0000000000000000000000000000000000000000000000000000000000000000',
+      treeHash:
+        getGitTreeHash(resolvedRoot) || createHash(HASH_ALGORITHM).update('genesis').digest('hex'),
+      decisionHash: createHash(HASH_ALGORITHM).update('genesis').digest('hex'),
+      signature: '',
+      timestamp: new Date().toISOString(),
+      metadata: {
+        iteration: 0,
+        unitId: null,
+        agent: 'genesis',
+        scoreBefore: 0,
+        scoreAfter: 0,
+        filesChanged: [],
+      },
+    };
+
+    signBlock(genesisBlock);
+    appendBlockToFile(resolvedRoot, genesisBlock);
+    blocks = [genesisBlock];
+  }
+
+  const genesisHash = blocks[0] ? computeBlockHash(blocks[0]) : '';
+
+  const chain: AuditChain = {
+    chainId,
+    genesisHash,
+    blocks,
+    verified: false,
+    lastVerified: null,
+    verificationFailures: [],
+  };
+
+  return verifyChain(chain);
+}
+
+/**
+ * Append a new block to the audit chain.
+ *
+ * Computes prevHash from the tip of the existing chain, computes treeHash
+ * from git state or file snapshot, computes decisionHash from metadata,
+ * signs the block, and appends it as a JSONL line.
+ *
+ * @param chain     The current audit chain.
+ * @param metadata  Metadata describing what happened in this block.
+ * @param rootDir   Absolute or relative path to the repository root.
+ * @returns The updated audit chain including the new block.
+ */
+export function appendBlock(
+  chain: AuditChain,
+  metadata: AuditBlock['metadata'],
+  rootDir: string,
+): AuditChain {
+  const resolvedRoot = resolveRoot(rootDir);
+
+  const prevBlock = chain.blocks[chain.blocks.length - 1] ?? null;
+  const prevHash = prevBlock ? computeBlockHash(prevBlock) : chain.genesisHash;
+
+  const treeHash = computeFilesHash(resolvedRoot, metadata.filesChanged);
+
+  const decisionHash = createHash(HASH_ALGORITHM).update(JSON.stringify(metadata)).digest('hex');
+
+  const block: AuditBlock = {
+    index: chain.blocks.length,
+    prevHash,
+    treeHash,
+    decisionHash,
+    signature: '',
+    timestamp: new Date().toISOString(),
+    metadata: { ...metadata },
+  };
+
+  signBlock(block);
+  appendBlockToFile(resolvedRoot, block);
+
+  return {
+    ...chain,
+    blocks: [...chain.blocks, block],
+  };
+}
+
+/**
+ * Verify the entire audit chain from genesis to tip.
+ *
+ * Walks forward block by block, checking:
+ * - Each block's prevHash matches the previous block's computed hash
+ * - Each block's signature is valid
+ *
+ * Any failures are recorded in `verificationFailures`.
+ *
+ * @param chain  The audit chain to verify.
+ * @returns The same chain object with `verified`, `lastVerified`, and
+ *          `verificationFailures` updated.
+ */
+export function verifyChain(chain: AuditChain): AuditChain {
+  const failures: AuditChain['verificationFailures'] = [];
+
+  for (let i = 0; i < chain.blocks.length; i++) {
+    const block = chain.blocks[i];
+    const prevBlock = i > 0 ? chain.blocks[i - 1] : null;
+
+    if (!verifyBlock(block, prevBlock)) {
+      let reason = `Block ${i} failed verification`;
+      if (prevBlock) {
+        const expectedPrevHash = computeBlockHash(prevBlock);
+        if (block.prevHash !== expectedPrevHash) {
+          reason = `Block ${i} prevHash mismatch: expected ${expectedPrevHash.slice(0, 16)}..., got ${block.prevHash.slice(0, 16)}...`;
+        }
+      }
+      if (!verifySignature(block)) {
+        reason = `Block ${i} signature invalid`;
+      }
+      failures.push({ blockIndex: i, reason });
+    }
+  }
+
+  return {
+    ...chain,
+    verified: failures.length === 0,
+    lastVerified: new Date().toISOString(),
+    verificationFailures: failures,
+  };
+}
+
+/**
+ * Verify a single block against its predecessor.
+ *
+ * Checks:
+ * - If prevBlock is non-null, block.prevHash must match computeBlockHash(prevBlock)
+ * - block.signature must be valid for the block's content
+ *
+ * @param block      The block to verify.
+ * @param prevBlock  The previous block in the chain, or null for genesis.
+ * @returns `true` if the block passes both checks.
+ */
+export function verifyBlock(block: AuditBlock, prevBlock: AuditBlock | null): boolean {
+  if (prevBlock) {
+    const expectedPrevHash = computeBlockHash(prevBlock);
+    if (block.prevHash !== expectedPrevHash) {
+      return false;
+    }
+  }
+
+  if (!verifySignature(block)) {
+    return false;
+  }
+
+  return true;
+}
