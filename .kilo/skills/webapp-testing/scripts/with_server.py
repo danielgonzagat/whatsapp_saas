@@ -103,7 +103,7 @@ async def _spawn_allowed_process(
 ) -> ManagedProcess:
     """Spawn an allow-listed executable through one static, shell-quoted path."""
     _resolve_executable(argv)
-    command = shlex.join(argv)
+    command = ' '.join(shlex.quote(token) for token in argv)
     return await asyncio.create_subprocess_exec('sh', '-c', command, stdout=stdout, stderr=stderr)
 
 

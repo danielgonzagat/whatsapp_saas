@@ -309,7 +309,7 @@ export class WalletService {
             },
           });
           if (debit.count === 0) {
-            throw new Error('KloelWallet modified concurrently');
+            throw new ConcurrentWalletUpdateError();
           }
 
           const created = await tx.kloelWalletTransaction.create({

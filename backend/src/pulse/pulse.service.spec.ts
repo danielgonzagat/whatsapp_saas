@@ -11,6 +11,12 @@ import {
   spyOnRunBackgroundTask,
 } from '../../test/pulse/pulse.service-test-helpers';
 
+function buildExpectedIntervalHandlerError() {
+  const error = new Error();
+  error.message = 'Expected callback interval handler';
+  return error;
+}
+
 describe('PulseService', () => {
   const realNodeEnv = process.env.NODE_ENV;
   const realJestWorker = process.env.JEST_WORKER_ID;
@@ -577,7 +583,7 @@ describe('PulseService', () => {
       .spyOn(global, 'setInterval')
       .mockImplementation((callback: TimerHandler, delay?: number) => {
         if (typeof callback !== 'function') {
-          throw new Error('Expected callback interval handler');
+          throw buildExpectedIntervalHandlerError();
         }
         scheduled.push({ callback: () => callback(), delay: Number(delay) });
         const timer = fakeTimers[timerIndex];
