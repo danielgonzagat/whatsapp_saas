@@ -10,7 +10,10 @@
 import { describe, it, expect } from 'vitest';
 import { directiveDigest } from '../autonomy-loop.state-io';
 import { DEFAULT_MAX_ITERATIONS } from '../autonomy-loop.types';
-import type { PulseAutonomousDirective } from '../autonomy-loop.types';
+import type {
+  PulseAutonomousDirective,
+  PulseAutonomousDirectiveUnit,
+} from '../autonomy-loop.types';
 
 function makeDirective(
   overrides: Partial<PulseAutonomousDirective> = {},
@@ -42,20 +45,24 @@ describe('directiveDigest determinism', () => {
 
   it('produces different digest when directive content changes', () => {
     const a = makeDirective();
+    const unit: PulseAutonomousDirectiveUnit = {
+      id: 'unit-1',
+      kind: 'validation',
+      priority: 'medium',
+      source: 'test',
+      executionMode: 'ai_safe',
+      riskLevel: 'low',
+      evidenceMode: 'typecheck',
+      confidence: 'high',
+      productImpact: 'type safety regression prevention',
+      ownerLane: 'pulse',
+      title: 'Fix typecheck-only issue',
+      summary: 'Exercise digest drift when executable unit content changes.',
+      validationTargets: ['npm run typecheck'],
+      requiredValidations: ['typecheck'],
+    };
     const b = makeDirective({
-      nextExecutableUnits: [
-        {
-          id: 'unit-1',
-          title: 'Fix typecheck-only issue',
-          flowId: null,
-          scopeExecutionMode: 'typecheck',
-          priorityScore: 0,
-          preconditions: [],
-          expectedArtifacts: [],
-          validationCommands: ['npm run typecheck'],
-          tags: [],
-        } as any,
-      ],
+      nextExecutableUnits: [unit],
     });
     expect(directiveDigest(a)).not.toBe(directiveDigest(b));
   });

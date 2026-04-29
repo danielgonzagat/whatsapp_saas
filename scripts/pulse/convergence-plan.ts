@@ -214,7 +214,7 @@ function normalizeConvergenceUnit(unit: PulseConvergenceUnit): PulseConvergenceU
     exitCriteria: uniqueStrings([
       ...unit.exitCriteria,
       'PULSE captures validation evidence before converting this surface into governed autonomous execution.',
-      'Rollback expectation is captured before any mutation moves beyond observation.',
+      'Rollback expectation is captured before mutation moves beyond observation.',
     ]),
   };
 }

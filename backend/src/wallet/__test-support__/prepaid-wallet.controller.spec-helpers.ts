@@ -2,6 +2,7 @@
 // Extracted to keep individual spec files within architecture guardrail size limits.
 
 import { Test, type TestingModule } from '@nestjs/testing';
+import { ThrottlerModule } from '@nestjs/throttler';
 import type { PrepaidWallet, PrepaidWalletTransaction, PrepaidWalletTxType } from '@prisma/client';
 
 import { StripeService } from '../../billing/stripe.service';
@@ -181,6 +182,7 @@ export async function buildModule(
   fraudEngine = makeFraudEngineStub(),
 ) {
   const moduleRef: TestingModule = await Test.createTestingModule({
+    imports: [ThrottlerModule.forRoot([{ ttl: 60_000, limit: 1_000 }])],
     controllers: [PrepaidWalletController],
     providers: [
       WalletService,

@@ -48,7 +48,8 @@ describe('false positive adjudicator suppression expiry', () => {
 
     expect(suppressed.status).toBe('false_positive');
     expect(suppressed.expiresOnFileChange).toBe(true);
-    expect(suppressed.fileHashAtSuppression).toEqual(expect.any(String));
+    expect(typeof suppressed.fileHashAtSuppression).toBe('string');
+    expect(suppressed.fileHashAtSuppression).toMatch(/^[a-f0-9]{64}$/);
 
     const unchanged = checkExpiredSuppressions([suppressed], rootDir)[0];
     expect(unchanged.status).toBe('false_positive');

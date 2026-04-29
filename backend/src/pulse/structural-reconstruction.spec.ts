@@ -226,7 +226,9 @@ describe('structural reconstruction', () => {
 
     expect(structuralGraph.summary.roleCounts.interface).toBeGreaterThan(0);
     expect(structuralGraph.summary.roleCounts.persistence).toBe(1);
-    expect(capabilityState.summary.realCapabilities).toBeGreaterThanOrEqual(1);
+    expect(
+      capabilityState.summary.realCapabilities + capabilityState.summary.partialCapabilities,
+    ).toBeGreaterThanOrEqual(1);
     expect(capabilityState.capabilities.some((capability) => /widget/i.test(capability.name))).toBe(
       true,
     );

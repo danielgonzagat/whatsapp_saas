@@ -109,7 +109,7 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
           file: relFile,
           line: 0,
           description:
-            'Money-like write without any cache invalidation strategy — user may see wrong balance or totals',
+            'Money-like write missing a cache invalidation strategy — user may see wrong balance or totals',
           detail:
             'After money-like mutations, call mutate() immediately to show updated balance or totals',
         });

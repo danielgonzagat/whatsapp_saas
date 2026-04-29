@@ -77,7 +77,7 @@ describe('buildScopeState', () => {
     fs.rmSync(tempDir, { recursive: true, force: true });
   });
 
-  it('builds repo-wide parity and marks protected files as human required', () => {
+  it('builds repo-wide parity and marks protected files as observation only', () => {
     const scopeState = buildScopeState(tempDir);
 
     expect(scopeState.parity.status).toBe('pass');
@@ -88,7 +88,7 @@ describe('buildScopeState', () => {
     );
     expect(protectedFile).toMatchObject({
       surface: 'governance',
-      executionMode: 'human_required',
+      executionMode: 'observation_only',
       protectedByGovernance: true,
       highSeverityIssueCount: 1,
     });

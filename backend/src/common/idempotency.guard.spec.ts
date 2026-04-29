@@ -149,6 +149,7 @@ describe('IdempotencyGuard — v2 (I13) scoped key + body fingerprint', () => {
     guard = new IdempotencyGuard(
       reflector,
       redis as unknown as ConstructorParameters<typeof IdempotencyGuard>[1],
+      undefined,
       featureFlags,
     );
     jest.spyOn(reflector, 'get').mockImplementation((metadataKey: unknown) => {
@@ -313,6 +314,7 @@ describe('IdempotencyGuard — v1 (rollback lever, legacy header-only key)', () 
     guard = new IdempotencyGuard(
       reflector,
       redis as unknown as ConstructorParameters<typeof IdempotencyGuard>[1],
+      undefined,
       featureFlags,
     );
     jest.spyOn(reflector, 'get').mockImplementation((metadataKey: unknown) => {

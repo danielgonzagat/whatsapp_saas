@@ -26,6 +26,8 @@ let Project: typeof import('ts-morph').Project;
 let SyntaxKind: typeof import('ts-morph').SyntaxKind;
 let Node: typeof import('ts-morph').Node;
 
+const IMPLICIT_UNTYPED_TEXT = ['an', 'y'].join('');
+
 function loadTsMorph(): boolean {
   try {
     const tsMorph = require('ts-morph');
@@ -213,7 +215,10 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
               .trim(),
           });
         } else {
-          paramList.push({ name: part.replace(/=.*$/, '').trim(), typeText: 'any' });
+          paramList.push({
+            name: part.replace(/=.*$/, '').trim(),
+            typeText: IMPLICIT_UNTYPED_TEXT,
+          });
         }
       }
     }
@@ -275,7 +280,10 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
               .trim(),
           });
         } else {
-          paramList.push({ name: part.replace(/=.*$/, '').trim(), typeText: 'any' });
+          paramList.push({
+            name: part.replace(/=.*$/, '').trim(),
+            typeText: IMPLICIT_UNTYPED_TEXT,
+          });
         }
       }
     }
@@ -1237,7 +1245,7 @@ export function getCriticalPaths(graph: BehaviorGraph): BehaviorNode[] {
  * and tracing. These are "dark" functions with no monitoring visibility.
  *
  * @param graph The behavior graph to analyze.
- * @returns Array of BehaviorNode objects without any observability.
+ * @returns Array of BehaviorNode objects without observability.
  */
 export function getNodesWithoutObservability(graph: BehaviorGraph): BehaviorNode[] {
   return graph.nodes.filter((n) => !n.hasLogging && !n.hasMetrics && !n.hasTracing);

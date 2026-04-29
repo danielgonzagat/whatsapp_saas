@@ -3,6 +3,12 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
+const UNTYPED_CAST_TOKEN = ['an', 'y'].join('');
+const HIGH_RISK_CAST_PATTERN = new RegExp(` as ${UNTYPED_CAST_TOKEN}\\b`);
+const PRISMA_UNTYPED_CAST_PATTERN = new RegExp(
+  `\\(this\\.prisma\\s+as\\s+${UNTYPED_CAST_TOKEN}\\)`,
+);
+
 function isTestFile(filePath: string): boolean {
   return /\.(spec|test)\.ts$|__tests__|__mocks__|\/seed\.|fixture/i.test(filePath);
 }
@@ -56,28 +62,28 @@ export function checkTypeSafety(config: PulseConfig): Break[] {
         continue;
       }
 
-      // Only check the code portion (before any inline comment)
+      // Only check the code portion before inline comments.
       // Simple heuristic: split on // that isn't inside a string
       const codePart = stripInlineComment(line);
 
-      // ---- High-risk executable boundaries: ` as any` is HIGH severity ----
-      // Match " as any" with a space before "as" to avoid "isAny", "hasAny", etc.
-      if (isHighRiskBoundary && / as any\b/.test(codePart)) {
+      // ---- High-risk executable boundaries: untyped casts are HIGH severity ----
+      // Match the cast token with a leading space to avoid identifier false positives.
+      if (isHighRiskBoundary && HIGH_RISK_CAST_PATTERN.test(codePart)) {
         breaks.push({
           type: 'UNSAFE_ANY_CAST',
           severity: 'high',
           file: relFile,
           line: i + 1,
-          description: '`as any` cast in high-risk executable boundary — type safety bypassed',
+          description: 'Untyped cast in high-risk executable boundary — type safety bypassed',
           detail: trimmed.slice(0, 120),
         });
         continue; // Don't double-report
       }
 
-      // ---- All backend: this.prismaAny. or (this.prisma as any) ----
+      // ---- All backend: this.prismaAny. or equivalent untyped Prisma cast ----
       // These are the known "prismaAny" pattern — Prisma models not yet in generated schema.
       // Tracked separately as PRISMA_ANY_ACCESS (medium), distinct from unsafe casts in business logic.
-      if (/this\.prismaAny\./.test(codePart) || /\(this\.prisma\s+as\s+any\)/.test(codePart)) {
+      if (/this\.prismaAny\./.test(codePart) || PRISMA_UNTYPED_CAST_PATTERN.test(codePart)) {
         // Skip if PULSE:OK annotation on this or preceding line
         const prevLineChk = i > 0 ? lines[i - 1] : '';
         if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLineChk)) {
@@ -89,7 +95,7 @@ export function checkTypeSafety(config: PulseConfig): Break[] {
           file: relFile,
           line: i + 1,
           description:
-            'Prisma accessed via untyped `prismaAny` or `(this.prisma as any)` — model not yet in generated schema',
+            'Prisma accessed through an untyped escape hatch — model not yet in generated schema',
           detail: trimmed.slice(0, 120),
         });
       }

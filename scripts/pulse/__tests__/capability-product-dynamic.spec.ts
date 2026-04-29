@@ -461,7 +461,7 @@ describe('PULSE dynamic capability/product reconstruction', () => {
     ).toHaveLength(1);
   });
 
-  it('uses any actor evidence bucket with scenario results when projecting flows', () => {
+  it('uses a populated actor evidence bucket with scenario results when projecting flows', () => {
     const graph = structuralGraph([
       structuralNode({
         id: 'ui:opaque',

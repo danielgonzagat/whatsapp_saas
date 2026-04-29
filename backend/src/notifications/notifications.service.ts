@@ -85,7 +85,11 @@ export class NotificationsService {
           agentId: device.agentId,
           details: { deletedBy: 'user' },
         })
-        .catch(() => {});
+        .catch((err: unknown) => {
+          this.logger.warn(
+            `Failed to log audit event for device token deletion: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        });
     }
 
     return this.prisma.deviceToken
@@ -93,6 +97,7 @@ export class NotificationsService {
         where: { token },
       })
       .catch((err) => {
+        void this.opsAlert?.alertOnCriticalError(err, 'NotificationsService.unregisterDevice');
         this.logger.warn(`Failed to unregister device token: ${err?.message}`);
         return null;
       });

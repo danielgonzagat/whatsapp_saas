@@ -550,7 +550,11 @@ export class KnowledgeBaseService {
           resourceId: sourceId,
           details: { sourceId },
         })
-        .catch(() => {});
+        .catch((err: unknown) => {
+          this.logger.warn(
+            `Failed to log audit event for deleteVectorsBySource: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        });
     }
 
     return this.prisma.vector.deleteMany({ where: { sourceId } });

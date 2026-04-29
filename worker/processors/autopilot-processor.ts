@@ -559,7 +559,10 @@ async function buildQuotedReplyPlan(params: {
         finalizeReplyStyle(message.content, replies[index]?.text || params.draftReply, 0) ||
         params.draftReply,
     }));
-  } catch {
+  } catch (err: unknown) {
+    log.warn('build_reply_variations_error', {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return fallback();
   }
 }
@@ -865,7 +868,10 @@ async function loadWorkspaceGlobalStrategy(input: {
       domain,
       intent: input.intentHint || 'generic',
     });
-  } catch {
+  } catch (err: unknown) {
+    log.warn('build_local_strategy_fallback', {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return buildGlobalStrategy({
       patterns: [],
       domain,
@@ -2580,7 +2586,10 @@ async function finalizeBacklogIntoSilentCatalog(input: {
           selfIdentity,
         }) && isConversationPendingForAgent(conversation),
     ).length;
-  } catch {
+  } catch (err: unknown) {
+    log.warn('compute_pending_count_error', {
+      error: err instanceof Error ? err.message : String(err),
+    });
     localPending = 0;
   }
 

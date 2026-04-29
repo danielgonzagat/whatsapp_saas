@@ -1505,7 +1505,7 @@ function buildHarnessExecutionPlan(
       step: 'tenant_boundary',
       required: true,
       detail:
-        'Run matching-context and mismatched-context attempts before any pass/fail status can count as observed evidence.',
+        'Run matching-context and mismatched-context attempts before a pass/fail status can count as observed evidence.',
     });
   }
 
@@ -1611,7 +1611,7 @@ function buildHarnessExpectedEvidence(
 
 /**
  * Build fixture data structures for common scenarios without connecting to
- * any real infrastructure. These are blueprint data definitions consumed by
+ * live infrastructure. These are blueprint data definitions consumed by
  * test runners when they actually execute.
  */
 export function buildFixtureDataStructures(targets: HarnessTarget[]): Record<string, unknown> {

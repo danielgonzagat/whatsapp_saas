@@ -1,3 +1,15 @@
+jest.mock('@nestjs/throttler', () => {
+  const actual = jest.requireActual<typeof import('@nestjs/throttler')>('@nestjs/throttler');
+  return {
+    ...actual,
+    ThrottlerGuard: class SpecThrottlerGuard {
+      canActivate() {
+        return true;
+      }
+    },
+  };
+});
+
 import type { PrepaidWalletTransaction } from '@prisma/client';
 
 import {

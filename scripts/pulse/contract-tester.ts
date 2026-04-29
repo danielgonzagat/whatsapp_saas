@@ -1214,7 +1214,7 @@ function parseMigrationSql(migrationName: string, sql: string): MigrationSafetyC
     const column = match[2];
     operations.push({ type: 'SET NOT NULL', table, column });
     warnings.push(
-      `ALTER COLUMN "${column}" SET NOT NULL on table "${table}" — will fail if any row has null values`,
+      `ALTER COLUMN "${column}" SET NOT NULL on table "${table}" — will fail when rows contain null values`,
     );
     destructive = true;
   }

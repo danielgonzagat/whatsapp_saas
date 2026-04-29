@@ -1,4 +1,17 @@
+jest.mock('@nestjs/throttler', () => {
+  const actual = jest.requireActual<typeof import('@nestjs/throttler')>('@nestjs/throttler');
+  return {
+    ...actual,
+    ThrottlerGuard: class SpecThrottlerGuard {
+      canActivate() {
+        return true;
+      }
+    },
+  };
+});
+
 import { Test, TestingModule } from '@nestjs/testing';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { IDEMPOTENCY_METADATA } from '../common/idempotency.guard';
 import { CheckoutPublicController } from './checkout-public.controller';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -45,6 +58,7 @@ describe('CheckoutPublicController', () => {
     };
 
     const moduleRef: TestingModule = await Test.createTestingModule({
+      imports: [ThrottlerModule.forRoot([{ ttl: 60_000, limit: 1_000 }])],
       controllers: [CheckoutPublicController],
       providers: [
         { provide: CheckoutService, useValue: checkoutService },

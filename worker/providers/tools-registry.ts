@@ -311,6 +311,7 @@ async function execute(
     }
     return await handler(args, context);
   } catch (err: unknown) {
+    console.error('Tool execution error:', err);
     return `Error executing tool: ${err instanceof Error ? err.message : 'unknown_error'}`;
   }
 }
