@@ -159,7 +159,14 @@ export function parseEvents(writes: string[]): Array<Record<string, unknown>> {
     .join('')
     .split('\n\n')
     .filter(Boolean)
-    .map((block) => JSON.parse(block.replace(/^data: /, '')) as Record<string, unknown>);
+    .map((block) => {
+      try {
+        return JSON.parse(block.replace(/^data: /, '')) as Record<string, unknown>;
+      } catch {
+        return null;
+      }
+    })
+    .filter((parsed): parsed is Record<string, unknown> => parsed !== null);
 }
 
 export type ProofCtx = {

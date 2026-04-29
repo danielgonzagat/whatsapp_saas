@@ -10,6 +10,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../../audit/audit.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
@@ -35,6 +36,7 @@ export class ProductCheckoutController {
 
   /** List. */
   @Get()
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -49,6 +51,7 @@ export class ProductCheckoutController {
 
   /** Create. */
   @Post()
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   async create(
     @Param('productId') productId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
@@ -71,6 +74,7 @@ export class ProductCheckoutController {
 
   /** Update. */
   @Put(':checkoutId')
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   async update(
     @Param('productId') productId: string,
     @Param('checkoutId') checkoutId: string,
@@ -96,6 +100,7 @@ export class ProductCheckoutController {
 
   /** Delete. */
   @Delete(':checkoutId')
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
   async delete(
     @Param('productId') productId: string,
     @Param('checkoutId') checkoutId: string,
