@@ -14,6 +14,8 @@ import { fetchGitHubActionsSignals } from './github-actions-adapter';
 import { fetchGitNexusSignal, runGitNexusAdapter } from './gitnexus-adapter';
 import type {
   PulseCertificationProfile,
+  PulseExternalAdapterProofBasis,
+  PulseExternalAdapterRequirement,
   PulseExternalAdapterStatus,
   PulseExternalSignalSource,
   PulseSignal,
@@ -139,18 +141,29 @@ export interface ExternalSourcesConfig {
   certificationScope?: string;
 }
 
+interface ExternalSourceRunResult {
+  source: PulseExternalSignalSource;
+  status: PulseExternalAdapterStatus;
+  signalCount: number;
+  syncedAt: string;
+  reason: string;
+}
+
+export interface ConsolidatedExternalSource extends ExternalSourceRunResult {
+  requiredness: AdapterRequiredness;
+  requirement: PulseExternalAdapterRequirement;
+  required: boolean;
+  blocking: boolean;
+  proofBasis: PulseExternalAdapterProofBasis;
+  missingReason: string | null;
+}
+
 /** Consolidated external state shape. */
 export interface ConsolidatedExternalState {
   /** Generated at property. */
   generatedAt: string;
   /** Sources property. */
-  sources: Array<{
-    source: PulseExternalSignalSource;
-    status: PulseExternalAdapterStatus;
-    signalCount: number;
-    syncedAt: string;
-    reason: string;
-  }>;
+  sources: ConsolidatedExternalSource[];
   /** All signals property. */
   allSignals: PulseSignal[];
   /** Signals by source property. */
@@ -165,6 +178,57 @@ export interface ConsolidatedExternalState {
   profile?: string;
   /** Active certification scope property. */
   certificationScope?: string;
+}
+
+function buildLiveMissingReason(
+  entry: ExternalSourceRunResult,
+  required: boolean,
+  proofBasis: PulseExternalAdapterProofBasis,
+  profile: PulseCertificationProfile | undefined,
+): string | null {
+  if (
+    entry.status !== 'not_available' &&
+    entry.status !== 'invalid' &&
+    entry.status !== 'stale' &&
+    entry.status !== 'optional_not_configured'
+  ) {
+    return null;
+  }
+
+  const profileLabel = profile || 'default';
+  const requirementLabel = required ? 'required' : 'optional';
+  const disposition = required ? 'blocking external proof closure' : 'tracked as non-blocking';
+  return `${entry.source} is ${requirementLabel} under profile=${profileLabel}; proofBasis=${proofBasis}; status=${entry.status}; ${disposition}. ${entry.reason}`;
+}
+
+function classifyLiveExternalSource(
+  entry: ExternalSourceRunResult,
+  profile: PulseCertificationProfile | undefined,
+): ConsolidatedExternalSource {
+  const required = isAdapterRequired(entry.source, profile);
+  const status: PulseExternalAdapterStatus =
+    entry.status === 'not_available' && !required ? 'optional_not_configured' : entry.status;
+  const proofBasis: PulseExternalAdapterProofBasis = 'live_adapter';
+  const requirement: PulseExternalAdapterRequirement = required ? 'required' : 'optional';
+  const classifiedEntry = {
+    ...entry,
+    status,
+    reason:
+      entry.status === 'not_available' && !required
+        ? `${entry.source} adapter is optional under profile=${profile || 'default'} and was not configured.`
+        : entry.reason,
+    requiredness: getAdapterRequiredness(entry.source),
+    requirement,
+    required,
+    blocking:
+      required && (status === 'not_available' || status === 'invalid' || status === 'stale'),
+    proofBasis,
+  };
+
+  return {
+    ...classifiedEntry,
+    missingReason: buildLiveMissingReason(classifiedEntry, required, proofBasis, profile),
+  };
 }
 
 function readEnv(key: string): string | undefined {
@@ -260,13 +324,7 @@ export async function runExternalSourcesOrchestrator(
   config: ExternalSourcesConfig,
 ): Promise<ConsolidatedExternalState> {
   const generatedAt = new Date().toISOString();
-  const sources: Array<{
-    source: PulseExternalSignalSource;
-    status: PulseExternalAdapterStatus;
-    signalCount: number;
-    syncedAt: string;
-    reason: string;
-  }> = [];
+  const sources: ExternalSourceRunResult[] = [];
   const allSignals: PulseSignal[] = [];
   const signalsBySource: Record<string, PulseSignal[]> = {};
   let totalSeverity = 0;
@@ -620,16 +678,9 @@ export async function runExternalSourcesOrchestrator(
     config.certificationScope || config.profile,
   );
   const requirednessProfile = certificationScope || profile;
-  const refinedSources = sources.map((entry) => {
-    if (entry.status !== 'not_available') return entry;
-    const required = isAdapterRequired(entry.source, requirednessProfile);
-    if (required) return entry;
-    return {
-      ...entry,
-      status: 'optional_not_configured' as PulseExternalAdapterStatus,
-      reason: `${entry.source} adapter is optional under profile=${requirednessProfile || 'default'} and was not configured.`,
-    };
-  });
+  const refinedSources = sources.map((entry) =>
+    classifyLiveExternalSource(entry, requirednessProfile),
+  );
 
   return {
     generatedAt,

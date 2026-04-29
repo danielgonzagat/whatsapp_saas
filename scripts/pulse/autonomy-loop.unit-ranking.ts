@@ -79,6 +79,7 @@ export function getAiSafeUnits(
 ): PulseAutonomousDirectiveUnit[] {
   const seen = new Set<string>();
   const units = [
+    ...(directive.pulseMachineNextWork || []),
     ...(directive.nextAutonomousUnits || []),
     ...(directive.nextExecutableUnits || []),
   ].filter((unit) => {
@@ -344,6 +345,10 @@ function getRuntimeRealityQueueRank(
   return metadata ? -metadata.rankScore : 0;
 }
 
+function getPulseMachineQueueRank(unit: PulseAutonomousDirectiveUnit): number {
+  return unit.source === 'pulse_machine' || unit.kind === 'pulse_machine' ? -100 : 0;
+}
+
 export function getAutomationExecutionCost(unit: PulseAutonomousDirectiveUnit): number {
   const capabilityCount = (unit.affectedCapabilities || []).length;
   const flowCount = (unit.affectedFlows || []).length;
@@ -430,6 +435,9 @@ function compareAutomationUnits(
   right: PulseAutonomousDirectiveUnit,
   influence?: StructuralQueueInfluence | null,
 ): number {
+  const pulseMachineDelta = getPulseMachineQueueRank(left) - getPulseMachineQueueRank(right);
+  if (pulseMachineDelta !== 0) return pulseMachineDelta;
+
   const memoryDelta = getMemoryQueueRank(left, influence) - getMemoryQueueRank(right, influence);
   if (memoryDelta !== 0) return memoryDelta;
 

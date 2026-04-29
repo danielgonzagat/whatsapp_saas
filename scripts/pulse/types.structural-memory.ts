@@ -9,6 +9,7 @@ export interface MemoryEntry {
   timestamp: string;
   unit: string;
   strategy: string;
+  strategyFingerprint?: string;
   result: AttemptStatus;
   evidence: string;
   falsePositive: boolean;
@@ -24,6 +25,11 @@ export interface UnitMemory {
   lastAttempt: string;
   failedStrategies: string[];
   successfulStrategies: string[];
+  strategyFingerprints?: string[];
+  strategyFingerprintCounts?: Record<string, number>;
+  lastStrategyFingerprint?: string | null;
+  repeatedStrategyAttempts?: number;
+  avoidStrategyFingerprint?: string | null;
   lastFailure: string | null;
   repeatedFailures: number;
   status: UnitMemoryStatus;

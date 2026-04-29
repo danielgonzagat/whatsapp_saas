@@ -58,6 +58,47 @@ describe('autonomy unit ranking', () => {
     expect(ranked.map((unit) => unit.id)).toEqual(['runtime-sentry', 'scope-static']);
   });
 
+  it('prioritizes PULSE machine next work before SaaS product units', () => {
+    const productUnit = makeUnit({
+      id: 'product-capability-gap',
+      kind: 'capability',
+      priority: 'P0',
+      title: 'Product capability gap',
+      affectedCapabilities: ['capability:checkout'],
+      affectedFlows: ['flow:checkout'],
+    });
+    const machineUnit = makeUnit({
+      id: 'pulse-machine-critical_path_terminal',
+      kind: 'pulse_machine',
+      priority: 'P0',
+      source: 'pulse_machine',
+      productImpact: 'machine',
+      ownerLane: 'pulse-core',
+      title: 'Close machine critical path terminal proof',
+      summary: 'PULSE machine readiness is not ready.',
+      affectedCapabilities: [],
+      affectedFlows: [],
+      validationTargets: ['PULSE_MACHINE_READINESS.json', 'PULSE_EXECUTION_MATRIX.json'],
+    });
+
+    const ranked = getPreferredAutomationSafeUnits(
+      {
+        pulseMachineNextWork: [machineUnit],
+        machineFocusRequired: true,
+        nextExecutableUnitsSource: 'pulse_machine',
+        nextAutonomousUnits: [productUnit],
+        nextExecutableUnits: [machineUnit],
+      },
+      'balanced',
+      null,
+    );
+
+    expect(ranked.map((unit) => unit.id)).toEqual([
+      'pulse-machine-critical_path_terminal',
+      'product-capability-gap',
+    ]);
+  });
+
   it('uses structural memory to promote repeated failures into autonomous validation work', () => {
     const normalUnit = makeUnit({
       id: 'normal-unit',

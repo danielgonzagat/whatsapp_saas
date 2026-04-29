@@ -1,3 +1,5 @@
+import type { PulseExecutionMatrixBreakpoint } from './types.execution-matrix';
+
 /**
  * PULSE Wave 6 — Full Path Coverage Engine types.
  *
@@ -41,6 +43,18 @@ export interface PathCoverageStructuralSafetyClassification {
   reason: string;
 }
 
+/** Observable terminal proof state for a path coverage entry. */
+export interface PathCoverageTerminalProof {
+  /** Whether this path is observed, terminally reasoned, ready for a probe, or still lacks a precise proof route. */
+  status: 'observed' | 'terminal_reasoned' | 'blueprint_ready' | 'inferred_gap';
+  /** Matrix breakpoint that explains where evidence stops, when known. */
+  breakpoint: PulseExecutionMatrixBreakpoint | null;
+  /** Most precise command an AI worker can run to produce or refresh evidence. */
+  validationCommand: string;
+  /** Human-readable reason for the proof status. */
+  reason: string;
+}
+
 /** A single path entry in the full path coverage state. */
 export interface PathCoverageEntry {
   /** Stable path id from the execution matrix. */
@@ -77,6 +91,8 @@ export interface PathCoverageEntry {
   structuralSafetyClassification: PathCoverageStructuralSafetyClassification;
   /** Related artifacts needed to execute or audit this path. */
   artifactLinks: PathCoverageArtifactLink[];
+  /** Explicit proof route that prevents inferred terminal paths from looking observed. */
+  terminalProof: PathCoverageTerminalProof;
 }
 
 /** Full path coverage state artifact stored at .pulse/current/PULSE_PATH_COVERAGE.json. */
@@ -93,6 +109,9 @@ export interface PathCoverageState {
     inferredOnly: number;
     criticalInferredOnly: number;
     criticalUnobserved: number;
+    criticalBlueprintReady: number;
+    criticalTerminalReasoned: number;
+    criticalInferredGap: number;
     coveragePercent: number;
   };
   /** All classified path entries. */

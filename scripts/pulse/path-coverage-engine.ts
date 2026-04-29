@@ -18,6 +18,7 @@ import type {
   PathCoverageEntry,
   PathCoverageState,
   PathCoverageStructuralSafetyClassification,
+  PathCoverageTerminalProof,
 } from './types.path-coverage-engine';
 import { readJsonFile, writeTextFile, ensureDir, pathExists } from './safe-fs';
 import { safeJoin } from './safe-path';
@@ -80,6 +81,8 @@ export function buildPathCoverageState(
         ? generateTestForPath(mp, rootDir, probeExecutionMode, terminalReason)
         : { testFilePath: null, fixtureNeeded: [] as string[] };
 
+    const terminalProof = buildTerminalProof(mp, classification, testInfo.testFilePath);
+
     return {
       pathId: mp.pathId,
       entrypoint: mp.entrypoint.description,
@@ -106,6 +109,7 @@ export function buildPathCoverageState(
         probeExecutionMode,
       ),
       artifactLinks: buildArtifactLinks(mp, testInfo.testFilePath),
+      terminalProof,
     };
   });
 
@@ -124,6 +128,15 @@ export function buildPathCoverageState(
       isCriticalRisk(e.risk) &&
       (e.classification === 'inferred_only' || e.classification === 'probe_blueprint_generated'),
   ).length;
+  const criticalBlueprintReady = entries.filter(
+    (e) => isCriticalRisk(e.risk) && e.terminalProof.status === 'blueprint_ready',
+  ).length;
+  const criticalTerminalReasoned = entries.filter(
+    (e) => isCriticalRisk(e.risk) && e.terminalProof.status === 'terminal_reasoned',
+  ).length;
+  const criticalInferredGap = entries.filter(
+    (e) => isCriticalRisk(e.risk) && e.terminalProof.status === 'inferred_gap',
+  ).length;
   const coveragePercent = computeCoveragePercent(entries);
 
   const state: PathCoverageState = {
@@ -137,6 +150,9 @@ export function buildPathCoverageState(
       inferredOnly,
       criticalInferredOnly,
       criticalUnobserved,
+      criticalBlueprintReady,
+      criticalTerminalReasoned,
+      criticalInferredGap,
       coveragePercent,
     },
     paths: entries,
@@ -451,6 +467,68 @@ function buildStructuralSafetyClassification(
     protectedSurface,
     reason,
   };
+}
+
+function buildTerminalProof(
+  mp: PulseExecutionMatrixPath,
+  classification: PathClassification,
+  probeFilePath: string | null,
+): PathCoverageTerminalProof {
+  if (classification === 'observed_pass' || classification === 'observed_fail') {
+    return {
+      status: 'observed',
+      breakpoint: mp.breakpoint,
+      validationCommand: mp.validationCommand,
+      reason: 'Path already has observed pass/fail evidence; rerun validation to refresh it.',
+    };
+  }
+
+  if (classification === 'probe_blueprint_generated' && probeFilePath) {
+    return {
+      status: 'blueprint_ready',
+      breakpoint: mp.breakpoint,
+      validationCommand: `${mp.validationCommand} # execute generated probe blueprint ${probeFilePath}`,
+      reason:
+        'Path has a generated probe blueprint that can produce observed terminal evidence when executed.',
+    };
+  }
+
+  if (classification === 'unreachable' || classification === 'not_executable') {
+    return {
+      status: 'terminal_reasoned',
+      breakpoint: mp.breakpoint,
+      validationCommand: mp.validationCommand,
+      reason:
+        'Path cannot produce runtime evidence until its breakpoint recovery reconnects it to an executable route, chain, or scenario.',
+    };
+  }
+
+  if (classification === 'inferred_only' && hasPreciseBreakpoint(mp)) {
+    return {
+      status: 'terminal_reasoned',
+      breakpoint: mp.breakpoint,
+      validationCommand: mp.validationCommand,
+      reason:
+        'Path remains inferred, but the matrix provides a precise terminal breakpoint and recovery target.',
+    };
+  }
+
+  return {
+    status: 'inferred_gap',
+    breakpoint: mp.breakpoint,
+    validationCommand: mp.validationCommand,
+    reason:
+      'Path lacks observed evidence and still needs a precise breakpoint or generated probe blueprint.',
+  };
+}
+
+function hasPreciseBreakpoint(mp: PulseExecutionMatrixPath): boolean {
+  const breakpoint = mp.breakpoint;
+  if (!breakpoint) {
+    return false;
+  }
+  const hasLocation = Boolean(breakpoint.filePath || breakpoint.nodeId || breakpoint.routePattern);
+  return hasLocation && breakpoint.reason.length > 0 && breakpoint.recovery.length > 0;
 }
 
 function buildArtifactLinks(

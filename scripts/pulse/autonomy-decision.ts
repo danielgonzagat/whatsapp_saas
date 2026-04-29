@@ -142,6 +142,7 @@ export function getAiSafeUnits(
 ): PulseAutonomousDirectiveUnit[] {
   const seen = new Set<string>();
   const units = [
+    ...(directive.pulseMachineNextWork || []),
     ...(directive.nextAutonomousUnits || []),
     ...(directive.nextExecutableUnits || []),
   ].filter((unit) => {

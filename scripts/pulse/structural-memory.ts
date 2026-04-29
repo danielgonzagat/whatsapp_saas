@@ -9,7 +9,7 @@
 //   2. `.pulse/audit/structural-memory.audit.jsonl` — append-only attempt log
 
 import * as path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   appendTextFile,
   ensureDir,
@@ -35,9 +35,17 @@ const AUDIT_LOG_FILENAME = 'structural-memory.audit.jsonl';
 const REPEATED_FAILURE_THRESHOLD = 3;
 const REPEATED_FAILURE_STATUS: UnitMemoryStatus = 'escalated_validation';
 
-type LegacyUnitMemory = Omit<UnitMemory, 'status'> & {
-  status: LegacyUnitMemoryStatus;
-};
+type StrategyFingerprintFields =
+  | 'strategyFingerprints'
+  | 'strategyFingerprintCounts'
+  | 'lastStrategyFingerprint'
+  | 'repeatedStrategyAttempts'
+  | 'avoidStrategyFingerprint';
+
+type LegacyUnitMemory = Omit<UnitMemory, 'status' | StrategyFingerprintFields> &
+  Partial<Pick<UnitMemory, StrategyFingerprintFields>> & {
+    status: LegacyUnitMemoryStatus;
+  };
 
 type LegacyStructuralMemoryState = Omit<StructuralMemoryState, 'units'> & {
   units: LegacyUnitMemory[];
@@ -69,11 +77,22 @@ function normalizeUnitStatus(status: LegacyUnitMemoryStatus): UnitMemoryStatus {
   return status === 'needs_human_review' ? REPEATED_FAILURE_STATUS : status;
 }
 
-function normalizeLoadedMemory(memory: LegacyStructuralMemoryState): StructuralMemoryState {
-  const units = memory.units.map((unit) => ({
+function normalizeUnitMemory(unit: LegacyUnitMemory): UnitMemory {
+  const strategyFingerprints = unit.strategyFingerprints ?? [];
+  const strategyFingerprintCounts = unit.strategyFingerprintCounts ?? {};
+  return {
     ...unit,
     status: normalizeUnitStatus(unit.status),
-  }));
+    strategyFingerprints,
+    strategyFingerprintCounts,
+    lastStrategyFingerprint: unit.lastStrategyFingerprint ?? null,
+    repeatedStrategyAttempts: unit.repeatedStrategyAttempts ?? 0,
+    avoidStrategyFingerprint: unit.avoidStrategyFingerprint ?? null,
+  };
+}
+
+function normalizeLoadedMemory(memory: LegacyStructuralMemoryState): StructuralMemoryState {
+  const units = memory.units.map((unit) => normalizeUnitMemory(unit));
   const learnedPatterns = memory.learnedPatterns ?? [];
   return {
     ...memory,
@@ -91,6 +110,35 @@ function recommendedStrategyForRepeatedFailure(status: AttemptStatus): string {
     return 'observation_only';
   }
   return REPEATED_FAILURE_STATUS;
+}
+
+export function fingerprintStrategy(strategy: string): string {
+  const normalized = strategy
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+  return createHash('sha256')
+    .update(normalized || 'empty-strategy')
+    .digest('hex')
+    .substring(0, 16);
+}
+
+function recordStrategyFingerprint(unit: UnitMemory, strategy: string): void {
+  const fingerprint = fingerprintStrategy(strategy);
+  const counts = unit.strategyFingerprintCounts ?? {};
+  const fingerprints = unit.strategyFingerprints ?? [];
+  const previousCount = counts[fingerprint] ?? 0;
+  const nextCount = previousCount + 1;
+
+  unit.strategyFingerprintCounts = {
+    ...counts,
+    [fingerprint]: nextCount,
+  };
+  unit.strategyFingerprints = [...new Set([...fingerprints, fingerprint])];
+  unit.lastStrategyFingerprint = fingerprint;
+  unit.repeatedStrategyAttempts = nextCount;
+  unit.avoidStrategyFingerprint = nextCount >= 2 ? fingerprint : null;
 }
 
 function loadAutonomyState(rootDir: string): PulseAutonomyState | null {
@@ -128,6 +176,12 @@ function appendAuditEntry(rootDir: string, entry: MemoryEntry): void {
   appendTextFile(logPath, `${JSON.stringify(entry)}\n`);
 }
 
+function persistMemory(rootDir: string, memory: StructuralMemoryState): void {
+  const artifactPath = getArtifactPath(rootDir);
+  ensureDir(path.dirname(artifactPath), { recursive: true });
+  writeTextFile(artifactPath, JSON.stringify(memory, null, 2));
+}
+
 // ── Unit memory factory ──────────────────────────────────────────────────────
 
 function createUnitMemory(unitId: string): UnitMemory {
@@ -137,6 +191,11 @@ function createUnitMemory(unitId: string): UnitMemory {
     lastAttempt: new Date(0).toISOString(),
     failedStrategies: [],
     successfulStrategies: [],
+    strategyFingerprints: [],
+    strategyFingerprintCounts: {},
+    lastStrategyFingerprint: null,
+    repeatedStrategyAttempts: 0,
+    avoidStrategyFingerprint: null,
     lastFailure: null,
     repeatedFailures: 0,
     status: 'active',
@@ -184,11 +243,13 @@ function recordAttemptInternal(
   const unit = { ...memory.units[unitIndex] };
   unit.attempts += 1;
   unit.lastAttempt = now;
+  recordStrategyFingerprint(unit, strategy);
 
   if (status === 'success') {
     unit.successfulStrategies = [...new Set([...unit.successfulStrategies, strategy])];
     unit.repeatedFailures = 0;
     unit.recommendedStrategy = strategy;
+    unit.avoidStrategyFingerprint = null;
     if (unit.status !== 'resolved' && unit.status !== 'archived') {
       unit.status = 'active';
     }
@@ -196,7 +257,10 @@ function recordAttemptInternal(
     unit.failedStrategies = [...new Set([...unit.failedStrategies, strategy])];
     unit.repeatedFailures += 1;
     unit.lastFailure = now;
-    unit.recommendedStrategy = null;
+    unit.recommendedStrategy =
+      unit.repeatedStrategyAttempts >= 2
+        ? `avoid_strategy_fingerprint:${unit.lastStrategyFingerprint}`
+        : null;
     if (unit.repeatedFailures >= REPEATED_FAILURE_THRESHOLD) {
       unit.status = REPEATED_FAILURE_STATUS;
       unit.recommendedStrategy = recommendedStrategyForRepeatedFailure(status);
@@ -211,6 +275,7 @@ function recordAttemptInternal(
     timestamp: now,
     unit: unitId,
     strategy,
+    strategyFingerprint: unit.lastStrategyFingerprint ?? fingerprintStrategy(strategy),
     result: status,
     evidence: evidence ?? `status=${status} strategy=${strategy}`,
     falsePositive: unit.falsePositive,
@@ -253,7 +318,9 @@ export function recordAttempt(
   rootDir: string,
 ): StructuralMemoryState {
   const memory = loadExisting(rootDir) ?? newMemoryState();
-  return recordAttemptInternal(memory, rootDir, unit, strategy, result, evidence);
+  const nextMemory = recordAttemptInternal(memory, rootDir, unit, strategy, result, evidence);
+  persistMemory(rootDir, nextMemory);
+  return nextMemory;
 }
 
 /**
@@ -317,18 +384,21 @@ export function markFalsePositive(
     timestamp: new Date().toISOString(),
     unit: unitId,
     strategy: 'false_positive_adjudication',
+    strategyFingerprint: fingerprintStrategy('false_positive_adjudication'),
     result: 'success',
     evidence: proof,
     falsePositive: true,
   };
   appendAuditEntry(rootDir, auditEntry);
 
-  return {
+  const nextMemory = {
     ...memory,
     units: newUnits,
     generatedAt: new Date().toISOString(),
     summary: computeSummary(newUnits, memory.learnedPatterns),
   };
+  persistMemory(rootDir, nextMemory);
+  return nextMemory;
 }
 
 /**
@@ -453,6 +523,7 @@ export function buildStructuralMemory(rootDir: string): StructuralMemoryState {
               : 'failed';
 
       const strategy = `${iteration.strategyMode ?? 'normal'}_${iteration.plannerMode}`;
+      recordStrategyFingerprint(existing, strategy);
 
       if (status === 'success') {
         existing.attempts += 1;
@@ -460,6 +531,7 @@ export function buildStructuralMemory(rootDir: string): StructuralMemoryState {
         existing.successfulStrategies = [...new Set([...existing.successfulStrategies, strategy])];
         existing.repeatedFailures = 0;
         existing.recommendedStrategy = strategy;
+        existing.avoidStrategyFingerprint = null;
         if (existing.status !== 'resolved' && existing.status !== 'archived') {
           existing.status = 'active';
         }
@@ -469,6 +541,10 @@ export function buildStructuralMemory(rootDir: string): StructuralMemoryState {
         existing.failedStrategies = [...new Set([...existing.failedStrategies, strategy])];
         existing.repeatedFailures += 1;
         existing.lastFailure = iteration.finishedAt;
+        existing.recommendedStrategy =
+          existing.repeatedStrategyAttempts >= 2
+            ? `avoid_strategy_fingerprint:${existing.lastStrategyFingerprint}`
+            : existing.recommendedStrategy;
         if (existing.repeatedFailures >= REPEATED_FAILURE_THRESHOLD) {
           existing.status = REPEATED_FAILURE_STATUS;
           existing.recommendedStrategy = recommendedStrategyForRepeatedFailure(status);
@@ -480,6 +556,7 @@ export function buildStructuralMemory(rootDir: string): StructuralMemoryState {
         timestamp: iteration.finishedAt,
         unit: unitId,
         strategy,
+        strategyFingerprint: existing.lastStrategyFingerprint ?? fingerprintStrategy(strategy),
         result: status,
         evidence: iteration.summary,
         falsePositive: existing.falsePositive,
@@ -509,9 +586,7 @@ export function buildStructuralMemory(rootDir: string): StructuralMemoryState {
   memory.learnedPatterns = learnedPatterns;
   memory.summary = computeSummary(units, learnedPatterns);
 
-  const artifactPath = getArtifactPath(rootDir);
-  ensureDir(path.dirname(artifactPath), { recursive: true });
-  writeTextFile(artifactPath, JSON.stringify(memory, null, 2));
+  persistMemory(rootDir, memory);
 
   return memory;
 }

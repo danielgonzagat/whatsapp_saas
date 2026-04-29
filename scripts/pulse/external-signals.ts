@@ -42,7 +42,8 @@ type AdapterClassificationFields =
   | 'required'
   | 'observed'
   | 'blocking'
-  | 'proofBasis';
+  | 'proofBasis'
+  | 'missingReason';
 type UnclassifiedExternalAdapter = Omit<PulseExternalAdapterSnapshot, AdapterClassificationFields>;
 
 /** Build an empty live-state envelope that carries active profile/scope semantics. */
@@ -217,11 +218,35 @@ function getAdapterProofBasis(
   return adapter.sourcePath?.startsWith('live:') ? 'live_adapter' : 'snapshot_artifact';
 }
 
+function buildAdapterMissingReason(
+  adapter: UnclassifiedExternalAdapter,
+  required: boolean,
+  proofBasis: PulseExternalAdapterProofBasis,
+  profile: PulseCertificationProfile | undefined,
+): string | null {
+  if (
+    adapter.status !== 'not_available' &&
+    adapter.status !== 'invalid' &&
+    adapter.status !== 'stale' &&
+    adapter.status !== 'optional_not_configured'
+  ) {
+    return null;
+  }
+
+  const profileLabel = profile || 'default';
+  const requirementLabel = required ? 'required' : 'optional';
+  const disposition = required ? 'blocking external proof closure' : 'tracked as non-blocking';
+  return compact(
+    `${adapter.source} is ${requirementLabel} under profile=${profileLabel}; proofBasis=${proofBasis}; status=${adapter.status}; ${disposition}. ${adapter.reason}`,
+  );
+}
+
 function classifyExternalAdapter(
   adapter: UnclassifiedExternalAdapter,
   profile: PulseCertificationProfile | undefined,
 ): PulseExternalAdapterSnapshot {
   const required = isAdapterRequired(adapter.source, profile);
+  const proofBasis = getAdapterProofBasis(adapter);
   const blocking =
     required &&
     (adapter.status === 'not_available' ||
@@ -234,7 +259,8 @@ function classifyExternalAdapter(
     required,
     observed: adapter.executed && adapter.status !== 'not_available',
     blocking,
-    proofBasis: getAdapterProofBasis(adapter),
+    proofBasis,
+    missingReason: buildAdapterMissingReason(adapter, required, proofBasis, profile),
   };
 }
 
@@ -321,6 +347,11 @@ function buildCodacyAdapter(input: BuildExternalSignalStateInput): PulseExternal
     observed: input.scopeState.codacy.snapshotAvailable,
     blocking: false,
     proofBasis: 'codacy_snapshot',
+    missingReason: !input.scopeState.codacy.snapshotAvailable
+      ? 'codacy is optional for external adapter closure; proofBasis=codacy_snapshot; status=not_available; tracked as non-blocking. PULSE_CODACY_STATE.json is not available.'
+      : input.scopeState.codacy.stale
+        ? `codacy is optional for external adapter closure; proofBasis=codacy_snapshot; status=stale; tracked as non-blocking. PULSE_CODACY_STATE.json is stale (${input.scopeState.codacy.ageMinutes} minute(s) old).`
+        : null,
     generatedAt: new Date().toISOString(),
     syncedAt,
     freshnessMinutes: input.scopeState.codacy.ageMinutes,

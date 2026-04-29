@@ -90,6 +90,9 @@ export interface PulseAutonomousDirective {
   }>;
   nextAutonomousUnits?: PulseAutonomousDirectiveUnit[];
   nextDecisionUnits?: PulseAutonomousDirectiveUnit[];
+  pulseMachineNextWork?: PulseAutonomousDirectiveUnit[];
+  machineFocusRequired?: boolean;
+  nextExecutableUnitsSource?: string;
   nextExecutableUnits?: PulseAutonomousDirectiveUnit[];
   blockedUnits?: Array<{
     id?: string;

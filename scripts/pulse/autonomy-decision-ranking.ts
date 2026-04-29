@@ -69,6 +69,10 @@ export function getAutomationExecutionCost(unit: PulseAutonomousDirectiveUnit): 
   );
 }
 
+function getPulseMachineQueueRank(unit: PulseAutonomousDirectiveUnit): number {
+  return unit.source === 'pulse_machine' || unit.kind === 'pulse_machine' ? -100 : 0;
+}
+
 export function getStalledUnitIds(previousState?: PulseAutonomyState | null): Set<string> {
   const stalled = new Set<string>();
   const attempts = new Map<string, { attempts: number; stalled: number }>();
@@ -127,6 +131,9 @@ export function compareAutomationUnits(
   left: PulseAutonomousDirectiveUnit,
   right: PulseAutonomousDirectiveUnit,
 ): number {
+  const pulseMachineDelta = getPulseMachineQueueRank(left) - getPulseMachineQueueRank(right);
+  if (pulseMachineDelta !== 0) return pulseMachineDelta;
+
   const costDelta = getAutomationExecutionCost(left) - getAutomationExecutionCost(right);
   if (costDelta !== 0) return costDelta;
   const priorityDelta = getPriorityRank(left.priority) - getPriorityRank(right.priority);

@@ -46,6 +46,11 @@ interface LegacyConvergenceState {
   history: LegacyConvergenceCycle[];
 }
 
+type LiveExternalSourceInput = Omit<
+  ConsolidatedExternalState['sources'][number],
+  'requiredness' | 'requirement' | 'required' | 'blocking' | 'proofBasis' | 'missingReason'
+>;
+
 function legacyCycle(input: LegacyConvergenceCycleInput): LegacyConvergenceCycle {
   const directiveSnapshot = {
     blockingTier: input.blockingTier,
@@ -216,14 +221,20 @@ function buildExternalInput(
   };
 }
 
-function buildLiveExternalState(
-  sources: ConsolidatedExternalState['sources'],
-): ConsolidatedExternalState {
+function buildLiveExternalState(sources: LiveExternalSourceInput[]): ConsolidatedExternalState {
   return {
     generatedAt: '2026-04-29T21:00:00.000Z',
     profile: 'pulse-core-final',
     certificationScope: 'pulse-core-final',
-    sources,
+    sources: sources.map((source) => ({
+      ...source,
+      requiredness: 'optional',
+      requirement: 'optional',
+      required: false,
+      blocking: false,
+      proofBasis: 'live_adapter',
+      missingReason: null,
+    })),
     allSignals: [],
     signalsBySource: {},
     criticalSignals: [],
@@ -330,6 +341,15 @@ describe('external-adapters — required vs optional', () => {
         expect(github?.status).toBe('not_available');
         expect(actions?.status).toBe('not_available');
         expect(github?.reason).toContain('required under profile=pulse-core-final');
+        expect(github?.requiredness).toBe('required');
+        expect(github?.requirement).toBe('required');
+        expect(github?.required).toBe(true);
+        expect(github?.blocking).toBe(true);
+        expect(github?.proofBasis).toBe('live_adapter');
+        expect(github?.missingReason).toContain(
+          'github is required under profile=pulse-core-final',
+        );
+        expect(github?.missingReason).toContain('blocking external proof closure');
         expect(actions?.reason).toContain('was not reused as live external reality');
         expect(state.summary.staleAdaptersList).not.toContain('github');
         expect(state.summary.staleAdaptersList).not.toContain('github_actions');

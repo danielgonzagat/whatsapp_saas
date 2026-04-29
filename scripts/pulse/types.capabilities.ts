@@ -346,6 +346,8 @@ export interface PulseExternalAdapterSnapshot {
   blocking: boolean;
   /** Basis used as proof for this adapter status. */
   proofBasis: PulseExternalAdapterProofBasis;
+  /** Structured reason when adapter proof is missing, stale, or invalid. */
+  missingReason: string | null;
   /** Generated at property. */
   generatedAt: string;
   /** Synced at property. */
