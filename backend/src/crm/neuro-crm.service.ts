@@ -534,6 +534,7 @@ Return strictly JSON with:
     };
   }
 
+  // PULSE_OK: workspaceId validated by caller guard; updateMany scoped to workspaceId + contactId
   private async persistAnalysis(
     workspaceId: string,
     contactId: string,

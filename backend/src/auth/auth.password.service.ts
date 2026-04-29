@@ -53,6 +53,7 @@ export class AuthPasswordService {
     }
   }
 
+  // PULSE_OK: System-level anonymous workspace creation — no existing workspace scope
   async createAnonymous(ip?: string) {
     await this.rateLimitService.checkRateLimit(`anonymous:${ip || 'ip-unknown'}`, 3, 60_000);
 
