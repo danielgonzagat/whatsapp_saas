@@ -1,9 +1,12 @@
 export type SignalSource =
+  | 'github'
   | 'sentry'
   | 'datadog'
   | 'prometheus'
   | 'github_actions'
+  | 'codacy'
   | 'codecov'
+  | 'dependabot'
   | 'gitnexus'
   | 'otel_runtime';
 export type SignalType =
@@ -14,7 +17,11 @@ export type SignalType =
   | 'saturation'
   | 'deploy_failure'
   | 'test_failure'
-  | 'graph_staleness';
+  | 'graph_staleness'
+  | 'code_quality'
+  | 'change'
+  | 'dependency'
+  | 'external';
 export type SignalSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 export type SignalAction =
   | 'block_merge'
@@ -22,6 +29,20 @@ export type SignalAction =
   | 'prioritize_fix'
   | 'create_issue'
   | 'log_only';
+export type RuntimeSignalEvidenceMode =
+  | 'observed'
+  | 'inferred'
+  | 'simulated'
+  | 'not_available'
+  | 'skipped';
+
+export type RuntimeFusionEvidenceStatus =
+  | 'observed'
+  | 'inferred'
+  | 'simulated'
+  | 'not_available'
+  | 'skipped'
+  | 'invalid';
 
 export interface RuntimeSignal {
   id: string;
@@ -41,6 +62,9 @@ export interface RuntimeSignal {
   count: number;
   trend: 'worsening' | 'stable' | 'improving' | 'unknown';
   pinned: boolean; // prevents auto-close
+  evidenceMode?: RuntimeSignalEvidenceMode;
+  sourceArtifact?: string;
+  observedAt?: string | null;
 }
 
 export interface RuntimeFusionState {
@@ -57,6 +81,31 @@ export interface RuntimeFusionState {
     signalsByFlow: Record<string, number>;
     topImpactCapabilities: Array<{ capabilityId: string; impactScore: number }>;
     topImpactFlows: Array<{ flowId: string; impactScore: number }>;
+  };
+  evidence: {
+    externalSignalState: {
+      status: RuntimeFusionEvidenceStatus;
+      artifactPath: string;
+      totalSignals: number;
+      observedSignals: number;
+      inferredSignals: number;
+      adapterStatusCounts: Record<string, number>;
+      notAvailableAdapters: string[];
+      skippedAdapters: string[];
+      staleAdapters: string[];
+      invalidAdapters: string[];
+      reason: string;
+    };
+    runtimeTraces: {
+      status: RuntimeFusionEvidenceStatus;
+      artifactPath: string;
+      source: string | null;
+      totalTraces: number;
+      totalSpans: number;
+      errorTraces: number;
+      derivedSignals: number;
+      reason: string;
+    };
   };
   priorityOverrides: Array<{
     capabilityId: string;

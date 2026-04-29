@@ -49,8 +49,6 @@ const ROUTE_NOISE_TOKENS = new Set([
   'routes',
   'main',
   'public',
-  'checkout',
-  'auth',
   'e2e',
   'internal',
   'index',

@@ -16,6 +16,7 @@ import { readOptionalJson, writeArtifact } from './artifacts.io';
 import { buildReport, buildCertificate, buildPulseMachineReadiness } from './artifacts.report';
 import { buildDirective, buildArtifactIndex } from './artifacts.directive';
 import { deriveAuthorityState } from './artifacts.autonomy';
+import { buildRuntimeProbesArtifact } from './runtime-probes';
 import { createRunIdentity, type PulseRunIdentity } from './run-identity';
 import {
   buildDirectiveContextFabricPatch,
@@ -396,7 +397,14 @@ export function generateArtifacts(
   );
   writeArtifact(
     'PULSE_RUNTIME_PROBES.json',
-    JSON.stringify(snapshot.certification.evidenceSummary.runtime.probes, null, 2),
+    JSON.stringify(
+      buildRuntimeProbesArtifact(snapshot.certification.evidenceSummary.runtime, {
+        generatedAt: identity.generatedAt,
+        environment: snapshot.certification.environment,
+      }),
+      null,
+      2,
+    ),
     registry,
     identity,
   );

@@ -69,3 +69,48 @@ export interface ReplayState {
     reason: string;
   }>;
 }
+
+/** Exported scenario catalog derived from production replays. */
+export interface ReplayScenarioCatalog {
+  /** ISO-8601 timestamp when this catalog was generated. */
+  generatedAt: string;
+  /** Replay source systems that contributed scenarios. */
+  sources: ReplaySource[];
+  /** Aggregate counts. */
+  summary: {
+    /** Total permanent scenarios generated. */
+    totalScenarios: number;
+    /** Breakdown by replay source. */
+    bySource: Record<string, number>;
+  };
+  /** Converted Playwright-ready scenario definitions. */
+  scenarios: Array<{
+    /** Human-readable scenario name. */
+    name: string;
+    /** Unique scenario identifier. */
+    id: string;
+    /** Replay session that produced this scenario. */
+    sourceSessionId: string;
+    /** Replay source system. */
+    source: ReplaySource;
+    /** Original session URL / entrypoint. */
+    originUrl: string;
+    /** Reason for permanent promotion. */
+    promotionReason: string;
+    /** Ordered Playwright-compatible steps. */
+    steps: Array<{
+      /** Execution order (0-based). */
+      order: number;
+      /** Step kind. */
+      kind: string;
+      /** Human-readable description. */
+      description: string;
+      /** Target selector, URL, or endpoint. */
+      target: string;
+      /** Expected outcome. */
+      expectedResult: string;
+      /** Timeout in milliseconds. */
+      timeout: number;
+    }>;
+  }>;
+}

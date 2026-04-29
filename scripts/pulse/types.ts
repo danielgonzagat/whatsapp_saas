@@ -176,6 +176,7 @@ export type * from './types.observability-coverage';
 export type * from './types.scenario-engine';
 export type * from './types.replay-adapter';
 export type * from './types.production-proof';
+export type * from './types.runtime-probes';
 export type * from './types.chaos-engine';
 export type * from './types.path-coverage-engine';
 export type * from './types.probabilistic-risk';

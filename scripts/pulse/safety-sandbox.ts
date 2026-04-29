@@ -1,5 +1,12 @@
 // PULSE — Live Codebase Nervous System
-// Safety Sandbox (Wave 9)
+// Safety Sandbox (Wave 9.3)
+//
+// Classifies destructive operations by risk level, defines isolation
+// rules per operation type, simulates logical sandbox workspaces for
+// planning validation, and gates autonomous execution of dangerous changes.
+//
+// This is a PLANNING module — it defines what should happen.
+// It does NOT actually clone workspaces, execute patches, or apply migrations.
 
 import * as path from 'path';
 import * as fs from 'fs';
@@ -8,7 +15,10 @@ import { ensureDir, pathExists, readJsonFile, writeTextFile } from './safe-fs';
 import type {
   DestructiveAction,
   DestructiveActionKind,
+  SandboxIsolationRules,
+  SandboxRiskLevel,
   SandboxState,
+  SandboxWorkspace,
 } from './types.safety-sandbox';
 
 const ARTIFACT_FILE_NAME = 'PULSE_SANDBOX_STATE.json';
@@ -18,6 +28,34 @@ interface ProtectedGovernanceConfig {
   protectedExact: string[];
   protectedPrefixes: string[];
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Risk Level Mapping
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Map each destructive action kind to its corresponding risk level
+ * following the Agent Operating Protocol Risk Classes:
+ *
+ *   Risk 0 (safe)     — docs, tests, minor UI
+ *   Risk 1 (normal)   — frontend, hooks, API clients, non-financial services
+ *   Risk 2 (high)     — auth, workspace isolation, WhatsApp, queues, external integrations
+ *   Risk 3 (critical) — payments, wallet, ledger, split, payout, KYC, secrets, CI/CD, governance
+ */
+const KIND_RISK_MAP: Record<DestructiveActionKind, SandboxRiskLevel> = {
+  migration: 'critical',
+  external_state_mutation: 'critical',
+  access_boundary_change: 'high',
+  infra_change: 'high',
+  secret_access: 'critical',
+  delete_operation: 'critical',
+  governance_change: 'critical',
+  protected_file_edit: 'critical',
+};
+
+// ────────────────────────────────────────────────────────────────────────────
+// Action Kind Requirements
+// ────────────────────────────────────────────────────────────────────────────
 
 /**
  * Action kind definitions with their safety requirements.
@@ -84,13 +122,103 @@ const ACTION_KIND_REQUIREMENTS: Record<
   },
 };
 
+// ────────────────────────────────────────────────────────────────────────────
+// Sandbox Isolation Rules
+// ────────────────────────────────────────────────────────────────────────────
+
 /**
- * File patterns that signal destructive actions in the repository.
+ * Default sandbox isolation rules for each destructive action kind.
  *
- * Each entry maps a file path pattern to a destructive action kind.
- * When a file matching the pattern is detected in a proposed change,
- * the corresponding action kind is triggered.
+ * These rules define the minimum sandbox configuration required before
+ * a destructive change of the corresponding kind can be validated.
  */
+const DEFAULT_ISOLATION_RULES: Record<DestructiveActionKind, SandboxIsolationRules> = {
+  migration: {
+    kind: 'migration',
+    requiresSeparateWorktree: true,
+    requiresNetworkIsolation: false,
+    requiresDatabaseIsolation: true,
+    blockedPaths: ['.env', '.env.local', '.env.production'],
+    preValidationCommands: ['npm run lint', 'npm run typecheck', 'npx prisma migrate status'],
+    postValidationCommands: ['npm test', 'npx prisma migrate deploy --preview-feature'],
+    maxActiveMinutes: 60,
+  },
+  external_state_mutation: {
+    kind: 'external_state_mutation',
+    requiresSeparateWorktree: true,
+    requiresNetworkIsolation: true,
+    requiresDatabaseIsolation: true,
+    blockedPaths: ['.env', '.env.local', '.env.production', 'ops/'],
+    preValidationCommands: ['npm run lint', 'npm run typecheck'],
+    postValidationCommands: ['npm test'],
+    maxActiveMinutes: 30,
+  },
+  access_boundary_change: {
+    kind: 'access_boundary_change',
+    requiresSeparateWorktree: true,
+    requiresNetworkIsolation: false,
+    requiresDatabaseIsolation: false,
+    blockedPaths: ['.env'],
+    preValidationCommands: ['npm run lint', 'npm run typecheck'],
+    postValidationCommands: ['npm test -- --testPathPattern="guard|auth"'],
+    maxActiveMinutes: 45,
+  },
+  infra_change: {
+    kind: 'infra_change',
+    requiresSeparateWorktree: true,
+    requiresNetworkIsolation: false,
+    requiresDatabaseIsolation: false,
+    blockedPaths: ['.env', '.env.local', '.env.production'],
+    preValidationCommands: ['npm run lint', 'npm run typecheck'],
+    postValidationCommands: ['npm test', 'npm run build'],
+    maxActiveMinutes: 120,
+  },
+  secret_access: {
+    kind: 'secret_access',
+    requiresSeparateWorktree: true,
+    requiresNetworkIsolation: true,
+    requiresDatabaseIsolation: true,
+    blockedPaths: ['.env', '.env.local', '.env.production', 'credentials/', 'secrets/'],
+    preValidationCommands: [],
+    postValidationCommands: [],
+    maxActiveMinutes: 15,
+  },
+  delete_operation: {
+    kind: 'delete_operation',
+    requiresSeparateWorktree: true,
+    requiresNetworkIsolation: false,
+    requiresDatabaseIsolation: true,
+    blockedPaths: ['.env'],
+    preValidationCommands: ['npm run lint', 'npm run typecheck'],
+    postValidationCommands: ['npm test'],
+    maxActiveMinutes: 30,
+  },
+  governance_change: {
+    kind: 'governance_change',
+    requiresSeparateWorktree: true,
+    requiresNetworkIsolation: false,
+    requiresDatabaseIsolation: false,
+    blockedPaths: [],
+    preValidationCommands: ['npm run lint'],
+    postValidationCommands: ['npm run ops:validate-governance'],
+    maxActiveMinutes: 30,
+  },
+  protected_file_edit: {
+    kind: 'protected_file_edit',
+    requiresSeparateWorktree: true,
+    requiresNetworkIsolation: false,
+    requiresDatabaseIsolation: false,
+    blockedPaths: ['.env'],
+    preValidationCommands: ['npm run lint'],
+    postValidationCommands: ['npm test'],
+    maxActiveMinutes: 30,
+  },
+};
+
+// ────────────────────────────────────────────────────────────────────────────
+// File Pattern Detection
+// ────────────────────────────────────────────────────────────────────────────
+
 const DESTRUCTIVE_FILE_PATTERNS: Array<{
   pattern: RegExp;
   kind: DestructiveActionKind;
@@ -125,6 +253,10 @@ const ACCESS_BOUNDARY_RE =
 const DELETE_OPERATION_RE =
   /\b(?:deleteMany|delete\s*\(|remove\s*\(|truncate|drop\s+table|drop\s+column)\b/i;
 
+// ────────────────────────────────────────────────────────────────────────────
+// Structural Content Classification
+// ────────────────────────────────────────────────────────────────────────────
+
 function classifyStructuralDestructiveActions(
   relativePath: string,
   content: string,
@@ -150,16 +282,10 @@ function classifyStructuralDestructiveActions(
   return actions;
 }
 
-/**
- * Load the list of protected files from governance configuration.
- *
- * Reads `ops/protected-governance-files.json` and expands both
- * exact file paths and prefix-based patterns into a flat list
- * of protected target paths.
- *
- * @param rootDir - Repository root directory
- * @returns Array of protected file paths
- */
+// ────────────────────────────────────────────────────────────────────────────
+// Protected Files
+// ────────────────────────────────────────────────────────────────────────────
+
 export function loadProtectedFiles(rootDir: string): string[] {
   const configPath = path.join(rootDir, PROTECTED_FILES_PATH);
 
@@ -192,9 +318,6 @@ export function loadProtectedFiles(rootDir: string): string[] {
   }
 }
 
-/**
- * Recursively expand a directory prefix into individual file paths.
- */
 function expandDirectory(dirPath: string, rootDir: string, accumulator: string[]): void {
   if (!pathExists(dirPath)) {
     return;
@@ -217,22 +340,15 @@ function expandDirectory(dirPath: string, rootDir: string, accumulator: string[]
   }
 }
 
-/**
- * Classify all potential destructive actions in the repository.
- *
- * Scans the repository file structure against known destructive patterns
- * and produces a classified action for each match with the appropriate
- * safety requirements.
- *
- * @param rootDir - Repository root directory
- * @returns Array of classified destructive actions
- */
+// ────────────────────────────────────────────────────────────────────────────
+// Destructive Action Classification
+// ────────────────────────────────────────────────────────────────────────────
+
 export function classifyDestructiveActions(rootDir: string): DestructiveAction[] {
   const protectedFiles = loadProtectedFiles(rootDir);
   const actions: DestructiveAction[] = [];
   const seen = new Set<string>();
 
-  // Walk the repository to find files matching destructive patterns
   function walk(dir: string): void {
     if (!pathExists(dir)) {
       return;
@@ -263,6 +379,7 @@ export function classifyDestructiveActions(rootDir: string): DestructiveAction[]
           if (pattern.test(relative) && !seen.has(`${kind}:${relative}`)) {
             seen.add(`${kind}:${relative}`);
             const reqs = ACTION_KIND_REQUIREMENTS[kind];
+            const riskLevel = KIND_RISK_MAP[kind];
             const isProtected = protectedFiles.some(
               (pf) => pf === relative || relative.startsWith(pf + path.sep),
             );
@@ -272,6 +389,7 @@ export function classifyDestructiveActions(rootDir: string): DestructiveAction[]
               kind,
               description: `${description}: ${relative}`,
               targetFile: relative,
+              riskLevel,
               requiresHumanApproval: reqs.requiresHumanApproval || isProtected,
               requiresDryRun: reqs.requiresDryRun,
               requiresBackup: reqs.requiresBackup,
@@ -295,6 +413,7 @@ export function classifyDestructiveActions(rootDir: string): DestructiveAction[]
           if (seen.has(`${kind}:${relative}`)) continue;
           seen.add(`${kind}:${relative}`);
           const reqs = ACTION_KIND_REQUIREMENTS[kind];
+          const riskLevel = KIND_RISK_MAP[kind];
           const isProtected = protectedFiles.some(
             (pf) => pf === relative || relative.startsWith(pf + path.sep),
           );
@@ -304,6 +423,7 @@ export function classifyDestructiveActions(rootDir: string): DestructiveAction[]
             kind,
             description: `${description}: ${relative}`,
             targetFile: relative,
+            riskLevel,
             requiresHumanApproval: reqs.requiresHumanApproval || isProtected,
             requiresDryRun: reqs.requiresDryRun,
             requiresBackup: reqs.requiresBackup,
@@ -318,18 +438,14 @@ export function classifyDestructiveActions(rootDir: string): DestructiveAction[]
   return actions;
 }
 
-/**
- * Determine whether a destructive action is allowed to execute
- * autonomously (without explicit human approval at runtime).
- *
- * An action is allowed in autonomy only if:
- *   - It does NOT require human approval
- *   - It is NOT sandbox-only
- *   - It does NOT involve governance changes or protected files
- *
- * @param action - The destructive action to evaluate
- * @returns Whether the action is allowed in autonomous mode
- */
+// ────────────────────────────────────────────────────────────────────────────
+// Risk Classification
+// ────────────────────────────────────────────────────────────────────────────
+
+export function classifyRiskLevel(kind: DestructiveActionKind): SandboxRiskLevel {
+  return KIND_RISK_MAP[kind];
+}
+
 export function isActionAllowedInAutonomy(action: DestructiveAction): boolean {
   if (action.requiresHumanApproval) {
     return false;
@@ -347,17 +463,82 @@ export function isActionAllowedInAutonomy(action: DestructiveAction): boolean {
   return true;
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Gate Requirements Per Operation Type
+// ────────────────────────────────────────────────────────────────────────────
+
 /**
- * Validate that a patch does not modify any protected files.
+ * Gate level derived from the operation kind's risk profile and requirements.
  *
- * Parses the patch header to extract modified file paths and checks
- * each against the list of protected files. Exact and prefix-based
- * matching is supported.
- *
- * @param patchFile - Path to the patch file to validate
- * @param protectedFiles - List of protected file paths
- * @returns Whether the patch is safe (touches no protected files)
+ * Used by the autonomy loop to decide whether a proposed change can proceed
+ * without human intervention.
  */
+export type GateDecision =
+  | 'alllow_autonomous' // No gate required; safe for autonomous execution
+  | 'require_sandbox' // Must execute inside a validated sandbox
+  | 'require_human' // Human approval required before any execution
+  | 'block_permanently'; // Operation should never be attempted
+
+/**
+ * Classify the gate requirement for a specific destructive action.
+ *
+ * This is the central decision function that the autonomy loop calls
+ * before applying any change to the repository.
+ */
+export function classifyGateRequirement(action: DestructiveAction): {
+  decision: GateDecision;
+  reason: string;
+  requiredChecks: string[];
+} {
+  const risk = action.riskLevel;
+  const kind = action.kind;
+
+  // Risk 3 operations always require human approval
+  if (risk === 'critical') {
+    return {
+      decision: 'require_human',
+      reason: `Risk 3 (critical) operation: ${kind}. Destructive actions at this level require explicit human approval.`,
+      requiredChecks: ['human-approval', 'dry-run', 'backup-created'],
+    };
+  }
+
+  // Risk 2 operations require sandbox isolation
+  if (risk === 'high') {
+    return {
+      decision: 'require_sandbox',
+      reason: `Risk 2 (high) operation: ${kind}. Must be validated in an isolated sandbox before approval.`,
+      requiredChecks: ['sandbox-created', 'pre-validation', 'patch-validated', 'post-validation'],
+    };
+  }
+
+  // Risk 1 operations are safe in sandbox, can proceed with pre-validation
+  if (risk === 'normal') {
+    if (action.requiresHumanApproval) {
+      return {
+        decision: 'require_human',
+        reason: `Risk 1 (normal) operation flagged for human approval: ${kind}.`,
+        requiredChecks: ['human-approval'],
+      };
+    }
+    return {
+      decision: 'require_sandbox',
+      reason: `Risk 1 (normal) operation: ${kind}. Validating in sandbox.`,
+      requiredChecks: ['lint', 'typecheck', 'test'],
+    };
+  }
+
+  // Risk 0 operations are safe for autonomous execution
+  return {
+    decision: 'alllow_autonomous',
+    reason: `Risk 0 (safe) operation: ${kind}. No gate required.`,
+    requiredChecks: [],
+  };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Patch Validation
+// ────────────────────────────────────────────────────────────────────────────
+
 export function validatePatchForProtectedFiles(
   patchFile: string,
   protectedFiles: string[],
@@ -396,9 +577,6 @@ export function validatePatchForProtectedFiles(
   return true;
 }
 
-/**
- * Extract modified file paths from a unified diff patch string.
- */
 function extractModifiedFilesFromPatch(patch: string): string[] {
   const files: string[] = [];
   const seen = new Set<string>();
@@ -416,33 +594,132 @@ function extractModifiedFilesFromPatch(patch: string): string[] {
   return files;
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Logical Sandbox Workspace (Planning Concept)
+// ────────────────────────────────────────────────────────────────────────────
+
 /**
- * Build the complete Safety Sandbox state for the repository.
+ * Create a logical sandbox workspace for planning validation.
  *
- * Loads protected files, classifies all destructive actions, and
- * aggregates active sandbox workspace information. The result is
- * persisted to `.pulse/current/PULSE_SANDBOX_STATE.json`.
- *
- * @param rootDir - Repository root directory
- * @returns Complete sandbox state
+ * This is NOT an actual git worktree clone. It is a planning concept
+ * that records what a workspace would look like for a set of proposed
+ * changes, so the autonomy loop can make gating decisions.
  */
+export function createLogicalSandbox(params: {
+  parentBranch: string;
+  filesTouched: string[];
+  actionKinds: DestructiveActionKind[];
+  rootDir: string;
+}): SandboxWorkspace {
+  const now = new Date();
+  const maxRisk = params.actionKinds.reduce<SandboxRiskLevel>((max, kind) => {
+    const risk = KIND_RISK_MAP[kind] ?? 'safe';
+    const order: SandboxRiskLevel[] = ['safe', 'normal', 'high', 'critical'];
+    return order.indexOf(risk) > order.indexOf(max) ? risk : max;
+  }, 'safe' as SandboxRiskLevel);
+
+  // Determine max active minutes from the most restrictive rule
+  const maxMinutes = params.actionKinds.reduce((max, kind) => {
+    const rules = DEFAULT_ISOLATION_RULES[kind];
+    return rules ? Math.max(max, rules.maxActiveMinutes) : max;
+  }, 15);
+
+  const expiresAt = new Date(now.getTime() + maxMinutes * 60 * 1000);
+
+  const workspaceId = `sandbox-${now.getTime()}-${Math.random().toString(36).slice(2, 8)}`;
+  const workspacePath = path.join(params.rootDir, '.pulse', 'sandboxes', workspaceId);
+
+  return {
+    workspacePath,
+    parentBranch: params.parentBranch,
+    createdAt: now.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+    filesTouched: params.filesTouched,
+    maxRiskLevel: maxRisk,
+    patches: [],
+    validationResults: [],
+    status: 'active',
+    allowedActionKinds: params.actionKinds,
+  };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Isolation Rules Access
+// ────────────────────────────────────────────────────────────────────────────
+
+export function getIsolationRules(kind: DestructiveActionKind): SandboxIsolationRules {
+  return DEFAULT_ISOLATION_RULES[kind];
+}
+
+export function getAllIsolationRules(): SandboxIsolationRules[] {
+  return Object.values(DEFAULT_ISOLATION_RULES);
+}
+
+/**
+ * Check whether an action kind is compatible with a workspace's isolation
+ * rules (i.e., all required preconditions are configured).
+ */
+export function validateWorkspaceForAction(
+  workspace: SandboxWorkspace,
+  actionKind: DestructiveActionKind,
+): { valid: boolean; missingRules: string[] } {
+  const rules = DEFAULT_ISOLATION_RULES[actionKind];
+  if (!rules) {
+    return { valid: true, missingRules: [] };
+  }
+
+  const missing: string[] = [];
+
+  if (rules.requiresSeparateWorktree && !workspace.workspacePath) {
+    missing.push('separate_worktree');
+  }
+
+  for (const cmd of rules.preValidationCommands) {
+    const result = workspace.validationResults.find((r) => r.command === cmd);
+    if (!result || !result.passed) {
+      missing.push(`pre_validation:${cmd}`);
+    }
+  }
+
+  return { valid: missing.length === 0, missingRules: missing };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Sandbox State Construction
+// ────────────────────────────────────────────────────────────────────────────
+
 export function buildSandboxState(rootDir: string): SandboxState {
   const protectedFiles = loadProtectedFiles(rootDir);
   const destructiveActions = classifyDestructiveActions(rootDir);
 
   const humanRequiredActions = destructiveActions.filter((a) => a.requiresHumanApproval).length;
   const sandboxOnlyActions = destructiveActions.filter((a) => a.sandboxOnly).length;
+  const governanceViolations = destructiveActions.filter(
+    (a) => a.kind === 'governance_change' || a.kind === 'protected_file_edit',
+  ).length;
+
+  const riskBreakdown: Record<SandboxRiskLevel, number> = {
+    safe: destructiveActions.filter((a) => a.riskLevel === 'safe').length,
+    normal: destructiveActions.filter((a) => a.riskLevel === 'normal').length,
+    high: destructiveActions.filter((a) => a.riskLevel === 'high').length,
+    critical: destructiveActions.filter((a) => a.riskLevel === 'critical').length,
+  };
+
+  const isolationRules = getAllIsolationRules();
 
   const state: SandboxState = {
     generatedAt: new Date().toISOString(),
     destructiveActions,
-    activeWorkspaces: [], // Populated by autonomy-loop.workspace integration
+    activeWorkspaces: [],
     protectedFiles,
+    isolationRules,
     summary: {
       totalDestructiveActions: destructiveActions.length,
       humanRequiredActions,
       sandboxOnlyActions,
       activeWorkspaces: 0,
+      riskBreakdown,
+      governanceViolations,
     },
   };
 

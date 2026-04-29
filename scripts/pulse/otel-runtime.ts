@@ -21,6 +21,8 @@ import type {
   OtelSpan,
   OtelTrace,
   OtelTraceSummary,
+  OtelRuntimeSource,
+  OtelRuntimeSourceDetails,
   RuntimeCallGraphEvidence,
   SpanToPathMapping,
 } from './types.otel-runtime';
@@ -147,8 +149,21 @@ function randomHex(len: number): string {
     .slice(0, len);
 }
 
-function randomChoice<T>(items: readonly T[]): T {
-  return items[Math.floor(Math.random() * items.length)];
+function stableHex(input: string, len: number): string {
+  return crypto.createHash('sha256').update(input).digest('hex').slice(0, len);
+}
+
+function stableNumber(input: string, modulo: number): number {
+  if (modulo <= 1) return 0;
+  return Number.parseInt(stableHex(input, 12), 16) % modulo;
+}
+
+function stableChoice<T>(items: readonly T[], input: string): T {
+  return items[stableNumber(input, items.length)];
+}
+
+function stableIso(offsetMs: number): string {
+  return new Date(Date.UTC(2026, 0, 1, 0, 0, 0, 0) + offsetMs).toISOString();
 }
 
 function clampDuration(ms: number, min: number, max: number): number {
@@ -161,6 +176,23 @@ function idFromName(name: string): string {
 
 function normalizePath(input: string): string {
   return input.split(path.sep).join('/');
+}
+
+function isRuntimeObservedSource(source: OtelRuntimeSource): boolean {
+  return source === 'real' || source === 'manual';
+}
+
+function emptyTraceSummary(): OtelTraceSummary {
+  return {
+    totalTraces: 0,
+    totalSpans: 0,
+    errorTraces: 0,
+    avgDurationMs: 0,
+    p95DurationMs: 0,
+    p99DurationMs: 0,
+    serviceMap: {},
+    endpointMap: {},
+  };
 }
 
 // ─── Manual Span Tracer ──────────────────────────────────────────────────────
@@ -797,6 +829,7 @@ function generateAstBasedTraces(
   count: number,
 ): OtelTrace[] {
   const traces: OtelTrace[] = [];
+  const graphSeed = buildStaticTraceSeed(astCtx, structCtx);
 
   // Collect HTTP routes from AST symbols
   const httpRoutes: Array<{
@@ -815,20 +848,26 @@ function generateAstBasedTraces(
       });
     }
   }
+  httpRoutes.sort((a, b) =>
+    `${a.method} ${a.routePath} ${a.filePath}`.localeCompare(
+      `${b.method} ${b.routePath} ${b.filePath}`,
+    ),
+  );
 
   for (let t = 0; t < count; t++) {
-    const traceId = randomHex(32);
+    const traceSeed = `${graphSeed}:trace:${t}`;
+    const traceId = stableHex(traceSeed, 32);
     const spans: OtelSpan[] = [];
 
     // Pick a root: prefer an AST-resolved HTTP route, fall back to random
     let rootName: string;
     let rootService: string;
     if (httpRoutes.length > 0) {
-      const route = randomChoice(httpRoutes);
+      const route = stableChoice(httpRoutes, `${traceSeed}:root-route`);
       rootName = `${route.method} ${route.routePath}`;
       rootService = route.service;
     } else {
-      rootName = randomChoice(HTTP_ROUTES);
+      rootName = stableChoice(HTTP_ROUTES, `${traceSeed}:fallback-route`);
       rootService = 'backend';
     }
 
@@ -842,17 +881,24 @@ function generateAstBasedTraces(
       astCtx,
       structCtx,
       { isRoot: true },
+      `${traceSeed}:root`,
     );
     spans.push(rootSpan);
 
     // Build child spans from AST edges
-    const { fromFile, toFile } = pickAstEdgeFiles(astCtx, structCtx);
-    const depth = 1 + Math.floor(Math.random() * 2);
+    const { fromFile, toFile } = pickAstEdgeFiles(astCtx, structCtx, `${traceSeed}:edge`);
+    const depth = 1 + stableNumber(`${traceSeed}:depth`, 2);
 
     let previousId = rootSpan.spanId;
     for (let i = 1; i <= depth; i++) {
       const kind: OtelSpan['kind'] = i === 1 ? 'client' : 'internal';
-      const childName = buildChildSpanName(astCtx, fromFile, toFile, kind);
+      const childName = buildChildSpanName(
+        astCtx,
+        fromFile,
+        toFile,
+        kind,
+        `${traceSeed}:child:${i}`,
+      );
       const childSpan = createManualSpanForTrace(
         traceId,
         previousId,
@@ -863,15 +909,16 @@ function generateAstBasedTraces(
         astCtx,
         structCtx,
         { isRoot: false },
+        `${traceSeed}:child:${i}`,
       );
       spans.push(childSpan);
       previousId = childSpan.spanId;
     }
 
     // Add sibling spans
-    const siblingCount = Math.floor(Math.random() * 2);
+    const siblingCount = stableNumber(`${traceSeed}:sibling-count`, 2);
     for (let i = 0; i < siblingCount; i++) {
-      const siblingName = buildSiblingSpanName(astCtx);
+      const siblingName = buildSiblingSpanName(astCtx, `${traceSeed}:sibling:${i}`);
       const sibSpan = createManualSpanForTrace(
         traceId,
         rootSpan.spanId,
@@ -882,6 +929,7 @@ function generateAstBasedTraces(
         astCtx,
         structCtx,
         { isRoot: false },
+        `${traceSeed}:sibling:${i}`,
       );
       spans.push(sibSpan);
     }
@@ -902,12 +950,37 @@ function generateAstBasedTraces(
   return traces;
 }
 
+function buildStaticTraceSeed(astCtx: AstGraphContext, structCtx: StructuralGraphContext): string {
+  const astEdges = astCtx.edges.map((edge) => `${edge.from}->${edge.to}`).sort();
+  const astSymbols = [...astCtx.symbols.entries()]
+    .map(
+      ([id, symbol]) =>
+        `${id}:${symbol.name}:${symbol.kind}:${symbol.filePath}:${symbol.httpMethod || ''}:${
+          symbol.routePath || ''
+        }`,
+    )
+    .sort();
+  const structuralEdges = structCtx.edges.map((edge) => `${edge.from}->${edge.to}`).sort();
+  const structuralNodes = Object.entries(structCtx.nodeFiles)
+    .map(([id, filePath]) => `${id}:${filePath}`)
+    .sort();
+
+  return stableHex(
+    [...astEdges, ...astSymbols, ...structuralEdges, ...structuralNodes].join('\n'),
+    32,
+  );
+}
+
 function pickAstEdgeFiles(
   astCtx: AstGraphContext,
   structCtx: StructuralGraphContext,
+  seed: string,
 ): { fromFile: string; toFile: string } {
   if (astCtx.edges.length > 0) {
-    const edge = randomChoice(astCtx.edges);
+    const edge = stableChoice(
+      [...astCtx.edges].sort((a, b) => `${a.from}->${a.to}`.localeCompare(`${b.from}->${b.to}`)),
+      seed,
+    );
     const fromSym = astCtx.symbols.get(edge.from);
     const toSym = astCtx.symbols.get(edge.to);
     return {
@@ -916,7 +989,10 @@ function pickAstEdgeFiles(
     };
   }
   if (structCtx.edges.length > 0) {
-    const edge = randomChoice(structCtx.edges);
+    const edge = stableChoice(
+      [...structCtx.edges].sort((a, b) => `${a.from}->${a.to}`.localeCompare(`${b.from}->${b.to}`)),
+      seed,
+    );
     return {
       fromFile: structCtx.nodeFiles[edge.from] || 'unknown.ts',
       toFile: structCtx.nodeFiles[edge.to] || 'unknown.ts',
@@ -930,15 +1006,22 @@ function buildChildSpanName(
   _fromFile: string,
   toFile: string,
   kind: OtelSpan['kind'],
+  seed: string,
 ): string {
   if (kind === 'client') {
     // Find an HTTP route in the AST symbols
-    const routes = [...astCtx.symbols.values()].filter((s) => s.httpMethod && s.routePath);
+    const routes = [...astCtx.symbols.values()]
+      .filter((s) => s.httpMethod && s.routePath)
+      .sort((a, b) =>
+        `${a.httpMethod || ''} ${a.routePath || ''} ${a.filePath}`.localeCompare(
+          `${b.httpMethod || ''} ${b.routePath || ''} ${b.filePath}`,
+        ),
+      );
     if (routes.length > 0) {
-      const r = randomChoice(routes);
+      const r = stableChoice(routes, `${seed}:route`);
       return `${r.httpMethod} ${r.routePath}`;
     }
-    return randomChoice(HTTP_ROUTES);
+    return stableChoice(HTTP_ROUTES, `${seed}:fallback-route`);
   }
 
   const baseName = path.basename(toFile, path.extname(toFile));
@@ -959,18 +1042,24 @@ function buildChildSpanName(
     'fetch',
     'compute',
   ];
-  const framework = randomChoice(['prisma', 'service', 'controller', 'util', 'helper']);
-  return `${framework}:${baseName}:${randomChoice(operations)}`;
+  const framework = stableChoice(
+    ['prisma', 'service', 'controller', 'util', 'helper'],
+    `${seed}:fw`,
+  );
+  return `${framework}:${baseName}:${stableChoice(operations, `${seed}:op`)}`;
 }
 
-function buildSiblingSpanName(astCtx: AstGraphContext): string {
+function buildSiblingSpanName(astCtx: AstGraphContext, seed: string): string {
   const dbOps = ['findMany', 'create', 'update', 'delete', 'count', 'upsert'];
   const svcOps = ['validate', 'process', 'transform', 'send', 'notify', 'log'];
   const queueOps = ['add', 'process', 'complete', 'fail', 'retry'];
 
   // Prefer a symbol name from the AST
-  if (astCtx.symbols.size > 0 && Math.random() < 0.5) {
-    const sym = randomChoice([...astCtx.symbols.values()]);
+  if (astCtx.symbols.size > 0 && stableNumber(`${seed}:prefer-symbol`, 2) === 0) {
+    const symbols = [...astCtx.symbols.values()].sort((a, b) =>
+      `${a.kind}:${a.name}:${a.filePath}`.localeCompare(`${b.kind}:${b.name}:${b.filePath}`),
+    );
+    const sym = stableChoice(symbols, `${seed}:symbol`);
     const basename = path.basename(sym.filePath, path.extname(sym.filePath));
     if (sym.kind === 'queue_processor' || sym.kind === 'cron_job') {
       return `bull:${basename}:process`;
@@ -981,7 +1070,10 @@ function buildSiblingSpanName(astCtx: AstGraphContext): string {
     return `${sym.kind}:${sym.name}`;
   }
 
-  const category = randomChoice(['prisma', 'service', 'queue', 'cache', 'http']);
+  const category = stableChoice(
+    ['prisma', 'service', 'queue', 'cache', 'http'],
+    `${seed}:category`,
+  );
   const ops =
     category === 'prisma'
       ? dbOps
@@ -991,7 +1083,10 @@ function buildSiblingSpanName(astCtx: AstGraphContext): string {
           ? ['get', 'set', 'del', 'exists']
           : svcOps;
 
-  return `${category}:${randomChoice(KNOWN_SERVICE_NAMES)}:${randomChoice(ops)}`;
+  return `${category}:${stableChoice(KNOWN_SERVICE_NAMES, `${seed}:service`)}:${stableChoice(
+    ops,
+    `${seed}:op`,
+  )}`;
 }
 
 interface SpanGenOptions {
@@ -1008,13 +1103,15 @@ function createManualSpanForTrace(
   astCtx: AstGraphContext,
   structCtx: StructuralGraphContext,
   opts: SpanGenOptions,
+  seed: string,
 ): OtelSpan {
   const edge = findRelevantEdge(name, astCtx, structCtx);
-  const startOffset = spanIndex * 15 + Math.floor(Math.random() * 10);
-  const durationMs = clampDuration(Math.floor(5 + Math.random() * 200), 1, 5000);
-  const isError = Math.random() < 0.05;
-  const startTime = new Date(Date.now() - (30_000 - startOffset * 100));
-  const endTime = new Date(startTime.getTime() + durationMs);
+  const startOffset = spanIndex * 15 + stableNumber(`${seed}:start`, 10);
+  const durationMs = clampDuration(5 + stableNumber(`${seed}:duration`, 200), 1, 5000);
+  const isError = stableNumber(`${seed}:status`, 20) === 0;
+  const startTimeMs = startOffset * 100;
+  const startTime = stableIso(startTimeMs);
+  const endTime = stableIso(startTimeMs + durationMs);
 
   const attributes: Record<string, string | number | boolean> = {
     'service.name': serviceName,
@@ -1039,15 +1136,15 @@ function createManualSpanForTrace(
   }
 
   return {
-    spanId: randomHex(16),
+    spanId: stableHex(`${traceId}:${parentSpanId || 'root'}:${spanIndex}:${name}`, 16),
     parentSpanId,
     traceId,
     name,
     kind,
     serviceName,
     attributes,
-    startTime: startTime.toISOString(),
-    endTime: endTime.toISOString(),
+    startTime,
+    endTime,
     durationMs,
     status: isError ? 'error' : 'ok',
     statusMessage: isError ? `Internal server error in ${name}` : null,
@@ -1055,7 +1152,7 @@ function createManualSpanForTrace(
       ? [
           {
             name: 'exception',
-            timestamp: endTime.toISOString(),
+            timestamp: endTime,
             attributes: {
               'exception.type': 'Error',
               'exception.message': 'Simulated error',
@@ -1278,11 +1375,12 @@ export function collectRuntimeTraces(
   rootDir: string,
   options?: {
     collectorUrl?: string;
+    manualTraces?: OtelTrace[];
     simulationMode?: boolean;
     traceFile?: string;
+    traceSource?: Extract<OtelRuntimeSource, 'real' | 'manual'>;
   },
 ): RuntimeCallGraphEvidence {
-  const currentDir = safeJoin(rootDir, '.pulse', 'current');
   const astCtx = loadAstGraphContext(rootDir);
   const structCtx = loadStructuralGraphContext(rootDir);
 
@@ -1290,32 +1388,67 @@ export function collectRuntimeTraces(
     options?.simulationMode === true || (!options?.collectorUrl && !options?.traceFile);
 
   let traces: OtelTrace[];
-  let source: RuntimeCallGraphEvidence['source'];
+  let source: OtelRuntimeSource;
+  let sourceDetails: OtelRuntimeSourceDetails;
 
-  if (!useSimulation && options?.traceFile) {
+  if (options?.manualTraces) {
+    traces = options.manualTraces;
+    source = 'manual';
+    sourceDetails = {
+      kind: 'manual_tracer',
+      runtimeObserved: true,
+      deterministic: false,
+      reason: null,
+    };
+  } else if (!useSimulation && options?.traceFile) {
     try {
       traces = loadTracesFromFile(options.traceFile);
-      source = 'otel_collector';
+      source = options.traceSource || 'real';
+      sourceDetails = {
+        kind: 'trace_file',
+        runtimeObserved: isRuntimeObservedSource(source),
+        deterministic: false,
+        reason: null,
+      };
     } catch (err) {
       console.warn(
-        `[otel-runtime] Failed to load ${options.traceFile}: ${String(err)}. Falling back to AST-based generation.`,
+        `[otel-runtime] Failed to load ${options.traceFile}: ${String(err)}. Runtime traces are not available.`,
       );
-      traces = generateAstBasedTraces(astCtx, structCtx, 10);
-      source = 'simulated';
+      traces = [];
+      source = 'not_available';
+      sourceDetails = {
+        kind: 'none',
+        runtimeObserved: false,
+        deterministic: true,
+        reason: `trace file unavailable: ${options.traceFile}`,
+      };
     }
   } else if (!useSimulation && options?.collectorUrl) {
     console.warn(
       `[otel-runtime] Collector URL provided (${options.collectorUrl}) but no local trace file found. ` +
-        'Generating AST-based traces. Real OTLP fetch requires an HTTP client.',
+        'Runtime traces are not available because this module does not fetch OTLP over HTTP.',
     );
-    traces = generateAstBasedTraces(astCtx, structCtx, 10);
-    source = 'otel_collector';
+    traces = [];
+    source = 'not_available';
+    sourceDetails = {
+      kind: 'otel_collector',
+      runtimeObserved: false,
+      deterministic: true,
+      reason: 'collector URL requires an external OTLP fetcher or local trace file',
+    };
   } else {
-    traces = generateAstBasedTraces(astCtx, structCtx, 8 + Math.floor(Math.random() * 8));
+    const graphSeed = buildStaticTraceSeed(astCtx, structCtx);
+    traces = generateAstBasedTraces(astCtx, structCtx, 8 + stableNumber(`${graphSeed}:count`, 8));
     source = 'simulated';
+    sourceDetails = {
+      kind: 'ast_static_map',
+      runtimeObserved: false,
+      deterministic: true,
+      reason: 'deterministic static auxiliary map; not production runtime proof',
+    };
   }
 
-  const summary = computeTraceSummary(traces);
+  const summary = traces.length > 0 ? computeTraceSummary(traces) : emptyTraceSummary();
 
   const nodesAndFiles = Object.entries(structCtx.nodeFiles).map(([nodeId, filePath]) => ({
     nodeId,
@@ -1328,6 +1461,7 @@ export function collectRuntimeTraces(
   const evidence: RuntimeCallGraphEvidence = {
     generatedAt: nowIso(),
     source,
+    sourceDetails,
     summary,
     traces,
     spanToPathMappings,
@@ -1359,26 +1493,29 @@ export function compareWithStaticGraph(
   evidence: RuntimeCallGraphEvidence,
   structuralGraph: { edges: Array<{ from: string; to: string }> },
 ): RuntimeCallGraphEvidence {
+  const runtimeObserved = isRuntimeObservedSource(evidence.source);
   const staticEdgeSet = new Set(structuralGraph.edges.map((e) => `${e.from}→${e.to}`));
 
   const runtimeEdgeSet = new Set<string>();
   const runtimeOnlyEdges: RuntimeCallGraphEvidence['runtimeOnlyEdges'] = [];
 
-  for (const trace of evidence.traces) {
-    for (const span of trace.spans) {
-      const structuralFrom = span.attributes['pulse.structural.from'] as string | undefined;
-      const structuralTo = span.attributes['pulse.structural.to'] as string | undefined;
+  if (runtimeObserved) {
+    for (const trace of evidence.traces) {
+      for (const span of trace.spans) {
+        const structuralFrom = span.attributes['pulse.structural.from'] as string | undefined;
+        const structuralTo = span.attributes['pulse.structural.to'] as string | undefined;
 
-      if (structuralFrom && structuralTo) {
-        const key = `${structuralFrom}→${structuralTo}`;
-        runtimeEdgeSet.add(key);
+        if (structuralFrom && structuralTo) {
+          const key = `${structuralFrom}→${structuralTo}`;
+          runtimeEdgeSet.add(key);
 
-        if (!staticEdgeSet.has(key)) {
-          runtimeOnlyEdges.push({
-            from: structuralFrom,
-            to: structuralTo,
-            spanName: span.name,
-          });
+          if (!staticEdgeSet.has(key)) {
+            runtimeOnlyEdges.push({
+              from: structuralFrom,
+              to: structuralTo,
+              spanName: span.name,
+            });
+          }
         }
       }
     }
@@ -1417,24 +1554,27 @@ export function compareWithAstGraph(
 } {
   const graph = readJsonFile<AstCallGraph>(astGraphPath);
   const astEdgeSet = new Set(graph.edges.map((e) => `${e.from}→${e.to}`));
+  const runtimeObserved = isRuntimeObservedSource(evidence.source);
 
   const runtimeEdgeSet = new Set<string>();
   const runtimeOnlyEdges: RuntimeCallGraphEvidence['runtimeOnlyEdges'] = [];
 
-  for (const trace of evidence.traces) {
-    for (const span of trace.spans) {
-      const structuralFrom = span.attributes['pulse.structural.from'] as string | undefined;
-      const structuralTo = span.attributes['pulse.structural.to'] as string | undefined;
+  if (runtimeObserved) {
+    for (const trace of evidence.traces) {
+      for (const span of trace.spans) {
+        const structuralFrom = span.attributes['pulse.structural.from'] as string | undefined;
+        const structuralTo = span.attributes['pulse.structural.to'] as string | undefined;
 
-      if (structuralFrom && structuralTo) {
-        const key = `${structuralFrom}→${structuralTo}`;
-        runtimeEdgeSet.add(key);
-        if (!astEdgeSet.has(key)) {
-          runtimeOnlyEdges.push({
-            from: structuralFrom,
-            to: structuralTo,
-            spanName: span.name,
-          });
+        if (structuralFrom && structuralTo) {
+          const key = `${structuralFrom}→${structuralTo}`;
+          runtimeEdgeSet.add(key);
+          if (!astEdgeSet.has(key)) {
+            runtimeOnlyEdges.push({
+              from: structuralFrom,
+              to: structuralTo,
+              spanName: span.name,
+            });
+          }
         }
       }
     }
@@ -1494,6 +1634,7 @@ export function saveTraceDiffArtifact(rootDir: string, evidence: RuntimeCallGrap
   const diff = {
     generatedAt: evidence.generatedAt,
     source: evidence.source,
+    sourceDetails: evidence.sourceDetails,
     staticGraphCoverage: evidence.staticGraphCoverage,
     runtimeOnlyEdges: evidence.runtimeOnlyEdges,
     summary: {

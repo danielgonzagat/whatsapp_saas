@@ -12,6 +12,34 @@ export type ObservabilityPillar =
   | 'sentry';
 export type ObservabilityStatus = 'observed' | 'missing' | 'partial' | 'not_applicable';
 
+/** Evidence class used to keep configured/catalogued observability separate from observed proof. */
+export type ObservabilityEvidenceKind =
+  | 'runtime_observed'
+  | 'static_instrumentation'
+  | 'configuration'
+  | 'catalog'
+  | 'simulated'
+  | 'absent'
+  | 'not_applicable';
+
+/** Per-pillar evidence provenance. */
+export interface ObservabilityPillarEvidence {
+  /** Pillar property. */
+  pillar: ObservabilityPillar;
+  /** Normalized status property. */
+  status: ObservabilityStatus;
+  /** Evidence kind property. */
+  sourceKind: ObservabilityEvidenceKind;
+  /** Whether this pillar has observed, trusted evidence. */
+  observed: boolean;
+  /** Human-readable source label. */
+  source: string;
+  /** Human-readable reason. */
+  reason: string;
+  /** Relative file paths that support this classification. */
+  filePaths: string[];
+}
+
 /** Code-level instrumentation quality score. */
 export type LogQuality = 'comprehensive' | 'adequate' | 'minimal' | 'none';
 
@@ -41,10 +69,15 @@ export interface CapabilityObservability {
   capabilityId: string;
   /** Capability name property. */
   capabilityName: string;
+  /** Runtime critical property. */
+  runtimeCritical: boolean;
   /** Pillars property. */
   pillars: Record<ObservabilityPillar, ObservabilityStatus>;
+  /** Per-pillar evidence provenance. */
+  evidence: Record<ObservabilityPillar, ObservabilityPillarEvidence>;
   /** Details property. */
   details: {
+    matchedFilePaths: string[];
     logCount: number;
     metricNames: string[];
     traceSpans: number;
@@ -60,6 +93,12 @@ export interface CapabilityObservability {
   overallStatus: 'covered' | 'partial' | 'uncovered';
   /** Code-level instrumentation quality (4-tier). */
   logQuality: LogQuality;
+  /** Trusted observed pillars property. */
+  trustedObservedPillars: ObservabilityPillar[];
+  /** Pillars that were present only through catalog/configuration/simulation. */
+  untrustedEvidencePillars: ObservabilityPillar[];
+  /** Whether a critical capability still claims observed coverage from an untrusted source. */
+  criticalObservedByUntrustedSource: boolean;
 }
 
 /** Per-flow observability rollup. */

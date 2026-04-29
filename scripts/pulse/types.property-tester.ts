@@ -1,5 +1,12 @@
-export type PropertyTestStatus = 'passed' | 'failed' | 'skipped' | 'error';
+export type PropertyTestStatus =
+  | 'planned'
+  | 'not_executed'
+  | 'passed'
+  | 'failed'
+  | 'skipped'
+  | 'error';
 export type FuzzStrategy = 'valid_only' | 'invalid_only' | 'both' | 'boundary' | 'random';
+export type PropertyBlueprintStatus = 'planned' | 'not_executed';
 
 export interface PropertyTestCase {
   testId: string;
@@ -19,6 +26,7 @@ export interface FuzzTestCase {
   endpoint: string;
   method: string;
   strategy: FuzzStrategy;
+  status: PropertyTestStatus;
   requestCount: number;
   statusCodes: Record<number, number>;
   failures: number;
@@ -28,6 +36,7 @@ export interface FuzzTestCase {
 
 export interface MutationTestResult {
   filePath: string;
+  status: PropertyBlueprintStatus;
   totalMutants: number;
   killedMutants: number;
   survivedMutants: number;
@@ -65,7 +74,7 @@ export interface GeneratedPropertyFunction {
   expectedPassCount: number;
   expectedFailCount: number;
   generatedInputs: GeneratedPropertyTestInput[];
-  status: 'generated';
+  status: PropertyBlueprintStatus;
 }
 
 export interface PureFunctionCandidate {
@@ -88,16 +97,24 @@ export interface PropertyTestEvidence {
   generatedAt: string;
   summary: {
     totalPropertyTests: number;
+    plannedPropertyTests: number;
+    notExecutedPropertyTests: number;
     passedPropertyTests: number;
     failedPropertyTests: number;
     totalFuzzTests: number;
+    plannedFuzzTests: number;
+    notExecutedFuzzTests: number;
     passedFuzzTests: number;
     failedFuzzTests: number;
     totalMutationTests: number;
+    plannedMutationTests: number;
+    notExecutedMutationTests: number;
     averageMutationScore: number;
     capabilitiesCovered: number;
     criticalCapabilitiesCovered: number;
+    criticalCapabilitiesPlanned: number;
     totalGeneratedTests: number;
+    plannedGeneratedTests: number;
   };
   propertyTests: PropertyTestCase[];
   fuzzTests: FuzzTestCase[];

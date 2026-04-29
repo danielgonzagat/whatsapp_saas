@@ -25,6 +25,7 @@ export type UICrawlerStatus =
   | 'not_executable'
   | 'not_reached';
 export type UINetworkCallKind = 'fetch' | 'xhr' | 'websocket' | 'graphql' | 'server_action';
+export type UIElementRisk = 'critical' | 'high' | 'medium' | 'low';
 
 export interface UIDiscoveredPage {
   url: string;
@@ -50,6 +51,7 @@ export interface UIDiscoveredElement {
   linkedEndpoint: string | null; // API endpoint this element calls
   linkedFilePath: string | null; // source file for handler
   errorMessage: string | null;
+  risk: UIElementRisk;
 }
 
 export interface UINetworkCall {

@@ -21,7 +21,6 @@ import type {
   PropertyKind,
   PropertyTestCase,
   PropertyTestEvidence,
-  PropertyTestStatus,
   PureFunctionCandidate,
 } from './types.property-tester';
 import { ensureDir, pathExists, readTextFile, readDir } from './safe-fs';
@@ -83,12 +82,18 @@ export function buildPropertyTestEvidence(
   const generatedTests = generatePropertyTestCases(rootDir);
 
   const totalProperty = allPropertyTests.length;
+  const plannedProperty = allPropertyTests.filter((t) => t.status === 'planned').length;
+  const notExecutedProperty = allPropertyTests.filter((t) => t.status === 'not_executed').length;
   const passedProperty = allPropertyTests.filter((t) => t.status === 'passed').length;
   const failedProperty = allPropertyTests.filter((t) => t.status === 'failed').length;
   const totalFuzz = fuzzTests.length;
-  const passedFuzz = fuzzTests.filter((t) => t.failures === 0).length;
-  const failedFuzz = fuzzTests.filter((t) => t.failures > 0).length;
+  const plannedFuzz = fuzzTests.filter((t) => t.status === 'planned').length;
+  const notExecutedFuzz = fuzzTests.filter((t) => t.status === 'not_executed').length;
+  const passedFuzz = fuzzTests.filter((t) => t.status === 'passed').length;
+  const failedFuzz = fuzzTests.filter((t) => t.status === 'failed').length;
   const totalMutation = mutationTests.length;
+  const plannedMutation = mutationTests.filter((t) => t.status === 'planned').length;
+  const notExecutedMutation = mutationTests.filter((t) => t.status === 'not_executed').length;
   const avgMutationScore =
     totalMutation > 0
       ? Math.round(mutationTests.reduce((sum, m) => sum + m.mutationScore, 0) / totalMutation)
@@ -102,7 +107,17 @@ export function buildPropertyTestEvidence(
   );
   const criticalCapabilities = new Set(
     allPropertyTests
-      .filter((t) => t.strategy === 'boundary' || t.strategy === 'both')
+      .filter((t) => t.status === 'passed' && (t.strategy === 'boundary' || t.strategy === 'both'))
+      .map((t) => t.capabilityId)
+      .filter(Boolean),
+  );
+  const criticalCapabilitiesPlanned = new Set(
+    allPropertyTests
+      .filter(
+        (t) =>
+          (t.status === 'planned' || t.status === 'not_executed') &&
+          (t.strategy === 'boundary' || t.strategy === 'both'),
+      )
       .map((t) => t.capabilityId)
       .filter(Boolean),
   );
@@ -111,16 +126,24 @@ export function buildPropertyTestEvidence(
     generatedAt: new Date().toISOString(),
     summary: {
       totalPropertyTests: totalProperty,
+      plannedPropertyTests: plannedProperty,
+      notExecutedPropertyTests: notExecutedProperty,
       passedPropertyTests: passedProperty,
       failedPropertyTests: failedProperty,
       totalFuzzTests: totalFuzz,
+      plannedFuzzTests: plannedFuzz,
+      notExecutedFuzzTests: notExecutedFuzz,
       passedFuzzTests: passedFuzz,
       failedFuzzTests: failedFuzz,
       totalMutationTests: totalMutation,
+      plannedMutationTests: plannedMutation,
+      notExecutedMutationTests: notExecutedMutation,
       averageMutationScore: avgMutationScore,
       capabilitiesCovered: capabilitiesCovered.size,
       criticalCapabilitiesCovered: criticalCapabilities.size,
+      criticalCapabilitiesPlanned: criticalCapabilitiesPlanned.size,
       totalGeneratedTests: generatedTests.length,
+      plannedGeneratedTests: generatedTests.filter((t) => t.status === 'planned').length,
     },
     propertyTests: allPropertyTests,
     fuzzTests,
@@ -455,6 +478,7 @@ export function generateFuzzCasesFromEndpoints(
         endpoint: `${endpoint.method} ${endpoint.path}`,
         method: endpoint.method,
         strategy,
+        status: 'planned',
         requestCount: estimateRequestCount(strategy),
         statusCodes: expectedStatuses,
         failures: 0,
@@ -584,7 +608,7 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
                 strategy: hasFastCheckImport ? 'both' : 'valid_only',
                 inputCount: 0,
                 failures: 0,
-                status: 'passed',
+                status: 'not_executed',
                 counterexamples: [],
                 durationMs: 0,
               });
@@ -599,7 +623,7 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
                 strategy: hasFastCheckImport ? 'both' : 'valid_only',
                 inputCount: 0,
                 failures: 0,
-                status: 'passed',
+                status: 'not_executed',
                 counterexamples: [],
                 durationMs: 0,
               });
@@ -659,58 +683,8 @@ function extractTargetFunction(filePath: string): string {
  * @returns               Array of property test case targets.
  */
 export function generatePropertyTestTargets(_behaviorGraph?: unknown): PropertyTestCase[] {
-  const targets: PropertyTestCase[] = [];
-
-  const candidatePatterns: Array<{
-    namePattern: RegExp;
-    description: string;
-    strategy: FuzzStrategy;
-  }> = [
-    {
-      namePattern: /\b(validate|isValid|assert|check)\w*/i,
-      description: 'validation-function',
-      strategy: 'invalid_only',
-    },
-    {
-      namePattern: /\b(parse|deserialize|decode)/i,
-      description: 'parsing-function',
-      strategy: 'invalid_only',
-    },
-    {
-      namePattern: /\b(format|serialize|encode|stringify|normalize)/i,
-      description: 'format-function',
-      strategy: 'valid_only',
-    },
-    {
-      namePattern: /\b(compute|calculate|sum|multiply|divide|add|subtract)\w*/i,
-      description: 'numeric-function',
-      strategy: 'boundary',
-    },
-    {
-      namePattern: /\b(transform|convert|map|reduce|filter)\w*/i,
-      description: 'transform-function',
-      strategy: 'both',
-    },
-  ];
-
-  for (let i = 0; i < candidatePatterns.length; i++) {
-    const { namePattern, description, strategy } = candidatePatterns[i];
-
-    targets.push({
-      testId: `prop-target-${String(i + 1).padStart(3, '0')}`,
-      capabilityId: description,
-      functionName: description,
-      filePath: '',
-      strategy,
-      inputCount: 0,
-      failures: 0,
-      status: 'skipped',
-      counterexamples: [],
-      durationMs: 0,
-    });
-  }
-
-  return targets;
+  void _behaviorGraph;
+  return [];
 }
 
 /**
@@ -762,6 +736,7 @@ export function computeMutationTargets(rootDir: string): MutationTestResult[] {
 
       results.push({
         filePath,
+        status: 'planned',
         totalMutants,
         killedMutants,
         survivedMutants,
@@ -807,6 +782,7 @@ function checkForExistingStrykerResults(rootDir: string): MutationTestResult[] {
 
             return {
               filePath: filePath.replace(rootDir + path.sep, ''),
+              status: 'planned',
               totalMutants,
               killedMutants,
               survivedMutants,
@@ -845,6 +821,7 @@ function generateDefaultMutationTargets(rootDir: string): MutationTestResult[] {
 
     targets.push({
       filePath,
+      status: 'planned',
       totalMutants,
       killedMutants,
       survivedMutants,
@@ -1060,21 +1037,6 @@ const SPECIAL_CHARS = [
   '\uFEFF',
 ];
 
-const ENUM_CANDIDATE_NAMES = [
-  'PaymentStatus',
-  'OrderStatus',
-  'CheckoutStatus',
-  'InvoiceStatus',
-  'PlanTier',
-  'Role',
-  'Provider',
-  'Currency',
-  'Language',
-  'Theme',
-  'Action',
-  'Event',
-];
-
 /**
  * Discover pure function candidates by scanning source files for exported
  * functions whose names match validation, parsing, formatting, numeric,
@@ -1167,10 +1129,6 @@ export function discoverPureFunctionCandidates(rootDir: string): PureFunctionCan
 
   scanDir(rootDir);
 
-  if (candidates.length === 0) {
-    return generateFallbackCandidates();
-  }
-
   return candidates;
 }
 
@@ -1203,137 +1161,6 @@ function parseParamNames(paramsStr: string): string[] {
       return clean.slice(0, endIdx).trim();
     })
     .filter(Boolean);
-}
-
-function generateFallbackCandidates(): PureFunctionCandidate[] {
-  return [
-    {
-      functionName: 'validateInput',
-      filePath: '',
-      category: 'validation',
-      params: ['input'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'parsePayload',
-      filePath: '',
-      category: 'parsing',
-      params: ['payload'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'formatValue',
-      filePath: '',
-      category: 'formatting',
-      params: ['value'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'computeTotal',
-      filePath: '',
-      category: 'numeric',
-      params: ['items'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'parseBRL',
-      filePath: '',
-      category: 'money_handler',
-      params: ['input'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'formatBRL',
-      filePath: '',
-      category: 'money_handler',
-      params: ['value'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'cents',
-      filePath: '',
-      category: 'money_handler',
-      params: ['amount'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'isValidEmail',
-      filePath: '',
-      category: 'validation',
-      params: ['value'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'parseNumber',
-      filePath: '',
-      category: 'parsing',
-      params: ['value'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'transformData',
-      filePath: '',
-      category: 'transform',
-      params: ['data'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'formatDate',
-      filePath: '',
-      category: 'formatting',
-      params: ['date'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'slugify',
-      filePath: '',
-      category: 'string_manipulation',
-      params: ['text'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'isValidTransition',
-      filePath: '',
-      category: 'validation',
-      params: ['current', 'next'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'computeShipping',
-      filePath: '',
-      category: 'numeric',
-      params: ['weight', 'distance'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'parseIpv4Literal',
-      filePath: '',
-      category: 'parsing',
-      params: ['hostname'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'formatPhone',
-      filePath: '',
-      category: 'formatting',
-      params: ['phone'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'formatBrlAmount',
-      filePath: '',
-      category: 'money_handler',
-      params: ['amount'],
-      hasReturnType: true,
-    },
-    {
-      functionName: 'parseObject',
-      filePath: '',
-      category: 'parsing',
-      params: ['value'],
-      hasReturnType: true,
-    },
-  ];
 }
 
 /**
@@ -1369,7 +1196,7 @@ export function generatePropertyTestCases(rootDir: string): GeneratedPropertyFun
       expectedPassCount: expectedPass,
       expectedFailCount: expectedFail,
       generatedInputs: allInputs,
-      status: 'generated',
+      status: 'planned',
     });
   }
 
@@ -1422,7 +1249,7 @@ function getStrategyForCategory(category: PureFunctionCandidate['category']): Fu
 function generateInputsForProperty(
   property: PropertyKind,
   rng: () => number,
-  _candidate: PureFunctionCandidate,
+  candidate: PureFunctionCandidate,
 ): GeneratedPropertyTestInput[] {
   switch (property) {
     case 'idempotency':
@@ -1438,7 +1265,7 @@ function generateInputsForProperty(
     case 'money_precision':
       return generateMoneyPrecisionInputs(rng);
     case 'enum_value':
-      return generateEnumValueInputs(rng);
+      return generateEnumValueInputs(rng, candidate);
     case 'length_boundary':
       return generateLengthBoundaryInputs(rng);
     case 'injection':
@@ -1808,48 +1635,39 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
   return inputs;
 }
 
-function generateEnumValueInputs(rng: () => number): GeneratedPropertyTestInput[] {
+function generateEnumValueInputs(
+  rng: () => number,
+  candidate: PureFunctionCandidate,
+): GeneratedPropertyTestInput[] {
   const inputs: GeneratedPropertyTestInput[] = [];
+  const enumName = candidate.functionName;
+  const discoveredMembers = inferEnumMembersFromCandidate(candidate);
 
-  // Simulated enum members
-  const simulatedEnums: Record<string, string[]> = {
-    PaymentStatus: ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED', 'REFUNDED', 'CANCELLED'],
-    OrderStatus: ['CREATED', 'CONFIRMED', 'SHIPPED', 'DELIVERED', 'CANCELLED'],
-    InvoiceStatus: ['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED'],
-    PlanTier: ['FREE', 'PRO', 'ENTERPRISE'],
-    Provider: ['STRIPE', 'ASAAS', 'PAGARME', 'MANUAL'],
-  };
+  for (const member of discoveredMembers) {
+    inputs.push({
+      value: member,
+      description: `Candidate member for ${enumName}: ${member}`,
+      expected: 'pass',
+      expectedBehavior: `Should accept a member discovered from ${enumName}`,
+    });
+  }
 
-  for (const [enumName, members] of Object.entries(simulatedEnums)) {
-    // Valid: all members
-    for (const member of members) {
-      inputs.push({
-        value: member,
-        description: `Valid ${enumName} value: ${member}`,
-        expected: 'pass',
-        expectedBehavior: `Should accept valid ${enumName} value "${member}"`,
-      });
-    }
-
-    // Invalid values
-    const invalids = ['INVALID', 'UNKNOWN', '', 'pending', 'PENDING_STATUS', 42, null, undefined];
-    for (const inv of invalids) {
-      inputs.push({
-        value: inv,
-        description: `Invalid ${enumName} value: ${JSON.stringify(inv)}`,
-        expected: 'fail',
-        expectedBehavior: `Should reject invalid ${enumName} value "${JSON.stringify(inv)}"`,
-      });
-    }
+  const invalids = ['INVALID', 'UNKNOWN', '', 'lower_case_value', 42, null, undefined];
+  for (const inv of invalids) {
+    inputs.push({
+      value: inv,
+      description: `Invalid ${enumName} value: ${JSON.stringify(inv)}`,
+      expected: 'fail',
+      expectedBehavior: `Should reject values outside the discovered ${enumName} set`,
+    });
   }
 
   // Random enum-like tests
   for (let i = 0; i < 200; i++) {
-    const enumName = ENUM_CANDIDATE_NAMES[Math.floor(rng() * ENUM_CANDIDATE_NAMES.length)];
     const isInvalid = rng() < 0.4;
     const value = isInvalid
       ? `INVALID_VALUE_${Math.floor(rng() * 100)}`
-      : `VALID_MEMBER_${Math.floor(rng() * 10)}`;
+      : discoveredMembers[Math.floor(rng() * discoveredMembers.length)];
     inputs.push({
       value,
       description: `Enum test #${i + 1} for ${enumName}: "${value}"`,
@@ -1861,6 +1679,16 @@ function generateEnumValueInputs(rng: () => number): GeneratedPropertyTestInput[
   }
 
   return inputs;
+}
+
+function inferEnumMembersFromCandidate(candidate: PureFunctionCandidate): string[] {
+  const words = candidate.functionName
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .split(/[^a-zA-Z0-9]+/)
+    .map((word) => word.trim().toUpperCase())
+    .filter((word) => word.length > 2);
+
+  return [...new Set([...words, 'VALUE_A', 'VALUE_B', 'VALUE_C'])];
 }
 
 function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestInput[] {

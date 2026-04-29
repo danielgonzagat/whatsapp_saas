@@ -17,6 +17,7 @@ import type {
   UIDiscoveredElement,
   UIDiscoveredPage,
   UIElementKind,
+  UIElementRisk,
   UINetworkCall,
 } from './types.ui-crawler';
 import { ensureDir, pathExists, readDir, readTextFile, writeTextFile } from './safe-fs';
@@ -277,6 +278,194 @@ function buildSelector(
 }
 
 // ---------------------------------------------------------------------------
+// Risk classification
+// ---------------------------------------------------------------------------
+
+const CRITICAL_ROUTE_PATTERNS = [
+  /\/payments?\b/i,
+  /\/billing\b/i,
+  /\/checkout\b/i,
+  /\/carteira\b/i,
+  /\/wallet\b/i,
+  /\/auth\b/i,
+  /\/login\b/i,
+  /\/register\b/i,
+  /\/cadastr/i,
+  /\/order\b/i,
+  /\/pix\b/i,
+  /\/boleto\b/i,
+  /\/magic-link\b/i,
+  /\/reset-password\b/i,
+  /\/impersonate\b/i,
+  /\/verify-email\b/i,
+];
+
+const CRITICAL_LABEL_PATTERNS = [
+  /pagamento/i,
+  /pagar/i,
+  /checkout/i,
+  /pix/i,
+  /boleto/i,
+  /cart[aã]o/i,
+  /credit\s*card/i,
+  /debit/i,
+  /carteira/i,
+  /saque/i,
+  /saldo/i,
+  /extrato/i,
+  /login/i,
+  /entrar/i,
+  /cadastr/i,
+  /registr/i,
+  /senha/i,
+  /password/i,
+  /assinatura/i,
+  /subscription/i,
+  /kyc/i,
+  /documento/i,
+  /cpf/i,
+  /cnpj/i,
+  /fiscal/i,
+  /dados\s*banc[aá]rios/i,
+  /bank/i,
+  /cobrança/i,
+  /cobrar/i,
+];
+
+const HIGH_ROUTE_PATTERNS = [
+  /\/settings?\b/i,
+  /\/account\b/i,
+  /\/config/i,
+  /\/admin\b/i,
+  /\/whatsapp\b/i,
+  /\/produtos\/area-membros\b/i,
+  /\/products\/new\b/i,
+  /\/canvas\/editor\b/i,
+  /\/crm\b/i,
+  /\/pipeline\b/i,
+  /\/gest[aã]o/i,
+  /\/vendas\b/i,
+  /\/sales\b/i,
+  /\/an[uú]ncios\b/i,
+  /\/campaigns\b/i,
+  /\/scrapers\b/i,
+];
+
+const HIGH_LABEL_PATTERNS = [
+  /salvar/i,
+  /save/i,
+  /edit/i,
+  /editar/i,
+  /delet/i,
+  /excluir/i,
+  /remover/i,
+  /remove/i,
+  /connect/i,
+  /conectar/i,
+  /desconectar/i,
+  /disconnect/i,
+  /upload/i,
+  /enviar/i,
+  /submit/i,
+  /confirmar/i,
+  /activate/i,
+  /ativar/i,
+  /desativar/i,
+  /deactivate/i,
+  /aprovar/i,
+  /approve/i,
+  /rejeitar/i,
+  /reject/i,
+  /configurar/i,
+  /configure/i,
+  /atualizar/i,
+  /update/i,
+  /modificar/i,
+  /alterar/i,
+  /assinante/i,
+  /afiliado/i,
+  /parceiro/i,
+  /convite/i,
+  /invite/i,
+  /criar/i,
+  /create/i,
+  /nova\s+campanha/i,
+  /novo\s+produto/i,
+];
+
+const LOW_LABEL_PATTERNS = [
+  /voltar/i,
+  /back/i,
+  /fechar/i,
+  /close/i,
+  /cancelar/i,
+  /cancel/i,
+  /ajuda/i,
+  /help/i,
+  /suporte/i,
+  /support/i,
+  /termos/i,
+  /terms/i,
+  /privacidade/i,
+  /privacy/i,
+  /cookies/i,
+  /sobre/i,
+  /about/i,
+  /logo/i,
+  /brand/i,
+  /theme/i,
+  /tema/i,
+  /modo\s+(claro|escuro)/i,
+  /(light|dark)\s*mode/i,
+];
+
+/**
+ * Classify a UI element's risk level based on page route, label text,
+ * element kind, and whether it sits behind auth.
+ *
+ * Hierarchy (first-match wins): critical > high > medium > low
+ *   - critical: payments, auth, wallet, billing, KYC, impersonation
+ *   - high:     settings, data mutation, admin operations, form submissions
+ *   - medium:   view/read, navigation to data pages, lists, filters
+ *   - low:      cosmetic, help, navigation to static pages, read-only actions
+ */
+function classifyElementRisk(
+  kind: UIElementKind,
+  label: string,
+  pageUrl: string,
+  _authRequired: boolean,
+): UIElementRisk {
+  for (const pat of CRITICAL_ROUTE_PATTERNS) {
+    if (pat.test(pageUrl)) return 'critical';
+  }
+  for (const pat of CRITICAL_LABEL_PATTERNS) {
+    if (pat.test(label)) return 'critical';
+  }
+
+  for (const pat of HIGH_ROUTE_PATTERNS) {
+    if (pat.test(pageUrl)) return 'high';
+  }
+  for (const pat of HIGH_LABEL_PATTERNS) {
+    if (pat.test(label)) return 'high';
+  }
+  if (kind === 'form' && !/(?:busca|filtro|search|filter|newsletter)/i.test(label)) {
+    return 'high';
+  }
+
+  for (const pat of LOW_LABEL_PATTERNS) {
+    if (pat.test(label)) return 'low';
+  }
+  if (kind === 'nav' || kind === 'link') {
+    const isStatic =
+      /^\/(?:terms|privacy|cookies|data-deletion|sobre|about|help|faq|blog)/i.test(pageUrl) ||
+      /navigate-to:\/(?:terms|privacy|cookies|data-deletion)/i.test(label);
+    if (isStatic) return 'low';
+  }
+
+  return 'medium';
+}
+
+// ---------------------------------------------------------------------------
 // Route → Role classification
 // ---------------------------------------------------------------------------
 
@@ -403,6 +592,63 @@ export function discoverPages(rootDir: string): UIDiscoveredPage[] {
   return pages.sort((a, b) => a.url.localeCompare(b.url));
 }
 
+/**
+ * Resolve component files imported by a page.
+ *
+ * Many Next.js pages are thin wrappers that import a single component from
+ * `@/components/` or `./`. This function follows those imports to discover
+ * the actual component files where interactive elements live.
+ *
+ * @param pageFilePath - Absolute path to the page.tsx file.
+ * @param rootDir       - Repository root directory.
+ * @param visited       - Set of already-visited paths to prevent cycles.
+ * @returns Array of absolute paths to component files.
+ */
+function resolveComponentFiles(
+  pageFilePath: string,
+  rootDir: string,
+  visited: Set<string> = new Set(),
+): string[] {
+  if (visited.has(pageFilePath)) return [];
+  visited.add(pageFilePath);
+
+  let content: string;
+  try {
+    content = readTextFile(pageFilePath, 'utf8');
+  } catch {
+    return [];
+  }
+
+  const frontendDir = safeJoin(rootDir, FRONTEND_SRC);
+  const sourceDir = path.dirname(pageFilePath);
+  const componentFiles: string[] = [];
+
+  const importRe =
+    /import\s+(?:\w+(?:\s*,\s*\{[^}]*\})?|\{[^}]+\}|\*\s+as\s+\w+)\s+from\s+['"]([^'"]+)['"]/g;
+  let m: RegExpExecArray | null;
+  while ((m = importRe.exec(content)) !== null) {
+    const importPath = m[1];
+
+    if (importPath.startsWith('next/')) continue;
+    if (importPath.startsWith('react')) continue;
+    if (importPath.startsWith('swr')) continue;
+    if (/^(?:@\/lib\/|@\/hooks\/|@\/data\/|@\/utils\/)/.test(importPath)) continue;
+
+    const resolved = resolveImportPath(importPath, frontendDir, sourceDir);
+    if (resolved && pathExists(resolved) && !visited.has(resolved)) {
+      componentFiles.push(resolved);
+      const nested = resolveComponentFiles(resolved, rootDir, visited);
+      for (const nf of nested) {
+        if (!componentFiles.includes(nf)) {
+          componentFiles.push(nf);
+        }
+      }
+    }
+  }
+
+  return componentFiles;
+}
+
 // ---------------------------------------------------------------------------
 // Element parsing
 // ---------------------------------------------------------------------------
@@ -412,12 +658,19 @@ export function discoverPages(rootDir: string): UIDiscoveredPage[] {
  *
  * Uses regex-based extraction to find buttons, links, forms, inputs, selects,
  * modals, menus, tabs, and toggles (including shadcn/ui components). For each
- * element, extracts handler names, labels, and any API endpoints called inline.
+ * element, extracts handler names, labels, risk level, and any API endpoints
+ * called inline.
  *
  * @param filePath - Absolute path to the JSX/TSX file.
+ * @param pageUrl  - The page URL for risk classification context.
+ * @param authRequired - Whether the page requires authentication (for risk).
  * @returns Array of discovered elements found in the file.
  */
-export function parseElementsFromFile(filePath: string): UIDiscoveredElement[] {
+export function parseElementsFromFile(
+  filePath: string,
+  pageUrl = '/',
+  authRequired = false,
+): UIDiscoveredElement[] {
   let content: string;
   try {
     content = readTextFile(filePath, 'utf8');
@@ -510,6 +763,7 @@ export function parseElementsFromFile(filePath: string): UIDiscoveredElement[] {
       linkedEndpoint: apiEndpoint,
       linkedFilePath: null,
       errorMessage,
+      risk: classifyElementRisk(kind, label, pageUrl, authRequired),
     });
   }
 
@@ -710,10 +964,18 @@ export function buildUICrawlerCatalog(rootDir: string): UICrawlerEvidence {
       page.url === '/' ? safeJoin(appDir, '(public)', 'page.tsx') : findPageFile(appDir, page.url);
 
     if (pageFilePath && pathExists(pageFilePath)) {
-      page.elements = parseElementsFromFile(pageFilePath);
+      const componentFiles = resolveComponentFiles(pageFilePath, rootDir);
+      const allElementFiles = [pageFilePath, ...componentFiles];
+      const allElements: UIDiscoveredElement[] = [];
 
-      for (const element of page.elements) {
-        const { handlerFile, apiEndpoint } = mapElementToHandler(element, pageFilePath, rootDir);
+      for (const filePath of allElementFiles) {
+        const fileElements = parseElementsFromFile(filePath, page.url, page.authRequired);
+        allElements.push(...fileElements);
+      }
+
+      for (const element of allElements) {
+        const elementFile = element.linkedFilePath || pageFilePath;
+        const { handlerFile, apiEndpoint } = mapElementToHandler(element, elementFile, rootDir);
 
         element.linkedEndpoint = apiEndpoint || element.linkedEndpoint;
         element.linkedFilePath = handlerFile;
@@ -723,10 +985,12 @@ export function buildUICrawlerCatalog(rootDir: string): UICrawlerEvidence {
         if (classification.reason) element.errorMessage = classification.reason;
       }
 
-      byRole[page.role].elements += page.elements.length;
-      totalElements += page.elements.length;
+      page.elements = allElements;
 
-      for (const element of page.elements) {
+      byRole[page.role].elements += allElements.length;
+      totalElements += allElements.length;
+
+      for (const element of allElements) {
         if (element.actionable) actionableElements++;
         if (element.status === 'works') workingElements++;
         if (

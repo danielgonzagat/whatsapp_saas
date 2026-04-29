@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import * as Sentry from '@sentry/node';
+import tracer from 'dd-trace';
+import { Counter, Histogram, register } from 'prom-client';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
@@ -19,12 +22,32 @@ interface AdRuleSnapshot {
 @Injectable()
 export class AdRulesEngineService {
   private readonly logger = new Logger(AdRulesEngineService.name);
+  private readonly counter =
+    (register.getSingleMetric('kloel_ad_rules_total') as Counter<string>) ||
+    new Counter({
+      name: 'kloel_ad_rules_total',
+      help: 'Ad rule engine events',
+      labelNames: ['event', 'result'],
+    });
+  private readonly histogram =
+    (register.getSingleMetric('kloel_ad_rules_evaluation_duration_ms') as Histogram<string>) ||
+    new Histogram({
+      name: 'kloel_ad_rules_evaluation_duration_ms',
+      help: 'Ad rule engine evaluation duration in milliseconds',
+      labelNames: ['result'],
+      buckets: [50, 100, 250, 500, 1000, 2500, 5000, 10000],
+    });
 
   constructor(private readonly prisma: PrismaService) {}
 
   /** Evaluate rules. */
   @Cron(CronExpression.EVERY_5_MINUTES)
   async evaluateRules() {
+    return tracer.trace('kloel.ad_rules.evaluate', () => this.evaluateRulesWithObservability());
+  }
+
+  private async evaluateRulesWithObservability(): Promise<void> {
+    const startedAt = Date.now();
     try {
       const rules = await this.prisma.adRule.findMany({
         where: { active: true },
@@ -44,8 +67,11 @@ export class AdRulesEngineService {
       });
 
       if (rules.length === 0) {
+        this.counter.inc({ event: 'evaluation', result: 'empty' });
+        this.histogram.observe({ result: 'empty' }, Date.now() - startedAt);
         return;
       }
+      this.counter.inc({ event: 'evaluation', result: 'started' });
       this.logger.log(`Evaluating ${rules.length} active ad rule(s)...`);
 
       await forEachSequential(rules, async (rule) => {
@@ -57,11 +83,25 @@ export class AdRulesEngineService {
         } catch (err: unknown) {
           // PULSE:OK — Per-rule failure is non-critical; other rules continue executing
           this.logger.error(`Error evaluating rule ${rule.id}: ${String(err)}`);
+          this.counter.inc({ event: 'rule', result: 'error' });
+          Sentry.captureException(err, {
+            tags: { component: 'ad_rules', operation: 'evaluate_rule' },
+            extra: { workspaceId: rule.workspaceId, ruleId: rule.id },
+            level: 'warning',
+          });
         }
       });
+      this.counter.inc({ event: 'evaluation', result: 'success' });
+      this.histogram.observe({ result: 'success' }, Date.now() - startedAt);
     } catch (err: unknown) {
       // PULSE:OK — AdRules engine is a background job; errors are logged and retried next cycle
       this.logger.error(`AdRules engine error: ${String(err)}`);
+      this.counter.inc({ event: 'evaluation', result: 'error' });
+      this.histogram.observe({ result: 'error' }, Date.now() - startedAt);
+      Sentry.captureException(err, {
+        tags: { component: 'ad_rules', operation: 'evaluate_rules' },
+        level: 'error',
+      });
     }
   }
 
@@ -107,6 +147,7 @@ export class AdRulesEngineService {
 
   private async fireRule(rule: AdRuleSnapshot): Promise<void> {
     this.logger.log(`Firing rule "${rule.name}" (id: ${rule.id}): ${rule.action}`);
+    this.counter.inc({ event: 'rule', result: 'fired' });
 
     await this.prisma.adRule.updateMany({
       where: { id: rule.id, workspaceId: rule.workspaceId },

@@ -17,11 +17,15 @@ import { classifyRoleFromRoute } from '../ui-crawler';
 import { determineRiskLevel } from '../dod-engine';
 import { isCriticalHarnessTarget } from '../execution-harness';
 import { filePathToCapability, filePathToFlow, isCriticalPath } from '../gitnexus/provider';
+import { ROUTE_NOISE_TOKENS } from '../codebase-truth.tokens';
+import { isUserFacingGroup } from '../codebase-truth.string-utils';
+import { isLikelyMutation } from '../codebase-truth-flows';
 import type { APIEndpointProbe } from '../types.api-fuzzer';
 import type { HarnessTarget } from '../types.execution-harness';
 import type { PulseExecutionMatrixPath } from '../types.execution-matrix';
 import type { PulseCapability } from '../types';
 import type { ReplaySession } from '../types.replay-adapter';
+import type { InteractionChain } from '../functional-map-types';
 
 function endpointProbe(overrides: Partial<APIEndpointProbe> = {}): APIEndpointProbe {
   return {
@@ -156,6 +160,33 @@ function pulseCapability(overrides: Partial<PulseCapability> = {}): PulseCapabil
       blockers: [],
       truthModeMet: true,
     },
+    ...overrides,
+  };
+}
+
+function interactionChain(overrides: Partial<InteractionChain> = {}): InteractionChain {
+  return {
+    pageRoute: '/opaque',
+    pageFile: 'frontend/src/app/opaque/page.tsx',
+    componentFile: 'frontend/src/components/Opaque.tsx',
+    elementType: 'button',
+    elementLabel: 'Open',
+    elementLine: 1,
+    handler: null,
+    handlerType: 'unknown',
+    apiCall: {
+      endpoint: '/opaque',
+      method: 'GET',
+      file: 'frontend/src/lib/api.ts',
+      line: 1,
+    },
+    proxyRoute: null,
+    backendRoute: null,
+    serviceMethod: null,
+    prismaModels: [],
+    status: 'FUNCIONA',
+    statusReason: '',
+    facadeEvidence: [],
     ...overrides,
   };
 }
@@ -365,5 +396,41 @@ describe('PULSE no-hardcoded-reality contracts', () => {
         }),
       ),
     ).toBe('high');
+  });
+
+  it('does not treat product route names as codebase-truth control tokens', () => {
+    expect(ROUTE_NOISE_TOKENS.has('checkout')).toBe(false);
+    expect(ROUTE_NOISE_TOKENS.has('auth')).toBe(false);
+    expect(isUserFacingGroup('checkout')).toBe(false);
+    expect(isUserFacingGroup('public')).toBe(true);
+  });
+
+  it('detects likely UI mutations from method and generic verbs instead of product words', () => {
+    expect(
+      isLikelyMutation(
+        interactionChain({
+          elementLabel: 'Pay now',
+          apiCall: { endpoint: '/checkout', method: 'GET', file: 'api.ts', line: 1 },
+        }),
+      ),
+    ).toBe(false);
+
+    expect(
+      isLikelyMutation(
+        interactionChain({
+          elementLabel: 'Submit',
+          apiCall: { endpoint: '/opaque', method: 'GET', file: 'api.ts', line: 1 },
+        }),
+      ),
+    ).toBe(true);
+
+    expect(
+      isLikelyMutation(
+        interactionChain({
+          elementLabel: 'Open',
+          apiCall: { endpoint: '/opaque', method: 'POST', file: 'api.ts', line: 1 },
+        }),
+      ),
+    ).toBe(true);
   });
 });

@@ -1,5 +1,5 @@
 // PULSE — Live Codebase Nervous System
-// Perfectness Test Harness types (Wave 9)
+// Perfectness Test Harness types (Wave 9.4)
 
 /**
  * A phase in the perfectness evaluation lifecycle.
@@ -25,6 +25,44 @@ export type PerfectnessPhase =
 export type PerfectnessVerdict = 'PERFECT' | 'ALMOST_PERFECT' | 'NEEDS_WORK' | 'FAILED';
 
 /**
+ * Exit condition for a specific gate.
+ *
+ * Defines what must happen for the test to exit (pass or fail)
+ * and what the resulting action should be.
+ */
+export type ExitAction =
+  | 'continue_autonomous' // Gate passed; autonomous work continues
+  | 'pause_for_human' // Gate failed; pause and request human review
+  | 'retry_sandbox' // Gate failed; retry in a new sandbox
+  | 'rollback_and_stop' // Gate failed; rollback and terminate
+  | 'mark_perfect'; // All gates passed; final verdict is PERFECT
+
+export interface GateExitCondition {
+  /** The gate name this exit condition applies to. */
+  gateName: string;
+  /** The action to take when the gate passes. */
+  onPass: ExitAction;
+  /** The action to take when the gate fails. */
+  onFail: ExitAction;
+  /** Maximum number of retries before escalating to human. */
+  maxRetries: number;
+  /** Human-readable description of the exit behavior. */
+  description: string;
+}
+
+/**
+ * Expected evidence sources for gate evaluation.
+ */
+export interface GateEvidenceSource {
+  /** The file or data source to read evidence from. */
+  source: string;
+  /** What field or key to extract from the source. */
+  field: string;
+  /** How to interpret the extracted value. */
+  interpretation: string;
+}
+
+/**
  * A single gate in the perfectness evaluation.
  *
  * Each gate checks one dimension of correctness against a target
@@ -43,6 +81,40 @@ export interface PerfectnessGate {
   passed: boolean;
   /** Supporting evidence for the evaluation (file paths, scores, timestamps). */
   evidence: string;
+}
+
+/**
+ * Evidence collection plan for a single gate.
+ *
+ * Maps each gate to what data it needs, where to find it,
+ * and how to interpret the result.
+ */
+export interface GateEvidencePlan {
+  gateName: string;
+  evidenceSources: GateEvidenceSource[];
+  collectionMethod: 'file_read' | 'command_output' | 'api_probe' | 'static_analysis';
+  fallbackIfMissing: string;
+}
+
+/**
+ * Test suite structure: ordered phases with gates.
+ */
+export interface PerfectnessTestSuite {
+  /** Phase definitions in execution order. */
+  phases: Array<{
+    phase: PerfectnessPhase;
+    /** Gates evaluated in this phase. */
+    gates: string[];
+    /** Whether this phase depends on the previous phase passing. */
+    dependsOnPrevious: boolean;
+    /** Whether this phase can run in parallel with other phases. */
+  }>;
+  /** Gate dependencies (a gate that depends on another gate being evaluated first). */
+  gateDependencies: Record<string, string[]>;
+  /** Exit conditions per gate. */
+  exitConditions: GateExitCondition[];
+  /** Evidence collection plans per gate. */
+  evidencePlans: GateEvidencePlan[];
 }
 
 /**
@@ -76,6 +148,10 @@ export interface PerfectnessResult {
   gates: PerfectnessGate[];
   /** Human-readable summary of the perfectness evaluation. */
   summary: string;
+  /** Ordered list of actions recommended based on the verdict. */
+  recommendedActions: string[];
+  /** Whether the system is approved for continuous autonomous operation. */
+  autonomousApproved: boolean;
 }
 
 /**
@@ -87,6 +163,6 @@ export interface PerfectnessResult {
  * 4. **runtime-stable** — no new Sentry errors during evaluation
  * 5. **no-regression** — final score >= start score
  * 6. **no-rollback-unrecovered** — all rollbacks successfully recovered
- * 7. **no-protected-violation** — zero protected file changes
+ * 7. **no-protected-violation** — zero protected file changes during autonomous work
  * 8. **72h-elapsed** — at least 72 hours of autonomous work completed
  */

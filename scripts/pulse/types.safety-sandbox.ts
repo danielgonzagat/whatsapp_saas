@@ -1,5 +1,5 @@
 // PULSE — Live Codebase Nervous System
-// Safety Sandbox types (Wave 9)
+// Safety Sandbox types (Wave 9.3)
 
 /**
  * Classification of destructive actions that require safety gating.
@@ -18,6 +18,17 @@ export type DestructiveActionKind =
   | 'protected_file_edit';
 
 /**
+ * Risk level for destructive actions following the
+ * Agent Operating Protocol risk classification.
+ *
+ *   - `safe`     — Risk 0: no risk (docs, tests, minor UI)
+ *   - `normal`   — Risk 1: frontend, hooks, API clients, non-financial services
+ *   - `high`     — Risk 2: auth, workspace isolation, WhatsApp, queues, external integrations
+ *   - `critical` — Risk 3: payments, wallet, ledger, split, payout, KYC, secrets, CI/CD, governance
+ */
+export type SandboxRiskLevel = 'safe' | 'normal' | 'high' | 'critical';
+
+/**
  * A classified destructive action that PULSE must gate before allowing.
  *
  * Each action carries a set of safety requirements that must be satisfied
@@ -33,6 +44,8 @@ export interface DestructiveAction {
   description: string;
   /** The file path targeted by this action, or null if not file-specific. */
   targetFile: string | null;
+  /** Risk level classification (Risk 0–3). */
+  riskLevel: SandboxRiskLevel;
   /** Whether this action requires explicit human approval before execution. */
   requiresHumanApproval: boolean;
   /** Whether this action requires a dry-run validation step. */
@@ -44,10 +57,33 @@ export interface DestructiveAction {
 }
 
 /**
+ * Isolation rules that define how a sandbox workspace must be configured
+ * for a specific kind of destructive action.
+ */
+export interface SandboxIsolationRules {
+  /** The action kind these rules apply to. */
+  kind: DestructiveActionKind;
+  /** Whether a separate git worktree is required. */
+  requiresSeparateWorktree: boolean;
+  /** Whether the sandbox must have network isolation (no external calls). */
+  requiresNetworkIsolation: boolean;
+  /** Whether the sandbox must use a cloned database or dry-run mode. */
+  requiresDatabaseIsolation: boolean;
+  /** Files or directories that must NOT be accessible within the sandbox. */
+  blockedPaths: string[];
+  /** Commands that must run and pass before the sandbox is considered valid. */
+  preValidationCommands: string[];
+  /** Commands that must run and pass after applying a patch. */
+  postValidationCommands: string[];
+  /** Maximum time (in minutes) the sandbox can remain active without explicit extension. */
+  maxActiveMinutes: number;
+}
+
+/**
  * A sandbox workspace for safely testing destructive changes.
  *
- * Workspaces are git worktrees that isolate changes from the main
- * branch, allowing validation without risk to the primary workspace.
+ * Workspaces are logical isolation units that simulate git worktree isolation
+ * for planning purposes, without performing actual disk clones.
  */
 export interface SandboxWorkspace {
   /** Absolute path to the sandbox workspace directory. */
@@ -56,8 +92,12 @@ export interface SandboxWorkspace {
   parentBranch: string;
   /** ISO-8601 timestamp of workspace creation. */
   createdAt: string;
+  /** ISO-8601 timestamp when the workspace expires (createdAt + maxActiveMinutes). */
+  expiresAt: string;
   /** Files touched by patches in this workspace. */
   filesTouched: string[];
+  /** Risk level of the most dangerous action in this workspace. */
+  maxRiskLevel: SandboxRiskLevel;
   /** Patches applied to this workspace with safety classification. */
   patches: Array<{
     /** Relative file path within the repository. */
@@ -78,6 +118,8 @@ export interface SandboxWorkspace {
   }>;
   /** Current lifecycle status of the workspace. */
   status: 'active' | 'validated' | 'rejected' | 'applied' | 'cleaned_up';
+  /** The action kinds allowed in this workspace (derived from patches). */
+  allowedActionKinds: DestructiveActionKind[];
 }
 
 /**
@@ -95,6 +137,8 @@ export interface SandboxState {
   activeWorkspaces: SandboxWorkspace[];
   /** Protected files loaded from governance configuration. */
   protectedFiles: string[];
+  /** Isolation rules configured per action kind. */
+  isolationRules: SandboxIsolationRules[];
   /** Aggregate counts for quick status assessment. */
   summary: {
     /** Total number of destructive actions classified. */
@@ -105,5 +149,9 @@ export interface SandboxState {
     sandboxOnlyActions: number;
     /** Number of currently active sandbox workspaces. */
     activeWorkspaces: number;
+    /** Breakdown of actions by risk level. */
+    riskBreakdown: Record<SandboxRiskLevel, number>;
+    /** Number of actions classified as governance-violating. */
+    governanceViolations: number;
   };
 }

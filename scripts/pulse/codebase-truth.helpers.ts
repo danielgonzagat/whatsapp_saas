@@ -35,8 +35,6 @@ export const ROUTE_NOISE_TOKENS = new Set([
   'routes',
   'main',
   'public',
-  'checkout',
-  'auth',
   'e2e',
   'internal',
   'index',
@@ -188,7 +186,7 @@ export function getRouteSegments(route: string): string[] {
 }
 
 export function isUserFacingGroup(group: string): boolean {
-  return group === 'main' || group === 'public' || group === 'checkout';
+  return group === 'main' || group === 'public';
 }
 
 function shouldIgnoreSemanticToken(token: string): boolean {

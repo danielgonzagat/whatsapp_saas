@@ -16,8 +16,6 @@ import type {
   APIEndpointProbe,
   APIFuzzEvidence,
   AuthTestCase,
-  FuzzTestCaseStatus,
-  IdempotencyResult,
   IdempotencyTestCase,
   RateLimitTestCase,
   SchemaTestCase,
@@ -395,8 +393,8 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     return [
       {
         testId: `${endpoint.endpointId}-auth-no-auth-required`,
-        scenario: 'Public endpoint — auth bypass verified',
-        status: 'skipped',
+        scenario: 'Public endpoint auth probe plan',
+        status: 'planned',
         expectedStatus: 200,
         actualStatus: null,
         error: null,
@@ -410,7 +408,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     tests.push({
       testId: `${endpoint.endpointId}-auth-missing`,
       scenario: 'No auth token → expect 401',
-      status: 'skipped',
+      status: 'planned',
       expectedStatus: 401,
       actualStatus: null,
       error: null,
@@ -419,7 +417,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     tests.push({
       testId: `${endpoint.endpointId}-auth-invalid`,
       scenario: 'Invalid/malformed token → expect 401',
-      status: 'skipped',
+      status: 'planned',
       expectedStatus: 401,
       actualStatus: null,
       error: null,
@@ -428,7 +426,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     tests.push({
       testId: `${endpoint.endpointId}-auth-expired`,
       scenario: 'Expired token → expect 401',
-      status: 'skipped',
+      status: 'planned',
       expectedStatus: 401,
       actualStatus: null,
       error: null,
@@ -439,7 +437,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     tests.push({
       testId: `${endpoint.endpointId}-auth-wrong-tenant`,
       scenario: 'Valid token, wrong tenant/workspace → expect 403',
-      status: 'skipped',
+      status: 'planned',
       expectedStatus: 403,
       actualStatus: null,
       error: null,
@@ -448,7 +446,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     tests.push({
       testId: `${endpoint.endpointId}-auth-wrong-role`,
       scenario: 'Valid token, insufficient role → expect 403',
-      status: 'skipped',
+      status: 'planned',
       expectedStatus: 403,
       actualStatus: null,
       error: null,
@@ -673,7 +671,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
         expectedStatus: 201,
         actualStatus: null,
         validationErrors: [],
-        status: 'skipped',
+        status: 'planned',
       });
     }
 
@@ -705,7 +703,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
           expectedStatus: 400,
           actualStatus: null,
           validationErrors: [`${reqField} is required`],
-          status: 'skipped',
+          status: 'planned',
         });
 
         if (fieldDef) {
@@ -734,7 +732,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
             expectedStatus: 400,
             actualStatus: null,
             validationErrors: [`${reqField} has wrong type`],
-            status: 'skipped',
+            status: 'planned',
           });
         }
       }
@@ -747,7 +745,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
       expectedStatus: 400,
       actualStatus: null,
       validationErrors: ['Body cannot be empty'],
-      status: 'skipped',
+      status: 'planned',
     });
 
     tests.push({
@@ -757,7 +755,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
       expectedStatus: 400,
       actualStatus: null,
       validationErrors: ['Unexpected fields'],
-      status: 'skipped',
+      status: 'planned',
     });
 
     tests.push({
@@ -767,7 +765,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
       expectedStatus: 400,
       actualStatus: null,
       validationErrors: ['Null value for required field'],
-      status: 'skipped',
+      status: 'planned',
     });
   }
 
@@ -791,7 +789,7 @@ export function generateIdempotencyTests(endpoint: APIEndpointProbe): Idempotenc
     {
       testId: `${endpoint.endpointId}-idempotency-duplicate`,
       key: `idem-${uniqueId()}`,
-      status: 'not_tested',
+      status: 'planned',
       requests: 2,
       uniqueResults: 0,
     },
@@ -814,6 +812,7 @@ export function generateRateLimitTests(endpoint: APIEndpointProbe): RateLimitTes
   return [
     {
       testId: `${endpoint.endpointId}-ratelimit-over-limit`,
+      status: 'planned',
       requestsSent: max + 5,
       rateLimited: false,
       rateLimitedAt: 0,
@@ -867,7 +866,7 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
       payload,
       expectedBlock: true,
       actuallyBlocked: null,
-      status: 'skipped',
+      status: 'planned',
       severity: 'high',
     });
   });
@@ -880,7 +879,7 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
       payload,
       expectedBlock: true,
       actuallyBlocked: null,
-      status: 'skipped',
+      status: 'planned',
       severity: 'medium',
     });
   });
@@ -894,7 +893,7 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
         payload,
         expectedBlock: true,
         actuallyBlocked: null,
-        status: 'skipped',
+        status: 'planned',
         severity: 'high',
       });
     });
@@ -909,7 +908,7 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
         payload,
         expectedBlock: true,
         actuallyBlocked: null,
-        status: 'skipped',
+        status: 'planned',
         severity: 'high',
       });
     });
@@ -923,7 +922,7 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
       payload: { resourceId: 'other-user-id' },
       expectedBlock: true,
       actuallyBlocked: null,
-      status: 'skipped',
+      status: 'planned',
       severity: 'high',
     });
   }
@@ -937,7 +936,7 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
         payload,
         expectedBlock: true,
         actuallyBlocked: null,
-        status: 'skipped',
+        status: 'planned',
         severity: 'medium',
       });
     });
@@ -1011,22 +1010,59 @@ export function buildAPIFuzzCatalog(rootDir: string): APIFuzzEvidence {
     endpoint.securityTests = generateSecurityTests(endpoint);
   }
 
-  const endpointsWithIssues = endpoints.filter((e) => e.authTests.length > 0);
+  const endpointsWithPlannedSecurityIssues = endpoints.filter((e) =>
+    e.securityTests.some((t) => t.status === 'planned' && t.expectedBlock),
+  );
+  const endpointsWithIssues = endpoints.filter((e) =>
+    e.securityTests.some((t) => t.status === 'failed' || t.status === 'security_issue'),
+  );
 
   const evidence: APIFuzzEvidence = {
     generatedAt: new Date().toISOString(),
     summary: {
       totalEndpoints: endpoints.length,
-      probedEndpoints: endpoints.length,
-      authTestedEndpoints: endpoints.filter((e) => e.requiresAuth).length,
-      schemaTestedEndpoints: endpoints.filter((e) => e.schemaTests.length > 0).length,
-      idempotencyTestedEndpoints: endpoints.filter((e) => e.idempotencyTests.length > 0).length,
-      rateLimitTestedEndpoints: endpoints.filter((e) => e.rateLimit && e.rateLimitTests.length > 0)
+      plannedEndpoints: endpoints.length,
+      probedEndpoints: 0,
+      authPlannedEndpoints: endpoints.filter((e) => e.authTests.some((t) => t.status === 'planned'))
         .length,
-      securityTestedEndpoints: endpoints.filter((e) => e.securityTests.length > 0).length,
+      authTestedEndpoints: endpoints.filter((e) =>
+        e.authTests.some((t) => t.status === 'passed' || t.status === 'failed'),
+      ).length,
+      schemaPlannedEndpoints: endpoints.filter((e) =>
+        e.schemaTests.some((t) => t.status === 'planned'),
+      ).length,
+      schemaTestedEndpoints: endpoints.filter((e) =>
+        e.schemaTests.some((t) => t.status === 'passed' || t.status === 'failed'),
+      ).length,
+      idempotencyPlannedEndpoints: endpoints.filter((e) =>
+        e.idempotencyTests.some((t) => t.status === 'planned'),
+      ).length,
+      idempotencyTestedEndpoints: endpoints.filter((e) =>
+        e.idempotencyTests.some((t) => t.status === 'idempotent' || t.status === 'not_idempotent'),
+      ).length,
+      rateLimitPlannedEndpoints: endpoints.filter((e) =>
+        e.rateLimitTests.some((t) => t.status === 'planned'),
+      ).length,
+      rateLimitTestedEndpoints: endpoints.filter((e) =>
+        e.rateLimitTests.some((t) => t.status === 'passed' || t.status === 'failed'),
+      ).length,
+      securityPlannedEndpoints: endpoints.filter((e) =>
+        e.securityTests.some((t) => t.status === 'planned'),
+      ).length,
+      securityTestedEndpoints: endpoints.filter((e) =>
+        e.securityTests.some((t) => t.status === 'passed' || t.status === 'failed'),
+      ).length,
       endpointsWithIssues: endpointsWithIssues.length,
+      endpointsWithPlannedSecurityIssues: endpointsWithPlannedSecurityIssues.length,
       criticalSecurityIssues: endpoints.filter(
-        (e) => classifyEndpointRisk(e) === 'critical' && e.securityTests.length > 0,
+        (e) =>
+          classifyEndpointRisk(e) === 'critical' &&
+          e.securityTests.some((t) => t.status === 'failed' || t.status === 'security_issue'),
+      ).length,
+      criticalSecurityPlans: endpoints.filter(
+        (e) =>
+          classifyEndpointRisk(e) === 'critical' &&
+          e.securityTests.some((t) => t.status === 'planned'),
       ).length,
     },
     probes: endpoints,

@@ -9,14 +9,17 @@
  * `.pulse/current/PULSE_OBSERVABILITY_COVERAGE.json`.
  */
 
+import * as path from 'node:path';
 import { safeJoin, safeResolve } from './safe-path';
 import { ensureDir, pathExists, readJsonFile, writeTextFile } from './safe-fs';
 import { walkFiles, readFileSafe } from './parsers/utils';
 import type {
   CapabilityObservability,
   FlowObservability,
+  ObservabilityEvidenceKind,
   LogQuality,
   ObservabilityCoverageState,
+  ObservabilityPillarEvidence,
   ObservabilityPillar,
   ObservabilityStatus,
   PerFileLoggingEntry,
@@ -43,6 +46,76 @@ const STRUCTURED_LOG_FIELDS = [
   'spanId',
 ] as const;
 
+interface PillarScanResult {
+  status: ObservabilityStatus;
+  sourceKind: ObservabilityEvidenceKind;
+  source: string;
+  reason: string;
+  filePaths: string[];
+}
+
+const TRUSTED_OBSERVED_KINDS = new Set<ObservabilityEvidenceKind>([
+  'runtime_observed',
+  'static_instrumentation',
+]);
+
+const UNTRUSTED_PRESENT_KINDS = new Set<ObservabilityEvidenceKind>([
+  'configuration',
+  'catalog',
+  'simulated',
+]);
+
+function containsSimulatedObservabilitySource(content: string): boolean {
+  return /\b(PULSE_SIMULATED_OBSERVABILITY|SIMULATED_OBSERVABILITY|mockObservability|fakeObservability|simulatedObservability|observabilityMock)\b/i.test(
+    content,
+  );
+}
+
+function missingEvidence(reason: string): PillarScanResult {
+  return {
+    status: 'missing',
+    sourceKind: 'absent',
+    source: 'none',
+    reason,
+    filePaths: [],
+  };
+}
+
+function normalizeStatusForEvidence(
+  status: ObservabilityStatus,
+  sourceKind: ObservabilityEvidenceKind,
+): ObservabilityStatus {
+  if (sourceKind === 'not_applicable') return 'not_applicable';
+  if (sourceKind === 'absent' || sourceKind === 'simulated') return 'missing';
+  if (sourceKind === 'configuration' || sourceKind === 'catalog') return 'partial';
+  return status;
+}
+
+function toRepoRelativePath(rootDir: string, filePath: string): string {
+  const relativePath = path.relative(safeResolve(rootDir), safeResolve(filePath));
+  if (!relativePath || relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    return filePath;
+  }
+  return relativePath.split(path.sep).join('/');
+}
+
+function resolveCapabilityFiles(
+  rootDir: string,
+  filePaths: string[],
+  allFiles: Set<string>,
+): string[] {
+  const resolved: string[] = [];
+  for (const filePath of filePaths) {
+    const absolutePath = path.isAbsolute(filePath)
+      ? safeResolve(filePath)
+      : safeResolve(rootDir, filePath);
+    if (allFiles.has(absolutePath)) {
+      resolved.push(absolutePath);
+    }
+  }
+  return [...new Set(resolved)].sort();
+}
+
 /**
  * Main entry point. Scans every capability and flow for observability
  * coverage across all eight pillars.
@@ -60,7 +133,7 @@ export function buildObservabilityCoverage(rootDir: string): ObservabilityCovera
   ];
 
   const capabilities = loadCapabilities(pulseCurrentDir);
-  const capabilityItems = buildCapabilityObservability(capabilities, allFiles);
+  const capabilityItems = buildCapabilityObservability(rootDir, capabilities, allFiles);
 
   const flows = loadFlows(pulseCurrentDir);
   const flowItems = buildFlowObservability(flows, capabilityItems);
@@ -91,26 +164,60 @@ export function buildObservabilityCoverage(rootDir: string): ObservabilityCovera
  * and `'missing'` when no log call is found.
  */
 export function scanForLogging(filePaths: string[]): ObservabilityStatus {
-  let structuredCount = 0;
-  let consoleCount = 0;
+  return scanForLoggingEvidence(filePaths).status;
+}
+
+function scanForLoggingEvidence(filePaths: string[]): PillarScanResult {
+  const simulatedFiles: string[] = [];
+  const structuredFiles: string[] = [];
+  const consoleFiles: string[] = [];
 
   for (const filePath of filePaths) {
     const content = readFileSafe(filePath);
+    if (containsSimulatedObservabilitySource(content)) {
+      simulatedFiles.push(filePath);
+      continue;
+    }
     if (
       /this\.logger\.|Logger\.(log|error|warn|debug|verbose)|new Logger\(|winston\.(info|error|warn|debug|log)|pino\(/m.test(
         content,
       )
     ) {
-      structuredCount++;
+      structuredFiles.push(filePath);
     }
     if (/console\.(log|error|warn|debug|info)\(/m.test(content)) {
-      consoleCount++;
+      consoleFiles.push(filePath);
     }
   }
 
-  if (structuredCount > 0) return 'observed';
-  if (consoleCount > 0) return 'partial';
-  return 'missing';
+  if (structuredFiles.length > 0) {
+    return {
+      status: 'observed',
+      sourceKind: 'static_instrumentation',
+      source: 'structured logger call',
+      reason: 'Structured logging calls are present in capability-owned code.',
+      filePaths: structuredFiles,
+    };
+  }
+  if (consoleFiles.length > 0) {
+    return {
+      status: 'partial',
+      sourceKind: 'static_instrumentation',
+      source: 'console logger call',
+      reason: 'Only console logging was found in capability-owned code.',
+      filePaths: consoleFiles,
+    };
+  }
+  if (simulatedFiles.length > 0) {
+    return {
+      status: 'missing',
+      sourceKind: 'simulated',
+      source: 'simulated observability marker',
+      reason: 'Only simulated observability markers were found.',
+      filePaths: simulatedFiles,
+    };
+  }
+  return missingEvidence('No logging instrumentation was found.');
 }
 
 /**
@@ -233,20 +340,59 @@ export function computeLogQuality(
  * DataDog (`dd-`, `DD-`, `statsd`), and OpenTelemetry metrics patterns.
  */
 export function scanForMetrics(filePaths: string[]): ObservabilityStatus {
-  let found = 0;
+  return scanForMetricsEvidence(filePaths).status;
+}
+
+function scanForMetricsEvidence(filePaths: string[]): PillarScanResult {
+  const instrumentedFiles: string[] = [];
+  const configurationFiles: string[] = [];
+  const simulatedFiles: string[] = [];
 
   for (const filePath of filePaths) {
     const content = readFileSafe(filePath);
+    if (containsSimulatedObservabilitySource(content)) {
+      simulatedFiles.push(filePath);
+      continue;
+    }
     if (
-      /@Metric\(|counter\.(inc|add|set)|histogram\.(observe|record)|gauge\.(inc|dec|set)|summary\.observe|prom\.client|dd-trace\/metrics|statsd\.|import.*datadog|otel\.metrics|meter\.create(Counter|Histogram|Gauge)/m.test(
+      /@Metric\(|counter\.(inc|add|set)|histogram\.(observe|record)|gauge\.(inc|dec|set)|summary\.observe|statsd\.(increment|histogram|gauge)|otel\.metrics|meter\.create(Counter|Histogram|Gauge)/m.test(
         content,
       )
     ) {
-      found++;
+      instrumentedFiles.push(filePath);
+    } else if (/prom\.client|dd-trace\/metrics|import.*datadog|PROMETHEUS_|DD_/m.test(content)) {
+      configurationFiles.push(filePath);
     }
   }
 
-  return found > 0 ? 'observed' : 'missing';
+  if (instrumentedFiles.length > 0) {
+    return {
+      status: 'observed',
+      sourceKind: 'static_instrumentation',
+      source: 'metric instrumentation call',
+      reason: 'Metric emitters are present in capability-owned code.',
+      filePaths: instrumentedFiles,
+    };
+  }
+  if (configurationFiles.length > 0) {
+    return {
+      status: 'partial',
+      sourceKind: 'configuration',
+      source: 'metrics configuration',
+      reason: 'Metrics configuration exists, but no metric emission was found for this capability.',
+      filePaths: configurationFiles,
+    };
+  }
+  if (simulatedFiles.length > 0) {
+    return {
+      status: 'missing',
+      sourceKind: 'simulated',
+      source: 'simulated observability marker',
+      reason: 'Only simulated metrics evidence was found.',
+      filePaths: simulatedFiles,
+    };
+  }
+  return missingEvidence('No metrics instrumentation was found.');
 }
 
 // ─── Tracing ──────────────────────────────────────────────────────────────────
@@ -258,20 +404,59 @@ export function scanForMetrics(filePaths: string[]): ObservabilityStatus {
  * and OpenTelemetry span patterns.
  */
 export function scanForTracing(filePaths: string[]): ObservabilityStatus {
-  let found = 0;
+  return scanForTracingEvidence(filePaths).status;
+}
+
+function scanForTracingEvidence(filePaths: string[]): PillarScanResult {
+  const instrumentedFiles: string[] = [];
+  const configurationFiles: string[] = [];
+  const simulatedFiles: string[] = [];
 
   for (const filePath of filePaths) {
     const content = readFileSafe(filePath);
+    if (containsSimulatedObservabilitySource(content)) {
+      simulatedFiles.push(filePath);
+      continue;
+    }
     if (
-      /@Span\(|tracer\.startSpan|tracer\.trace|span\.setTag|span\.finish|span\.log|dd-trace|otel\.trace|OpentelemetryModule|withSpan\(|context\.with\(|startSpan\(|trace\.getTracer\(|opentelemetry.*trace/m.test(
+      /@Span\(|tracer\.startSpan|tracer\.trace|span\.setTag|span\.finish|span\.log|withSpan\(|context\.with\(|startSpan\(|trace\.getTracer\(/m.test(
         content,
       )
     ) {
-      found++;
+      instrumentedFiles.push(filePath);
+    } else if (/dd-trace|otel\.trace|OpentelemetryModule|opentelemetry.*trace/m.test(content)) {
+      configurationFiles.push(filePath);
     }
   }
 
-  return found > 0 ? 'observed' : 'missing';
+  if (instrumentedFiles.length > 0) {
+    return {
+      status: 'observed',
+      sourceKind: 'static_instrumentation',
+      source: 'trace span instrumentation',
+      reason: 'Trace spans are created in capability-owned code.',
+      filePaths: instrumentedFiles,
+    };
+  }
+  if (configurationFiles.length > 0) {
+    return {
+      status: 'partial',
+      sourceKind: 'configuration',
+      source: 'tracing configuration',
+      reason: 'Tracing configuration exists, but no capability-owned span was found.',
+      filePaths: configurationFiles,
+    };
+  }
+  if (simulatedFiles.length > 0) {
+    return {
+      status: 'missing',
+      sourceKind: 'simulated',
+      source: 'simulated observability marker',
+      reason: 'Only simulated tracing evidence was found.',
+      filePaths: simulatedFiles,
+    };
+  }
+  return missingEvidence('No tracing instrumentation was found.');
 }
 
 // ─── Error Tracking ───────────────────────────────────────────────────────────
@@ -283,20 +468,60 @@ export function scanForTracing(filePaths: string[]): ObservabilityStatus {
  * `initSentry`, and `SentryInterceptor` usage.
  */
 export function scanForErrorTracking(filePaths: string[]): ObservabilityStatus {
-  let found = 0;
+  return scanForErrorTrackingEvidence(filePaths).status;
+}
+
+function scanForErrorTrackingEvidence(filePaths: string[]): PillarScanResult {
+  const instrumentedFiles: string[] = [];
+  const configurationFiles: string[] = [];
+  const simulatedFiles: string[] = [];
 
   for (const filePath of filePaths) {
     const content = readFileSafe(filePath);
+    if (containsSimulatedObservabilitySource(content)) {
+      simulatedFiles.push(filePath);
+      continue;
+    }
     if (
-      /@Sentry\(|Sentry\.(captureException|captureMessage|init|addBreadcrumb)|initSentry|SentryInterceptor|SentryModule|from ['"]@sentry\//m.test(
+      /@Sentry\(|Sentry\.(captureException|captureMessage|addBreadcrumb)|SentryInterceptor/m.test(
         content,
       )
     ) {
-      found++;
+      instrumentedFiles.push(filePath);
+    } else if (/Sentry\.(init)|initSentry|SentryModule|from ['"]@sentry\//m.test(content)) {
+      configurationFiles.push(filePath);
     }
   }
 
-  return found > 0 ? 'observed' : 'missing';
+  if (instrumentedFiles.length > 0) {
+    return {
+      status: 'observed',
+      sourceKind: 'static_instrumentation',
+      source: 'error capture instrumentation',
+      reason: 'Error capture calls are present in capability-owned code.',
+      filePaths: instrumentedFiles,
+    };
+  }
+  if (configurationFiles.length > 0) {
+    return {
+      status: 'partial',
+      sourceKind: 'configuration',
+      source: 'sentry configuration',
+      reason:
+        'Sentry configuration exists, but no error capture call was found for this capability.',
+      filePaths: configurationFiles,
+    };
+  }
+  if (simulatedFiles.length > 0) {
+    return {
+      status: 'missing',
+      sourceKind: 'simulated',
+      source: 'simulated observability marker',
+      reason: 'Only simulated error-tracking evidence was found.',
+      filePaths: simulatedFiles,
+    };
+  }
+  return missingEvidence('No error-tracking instrumentation was found.');
 }
 
 // ─── Integrations Detection ───────────────────────────────────────────────────
@@ -344,10 +569,12 @@ function loadFlows(pulseCurrentDir: string): PulseFlowProjectionItem[] {
 }
 
 function buildCapabilityObservability(
+  rootDir: string,
   capabilities: PulseCapability[],
   allFiles: string[],
 ): CapabilityObservability[] {
   const fileCache = new Map<string, string>();
+  const allFileSet = new Set(allFiles.map((filePath) => safeResolve(filePath)));
 
   function getContent(filePath: string): string {
     if (!fileCache.has(filePath)) {
@@ -357,39 +584,72 @@ function buildCapabilityObservability(
   }
 
   return capabilities.map((cap) => {
-    const relevantFiles = cap.filePaths.filter((fp) => allFiles.includes(fp));
+    const relevantFiles = resolveCapabilityFiles(rootDir, cap.filePaths, allFileSet);
 
-    const logs = scanForLogging(relevantFiles);
-    const metrics = scanForMetrics(relevantFiles);
-    const tracing = scanForTracing(relevantFiles);
-    const sentry = scanForErrorTracking(relevantFiles);
-
-    const healthEndpoint = findHealthEndpoint(relevantFiles);
-    const alerts = scanForAlerts(relevantFiles);
-    const dashboards = findDashboards(relevantFiles);
-    const errorBudget = cap.runtimeCritical ? 'missing' : 'not_applicable';
+    const evidence: Record<ObservabilityPillar, ObservabilityPillarEvidence> = {
+      logs: normalizePillarEvidence('logs', scanForLoggingEvidence(relevantFiles), rootDir),
+      metrics: normalizePillarEvidence('metrics', scanForMetricsEvidence(relevantFiles), rootDir),
+      tracing: normalizePillarEvidence('tracing', scanForTracingEvidence(relevantFiles), rootDir),
+      alerts: normalizePillarEvidence('alerts', scanForAlertsEvidence(relevantFiles), rootDir),
+      dashboards: normalizePillarEvidence(
+        'dashboards',
+        findDashboardEvidence(relevantFiles),
+        rootDir,
+      ),
+      health_probes: normalizePillarEvidence(
+        'health_probes',
+        findHealthEndpointEvidence(relevantFiles),
+        rootDir,
+      ),
+      error_budget: normalizePillarEvidence(
+        'error_budget',
+        cap.runtimeCritical
+          ? missingEvidence('Runtime-critical capabilities need explicit error-budget evidence.')
+          : {
+              status: 'not_applicable',
+              sourceKind: 'not_applicable',
+              source: 'non-runtime-critical capability',
+              reason:
+                'Error budget evidence is not required for non-runtime-critical capabilities.',
+              filePaths: [],
+            },
+        rootDir,
+      ),
+      sentry: normalizePillarEvidence(
+        'sentry',
+        scanForErrorTrackingEvidence(relevantFiles),
+        rootDir,
+      ),
+    };
 
     const pillars: Record<ObservabilityPillar, ObservabilityStatus> = {
-      logs,
-      metrics,
-      tracing,
-      alerts,
-      dashboards,
-      health_probes: healthEndpoint ? 'observed' : 'missing',
-      error_budget: errorBudget as ObservabilityStatus,
-      sentry,
+      logs: evidence.logs.status,
+      metrics: evidence.metrics.status,
+      tracing: evidence.tracing.status,
+      alerts: evidence.alerts.status,
+      dashboards: evidence.dashboards.status,
+      health_probes: evidence.health_probes.status,
+      error_budget: evidence.error_budget.status,
+      sentry: evidence.sentry.status,
     };
 
     const structuredLogFields = scanForStructuredFields(relevantFiles, getContent);
-    const perFileLogging = scanPerFileLogging(relevantFiles, getContent);
+    const perFileLogging = scanPerFileLogging(relevantFiles, getContent).map((entry) => ({
+      ...entry,
+      filePath: toRepoRelativePath(rootDir, entry.filePath),
+    }));
 
     const detail = {
+      matchedFilePaths: relevantFiles.map((filePath) => toRepoRelativePath(rootDir, filePath)),
       logCount: countLogCalls(relevantFiles, getContent),
       metricNames: findMetricNames(relevantFiles, getContent),
       traceSpans: countTraceSpans(relevantFiles, getContent),
       alertRules: countAlertRules(relevantFiles, getContent),
       dashboardUrls: findDashboardUrls(relevantFiles, getContent),
-      healthProbeUrl: healthEndpoint ?? null,
+      healthProbeUrl:
+        evidence.health_probes.status === 'observed'
+          ? evidence.health_probes.source.replace(/^health endpoint /, '')
+          : null,
       errorBudgetRemaining: null,
       sentryProjectId: null,
       structuredLogFields,
@@ -398,17 +658,56 @@ function buildCapabilityObservability(
 
     const overallStatus = computeOverallStatus(pillars);
 
-    const logQuality = computeLogQuality(logs, tracing, sentry, structuredLogFields.length);
+    const logQuality = computeLogQuality(
+      pillars.logs,
+      pillars.tracing,
+      pillars.sentry,
+      structuredLogFields.length,
+    );
+
+    const trustedObservedPillars = (
+      Object.entries(evidence) as Array<[ObservabilityPillar, ObservabilityPillarEvidence]>
+    )
+      .filter(([, item]) => item.observed)
+      .map(([pillar]) => pillar);
+
+    const untrustedEvidencePillars = (
+      Object.entries(evidence) as Array<[ObservabilityPillar, ObservabilityPillarEvidence]>
+    )
+      .filter(([, item]) => UNTRUSTED_PRESENT_KINDS.has(item.sourceKind))
+      .map(([pillar]) => pillar);
 
     return {
       capabilityId: cap.id,
       capabilityName: cap.name,
+      runtimeCritical: cap.runtimeCritical,
       pillars,
+      evidence,
       details: detail,
       overallStatus,
       logQuality,
+      trustedObservedPillars,
+      untrustedEvidencePillars,
+      criticalObservedByUntrustedSource: false,
     };
   });
+}
+
+function normalizePillarEvidence(
+  pillar: ObservabilityPillar,
+  result: PillarScanResult,
+  rootDir: string,
+): ObservabilityPillarEvidence {
+  const status = normalizeStatusForEvidence(result.status, result.sourceKind);
+  return {
+    pillar,
+    status,
+    sourceKind: result.sourceKind,
+    observed: status === 'observed' && TRUSTED_OBSERVED_KINDS.has(result.sourceKind),
+    source: result.source,
+    reason: result.reason,
+    filePaths: result.filePaths.map((filePath) => toRepoRelativePath(rootDir, filePath)),
+  };
 }
 
 function buildFlowObservability(
@@ -479,44 +778,133 @@ function computeOverallStatus(
   return 'uncovered';
 }
 
-function findHealthEndpoint(filePaths: string[]): string | null {
+function findHealthEndpointEvidence(filePaths: string[]): PillarScanResult {
+  const simulatedFiles: string[] = [];
   for (const filePath of filePaths) {
     const content = readFileSafe(filePath);
+    if (containsSimulatedObservabilitySource(content)) {
+      simulatedFiles.push(filePath);
+      continue;
+    }
     const m = content.match(
       /@(Get|Head)\s*\(\s*['"](?:\/)?(healthz?|health\/detailed|ready)\s*['"]/i,
     );
-    if (m) return `/${m[2]}`;
+    if (m) {
+      return {
+        status: 'observed',
+        sourceKind: 'static_instrumentation',
+        source: `health endpoint /${m[2]}`,
+        reason: 'A concrete health endpoint is declared in capability-owned code.',
+        filePaths: [filePath],
+      };
+    }
   }
-  return null;
+  if (simulatedFiles.length > 0) {
+    return {
+      status: 'missing',
+      sourceKind: 'simulated',
+      source: 'simulated observability marker',
+      reason: 'Only simulated health-probe evidence was found.',
+      filePaths: simulatedFiles,
+    };
+  }
+  return missingEvidence('No health probe endpoint was found.');
 }
 
 function scanForAlerts(filePaths: string[]): ObservabilityStatus {
-  let found = 0;
+  return scanForAlertsEvidence(filePaths).status;
+}
+
+function scanForAlertsEvidence(filePaths: string[]): PillarScanResult {
+  const observedFiles: string[] = [];
+  const configurationFiles: string[] = [];
+  const simulatedFiles: string[] = [];
   for (const filePath of filePaths) {
     const content = readFileSafe(filePath);
+    if (containsSimulatedObservabilitySource(content)) {
+      simulatedFiles.push(filePath);
+      continue;
+    }
     if (
-      /datadog.*monitor|@monitor|PROMETHEUS_ALERT|alertmanager|uptime_kuma|better_uptime|webhook.*alert|alertApi|notifyAlert/m.test(
+      /Sentry\.(captureException|captureMessage)|alertApi\.(send|post|create)|notifyAlert\(|sendAlert\(|webhook.*alert.*(send|post)/m.test(
         content,
       )
     ) {
-      found++;
+      observedFiles.push(filePath);
+    } else if (
+      /datadog.*monitor|@monitor|PROMETHEUS_ALERT|alertmanager|uptime_kuma|better_uptime|OPS_WEBHOOK_URL|AUTOPILOT_ALERT_WEBHOOK_URL|DLQ_WEBHOOK_URL|webhook.*alert/m.test(
+        content,
+      )
+    ) {
+      configurationFiles.push(filePath);
     }
   }
-  return found > 0 ? 'observed' : 'missing';
+  if (observedFiles.length > 0) {
+    return {
+      status: 'observed',
+      sourceKind: 'static_instrumentation',
+      source: 'alert dispatch instrumentation',
+      reason: 'Alert dispatch code is present in capability-owned code.',
+      filePaths: observedFiles,
+    };
+  }
+  if (configurationFiles.length > 0) {
+    return {
+      status: 'partial',
+      sourceKind: 'configuration',
+      source: 'alerting configuration',
+      reason: 'Alerting configuration exists, but no alert dispatch evidence was found.',
+      filePaths: configurationFiles,
+    };
+  }
+  if (simulatedFiles.length > 0) {
+    return {
+      status: 'missing',
+      sourceKind: 'simulated',
+      source: 'simulated observability marker',
+      reason: 'Only simulated alerting evidence was found.',
+      filePaths: simulatedFiles,
+    };
+  }
+  return missingEvidence('No alerting evidence was found.');
 }
 
-function findDashboards(filePaths: string[]): ObservabilityStatus {
+function findDashboardEvidence(filePaths: string[]): PillarScanResult {
+  const catalogFiles: string[] = [];
+  const simulatedFiles: string[] = [];
   for (const filePath of filePaths) {
     const content = readFileSafe(filePath);
+    if (containsSimulatedObservabilitySource(content)) {
+      simulatedFiles.push(filePath);
+      continue;
+    }
     if (
       /grafana|kibana|splunk|datadog.*dashboard|dashboard.*url|bullboard|BullBoard|@BullBoard\(/m.test(
         content,
       )
     ) {
-      return 'observed';
+      catalogFiles.push(filePath);
     }
   }
-  return 'missing';
+  if (catalogFiles.length > 0) {
+    return {
+      status: 'partial',
+      sourceKind: 'catalog',
+      source: 'dashboard catalog',
+      reason: 'Dashboard references are catalog/configuration, not observed runtime evidence.',
+      filePaths: catalogFiles,
+    };
+  }
+  if (simulatedFiles.length > 0) {
+    return {
+      status: 'missing',
+      sourceKind: 'simulated',
+      source: 'simulated observability marker',
+      reason: 'Only simulated dashboard evidence was found.',
+      filePaths: simulatedFiles,
+    };
+  }
+  return missingEvidence('No dashboard catalog entry was found.');
 }
 
 function countLogCalls(filePaths: string[], getContent: (p: string) => string): number {
@@ -631,7 +1019,7 @@ function buildSummary(
     totalFlows: flowItems.length,
     fullyCoveredFlows: flowItems.filter((f) => f.overallStatus === 'covered').length,
     criticalCapabilitiesWithoutAlerts: capabilityItems.filter(
-      (c) => c.pillars.alerts === 'missing' && c.overallStatus !== 'covered',
+      (c) => c.runtimeCritical && c.pillars.alerts === 'missing' && c.overallStatus !== 'covered',
     ).length,
     criticalFlowsWithoutTracing: flowItems.filter(
       (f) => f.pillars.tracing === 'missing' && f.overallStatus !== 'covered',

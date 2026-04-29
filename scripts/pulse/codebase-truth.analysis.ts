@@ -130,7 +130,7 @@ export function buildPageSemanticProfile(page: PageFunctionalMap): SemanticToken
 export function isLikelyMutation(interaction: InteractionChain): boolean {
   if (!interaction.apiCall) return false;
   if (interaction.apiCall.method && interaction.apiCall.method.toUpperCase() !== 'GET') return true;
-  return /\b(save|create|update|delete|remove|add|send|submit|pay|upload|sync|connect|approve|withdraw|checkout)\b/i.test(
+  return /\b(save|create|update|delete|remove|add|send|submit|upload|sync|connect|approve)\b/i.test(
     `${interaction.elementLabel} ${interaction.handler || ''} ${interaction.apiCall.endpoint}`,
   );
 }

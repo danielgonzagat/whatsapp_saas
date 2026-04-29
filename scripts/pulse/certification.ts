@@ -89,12 +89,15 @@ import {
   evaluateBreakpointPrecisionGate,
   evaluateCriticalPathObservedGate,
   evaluateExecutionMatrixCompleteGate,
+  type PulsePathCoverageGateState,
 } from './cert-gate-execution-matrix';
 import {
   detectPlaceholderTests,
   detectWeakStatusAssertions,
   detectTypeEscapeHatches,
 } from './test-honesty';
+import { pathExists, readJsonFile } from './safe-fs';
+import { safeJoin } from './safe-path';
 
 interface ComputeCertificationInput {
   rootDir: string;
@@ -138,6 +141,18 @@ interface ComputeCertificationInput {
   selfTrustReport?: PulseSelfTrustReport | null;
 }
 
+function loadPathCoverageGateState(rootDir: string): PulsePathCoverageGateState | null {
+  const filePath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_PATH_COVERAGE.json');
+  if (!pathExists(filePath)) {
+    return null;
+  }
+  try {
+    return readJsonFile<PulsePathCoverageGateState>(filePath);
+  } catch {
+    return null;
+  }
+}
+
 /** Compute certification. */
 export function computeCertification(input: ComputeCertificationInput): PulseCertification {
   const env = getEnvironment();
@@ -147,6 +162,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
   const certificationTiers = getCertificationTiers(input.resolvedManifest);
   const finalReadinessCriteria = getFinalReadinessCriteria(input.resolvedManifest);
   const timestamp = new Date().toISOString();
+  const pathCoverage = loadPathCoverageGateState(input.rootDir);
 
   const defaults = buildDefaultEvidence(
     env,
@@ -185,10 +201,18 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       {
         kind: 'coverage',
         executed: true,
-        summary: `${input.executionMatrix.summary.criticalUnobservedPaths} critical path(s) lack observed pass/fail evidence.`,
-        artifactPaths: ['PULSE_EXECUTION_MATRIX.json'],
+        summary:
+          pathCoverage?.summary?.criticalUnobserved && pathCoverage.summary.criticalUnobserved > 0
+            ? `${pathCoverage.summary.criticalUnobserved} critical path(s) remain unobserved in path coverage.`
+            : `${input.executionMatrix.summary.criticalUnobservedPaths} critical path(s) lack observed pass/fail evidence.`,
+        artifactPaths: pathCoverage
+          ? ['PULSE_EXECUTION_MATRIX.json', 'PULSE_PATH_COVERAGE.json']
+          : ['PULSE_EXECUTION_MATRIX.json'],
         metrics: {
           criticalUnobservedPaths: input.executionMatrix.summary.criticalUnobservedPaths,
+          criticalInferredOnlyPaths: pathCoverage?.summary?.criticalInferredOnly ?? 0,
+          criticalPathCoverageUnobserved: pathCoverage?.summary?.criticalUnobserved ?? 0,
+          pathCoveragePercent: pathCoverage?.summary?.coveragePercent ?? null,
           observedPass: input.executionMatrix.summary.observedPass,
           observedFail: input.executionMatrix.summary.observedFail,
         },
@@ -462,7 +486,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     criticalPathObservedPass: withTemporaryGateAcceptance(
       'criticalPathObservedPass',
       manifest,
-      evaluateCriticalPathObservedGate(input.executionMatrix),
+      evaluateCriticalPathObservedGate(input.executionMatrix, pathCoverage),
     ),
     breakpointPrecisionPass: withTemporaryGateAcceptance(
       'breakpointPrecisionPass',

@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-29T19:00:46.526Z
+# PULSE REPORT — 2026-04-29T19:25:31.137Z
 
 ## PULSE VERDICT
 
@@ -19,7 +19,7 @@
 - Can declare Kloel product certified: NAO
 - bounded_run: PASS - Bounded next autonomous cycle exposes 8 ai_safe unit(s).
 - artifact_consistency: PASS - Cross-artifact consistency passed.
-- execution_matrix: PASS - Execution matrix classified 4012 path(s) with zero unknown and zero non-terminal paths.
+- execution_matrix: PASS - Execution matrix classified 4017 path(s) with zero unknown and zero non-terminal paths.
 - critical_path_terminal: PASS - All critical matrix paths are observed pass/fail, human-blocked, or carry a precise terminal reason.
 - breakpoint_precision: PASS - Every observed failure in the execution matrix has a breakpoint.
 - external_reality: PASS - Required external adapters are fresh and available for PULSE-machine decisions.
@@ -30,35 +30,35 @@
 
 - Certification: PARTIAL
 - Human replacement: NOT_READY
-- Score: 75/100
+- Score: 74/100
 - Blocking tier: 1
 - Scope parity: PASS (high)
 - Structural chains: 782/2376 complete
 - Capabilities: real=112, partial=189, latent=11, phantom=0
 - Capability maturity: foundational=4, connected=72, operational=183, productionReady=53
-- Flows: real=33, partial=89, latent=0, phantom=0
-- Execution matrix: paths=4012, observedPass=20, observedFail=228, criticalUnobserved=0, unknown=0
+- Flows: real=23, partial=95, latent=0, phantom=0
+- Execution matrix: paths=4017, observedPass=17, observedFail=229, criticalUnobserved=0, unknown=0
 - Structural parity gaps: total=39, critical=37, high=0
 - Codacy HIGH issues: 1116
-- GitNexus Code Graph: GitNexus index is fresh for commit dcb68e79.
+- GitNexus Code Graph: GitNexus index is fresh for commit ff00fe60.
 - External signals: total=8, runtime=2, change=1, dependency=0, high-impact=3
 
 ## Coverage Truth
 
 - Inventory Coverage: 100%
 - Classification Coverage: 98%
-- Structural Graph Coverage: 38% (813/2168 connected)
-  Reason: 813/2168 structural files connected.
+- Structural Graph Coverage: 37% (813/2173 connected)
+  Reason: 813/2173 structural files connected.
 - Test Coverage: 11%
   Reason: 173/1610 source modules have spec files.
-- Scenario Coverage: 100% (declared=100%, executed=100%, passed=27%)
+- Scenario Coverage: 100% (declared=100%, executed=100%, passed=19%)
 - Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
   Reason: 0/2 probes fresh.
 - Production Proof Coverage: 36%
   Reason: 112/312 capabilities real.
-- Unknown Files: 50
+- Unknown Files: 52
 - Orphan Files: 200
-- Excluded Directories: 21
+- Excluded Directories: 22
 - Manifest role: semantic overlay, NOT scope boundary
 - Scope source: repo_filesystem
 
@@ -73,71 +73,72 @@
 ### Inferred (structural analysis)
 - 2376 structural chains
 - 112 real capabilities
-- 33 real flows
+- 23 real flows
 
 ### Aspirational (product vision projection)
-- 41 projected surfaces
-- Target: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 291/291 capability(ies) and 122/122 flow(s) at least partially real, with readiness yellow.
+- 37 projected surfaces
+- Target: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 291/291 capability(ies) and 118/118 flow(s) at least partially real, with readiness yellow.
 
 ## External Reality
 
 - codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=3, mappedFlows=7, summary=37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=71, mappedFlows=111, summary=2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=51, mappedFlows=97, summary=1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=71, mappedFlows=112, summary=2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=51, mappedFlows=94, summary=1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
 - codacy/static_hotspot: impact=55%, mode=human_required, mappedCapabilities=3, mappedFlows=7, summary=1 HIGH Codacy issue(s) remain in package.json.
 - github/code-change: impact=40%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#224) Bump
 - sentry/performance-metric: impact=10%, mode=observation_only, mappedCapabilities=1, mappedFlows=0, summary=No unresolved Sentry issues — project is clean
-- datadog/config-gap: impact=20%, mode=observation_only, mappedCapabilities=23, mappedFlows=109, summary=No Datadog monitors configured — add monitors for production visibility
-- gitnexus/codegraph: impact=10%, mode=ai_safe, mappedCapabilities=11, mappedFlows=72, summary=GitNexus index is fresh for commit dcb68e79.
+- datadog/config-gap: impact=20%, mode=observation_only, mappedCapabilities=23, mappedFlows=106, summary=No Datadog monitors configured — add monitors for production visibility
+- gitnexus/codegraph: impact=10%, mode=ai_safe, mappedCapabilities=11, mappedFlows=86, summary=GitNexus index is fresh for commit ff00fe60.
 
 ## Product Identity
 
 - Current checkpoint: The current product-facing system materializes 102 real capability(ies), 189 partial capability(ies), 0 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.
-- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Scrapers, Onboarding, Inbox/Chat, Followups, Settings, Analytics, CIA/Agent, Autopilot.
-- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 291/291 capability(ies) and 122/122 flow(s) at least partially real, with readiness yellow.
+- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Scrapers, Onboarding, Inbox/Chat, Followups, Settings, Analytics, Autopilot, CIA/Agent.
+- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 291/291 capability(ies) and 118/118 flow(s) at least partially real, with readiness yellow.
 - Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 39 structural parity gap(s), and 1116 HIGH Codacy issue(s).
 
 ## Product Surfaces
 
 - Scrapers: status=real, completion=100%, capabilities=1, flows=0
 - Onboarding: status=real, completion=85%, capabilities=3, flows=22, blocker=Ai Assistant remains partial.
-- Inbox/Chat: status=real, completion=77%, capabilities=7, flows=57, blocker=Inbox Encode remains partial.
-- Followups: status=real, completion=75%, capabilities=66, flows=107, blocker=Missing structural roles: side_effect.
-- Settings: status=real, completion=74%, capabilities=64, flows=113, blocker=Ad Rules remains partial.
-- Analytics: status=real, completion=73%, capabilities=13, flows=95, blocker=Analytics Analytic remains partial.
-- CIA/Agent: status=real, completion=73%, capabilities=43, flows=97, blocker=Ai Assistant remains partial.
-- Autopilot: status=real, completion=72%, capabilities=50, flows=97, blocker=Ai Assistant remains partial.
-- Checkout: status=real, completion=72%, capabilities=39, flows=109, blocker=Ad Rules remains partial.
-- Marketing: status=real, completion=72%, capabilities=67, flows=110, blocker=Missing structural roles: side_effect.
-- Products: status=real, completion=72%, capabilities=38, flows=109, blocker=Ad Rules remains partial.
-- Anuncios/Ads: status=real, completion=71%, capabilities=78, flows=105, blocker=Ad Rules remains partial.
+- Inbox/Chat: status=real, completion=75%, capabilities=7, flows=56, blocker=Inbox Encode remains partial.
+- Followups: status=real, completion=74%, capabilities=66, flows=112, blocker=Missing structural roles: side_effect.
+- Settings: status=real, completion=73%, capabilities=64, flows=110, blocker=Ad Rules remains partial.
+- Analytics: status=real, completion=72%, capabilities=13, flows=92, blocker=Analytics Analytic remains partial.
+- Autopilot: status=real, completion=71%, capabilities=50, flows=94, blocker=Ai Assistant remains partial.
+- CIA/Agent: status=real, completion=71%, capabilities=43, flows=94, blocker=Ai Assistant remains partial.
+- Campaigns: status=real, completion=70%, capabilities=57, flows=110, blocker=Ad Rules remains partial.
+- Checkout: status=real, completion=70%, capabilities=38, flows=106, blocker=Ad Rules remains partial.
+- CRM: status=real, completion=70%, capabilities=4, flows=79, blocker=Campaigns Campaign remains partial.
+- Marketing: status=real, completion=70%, capabilities=67, flows=112, blocker=Missing structural roles: side_effect.
 
 ## Experience Projection
 
-- Operator Campaigns And Flows: status=partial, completion=64%, routes=/campaigns, /flow, /followups, blocker=Ai Assistant remains partial.
-- Admin Settings Kyc Banking: status=partial, completion=63%, routes=/billing, /settings, /wallet, blocker=Ai Assistant remains partial.
-- Admin Whatsapp Session Control: status=partial, completion=63%, routes=/settings, /whatsapp, blocker=Ai Assistant remains partial.
-- Customer Auth Shell: status=partial, completion=63%, routes=/dashboard, blocker=Ai Assistant remains partial.
-- Customer Product And Checkout: status=partial, completion=63%, routes=/billing, /checkout, /products, blocker=Inbox Encode remains partial.
-- Customer Whatsapp And Inbox: status=partial, completion=63%, routes=/inbox, /marketing, /whatsapp, blocker=Ai Assistant remains partial.
-- Operator Autopilot Run: status=partial, completion=63%, routes=/analytics, /autopilot, blocker=Ai Assistant remains partial.
-- System Payment Reconciliation: status=partial, completion=63%, routes=/billing, /checkout, /wallet, blocker=Ai Assistant remains partial.
+- Admin Settings Kyc Banking: status=partial, completion=62%, routes=/billing, /settings, /wallet, blocker=Ai Assistant remains partial.
+- Admin Whatsapp Session Control: status=partial, completion=62%, routes=/settings, /whatsapp, blocker=Ai Assistant remains partial.
+- Customer Auth Shell: status=partial, completion=62%, routes=/dashboard, blocker=Ai Assistant remains partial.
+- Customer Product And Checkout: status=partial, completion=62%, routes=/billing, /checkout, /products, blocker=Inbox Encode remains partial.
+- Customer Whatsapp And Inbox: status=partial, completion=62%, routes=/inbox, /marketing, /whatsapp, blocker=Ai Assistant remains partial.
+- Operator Autopilot Run: status=partial, completion=62%, routes=/analytics, /autopilot, blocker=Ai Assistant remains partial.
+- Operator Campaigns And Flows: status=partial, completion=62%, routes=/campaigns, /flow, /followups, blocker=Ai Assistant remains partial.
+- System Payment Reconciliation: status=partial, completion=62%, routes=/billing, /checkout, /wallet, blocker=Ai Assistant remains partial.
 
 ## Promise To Production Delta
 
-- Declared surfaces: 41
-- Real surfaces: 30
-- Partial surfaces: 3
+- Declared surfaces: 37
+- Real surfaces: 25
+- Partial surfaces: 5
 - Latent surfaces: 0
-- Phantom surfaces: 8
+- Phantom surfaces: 7
 - Critical gaps:
   - Billing: Billing Activate remains partial.
+  - Dashboard: Missing structural roles: side_effect.
+  - Ferramentas: Missing structural roles: orchestration, persistence, side_effect.
   - Produtos: onApprove remains partial.
-  - Reset: Auth Anonymous remains partial.
+  - Webinarios: (sem texto) remains partial.
   - Pay: phantom surface with incomplete materialization.
   - Privacy: phantom surface with incomplete materialization.
   - Terms: phantom surface with incomplete materialization.
-  - Tools: phantom surface with incomplete materialization.
 
 ## Structural Parity Gaps
 
@@ -185,12 +186,12 @@
 - codacy/static_hotspot: 2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.
 - codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.
 - Billing: Billing Activate remains partial.
+- Dashboard: Missing structural roles: side_effect.
+- Ferramentas: Missing structural roles: orchestration, persistence, side_effect.
 - Produtos: onApprove remains partial.
-- Reset: Auth Anonymous remains partial.
+- Webinarios: (sem texto) remains partial.
 - Pay: phantom surface with incomplete materialization.
 - Privacy: phantom surface with incomplete materialization.
-- Terms: phantom surface with incomplete materialization.
-- Tools: phantom surface with incomplete materialization.
 
 ## Next Work
 

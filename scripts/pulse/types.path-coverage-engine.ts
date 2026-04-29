@@ -9,7 +9,7 @@
 export type PathClassification =
   | 'observed_pass'
   | 'observed_fail'
-  | 'test_generated'
+  | 'probe_blueprint_generated'
   | 'inferred_only'
   | 'blocked_human_required'
   | 'unreachable'
@@ -21,6 +21,10 @@ export interface PathCoverageEntry {
   pathId: string;
   /** Human-readable entrypoint description. */
   entrypoint: string;
+  /** Risk level from the execution matrix. */
+  risk: 'low' | 'medium' | 'high' | 'critical';
+  /** Execution mode from the execution matrix. */
+  executionMode: 'ai_safe' | 'human_required' | 'observation_only';
   /** Terminal classification after coverage analysis. */
   classification: PathClassification;
   /** Whether a test or probe was generated for this path. */
@@ -33,6 +37,8 @@ export interface PathCoverageEntry {
   fixtureNeeded: string[];
   /** ISO timestamp of last probe execution, or null. */
   lastProbed: string | null;
+  /** Whether this entry is only a generated plan and not runtime evidence. */
+  evidenceMode: 'observed' | 'blueprint' | 'inferred' | 'blocked';
 }
 
 /** Full path coverage state artifact stored at .pulse/current/PULSE_PATH_COVERAGE.json. */
@@ -45,9 +51,12 @@ export interface PathCoverageState {
     observedPass: number;
     observedFail: number;
     testGenerated: number;
+    probeBlueprintGenerated: number;
     inferredOnly: number;
     blockedHuman: number;
     criticalInferredOnly: number;
+    criticalBlockedHuman: number;
+    criticalUnobserved: number;
     coveragePercent: number;
   };
   /** All classified path entries. */

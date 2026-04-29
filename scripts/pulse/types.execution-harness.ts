@@ -8,6 +8,8 @@ export type HarnessTargetKind =
   | 'webhook'
   | 'script';
 export type HarnessExecutionStatus =
+  | 'planned'
+  | 'not_executed'
   | 'not_tested'
   | 'passed'
   | 'failed'
@@ -26,6 +28,8 @@ export type ExecutionFeasibility = 'executable' | 'needs_staging' | 'cannot_exec
 export interface HarnessGeneratedTest {
   /** Human-readable test name (e.g. "should return 200 for valid request") */
   testName: string;
+  /** Generated catalog status. Plans are not executable proof. */
+  status: 'planned' | 'not_executed';
   /** The generated test harness code as a string */
   code: string;
   /** Test framework hint: jest, vitest, playwright, supertest */
@@ -82,6 +86,8 @@ export interface HarnessEvidence {
   generatedAt: string;
   summary: {
     totalTargets: number;
+    plannedTargets: number;
+    notExecutedTargets: number;
     testedTargets: number;
     passedTargets: number;
     failedTargets: number;

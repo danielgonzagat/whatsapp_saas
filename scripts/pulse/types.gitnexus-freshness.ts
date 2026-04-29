@@ -28,4 +28,8 @@ export interface GitNexusFreshness {
   totalIndexableFiles: number;
   /** Percentage of indexable files currently indexed (0–100). */
   coveragePercent: number;
+  /** Whether the GitNexus index directory (.gitnexus) exists on disk. */
+  hasIndexDirectory: boolean;
+  /** When true, the index is fresh enough to gate PULSE autonomous decisions. */
+  autonomyGatePassed: boolean;
 }

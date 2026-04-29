@@ -19,6 +19,7 @@ import type {
   HarnessTargetKind,
   ExecutionFeasibility,
   HarnessGeneratedTest,
+  HarnessExecutionStatus,
 } from './types.execution-harness';
 import type { BehaviorGraph, BehaviorNode } from './types.behavior-graph';
 import { detectConfig } from './config';
@@ -123,6 +124,31 @@ export function isCriticalHarnessTarget(target: HarnessTarget): boolean {
     hasPersistenceDependency(target) ||
     Boolean(method && MUTATING_METHODS.has(method))
   );
+}
+
+function isObservedHarnessStatus(status: HarnessExecutionStatus): boolean {
+  return status === 'passed' || status === 'failed' || status === 'blocked' || status === 'error';
+}
+
+function normalizeHarnessExecutionResult(result: HarnessExecutionResult): HarnessExecutionResult {
+  if (result.status === 'not_tested' || result.status === 'planned') {
+    return { ...result, status: 'not_executed' };
+  }
+
+  const hasExecutionEvidence =
+    result.attempts > 0 ||
+    result.executionTimeMs > 0 ||
+    Boolean(result.startedAt && result.finishedAt);
+
+  if (isObservedHarnessStatus(result.status) && !hasExecutionEvidence) {
+    return {
+      ...result,
+      status: 'not_executed',
+      error: result.error ?? 'Stored status had no execution attempts or timestamps',
+    };
+  }
+
+  return result;
 }
 
 function isWebhookLikeTarget(target: HarnessTarget): boolean {
@@ -574,11 +600,11 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
   const combinedResults: HarnessExecutionResult[] = allTargets.map((target) => {
     const existing = resultsById.get(target.targetId);
     if (existing) {
-      return existing;
+      return normalizeHarnessExecutionResult(existing);
     }
     return {
       targetId: target.targetId,
-      status: 'not_tested' as const,
+      status: 'not_executed' as const,
       executionTimeMs: 0,
       attempts: 0,
       error: null,
@@ -591,12 +617,7 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
   });
 
   // ── 8. Compute critical target stats ──
-  const criticalKeywords = ['payment', 'wallet', 'ledger', 'withdraw', 'kyc', 'split'];
-  const criticalTargets = allTargets.filter((t) =>
-    criticalKeywords.some(
-      (kw) => t.targetId.toLowerCase().includes(kw) || t.name.toLowerCase().includes(kw),
-    ),
-  );
+  const criticalTargets = allTargets.filter(isCriticalHarnessTarget);
 
   const passedResults = combinedResults.filter((r) => r.status === 'passed');
   const failedResults = combinedResults.filter((r) => r.status === 'failed');
@@ -606,16 +627,20 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
 
   const summary = {
     totalTargets: allTargets.length,
-    testedTargets: combinedResults.filter(
-      (r) => r.status !== 'not_tested' && r.status !== 'skipped',
+    plannedTargets: allTargets.filter((t) =>
+      t.generatedTests.some((test) => test.status === 'planned'),
     ).length,
+    notExecutedTargets: combinedResults.filter(
+      (r) => r.status === 'planned' || r.status === 'not_executed' || r.status === 'not_tested',
+    ).length,
+    testedTargets: combinedResults.filter((r) => isObservedHarnessStatus(r.status)).length,
     passedTargets: passedResults.length,
     failedTargets: failedResults.length,
     blockedTargets: blockedResults.length,
     criticalTargets: criticalTargets.length,
     criticalTested: criticalTargets.filter((t) => {
       const r = combinedResults.find((rr) => rr.targetId === t.targetId);
-      return r && r.status !== 'not_tested' && r.status !== 'skipped';
+      return r && isObservedHarnessStatus(r.status);
     }).length,
     criticalPassed: criticalTargets.filter((t) => {
       const r = combinedResults.find((rr) => rr.targetId === t.targetId);
@@ -1252,19 +1277,15 @@ export function classifyExecutionFeasibility(
     };
   }
 
-  // ── Check 6: heavy DB writes on critical models ──
+  // ── Check 6: destructive DB writes ──
   if (
     behaviorNode?.stateAccess &&
     behaviorNode.stateAccess.length > 0 &&
-    behaviorNode.stateAccess.some(
-      (s) =>
-        s.operation === 'delete' ||
-        (s.operation === 'upsert' && /payment|wallet|ledger|kyc|split/i.test(s.model)),
-    )
+    behaviorNode.stateAccess.some((s) => s.operation === 'delete' || s.operation === 'upsert')
   ) {
     return {
       feasibility: 'needs_staging',
-      reason: `Target performs destructive or financial DB writes on: ${behaviorNode.stateAccess.map((s) => s.model).join(', ')}`,
+      reason: `Target performs destructive DB writes on: ${behaviorNode.stateAccess.map((s) => s.model).join(', ')}`,
     };
   }
 
@@ -1284,133 +1305,61 @@ export function classifyExecutionFeasibility(
 /**
  * Generate test harness code for a given executable target.
  *
- * Produces Jest/Vitest-style test code strings with:
- *   - Arrange: fixture setup (mocks, test data)
- *   - Act: call the target function
- *   - Assert: verify outputs (HTTP status, return value, side effects)
- *
- * Each generated test is tagged as `generated: true`, meaning it has NOT
- * been executed — it is a plan for what SHOULD be run.
+ * Produces a non-executed blueprint. The blueprint is deliberately not marked
+ * runnable because fixture selection and assertions must be materialized from
+ * real code behavior before this can become proof.
  */
 export function generateTestHarnessCode(target: HarnessTarget): HarnessGeneratedTest[] {
   if (target.feasibility !== 'executable') {
     return [];
   }
 
-  const tests: HarnessGeneratedTest[] = [];
-  const imports = buildTestImports(target);
-  const beforeBlock = buildTestBeforeBlock(target);
   const suiteName = camelToKebab(target.name).replace(/\//g, '_');
 
-  // ── Test 1: basic invocation / smoke test ──
-  tests.push({
-    testName: `[PULSE] ${suiteName} — should resolve without error`,
-    framework: 'jest',
-    canRunLocally: true,
-    code: [
-      imports,
-      beforeBlock,
-      `describe('${target.name}', () => {`,
-      `  it('should resolve without error', async () => {`,
-      `    const result = await ${target.methodName}(validPayload);`,
-      `    expect(result).toBeDefined();`,
-      `    expect(result).not.toBeInstanceOf(Error);`,
-      `  });`,
-      `});`,
-    ].join('\n'),
-  });
-
-  // ── Test 2: input validation ──
-  if (target.requiresAuth || target.httpMethod) {
-    tests.push({
-      testName: `[PULSE] ${suiteName} — should reject missing auth`,
+  return [
+    {
+      testName: `[PULSE] ${suiteName} — planned executable harness`,
+      status: 'planned',
       framework: target.httpMethod ? 'supertest' : 'jest',
-      canRunLocally: true,
-      code: target.httpMethod
-        ? [
-            imports,
-            beforeBlock,
-            `describe('${target.httpMethod} ${target.routePattern}', () => {`,
-            `  it('should return 401 for missing auth token', async () => {`,
-            `    const res = await request(app)`,
-            `      .${target.httpMethod.toLowerCase()}('${target.routePattern}')`,
-            `      .send({});`,
-            `    expect(res.status).toBe(401);`,
-            `  });`,
-            `});`,
-          ].join('\n')
-        : [
-            imports,
-            beforeBlock,
-            `describe('${target.name}', () => {`,
-            `  it('should throw when required context is missing', async () => {`,
-            `    await expect(${target.methodName}()).rejects.toThrow();`,
-            `  });`,
-            `});`,
-          ].join('\n'),
-    });
-  }
+      canRunLocally: false,
+      code: buildHarnessBlueprintCode(target),
+    },
+  ];
+}
 
-  // ── Test 3: valid input path ──
-  tests.push({
-    testName: `[PULSE] ${suiteName} — should handle valid input correctly`,
-    framework: target.httpMethod ? 'supertest' : 'jest',
-    canRunLocally: true,
-    code: target.httpMethod
-      ? [
-          imports,
-          beforeBlock,
-          `describe('${target.httpMethod} ${target.routePattern}', () => {`,
-          `  it('should return 200 for valid request', async () => {`,
-          `    const res = await request(app)`,
-          `      .${target.httpMethod.toLowerCase()}('${target.routePattern}')`,
-          `      ${target.requiresAuth ? ".set('Authorization', `Bearer ${pulseAuthToken}`)" : ''}`,
-          `      .send(validPayload);`,
-          `    expect(res.status).toBeLessThan(500);`,
-          `    if (res.status === 200) {`,
-          `      expect(res.body).toBeDefined();`,
-          `    }`,
-          `  });`,
-          `});`,
-        ].join('\n')
-      : [
-          imports,
-          beforeBlock,
-          `describe('${target.name}', () => {`,
-          `  it('should handle valid input correctly', async () => {`,
-          `    const result = await ${target.methodName}(validPayload);`,
-          `    expect(result).toBeDefined();`,
-          `  });`,
-          `});`,
-        ].join('\n'),
-  });
+function buildHarnessBlueprintCode(target: HarnessTarget): string {
+  const blueprint = {
+    targetId: target.targetId,
+    kind: target.kind,
+    name: target.name,
+    filePath: target.filePath,
+    methodName: target.methodName,
+    routePattern: target.routePattern,
+    httpMethod: target.httpMethod,
+    requiresAuth: target.requiresAuth,
+    requiresTenant: target.requiresTenant,
+    dependencies: target.dependencies,
+    requiredFixtures: target.fixtures
+      .filter((fixture) => fixture.required)
+      .map((fixture) => ({
+        kind: fixture.kind,
+        name: fixture.name,
+        description: fixture.description,
+      })),
+    requiredAssertions: [
+      'materialize target import and dependency setup from the owning package',
+      'bind fixtures to real constructors, HTTP app, queue, or database test adapter',
+      'assert concrete output contract instead of defined/non-error placeholders',
+      'assert auth, tenant, and side-effect isolation when target metadata requires it',
+      'record attempts, timestamps, output, logs, and side effects before status can pass',
+    ],
+  };
 
-  // ── Test 4: tenant isolation (if applicable) ──
-  if (target.requiresTenant) {
-    tests.push({
-      testName: `[PULSE] ${suiteName} — should enforce tenant isolation`,
-      framework: target.httpMethod ? 'supertest' : 'jest',
-      canRunLocally: true,
-      code: [
-        imports,
-        beforeBlock,
-        `describe('${target.name}', () => {`,
-        `  it('should not leak data across workspaces', async () => {`,
-        `    const ws1Payload = { ...validPayload, workspaceId: 'ws-1' };`,
-        `    const ws2Payload = { ...validPayload, workspaceId: 'ws-2' };`,
-        ``,
-        `    await ${target.methodName}(ws1Payload);`,
-        `    const ws2Result = await ${target.methodName}(ws2Payload);`,
-        ``,
-        `    // Verify ws-2 does not see ws-1 data`,
-        `    expect(ws2Result).toBeDefined();`,
-        `  });`,
-        `});`,
-      ].join('\n'),
-    });
-  }
-
-  return tests;
+  return [
+    `const pulseHarnessBlueprint = ${JSON.stringify(blueprint, null, 2)};`,
+    '',
+    "throw new Error('PULSE_HARNESS_BLUEPRINT_NOT_EXECUTED: materialize fixtures and assertions before running this plan');",
+  ].join('\n');
 }
 
 // ─── Fixture Data Structure Builders ─────────────────────────────────────────
@@ -1484,50 +1433,6 @@ export function buildFixtureDataStructures(targets: HarnessTarget[]): Record<str
   };
 }
 
-// ─── Utility: Test Import Builder ────────────────────────────────────────────
-
-function buildTestImports(target: HarnessTarget): string {
-  const importPath = target.filePath
-    .replace(/^backend\/src\//, '../')
-    .replace(/^frontend\/src\//, '../../frontend/')
-    .replace(/\.ts$/, '');
-
-  const lines: string[] = [];
-
-  if (target.httpMethod) {
-    lines.push("import request from 'supertest';");
-    lines.push(`import { app } from '../../test/setup';`);
-  }
-
-  lines.push(`import { ${target.methodName} } from '${importPath}';`);
-
-  if (target.requiresAuth) {
-    lines.push("import { createTestToken } from '../../test/auth-helper';");
-  }
-
-  return lines.join('\n');
-}
-
-function buildTestBeforeBlock(target: HarnessTarget): string {
-  const lines: string[] = [];
-
-  if (target.requiresAuth) {
-    lines.push(
-      `const pulseAuthToken = createTestToken({ workspaceId: 'pulse-test-workspace', roles: ['admin'] });`,
-    );
-  }
-
-  lines.push('const validPayload = {');
-  if (target.requiresTenant) {
-    lines.push("  workspaceId: 'pulse-test-workspace',");
-  }
-  lines.push('  // TODO: fill with realistic test data based on target signature');
-  lines.push('};');
-  lines.push('');
-
-  return lines.join('\n');
-}
-
 // ─── Feasibility Summary Builder ─────────────────────────────────────────────
 
 function buildFeasibilitySummary(targets: HarnessTarget[]): {
@@ -1577,7 +1482,9 @@ export function loadHarnessResults(rootDir: string): HarnessExecutionResult[] {
 
   try {
     const evidence = readJsonFile<HarnessEvidence>(artifactPath);
-    return Array.isArray(evidence.results) ? evidence.results : [];
+    return Array.isArray(evidence.results)
+      ? evidence.results.map(normalizeHarnessExecutionResult)
+      : [];
   } catch {
     return [];
   }

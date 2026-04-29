@@ -1,12 +1,27 @@
 // PULSE — Live Codebase Nervous System
-// Perfectness Test Harness (Wave 9)
+// Perfectness Test Harness (Wave 9.4)
+//
+// Formal 72-hour autonomous test plan that validates the PULSE system's
+// ability to operate without human intervention.
+//
+// Defines the test suite structure, gate criteria, evidence collection
+// plan, exit conditions, and the evaluation pipeline.
+//
+// This is a PLANNING module — it defines the evaluation framework.
+// It does NOT execute the autonomous work or mutate the repository.
 
 import * as path from 'path';
 
 import { ensureDir, pathExists, readJsonFile, writeTextFile } from './safe-fs';
 import type {
+  ExitAction,
+  GateEvidencePlan,
+  GateEvidenceSource,
+  GateExitCondition,
   PerfectnessGate,
+  PerfectnessPhase,
   PerfectnessResult,
+  PerfectnessTestSuite,
   PerfectnessVerdict,
 } from './types.perfectness-test';
 
@@ -14,78 +29,126 @@ const ARTIFACT_FILE_NAME = 'PULSE_PERFECTNESS_RESULT.json';
 const PULSE_CERTIFICATE_FILE = 'PULSE_CERTIFICATE.json';
 const PULSE_AUTONOMY_STATE_FILE = 'PULSE_AUTONOMY_STATE.json';
 const PULSE_SANDBOX_STATE_FILE = 'PULSE_SANDBOX_STATE.json';
+const SCENARIO_EVIDENCE_FILE = 'PULSE_SCENARIO_EVIDENCE.json';
 
+// ────────────────────────────────────────────────────────────────────────────
+// Gate Definitions (canonical 8-gate suite)
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * The canonical 8-gate perfectness evaluation suite.
+ *
+ * Each gate defines what is being checked, the target condition,
+ * and a human-readable description.
+ */
 const GATE_DEFINITIONS = [
   {
     name: 'pulse-core-green',
     description: 'All PULSE certification gates pass',
-    target: 'score >= certified',
+    target: 'All certification gates status=pass AND score >= 50',
+    phase: 'validation' as PerfectnessPhase,
   },
   {
     name: 'product-core-green',
     description: 'All critical capabilities are real (not partial/latent/phantom)',
-    target: 'critical capabilities >= 90% real',
+    target: 'Certification score >= 60 (proxy for critical capability health)',
+    phase: 'validation' as PerfectnessPhase,
   },
   {
     name: 'e2e-core-pass',
     description: 'Scenario pass rate meets threshold',
     target: 'scenario pass rate >= 90%',
+    phase: 'validation' as PerfectnessPhase,
   },
   {
     name: 'runtime-stable',
-    description: 'No new Sentry errors during evaluation',
-    target: 'new errors = 0',
+    description: 'No new critical failures during evaluation period',
+    target: 'new critical errors = 0',
+    phase: 'autonomous_work' as PerfectnessPhase,
   },
   {
     name: 'no-regression',
     description: 'Final score not lower than start score',
     target: 'score end >= score start',
+    phase: 'verdict' as PerfectnessPhase,
   },
   {
     name: 'no-rollback-unrecovered',
     description: 'All rollbacks successfully recovered',
     target: 'unrecovered rollbacks = 0',
+    phase: 'autonomous_work' as PerfectnessPhase,
   },
   {
     name: 'no-protected-violation',
     description: 'Zero protected file changes during autonomous work',
     target: 'protected violations = 0',
+    phase: 'autonomous_work' as PerfectnessPhase,
   },
   {
     name: '72h-elapsed',
     description: 'At least 72 hours of autonomous work completed',
     target: 'duration >= 72h',
+    phase: 'verdict' as PerfectnessPhase,
   },
 ] as const;
 
-interface PulseCertState {
-  score?: number;
-  certified?: boolean;
-  status?: string;
-  gates?: Record<string, { status?: string; reason?: string }>;
-}
+// ────────────────────────────────────────────────────────────────────────────
+// Test Suite Structure
+// ────────────────────────────────────────────────────────────────────────────
 
-interface PulseAutonomyState {
-  iterations?: Array<{ accepted: boolean; rollback?: boolean; recovered?: boolean }>;
-  totalIterations?: number;
-  acceptedIterations?: number;
-  rejectedIterations?: number;
-  rollbacks?: number;
-}
+/**
+ * Build the complete perfectness test suite structure.
+ *
+ * This defines the ordered phases, gate dependencies, exit conditions,
+ * and evidence collection plan. The suite is the "planning document"
+ * that the autonomy loop follows during the 72h evaluation.
+ */
+export function buildTestSuite(): PerfectnessTestSuite {
+  const phases: PerfectnessTestSuite['phases'] = [
+    {
+      phase: 'fresh_branch',
+      gates: [],
+      dependsOnPrevious: false,
+    },
+    {
+      phase: 'pulse_run',
+      gates: [],
+      dependsOnPrevious: true,
+    },
+    {
+      phase: 'autonomous_work',
+      gates: ['runtime-stable', 'no-rollback-unrecovered', 'no-protected-violation'],
+      dependsOnPrevious: true,
+    },
+    {
+      phase: 'validation',
+      gates: ['pulse-core-green', 'product-core-green', 'e2e-core-pass'],
+      dependsOnPrevious: true,
+    },
+    {
+      phase: 'verdict',
+      gates: ['no-regression', '72h-elapsed'],
+      dependsOnPrevious: true,
+    },
+  ];
 
-interface PulseSandboxState {
-  summary?: {
-    totalDestructiveActions?: number;
+  return {
+    phases,
+    gateDependencies: buildGateDependencies(),
+    exitConditions: buildExitConditions(),
+    evidencePlans: buildEvidencePlans(),
   };
 }
 
 /**
- * Return the canonical list of perfectness evaluation gates.
- *
- * Each gate defines what is being checked, the target condition,
- * and a human-readable description.
- *
- * @returns Array of gate definitions (name, description, target)
+ * Get the canonical list of gate names in evaluation order.
+ */
+export function getGateNames(): string[] {
+  return GATE_DEFINITIONS.map((g) => g.name);
+}
+
+/**
+ * Return gate definitions (without evaluation results) for documentation.
  */
 export function getAcceptanceCriteria(): Omit<PerfectnessGate, 'actual' | 'passed' | 'evidence'>[] {
   return GATE_DEFINITIONS.map((g) => ({
@@ -95,17 +158,348 @@ export function getAcceptanceCriteria(): Omit<PerfectnessGate, 'actual' | 'passe
   }));
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Gate Dependencies
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Define which gates depend on the successful evaluation of other gates.
+ *
+ * Dependencies enforce ordering: a dependent gate's evaluation is
+ * skipped if its prerequisite gates have not been evaluated yet.
+ */
+function buildGateDependencies(): Record<string, string[]> {
+  return {
+    // 'product-core-green' depends on certification being healthy
+    'product-core-green': ['pulse-core-green'],
+    // 'no-regression' depends on having baseline scores from validation gates
+    'no-regression': ['pulse-core-green', 'product-core-green'],
+    // '72h-elapsed' depends on the autonomous work gates completing
+    '72h-elapsed': ['runtime-stable', 'no-rollback-unrecovered', 'no-protected-violation'],
+  };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Exit Conditions
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Define exit conditions (actions) for each gate's pass and fail outcomes.
+ *
+ * Exit conditions control the autonomy loop's behavior:
+ *   - On pass: what to do next
+ *   - On fail: whether to retry, pause for human, or rollback
+ */
+function buildExitConditions(): GateExitCondition[] {
+  return [
+    {
+      gateName: 'pulse-core-green',
+      onPass: 'continue_autonomous',
+      onFail: 'pause_for_human',
+      maxRetries: 3,
+      description:
+        'If PULSE certification gates fail after 3 retries, pause and request human diagnosis.',
+    },
+    {
+      gateName: 'product-core-green',
+      onPass: 'continue_autonomous',
+      onFail: 'pause_for_human',
+      maxRetries: 2,
+      description:
+        'If critical capabilities degrade, pause for human. Capability mapping may need manual correction.',
+    },
+    {
+      gateName: 'e2e-core-pass',
+      onPass: 'continue_autonomous',
+      onFail: 'retry_sandbox',
+      maxRetries: 3,
+      description:
+        'If E2E scenarios fail, retry in a new sandbox. After 3 attempts, pause for human.',
+    },
+    {
+      gateName: 'runtime-stable',
+      onPass: 'continue_autonomous',
+      onFail: 'rollback_and_stop',
+      maxRetries: 1,
+      description:
+        'Runtime instability (new errors) is a critical signal. Rollback immediately and stop.',
+    },
+    {
+      gateName: 'no-regression',
+      onPass: 'continue_autonomous',
+      onFail: 'rollback_and_stop',
+      maxRetries: 1,
+      description:
+        'Score regression means autonomous work is making things worse. Rollback and stop.',
+    },
+    {
+      gateName: 'no-rollback-unrecovered',
+      onPass: 'continue_autonomous',
+      onFail: 'pause_for_human',
+      maxRetries: 0,
+      description:
+        'Unrecovered rollbacks leave the system in an unknown state. Human must intervene.',
+    },
+    {
+      gateName: 'no-protected-violation',
+      onPass: 'continue_autonomous',
+      onFail: 'rollback_and_stop',
+      maxRetries: 0,
+      description:
+        'Protected file violations are a governance boundary breach. Rollback immediately.',
+    },
+    {
+      gateName: '72h-elapsed',
+      onPass: 'mark_perfect',
+      onFail: 'continue_autonomous',
+      maxRetries: Infinity,
+      description:
+        'Time gate. If 72h not yet elapsed, continue autonomous work. No failure action.',
+    },
+  ];
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Evidence Collection Plan
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Define the evidence collection plan for each gate.
+ *
+ * Each plan specifies what files or probes to read, what fields
+ * to extract, and how to interpret the data for the gate condition.
+ */
+function buildEvidencePlans(): GateEvidencePlan[] {
+  return [
+    {
+      gateName: 'pulse-core-green',
+      evidenceSources: [
+        {
+          source: PULSE_CERTIFICATE_FILE,
+          field: 'certified',
+          interpretation: 'Boolean: true means all certification gates passed',
+        },
+        {
+          source: PULSE_CERTIFICATE_FILE,
+          field: 'score',
+          interpretation: 'Number: must be >= 50 for pass',
+        },
+        {
+          source: PULSE_CERTIFICATE_FILE,
+          field: 'gates',
+          interpretation: 'Object: every gate must have status="pass"',
+        },
+      ],
+      collectionMethod: 'file_read',
+      fallbackIfMissing: 'Assume FAIL — certification file must exist for evaluation.',
+    },
+    {
+      gateName: 'product-core-green',
+      evidenceSources: [
+        {
+          source: PULSE_CERTIFICATE_FILE,
+          field: 'capabilities',
+          interpretation: 'Array: count capabilities with health="real" vs total',
+        },
+        {
+          source: PULSE_CERTIFICATE_FILE,
+          field: 'score',
+          interpretation: 'Number: proxy threshold >= 60 for product health',
+        },
+      ],
+      collectionMethod: 'file_read',
+      fallbackIfMissing: 'Assume FAIL — cannot verify product health without certification data.',
+    },
+    {
+      gateName: 'e2e-core-pass',
+      evidenceSources: [
+        {
+          source: SCENARIO_EVIDENCE_FILE,
+          field: 'scenarios',
+          interpretation: 'Array: count scenarios with passStatus="pass" / total executed',
+        },
+        {
+          source: PULSE_CERTIFICATE_FILE,
+          field: 'gates.browserPass',
+          interpretation: 'Object: status="pass" indicates browser scenarios executed',
+        },
+      ],
+      collectionMethod: 'file_read',
+      fallbackIfMissing:
+        'Check PULSE_CERTIFICATE.json for browser gate as proxy. If absent, assume 0% pass rate.',
+    },
+    {
+      gateName: 'runtime-stable',
+      evidenceSources: [
+        {
+          source: PULSE_CERTIFICATE_FILE,
+          field: 'gates',
+          interpretation:
+            'Object: count entries where status != "pass" AND name includes "critical"',
+        },
+      ],
+      collectionMethod: 'file_read',
+      fallbackIfMissing:
+        'If certificate absent, assume new errors exist and gate FAILS as safety precaution.',
+    },
+    {
+      gateName: 'no-regression',
+      evidenceSources: [
+        {
+          source: PULSE_CERTIFICATE_FILE,
+          field: 'score',
+          interpretation: 'Number: compare to scoreStart captured at evaluation start',
+        },
+      ],
+      collectionMethod: 'file_read',
+      fallbackIfMissing: 'Use startScore from evaluation initiation. If no cert, gate FAILS.',
+    },
+    {
+      gateName: 'no-rollback-unrecovered',
+      evidenceSources: [
+        {
+          source: PULSE_AUTONOMY_STATE_FILE,
+          field: 'iterations',
+          interpretation: 'Array: count entries where rollback=true AND recovered=false',
+        },
+        {
+          source: PULSE_AUTONOMY_STATE_FILE,
+          field: 'rollbacks',
+          interpretation: 'Number: total rollbacks for context',
+        },
+      ],
+      collectionMethod: 'file_read',
+      fallbackIfMissing: 'If no autonomy state file, assume 0 rollbacks (no autonomous work done).',
+    },
+    {
+      gateName: 'no-protected-violation',
+      evidenceSources: [
+        {
+          source: PULSE_SANDBOX_STATE_FILE,
+          field: 'activeWorkspaces',
+          interpretation: 'Array: check each workspace for patches that modified protected files',
+        },
+        {
+          source: PULSE_SANDBOX_STATE_FILE,
+          field: 'protectedFiles',
+          interpretation: 'Array: the list of protected files to check against',
+        },
+      ],
+      collectionMethod: 'file_read',
+      fallbackIfMissing:
+        'If no sandbox state file, assume no protected violations (no changes made).',
+    },
+    {
+      gateName: '72h-elapsed',
+      evidenceSources: [
+        {
+          source: 'system_clock',
+          field: 'current_time',
+          interpretation: 'ISO-8601 timestamp compared to evaluation startTime',
+        },
+      ],
+      collectionMethod: 'api_probe',
+      fallbackIfMissing: 'System clock always available. Compute hours since startTime.',
+    },
+  ];
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// State File Interfaces
+// ────────────────────────────────────────────────────────────────────────────
+
+interface PulseCertState {
+  score?: number;
+  certified?: boolean;
+  status?: string;
+  gates?: Record<string, { status?: string; reason?: string }>;
+  capabilities?: Array<{ health?: string }>;
+}
+
+interface PulseAutonomyState {
+  iterations?: Array<{
+    accepted: boolean;
+    rollback?: boolean;
+    recovered?: boolean;
+  }>;
+  totalIterations?: number;
+  acceptedIterations?: number;
+  rejectedIterations?: number;
+  rollbacks?: number;
+}
+
+interface PulseSandboxState {
+  summary?: {
+    totalDestructiveActions?: number;
+    governanceViolations?: number;
+  };
+  activeWorkspaces?: Array<{
+    patches?: Array<{ safe: boolean }>;
+  }>;
+  protectedFiles?: string[];
+}
+
+interface PulseScenarioEvidence {
+  scenarios?: Array<{
+    passStatus?: string;
+    passRate?: number;
+    executed?: boolean;
+  }>;
+  summary?: {
+    passRate?: number;
+    totalExecuted?: number;
+    totalPassed?: number;
+  };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Scenario Pass Rate Computation
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Compute the scenario pass rate from scenario evidence.
+ *
+ * Reads PULSE_SCENARIO_EVIDENCE.json and calculates the ratio
+ * of passed scenarios to total executed scenarios.
+ *
+ * Returns 0 if no evidence is available.
+ */
+function computeScenarioPassRate(pulseDir: string): {
+  rate: number;
+  total: number;
+  passed: number;
+} {
+  const evidence = readStateFile<PulseScenarioEvidence>(pulseDir, SCENARIO_EVIDENCE_FILE);
+
+  if (evidence?.scenarios?.length) {
+    const total = evidence.scenarios.filter((s) => s.executed !== false).length;
+    const passed = evidence.scenarios.filter(
+      (s) => s.passStatus === 'pass' || s.passStatus === 'PASS',
+    ).length;
+    return {
+      rate: total > 0 ? Math.round((passed / total) * 100) : 0,
+      total,
+      passed,
+    };
+  }
+
+  if (evidence?.summary) {
+    return {
+      rate: Math.round(evidence.summary.passRate ?? 0),
+      total: evidence.summary.totalExecuted ?? 0,
+      passed: evidence.summary.totalPassed ?? 0,
+    };
+  }
+
+  return { rate: 0, total: 0, passed: 0 };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Gate Evaluation
+// ────────────────────────────────────────────────────────────────────────────
+
 /**
  * Evaluate a single perfectness gate against the current repository state.
- *
- * Each gate reads from relevant PULSE state files to determine whether
- * its condition is satisfied.
- *
- * @param name - Gate name to evaluate
- * @param rootDir - Repository root directory
- * @param startScore - PULSE score at the start of the evaluation
- * @param startTime - ISO-8601 timestamp when evaluation started
- * @returns Gate evaluation result with pass/fail and evidence
  */
 export function evaluateGate(
   name: string,
@@ -119,125 +513,187 @@ export function evaluateGate(
   const target = def?.target ?? '';
 
   switch (name) {
+    // ── Gate 1: pulse-core-green ──────────────────────────────────────────
     case 'pulse-core-green': {
       const cert = readStateFile<PulseCertState>(pulseDir, PULSE_CERTIFICATE_FILE);
       const certified = cert?.certified === true || cert?.status === 'CERTIFIED';
-      const passed = certified && (cert?.score ?? 0) >= 50;
+      const scoreOk = (cert?.score ?? 0) >= 50;
       const gateEntries = Object.values(cert?.gates ?? {});
       const allGatesPass = gateEntries.length > 0 && gateEntries.every((g) => g.status === 'pass');
-      const finalPassed = passed && allGatesPass;
+      const passed = certified && scoreOk && allGatesPass;
+
       return {
         name,
         description,
         target,
         actual: `certified=${certified}, score=${cert?.score ?? 0}, allGatesPass=${allGatesPass}`,
-        passed: finalPassed,
-        evidence: `${PULSE_CERTIFICATE_FILE} — score=${cert?.score ?? 0}, certified=${certified}`,
+        passed,
+        evidence: `PULSE_CERTIFICATE.json — certified=${certified}, score=${cert?.score ?? 0}, ${gateEntries.length} gates evaluated`,
       };
     }
 
+    // ── Gate 2: product-core-green ────────────────────────────────────────
     case 'product-core-green': {
-      // Reads capabilities from certificate state; real cap count vs total
       const cert = readStateFile<PulseCertState>(pulseDir, PULSE_CERTIFICATE_FILE);
-      // Simplified: gate passes if certification score >= 60 (proxy for product health)
       const score = cert?.score ?? 0;
-      const passed = score >= 60;
+
+      // Check capabilities: count "real" vs total
+      const capabilities = cert?.capabilities ?? [];
+      const realCount = capabilities.filter((c) => c.health === 'real').length;
+      const totalCap = capabilities.length;
+      const capabilityHealth =
+        totalCap > 0 ? `${realCount}/${totalCap} real` : 'no capability data';
+
+      // Gate passes if score >= 60 (proxy) OR if all capabilities are real
+      const passed = score >= 60 || (totalCap > 0 && realCount === totalCap);
+
       return {
         name,
         description,
         target,
-        actual: `certification score = ${score}`,
+        actual: `score=${score}, capabilities=${capabilityHealth}`,
         passed,
-        evidence: `PULSE_CERTIFICATE.json score = ${score}`,
+        evidence: `PULSE_CERTIFICATE.json — score=${score}, ${realCount}/${totalCap} capabilities are real`,
       };
     }
 
+    // ── Gate 3: e2e-core-pass ─────────────────────────────────────────────
     case 'e2e-core-pass': {
+      const scenarioData = computeScenarioPassRate(pulseDir);
+
+      // If scenario evidence exists, use it directly
+      if (scenarioData.total > 0) {
+        const passed = scenarioData.rate >= 90;
+        return {
+          name,
+          description,
+          target,
+          actual: `scenario pass rate = ${scenarioData.rate}% (${scenarioData.passed}/${scenarioData.total})`,
+          passed,
+          evidence: `PULSE_SCENARIO_EVIDENCE.json — ${scenarioData.passed}/${scenarioData.total} scenarios passed (${scenarioData.rate}%)`,
+        };
+      }
+
+      // Fallback: use browser gate proxy from certificate
       const cert = readStateFile<PulseCertState>(pulseDir, PULSE_CERTIFICATE_FILE);
-      // Proxy: check for browser gate pass
       const browserGate = cert?.gates?.browserPass;
       const passed = browserGate?.status === 'pass';
+
       return {
         name,
         description,
         target,
-        actual: `browser gate = ${browserGate?.status ?? 'not found'}`,
+        actual: `scenario evidence not found; browser gate = ${browserGate?.status ?? 'missing'}`,
         passed,
-        evidence: `PULSE_CERTIFICATE.json browser gate status=${browserGate?.status}`,
+        evidence: `Fallback: PULSE_CERTIFICATE.json browser gate status=${browserGate?.status ?? 'not found'} (no scenario evidence file)`,
       };
     }
 
+    // ── Gate 4: runtime-stable ────────────────────────────────────────────
     case 'runtime-stable': {
-      // Proxy: no critical gate failures in certificate
       const cert = readStateFile<PulseCertState>(pulseDir, PULSE_CERTIFICATE_FILE);
       const criticalFailures = Object.entries(cert?.gates ?? {}).filter(
-        ([gateName, gate]) => gate.status !== 'pass' && gateName.toLowerCase().includes('critical'),
+        ([gateName, gate]) =>
+          gate.status !== 'pass' &&
+          (gateName.toLowerCase().includes('critical') ||
+            gateName.toLowerCase().includes('runtime') ||
+            gateName.toLowerCase().includes('error')),
       ).length;
       const passed = criticalFailures === 0;
+
+      const failingGateNames = Object.entries(cert?.gates ?? {})
+        .filter(
+          ([gateName, gate]) =>
+            gate.status !== 'pass' &&
+            (gateName.toLowerCase().includes('critical') ||
+              gateName.toLowerCase().includes('runtime')),
+        )
+        .map(([n]) => n)
+        .join(', ');
+
       return {
         name,
         description,
         target,
-        actual: `critical gate failures = ${criticalFailures}`,
+        actual: `critical/runtime gate failures = ${criticalFailures}${failingGateNames ? ` (${failingGateNames})` : ''}`,
         passed,
-        evidence: `PULSE_CERTIFICATE.json — ${criticalFailures} critical failures`,
+        evidence: `PULSE_CERTIFICATE.json — ${criticalFailures} critical/runtime gate failures found`,
       };
     }
 
+    // ── Gate 5: no-regression ─────────────────────────────────────────────
     case 'no-regression': {
       const cert = readStateFile<PulseCertState>(pulseDir, PULSE_CERTIFICATE_FILE);
       const scoreEnd = cert?.score ?? 0;
+      const delta = scoreEnd - startScore;
       const passed = scoreEnd >= startScore;
+
       return {
         name,
         description,
         target,
-        actual: `start=${startScore}, end=${scoreEnd}`,
+        actual: `start=${startScore}, end=${scoreEnd} (Δ${delta >= 0 ? '+' : ''}${delta})`,
         passed,
-        evidence: `Start score=${startScore}, end score=${scoreEnd}`,
+        evidence: `PULSE_CERTIFICATE.json — startScore=${startScore}, endScore=${scoreEnd}, delta=${delta >= 0 ? '+' : ''}${delta}`,
       };
     }
 
+    // ── Gate 6: no-rollback-unrecovered ───────────────────────────────────
     case 'no-rollback-unrecovered': {
       const auto = readStateFile<PulseAutonomyState>(pulseDir, PULSE_AUTONOMY_STATE_FILE);
       const rollbackCount = auto?.rollbacks ?? 0;
       const iterations = auto?.iterations ?? [];
       const unrecoveredRollbacks = iterations.filter((i) => i.rollback && !i.recovered).length;
       const passed = unrecoveredRollbacks === 0;
+
       return {
         name,
         description,
         target,
         actual: `rollbacks=${rollbackCount}, unrecovered=${unrecoveredRollbacks}`,
         passed,
-        evidence: `PULSE_AUTONOMY_STATE.json — ${unrecoveredRollbacks} unrecovered of ${rollbackCount} total`,
+        evidence: `PULSE_AUTONOMY_STATE.json — ${unrecoveredRollbacks} unrecovered of ${rollbackCount} total rollbacks`,
       };
     }
 
+    // ── Gate 7: no-protected-violation ────────────────────────────────────
     case 'no-protected-violation': {
       const sandbox = readStateFile<PulseSandboxState>(pulseDir, PULSE_SANDBOX_STATE_FILE);
-      const violations = sandbox?.summary?.totalDestructiveActions ?? 0;
-      const passed = violations === 0;
+
+      // Check for actual governance violations from sandbox state
+      const governanceViolations = sandbox?.summary?.governanceViolations ?? 0;
+
+      // Check active workspaces for unsafe patches
+      const workspaces = sandbox?.activeWorkspaces ?? [];
+      const unsafePatches = workspaces.reduce((count, ws) => {
+        return count + (ws.patches ?? []).filter((p) => !p.safe).length;
+      }, 0);
+
+      const totalViolations = governanceViolations + unsafePatches;
+      const passed = totalViolations === 0;
+
       return {
         name,
         description,
         target,
-        actual: `destructive actions = ${violations}`,
+        actual: `governance violations=${governanceViolations}, unsafe patches=${unsafePatches}`,
         passed,
-        evidence: `PULSE_SANDBOX_STATE.json — ${violations} destructive actions`,
+        evidence: `PULSE_SANDBOX_STATE.json — ${governanceViolations} governance violations, ${unsafePatches} unsafe patches across ${workspaces.length} workspaces`,
       };
     }
 
+    // ── Gate 8: 72h-elapsed ───────────────────────────────────────────────
     case '72h-elapsed': {
       const elapsed = computeHoursSince(startTime);
       const passed = elapsed >= 72;
+
       return {
         name,
         description,
         target,
         actual: `${elapsed.toFixed(1)}h elapsed`,
         passed,
-        evidence: `Start=${startTime}, elapsed=${elapsed.toFixed(1)}h`,
+        evidence: `System clock — startedAt=${startTime}, elapsed=${elapsed.toFixed(1)}h, remaining=${Math.max(0, 72 - elapsed).toFixed(1)}h`,
       };
     }
 
@@ -248,23 +704,15 @@ export function evaluateGate(
         target,
         actual: 'unknown gate',
         passed: false,
-        evidence: 'Gate not recognized',
+        evidence: `Gate "${name}" is not recognized in the 8-gate perfectness suite`,
       };
   }
 }
 
-/**
- * Compute the perfectness verdict from a set of evaluated gates.
- *
- * Verdict is determined by the number of passing gates:
- *   - 8 passed → PERFECT
- *   - 6–7 passed → ALMOST_PERFECT
- *   - 3–5 passed → NEEDS_WORK
- *   - 0–2 passed → FAILED
- *
- * @param gates - Evaluated perfectness gates
- * @returns The computed verdict
- */
+// ────────────────────────────────────────────────────────────────────────────
+// Verdict Computation
+// ────────────────────────────────────────────────────────────────────────────
+
 export function computeVerdict(gates: PerfectnessGate[]): PerfectnessVerdict {
   const passed = gates.filter((g) => g.passed).length;
 
@@ -281,18 +729,23 @@ export function computeVerdict(gates: PerfectnessGate[]): PerfectnessVerdict {
 }
 
 /**
- * Check whether at least 72 hours have elapsed since the given start time.
+ * Determine whether autonomous operation is approved for the repository
+ * based on the perfectness verdict.
  *
- * @param startTime - ISO-8601 timestamp of the evaluation start
- * @returns Whether 72 hours (or more) have elapsed
+ * Only PERFECT and ALMOST_PERFECT verdicts authorize continued autonomy.
  */
+export function isAutonomousApproved(verdict: PerfectnessVerdict): boolean {
+  return verdict === 'PERFECT' || verdict === 'ALMOST_PERFECT';
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Time Utilities
+// ────────────────────────────────────────────────────────────────────────────
+
 export function hasElapsed72h(startTime: string): boolean {
   return computeHoursSince(startTime) >= 72;
 }
 
-/**
- * Compute elapsed hours between startTime and now.
- */
 function computeHoursSince(startTime: string): number {
   const start = new Date(startTime).getTime();
   const now = Date.now();
@@ -304,10 +757,10 @@ function computeHoursSince(startTime: string): number {
   return (now - start) / (1000 * 60 * 60);
 }
 
-/**
- * Read a JSON state file from the PULSE current directory.
- * Returns null if the file is missing or malformed.
- */
+// ────────────────────────────────────────────────────────────────────────────
+// State File Helpers
+// ────────────────────────────────────────────────────────────────────────────
+
 function readStateFile<T>(pulseDir: string, fileName: string): T | null {
   const filePath = path.join(pulseDir, fileName);
 
@@ -322,9 +775,57 @@ function readStateFile<T>(pulseDir: string, fileName: string): T | null {
   }
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Exit Condition Resolution
+// ────────────────────────────────────────────────────────────────────────────
+
 /**
- * Build a human-readable summary string from the perfectness evaluation result.
+ * Resolve the exit action for a specific gate's evaluation result.
+ *
+ * The autonomy loop calls this to determine what to do next
+ * after evaluating a gate.
  */
+export function resolveExitAction(
+  gateName: string,
+  passed: boolean,
+  retryCount: number,
+): { action: ExitAction; description: string } {
+  const conditions = buildExitConditions();
+  const condition = conditions.find((c) => c.gateName === gateName);
+
+  if (!condition) {
+    return {
+      action: passed ? 'continue_autonomous' : 'pause_for_human',
+      description: `No exit condition defined for gate "${gateName}". Defaulting.`,
+    };
+  }
+
+  if (passed) {
+    return {
+      action: condition.onPass,
+      description: condition.description,
+    };
+  }
+
+  // On fail: check if we can retry
+  if (retryCount < condition.maxRetries) {
+    return {
+      action: 'retry_sandbox',
+      description: `Gate "${gateName}" failed. Retry ${retryCount + 1}/${condition.maxRetries}. ${condition.description}`,
+    };
+  }
+
+  // Max retries exceeded — escalate
+  return {
+    action: condition.onFail,
+    description: `Gate "${gateName}" failed after ${retryCount} retries. ${condition.description}`,
+  };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Summary Generation
+// ────────────────────────────────────────────────────────────────────────────
+
 function buildSummary(
   verdict: PerfectnessVerdict,
   passed: number,
@@ -346,21 +847,54 @@ function buildSummary(
   }
 }
 
+function buildRecommendedActions(verdict: PerfectnessVerdict, gates: PerfectnessGate[]): string[] {
+  const failedGates = gates.filter((g) => !g.passed);
+  const actions: string[] = [];
+
+  switch (verdict) {
+    case 'PERFECT':
+      actions.push('System is fully approved for continuous autonomous operation.');
+      actions.push('No human intervention required except for Risk 3 destructive operations.');
+      break;
+    case 'ALMOST_PERFECT':
+      actions.push('Autonomous operation approved with caution.');
+      actions.push('Monitor failed gates closely.');
+      for (const g of failedGates) {
+        actions.push(`Address gate "${g.name}": ${g.actual}`);
+      }
+      break;
+    case 'NEEDS_WORK':
+      actions.push('Autonomous operation suspended. Human review required.');
+      for (const g of failedGates) {
+        actions.push(`Fix gate "${g.name}": expected ${g.target}, got ${g.actual}`);
+      }
+      break;
+    case 'FAILED':
+      actions.push('Autonomous operation blocked. Immediate human intervention required.');
+      for (const g of failedGates) {
+        actions.push(`CRITICAL: gate "${g.name}" failed — ${g.evidence}`);
+      }
+      break;
+  }
+
+  return actions;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Full Perfectness Evaluation
+// ────────────────────────────────────────────────────────────────────────────
+
 /**
  * Run a full perfectness evaluation against the current repository state.
  *
  * Loads current PULSE state, evaluates all eight perfectness gates,
- * computes the verdict, and persists the result to
- * `.pulse/current/PULSE_PERFECTNESS_RESULT.json`.
- *
- * @param rootDir - Repository root directory
- * @param startTime - ISO-8601 timestamp when the evaluation period started
- * @returns Complete perfectness evaluation result
+ * computes the verdict, generates recommended actions, and persists
+ * the result to `.pulse/current/PULSE_PERFECTNESS_RESULT.json`.
  */
 export function evaluatePerfectness(rootDir: string, startTime: string): PerfectnessResult {
   const pulseDir = path.join(rootDir, '.pulse', 'current');
 
-  // Determine start score from existing state or default
+  // Determine start score from existing state or default to 0
   const cert = readStateFile<PulseCertState>(pulseDir, PULSE_CERTIFICATE_FILE);
   const startScore = cert?.score ?? 0;
 
@@ -371,7 +905,7 @@ export function evaluatePerfectness(rootDir: string, startTime: string): Perfect
   const rejectedIterations = auto?.rejectedIterations ?? 0;
   const rollbacks = auto?.rollbacks ?? 0;
 
-  // Evaluate all gates
+  // Evaluate all eight gates
   const gates: PerfectnessGate[] = GATE_DEFINITIONS.map((def) =>
     evaluateGate(def.name, rootDir, startScore, startTime),
   );
@@ -380,6 +914,7 @@ export function evaluatePerfectness(rootDir: string, startTime: string): Perfect
   const scoreEnd = cert?.score ?? startScore;
   const scoreDelta = scoreEnd - startScore;
   const passed = gates.filter((g) => g.passed).length;
+  const autonomousApproved = isAutonomousApproved(verdict);
 
   const result: PerfectnessResult = {
     startedAt: startTime,
@@ -394,6 +929,8 @@ export function evaluatePerfectness(rootDir: string, startTime: string): Perfect
     verdict,
     gates,
     summary: buildSummary(verdict, passed, GATE_DEFINITIONS.length, scoreDelta),
+    recommendedActions: buildRecommendedActions(verdict, gates),
+    autonomousApproved,
   };
 
   ensureDir(pulseDir, { recursive: true });

@@ -41,6 +41,30 @@ export interface ScenarioStep {
   timeout: number;
 }
 
+/** Linking evidence: UI element, API endpoint, DB model, runtime trace per scenario. */
+export interface ScenarioEvidenceLink {
+  /** UI element label or data-testid this step exercises. */
+  ui?: string;
+  /** API endpoint pattern (e.g. "POST /api/auth/login"). */
+  api?: string;
+  /** Prisma model name touched by this step. */
+  dbModel?: string;
+  /** DB operation (create, read, update, delete). */
+  dbOperation?: string;
+  /** Runtime signal (log, trace, metric) expected. */
+  runtimeSignal?: string;
+}
+
+/** Preconditions that must be met before a scenario can execute. */
+export interface ScenarioPrecondition {
+  /** Description of the required state. */
+  description: string;
+  /** DB seed or fixture name needed. */
+  fixture?: string;
+  /** Expected workspace or tenant state. */
+  workspaceState?: string;
+}
+
 /** Full end-to-end scenario definition. */
 export interface Scenario {
   /** Unique scenario ID. */
@@ -51,8 +75,12 @@ export interface Scenario {
   role: ScenarioRole;
   /** Parent flow this scenario validates. */
   flowId: string;
+  /** Scenario category group. */
+  category: ScenarioCategory;
   /** Capabilities exercised by this scenario. */
   capabilityIds: string[];
+  /** Preconditions required before execution. */
+  preconditions: ScenarioPrecondition[];
   /** Ordered steps to execute. */
   steps: ScenarioStep[];
   /** Current execution status. */
@@ -63,7 +91,21 @@ export interface Scenario {
   durationMs: number | null;
   /** Paths to evidence artifacts produced during execution. */
   evidence: string[];
+  /** UI/API/DB/runtime evidence links per step (optional, generated when artifacts available). */
+  evidenceLinks?: ScenarioEvidenceLink[];
+  /** Playwright-compatible spec as text string (optional, generated when structural data available). */
+  playwrightSpec?: string;
 }
+
+/** Broad scenario category grouping related flows. */
+export type ScenarioCategory =
+  | 'auth-flow'
+  | 'payment-flow'
+  | 'whatsapp-flow'
+  | 'workspace-flow'
+  | 'product-flow'
+  | 'surface-map'
+  | 'system-flow';
 
 /** Complete scenario evidence state persisted to disk. */
 export interface ScenarioEvidenceState {
@@ -79,10 +121,14 @@ export interface ScenarioEvidenceState {
     failed: number;
     /** Not-run scenario count. */
     notRun: number;
+    /** Scenarios with Playwright spec strings generated. */
+    generated: number;
     /** Scenarios marked as critical (core flows). */
     coreScenarios: number;
     /** Core scenarios that passed. */
     coreScenariosPassed: number;
+    /** Breakdown by category. */
+    byCategory: Record<string, { total: number; passed: number; failed: number; notRun: number }>;
   };
   /** All scenarios in the catalog. */
   scenarios: Scenario[];

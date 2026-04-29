@@ -2,11 +2,21 @@
 // Wave 8 — Audit Chain types
 
 /**
- * A single block in the signed audit chain.
+ * Signature mode used by an audit block.
+ */
+export type AuditSignatureMode = 'hmac_sha256' | 'unsigned';
+
+/**
+ * Runtime configuration status for audit signing.
+ */
+export type AuditSigningKeyStatus = 'configured' | 'not_configured';
+
+/**
+ * A single block in the audit chain.
  *
  * Each block captures a snapshot of the codebase state (treeHash),
- * the decision that was made (decisionHash), and a cryptographic
- * signature linking them together with the previous block (prevHash).
+ * the decision that was made (decisionHash), and either a cryptographic
+ * signature or an explicit unsigned marker when signing is not configured.
  */
 export interface AuditBlock {
   /** Monotonically increasing block index (0 = genesis). */
@@ -17,8 +27,12 @@ export interface AuditBlock {
   treeHash: string;
   /** SHA-256 hash of the decision metadata (what was decided / executed). */
   decisionHash: string;
-  /** HMAC-SHA256 signature over the block content. */
+  /** HMAC-SHA256 signature over the block content, empty when unsigned. */
   signature: string;
+  /** Signature mode used for this block. */
+  signatureMode: AuditSignatureMode;
+  /** Whether a real signing key was configured when this block was created. */
+  signingKeyStatus: AuditSigningKeyStatus;
   /** ISO-8601 timestamp when this block was created. */
   timestamp: string;
   /** Human-readable metadata about what this block represents. */
@@ -39,7 +53,7 @@ export interface AuditBlock {
 }
 
 /**
- * Full audit chain — an append-only, verifiable execution trail.
+ * Full audit chain — an append-only execution trail.
  *
  * Stored as an append-only JSONL file at `.pulse/audit/PULSE_AUDIT_CHAIN.jsonl`.
  * Each line is a serialized {@link AuditBlock}.
@@ -47,11 +61,11 @@ export interface AuditBlock {
 export interface AuditChain {
   /** Unique identifier for this chain instance. */
   chainId: string;
-  /** SHA-256 hash of the genesis block (the anchor of trust). */
+  /** SHA-256 hash of the genesis block. */
   genesisHash: string;
   /** All blocks in the chain, from genesis to tip. */
   blocks: AuditBlock[];
-  /** Whether the last full verification passed. */
+  /** Whether the last full continuity and signature verification passed. */
   verified: boolean;
   /** ISO-8601 timestamp of the last verification, or null if never verified. */
   lastVerified: string | null;

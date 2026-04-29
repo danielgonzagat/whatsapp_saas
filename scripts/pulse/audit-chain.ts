@@ -1,29 +1,34 @@
 /**
- * Audit Chain — signed, append-only execution trail using HMAC-SHA256.
+ * Audit Chain — append-only execution trail with optional HMAC-SHA256 signing.
  *
  * Wave 8, Module C.
  *
- * The audit chain provides a cryptographically verifiable history of every
- * autonomous action PULSE takes. Each block captures a snapshot of the codebase
- * state (treeHash), the decision that was made (decisionHash), and a signature
- * that links it irreversibly to the previous block.
+ * The audit chain provides an execution history of every autonomous action
+ * PULSE takes. Each block captures a snapshot of the codebase state (treeHash)
+ * and the decision that was made (decisionHash). Blocks are cryptographically
+ * signed only when `PULSE_AUDIT_SIGNING_KEY` is configured.
  *
  * Blocks are stored as an append-only JSONL file at
  * `.pulse/audit/PULSE_AUDIT_CHAIN.jsonl`. Verification walks forward from the
- * genesis block checking prevHash continuity and signature validity.
+ * genesis block checking prevHash continuity and signature validity when
+ * signing is configured.
  */
 import * as path from 'node:path';
 import { createHash, createHmac, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { appendTextFile, ensureDir, pathExists, readTextFile, writeTextFile } from './safe-fs';
 import { resolveRoot } from './lib/safe-path';
-import type { AuditBlock, AuditChain } from './types.audit-chain';
+import type {
+  AuditBlock,
+  AuditChain,
+  AuditSignatureMode,
+  AuditSigningKeyStatus,
+} from './types.audit-chain';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const AUDIT_CHAIN_FILENAME = 'PULSE_AUDIT_CHAIN.jsonl';
 const AUDIT_CHAIN_ID_FILENAME = 'PULSE_AUDIT_CHAIN_ID.txt';
-const DEFAULT_HMAC_SECRET = 'pulse-audit-chain-internal-key';
 const HASH_ALGORITHM = 'sha256';
 
 // ── Path helpers ──────────────────────────────────────────────────────────────
@@ -49,8 +54,27 @@ function getOrCreateChainId(rootDir: string): string {
 
 // ── HMAC key resolution ───────────────────────────────────────────────────────
 
-function getSigningKey(): string {
-  return process.env.PULSE_AUDIT_SIGNING_KEY ?? DEFAULT_HMAC_SECRET;
+interface AuditSigningConfig {
+  mode: AuditSignatureMode;
+  keyStatus: AuditSigningKeyStatus;
+  key: string | null;
+}
+
+function getSigningConfig(): AuditSigningConfig {
+  const key = process.env.PULSE_AUDIT_SIGNING_KEY?.trim();
+  if (!key) {
+    return {
+      mode: 'unsigned',
+      keyStatus: 'not_configured',
+      key: null,
+    };
+  }
+
+  return {
+    mode: 'hmac_sha256',
+    keyStatus: 'configured',
+    key,
+  };
 }
 
 // ── Git tree hash ─────────────────────────────────────────────────────────────
@@ -123,18 +147,27 @@ export function computeBlockHash(block: AuditBlock): string {
 }
 
 /**
- * Sign a block with HMAC-SHA256.
+ * Sign a block with HMAC-SHA256 when a real key is configured.
  *
- * The signature covers the block hash (via {@link computeBlockHash}) and
- * uses the key from `PULSE_AUDIT_SIGNING_KEY` env var (falls back to a
- * default key for local development).
+ * Without `PULSE_AUDIT_SIGNING_KEY`, the block is marked as unsigned and the
+ * signature stays empty. This keeps the trail honest instead of pretending a
+ * default secret produced a real signature.
  *
- * @param block  The block to sign (signature field is overwritten).
- * @returns The block with signature populated.
+ * @param block  The block to sign or mark unsigned.
+ * @returns The block with signature metadata populated.
  */
 function signBlock(block: AuditBlock): AuditBlock {
+  const signingConfig = getSigningConfig();
+  block.signatureMode = signingConfig.mode;
+  block.signingKeyStatus = signingConfig.keyStatus;
+
+  if (!signingConfig.key) {
+    block.signature = '';
+    return block;
+  }
+
   const blockHash = computeBlockHash(block);
-  const hmac = createHmac(HASH_ALGORITHM, getSigningKey());
+  const hmac = createHmac(HASH_ALGORITHM, signingConfig.key);
   hmac.update(blockHash);
   block.signature = hmac.digest('hex');
   return block;
@@ -144,14 +177,39 @@ function signBlock(block: AuditBlock): AuditBlock {
  * Verify a block's signature against its computed hash.
  *
  * @param block  The block to verify.
- * @returns `true` if the signature matches the block content.
+ * @returns Verification result with an explicit failure reason.
  */
-function verifySignature(block: AuditBlock): boolean {
+function verifySignature(block: AuditBlock): { valid: boolean; reason: string | null } {
+  const mode = block.signatureMode ?? 'hmac_sha256';
+  const blockKeyStatus = block.signingKeyStatus ?? 'configured';
+
+  if (mode === 'unsigned' || blockKeyStatus === 'not_configured') {
+    return {
+      valid: false,
+      reason: 'signature not configured: block is explicitly unsigned',
+    };
+  }
+
+  const signingConfig = getSigningConfig();
+  if (!signingConfig.key) {
+    return {
+      valid: false,
+      reason: 'signature verification unavailable: PULSE_AUDIT_SIGNING_KEY is not configured',
+    };
+  }
+
   const blockHash = computeBlockHash(block);
-  const hmac = createHmac(HASH_ALGORITHM, getSigningKey());
+  const hmac = createHmac(HASH_ALGORITHM, signingConfig.key);
   hmac.update(blockHash);
   const expectedSignature = hmac.digest('hex');
-  return block.signature === expectedSignature;
+  if (block.signature !== expectedSignature) {
+    return {
+      valid: false,
+      reason: 'signature invalid',
+    };
+  }
+
+  return { valid: true, reason: null };
 }
 
 // ── JSONL I/O ─────────────────────────────────────────────────────────────────
@@ -207,6 +265,8 @@ export function buildAuditChain(rootDir: string): AuditChain {
         getGitTreeHash(resolvedRoot) || createHash(HASH_ALGORITHM).update('genesis').digest('hex'),
       decisionHash: createHash(HASH_ALGORITHM).update('genesis').digest('hex'),
       signature: '',
+      signatureMode: 'unsigned',
+      signingKeyStatus: 'not_configured',
       timestamp: new Date().toISOString(),
       metadata: {
         iteration: 0,
@@ -269,6 +329,8 @@ export function appendBlock(
     treeHash,
     decisionHash,
     signature: '',
+    signatureMode: 'unsigned',
+    signingKeyStatus: 'not_configured',
     timestamp: new Date().toISOString(),
     metadata: { ...metadata },
   };
@@ -302,7 +364,8 @@ export function verifyChain(chain: AuditChain): AuditChain {
     const block = chain.blocks[i];
     const prevBlock = i > 0 ? chain.blocks[i - 1] : null;
 
-    if (!verifyBlock(block, prevBlock)) {
+    const blockVerification = verifyBlockDetailed(block, prevBlock);
+    if (!blockVerification.valid) {
       let reason = `Block ${i} failed verification`;
       if (prevBlock) {
         const expectedPrevHash = computeBlockHash(prevBlock);
@@ -310,8 +373,8 @@ export function verifyChain(chain: AuditChain): AuditChain {
           reason = `Block ${i} prevHash mismatch: expected ${expectedPrevHash.slice(0, 16)}..., got ${block.prevHash.slice(0, 16)}...`;
         }
       }
-      if (!verifySignature(block)) {
-        reason = `Block ${i} signature invalid`;
+      if (blockVerification.reason) {
+        reason = `Block ${i} ${blockVerification.reason}`;
       }
       failures.push({ blockIndex: i, reason });
     }
@@ -337,16 +400,24 @@ export function verifyChain(chain: AuditChain): AuditChain {
  * @returns `true` if the block passes both checks.
  */
 export function verifyBlock(block: AuditBlock, prevBlock: AuditBlock | null): boolean {
+  return verifyBlockDetailed(block, prevBlock).valid;
+}
+
+function verifyBlockDetailed(
+  block: AuditBlock,
+  prevBlock: AuditBlock | null,
+): { valid: boolean; reason: string | null } {
   if (prevBlock) {
     const expectedPrevHash = computeBlockHash(prevBlock);
     if (block.prevHash !== expectedPrevHash) {
-      return false;
+      return { valid: false, reason: 'prevHash mismatch' };
     }
   }
 
-  if (!verifySignature(block)) {
-    return false;
+  const signatureVerification = verifySignature(block);
+  if (!signatureVerification.valid) {
+    return signatureVerification;
   }
 
-  return true;
+  return { valid: true, reason: null };
 }

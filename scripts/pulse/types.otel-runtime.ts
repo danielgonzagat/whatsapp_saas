@@ -67,6 +67,21 @@ export interface OtelTraceSummary {
   endpointMap: Record<string, number>;
 }
 
+/** Provenance class for OTel runtime evidence. */
+export type OtelRuntimeSource = 'real' | 'manual' | 'simulated' | 'not_available';
+
+/** Source details that separate runtime proof from static auxiliary maps. */
+export interface OtelRuntimeSourceDetails {
+  /** Data path that produced the artifact. */
+  kind: 'otel_collector' | 'trace_file' | 'manual_tracer' | 'ast_static_map' | 'none';
+  /** True only when traces came from an observed runtime execution. */
+  runtimeObserved: boolean;
+  /** True when generated content is stable for the same static inputs. */
+  deterministic: boolean;
+  /** Human-readable reason for fallback or absence. */
+  reason: string | null;
+}
+
 /** Mapping from a runtime span to static graph nodes and file paths. */
 export interface SpanToPathMapping {
   /** Name of the span that was matched. */
@@ -85,11 +100,13 @@ export interface SpanToPathMapping {
  * This is the primary output of the OTel runtime module and is persisted as
  * an artifact for downstream PULSE gates.
  */
-export interface RuntimeCallGraphEvidence {
+export interface RuntimeCallGraphEvidence extends Record<string, unknown> {
   /** ISO-8601 timestamp when this evidence was generated. */
   generatedAt: string;
   /** Source of the trace data. */
-  source: 'otel_collector' | 'datadog' | 'sentry' | 'simulated';
+  source: OtelRuntimeSource;
+  /** Detailed source contract used by downstream proof gates. */
+  sourceDetails: OtelRuntimeSourceDetails;
   /** Aggregate statistics across all collected traces. */
   summary: OtelTraceSummary;
   /** All collected traces. */

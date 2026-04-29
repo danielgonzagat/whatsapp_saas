@@ -12,7 +12,6 @@
 import * as path from 'path';
 import { pathExists, readTextFile, writeTextFile, ensureDir } from './safe-fs';
 import { tokenize, unique } from './signal-normalizers';
-import { loadRuntimeCallGraphArtifact } from './otel-runtime';
 import type { RuntimeCallGraphEvidence, OtelSpan } from './types.otel-runtime';
 import type {
   RuntimeSignal,
@@ -21,22 +20,16 @@ import type {
   SignalType,
   SignalSeverity,
   SignalAction,
+  RuntimeFusionEvidenceStatus,
 } from './types.runtime-fusion';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const OTEL_RUNTIME_ARTIFACT = 'PULSE_OTEL_RUNTIME.json';
-
-const SIGNAL_SOURCE_FILES: Record<Exclude<SignalSource, 'otel_runtime'>, string> = {
-  sentry: 'PULSE_SENTRY_STATE.json',
-  datadog: 'PULSE_DATADOG_STATE.json',
-  prometheus: 'PULSE_PROMETHEUS_STATE.json',
-  github_actions: 'PULSE_GITHUB_ACTIONS_STATE.json',
-  codecov: 'PULSE_CODECOV_STATE.json',
-  gitnexus: 'PULSE_GITNEXUS_STATE.json',
-};
-
+const EXTERNAL_SIGNAL_STATE_FILE = 'PULSE_EXTERNAL_SIGNAL_STATE.json';
+const RUNTIME_TRACES_FILE = 'PULSE_RUNTIME_TRACES.json';
 const FUSION_OUTPUT_FILE = 'PULSE_RUNTIME_FUSION.json';
+const OBSERVED_RUNTIME_TRACE_SOURCES = new Set(['otel_collector', 'datadog', 'sentry']);
+const SKIPPED_ADAPTER_STATUSES = new Set(['optional_not_configured', 'skipped']);
 
 const SEVERITY_WEIGHTS: Record<SignalSeverity, number> = {
   critical: 1.0,
@@ -71,6 +64,14 @@ const TYPE_MAP: Record<string, SignalType> = {
   coverage_drop: 'test_failure',
   graph_staleness: 'graph_staleness',
   stale_index: 'graph_staleness',
+  static_hotspot: 'code_quality',
+  code_quality: 'code_quality',
+  codacy: 'code_quality',
+  issue: 'code_quality',
+  pull_request: 'change',
+  change: 'change',
+  dependency: 'dependency',
+  dependabot: 'dependency',
 };
 
 // ─── Numeric → Categorical Mapping ──────────────────────────────────────────
@@ -94,7 +95,7 @@ function mapType(rawType: string): SignalType {
   for (const [key, value] of Object.entries(TYPE_MAP)) {
     if (lower.includes(key)) return value;
   }
-  return 'error';
+  return 'external';
 }
 
 /**
@@ -151,82 +152,245 @@ function asStringArray(value: unknown): string[] {
     .filter(Boolean);
 }
 
-// ─── Signal Parsers per Source ──────────────────────────────────────────────
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
 
-/**
- * Parse a raw signal entry from an adapter output into a {@link RuntimeSignal}.
- * Handles both the existing {@link PulseSignalDraft} shape and raw adapter output shapes.
- */
-function parseRawSignal(entry: Record<string, unknown>, source: SignalSource): RuntimeSignal {
-  const severityScore = asNumber(entry.severity ?? entry.level, 0.5);
-  const rawType = asString(entry.type ?? entry.signalType ?? entry.kind ?? 'error');
-  const severity = mapSeverity(severityScore);
-  const type = mapType(rawType);
-  const action = (asString(entry.action) as SignalAction) || deriveAction(severity, type);
+function resolvePulseCurrentDir(rootDir: string): string {
+  if (path.basename(rootDir) === 'current' && path.basename(path.dirname(rootDir)) === '.pulse') {
+    return rootDir;
+  }
+  return path.join(rootDir, '.pulse', 'current');
+}
 
-  const id =
-    asString(entry.id) ||
-    `${source}:${type}:${asString(entry.summary ?? entry.message ?? 'signal').slice(0, 80)}`;
+const SIGNAL_SOURCES: readonly SignalSource[] = [
+  'github',
+  'sentry',
+  'datadog',
+  'prometheus',
+  'github_actions',
+  'codacy',
+  'codecov',
+  'dependabot',
+  'gitnexus',
+  'otel_runtime',
+];
+const SIGNAL_SOURCE_SET = new Set<string>(SIGNAL_SOURCES);
 
-  const message =
-    asString(entry.message) ||
-    asString(entry.summary) ||
-    asString(entry.title) ||
-    asString(entry.description) ||
-    `${source} ${type} signal`;
+function isSignalSource(value: string): value is SignalSource {
+  return SIGNAL_SOURCE_SET.has(value);
+}
 
-  const affectedCapabilityIds = entry.capabilityIds ? asStringArray(entry.capabilityIds) : [];
-  const affectedFlowIds = entry.flowIds ? asStringArray(entry.flowIds) : [];
-  const affectedFilePaths = entry.relatedFiles
-    ? asStringArray(entry.relatedFiles)
-    : asStringArray(entry.files ?? entry.changedFiles ?? entry.stackFiles);
-
-  const frequency = asNumber(entry.frequency ?? entry.rate ?? entry.occurrences, 1);
-  const affectedUsers = asNumber(entry.affectedUsers ?? entry.userCount ?? entry.users, 0);
-  const count = asNumber(entry.count ?? entry.eventCount ?? entry.total, 1);
-  const firstSeen = asString(entry.firstSeen ?? entry.createdAt ?? entry.startTime ?? '');
-  const lastSeen = asString(
-    entry.lastSeen ?? entry.observedAt ?? entry.updatedAt ?? entry.endTime ?? '',
-  );
-  const trend = (asString(entry.trend) || 'unknown') as RuntimeSignal['trend'];
-  const pinned = Boolean(entry.pinned) ?? false;
-
+function emptySourceCounts(): Record<SignalSource, number> {
   return {
-    id,
-    source,
-    type,
-    severity,
-    action,
-    message,
-    affectedCapabilityIds,
-    affectedFlowIds,
-    affectedFilePaths,
-    frequency: Math.max(1, frequency),
-    affectedUsers: Math.max(0, affectedUsers),
-    impactScore: asNumber(entry.impactScore ?? entry.impact ?? entry.weight, severityScore),
-    firstSeen: firstSeen || new Date().toISOString(),
-    lastSeen: lastSeen || new Date().toISOString(),
-    count: Math.max(1, count),
-    trend,
-    pinned,
+    github: 0,
+    sentry: 0,
+    datadog: 0,
+    prometheus: 0,
+    github_actions: 0,
+    codacy: 0,
+    codecov: 0,
+    dependabot: 0,
+    gitnexus: 0,
+    otel_runtime: 0,
   };
 }
 
-/**
- * Parse the raw signals array from a loaded adapter output payload.
- * Expects either a top-level `signals` array or the entire payload to be the array.
- */
-function parseSignalsFromPayload(
+interface CanonicalExternalSignal {
+  id: string;
+  source: SignalSource;
+  type: string;
+  truthMode: 'observed' | 'inferred';
+  severity: number;
+  impactScore: number;
+  summary: string;
+  observedAt: string | null;
+  relatedFiles: string[];
+  capabilityIds: string[];
+  flowIds: string[];
+}
+
+interface CanonicalExternalAdapter {
+  source: string;
+  status: string;
+}
+
+interface CanonicalExternalSignalState {
+  generatedAt: string;
+  truthMode: 'observed' | 'inferred';
+  signals: CanonicalExternalSignal[];
+  adapters: CanonicalExternalAdapter[];
+}
+
+function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal | null {
+  if (!isRecord(value)) return null;
+  const sourceRaw = asString(value.source);
+  if (!isSignalSource(sourceRaw) || sourceRaw === 'otel_runtime') return null;
+
+  const truthModeRaw = asString(value.truthMode);
+  const truthMode = truthModeRaw === 'inferred' ? 'inferred' : 'observed';
+  const summary = asString(value.summary ?? value.message ?? value.title);
+
+  return {
+    id: asString(value.id) || `${sourceRaw}:${summary.slice(0, 80) || 'signal'}`,
+    source: sourceRaw,
+    type: asString(value.type) || 'external',
+    truthMode,
+    severity: asNumber(value.severity, 0.5),
+    impactScore: asNumber(value.impactScore, asNumber(value.severity, 0.5)),
+    summary: summary || `${sourceRaw} external signal`,
+    observedAt: asString(value.observedAt) || null,
+    relatedFiles: asStringArray(value.relatedFiles),
+    capabilityIds: asStringArray(value.capabilityIds),
+    flowIds: asStringArray(value.flowIds),
+  };
+}
+
+function parseCanonicalExternalAdapter(value: unknown): CanonicalExternalAdapter | null {
+  if (!isRecord(value)) return null;
+  const source = asString(value.source);
+  const status = asString(value.status);
+  if (!source || !status) return null;
+  return { source, status };
+}
+
+function parseCanonicalExternalSignalState(
   payload: Record<string, unknown>,
-  source: SignalSource,
-): RuntimeSignal[] {
-  const raw = asArray(payload.signals ?? payload.data ?? payload.results ?? payload);
-  return raw
-    .map((entry) => {
-      if (!entry || typeof entry !== 'object') return null;
-      return parseRawSignal(entry as Record<string, unknown>, source);
-    })
-    .filter((signal): signal is RuntimeSignal => signal !== null);
+): CanonicalExternalSignalState {
+  const truthModeRaw = asString(payload.truthMode);
+  const truthMode = truthModeRaw === 'inferred' ? 'inferred' : 'observed';
+  const signals = asArray(payload.signals)
+    .map(parseCanonicalExternalSignal)
+    .filter((signal): signal is CanonicalExternalSignal => signal !== null);
+  const adapters = asArray(payload.adapters)
+    .map(parseCanonicalExternalAdapter)
+    .filter((adapter): adapter is CanonicalExternalAdapter => adapter !== null);
+
+  return {
+    generatedAt: asString(payload.generatedAt) || new Date().toISOString(),
+    truthMode,
+    signals,
+    adapters,
+  };
+}
+
+function isRuntimeCallGraphEvidence(value: unknown): value is RuntimeCallGraphEvidence {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    typeof value.source === 'string' &&
+    isRecord(value.summary) &&
+    Array.isArray(value.traces) &&
+    Array.isArray(value.spanToPathMappings)
+  );
+}
+
+function canonicalExternalSignalToRuntimeSignal(
+  signal: CanonicalExternalSignal,
+  generatedAt: string,
+): RuntimeSignal {
+  const severity = mapSeverity(signal.severity);
+  const type = mapType(signal.type);
+  const observedAt = signal.observedAt || generatedAt;
+
+  return {
+    id: signal.id,
+    source: signal.source,
+    type,
+    severity,
+    action: deriveAction(severity, type),
+    message: signal.summary,
+    affectedCapabilityIds: signal.capabilityIds,
+    affectedFlowIds: signal.flowIds,
+    affectedFilePaths: signal.relatedFiles,
+    frequency: 1,
+    affectedUsers: 0,
+    impactScore: signal.impactScore,
+    firstSeen: observedAt,
+    lastSeen: observedAt,
+    count: 1,
+    trend: 'unknown',
+    pinned: false,
+    evidenceMode: signal.truthMode,
+    sourceArtifact: EXTERNAL_SIGNAL_STATE_FILE,
+    observedAt: signal.observedAt,
+  };
+}
+
+function loadCanonicalExternalSignals(currentDir: string): {
+  signals: RuntimeSignal[];
+  evidence: RuntimeFusionState['evidence']['externalSignalState'];
+} {
+  const artifactPath = path.join(currentDir, EXTERNAL_SIGNAL_STATE_FILE);
+  const payload = safeJsonParseFile(artifactPath);
+  if (!payload) {
+    return {
+      signals: [],
+      evidence: {
+        status: pathExists(artifactPath) ? 'invalid' : 'not_available',
+        artifactPath,
+        totalSignals: 0,
+        observedSignals: 0,
+        inferredSignals: 0,
+        adapterStatusCounts: {},
+        notAvailableAdapters: [],
+        skippedAdapters: [],
+        staleAdapters: [],
+        invalidAdapters: [],
+        reason: pathExists(artifactPath)
+          ? `${EXTERNAL_SIGNAL_STATE_FILE} is not valid JSON.`
+          : `${EXTERNAL_SIGNAL_STATE_FILE} is not available in .pulse/current.`,
+      },
+    };
+  }
+
+  const state = parseCanonicalExternalSignalState(payload);
+  const signals = state.signals.map((signal) =>
+    canonicalExternalSignalToRuntimeSignal(signal, state.generatedAt),
+  );
+  const adapterStatusCounts: Record<string, number> = {};
+  const notAvailableAdapters: string[] = [];
+  const skippedAdapters: string[] = [];
+  const staleAdapters: string[] = [];
+  const invalidAdapters: string[] = [];
+
+  for (const adapter of state.adapters) {
+    adapterStatusCounts[adapter.status] = (adapterStatusCounts[adapter.status] ?? 0) + 1;
+    if (adapter.status === 'not_available') notAvailableAdapters.push(adapter.source);
+    if (adapter.status === 'stale') staleAdapters.push(adapter.source);
+    if (adapter.status === 'invalid') invalidAdapters.push(adapter.source);
+    if (SKIPPED_ADAPTER_STATUSES.has(adapter.status)) skippedAdapters.push(adapter.source);
+  }
+
+  const observedSignals = state.signals.filter((signal) => signal.truthMode === 'observed').length;
+  const inferredSignals = state.signals.length - observedSignals;
+  const status: RuntimeFusionEvidenceStatus =
+    state.signals.length > 0
+      ? state.truthMode
+      : skippedAdapters.length > 0
+        ? 'skipped'
+        : 'observed';
+
+  return {
+    signals,
+    evidence: {
+      status,
+      artifactPath,
+      totalSignals: state.signals.length,
+      observedSignals,
+      inferredSignals,
+      adapterStatusCounts,
+      notAvailableAdapters,
+      skippedAdapters,
+      staleAdapters,
+      invalidAdapters,
+      reason:
+        state.signals.length > 0
+          ? `${state.signals.length} canonical external signal(s) loaded from ${EXTERNAL_SIGNAL_STATE_FILE}.`
+          : `No canonical external signals were present in ${EXTERNAL_SIGNAL_STATE_FILE}.`,
+    },
+  };
 }
 
 // ─── OTel Runtime Signal Extraction ───────────────────────────────────────────
@@ -271,6 +435,8 @@ function otelErrorSpanToSignal(span: OtelSpan, traceId: string): RuntimeSignal {
     count: 1,
     trend: 'unknown',
     pinned: false,
+    evidenceMode: 'observed',
+    sourceArtifact: RUNTIME_TRACES_FILE,
   };
 }
 
@@ -304,11 +470,13 @@ function otelLatencyToSignal(
     count: traceCount,
     trend: 'unknown',
     pinned: false,
+    evidenceMode: 'observed',
+    sourceArtifact: RUNTIME_TRACES_FILE,
   };
 }
 
 /**
- * Load and convert OpenTelemetry runtime evidence from PULSE_OTEL_RUNTIME.json
+ * Convert observed OpenTelemetry runtime evidence from PULSE_RUNTIME_TRACES.json
  * into {@link RuntimeSignal} entries for fusion.
  *
  * Extracts:
@@ -316,20 +484,11 @@ function otelLatencyToSignal(
  *  - Trace endpoint latency as latency signals (for endpoints exceeding thresholds)
  *  - Span-to-path mappings to connect signals to capabilities
  *
- * @param rootDir - The PULSE state root directory (typically `.pulse/current`).
+ * @param evidence - The already loaded runtime trace artifact.
  * @returns Array of {@link RuntimeSignal} entries.
  */
-function loadOtelRuntimeSignals(rootDir: string): RuntimeSignal[] {
+function runtimeTraceEvidenceToSignals(evidence: RuntimeCallGraphEvidence): RuntimeSignal[] {
   const signals: RuntimeSignal[] = [];
-  let evidence: RuntimeCallGraphEvidence | null = null;
-
-  try {
-    evidence = loadRuntimeCallGraphArtifact(rootDir);
-  } catch {
-    return signals;
-  }
-
-  if (!evidence) return signals;
 
   for (const trace of evidence.traces) {
     for (const span of trace.spans) {
@@ -366,18 +525,101 @@ function loadOtelRuntimeSignals(rootDir: string): RuntimeSignal[] {
 
 // ─── File Loading ───────────────────────────────────────────────────────────
 
-/**
- * Load runtime signals from a single external source file.
- * Returns an empty array if the file is missing, malformed, or empty.
- */
-function loadSourceSignals(rootDir: string, source: SignalSource): RuntimeSignal[] {
-  const fileName = SIGNAL_SOURCE_FILES[source];
-  const filePath = path.join(rootDir, fileName);
+function loadRuntimeTraceEvidence(currentDir: string): {
+  signals: RuntimeSignal[];
+  evidence: RuntimeFusionState['evidence']['runtimeTraces'];
+} {
+  const artifactPath = path.join(currentDir, RUNTIME_TRACES_FILE);
+  const payload = safeJsonParseFile(artifactPath);
+  if (!payload) {
+    return {
+      signals: [],
+      evidence: {
+        status: pathExists(artifactPath) ? 'invalid' : 'not_available',
+        artifactPath,
+        source: null,
+        totalTraces: 0,
+        totalSpans: 0,
+        errorTraces: 0,
+        derivedSignals: 0,
+        reason: pathExists(artifactPath)
+          ? `${RUNTIME_TRACES_FILE} is not valid JSON.`
+          : `${RUNTIME_TRACES_FILE} is not available in .pulse/current.`,
+      },
+    };
+  }
 
-  const payload = safeJsonParseFile(filePath);
-  if (!payload) return [];
+  const source = asString(payload.source);
+  const summary = isRecord(payload.summary) ? payload.summary : {};
+  const totalTraces = asNumber(summary.totalTraces, asArray(payload.traces).length);
+  const totalSpans = asNumber(summary.totalSpans, 0);
+  const errorTraces = asNumber(summary.errorTraces, 0);
 
-  return parseSignalsFromPayload(payload, source);
+  if (source === 'simulated') {
+    return {
+      signals: [],
+      evidence: {
+        status: 'simulated',
+        artifactPath,
+        source,
+        totalTraces,
+        totalSpans,
+        errorTraces,
+        derivedSignals: 0,
+        reason: `${RUNTIME_TRACES_FILE} source is simulated; traces are retained as non-observed metadata only.`,
+      },
+    };
+  }
+
+  if (!OBSERVED_RUNTIME_TRACE_SOURCES.has(source)) {
+    return {
+      signals: [],
+      evidence: {
+        status: source ? 'skipped' : 'invalid',
+        artifactPath,
+        source: source || null,
+        totalTraces,
+        totalSpans,
+        errorTraces,
+        derivedSignals: 0,
+        reason: source
+          ? `${RUNTIME_TRACES_FILE} source ${source} is not an observed runtime source for fusion.`
+          : `${RUNTIME_TRACES_FILE} does not declare a runtime source.`,
+      },
+    };
+  }
+
+  if (!isRuntimeCallGraphEvidence(payload)) {
+    return {
+      signals: [],
+      evidence: {
+        status: 'invalid',
+        artifactPath,
+        source,
+        totalTraces,
+        totalSpans,
+        errorTraces,
+        derivedSignals: 0,
+        reason: `${RUNTIME_TRACES_FILE} source ${source} is missing required trace evidence fields.`,
+      },
+    };
+  }
+
+  const signals = runtimeTraceEvidenceToSignals(payload);
+
+  return {
+    signals,
+    evidence: {
+      status: 'observed',
+      artifactPath,
+      source,
+      totalTraces,
+      totalSpans,
+      errorTraces,
+      derivedSignals: signals.length,
+      reason: `${signals.length} runtime signal(s) derived from observed ${source} traces.`,
+    },
+  };
 }
 
 // ─── Mapping Signals to Capabilities ────────────────────────────────────────
@@ -570,15 +812,7 @@ function buildSummary(
   ).length;
   const blockDeploySignals = signals.filter((s) => s.action === 'block_deploy').length;
 
-  const sourceCounts: Record<SignalSource, number> = {
-    sentry: 0,
-    datadog: 0,
-    prometheus: 0,
-    github_actions: 0,
-    codecov: 0,
-    gitnexus: 0,
-    otel_runtime: 0,
-  };
+  const sourceCounts = emptySourceCounts();
   for (const s of signals) {
     sourceCounts[s.source] = (sourceCounts[s.source] ?? 0) + 1;
   }
@@ -641,27 +875,13 @@ function buildSummary(
  * @returns The complete {@link RuntimeFusionState}.
  */
 export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
-  const allSignals: RuntimeSignal[] = [];
-  const sources: Exclude<SignalSource, 'otel_runtime'>[] = [
-    'sentry',
-    'datadog',
-    'prometheus',
-    'github_actions',
-    'codecov',
-    'gitnexus',
-  ];
-
-  for (const source of sources) {
-    const sourceSignals = loadSourceSignals(rootDir, source);
-    allSignals.push(...sourceSignals);
-  }
-
-  // Load OTel runtime traces from PULSE_OTEL_RUNTIME.json
-  const otelSignals = loadOtelRuntimeSignals(rootDir);
-  allSignals.push(...otelSignals);
+  const currentDir = resolvePulseCurrentDir(rootDir);
+  const externalSignals = loadCanonicalExternalSignals(currentDir);
+  const runtimeTraces = loadRuntimeTraceEvidence(currentDir);
+  const allSignals: RuntimeSignal[] = [...externalSignals.signals, ...runtimeTraces.signals];
 
   // Try loading capability state for signal→capability mapping context
-  const capabilityStatePath = path.join(rootDir, 'PULSE_CAPABILITY_STATE.json');
+  const capabilityStatePath = path.join(currentDir, 'PULSE_CAPABILITY_STATE.json');
   const capabilityPayload = safeJsonParseFile(capabilityStatePath);
   const capabilityState = capabilityPayload
     ? (capabilityPayload as unknown as {
@@ -680,7 +900,7 @@ export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
   }
 
   // Load convergence plan for priority context
-  const convergencePlanPath = path.join(rootDir, 'PULSE_CONVERGENCE_PLAN.json');
+  const convergencePlanPath = path.join(currentDir, 'PULSE_CONVERGENCE_PLAN.json');
   const convergencePayload = safeJsonParseFile(convergencePlanPath);
   const convergencePlan = convergencePayload
     ? (convergencePayload as unknown as {
@@ -695,15 +915,19 @@ export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
     generatedAt: new Date().toISOString(),
     signals: allSignals,
     summary,
+    evidence: {
+      externalSignalState: externalSignals.evidence,
+      runtimeTraces: runtimeTraces.evidence,
+    },
     priorityOverrides: [],
   };
 
   state = overridePriorities(state, convergencePlan);
 
-  if (!pathExists(rootDir)) {
-    ensureDir(rootDir);
+  if (!pathExists(currentDir)) {
+    ensureDir(currentDir, { recursive: true });
   }
-  writeTextFile(path.join(rootDir, FUSION_OUTPUT_FILE), JSON.stringify(state, null, 2));
+  writeTextFile(path.join(currentDir, FUSION_OUTPUT_FILE), JSON.stringify(state, null, 2));
 
   return state;
 }

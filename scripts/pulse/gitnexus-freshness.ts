@@ -152,20 +152,39 @@ function getCurrentCommit(rootDir: string): string {
 
 /**
  * Read the last indexed commit from the GitNexus evidence state file.
+ *
+ * Priority order:
+ * 1. `.pulse/current/PULSE_GITNEXUS_EVIDENCE.json` → status.lastIndexedCommit
+ * 2. `.gitnexus/meta.json` → lastCommit (fallback when evidence file is absent)
+ * 3. null (no index state available)
  */
 function getLastIndexedCommit(rootDir: string): string | null {
   const evidencePath = path.join(rootDir, '.pulse', 'current', GITNEXUS_STATE_FILE);
 
-  if (!pathExists(evidencePath)) {
-    return null;
+  if (pathExists(evidencePath)) {
+    try {
+      const evidence = readJsonFile<GitNexusEvidenceState>(evidencePath);
+      if (evidence?.status?.lastIndexedCommit) {
+        return evidence.status.lastIndexedCommit;
+      }
+    } catch {
+      // Fall through to meta.json
+    }
   }
 
-  try {
-    const evidence = readJsonFile<GitNexusEvidenceState>(evidencePath);
-    return evidence?.status?.lastIndexedCommit ?? null;
-  } catch {
-    return null;
+  const metaPath = path.join(rootDir, GITNEXUS_INDEX_DIR, 'meta.json');
+  if (pathExists(metaPath)) {
+    try {
+      const meta = readJsonFile<{ lastCommit?: string }>(metaPath);
+      if (meta?.lastCommit) {
+        return meta.lastCommit;
+      }
+    } catch {
+      return null;
+    }
   }
+
+  return null;
 }
 
 /**
@@ -198,8 +217,23 @@ export function checkGitNexusFreshness(rootDir: string): GitNexusFreshness {
   const coveragePercent =
     totalIndexableFiles > 0 ? Math.round((indexedFiles / totalIndexableFiles) * 100) : 0;
 
+  const indexDirExists = pathExists(path.join(rootDir, GITNEXUS_INDEX_DIR));
   const reindexRecommended = stale || indexedFiles === 0;
   const impactAnalysisAvailable = !stale && indexedFiles > 0;
+  const autonomyGatePassed = isGraphFreshEnoughForAutonomy({
+    lastIndexedCommit,
+    currentCommit,
+    stale,
+    filesBehind: filesBehind > 0 ? filesBehind : 0,
+    lastChecked: now,
+    reindexRecommended,
+    impactAnalysisAvailable,
+    indexedFiles,
+    totalIndexableFiles,
+    coveragePercent,
+    hasIndexDirectory: indexDirExists,
+    autonomyGatePassed: false,
+  });
 
   const freshness: GitNexusFreshness = {
     lastIndexedCommit,
@@ -212,6 +246,8 @@ export function checkGitNexusFreshness(rootDir: string): GitNexusFreshness {
     indexedFiles,
     totalIndexableFiles,
     coveragePercent,
+    hasIndexDirectory: indexDirExists,
+    autonomyGatePassed,
   };
 
   const pulseDir = path.join(rootDir, '.pulse', 'current');

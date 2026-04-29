@@ -18,7 +18,7 @@ import {
 import { buildPageSemanticProfile, buildGenericModuleAlias } from './codebase-truth-module';
 
 function isUserFacingGroup(group: string): boolean {
-  return group === 'main' || group === 'public' || group === 'checkout';
+  return group === 'main' || group === 'public';
 }
 
 export function isLikelyMutation(interaction: InteractionChain): boolean {
@@ -28,7 +28,7 @@ export function isLikelyMutation(interaction: InteractionChain): boolean {
   if (interaction.apiCall.method && interaction.apiCall.method.toUpperCase() !== 'GET') {
     return true;
   }
-  return /\b(save|create|update|delete|remove|add|send|submit|pay|upload|sync|connect|approve|withdraw|checkout)\b/i.test(
+  return /\b(save|create|update|delete|remove|add|send|submit|upload|sync|connect|approve)\b/i.test(
     `${interaction.elementLabel} ${interaction.handler || ''} ${interaction.apiCall.endpoint}`,
   );
 }

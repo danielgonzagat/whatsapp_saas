@@ -52,7 +52,6 @@ function isInaccessible(filePath: string): boolean {
 /** Build the full path coverage state from the execution matrix. */
 export function buildPathCoverageState(rootDir: string): PathCoverageState {
   const matrixPath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_EXECUTION_MATRIX.json');
-  const frontierDir = safeJoin(rootDir, '.pulse', 'frontier');
 
   let matrixPaths: PulseExecutionMatrixPath[] = [];
   if (pathExists(matrixPath)) {
@@ -61,8 +60,14 @@ export function buildPathCoverageState(rootDir: string): PathCoverageState {
   }
 
   const entries: PathCoverageEntry[] = matrixPaths.map((mp) => {
-    const classification = classifyPath(mp, rootDir);
     const safe = isSafeToExecute(mp);
+    const discoveredClassification = classifyPath(mp, rootDir);
+    const classification =
+      !safe &&
+      (discoveredClassification === 'inferred_only' ||
+        discoveredClassification === 'probe_blueprint_generated')
+        ? 'blocked_human_required'
+        : discoveredClassification;
     const testInfo =
       safe && classification === 'inferred_only'
         ? generateTestForPath(mp, rootDir)
@@ -71,22 +76,41 @@ export function buildPathCoverageState(rootDir: string): PathCoverageState {
     return {
       pathId: mp.pathId,
       entrypoint: mp.entrypoint.description,
+      risk: mp.risk,
+      executionMode: mp.executionMode,
       classification,
       testGenerated: testInfo.testFilePath !== null,
       testFilePath: testInfo.testFilePath,
       safeToExecute: safe,
       fixtureNeeded: testInfo.fixtureNeeded,
-      lastProbed: safe ? new Date().toISOString() : null,
+      lastProbed:
+        classification === 'observed_pass' || classification === 'observed_fail'
+          ? new Date().toISOString()
+          : null,
+      evidenceMode: getEvidenceMode(classification),
     };
   });
 
   const observedPass = entries.filter((e) => e.classification === 'observed_pass').length;
   const observedFail = entries.filter((e) => e.classification === 'observed_fail').length;
   const testGenerated = entries.filter((e) => e.testGenerated).length;
+  const probeBlueprintGenerated = entries.filter(
+    (e) => e.classification === 'probe_blueprint_generated',
+  ).length;
   const inferredOnly = entries.filter((e) => e.classification === 'inferred_only').length;
   const blockedHuman = entries.filter((e) => e.classification === 'blocked_human_required').length;
   const criticalInferredOnly = entries.filter(
-    (e) => e.classification === 'inferred_only' && !e.safeToExecute,
+    (e) => e.classification === 'inferred_only' && isCriticalRisk(e.risk),
+  ).length;
+  const criticalBlockedHuman = entries.filter(
+    (e) => e.classification === 'blocked_human_required' && isCriticalRisk(e.risk),
+  ).length;
+  const criticalUnobserved = entries.filter(
+    (e) =>
+      isCriticalRisk(e.risk) &&
+      e.classification !== 'observed_pass' &&
+      e.classification !== 'observed_fail' &&
+      e.classification !== 'not_executable',
   ).length;
   const coveragePercent = computeCoveragePercent(entries);
 
@@ -97,9 +121,12 @@ export function buildPathCoverageState(rootDir: string): PathCoverageState {
       observedPass,
       observedFail,
       testGenerated,
+      probeBlueprintGenerated,
       inferredOnly,
       blockedHuman,
       criticalInferredOnly,
+      criticalBlockedHuman,
+      criticalUnobserved,
       coveragePercent,
     },
     paths: entries,
@@ -142,7 +169,7 @@ export function classifyPath(mp: PulseExecutionMatrixPath, _rootDir: string): Pa
 
   if (status === 'inferred_only' || status === 'untested') {
     if (hasMapped && mp.routePatterns.length > 0) {
-      return 'test_generated';
+      return 'probe_blueprint_generated';
     }
     return 'inferred_only';
   }
@@ -155,10 +182,9 @@ export function generateTestForPath(
   mp: PulseExecutionMatrixPath,
   rootDir: string,
 ): { testFilePath: string; fixtureNeeded: string[] } {
-  const routePattern = mp.routePatterns[0] ?? '';
   const safeName = mp.pathId.replace(/[^a-zA-Z0-9_]/g, '_').slice(0, 60);
   const testDir = safeJoin(rootDir, '.pulse', 'frontier');
-  const testFilePath = path.posix.join('.pulse', 'frontier', `${safeName}.probe.ts`);
+  const testFilePath = path.posix.join('.pulse', 'frontier', `${safeName}.probe.json`);
   ensureDir(testDir, { recursive: true });
 
   const fixtures: string[] = [];
@@ -171,7 +197,7 @@ export function generateTestForPath(
     fixtures.push(`flow:${mp.flowId}`);
   }
 
-  const probeContent = generateProbeFileContent(mp, testFilePath, routeMethod, fixtures);
+  const probeContent = generateProbeFileContent(mp, routeMethod, fixtures);
   writeTextFile(safeJoin(rootDir, testFilePath), probeContent);
 
   return { testFilePath, fixtureNeeded: fixtures };
@@ -208,9 +234,7 @@ export function computeCoveragePercent(paths: PathCoverageEntry[]): number {
   }
 
   const covered = paths.filter((p) =>
-    ['observed_pass', 'observed_fail', 'test_generated', 'blocked_human_required'].includes(
-      p.classification,
-    ),
+    ['observed_pass', 'observed_fail', 'blocked_human_required'].includes(p.classification),
   ).length;
 
   return Math.min(100, Math.round((covered / paths.length) * 100));
@@ -237,47 +261,49 @@ function detectRouteMethod(mp: PulseExecutionMatrixPath): string {
 
 function generateProbeFileContent(
   mp: PulseExecutionMatrixPath,
-  testFilePath: string,
   method: string,
   fixtures: string[],
 ): string {
   const route = mp.routePatterns[0] ?? '/';
-  const desc = mp.entrypoint.description.replace(/"/g, "'");
-
-  return (
-    `/**\n` +
-    ` * PULSE Frontier Probe — auto-generated for ${mp.pathId}\n` +
-    ` * Path: ${mp.entrypoint.description}\n` +
-    ` * Classification: ${mp.status}\n` +
-    ` * Generated: ${new Date().toISOString()}\n` +
-    ` *\n` +
-    ` * This probe was produced by the Full Path Coverage Engine (Wave 6).\n` +
-    ` * It validates that the inferred execution path actually behaves as expected.\n` +
-    ` *\n` +
-    ` * Fixtures required:\n` +
-    fixtures.map((f) => ` *   - ${f}`).join('\n') +
-    `\n` +
-    ` */\n` +
-    `\n` +
-    `import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';\n` +
-    `\n` +
-    `describe('${mp.pathId}', () => {\n` +
-    `  beforeAll(async () => {\n` +
-    `    // TODO: set up fixtures\n` +
-    fixtures.map((f) => `    //   - ${f}`).join('\n') +
-    `\n` +
-    `  });\n` +
-    `\n` +
-    `  afterAll(async () => {\n` +
-    `    // TODO: tear down fixtures\n` +
-    `  });\n` +
-    `\n` +
-    `  it('should respond to ${method} ${route} — ${desc}', async () => {\n` +
-    `    // TODO: Execute ${method} ${route} with appropriate payload\n` +
-    `    // Expected outcome: ${mp.status === 'inferred_only' ? 'degraded gracefully or pass' : 'pass'}\n` +
-    `    // Validation command: ${mp.validationCommand}\n` +
-    `    expect(true).toBe(true); // placeholder — replace with actual probe\n` +
-    `  });\n` +
-    `});\n`
+  return JSON.stringify(
+    {
+      kind: 'pulse_frontier_probe_blueprint',
+      pathId: mp.pathId,
+      entrypoint: mp.entrypoint.description,
+      matrixStatus: mp.status,
+      generatedAt: new Date().toISOString(),
+      evidenceMode: 'blueprint',
+      executed: false,
+      route: {
+        method,
+        pattern: route,
+      },
+      fixtures,
+      validationCommand: mp.validationCommand,
+      validationRequired: [
+        'runtime_harness_executes_blueprint',
+        'response_contract_verified',
+        'side_effects_verified_when_declared',
+      ],
+    },
+    null,
+    2,
   );
+}
+
+function getEvidenceMode(classification: PathClassification): PathCoverageEntry['evidenceMode'] {
+  if (classification === 'observed_pass' || classification === 'observed_fail') {
+    return 'observed';
+  }
+  if (classification === 'probe_blueprint_generated') {
+    return 'blueprint';
+  }
+  if (classification === 'blocked_human_required') {
+    return 'blocked';
+  }
+  return 'inferred';
+}
+
+function isCriticalRisk(risk: PathCoverageEntry['risk']): boolean {
+  return risk === 'high' || risk === 'critical';
 }

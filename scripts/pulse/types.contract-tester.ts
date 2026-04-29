@@ -9,7 +9,13 @@
 export type ContractProvider = string;
 
 /** Current validation status of a provider contract. */
-export type ContractStatus = 'valid' | 'broken' | 'untested' | 'deprecated' | 'unknown';
+export type ContractStatus =
+  | 'valid'
+  | 'broken'
+  | 'untested'
+  | 'deprecated'
+  | 'unknown'
+  | 'generated';
 
 /** Severity classification for a detected schema change. */
 export type SchemaDiffSeverity = 'breaking' | 'non_breaking' | 'addition' | 'deprecation';

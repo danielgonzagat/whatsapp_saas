@@ -1,4 +1,11 @@
-export type FuzzTestCaseStatus = 'passed' | 'failed' | 'security_issue' | 'blocked' | 'skipped';
+export type FuzzTestCaseStatus =
+  | 'planned'
+  | 'not_executed'
+  | 'passed'
+  | 'failed'
+  | 'security_issue'
+  | 'blocked'
+  | 'skipped';
 export type AuthTestResult =
   | 'valid_auth'
   | 'missing_auth'
@@ -6,7 +13,12 @@ export type AuthTestResult =
   | 'expired_token'
   | 'wrong_tenant'
   | 'wrong_role';
-export type IdempotencyResult = 'idempotent' | 'not_idempotent' | 'not_tested';
+export type IdempotencyResult =
+  | 'planned'
+  | 'not_executed'
+  | 'idempotent'
+  | 'not_idempotent'
+  | 'not_tested';
 
 export interface APIEndpointProbe {
   endpointId: string;
@@ -55,6 +67,7 @@ export interface IdempotencyTestCase {
 
 export interface RateLimitTestCase {
   testId: string;
+  status: FuzzTestCaseStatus;
   requestsSent: number;
   rateLimited: boolean;
   rateLimitedAt: number;
@@ -75,14 +88,22 @@ export interface APIFuzzEvidence {
   generatedAt: string;
   summary: {
     totalEndpoints: number;
+    plannedEndpoints: number;
     probedEndpoints: number;
+    authPlannedEndpoints: number;
     authTestedEndpoints: number;
+    schemaPlannedEndpoints: number;
     schemaTestedEndpoints: number;
+    idempotencyPlannedEndpoints: number;
     idempotencyTestedEndpoints: number;
+    rateLimitPlannedEndpoints: number;
     rateLimitTestedEndpoints: number;
+    securityPlannedEndpoints: number;
     securityTestedEndpoints: number;
     endpointsWithIssues: number;
+    endpointsWithPlannedSecurityIssues: number;
     criticalSecurityIssues: number;
+    criticalSecurityPlans: number;
   };
   probes: APIEndpointProbe[];
 }

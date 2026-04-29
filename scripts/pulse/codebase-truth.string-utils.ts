@@ -52,7 +52,7 @@ export function getRouteSegments(route: string): string[] {
 }
 
 export function isUserFacingGroup(group: string): boolean {
-  return group === 'main' || group === 'public' || group === 'checkout';
+  return group === 'main' || group === 'public';
 }
 
 export function shouldIgnoreSemanticToken(token: string): boolean {

@@ -1,7 +1,16 @@
 {
-  "score": 75,
-  "totalNodes": 2794,
+  "score": 74,
+  "totalNodes": 2795,
   "breaks": [
+    {
+      "type": "BACKUP_MISSING",
+      "severity": "critical",
+      "file": ".backup-manifest.json",
+      "line": 0,
+      "description": "No recent DB backup found — backup manifest missing or older than 60 min (RPO breach)",
+      "detail": "Backup manifest exists but lastBackup timestamp is stale (>60 min) or missing",
+      "source": "backup-checker"
+    },
     {
       "type": "CICD_INCOMPLETE",
       "severity": "high",
@@ -2322,7 +2331,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/plan-limits.service.ts",
-      "line": 327,
+      "line": 325,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2331,7 +2340,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/plan-limits.service.ts",
-      "line": 357,
+      "line": 355,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2340,7 +2349,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/plan-limits.service.ts",
-      "line": 364,
+      "line": 362,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const daysInMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 0).getDate(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -11467,11 +11476,11 @@
     "proxyNoUpstream": 0,
     "securityIssues": 0,
     "dataSafetyIssues": 14,
-    "qualityIssues": 1183,
+    "qualityIssues": 1184,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-29T18:58:00.380Z",
-  "runId": "7ca372a6-df52-4a3f-8592-bd66f38e7732",
-  "generatedAt": "2026-04-29T19:00:52.738Z"
+  "timestamp": "2026-04-29T19:23:38.590Z",
+  "runId": "99bdb1b0-205a-49ea-a4b8-9690233977db",
+  "generatedAt": "2026-04-29T19:25:34.714Z"
 }

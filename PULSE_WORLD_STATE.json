@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-29T19:00:52.738Z",
+  "generatedAt": "2026-04-29T19:25:34.714Z",
   "backendUrl": "https://whatsappsaas-copy-staging.up.railway.app",
   "frontendUrl": "https://kloel-frontend-plhznpy68-danielgonzagatj-gmailcoms-projects.vercel.app",
   "actorProfiles": [
@@ -275,5 +275,5 @@
       "passedScenarios": 0
     }
   ],
-  "runId": "7ca372a6-df52-4a3f-8592-bd66f38e7732"
+  "runId": "99bdb1b0-205a-49ea-a4b8-9690233977db"
 }

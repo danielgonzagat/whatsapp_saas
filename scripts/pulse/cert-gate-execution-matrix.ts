@@ -1,6 +1,16 @@
 import type { PulseExecutionMatrix, PulseExecutionMatrixPath, PulseGateResult } from './types';
 import { gateFail } from './cert-gate-evaluators';
 
+export interface PulsePathCoverageGateState {
+  summary?: {
+    totalPaths?: number;
+    inferredOnly?: number;
+    criticalInferredOnly?: number;
+    criticalUnobserved?: number;
+    coveragePercent?: number;
+  };
+}
+
 function hasPreciseTerminalReason(path: PulseExecutionMatrixPath): boolean {
   if (['observed_pass', 'observed_fail', 'blocked_human_required'].includes(path.status)) {
     return true;
@@ -42,11 +52,24 @@ export function evaluateExecutionMatrixCompleteGate(
 /** Gate: critical paths must be observed or carry a precise terminal reason. */
 export function evaluateCriticalPathObservedGate(
   matrix?: PulseExecutionMatrix | null,
+  pathCoverage?: PulsePathCoverageGateState | null,
 ): PulseGateResult {
   if (!matrix) {
     return gateFail(
       'Execution matrix is missing, so critical path observation is unknown.',
       'missing_evidence',
+    );
+  }
+  const criticalUnobserved =
+    pathCoverage?.summary?.criticalUnobserved ?? pathCoverage?.summary?.criticalInferredOnly ?? 0;
+  if (criticalUnobserved > 0) {
+    return gateFail(
+      `Path coverage still has ${criticalUnobserved} critical unobserved path(s); execution matrix precision cannot be treated as observed proof.`,
+      'missing_evidence',
+      {
+        evidenceMode: 'inferred',
+        confidence: 'high',
+      },
     );
   }
   if (matrix.summary.criticalUnobservedPaths > 0) {
