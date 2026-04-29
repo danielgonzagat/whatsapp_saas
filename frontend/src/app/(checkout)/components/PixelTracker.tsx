@@ -109,7 +109,7 @@ function shouldTrack(pixel: PixelConfig, event: PixelEvent): boolean {
 /* ─── Script injectors ────────────────────────────────────────────────────── */
 
 function ensureFacebookPixel(pixelId: string): void {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
     return;
   }
   const pw = getPixelWindow();

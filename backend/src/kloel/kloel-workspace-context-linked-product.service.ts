@@ -85,9 +85,14 @@ export class KloelWorkspaceContextLinkedProductService {
       affiliateProductProductId || linkedProduct.productId || '',
     ).trim();
     const producerWorkspaceId = targetProductId
-      ? await this.prisma.product
-          .findFirst({ where: { id: targetProductId }, select: { workspaceId: true } })
-          .then((p) => p?.workspaceId || null)
+      ? (
+          await this.prisma.product
+            .findFirst({
+              where: { id: targetProductId },
+              select: { workspaceId: true },
+            })
+            .catch(() => null)
+        )?.workspaceId || null
       : null;
     const catalogProduct =
       producerWorkspaceId && targetProductId
