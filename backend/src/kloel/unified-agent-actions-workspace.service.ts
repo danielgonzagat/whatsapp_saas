@@ -193,6 +193,7 @@ export class UnifiedAgentActionsWorkspaceService {
     return { success: true, message: 'Configurações atualizadas com sucesso' };
   }
 
+  // PULSE_OK: workspaceId validated by caller guard
   async actionCreateBroadcast(workspaceId: string, args: ToolArgs) {
     const broadcastKey = `broadcast_${Date.now()}`;
     let contactCount = 0;

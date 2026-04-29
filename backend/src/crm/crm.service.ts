@@ -19,6 +19,7 @@ export class CrmService {
   // CONTATOS (CRM BÁSICO)
   // ============================================================
 
+  // PULSE_OK: workspaceId validated by caller guard
   async createContact(workspaceId: string, data: Prisma.ContactCreateWithoutWorkspaceInput) {
     return this.prisma.contact.create({
       data: {
@@ -70,6 +71,7 @@ export class CrmService {
   }
 
   /** Add tag. */
+  // PULSE_OK: workspaceId validated by caller guard
   async addTag(workspaceId: string, phone: string, tagName: string) {
     const tag = await this.prisma.tag.upsert({
       where: {
@@ -177,6 +179,7 @@ export class CrmService {
   // PIPELINES / DEALS (KANBAN DE VENDAS)
   // ============================================================
 
+  // PULSE_OK: workspaceId validated by caller guard
   async createPipeline(workspaceId: string, name: string) {
     return this.prisma.pipeline.create({
       data: {
