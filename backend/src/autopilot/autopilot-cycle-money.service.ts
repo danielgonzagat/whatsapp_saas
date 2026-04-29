@@ -157,7 +157,7 @@ export class AutopilotCycleMoneyService {
         await this.campaignQueue.add(
           'process-campaign',
           { campaignId: id, workspaceId },
-          { delay },
+          { delay, jobId: `process-campaign:${id}` },
         );
       });
 
