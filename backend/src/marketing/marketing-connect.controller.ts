@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { buildUnsubscribeFooterHtml } from '../common/utils/unsubscribe-footer.util';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
@@ -63,12 +64,14 @@ export class MarketingConnectController {
       throw new BadRequestException('email_provider_not_configured');
     }
 
+    const safeHtml = html + buildUnsubscribeFooterHtml({ email: recipientEmail });
+
     const { EmailService } = await import('../auth/email.service');
     const emailService = new EmailService();
     const success = await emailService.sendEmail({
       to: recipientEmail,
       subject,
-      html,
+      html: safeHtml,
     });
     if (!success) {
       throw new BadRequestException('email_provider_rejected_request');
