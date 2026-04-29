@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { CheckoutSocialLeadStatus } from '@prisma/client';
+import { CheckoutSocialLeadStatus, Prisma } from '@prisma/client';
 import { EmailService } from '../auth/email.service';
 import { forEachSequential } from '../common/async-sequence';
 import { FollowUpService } from '../followup/followup.service';
@@ -55,19 +55,19 @@ export class CheckoutSocialRecoveryService {
       const age = now - lead.createdAt.getTime();
 
       if (!lead.abandonedAt && age >= THIRTY_MINUTES_MS) {
-        const existing = await this.prisma.checkoutSocialLead.findFirst({
-          where: { id: lead.id, workspaceId: lead.workspaceId },
-          select: { id: true },
-        });
-        if (existing) {
+        try {
           await this.prisma.checkoutSocialLead.update({
-            where: { id: lead.id },
+            where: { id: lead.id, workspaceId: lead.workspaceId },
             data: {
               status: CheckoutSocialLeadStatus.ABANDONED,
               abandonedAt: new Date(),
             },
             select: { id: true, workspaceId: true },
           });
+        } catch (error: unknown) {
+          if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')) {
+            throw error;
+          }
         }
       }
 

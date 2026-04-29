@@ -52,14 +52,14 @@ export class CheckoutCatalogService {
 
   /** Update bump. */
   async updateBump(id: string, data: Prisma.OrderBumpUpdateInput) {
-    const existing = await this.prisma.orderBump.findUnique({
-      where: { id },
-      select: { id: true },
-    });
-    if (!existing) {
-      throw new NotFoundException('OrderBump not found');
+    try {
+      return await this.prisma.orderBump.update({ where: { id }, data });
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('OrderBump not found');
+      }
+      throw error;
     }
-    return this.prisma.orderBump.update({ where: { id }, data });
   }
 
   /** Delete bump. */
@@ -144,11 +144,14 @@ export class CheckoutCatalogService {
 
   /** Update upsell. */
   async updateUpsell(id: string, data: Prisma.UpsellUpdateInput) {
-    const existing = await this.prisma.upsell.findUnique({ where: { id }, select: { id: true } });
-    if (!existing) {
-      throw new NotFoundException('Upsell not found');
+    try {
+      return await this.prisma.upsell.update({ where: { id }, data });
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('Upsell not found');
+      }
+      throw error;
     }
-    return this.prisma.upsell.update({ where: { id }, data });
   }
 
   /** Delete upsell. */
@@ -233,15 +236,17 @@ export class CheckoutCatalogService {
     if (!workspaceId) {
       throw new BadRequestException('workspaceId is required');
     }
-    const existing = await this.prisma.checkoutCoupon.findFirst({
-      where: { id, workspaceId },
-      select: { id: true },
-    });
-    if (!existing) {
-      throw new NotFoundException('CheckoutCoupon not found');
+    try {
+      return await this.prisma.checkoutCoupon.update({
+        where: { id, workspaceId },
+        data,
+      });
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('CheckoutCoupon not found');
+      }
+      throw error;
     }
-    await this.prisma.checkoutCoupon.updateMany({ where: { id, workspaceId }, data });
-    return this.prisma.checkoutCoupon.findFirst({ where: { id, workspaceId } });
   }
 
   /** Delete coupon. */
@@ -337,14 +342,14 @@ export class CheckoutCatalogService {
 
   /** Update pixel. */
   async updatePixel(id: string, data: Prisma.CheckoutPixelUpdateInput) {
-    const existing = await this.prisma.checkoutPixel.findUnique({
-      where: { id },
-      select: { id: true },
-    });
-    if (!existing) {
-      throw new NotFoundException('CheckoutPixel not found');
+    try {
+      return await this.prisma.checkoutPixel.update({ where: { id }, data });
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('CheckoutPixel not found');
+      }
+      throw error;
     }
-    return this.prisma.checkoutPixel.update({ where: { id }, data });
   }
 
   /** Delete pixel. */

@@ -66,18 +66,17 @@ export class CheckoutProductService {
 
   /** Update product. */
   async updateProduct(id: string, workspaceId: string, data: Prisma.ProductUpdateInput) {
-    const existing = await this.prisma.product.findFirst({
-      where: { id, workspaceId },
-      select: { id: true },
-    });
-    if (!existing) {
-      throw new NotFoundException('Product not found');
+    try {
+      return await this.prisma.product.update({
+        where: { id, workspaceId },
+        data,
+      });
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('Product not found');
+      }
+      throw error;
     }
-    await this.prisma.product.updateMany({
-      where: { id, workspaceId },
-      data,
-    });
-    return this.prisma.product.findFirst({ where: { id, workspaceId } });
   }
 
   /** List products. */
@@ -192,18 +191,18 @@ export class CheckoutProductService {
 
   /** Update plan. */
   async updatePlan(id: string, data: Prisma.CheckoutProductPlanUpdateInput) {
-    const existing = await this.prisma.checkoutProductPlan.findUnique({
-      where: { id },
-      select: { id: true },
-    });
-    if (!existing) {
-      throw new NotFoundException('CheckoutProductPlan not found');
+    try {
+      return await this.prisma.checkoutProductPlan.update({
+        where: { id },
+        data,
+        include: { checkoutConfig: true },
+      });
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('CheckoutProductPlan not found');
+      }
+      throw error;
     }
-    return this.prisma.checkoutProductPlan.update({
-      where: { id },
-      data,
-      include: { checkoutConfig: true },
-    });
   }
 
   /** Delete plan. */
@@ -230,18 +229,18 @@ export class CheckoutProductService {
 
   /** Update checkout config. */
   async updateConfig(planId: string, data: Prisma.CheckoutConfigUpdateInput) {
-    const existing = await this.prisma.checkoutConfig.findUnique({
-      where: { planId },
-      select: { id: true },
-    });
-    if (!existing) {
-      throw new NotFoundException('CheckoutConfig not found');
+    try {
+      return await this.prisma.checkoutConfig.update({
+        where: { planId },
+        data: normalizeCheckoutConfigUpdate(data),
+        include: { pixels: true },
+      });
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException('CheckoutConfig not found');
+      }
+      throw error;
     }
-    return this.prisma.checkoutConfig.update({
-      where: { planId },
-      data: normalizeCheckoutConfigUpdate(data),
-      include: { pixels: true },
-    });
   }
 
   /** Get checkout config. */
