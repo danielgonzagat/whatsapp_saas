@@ -84,6 +84,10 @@ function deriveRequestedModesFromScenarios(
   scenarioIds: string[],
   profile: PulseCertificationProfile,
 ): Array<'customer' | 'operator' | 'admin' | 'shift' | 'soak'> {
+  if (profile === 'pulse-core-final') {
+    return [];
+  }
+
   if (!manifest) {
     return isFullWorkspaceProfile(profile)
       ? ['customer', 'operator', 'admin', 'soak']
@@ -123,6 +127,10 @@ function deriveScenarioIds(
   manifest: PulseManifest | null,
   profile: PulseCertificationProfile,
 ): string[] {
+  if (profile === 'pulse-core-final') {
+    return [];
+  }
+
   if (!manifest) {
     return [];
   }
