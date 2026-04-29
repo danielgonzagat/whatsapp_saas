@@ -134,13 +134,23 @@ function uniqueStrings(values: string[]): string[] {
 }
 
 function uniqueLeasePaths(rootDir: string, values: string[]): string[] {
-  return [...new Set(values.map((value) => normalizeLeasePath(rootDir, value)).filter(Boolean) as string[])].sort();
+  return [
+    ...new Set(
+      values.map((value) => normalizeLeasePath(rootDir, value)).filter(Boolean) as string[],
+    ),
+  ].sort();
 }
 
 function readProtectedGovernanceConfig(rootDir: string): ProtectedGovernanceConfig {
   const fallback: ProtectedGovernanceConfig = {
     protectedExact: ['AGENTS.md', 'CLAUDE.md', 'CODEX.md', 'package.json', '.codacy.yml'],
-    protectedPrefixes: ['ops/', 'scripts/ops/', '.github/workflows/', 'docs/codacy/', 'docs/design/'],
+    protectedPrefixes: [
+      'ops/',
+      'scripts/ops/',
+      '.github/workflows/',
+      'docs/codacy/',
+      'docs/design/',
+    ],
   };
   const configPath = safeJoin(rootDir, 'ops', 'protected-governance-files.json');
   if (!pathExists(configPath)) {
@@ -148,7 +158,9 @@ function readProtectedGovernanceConfig(rootDir: string): ProtectedGovernanceConf
   }
 
   try {
-    const parsed = JSON.parse(readTextFile(configPath, 'utf8')) as Partial<ProtectedGovernanceConfig>;
+    const parsed = JSON.parse(
+      readTextFile(configPath, 'utf8'),
+    ) as Partial<ProtectedGovernanceConfig>;
     return {
       protectedExact: Array.isArray(parsed.protectedExact)
         ? parsed.protectedExact.map(String)
@@ -319,12 +331,12 @@ export function buildBeadsSnapshot(rootDir: string, generatedAt: string): PulseC
   const issuesText = readTextFile(issuesPath, 'utf8');
   const issueLines = issuesText.split('\n').filter((line) => line.trim().length > 0);
   const interactions = pathExists(interactionsPath)
-    ? readTextFile(interactionsPath, 'utf8').split('\n').filter((line) => line.trim().length > 0)
+    ? readTextFile(interactionsPath, 'utf8')
+        .split('\n')
+        .filter((line) => line.trim().length > 0)
     : [];
   const touchedAt =
-    fileMtimeIso(safeJoin(beadsDir, 'last-touched')) ||
-    fileMtimeIso(issuesPath) ||
-    generatedAt;
+    fileMtimeIso(safeJoin(beadsDir, 'last-touched')) || fileMtimeIso(issuesPath) || generatedAt;
   metadata.issueCount = issueLines.length;
   metadata.interactionCount = interactions.length;
   metadata.touchedAt = touchedAt;
@@ -460,7 +472,8 @@ export function buildPulseContextFabricBundle(input: {
     const conflictReasons =
       duplicateReadOnly.length > 0
         ? duplicateReadOnly.map(
-            (filePath) => `${filePath} already leased to ${mutableOwners.get(filePath) ?? 'another worker'}.`,
+            (filePath) =>
+              `${filePath} already leased to ${mutableOwners.get(filePath) ?? 'another worker'}.`,
           )
         : [];
     const currentLeaseId = leaseId(input.runId, id, unit.id);
@@ -550,7 +563,9 @@ export function buildPulseContextFabricBundle(input: {
   };
 }
 
-export function buildDirectiveContextFabricPatch(bundle: PulseContextFabricBundle): Record<string, unknown> {
+export function buildDirectiveContextFabricPatch(
+  bundle: PulseContextFabricBundle,
+): Record<string, unknown> {
   return {
     broadcastRef: 'PULSE_CONTEXT_BROADCAST.json',
     leasesRef: 'PULSE_WORKER_LEASES.json',

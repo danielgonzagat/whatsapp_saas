@@ -1,6 +1,6 @@
 {
-  "score": 74,
-  "totalNodes": 2747,
+  "score": 78,
+  "totalNodes": 2699,
   "breaks": [
     {
       "type": "BACKUP_MISSING",
@@ -12,255 +12,12 @@
       "source": "backup-checker"
     },
     {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/admin/dashboard/admin-dashboard.service.ts",
-      "line": 381,
-      "description": "Backend TypeScript compile error: TS18047",
-      "detail": "'previous' is possibly 'null'.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/affiliate/affiliate-marketplace.controller.ts",
-      "line": 187,
-      "description": "Backend TypeScript compile error: TS2345",
-      "detail": "Argument of type '{ category?: { in: (string | null)[]; } | undefined; listed: true; }' is not assignable to parameter of type 'AffiliateProductWhereInput'.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/affiliate/affiliate.controller.ts",
-      "line": 286,
-      "description": "Backend TypeScript compile error: TS2322",
-      "detail": "Type 'string | number | true | InputJsonObject | InputJsonArray | { toJSON(): unknown; } | null' is not assignable to type 'InputJsonValue | NullableJsonNullValueInput | undefined'.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/ai-brain/agent-assist.service.ts",
-      "line": 77,
-      "description": "Backend TypeScript compile error: TS2345",
-      "detail": "Argument of type 'OpenAI | null' is not assignable to parameter of type 'OpenAI'.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/ai-brain/media-factory.service.ts",
-      "line": 31,
-      "description": "Backend TypeScript compile error: TS18048",
-      "detail": "'response.data' is possibly 'undefined'.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/ai-brain/vector.service.ts",
-      "line": 12,
-      "description": "Backend TypeScript compile error: TS2564",
-      "detail": "Property 'openai' has no initializer and is not definitely assigned in the constructor.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/alerts/alerts.gateway.ts",
-      "line": 26,
-      "description": "Backend TypeScript compile error: TS2564",
-      "detail": "Property 'server' has no initializer and is not definitely assigned in the constructor.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/analytics/advanced-analytics.service.ts",
-      "line": 227,
-      "description": "Backend TypeScript compile error: TS2345",
-      "detail": "Argument of type 'string | null' is not assignable to parameter of type 'string'.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/analytics/advanced-analytics.service.ts",
-      "line": 230,
-      "description": "Backend TypeScript compile error: TS2345",
-      "detail": "Argument of type 'string | null' is not assignable to parameter of type 'string'.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/analytics/advanced-analytics.service.ts",
-      "line": 247,
-      "description": "Backend TypeScript compile error: TS2345",
-      "detail": "Argument of type 'string | null' is not assignable to parameter of type 'string'.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/analytics/analytics.controller.ts",
-      "line": 48,
-      "description": "Backend TypeScript compile error: TS7006",
-      "detail": "Parameter 'req' implicitly has an 'any' type.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/analytics/analytics.controller.ts",
-      "line": 54,
-      "description": "Backend TypeScript compile error: TS7006",
-      "detail": "Parameter 'req' implicitly has an 'any' type.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/analytics/analytics.controller.ts",
-      "line": 60,
-      "description": "Backend TypeScript compile error: TS7006",
-      "detail": "Parameter 'req' implicitly has an 'any' type.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/analytics/analytics.controller.ts",
-      "line": 67,
-      "description": "Backend TypeScript compile error: TS7006",
-      "detail": "Parameter 'req' implicitly has an 'any' type.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/analytics/analytics.controller.ts",
-      "line": 78,
-      "description": "Backend TypeScript compile error: TS7006",
-      "detail": "Parameter 'req' implicitly has an 'any' type.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/analytics/analytics.controller.ts",
-      "line": 92,
-      "description": "Backend TypeScript compile error: TS7006",
-      "detail": "Parameter 'req' implicitly has an 'any' type.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/api-keys/api-keys.controller.ts",
-      "line": 18,
-      "description": "Backend TypeScript compile error: TS7006",
-      "detail": "Parameter 'req' implicitly has an 'any' type.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/api-keys/api-keys.controller.ts",
-      "line": 25,
-      "description": "Backend TypeScript compile error: TS7006",
-      "detail": "Parameter 'req' implicitly has an 'any' type.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/api-keys/api-keys.controller.ts",
-      "line": 32,
-      "description": "Backend TypeScript compile error: TS7006",
-      "detail": "Parameter 'req' implicitly has an 'any' type.",
-      "source": "build-checker"
-    },
-    {
-      "type": "BUILD_BACKEND_FAILS",
-      "severity": "critical",
-      "file": "backend/src/audit/audit.interceptor.ts",
-      "line": 47,
-      "description": "Backend TypeScript compile error: TS2339",
-      "detail": "Property 'id' does not exist on type '{}'.",
-      "source": "build-checker"
-    },
-    {
       "type": "RACE_CONDITION_DATA_CORRUPTION",
       "severity": "critical",
       "file": "backend/src/billing/billing-webhook.service.ts",
-      "line": 373,
+      "line": 362,
       "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 373 followed by update at line 383 without $transaction or version check",
-      "source": "concurrency-tester"
-    },
-    {
-      "type": "RACE_CONDITION_DATA_CORRUPTION",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout-catalog.service.ts",
-      "line": 55,
-      "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 55 followed by update at line 62 without $transaction or version check",
-      "source": "concurrency-tester"
-    },
-    {
-      "type": "RACE_CONDITION_DATA_CORRUPTION",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout-catalog.service.ts",
-      "line": 147,
-      "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 147 followed by update at line 151 without $transaction or version check",
-      "source": "concurrency-tester"
-    },
-    {
-      "type": "RACE_CONDITION_DATA_CORRUPTION",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout-catalog.service.ts",
-      "line": 339,
-      "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 339 followed by update at line 346 without $transaction or version check",
-      "source": "concurrency-tester"
-    },
-    {
-      "type": "RACE_CONDITION_DATA_CORRUPTION",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout-product.service.ts",
-      "line": 69,
-      "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 69 followed by update at line 76 without $transaction or version check",
-      "source": "concurrency-tester"
-    },
-    {
-      "type": "RACE_CONDITION_DATA_CORRUPTION",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout-product.service.ts",
-      "line": 195,
-      "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 195 followed by update at line 202 without $transaction or version check",
-      "source": "concurrency-tester"
-    },
-    {
-      "type": "RACE_CONDITION_DATA_CORRUPTION",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout-product.service.ts",
-      "line": 233,
-      "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 233 followed by update at line 240 without $transaction or version check",
-      "source": "concurrency-tester"
-    },
-    {
-      "type": "RACE_CONDITION_DATA_CORRUPTION",
-      "severity": "critical",
-      "file": "backend/src/checkout/checkout-social-recovery.service.ts",
-      "line": 58,
-      "description": "Read-modify-write without transaction or optimistic lock — race condition possible",
-      "detail": "findFirst/findUnique at line 58 followed by update at line 63 without $transaction or version check",
+      "detail": "findFirst/findUnique at line 362 followed by update at line 376 without $transaction or version check",
       "source": "concurrency-tester"
     },
     {
@@ -291,46 +48,10 @@
       "source": "communication-checker"
     },
     {
-      "type": "EMAIL_NO_AUTH",
-      "severity": "high",
-      "file": "backend/src/marketing/marketing-connect.controller.ts",
-      "line": 0,
-      "description": "Marketing email sent without unsubscribe link — violates LGPD and CAN-SPAM",
-      "detail": "Add unsubscribe link to all marketing emails; track opt-outs in DB and honor them immediately",
-      "source": "communication-checker"
-    },
-    {
       "type": "RACE_CONDITION_OVERWRITE",
       "severity": "high",
       "file": "backend/src/billing/billing-webhook.service.ts",
-      "line": 346,
-      "description": "Update without optimistic lock version check — concurrent updates may silently overwrite each other",
-      "detail": "Add a `version` field or protect the mutation with a transaction/conditional WHERE to detect conflicts",
-      "source": "concurrency-tester"
-    },
-    {
-      "type": "RACE_CONDITION_OVERWRITE",
-      "severity": "high",
-      "file": "backend/src/checkout/checkout-catalog.service.ts",
-      "line": 54,
-      "description": "Update without optimistic lock version check — concurrent updates may silently overwrite each other",
-      "detail": "Add a `version` field or protect the mutation with a transaction/conditional WHERE to detect conflicts",
-      "source": "concurrency-tester"
-    },
-    {
-      "type": "RACE_CONDITION_OVERWRITE",
-      "severity": "high",
-      "file": "backend/src/checkout/checkout-product.service.ts",
-      "line": 68,
-      "description": "Update without optimistic lock version check — concurrent updates may silently overwrite each other",
-      "detail": "Add a `version` field or protect the mutation with a transaction/conditional WHERE to detect conflicts",
-      "source": "concurrency-tester"
-    },
-    {
-      "type": "RACE_CONDITION_OVERWRITE",
-      "severity": "high",
-      "file": "backend/src/checkout/checkout-social-recovery.service.ts",
-      "line": 27,
+      "line": 348,
       "description": "Update without optimistic lock version check — concurrent updates may silently overwrite each other",
       "detail": "Add a `version` field or protect the mutation with a transaction/conditional WHERE to detect conflicts",
       "source": "concurrency-tester"
@@ -390,19 +111,10 @@
       "source": "cost-limit-checker"
     },
     {
-      "type": "CRUD_BROKEN",
-      "severity": "high",
-      "file": "backend/src/products",
-      "line": 0,
-      "description": "CRUD CREATE — expected 200/201, got 401",
-      "detail": "{\"message\":\"Invalid token\",\"error\":\"Unauthorized\",\"statusCode\":401}",
-      "source": "crud-tester"
-    },
-    {
       "type": "DATA_PRODUCT_NO_PLAN",
       "severity": "high",
       "file": "/Users/danielpenin/whatsapp_saas/backend/src/billing/billing.service.ts",
-      "line": 191,
+      "line": 193,
       "description": "Billing operation without plan validation in billing.service.ts",
       "detail": "Function 'createCheckoutSession' creates a subscription or billing record without first checking the plan exists and is active. Subscriptions may reference deleted plans.",
       "source": "data-consistency"
@@ -471,156 +183,12 @@
       "source": "financial-arithmetic"
     },
     {
-      "type": "FINANCIAL_NO_RATE_LIMIT",
-      "severity": "high",
-      "file": "backend/src/kloel/product-sub-resources/product-checkout.controller.ts",
-      "line": 37,
-      "description": "Financial route has no @Throttle rate-limit decorator",
-      "detail": "@Get() — financial endpoints must have @Throttle()",
-      "source": "guard-auditor"
-    },
-    {
-      "type": "FINANCIAL_NO_RATE_LIMIT",
-      "severity": "high",
-      "file": "backend/src/kloel/product-sub-resources/product-checkout.controller.ts",
-      "line": 51,
-      "description": "Financial route has no @Throttle rate-limit decorator",
-      "detail": "@Post() — financial endpoints must have @Throttle()",
-      "source": "guard-auditor"
-    },
-    {
-      "type": "FINANCIAL_NO_RATE_LIMIT",
-      "severity": "high",
-      "file": "backend/src/kloel/product-sub-resources/product-checkout.controller.ts",
-      "line": 73,
-      "description": "Financial route has no @Throttle rate-limit decorator",
-      "detail": "@Put(':checkoutId') — financial endpoints must have @Throttle()",
-      "source": "guard-auditor"
-    },
-    {
-      "type": "FINANCIAL_NO_RATE_LIMIT",
-      "severity": "high",
-      "file": "backend/src/kloel/product-sub-resources/product-checkout.controller.ts",
-      "line": 98,
-      "description": "Financial route has no @Throttle rate-limit decorator",
-      "detail": "@Delete(':checkoutId') — financial endpoints must have @Throttle()",
-      "source": "guard-auditor"
-    },
-    {
-      "type": "FINANCIAL_NO_RATE_LIMIT",
-      "severity": "high",
-      "file": "backend/src/payments/split/split.controller.ts",
-      "line": 39,
-      "description": "Financial route has no @Throttle rate-limit decorator",
-      "detail": "@Post(':workspaceId/preview') — financial endpoints must have @Throttle()",
-      "source": "guard-auditor"
-    },
-    {
-      "type": "FETCH_NO_TIMEOUT",
-      "severity": "high",
-      "file": "backend/src/common/utils/url-safety.ts",
-      "line": 197,
-      "description": "fetch() call without AbortController/signal timeout",
-      "detail": "const response = await fetch(currentUrl, { — wrap with AbortController and setTimeout to avoid hanging requests",
-      "source": "http-timeout-checker"
-    },
-    {
-      "type": "IDEMPOTENCY_JOB",
-      "severity": "high",
-      "file": "backend/src/autopilot/autopilot-cycle-money.service.ts",
-      "line": 0,
-      "description": "BullMQ job enqueued without deduplication jobId — same job may run multiple times on retry",
-      "detail": "Pass { jobId: uniqueKey } option when adding jobs; BullMQ will skip duplicate jobIds",
-      "source": "idempotency-checker"
-    },
-    {
-      "type": "JSON_PARSE_UNSAFE",
-      "severity": "high",
-      "file": "backend/src/auth/apple-auth.service.ts",
-      "line": 74,
-      "description": "JSON.parse() outside try/catch — throws SyntaxError on invalid input",
-      "detail": "return JSON.parse(decoded) as T;",
-      "source": "json-parse-safety"
-    },
-    {
-      "type": "JSON_PARSE_UNSAFE",
-      "severity": "high",
-      "file": "backend/src/kloel/kloel.autonomy-proof.helpers.ts",
-      "line": 162,
-      "description": "JSON.parse() outside try/catch — throws SyntaxError on invalid input",
-      "detail": ".map((block) => JSON.parse(block.replace(/^data: /, '')) as Record<string, unknown>);",
-      "source": "json-parse-safety"
-    },
-    {
-      "type": "FLOATING_PROMISE",
-      "severity": "high",
-      "file": "backend/src/kloel/kloel-workspace-context-linked-product.service.ts",
-      "line": 90,
-      "description": ".then() call without .catch() — unhandled promise rejection",
-      "detail": ".then((p) => p?.workspaceId || null) — add .catch(err => this.logger.error(err)) or use async/await with try/catch",
-      "source": "missing-await-checker"
-    },
-    {
-      "type": "MONITORING_MISSING",
-      "severity": "high",
-      "file": "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-catalog-config.service.ts",
-      "line": 0,
-      "description": "Financial service has no structured logging",
-      "detail": "checkout-catalog-config.service.ts: No Logger usage found. Financial operations (payments, withdrawals) must be logged for audit and debugging.",
-      "source": "monitoring-coverage"
-    },
-    {
-      "type": "MONITORING_MISSING",
-      "severity": "high",
-      "file": "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-catalog.service.ts",
-      "line": 0,
-      "description": "Financial service has no structured logging",
-      "detail": "checkout-catalog.service.ts: No Logger usage found. Financial operations (payments, withdrawals) must be logged for audit and debugging.",
-      "source": "monitoring-coverage"
-    },
-    {
-      "type": "MONITORING_MISSING",
-      "severity": "high",
-      "file": "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-product-config.service.ts",
-      "line": 0,
-      "description": "Financial service has no structured logging",
-      "detail": "checkout-product-config.service.ts: No Logger usage found. Financial operations (payments, withdrawals) must be logged for audit and debugging.",
-      "source": "monitoring-coverage"
-    },
-    {
-      "type": "MONITORING_MISSING",
-      "severity": "high",
-      "file": "/Users/danielpenin/whatsapp_saas/backend/src/kloel/kloel-tool-executor-billing.service.ts",
-      "line": 0,
-      "description": "Financial service has no structured logging",
-      "detail": "kloel-tool-executor-billing.service.ts: No Logger usage found. Financial operations (payments, withdrawals) must be logged for audit and debugging.",
-      "source": "monitoring-coverage"
-    },
-    {
       "type": "SSR_UNSAFE_ACCESS",
       "severity": "high",
       "file": "frontend/src/app/(checkout)/components/PixelTracker.tsx",
       "line": 143,
       "description": "`document` accessed at module scope — crashes during SSR",
       "detail": "document.head.appendChild(s);",
-      "source": "nextjs-checker"
-    },
-    {
-      "type": "SSR_UNSAFE_ACCESS",
-      "severity": "high",
-      "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
-      "line": 43,
-      "description": "`document` accessed at module scope — crashes during SSR",
-      "detail": "const link = document.createElement('a');",
-      "source": "nextjs-checker"
-    },
-    {
-      "type": "SSR_UNSAFE_ACCESS",
-      "severity": "high",
-      "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
-      "line": 47,
-      "description": "`document` accessed at module scope — crashes during SSR",
-      "detail": "document.body.appendChild(link);",
       "source": "nextjs-checker"
     },
     {
@@ -640,6 +208,24 @@
       "description": "`window` accessed at module scope — crashes during SSR",
       "detail": "if (typeof window === 'undefined' || !window.FB) {",
       "source": "nextjs-checker"
+    },
+    {
+      "type": "OBSERVABILITY_NO_ALERTING",
+      "severity": "high",
+      "file": "backend/src/checkout/checkout-catalog.service.ts",
+      "line": 0,
+      "description": "Payment/financial error caught without external alert — payment failures may go unnoticed for hours",
+      "detail": "Add Sentry.captureException(err) or custom alert in payment error catch blocks",
+      "source": "observability-checker"
+    },
+    {
+      "type": "OBSERVABILITY_NO_ALERTING",
+      "severity": "high",
+      "file": "backend/src/checkout/checkout-social-recovery.service.ts",
+      "line": 0,
+      "description": "Payment/financial error caught without external alert — payment failures may go unnoticed for hours",
+      "detail": "Add Sentry.captureException(err) or custom alert in payment error catch blocks",
+      "source": "observability-checker"
     },
     {
       "type": "ORDERING_WEBHOOK_OOO",
@@ -793,15 +379,6 @@
       "description": "$transaction in financial file without isolationLevel specified",
       "detail": "await deps.prisma.$transaction(async (tx) => {",
       "source": "prisma-safety-checker"
-    },
-    {
-      "type": "CHECK_UNAVAILABLE",
-      "severity": "high",
-      "file": "scripts/pulse/parsers/test-coverage.ts",
-      "line": 1,
-      "description": "PULSE parser \"test-coverage\" failed during execution",
-      "detail": "parser=test-coverage | file=scripts/pulse/parsers/test-coverage.ts | kind=timeout | pid=87614 | elapsedMs=90247 | timeoutMs=90000 | command=/opt/homebrew/Cellar/node/25.8.2/bin/node -r /Users/danielpenin/whatsapp_saas/backend/node_modules/ts-node/register/transpile-only.js /Users/danielpenin/whatsapp_saas/scripts/pulse/parser-worker.ts test-coverage <encoded-config> | stdout=<empty> | stderr=<empty> | action=SIGKILL sent to isolated parser worker because the parser exceeded its budget.",
-      "source": "test-coverage"
     },
     {
       "type": "UI_DEAD_HANDLER",
@@ -1972,7 +1549,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/billing.service.ts",
-      "line": 84,
+      "line": 86,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1981,7 +1558,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/billing.service.ts",
-      "line": 85,
+      "line": 87,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const trialEnd = new Date(sub.currentPeriodEnd); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1990,7 +1567,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/billing.service.ts",
-      "line": 177,
+      "line": 179,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "createdAt: { gte: new Date(new Date().setDate(1)) }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2179,7 +1756,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-product-config.service.ts",
-      "line": 38,
+      "line": 41,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2206,7 +1783,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-social-recovery.service.ts",
-      "line": 67,
+      "line": 63,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "abandonedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3772,7 +3349,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/marketing/marketing-connect.controller.ts",
-      "line": 157,
+      "line": 160,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "new Date(metaConnection.tokenExpiresAt).getTime() < Date.now(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -5452,15 +5029,6 @@
       "source": "error-handler-auditor"
     },
     {
-      "type": "UNHANDLED_PROMISE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-workspace-context-linked-product.service.ts",
-      "line": 90,
-      "description": ".then() without .catch() — unhandled promise rejection",
-      "detail": ".then((p) => p?.workspaceId || null)",
-      "source": "error-handler-auditor"
-    },
-    {
       "type": "EMPTY_CATCH",
       "severity": "medium",
       "file": "backend/src/kloel/sales-subscriptions.controller.ts",
@@ -5707,7 +5275,7 @@
       "type": "CLOCK_SKEW_TOO_STRICT",
       "severity": "medium",
       "file": "backend/src/auth/apple-auth.service.ts",
-      "line": 272,
+      "line": 276,
       "description": "JWT verification without clock skew tolerance — users may be spuriously logged out",
       "detail": "Add clockTolerance: 30 to jwt.verify() options to handle clock drift between servers",
       "source": "ordering-timing-checker"
@@ -5923,7 +5491,7 @@
       "type": "SLOW_QUERY",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-product-config.service.ts",
-      "line": 40,
+      "line": 43,
       "description": "findMany without select or include — returns all columns from DB",
       "detail": "const feeRows = await this.prisma.marketplaceFee.findMany({ — Add a select: { ... } block to fetch only required fields, reducing payload size.",
       "source": "performance-query-profiler"
@@ -5932,7 +5500,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/checkout/checkout-product-config.service.ts",
-      "line": 237,
+      "line": 240,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "const legacyPlans = await this.prisma.checkoutProductPlan.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -8983,7 +8551,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
-      "line": 247,
+      "line": 249,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #25D366 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -8992,7 +8560,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
-      "line": 254,
+      "line": 256,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #E1306C with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -9001,7 +8569,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
-      "line": 261,
+      "line": 263,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #ff0050 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -9010,7 +8578,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
-      "line": 268,
+      "line": 270,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #1877F2 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -9019,7 +8587,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
-      "line": 275,
+      "line": 277,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #F59E0B with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -10400,7 +9968,7 @@
       "type": "ROUTE_NO_CALLER",
       "severity": "low",
       "file": "backend/src/payments/split/split.controller.ts",
-      "line": 39,
+      "line": 40,
       "description": "POST /payments/split/:workspaceId/preview is not called by any frontend code",
       "detail": "Controller: preview"
     },
@@ -11125,12 +10693,12 @@
     "proxyRoutes": 77,
     "proxyNoUpstream": 0,
     "securityIssues": 0,
-    "dataSafetyIssues": 14,
-    "qualityIssues": 1146,
-    "unavailableChecks": 1,
+    "dataSafetyIssues": 12,
+    "qualityIssues": 1100,
+    "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-28T22:59:51.265Z",
-  "runId": "05381ce6-2c4e-427d-91c4-1c65e08d862d",
-  "generatedAt": "2026-04-28T23:05:50.200Z"
+  "timestamp": "2026-04-29T02:02:31.652Z",
+  "runId": "7d0da39a-7499-4f34-b3fd-ac585ebd673e",
+  "generatedAt": "2026-04-29T02:04:16.965Z"
 }

@@ -1,5 +1,17 @@
-import type { PulseExecutionMatrix, PulseGateResult } from './types';
+import type { PulseExecutionMatrix, PulseExecutionMatrixPath, PulseGateResult } from './types';
 import { gateFail } from './cert-gate-evaluators';
+
+function hasPreciseTerminalReason(path: PulseExecutionMatrixPath): boolean {
+  if (['observed_pass', 'observed_fail', 'blocked_human_required'].includes(path.status)) {
+    return true;
+  }
+  const breakpoint = path.breakpoint;
+  if (!breakpoint) {
+    return false;
+  }
+  const hasLocation = Boolean(breakpoint.filePath || breakpoint.nodeId || breakpoint.routePattern);
+  return hasLocation && breakpoint.reason.length > 0 && breakpoint.recovery.length > 0;
+}
 
 /** Gate: every discovered executable path is classified by the matrix. */
 export function evaluateExecutionMatrixCompleteGate(
@@ -27,29 +39,30 @@ export function evaluateExecutionMatrixCompleteGate(
   };
 }
 
-/** Gate: critical paths must be observed pass/fail or explicitly human-blocked. */
+/** Gate: critical paths must be observed or carry a precise terminal reason. */
 export function evaluateCriticalPathObservedGate(
   matrix?: PulseExecutionMatrix | null,
 ): PulseGateResult {
   if (!matrix) {
-    return gateFail('Execution matrix is missing, so critical path observation is unknown.', 'missing_evidence');
+    return gateFail(
+      'Execution matrix is missing, so critical path observation is unknown.',
+      'missing_evidence',
+    );
   }
   if (matrix.summary.criticalUnobservedPaths > 0) {
     const affected = matrix.paths
-      .filter(
-        (path) =>
-          path.risk === 'high' &&
-          !['observed_pass', 'observed_fail', 'blocked_human_required'].includes(path.status),
-      )
+      .filter((path) => path.risk === 'high' && !hasPreciseTerminalReason(path))
       .slice(0, 8);
     return gateFail(
-      `Execution matrix still has ${matrix.summary.criticalUnobservedPaths} critical path(s) without observed pass/fail evidence: ${affected.map((path) => path.pathId).join(', ')}.`,
+      `Execution matrix still has ${matrix.summary.criticalUnobservedPaths} critical path(s) without observed evidence or a precise terminal reason: ${affected.map((path) => path.pathId).join(', ')}.`,
       'missing_evidence',
       {
         affectedCapabilityIds: affected
           .map((path) => path.capabilityId)
           .filter((id): id is string => Boolean(id)),
-        affectedFlowIds: affected.map((path) => path.flowId).filter((id): id is string => Boolean(id)),
+        affectedFlowIds: affected
+          .map((path) => path.flowId)
+          .filter((id): id is string => Boolean(id)),
         evidenceMode: 'inferred',
         confidence: 'high',
       },
@@ -57,7 +70,8 @@ export function evaluateCriticalPathObservedGate(
   }
   return {
     status: 'pass',
-    reason: 'All critical matrix paths are observed pass/fail or explicitly human-blocked.',
+    reason:
+      'All critical matrix paths are observed pass/fail, human-blocked, or carry a precise terminal reason.',
     evidenceMode: 'observed',
     confidence: 'high',
   };
@@ -68,7 +82,10 @@ export function evaluateBreakpointPrecisionGate(
   matrix?: PulseExecutionMatrix | null,
 ): PulseGateResult {
   if (!matrix) {
-    return gateFail('Execution matrix is missing, so breakpoint precision is unknown.', 'missing_evidence');
+    return gateFail(
+      'Execution matrix is missing, so breakpoint precision is unknown.',
+      'missing_evidence',
+    );
   }
   if (matrix.summary.impreciseBreakpoints > 0) {
     return gateFail(

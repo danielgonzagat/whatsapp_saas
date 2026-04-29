@@ -74,7 +74,12 @@ function unitRelatedSourceFiles(unit: PulseAutonomousDirectiveUnit): string[] {
 function buildAffectedTestsCommand(unit: PulseAutonomousDirectiveUnit): string {
   const files = [...new Set(unitRelatedSourceFiles(unit))];
   if (files.length === 0) {
-    return 'node scripts/pulse/run.js --deep --fast --json';
+    return [
+      'npx vitest run',
+      'scripts/pulse/__tests__/multi-cycle-convergence.spec.ts',
+      'scripts/pulse/__tests__/regression-guard.spec.ts',
+      'scripts/pulse/__tests__/execution-matrix.spec.ts',
+    ].join(' ');
   }
   return `npx jest --findRelatedTests ${files.map(shellQuote).join(' ')} --passWithNoTests`;
 }

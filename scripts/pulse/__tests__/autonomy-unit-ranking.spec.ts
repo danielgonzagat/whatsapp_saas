@@ -3,9 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { getPreferredAutomationSafeUnits } from '../autonomy-loop.unit-ranking';
 import type { PulseAutonomousDirectiveUnit } from '../autonomy-loop.types';
 
-function makeUnit(
-  overrides: Partial<PulseAutonomousDirectiveUnit>,
-): PulseAutonomousDirectiveUnit {
+function makeUnit(overrides: Partial<PulseAutonomousDirectiveUnit>): PulseAutonomousDirectiveUnit {
   return {
     id: overrides.id ?? 'unit',
     kind: overrides.kind ?? 'static',

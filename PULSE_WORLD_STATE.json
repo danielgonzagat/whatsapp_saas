@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-28T23:05:50.200Z",
+  "generatedAt": "2026-04-29T02:04:16.965Z",
   "backendUrl": "https://whatsappsaas-copy-staging.up.railway.app",
   "frontendUrl": "https://kloel-frontend-plhznpy68-danielgonzagatj-gmailcoms-projects.vercel.app",
   "actorProfiles": [
@@ -10,11 +10,8 @@
   ],
   "executedScenarios": [
     "admin-ops-surface-map",
-    "admin-settings-kyc-banking",
     "admin-whatsapp-session-control",
-    "customer-auth-shell",
     "customer-onboarding-public-map",
-    "customer-whatsapp-and-inbox",
     "operator-ads-surface-map",
     "operator-autopilot-run",
     "operator-campaigns-and-flows",
@@ -26,6 +23,8 @@
     "operator-tools-surface-map"
   ],
   "pendingAsyncExpectations": [
+    "admin-settings-kyc-banking:kyc-doc-processing",
+    "admin-settings-kyc-banking:withdrawal-ledger-consistency",
     "customer-whatsapp-and-inbox:conversation-reload",
     "customer-whatsapp-and-inbox:message-persistence",
     "system-payment-reconciliation:payment-webhook-replay",
@@ -99,12 +98,12 @@
     {
       "scenarioId": "customer-whatsapp-and-inbox",
       "expectation": "message-persistence",
-      "status": "failed"
+      "status": "missing_evidence"
     },
     {
       "scenarioId": "customer-whatsapp-and-inbox",
       "expectation": "conversation-reload",
-      "status": "failed"
+      "status": "missing_evidence"
     },
     {
       "scenarioId": "operator-campaigns-and-flows",
@@ -124,12 +123,12 @@
     {
       "scenarioId": "admin-settings-kyc-banking",
       "expectation": "kyc-doc-processing",
-      "status": "satisfied"
+      "status": "missing_evidence"
     },
     {
       "scenarioId": "admin-settings-kyc-banking",
       "expectation": "withdrawal-ledger-consistency",
-      "status": "satisfied"
+      "status": "missing_evidence"
     },
     {
       "scenarioId": "admin-whatsapp-session-control",
@@ -144,12 +143,12 @@
     {
       "scenarioId": "system-payment-reconciliation",
       "expectation": "payment-webhook-replay",
-      "status": "failed"
+      "status": "missing_evidence"
     },
     {
       "scenarioId": "system-payment-reconciliation",
       "expectation": "wallet-ledger-reconciliation",
-      "status": "failed"
+      "status": "missing_evidence"
     }
   ],
   "artifactsByScenario": {
@@ -254,7 +253,7 @@
     {
       "kind": "customer",
       "declaredScenarios": 4,
-      "executedScenarios": 3,
+      "executedScenarios": 1,
       "passedScenarios": 1
     },
     {
@@ -266,8 +265,8 @@
     {
       "kind": "admin",
       "declaredScenarios": 3,
-      "executedScenarios": 3,
-      "passedScenarios": 3
+      "executedScenarios": 2,
+      "passedScenarios": 2
     },
     {
       "kind": "system",
@@ -276,5 +275,5 @@
       "passedScenarios": 0
     }
   ],
-  "runId": "05381ce6-2c4e-427d-91c4-1c65e08d862d"
+  "runId": "7d0da39a-7499-4f34-b3fd-ac585ebd673e"
 }

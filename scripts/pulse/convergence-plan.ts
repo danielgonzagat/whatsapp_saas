@@ -1486,9 +1486,7 @@ function buildExecutionMatrixUnits(input: BuildPulseConvergencePlanInput): Pulse
     failureClass: path.status === 'observed_fail' ? 'product_failure' : 'missing_evidence',
     actorKinds: [],
     gateNames:
-      path.status === 'observed_fail'
-        ? ['breakpointPrecisionPass']
-        : ['criticalPathObservedPass'],
+      path.status === 'observed_fail' ? ['breakpointPrecisionPass'] : ['criticalPathObservedPass'],
     scenarioIds: [],
     moduleKeys: [],
     routePatterns: path.routePatterns,

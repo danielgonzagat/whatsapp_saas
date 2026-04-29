@@ -263,9 +263,7 @@ export function buildDirective(
           .filter(
             (path) =>
               path.risk === 'high' &&
-              !['observed_pass', 'observed_fail', 'blocked_human_required'].includes(
-                path.status,
-              ),
+              !['observed_pass', 'observed_fail', 'blocked_human_required'].includes(path.status),
           )
           .slice(0, 8),
       },
@@ -367,10 +365,8 @@ export function buildArtifactIndex(
         ? {
             status: pulseMachineReadiness.status,
             scope: pulseMachineReadiness.scope,
-            canRunBoundedAutonomousCycle:
-              pulseMachineReadiness.canRunBoundedAutonomousCycle,
-            canDeclareKloelProductCertified:
-              pulseMachineReadiness.canDeclareKloelProductCertified,
+            canRunBoundedAutonomousCycle: pulseMachineReadiness.canRunBoundedAutonomousCycle,
+            canDeclareKloelProductCertified: pulseMachineReadiness.canDeclareKloelProductCertified,
             blockers: pulseMachineReadiness.blockers.slice(0, 12),
           }
         : null,

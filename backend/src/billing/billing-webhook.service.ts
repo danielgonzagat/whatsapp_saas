@@ -347,6 +347,7 @@ export class BillingWebhookService {
   }
   private async cancelSubscriptionByStripeId(stripeId: string) {
     let workspaceId: string | null = null;
+    let updatedAt: Date | null = null;
     if (this.stripe) {
       try {
         const sub = await this.stripe.subscriptions.retrieve(stripeId);
@@ -360,9 +361,10 @@ export class BillingWebhookService {
     if (!workspaceId) {
       const existing = await this.prisma.subscription.findFirst({
         where: { stripeId },
-        select: { workspaceId: true },
+        select: { workspaceId: true, updatedAt: true },
       });
       workspaceId = existing?.workspaceId ?? null;
+      updatedAt = existing?.updatedAt ?? null;
     }
     if (!workspaceId) {
       this.logger.warn(
@@ -370,11 +372,9 @@ export class BillingWebhookService {
       );
       return;
     }
-    // Tenant-safe queries: inline the workspaceId predicate so the static
-    // tenant-filter scanner reads the literal token in the where body.
     try {
       const result = await this.prisma.subscription.updateMany({
-        where: { stripeId, workspaceId },
+        where: { stripeId, workspaceId, ...(updatedAt ? { updatedAt } : {}) },
         data: { status: 'CANCELED' },
       });
       this.logger.log(`Subscription CANCELED: ${stripeId} (matched ${result.count})`);

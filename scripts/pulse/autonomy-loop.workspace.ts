@@ -33,7 +33,9 @@ function normalizeLeasePath(filePath: string, rootDir?: string): string | null {
   }
   const slashNormalized = normalizeRepoPath(trimmed);
   const relativePath =
-    rootDir && path.isAbsolute(slashNormalized) ? path.relative(rootDir, slashNormalized) : slashNormalized;
+    rootDir && path.isAbsolute(slashNormalized)
+      ? path.relative(rootDir, slashNormalized)
+      : slashNormalized;
   const normalized = normalizeRepoPath(relativePath);
   if (
     !normalized ||

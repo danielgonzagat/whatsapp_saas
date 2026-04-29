@@ -4,6 +4,7 @@
  * Verifies that PULSE has accumulated >= 3 real, executed, non-regressing
  * autonomous cycles. A cycle is counted when:
  *  - codex.executed === true
+ *  - codex.exitCode === 0
  *  - validation.commands.length > 0 and every command has exitCode === 0
  *  - directiveAfter.score is >= directiveBefore.score
  *  - directiveAfter.blockingTier <= directiveBefore.blockingTier (lower = better)
@@ -28,6 +29,7 @@ export const REQUIRED_NON_REGRESSING_CYCLES = 3;
 
 interface CycleAnalysis {
   isRealExecuted: boolean;
+  codexPassed: boolean;
   hasValidationCommands: boolean;
   hasRuntimeValidation: boolean;
   allCommandsZero: boolean;
@@ -76,6 +78,15 @@ function isRealExecutedCycle(record: PulseAutonomyIterationRecord): boolean {
     return true;
   }
   return record.codex?.executed === true;
+}
+
+function isCodexExecutionPassing(record: PulseAutonomyIterationRecord): boolean {
+  if (!isRealExecutedCycle(record)) return false;
+  const legacy = record as unknown as { status?: string; validationCommands?: unknown };
+  if (legacy.status === 'completed' && legacy.validationCommands && !record.codex?.exitCode) {
+    return true;
+  }
+  return record.codex?.exitCode === 0;
 }
 
 /**
@@ -176,7 +187,8 @@ function readExecutionMatrixSummary(
   phase: 'before' | 'after',
 ): MatrixSummarySnapshot | null {
   const object = asObject(record);
-  const directive = phase === 'before' ? asObject(record.directiveBefore) : asObject(record.directiveAfter);
+  const directive =
+    phase === 'before' ? asObject(record.directiveBefore) : asObject(record.directiveAfter);
   const suffix = phase === 'before' ? 'Before' : 'After';
   const candidates = [
     object?.[`executionMatrix${suffix}`],
@@ -249,24 +261,31 @@ function isBlockingTierNonRegressing(record: PulseAutonomyIterationRecord): bool
   return afterTier <= beforeTier;
 }
 
+function formatCycleLabel(record: PulseAutonomyIterationRecord, index: number): string {
+  return `cycle${record.iteration ?? index + 1}`;
+}
+
+function formatNumericTransition(before: number | null, after: number | null): string {
+  return `${before ?? 'missing'}->${after ?? 'missing'}`;
+}
+
 function analyzeCycle(record: PulseAutonomyIterationRecord): CycleAnalysis {
   const isRealExecuted = isRealExecutedCycle(record);
+  const codexPassed = isCodexExecutionPassing(record);
   const { hasValidationCommands, hasRuntimeValidation, allCommandsZero } =
     evaluateValidation(record);
   const scoreNonRegressing = isScoreNonRegressing(record);
   const blockingTierNonRegressing = isBlockingTierNonRegressing(record);
   const { adapterClosed, adapterBlockers } = evaluateAdapters(record);
-  const {
-    executionMatrixCompared,
-    executionMatrixNonRegressing,
-    executionMatrixRegressions,
-  } = evaluateExecutionMatrixNonRegression(record);
+  const { executionMatrixCompared, executionMatrixNonRegressing, executionMatrixRegressions } =
+    evaluateExecutionMatrixNonRegression(record);
 
   // Cycle counts toward convergence ONLY if validation touched runtime.
   // Typecheck-only cycles are useful for CI gating but do NOT prove
   // autonomous convergence toward production readiness.
   const countsTowardConvergence =
     isRealExecuted &&
+    codexPassed &&
     hasValidationCommands &&
     hasRuntimeValidation &&
     allCommandsZero &&
@@ -277,6 +296,7 @@ function analyzeCycle(record: PulseAutonomyIterationRecord): CycleAnalysis {
 
   return {
     isRealExecuted,
+    codexPassed,
     hasValidationCommands,
     hasRuntimeValidation,
     allCommandsZero,
@@ -316,17 +336,23 @@ export function evaluateMultiCycleConvergenceGate(
   let regressedScore = 0;
   let regressedTier = 0;
   let failedValidation = 0;
+  let failedCodex = 0;
   let missingValidation = 0;
   let missingRuntimeValidation = 0;
   let executionMatrixCompared = 0;
   let regressedExecutionMatrix = 0;
   const executionMatrixRegressions = new Set<string>();
+  const scoreRegressions = new Set<string>();
+  const tierRegressions = new Set<string>();
   const adapterBlockers = new Set<string>();
 
-  for (const record of history) {
+  for (const [index, record] of history.entries()) {
     const analysis = analyzeCycle(record);
     if (analysis.isRealExecuted) {
       realExecuted += 1;
+      if (!analysis.codexPassed) {
+        failedCodex += 1;
+      }
       if (!analysis.hasValidationCommands) {
         missingValidation += 1;
       } else if (!analysis.allCommandsZero) {
@@ -336,9 +362,21 @@ export function evaluateMultiCycleConvergenceGate(
       }
       if (!analysis.scoreNonRegressing) {
         regressedScore += 1;
+        scoreRegressions.add(
+          `${formatCycleLabel(record, index)}:${formatNumericTransition(
+            record.directiveBefore?.score ?? null,
+            record.directiveAfter?.score ?? null,
+          )}`,
+        );
       }
       if (!analysis.blockingTierNonRegressing) {
         regressedTier += 1;
+        tierRegressions.add(
+          `${formatCycleLabel(record, index)}:${formatNumericTransition(
+            record.directiveBefore?.blockingTier ?? null,
+            record.directiveAfter?.blockingTier ?? null,
+          )}`,
+        );
       }
       if (!analysis.adapterClosed) {
         for (const adapter of analysis.adapterBlockers) {
@@ -371,6 +409,7 @@ export function evaluateMultiCycleConvergenceGate(
 
   const failureClass =
     failedValidation > 0 ||
+    failedCodex > 0 ||
     regressedScore > 0 ||
     regressedTier > 0 ||
     regressedExecutionMatrix > 0
@@ -381,11 +420,14 @@ export function evaluateMultiCycleConvergenceGate(
     `recorded=${history.length}`,
     `realExecuted=${realExecuted}`,
     `nonRegressing=${nonRegressing}/${REQUIRED_NON_REGRESSING_CYCLES}`,
+    `failedCodex=${failedCodex}`,
     `failedValidation=${failedValidation}`,
     `missingValidation=${missingValidation}`,
     `missingRuntimeValidation=${missingRuntimeValidation}`,
     `regressedScore=${regressedScore}`,
+    scoreRegressions.size > 0 ? `scoreRegression(s)=${[...scoreRegressions].join('|')}` : '',
     `regressedTier=${regressedTier}`,
+    tierRegressions.size > 0 ? `tierRegression(s)=${[...tierRegressions].join('|')}` : '',
     `executionMatrixCompared=${executionMatrixCompared}`,
     `regressedExecutionMatrix=${regressedExecutionMatrix}`,
     executionMatrixRegressions.size > 0

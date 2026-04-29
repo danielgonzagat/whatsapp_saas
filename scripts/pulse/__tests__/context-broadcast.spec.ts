@@ -194,7 +194,10 @@ describe('PULSE context broadcast and worker leases', () => {
     execFileSync('git', ['-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'baseline'], {
       cwd: rootDir,
     });
-    const head = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: rootDir, encoding: 'utf8' }).trim();
+    const head = execFileSync('git', ['rev-parse', 'HEAD'], {
+      cwd: rootDir,
+      encoding: 'utf8',
+    }).trim();
     fs.mkdirSync(path.join(rootDir, '.gitnexus'), { recursive: true });
     fs.writeFileSync(
       path.join(rootDir, '.gitnexus', 'meta.json'),

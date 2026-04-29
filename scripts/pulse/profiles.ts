@@ -76,11 +76,7 @@ function unique<T>(values: T[]): T[] {
 }
 
 function isFullWorkspaceProfile(profile: PulseCertificationProfile): boolean {
-  return profile === 'full-product';
-}
-
-function isPulseCoreFinalProfile(profile: PulseCertificationProfile): boolean {
-  return profile === 'pulse-core-final';
+  return profile === 'full-product' || profile === 'pulse-core-final';
 }
 
 function deriveRequestedModesFromScenarios(
@@ -88,10 +84,6 @@ function deriveRequestedModesFromScenarios(
   scenarioIds: string[],
   profile: PulseCertificationProfile,
 ): Array<'customer' | 'operator' | 'admin' | 'shift' | 'soak'> {
-  if (isPulseCoreFinalProfile(profile)) {
-    return [];
-  }
-
   if (!manifest) {
     return isFullWorkspaceProfile(profile)
       ? ['customer', 'operator', 'admin', 'soak']
@@ -132,10 +124,6 @@ function deriveScenarioIds(
   profile: PulseCertificationProfile,
 ): string[] {
   if (!manifest) {
-    return [];
-  }
-
-  if (isPulseCoreFinalProfile(profile)) {
     return [];
   }
 

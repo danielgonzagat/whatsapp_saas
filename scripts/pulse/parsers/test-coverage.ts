@@ -20,7 +20,7 @@ import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import type { Break, PulseConfig } from '../types';
-import { pathExists, readTextFile } from '../safe-fs';
+import { pathExists, readTextFile, statPath } from '../safe-fs';
 
 interface CoverageEntry {
   lines: { total: number; covered: number; pct: number };
@@ -31,11 +31,21 @@ interface CoverageEntry {
 
 type CoverageSummary = Record<string, CoverageEntry>;
 
+interface CoverageRunResult {
+  ok: boolean;
+  timedOut: boolean;
+  reason: string | null;
+}
+
 const FINANCIAL_PATH_RE = /checkout|wallet|billing|payment|kloel/i;
 const CORE_PATH_RE = /auth|workspace|products|kyc/i;
 
+function coverageSummaryPath(dir: string): string {
+  return safeJoin(dir, 'coverage', 'coverage-summary.json');
+}
+
 function readCoverage(dir: string): CoverageSummary | null {
-  const summaryPath = safeJoin(dir, 'coverage', 'coverage-summary.json');
+  const summaryPath = coverageSummaryPath(dir);
   if (!pathExists(summaryPath)) {
     return null;
   }
@@ -46,16 +56,71 @@ function readCoverage(dir: string): CoverageSummary | null {
   }
 }
 
-function runCoverage(dir: string): void {
+function coverageSummaryAge(summaryPath: string): string {
+  if (!pathExists(summaryPath)) {
+    return 'missing';
+  }
+  const ageMs = Date.now() - statPath(summaryPath).mtimeMs;
+  const ageMinutes = Math.max(0, Math.round(ageMs / 60_000));
+  return `${ageMinutes} minute(s) old`;
+}
+
+function runCoverage(dir: string, command: string): CoverageRunResult {
+  const timeoutMs = Number(process.env.PULSE_COVERAGE_TIMEOUT_MS || 30_000);
   try {
-    execSync('npx jest --coverage --coverageReporters=json-summary --passWithNoTests --silent', {
+    execSync(command, {
       cwd: dir,
-      timeout: 120_000,
+      timeout: Math.max(5_000, timeoutMs),
       stdio: 'ignore',
     });
-  } catch {
+    return { ok: true, timedOut: false, reason: null };
+  } catch (error: unknown) {
     // Jest exits non-zero when tests fail; we still get the coverage file
+    const timedOut =
+      typeof error === 'object' &&
+      error !== null &&
+      ('signal' in error || 'code' in error) &&
+      ((error as { signal?: unknown }).signal === 'SIGTERM' ||
+        (error as { code?: unknown }).code === 'ETIMEDOUT');
+    const summaryPath = coverageSummaryPath(dir);
+    if (pathExists(summaryPath)) {
+      return {
+        ok: false,
+        timedOut,
+        reason: timedOut
+          ? `coverage command exceeded ${timeoutMs}ms`
+          : 'coverage command exited non-zero after writing coverage summary',
+      };
+    }
+    return {
+      ok: false,
+      timedOut,
+      reason: timedOut
+        ? `coverage command exceeded ${timeoutMs}ms`
+        : 'coverage command exited before writing coverage summary',
+    };
   }
+}
+
+function pushCoverageRunBreak(
+  breaks: Break[],
+  target: 'Backend' | 'Frontend',
+  relativeSummaryPath: string,
+  run: CoverageRunResult,
+  summaryPath: string,
+): void {
+  if (run.ok || !run.reason) {
+    return;
+  }
+
+  breaks.push({
+    type: 'COVERAGE_CORE_LOW',
+    severity: 'medium',
+    file: relativeSummaryPath,
+    line: 0,
+    description: `${target} coverage generation did not complete cleanly within the PULSE parser budget`,
+    detail: `${run.reason}; ${pathExists(summaryPath) ? `reused existing coverage summary (${coverageSummaryAge(summaryPath)})` : 'no reusable coverage summary was available'}`,
+  });
 }
 
 /** Check test coverage. */
@@ -66,7 +131,11 @@ export function checkTestCoverage(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   // CHECK 1-4: Backend coverage
-  runCoverage(config.backendDir);
+  const backendSummaryPath = coverageSummaryPath(config.backendDir);
+  const backendRun = runCoverage(
+    config.backendDir,
+    'npm run test:cov -- --coverageReporters=json-summary --passWithNoTests --silent',
+  );
   const backendCoverage = readCoverage(config.backendDir);
 
   if (!backendCoverage) {
@@ -76,10 +145,20 @@ export function checkTestCoverage(config: PulseConfig): Break[] {
       file: 'backend/coverage/coverage-summary.json',
       line: 0,
       description: 'Backend coverage report not found — run jest --coverage to generate',
-      detail: 'No coverage-summary.json found; tests may not be configured or have never been run',
+      detail:
+        backendRun.reason ||
+        'No coverage-summary.json found; tests may not be configured or have never been run',
     });
     return breaks;
   }
+
+  pushCoverageRunBreak(
+    breaks,
+    'Backend',
+    'backend/coverage/coverage-summary.json',
+    backendRun,
+    backendSummaryPath,
+  );
 
   for (const [filePath, entry] of Object.entries(backendCoverage)) {
     if (filePath === 'total') {
@@ -130,10 +209,21 @@ export function checkTestCoverage(config: PulseConfig): Break[] {
   }
 
   // CHECK 5: Frontend coverage for critical flows
-  runCoverage(config.frontendDir);
+  const frontendSummaryPath = coverageSummaryPath(config.frontendDir);
+  const frontendRun = runCoverage(
+    config.frontendDir,
+    'npm run test:coverage -- --coverage.reporter=json-summary --silent',
+  );
   const frontendCoverage = readCoverage(config.frontendDir);
 
   if (frontendCoverage) {
+    pushCoverageRunBreak(
+      breaks,
+      'Frontend',
+      'frontend/coverage/coverage-summary.json',
+      frontendRun,
+      frontendSummaryPath,
+    );
     const FRONTEND_CRITICAL_RE = /checkout|auth|login|signup/i;
     for (const [filePath, entry] of Object.entries(frontendCoverage)) {
       if (filePath === 'total') {

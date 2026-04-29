@@ -257,6 +257,7 @@ function makeEvidence(overrides: Partial<PulseExecutionEvidence> = {}): PulseExe
 
 function buildMatrix(args: {
   chain?: PulseExecutionChain;
+  chains?: PulseExecutionChain[];
   capability?: PulseCapability;
   flow?: PulseFlowProjectionItem;
   evidence?: PulseExecutionEvidence;
@@ -265,14 +266,15 @@ function buildMatrix(args: {
 }) {
   const capability = args.capability ?? makeCapability();
   const flow = args.flow ?? makeFlow();
+  const chains = args.chains ?? (args.chain ? [args.chain] : [makeChain()]);
   const executionChains: PulseExecutionChainSet = {
-    chains: args.chain ? [args.chain] : [makeChain()],
+    chains,
     summary: {
-      totalChains: 1,
-      completeChains: 1,
+      totalChains: chains.length,
+      completeChains: chains.length,
       partialChains: 0,
       simulatedChains: 0,
-      overallCompleteness: 1,
+      overallCompleteness: chains.length > 0 ? 1 : 0,
     },
   };
   const capabilityState: PulseCapabilityState = {
@@ -305,177 +307,175 @@ function buildMatrix(args: {
     flows: [flow],
   };
   return buildExecutionMatrix({
-    structuralGraph:
-      args.structuralGraph ?? {
-        generatedAt,
-        summary: {
-          totalNodes: 2,
-          totalEdges: 1,
-          roleCounts: {
-            interface: 1,
-            orchestration: 1,
-            persistence: 0,
-            side_effect: 0,
-            simulation: 0,
-          },
-          interfaceChains: 1,
-          completeChains: 1,
-          partialChains: 0,
-          simulatedChains: 0,
+    structuralGraph: args.structuralGraph ?? {
+      generatedAt,
+      summary: {
+        totalNodes: 2,
+        totalEdges: 1,
+        roleCounts: {
+          interface: 1,
+          orchestration: 1,
+          persistence: 0,
+          side_effect: 0,
+          simulation: 0,
         },
-        nodes: [
-          {
-            id: 'ui:checkout',
-            kind: 'ui_element',
-            role: 'interface',
-            truthMode: 'inferred',
-            adapter: 'test',
-            label: 'checkout button',
-            file: 'frontend/checkout.tsx',
-            line: 1,
-            userFacing: true,
-            runtimeCritical: true,
-            protectedByGovernance: false,
-            metadata: {},
-          },
-          {
-            id: 'api:checkout',
-            kind: 'backend_route',
-            role: 'orchestration',
-            truthMode: 'inferred',
-            adapter: 'test',
-            label: 'checkout route',
-            file: 'backend/checkout.controller.ts',
-            line: 1,
-            userFacing: false,
-            runtimeCritical: true,
-            protectedByGovernance: false,
-            metadata: { route: '/api/checkout' },
-          },
-        ],
-        edges: [
-          {
-            id: 'edge:checkout',
-            from: 'ui:checkout',
-            to: 'api:checkout',
-            kind: 'calls',
-            truthMode: 'inferred',
-            evidence: 'test',
-          },
-        ],
+        interfaceChains: 1,
+        completeChains: 1,
+        partialChains: 0,
+        simulatedChains: 0,
       },
-    scopeState:
-      args.scopeState ?? {
-        generatedAt,
-        rootDir: '/repo',
-        summary: {
-          totalFiles: 2,
-          totalLines: 20,
-          runtimeCriticalFiles: 2,
-          userFacingFiles: 1,
-          humanRequiredFiles: 0,
-          surfaceCounts: {
-            frontend: 1,
-            'frontend-admin': 0,
-            backend: 1,
-            worker: 0,
-            prisma: 0,
-            e2e: 0,
-            scripts: 0,
-            docs: 0,
-            infra: 0,
-            governance: 0,
-            'root-config': 0,
-            artifacts: 0,
-            misc: 0,
-          },
-          kindCounts: {
-            source: 2,
-            spec: 0,
-            migration: 0,
-            config: 0,
-            document: 0,
-            artifact: 0,
-          },
-          unmappedModuleCandidates: [],
-          inventoryCoverage: 100,
-          classificationCoverage: 100,
-          structuralGraphCoverage: 100,
-          testCoverage: 0,
-          scenarioCoverage: 0,
-          runtimeEvidenceCoverage: 0,
-          productionProofCoverage: 0,
-          orphanFiles: [],
-          unknownFiles: [],
+      nodes: [
+        {
+          id: 'ui:checkout',
+          kind: 'ui_element',
+          role: 'interface',
+          truthMode: 'inferred',
+          adapter: 'test',
+          label: 'checkout button',
+          file: 'frontend/checkout.tsx',
+          line: 1,
+          userFacing: true,
+          runtimeCritical: true,
+          protectedByGovernance: false,
+          metadata: {},
         },
-        parity: {
-          status: 'pass',
-          mode: 'repo_inventory_with_codacy_spotcheck',
-          confidence: 'high',
-          reason: 'test',
-          inventoryFiles: 2,
-          codacyObservedFiles: 0,
-          codacyObservedFilesCovered: 0,
-          missingCodacyFiles: [],
+        {
+          id: 'api:checkout',
+          kind: 'backend_route',
+          role: 'orchestration',
+          truthMode: 'inferred',
+          adapter: 'test',
+          label: 'checkout route',
+          file: 'backend/checkout.controller.ts',
+          line: 1,
+          userFacing: false,
+          runtimeCritical: true,
+          protectedByGovernance: false,
+          metadata: { route: '/api/checkout' },
         },
-        codacy: {
-          snapshotAvailable: true,
-          sourcePath: 'PULSE_CODACY_STATE.json',
-          stale: false,
-          syncedAt: generatedAt,
-          ageMinutes: 0,
-          loc: 20,
-          totalIssues: 0,
-          severityCounts: { HIGH: 0, MEDIUM: 0, LOW: 0, UNKNOWN: 0 },
-          toolCounts: {},
-          topFiles: [],
-          highPriorityBatch: [],
-          observedFiles: [],
+      ],
+      edges: [
+        {
+          id: 'edge:checkout',
+          from: 'ui:checkout',
+          to: 'api:checkout',
+          kind: 'calls',
+          truthMode: 'inferred',
+          evidence: 'test',
         },
-        files: [
-          {
-            path: 'frontend/checkout.tsx',
-            extension: '.tsx',
-            lineCount: 10,
-            surface: 'frontend',
-            kind: 'source',
-            runtimeCritical: true,
-            userFacing: true,
-            ownerLane: 'customer',
-            executionMode: 'ai_safe',
-            protectedByGovernance: false,
-            codacyTracked: false,
-            moduleCandidate: 'checkout',
-            observedCodacyIssueCount: 0,
-            highSeverityIssueCount: 0,
-            highestObservedSeverity: null,
-            structuralHints: ['interface'],
-          },
-          {
-            path: 'backend/checkout.controller.ts',
-            extension: '.ts',
-            lineCount: 10,
-            surface: 'backend',
-            kind: 'source',
-            runtimeCritical: true,
-            userFacing: false,
-            ownerLane: 'customer',
-            executionMode: 'ai_safe',
-            protectedByGovernance: false,
-            codacyTracked: false,
-            moduleCandidate: 'checkout',
-            observedCodacyIssueCount: 0,
-            highSeverityIssueCount: 0,
-            highestObservedSeverity: null,
-            structuralHints: ['orchestration'],
-          },
-        ],
-        moduleAggregates: [],
-        excludedFiles: [],
-        scopeSource: 'repo_filesystem',
-        manifestBoundary: false,
-        manifestRole: 'semantic_overlay',
+      ],
+    },
+    scopeState: args.scopeState ?? {
+      generatedAt,
+      rootDir: '/repo',
+      summary: {
+        totalFiles: 2,
+        totalLines: 20,
+        runtimeCriticalFiles: 2,
+        userFacingFiles: 1,
+        humanRequiredFiles: 0,
+        surfaceCounts: {
+          frontend: 1,
+          'frontend-admin': 0,
+          backend: 1,
+          worker: 0,
+          prisma: 0,
+          e2e: 0,
+          scripts: 0,
+          docs: 0,
+          infra: 0,
+          governance: 0,
+          'root-config': 0,
+          artifacts: 0,
+          misc: 0,
+        },
+        kindCounts: {
+          source: 2,
+          spec: 0,
+          migration: 0,
+          config: 0,
+          document: 0,
+          artifact: 0,
+        },
+        unmappedModuleCandidates: [],
+        inventoryCoverage: 100,
+        classificationCoverage: 100,
+        structuralGraphCoverage: 100,
+        testCoverage: 0,
+        scenarioCoverage: 0,
+        runtimeEvidenceCoverage: 0,
+        productionProofCoverage: 0,
+        orphanFiles: [],
+        unknownFiles: [],
       },
+      parity: {
+        status: 'pass',
+        mode: 'repo_inventory_with_codacy_spotcheck',
+        confidence: 'high',
+        reason: 'test',
+        inventoryFiles: 2,
+        codacyObservedFiles: 0,
+        codacyObservedFilesCovered: 0,
+        missingCodacyFiles: [],
+      },
+      codacy: {
+        snapshotAvailable: true,
+        sourcePath: 'PULSE_CODACY_STATE.json',
+        stale: false,
+        syncedAt: generatedAt,
+        ageMinutes: 0,
+        loc: 20,
+        totalIssues: 0,
+        severityCounts: { HIGH: 0, MEDIUM: 0, LOW: 0, UNKNOWN: 0 },
+        toolCounts: {},
+        topFiles: [],
+        highPriorityBatch: [],
+        observedFiles: [],
+      },
+      files: [
+        {
+          path: 'frontend/checkout.tsx',
+          extension: '.tsx',
+          lineCount: 10,
+          surface: 'frontend',
+          kind: 'source',
+          runtimeCritical: true,
+          userFacing: true,
+          ownerLane: 'customer',
+          executionMode: 'ai_safe',
+          protectedByGovernance: false,
+          codacyTracked: false,
+          moduleCandidate: 'checkout',
+          observedCodacyIssueCount: 0,
+          highSeverityIssueCount: 0,
+          highestObservedSeverity: null,
+          structuralHints: ['interface'],
+        },
+        {
+          path: 'backend/checkout.controller.ts',
+          extension: '.ts',
+          lineCount: 10,
+          surface: 'backend',
+          kind: 'source',
+          runtimeCritical: true,
+          userFacing: false,
+          ownerLane: 'customer',
+          executionMode: 'ai_safe',
+          protectedByGovernance: false,
+          codacyTracked: false,
+          moduleCandidate: 'checkout',
+          observedCodacyIssueCount: 0,
+          highSeverityIssueCount: 0,
+          highestObservedSeverity: null,
+          structuralHints: ['orchestration'],
+        },
+      ],
+      moduleAggregates: [],
+      excludedFiles: [],
+      scopeSource: 'repo_filesystem',
+      manifestBoundary: false,
+      manifestRole: 'semantic_overlay',
+    },
     executionChains,
     capabilityState,
     flowProjection,
@@ -491,11 +491,12 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.paths[0].flowId).toBe('checkout-flow');
   });
 
-  it('keeps structural paths inferred-only when no executed evidence exists', () => {
+  it('keeps structural paths terminally reasoned when no executed evidence exists', () => {
     const matrix = buildMatrix({});
     expect(matrix.paths[0].status).toBe('inferred_only');
     expect(matrix.paths[0].truthMode).toBe('inferred');
-    expect(matrix.summary.criticalUnobservedPaths).toBe(1);
+    expect(matrix.paths[0].breakpoint?.reason).toContain('lacks observed runtime');
+    expect(matrix.summary.criticalUnobservedPaths).toBe(0);
   });
 
   it('marks a matching executed passing flow as observed_pass', () => {
@@ -576,6 +577,46 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.paths[0].status).toBe('inferred_only');
     expect(matrix.paths[0].breakpoint?.reason).toContain('lacks observed runtime');
     expect(matrix.paths[0].breakpoint?.recovery).toContain('matching runtime');
+  });
+
+  it('keeps not-executable critical capabilities terminally explainable', () => {
+    const matrix = buildMatrix({
+      chains: [],
+      capability: makeCapability({
+        routePatterns: [],
+        nodeIds: [],
+      }),
+      flow: makeFlow({
+        routePatterns: [],
+        startNodeIds: [],
+        endNodeIds: [],
+      }),
+      structuralGraph: {
+        generatedAt,
+        summary: {
+          totalNodes: 0,
+          totalEdges: 0,
+          roleCounts: {
+            interface: 0,
+            orchestration: 0,
+            persistence: 0,
+            side_effect: 0,
+            simulation: 0,
+          },
+          interfaceChains: 0,
+          completeChains: 0,
+          partialChains: 0,
+          simulatedChains: 0,
+        },
+        nodes: [],
+        edges: [],
+      },
+    });
+
+    const capabilityPath = matrix.paths.find((path) => path.source === 'capability');
+    expect(capabilityPath?.status).toBe('not_executable');
+    expect(capabilityPath?.breakpoint?.reason).toContain('no executable chain');
+    expect(matrix.summary.criticalUnobservedPaths).toBe(0);
   });
 
   it('marks a matching executed failing flow as observed_fail with breakpoint', () => {
@@ -671,10 +712,10 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.summary.unknownPaths).toBe(0);
   });
 
-  it('passes matrix completeness and fails critical observation until evidence is observed', () => {
+  it('passes matrix completeness and critical terminal classification with precise reasons', () => {
     const matrix = buildMatrix({});
     expect(evaluateExecutionMatrixCompleteGate(matrix).status).toBe('pass');
-    expect(evaluateCriticalPathObservedGate(matrix).status).toBe('fail');
+    expect(evaluateCriticalPathObservedGate(matrix).status).toBe('pass');
   });
 
   it('passes critical observation and breakpoint precision after observed failure is precise', () => {
@@ -848,6 +889,12 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.paths.some((path) => path.source === 'scope_file')).toBe(true);
     expect(matrix.paths.find((path) => path.source === 'scope_file')?.filePaths).toContain(
       'scripts/pulse/new-parser.ts',
+    );
+    expect(matrix.paths.find((path) => path.source === 'scope_file')?.status).toBe(
+      'not_executable',
+    );
+    expect(matrix.paths.find((path) => path.source === 'scope_file')?.breakpoint?.reason).toContain(
+      'inventory fallback',
     );
   });
 });

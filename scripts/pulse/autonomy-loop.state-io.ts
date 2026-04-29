@@ -57,8 +57,12 @@ export function getDirectiveSnapshot(
 ): PulseAutonomySummarySnapshot {
   const executionMatrixSummary =
     directive.executionMatrix?.summary ??
-    ((directive.currentState as { executionMatrixSummary?: PulseAutonomySummarySnapshot['executionMatrixSummary'] } | null)
-      ?.executionMatrixSummary ?? null);
+    (
+      directive.currentState as {
+        executionMatrixSummary?: PulseAutonomySummarySnapshot['executionMatrixSummary'];
+      } | null
+    )?.executionMatrixSummary ??
+    null;
 
   return {
     certificationStatus: directive.currentState?.certificationStatus || null,

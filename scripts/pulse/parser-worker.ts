@@ -53,7 +53,8 @@ async function main(): Promise<void> {
 main().catch((error: unknown) => {
   writeResult({
     ok: false,
-    error: error instanceof Error ? error.message : String(error || 'Unknown parser worker failure'),
+    error:
+      error instanceof Error ? error.message : String(error || 'Unknown parser worker failure'),
   });
   process.exit(1);
 });

@@ -4,7 +4,7 @@
 import * as path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { buildArtifactRegistry } from './artifact-registry';
-import { createAppendStream, ensureDir, pathExists, readTextFile } from './safe-fs';
+import { createAppendStream, ensureDir, pathExists, readTextFile, writeTextFile } from './safe-fs';
 import type {
   PulseAutonomyValidationCommandResult,
   PulseAgentOrchestrationWorkerResult,
@@ -30,7 +30,9 @@ export function runCodexExec(
 ): { command: string; exitCode: number | null; finalMessage: string | null } {
   const registry = buildArtifactRegistry(rootDir);
   ensureDir(registry.tempDir, { recursive: true });
-  const outputPath = path.join(registry.tempDir, `pulse-autonomy-codex-${Date.now()}.txt`);
+  const timestamp = Date.now();
+  const outputPath = path.join(registry.tempDir, `pulse-autonomy-codex-${timestamp}.txt`);
+  const logPath = path.join(registry.tempDir, `pulse-autonomy-codex-${timestamp}.log`);
   const args = ['exec', '--full-auto', '-C', rootDir, '--output-last-message', outputPath];
 
   if (codexModel) {
@@ -43,8 +45,20 @@ export function runCodexExec(
     cwd: rootDir,
     input: prompt,
     encoding: 'utf8',
-    stdio: ['pipe', 'inherit', 'inherit'],
+    stdio: ['pipe', 'pipe', 'pipe'],
   });
+
+  writeTextFile(
+    logPath,
+    [
+      `$ ${buildCodexCommand(args)}`,
+      '',
+      '--- stdout ---',
+      result.stdout || '',
+      '--- stderr ---',
+      result.stderr || '',
+    ].join('\n'),
+  );
 
   const finalMessage = pathExists(outputPath) ? readTextFile(outputPath).trim() : null;
 

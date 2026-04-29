@@ -38,7 +38,9 @@ function makePatch(root: string, relativePath: string, nextContent: string): str
   return patchPath;
 }
 
-function futureLease(overrides: Partial<PulseWorkerLeaseValidationInput> = {}): PulseWorkerLeaseValidationInput {
+function futureLease(
+  overrides: Partial<PulseWorkerLeaseValidationInput> = {},
+): PulseWorkerLeaseValidationInput {
   return {
     leaseId: 'lease-test',
     leaseStatus: 'active',

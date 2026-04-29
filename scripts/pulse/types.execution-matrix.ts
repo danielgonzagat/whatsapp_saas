@@ -1,10 +1,10 @@
 import type {
   PulseConvergenceExecutionMode,
   PulseConvergenceRiskLevel,
-} from './types.convergence';
-import type { PulseFlowProjectionStatus } from './types.capabilities';
-import type { PulseExecutionChainStepRole } from './types.product-graph';
-import type { PulseTruthMode } from './types.structural';
+  PulseExecutionChainStepRole,
+  PulseFlowProjectionStatus,
+  PulseTruthMode,
+} from './types';
 
 /** Status assigned to every code-discovered executable path. */
 export type PulseExecutionMatrixPathStatus =

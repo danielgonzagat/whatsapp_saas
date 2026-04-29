@@ -1,21 +1,17 @@
 {
-  "runId": "05381ce6-2c4e-427d-91c4-1c65e08d862d",
-  "generatedAt": "2026-04-28T23:05:50.200Z",
-  "authorityMode": "advisory-only",
-  "advisoryOnly": true,
+  "runId": "7d0da39a-7499-4f34-b3fd-ac585ebd673e",
+  "generatedAt": "2026-04-29T02:04:16.965Z",
+  "authorityMode": "autonomous-execution",
+  "advisoryOnly": false,
   "authorityReasons": [
-    "Pulse self-trust is still failing."
+    "Core trust/production gates are green; autonomous execution may proceed."
   ],
   "pulseMachineReadiness": {
-    "status": "NOT_READY",
+    "status": "READY",
     "scope": "pulse_machine_not_kloel_product",
-    "canRunBoundedAutonomousCycle": false,
+    "canRunBoundedAutonomousCycle": true,
     "canDeclareKloelProductCertified": false,
-    "blockers": [
-      "critical_path_terminal: Execution matrix still has 3016 critical path(s) without observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-marketing, matrix:capability:capability:admin-permission.",
-      "self_trust: Parser self-trust failed because 1 check(s) could not load.",
-      "multi_cycle: multiCycleConvergence: 0/3 non-regressing real cycles (recorded=1, realExecuted=1, nonRegressing=0/3, failedValidation=1, missingValidation=0, missingRuntimeValidation=0, regressedScore=0, regressedTier=0, executionMatrixCompared=0, regressedExecutionMatrix=0). Cycle proof: 0/3 successful non-regressing real cycle(s)."
-    ]
+    "blockers": []
   },
   "cleanupPolicy": "enforced-single-state",
   "canonicalDir": "/Users/danielpenin/whatsapp_saas/.pulse/current",
@@ -80,7 +76,6 @@
     "PULSE_WORLD_STATE.json"
   ],
   "removedLegacyPulseArtifacts": [
-    "PULSE_BROWSER_EVIDENCE.json",
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
     "PULSE_HEALTH.json",

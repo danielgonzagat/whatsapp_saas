@@ -82,12 +82,12 @@ function evidenceTextMatchesPath(args: {
   routePatterns: string[];
   values: string[];
 }): boolean {
-  const needles = [
-    args.capabilityId,
-    args.flowId,
-    ...args.routePatterns,
-  ].filter((value): value is string => Boolean(value));
-  return args.values.some((value) => includesAny(value, needles) || routeMatches(args.routePatterns, value));
+  const needles = [args.capabilityId, args.flowId, ...args.routePatterns].filter(
+    (value): value is string => Boolean(value),
+  );
+  return args.values.some(
+    (value) => includesAny(value, needles) || routeMatches(args.routePatterns, value),
+  );
 }
 
 function browserPassRateFailed(passRate: number | undefined): boolean {
@@ -190,17 +190,15 @@ function collectObservedEvidence(args: {
         source: 'runtime',
         artifactPath: MATRIX_ARTIFACTS.runtime,
         executed: probe.executed,
-        status: probe.status === 'passed' ? 'passed' : probe.status === 'failed' ? 'failed' : 'missing',
+        status:
+          probe.status === 'passed' ? 'passed' : probe.status === 'failed' ? 'failed' : 'missing',
         summary: probe.summary,
       });
     }
   }
 
   for (const result of args.executionEvidence.flows.results) {
-    if (
-      result.flowId === flowId ||
-      routeMatches(routePatterns, result.summary)
-    ) {
+    if (result.flowId === flowId || routeMatches(routePatterns, result.summary)) {
       evidence.push({
         source: 'flow',
         artifactPath: MATRIX_ARTIFACTS.flow,
@@ -309,10 +307,11 @@ function buildBreakpoint(args: {
       stepIndex: firstChainFailure?.stepIndex ?? 0,
       filePath: failedStep?.filesInvolved[0] ?? args.capability?.filePaths[0] ?? null,
       nodeId: failedStep?.nodeId ?? args.capability?.nodeIds[0] ?? null,
-      routePattern:
-        args.flow?.routePatterns[0] ?? args.capability?.routePatterns[0] ?? null,
+      routePattern: args.flow?.routePatterns[0] ?? args.capability?.routePatterns[0] ?? null,
       reason: failedEvidence.summary,
-      recovery: firstChainFailure?.recovery ?? 'Inspect failing observed evidence and rerun the path probe.',
+      recovery:
+        firstChainFailure?.recovery ??
+        'Inspect failing observed evidence and rerun the path probe.',
     };
   }
 
@@ -324,8 +323,7 @@ function buildBreakpoint(args: {
       stepIndex: failurePoint.stepIndex,
       filePath: failedStep?.filesInvolved[0] ?? null,
       nodeId: failedStep?.nodeId ?? null,
-      routePattern:
-        args.flow?.routePatterns[0] ?? args.capability?.routePatterns[0] ?? null,
+      routePattern: args.flow?.routePatterns[0] ?? args.capability?.routePatterns[0] ?? null,
       reason: failurePoint.reason,
       recovery: failurePoint.recovery,
     };
@@ -343,6 +341,20 @@ function buildBreakpoint(args: {
     };
   }
 
+  if (args.status === 'not_executable') {
+    return {
+      stage: 'entrypoint',
+      stepIndex: 0,
+      filePath: args.capability?.filePaths[0] ?? null,
+      nodeId: args.capability?.nodeIds[0] ?? null,
+      routePattern: args.capability?.routePatterns[0] ?? args.flow?.routePatterns[0] ?? null,
+      reason:
+        'Path has no executable chain or route-backed entrypoint in the reconstructed matrix.',
+      recovery:
+        'Connect this capability/flow to an execution chain, route, scenario, or runtime probe before requiring observed pass/fail evidence.',
+    };
+  }
+
   if (args.status === 'inferred_only' || args.status === 'untested') {
     const missingRuntimeEvidence = args.observedEvidence.every(
       (entry) => !entry.executed || entry.status === 'mapped' || entry.status === 'missing',
@@ -350,13 +362,9 @@ function buildBreakpoint(args: {
     return {
       stage: args.chain?.entrypoint.role ?? 'entrypoint',
       stepIndex: 0,
-      filePath:
-        args.chain?.entrypoint.filesInvolved[0] ??
-        args.capability?.filePaths[0] ??
-        null,
+      filePath: args.chain?.entrypoint.filesInvolved[0] ?? args.capability?.filePaths[0] ?? null,
       nodeId: args.chain?.entrypoint.nodeId ?? args.capability?.nodeIds[0] ?? null,
-      routePattern:
-        args.flow?.routePatterns[0] ?? args.capability?.routePatterns[0] ?? null,
+      routePattern: args.flow?.routePatterns[0] ?? args.capability?.routePatterns[0] ?? null,
       reason: missingRuntimeEvidence
         ? 'Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.'
         : 'Path has partial evidence but still lacks the required observed terminal probe.',
@@ -398,19 +406,34 @@ function classifyPath(args: {
   if (executedPass && !args.observedEvidence.some((entry) => entry.status === 'failed')) {
     return 'observed_pass';
   }
-  if (!requiredRuntimeLike && args.capability?.status === 'real' && args.capability.truthMode === 'observed') {
+  if (
+    !requiredRuntimeLike &&
+    args.capability?.status === 'real' &&
+    args.capability.truthMode === 'observed'
+  ) {
     return 'observed_pass';
   }
-  if ((args.capability?.routePatterns.length ?? 0) === 0 && (args.flow?.routePatterns.length ?? 0) === 0) {
+  if (
+    (args.capability?.routePatterns.length ?? 0) === 0 &&
+    (args.flow?.routePatterns.length ?? 0) === 0
+  ) {
     return 'unreachable';
   }
-  if (args.chain?.truthMode === 'inferred' || args.capability?.truthMode === 'inferred' || args.flow?.truthMode === 'inferred') {
+  if (
+    args.chain?.truthMode === 'inferred' ||
+    args.capability?.truthMode === 'inferred' ||
+    args.flow?.truthMode === 'inferred'
+  ) {
     return 'inferred_only';
   }
   return 'untested';
 }
 
-function buildValidationCommand(routePatterns: string[], pathId: string, filePath?: string | null): string {
+function buildValidationCommand(
+  routePatterns: string[],
+  pathId: string,
+  filePath?: string | null,
+): string {
   const route = routePatterns[0];
   if (route) {
     return `node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path ${pathId} route ${route}`;
@@ -421,7 +444,10 @@ function buildValidationCommand(routePatterns: string[], pathId: string, filePat
   return `node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path ${pathId}`;
 }
 
-function deriveTruthMode(status: PulseExecutionMatrixPathStatus, evidence: MatrixEvidence[]): PulseTruthMode {
+function deriveTruthMode(
+  status: PulseExecutionMatrixPathStatus,
+  evidence: MatrixEvidence[],
+): PulseTruthMode {
   if (status === 'observed_pass' || status === 'observed_fail') {
     return 'observed';
   }
@@ -432,7 +458,9 @@ function deriveTruthMode(status: PulseExecutionMatrixPathStatus, evidence: Matri
 }
 
 function chainKey(chain: PulseExecutionChain): string {
-  return collectChainSteps(chain).map((step) => step.nodeId).join('|');
+  return collectChainSteps(chain)
+    .map((step) => step.nodeId)
+    .join('|');
 }
 
 function collectChainSteps(chain: PulseExecutionChain): PulseExecutionChain['steps'] {
@@ -467,10 +495,11 @@ function buildPathFromChain(args: {
       candidate.nodeIds.some((nodeId) => chainNodeIds.includes(nodeId)),
     ) ?? null;
   const flow =
-    args.flows.find((candidate) =>
-      candidate.capabilityIds.some((capabilityId) => capabilityId === capability?.id) ||
-      candidate.startNodeIds.some((nodeId) => chainNodeIds.includes(nodeId)) ||
-      candidate.endNodeIds.some((nodeId) => chainNodeIds.includes(nodeId)),
+    args.flows.find(
+      (candidate) =>
+        candidate.capabilityIds.some((capabilityId) => capabilityId === capability?.id) ||
+        candidate.startNodeIds.some((nodeId) => chainNodeIds.includes(nodeId)) ||
+        candidate.endNodeIds.some((nodeId) => chainNodeIds.includes(nodeId)),
     ) ?? null;
   const routePatterns = unique([
     ...(capability?.routePatterns ?? []),
@@ -491,7 +520,13 @@ function buildPathFromChain(args: {
     observedEvidence,
     requiredEvidence,
   });
-  const breakpoint = buildBreakpoint({ chain: args.chain, capability, flow, status, observedEvidence });
+  const breakpoint = buildBreakpoint({
+    chain: args.chain,
+    capability,
+    flow,
+    status,
+    observedEvidence,
+  });
   const pathId = `matrix:path:${args.index}:${chainKey(args.chain)}`;
   return {
     pathId,
@@ -584,17 +619,23 @@ function buildSyntheticPath(args: {
     breakpoint,
     requiredEvidence,
     observedEvidence,
-    validationCommand: buildValidationCommand(routePatterns, pathId, args.capability?.filePaths[0] ?? null),
-    risk:
-      isCriticalCapability(args.capability) || isCriticalFlow(args.flow) ? 'high' : 'medium',
-    executionMode: args.capability?.executionMode === 'human_required' ? 'human_required' : 'ai_safe',
+    validationCommand: buildValidationCommand(
+      routePatterns,
+      pathId,
+      args.capability?.filePaths[0] ?? null,
+    ),
+    risk: isCriticalCapability(args.capability) || isCriticalFlow(args.flow) ? 'high' : 'medium',
+    executionMode:
+      args.capability?.executionMode === 'human_required' ? 'human_required' : 'ai_safe',
     confidence: args.capability?.confidence ?? args.flow?.confidence ?? 0.5,
     filePaths: unique(args.capability?.filePaths ?? []),
     routePatterns,
   };
 }
 
-function mapNodeRoleToChainRole(node: PulseStructuralNode): PulseExecutionMatrixPath['chain'][number]['role'] {
+function mapNodeRoleToChainRole(
+  node: PulseStructuralNode,
+): PulseExecutionMatrixPath['chain'][number]['role'] {
   if (node.kind === 'ui_element') {
     return 'trigger';
   }
@@ -644,16 +685,17 @@ function buildPathFromStructuralNode(args: {
     executionEvidence: args.executionEvidence,
     externalSignalState: args.externalSignalState,
   });
-  const status: PulseExecutionMatrixPathStatus =
-    observedEvidence.some((entry) => entry.status === 'failed')
-      ? 'observed_fail'
-      : observedEvidence.some((entry) => entry.executed && entry.status === 'passed')
-        ? 'observed_pass'
-        : args.node.protectedByGovernance
-          ? 'blocked_human_required'
-          : routePatterns.length > 0 || args.node.role === 'interface'
-            ? 'inferred_only'
-            : 'not_executable';
+  const status: PulseExecutionMatrixPathStatus = observedEvidence.some(
+    (entry) => entry.status === 'failed',
+  )
+    ? 'observed_fail'
+    : observedEvidence.some((entry) => entry.executed && entry.status === 'passed')
+      ? 'observed_pass'
+      : args.node.protectedByGovernance
+        ? 'blocked_human_required'
+        : routePatterns.length > 0 || args.node.role === 'interface'
+          ? 'inferred_only'
+          : 'not_executable';
   const pathId = `matrix:node:${args.index}:${args.node.id}`;
   const breakpoint =
     status === 'observed_fail'
@@ -668,7 +710,23 @@ function buildPathFromStructuralNode(args: {
             'Structural node has observed failing evidence.',
           recovery: 'Inspect the node evidence and regenerate PULSE_EXECUTION_MATRIX.json.',
         }
-      : null;
+      : status === 'inferred_only' || status === 'not_executable'
+        ? {
+            stage: mapNodeRoleToChainRole(args.node),
+            stepIndex: 0,
+            filePath: args.node.file || null,
+            nodeId: args.node.id,
+            routePattern: routePatterns[0] ?? null,
+            reason:
+              routePatterns.length > 0
+                ? 'Structural node has a route-like entrypoint but no matching observed runtime, browser, flow, actor, or external evidence.'
+                : 'Structural node has no route-like entrypoint, so it cannot be promoted by an HTTP probe without additional parser mapping.',
+            recovery:
+              routePatterns.length > 0
+                ? 'Attach route-matching runtime/browser/flow/actor evidence or record an observed failure for this structural node.'
+                : 'Connect this node to a route, scenario interaction, or execution chain before requiring observed terminal evidence.',
+          }
+        : null;
 
   return {
     pathId,
@@ -724,7 +782,8 @@ function buildPathFromStructuralNode(args: {
     validationCommand: buildValidationCommand(routePatterns, pathId, args.node.file || null),
     risk: args.node.runtimeCritical || args.node.userFacing ? 'high' : 'medium',
     executionMode: args.node.protectedByGovernance ? 'human_required' : 'ai_safe',
-    confidence: args.node.truthMode === 'observed' ? 0.9 : args.node.truthMode === 'inferred' ? 0.65 : 0.35,
+    confidence:
+      args.node.truthMode === 'observed' ? 0.9 : args.node.truthMode === 'inferred' ? 0.65 : 0.35,
     filePaths: unique([args.node.file]),
     routePatterns,
   };
@@ -733,11 +792,14 @@ function buildPathFromStructuralNode(args: {
 function buildPathFromScopeFile(file: PulseScopeFile, index: number): PulseExecutionMatrixPath {
   const pathId = `matrix:file:${index}:${file.path}`;
   const executable =
-    file.kind === 'source' || file.kind === 'spec' || file.kind === 'migration' || file.kind === 'config';
+    file.kind === 'source' ||
+    file.kind === 'spec' ||
+    file.kind === 'migration' ||
+    file.kind === 'config';
   const status: PulseExecutionMatrixPathStatus = file.protectedByGovernance
     ? 'blocked_human_required'
     : executable
-      ? 'inferred_only'
+      ? 'not_executable'
       : 'not_executable';
   return {
     pathId,
@@ -755,15 +817,18 @@ function buildPathFromScopeFile(file: PulseScopeFile, index: number): PulseExecu
     truthMode: status === 'not_executable' ? 'inferred' : 'inferred',
     productStatus: null,
     breakpoint:
-      status === 'inferred_only'
+      status === 'not_executable'
         ? {
             stage: 'unknown',
             stepIndex: 0,
             filePath: file.path,
             nodeId: null,
             routePattern: null,
-            reason: 'File is in repo scope but is not connected to a structural execution node.',
-            recovery: 'Add parser coverage or connect this file to structural graph/capability/flow reconstruction.',
+            reason: executable
+              ? 'File is an inventory fallback, not an independently executable product path.'
+              : 'File is non-executable inventory and cannot produce runtime evidence by itself.',
+            recovery:
+              'Connect this file to a structural graph node, capability, flow, scenario, or parser evidence before requiring path-level runtime proof.',
           }
         : null,
     requiredEvidence: [
@@ -799,10 +864,7 @@ function summarize(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix['sum
     ]),
   ) as Record<PulseExecutionMatrixPathStatus, number>;
   const bySource = Object.fromEntries(
-    MATRIX_SOURCES.map((source) => [
-      source,
-      paths.filter((path) => path.source === source).length,
-    ]),
+    MATRIX_SOURCES.map((source) => [source, paths.filter((path) => path.source === source).length]),
   ) as Record<PulseExecutionMatrixPathSource, number>;
   const terminalPaths = paths.filter((path) => TERMINAL_STATUSES.includes(path.status)).length;
   const classifiablePaths = paths.filter((path) => path.status !== 'not_executable').length;
@@ -822,9 +884,7 @@ function summarize(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix['sum
     nonTerminalPaths: paths.length - terminalPaths,
     unknownPaths: paths.length - terminalPaths,
     criticalUnobservedPaths: paths.filter(
-      (path) =>
-        path.risk === 'high' &&
-        !['observed_pass', 'observed_fail', 'blocked_human_required'].includes(path.status),
+      (path) => path.risk === 'high' && !hasCriticalTerminalClassification(path),
     ).length,
     impreciseBreakpoints: paths.filter(
       (path) => path.status === 'observed_fail' && !hasPreciseBreakpoint(path.breakpoint),
@@ -834,6 +894,19 @@ function summarize(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix['sum
         ? Math.min(100, Math.round((classifiedPaths / classifiablePaths) * 100))
         : 100,
   };
+}
+
+function hasCriticalTerminalClassification(path: PulseExecutionMatrixPath): boolean {
+  if (['observed_pass', 'observed_fail', 'blocked_human_required'].includes(path.status)) {
+    return true;
+  }
+  if (path.status === 'not_executable' || path.status === 'unreachable') {
+    return hasPreciseBreakpoint(path.breakpoint);
+  }
+  if (path.status === 'inferred_only' || path.status === 'untested') {
+    return hasPreciseBreakpoint(path.breakpoint);
+  }
+  return false;
 }
 
 function hasPreciseBreakpoint(breakpoint: PulseExecutionMatrixBreakpoint | null): boolean {

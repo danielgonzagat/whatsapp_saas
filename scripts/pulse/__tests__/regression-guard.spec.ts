@@ -313,9 +313,7 @@ describe('detectRegression', () => {
 
       expect(result.regressed).toBe(true);
       expect(result.deltas.executionMatrixRegressions).toContain('observedPass:10->9');
-      expect(result.deltas.executionMatrixRegressions).toContain(
-        'criticalUnobservedPaths:2->3',
-      );
+      expect(result.deltas.executionMatrixRegressions).toContain('criticalUnobservedPaths:2->3');
     });
   });
 

@@ -68,12 +68,25 @@ export function buildCodexPrompt(
     'Do not touch human_required or observation_only surfaces.',
     'At the end, return a concise summary of edits, validation, and remaining blockers.',
   ].join(' ');
+  const unitSpecificHeader =
+    unit.id === 'gate-multi-cycle-convergence-pass'
+      ? [
+          'This unit is a convergence-proof unit, not a product-feature repair.',
+          'Do not edit product code unless validation exposes a concrete PULSE infrastructure defect.',
+          'Do not run `node scripts/pulse/run.js --autonomous` or spawn another autonomous loop from inside this cycle.',
+          'If no patch is needed, leave files unchanged and report the exact validation evidence that should count for this cycle.',
+        ].join(' ')
+      : '';
 
   if (customPrompt && customPrompt.trim().length > 0) {
-    return [enforcedHeader, '', customPrompt.trim(), '', ...instructionLines].join('\n');
+    return [enforcedHeader, unitSpecificHeader, '', customPrompt.trim(), '', ...instructionLines]
+      .filter((line) => line !== '')
+      .join('\n');
   }
 
-  return [enforcedHeader, '', ...instructionLines].join('\n');
+  return [enforcedHeader, unitSpecificHeader, '', ...instructionLines]
+    .filter((line) => line !== '')
+    .join('\n');
 }
 
 export function buildAdaptivePrompt(

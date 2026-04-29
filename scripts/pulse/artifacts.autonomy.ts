@@ -353,7 +353,8 @@ function readCycleMatrixSummary(
   phase: 'before' | 'after',
 ): MatrixSummarySnapshot | null {
   const object = asObject(entry);
-  const directive = phase === 'before' ? asObject(entry.directiveBefore) : asObject(entry.directiveAfter);
+  const directive =
+    phase === 'before' ? asObject(entry.directiveBefore) : asObject(entry.directiveAfter);
   const suffix = phase === 'before' ? 'Before' : 'After';
   const candidates = [
     object?.[`executionMatrix${suffix}`],
@@ -400,7 +401,9 @@ function fail(reason: string): PulseMachineReadinessGate {
   return { status: 'fail', reason };
 }
 
-function getCrossArtifactConsistencyGate(snapshot: PulseArtifactSnapshot): PulseMachineReadinessGate {
+function getCrossArtifactConsistencyGate(
+  snapshot: PulseArtifactSnapshot,
+): PulseMachineReadinessGate {
   const consistency = snapshot.certification.selfTrustReport?.checks?.find(
     (check) => check.id === 'cross-artifact-consistency',
   );

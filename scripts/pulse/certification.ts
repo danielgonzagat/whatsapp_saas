@@ -552,7 +552,9 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     'typeIntegrityPass',
   ];
   const allPass = GATE_ORDER.every((gateName) => gates[gateName].status === 'pass');
-  const pulseCorePass = pulseCoreRequiredGates.every((gateName) => gates[gateName].status === 'pass');
+  const pulseCorePass = pulseCoreRequiredGates.every(
+    (gateName) => gates[gateName].status === 'pass',
+  );
   const foundationsPass = foundationalGates.every((gateName) => gates[gateName].status === 'pass');
   const tierStatus = buildTierStatuses(certificationTiers, gates, manifest, evidenceSummary);
   const blockingTier = getBlockingTier(tierStatus);
@@ -623,7 +625,8 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
   );
 
   return {
-    certificationScope: certificationTarget.certificationScope || certificationTarget.profile || null,
+    certificationScope:
+      certificationTarget.certificationScope || certificationTarget.profile || null,
     version: '2.5.0',
     status,
     humanReplacementStatus:

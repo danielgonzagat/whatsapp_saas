@@ -43,7 +43,9 @@ function isFresh(filePath: string): boolean {
 }
 
 function normalizeStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
+  return Array.isArray(value)
+    ? value.filter((entry): entry is string => typeof entry === 'string')
+    : [];
 }
 
 function normalizeScenarioResult(
@@ -83,9 +85,7 @@ function normalizeScenarioResult(
     critical: item.critical === true,
     requested: item.requested === true,
     runner:
-      typeof item.runner === 'string'
-        ? (item.runner as PulseScenarioResult['runner'])
-        : 'derived',
+      typeof item.runner === 'string' ? (item.runner as PulseScenarioResult['runner']) : 'derived',
     status: normalizedStatus,
     executed: item.executed === true,
     truthMode: fresh ? 'observed-from-disk' : 'inferred',

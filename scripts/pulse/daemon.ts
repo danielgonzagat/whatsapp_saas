@@ -131,7 +131,12 @@ async function runParserWithTimeout(
 }
 
 function resolveTsNodeRegister(rootDir: string): string {
-  const candidates = [rootDir, path.join(rootDir, 'backend'), path.join(rootDir, 'worker'), path.join(rootDir, 'e2e')];
+  const candidates = [
+    rootDir,
+    path.join(rootDir, 'backend'),
+    path.join(rootDir, 'worker'),
+    path.join(rootDir, 'e2e'),
+  ];
   for (const candidate of candidates) {
     try {
       return require.resolve('ts-node/register/transpile-only', { paths: [candidate] });
