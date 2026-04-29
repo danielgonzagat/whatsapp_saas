@@ -330,17 +330,19 @@ export class BillingWebhookService {
         status,
       });
     } else {
-      const existing = await this.prisma.subscription.findUnique({
-        where: { workspaceId },
-        select: { id: true },
-      });
-      if (!existing) {
+      try {
+        await this.prisma.subscription.update({
+          where: { workspaceId },
+          data: { status },
+        });
+      } catch (error: unknown) {
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')) {
+          throw error;
+        }
         this.logger.warn(
           `markSubscriptionStatus: subscription not found for workspace ${workspaceId}`,
         );
-        return;
       }
-      await this.prisma.subscription.update({ where: { workspaceId }, data: { status } });
     }
   }
   private async cancelSubscriptionByStripeId(stripeId: string) {
@@ -370,21 +372,20 @@ export class BillingWebhookService {
     }
     // Tenant-safe queries: inline the workspaceId predicate so the static
     // tenant-filter scanner reads the literal token in the where body.
-    const existing = await this.prisma.subscription.findFirst({
-      where: { stripeId, workspaceId },
-      select: { id: true },
-    });
-    if (!existing) {
+    try {
+      const result = await this.prisma.subscription.updateMany({
+        where: { stripeId, workspaceId },
+        data: { status: 'CANCELED' },
+      });
+      this.logger.log(`Subscription CANCELED: ${stripeId} (matched ${result.count})`);
+    } catch (error: unknown) {
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')) {
+        throw error;
+      }
       this.logger.warn(
         `cancelSubscriptionByStripeId: subscription not found for stripeId ${stripeId}`,
       );
-      return;
     }
-    const result = await this.prisma.subscription.updateMany({
-      where: { stripeId, workspaceId },
-      data: { status: 'CANCELED' },
-    });
-    this.logger.log(`Subscription CANCELED: ${stripeId} (matched ${result.count})`);
   }
   async notifyOps(event: string, payload: Record<string, unknown>): Promise<void> {
     return notifyOpsHelper(this.logger, event, payload, this.financialAlert);
