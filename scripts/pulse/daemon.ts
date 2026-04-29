@@ -574,6 +574,7 @@ export async function fullScan(
     executionEvidence: preliminaryCertification.evidenceSummary,
     externalSignalState,
   });
+  buildPathCoverageState(config.rootDir, executionMatrix);
   const certification = computeCertification({
     rootDir: config.rootDir,
     manifestResult,

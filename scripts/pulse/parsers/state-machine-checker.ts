@@ -4,19 +4,9 @@
  * Mode: DEEP (requires codebase scan + optional runtime validation)
  *
  * CHECKS:
- * 1. Order state machine: valid transitions are
- *    PENDING → PAID → FULFILLED → REFUNDED
- *    PENDING → FAILED | CANCELLED
- *    Flags any code that sets status without checking current status first
- * 2. Subscription state machine:
- *    TRIAL → ACTIVE → PAST_DUE → CANCELLED | SUSPENDED
- *    Flags direct jumps like TRIAL → CANCELLED without ACTIVE intermediate
- * 3. Payment state machine:
- *    PENDING → PROCESSING → PAID | FAILED | REFUNDED
- *    Flags any code that marks PAID without coming from PROCESSING
- * 4. WhatsApp session state machine:
- *    DISCONNECTED → CONNECTING → QR_READY → AUTHENTICATED → ACTIVE
- *    Flags transitions that skip states
+ * 1. Stateful flows must check current status before assigning a new terminal status
+ * 2. Status changes that carry money-like state require an intermediate processing guard
+ * 3. Authentication/session-like state transitions must not skip intermediate states
  * 5. Checks that state transition code uses a centralized state machine
  *    (not scattered `status = 'X'` assignments across multiple files)
  * 6. Checks that invalid transitions are explicitly rejected (throw, not silent ignore)
@@ -31,9 +21,6 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
-// Files likely to contain state transitions
-const STATE_FILE_RE = /order|subscription|payment|session|whatsapp/i;
-
 // Direct status assignment patterns (not using a transition function)
 const DIRECT_STATUS_SET_RE =
   /\.status\s*=\s*['"`](?:PAID|ACTIVE|FULFILLED|AUTHENTICATED|PROCESSING)['"`]/;
@@ -46,9 +33,13 @@ const TRANSITION_GUARD_RE =
 const STATUS_CHECK_RE =
   /current(Status|State)|fromStatus|fromState|existing\.status|record\.status/i;
 
-// Payment-specific: setting PAID directly
+// Money-like terminal state: setting PAID directly
 const PAYMENT_PAID_RE = /status:\s*['"`]PAID['"`]|\.status\s*=\s*['"`]PAID['"`]/;
 const PAYMENT_PROCESSING_CHECK_RE = /status.*PROCESSING|PROCESSING.*status/;
+const STATEFUL_CONTENT_RE =
+  /\b(?:status|state|currentStatus|currentState|transition|allowedTransitions|validTransitions)\b/i;
+const MONEY_STATE_RE =
+  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
 
 /** Check state machine. */
 export function checkStateMachine(config: PulseConfig): Break[] {
@@ -67,14 +58,14 @@ export function checkStateMachine(config: PulseConfig): Break[] {
     if (/\.spec\.ts$/.test(file)) {
       continue;
     }
-    if (!STATE_FILE_RE.test(path.basename(file))) {
-      continue;
-    }
 
     let content: string;
     try {
       content = readTextFile(file, 'utf8');
     } catch {
+      continue;
+    }
+    if (!STATEFUL_CONTENT_RE.test(content)) {
       continue;
     }
 
@@ -117,7 +108,7 @@ export function checkStateMachine(config: PulseConfig): Break[] {
       }
 
       // CHECK 3: Payment PAID set without PROCESSING guard
-      if (PAYMENT_PAID_RE.test(line)) {
+      if (PAYMENT_PAID_RE.test(line) && MONEY_STATE_RE.test(content)) {
         const context = lines.slice(Math.max(0, i - 40), i + 2).join('\n');
         const hasProcessingCheck =
           PAYMENT_PROCESSING_CHECK_RE.test(context) ||
@@ -130,8 +121,8 @@ export function checkStateMachine(config: PulseConfig): Break[] {
             file: relFile,
             line: i + 1,
             description:
-              'Payment status set to PAID without verifying PROCESSING intermediate state',
-            detail: `${line.slice(0, 120)} — payment must transition PENDING → PROCESSING → PAID, never jump directly`,
+              'Money-like status set to PAID without verifying PROCESSING intermediate state',
+            detail: `${line.slice(0, 120)} — money-like state must transition PENDING → PROCESSING → PAID, never jump directly`,
           });
         }
       }
@@ -157,9 +148,6 @@ export function checkStateMachine(config: PulseConfig): Break[] {
 
   // CHECK 6: Invalid transitions explicitly rejected
   for (const file of backendFiles) {
-    if (!STATE_FILE_RE.test(path.basename(file))) {
-      continue;
-    }
     if (!/service/i.test(file)) {
       continue;
     }
@@ -168,6 +156,9 @@ export function checkStateMachine(config: PulseConfig): Break[] {
     try {
       content = readTextFile(file, 'utf8');
     } catch {
+      continue;
+    }
+    if (!STATEFUL_CONTENT_RE.test(content)) {
       continue;
     }
 

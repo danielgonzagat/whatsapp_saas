@@ -4,6 +4,7 @@ import { ModuleRef } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { activatePlanFeatures } from './billing-plan-features';
 import {
@@ -39,6 +40,8 @@ export class BillingWebhookService {
     private readonly moduleRef: ModuleRef,
     @Optional()
     private readonly financialAlert?: FinancialAlertService,
+    @Optional()
+    private readonly opsAlert?: OpsAlertService,
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (secretKey) {
@@ -61,6 +64,7 @@ export class BillingWebhookService {
       } catch {
         // discarded — Sentry may not be initialised
       }
+      void this.opsAlert?.alertOnCriticalError(err, 'BillingWebhookService.resolveWhatsappService');
       return null;
     }
   }

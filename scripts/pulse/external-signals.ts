@@ -342,6 +342,9 @@ export function buildExternalSignalState(
     ).length,
     humanRequiredSignals: signals.filter((signal) => signal.executionMode === 'human_required')
       .length,
+    governedValidationSignals: signals.filter(
+      (signal) => signal.governanceDisposition === 'governed_validation',
+    ).length,
     staleAdapters: staleAdaptersList.length,
     missingAdapters: missingAdaptersList.length,
     invalidAdapters: invalidAdaptersList.length,

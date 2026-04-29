@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { Prisma } from '@prisma/client';
@@ -6,6 +6,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { renderTemplate } from '../common/sales-templates';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
 
@@ -47,6 +48,7 @@ export class AutopilotCycleExecutorService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly planLimits: PlanLimitsService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -170,7 +172,11 @@ export class AutopilotCycleExecutorService {
           },
         });
       } catch {
-        // optional table
+        void this.opsAlert?.alertOnCriticalError(
+          new Error('autopilotEvent.create failed silently'),
+          'AutopilotCycleExecutorService.executeAction',
+          { workspaceId: conv.workspaceId },
+        );
       }
       return;
     }
@@ -240,6 +246,13 @@ export class AutopilotCycleExecutorService {
       } catch (err: unknown) {
         this.logger.warn(
           `[Autopilot] Falha ao enfileirar envio: ${err instanceof Error ? err.message : 'unknown_error'}`,
+        );
+        void this.opsAlert?.alertOnCriticalError(
+          err,
+          'AutopilotCycleExecutorService.executeAction.send',
+          {
+            workspaceId: conv.workspaceId,
+          },
         );
       }
     }

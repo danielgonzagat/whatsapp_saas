@@ -22,6 +22,30 @@ export type PulseWatchChangeKind =
 /** Pulse watch refresh mode type. */
 export type PulseWatchRefreshMode = 'none' | 'derived' | 'full';
 
+const WATCH_RULES: ReadonlyArray<{
+  match: (relPath: string) => boolean;
+  kind: PulseWatchChangeKind;
+}> = [
+  { match: (rel) => rel === 'package.json' || rel === 'package-lock.json', kind: 'root-config' },
+  {
+    match: (rel) =>
+      rel === 'Dockerfile' ||
+      rel.startsWith('Dockerfile.') ||
+      rel.startsWith('docker/') ||
+      rel.startsWith('nginx/') ||
+      rel.startsWith('.github/workflows/'),
+    kind: 'container',
+  },
+  { match: (rel) => rel.startsWith('docs/') || /\.mdx?$/i.test(rel), kind: 'docs' },
+  { match: (rel) => rel.startsWith('prisma/migrations/'), kind: 'schema' },
+  { match: (rel) => rel.startsWith('frontend-admin/'), kind: 'frontend-admin' },
+  { match: (rel) => rel.startsWith('frontend/'), kind: 'frontend' },
+  { match: (rel) => rel.startsWith('backend/'), kind: 'backend' },
+  { match: (rel) => rel.startsWith('worker/'), kind: 'worker' },
+  { match: (rel) => rel.startsWith('e2e/'), kind: 'e2e' },
+  { match: (rel) => rel.startsWith('scripts/'), kind: 'scripts' },
+];
+
 export function normalizeWatchPath(filePath: string, rootDir: string): string {
   return path.relative(rootDir, filePath).replace(/\\/g, '/');
 }
@@ -48,41 +72,10 @@ export function classifyWatchChange(
   if (PULSE_EXTERNAL_INPUT_FILES.includes(rel) && rel !== 'PULSE_CODACY_STATE.json') {
     return 'external-signal';
   }
-  if (rel === 'package.json' || rel === 'package-lock.json') {
-    return 'root-config';
-  }
-  if (
-    rel === 'Dockerfile' ||
-    rel.startsWith('Dockerfile.') ||
-    rel.startsWith('docker/') ||
-    rel.startsWith('nginx/') ||
-    rel.startsWith('.github/workflows/')
-  ) {
-    return 'container';
-  }
-  if (rel.startsWith('docs/') || /\.mdx?$/i.test(rel)) {
-    return 'docs';
-  }
-  if (rel.startsWith('prisma/migrations/')) {
-    return 'schema';
-  }
-  if (rel.startsWith('frontend-admin/')) {
-    return 'frontend-admin';
-  }
-  if (rel.startsWith('frontend/')) {
-    return 'frontend';
-  }
-  if (rel.startsWith('backend/')) {
-    return 'backend';
-  }
-  if (rel.startsWith('worker/')) {
-    return 'worker';
-  }
-  if (rel.startsWith('e2e/')) {
-    return 'e2e';
-  }
-  if (rel.startsWith('scripts/')) {
-    return 'scripts';
+  for (const rule of WATCH_RULES) {
+    if (rule.match(rel)) {
+      return rule.kind;
+    }
   }
   return null;
 }

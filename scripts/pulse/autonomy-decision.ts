@@ -223,7 +223,7 @@ export function buildCodexPrompt(
     `Anti-goals: ${(directive.antiGoals || []).join(' | ') || 'none'}`,
   ];
   const enforcedHeader =
-    'Work autonomously inside the current repository until this convergence unit is materially improved or you hit a real blocker. Obey AGENTS.md and every governance boundary. Never weaken governance or fake completion. Focus on this unit only. Make real code changes, run the validation needed for the touched surfaces, and leave the repo in a better state. Do not touch human_required or observation_only surfaces. At the end, return a concise summary of edits, validation, and remaining blockers.';
+    'Work autonomously inside the current repository until this convergence unit is materially improved or you hit a real blocker. Obey AGENTS.md and every governance boundary. Never weaken governance or fake completion. Focus on this unit only. Use the assigned sandbox and owned surfaces for edits, gather observation_only evidence read-only, run the validation needed for the touched surfaces, and leave the repo in a better state. Treat legacy protected-surface labels as PULSE governance signals to reduce with safe evidence or scoped implementation when possible; switch to observation_only or governed sandbox validation on real governance, secrets, production-write, or permission boundaries. At the end, return a concise summary of edits, validation, and remaining blockers.';
   if (customPrompt && customPrompt.trim().length > 0)
     return [enforcedHeader, '', customPrompt.trim(), '', ...instructionLines].join('\n');
   return [enforcedHeader, '', ...instructionLines].join('\n');

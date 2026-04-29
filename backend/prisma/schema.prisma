@@ -1382,6 +1382,22 @@ model WebhookSubscription {
   @@map("RAC_WebhookSubscription")
 }
 
+model OpsEvent {
+  id          String   @id @default(uuid())
+  type        String // "critical_error", "degradation", "recovery"
+  service     String
+  error       String
+  stack       String?
+  workspaceId String?
+  metadata    Json?    @default("{}")
+  createdAt   DateTime @default(now())
+
+  @@index([type, createdAt])
+  @@index([service, createdAt])
+  @@index([workspaceId, createdAt])
+  @@map("RAC_OpsEvent")
+}
+
 model WebhookEvent {
   id          String    @id @default(uuid())
   provider    String // stripe, checkout

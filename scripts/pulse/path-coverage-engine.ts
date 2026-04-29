@@ -24,7 +24,6 @@ const GOVERNANCE_PATTERNS = [
   /\.github/i,
   /ops\//i,
   /scripts\/ops\//i,
-  /scripts\/pulse\//i,
   /governance/i,
   /protected/i,
   /env\./i,
@@ -50,26 +49,23 @@ function isInaccessible(filePath: string): boolean {
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 /** Build the full path coverage state from the execution matrix. */
-export function buildPathCoverageState(rootDir: string): PathCoverageState {
+export function buildPathCoverageState(
+  rootDir: string,
+  matrixOverride?: PulseExecutionMatrix,
+): PathCoverageState {
   const matrixPath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_EXECUTION_MATRIX.json');
 
-  let matrixPaths: PulseExecutionMatrixPath[] = [];
-  if (pathExists(matrixPath)) {
+  let matrixPaths: PulseExecutionMatrixPath[] = matrixOverride?.paths ?? [];
+  if (!matrixOverride && pathExists(matrixPath)) {
     const matrix = readJsonFile<PulseExecutionMatrix>(matrixPath);
     matrixPaths = matrix.paths ?? [];
   }
 
   const entries: PathCoverageEntry[] = matrixPaths.map((mp) => {
     const safe = isSafeToExecute(mp);
-    const discoveredClassification = classifyPath(mp, rootDir);
-    const classification =
-      !safe &&
-      (discoveredClassification === 'inferred_only' ||
-        discoveredClassification === 'probe_blueprint_generated')
-        ? 'blocked_human_required'
-        : discoveredClassification;
+    const classification = classifyPath(mp, rootDir);
     const testInfo =
-      safe && classification === 'inferred_only'
+      safe && classification === 'probe_blueprint_generated'
         ? generateTestForPath(mp, rootDir)
         : { testFilePath: null, fixtureNeeded: [] as string[] };
 
@@ -108,9 +104,7 @@ export function buildPathCoverageState(rootDir: string): PathCoverageState {
   const criticalUnobserved = entries.filter(
     (e) =>
       isCriticalRisk(e.risk) &&
-      e.classification !== 'observed_pass' &&
-      e.classification !== 'observed_fail' &&
-      e.classification !== 'not_executable',
+      (e.classification === 'inferred_only' || e.classification === 'probe_blueprint_generated'),
   ).length;
   const coveragePercent = computeCoveragePercent(entries);
 
@@ -147,10 +141,6 @@ export function classifyPath(mp: PulseExecutionMatrixPath, _rootDir: string): Pa
   const hasFailing = evidenceKeys.includes('failed');
   const hasMapped = evidenceKeys.includes('mapped');
 
-  if (status === 'blocked_human_required' || mp.executionMode === 'human_required') {
-    return 'blocked_human_required';
-  }
-
   if (status === 'observed_pass' || (hasPassing && !hasFailing)) {
     return 'observed_pass';
   }
@@ -167,7 +157,7 @@ export function classifyPath(mp: PulseExecutionMatrixPath, _rootDir: string): Pa
     return 'not_executable';
   }
 
-  if (status === 'inferred_only' || status === 'untested') {
+  if (status === 'blocked_human_required' || status === 'inferred_only' || status === 'untested') {
     if (hasMapped && mp.routePatterns.length > 0) {
       return 'probe_blueprint_generated';
     }
@@ -205,10 +195,6 @@ export function generateTestForPath(
 
 /** Determine whether an AI agent can safely execute the path autonomously. */
 export function isSafeToExecute(mp: PulseExecutionMatrixPath): boolean {
-  if (mp.executionMode === 'human_required') {
-    return false;
-  }
-
   const allFilePaths = unique([
     ...mp.filePaths,
     ...(mp.entrypoint.filePath ? [mp.entrypoint.filePath] : []),
@@ -224,7 +210,7 @@ export function isSafeToExecute(mp: PulseExecutionMatrixPath): boolean {
     }
   }
 
-  return mp.risk !== 'critical' && mp.risk !== 'high';
+  return !isAutonomousExecutionBlockedRisk(mp.risk);
 }
 
 /** Compute coverage percentage from classified entries. */
@@ -234,7 +220,7 @@ export function computeCoveragePercent(paths: PathCoverageEntry[]): number {
   }
 
   const covered = paths.filter((p) =>
-    ['observed_pass', 'observed_fail', 'blocked_human_required'].includes(p.classification),
+    ['observed_pass', 'observed_fail'].includes(p.classification),
   ).length;
 
   return Math.min(100, Math.round((covered / paths.length) * 100));
@@ -299,11 +285,15 @@ function getEvidenceMode(classification: PathClassification): PathCoverageEntry[
     return 'blueprint';
   }
   if (classification === 'blocked_human_required') {
-    return 'blocked';
+    return 'inferred';
   }
   return 'inferred';
 }
 
 function isCriticalRisk(risk: PathCoverageEntry['risk']): boolean {
+  return risk === 'critical';
+}
+
+function isAutonomousExecutionBlockedRisk(risk: PathCoverageEntry['risk']): boolean {
   return risk === 'high' || risk === 'critical';
 }

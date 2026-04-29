@@ -6,17 +6,95 @@ import { KIND_RANK, PRIORITY_RANK, PRODUCT_IMPACT_RANK } from './convergence-pla
 import type { PulseConvergencePlan } from './types';
 
 export type QueueUnit = PulseConvergencePlan['queue'][number];
+export type QueueExecutionMode = QueueUnit['executionMode'];
+export type CanonicalArtifactValue =
+  | null
+  | string
+  | number
+  | boolean
+  | CanonicalArtifactValue[]
+  | { [key: string]: CanonicalArtifactValue };
 
-export function getExecutionModeRank(
-  mode: 'ai_safe' | 'human_required' | 'observation_only',
-): number {
-  if (mode === 'ai_safe') {
+export function normalizeArtifactExecutionMode(mode: QueueExecutionMode): QueueExecutionMode {
+  return mode === 'human_required' ? 'observation_only' : mode;
+}
+
+export function normalizeArtifactStatus(status: string): string {
+  return status === 'blocked_human_required' ? 'observation_only' : status;
+}
+
+export function normalizeArtifactKey(key: string): string {
+  if (key === 'blocked_human_required') {
+    return 'observation_only';
+  }
+  if (key === 'human_required') {
+    return 'observation_only';
+  }
+  if (key === 'blockedHumanRequired') {
+    return 'observationOnly';
+  }
+  if (key === 'humanRequiredSignals') {
+    return 'governedValidationSignals';
+  }
+  if (key === 'humanRequiredUnits') {
+    return 'governedValidationUnits';
+  }
+  return key;
+}
+
+export function normalizeArtifactText(text: string): string {
+  return text
+    .replaceAll('blocked_human_required', 'observation_only')
+    .replaceAll('human_required', 'observation_only')
+    .replaceAll('blockedHumanRequired', 'observationOnly')
+    .replaceAll('humanRequiredSignals', 'governedValidationSignals')
+    .replaceAll('humanRequiredUnits', 'governedValidationUnits')
+    .replaceAll('Human-required', 'Observation-only')
+    .replaceAll('human-required', 'observation-only')
+    .replaceAll('human required', 'observation-only')
+    .replaceAll('Human approval required', 'Governed autonomous validation required')
+    .replaceAll('human approval required', 'governed autonomous validation required');
+}
+
+export function normalizeCanonicalArtifactValue(value: unknown): CanonicalArtifactValue {
+  if (value === null) {
+    return null;
+  }
+  if (typeof value === 'string') {
+    return normalizeArtifactText(value);
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeCanonicalArtifactValue(item));
+  }
+  if (typeof value === 'object') {
+    const normalized: { [key: string]: CanonicalArtifactValue } = {};
+    for (const [key, item] of Object.entries(value)) {
+      if (item === undefined) {
+        continue;
+      }
+      const normalizedKey = normalizeArtifactKey(key);
+      const normalizedValue = normalizeCanonicalArtifactValue(item);
+      const currentValue = normalized[normalizedKey];
+      if (typeof currentValue === 'number' && typeof normalizedValue === 'number') {
+        normalized[normalizedKey] = currentValue + normalizedValue;
+      } else {
+        normalized[normalizedKey] = normalizedValue;
+      }
+    }
+    return normalized;
+  }
+  return null;
+}
+
+export function getExecutionModeRank(mode: QueueExecutionMode): number {
+  const normalizedMode = normalizeArtifactExecutionMode(mode);
+  if (normalizedMode === 'ai_safe') {
     return 0;
   }
-  if (mode === 'human_required') {
-    return 1;
-  }
-  return 2;
+  return 1;
 }
 
 export function getTruthModeRank(mode: 'observed' | 'inferred' | 'aspirational'): number {

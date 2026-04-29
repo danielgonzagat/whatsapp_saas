@@ -60,6 +60,19 @@ const MATRIX_ARTIFACTS = {
   static: 'PULSE_CERTIFICATE.json',
 };
 
+function normalizeExecutionMode(
+  mode: PulseExecutionMatrixPath['executionMode'] | undefined,
+  risk: PulseExecutionMatrixPath['risk'],
+): PulseExecutionMatrixPath['executionMode'] {
+  if (mode === 'human_required' || mode === 'observation_only') {
+    return 'observation_only';
+  }
+  if (mode === 'governed_validation' || risk === 'high' || risk === 'critical') {
+    return 'governed_validation';
+  }
+  return mode ?? 'ai_safe';
+}
+
 function unique(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
 }
@@ -383,9 +396,6 @@ function classifyPath(args: {
   observedEvidence: MatrixEvidence[];
   requiredEvidence: PulseExecutionMatrixEvidenceRequirement[];
 }): PulseExecutionMatrixPathStatus {
-  if (args.capability?.executionMode === 'human_required') {
-    return 'blocked_human_required';
-  }
   if (!args.chain && !args.capability?.routePatterns.length && !args.flow?.routePatterns.length) {
     return 'not_executable';
   }
@@ -513,6 +523,7 @@ function buildPathFromChain(args: {
     executionEvidence: args.executionEvidence,
     externalSignalState: args.externalSignalState,
   });
+  const risk: PulseExecutionMatrixPath['risk'] = capability?.runtimeCritical ? 'high' : 'medium';
   const status = classifyPath({
     capability,
     flow,
@@ -553,8 +564,8 @@ function buildPathFromChain(args: {
     requiredEvidence,
     observedEvidence,
     validationCommand: buildValidationCommand(routePatterns, pathId, chainFiles[0] ?? null),
-    risk: capability?.runtimeCritical ? 'high' : 'medium',
-    executionMode: capability?.executionMode === 'human_required' ? 'human_required' : 'ai_safe',
+    risk,
+    executionMode: normalizeExecutionMode(capability?.executionMode, risk),
     confidence: Math.min(1, Math.max(0, args.chain.confidence.score)),
     filePaths: unique([...(capability?.filePaths ?? []), ...chainFiles]),
     routePatterns,
@@ -585,6 +596,8 @@ function buildSyntheticPath(args: {
     executionEvidence: args.executionEvidence,
     externalSignalState: args.externalSignalState,
   });
+  const risk: PulseExecutionMatrixPath['risk'] =
+    isCriticalCapability(args.capability) || isCriticalFlow(args.flow) ? 'high' : 'medium';
   const status = classifyPath({
     capability: args.capability,
     flow: args.flow,
@@ -624,9 +637,8 @@ function buildSyntheticPath(args: {
       pathId,
       args.capability?.filePaths[0] ?? null,
     ),
-    risk: isCriticalCapability(args.capability) || isCriticalFlow(args.flow) ? 'high' : 'medium',
-    executionMode:
-      args.capability?.executionMode === 'human_required' ? 'human_required' : 'ai_safe',
+    risk,
+    executionMode: normalizeExecutionMode(args.capability?.executionMode, risk),
     confidence: args.capability?.confidence ?? args.flow?.confidence ?? 0.5,
     filePaths: unique(args.capability?.filePaths ?? []),
     routePatterns,
@@ -685,17 +697,17 @@ function buildPathFromStructuralNode(args: {
     executionEvidence: args.executionEvidence,
     externalSignalState: args.externalSignalState,
   });
+  const risk: PulseExecutionMatrixPath['risk'] =
+    args.node.runtimeCritical || args.node.userFacing ? 'high' : 'medium';
   const status: PulseExecutionMatrixPathStatus = observedEvidence.some(
     (entry) => entry.status === 'failed',
   )
     ? 'observed_fail'
     : observedEvidence.some((entry) => entry.executed && entry.status === 'passed')
       ? 'observed_pass'
-      : args.node.protectedByGovernance
-        ? 'blocked_human_required'
-        : routePatterns.length > 0 || args.node.role === 'interface'
-          ? 'inferred_only'
-          : 'not_executable';
+      : routePatterns.length > 0 || args.node.role === 'interface'
+        ? 'inferred_only'
+        : 'not_executable';
   const pathId = `matrix:node:${args.index}:${args.node.id}`;
   const breakpoint =
     status === 'observed_fail'
@@ -780,8 +792,11 @@ function buildPathFromStructuralNode(args: {
             },
           ],
     validationCommand: buildValidationCommand(routePatterns, pathId, args.node.file || null),
-    risk: args.node.runtimeCritical || args.node.userFacing ? 'high' : 'medium',
-    executionMode: args.node.protectedByGovernance ? 'human_required' : 'ai_safe',
+    risk,
+    executionMode: normalizeExecutionMode(
+      args.node.protectedByGovernance ? 'observation_only' : 'ai_safe',
+      risk,
+    ),
     confidence:
       args.node.truthMode === 'observed' ? 0.9 : args.node.truthMode === 'inferred' ? 0.65 : 0.35,
     filePaths: unique([args.node.file]),
@@ -796,11 +811,9 @@ function buildPathFromScopeFile(file: PulseScopeFile, index: number): PulseExecu
     file.kind === 'spec' ||
     file.kind === 'migration' ||
     file.kind === 'config';
-  const status: PulseExecutionMatrixPathStatus = file.protectedByGovernance
-    ? 'blocked_human_required'
-    : executable
-      ? 'not_executable'
-      : 'not_executable';
+  const status: PulseExecutionMatrixPathStatus = 'not_executable';
+  const risk: PulseExecutionMatrixPath['risk'] =
+    file.runtimeCritical || file.userFacing ? 'high' : 'medium';
   return {
     pathId,
     capabilityId: null,
@@ -848,8 +861,8 @@ function buildPathFromScopeFile(file: PulseScopeFile, index: number): PulseExecu
       },
     ],
     validationCommand: buildValidationCommand([], pathId, file.path),
-    risk: file.runtimeCritical || file.userFacing ? 'high' : 'medium',
-    executionMode: file.executionMode,
+    risk,
+    executionMode: normalizeExecutionMode(file.executionMode, risk),
     confidence: file.structuralHints && file.structuralHints.length > 0 ? 0.65 : 0.45,
     filePaths: [file.path],
     routePatterns: [],
@@ -884,7 +897,9 @@ function summarize(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix['sum
     nonTerminalPaths: paths.length - terminalPaths,
     unknownPaths: paths.length - terminalPaths,
     criticalUnobservedPaths: paths.filter(
-      (path) => path.risk === 'high' && !hasCriticalTerminalClassification(path),
+      (path) =>
+        (path.risk === 'high' || path.risk === 'critical') &&
+        !hasCriticalTerminalClassification(path),
     ).length,
     impreciseBreakpoints: paths.filter(
       (path) => path.status === 'observed_fail' && !hasPreciseBreakpoint(path.breakpoint),
@@ -897,7 +912,7 @@ function summarize(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix['sum
 }
 
 function hasCriticalTerminalClassification(path: PulseExecutionMatrixPath): boolean {
-  if (['observed_pass', 'observed_fail', 'blocked_human_required'].includes(path.status)) {
+  if (path.status === 'observed_pass' || path.status === 'observed_fail') {
     return true;
   }
   if (path.status === 'not_executable' || path.status === 'unreachable') {

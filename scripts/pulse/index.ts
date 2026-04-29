@@ -42,6 +42,7 @@ import { buildProductVision } from './product-vision';
 import { buildProductModel } from './product-model';
 import { buildExternalSignalState, createExternalSignalProfileState } from './external-signals';
 import { runExternalSourcesOrchestrator } from './adapters/external-sources-orchestrator';
+import { buildPathCoverageState } from './path-coverage-engine';
 import { runPulseAutonomousLoop } from './autonomy-loop';
 import {
   buildFailedRuntimeProbe,
@@ -436,6 +437,7 @@ async function main() {
     executionEvidence: finalExecutionEvidencePayload,
     externalSignalState: derivedExternalSignalState,
   });
+  buildPathCoverageState(config.rootDir, derivedExecutionMatrix);
 
   // TODO(pulse-pipeline): Restructure to generate non-cert artifacts (external-signal-state,
   // convergence-plan, product-vision, autonomy-*) before self-trust runs, eliminating the
@@ -651,6 +653,7 @@ async function main() {
     executionEvidence: certification.evidenceSummary,
     externalSignalState,
   });
+  buildPathCoverageState(config.rootDir, executionMatrix);
   certification = computeCertification({
     rootDir: config.rootDir,
     manifestResult: scanResult.manifestResult,

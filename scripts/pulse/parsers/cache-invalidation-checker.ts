@@ -7,13 +7,12 @@
  * 1. SWR cache stale after write: verifies that mutation operations (POST/PUT/DELETE)
  *    call `mutate()` or `revalidate()` to invalidate affected SWR cache keys
  * 2. Verifies that write API handlers in the frontend invalidate related SWR keys
- *    (e.g., creating a product should invalidate /api/products list cache)
  * 3. Redis cache stale after DB write: verifies backend services that write to Redis
  *    also invalidate cache keys when the underlying data changes
- * 4. Checks for missing cache invalidation in financial data (balance, payments)
+ * 4. Checks for missing cache invalidation in money-like state
  *    — stale balance display is a critical UX and trust issue
  * 5. Verifies cache keys include workspace/tenant ID (multi-tenant isolation)
- * 6. Checks TTL values are appropriate — financial data should have short TTL (< 60s)
+ * 6. Checks TTL values are appropriate — money-like data should have short TTL (< 60s)
  *    or be invalidated on write, not cached for long periods
  *
  * REQUIRES: PULSE_DEEP=1
@@ -26,12 +25,17 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
-const FINANCIAL_PATH_RE = /wallet|balance|payment|billing|saldo|transaction/i;
 const WRITE_METHOD_RE = /\bpost\b|\bput\b|\bpatch\b|\bdelete\b/i;
 const SWR_MUTATE_RE = /\bmutate\s*\(|\brevalidate\s*\(|\buseSWRConfig|mutate\s*\(/;
 const REDIS_WRITE_RE =
   /\b(?:this\.)?redis\.(?:set|hset|zadd)\b|\b(?:this\.)?cache\.(?:set|setEx)\b|\.setEx\s*\(/i;
 const REDIS_DEL_RE = /redis\.del|redis\.hdel|redis\.expire|cache\.invalidate/i;
+const MONEY_STATE_RE =
+  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
+
+function hasMoneyLikeState(content: string): boolean {
+  return MONEY_STATE_RE.test(content);
+}
 
 /** Check cache invalidation. */
 export function checkCacheInvalidation(config: PulseConfig): Break[] {
@@ -72,7 +76,8 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
     const isSWRSurface = /\buseSWR\b|from\s+['"]swr['"]|\buseSWRConfig\b|\bmutate\s*\(/.test(
       content,
     );
-    if (!isSWRSurface && !FINANCIAL_PATH_RE.test(file)) {
+    const hasMoneyState = hasMoneyLikeState(content);
+    if (!isSWRSurface && !hasMoneyState) {
       continue;
     }
 
@@ -80,10 +85,9 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
     const hasMutate = SWR_MUTATE_RE.test(content);
 
     if (!hasMutate) {
-      const isFinancial = FINANCIAL_PATH_RE.test(file);
       breaks.push({
         type: 'CACHE_STALE_AFTER_WRITE',
-        severity: isFinancial ? 'high' : 'high',
+        severity: 'high',
         file: relFile,
         line: 0,
         description:
@@ -93,8 +97,8 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
       });
     }
 
-    // CHECK 4: Financial data specifically — must always invalidate
-    if (FINANCIAL_PATH_RE.test(file) && hasWriteCall) {
+    // CHECK 4: Money-like state specifically — must always invalidate
+    if (hasMoneyState && hasWriteCall) {
       if (
         !hasMutate &&
         !/router\.refresh\(\)|router\.push\(|window\.location\.reload/i.test(content)
@@ -105,9 +109,9 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
           file: relFile,
           line: 0,
           description:
-            'Financial write without any cache invalidation strategy — user may see wrong balance',
+            'Money-like write without any cache invalidation strategy — user may see wrong balance or totals',
           detail:
-            'After wallet/payment mutations, call mutate() immediately to show updated balance',
+            'After money-like mutations, call mutate() immediately to show updated balance or totals',
         });
       }
     }
@@ -178,8 +182,8 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
       });
     }
 
-    // CHECK 6: Financial Redis cache TTL check
-    if (FINANCIAL_PATH_RE.test(file) && hasRedisWrite) {
+    // CHECK 6: Money-like Redis cache TTL check
+    if (hasMoneyLikeState(content) && hasRedisWrite) {
       const lines = content.split('\n');
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -198,9 +202,9 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
                 severity: 'high',
                 file: relFile,
                 line: i + 1,
-                description: `Financial data cached in Redis with TTL of ${ttl}s — too long, user may see stale balance`,
+                description: `Money-like data cached in Redis with TTL of ${ttl}s — too long, user may see stale balances or totals`,
                 detail:
-                  'Financial cache TTL should be ≤60s; prefer invalidation-on-write over time-based expiry',
+                  'Money-like cache TTL should be ≤60s; prefer invalidation-on-write over time-based expiry',
               });
             }
           } else {
@@ -211,9 +215,9 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
               file: relFile,
               line: i + 1,
               description:
-                'Financial data cached in Redis without TTL — cache never expires, will always be stale',
+                'Money-like data cached in Redis without TTL — cache never expires, will always be stale',
               detail:
-                'Set EX (expire) on all Redis cache writes; financial data should use ≤60s TTL',
+                'Set EX (expire) on all Redis cache writes; money-like data should use ≤60s TTL',
             });
           }
         }

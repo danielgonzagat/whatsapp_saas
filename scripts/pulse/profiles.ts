@@ -31,14 +31,6 @@ export interface PulseProfileSelection {
   includeParser(name: string): boolean;
 }
 
-const DEFAULT_RUNTIME_PROBES = [
-  'backend-health',
-  'auth-session',
-  'ad-rules',
-  'frontend-reachability',
-  'db-connectivity',
-] as const;
-
 const CORE_CRITICAL_SKIPPED_PARSERS = [
   'accessibility-tester',
   'api-contract-tester',
@@ -72,6 +64,8 @@ const CORE_CRITICAL_SKIPPED_PARSERS = [
 
 const CORE_CRITICAL_SKIPPED_SET = new Set<string>(CORE_CRITICAL_SKIPPED_PARSERS);
 
+type PulseRequestedMode = PulseProfileSelection['requestedModes'][number];
+
 function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
@@ -83,16 +77,13 @@ function isFullWorkspaceProfile(profile: PulseCertificationProfile): boolean {
 function deriveRequestedModesFromScenarios(
   manifest: PulseManifest | null,
   scenarioIds: string[],
-  profile: PulseCertificationProfile,
-): Array<'customer' | 'operator' | 'admin' | 'shift' | 'soak'> {
+): PulseRequestedMode[] {
   if (!manifest) {
-    return isFullWorkspaceProfile(profile)
-      ? ['customer', 'operator', 'admin', 'soak']
-      : ['customer', 'operator', 'admin'];
+    return [];
   }
 
   const scenarios = manifest.scenarioSpecs.filter((scenario) => scenarioIds.includes(scenario.id));
-  const modes = new Set<'customer' | 'operator' | 'admin' | 'shift' | 'soak'>();
+  const modes = new Set<PulseRequestedMode>();
 
   for (const scenario of scenarios) {
     if (scenario.actorKind === 'customer') {
@@ -112,9 +103,18 @@ function deriveRequestedModesFromScenarios(
   }
 
   if (modes.size === 0) {
-    return isFullWorkspaceProfile(profile)
-      ? ['customer', 'operator', 'admin', 'soak']
-      : ['customer', 'operator', 'admin'];
+    const profileModes = manifest.actorProfiles.flatMap((actorProfile) => {
+      const syntheticModes: PulseRequestedMode[] = [];
+      if (actorProfile.kind === 'customer') syntheticModes.push('customer');
+      if (actorProfile.kind === 'operator') syntheticModes.push('operator');
+      if (actorProfile.kind === 'admin') syntheticModes.push('admin');
+      if (actorProfile.defaultTimeWindowModes.includes('shift')) syntheticModes.push('shift');
+      if (actorProfile.defaultTimeWindowModes.includes('soak') || actorProfile.kind === 'system') {
+        syntheticModes.push('soak');
+      }
+      return syntheticModes;
+    });
+    return unique(profileModes);
   }
 
   return [...modes];
@@ -178,7 +178,7 @@ function deriveRuntimeProbeIds(
   scenarioIds: string[],
 ): string[] {
   if (!manifest) {
-    return [...DEFAULT_RUNTIME_PROBES];
+    return [];
   }
 
   const selectedScenarios = manifest.scenarioSpecs.filter((scenario) =>
@@ -194,10 +194,10 @@ function deriveRuntimeProbeIds(
     const allProbeIds = unique(
       manifest.scenarioSpecs.flatMap((scenario) => scenario.runtimeProbes),
     );
-    return allProbeIds.length > 0 ? allProbeIds : [...DEFAULT_RUNTIME_PROBES];
+    return allProbeIds;
   }
 
-  return [...DEFAULT_RUNTIME_PROBES];
+  return [];
 }
 
 /** Parse certification profile. */
@@ -225,7 +225,7 @@ export function getProfileSelection(
   const flowIds = deriveFlowIds(manifest, profile);
   const invariantIds = deriveInvariantIds(manifest, profile);
   const runtimeProbeIds = deriveRuntimeProbeIds(manifest, profile, scenarioIds);
-  const requestedModes = deriveRequestedModesFromScenarios(manifest, scenarioIds, profile);
+  const requestedModes = deriveRequestedModesFromScenarios(manifest, scenarioIds);
 
   if (profile === 'core-critical') {
     return {

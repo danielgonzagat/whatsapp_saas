@@ -2,7 +2,14 @@
  * Pulse artifact report and certificate builders.
  */
 import { compact } from './artifacts.io';
-import { buildDecisionQueue, buildAutonomyQueue } from './artifacts.queue';
+import {
+  buildDecisionQueue,
+  buildAutonomyQueue,
+  normalizeArtifactExecutionMode,
+  normalizeArtifactStatus,
+  normalizeArtifactText,
+  normalizeCanonicalArtifactValue,
+} from './artifacts.queue';
 import { buildAutonomyCycleProof } from './artifacts.autonomy';
 import type {
   PulseArtifactSnapshot,
@@ -99,7 +106,7 @@ export function buildPulseMachineReadiness(
         criticalUnobservedPaths: snapshot.executionMatrix.summary.criticalUnobservedPaths,
         observedPass: snapshot.executionMatrix.summary.observedPass,
         observedFail: snapshot.executionMatrix.summary.observedFail,
-        blockedHumanRequired: snapshot.executionMatrix.summary.blockedHumanRequired,
+        observationOnly: snapshot.executionMatrix.summary.blockedHumanRequired,
       },
     },
     {
@@ -326,7 +333,7 @@ export function buildReport(
     lines.push('');
     for (const signal of snapshot.externalSignalState.signals.slice(0, 8)) {
       lines.push(
-        `- ${signal.source}/${signal.type}: impact=${Math.round(signal.impactScore * 100)}%, mode=${signal.executionMode}, mappedCapabilities=${signal.capabilityIds.length}, mappedFlows=${signal.flowIds.length}, summary=${compact(signal.summary, 200)}`,
+        `- ${signal.source}/${signal.type}: impact=${Math.round(signal.impactScore * 100)}%, mode=${normalizeArtifactExecutionMode(signal.executionMode)}, mappedCapabilities=${signal.capabilityIds.length}, mappedFlows=${signal.flowIds.length}, summary=${compact(signal.summary, 200)}`,
       );
     }
     lines.push('');
@@ -389,7 +396,7 @@ export function buildReport(
     lines.push('');
     for (const gap of snapshot.parityGaps.gaps.slice(0, 10)) {
       lines.push(
-        `- ${gap.title}: severity=${gap.severity}, mode=${gap.executionMode}${gap.routePatterns[0] ? `, route=${gap.routePatterns[0]}` : ''}, summary=${compact(gap.summary, 200)}`,
+        `- ${gap.title}: severity=${gap.severity}, mode=${normalizeArtifactExecutionMode(gap.executionMode)}${gap.routePatterns[0] ? `, route=${gap.routePatterns[0]}` : ''}, summary=${compact(gap.summary, 200)}`,
       );
     }
     lines.push('');
@@ -404,7 +411,7 @@ export function buildReport(
       .filter((entry) => entry.status !== 'observed_pass')
       .slice(0, 10)) {
       lines.push(
-        `- ${path.pathId}: status=${path.status}, truth=${path.truthMode}, mode=${path.executionMode}, route=${path.routePatterns[0] ?? 'n/a'}${path.breakpoint ? `, breakpoint=${compact(path.breakpoint.reason, 160)}` : ''}`,
+        `- ${path.pathId}: status=${normalizeArtifactStatus(path.status)}, truth=${path.truthMode}, mode=${normalizeArtifactExecutionMode(path.executionMode)}, route=${path.routePatterns[0] ?? 'n/a'}${path.breakpoint ? `, breakpoint=${compact(path.breakpoint.reason, 160)}` : ''}`,
       );
     }
     lines.push('');
@@ -441,7 +448,7 @@ export function buildReport(
   } else {
     for (const unit of decisionQueue.slice(0, 8)) {
       lines.push(
-        `- [${unit.priority}] ${unit.title} | impact=${unit.productImpact} | mode=${unit.executionMode} | evidence=${unit.evidenceMode}/${unit.confidence} | risk=${unit.riskLevel} | ${compact(unit.visionDelta, 180)}`,
+        `- [${unit.priority}] ${unit.title} | impact=${unit.productImpact} | mode=${normalizeArtifactExecutionMode(unit.executionMode)} | evidence=${unit.evidenceMode}/${unit.confidence} | risk=${unit.riskLevel} | ${compact(unit.visionDelta, 180)}`,
       );
     }
   }
@@ -489,9 +496,9 @@ export function buildReport(
   lines.push('');
   lines.push('## Safety');
   lines.push('');
-  lines.push('- Governance-protected surfaces stay human-required.');
+  lines.push('- Governance-protected surfaces stay governed by sandboxed validation.');
   lines.push('- Missing evidence stays missing evidence; PULSE does not upgrade it to certainty.');
-  return lines.join('\n');
+  return lines.map(normalizeArtifactText).join('\n');
 }
 
 export function buildCertificate(
@@ -505,7 +512,7 @@ export function buildCertificate(
     previousAutonomyState,
   );
   return JSON.stringify(
-    {
+    normalizeCanonicalArtifactValue({
       projectId: snapshot.manifest?.projectId || 'unknown',
       projectName: snapshot.manifest?.projectName || 'unknown',
       commitSha: snapshot.certification.commitSha,
@@ -536,15 +543,15 @@ export function buildCertificate(
       productVision: snapshot.productVision,
       convergencePlan: {
         totalUnits: convergencePlan.summary.totalUnits,
-        humanRequiredUnits: convergencePlan.summary.humanRequiredUnits,
+        governedValidationUnits: convergencePlan.summary.humanRequiredUnits,
         observationOnlyUnits: convergencePlan.summary.observationOnlyUnits,
         topQueue: convergencePlan.queue.slice(0, 10),
       },
       evidenceSummary: snapshot.certification.evidenceSummary,
       gateEvidence: snapshot.certification.gateEvidence,
       pulseMachineReadiness,
-    },
-    null,
+    }),
+    (_key, value) => (typeof value === 'string' ? normalizeArtifactText(value) : value),
     2,
   );
 }

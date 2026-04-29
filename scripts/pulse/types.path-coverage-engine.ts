@@ -1,3 +1,5 @@
+import type { PulseConvergenceExecutionMode } from './types.convergence';
+
 /**
  * PULSE Wave 6 — Full Path Coverage Engine types.
  *
@@ -11,6 +13,7 @@ export type PathClassification =
   | 'observed_fail'
   | 'probe_blueprint_generated'
   | 'inferred_only'
+  /** @deprecated Legacy matrix compatibility only. New coverage states should classify risk gaps as inferred/probe work. */
   | 'blocked_human_required'
   | 'unreachable'
   | 'not_executable';
@@ -23,8 +26,8 @@ export interface PathCoverageEntry {
   entrypoint: string;
   /** Risk level from the execution matrix. */
   risk: 'low' | 'medium' | 'high' | 'critical';
-  /** Execution mode from the execution matrix. */
-  executionMode: 'ai_safe' | 'human_required' | 'observation_only';
+  /** Execution mode from the execution matrix; human_required is legacy input only. */
+  executionMode: PulseConvergenceExecutionMode;
   /** Terminal classification after coverage analysis. */
   classification: PathClassification;
   /** Whether a test or probe was generated for this path. */
@@ -53,8 +56,10 @@ export interface PathCoverageState {
     testGenerated: number;
     probeBlueprintGenerated: number;
     inferredOnly: number;
+    /** Legacy compatibility counter; new coverage states should keep this at zero. */
     blockedHuman: number;
     criticalInferredOnly: number;
+    /** Legacy compatibility counter; risk should require probes/sandboxing, not human blocking. */
     criticalBlockedHuman: number;
     criticalUnobserved: number;
     coveragePercent: number;

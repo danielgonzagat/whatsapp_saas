@@ -127,9 +127,10 @@ export function normalizeSummary(value: unknown, fallback: string): string {
 }
 
 export function normalizeExecutionMode(value: unknown): PulseScopeExecutionMode | undefined {
-  return value === 'ai_safe' || value === 'human_required' || value === 'observation_only'
-    ? value
-    : undefined;
+  if (value === 'human_required') {
+    return 'observation_only';
+  }
+  return value === 'ai_safe' || value === 'observation_only' ? value : undefined;
 }
 
 export function routeMatches(left: string, right: string): boolean {

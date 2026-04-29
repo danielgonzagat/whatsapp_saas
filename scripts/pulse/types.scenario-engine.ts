@@ -98,14 +98,7 @@ export interface Scenario {
 }
 
 /** Broad scenario category grouping related flows. */
-export type ScenarioCategory =
-  | 'auth-flow'
-  | 'payment-flow'
-  | 'whatsapp-flow'
-  | 'workspace-flow'
-  | 'product-flow'
-  | 'surface-map'
-  | 'system-flow';
+export type ScenarioCategory = 'interaction-flow' | 'runtime-flow' | 'surface-map' | 'system-flow';
 
 /** Complete scenario evidence state persisted to disk. */
 export interface ScenarioEvidenceState {

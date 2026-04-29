@@ -6,6 +6,7 @@ import type {
   PulseWorldState,
 } from './types';
 import { getRuntimeResolution } from './parsers/runtime-utils';
+import { resolveRuntimeProbeTargetFromArtifacts } from './browser-stress-tester/live-artifacts';
 
 function compactReason(value: string, max: number = 500): string {
   const compact = value.replace(/\s+/g, ' ').trim();
@@ -18,16 +19,12 @@ function compactReason(value: string, max: number = 500): string {
 /** Build timed out runtime probe. */
 export function buildTimedOutRuntimeProbe(probeId: string): PulseRuntimeProbe {
   const resolution = getRuntimeResolution();
-  const target =
-    probeId === 'backend-health'
-      ? `${resolution.backendUrl}/health/system`
-      : probeId === 'auth-session'
-        ? `${resolution.backendUrl}/auth/login`
-        : probeId === 'ad-rules'
-          ? `${resolution.backendUrl}/ad-rules`
-          : probeId === 'frontend-reachability'
-            ? resolution.frontendUrl
-            : resolution.dbSource || 'database';
+  const target = resolveRuntimeProbeTargetFromArtifacts(
+    probeId,
+    resolution.backendUrl,
+    resolution.frontendUrl,
+    resolution.dbSource,
+  );
 
   return {
     probeId,
@@ -44,16 +41,12 @@ export function buildTimedOutRuntimeProbe(probeId: string): PulseRuntimeProbe {
 /** Build failed runtime probe. */
 export function buildFailedRuntimeProbe(probeId: string, error: unknown): PulseRuntimeProbe {
   const resolution = getRuntimeResolution();
-  const target =
-    probeId === 'backend-health'
-      ? `${resolution.backendUrl}/health/system`
-      : probeId === 'auth-session'
-        ? `${resolution.backendUrl}/auth/login`
-        : probeId === 'ad-rules'
-          ? `${resolution.backendUrl}/ad-rules`
-          : probeId === 'frontend-reachability'
-            ? resolution.frontendUrl
-            : resolution.dbSource || 'database';
+  const target = resolveRuntimeProbeTargetFromArtifacts(
+    probeId,
+    resolution.backendUrl,
+    resolution.frontendUrl,
+    resolution.dbSource,
+  );
 
   return {
     probeId,

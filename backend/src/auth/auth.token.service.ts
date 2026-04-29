@@ -1,7 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { Logger, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import {
+  Logger,
+  Optional,
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { assertAgentCanAuthenticate, buildAuthLogMessage } from './auth.helpers';
 import { DbInitErrorService } from './db-init-error.service';
@@ -24,6 +30,7 @@ export class AuthTokenService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private async signToken(
@@ -64,6 +71,10 @@ export class AuthTokenService {
       }
       workspaceMeta = ws;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AuthTokenService.loadWorkspaceMeta', {
+        workspaceId: agent.workspaceId,
+        metadata: { agentId: agent.id, email: agent?.email },
+      });
       DbInitErrorService.throwFriendlyDbInitError(error);
     }
     return workspaceMeta;
@@ -141,6 +152,10 @@ export class AuthTokenService {
         isNewUser: extra?.isNewUser === true,
       };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AuthTokenService.issueTokens', {
+        workspaceId: agent.workspaceId,
+        metadata: { agentId: agent.id, email: agent?.email },
+      });
       DbInitErrorService.throwFriendlyDbInitError(error);
     }
   }
@@ -207,6 +222,7 @@ export class AuthTokenService {
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AuthTokenService.refresh');
       DbInitErrorService.throwFriendlyDbInitError(error);
     }
 

@@ -2,6 +2,11 @@
 
 import type { Page } from 'playwright';
 import type { AuthCredentials } from './types';
+import {
+  discoverBrowserLiveArtifacts,
+  isLoginRedirectFromArtifacts,
+  type BrowserAuthStorageContract,
+} from './live-artifacts';
 
 type AuthResponseJson = Record<string, unknown>;
 
@@ -50,9 +55,12 @@ async function httpJson(
 export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentials> {
   const email = process.env.E2E_ADMIN_EMAIL || DEFAULT_EMAIL;
   const password = process.env.E2E_ADMIN_PASSWORD || DEFAULT_CREDENTIAL;
+  const authRoutes = discoverBrowserLiveArtifacts().authRoutes;
+  if (!authRoutes.loginPath) {
+    throw new Error('Auth login route was not discovered from PULSE artifacts.');
+  }
 
-  // Try login first
-  const loginRes = await httpJson(`${backendUrl}/auth/login`, {
+  const loginRes = await httpJson(`${backendUrl}${authRoutes.loginPath}`, {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
@@ -72,17 +80,18 @@ export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentia
     return { token: access_token, workspaceId, email };
   }
 
-  // Login failed — try register
   console.log('  Login failed, attempting register...');
-  const registerRes = await httpJson(`${backendUrl}/auth/register`, {
-    method: 'POST',
-    body: JSON.stringify({
-      name: 'PULSE Stress Tester',
-      email,
-      password,
-      workspaceName: 'PULSE Stress Workspace',
-    }),
-  });
+  const registerRes = authRoutes.registerPath
+    ? await httpJson(`${backendUrl}${authRoutes.registerPath}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          name: 'PULSE Stress Tester',
+          email,
+          password,
+          workspaceName: 'PULSE Stress Workspace',
+        }),
+      })
+    : { status: 0, json: { error: 'auth_register_route_not_discovered' } };
 
   if (registerRes.status === 200 || registerRes.status === 201) {
     const data = registerRes.json as AuthResponseJson;
@@ -99,11 +108,10 @@ export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentia
     return { token: access_token, workspaceId, email };
   }
 
-  // Register returned 409 (email exists) — retry login
   if (registerRes.status === 400 || registerRes.status === 409) {
     console.log('  Email already exists, retrying login...');
     await new Promise((r) => setTimeout(r, 1000));
-    const retryRes = await httpJson(`${backendUrl}/auth/login`, {
+    const retryRes = await httpJson(`${backendUrl}${authRoutes.loginPath}`, {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
@@ -124,6 +132,20 @@ export async function obtainAuthToken(backendUrl: string): Promise<AuthCredentia
   );
 }
 
+function buildAuthStorage(contract: BrowserAuthStorageContract): {
+  tokenKeys: string[];
+  workspaceKeys: string[];
+  onboardingKeys: string[];
+  cookieNames: string[];
+} {
+  return {
+    tokenKeys: contract.tokenStorageKeys,
+    workspaceKeys: contract.workspaceStorageKeys,
+    onboardingKeys: contract.onboardingStorageKeys,
+    cookieNames: contract.authCookieNames,
+  };
+}
+
 /** Inject auth. */
 export async function injectAuth(
   page: Page,
@@ -131,44 +153,58 @@ export async function injectAuth(
   frontendUrl: string,
 ): Promise<void> {
   const url = new URL(frontendUrl);
+  const storage = buildAuthStorage(discoverBrowserLiveArtifacts().storage);
 
-  // Set cookie FIRST via Playwright API (works before navigation)
-  await page.context().addCookies([
-    {
-      name: 'kloel_auth',
-      value: '1',
-      domain: url.hostname,
-      path: '/',
-      sameSite: 'Lax' as const,
+  if (storage.cookieNames.length > 0) {
+    await page.context().addCookies(
+      storage.cookieNames.map((cookieName) => ({
+        name: cookieName,
+        value: '1',
+        domain: url.hostname,
+        path: '/',
+        sameSite: 'Lax' as const,
+      })),
+    );
+  }
+
+  await page.addInitScript(
+    ({ token, workspaceId, tokenKeys, workspaceKeys, onboardingKeys, cookieNames }) => {
+      try {
+        for (const key of tokenKeys) {
+          localStorage.setItem(key, token);
+        }
+        for (const key of workspaceKeys) {
+          localStorage.setItem(key, workspaceId);
+        }
+        for (const key of onboardingKeys) {
+          localStorage.setItem(key, 'true');
+        }
+        for (const cookieName of cookieNames) {
+          document.cookie = `${cookieName}=1; path=/; SameSite=Lax`;
+        }
+      } catch {
+        /* ignore if not available yet */
+      }
     },
-  ]);
+    { ...creds, ...storage },
+  );
 
-  // Use addInitScript to inject localStorage BEFORE page loads
-  // This runs before every page navigation in this context
-  await page.addInitScript(({ token, workspaceId }) => {
-    try {
-      localStorage.setItem('kloel_access_token', token);
-      localStorage.setItem('kloel_workspace_id', workspaceId);
-      localStorage.setItem('kloel_onboarding_completed', 'true');
-      document.cookie = 'kloel_auth=1; path=/; SameSite=Lax';
-    } catch {
-      /* ignore if not available yet */
-    }
-  }, creds);
-
-  // Navigate to root to trigger the init script
   await page.goto(frontendUrl, { waitUntil: 'domcontentloaded', timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(1000);
 }
 
 /** Verify auth. */
 export async function verifyAuth(page: Page, frontendUrl: string): Promise<boolean> {
-  await page.goto(`${frontendUrl}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 20000 });
-  // Wait a bit for client-side auth check
+  const liveArtifacts = discoverBrowserLiveArtifacts();
+  const authenticatedRoute = [...liveArtifacts.pages.authenticatedRoutes][0] || '/';
+  await page.goto(`${frontendUrl}${authenticatedRoute}`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 20000,
+  });
   await page.waitForTimeout(3000);
 
   const url = page.url();
-  if (url.includes('/login')) {
+  if (isLoginRedirectFromArtifacts(url, liveArtifacts.pages)) {
     return false;
   }
   return true;

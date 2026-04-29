@@ -3,10 +3,19 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
-// Financial file path patterns
-const FINANCIAL_PATH = /checkout|wallet|payment|billing/i;
 // Webhook controllers handle errors by design — catch + log + continue is correct
 const WEBHOOK_CONTROLLER = /webhook/i;
+const MONEY_STATE_RE =
+  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
+const DB_MUTATION_RE =
+  /prisma\.[A-Za-z_$][\w$]*\.(?:create|createMany|update|updateMany|upsert|delete|deleteMany)\s*\(/;
+const EXTERNAL_CALL_RE = /\b(?:fetch|axios|apiFetch)\s*\(|\bhttps?:\/\//i;
+
+function isHighRiskErrorSurface(content: string): boolean {
+  return (
+    MONEY_STATE_RE.test(content) && (DB_MUTATION_RE.test(content) || EXTERNAL_CALL_RE.test(content))
+  );
+}
 
 /**
  * Extract the body of a catch block starting at line `catchLineIdx`.
@@ -108,7 +117,7 @@ function catchBodyRethrows(bodyLines: string[]): boolean {
 
 function catchBodyReportsOrCompensates(bodyLines: string[]): boolean {
   const body = bodyLines.join('\n');
-  return /financialAlert|FINANCIAL_ALERT|Sentry|captureException|captureMessage|paymentFailed|withdrawalFailed|webhookProcessingFailed|reconciliationAlert|notifyOps|appendAudit|adminAuditLog|auditLog|deadLetter|dlq|reasons\.push|state\s*:\s*['"`]FAILED|status\s*:\s*[A-Za-z0-9_.]*FAILED|enrichmentStatus\s*:/i.test(
+  return /alert|Sentry|captureException|captureMessage|Failed|notifyOps|appendAudit|adminAuditLog|auditLog|deadLetter|dlq|reasons\.push|state\s*:\s*['"`]FAILED|status\s*:\s*[A-Za-z0-9_.]*FAILED|enrichmentStatus\s*:/i.test(
     body,
   );
 }
@@ -141,7 +150,7 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
 
       const lines = content.split('\n');
       const relFile = path.relative(config.rootDir, file);
-      const isFinancial = FINANCIAL_PATH.test(file);
+      const isFinancial = isHighRiskErrorSurface(content);
       const isWebhookController = WEBHOOK_CONTROLLER.test(file) && file.endsWith('.controller.ts');
 
       for (let i = 0; i < lines.length; i++) {
@@ -179,7 +188,8 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
                 severity: 'critical',
                 file: relFile,
                 line: i + 1,
-                description: 'Empty catch block in financial code — error silently swallowed',
+                description:
+                  'Empty catch block in money-like mutating code — error silently swallowed',
                 detail: trimmed.slice(0, 120),
               });
             } else {
@@ -201,7 +211,7 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
                 file: relFile,
                 line: i + 1,
                 description:
-                  'catch block in financial code only logs — error swallowed without throw',
+                  'catch block in money-like mutating code only logs — error swallowed without throw',
                 detail: trimmed.slice(0, 120),
               });
             } else {
@@ -240,8 +250,8 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
                 file: relFile,
                 line: i + 1,
                 description: hasNullReturn
-                  ? 'catch in financial code returns null/default — caller may not detect failure'
-                  : 'catch in financial code handles error without rethrow',
+                  ? 'catch in money-like mutating code returns null/default — caller may not detect failure'
+                  : 'catch in money-like mutating code handles error without rethrow',
                 detail: trimmed.slice(0, 120),
               });
             } else {
@@ -251,7 +261,7 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
                 file: relFile,
                 line: i + 1,
                 description:
-                  'catch block in financial code does not rethrow — caller unaware of failure',
+                  'catch block in money-like mutating code does not rethrow — caller unaware of failure',
                 detail: trimmed.slice(0, 120),
               });
             }

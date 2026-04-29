@@ -30,8 +30,12 @@ export type PulseScopeFileKind =
   | 'document'
   | 'artifact';
 
-/** Pulse scope execution mode type. */
-export type PulseScopeExecutionMode = 'ai_safe' | 'human_required' | 'observation_only';
+/** Pulse scope execution mode type. `human_required` is legacy input only. */
+export type PulseScopeExecutionMode =
+  | 'ai_safe'
+  | 'observation_only'
+  | 'governed_validation'
+  | 'human_required';
 
 /** Pulse scope file shape. */
 export interface PulseScopeFile {

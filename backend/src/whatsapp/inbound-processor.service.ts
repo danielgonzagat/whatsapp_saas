@@ -1,11 +1,12 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 import { InboxService } from '../inbox/inbox.service';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue, flowQueue, voiceQueue } from '../queue/queue';
@@ -127,6 +128,7 @@ export class InboundProcessorService {
     private readonly unifiedAgent: UnifiedAgentService,
     @Inject(forwardRef(() => WhatsappService))
     private readonly whatsappService: WhatsappService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
@@ -592,6 +594,10 @@ export class InboundProcessorService {
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // PULSE:OK — Autopilot queue enqueue non-critical; message already saved to inbox
       this.logger.warn(`[AUTOPILOT] Erro ao enfileirar: ${errInstanceofError?.message}`);
+      void this.opsAlert?.alertOnCriticalError(err, 'InboundProcessorService.triggerAutopilot', {
+        workspaceId,
+        metadata: { contactId, phone },
+      });
     }
   }
 
@@ -802,6 +808,14 @@ export class InboundProcessorService {
           : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error(
         `🤖 [AUTOPILOT] Inline agent failed for ${input.phone}: ${errorInstanceofError?.message || 'unknown_error'}`,
+      );
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'InboundProcessorService.triggerInlineAutopilot',
+        {
+          workspaceId: input.workspaceId,
+          metadata: { contactId: input.contactId, phone: input.phone },
+        },
       );
     }
 
@@ -1145,6 +1159,13 @@ export class InboundProcessorService {
           : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.warn(
         `[AUTOPILOT] Falha ao registrar skip inline: ${errorInstanceofError?.message || 'unknown_error'}`,
+      );
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'InboundProcessorService.recordAutopilotSkip',
+        {
+          workspaceId,
+        },
       );
     }
   }

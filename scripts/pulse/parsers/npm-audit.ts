@@ -116,7 +116,7 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
           ? `fix: upgrade to ${vuln.fixAvailable.name}@${vuln.fixAvailable.version}`
           : vuln.fixAvailable
             ? 'fix: run npm audit fix'
-            : 'no automatic fix available — manual review required';
+            : 'no direct npm audit fix is available — require governed dependency remediation';
 
       const directNote = vuln.isDirect ? ' [DIRECT DEPENDENCY]' : ' [transitive]';
 

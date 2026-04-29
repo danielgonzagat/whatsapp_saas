@@ -1,6 +1,6 @@
 {
-  "score": 74,
-  "totalNodes": 2795,
+  "score": 75,
+  "totalNodes": 2789,
   "breaks": [
     {
       "type": "BACKUP_MISSING",
@@ -203,15 +203,6 @@
     {
       "type": "OBSERVABILITY_NO_ALERTING",
       "severity": "high",
-      "file": "backend/src/admin/seed/admin-seed.service.ts",
-      "line": 0,
-      "description": "Runtime-critical error caught without external alert — failures may go unnoticed for hours",
-      "detail": "Add Sentry.captureException(err) or custom alert in runtime-critical catch blocks",
-      "source": "observability-checker"
-    },
-    {
-      "type": "OBSERVABILITY_NO_ALERTING",
-      "severity": "high",
       "file": "backend/src/ai-brain/agent-assist.service.ts",
       "line": 0,
       "description": "Runtime-critical error caught without external alert — failures may go unnoticed for hours",
@@ -248,25 +239,7 @@
     {
       "type": "OBSERVABILITY_NO_ALERTING",
       "severity": "high",
-      "file": "backend/src/audit/audit.service.ts",
-      "line": 0,
-      "description": "Runtime-critical error caught without external alert — failures may go unnoticed for hours",
-      "detail": "Add Sentry.captureException(err) or custom alert in runtime-critical catch blocks",
-      "source": "observability-checker"
-    },
-    {
-      "type": "OBSERVABILITY_NO_ALERTING",
-      "severity": "high",
       "file": "backend/src/auth/auth-partner.service.ts",
-      "line": 0,
-      "description": "Runtime-critical error caught without external alert — failures may go unnoticed for hours",
-      "detail": "Add Sentry.captureException(err) or custom alert in runtime-critical catch blocks",
-      "source": "observability-checker"
-    },
-    {
-      "type": "OBSERVABILITY_NO_ALERTING",
-      "severity": "high",
-      "file": "backend/src/auth/auth-verification.service.ts",
       "line": 0,
       "description": "Runtime-critical error caught without external alert — failures may go unnoticed for hours",
       "detail": "Add Sentry.captureException(err) or custom alert in runtime-critical catch blocks",
@@ -329,25 +302,7 @@
     {
       "type": "OBSERVABILITY_NO_ALERTING",
       "severity": "high",
-      "file": "backend/src/autopilot/autopilot-cycle-executor.service.ts",
-      "line": 0,
-      "description": "Runtime-critical error caught without external alert — failures may go unnoticed for hours",
-      "detail": "Add Sentry.captureException(err) or custom alert in runtime-critical catch blocks",
-      "source": "observability-checker"
-    },
-    {
-      "type": "OBSERVABILITY_NO_ALERTING",
-      "severity": "high",
       "file": "backend/src/autopilot/autopilot-ops-conversion.service.ts",
-      "line": 0,
-      "description": "Runtime-critical error caught without external alert — failures may go unnoticed for hours",
-      "detail": "Add Sentry.captureException(err) or custom alert in runtime-critical catch blocks",
-      "source": "observability-checker"
-    },
-    {
-      "type": "OBSERVABILITY_NO_ALERTING",
-      "severity": "high",
-      "file": "backend/src/autopilot/autopilot.service.ts",
       "line": 0,
       "description": "Runtime-critical error caught without external alert — failures may go unnoticed for hours",
       "detail": "Add Sentry.captureException(err) or custom alert in runtime-critical catch blocks",
@@ -582,15 +537,6 @@
       "type": "OBSERVABILITY_NO_ALERTING",
       "severity": "high",
       "file": "backend/src/kloel/kloel-tool-executor.service.ts",
-      "line": 0,
-      "description": "Runtime-critical error caught without external alert — failures may go unnoticed for hours",
-      "detail": "Add Sentry.captureException(err) or custom alert in runtime-critical catch blocks",
-      "source": "observability-checker"
-    },
-    {
-      "type": "OBSERVABILITY_NO_ALERTING",
-      "severity": "high",
-      "file": "backend/src/kloel/kloel-whatsapp-tools.service.ts",
       "line": 0,
       "description": "Runtime-critical error caught without external alert — failures may go unnoticed for hours",
       "detail": "Add Sentry.captureException(err) or custom alert in runtime-critical catch blocks",
@@ -1890,7 +1836,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/auth/auth-verification.service.ts",
-      "line": 157,
+      "line": 159,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "if (!magicLink || magicLink.usedAt || magicLink.expiresAt < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1899,7 +1845,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/auth/auth-verification.service.ts",
-      "line": 199,
+      "line": 201,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { agentId: agent.id, usedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1908,7 +1854,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/auth/auth-verification.service.ts",
-      "line": 212,
+      "line": 214,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data: { usedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -1917,7 +1863,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/auth/auth-verification.service.ts",
-      "line": 318,
+      "line": 320,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "if (agent.emailVerificationExpiry && agent.emailVerificationExpiry < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2034,7 +1980,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/autopilot/autopilot-cycle-executor.service.ts",
-      "line": 105,
+      "line": 107,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const hour = new Date().getHours(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2160,7 +2106,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/autopilot/autopilot.service.ts",
-      "line": 190,
+      "line": 195,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "lastTransitionAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2250,7 +2196,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/billing-webhook.service.ts",
-      "line": 192,
+      "line": 196,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const periodEnd = currentPeriodEndRaw ? new Date(currentPeriodEndRaw * 1000) : undefined; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2259,7 +2205,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/billing-webhook.service.ts",
-      "line": 199,
+      "line": 203,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "currentPeriodEnd: periodEnd || new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -2268,7 +2214,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/billing/billing-webhook.service.ts",
-      "line": 206,
+      "line": 210,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "currentPeriodEnd: periodEnd || new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3177,7 +3123,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/ad-rules-engine.service.ts",
-      "line": 70,
+      "line": 110,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const lastFired = rule.lastFiredAt ? new Date(rule.lastFiredAt) : null; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -3186,7 +3132,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kloel/ad-rules-engine.service.ts",
-      "line": 115,
+      "line": 156,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "lastFiredAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -5094,7 +5040,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/whatsapp/inbound-processor.service.ts",
-      "line": 245,
+      "line": 247,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "remotePushNameUpdatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -11476,11 +11422,11 @@
     "proxyNoUpstream": 0,
     "securityIssues": 0,
     "dataSafetyIssues": 14,
-    "qualityIssues": 1184,
+    "qualityIssues": 1178,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-29T19:23:38.590Z",
-  "runId": "99bdb1b0-205a-49ea-a4b8-9690233977db",
-  "generatedAt": "2026-04-29T19:25:34.714Z"
+  "timestamp": "2026-04-29T19:47:56.514Z",
+  "runId": "6bf525fc-1e8e-4820-a5cb-90aea5fdb379",
+  "generatedAt": "2026-04-29T19:50:07.070Z"
 }

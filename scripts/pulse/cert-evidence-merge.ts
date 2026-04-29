@@ -1,10 +1,45 @@
-import type { PulseExecutionEvidence } from './types';
+import type { PulseActorEvidence, PulseExecutionEvidence } from './types';
+
+type ActorEvidenceKey = 'customer' | 'operator' | 'admin' | 'soak';
+
+const ACTOR_EVIDENCE_KEYS: ActorEvidenceKey[] = ['customer', 'operator', 'admin', 'soak'];
+
+function mergeActorArrayField<K extends keyof PulseActorEvidence>(
+  overrides: PulseActorEvidence | undefined,
+  defaults: PulseActorEvidence,
+  key: K,
+): PulseActorEvidence[K] {
+  return overrides?.[key] || defaults[key];
+}
+
+function mergeActorEvidence(
+  key: ActorEvidenceKey,
+  defaults: PulseExecutionEvidence,
+  overrides: Partial<PulseExecutionEvidence>,
+): PulseExecutionEvidence[ActorEvidenceKey] {
+  const defaultEvidence = defaults[key];
+  const overrideEvidence = overrides[key];
+  return {
+    ...defaultEvidence,
+    ...(overrideEvidence || {}),
+    declared: mergeActorArrayField(overrideEvidence, defaultEvidence, 'declared'),
+    executed: mergeActorArrayField(overrideEvidence, defaultEvidence, 'executed'),
+    missing: mergeActorArrayField(overrideEvidence, defaultEvidence, 'missing'),
+    passed: mergeActorArrayField(overrideEvidence, defaultEvidence, 'passed'),
+    failed: mergeActorArrayField(overrideEvidence, defaultEvidence, 'failed'),
+    artifactPaths: mergeActorArrayField(overrideEvidence, defaultEvidence, 'artifactPaths'),
+    results: mergeActorArrayField(overrideEvidence, defaultEvidence, 'results'),
+  };
+}
 
 export function mergeExecutionEvidence(
   defaults: PulseExecutionEvidence,
   overrides?: Partial<PulseExecutionEvidence>,
 ): PulseExecutionEvidence {
   if (!overrides) return defaults;
+  const actorEvidence = Object.fromEntries(
+    ACTOR_EVIDENCE_KEYS.map((key) => [key, mergeActorEvidence(key, defaults, overrides)]),
+  ) as Pick<PulseExecutionEvidence, ActorEvidenceKey>;
   return {
     runtime: {
       ...defaults.runtime,
@@ -56,50 +91,7 @@ export function mergeExecutionEvidence(
       artifactPaths: overrides.recovery?.artifactPaths || defaults.recovery.artifactPaths,
       signals: { ...defaults.recovery.signals, ...(overrides.recovery?.signals || {}) },
     },
-    customer: {
-      ...defaults.customer,
-      ...(overrides.customer || {}),
-      declared: overrides.customer?.declared || defaults.customer.declared,
-      executed: overrides.customer?.executed || defaults.customer.executed,
-      missing: overrides.customer?.missing || defaults.customer.missing,
-      passed: overrides.customer?.passed || defaults.customer.passed,
-      failed: overrides.customer?.failed || defaults.customer.failed,
-      artifactPaths: overrides.customer?.artifactPaths || defaults.customer.artifactPaths,
-      results: overrides.customer?.results || defaults.customer.results,
-    },
-    operator: {
-      ...defaults.operator,
-      ...(overrides.operator || {}),
-      declared: overrides.operator?.declared || defaults.operator.declared,
-      executed: overrides.operator?.executed || defaults.operator.executed,
-      missing: overrides.operator?.missing || defaults.operator.missing,
-      passed: overrides.operator?.passed || defaults.operator.passed,
-      failed: overrides.operator?.failed || defaults.operator.failed,
-      artifactPaths: overrides.operator?.artifactPaths || defaults.operator.artifactPaths,
-      results: overrides.operator?.results || defaults.operator.results,
-    },
-    admin: {
-      ...defaults.admin,
-      ...(overrides.admin || {}),
-      declared: overrides.admin?.declared || defaults.admin.declared,
-      executed: overrides.admin?.executed || defaults.admin.executed,
-      missing: overrides.admin?.missing || defaults.admin.missing,
-      passed: overrides.admin?.passed || defaults.admin.passed,
-      failed: overrides.admin?.failed || defaults.admin.failed,
-      artifactPaths: overrides.admin?.artifactPaths || defaults.admin.artifactPaths,
-      results: overrides.admin?.results || defaults.admin.results,
-    },
-    soak: {
-      ...defaults.soak,
-      ...(overrides.soak || {}),
-      declared: overrides.soak?.declared || defaults.soak.declared,
-      executed: overrides.soak?.executed || defaults.soak.executed,
-      missing: overrides.soak?.missing || defaults.soak.missing,
-      passed: overrides.soak?.passed || defaults.soak.passed,
-      failed: overrides.soak?.failed || defaults.soak.failed,
-      artifactPaths: overrides.soak?.artifactPaths || defaults.soak.artifactPaths,
-      results: overrides.soak?.results || defaults.soak.results,
-    },
+    ...actorEvidence,
     syntheticCoverage: {
       ...defaults.syntheticCoverage,
       ...(overrides.syntheticCoverage || {}),

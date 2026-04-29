@@ -712,10 +712,12 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.summary.unknownPaths).toBe(0);
   });
 
-  it('passes matrix completeness and critical terminal classification with precise reasons', () => {
+  it('passes matrix completeness but does not treat inferred critical paths as observed proof', () => {
     const matrix = buildMatrix({});
     expect(evaluateExecutionMatrixCompleteGate(matrix).status).toBe('pass');
-    expect(evaluateCriticalPathObservedGate(matrix).status).toBe('pass');
+    const observedGate = evaluateCriticalPathObservedGate(matrix);
+    expect(observedGate.status).toBe('fail');
+    expect(observedGate.reason).toContain('critical path(s) without observed evidence');
   });
 
   it('passes critical observation and breakpoint precision after observed failure is precise', () => {

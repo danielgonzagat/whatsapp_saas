@@ -604,7 +604,7 @@ function buildCapabilityObservability(
       error_budget: normalizePillarEvidence(
         'error_budget',
         cap.runtimeCritical
-          ? missingEvidence('Runtime-critical capabilities need explicit error-budget evidence.')
+          ? findErrorBudgetEvidence(relevantFiles)
           : {
               status: 'not_applicable',
               sourceKind: 'not_applicable',
@@ -809,6 +809,44 @@ function findHealthEndpointEvidence(filePaths: string[]): PillarScanResult {
     };
   }
   return missingEvidence('No health probe endpoint was found.');
+}
+
+function findErrorBudgetEvidence(filePaths: string[]): PillarScanResult {
+  const observedFiles: string[] = [];
+  const simulatedFiles: string[] = [];
+  for (const filePath of filePaths) {
+    const content = readFileSafe(filePath);
+    if (containsSimulatedObservabilitySource(content)) {
+      simulatedFiles.push(filePath);
+      continue;
+    }
+    if (
+      /\b(errorBudgetRemaining|errorBudget|error_budget|ERROR_BUDGET|sloTarget|sloThreshold|SLO_TARGET|SLO_THRESHOLD|serviceLevelObjective)\b/m.test(
+        content,
+      )
+    ) {
+      observedFiles.push(filePath);
+    }
+  }
+  if (observedFiles.length > 0) {
+    return {
+      status: 'observed',
+      sourceKind: 'static_instrumentation',
+      source: 'error budget instrumentation',
+      reason: 'Runtime-critical capability-owned code exposes explicit SLO/error-budget evidence.',
+      filePaths: observedFiles,
+    };
+  }
+  if (simulatedFiles.length > 0) {
+    return {
+      status: 'missing',
+      sourceKind: 'simulated',
+      source: 'simulated observability marker',
+      reason: 'Only simulated error-budget evidence was found.',
+      filePaths: simulatedFiles,
+    };
+  }
+  return missingEvidence('Runtime-critical capabilities need explicit error-budget evidence.');
 }
 
 function scanForAlerts(filePaths: string[]): ObservabilityStatus {

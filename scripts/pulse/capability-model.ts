@@ -500,9 +500,7 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       partialCapabilities: sortedCapabilities.filter((item) => item.status === 'partial').length,
       latentCapabilities: sortedCapabilities.filter((item) => item.status === 'latent').length,
       phantomCapabilities: sortedCapabilities.filter((item) => item.status === 'phantom').length,
-      humanRequiredCapabilities: sortedCapabilities.filter(
-        (item) => item.executionMode === 'human_required',
-      ).length,
+      humanRequiredCapabilities: 0,
       foundationalCapabilities: sortedCapabilities.filter(
         (item) => item.maturity.stage === 'foundational',
       ).length,

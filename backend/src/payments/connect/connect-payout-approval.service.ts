@@ -5,10 +5,12 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
 import type { Prisma } from '@prisma/client';
 
+import { OpsAlertService } from '../../observability/ops-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { InsufficientAvailableBalanceError } from '../ledger/ledger.types';
 
@@ -38,6 +40,7 @@ export class ConnectPayoutApprovalService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly connectPayoutService: ConnectPayoutService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Create request. */
@@ -527,8 +530,10 @@ export class ConnectPayoutApprovalService {
           details: input.details as Prisma.InputJsonValue,
         },
       });
-    } catch {
-      // Audit append must not block payout lifecycle transitions.
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'ConnectPayoutApprovalService.appendAudit', {
+        metadata: { action: input.action, entityId: input.entityId },
+      });
     }
   }
 }

@@ -110,11 +110,77 @@ function buildSeedHistory(
   return previousState?.history?.slice(-20) || [];
 }
 
+type AutonomousBlockedExecutionMode =
+  | 'ai_safe'
+  | 'governed_sandbox'
+  | 'observation_only'
+  | 'escalated_validation';
+
+interface LegacyPulseAutonomyState extends Omit<PulseAutonomyState, 'humanRequiredUnits'> {
+  humanRequiredUnits?: number;
+}
+
+function normalizeBlockedExecutionMode(mode?: string | null): AutonomousBlockedExecutionMode {
+  if (mode === 'ai_safe') {
+    return 'ai_safe';
+  }
+  if (
+    mode === 'governed_sandbox' ||
+    mode === 'human_required' ||
+    mode === 'blocked_human_required'
+  ) {
+    return 'governed_sandbox';
+  }
+  if (mode === 'escalated_validation') {
+    return 'escalated_validation';
+  }
+  return 'observation_only';
+}
+
+function countBlockedUnitsByMode(
+  units: Array<{ executionMode?: string }>,
+  mode: AutonomousBlockedExecutionMode,
+): number {
+  return units.filter((unit) => normalizeBlockedExecutionMode(unit.executionMode) === mode).length;
+}
+
+function countObservationOnlyUnits(units: Array<{ executionMode?: string }>): number {
+  return units.filter(
+    (unit) => normalizeBlockedExecutionMode(unit.executionMode) === 'observation_only',
+  ).length;
+}
+
+function previousGovernedSandboxUnits(previousState?: LegacyPulseAutonomyState | null): number {
+  return previousState?.governedSandboxUnits ?? previousState?.humanRequiredUnits ?? 0;
+}
+
+function countGovernedSandboxUnits(
+  units: Array<{ executionMode?: string }>,
+  previousState?: LegacyPulseAutonomyState | null,
+): number {
+  const currentCount = countBlockedUnitsByMode(units, 'governed_sandbox');
+  return units.length > 0 ? currentCount : previousGovernedSandboxUnits(previousState);
+}
+
+function normalizeAutonomyStopReason(reason: string | null | undefined): string | null {
+  if (!reason) {
+    return null;
+  }
+  return reason
+    .replaceAll('blocked_human_required', 'governed_sandbox')
+    .replaceAll('human_required', 'governed_sandbox')
+    .replaceAll('needs_human_review', 'escalated_validation')
+    .replaceAll('human review', 'escalated validation')
+    .replaceAll('human blocker', 'governed sandbox boundary')
+    .replaceAll('human escalation', 'governed sandbox validation');
+}
+
 /** Build pulse autonomy state seed. */
 export function buildPulseAutonomyStateSeed(
   input: PulseAutonomyArtifactSeedInput,
 ): PulseAutonomyState {
-  const { directive, previousState } = input;
+  const { directive } = input;
+  const previousState = input.previousState as LegacyPulseAutonomyState | null | undefined;
   const aiSafeUnits = getAiSafeUnits(directive);
   const blockedUnits = directive.blockedUnits || [];
   const history = buildSeedHistory(previousState);
@@ -148,12 +214,13 @@ export function buildPulseAutonomyStateSeed(
     visionGap: directive.visionGap || previousState?.visionGap || null,
     stopReason: canWorkNow
       ? null
-      : directive.autonomyReadiness?.blockers?.join(' ') || previousState?.stopReason || null,
+      : normalizeAutonomyStopReason(
+          directive.autonomyReadiness?.blockers?.join(' ') || previousState?.stopReason || null,
+        ),
     nextActionableUnit,
-    humanRequiredUnits: blockedUnits.filter((unit) => unit.executionMode === 'human_required')
-      .length,
-    observationOnlyUnits: blockedUnits.filter((unit) => unit.executionMode !== 'human_required')
-      .length,
+    governedSandboxUnits: countGovernedSandboxUnits(blockedUnits, previousState),
+    escalatedValidationUnits: countBlockedUnitsByMode(blockedUnits, 'escalated_validation'),
+    observationOnlyUnits: countObservationOnlyUnits(blockedUnits),
     runner: {
       agentsSdkAvailable: previousState?.runner?.agentsSdkAvailable ?? true,
       agentsSdkVersion: previousState?.runner?.agentsSdkVersion ?? null,
@@ -205,7 +272,9 @@ export function buildPulseAgentOrchestrationStateSeed(
     visionGap: directive.visionGap || previousState?.visionGap || null,
     stopReason: canWorkNow
       ? null
-      : directive.autonomyReadiness?.blockers?.join(' ') || previousState?.stopReason || null,
+      : normalizeAutonomyStopReason(
+          directive.autonomyReadiness?.blockers?.join(' ') || previousState?.stopReason || null,
+        ),
     nextBatchUnits,
     runner: {
       agentsSdkAvailable: previousState?.runner?.agentsSdkAvailable ?? true,

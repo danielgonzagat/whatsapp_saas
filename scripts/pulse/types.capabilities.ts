@@ -291,6 +291,8 @@ export interface PulseSignal {
   ownerLane: PulseConvergenceOwnerLane;
   /** Execution mode property. */
   executionMode: PulseScopeExecutionMode;
+  /** Non-human governance disposition for signals that need bounded validation before mutation. */
+  governanceDisposition?: 'observation_only' | 'governed_validation';
   /** Protected by governance property. */
   protectedByGovernance: boolean;
   /** Validation targets property. */
@@ -335,8 +337,10 @@ export interface PulseExternalSignalSummary {
   highImpactSignals: number;
   /** Mapped signals property. */
   mappedSignals: number;
-  /** Human required signals property. */
+  /** Legacy human-required signals still observed from older artifacts. New outputs should be zero. */
   humanRequiredSignals: number;
+  /** Signals requiring governed validation before mutation. */
+  governedValidationSignals: number;
   /** Stale adapters property. */
   staleAdapters: number;
   /** Missing adapters property (required && (not_available || invalid)). */

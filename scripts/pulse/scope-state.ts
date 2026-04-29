@@ -212,7 +212,7 @@ function walkScopeFiles(
       runtimeCritical: isRuntimeCritical(surface, kind),
       userFacing: isUserFacing(surface, kind),
       ownerLane,
-      executionMode: protectedByGovernance ? 'human_required' : 'ai_safe',
+      executionMode: protectedByGovernance ? 'observation_only' : 'ai_safe',
       protectedByGovernance,
       codacyTracked: true,
       moduleCandidate,
@@ -248,7 +248,7 @@ function walkScopeFiles(
  *
  * Governance-boundary protection (`scripts/ops/`, `.github/workflows/`,
  * etc.) is applied AFTER inclusion — it sets `executionMode` to
- * `human_required` but does NOT exclude the file.
+ * `observation_only` but does NOT exclude the file.
  */
 export function buildScopeState(rootDir: string): PulseScopeState {
   const codacy = buildCodacySummary(rootDir);
@@ -277,7 +277,7 @@ export function buildScopeState(rootDir: string): PulseScopeState {
   let totalLines = 0;
   let runtimeCriticalFiles = 0;
   let userFacingFiles = 0;
-  let humanRequiredFiles = 0;
+  const humanRequiredFiles = 0;
 
   for (const file of files) {
     surfaceCounts[file.surface] += 1;
@@ -288,9 +288,6 @@ export function buildScopeState(rootDir: string): PulseScopeState {
     }
     if (file.userFacing) {
       userFacingFiles += 1;
-    }
-    if (file.executionMode === 'human_required') {
-      humanRequiredFiles += 1;
     }
   }
 
@@ -329,7 +326,6 @@ export function buildScopeState(rootDir: string): PulseScopeState {
     aggregate.fileCount += 1;
     aggregate.runtimeCriticalFileCount += file.runtimeCritical ? 1 : 0;
     aggregate.userFacingFileCount += file.userFacing ? 1 : 0;
-    aggregate.humanRequiredFileCount += file.executionMode === 'human_required' ? 1 : 0;
     aggregate.observedCodacyIssueCount += file.observedCodacyIssueCount;
     aggregate.highSeverityIssueCount += file.highSeverityIssueCount;
     aggregate.surfaces.add(file.surface);

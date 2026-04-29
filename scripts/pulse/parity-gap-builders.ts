@@ -1,12 +1,12 @@
 import type {
   PulseCapability,
-  PulseConvergenceExecutionMode,
   PulseFlowProjectionItem,
   PulseParityGap,
   PulseParityGapKind,
   PulseParityGapsArtifact,
   PulseParityGapSeverity,
   PulseResolvedManifest,
+  PulseScopeExecutionMode,
   PulseTruthMode,
 } from './types';
 import { deriveStructuralFamilies, slugifyStructural } from './structural-family';
@@ -54,13 +54,16 @@ function compact(value: string, max: number = 280): string {
 }
 
 function pickExecutionMode(
-  values: Array<PulseConvergenceExecutionMode | undefined>,
-): PulseConvergenceExecutionMode {
+  values: Array<PulseScopeExecutionMode | undefined>,
+): PulseScopeExecutionMode {
+  if (values.includes('observation_only')) {
+    return 'observation_only';
+  }
   if (values.includes('human_required')) {
     return 'human_required';
   }
-  if (values.includes('observation_only')) {
-    return 'observation_only';
+  if (values.includes('governed_validation')) {
+    return 'governed_validation';
   }
   return 'ai_safe';
 }

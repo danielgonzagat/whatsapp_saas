@@ -23,12 +23,12 @@
  * Structured logging:
  * 10. Check that Logger (NestJS Logger) is used consistently (not console.log) in backend
  * 11. Check that log messages include context: Logger.error(msg, stack, 'ContextName')
- * 12. Check that financial operations log: wallet credit, withdrawal, payment events
+ * 12. Check that money-like mutating operations log amount/state changes
  * 13. Verify logs include workspaceId for multi-tenant debugging
  *
  * Alerting:
  * 14. Check if Uptime Kuma, Better Uptime, or equivalent is configured (via webhook URL env var)
- * 15. Check if critical financial operations have alert triggers (wallet insufficient, payment failed)
+ * 15. Check if critical money-like operations have alert triggers
  *
  * Queue monitoring:
  * 16. GET /health/queues → check BullMQ queue depth and failed job count (if endpoint exists)
@@ -44,14 +44,25 @@
  *
  * BREAK TYPES:
  * - MONITORING_MISSING (high) — health endpoint missing or returning 5xx, Sentry not configured,
- *   structured logging absent from financial operations, or failed job queue not monitored
+ *   structured logging absent from money-like operations, or failed job queue not monitored
  */
 
-import { safeJoin, safeResolve } from '../safe-path';
-import * as fs from 'fs';
+import { safeJoin } from '../safe-path';
 import * as path from 'path';
 import { walkFiles, readFileSafe } from './utils';
 import type { Break, PulseConfig } from '../types';
+
+const MONEY_STATE_RE =
+  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
+const DB_MUTATION_RE =
+  /prisma\.[A-Za-z_$][\w$]*\.(?:create|createMany|update|updateMany|upsert|delete|deleteMany)\s*\(/;
+const EXTERNAL_CALL_RE = /\b(?:fetch|axios|apiFetch)\s*\(|\bhttps?:\/\//i;
+
+function isHighRiskService(content: string): boolean {
+  return (
+    MONEY_STATE_RE.test(content) && (DB_MUTATION_RE.test(content) || EXTERNAL_CALL_RE.test(content))
+  );
+}
 
 /** Check monitoring coverage. */
 export function checkMonitoringCoverage(config: PulseConfig): Break[] {
@@ -193,14 +204,16 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
     });
   }
 
-  // --- Check 6: Financial operations have logging ---
-  const financialServiceFiles = backendFiles.filter(
-    (f) =>
-      /wallet|payment|checkout|billing|transaction/i.test(path.basename(f)) &&
-      f.endsWith('.service.ts'),
-  );
+  // --- Check 6: Money-like mutating operations have logging ---
+  const highRiskServiceFiles = backendFiles.filter((f) => {
+    if (!f.endsWith('.service.ts')) {
+      return false;
+    }
+    const content = readFileSafe(f);
+    return isHighRiskService(content);
+  });
 
-  for (const file of financialServiceFiles) {
+  for (const file of highRiskServiceFiles) {
     const content = readFileSafe(file);
     const hasLogger = /this\.logger\.(log|error|warn)\(|Logger\.(log|error|warn)\(/m.test(content);
     if (!hasLogger) {
@@ -209,8 +222,8 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
         severity: 'high',
         file,
         line: 0,
-        description: 'Financial service has no structured logging',
-        detail: `${path.basename(file)}: No Logger usage found. Financial operations (payments, withdrawals) must be logged for audit and debugging.`,
+        description: 'Money-like mutating service has no structured logging',
+        detail: `${path.basename(file)}: No Logger usage found. Money-like mutations must be logged for audit and debugging.`,
       });
     }
   }

@@ -1,8 +1,8 @@
 // PULSE — Wave 7 Module B: Structural Memory Engine
 //
 // Persistent per-unit memory that tracks attempt history, learns which
-// strategies work on which kinds of units, and surfaces units that need
-// human review after repeated automated failures.
+// strategies work on which kinds of units, and escalates repeated automated
+// failures into validation strategies that remain autonomous.
 //
 // Two persistence layers:
 //   1. `.pulse/current/PULSE_STRUCTURAL_MEMORY.json` — aggregate state
@@ -21,16 +21,27 @@ import {
 import type { PulseAutonomyState } from './types';
 import type {
   AttemptStatus,
+  LegacyUnitMemoryStatus,
   LearnedPattern,
   MemoryEntry,
   StructuralMemoryState,
   UnitMemory,
+  UnitMemoryStatus,
 } from './types.structural-memory';
 
 const ARTIFACT_FILE = 'PULSE_STRUCTURAL_MEMORY.json';
 const AUDIT_LOG_FILENAME = 'structural-memory.audit.jsonl';
 
 const REPEATED_FAILURE_THRESHOLD = 3;
+const REPEATED_FAILURE_STATUS: UnitMemoryStatus = 'escalated_validation';
+
+type LegacyUnitMemory = Omit<UnitMemory, 'status'> & {
+  status: LegacyUnitMemoryStatus;
+};
+
+type LegacyStructuralMemoryState = Omit<StructuralMemoryState, 'units'> & {
+  units: LegacyUnitMemory[];
+};
 
 // ── Paths ────────────────────────────────────────────────────────────────────
 
@@ -48,10 +59,38 @@ function loadExisting(rootDir: string): StructuralMemoryState | null {
   const filePath = getArtifactPath(rootDir);
   if (!pathExists(filePath)) return null;
   try {
-    return readJsonFile<StructuralMemoryState>(filePath);
+    return normalizeLoadedMemory(readJsonFile<LegacyStructuralMemoryState>(filePath));
   } catch {
     return null;
   }
+}
+
+function normalizeUnitStatus(status: LegacyUnitMemoryStatus): UnitMemoryStatus {
+  return status === 'needs_human_review' ? REPEATED_FAILURE_STATUS : status;
+}
+
+function normalizeLoadedMemory(memory: LegacyStructuralMemoryState): StructuralMemoryState {
+  const units = memory.units.map((unit) => ({
+    ...unit,
+    status: normalizeUnitStatus(unit.status),
+  }));
+  const learnedPatterns = memory.learnedPatterns ?? [];
+  return {
+    ...memory,
+    units,
+    learnedPatterns,
+    summary: computeSummary(units, learnedPatterns),
+  };
+}
+
+function recommendedStrategyForRepeatedFailure(status: AttemptStatus): string {
+  if (status === 'blocked') {
+    return 'governed_sandbox';
+  }
+  if (status === 'timeout') {
+    return 'observation_only';
+  }
+  return REPEATED_FAILURE_STATUS;
 }
 
 function loadAutonomyState(rootDir: string): PulseAutonomyState | null {
@@ -116,7 +155,7 @@ function computeSummary(
   return {
     totalUnits: units.length,
     activeUnits: units.filter((u) => u.status === 'active').length,
-    needsHumanReview: units.filter((u) => u.status === 'needs_human_review').length,
+    escalatedValidationUnits: units.filter((u) => u.status === REPEATED_FAILURE_STATUS).length,
     resolvedUnits: units.filter((u) => u.status === 'resolved').length,
     falsePositives: units.filter((u) => u.falsePositive).length,
     learnedStrategies: learnedPatterns.length,
@@ -159,7 +198,8 @@ function recordAttemptInternal(
     unit.lastFailure = now;
     unit.recommendedStrategy = null;
     if (unit.repeatedFailures >= REPEATED_FAILURE_THRESHOLD) {
-      unit.status = 'needs_human_review';
+      unit.status = REPEATED_FAILURE_STATUS;
+      unit.recommendedStrategy = recommendedStrategyForRepeatedFailure(status);
     }
   }
 
@@ -197,7 +237,7 @@ function recordAttemptInternal(
  *
  * Appends an atomic audit entry to `.pulse/audit/structural-memory.audit.jsonl`
  * and updates the aggregate unit memory. Detects repeated failures (3+) and
- * flags units as `needs_human_review`.
+ * flags units for autonomous escalated validation.
  *
  * @param unit    — Unit id of the attempted unit
  * @param strategy — Strategy description used in this attempt
@@ -218,14 +258,15 @@ export function recordAttempt(
 
 /**
  * Detect all units that have hit the repeated failure threshold and need
- * human review. A unit reaches this state after 3+ consecutive failures.
+ * autonomous escalated validation. A unit reaches this state after 3+
+ * consecutive failures.
  *
  * @param rootDir — Repository root directory
  */
 export function detectRepeatedFailures(rootDir: string): UnitMemory[] {
   const memory = loadExisting(rootDir);
   if (!memory) return [];
-  return memory.units.filter((u) => u.status === 'needs_human_review');
+  return memory.units.filter((u) => u.status === REPEATED_FAILURE_STATUS);
 }
 
 /**
@@ -248,7 +289,7 @@ export function getLearnedPatterns(rootDir: string): LearnedPattern[] {
  * Mark a unit as a false positive with supporting proof.
  *
  * Once marked, the unit transitions to `resolved` status and will not
- * trigger `needs_human_review` alerts.
+ * trigger autonomous escalated validation.
  *
  * @param unitId   — ID of the unit to mark
  * @param proof    — Explanation of why this is a false positive
@@ -275,7 +316,7 @@ export function markFalsePositive(
     id: randomUUID(),
     timestamp: new Date().toISOString(),
     unit: unitId,
-    strategy: 'manual_fp_mark',
+    strategy: 'false_positive_adjudication',
     result: 'success',
     evidence: proof,
     falsePositive: true,
@@ -346,7 +387,7 @@ export function learnPatterns(memory: StructuralMemoryState): LearnedPattern[] {
 
   for (let i = 0; i < memory.units.length; i++) {
     const unit = memory.units[i];
-    if (unit.recommendedStrategy || unit.status === 'needs_human_review') continue;
+    if (unit.recommendedStrategy || unit.status === REPEATED_FAILURE_STATUS) continue;
 
     const prefix = unit.unitId.split(/[_-]/)[0];
     const siblingPatterns = patterns
@@ -371,7 +412,7 @@ export function learnPatterns(memory: StructuralMemoryState): LearnedPattern[] {
  * Workflow:
  * 1. Load existing memory from PULSE_STRUCTURAL_MEMORY.json
  * 2. Load autonomy iteration records for new attempt evidence
- * 3. Units with 3+ consecutive failures → needs_human_review
+ * 3. Units with 3+ consecutive failures → escalated_validation
  * 4. Learn pattern recommendations from sibling units
  * 5. Store at `.pulse/current/PULSE_STRUCTURAL_MEMORY.json`
  *
@@ -429,7 +470,8 @@ export function buildStructuralMemory(rootDir: string): StructuralMemoryState {
         existing.repeatedFailures += 1;
         existing.lastFailure = iteration.finishedAt;
         if (existing.repeatedFailures >= REPEATED_FAILURE_THRESHOLD) {
-          existing.status = 'needs_human_review';
+          existing.status = REPEATED_FAILURE_STATUS;
+          existing.recommendedStrategy = recommendedStrategyForRepeatedFailure(status);
         }
       }
 
@@ -454,7 +496,7 @@ export function buildStructuralMemory(rootDir: string): StructuralMemoryState {
     summary: {
       totalUnits: 0,
       activeUnits: 0,
-      needsHumanReview: 0,
+      escalatedValidationUnits: 0,
       resolvedUnits: 0,
       falsePositives: 0,
       learnedStrategies: 0,
@@ -492,7 +534,7 @@ function newMemoryState(): StructuralMemoryState {
     summary: {
       totalUnits: 0,
       activeUnits: 0,
-      needsHumanReview: 0,
+      escalatedValidationUnits: 0,
       resolvedUnits: 0,
       falsePositives: 0,
       learnedStrategies: 0,

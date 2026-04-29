@@ -1,6 +1,12 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  Optional,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 
@@ -10,6 +16,7 @@ import { createRedisClient } from '../common/redis/redis.util';
 import { NeuroCrmService } from '../crm/neuro-crm.service';
 import { InboxService } from '../inbox/inbox.service';
 import { StructuredLogger } from '../logging/structured-logger';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue, flowQueue } from '../queue/queue';
@@ -101,6 +108,7 @@ export class WhatsappService {
     private readonly catchupService: WhatsAppCatchupService,
     private readonly ciaRuntime: CiaRuntimeService,
     private readonly workerRuntime: WorkerRuntimeService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private readText(value: unknown): string {
@@ -271,6 +279,10 @@ export class WhatsappService {
           errorInstanceofError?.message || 'unknown_error',
         )}`,
       );
+      void this.opsAlert?.alertOnCriticalError(error, 'WhatsappService.syncRemoteContactProfile', {
+        workspaceId,
+        metadata: { phone: normalizedPhone },
+      });
       return false;
     }
   }
@@ -1627,6 +1639,9 @@ export class WhatsappService {
           err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
         // PULSE:OK — Auto opt-out is best-effort; message still processed
         this.logger.warn(`Opt-out auto falhou: ${errInstanceofError?.message}`);
+        void this.opsAlert?.alertOnCriticalError(err, 'WhatsappService.optOutContact', {
+          workspaceId,
+        });
       }
     }
 
@@ -1754,6 +1769,9 @@ export class WhatsappService {
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // PULSE:OK — Autopilot enqueue non-critical; message already persisted to inbox
       this.logger.warn(`Autopilot enqueue failed: ${errInstanceofError?.message}`);
+      void this.opsAlert?.alertOnCriticalError(err, 'WhatsappService.processInbound.autopilot', {
+        workspaceId,
+      });
     }
 
     // 4. Pipeline NeuroCRM (análise cognitiva básica)
@@ -1780,6 +1798,9 @@ export class WhatsappService {
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // PULSE:OK — Copilot WebSocket push non-critical; inbox still receives the message
       this.logger.warn(`Copilot push failed: ${errInstanceofError?.message}`);
+      void this.opsAlert?.alertOnCriticalError(err, 'WhatsappService.processInbound.copilot', {
+        workspaceId,
+      });
     }
 
     return { ok: true };
@@ -2140,6 +2161,9 @@ export class WhatsappService {
       this.logger.warn(
         `Redis indisponível para deliverToContext, usando client ad-hoc: ${errInstanceofError?.message}`,
       );
+      void this.opsAlert?.alertOnCriticalError(err, 'WhatsappService.deliverToContext', {
+        workspaceId,
+      });
       const fallback = createRedisClient();
       if (!fallback) {
         throw new Error('Redis client unavailable');
@@ -2218,6 +2242,9 @@ export class WhatsappService {
         status: 'UNKNOWN',
         error: error instanceof Error ? error.message : 'unknown_error',
       };
+      void this.opsAlert?.alertOnCriticalError(error, 'WhatsappService.runDiagnostics.session', {
+        workspaceId,
+      });
     }
 
     return { issues, diagnostics };

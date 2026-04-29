@@ -1,4 +1,6 @@
 import type { PulseAutonomousDirectiveUnit } from './autonomy-loop.types';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 type RequiredValidationCategory =
   | 'typecheck'
@@ -6,6 +8,99 @@ type RequiredValidationCategory =
   | 'flow-evidence'
   | 'scenario-evidence'
   | 'browser-evidence';
+
+type SyntheticActorFlag = '--customer' | '--operator' | '--admin' | '--shift' | '--soak';
+
+interface ScenarioValidationMetadata {
+  id: string;
+  actorKind?: string;
+  timeWindowModes: string[];
+  playwrightSpecs: string[];
+}
+
+function readScenarioValidationMetadata(): ScenarioValidationMetadata[] {
+  const candidates = [
+    path.join(process.cwd(), '.pulse', 'current', 'PULSE_RESOLVED_MANIFEST.json'),
+    path.join(process.cwd(), 'PULSE_RESOLVED_MANIFEST.json'),
+    path.join(process.cwd(), 'pulse.manifest.json'),
+  ];
+
+  for (const candidate of candidates) {
+    if (!fs.existsSync(candidate)) {
+      continue;
+    }
+    try {
+      const parsed = JSON.parse(fs.readFileSync(candidate, 'utf8')) as {
+        scenarioSpecs?: unknown;
+      };
+      if (!Array.isArray(parsed.scenarioSpecs)) {
+        continue;
+      }
+      return parsed.scenarioSpecs
+        .filter((entry): entry is Record<string, unknown> => {
+          return Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry);
+        })
+        .flatMap((entry) => {
+          if (typeof entry.id !== 'string') {
+            return [];
+          }
+          return [
+            {
+              id: entry.id,
+              actorKind: typeof entry.actorKind === 'string' ? entry.actorKind : undefined,
+              timeWindowModes: Array.isArray(entry.timeWindowModes)
+                ? entry.timeWindowModes.filter(
+                    (value): value is string => typeof value === 'string',
+                  )
+                : [],
+              playwrightSpecs: Array.isArray(entry.playwrightSpecs)
+                ? entry.playwrightSpecs.filter(
+                    (value): value is string => typeof value === 'string',
+                  )
+                : [],
+            },
+          ];
+        });
+    } catch {
+      continue;
+    }
+  }
+  return [];
+}
+
+function getScenarioMetadataById(scenarioIds: string[]): ScenarioValidationMetadata[] {
+  const byId = new Map(readScenarioValidationMetadata().map((scenario) => [scenario.id, scenario]));
+  return scenarioIds.flatMap((scenarioId) => {
+    const scenario = byId.get(scenarioId);
+    return scenario ? [scenario] : [];
+  });
+}
+
+function actorFlagsForUnit(unit: PulseAutonomousDirectiveUnit): SyntheticActorFlag[] {
+  const flags = new Set<SyntheticActorFlag>();
+  const scenarios = getScenarioMetadataById(unit.scenarioIds ?? []);
+  for (const scenario of scenarios) {
+    if (scenario.actorKind === 'customer') flags.add('--customer');
+    if (scenario.actorKind === 'operator') flags.add('--operator');
+    if (scenario.actorKind === 'admin') flags.add('--admin');
+    if (scenario.timeWindowModes.includes('shift')) flags.add('--shift');
+    if (scenario.timeWindowModes.includes('soak') || scenario.actorKind === 'system') {
+      flags.add('--soak');
+    }
+  }
+
+  const hints = [
+    ...(unit.gateNames ?? []),
+    ...(unit.validationTargets ?? []),
+    ...(unit.validationArtifacts ?? []),
+    ...(unit.exitCriteria ?? []),
+  ].join(' ');
+  if (/\bcustomerPass\b|PULSE_CUSTOMER_EVIDENCE[.]json/.test(hints)) flags.add('--customer');
+  if (/\boperatorPass\b|PULSE_OPERATOR_EVIDENCE[.]json/.test(hints)) flags.add('--operator');
+  if (/\badminPass\b|PULSE_ADMIN_EVIDENCE[.]json/.test(hints)) flags.add('--admin');
+  if (/\bsoakPass\b|PULSE_SOAK_EVIDENCE[.]json/.test(hints)) flags.add('--soak');
+  return [...flags];
+}
 
 /**
  * Translate a unit's requiredValidations[] into concrete shell commands.
@@ -36,21 +131,34 @@ export function buildRequiredValidationCommands(unit: PulseAutonomousDirectiveUn
         break;
       }
       case 'scenario-evidence': {
-        const scenarios = unit.scenarioIds ?? [];
-        if (scenarios.length === 0) {
-          commands.push('npm --prefix e2e exec playwright test --pass-with-no-tests');
-        } else {
-          for (const sid of scenarios) {
-            commands.push(
-              `npm --prefix e2e exec playwright test specs/${sid}.spec.ts --pass-with-no-tests`,
-            );
-          }
+        const playwrightSpecs = getScenarioMetadataById(unit.scenarioIds ?? []).flatMap(
+          (scenario) => scenario.playwrightSpecs,
+        );
+        if (playwrightSpecs.length > 0) {
+          commands.push(
+            `npm --prefix e2e exec playwright test ${[...new Set(playwrightSpecs)]
+              .map(shellQuote)
+              .join(' ')} --pass-with-no-tests`,
+          );
+          break;
         }
+        const actorFlags = actorFlagsForUnit(unit);
+        commands.push(
+          actorFlags.length > 0
+            ? `node scripts/pulse/run.js ${actorFlags.join(' ')} --fast --json`
+            : 'node scripts/pulse/run.js --deep --fast --json',
+        );
         break;
       }
-      case 'browser-evidence':
-        commands.push('node scripts/pulse/run.js --deep --customer --operator --admin --fast');
+      case 'browser-evidence': {
+        const actorFlags = actorFlagsForUnit(unit);
+        commands.push(
+          actorFlags.length > 0
+            ? `node scripts/pulse/run.js --deep ${actorFlags.join(' ')} --fast`
+            : 'node scripts/pulse/run.js --deep --fast',
+        );
         break;
+      }
     }
   }
   return commands;

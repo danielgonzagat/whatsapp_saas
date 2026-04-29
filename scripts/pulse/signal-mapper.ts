@@ -108,13 +108,15 @@ function resolveExecutionMode(
   hasDirectStructuralTarget: boolean,
   flowMatches: PulseFlowProjectionItem[],
 ): PulseScopeExecutionMode {
-  if (protectedByGovernance) return 'human_required';
-  if (draft.executionMode === 'human_required') return 'human_required';
+  if (protectedByGovernance) return 'observation_only';
+  if (draft.executionMode === 'human_required') return 'observation_only';
   if (
+    capabilityMatches.some((c) => c.executionMode === 'observation_only') ||
     capabilityMatches.some((c) => c.executionMode === 'human_required') ||
+    relatedScopeFiles.some((f) => f.executionMode === 'observation_only') ||
     relatedScopeFiles.some((f) => f.executionMode === 'human_required')
   )
-    return 'human_required';
+    return 'observation_only';
   if (draft.executionMode === 'observation_only' || (changeSignal && !hasDirectStructuralTarget)) {
     return 'observation_only';
   }
@@ -192,6 +194,14 @@ export function buildSignalState(
       hasDirectStructuralTarget,
       flowMatches,
     );
+    const governanceDisposition =
+      protectedByGovernance ||
+      draft.tags.includes('governed_validation') ||
+      (capabilityMatches.length === 0 && flowMatches.length === 0 && draft.impactScore >= 0.7)
+        ? 'governed_validation'
+        : executionMode === 'observation_only'
+          ? 'observation_only'
+          : undefined;
 
     const ownerLane = selectLane(
       [
@@ -214,11 +224,13 @@ export function buildSignalState(
       recentChangeRefs: [],
       ownerLane,
       executionMode,
+      governanceDisposition,
       protectedByGovernance,
       validationTargets: unique(
         [
           'PULSE_EXTERNAL_SIGNAL_STATE.json',
           'PULSE_CERTIFICATE.json',
+          governanceDisposition === 'governed_validation' ? 'PULSE_CONVERGENCE_PLAN.json' : null,
           capabilityMatches.length > 0 ? 'PULSE_CAPABILITY_STATE.json' : null,
           flowMatches.length > 0 ? 'PULSE_FLOW_PROJECTION.json' : null,
         ].filter(Boolean) as string[],
@@ -253,13 +265,18 @@ export function buildSignalState(
       recentChangeRefs: unique([...existing.recentChangeRefs, ...signal.recentChangeRefs]),
       validationTargets: unique([...existing.validationTargets, ...signal.validationTargets]),
       protectedByGovernance: existing.protectedByGovernance || signal.protectedByGovernance,
+      governanceDisposition:
+        existing.governanceDisposition === 'governed_validation' ||
+        signal.governanceDisposition === 'governed_validation'
+          ? 'governed_validation'
+          : existing.governanceDisposition || signal.governanceDisposition,
       executionMode:
-        existing.executionMode === 'human_required' || signal.executionMode === 'human_required'
-          ? 'human_required'
-          : existing.executionMode === 'observation_only' ||
-              signal.executionMode === 'observation_only'
-            ? 'observation_only'
-            : 'ai_safe',
+        existing.executionMode === 'observation_only' ||
+        existing.executionMode === 'human_required' ||
+        signal.executionMode === 'observation_only' ||
+        signal.executionMode === 'human_required'
+          ? 'observation_only'
+          : 'ai_safe',
     });
   }
 

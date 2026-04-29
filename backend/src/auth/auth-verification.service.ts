@@ -8,6 +8,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { Redis } from 'ioredis';
 import { AuthWhatsappPasswordService } from './auth-whatsapp-password.service';
@@ -30,6 +31,7 @@ export class AuthVerificationService {
     private readonly emailService: EmailService,
     private readonly config: ConfigService,
     private readonly authWhatsappPasswordService: AuthWhatsappPasswordService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
   ) {
     this.rateLimitService = new RateLimitService(this.redis || null);
@@ -331,6 +333,9 @@ export class AuthVerificationService {
 
       return { success: true, message: 'Email verificado com sucesso!' };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AuthVerificationService.verifyEmail', {
+        metadata: { token },
+      });
       DbInitErrorService.throwFriendlyDbInitError(error);
     }
   }

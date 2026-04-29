@@ -1,6 +1,13 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  Optional,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
 import { AutopilotAnalyticsService } from './autopilot-analytics.service';
@@ -18,6 +25,7 @@ export class AutopilotService {
     private readonly cycle: AutopilotCycleService,
     private readonly ops: AutopilotOpsService,
     private readonly planLimits: PlanLimitsService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   // ─── Analytics delegation ──────────────────────────────────────────────────
@@ -132,6 +140,13 @@ export class AutopilotService {
       } catch (err: unknown) {
         this.logger.warn(
           `Failed to log billing suspension event: ${err instanceof Error ? err.message : 'unknown error'}`,
+        );
+        void this.opsAlert?.alertOnCriticalError(
+          err,
+          'AutopilotService.ensureBillingAllowsAutopilot',
+          {
+            workspaceId,
+          },
         );
       }
       throw new ForbiddenException('Autopilot suspenso: regularize cobrança para reativar.');

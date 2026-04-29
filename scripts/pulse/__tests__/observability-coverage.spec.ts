@@ -112,6 +112,7 @@ describe('PULSE observability coverage', () => {
         "import * as Sentry from '@sentry/node';",
         'const OPS_WEBHOOK_URL = process.env.OPS_WEBHOOK_URL;',
         'const dashboardUrl = "https://datadog.example.test/dashboard/payment";',
+        'const errorBudgetRemaining = 0.99;',
         'export class CriticalPayment {',
         '  private readonly logger = new Logger(CriticalPayment.name);',
         '  run(workspaceId: string): void {',
@@ -146,6 +147,9 @@ describe('PULSE observability coverage', () => {
     expect(capability.pillars.dashboards).toBe('partial');
     expect(capability.evidence.dashboards.sourceKind).toBe('catalog');
     expect(capability.evidence.dashboards.observed).toBe(false);
+    expect(capability.pillars.error_budget).toBe('observed');
+    expect(capability.evidence.error_budget.sourceKind).toBe('static_instrumentation');
+    expect(capability.evidence.error_budget.observed).toBe(true);
   });
 
   it('does not turn alert configuration into observed evidence for critical capabilities', () => {
@@ -172,6 +176,26 @@ describe('PULSE observability coverage', () => {
     expect(capability.evidence.alerts.observed).toBe(false);
     expect(capability.trustedObservedPillars).not.toContain('alerts');
     expect(capability.criticalObservedByUntrustedSource).toBe(false);
+  });
+
+  it('keeps runtime-critical error budget missing when no explicit evidence exists', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-observability-no-budget-'));
+    const sourcePath = path.join(rootDir, 'backend', 'src', 'critical-payment.ts');
+    fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
+    fs.writeFileSync(
+      sourcePath,
+      ['export class CriticalPayment {', '  run(): void {', '    return;', '  }', '}'].join('\n'),
+      'utf8',
+    );
+
+    writePulseInputs(rootDir, [makeCapability()]);
+
+    const capability = buildObservabilityCoverage(rootDir).capabilities[0];
+
+    expect(capability.runtimeCritical).toBe(true);
+    expect(capability.pillars.error_budget).toBe('missing');
+    expect(capability.evidence.error_budget.sourceKind).toBe('absent');
+    expect(capability.evidence.error_budget.observed).toBe(false);
   });
 
   it('does not mark simulated or absent sources as observed', () => {
@@ -210,6 +234,9 @@ describe('PULSE observability coverage', () => {
     expect(simulated?.pillars.logs).toBe('missing');
     expect(simulated?.evidence.logs.sourceKind).toBe('simulated');
     expect(simulated?.evidence.logs.observed).toBe(false);
+    expect(simulated?.pillars.error_budget).toBe('missing');
+    expect(simulated?.evidence.error_budget.sourceKind).toBe('simulated');
+    expect(simulated?.evidence.error_budget.observed).toBe(false);
     expect(absent?.details.matchedFilePaths).toEqual([]);
     expect(absent?.pillars.logs).toBe('missing');
     expect(absent?.evidence.logs.sourceKind).toBe('absent');

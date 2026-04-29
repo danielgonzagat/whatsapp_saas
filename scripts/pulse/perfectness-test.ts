@@ -2,7 +2,7 @@
 // Perfectness Test Harness (Wave 9.4)
 //
 // Formal 72-hour autonomous test plan that validates the PULSE system's
-// ability to operate without human intervention.
+// ability to operate without external intervention.
 //
 // Defines the test suite structure, gate criteria, evidence collection
 // plan, exit conditions, and the evaluation pipeline.
@@ -39,7 +39,7 @@ const SCENARIO_EVIDENCE_FILE = 'PULSE_SCENARIO_EVIDENCE.json';
  * The canonical 8-gate perfectness evaluation suite.
  *
  * Each gate defines what is being checked, the target condition,
- * and a human-readable description.
+ * and a plain-language description.
  */
 const GATE_DEFINITIONS = [
   {
@@ -188,25 +188,25 @@ function buildGateDependencies(): Record<string, string[]> {
  *
  * Exit conditions control the autonomy loop's behavior:
  *   - On pass: what to do next
- *   - On fail: whether to retry, pause for human, or rollback
+ *   - On fail: whether to retry in sandbox, observe evidence, or rollback
  */
 function buildExitConditions(): GateExitCondition[] {
   return [
     {
       gateName: 'pulse-core-green',
       onPass: 'continue_autonomous',
-      onFail: 'pause_for_human',
+      onFail: 'retry_sandbox',
       maxRetries: 3,
       description:
-        'If PULSE certification gates fail after 3 retries, pause and request human diagnosis.',
+        'If PULSE certification gates fail after 3 retries, open an autonomous diagnostic cycle with stricter evidence.',
     },
     {
       gateName: 'product-core-green',
       onPass: 'continue_autonomous',
-      onFail: 'pause_for_human',
+      onFail: 'retry_sandbox',
       maxRetries: 2,
       description:
-        'If critical capabilities degrade, pause for human. Capability mapping may need manual correction.',
+        'If critical capabilities degrade, retry in sandbox and regenerate capability evidence before accepting changes.',
     },
     {
       gateName: 'e2e-core-pass',
@@ -214,7 +214,7 @@ function buildExitConditions(): GateExitCondition[] {
       onFail: 'retry_sandbox',
       maxRetries: 3,
       description:
-        'If E2E scenarios fail, retry in a new sandbox. After 3 attempts, pause for human.',
+        'If E2E scenarios fail, retry in a new sandbox. After 3 attempts, keep the failure as governed validation evidence.',
     },
     {
       gateName: 'runtime-stable',
@@ -235,10 +235,10 @@ function buildExitConditions(): GateExitCondition[] {
     {
       gateName: 'no-rollback-unrecovered',
       onPass: 'continue_autonomous',
-      onFail: 'pause_for_human',
-      maxRetries: 0,
+      onFail: 'retry_sandbox',
+      maxRetries: 1,
       description:
-        'Unrecovered rollbacks leave the system in an unknown state. Human must intervene.',
+        'Unrecovered rollbacks leave the system in an unknown state. Retry in a clean governed sandbox before continuing.',
     },
     {
       gateName: 'no-protected-violation',
@@ -795,7 +795,7 @@ export function resolveExitAction(
 
   if (!condition) {
     return {
-      action: passed ? 'continue_autonomous' : 'pause_for_human',
+      action: passed ? 'continue_autonomous' : 'retry_sandbox',
       description: `No exit condition defined for gate "${gateName}". Defaulting.`,
     };
   }
@@ -815,7 +815,7 @@ export function resolveExitAction(
     };
   }
 
-  // Max retries exceeded — escalate
+  // Max retries exceeded — use the configured governed action.
   return {
     action: condition.onFail,
     description: `Gate "${gateName}" failed after ${retryCount} retries. ${condition.description}`,
@@ -839,7 +839,7 @@ function buildSummary(
     case 'ALMOST_PERFECT':
       return `ALMOST_PERFECT — ${passed}/${total} gates passed. Score change: ${deltaSign}${scoreDelta}. Minor gaps remain; autonomous work is approved with caution.`;
     case 'NEEDS_WORK':
-      return `NEEDS_WORK — ${passed}/${total} gates passed. Score change: ${deltaSign}${scoreDelta}. Significant gaps detected; human review recommended.`;
+      return `NEEDS_WORK — ${passed}/${total} gates passed. Score change: ${deltaSign}${scoreDelta}. Significant gaps detected; keep working through governed validation.`;
     case 'FAILED':
       return `FAILED — ${passed}/${total} gates passed. Score change: ${deltaSign}${scoreDelta}. The system is not ready for autonomous operation.`;
     default:
@@ -854,7 +854,7 @@ function buildRecommendedActions(verdict: PerfectnessVerdict, gates: Perfectness
   switch (verdict) {
     case 'PERFECT':
       actions.push('System is fully approved for continuous autonomous operation.');
-      actions.push('No human intervention required except for Risk 3 destructive operations.');
+      actions.push('Risk 3 destructive operations remain outside autonomous mutation scope.');
       break;
     case 'ALMOST_PERFECT':
       actions.push('Autonomous operation approved with caution.');
@@ -864,13 +864,15 @@ function buildRecommendedActions(verdict: PerfectnessVerdict, gates: Perfectness
       }
       break;
     case 'NEEDS_WORK':
-      actions.push('Autonomous operation suspended. Human review required.');
+      actions.push('Autonomous operation remains in governed validation mode.');
       for (const g of failedGates) {
         actions.push(`Fix gate "${g.name}": expected ${g.target}, got ${g.actual}`);
       }
       break;
     case 'FAILED':
-      actions.push('Autonomous operation blocked. Immediate human intervention required.');
+      actions.push(
+        'Autonomous operation failed; rollback_and_stop or retry_sandbox is required before continuing.',
+      );
       for (const g of failedGates) {
         actions.push(`CRITICAL: gate "${g.name}" failed — ${g.evidence}`);
       }

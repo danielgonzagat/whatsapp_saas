@@ -11,12 +11,87 @@ type ActorEvidenceKey = 'customer' | 'operator' | 'admin' | 'soak';
 
 const FRESHNESS_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-const EVIDENCE_FILES: Array<{ key: ActorEvidenceKey; fileName: string }> = [
-  { key: 'customer', fileName: 'PULSE_CUSTOMER_EVIDENCE.json' },
-  { key: 'operator', fileName: 'PULSE_OPERATOR_EVIDENCE.json' },
-  { key: 'admin', fileName: 'PULSE_ADMIN_EVIDENCE.json' },
-  { key: 'soak', fileName: 'PULSE_SOAK_EVIDENCE.json' },
-];
+const CONTRACT_EVIDENCE_FILES = [
+  'PULSE_CUSTOMER_EVIDENCE.json',
+  'PULSE_OPERATOR_EVIDENCE.json',
+  'PULSE_ADMIN_EVIDENCE.json',
+  'PULSE_SOAK_EVIDENCE.json',
+] as const;
+
+function normalizeActorEvidenceKey(value: unknown): ActorEvidenceKey | null {
+  if (value === 'customer' || value === 'operator' || value === 'admin' || value === 'soak') {
+    return value;
+  }
+  if (value === 'system') {
+    return 'soak';
+  }
+  return null;
+}
+
+function inferActorEvidenceKeyFromFileName(fileName: string): ActorEvidenceKey | null {
+  const match = fileName.match(/^PULSE_([A-Z]+)_EVIDENCE[.]json$/);
+  return match ? normalizeActorEvidenceKey(match[1].toLowerCase()) : null;
+}
+
+function readEvidenceFileNamesFromManifest(rootDir: string): string[] {
+  const candidates = [
+    path.join(path.resolve(rootDir), '.pulse', 'current', 'PULSE_RESOLVED_MANIFEST.json'),
+    path.join(path.resolve(rootDir), 'PULSE_RESOLVED_MANIFEST.json'),
+    path.join(path.resolve(rootDir), 'pulse.manifest.json'),
+  ];
+  for (const candidate of candidates) {
+    if (!fs.existsSync(candidate)) {
+      continue;
+    }
+    try {
+      const parsed = JSON.parse(fs.readFileSync(candidate, 'utf8')) as {
+        scenarioSpecs?: unknown;
+      };
+      if (!Array.isArray(parsed.scenarioSpecs)) {
+        continue;
+      }
+      return parsed.scenarioSpecs
+        .filter((entry): entry is Record<string, unknown> => {
+          return Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry);
+        })
+        .flatMap((entry) =>
+          Array.isArray(entry.requiredArtifacts)
+            ? entry.requiredArtifacts.filter((artifact): artifact is string => {
+                return (
+                  typeof artifact === 'string' && /^PULSE_[A-Z_]+_EVIDENCE[.]json$/.test(artifact)
+                );
+              })
+            : [],
+        );
+    } catch {
+      continue;
+    }
+  }
+  return [];
+}
+
+function readExistingEvidenceFileNames(rootDir: string): string[] {
+  const resolvedRoot = path.resolve(rootDir);
+  const dirs = [resolvedRoot, path.join(resolvedRoot, '.pulse', 'current')];
+  return dirs.flatMap((dir) => {
+    if (!fs.existsSync(dir)) {
+      return [];
+    }
+    return fs
+      .readdirSync(dir)
+      .filter((fileName) => /^PULSE_[A-Z_]+_EVIDENCE[.]json$/.test(fileName));
+  });
+}
+
+function discoverEvidenceFileNames(rootDir: string): string[] {
+  return [
+    ...new Set([
+      ...readEvidenceFileNamesFromManifest(rootDir),
+      ...readExistingEvidenceFileNames(rootDir),
+      ...CONTRACT_EVIDENCE_FILES,
+    ]),
+  ];
+}
 
 function resolveEvidencePath(rootDir: string, fileName: string): string | null {
   const resolvedRoot = path.resolve(rootDir);
@@ -50,7 +125,7 @@ function normalizeStringArray(value: unknown): string[] {
 
 function normalizeScenarioResult(
   raw: unknown,
-  actorKind: ActorEvidenceKey,
+  fallbackActorKind: ActorEvidenceKey,
   fresh: boolean,
 ): PulseScenarioResult | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
@@ -74,6 +149,7 @@ function normalizeScenarioResult(
   const normalizedStatus = acceptedStatuses.includes(status as PulseScenarioResult['status'])
     ? (status as PulseScenarioResult['status'])
     : 'checker_gap';
+  const actorKind = normalizeActorEvidenceKey(item.actorKind) ?? fallbackActorKind;
 
   return {
     scenarioId,
@@ -122,7 +198,7 @@ function normalizeScenarioResult(
 
 function normalizeActorEvidence(
   raw: unknown,
-  actorKind: ActorEvidenceKey,
+  fallbackActorKind: ActorEvidenceKey | null,
   fresh: boolean,
 ): PulseActorEvidence | null {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
@@ -131,6 +207,13 @@ function normalizeActorEvidence(
 
   const data = raw as Record<string, unknown>;
   if (!Array.isArray(data.results)) {
+    return null;
+  }
+  const actorKind =
+    normalizeActorEvidenceKey(data.actorKind) ??
+    normalizeActorEvidenceKey(data.key) ??
+    fallbackActorKind;
+  if (!actorKind) {
     return null;
   }
 
@@ -163,10 +246,12 @@ export function loadScenarioEvidenceFromDisk(rootDir: string): DiskScenarioEvide
   };
   const summaryParts: string[] = [];
 
-  for (const { key, fileName } of EVIDENCE_FILES) {
+  for (const fileName of discoverEvidenceFileNames(rootDir)) {
+    const fallbackKey = inferActorEvidenceKeyFromFileName(fileName);
+    const summaryKey = fallbackKey ?? fileName;
     const filePath = resolveEvidencePath(rootDir, fileName);
     if (!filePath) {
-      summaryParts.push(`${key}: no file`);
+      summaryParts.push(`${summaryKey}: no file`);
       continue;
     }
 
@@ -174,17 +259,18 @@ export function loadScenarioEvidenceFromDisk(rootDir: string): DiskScenarioEvide
     try {
       parsed = readJson(filePath);
     } catch {
-      summaryParts.push(`${key}: parse error`);
+      summaryParts.push(`${summaryKey}: parse error`);
       continue;
     }
 
     const fresh = isFresh(filePath);
-    const evidence = normalizeActorEvidence(parsed, key, fresh);
+    const evidence = normalizeActorEvidence(parsed, fallbackKey, fresh);
     if (!evidence) {
-      summaryParts.push(`${key}: invalid structure`);
+      summaryParts.push(`${summaryKey}: invalid structure`);
       continue;
     }
 
+    const key = evidence.actorKind;
     bundle[key] = evidence;
     bundle.results.push(...evidence.results);
     summaryParts.push(`${key}: ${fresh ? 'fresh' : 'stale'} (${evidence.results.length})`);

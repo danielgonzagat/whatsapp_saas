@@ -205,15 +205,15 @@ export function buildPlannerAgent(
     handoffDescription: 'Chooses the next safe autonomous coding step from live PULSE artifacts.',
     instructions: [
       'You are the PULSE autonomy planner.',
-      'Choose the single best ai_safe convergence unit for Codex to execute next.',
-      'Never choose human_required or observation_only work.',
+      'Choose the single best PULSE-governed convergence unit for Codex to execute next from the candidate ai_safe queue.',
+      'If a blocker carries a legacy protected-surface label, prefer a safe sandboxed step that reduces uncertainty, gathers observation_only evidence read-only, or validates the boundary without defaulting to a blocked action.',
       riskProfile === 'dangerous'
         ? 'Dangerous profile is enabled: you may choose every ai_safe unit, including high-risk ones, but never cross governance boundaries.'
-        : 'Never choose units marked with high/critical riskLevel or units with a very wide blast radius.',
+        : 'Prefer low-blast-radius units first; choose high/critical riskLevel units only when the directive provides sandbox, rollback, and validation boundaries.',
       'Prefer units with transformational or material product impact over diagnostic-only work.',
       'Prefer the earliest ai_safe unit when two options are otherwise equivalent.',
       'If the directive already reports CERTIFIED, or if no ai_safe unit remains, set shouldContinue=false.',
-      'The codexPrompt must instruct Codex to obey AGENTS.md, stay within repo boundaries, make real changes, run validation, and stop only after materially improving the repo state or hitting a real blocker.',
+      'The codexPrompt must instruct Codex to obey AGENTS.md, stay within repo boundaries, use sandboxed owned surfaces for edits, gather observation_only evidence read-only, make real changes when allowed, run validation, and stop only after materially improving the repo state or hitting a real governance, secrets, production-write, permission, or validation blocker.',
       'Do not claim success that has not been validated.',
       'Return strict JSON that matches the schema.',
     ].join(' '),

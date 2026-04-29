@@ -3,7 +3,14 @@
  * Constructs the CLI directive JSON and artifact index.
  */
 import { compact, unique } from './artifacts.io';
-import { buildDecisionQueue, buildAutonomyQueue } from './artifacts.queue';
+import {
+  buildDecisionQueue,
+  buildAutonomyQueue,
+  normalizeArtifactStatus,
+  normalizeArtifactExecutionMode,
+  normalizeArtifactText,
+  normalizeCanonicalArtifactValue,
+} from './artifacts.queue';
 import { buildPulseMachineReadiness, getProductFacingCapabilities } from './artifacts.report';
 import {
   deriveAuthorityState,
@@ -23,6 +30,53 @@ import {
   buildForbiddenActions,
   buildSuccessCriteria,
 } from './artifacts.directive.helpers';
+
+type DirectiveExecutionMatrixPath = PulseArtifactSnapshot['executionMatrix']['paths'][number];
+type DirectiveExecutionMatrixSummary = PulseArtifactSnapshot['executionMatrix']['summary'];
+type DirectiveExternalSignalSummary = PulseArtifactSnapshot['externalSignalState']['summary'];
+
+function normalizeMatrixStatusForDirective(status: string): string {
+  return normalizeArtifactStatus(status);
+}
+
+function normalizeExecutionMatrixSummaryForDirective(
+  summary: DirectiveExecutionMatrixSummary,
+): Record<string, unknown> {
+  const byStatusEntries = Object.entries(summary.byStatus).map(([status, count]) => [
+    normalizeMatrixStatusForDirective(status),
+    count,
+  ]);
+  return {
+    ...summary,
+    byStatus: Object.fromEntries(byStatusEntries),
+    observationOnly: summary.blockedHumanRequired,
+    blockedHumanRequired: undefined,
+  };
+}
+
+function normalizeExecutionMatrixPathForDirective(
+  path: DirectiveExecutionMatrixPath,
+): Record<string, unknown> {
+  return {
+    ...path,
+    status: normalizeMatrixStatusForDirective(path.status),
+    executionMode: normalizeArtifactExecutionMode(path.executionMode),
+  };
+}
+
+function normalizeExternalSignalSummaryForDirective(
+  summary: DirectiveExternalSignalSummary,
+): Record<string, unknown> {
+  return {
+    ...summary,
+    observationOnlySignals: summary.humanRequiredSignals,
+    humanRequiredSignals: undefined,
+  };
+}
+
+function artifactJsonReplacer(_key: string, value: unknown): unknown {
+  return typeof value === 'string' ? normalizeArtifactText(value) : value;
+}
 
 function buildDefaultExitCriteria(unit: QueueUnit): string[] {
   const kind = unit.kind;
@@ -45,7 +99,7 @@ function buildDefaultExitCriteria(unit: QueueUnit): string[] {
         target:
           Array.isArray(unit.scenarioIds) && unit.scenarioIds.length > 0
             ? unit.scenarioIds[0]
-            : unit.id.replace('recover-', 'customer-'),
+            : unit.id.replace(/^recover-/, ''),
         expected: { status: 'passed' },
         comparison: 'eq',
       }),
@@ -55,13 +109,14 @@ function buildDefaultExitCriteria(unit: QueueUnit): string[] {
 }
 
 function buildDirectiveUnit(snapshot: PulseArtifactSnapshot, unit: QueueUnit) {
+  const executionMode = normalizeArtifactExecutionMode(unit.executionMode);
   const directiveUnit = {
     order: unit.order,
     id: unit.id,
     kind: unit.kind,
     priority: unit.priority,
     source: unit.source,
-    executionMode: unit.executionMode,
+    executionMode,
     riskLevel: unit.riskLevel,
     evidenceMode: unit.evidenceMode,
     confidence: unit.confidence,
@@ -124,27 +179,23 @@ export function buildDirective(
   const nextExecutableUnits =
     nextAutonomousUnits.length > 0 ? nextAutonomousUnits.slice(0, 8) : nextDecisionUnits;
   const blockedWork = convergencePlan.queue
-    .filter((unit) => unit.executionMode !== 'ai_safe')
+    .filter((unit) => normalizeArtifactExecutionMode(unit.executionMode) === 'observation_only')
     .slice(0, 10);
   const blockedUnits = blockedWork.map((unit) => ({
     id: unit.id,
     title: unit.title,
-    executionMode: unit.executionMode,
+    executionMode: normalizeArtifactExecutionMode(unit.executionMode),
     evidenceMode: unit.evidenceMode,
     confidence: unit.confidence,
     productImpact: unit.productImpact,
     summary: unit.summary,
     whyBlocked:
-      unit.executionMode === 'human_required'
-        ? 'Governance-protected or human-owned surface.'
-        : 'Observed signal is not mapped enough for autonomous mutation.',
+      'Signal remains in observation-only evidence gathering until mapped enough for mutation.',
     relatedFiles: unit.relatedFiles,
   }));
   const doNotTouchSurfaces = [
     ...new Set(
-      blockedWork
-        .filter((unit) => unit.executionMode === 'human_required')
-        .flatMap((unit) => [...unit.relatedFiles, ...unit.affectedCapabilityIds]),
+      blockedWork.flatMap((unit) => [...unit.relatedFiles, ...unit.affectedCapabilityIds]),
     ),
   ].slice(0, 20);
   const topProblems = [
@@ -153,7 +204,7 @@ export function buildDirective(
       type: signal.type,
       summary: signal.summary,
       impactScore: signal.impactScore,
-      executionMode: signal.executionMode,
+      executionMode: normalizeArtifactExecutionMode(signal.executionMode),
       affectedCapabilities: signal.capabilityIds,
       affectedFlows: signal.flowIds,
     })),
@@ -190,7 +241,7 @@ export function buildDirective(
   );
 
   return JSON.stringify(
-    {
+    normalizeCanonicalArtifactValue({
       generatedAt: snapshot.certification.timestamp,
       profile: snapshot.certification.certificationTarget.profile ?? null,
       certificationScope: snapshot.certification.certificationScope,
@@ -247,24 +298,28 @@ export function buildDirective(
       promiseToProductionDelta: snapshot.productVision.promiseToProductionDelta,
       freshness,
       externalSignals: {
-        summary: snapshot.externalSignalState.summary,
-        top: snapshot.externalSignalState.signals.slice(0, 12),
+        summary: normalizeExternalSignalSummaryForDirective(snapshot.externalSignalState.summary),
+        top: snapshot.externalSignalState.signals.slice(0, 12).map((signal) => ({
+          ...signal,
+          executionMode: normalizeArtifactExecutionMode(signal.executionMode),
+        })),
       },
       parityGaps: {
         summary: snapshot.parityGaps.summary,
         top: snapshot.parityGaps.gaps.slice(0, 12),
       },
       executionMatrix: {
-        summary: snapshot.executionMatrix.summary,
+        summary: normalizeExecutionMatrixSummaryForDirective(snapshot.executionMatrix.summary),
         topFailures: snapshot.executionMatrix.paths
           .filter((path) => path.status === 'observed_fail')
+          .map(normalizeExecutionMatrixPathForDirective)
           .slice(0, 8),
         topUnobservedCritical: snapshot.executionMatrix.paths
           .filter(
             (path) =>
-              path.risk === 'high' &&
-              !['observed_pass', 'observed_fail', 'blocked_human_required'].includes(path.status),
+              path.risk === 'high' && !['observed_pass', 'observed_fail'].includes(path.status),
           )
+          .map(normalizeExecutionMatrixPathForDirective)
           .slice(0, 8),
       },
       surfaces: (snapshot.productVision.surfaces || []).slice(0, 15),
@@ -282,7 +337,7 @@ export function buildDirective(
           stage: capability.maturity.stage,
           score: capability.maturity.score,
           missing: capability.maturity.missing,
-          executionMode: capability.executionMode,
+          executionMode: normalizeArtifactExecutionMode(capability.executionMode),
           routePatterns: capability.routePatterns,
         })),
       topBlockers: snapshot.productVision.topBlockers,
@@ -297,7 +352,7 @@ export function buildDirective(
       antiGoals: [
         'Do not treat projected vision as proof of implementation.',
         'Do not spend the next cycle on diagnostic-only work while transformational or material product gaps remain open.',
-        'Do not auto-edit governance-protected surfaces.',
+        'Keep governance-protected surfaces in observation-only evidence gathering unless a governed validation path is explicitly mapped.',
         'Do not suppress Codacy or certification signals to simulate convergence.',
       ],
       productTruth: {
@@ -312,8 +367,8 @@ export function buildDirective(
       operatingRules: [
         'Use observed evidence over inferred evidence whenever they conflict.',
         'Treat projected product vision as a convergence target, not as proof of implementation.',
-        'Never auto-edit governance-protected surfaces.',
-        'Treat human_required and observation_only units as blocked for autonomous code changes.',
+        'Governance-protected surfaces require sandboxed, validated autonomous handling.',
+        'Treat observation_only units as evidence-gathering work until mapped enough for mutation.',
       ],
       suggestedValidation: {
         commands: [
@@ -341,8 +396,8 @@ export function buildDirective(
         status: 'pending_artifact_generation',
       },
       stopCondition,
-    },
-    null,
+    }),
+    artifactJsonReplacer,
     2,
   );
 }
@@ -355,7 +410,7 @@ export function buildArtifactIndex(
   pulseMachineReadiness?: PulseMachineReadiness,
 ): string {
   return JSON.stringify(
-    {
+    normalizeCanonicalArtifactValue({
       runId: identity?.runId ?? registry.runId ?? null,
       generatedAt: identity?.generatedAt ?? new Date().toISOString(),
       authorityMode: authority.mode,
@@ -377,8 +432,8 @@ export function buildArtifactIndex(
       compatibilityMirrors: registry.mirrors,
       removedLegacyPulseArtifacts: cleanupReport.removedLegacyPulseArtifacts,
       rootStateMode: 'local-only',
-    },
-    null,
+    }),
+    artifactJsonReplacer,
     2,
   );
 }

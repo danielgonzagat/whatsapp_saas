@@ -5,20 +5,14 @@ import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
 
 const HTTP_DECORATORS = ['@Get(', '@Post(', '@Put(', '@Patch(', '@Delete('];
+const MONEY_STATE_RE =
+  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
+const MUTATING_HTTP_DECORATOR_RE = /@(Post|Put|Patch|Delete)\s*\(/;
+const AUTH_TENANT_RE =
+  /workspaceId|tenantId|@Workspace|CurrentWorkspace|JwtAuthGuard|UseGuards|roles/i;
 
-const FINANCIAL_PATHS = [
-  'checkout',
-  'wallet',
-  'billing',
-  'payment',
-  'payout',
-  'withdraw',
-  'transaction',
-];
-
-function isFinancialFile(filePath: string): boolean {
-  const lower = filePath.toLowerCase();
-  return FINANCIAL_PATHS.some((p) => lower.includes(p));
+function isHighRiskController(content: string): boolean {
+  return MONEY_STATE_RE.test(content) && MUTATING_HTTP_DECORATOR_RE.test(content);
 }
 
 function hasDecoratorInRange(lines: string[], from: number, to: number, pattern: RegExp): boolean {
@@ -86,7 +80,8 @@ export function checkGuards(config: PulseConfig): Break[] {
 
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
-    const financial = isFinancialFile(file);
+    const highRiskMutatingController = isHighRiskController(content);
+    const hasTenantOrAuthContext = AUTH_TENANT_RE.test(content);
 
     // Find all @Controller blocks and their class-level guards / @Public / @Throttle
     interface ControllerBlock {
@@ -185,15 +180,20 @@ export function checkGuards(config: PulseConfig): Break[] {
           });
         }
 
-        if (financial && !methodHasThrottle && !block.hasClassThrottle) {
+        if (
+          highRiskMutatingController &&
+          hasTenantOrAuthContext &&
+          !methodHasThrottle &&
+          !block.hasClassThrottle
+        ) {
           // Only flag if neither the class nor the method has a throttle or ThrottlerGuard
           breaks.push({
             type: 'FINANCIAL_NO_RATE_LIMIT',
             severity: 'high',
             file: relFile,
             line: i + 1,
-            description: 'Financial route has no @Throttle rate-limit decorator',
-            detail: `${trimmed.slice(0, 100)} — financial endpoints must have @Throttle()`,
+            description: 'Money-like mutating route has no @Throttle rate-limit decorator',
+            detail: `${trimmed.slice(0, 100)} — high-risk mutating endpoints must have @Throttle()`,
           });
         }
       }

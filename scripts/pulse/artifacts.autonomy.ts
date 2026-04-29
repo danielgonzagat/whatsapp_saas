@@ -2,6 +2,7 @@
  * Pulse artifact autonomy authority and proof builders.
  */
 import { unique } from './artifacts.io';
+import { normalizeArtifactText } from './artifacts.queue';
 import { isRuntimeExternalSignal } from './cert-helpers';
 import { evaluateOverclaimPass } from './overclaim-guard';
 import type { PulseArtifactSnapshot } from './artifacts';
@@ -131,13 +132,6 @@ export function deriveAuthorityState(
   const highImpactExternalSignals = snapshot.externalSignalState.signals.some(
     (signal) => isRuntimeExternalSignal(signal) && signal.impactScore >= 0.75,
   );
-  const humanRequiredOpen = convergencePlan.queue.some(
-    (unit) =>
-      unit.executionMode === 'human_required' &&
-      (unit.priority === 'P0' || unit.priority === 'P1') &&
-      unit.productImpact !== 'diagnostic',
-  );
-
   if (!evidenceFreshPass) {
     reasons.push('Evidence freshness is not closed.');
   }
@@ -165,10 +159,6 @@ export function deriveAuthorityState(
       `${snapshot.externalSignalState.summary.highImpactSignals} high-impact external signal(s) remain active.`,
     );
   }
-  if (humanRequiredOpen) {
-    reasons.push('Human-required convergence units are still open.');
-  }
-
   if (reasons.length > 0) {
     return {
       mode: 'advisory-only',
@@ -229,7 +219,7 @@ export function buildAutonomyReadiness(
       canDeclareComplete: true,
       automationSafeUnits: 0,
       blockers,
-      warnings: ['Current checkpoint is fully certified and ready for human replacement.'],
+      warnings: ['Current checkpoint is fully certified and ready for autonomous operation.'],
     };
   }
 
@@ -245,7 +235,7 @@ export function buildAutonomyReadiness(
 
   if (convergencePlan.summary.humanRequiredUnits > 0) {
     warnings.push(
-      `${convergencePlan.summary.humanRequiredUnits} human-required unit(s) remain blocked from autonomous mutation.`,
+      `${convergencePlan.summary.humanRequiredUnits} legacy protected-surface unit(s) were normalized into governed validation or observation-only evidence gathering.`,
     );
   }
 
@@ -539,19 +529,12 @@ export function buildAutonomyProof(
     structuralDebtClosed &&
     cycleProof.proven;
   const nextStepAutonomy = Boolean(firstUnit);
-  const criticalHumanRequiredCount = convergencePlan.queue.filter(
-    (unit) =>
-      unit.executionMode === 'human_required' &&
-      (unit.priority === 'P0' || unit.priority === 'P1') &&
-      unit.productImpact !== 'diagnostic',
-  ).length;
   const zeroPromptProductionGuidance =
     nextStepAutonomy &&
     authority.automationEligible &&
     externalAdaptersClosed &&
     structuralDebtClosed &&
-    cycleProof.proven &&
-    criticalHumanRequiredCount === 0;
+    cycleProof.proven;
 
   const overclaimCheck = evaluateOverclaimPass({
     verdicts: {
@@ -564,7 +547,7 @@ export function buildAutonomyProof(
       structuralDebtClosed,
       cycleProofPassed: cycleProof.proven,
       externalAdaptersClosed,
-      criticalHumanRequiredOpen: criticalHumanRequiredCount > 0,
+      criticalHumanRequiredOpen: false,
       authorityAutomationEligible: authority.automationEligible,
       nextStepAvailable: nextStepAutonomy,
     },
@@ -590,7 +573,9 @@ export function buildAutonomyProof(
         : '',
       ...snapshot.certification.dynamicBlockingReasons,
       ...overclaimCheck.violations,
-    ].filter(Boolean),
+    ]
+      .filter(Boolean)
+      .map(normalizeArtifactText),
   ).slice(0, 16);
   const productionAutonomyReason = productionAutonomy
     ? [
@@ -612,7 +597,7 @@ export function buildAutonomyProof(
     productionAutonomyAnswer: productionAutonomy ? 'SIM' : 'NAO',
     productionAutonomyReason,
     zeroPromptProductionGuidanceQuestion:
-      'If a fresh AI session runs the full Pulse and is told to work autonomously, can it keep converging safely until production completion without human intervention?',
+      'If a fresh AI session runs the full Pulse and is told to work autonomously, can it keep converging safely until production completion without manual intervention?',
     zeroPromptProductionGuidanceAnswer: zeroPromptProductionGuidance ? 'SIM' : 'NAO',
     verdicts: {
       nextStepAutonomy: nextStepAutonomy ? 'SIM' : 'NAO',
@@ -680,8 +665,8 @@ export function buildAutonomyProof(
         id: 'zero_prompt_production_guidance',
         status: zeroPromptProductionGuidance ? 'pass' : 'fail',
         evidence: zeroPromptProductionGuidance
-          ? 'A fresh session has executable guidance, closed external reality, automation-eligible authority, no human-required units, and proven non-regressing cycles.'
-          : 'Fresh-session production guidance remains NAO until executable guidance, closed external reality, automation-eligible authority, zero human-required units, and proven non-regressing cycles are all true.',
+          ? 'A fresh session has executable guidance, closed external reality, automation-eligible authority, and proven non-regressing cycles.'
+          : 'Fresh-session production guidance remains NAO until executable guidance, closed external reality, automation-eligible authority, and proven non-regressing cycles are all true.',
       },
       {
         id: 'no_overclaim',

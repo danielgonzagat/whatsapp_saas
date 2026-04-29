@@ -571,7 +571,7 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
 
   // ── 3. Classify execution feasibility for every target ──
   for (const target of allTargets) {
-    const classification = classifyExecutionFeasibility(target, behaviorNodeMap);
+    const classification = classifyExecutionFeasibility(target, behaviorNodeMap, rootDir);
     target.feasibility = classification.feasibility;
     target.feasibilityReason = classification.reason;
     target.generatedTests = [];
@@ -1171,24 +1171,11 @@ export function readBehaviorGraph(rootDir: string): BehaviorGraph | null {
 
 // ─── Execution Feasibility Classification ────────────────────────────────────
 
-const EXTERNAL_PROVIDER_KEYWORDS = [
-  'stripe',
-  'asaas',
-  'whatsapp',
-  'meta',
-  'openai',
-  'resend',
-  'sendgrid',
-  'twilio',
-  'aws',
-  's3',
-  'supabase',
-  'mercado',
-  'pagar',
-  'gerencianet',
-];
-
-const STAGING_KEYWORDS = ['redis', 'bull', 'queue', 'webhook', 'external', 'callback', 'provider'];
+const EXTERNAL_CALL_SHAPE_RE =
+  /\b(?:fetch|axios|httpService|request)\s*(?:<[^>]*>)?\s*\(|\.(?:get|post|put|patch|delete)\s*\(\s*['"`]https?:\/\//i;
+const INFRASTRUCTURE_BOUNDARY_SHAPE_RE =
+  /@\s*(?:Processor|Process|Cron|OnQueue\w*)\b|\b(?:new\s+Queue|QueueEvents|EventEmitter|emit|publish|subscribe)\s*\(/i;
+const DESTRUCTIVE_STATE_ACCESS_SHAPE_RE = /\.(?:delete|deleteMany|upsert)\s*\(/i;
 
 /**
  * Classify a harness target's execution feasibility.
@@ -1204,6 +1191,7 @@ const STAGING_KEYWORDS = ['redis', 'bull', 'queue', 'webhook', 'external', 'call
 export function classifyExecutionFeasibility(
   target: HarnessTarget,
   behaviorNodes: Map<string, BehaviorNode>,
+  rootDir?: string,
 ): { feasibility: ExecutionFeasibility; reason: string } {
   const targetKey = `${target.filePath}:${target.methodName ?? 'constructor'}`;
 
@@ -1231,27 +1219,15 @@ export function classifyExecutionFeasibility(
   // ── Look up behavior node for richer context ──
   const behaviorNode = behaviorNodes.get(targetKey);
 
-  // ── Check 3: behavior-graph says human_required ──
+  // ── Check 3: behavior graph requires governed staging execution ──
   if (behaviorNode && behaviorNode.executionMode === 'human_required') {
     return {
-      feasibility: 'cannot_execute',
-      reason: `Behavior graph classifies "${behaviorNode.name}" as human_required: ${behaviorNode.risk} risk, may involve destructive operations`,
+      feasibility: 'needs_staging',
+      reason: `Behavior graph requires governed staging execution for "${behaviorNode.name}" before this can become observed proof.`,
     };
   }
 
   // ── Check 4: external API calls ──
-  const fileLower = target.filePath.toLowerCase();
-  const nameLower = target.name.toLowerCase();
-
-  for (const kw of EXTERNAL_PROVIDER_KEYWORDS) {
-    if (nameLower.includes(kw) || fileLower.includes(kw)) {
-      return {
-        feasibility: 'needs_staging',
-        reason: `Target references external provider "${kw}" — requires real credentials and network`,
-      };
-    }
-  }
-
   if (behaviorNode?.externalCalls && behaviorNode.externalCalls.length > 0) {
     const providers = [...new Set(behaviorNode.externalCalls.map((c) => c.provider))];
     return {
@@ -1260,14 +1236,21 @@ export function classifyExecutionFeasibility(
     };
   }
 
-  // ── Check 5: queue / redis / webhook markers ──
-  for (const kw of STAGING_KEYWORDS) {
-    if (nameLower.includes(kw) || fileLower.includes(kw)) {
+  const targetSource = rootDir ? readHarnessTargetSource(rootDir, target.filePath) : '';
+
+  if (targetSource && EXTERNAL_CALL_SHAPE_RE.test(targetSource)) {
+    return {
+      feasibility: 'needs_staging',
+      reason: 'Source contains an outbound HTTP call shape that requires network-controlled staging',
+    };
+  }
+
+  // ── Check 5: queue/event infrastructure boundaries ──
+  if (targetSource && INFRASTRUCTURE_BOUNDARY_SHAPE_RE.test(targetSource)) {
       return {
         feasibility: 'needs_staging',
-        reason: `Target involves "${kw}" — requires staging infrastructure (Redis/BullMQ/webhook endpoint)`,
+        reason: 'Source contains queue/event infrastructure shape that requires staging services',
       };
-    }
   }
 
   if (target.kind === 'worker' || target.kind === 'webhook') {
@@ -1288,6 +1271,12 @@ export function classifyExecutionFeasibility(
       reason: `Target performs destructive DB writes on: ${behaviorNode.stateAccess.map((s) => s.model).join(', ')}`,
     };
   }
+  if (targetSource && DESTRUCTIVE_STATE_ACCESS_SHAPE_RE.test(targetSource)) {
+    return {
+      feasibility: 'needs_staging',
+      reason: 'Source contains destructive persistent-state access that requires sandboxed staging',
+    };
+  }
 
   // ── Default: executable ──
   const supports = behaviorNode
@@ -1298,6 +1287,18 @@ export function classifyExecutionFeasibility(
     feasibility: 'executable',
     reason: `Target is self-contained: ${supports}`,
   };
+}
+
+function readHarnessTargetSource(rootDir: string, filePath: string): string {
+  const absolutePath = path.isAbsolute(filePath) ? filePath : safeJoin(rootDir, filePath);
+  if (!pathExists(absolutePath)) {
+    return '';
+  }
+  try {
+    return readTextFile(absolutePath);
+  } catch {
+    return '';
+  }
 }
 
 // ─── Test Harness Code Generation ────────────────────────────────────────────

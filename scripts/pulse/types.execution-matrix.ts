@@ -11,6 +11,7 @@ export type PulseExecutionMatrixPathStatus =
   | 'observed_pass'
   | 'observed_fail'
   | 'untested'
+  /** @deprecated Legacy artifact compatibility only. New matrix builds must not emit this. */
   | 'blocked_human_required'
   | 'unreachable'
   | 'inferred_only'
@@ -131,7 +132,7 @@ export interface PulseExecutionMatrixSummary {
   observedFail: number;
   /** Paths discovered but not executed. */
   untested: number;
-  /** Paths blocked on human/governance/secret/runtime. */
+  /** Legacy blocked-human count retained for artifact compatibility. New matrix builds should emit zero. */
   blockedHumanRequired: number;
   /** Paths with no real entrypoint. */
   unreachable: number;

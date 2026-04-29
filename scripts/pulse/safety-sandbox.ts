@@ -61,63 +61,72 @@ const KIND_RISK_MAP: Record<DestructiveActionKind, SandboxRiskLevel> = {
  * Action kind definitions with their safety requirements.
  *
  * Each destructive action kind carries a default set of requirements:
- * human approval, dry-run validation, backup creation, and sandbox-only execution.
+ * sandbox validation, dry-run validation, backup creation, and isolated execution.
  */
 const ACTION_KIND_REQUIREMENTS: Record<
   DestructiveActionKind,
   {
-    requiresHumanApproval: boolean;
+    requiresGovernedSandbox: boolean;
     requiresDryRun: boolean;
     requiresBackup: boolean;
+    requiresRollbackProof: boolean;
     sandboxOnly: boolean;
   }
 > = {
   migration: {
-    requiresHumanApproval: true,
+    requiresGovernedSandbox: true,
     requiresDryRun: true,
     requiresBackup: true,
+    requiresRollbackProof: true,
     sandboxOnly: false,
   },
   external_state_mutation: {
-    requiresHumanApproval: true,
+    requiresGovernedSandbox: true,
     requiresDryRun: true,
     requiresBackup: false,
+    requiresRollbackProof: true,
     sandboxOnly: true,
   },
   access_boundary_change: {
-    requiresHumanApproval: true,
+    requiresGovernedSandbox: true,
     requiresDryRun: true,
     requiresBackup: true,
+    requiresRollbackProof: true,
     sandboxOnly: true,
   },
   infra_change: {
-    requiresHumanApproval: true,
+    requiresGovernedSandbox: true,
     requiresDryRun: true,
     requiresBackup: true,
+    requiresRollbackProof: true,
     sandboxOnly: true,
   },
   secret_access: {
-    requiresHumanApproval: true,
+    requiresGovernedSandbox: true,
     requiresDryRun: false,
     requiresBackup: false,
+    requiresRollbackProof: false,
     sandboxOnly: true,
   },
   delete_operation: {
-    requiresHumanApproval: true,
+    requiresGovernedSandbox: true,
     requiresDryRun: true,
     requiresBackup: true,
+    requiresRollbackProof: true,
     sandboxOnly: true,
   },
   governance_change: {
-    requiresHumanApproval: true,
+    requiresGovernedSandbox: true,
     requiresDryRun: false,
     requiresBackup: true,
+    requiresRollbackProof: true,
     sandboxOnly: false,
   },
   protected_file_edit: {
-    requiresHumanApproval: true,
+    requiresGovernedSandbox: true,
     requiresDryRun: true,
     requiresBackup: true,
+    requiresRollbackProof: true,
     sandboxOnly: false,
   },
 };
@@ -390,9 +399,11 @@ export function classifyDestructiveActions(rootDir: string): DestructiveAction[]
               description: `${description}: ${relative}`,
               targetFile: relative,
               riskLevel,
-              requiresHumanApproval: reqs.requiresHumanApproval || isProtected,
+              requiresHumanApproval: false,
+              requiresGovernedSandbox: reqs.requiresGovernedSandbox || isProtected,
               requiresDryRun: reqs.requiresDryRun,
               requiresBackup: reqs.requiresBackup,
+              requiresRollbackProof: reqs.requiresRollbackProof || isProtected,
               sandboxOnly: reqs.sandboxOnly,
             });
             break;
@@ -424,9 +435,11 @@ export function classifyDestructiveActions(rootDir: string): DestructiveAction[]
             description: `${description}: ${relative}`,
             targetFile: relative,
             riskLevel,
-            requiresHumanApproval: reqs.requiresHumanApproval || isProtected,
+            requiresHumanApproval: false,
+            requiresGovernedSandbox: reqs.requiresGovernedSandbox || isProtected,
             requiresDryRun: reqs.requiresDryRun,
             requiresBackup: reqs.requiresBackup,
+            requiresRollbackProof: reqs.requiresRollbackProof || isProtected,
             sandboxOnly: reqs.sandboxOnly,
           });
         }
@@ -447,7 +460,7 @@ export function classifyRiskLevel(kind: DestructiveActionKind): SandboxRiskLevel
 }
 
 export function isActionAllowedInAutonomy(action: DestructiveAction): boolean {
-  if (action.requiresHumanApproval) {
+  if (action.requiresGovernedSandbox) {
     return false;
   }
   if (action.sandboxOnly) {
@@ -471,13 +484,29 @@ export function isActionAllowedInAutonomy(action: DestructiveAction): boolean {
  * Gate level derived from the operation kind's risk profile and requirements.
  *
  * Used by the autonomy loop to decide whether a proposed change can proceed
- * without human intervention.
+ * through PULSE-governed validation.
  */
 export type GateDecision =
   | 'alllow_autonomous' // No gate required; safe for autonomous execution
   | 'require_sandbox' // Must execute inside a validated sandbox
-  | 'require_human' // Human approval required before any execution
   | 'block_permanently'; // Operation should never be attempted
+
+function buildGovernedSandboxChecks(action: DestructiveAction): string[] {
+  const checks = ['sandbox-created', 'pre-validation', 'patch-validated'];
+
+  if (action.requiresDryRun) {
+    checks.push('dry-run');
+  }
+  if (action.requiresBackup) {
+    checks.push('backup-created');
+  }
+  if (action.requiresRollbackProof) {
+    checks.push('rollback-validated');
+  }
+
+  checks.push('post-validation');
+  return checks;
+}
 
 /**
  * Classify the gate requirement for a specific destructive action.
@@ -493,12 +522,24 @@ export function classifyGateRequirement(action: DestructiveAction): {
   const risk = action.riskLevel;
   const kind = action.kind;
 
-  // Risk 3 operations always require human approval
+  if (
+    action.kind === 'governance_change' ||
+    action.kind === 'protected_file_edit' ||
+    action.kind === 'secret_access'
+  ) {
+    return {
+      decision: 'block_permanently',
+      reason: `${kind} is outside autonomous execution policy. PULSE records the boundary and blocks execution with policy evidence.`,
+      requiredChecks: ['policy-boundary-recorded'],
+    };
+  }
+
+  // Risk 3 operations always require an isolated sandbox with rollback proof.
   if (risk === 'critical') {
     return {
-      decision: 'require_human',
-      reason: `Risk 3 (critical) operation: ${kind}. Destructive actions at this level require explicit human approval.`,
-      requiredChecks: ['human-approval', 'dry-run', 'backup-created'],
+      decision: 'require_sandbox',
+      reason: `Risk 3 (critical) operation: ${kind}. Destructive actions at this level require sandbox isolation, dry-run evidence, backup proof, and rollback proof.`,
+      requiredChecks: buildGovernedSandboxChecks(action),
     };
   }
 
@@ -506,18 +547,18 @@ export function classifyGateRequirement(action: DestructiveAction): {
   if (risk === 'high') {
     return {
       decision: 'require_sandbox',
-      reason: `Risk 2 (high) operation: ${kind}. Must be validated in an isolated sandbox before approval.`,
-      requiredChecks: ['sandbox-created', 'pre-validation', 'patch-validated', 'post-validation'],
+      reason: `Risk 2 (high) operation: ${kind}. Must be validated in an isolated sandbox before execution.`,
+      requiredChecks: buildGovernedSandboxChecks(action),
     };
   }
 
   // Risk 1 operations are safe in sandbox, can proceed with pre-validation
   if (risk === 'normal') {
-    if (action.requiresHumanApproval) {
+    if (action.requiresGovernedSandbox) {
       return {
-        decision: 'require_human',
-        reason: `Risk 1 (normal) operation flagged for human approval: ${kind}.`,
-        requiredChecks: ['human-approval'],
+        decision: 'require_sandbox',
+        reason: `Risk 1 (normal) operation flagged for governed validation: ${kind}.`,
+        requiredChecks: buildGovernedSandboxChecks(action),
       };
     }
     return {
@@ -692,7 +733,8 @@ export function buildSandboxState(rootDir: string): SandboxState {
   const protectedFiles = loadProtectedFiles(rootDir);
   const destructiveActions = classifyDestructiveActions(rootDir);
 
-  const humanRequiredActions = destructiveActions.filter((a) => a.requiresHumanApproval).length;
+  const governedSandboxActions = destructiveActions.filter((a) => a.requiresGovernedSandbox).length;
+  const humanRequiredActions = 0;
   const sandboxOnlyActions = destructiveActions.filter((a) => a.sandboxOnly).length;
   const governanceViolations = destructiveActions.filter(
     (a) => a.kind === 'governance_change' || a.kind === 'protected_file_edit',
@@ -716,6 +758,7 @@ export function buildSandboxState(rootDir: string): SandboxState {
     summary: {
       totalDestructiveActions: destructiveActions.length,
       humanRequiredActions,
+      governedSandboxActions,
       sandboxOnlyActions,
       activeWorkspaces: 0,
       riskBreakdown,

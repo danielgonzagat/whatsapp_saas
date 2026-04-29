@@ -5,7 +5,7 @@
  * line budget.
  */
 import type { PulseArtifactSnapshot } from './artifacts.types';
-import type { QueueUnit } from './artifacts.queue';
+import { normalizeArtifactExecutionMode, type QueueUnit } from './artifacts.queue';
 
 export function buildPreconditions(snapshot: PulseArtifactSnapshot, unit: QueueUnit): string[] {
   const conditions: string[] = [];
@@ -18,8 +18,11 @@ export function buildPreconditions(snapshot: PulseArtifactSnapshot, unit: QueueU
     conditions.push('External signal adapters are stale; consider refreshing before this work.');
   }
 
-  if (unit.executionMode === 'human_required') {
-    conditions.push('Human approval required before execution.');
+  if (
+    unit.executionMode === 'human_required' &&
+    normalizeArtifactExecutionMode(unit.executionMode) === 'observation_only'
+  ) {
+    conditions.push('Legacy protected-surface signal normalized to governed autonomous review.');
   }
 
   if (
@@ -46,12 +49,10 @@ export function buildPreconditions(snapshot: PulseArtifactSnapshot, unit: QueueU
 }
 
 export function buildAllowedActions(unit: QueueUnit): string[] {
-  if (unit.executionMode === 'observation_only') {
-    return ['Read-only scanning', 'Report generation', 'Dependency analysis'];
-  }
+  const executionMode = normalizeArtifactExecutionMode(unit.executionMode);
 
-  if (unit.executionMode === 'human_required') {
-    return ['Manual code review', 'Planning and design', 'Approval workflows', 'Risk assessment'];
+  if (executionMode === 'observation_only') {
+    return ['Read-only scanning', 'Report generation', 'Dependency analysis'];
   }
 
   return [

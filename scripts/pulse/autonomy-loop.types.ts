@@ -11,7 +11,7 @@ export interface PulseAutonomousDirectiveUnit {
   kind: string;
   priority: string;
   source: string;
-  executionMode: 'ai_safe' | 'human_required' | 'observation_only';
+  executionMode: 'ai_safe' | 'governed_sandbox' | 'observation_only' | 'human_required';
   riskLevel: string;
   evidenceMode: string;
   confidence: string;

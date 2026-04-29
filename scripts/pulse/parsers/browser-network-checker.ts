@@ -25,7 +25,7 @@
  *   NETWORK_SLOW_UNUSABLE(medium)      — page has no loading state for slow network
  *   NETWORK_OFFLINE_DATA_LOST(high)    — form data lost on offline/connection drop
  */
-import { safeJoin, safeResolve } from '../safe-path';
+import { safeJoin } from '../safe-path';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
@@ -41,6 +41,12 @@ const LOADING_STATE_RE = /skeleton|Skeleton|isLoading|loading.*true|Spinner|Load
 const OFFLINE_PROTECTION_RE =
   /localStorage\s*\.\s*setItem.*form|draft|autosave|formPersist|offlineQueue/i;
 const FORM_BACKUP_RE = /saveFormState|persistForm|formDraft|savedDraft/i;
+const MONEY_FORM_RE =
+  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|billingAddress|taxId)\b/i;
+
+function hasMoneyLikeFormState(content: string): boolean {
+  return MONEY_FORM_RE.test(content);
+}
 
 /** Check browser network. */
 export function checkBrowserNetwork(config: PulseConfig): Break[] {
@@ -124,11 +130,9 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
   }
 
   // CHECK 3: Offline data loss in forms
-  const formFiles = frontendFiles.filter(
-    (f) => /checkout|form|payment|register|signup/i.test(f) && !/node_modules|\.next/.test(f),
-  );
-  const hasCheckoutDraftPersistence = frontendFiles.some((f) => {
-    if (!/checkout/i.test(f) || /node_modules|\.next/.test(f)) {
+  const formFiles = frontendFiles.filter((f) => !/node_modules|\.next/.test(f));
+  const hasDraftPersistence = frontendFiles.some((f) => {
+    if (/node_modules|\.next/.test(f)) {
       return false;
     }
     try {
@@ -153,16 +157,16 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
     const hasForm = /<form|useForm|handleSubmit/i.test(content);
     const hasOfflineProtection =
       OFFLINE_PROTECTION_RE.test(content) || FORM_BACKUP_RE.test(content);
-    const isControlledCheckoutChild =
-      /updateField|form:\s*[A-Za-z_$]\w+|form=\{checkout\.form\}/i.test(content) &&
-      hasCheckoutDraftPersistence;
+    const isControlledFormChild =
+      /updateField|form:\s*[A-Za-z_$]\w+|form=\{[A-Za-z_$][\w$.]*\.form\}/i.test(content) &&
+      hasDraftPersistence;
 
-    // Only flag checkout/payment forms (high-stakes)
+    // Only flag high-stakes money-like forms.
     if (
       hasForm &&
       !hasOfflineProtection &&
-      !isControlledCheckoutChild &&
-      /checkout|payment|pagamento/i.test(file)
+      !isControlledFormChild &&
+      hasMoneyLikeFormState(content)
     ) {
       breaks.push({
         type: 'NETWORK_OFFLINE_DATA_LOST',
@@ -170,7 +174,7 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
         file: relFile,
         line: 0,
         description:
-          'Payment/checkout form has no offline protection — user loses entered data on connection drop',
+          'Money-like form has no offline protection — user loses entered data on connection drop',
         detail:
           'Save form progress to localStorage on every field change; restore on mount; show offline indicator',
       });

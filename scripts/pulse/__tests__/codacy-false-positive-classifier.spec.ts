@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { NON_ACTIONABLE_PATTERNS, classifyCodacyIssues } from '../codacy-false-positive-classifier';
 import type { PulseCodacyIssue, PulseCodacySummary } from '../types.truth';
+import type { CodacyClassification } from '../types.codacy-classification';
 
 const RAC_PATTERN = 'Semgrep_codacy.generic.sql.rac-table-access';
 
@@ -41,6 +42,10 @@ function makeSummary(overrides: Partial<PulseCodacySummary> = {}): PulseCodacySu
   };
 }
 
+function governedValidationAction(result: CodacyClassification): string | undefined {
+  return result.humanRequiredAction;
+}
+
 describe('classifyCodacyIssues', () => {
   it('lists Semgrep RAC table access as a non-actionable pattern', () => {
     expect(NON_ACTIONABLE_PATTERNS).toContain(RAC_PATTERN);
@@ -54,7 +59,7 @@ describe('classifyCodacyIssues', () => {
     expect(result.actionableHigh).toBe(0);
     expect(result.nonActionableHigh).toBe(0);
     expect(result.nonActionableByPattern).toEqual({});
-    expect(result.humanRequiredAction).toBeUndefined();
+    expect(governedValidationAction(result)).toBeUndefined();
   });
 
   it('treats only-actionable patterns as fully actionable', () => {
@@ -75,7 +80,7 @@ describe('classifyCodacyIssues', () => {
     expect(result.actionableHigh).toBe(3);
     expect(result.nonActionableHigh).toBe(0);
     expect(result.nonActionableByPattern).toEqual({});
-    expect(result.humanRequiredAction).toBeUndefined();
+    expect(governedValidationAction(result)).toBeUndefined();
   });
 
   it('treats only-non-actionable RAC patterns as fully non-actionable', () => {
@@ -99,9 +104,9 @@ describe('classifyCodacyIssues', () => {
     expect(result.actionableHigh).toBe(0);
     expect(result.nonActionableHigh).toBe(37);
     expect(result.nonActionableByPattern[RAC_PATTERN]).toBe(37);
-    expect(result.humanRequiredAction).toBeDefined();
-    expect(result.humanRequiredAction).toContain(RAC_PATTERN);
-    expect(result.humanRequiredAction).toContain('codacy-enforce-max-rigor');
+    expect(governedValidationAction(result)).toBeDefined();
+    expect(governedValidationAction(result)).toContain(RAC_PATTERN);
+    expect(governedValidationAction(result)).toContain('codacy-enforce-max-rigor');
   });
 
   it('splits mixed actionable and non-actionable HIGH issues', () => {
@@ -125,7 +130,7 @@ describe('classifyCodacyIssues', () => {
     expect(result.nonActionableHigh).toBe(3);
     expect(result.actionableHigh).toBe(5);
     expect(result.nonActionableByPattern).toEqual({ [RAC_PATTERN]: 3 });
-    expect(result.humanRequiredAction).toContain(RAC_PATTERN);
+    expect(governedValidationAction(result)).toContain(RAC_PATTERN);
   });
 
   it('ignores non-HIGH severity rows even when patternId is non-actionable', () => {
@@ -145,7 +150,7 @@ describe('classifyCodacyIssues', () => {
     expect(result.nonActionableHigh).toBe(0);
     expect(result.actionableHigh).toBe(0);
     expect(result.nonActionableByPattern).toEqual({});
-    expect(result.humanRequiredAction).toBeUndefined();
+    expect(governedValidationAction(result)).toBeUndefined();
   });
 
   it('clamps actionableHigh at zero if non-actionable count exceeds totalHigh', () => {

@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { createConnection } from 'node:net';
 import { connect as tlsConnect } from 'node:tls';
 import { join } from 'node:path';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { escapeHtml } from '../common/utils/html-escape.util';
 
@@ -59,7 +60,7 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
 
-  constructor() {
+  constructor(@Optional() private readonly opsAlert?: OpsAlertService) {
     this.logger.log(`EmailService initialized with provider: ${this.getProvider()}`);
   }
 
@@ -218,6 +219,7 @@ export class EmailService {
       this.logger.error(
         `Erro ao enviar email: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );
+      void this.opsAlert?.alertOnCriticalError(error, 'EmailService.send');
       return false;
     }
   }
@@ -328,6 +330,7 @@ export class EmailService {
       });
 
       socket.on('error', (err: Error) => {
+        void this.opsAlert?.alertOnCriticalError(err, 'EmailService.sendViaSMTP');
         reject(err);
       });
 

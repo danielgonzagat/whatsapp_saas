@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-04-29T19:25:34.714Z",
+  "generatedAt": "2026-04-29T19:50:07.070Z",
   "profile": null,
   "certificationScope": null,
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
     "status": "READY",
-    "generatedAt": "2026-04-29T19:25:31.137Z",
+    "generatedAt": "2026-04-29T19:50:02.926Z",
     "productCertificationStatus": "PARTIAL",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": true,
@@ -34,9 +34,9 @@
       {
         "id": "execution_matrix",
         "status": "pass",
-        "reason": "Execution matrix classified 4017 path(s) with zero unknown and zero non-terminal paths.",
+        "reason": "Execution matrix classified 4020 path(s) with zero unknown and zero non-terminal paths.",
         "evidence": {
-          "totalPaths": 4017,
+          "totalPaths": 4020,
           "unknownPaths": 0,
           "criticalUnobservedPaths": 0,
           "impreciseBreakpoints": 0,
@@ -120,12 +120,12 @@
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-29T19:25:31.137Z",
+    "generatedAt": "2026-04-29T19:50:02.926Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
     "productionAutonomyAnswer": "NAO",
-    "productionAutonomyReason": "NAO: Core trust/production gates are green; autonomous execution may proceed. | Authority mode is autonomous-execution, not certified-autonomous. | Certification status is PARTIAL, not CERTIFIED. | 39 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | Codacy still reports 1116 HIGH issue(s). | Observed external high-impact signals remain active: 3.",
+    "productionAutonomyReason": "NAO: Core trust/production gates are green; autonomous execution may proceed. | Authority mode is autonomous-execution, not certified-autonomous. | Certification status is PARTIAL, not CERTIFIED. | 34 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | Codacy still reports 1116 HIGH issue(s). | Observed external high-impact signals remain active: 3.",
     "zeroPromptProductionGuidanceQuestion": "If a fresh AI session runs the full Pulse and is told to work autonomously, can it keep converging safely until production completion without human intervention?",
     "zeroPromptProductionGuidanceAnswer": "NAO",
     "verdicts": {
@@ -183,7 +183,7 @@
       {
         "id": "structural_debt_closed",
         "status": "fail",
-        "evidence": "39 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), 0 phantom flow(s)."
+        "evidence": "34 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), 0 phantom flow(s)."
       },
       {
         "id": "multi_cycle_convergence",
@@ -205,7 +205,7 @@
       "Core trust/production gates are green; autonomous execution may proceed.",
       "Authority mode is autonomous-execution, not certified-autonomous.",
       "Certification status is PARTIAL, not CERTIFIED.",
-      "39 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
+      "34 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain.",
       "Codacy still reports 1116 HIGH issue(s).",
       "Observed external high-impact signals remain active: 3."
     ],
@@ -281,7 +281,7 @@
         "status": "ready",
         "executed": true,
         "signalCount": 1,
-        "reason": "GitNexus index is fresh for commit ff00fe60."
+        "reason": "GitNexus index is fresh for commit c74dae23."
       }
     ],
     "requiredBeforeSim": [
@@ -300,24 +300,24 @@
   "currentCheckpoint": {
     "tier": 1,
     "status": "PARTIAL",
-    "score": 74
+    "score": 75
   },
   "targetCheckpoint": {
     "capabilityRealnessRatio": 1,
     "flowRealnessRatio": 1,
     "projectedProductionReadiness": "yellow"
   },
-  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 39 structural parity gap(s), and 1116 HIGH Codacy issue(s).",
+  "visionGap": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 34 structural parity gap(s), and 1116 HIGH Codacy issue(s).",
   "currentState": {
     "certificationStatus": "PARTIAL",
     "blockingTier": 1,
-    "score": 74,
+    "score": 75,
     "scopeParity": {
       "status": "pass",
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "high",
       "reason": "Repo inventory completed and all observed Codacy hotspot files are covered.",
-      "inventoryFiles": 2846,
+      "inventoryFiles": 2849,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 60,
       "missingCodacyFiles": []
@@ -371,54 +371,54 @@
         "source": "codacy",
         "status": "ready",
         "syncedAt": "2026-04-29T17:24:36.686Z",
-        "freshnessMinutes": 119
+        "freshnessMinutes": 143
       },
       {
         "source": "github",
         "status": "ready",
-        "syncedAt": "2026-04-29T19:25:26.067Z",
+        "syncedAt": "2026-04-29T19:49:53.865Z",
         "freshnessMinutes": 0
       },
       {
         "source": "github_actions",
         "status": "ready",
-        "syncedAt": "2026-04-29T19:25:26.067Z",
+        "syncedAt": "2026-04-29T19:49:53.865Z",
         "freshnessMinutes": 0
       },
       {
         "source": "codecov",
         "status": "ready",
-        "syncedAt": "2026-04-29T19:25:26.067Z",
+        "syncedAt": "2026-04-29T19:49:53.865Z",
         "freshnessMinutes": 0
       },
       {
         "source": "sentry",
         "status": "ready",
-        "syncedAt": "2026-04-29T19:25:26.067Z",
+        "syncedAt": "2026-04-29T19:49:53.865Z",
         "freshnessMinutes": 0
       },
       {
         "source": "datadog",
         "status": "ready",
-        "syncedAt": "2026-04-29T19:25:26.067Z",
+        "syncedAt": "2026-04-29T19:49:53.865Z",
         "freshnessMinutes": 0
       },
       {
         "source": "prometheus",
         "status": "optional_not_configured",
-        "syncedAt": "2026-04-29T19:25:26.067Z",
+        "syncedAt": "2026-04-29T19:49:53.865Z",
         "freshnessMinutes": 0
       },
       {
         "source": "dependabot",
         "status": "ready",
-        "syncedAt": "2026-04-29T19:25:26.067Z",
+        "syncedAt": "2026-04-29T19:49:53.865Z",
         "freshnessMinutes": 0
       },
       {
         "source": "gitnexus",
         "status": "ready",
-        "syncedAt": "2026-04-29T19:25:26.067Z",
+        "syncedAt": "2026-04-29T19:49:53.865Z",
         "freshnessMinutes": 0
       }
     ]
@@ -464,7 +464,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-04-29T19:23:39.296Z",
+        "observedAt": "2026-04-29T19:47:57.360Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -508,7 +508,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-        "observedAt": "2026-04-29T19:23:39.296Z",
+        "observedAt": "2026-04-29T19:47:57.360Z",
         "relatedFiles": [
           "backend/src/auth/email.service.ts"
         ],
@@ -726,7 +726,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-        "observedAt": "2026-04-29T19:23:39.296Z",
+        "observedAt": "2026-04-29T19:47:57.360Z",
         "relatedFiles": [
           "backend/src/autopilot/autopilot.service.ts"
         ],
@@ -905,7 +905,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-29T19:23:39.296Z",
+        "observedAt": "2026-04-29T19:47:57.360Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -941,7 +941,7 @@
         ]
       },
       {
-        "id": "github-recent-commits-1777490727467",
+        "id": "github-recent-commits-1777492194780",
         "type": "code-change",
         "source": "github",
         "truthMode": "observed",
@@ -968,7 +968,7 @@
         ]
       },
       {
-        "id": "sentry-no-issues-1777490727834",
+        "id": "sentry-no-issues-1777492195459",
         "type": "performance-metric",
         "source": "sentry",
         "truthMode": "observed",
@@ -977,7 +977,7 @@
         "impactScore": 0.1,
         "confidence": 0.95,
         "summary": "No unresolved Sentry issues — project is clean",
-        "observedAt": "2026-04-29T19:25:27.834Z",
+        "observedAt": "2026-04-29T19:49:55.459Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -999,7 +999,7 @@
         ]
       },
       {
-        "id": "datadog-no-monitors-1777490729561",
+        "id": "datadog-no-monitors-1777492199326",
         "type": "config-gap",
         "source": "datadog",
         "truthMode": "observed",
@@ -1008,7 +1008,7 @@
         "impactScore": 0.2,
         "confidence": 0.95,
         "summary": "No Datadog monitors configured — add monitors for production visibility",
-        "observedAt": "2026-04-29T19:25:29.561Z",
+        "observedAt": "2026-04-29T19:49:59.326Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -1161,7 +1161,7 @@
         ]
       },
       {
-        "id": "gitnexus:2026-04-29T19:25:31.034Z",
+        "id": "gitnexus:2026-04-29T19:50:02.659Z",
         "type": "codegraph",
         "source": "gitnexus",
         "truthMode": "observed",
@@ -1169,8 +1169,8 @@
         "severity": 0.1,
         "impactScore": 0.1,
         "confidence": 0.9,
-        "summary": "GitNexus index is fresh for commit ff00fe60.",
-        "observedAt": "2026-04-29T19:25:31.034Z",
+        "summary": "GitNexus index is fresh for commit c74dae23.",
+        "observedAt": "2026-04-29T19:50:02.659Z",
         "relatedFiles": [],
         "routePatterns": [],
         "tags": [
@@ -1293,8 +1293,8 @@
   },
   "parityGaps": {
     "summary": {
-      "totalGaps": 39,
-      "criticalGaps": 37,
+      "totalGaps": 34,
+      "criticalGaps": 32,
       "highGaps": 0,
       "byKind": {
         "front_without_back": 1,
@@ -1302,114 +1302,12 @@
         "ui_without_persistence": 1,
         "persistence_without_consumer": 0,
         "flow_without_validation": 0,
-        "integration_without_observability": 37,
+        "integration_without_observability": 32,
         "feature_declared_without_runtime": 0,
         "runtime_without_product_surface": 0
       }
     },
     "top": [
-      {
-        "id": "integration_without_observability:integration-without-observability-ad-rules",
-        "kind": "integration_without_observability",
-        "severity": "critical",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Integration without observability: Ad Rules",
-        "summary": "Capability Ad Rules depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
-        "relatedFiles": [
-          "backend/prisma/schema.prisma",
-          "backend/src/audit/audit.service.ts",
-          "backend/src/kloel/ad-rules-engine.service.ts",
-          "backend/src/kloel/ad-rules.controller.ts",
-          "frontend/src/components/kloel/anuncios/AnunciosView.tsx",
-          "frontend/src/lib/api/misc.ts"
-        ],
-        "routePatterns": [
-          "/ad-rules",
-          "/ad-rules/${encodeURIComponent(id)}",
-          "/ad-rules/${id}",
-          "/ad-rules/${id}/toggle",
-          "/ad-rules/:id",
-          "/ad-rules/:id/toggle",
-          "/campaigns/:id/launch",
-          "/checkout/bumps/:id",
-          "/checkout/checkouts/:id",
-          "/checkout/coupons/:id",
-          "/checkout/orders/:id/status",
-          "/checkout/pixels/:id",
-          "/checkout/plans/:id",
-          "/checkout/products/:id",
-          "/checkout/products/:productId/checkouts",
-          "/checkout/products/:productId/plans",
-          "/checkout/upsells/:id",
-          "/settings/api-keys/:id",
-          "cron:CronExpression.EVERY_5_MINUTES"
-        ],
-        "affectedCapabilityIds": [
-          "capability:ad-rules"
-        ],
-        "affectedFlowIds": [
-          "ad-delete-ad-rules-id",
-          "ad-patch-meta-ads-campaigns-id-status",
-          "ad-post-ad-rules-id-toggle",
-          "admin-post-admin-products-product-id-approve",
-          "admin-post-admin-products-product-id-reject",
-          "marketing-patch-checkout-plans-plan-id-config",
-          "member-delete-member-areas-id-students-student-id",
-          "member-post-affiliate-request-product-id",
-          "member-post-affiliate-saved-product-id",
-          "member-post-member-areas-id-generate-structure",
-          "member-post-member-areas-id-modules",
-          "member-post-member-areas-id-modules-module-id-lessons",
-          "member-post-member-areas-id-students",
-          "member-put-member-areas-id",
-          "member-put-member-areas-id-lessons-lesson-id",
-          "member-put-member-areas-id-modules-module-id",
-          "member-put-member-areas-id-students-student-id",
-          "products-delete-checkout-checkouts-id",
-          "products-delete-products-product-id-campaigns-campaign-id",
-          "products-delete-products-product-id-commissions-commission-id",
-          "products-delete-products-product-id-coupons-coupon-id",
-          "products-delete-products-product-id-reviews-review-id",
-          "products-delete-products-product-id-urls-url-id",
-          "products-get-products-id",
-          "products-post-checkout-checkouts-id-duplicate",
-          "products-post-checkout-products-product-id-checkouts",
-          "products-post-checkout-products-product-id-plans",
-          "products-post-products",
-          "products-post-products-product-id-campaigns-campaign-id-launch",
-          "products-post-products-product-id-campaigns-campaign-id-pause",
-          "products-post-workspace-id-jitter",
-          "products-put-checkout-bumps-id",
-          "products-put-checkout-products-id",
-          "products-put-products-product-id-affiliates-links-link-id",
-          "workspace-delete-api-kyc-bank",
-          "workspace-delete-billing-payment-methods-payment-method-id",
-          "workspace-delete-team-invite-id",
-          "workspace-delete-team-member-id",
-          "workspace-post-ai-kb-create",
-          "workspace-post-ai-kb-source",
-          "workspace-post-api-kyc-bank",
-          "workspace-post-api-kyc-fiscal",
-          "workspace-post-autopilot-toggle",
-          "workspace-post-billing-activate-trial",
-          "workspace-post-billing-payment-methods-payment-method-id-default",
-          "workspace-post-billing-payment-methods-setup-intent",
-          "workspace-post-kyc-status",
-          "workspace-post-meta-auth-disconnect",
-          "workspace-post-products",
-          "workspace-post-segmentation-workspace-id-auto-segment",
-          "workspace-post-team-invite",
-          "workspace-post-workspace-id-account",
-          "workspace-put-api-kyc-fiscal",
-          "workspace-put-crm-deals-id-move"
-        ],
-        "validationTargets": [
-          "Validate structural chain for /ad-rules.",
-          "Re-run runtime evidence for this capability.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-        ]
-      },
       {
         "id": "integration_without_observability:integration-without-observability-admin-accounts",
         "kind": "integration_without_observability",
@@ -1627,26 +1525,161 @@
         "relatedFiles": [
           "backend/prisma/schema.prisma",
           "backend/src/analytics/smart-time/smart-time.service.ts",
-          "backend/src/autopilot/autopilot-cycle-executor.service.ts",
-          "backend/src/autopilot/autopilot-cycle.service.ts",
-          "backend/src/autopilot/autopilot.controller.ts",
-          "backend/src/autopilot/autopilot.service.ts"
+          "backend/src/audit/audit.service.ts",
+          "backend/src/campaigns/campaigns.service.ts",
+          "backend/src/kloel/product-sub-resources/product-affiliate.controller.ts",
+          "backend/src/kloel/product-sub-resources/product-ai-config.controller.ts",
+          "backend/src/kloel/product-sub-resources/product-campaign.controller.ts",
+          "backend/src/kloel/product-sub-resources/product-checkout.controller.ts",
+          "backend/src/kloel/product-sub-resources/product-commission.controller.ts",
+          "backend/src/kloel/product-sub-resources/product-coupon.controller.ts",
+          "backend/src/kloel/product-sub-resources/product-plan.controller.ts",
+          "backend/src/kloel/product-sub-resources/product-review.controller.ts",
+          "backend/src/kloel/product-sub-resources/product-url.controller.ts",
+          "backend/src/kloel/product.controller.ts",
+          "backend/src/partnerships/partnerships.service.ts",
+          "frontend/src/app/(main)/products/[id]/plans/[planId]/page.tsx",
+          "frontend/src/app/(main)/products/new/page.tsx",
+          "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
+          "frontend/src/components/kloel/products/ProductNerveCenter.tsx",
+          "frontend/src/components/kloel/products/ProductNerveCenterAvalTab.tsx",
+          "frontend/src/components/kloel/products/ProductNerveCenterCampanhasTab.tsx",
+          "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.afiliados.tsx",
+          "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.coprod.tsx",
+          "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.hooks.ts",
+          "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.richtext.tsx",
+          "frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx",
+          "frontend/src/components/kloel/products/ProductNerveCenterIATab.tsx",
+          "frontend/src/components/kloel/produtos/ProdutosView.tsx",
+          "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+          "frontend/src/components/plans/PlanAIConfigTab.tsx",
+          "frontend/src/components/plans/PlanAffiliateTab.tsx",
+          "frontend/src/components/plans/PlanPaymentTab.tsx",
+          "frontend/src/components/plans/PlanShippingTab.tsx",
+          "frontend/src/components/plans/PlanStoreTab.tsx",
+          "frontend/src/components/plans/PlanThankYouTab.tsx",
+          "frontend/src/components/products/ProductAfterPayTab.tsx",
+          "frontend/src/components/products/ProductCampaignsTab.tsx",
+          "frontend/src/components/products/ProductCheckoutsTab.tsx",
+          "frontend/src/components/products/ProductCommissionsTab.tsx",
+          "frontend/src/components/products/ProductCouponsTab.tsx",
+          "frontend/src/components/products/ProductGeneralTab.tsx",
+          "frontend/src/components/products/ProductIATab.tsx",
+          "frontend/src/components/products/ProductPlansTab.tsx",
+          "frontend/src/components/products/ProductReviewsTab.tsx",
+          "frontend/src/components/products/ProductUrlsTab.tsx",
+          "frontend/src/hooks/useProducts.ts",
+          "frontend/src/lib/api/products.ts"
         ],
         "routePatterns": [
           "/analytics/smart-time",
           "/autopilot/money-machine",
           "/autopilot/process",
-          "/autopilot/queue",
           "/autopilot/run",
-          "/autopilot/runtime-config",
-          "/autopilot/send",
-          "/autopilot/toggle",
+          "/campaigns",
+          "/campaigns/:id",
+          "/campaigns/:id/darwin/evaluate",
+          "/campaigns/:id/darwin/variants",
           "/campaigns/:id/launch",
+          "/campaigns/:id/pause",
+          "/checkout/bumps/:id",
+          "/checkout/checkouts/:id",
+          "/checkout/coupons/:id",
+          "/checkout/orders/:id/status",
+          "/checkout/pixels/:id",
+          "/checkout/plans/:id",
+          "/checkout/products/:id",
+          "/checkout/products/:productId/checkouts",
+          "/checkout/products/:productId/plans",
+          "/checkout/upsells/:id",
+          "/growth/money-machine/activate",
+          "/partnerships/affiliates",
+          "/partnerships/affiliates/:id",
+          "/partnerships/affiliates/:id/approve",
+          "/partnerships/affiliates/:id/performance",
+          "/partnerships/affiliates/:id/revoke",
+          "/partnerships/affiliates/stats",
+          "/partnerships/chat/:partnerId/read",
+          "/partnerships/chat/contacts",
+          "/partnerships/collaborators",
+          "/partnerships/collaborators/invite",
+          "/partnerships/collaborators/stats",
+          "/products",
+          "/products${qs ?",
+          "/products${qs}",
+          "/products/${encodeURIComponent(id)}",
+          "/products/${encodeURIComponent(productId)}/plans/${encodeURIComponent(planId)}",
+          "/products/${id}",
+          "/products/${productId}",
+          "/products/${productId}/affiliates",
+          "/products/${productId}/affiliates/links/${linkId}",
+          "/products/${productId}/affiliates/requests/${requestId}/${action}",
+          "/products/${productId}/ai-config",
+          "/products/${productId}/campaigns",
+          "/products/${productId}/campaigns/${campaignId}${endpointSuffix}",
+          "/products/${productId}/campaigns/${id}",
+          "/products/${productId}/campaigns/${id}/launch",
+          "/products/${productId}/campaigns/${id}/pause",
+          "/products/${productId}/checkouts",
+          "/products/${productId}/checkouts/${checkoutPendingDelete.id}",
+          "/products/${productId}/checkouts/${editingCheckoutId}",
+          "/products/${productId}/commissions",
+          "/products/${productId}/commissions/${commissionPendingDelete.id}",
+          "/products/${productId}/commissions/${deleteTarget.id}",
+          "/products/${productId}/commissions/${editingId}",
+          "/products/${productId}/coupons",
+          "/products/${productId}/coupons/${couponId}",
+          "/products/${productId}/coupons/${couponPendingDelete.id}",
+          "/products/${productId}/plans",
+          "/products/${productId}/reviews",
+          "/products/${productId}/reviews/${id}",
+          "/products/${productId}/reviews/${reviewPendingDelete.id}",
+          "/products/${productId}/urls",
+          "/products/${productId}/urls/${urlPendingDelete.id}",
+          "/products/:id",
+          "/products/:productId",
+          "/products/:productId/affiliates",
+          "/products/:productId/affiliates/links/:linkId",
+          "/products/:productId/affiliates/requests/:requestId/:action",
+          "/products/:productId/affiliates/requests/:requestId/approve",
+          "/products/:productId/affiliates/requests/:requestId/reject",
+          "/products/:productId/ai-config",
+          "/products/:productId/campaigns",
+          "/products/:productId/campaigns/:campaignId",
           "/products/:productId/campaigns/:campaignId/launch",
-          "/webhook/payment"
+          "/products/:productId/campaigns/:campaignId/pause",
+          "/products/:productId/campaigns/:campaignId:endpointSuffix",
+          "/products/:productId/campaigns/:id",
+          "/products/:productId/campaigns/:id/launch",
+          "/products/:productId/campaigns/:id/pause",
+          "/products/:productId/checkouts",
+          "/products/:productId/checkouts/:checkoutId",
+          "/products/:productId/checkouts/:editingCheckoutId",
+          "/products/:productId/checkouts/:param",
+          "/products/:productId/commissions",
+          "/products/:productId/commissions/:commissionId",
+          "/products/:productId/commissions/:editingId",
+          "/products/:productId/commissions/:param",
+          "/products/:productId/coupons",
+          "/products/:productId/coupons/:couponId",
+          "/products/:productId/coupons/:param",
+          "/products/:productId/coupons/validate",
+          "/products/:productId/plans",
+          "/products/:productId/plans/:planId",
+          "/products/:productId/reviews",
+          "/products/:productId/reviews/:id",
+          "/products/:productId/reviews/:param",
+          "/products/:productId/reviews/:reviewId",
+          "/products/:productId/urls",
+          "/products/:productId/urls/:param",
+          "/products/:productId/urls/:urlId",
+          "/products/categories/list",
+          "/products/import",
+          "/products/stats",
+          "/settings/api-keys/:id"
         ],
         "affectedCapabilityIds": [
-          "capability:autopilot-process"
+          "capability:products-product"
         ],
         "affectedFlowIds": [
           "admin-post-admin-products-product-id-approve",
@@ -1657,6 +1690,7 @@
           "autopilot-post-autopilot-send",
           "autopilot-post-autopilot-test",
           "autopilot-post-autopilot-toggle",
+          "marketing-patch-checkout-plans-plan-id-config",
           "member-delete-member-areas-id-students-student-id",
           "member-post-affiliate-request-product-id",
           "member-post-affiliate-saved-product-id",
@@ -1685,13 +1719,30 @@
           "products-put-checkout-bumps-id",
           "products-put-checkout-products-id",
           "products-put-products-product-id-affiliates-links-link-id",
+          "workspace-delete-api-kyc-bank",
+          "workspace-delete-billing-payment-methods-payment-method-id",
+          "workspace-delete-team-invite-id",
+          "workspace-delete-team-member-id",
+          "workspace-post-ai-kb-create",
+          "workspace-post-ai-kb-source",
+          "workspace-post-api-kyc-bank",
+          "workspace-post-api-kyc-fiscal",
           "workspace-post-autopilot-toggle",
-          "workspace-post-products"
+          "workspace-post-billing-activate-trial",
+          "workspace-post-billing-payment-methods-payment-method-id-default",
+          "workspace-post-billing-payment-methods-setup-intent",
+          "workspace-post-kyc-status",
+          "workspace-post-meta-auth-disconnect",
+          "workspace-post-products",
+          "workspace-post-segmentation-workspace-id-auto-segment",
+          "workspace-post-team-invite",
+          "workspace-post-workspace-id-account",
+          "workspace-put-api-kyc-fiscal",
+          "workspace-put-crm-deals-id-move"
         ],
         "validationTargets": [
           "Validate structural chain for /analytics/smart-time.",
           "Re-run runtime evidence for this capability.",
-          "Re-sync Codacy and confirm HIGH issues dropped.",
           "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
         ]
       },
@@ -1836,103 +1887,6 @@
         ]
       },
       {
-        "id": "integration_without_observability:integration-without-observability-auth-magic",
-        "kind": "integration_without_observability",
-        "severity": "critical",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Integration without observability: Auth Magic",
-        "summary": "Capability Auth Magic depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
-        "relatedFiles": [
-          "backend/prisma/schema.prisma",
-          "backend/src/auth/auth-verification.service.ts",
-          "backend/src/auth/auth.controller.ts",
-          "backend/src/auth/auth.service.ts"
-        ],
-        "routePatterns": [
-          "/api/auth/magic-link/request",
-          "/api/auth/magic-link/verify",
-          "/auth/magic-link/request",
-          "/auth/magic-link/verify",
-          "/auth/resend-verification",
-          "/auth/send-verification"
-        ],
-        "affectedCapabilityIds": [
-          "capability:auth-send"
-        ],
-        "affectedFlowIds": [
-          "auth-post-auth-forgot-password",
-          "auth-post-auth-reset-password"
-        ],
-        "validationTargets": [
-          "Validate structural chain for /api/auth/magic-link/request.",
-          "Re-run runtime evidence for this capability.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-        ]
-      },
-      {
-        "id": "integration_without_observability:integration-without-observability-auth-register",
-        "kind": "integration_without_observability",
-        "severity": "critical",
-        "truthMode": "observed",
-        "executionMode": "ai_safe",
-        "title": "Integration without observability: Auth Register",
-        "summary": "Capability Auth Register depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
-        "relatedFiles": [
-          "backend/prisma/schema.prisma",
-          "backend/src/audit/audit.service.ts",
-          "backend/src/kloel/payment.controller.ts",
-          "backend/src/kloel/payment.service.ts",
-          "backend/src/payments/fraud/fraud.engine.ts",
-          "frontend/src/app/(public)/pay/[id]/page.tsx",
-          "frontend/src/lib/api/billing.ts",
-          "frontend/src/lib/api/kloel.ts"
-        ],
-        "routePatterns": [
-          "/api/auth/register",
-          "/api/whatsapp-api/session/backlog/start",
-          "/auth/register",
-          "/kloel/agent/:workspaceId/process",
-          "/kloel/agent/:workspaceId/simulate",
-          "/kloel/payment/:workspaceId/create",
-          "/kloel/payment/:workspaceId/recovery/:paymentId",
-          "/kloel/payment/:workspaceId/webhook/confirm",
-          "/kloel/payments/create/${encodeURIComponent(workspaceId)}",
-          "/kloel/payments/create/:workspaceId",
-          "/kloel/payments/public/${resolvedParams.id}",
-          "/kloel/payments/public/:param",
-          "/kloel/payments/public/:paymentId",
-          "/kloel/payments/report/${encodeURIComponent(workspaceId)}?period=${encodeURIComponent(period)}",
-          "/kloel/payments/report/:workspaceId",
-          "/kloel/payments/status",
-          "/kloel/payments/webhook",
-          "/wallet/prepaid/:workspaceId/topup",
-          "/whatsapp-api/session/backlog/start"
-        ],
-        "affectedCapabilityIds": [
-          "capability:kloel-payments"
-        ],
-        "affectedFlowIds": [
-          "auth-post-auth-forgot-password",
-          "auth-post-auth-reset-password",
-          "kloel-delete-kloel-site-id",
-          "kloel-delete-kloel-wallet-workspace-id-bank-accounts-id",
-          "kloel-post-kloel-onboarding-workspace-id-chat-stream",
-          "kloel-post-kloel-site-generate",
-          "kloel-post-kloel-site-save",
-          "kloel-post-kloel-wallet-workspace-id-withdraw",
-          "kloel-put-kloel-site-id",
-          "meta-post-meta-auth-disconnect",
-          "vendas-post-kloel-payment-workspace-id-create",
-          "whatsapp-post-whatsapp-api-session-action"
-        ],
-        "validationTargets": [
-          "Validate structural chain for /api/auth/register.",
-          "Re-run runtime evidence for this capability.",
-          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
-        ]
-      },
-      {
         "id": "integration_without_observability:integration-without-observability-autopilot-actions",
         "kind": "integration_without_observability",
         "severity": "critical",
@@ -2008,18 +1962,142 @@
           "Re-sync Codacy and confirm HIGH issues dropped.",
           "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
         ]
+      },
+      {
+        "id": "integration_without_observability:integration-without-observability-autopilot-conversion",
+        "kind": "integration_without_observability",
+        "severity": "critical",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Integration without observability: Autopilot Conversion",
+        "summary": "Capability Autopilot Conversion depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "relatedFiles": [
+          "backend/prisma/schema.prisma",
+          "backend/src/autopilot/autopilot-ops-conversion.service.ts",
+          "backend/src/autopilot/autopilot-ops.service.ts",
+          "backend/src/autopilot/autopilot.controller.ts",
+          "backend/src/autopilot/autopilot.service.ts",
+          "frontend/src/app/(main)/autopilot/page.tsx",
+          "frontend/src/lib/api/autopilot.ts"
+        ],
+        "routePatterns": [
+          "/autopilot/conversion",
+          "/autopilot/pipeline",
+          "/autopilot/retry",
+          "/autopilot/test",
+          "/webhook/payment",
+          "/webhook/payment/paghiper",
+          "/webhook/payment/shopify",
+          "/webhook/payment/woocommerce"
+        ],
+        "affectedCapabilityIds": [
+          "capability:autopilot"
+        ],
+        "affectedFlowIds": [
+          "autopilot-post-autopilot-ask",
+          "autopilot-post-autopilot-money-machine",
+          "autopilot-post-autopilot-send",
+          "autopilot-post-autopilot-test",
+          "autopilot-post-autopilot-toggle",
+          "cia-post-cia-autopilot-total-workspace-id",
+          "workspace-post-autopilot-toggle"
+        ],
+        "validationTargets": [
+          "Validate structural chain for /autopilot/conversion.",
+          "Re-run runtime evidence for this capability.",
+          "Re-sync Codacy and confirm HIGH issues dropped.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+        ]
+      },
+      {
+        "id": "integration_without_observability:integration-without-observability-autopilot-money",
+        "kind": "integration_without_observability",
+        "severity": "critical",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Integration without observability: Autopilot Money",
+        "summary": "Capability Autopilot Money depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "relatedFiles": [
+          "backend/prisma/schema.prisma",
+          "backend/src/autopilot/autopilot-analytics-report.service.ts",
+          "backend/src/autopilot/autopilot-analytics.service.ts",
+          "backend/src/autopilot/autopilot-cycle-money.service.ts",
+          "backend/src/autopilot/autopilot-cycle.service.ts",
+          "backend/src/autopilot/autopilot.controller.ts",
+          "backend/src/autopilot/autopilot.service.ts",
+          "frontend/src/app/(main)/autopilot/page.tsx",
+          "frontend/src/lib/api/autopilot.ts"
+        ],
+        "routePatterns": [
+          "/autopilot/money-machine",
+          "/autopilot/money-report",
+          "/autopilot/next-best-action",
+          "/autopilot/process",
+          "/autopilot/run"
+        ],
+        "affectedCapabilityIds": [
+          "capability:autopilot-money"
+        ],
+        "affectedFlowIds": [
+          "autopilot-post-autopilot-ask",
+          "autopilot-post-autopilot-money-machine",
+          "autopilot-post-autopilot-send",
+          "autopilot-post-autopilot-test",
+          "autopilot-post-autopilot-toggle"
+        ],
+        "validationTargets": [
+          "Validate structural chain for /autopilot/money-machine.",
+          "Re-run runtime evidence for this capability.",
+          "Re-sync Codacy and confirm HIGH issues dropped.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+        ]
+      },
+      {
+        "id": "integration_without_observability:integration-without-observability-autopilot-revenue",
+        "kind": "integration_without_observability",
+        "severity": "critical",
+        "truthMode": "observed",
+        "executionMode": "ai_safe",
+        "title": "Integration without observability: Autopilot Revenue",
+        "summary": "Capability Autopilot Revenue depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).",
+        "relatedFiles": [
+          "backend/prisma/schema.prisma",
+          "backend/src/autopilot/autopilot-analytics-report.service.ts",
+          "backend/src/autopilot/autopilot-analytics.service.ts",
+          "backend/src/autopilot/autopilot.controller.ts",
+          "backend/src/autopilot/autopilot.service.ts"
+        ],
+        "routePatterns": [
+          "/autopilot/revenue-events"
+        ],
+        "affectedCapabilityIds": [
+          "capability:autopilot-revenue"
+        ],
+        "affectedFlowIds": [
+          "autopilot-post-autopilot-ask",
+          "autopilot-post-autopilot-money-machine",
+          "autopilot-post-autopilot-send",
+          "autopilot-post-autopilot-test",
+          "autopilot-post-autopilot-toggle"
+        ],
+        "validationTargets": [
+          "Validate structural chain for /autopilot/revenue-events.",
+          "Re-run runtime evidence for this capability.",
+          "Re-sync Codacy and confirm HIGH issues dropped.",
+          "Re-run observability evidence and confirm request IDs/tracing/logging are detected."
+        ]
       }
     ]
   },
   "executionMatrix": {
     "summary": {
-      "totalPaths": 4017,
+      "totalPaths": 4020,
       "bySource": {
         "execution_chain": 0,
         "capability": 312,
         "flow": 118,
         "structural_node": 1473,
-        "scope_file": 2114
+        "scope_file": 2117
       },
       "byStatus": {
         "observed_pass": 17,
@@ -2028,7 +2106,7 @@
         "blocked_human_required": 113,
         "unreachable": 0,
         "inferred_only": 1439,
-        "not_executable": 2113
+        "not_executable": 2116
       },
       "observedPass": 17,
       "observedFail": 229,
@@ -2036,8 +2114,8 @@
       "blockedHumanRequired": 113,
       "unreachable": 0,
       "inferredOnly": 1439,
-      "notExecutable": 2113,
-      "terminalPaths": 4017,
+      "notExecutable": 2116,
+      "terminalPaths": 4020,
       "nonTerminalPaths": 0,
       "unknownPaths": 0,
       "criticalUnobservedPaths": 0,
@@ -14776,7 +14854,7 @@
     {
       "source": "gitnexus",
       "type": "codegraph",
-      "summary": "GitNexus index is fresh for commit ff00fe60.",
+      "summary": "GitNexus index is fresh for commit c74dae23.",
       "impactScore": 0.1,
       "executionMode": "ai_safe",
       "affectedCapabilities": [
@@ -15969,7 +16047,6 @@
         "backend/src/admin/auth/guards/admin-auth.guard.ts",
         "backend/src/auth/apple-auth.support.ts",
         "backend/src/auth/auth-partner.service.ts",
-        "backend/src/auth/auth-verification.service.ts",
         "backend/src/auth/auth.password.service.ts",
         "backend/src/auth/auth.token.service.ts",
         "backend/src/auth/email.service.ts",
@@ -16150,13 +16227,13 @@
         "backend/src/webhooks/payment-webhook-stripe.handlers2.ts (5)",
         "backend/src/webhooks/payment-webhook-stripe.handlers.ts (3)",
         "backend/src/kloel/kloel-tool-executor-whatsapp.service.ts (2)",
-        "backend/src/kloel/kloel-whatsapp-tools.service.ts (2)",
         "/Users/danielpenin/whatsapp_saas/.github/workflows/ci-cd.yml",
         "/Users/danielpenin/whatsapp_saas/backend/src/billing/billing.service.ts",
         "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-product.service.ts",
         "/Users/danielpenin/whatsapp_saas/backend/src/checkout/checkout-social-lead.service.ts",
         "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts",
-        "/Users/danielpenin/whatsapp_saas/backend/src/wallet/wallet.service.ts"
+        "/Users/danielpenin/whatsapp_saas/backend/src/wallet/wallet.service.ts",
+        "/Users/danielpenin/whatsapp_saas/docker-compose.yml"
       ],
       "exitCriteria": [
         "Async expectations settle to satisfied: conversation-reload, message-persistence.",
@@ -18150,8 +18227,8 @@
       "phantomFlows": 0
     },
     "parityGaps": {
-      "totalGaps": 39,
-      "criticalGaps": 37,
+      "totalGaps": 34,
+      "criticalGaps": 32,
       "highGaps": 0,
       "byKind": {
         "front_without_back": 1,
@@ -18159,17 +18236,17 @@
         "ui_without_persistence": 1,
         "persistence_without_consumer": 0,
         "flow_without_validation": 0,
-        "integration_without_observability": 37,
+        "integration_without_observability": 32,
         "feature_declared_without_runtime": 0,
         "runtime_without_product_surface": 0
       }
     },
     "structuralGraph": {
-      "totalNodes": 5737,
-      "totalEdges": 8236,
+      "totalNodes": 5738,
+      "totalEdges": 8238,
       "roleCounts": {
         "interface": 2376,
-        "orchestration": 2993,
+        "orchestration": 2994,
         "persistence": 134,
         "side_effect": 234,
         "simulation": 0
@@ -18252,9 +18329,9 @@
   "contextFabric": {
     "broadcastRef": "PULSE_CONTEXT_BROADCAST.json",
     "leasesRef": "PULSE_WORKER_LEASES.json",
-    "gitnexusRef": "gitnexus:ff00fe6066c7e556ec9f1bb601f42df6f8893cbf:2026-04-29T19:18:58.235Z",
+    "gitnexusRef": "gitnexus:c74dae23729dce78a2f6fa0c7124a5ccb11c6e30:2026-04-29T19:39:02.306Z",
     "beadsRef": "beads:60ac6e77ca29e058",
-    "contextDigest": "9d17959590f4352c7b4e10577ea86d24906c85c2f0713d117c4bbc05f8b3ae16",
+    "contextDigest": "4ddba77bd16413c9382a4d38cd6c65a60307595fd2e77e266c188ec953480fa1",
     "workerEnvelopeCount": 10,
     "contextBroadcastPass": true,
     "ownershipConflictPass": true,
@@ -18267,5 +18344,5 @@
     "Codacy still reports 1116 HIGH issue(s).",
     "Observed external high-impact signals remain active: 3."
   ],
-  "runId": "99bdb1b0-205a-49ea-a4b8-9690233977db"
+  "runId": "6bf525fc-1e8e-4820-a5cb-90aea5fdb379"
 }

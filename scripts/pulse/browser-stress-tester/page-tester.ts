@@ -18,6 +18,7 @@ import {
   findAndClickSave,
 } from './interactors';
 import { classifyResult, matchToFmapEntry, verifyPersistence } from './verifier';
+import { discoverBrowserLiveArtifacts, isLoginRedirectFromArtifacts } from './live-artifacts';
 import * as path from 'path';
 import { ensureDir } from '../safe-fs';
 
@@ -34,6 +35,7 @@ export async function testPage(
   const results: ElementTestResult[] = [];
   const pageConsoleErrors: string[] = [];
   const startTime = Date.now();
+  const pagePolicy = discoverBrowserLiveArtifacts().pages;
 
   // Console error collector for page-level
   const consoleHandler = (msg: any) => {
@@ -58,8 +60,7 @@ export async function testPage(
     // Wait for hydration
     await page.waitForTimeout(2000);
 
-    // Check if redirected to login
-    if (page.url().includes('/login')) {
+    if (isLoginRedirectFromArtifacts(page.url(), pagePolicy)) {
       loadStatus = 'redirect';
       page.removeListener('console', consoleHandler);
       return {

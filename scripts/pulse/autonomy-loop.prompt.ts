@@ -2,6 +2,8 @@
  * Prompt building functions for the autonomy loop.
  * Produces prompts for Codex and the planner agent.
  */
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import type { PulseAutonomyState, PulseAutonomyUnitSnapshot } from './types';
 import type { PulseAutonomousDirective, PulseAutonomousDirectiveUnit } from './autonomy-loop.types';
 import { DEFAULT_VALIDATION_COMMANDS } from './autonomy-loop.types';
@@ -13,6 +15,96 @@ import {
   getAutomationSafeUnits,
   hasAdaptiveRetryBeenExhausted,
 } from './autonomy-loop.unit-ranking';
+
+type SyntheticActorFlag = '--customer' | '--operator' | '--admin' | '--shift' | '--soak';
+
+interface ScenarioModeMetadata {
+  id: string;
+  actorKind?: string;
+  timeWindowModes?: string[];
+}
+
+function readScenarioModeMetadata(): ScenarioModeMetadata[] {
+  const candidates = [
+    path.join(process.cwd(), '.pulse', 'current', 'PULSE_RESOLVED_MANIFEST.json'),
+    path.join(process.cwd(), 'PULSE_RESOLVED_MANIFEST.json'),
+    path.join(process.cwd(), 'pulse.manifest.json'),
+  ];
+
+  for (const candidate of candidates) {
+    if (!fs.existsSync(candidate)) {
+      continue;
+    }
+    try {
+      const parsed = JSON.parse(fs.readFileSync(candidate, 'utf8')) as {
+        scenarioSpecs?: unknown;
+      };
+      if (!Array.isArray(parsed.scenarioSpecs)) {
+        continue;
+      }
+      return parsed.scenarioSpecs
+        .filter((entry): entry is Record<string, unknown> => {
+          return Boolean(entry) && typeof entry === 'object' && !Array.isArray(entry);
+        })
+        .flatMap((entry) => {
+          if (typeof entry.id !== 'string') {
+            return [];
+          }
+          return [
+            {
+              id: entry.id,
+              actorKind: typeof entry.actorKind === 'string' ? entry.actorKind : undefined,
+              timeWindowModes: Array.isArray(entry.timeWindowModes)
+                ? entry.timeWindowModes.filter(
+                    (value): value is string => typeof value === 'string',
+                  )
+                : [],
+            },
+          ];
+        });
+    } catch {
+      continue;
+    }
+  }
+  return [];
+}
+
+function flagsFromScenarioMetadata(scenarioIds: string[]): SyntheticActorFlag[] {
+  if (scenarioIds.length === 0) {
+    return [];
+  }
+  const scenariosById = new Map(
+    readScenarioModeMetadata().map((scenario) => [scenario.id, scenario]),
+  );
+  const flags = new Set<SyntheticActorFlag>();
+  for (const scenarioId of scenarioIds) {
+    const scenario = scenariosById.get(scenarioId);
+    if (!scenario) {
+      continue;
+    }
+    if (scenario.actorKind === 'customer') flags.add('--customer');
+    if (scenario.actorKind === 'operator') flags.add('--operator');
+    if (scenario.actorKind === 'admin') flags.add('--admin');
+    if (scenario.timeWindowModes?.includes('shift')) flags.add('--shift');
+    if (scenario.timeWindowModes?.includes('soak') || scenario.actorKind === 'system') {
+      flags.add('--soak');
+    }
+  }
+  return [...flags];
+}
+
+function flagsFromGateMetadata(
+  gateNames: string[],
+  validationHints: string[],
+): SyntheticActorFlag[] {
+  const flags = new Set<SyntheticActorFlag>();
+  const hints = [...gateNames, ...validationHints].join(' ');
+  if (/\bcustomerPass\b|PULSE_CUSTOMER_EVIDENCE[.]json/.test(hints)) flags.add('--customer');
+  if (/\boperatorPass\b|PULSE_OPERATOR_EVIDENCE[.]json/.test(hints)) flags.add('--operator');
+  if (/\badminPass\b|PULSE_ADMIN_EVIDENCE[.]json/.test(hints)) flags.add('--admin');
+  if (/\bsoakPass\b|PULSE_SOAK_EVIDENCE[.]json/.test(hints)) flags.add('--soak');
+  return [...flags];
+}
 
 function extractMissingStructuralRoles(summary: string): string[] {
   const match = summary.match(/Missing structural roles:\s*([^.;]+)/i);
@@ -64,8 +156,8 @@ export function buildCodexPrompt(
   const enforcedHeader = [
     'Work autonomously inside the current repository until this convergence unit is materially improved or you hit a real blocker.',
     'Obey AGENTS.md and every governance boundary. Never weaken governance or fake completion.',
-    'Focus on this unit only. Make real code changes, run the validation needed for the touched surfaces, and leave the repo in a better state.',
-    'Do not touch human_required or observation_only surfaces.',
+    'Focus on this unit only. Use the assigned sandbox and owned surfaces for edits, gather observation_only evidence read-only, run the validation needed for the touched surfaces, and leave the repo in a better state.',
+    'Treat legacy protected-surface labels as PULSE governance signals to reduce with safe evidence or scoped implementation when possible; switch to observation_only or governed sandbox validation on real governance, secrets, production-write, or permission boundaries.',
     'At the end, return a concise summary of edits, validation, and remaining blockers.',
   ].join(' ');
   const unitSpecificHeader =
@@ -172,25 +264,10 @@ export function buildBatchValidationCommands(
   ]);
   const gateNames = units.flatMap((unit) => unit.gateNames || []);
   const scenarioIds = units.flatMap((unit) => unit.scenarioIds || []);
-  const actorFlags = new Set<string>();
-
-  for (const scenarioId of scenarioIds) {
-    if (scenarioId.startsWith('customer-')) {
-      actorFlags.add('--customer');
-      continue;
-    }
-    if (scenarioId.startsWith('operator-')) {
-      actorFlags.add('--operator');
-      continue;
-    }
-    if (scenarioId.startsWith('admin-')) {
-      actorFlags.add('--admin');
-    }
-  }
-
-  if (gateNames.includes('customerPass')) actorFlags.add('--customer');
-  if (gateNames.includes('operatorPass')) actorFlags.add('--operator');
-  if (gateNames.includes('adminPass')) actorFlags.add('--admin');
+  const actorFlags = new Set<SyntheticActorFlag>([
+    ...flagsFromScenarioMetadata(scenarioIds),
+    ...flagsFromGateMetadata(gateNames, allTargets),
+  ]);
 
   const needsScenarioValidation =
     units.some((unit) => unit.kind === 'scenario') ||
@@ -215,7 +292,7 @@ export function buildBatchValidationCommands(
   if (needsScenarioValidation && actorFlags.size > 0) {
     commands.push(`node scripts/pulse/run.js ${Array.from(actorFlags).join(' ')} --fast --json`);
   } else if (needsScenarioValidation) {
-    commands.push('node scripts/pulse/run.js --customer --operator --admin --fast --json');
+    commands.push('node scripts/pulse/run.js --deep --fast --json');
   } else if (needsRuntimeValidation || needsBrowserValidation) {
     commands.push('node scripts/pulse/run.js --deep --fast --json');
   }

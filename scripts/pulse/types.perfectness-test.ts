@@ -32,7 +32,6 @@ export type PerfectnessVerdict = 'PERFECT' | 'ALMOST_PERFECT' | 'NEEDS_WORK' | '
  */
 export type ExitAction =
   | 'continue_autonomous' // Gate passed; autonomous work continues
-  | 'pause_for_human' // Gate failed; pause and request human review
   | 'retry_sandbox' // Gate failed; retry in a new sandbox
   | 'rollback_and_stop' // Gate failed; rollback and terminate
   | 'mark_perfect'; // All gates passed; final verdict is PERFECT
@@ -44,9 +43,9 @@ export interface GateExitCondition {
   onPass: ExitAction;
   /** The action to take when the gate fails. */
   onFail: ExitAction;
-  /** Maximum number of retries before escalating to human. */
+  /** Maximum number of retries before stopping the autonomous run. */
   maxRetries: number;
-  /** Human-readable description of the exit behavior. */
+  /** Plain-language description of the exit behavior. */
   description: string;
 }
 
@@ -71,7 +70,7 @@ export interface GateEvidenceSource {
 export interface PerfectnessGate {
   /** Unique gate name (e.g. 'pulse-core-green'). */
   name: string;
-  /** Human-readable description of what this gate checks. */
+  /** Plain-language description of what this gate checks. */
   description: string;
   /** The target value or condition that must be met. */
   target: string;
@@ -146,7 +145,7 @@ export interface PerfectnessResult {
   verdict: PerfectnessVerdict;
   /** Detailed per-gate evaluation results. */
   gates: PerfectnessGate[];
-  /** Human-readable summary of the perfectness evaluation. */
+  /** Plain-language summary of the perfectness evaluation. */
   summary: string;
   /** Ordered list of actions recommended based on the verdict. */
   recommendedActions: string[];

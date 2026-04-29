@@ -25,8 +25,12 @@ export type PulseConvergenceUnitKind =
 export type PulseConvergenceUnitStatus = 'open' | 'watch';
 /** Pulse convergence source type. */
 export type PulseConvergenceSource = 'pulse' | 'codacy' | 'scope' | 'gate' | 'external';
-/** Pulse convergence execution mode type. */
-export type PulseConvergenceExecutionMode = 'ai_safe' | 'human_required' | 'observation_only';
+/** Pulse convergence execution mode type. `human_required` is legacy input only. */
+export type PulseConvergenceExecutionMode =
+  | 'ai_safe'
+  | 'observation_only'
+  | 'governed_validation'
+  | 'human_required';
 /** Pulse convergence risk level type. */
 export type PulseConvergenceRiskLevel = 'critical' | 'high' | 'medium' | 'low';
 /** Pulse convergence product impact type. */

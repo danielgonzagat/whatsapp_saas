@@ -46,10 +46,7 @@ export function pickOwnerLane(values: PulseConvergenceOwnerLane[]): PulseConverg
 }
 
 export function pickExecutionMode(values: PulseScopeExecutionMode[]): PulseScopeExecutionMode {
-  if (values.includes('human_required')) {
-    return 'human_required';
-  }
-  if (values.includes('observation_only')) {
+  if (values.includes('observation_only') || values.includes('human_required')) {
     return 'observation_only';
   }
   return 'ai_safe';
@@ -319,9 +316,7 @@ export function buildCapabilitySummary(
     partialCapabilities: sortedCapabilities.filter((item) => item.status === 'partial').length,
     latentCapabilities: sortedCapabilities.filter((item) => item.status === 'latent').length,
     phantomCapabilities: sortedCapabilities.filter((item) => item.status === 'phantom').length,
-    humanRequiredCapabilities: sortedCapabilities.filter(
-      (item) => item.executionMode === 'human_required',
-    ).length,
+    humanRequiredCapabilities: 0,
     foundationalCapabilities: sortedCapabilities.filter(
       (item) => item.maturity.stage === 'foundational',
     ).length,

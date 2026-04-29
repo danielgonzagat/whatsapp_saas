@@ -23,10 +23,12 @@ function getHaystack(flow: PulseDiscoveredFlowCandidate): string {
       flow.id,
       flow.moduleKey,
       flow.moduleName,
+      flow.declaredFlow || '',
       flow.pageRoute,
       flow.elementLabel,
       flow.endpoint,
       flow.backendRoute || '',
+      ...(flow.semanticTokens || []),
     ].join(' '),
   );
 }
@@ -53,8 +55,8 @@ export function inferAction(flow: PulseDiscoveredFlowCandidate): string {
   return 'create';
 }
 
-const _ID_PARAMS =
-  /^(id|workspaceid|orderid|planid|productid|campaignid|conversationid|paymentmethodid|studentid|phone|tag|slug)$/i;
+const VERSION_SEGMENT = /^v\d+$/i;
+const GENERIC_IDENTIFIER_SEGMENT = /^(?:[a-z0-9]+id|id|uuid|slug|key|token|phone)$/i;
 
 function getEndpointSegments(flow: PulseDiscoveredFlowCandidate): string[] {
   return getPath(flow)
@@ -62,8 +64,8 @@ function getEndpointSegments(flow: PulseDiscoveredFlowCandidate): string[] {
     .split('/')
     .map((p) => p.replace(/^:+/, ''))
     .filter(Boolean)
-    .filter((p) => !['api', 'v1', 'kloel'].includes(p))
-    .filter((p) => !_ID_PARAMS.test(p));
+    .filter((p) => normalizeText(p) !== 'api' && !VERSION_SEGMENT.test(p))
+    .filter((p) => !GENERIC_IDENTIFIER_SEGMENT.test(p));
 }
 
 function inferResourceFamily(flow: PulseDiscoveredFlowCandidate): string {
@@ -79,6 +81,19 @@ function inferResourceFamily(flow: PulseDiscoveredFlowCandidate): string {
     'generate',
     'save',
   ];
+  const declaredFamily = slugify(flow.declaredFlow || '');
+  if (declaredFamily) {
+    return declaredFamily;
+  }
+
+  const semanticFamily = unique(flow.semanticTokens || [])
+    .map(slugify)
+    .filter(Boolean)
+    .find((token) => token !== slugify(flow.moduleKey) && !actionVerbs.includes(token));
+  if (semanticFamily) {
+    return semanticFamily;
+  }
+
   const segments = getEndpointSegments(flow)
     .filter((segment) => normalizeText(segment) !== flow.moduleKey)
     .filter((segment) => !actionVerbs.includes(normalizeText(segment)));

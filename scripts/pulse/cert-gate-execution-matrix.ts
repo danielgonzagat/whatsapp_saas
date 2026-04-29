@@ -12,8 +12,15 @@ export interface PulsePathCoverageGateState {
 }
 
 function hasPreciseTerminalReason(path: PulseExecutionMatrixPath): boolean {
-  if (['observed_pass', 'observed_fail', 'blocked_human_required'].includes(path.status)) {
+  if (path.status === 'observed_pass' || path.status === 'observed_fail') {
     return true;
+  }
+  if (
+    path.status === 'blocked_human_required' ||
+    path.status === 'inferred_only' ||
+    path.status === 'untested'
+  ) {
+    return false;
   }
   const breakpoint = path.breakpoint;
   if (!breakpoint) {
@@ -72,12 +79,17 @@ export function evaluateCriticalPathObservedGate(
       },
     );
   }
-  if (matrix.summary.criticalUnobservedPaths > 0) {
-    const affected = matrix.paths
-      .filter((path) => path.risk === 'high' && !hasPreciseTerminalReason(path))
-      .slice(0, 8);
+  const matrixCriticalUnobserved = matrix.paths.filter(
+    (path) => (path.risk === 'high' || path.risk === 'critical') && !hasPreciseTerminalReason(path),
+  );
+  if (matrix.summary.criticalUnobservedPaths > 0 || matrixCriticalUnobserved.length > 0) {
+    const affected = matrixCriticalUnobserved.slice(0, 8);
+    const unobservedCount = Math.max(
+      matrix.summary.criticalUnobservedPaths,
+      matrixCriticalUnobserved.length,
+    );
     return gateFail(
-      `Execution matrix still has ${matrix.summary.criticalUnobservedPaths} critical path(s) without observed evidence or a precise terminal reason: ${affected.map((path) => path.pathId).join(', ')}.`,
+      `Execution matrix still has ${unobservedCount} critical path(s) without observed evidence or a precise terminal reason: ${affected.map((path) => path.pathId).join(', ')}.`,
       'missing_evidence',
       {
         affectedCapabilityIds: affected
@@ -94,7 +106,7 @@ export function evaluateCriticalPathObservedGate(
   return {
     status: 'pass',
     reason:
-      'All critical matrix paths are observed pass/fail, human-blocked, or carry a precise terminal reason.',
+      'All critical matrix paths are observed pass/fail or carry a precise non-executable terminal reason.',
     evidenceMode: 'observed',
     confidence: 'high',
   };

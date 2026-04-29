@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-29T19:25:31.137Z
+# PULSE REPORT — 2026-04-29T19:50:02.926Z
 
 ## PULSE VERDICT
 
@@ -19,7 +19,7 @@
 - Can declare Kloel product certified: NAO
 - bounded_run: PASS - Bounded next autonomous cycle exposes 8 ai_safe unit(s).
 - artifact_consistency: PASS - Cross-artifact consistency passed.
-- execution_matrix: PASS - Execution matrix classified 4017 path(s) with zero unknown and zero non-terminal paths.
+- execution_matrix: PASS - Execution matrix classified 4020 path(s) with zero unknown and zero non-terminal paths.
 - critical_path_terminal: PASS - All critical matrix paths are observed pass/fail, human-blocked, or carry a precise terminal reason.
 - breakpoint_precision: PASS - Every observed failure in the execution matrix has a breakpoint.
 - external_reality: PASS - Required external adapters are fresh and available for PULSE-machine decisions.
@@ -30,25 +30,25 @@
 
 - Certification: PARTIAL
 - Human replacement: NOT_READY
-- Score: 74/100
+- Score: 75/100
 - Blocking tier: 1
 - Scope parity: PASS (high)
 - Structural chains: 782/2376 complete
 - Capabilities: real=112, partial=189, latent=11, phantom=0
 - Capability maturity: foundational=4, connected=72, operational=183, productionReady=53
 - Flows: real=23, partial=95, latent=0, phantom=0
-- Execution matrix: paths=4017, observedPass=17, observedFail=229, criticalUnobserved=0, unknown=0
-- Structural parity gaps: total=39, critical=37, high=0
+- Execution matrix: paths=4020, observedPass=17, observedFail=229, criticalUnobserved=0, unknown=0
+- Structural parity gaps: total=34, critical=32, high=0
 - Codacy HIGH issues: 1116
-- GitNexus Code Graph: GitNexus index is fresh for commit ff00fe60.
+- GitNexus Code Graph: GitNexus index is fresh for commit c74dae23.
 - External signals: total=8, runtime=2, change=1, dependency=0, high-impact=3
 
 ## Coverage Truth
 
 - Inventory Coverage: 100%
 - Classification Coverage: 98%
-- Structural Graph Coverage: 37% (813/2173 connected)
-  Reason: 813/2173 structural files connected.
+- Structural Graph Coverage: 37% (813/2174 connected)
+  Reason: 813/2174 structural files connected.
 - Test Coverage: 11%
   Reason: 173/1610 source modules have spec files.
 - Scenario Coverage: 100% (declared=100%, executed=100%, passed=19%)
@@ -56,7 +56,7 @@
   Reason: 0/2 probes fresh.
 - Production Proof Coverage: 36%
   Reason: 112/312 capabilities real.
-- Unknown Files: 52
+- Unknown Files: 54
 - Orphan Files: 200
 - Excluded Directories: 22
 - Manifest role: semantic overlay, NOT scope boundary
@@ -88,14 +88,14 @@
 - github/code-change: impact=40%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=20 recent commits detected; latest: chore(deps): bump the worker-prod-patches group (#224) Bump
 - sentry/performance-metric: impact=10%, mode=observation_only, mappedCapabilities=1, mappedFlows=0, summary=No unresolved Sentry issues — project is clean
 - datadog/config-gap: impact=20%, mode=observation_only, mappedCapabilities=23, mappedFlows=106, summary=No Datadog monitors configured — add monitors for production visibility
-- gitnexus/codegraph: impact=10%, mode=ai_safe, mappedCapabilities=11, mappedFlows=86, summary=GitNexus index is fresh for commit ff00fe60.
+- gitnexus/codegraph: impact=10%, mode=ai_safe, mappedCapabilities=11, mappedFlows=86, summary=GitNexus index is fresh for commit c74dae23.
 
 ## Product Identity
 
 - Current checkpoint: The current product-facing system materializes 102 real capability(ies), 189 partial capability(ies), 0 latent capability(ies), and 0 product-facing phantom capability(ies). System-wide phantom capability count is 0.
 - Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Scrapers, Onboarding, Inbox/Chat, Followups, Settings, Analytics, Autopilot, CIA/Agent.
 - Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 291/291 capability(ies) and 118/118 flow(s) at least partially real, with readiness yellow.
-- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 39 structural parity gap(s), and 1116 HIGH Codacy issue(s).
+- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 34 structural parity gap(s), and 1116 HIGH Codacy issue(s).
 
 ## Product Surfaces
 
@@ -142,7 +142,6 @@
 
 ## Structural Parity Gaps
 
-- Integration without observability: Ad Rules: severity=critical, mode=ai_safe, route=/ad-rules, summary=Capability Ad Rules depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
 - Integration without observability: Admin Accounts: severity=critical, mode=ai_safe, route=/admin/accounts, summary=Capability Admin Accounts depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
 - Integration without observability: Admin Carteira: severity=critical, mode=ai_safe, route=/admin/carteira/connect/accounts, summary=Capability Admin Carteira depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
 - Integration without observability: Ai Assistant: severity=critical, mode=ai_safe, route=/ai/assistant/analyze-sentiment, summary=Capability Ai Assistant depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
@@ -150,8 +149,9 @@
 - Integration without observability: Auth Anonymous: severity=critical, mode=ai_safe, route=/api/auth/anonymous, summary=Capability Auth Anonymous depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
 - Integration without observability: Auth Check: severity=critical, mode=ai_safe, route=/api/auth/check-email, summary=Capability Auth Check depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
 - Integration without observability: Auth Facebook: severity=critical, mode=ai_safe, route=/api/auth/facebook/data-deletion, summary=Capability Auth Facebook depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
-- Integration without observability: Auth Magic: severity=critical, mode=ai_safe, route=/api/auth/magic-link/request, summary=Capability Auth Magic depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
-- Integration without observability: Auth Register: severity=critical, mode=ai_safe, route=/api/auth/register, summary=Capability Auth Register depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
+- Integration without observability: Autopilot Actions: severity=critical, mode=ai_safe, route=/autopilot/actions, summary=Capability Autopilot Actions depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
+- Integration without observability: Autopilot Ask: severity=critical, mode=ai_safe, route=/autopilot/ask, summary=Capability Autopilot Ask depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
+- Integration without observability: Autopilot Conversion: severity=critical, mode=ai_safe, route=/autopilot/conversion, summary=Capability Autopilot Conversion depends on runtime-critical effects but observability evidence is still weak (7 signal(s) detected).
 
 ## Execution Matrix
 

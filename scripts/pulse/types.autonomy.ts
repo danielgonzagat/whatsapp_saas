@@ -134,8 +134,10 @@ export interface PulseAutonomyState {
   stopReason: string | null;
   /** Next actionable unit property. */
   nextActionableUnit: PulseAutonomyUnitSnapshot | null;
-  /** Human required unit count property. */
-  humanRequiredUnits: number;
+  /** Governed sandbox unit count property. */
+  governedSandboxUnits: number;
+  /** Escalated validation unit count property. */
+  escalatedValidationUnits: number;
   /** Observation only unit count property. */
   observationOnlyUnits: number;
   /** Runner capability snapshot property. */
@@ -280,10 +282,12 @@ export type PulseAutonomyConceptType =
 /** Persisted autonomy strategy type. */
 export type PulseAutonomySuggestedStrategy =
   | 'narrow_scope'
+  | 'escalated_validation'
+  | 'governed_sandbox'
+  | 'observation_only'
   | 'increase_validation'
   | 'retry_in_isolation'
-  | 'reduce_parallelism'
-  | 'human_escalation';
+  | 'reduce_parallelism';
 
 /** Persistent autonomy concept memory item. */
 export interface PulseAutonomyMemoryConcept {

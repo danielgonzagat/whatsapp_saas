@@ -3,6 +3,7 @@
 import type { Page } from 'playwright';
 import type { BrowserTestStatus, ObservedApiCall } from './types';
 import type { InteractionChain } from '../functional-map-types';
+import { discoverBrowserLiveArtifacts, isLoginRedirectFromArtifacts } from './live-artifacts';
 
 /** Classify result. */
 export function classifyResult(observations: {
@@ -89,9 +90,8 @@ export async function verifyPersistence(
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(2000);
 
-    // Check we're still on the same route (not redirected)
     const currentUrl = page.url();
-    if (currentUrl.includes('/login')) {
+    if (isLoginRedirectFromArtifacts(currentUrl, discoverBrowserLiveArtifacts().pages)) {
       return false;
     }
 

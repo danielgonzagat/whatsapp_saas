@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Optional, UnauthorizedException } from '@nestjs/common';
 import { Agent, Prisma, Workspace } from '@prisma/client';
 import { compare as bcryptCompare, hash as bcryptHash } from 'bcrypt';
 import { BCRYPT_ROUNDS } from '../common/constants';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthPartnerService } from './auth-partner.service';
 import { assertAgentCanAuthenticate, normalizeEmail, PATTERN_RE } from './auth.helpers';
@@ -31,6 +32,7 @@ export class AuthPasswordService {
     private readonly tokenService: AuthTokenService,
     private readonly authPartnerService: AuthPartnerService,
     private readonly rateLimitService: RateLimitService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   async checkEmail(email: string): Promise<{ exists: boolean }> {
@@ -46,6 +48,7 @@ export class AuthPasswordService {
       });
       return { exists: !!agent };
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AuthPasswordService');
       DbInitErrorService.throwFriendlyDbInitError(error);
     }
   }
@@ -75,6 +78,7 @@ export class AuthPasswordService {
         },
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AuthPasswordService');
       DbInitErrorService.throwFriendlyDbInitError(error);
     }
 
@@ -90,6 +94,7 @@ export class AuthPasswordService {
         },
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AuthPasswordService');
       DbInitErrorService.throwFriendlyDbInitError(error);
     }
 
@@ -105,6 +110,7 @@ export class AuthPasswordService {
         select: { id: true, workspaceId: true },
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AuthPasswordService');
       DbInitErrorService.throwFriendlyDbInitError(error);
     }
   }
@@ -113,6 +119,7 @@ export class AuthPasswordService {
     try {
       return await this.prisma.workspace.create({ data: { name } });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AuthPasswordService');
       DbInitErrorService.throwFriendlyDbInitError(error);
     }
   }
@@ -137,6 +144,7 @@ export class AuthPasswordService {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('Email já em uso');
       }
+      void this.opsAlert?.alertOnCriticalError(error, 'AuthPasswordService');
       DbInitErrorService.throwFriendlyDbInitError(error);
     }
   }
@@ -214,6 +222,7 @@ export class AuthPasswordService {
         },
       });
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AuthPasswordService');
       DbInitErrorService.throwFriendlyDbInitError(error);
     }
   }

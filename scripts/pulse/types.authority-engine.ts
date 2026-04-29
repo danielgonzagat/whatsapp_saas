@@ -5,7 +5,7 @@
  * Authority levels in increasing order of autonomy.
  *
  * - `advisory_only`: PULSE can only report and recommend.
- * - `operator_gated`: PULSE can execute with explicit human approval per action.
+ * - `operator_gated`: PULSE can execute with operator-grade gates and sandbox evidence.
  * - `bounded_autonomous`: PULSE can execute ai_safe units autonomously.
  * - `certified_autonomous`: PULSE can execute all units autonomously and declare completion.
  * - `production_authority`: PULSE has full autonomy to merge, deploy, and operate in production.
@@ -82,7 +82,7 @@ export interface AuthorityState {
  *   - criticalPaths observed
  *   - multiCycle PASS
  *   - noOverclaim PASS
- *   - humanRequiredBlockers zero
+ *   - governed blocker backlog zero
  *   - productionProof > 90%
  *
  * certified_autonomous → production_authority:
@@ -92,7 +92,7 @@ export interface AuthorityState {
  *   - criticalPaths observed
  *   - multiCycle PASS
  *   - noOverclaim PASS
- *   - humanRequiredBlockers zero
+ *   - governed blocker backlog zero
  *   - productionProof > 90%
  *   - 72h autonomous test PASS
  *   - zeroPromptProductionGuidance SIM

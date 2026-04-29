@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildAutonomyQueue } from '../artifacts.queue';
+import {
+  buildAutonomyQueue,
+  normalizeArtifactExecutionMode,
+  normalizeArtifactStatus,
+  normalizeCanonicalArtifactValue,
+} from '../artifacts.queue';
 import type { PulseConvergencePlan } from '../types';
 
 type QueueUnit = PulseConvergencePlan['queue'][number];
@@ -44,6 +49,23 @@ function makeQueueUnit(overrides: Partial<QueueUnit>): QueueUnit {
 }
 
 describe('buildAutonomyQueue', () => {
+  it('normalizes legacy human-required artifact states into observation-only governance evidence', () => {
+    expect(normalizeArtifactExecutionMode('human_required')).toBe('observation_only');
+    expect(normalizeArtifactStatus('blocked_human_required')).toBe('observation_only');
+    expect(
+      normalizeCanonicalArtifactValue({
+        humanRequiredUnits: 2,
+        blockedHumanRequired: 1,
+        summary: 'Human approval required for human_required governance validation.',
+      }),
+    ).toEqual({
+      governedValidationUnits: 2,
+      observationOnly: 1,
+      summary:
+        'Governed autonomous validation required for observation_only governance validation.',
+    });
+  });
+
   it('keeps runtime work ahead of static/scope work in generated directives', () => {
     const scopeUnit = makeQueueUnit({
       order: 1,

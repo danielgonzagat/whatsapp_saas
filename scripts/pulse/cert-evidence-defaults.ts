@@ -45,6 +45,21 @@ export {
   buildDefaultWorldState,
 } from './cert-evidence-actor';
 
+type ActorEvidenceKey = 'customer' | 'operator' | 'admin' | 'soak';
+
+const ACTOR_EVIDENCE_KEYS: ActorEvidenceKey[] = ['customer', 'operator', 'admin', 'soak'];
+
+function buildDefaultActorEvidenceByContract(
+  resolvedManifest: PulseResolvedManifest,
+): Record<ActorEvidenceKey, PulseActorEvidence> {
+  return Object.fromEntries(
+    ACTOR_EVIDENCE_KEYS.map((actorKind) => [
+      actorKind,
+      buildDefaultActorEvidence(actorKind, resolvedManifest),
+    ]),
+  ) as Record<ActorEvidenceKey, PulseActorEvidence>;
+}
+
 export function buildDefaultFlowEvidence(
   manifest: PulseManifest | null,
   env: PulseEnvironment,
@@ -266,10 +281,7 @@ export function buildDefaultEvidence(
           summary: 'Browser certification is not required in this environment.',
           failureCode: 'ok',
         };
-  const customer = buildDefaultActorEvidence('customer', resolvedManifest);
-  const operator = buildDefaultActorEvidence('operator', resolvedManifest);
-  const admin = buildDefaultActorEvidence('admin', resolvedManifest);
-  const soak = buildDefaultActorEvidence('soak', resolvedManifest);
+  const actorEvidence = buildDefaultActorEvidenceByContract(resolvedManifest);
   return {
     runtime,
     browser,
@@ -277,17 +289,14 @@ export function buildDefaultEvidence(
     invariants: buildDefaultInvariantEvidence(manifest, env),
     observability: buildDefaultObservabilityEvidence(env),
     recovery: buildDefaultRecoveryEvidence(env),
-    customer,
-    operator,
-    admin,
-    soak,
+    ...actorEvidence,
     syntheticCoverage: buildDefaultSyntheticCoverage(codebaseTruth, resolvedManifest),
     worldState: buildDefaultWorldState(resolvedManifest, {
       runtime,
-      customer,
-      operator,
-      admin,
-      soak,
+      customer: actorEvidence.customer,
+      operator: actorEvidence.operator,
+      admin: actorEvidence.admin,
+      soak: actorEvidence.soak,
     }),
     executionTrace: buildDefaultExecutionTrace(env, target),
   };

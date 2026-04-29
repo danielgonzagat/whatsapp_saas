@@ -14,6 +14,10 @@ export interface MemoryEntry {
   falsePositive: boolean;
 }
 
+export type UnitMemoryStatus = 'active' | 'escalated_validation' | 'resolved' | 'archived';
+
+export type LegacyUnitMemoryStatus = UnitMemoryStatus | 'needs_human_review';
+
 export interface UnitMemory {
   unitId: string;
   attempts: number;
@@ -22,7 +26,7 @@ export interface UnitMemory {
   successfulStrategies: string[];
   lastFailure: string | null;
   repeatedFailures: number;
-  status: 'active' | 'needs_human_review' | 'resolved' | 'archived';
+  status: UnitMemoryStatus;
   recommendedStrategy: string | null;
   falsePositive: boolean;
   fpProof: string | null;
@@ -39,7 +43,7 @@ export interface StructuralMemoryState {
   summary: {
     totalUnits: number;
     activeUnits: number;
-    needsHumanReview: number;
+    escalatedValidationUnits: number;
     resolvedUnits: number;
     falsePositives: number;
     learnedStrategies: number;

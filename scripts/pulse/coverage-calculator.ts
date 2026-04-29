@@ -15,15 +15,10 @@ function filePathToModule(filePath: string): string {
 }
 
 function isStructuralFile(file: PulseScopeFile): boolean {
-  return (
-    file.surface === 'backend' ||
-    file.surface === 'frontend' ||
-    file.surface === 'frontend-admin' ||
-    file.surface === 'worker' ||
-    file.kind === 'source' ||
-    file.kind === 'spec' ||
-    file.kind === 'migration'
-  );
+  if (file.kind === 'source' || file.kind === 'spec' || file.kind === 'migration') {
+    return true;
+  }
+  return file.runtimeCritical || file.userFacing;
 }
 function isSourceFile(file: PulseScopeFile): boolean {
   return file.kind === 'source';

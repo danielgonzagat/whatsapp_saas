@@ -30,6 +30,11 @@ export function evaluateOverclaimPass(input: OverclaimCheckInput): OverclaimResu
 
   // zeroPromptProductionGuidance requires all supporting gates to be green
   if (input.verdicts.zeroPromptProductionGuidance === 'SIM') {
+    if (!input.gateStatus.structuralDebtClosed) {
+      violations.push(
+        'zeroPromptProductionGuidance=SIM but structuralDebtClosed=false. Structural debt remains open.',
+      );
+    }
     if (!input.gateStatus.nextStepAvailable) {
       violations.push(
         'zeroPromptProductionGuidance=SIM but nextStepAvailable=false. Fresh session has no executable unit.',
@@ -47,7 +52,7 @@ export function evaluateOverclaimPass(input: OverclaimCheckInput): OverclaimResu
     }
     if (input.gateStatus.criticalHumanRequiredOpen) {
       violations.push(
-        'zeroPromptProductionGuidance=SIM but criticalHumanRequiredOpen=true. Human-required units block autonomy.',
+        'zeroPromptProductionGuidance=SIM but protectedSurfaceGapOpen=true. Legacy protected-surface labels must be normalized into governed autonomous validation before claiming zero-prompt guidance.',
       );
     }
     // Critical: zeroPrompt must not claim production guidance without proven cycles

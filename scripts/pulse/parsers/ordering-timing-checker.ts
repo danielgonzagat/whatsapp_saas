@@ -8,25 +8,37 @@
  *    before applying state changes (a REFUND arriving before PAID must be handled)
  * 2. Clock skew tolerance: JWT expiry and session checks must allow ±30s skew
  *    (too strict = users logged out spuriously; too loose = security risk)
- * 3. Timezone handling: financial reports and scheduling must use UTC storage
+ * 3. Timezone handling: money-like reports and scheduling must use UTC storage
  *    with explicit timezone conversion at display layer — not mix of TZ
- * 4. Idempotent webhook processing with sequence numbers (Asaas sends events in order
- *    but network can deliver out of order)
+ * 4. Idempotent webhook processing with sequence numbers
  * 5. Cron job timing: cron expressions verified against intended schedule
  *    (0 0 * * * = midnight UTC, not midnight local)
  * 6. Date comparison operators: verifies `>=` not `>` for range queries (off-by-one)
- * 7. Stale-while-revalidate cache: verifies SWR config doesn't serve stale financial data
+ * 7. Stale-while-revalidate cache: verifies SWR config doesn't serve stale money-like data
  *
  * REQUIRES: PULSE_DEEP=1
  * BREAK TYPES:
  *   ORDERING_WEBHOOK_OOO(high)         — webhook handler ignores event ordering
  *   CLOCK_SKEW_TOO_STRICT(medium)      — JWT/session validation has zero skew tolerance
- *   TIMEZONE_REPORT_MISMATCH(high)     — financial data stored or compared in local TZ
+ *   TIMEZONE_REPORT_MISMATCH(high)     — money-like data stored or compared in local TZ
  */
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+
+const MONEY_STATE_RE =
+  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
+const TEMPORAL_AGGREGATION_RE =
+  /\b(?:createdAt|updatedAt|startDate|endDate|dateRange|period|aggregate|groupBy)\b/i;
+
+function hasMoneyLikeState(content: string): boolean {
+  return MONEY_STATE_RE.test(content);
+}
+
+function hasTemporalAggregation(content: string): boolean {
+  return TEMPORAL_AGGREGATION_RE.test(content);
+}
 
 /** Check ordering timing. */
 export function checkOrderingTiming(config: PulseConfig): Break[] {
@@ -58,9 +70,8 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
         content,
       );
     const mutatesWebhookState =
-      /prisma\.[a-z]+\.(create|update|upsert|delete)|status\s*=|ledger|payment|refund|charge|withdraw|transaction/i.test(
-        content,
-      );
+      /prisma\.[a-z]+\.(create|update|upsert|delete)|status\s*=/.test(content) ||
+      hasMoneyLikeState(content);
 
     if (
       looksLikeWebhookFile &&
@@ -110,7 +121,7 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
       }
     }
 
-    // CHECK 3: Local timezone in financial date operations
+    // CHECK 3: Local timezone in money-like or reporting date operations
     const localTzPatterns = [
       /new Date\(\)\.toLocaleDateString|new Date\(\)\.toLocaleString/,
       /new Date\(\)\.getHours\(\)|new Date\(\)\.getDate\(\)/,
@@ -118,7 +129,7 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
       /Intl\.DateTimeFormat(?!.*timeZone)/,
     ];
 
-    if (/checkout|wallet|billing|payment|report|analytics/i.test(file)) {
+    if (hasMoneyLikeState(content) || hasTemporalAggregation(content)) {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         if (line.startsWith('//') || line.startsWith('*')) {
@@ -132,7 +143,7 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
             file: relFile,
             line: i + 1,
             description:
-              'Local timezone used in financial/report date operation — data inconsistency across server timezones',
+              'Local timezone used in money-like/report date operation — data inconsistency across server timezones',
             detail: `${line.slice(0, 120)} — use UTC explicitly: new Date().toISOString() or dayjs.utc()`,
           });
         }
@@ -164,7 +175,7 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
     }
 
     // CHECK 6: Date range off-by-one (> vs >=)
-    if (/report|analytics|dashboard/i.test(file)) {
+    if (hasTemporalAggregation(content)) {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         if (/gte.*startDate|lte.*endDate|createdAt.*gt\s/i.test(line)) {
@@ -185,12 +196,9 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
     }
   }
 
-  // Frontend: SWR stale financial data
+  // Frontend: SWR stale money-like data
   const frontendFiles = walkFiles(config.frontendDir, ['.ts', '.tsx']);
   for (const file of frontendFiles) {
-    if (!/checkout|wallet|billing|payment/i.test(file)) {
-      continue;
-    }
     if (/node_modules|\.next/.test(file)) {
       continue;
     }
@@ -199,6 +207,9 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
     try {
       content = readTextFile(file, 'utf8');
     } catch {
+      continue;
+    }
+    if (!hasMoneyLikeState(content)) {
       continue;
     }
 
@@ -216,9 +227,9 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
           file: relFile,
           line: 0,
           description:
-            'SWR in financial page has revalidateOnFocus: false without refreshInterval — user sees stale balance',
+            'SWR for money-like data has revalidateOnFocus: false without refreshInterval — user sees stale balance or totals',
           detail:
-            'Add refreshInterval: 30000 or use mutate() after write operations to keep financial data fresh',
+            'Add refreshInterval: 30000 or use mutate() after write operations to keep money-like data fresh',
         });
       }
     }

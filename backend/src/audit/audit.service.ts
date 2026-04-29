@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Audit service. */
@@ -7,7 +8,10 @@ import { PrismaService } from '../prisma/prisma.service';
 export class AuditService {
   private readonly logger = new Logger(AuditService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
 
   /**
    * Record a system action for security and compliance.
@@ -79,6 +83,10 @@ export class AuditService {
         `CRITICAL: Audit log failed — ${error instanceof Error ? error.message : 'unknown_error'}`,
         error instanceof Error ? error.stack : undefined,
       );
+      void this.opsAlert?.alertOnCriticalError(error, 'AuditService.log', {
+        workspaceId: data.workspaceId,
+        metadata: { action: data.action, resource: data.resource },
+      });
       // Attempt one retry
       try {
         await this.prisma.auditLog.create({
@@ -101,6 +109,10 @@ export class AuditService {
         this.logger.error(
           `CRITICAL: Audit log retry also failed — ${retryErrorInstanceofError?.message}`,
         );
+        void this.opsAlert?.alertOnCriticalError(retryError, 'AuditService.log.retry', {
+          workspaceId: data.workspaceId,
+          metadata: { action: data.action, resource: data.resource },
+        });
       }
     }
   }

@@ -1,11 +1,23 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { execFileSync } from 'node:child_process';
-import { describe, expect, it } from 'vitest';
+import * as childProcess from 'node:child_process';
+import { describe, expect, it, vi } from 'vitest';
 import { buildArtifactRegistry } from '../artifact-registry';
 import { buildGitNexusSnapshot, buildPulseContextFabricBundle } from '../context-broadcast';
 import type { PulseConvergencePlan, PulseConvergenceUnit } from '../types';
+
+vi.mock('node:child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:child_process')>();
+  return {
+    ...actual,
+    spawnSync: vi.fn(() => ({
+      status: 0,
+      stdout: 'gitnexus 0.0.0-test',
+      stderr: '',
+    })),
+  };
+});
 
 function makeTempRoot(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-context-'));
@@ -186,18 +198,26 @@ describe('PULSE context broadcast and worker leases', () => {
 
   it('treats GitNexus meta.json lastCommit as a fresh local index', () => {
     const rootDir = makeTempRoot();
-    execFileSync('git', ['init', '-q'], { cwd: rootDir });
-    execFileSync('git', ['config', 'user.name', 'PULSE Test'], { cwd: rootDir });
-    execFileSync('git', ['config', 'user.email', 'pulse-test@local'], { cwd: rootDir });
-    fs.writeFileSync(path.join(rootDir, 'README.md'), '# test\n', 'utf8');
-    execFileSync('git', ['add', 'README.md'], { cwd: rootDir });
-    execFileSync('git', ['-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'baseline'], {
+    childProcess.execFileSync('git', ['init', '-q'], { cwd: rootDir });
+    childProcess.execFileSync('git', ['config', 'user.name', 'PULSE Test'], { cwd: rootDir });
+    childProcess.execFileSync('git', ['config', 'user.email', 'pulse-test@local'], {
       cwd: rootDir,
     });
-    const head = execFileSync('git', ['rev-parse', 'HEAD'], {
-      cwd: rootDir,
-      encoding: 'utf8',
-    }).trim();
+    fs.writeFileSync(path.join(rootDir, 'README.md'), '# test\n', 'utf8');
+    childProcess.execFileSync('git', ['add', 'README.md'], { cwd: rootDir });
+    childProcess.execFileSync(
+      'git',
+      ['-c', 'commit.gpgsign=false', 'commit', '-q', '-m', 'baseline'],
+      {
+        cwd: rootDir,
+      },
+    );
+    const head = childProcess
+      .execFileSync('git', ['rev-parse', 'HEAD'], {
+        cwd: rootDir,
+        encoding: 'utf8',
+      })
+      .trim();
     fs.mkdirSync(path.join(rootDir, '.gitnexus'), { recursive: true });
     fs.writeFileSync(
       path.join(rootDir, '.gitnexus', 'meta.json'),

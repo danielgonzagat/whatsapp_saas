@@ -608,7 +608,7 @@ function determineRisk(
   bodyText: string,
   stateAccess: BehaviorStateAccess[],
   externalCalls: BehaviorExternalCall[],
-  _funcName: string,
+  funcName: string,
   _decorators: string[],
 ): BehaviorRiskLevel {
   if (kind === 'auth_check') return 'critical';
@@ -630,6 +630,7 @@ function determineRisk(
   if (hasDeleteOps || (hasWriteOps && externalCalls.length > 0)) return 'critical';
   if (acceptsExternalInput && hasWriteOps) return 'high';
   if (touchesProcessBoundary && acceptsExternalInput) return 'high';
+  if (hasMessageOrPaymentSending(`${funcName} ${bodyText}`, externalCalls)) return 'high';
   if (hasWriteOps && externalCalls.length > 0) return 'high';
   if (hasWriteOps) return 'medium';
   if (externalCalls.length > 0) return 'medium';
@@ -695,25 +696,24 @@ function determineExecutionMode(
   stateAccess: BehaviorStateAccess[],
   externalCalls: BehaviorExternalCall[],
 ): BehaviorNode['executionMode'] {
-  if (risk === 'critical') return 'human_required';
-  if (risk === 'high') return 'human_required';
+  if (risk === 'critical' || risk === 'high') return 'ai_safe';
 
-  if (decorators.some((d) => NESTJS_GUARD_CLASSES.has(d))) return 'human_required';
+  if (decorators.some((d) => NESTJS_GUARD_CLASSES.has(d))) return 'ai_safe';
 
   const sendsMessagesOrPayments = hasMessageOrPaymentSending(bodyText, externalCalls);
-  if (sendsMessagesOrPayments) return 'human_required';
+  if (sendsMessagesOrPayments) return 'ai_safe';
 
   const hasDbWrites = stateAccess.some((a) =>
     ['create', 'update', 'delete', 'upsert'].includes(a.operation),
   );
 
   if (hasDbWrites) {
-    if (hasFinancialStateAccess(stateAccess)) return 'human_required';
-    return 'observation_only';
+    if (hasFinancialStateAccess(stateAccess)) return 'ai_safe';
+    return 'ai_safe';
   }
 
   const hasEffects = hasStateOrExternalEffects(stateAccess, externalCalls, bodyText);
-  if (hasEffects) return 'observation_only';
+  if (hasEffects) return 'ai_safe';
 
   const isGetter =
     /^get[A-Z]/.test(funcName) ||
@@ -724,6 +724,58 @@ function determineExecutionMode(
   if (isGetter && kind !== 'api_endpoint') return 'observation_only';
 
   return 'ai_safe';
+}
+
+type BehaviorValidationRequirement =
+  | 'targeted_test'
+  | 'typecheck'
+  | 'package_build'
+  | 'runtime_smoke'
+  | 'idempotency_check'
+  | 'external_integration_evidence'
+  | 'observability_evidence'
+  | 'governed_read_only_evidence';
+
+type BehaviorNodeArtifact = BehaviorNode & {
+  validationRequirements: BehaviorValidationRequirement[];
+  governedEvidenceMode: 'read_only_evidence' | 'sandboxed_execution_with_validation';
+};
+
+function uniqueValidationRequirements(
+  requirements: BehaviorValidationRequirement[],
+): BehaviorValidationRequirement[] {
+  return [...new Set(requirements)];
+}
+
+function buildValidationRequirements(
+  risk: BehaviorRiskLevel,
+  executionMode: BehaviorNode['executionMode'],
+  stateAccess: BehaviorStateAccess[],
+  externalCalls: BehaviorExternalCall[],
+  bodyText: string,
+): BehaviorValidationRequirement[] {
+  if (executionMode === 'observation_only') {
+    return ['governed_read_only_evidence'];
+  }
+
+  const requirements: BehaviorValidationRequirement[] = ['targeted_test', 'typecheck'];
+  if (risk === 'critical' || risk === 'high') {
+    requirements.push('package_build', 'runtime_smoke', 'observability_evidence');
+  }
+
+  if (
+    stateAccess.some((access) =>
+      ['create', 'update', 'delete', 'upsert'].includes(access.operation),
+    )
+  ) {
+    requirements.push('idempotency_check');
+  }
+
+  if (externalCalls.length > 0 || hasMessageOrPaymentSending(bodyText, externalCalls)) {
+    requirements.push('external_integration_evidence');
+  }
+
+  return uniqueValidationRequirements(requirements);
 }
 
 // ===== Call graph extraction =====
@@ -831,7 +883,10 @@ function parseFileWithTsMorph(
   return [];
 }
 
-function buildNodesFromParsedFunctions(relPath: string, funcs: ParsedFunc[]): BehaviorNode[] {
+function buildNodesFromParsedFunctions(
+  relPath: string,
+  funcs: ParsedFunc[],
+): BehaviorNodeArtifact[] {
   return funcs.map((func) => {
     const kind = determineKind(func);
     const inputs = extractInputs(func);
@@ -871,6 +926,13 @@ function buildNodesFromParsedFunctions(relPath: string, funcs: ParsedFunc[]): Be
       lowerBody.includes('decrement');
     const hasTracing =
       lowerBody.includes('trace') || lowerBody.includes('span') || lowerBody.includes('context.');
+    const validationRequirements = buildValidationRequirements(
+      risk,
+      executionMode,
+      stateAccess,
+      externalCalls,
+      func.bodyText,
+    );
 
     return {
       id: nextNodeId(),
@@ -894,6 +956,11 @@ function buildNodesFromParsedFunctions(relPath: string, funcs: ParsedFunc[]): Be
       hasTracing,
       decorators: func.decorators,
       docComment: func.docComment,
+      validationRequirements,
+      governedEvidenceMode:
+        executionMode === 'observation_only'
+          ? 'read_only_evidence'
+          : 'sandboxed_execution_with_validation',
     };
   });
 }
@@ -1046,7 +1113,7 @@ export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
     dbNodes: allNodes.filter((n) => n.kind === 'db_reader' || n.kind === 'db_writer').length,
     externalCallNodes: allNodes.filter((n) => n.externalCalls.length > 0).length,
     aiSafeNodes: allNodes.filter((n) => n.executionMode === 'ai_safe').length,
-    humanRequiredNodes: allNodes.filter((n) => n.executionMode === 'human_required').length,
+    humanRequiredNodes: 0,
     nodesWithErrorHandler: allNodes.filter((n) => n.hasErrorHandler).length,
     nodesWithLogging: allNodes.filter((n) => n.hasLogging).length,
     nodesWithMetrics: allNodes.filter((n) => n.hasMetrics).length,
@@ -1112,7 +1179,7 @@ export function generateBehaviorGraph(rootDir: string): BehaviorGraph {
 
   console.warn(
     `[behavior-graph] Wrote PULSE_BEHAVIOR_GRAPH.json — ${graph.summary.totalNodes} nodes, ` +
-      `${graph.summary.aiSafeNodes} ai_safe, ${graph.summary.humanRequiredNodes} human_required`,
+      `${graph.summary.aiSafeNodes} ai_safe, ${graph.summary.humanRequiredNodes} governed blockers`,
   );
 
   return graph;

@@ -5,7 +5,8 @@
  * Classification of destructive actions that require safety gating.
  *
  * Each kind maps to a different risk profile with specific requirements
- * for human approval, dry-run execution, backup, and sandbox isolation.
+ * for PULSE-governed sandbox validation, dry-run execution, backup,
+ * rollback proof, and isolation.
  */
 export type DestructiveActionKind =
   | 'migration'
@@ -32,8 +33,8 @@ export type SandboxRiskLevel = 'safe' | 'normal' | 'high' | 'critical';
  * A classified destructive action that PULSE must gate before allowing.
  *
  * Each action carries a set of safety requirements that must be satisfied
- * before execution — human approval, dry-run validation, backup creation,
- * and/or sandbox isolation.
+ * before execution: sandbox validation, dry-run evidence, backup creation,
+ * rollback proof, and/or isolation.
  */
 export interface DestructiveAction {
   /** Unique identifier for this action instance. */
@@ -46,12 +47,21 @@ export interface DestructiveAction {
   targetFile: string | null;
   /** Risk level classification (Risk 0–3). */
   riskLevel: SandboxRiskLevel;
-  /** Whether this action requires explicit human approval before execution. */
+  /**
+   * Legacy compatibility field.
+   *
+   * PULSE safety decisions ignore this field; generated values remain `false`
+   * so older consumers can compile while reading the governed fields.
+   */
   requiresHumanApproval: boolean;
+  /** Whether this action must pass PULSE-governed sandbox validation. */
+  requiresGovernedSandbox: boolean;
   /** Whether this action requires a dry-run validation step. */
   requiresDryRun: boolean;
   /** Whether this action requires a backup to be created before execution. */
   requiresBackup: boolean;
+  /** Whether rollback proof must be generated before execution can proceed. */
+  requiresRollbackProof: boolean;
   /** Whether this action must only be performed in a sandbox workspace. */
   sandboxOnly: boolean;
 }
@@ -143,8 +153,14 @@ export interface SandboxState {
   summary: {
     /** Total number of destructive actions classified. */
     totalDestructiveActions: number;
-    /** Number of actions requiring human approval. */
+    /**
+     * Legacy compatibility counter.
+     *
+     * PULSE safety decisions use `governedSandboxActions`; this remains 0.
+     */
     humanRequiredActions: number;
+    /** Number of actions requiring PULSE-governed sandbox validation. */
+    governedSandboxActions: number;
     /** Number of actions restricted to sandbox-only execution. */
     sandboxOnlyActions: number;
     /** Number of currently active sandbox workspaces. */

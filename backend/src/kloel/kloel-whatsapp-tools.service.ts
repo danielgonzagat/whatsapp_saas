@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
@@ -65,6 +66,7 @@ export class KloelWhatsAppToolsService {
     private readonly whatsappService: WhatsappService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly audioService: AudioService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   async toolConnectWhatsapp(workspaceId: string): Promise<ToolResult> {
@@ -90,6 +92,13 @@ export class KloelWhatsAppToolsService {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'unknown error';
       this.logger.error('Erro ao conectar WhatsApp:', error);
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'KloelWhatsAppToolsService.toolConnectWhatsapp',
+        {
+          workspaceId,
+        },
+      );
       return { success: false, error: msg };
     }
   }
@@ -170,6 +179,11 @@ export class KloelWhatsAppToolsService {
         where: { id: msg.id, workspaceId },
         data: { status: 'FAILED' },
       });
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'KloelWhatsAppToolsService.toolSendWhatsAppMessage',
+        { workspaceId, metadata: { phone: normalizedPhone } },
+      );
       return { success: false, error: `Falha ao enviar mensagem: ${errMsg}` };
     }
   }
@@ -308,6 +322,9 @@ export class KloelWhatsAppToolsService {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'unknown error';
       this.logger.error('Erro ao enviar áudio:', error);
+      void this.opsAlert?.alertOnCriticalError(error, 'KloelWhatsAppToolsService.toolSendAudio', {
+        workspaceId,
+      });
       return { success: false, error: msg };
     }
   }
@@ -339,6 +356,13 @@ export class KloelWhatsAppToolsService {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'unknown error';
       this.logger.error('Erro ao enviar documento:', error);
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'KloelWhatsAppToolsService.toolSendDocument',
+        {
+          workspaceId,
+        },
+      );
       return { success: false, error: msg };
     }
   }
@@ -365,6 +389,13 @@ export class KloelWhatsAppToolsService {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'unknown error';
       this.logger.error('Erro ao transcrever áudio:', error);
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'KloelWhatsAppToolsService.toolTranscribeAudio',
+        {
+          workspaceId,
+        },
+      );
       return { success: false, error: msg };
     }
   }

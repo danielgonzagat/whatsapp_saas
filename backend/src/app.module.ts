@@ -74,6 +74,7 @@ import { MarketingModule } from './marketing/marketing.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MemberAreaModule } from './member-area/member-area.module';
 import { MetaModule } from './meta/meta.module';
+import { OpsAlertModule } from './observability/ops-alert.module';
 import { OpsModule } from './ops/ops.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
 import { PipelineModule } from './pipeline/pipeline.module';
@@ -221,6 +222,7 @@ const isProd = process.env.NODE_ENV === 'production';
     CookieConsentModule, // Cookie consent management
     ComplianceModule, // OAuth/Meta/LGPD compliance callbacks and user rights endpoints
     FinancialAlertModule, // Financial alerting (global)
+    OpsAlertModule, // OPS critical error alerting (global)
     PulseModule, // PULSE live organism collector
     AdminModule, // adm.kloel.com identity, audit, permissions (SP-0..2)
     PaymentsModule, // 💳 Stripe Connect — split, ledger, fraud, charge, webhook (FASES 1-7)

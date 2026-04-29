@@ -127,9 +127,9 @@ function computeCurrentScore(graph: BehaviorGraph): number {
   const totalNodes = graph.summary.totalNodes;
   if (totalNodes === 0) return 0;
   const aiSafeNodes = graph.summary.aiSafeNodes;
-  const humanRequiredNodes = graph.summary.humanRequiredNodes;
-  // Score: ratio of ai_safe vs total that could be automated
-  const automatableTarget = totalNodes - humanRequiredNodes;
+  // Score: ratio of ai_safe vs total discovered nodes; PULSE should not remove
+  // nodes from the autonomy denominator by routing them to humans.
+  const automatableTarget = totalNodes;
   if (automatableTarget <= 0) return 0;
   return Math.round((aiSafeNodes / automatableTarget) * 100);
 }

@@ -17,13 +17,15 @@ import { classifyRoleFromRoute } from '../ui-crawler';
 import { determineRiskLevel } from '../dod-engine';
 import { isCriticalHarnessTarget } from '../execution-harness';
 import { filePathToCapability, filePathToFlow, isCriticalPath } from '../gitnexus/provider';
+import { auditPulseNoHardcodedReality } from '../no-hardcoded-reality-audit';
 import { ROUTE_NOISE_TOKENS } from '../codebase-truth.tokens';
 import { isUserFacingGroup } from '../codebase-truth.string-utils';
 import { isLikelyMutation } from '../codebase-truth-flows';
+import { buildScenarioCatalog } from '../scenario-engine';
 import type { APIEndpointProbe } from '../types.api-fuzzer';
 import type { HarnessTarget } from '../types.execution-harness';
 import type { PulseExecutionMatrixPath } from '../types.execution-matrix';
-import type { PulseCapability } from '../types';
+import type { PulseCapability, PulseProductGraph } from '../types';
 import type { ReplaySession } from '../types.replay-adapter';
 import type { InteractionChain } from '../functional-map-types';
 
@@ -192,6 +194,54 @@ function interactionChain(overrides: Partial<InteractionChain> = {}): Interactio
 }
 
 describe('PULSE no-hardcoded-reality contracts', () => {
+  it('fails fixed reality decision maps in core PULSE code', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-hardcoded-reality-'));
+    const pulseDir = path.join(rootDir, 'scripts/pulse');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pulseDir, 'bad.ts'),
+      [
+        "const FIXED_ROUTES = ['/checkout', '/billing/status'];",
+        "const capabilityIds = ['checkout-capability'];",
+        "const flowIds = ['payment-flow'];",
+        "const MODULE_DECISIONS = ['Billing', 'Checkout'];",
+      ].join('\n'),
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir).findings.map((finding) => finding.kind)).toEqual([
+      'fixed_product_route_collection',
+      'fixed_capability_id_collection',
+      'fixed_flow_id_collection',
+      'fixed_module_decision_collection',
+    ]);
+  });
+
+  it('allows kernel grammar collections that do not claim product reality', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-hardcoded-grammar-'));
+    const pulseDir = path.join(rootDir, 'scripts/pulse');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pulseDir, 'grammar.ts'),
+      [
+        "const TRUTH_MODES = ['observed', 'inferred', 'aspirational'];",
+        "const STRUCTURAL_ROLES = ['interface', 'persistence', 'side_effect'];",
+        "const SEVERITY_LEVELS = ['critical', 'high', 'medium', 'low'];",
+        "const ARTIFACT_FILES = ['PULSE_CERTIFICATE.json', 'PULSE_CLI_DIRECTIVE.json'];",
+        "const HTTP_METHODS = ['GET', 'POST', 'PATCH', 'DELETE'];",
+        "const SECURITY_PAYLOAD_CLASSES = ['sql-injection', 'xss-payload'];",
+      ].join('\n'),
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([]);
+  });
+
+  it('keeps core PULSE free of hardcoded product reality decision collections', () => {
+    const result = auditPulseNoHardcodedReality(process.cwd());
+
+    expect(result.scannedFiles).toBeGreaterThan(0);
+    expect(result.findings).toEqual([]);
+  });
+
   it('does not seed built-in product domain packs from the core', () => {
     const plugins = discoverPlugins(path.join(process.cwd(), '__pulse_no_plugins__'));
 
@@ -290,7 +340,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     expect(detectNewFile(rootDir, productNamedFile)?.isProtected).toBe(false);
     expect(detectNewFile(rootDir, productNamedFile)?.executionMode).toBe('ai_safe');
     expect(detectNewFile(rootDir, protectedFile)?.isProtected).toBe(true);
-    expect(detectNewFile(rootDir, protectedFile)?.executionMode).toBe('human_required');
+    expect(detectNewFile(rootDir, protectedFile)?.executionMode).toBe('observation_only');
   });
 
   it('does not classify sandbox destructive actions from product path names alone', () => {
@@ -432,5 +482,123 @@ describe('PULSE no-hardcoded-reality contracts', () => {
         }),
       ),
     ).toBe(true);
+  });
+
+  it('builds scenario catalog from arbitrary product graph surfaces instead of fixed domains', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-scenario-dynamic-'));
+    const pulseDir = path.join(rootDir, '.pulse', 'current');
+    fs.mkdirSync(pulseDir, { recursive: true });
+
+    const graph: PulseProductGraph = {
+      surfaces: [
+        {
+          id: 'xpto',
+          name: 'Xpto',
+          description: 'Opaque discovered surface',
+          artifactIds: [],
+          capabilities: ['cap-xpto'],
+          completeness: 0.5,
+          truthMode: 'observed',
+        },
+      ],
+      capabilities: [
+        {
+          id: 'cap-xpto',
+          name: 'Opaque Capability',
+          surfaceId: 'xpto',
+          artifactIds: [],
+          flowIds: ['flow-xpto'],
+          maturityScore: 0.5,
+          truthMode: 'observed',
+          criticality: 'must_have',
+          blockers: [],
+        },
+      ],
+      flows: [
+        {
+          id: 'flow-xpto',
+          name: 'Opaque Flow',
+          entryCapability: 'cap-xpto',
+          capabilities: ['cap-xpto'],
+          completeness: 0.5,
+          truthMode: 'observed',
+          blockers: [],
+        },
+      ],
+      orphanedArtifactIds: [],
+      phantomCapabilities: [],
+      latentCapabilities: [],
+    };
+
+    fs.writeFileSync(
+      path.join(pulseDir, 'PULSE_PRODUCT_GRAPH.json'),
+      JSON.stringify(graph, null, 2),
+    );
+    fs.writeFileSync(
+      path.join(pulseDir, 'PULSE_BEHAVIOR_GRAPH.json'),
+      JSON.stringify({
+        generatedAt: '2026-04-29T00:00:00.000Z',
+        summary: {
+          totalNodes: 1,
+          handlerNodes: 0,
+          apiEndpointNodes: 1,
+          queueNodes: 0,
+          cronNodes: 0,
+          webhookNodes: 0,
+          dbNodes: 0,
+          externalCallNodes: 0,
+          aiSafeNodes: 1,
+          humanRequiredNodes: 0,
+          nodesWithErrorHandler: 0,
+          nodesWithLogging: 0,
+          nodesWithMetrics: 0,
+          criticalRiskNodes: 0,
+        },
+        nodes: [
+          {
+            id: 'node:xpto',
+            kind: 'api_endpoint',
+            name: 'XptoController.create',
+            filePath: 'backend/src/xpto/xpto.controller.ts',
+            line: 1,
+            parentFunctionId: null,
+            inputs: [
+              {
+                kind: 'body',
+                name: 'opaqueField',
+                type: 'string',
+                required: true,
+                validated: true,
+                source: 'dto',
+              },
+            ],
+            outputs: [{ kind: 'db_write', target: 'Opaque', type: 'create', conditional: false }],
+            stateAccess: [],
+            externalCalls: [],
+            risk: 'medium',
+            executionMode: 'ai_safe',
+            calledBy: [],
+            calls: [],
+            isAsync: false,
+            hasErrorHandler: false,
+            hasLogging: false,
+            hasMetrics: false,
+            hasTracing: false,
+            decorators: ['Post'],
+            docComment: null,
+          },
+        ],
+        orphanNodes: [],
+        unreachableNodes: [],
+      }),
+    );
+
+    const state = buildScenarioCatalog(rootDir);
+
+    expect(state.scenarios).toHaveLength(1);
+    expect(state.scenarios[0].id).toBe('flow-xpto');
+    expect(state.scenarios[0].flowId).toBe('xpto/flow-xpto');
+    expect(state.scenarios[0].steps.map((step) => step.kind)).toContain('api_call');
+    expect(state.scenarios[0].steps.some((step) => step.target.includes('opaqueField'))).toBe(true);
   });
 });

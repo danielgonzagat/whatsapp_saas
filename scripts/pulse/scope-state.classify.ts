@@ -168,15 +168,46 @@ export function classifyModuleCandidate(relPath: string): string | null {
 }
 
 /** Pick the convergence owner lane responsible for a file. */
-const SECURITY_LANE_SEGMENTS = ['/security/', '/audit/', '/rbac/', '/permissions/'] as const;
-const RELIABILITY_LANE_SEGMENTS = ['/health/', '/metrics', '/observability/', '/alerts/'] as const;
+const SECURITY_LANE_SEGMENTS = [
+  '/auth/',
+  '/security/',
+  '/audit/',
+  '/rbac/',
+  '/permissions/',
+  '/policy/',
+] as const;
+const RELIABILITY_LANE_SEGMENTS = [
+  '/health/',
+  '/metrics',
+  '/observability/',
+  '/alerts/',
+  '/telemetry/',
+  '/queue/',
+  '/jobs/',
+  '/logging/',
+] as const;
 const RELIABILITY_LANE_SURFACES: ReadonlySet<PulseScopeSurface> = new Set([
   'worker',
   'prisma',
   'infra',
   'root-config',
 ]);
-const ADMIN_LANE_SEGMENTS = ['/admin/', '/internal/', '/dashboard/'] as const;
+const OPERATOR_LANE_SEGMENTS = [
+  '/admin/',
+  '/internal/',
+  '/operator/',
+  '/backoffice/',
+  '/dashboard/',
+] as const;
+const USER_ENTRY_SEGMENTS = [
+  '/page.',
+  '/pages/',
+  '/route.',
+  '/routes/',
+  '/controller.',
+  '/controllers/',
+  '/public/',
+] as const;
 
 function matchesAnySegment(value: string, segments: ReadonlyArray<string>): boolean {
   return segments.some((segment) => value.includes(segment));
@@ -193,8 +224,25 @@ function isReliabilityLane(normalized: string, surface: PulseScopeSurface): bool
   );
 }
 
-function isBackendAdminLane(normalized: string): boolean {
-  return matchesAnySegment(normalized, ADMIN_LANE_SEGMENTS);
+function matchesAnyToken(value: string | null, tokens: ReadonlyArray<string>): boolean {
+  if (!value) {
+    return false;
+  }
+  return tokens.some((token) => value.includes(token.replace(/\//g, '')));
+}
+
+function isOperatorLane(normalized: string, moduleCandidate: string | null): boolean {
+  return (
+    matchesAnySegment(normalized, OPERATOR_LANE_SEGMENTS) ||
+    matchesAnyToken(moduleCandidate, OPERATOR_LANE_SEGMENTS)
+  );
+}
+
+function isUserEntrySurface(normalized: string, surface: PulseScopeSurface): boolean {
+  if (surface === 'frontend' || surface === 'frontend-admin') {
+    return true;
+  }
+  return matchesAnySegment(normalized, USER_ENTRY_SEGMENTS);
 }
 
 export function classifyOwnerLane(
@@ -214,17 +262,14 @@ export function classifyOwnerLane(
   if (isReliabilityLane(normalized, surface)) {
     return 'reliability';
   }
+  if (isOperatorLane(normalized, moduleCandidate)) {
+    return 'operator-admin';
+  }
   if (surface === 'frontend-admin') {
     return 'operator-admin';
   }
-  if (surface === 'frontend') {
+  if (isUserEntrySurface(normalized, surface)) {
     return 'customer';
-  }
-  if (surface === 'backend') {
-    return isBackendAdminLane(normalized) ? 'operator-admin' : 'customer';
-  }
-  if (moduleCandidate && moduleCandidate.includes('admin')) {
-    return 'operator-admin';
   }
   return 'platform';
 }
@@ -234,15 +279,10 @@ export function isRuntimeCritical(surface: PulseScopeSurface, kind: PulseScopeFi
   if (kind === 'artifact' || kind === 'document') {
     return false;
   }
-  return [
-    'frontend',
-    'frontend-admin',
-    'backend',
-    'worker',
-    'prisma',
-    'infra',
-    'root-config',
-  ].includes(surface);
+  if (kind === 'source' || kind === 'migration') {
+    return true;
+  }
+  return surface === 'infra' || surface === 'root-config';
 }
 
 /** Decide whether a given (surface,kind) tuple is user-facing. */

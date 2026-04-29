@@ -4,60 +4,53 @@
  * Mode: STATIC (source code pattern analysis — no DB access needed)
  *
  * CHECKS:
- * Verify business rule consistency enforcement in financial service code.
+ * Verify business rule consistency enforcement in critical mutating service code.
  * These are rules that foreign keys cannot enforce — they require application-level logic.
- * This static checker looks for the ABSENCE of validation guards before financial mutations.
+ * This static checker looks for the ABSENCE of validation guards before critical mutations.
  *
- * Product rules:
- * 1. Every published Product must have at least one active Plan
- *    → Products with status=PUBLISHED and zero Plans → DATA_PRODUCT_NO_PLAN
- * 2. Every Plan must have a price > 0
- *    → Plans with price <= 0 → data consistency violation
- * 3. Every Product with checkoutEnabled=true must have Asaas config (apiKey or linked account)
- *
- * Order rules:
- * 4. Every Order with status=PAID must have a corresponding Payment with status=CONFIRMED
- *    → PAID Orders without confirmed Payment → DATA_ORDER_NO_PAYMENT
- * 5. Every Order amount must match the Plan price (minus coupon discount if applied)
- *    → Orders where amount != plan.price - couponDiscount → arithmetic inconsistency
- * 6. Every Order must belong to a Workspace that owns the Product ordered
- *    → Cross-workspace orders → critical data inconsistency
- *
- * Workspace rules:
- * 7. Every Workspace must have exactly one OWNER member
- *    → Workspaces with zero OWNER members → DATA_WORKSPACE_NO_OWNER
- * 8. Workspaces with multiple OWNER members → flag (may be intentional or bug)
- * 9. Every Workspace must have a Wallet record
- *    → Workspaces without Wallet → financial operations will fail
+ * Critical rules:
+ * 1. Every amount-bearing write must validate its referenced entity first.
+ * 2. Every balance-decreasing operation must validate balance atomically.
+ * 3. Every tenant/owner write must validate ownership before mutation.
  *
  * STATIC APPROACH:
- * Look for the pattern: financial .create() / .update() WITHOUT a prior .findFirst() / .findUnique()
+ * Look for the pattern: critical .create() / .update() WITHOUT a prior .findFirst() / .findUnique()
  * in the same function body. This indicates an operation that does not validate existence first.
  *
  * BREAK TYPES:
- * - DATA_PRODUCT_NO_PLAN (high) — checkout service creates order without validating plan exists
- * - DATA_ORDER_NO_PAYMENT (high) — payment webhook marks order paid without confirming payment record
- * - DATA_WORKSPACE_NO_OWNER (high) — workspace creation does not enforce owner member creation
+ * - DATA_PRODUCT_NO_PLAN (high) — money-like record created without validated reference
+ * - DATA_ORDER_NO_PAYMENT (high) — amount/balance mutation without atomic validation
+ * - DATA_WORKSPACE_NO_OWNER (high) — tenant owner/member mutation lacks validation
  */
 
 import * as path from 'path';
 import { walkFiles, readFileSafe } from './utils';
 import type { Break, PulseConfig } from '../types';
 
-// Financial service files to check
-const FINANCIAL_SERVICE_PATTERNS = [
-  /checkout.*\.service\.ts$/i,
-  /wallet.*\.service\.ts$/i,
-  /billing.*\.service\.ts$/i,
-  /payment.*\.service\.ts$/i,
-  /order.*\.service\.ts$/i,
-  /stripe.*\.service\.ts$/i,
-];
-
 const CREATE_OPERATION_TOKENS = ['.create(', '.createMany(', '.upsert('];
+const MUTATION_OPERATION_RE =
+  /prisma\.[A-Za-z_$][\w$]*\.(?:create|createMany|update|updateMany|upsert|delete|deleteMany)\s*\(/;
+const MONEY_STATE_RE =
+  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
+const TENANT_OWNER_STATE_RE = /\b(?:workspaceId|tenantId|ownerId|memberId|role|OWNER)\b/;
 
 // Keywords that indicate existence validation before create
 const VALIDATION_READS = ['findFirst(', 'findUnique(', 'findMany(', 'count('];
+
+function isConsistencyCriticalService(content: string): boolean {
+  return (
+    MUTATION_OPERATION_RE.test(content) &&
+    (MONEY_STATE_RE.test(content) || TENANT_OWNER_STATE_RE.test(content))
+  );
+}
+
+function mutatesMoneyLikeState(content: string): boolean {
+  return MONEY_STATE_RE.test(content);
+}
+
+function mutatesTenantOwnerState(content: string): boolean {
+  return TENANT_OWNER_STATE_RE.test(content);
+}
 
 /**
  * Extract function bodies from TypeScript source.
@@ -150,14 +143,15 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   const backendFiles = walkFiles(config.backendDir, ['.ts']);
-  const financialFiles = backendFiles.filter(
-    (file) =>
-      FINANCIAL_SERVICE_PATTERNS.some((p) => p.test(file)) &&
-      !file.includes('.spec.') &&
-      !file.includes('.test.'),
-  );
+  const criticalServiceFiles = backendFiles.filter((file) => {
+    if (!file.endsWith('.service.ts') || file.includes('.spec.') || file.includes('.test.')) {
+      return false;
+    }
+    const content = readFileSafe(file);
+    return isConsistencyCriticalService(content);
+  });
 
-  for (const file of financialFiles) {
+  for (const file of criticalServiceFiles) {
     const content = readFileSafe(file);
     if (!content) {
       continue;
@@ -172,7 +166,7 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
         continue;
       }
 
-      // Check for create without prior findFirst/findUnique in financial context
+      // Check for create without prior findFirst/findUnique in critical mutation context.
       // (updates are excluded — they usually already have a validated ID from the request)
       if (hasWriteWithoutValidation(fn.body, VALIDATION_READS)) {
         // Determine the most specific break type based on file
@@ -180,27 +174,21 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
         let description: string;
         let detail: string;
 
-        if (/checkout|order/i.test(fileName)) {
+        if (mutatesMoneyLikeState(fn.body)) {
           breakType = 'DATA_PRODUCT_NO_PLAN';
-          description = `Checkout/order creation without prior plan/product validation in ${fileName}`;
+          description = `Money-like creation without prior existence validation in ${fileName}`;
           detail =
             `Function '${fn.name}' performs a write operation without a findFirst/findUnique guard. ` +
-            `An order could be created for a non-existent or inactive plan.`;
-        } else if (/wallet|payment/i.test(fileName)) {
-          breakType = 'DATA_ORDER_NO_PAYMENT';
-          description = `Financial write without existence check in ${fileName}`;
+            `A money-like record could be created for a non-existent, inactive, or unauthorized reference.`;
+        } else if (mutatesTenantOwnerState(fn.body)) {
+          breakType = 'DATA_WORKSPACE_NO_OWNER';
+          description = `Tenant/owner mutation without prior validation in ${fileName}`;
           detail =
-            `Function '${fn.name}' creates or updates a financial record without first validating ` +
-            `the referenced entity exists. This can create orphaned payment records.`;
-        } else if (/billing|subscription/i.test(fileName)) {
-          breakType = 'DATA_PRODUCT_NO_PLAN';
-          description = `Billing operation without plan validation in ${fileName}`;
-          detail =
-            `Function '${fn.name}' creates a subscription or billing record without first checking ` +
-            `the plan exists and is active. Subscriptions may reference deleted plans.`;
+            `Function '${fn.name}' mutates tenant/owner state without first validating the referenced ` +
+            `workspace, tenant, member, or owner exists.`;
         } else {
           breakType = 'DATA_WORKSPACE_NO_OWNER';
-          description = `Financial write without validation in ${fileName}`;
+          description = `Critical write without validation in ${fileName}`;
           detail =
             `Function '${fn.name}' in ${fileName} performs write operation(s) without ` +
             `a prior findFirst/findUnique validation. May violate business rule constraints.`;
@@ -217,10 +205,12 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
       }
     }
 
-    // Check wallet service specifically: withdrawal must validate balance
-    if (/wallet/i.test(fileName)) {
-      const withdrawFns = functions.filter((fn) => /withdraw|saque|debit|deduct/i.test(fn.name));
-      for (const fn of withdrawFns) {
+    // Check balance-decreasing functions specifically: must validate balance atomically.
+    if (MONEY_STATE_RE.test(content)) {
+      const balanceDecreaseFns = functions.filter((fn) =>
+        /debit|deduct|decrement|amount|balance/i.test(fn.name),
+      );
+      for (const fn of balanceDecreaseFns) {
         const hasBalanceCheck =
           /balance|saldo|amount.*<=|>=.*amount|findFirst|findUnique/i.test(fn.body) &&
           /\$transaction|transaction/i.test(fn.body);
@@ -230,17 +220,17 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
             severity: 'high',
             file,
             line: fn.startLine,
-            description: `Withdrawal function '${fn.name}' may not validate balance atomically`,
+            description: `Balance-decreasing function '${fn.name}' may not validate balance atomically`,
             detail:
-              `wallet.service: '${fn.name}' does not appear to use a Prisma $transaction with balance validation. ` +
-              `Race conditions can cause overdraft — two concurrent withdrawals may both pass the balance check.`,
+              `${fileName}: '${fn.name}' does not appear to use a Prisma $transaction with balance validation. ` +
+              `Race conditions can cause negative balance — two concurrent decrements may both pass the balance check.`,
           });
         }
       }
     }
 
-    // Check workspace creation: must create OWNER member record
-    if (/workspace.*service/i.test(fileName)) {
+    // Check tenant creation: must create OWNER member record
+    if (TENANT_OWNER_STATE_RE.test(content)) {
       const createFns = functions.filter((fn) => /create/i.test(fn.name));
       for (const fn of createFns) {
         const hasOwnerCreation = /OWNER|role.*owner|owner.*role/i.test(fn.body);
@@ -250,10 +240,10 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
             severity: 'high',
             file,
             line: fn.startLine,
-            description: `Workspace creation in '${fn.name}' does not create an OWNER member`,
+            description: `Tenant creation in '${fn.name}' does not create an OWNER member`,
             detail:
-              `workspace.service: '${fn.name}' creates a workspace but does not appear to create a ` +
-              `WorkspaceMember with role=OWNER. The workspace will be orphaned with no admin.`,
+              `${fileName}: '${fn.name}' creates tenant-like state but does not appear to create a ` +
+              `member with role=OWNER. The tenant can be orphaned with no admin.`,
           });
         }
       }

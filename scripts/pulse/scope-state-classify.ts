@@ -279,14 +279,22 @@ export function classifyOwnerLane(
   protectedByGovernance: boolean,
 ): PulseConvergenceOwnerLane {
   const normalized = relPath.toLowerCase();
+  const moduleToken = moduleCandidate || '';
+  const hasAnySegment = (segments: ReadonlyArray<string>): boolean =>
+    segments.some((segment) => normalized.includes(segment));
+  const hasAnyModuleToken = (segments: ReadonlyArray<string>): boolean =>
+    segments.some((segment) => moduleToken.includes(segment.replace(/\//g, '')));
+
   if (protectedByGovernance || surface === 'governance' || surface === 'docs') {
     return 'platform';
   }
   if (
+    normalized.includes('/auth/') ||
     normalized.includes('/security/') ||
     normalized.includes('/audit/') ||
     normalized.includes('/rbac/') ||
-    normalized.includes('/permissions/')
+    normalized.includes('/permissions/') ||
+    normalized.includes('/policy/')
   ) {
     return 'security';
   }
@@ -298,29 +306,36 @@ export function classifyOwnerLane(
     normalized.includes('/health/') ||
     normalized.includes('/metrics') ||
     normalized.includes('/observability/') ||
-    normalized.includes('/alerts/')
+    normalized.includes('/alerts/') ||
+    normalized.includes('/telemetry/') ||
+    normalized.includes('/queue/') ||
+    normalized.includes('/jobs/') ||
+    normalized.includes('/logging/')
   ) {
     return 'reliability';
+  }
+  if (
+    hasAnySegment(['/admin/', '/internal/', '/operator/', '/backoffice/', '/dashboard/']) ||
+    hasAnyModuleToken(['/admin/', '/internal/', '/operator/', '/backoffice/', '/dashboard/'])
+  ) {
+    return 'operator-admin';
   }
   if (surface === 'frontend-admin') {
     return 'operator-admin';
   }
-  if (surface === 'frontend') {
-    return 'customer';
-  }
   if (
-    surface === 'backend' &&
-    (normalized.includes('/admin/') ||
-      normalized.includes('/internal/') ||
-      normalized.includes('/dashboard/'))
+    surface === 'frontend' ||
+    hasAnySegment([
+      '/page.',
+      '/pages/',
+      '/route.',
+      '/routes/',
+      '/controller.',
+      '/controllers/',
+      '/public/',
+    ])
   ) {
-    return 'operator-admin';
-  }
-  if (surface === 'backend') {
     return 'customer';
-  }
-  if (moduleCandidate && moduleCandidate.includes('admin')) {
-    return 'operator-admin';
   }
   return 'platform';
 }
@@ -329,15 +344,10 @@ export function isRuntimeCritical(surface: PulseScopeSurface, kind: PulseScopeFi
   if (kind === 'artifact' || kind === 'document') {
     return false;
   }
-  return [
-    'frontend',
-    'frontend-admin',
-    'backend',
-    'worker',
-    'prisma',
-    'infra',
-    'root-config',
-  ].includes(surface);
+  if (kind === 'source' || kind === 'migration') {
+    return true;
+  }
+  return surface === 'infra' || surface === 'root-config';
 }
 
 export function isUserFacing(surface: PulseScopeSurface, kind: PulseScopeFileKind): boolean {

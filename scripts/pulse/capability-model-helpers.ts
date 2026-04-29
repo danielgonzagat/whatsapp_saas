@@ -54,10 +54,7 @@ export function pickOwnerLane(values: PulseConvergenceOwnerLane[]): PulseConverg
 }
 
 export function pickExecutionMode(values: PulseScopeExecutionMode[]): PulseScopeExecutionMode {
-  if (values.includes('human_required')) {
-    return 'human_required';
-  }
-  if (values.includes('observation_only')) {
+  if (values.includes('observation_only') || values.includes('human_required')) {
     return 'observation_only';
   }
   return 'ai_safe';

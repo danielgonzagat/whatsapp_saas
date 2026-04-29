@@ -4,6 +4,7 @@ import { safeJoin, safeResolve } from '../safe-path';
 import type { Page, Locator } from 'playwright';
 import type { ObservedApiCall, DiscoveredElement } from './types';
 import { generateTestData, generateTestImage } from './data-gen';
+import { getBackendUrl } from '../parsers/runtime-utils';
 import * as path from 'path';
 import * as os from 'os';
 import { removeFile, writeBinaryFile } from '../safe-fs';
@@ -24,6 +25,19 @@ export interface InteractionResult {
 const DANGEROUS_RE =
   /^(excluir|deletar|remover|delete|remove|sair|logout|desconectar|disconnect|apagar|cancelar assinatura|encerrar)/i;
 const NAVIGATION_ONLY_RE = /^(voltar|back|anterior|← |sair|fechar|cancelar|close)$/i;
+
+function isObservedBackendResponse(url: string): boolean {
+  try {
+    const responseUrl = new URL(url);
+    const backendUrl = new URL(getBackendUrl());
+    if (responseUrl.origin === backendUrl.origin) {
+      return true;
+    }
+    return responseUrl.pathname.startsWith('/api/');
+  } catch {
+    return false;
+  }
+}
 
 /** Is dangerous element. */
 export function isDangerousElement(label: string): boolean {
@@ -51,7 +65,7 @@ export async function interactWithElement(
   const responseHandler = (response: any) => {
     const url = response.url();
     // Only track API calls (not static assets)
-    if (url.includes('/api/') || url.includes(':3001/') || url.includes('railway.app/')) {
+    if (isObservedBackendResponse(url)) {
       const urlObj = new URL(url);
       if (!urlObj.pathname.match(/\.(js|css|ico|png|jpg|svg|woff|ttf)$/)) {
         apiCalls.push({
@@ -290,7 +304,7 @@ export async function findAndClickSave(page: Page, timeout: number): Promise<Obs
 
   const responseHandler = (response: any) => {
     const url = response.url();
-    if (url.includes('/api/') || url.includes(':3001/') || url.includes('railway.app/')) {
+    if (isObservedBackendResponse(url)) {
       const urlObj = new URL(url);
       if (!urlObj.pathname.match(/\.(js|css|ico|png|jpg|svg|woff|ttf)$/)) {
         apiCalls.push({

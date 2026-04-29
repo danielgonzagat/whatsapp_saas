@@ -22,7 +22,12 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
-const FINANCIAL_PATH_RE = /checkout|wallet|billing|payment|kloel/i;
+const MONEY_TEST_RE =
+  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
+
+function testsMoneyLikeBehavior(content: string): boolean {
+  return MONEY_TEST_RE.test(content);
+}
 
 /** Check test quality. */
 export function checkTestQuality(config: PulseConfig): Break[] {
@@ -78,8 +83,8 @@ export function checkTestQuality(config: PulseConfig): Break[] {
         });
       }
 
-      // CHECK 3: Financial tests must cover error cases
-      if (FINANCIAL_PATH_RE.test(file)) {
+      // CHECK 3: Money-like tests must cover error cases
+      if (testsMoneyLikeBehavior(content)) {
         const errorCasePatterns = [
           /insufficient|reject|fail|error|exception|throw/i,
           /toThrow|rejects|toBe\s*\(\s*false|toBeUndefined|toBeNull/i,
@@ -92,9 +97,9 @@ export function checkTestQuality(config: PulseConfig): Break[] {
             file: relFile,
             line: 0,
             description:
-              'Financial test file has no error/rejection case tests — happy path only is insufficient',
+              'Money-like test file has no error/rejection case tests — happy path only is insufficient',
             detail:
-              'Add tests for: insufficient funds, payment rejection, invalid coupon, concurrent writes',
+              'Add tests for: insufficient funds, rejected state, invalid discount, concurrent writes',
           });
         }
       }

@@ -5,7 +5,7 @@
  * produces a PulseSignal that flows into certification,
  * convergence plan, and the external-signal-state artifact.
  */
-import type { PulseSignal } from '../types';
+import type { PulseExternalAdapterStatus, PulseExternalSignalSource, PulseSignal } from '../types';
 import { GitNexusCodeGraphProvider } from '../gitnexus/provider';
 
 let provider: GitNexusCodeGraphProvider | null = null;
@@ -19,7 +19,9 @@ function makeSignal(
   summary: string,
   impactScore: number,
   severity: number,
-  executionMode: 'ai_safe' | 'human_required' | 'observation_only',
+  executionMode: PulseSignal['executionMode'],
+  tags: string[] = [],
+  validationTargets: string[] = [],
 ): PulseSignal {
   const ts = new Date().toISOString();
   return {
@@ -34,14 +36,15 @@ function makeSignal(
     observedAt: ts,
     relatedFiles: [],
     routePatterns: [],
-    tags: ['gitnexus', 'code-graph'],
+    tags: ['gitnexus', 'code-graph', ...tags],
     capabilityIds: [],
     flowIds: [],
     recentChangeRefs: [],
     ownerLane: 'platform',
     executionMode,
+    governanceDisposition: tags.includes('governed_validation') ? 'governed_validation' : undefined,
     protectedByGovernance: false,
-    validationTargets: [],
+    validationTargets,
     rawRef: null,
   };
 }
@@ -58,7 +61,11 @@ export async function fetchGitNexusSignal(repoRoot: string): Promise<PulseSignal
           : 'GitNexus CLI is unavailable and no local index exists.',
         0.4,
         0.5,
-        'ai_safe',
+        'observation_only',
+        available
+          ? ['gitnexus:index_missing', 'governed_validation']
+          : ['gitnexus:not_available', 'governed_validation'],
+        ['PULSE_GITNEXUS_STATE.json', 'PULSE_EXTERNAL_SIGNAL_STATE.json'],
       );
     }
 
@@ -67,7 +74,9 @@ export async function fetchGitNexusSignal(repoRoot: string): Promise<PulseSignal
         `GitNexus index is stale (current: ${status.currentCommit?.slice(0, 8)}, indexed: ${status.lastIndexedCommit?.slice(0, 8)}).`,
         0.5,
         0.6,
-        'ai_safe',
+        'observation_only',
+        ['gitnexus:stale', 'governed_validation'],
+        ['PULSE_GITNEXUS_STATE.json', 'PULSE_EXTERNAL_SIGNAL_STATE.json'],
       );
     }
 
@@ -76,6 +85,8 @@ export async function fetchGitNexusSignal(repoRoot: string): Promise<PulseSignal
       0.1,
       0.1,
       'ai_safe',
+      ['gitnexus:ready'],
+      ['PULSE_GITNEXUS_STATE.json', 'PULSE_EXTERNAL_SIGNAL_STATE.json'],
     );
   } catch (err) {
     return makeSignal(
@@ -83,11 +94,11 @@ export async function fetchGitNexusSignal(repoRoot: string): Promise<PulseSignal
       0.6,
       0.7,
       'observation_only',
+      ['gitnexus:invalid'],
+      ['PULSE_GITNEXUS_STATE.json', 'PULSE_EXTERNAL_SIGNAL_STATE.json'],
     );
   }
 }
-
-import type { PulseExternalAdapterStatus, PulseExternalSignalSource } from '../types';
 
 interface RunGitNexusAdapterArgs {
   config: { rootDir: string };
@@ -101,6 +112,22 @@ interface RunGitNexusAdapterArgs {
     reason: string;
   }>;
   generatedAt: string;
+}
+
+function classifyGitNexusSignalStatus(signal: PulseSignal): PulseExternalAdapterStatus {
+  if (
+    signal.tags.includes('gitnexus:not_available') ||
+    signal.tags.includes('gitnexus:index_missing')
+  ) {
+    return 'not_available';
+  }
+  if (signal.tags.includes('gitnexus:stale')) {
+    return 'stale';
+  }
+  if (signal.tags.includes('gitnexus:invalid')) {
+    return 'invalid';
+  }
+  return 'ready';
 }
 
 /**
@@ -117,7 +144,7 @@ export async function runGitNexusAdapter(args: RunGitNexusAdapterArgs): Promise<
       signalsBySource['gitnexus'] = [signal];
       sources.push({
         source: 'gitnexus',
-        status: signal.severity >= 0.8 ? 'stale' : 'ready',
+        status: classifyGitNexusSignalStatus(signal),
         signalCount: 1,
         syncedAt: generatedAt,
         reason: signal.summary,
