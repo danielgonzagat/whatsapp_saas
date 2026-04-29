@@ -6,18 +6,7 @@ import {
   validateOrderTransition,
 } from '../common/checkout-order-state-machine';
 import { PrismaService } from '../prisma/prisma.service';
-import type { CheckoutOrderStatusValue } from './checkout-order.service';
-
-const CHECKOUT_ORDER_STATUSES = [
-  'PENDING',
-  'PROCESSING',
-  'PAID',
-  'SHIPPED',
-  'DELIVERED',
-  'CANCELED',
-  'REFUNDED',
-  'CHARGEBACK',
-] as const;
+import { CHECKOUT_ORDER_STATUSES, type CheckoutOrderStatusValue } from './checkout-order-status';
 
 /** Handles read operations and status/upsell mutations on checkout orders. */
 @Injectable()
