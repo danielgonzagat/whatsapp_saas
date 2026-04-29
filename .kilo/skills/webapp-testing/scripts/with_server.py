@@ -4,9 +4,9 @@
 This helper is meant to be invoked by developers locally during webapp
 testing. It deliberately spawns child processes (subprocess) because that
 is the only way to launch a dev server alongside a test command. To avoid
-shell-injection risks the server command is parsed with ``shlex.split`` and
-the wrapped command is forwarded as a list (no shell). Operators that need
-shell features must wrap their command in an explicit ``sh -c '...'`` call.
+shell-injection risks the server command is parsed with ``shlex.split``, the
+executable is restricted to a small allowlist, and each token is shell-quoted
+before the command is forwarded to the system shell.
 
 Usage:
     # Single server
@@ -101,33 +101,10 @@ async def _spawn_allowed_process(
         stdout=None,
         stderr=None,
 ) -> ManagedProcess:
-    """Spawn an allow-listed executable using a literal command branch."""
+    """Spawn an allow-listed executable through one static, shell-quoted path."""
     _resolve_executable(argv)
-    executable = argv[0]
-    args = list(argv[1:])
-    if executable == 'bash':
-        return await asyncio.create_subprocess_exec('bash', *args, stdout=stdout, stderr=stderr)
-    if executable == 'bun':
-        return await asyncio.create_subprocess_exec('bun', *args, stdout=stdout, stderr=stderr)
-    if executable == 'node':
-        return await asyncio.create_subprocess_exec('node', *args, stdout=stdout, stderr=stderr)
-    if executable == 'npm':
-        return await asyncio.create_subprocess_exec('npm', *args, stdout=stdout, stderr=stderr)
-    if executable == 'npx':
-        return await asyncio.create_subprocess_exec('npx', *args, stdout=stdout, stderr=stderr)
-    if executable == 'pnpm':
-        return await asyncio.create_subprocess_exec('pnpm', *args, stdout=stdout, stderr=stderr)
-    if executable == 'python':
-        return await asyncio.create_subprocess_exec('python', *args, stdout=stdout, stderr=stderr)
-    if executable == 'python3':
-        return await asyncio.create_subprocess_exec('python3', *args, stdout=stdout, stderr=stderr)
-    if executable == 'sh':
-        return await asyncio.create_subprocess_exec('sh', *args, stdout=stdout, stderr=stderr)
-    if executable == 'uv':
-        return await asyncio.create_subprocess_exec('uv', *args, stdout=stdout, stderr=stderr)
-    if executable == 'yarn':
-        return await asyncio.create_subprocess_exec('yarn', *args, stdout=stdout, stderr=stderr)
-    raise ValueError(f'executable is not allowed for with_server.py: {executable}')
+    command = ' '.join(shlex.quote(token) for token in argv)
+    return await asyncio.create_subprocess_exec('sh', '-c', command, stdout=stdout, stderr=stderr)
 
 
 def is_server_ready(port: int, timeout: int = _DEFAULT_READINESS_TIMEOUT_SEC) -> bool:

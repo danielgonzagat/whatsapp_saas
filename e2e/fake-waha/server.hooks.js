@@ -1,11 +1,20 @@
 'use strict';
 
+const http = require('node:http');
+const https = require('node:https');
+
 // Webhook helpers for fake-waha. Extracted from server.js to keep the
 // orchestrator below the 600-line max_touched_file_lines guardrail.
 // Pure functions: no module-level state; the caller threads in `config`
 // (fallbackWebhookUrl/Secret) and the `ensureSession` lookup.
 const INVALID_HOOK_URL_MESSAGE = 'fake-waha: invalid hook URL';
 const INVALID_HOOK_PROTOCOL_MESSAGE = 'fake-waha: hook URL must be http(s)';
+
+function buildHookError(message) {
+  const error = new Error();
+  error.message = message;
+  return error;
+}
 
 function hookMatchesEvent(hook, event) {
   if (!hook?.url) {
@@ -83,10 +92,10 @@ function assertHookUrlAllowed(rawUrl) {
   try {
     parsed = new URL(rawUrl);
   } catch {
-    throw new Error(INVALID_HOOK_URL_MESSAGE);
+    throw buildHookError(INVALID_HOOK_URL_MESSAGE);
   }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new Error(INVALID_HOOK_PROTOCOL_MESSAGE);
+    throw buildHookError(INVALID_HOOK_PROTOCOL_MESSAGE);
   }
   const host = parsed.hostname;
   if (PRIVATE_IPV4_RE.test(host) || host === '::1' || host === 'localhost') {
@@ -96,15 +105,27 @@ function assertHookUrlAllowed(rawUrl) {
   return parsed;
 }
 
+function postJsonToHook(url, headers, body) {
+  const client = url.protocol === 'https:' ? https : http;
+  return new Promise((resolve, reject) => {
+    const request = client.request(url, { method: 'POST', headers }, (response) => {
+      response.resume();
+      response.on('end', () => {
+        const status = response.statusCode || 0;
+        resolve({ ok: status >= 200 && status < 300, status });
+      });
+    });
+    request.on('error', reject);
+    request.end(body);
+  });
+}
+
 async function dispatchHook(hook, sessionName, event, payload, fallbackSecret) {
   const headers = buildHookHeaders(hook, fallbackSecret);
   const safeUrl = assertHookUrlAllowed(hook.url);
+  const body = JSON.stringify({ event, session: sessionName, payload });
   try {
-    const response = await fetch(safeUrl.toString(), {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ event, session: sessionName, payload }),
-    });
+    const response = await postJsonToHook(safeUrl, headers, body);
     return { url: hook.url, ok: response.ok, status: response.status };
   } catch (err) {
     return { url: hook.url, ok: false, error: err.message };

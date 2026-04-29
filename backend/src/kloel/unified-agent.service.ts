@@ -21,6 +21,28 @@ import { UnifiedAgentActionsService } from './unified-agent-actions.service';
 
 type UnknownRecord = Record<string, unknown>;
 
+function formatPromptValue(value: unknown): string {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return `[${value.map(formatPromptValue).join(',')}]`;
+  if (typeof value === 'object') {
+    const record = value as Record<string, unknown>;
+    return `{${Object.keys(record)
+      .sort()
+      .map((key) => `${key}:${formatPromptValue(record[key])}`)
+      .join(',')}}`;
+  }
+  if (typeof value === 'string') {
+    return `"${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  if (typeof value === 'undefined') {
+    return 'undefined';
+  }
+  return Object.prototype.toString.call(value);
+}
+
 /** ToolArgs shape used by all action methods. */
 export interface ToolArgs {
   active?: boolean;
@@ -268,6 +290,7 @@ export class UnifiedAgentService {
     const tagNames = this.ctx.readTagList(contactData.tags);
 
     // 3. Build messages array
+    const additionalContext = context ? formatPromptValue(context) : '';
     const messages: ChatCompletionMessageParam[] = [
       { role: 'system', content: systemPrompt },
       ...conversationHistory,
@@ -277,8 +300,8 @@ export class UnifiedAgentService {
 [Sentiment: ${contactSentiment}]
 [Lead Score: ${leadScore}]
 [Tags: ${tagNames}]
-[Memória comprimida: ${compressedContext || 'nenhuma'}]
-${context ? `[Contexto adicional: ${JSON.stringify(context)}]` : ''}
+  [Memória comprimida: ${compressedContext || 'nenhuma'}]
+  ${additionalContext ? `[Contexto adicional: ${additionalContext}]` : ''}
 [Instrução tática: ${tacticalHint || 'responder com clareza, valor concreto e próximo passo.'}]
 [Política de resposta: ${stylePolicy}]
 

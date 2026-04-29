@@ -8,9 +8,9 @@
 CREATE TABLE IF NOT EXISTS "RAC_AdRule" (
     id TEXT NOT NULL,
     "workspaceId" TEXT NOT NULL,
-    name TEXT NOT NULL,
+    "name" TEXT NOT NULL,
     condition TEXT NOT NULL,
-    action TEXT NOT NULL,
+    "action" TEXT NOT NULL,
     "alertMethod" TEXT,
     "alertTarget" TEXT,
     active BOOLEAN NOT NULL DEFAULT true,

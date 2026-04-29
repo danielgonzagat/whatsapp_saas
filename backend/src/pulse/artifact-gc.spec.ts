@@ -15,9 +15,9 @@ const FIXTURE_RELATIVE_PATHS = {
 } as const;
 
 type FixtureName = keyof typeof FIXTURE_RELATIVE_PATHS;
+type FixtureRoot = URL;
 
-function writeFixture(tempDir: string, name: FixtureName, value: string) {
-  const rootUrl = pathToFileURL(`${tempDir}${path.sep}`);
+function writeFixture(rootUrl: FixtureRoot, name: FixtureName, value: string) {
   switch (name) {
     case 'staleTmpRun':
       fs.mkdirSync(new URL('.pulse/tmp/', rootUrl), { recursive: true });
@@ -44,16 +44,18 @@ function writeFixture(tempDir: string, name: FixtureName, value: string) {
 
 describe('cleanupPulseArtifacts', () => {
   let tempDir: string;
+  let fixtureRoot: FixtureRoot;
 
   beforeEach(() => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-artifacts-'));
+    fixtureRoot = pathToFileURL(`${tempDir}${path.sep}`);
 
-    writeFixture(tempDir, 'staleTmpRun', 'stale');
-    writeFixture(tempDir, 'currentCertificate', '{"status":"stale"}');
-    writeFixture(tempDir, 'legacyPulseReport', '# stale');
-    writeFixture(tempDir, 'legacyCheckoutFlow', '{"legacy":true}');
-    writeFixture(tempDir, 'auditFeatureMatrix', '# stale');
-    writeFixture(tempDir, 'codacyState', '{"syncedAt":"now"}');
+    writeFixture(fixtureRoot, 'staleTmpRun', 'stale');
+    writeFixture(fixtureRoot, 'currentCertificate', '{"status":"stale"}');
+    writeFixture(fixtureRoot, 'legacyPulseReport', '# stale');
+    writeFixture(fixtureRoot, 'legacyCheckoutFlow', '{"legacy":true}');
+    writeFixture(fixtureRoot, 'auditFeatureMatrix', '# stale');
+    writeFixture(fixtureRoot, 'codacyState', '{"syncedAt":"now"}');
   });
 
   afterEach(() => {

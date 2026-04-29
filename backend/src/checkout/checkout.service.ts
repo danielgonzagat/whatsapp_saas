@@ -11,7 +11,7 @@ import { CheckoutOrderService } from './checkout-order.service';
 import { CheckoutProductService } from './checkout-product.service';
 import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder';
 
-export type { CheckoutOrderStatusValue } from './checkout-order.service';
+export type { CheckoutOrderStatusValue } from './checkout-order-status';
 
 /**
  * Checkout façade — delegates product/plan, catalog, and order concerns to

@@ -73,14 +73,34 @@ function isFullWorkspaceProfile(profile: PulseCertificationProfile): boolean {
 function deriveRequestedModesFromScenarios(
   manifest: PulseManifest | null,
   scenarioIds: string[],
+  profile: PulseCertificationProfile,
 ): PulseSyntheticRunMode[] {
-  return deriveSyntheticModesFromManifest(manifest, scenarioIds);
+  if (profile === 'pulse-core-final') {
+    return [];
+  }
+
+  const derivedModes = deriveSyntheticModesFromManifest(manifest, scenarioIds);
+  if (derivedModes.length > 0) {
+    return derivedModes;
+  }
+
+  if (!manifest) {
+    return isFullWorkspaceProfile(profile)
+      ? ['customer', 'operator', 'admin', 'soak']
+      : ['customer', 'operator', 'admin'];
+  }
+
+  return [];
 }
 
 function deriveScenarioIds(
   manifest: PulseManifest | null,
   profile: PulseCertificationProfile,
 ): string[] {
+  if (profile === 'pulse-core-final') {
+    return [];
+  }
+
   if (!manifest) {
     return [];
   }
@@ -184,7 +204,7 @@ export function getProfileSelection(
   const flowIds = deriveFlowIds(manifest, profile);
   const invariantIds = deriveInvariantIds(manifest, profile);
   const runtimeProbeIds = deriveRuntimeProbeIds(manifest, profile, scenarioIds);
-  const requestedModes = deriveRequestedModesFromScenarios(manifest, scenarioIds);
+  const requestedModes = deriveRequestedModesFromScenarios(manifest, scenarioIds, profile);
 
   if (profile === 'core-critical') {
     return {

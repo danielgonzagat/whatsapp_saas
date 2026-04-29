@@ -11,6 +11,18 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 const THIRTY_MINUTES_MS = 30 * 60 * 1000;
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
+type RecoveryLead = {
+  id: string;
+  workspaceId: string;
+  checkoutSlug: string;
+  name: string | null;
+  email: string | null;
+  recoveryWhatsAppSentAt: Date | null;
+  recoveryEmailSentAt: Date | null;
+  abandonedAt: Date | null;
+  createdAt: Date;
+};
+
 /** Checkout social recovery service. */
 @Injectable()
 export class CheckoutSocialRecoveryService {
@@ -56,29 +68,13 @@ export class CheckoutSocialRecoveryService {
     await forEachSequential(leads, async (lead) => {
       const age = now - lead.createdAt.getTime();
 
-      if (!lead.abandonedAt && age >= THIRTY_MINUTES_MS) {
-        try {
-          await this.prisma.checkoutSocialLead.update({
-            where: { id: lead.id, workspaceId: lead.workspaceId },
-            data: {
-              status: CheckoutSocialLeadStatus.ABANDONED,
-              abandonedAt: new Date(),
-            },
-            select: { id: true, workspaceId: true },
-          });
-        } catch (error: unknown) {
-          void this.opsAlert?.alertOnCriticalError(error, 'CheckoutSocialRecoveryService.update');
-          if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')) {
-            throw error;
-          }
-        }
-      }
+      await this.markAbandonedIfEligible(lead, age);
 
-      if (age >= THIRTY_MINUTES_MS && !lead.recoveryWhatsAppSentAt) {
+      if (this.shouldDispatchWhatsAppRecovery(lead, age)) {
         await this.dispatchWhatsAppRecovery(lead.id);
       }
 
-      if (age >= ONE_HOUR_MS && !lead.recoveryEmailSentAt && lead.email) {
+      if (this.shouldDispatchEmailRecovery(lead, age)) {
         await this.dispatchEmailRecovery(
           lead.id,
           lead.workspaceId,
@@ -88,6 +84,42 @@ export class CheckoutSocialRecoveryService {
         );
       }
     });
+  }
+
+  private async markAbandonedIfEligible(lead: RecoveryLead, age: number) {
+    if (lead.abandonedAt || age < THIRTY_MINUTES_MS) {
+      return;
+    }
+
+    try {
+      await this.prisma.checkoutSocialLead.update({
+        where: { id: lead.id, workspaceId: lead.workspaceId },
+        data: {
+          status: CheckoutSocialLeadStatus.ABANDONED,
+          abandonedAt: new Date(),
+        },
+        select: { id: true, workspaceId: true },
+      });
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'CheckoutSocialRecoveryService.markAbandonedIfEligible',
+      );
+      if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')) {
+        throw error;
+      }
+    }
+  }
+
+  private shouldDispatchWhatsAppRecovery(lead: RecoveryLead, age: number) {
+    return age >= THIRTY_MINUTES_MS && !lead.recoveryWhatsAppSentAt;
+  }
+
+  private shouldDispatchEmailRecovery(
+    lead: RecoveryLead,
+    age: number,
+  ): lead is RecoveryLead & { email: string } {
+    return age >= ONE_HOUR_MS && !lead.recoveryEmailSentAt && Boolean(lead.email);
   }
 
   private async dispatchWhatsAppRecovery(leadId: string) {

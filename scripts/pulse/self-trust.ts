@@ -6,7 +6,7 @@
  */
 
 import * as path from 'path';
-import type { Break } from './types';
+import type { Break, PulseParserContract } from './types';
 import { pathExists, readDir, readTextFile, statPath } from './safe-fs';
 import {
   runCrossArtifactConsistencyCheck,
@@ -14,6 +14,14 @@ import {
 } from './cross-artifact-consistency-check';
 import { extractRunId, isPreservedArtifact } from './run-identity';
 import { discoverParserContracts } from './parser-registry';
+
+const CRITICAL_PARSER_CONTRACT_NAMES = [
+  'financial-arithmetic',
+  'error-handler-auditor',
+  'idempotency-checker',
+  'audit-trail-checker',
+  'security-injection',
+] as const;
 
 /** Self trust checkpoint shape. */
 export interface SelfTrustCheckpoint {
@@ -152,6 +160,33 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
         description: 'At least one parser module must declare an executable parser contract',
         pass: false,
         reason: `${helperModules.length} helper module(s) discovered but no active parser contract matched`,
+        severity: 'critical',
+        score: 0,
+      };
+    }
+
+    const activeParserNames = new Set(activeParsers.map((contract) => contract.name));
+    const missingCriticalParsers = CRITICAL_PARSER_CONTRACT_NAMES.filter(
+      (parserName) => !activeParserNames.has(parserName),
+    );
+    if (missingCriticalParsers.length > 0) {
+      const helperCriticalParsers = contracts
+        .filter(
+          (contract): contract is PulseParserContract =>
+            contract.kind === 'helper' &&
+            missingCriticalParsers.some((parserName) => parserName === contract.name),
+        )
+        .map((contract) => `${contract.name} (${contract.proof})`);
+      const helperDetail =
+        helperCriticalParsers.length > 0
+          ? ` Helper contract(s): ${helperCriticalParsers.join('; ')}.`
+          : '';
+      return {
+        id,
+        name: 'Critical Parser Contracts',
+        description: 'Financial and security critical parsers must remain active parser contracts',
+        pass: false,
+        reason: `Missing active critical parser contract(s): ${missingCriticalParsers.join(', ')}.${helperDetail}`,
         severity: 'critical',
         score: 0,
       };

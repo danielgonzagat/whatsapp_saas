@@ -4,6 +4,7 @@ import {
   PRODUCT_CUE_WORDS,
   STOPWORDS,
 } from './account-agent.util.helpers';
+import { formatBrlAmount } from '../kloel/money-format.util';
 
 /** Catalog gap detection shape. */
 export interface CatalogGapDetection {
@@ -269,7 +270,9 @@ function buildOfferSummary(offers: ParsedOfferLine[]): string {
     return '';
   }
   const parts = offers
-    .map((offer) => (offer.price ? `${offer.title} por R$ ${offer.price.toFixed(2)}` : offer.title))
+    .map((offer) =>
+      offer.price ? `${offer.title} por ${formatBrlAmount(offer.price)}` : offer.title,
+    )
     .join('; ');
   return ` Opções comerciais registradas: ${parts}.`;
 }
@@ -306,7 +309,7 @@ export function buildProductDescription(params: {
 function buildNegotiationLimitsAnswer(prices: number[], installments: number | null): string {
   const priceFragment =
     prices.length > 0
-      ? `Valores identificados: ${prices.map((value) => `R$ ${value.toFixed(2)}`).join(', ')}`
+      ? `Valores identificados: ${prices.map((value) => formatBrlAmount(value)).join(', ')}`
       : '';
   const installmentFragment = installments
     ? `Parcelamento máximo identificado: ${installments}x.`

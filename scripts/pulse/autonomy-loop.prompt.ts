@@ -15,7 +15,6 @@ import {
   getAutomationSafeUnits,
   hasAdaptiveRetryBeenExhausted,
 } from './autonomy-loop.unit-ranking';
-
 type SyntheticActorFlag = '--customer' | '--operator' | '--admin' | '--shift' | '--soak';
 
 interface ScenarioModeMetadata {
@@ -111,13 +110,11 @@ function extractMissingStructuralRoles(summary: string): string[] {
   if (!match) {
     return [];
   }
-
   return match[1]
     .split(',')
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
 }
-
 export function buildCodexPrompt(
   directive: PulseAutonomousDirective,
   unit: PulseAutonomousDirectiveUnit,
@@ -152,7 +149,6 @@ export function buildCodexPrompt(
     `Do not touch surfaces: ${(directive.doNotTouchSurfaces || []).join(', ') || 'none'}`,
     `Anti-goals: ${(directive.antiGoals || []).join(' | ') || 'none'}`,
   ];
-
   const enforcedHeader = [
     'Work autonomously inside the current repository until this convergence unit is materially improved or you hit a real blocker.',
     'Obey AGENTS.md and every governance boundary. Never weaken governance or fake completion.',
@@ -169,18 +165,15 @@ export function buildCodexPrompt(
           'If no patch is needed, leave files unchanged and report the exact validation evidence that should count for this cycle.',
         ].join(' ')
       : '';
-
   if (customPrompt && customPrompt.trim().length > 0) {
     return [enforcedHeader, unitSpecificHeader, '', customPrompt.trim(), '', ...instructionLines]
       .filter((line) => line !== '')
       .join('\n');
   }
-
   return [enforcedHeader, unitSpecificHeader, '', ...instructionLines]
     .filter((line) => line !== '')
     .join('\n');
 }
-
 export function buildAdaptivePrompt(
   directive: PulseAutonomousDirective,
   unit: PulseAutonomousDirectiveUnit,
@@ -192,11 +185,9 @@ export function buildAdaptivePrompt(
     'Adaptive retry is active because this unit stalled in previous iterations.',
     'Do not attempt to fully complete the entire unit in one pass.',
   ];
-
   if (customPrompt && customPrompt.trim().length > 0) {
     narrowedInstructions.push(customPrompt.trim());
   }
-
   if (primaryRole) {
     narrowedInstructions.push(
       `Focus only on materializing the missing structural role "${primaryRole}" for this unit.`,
@@ -210,15 +201,12 @@ export function buildAdaptivePrompt(
       'Focus only on the smallest real code change that reduces the structural gap for this unit.',
     );
   }
-
   narrowedInstructions.push(
     'Prefer one narrow, validated improvement over a wide incomplete refactor.',
     'If the smallest useful change is impossible without broader work, stop and explain the exact blocker rather than widening scope.',
   );
-
   return buildCodexPrompt(directive, unit, narrowedInstructions.join(' '));
 }
-
 export function buildWorkerPrompt(
   directive: PulseAutonomousDirective,
   unit: PulseAutonomousDirectiveUnit,
@@ -233,10 +221,8 @@ export function buildWorkerPrompt(
     'Assume other workers are operating in parallel; do not revert edits made by others.',
     'If the repo state changes under you, adapt safely and keep the convergence unit isolated.',
   ].join(' ');
-
   return buildCodexPrompt(directive, unit, coordinationHeader);
 }
-
 export function normalizeValidationCommands(
   commands: string[],
   directive: PulseAutonomousDirective,
@@ -250,7 +236,6 @@ export function normalizeValidationCommands(
   }
   return DEFAULT_VALIDATION_COMMANDS;
 }
-
 export function buildBatchValidationCommands(
   directive: PulseAutonomousDirective,
   units: PulseAutonomousDirectiveUnit[],
@@ -288,7 +273,6 @@ export function buildBatchValidationCommands(
     (target) =>
       target.includes('PULSE_BROWSER_EVIDENCE') || target.includes('Browser-required routes'),
   );
-
   if (needsScenarioValidation && actorFlags.size > 0) {
     commands.push(`node scripts/pulse/run.js ${Array.from(actorFlags).join(' ')} --fast --json`);
   } else if (needsScenarioValidation) {
@@ -296,11 +280,9 @@ export function buildBatchValidationCommands(
   } else if (needsRuntimeValidation || needsBrowserValidation) {
     commands.push('node scripts/pulse/run.js --deep --fast --json');
   }
-
   commands.push('node scripts/pulse/run.js --guidance');
   return unique(commands);
 }
-
 export function buildUnitValidationCommands(
   directive: PulseAutonomousDirective,
   unit: PulseAutonomousDirectiveUnit,
@@ -312,7 +294,6 @@ export function buildUnitValidationCommands(
   }
   return buildBatchValidationCommands(directive, [unit], fallbackCommands);
 }
-
 export function buildPlannerPrompt(
   directive: PulseAutonomousDirective,
   previousState: PulseAutonomyState | null,
@@ -336,7 +317,6 @@ export function buildPlannerPrompt(
         ...(unit.validationArtifacts || []),
       ]).slice(0, 6),
     }));
-
   return JSON.stringify(
     {
       currentCheckpoint: directive.currentCheckpoint || null,
@@ -369,11 +349,9 @@ export function buildPlannerPrompt(
     2,
   );
 }
-
 export function summarizeBatchUnits(units: PulseAutonomousDirectiveUnit[]): string {
   return units.map((unit) => unit.title).join(' | ');
 }
-
 export function buildAdaptiveDecision(
   directive: PulseAutonomousDirective,
   validationCommands: string[],
@@ -384,7 +362,6 @@ export function buildAdaptiveDecision(
   const candidate = stalledCandidates.find(
     (unit) => !hasAdaptiveRetryBeenExhausted(previousState, unit.id),
   );
-
   if (!candidate) {
     return {
       shouldContinue: false,
@@ -398,7 +375,6 @@ export function buildAdaptiveDecision(
       strategyMode: 'adaptive_narrow_scope',
     };
   }
-
   return {
     shouldContinue: true,
     selectedUnitId: candidate.id,
@@ -410,7 +386,6 @@ export function buildAdaptiveDecision(
     strategyMode: 'adaptive_narrow_scope',
   };
 }
-
 export function buildDeterministicDecision(
   directive: PulseAutonomousDirective,
   validationCommands: string[],
@@ -421,7 +396,6 @@ export function buildDeterministicDecision(
   if (!unit) {
     return buildAdaptiveDecision(directive, validationCommands, riskProfile, previousState);
   }
-
   return {
     shouldContinue: true,
     selectedUnitId: unit.id,
@@ -433,7 +407,6 @@ export function buildDeterministicDecision(
     strategyMode: 'normal',
   };
 }
-
 export function coercePlannerDecision(
   value: unknown,
   directive: PulseAutonomousDirective,
@@ -453,7 +426,6 @@ export function coercePlannerDecision(
         candidate.validationCommands.filter((entry): entry is string => typeof entry === 'string'),
       )
     : validationCommands;
-
   const freshUnit =
     getFreshAutomationSafeUnits(directive, riskProfile, previousState).find(
       (unit) => unit.id === selectedUnitId,
@@ -476,7 +448,6 @@ export function coercePlannerDecision(
       strategyMode: 'normal',
     };
   }
-
   return {
     shouldContinue: true,
     selectedUnitId: chosenUnit.id,

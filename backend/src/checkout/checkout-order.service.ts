@@ -17,23 +17,10 @@ import { CheckoutCatalogService } from './checkout-catalog.service';
 import { CheckoutOrderQueryService } from './checkout-order-query.service';
 import { buildCheckoutOrderMetadata } from './checkout-order-metadata.util';
 import { processOrderPostPayment } from './checkout-order-payment.helpers';
+import type { CheckoutOrderStatusValue } from './checkout-order-status';
 
 const D_RE = /\D/g;
 const DEFAULT_MARKETPLACE_FEE_PERCENT = 9.9;
-
-const _CHECKOUT_ORDER_STATUSES = [
-  'PENDING',
-  'PROCESSING',
-  'PAID',
-  'SHIPPED',
-  'DELIVERED',
-  'CANCELED',
-  'REFUNDED',
-  'CHARGEBACK',
-] as const;
-
-/** Checkout order status value type. */
-export type CheckoutOrderStatusValue = (typeof _CHECKOUT_ORDER_STATUSES)[number];
 
 /** Manages order lifecycle: create, query, status transitions, upsell accept/decline. */
 @Injectable()

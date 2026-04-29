@@ -171,6 +171,10 @@ export async function assertSafeStorageUrl(
   return url;
 }
 
+function toValidatedFetchTarget(url: URL): string {
+  return `${url.protocol}//${url.host}${url.pathname}${url.search}`;
+}
+
 /**
  * Issue a redirect-safe fetch against a signed storage URL. Each hop is
  * re-validated through `assertSafeStorageUrl`. Caps redirects to prevent
@@ -198,7 +202,7 @@ export async function safeStorageFetch(
     const timeoutMs = 30_000;
     const timer = setTimeout(() => controller.abort(new Error('Request timeout')), timeoutMs);
 
-    const response = await fetch(currentUrl.href, {
+    const response = await fetch(toValidatedFetchTarget(currentUrl), {
       ...(options.init ?? {}),
       headers,
       signal: controller.signal,
