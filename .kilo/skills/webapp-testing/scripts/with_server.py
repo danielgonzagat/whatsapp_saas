@@ -37,6 +37,7 @@ from typing import List, Optional, Protocol, Sequence
 
 
 class ManagedProcess(Protocol):
+
     """Minimal asyncio process surface used by this helper."""
 
     returncode: Optional[int]
@@ -49,6 +50,7 @@ class ManagedProcess(Protocol):
 
     async def wait(self) -> int:
         """Wait for process exit and return the exit code."""
+
 
 # Polling interval (seconds) when waiting for a TCP port to accept connections.
 # Kept small so the wait loop reacts quickly without burning CPU.
@@ -76,8 +78,7 @@ _ALLOWED_EXECUTABLES = frozenset(
 
 
 def _resolve_executable(argv: Sequence[str]) -> str:
-    """
-    Validate the spawn target and return its absolute path.
+    """Validate the spawn target and return its absolute path.
 
     Refusing to launch a binary that is not on ``PATH`` materially shrinks the
     command-injection surface flagged by Bandit B603 and the Semgrep
@@ -102,55 +103,10 @@ async def _spawn_allowed_process(
     stderr=None,
 ) -> ManagedProcess:
     """Spawn an allow-listed executable using a literal command branch."""
-    if not argv:
-        raise ValueError('empty command argv; nothing to execute')
-    executable = argv[0]
-    args = list(argv[1:])
-    if executable == 'bash':
-        return await asyncio.create_subprocess_exec(
-            'bash', *args, stdout=stdout, stderr=stderr
-        )
-    if executable == 'bun':
-        return await asyncio.create_subprocess_exec(
-            'bun', *args, stdout=stdout, stderr=stderr
-        )
-    if executable == 'node':
-        return await asyncio.create_subprocess_exec(
-            'node', *args, stdout=stdout, stderr=stderr
-        )
-    if executable == 'npm':
-        return await asyncio.create_subprocess_exec(
-            'npm', *args, stdout=stdout, stderr=stderr
-        )
-    if executable == 'npx':
-        return await asyncio.create_subprocess_exec(
-            'npx', *args, stdout=stdout, stderr=stderr
-        )
-    if executable == 'pnpm':
-        return await asyncio.create_subprocess_exec(
-            'pnpm', *args, stdout=stdout, stderr=stderr
-        )
-    if executable == 'python':
-        return await asyncio.create_subprocess_exec(
-            'python', *args, stdout=stdout, stderr=stderr
-        )
-    if executable == 'python3':
-        return await asyncio.create_subprocess_exec(
-            'python3', *args, stdout=stdout, stderr=stderr
-        )
-    if executable == 'sh':
-        return await asyncio.create_subprocess_exec(
-            'sh', *args, stdout=stdout, stderr=stderr
-        )
-    if executable == 'uv':
-        return await asyncio.create_subprocess_exec(
-            'uv', *args, stdout=stdout, stderr=stderr
-        )
-    if executable == 'yarn':
-        return await asyncio.create_subprocess_exec(
-            'yarn', *args, stdout=stdout, stderr=stderr
-        )
-    raise ValueError(f'executable is not allowed for with_server.py: {executable}')
+    resolved = _resolve_executable(argv)
+    return await asyncio.create_subprocess_exec(
+        resolved, *argv[1:], stdout=stdout, stderr=stderr
+    )
 
 
 def is_server_ready(port: int, timeout: int = _DEFAULT_READINESS_TIMEOUT_SEC) -> bool:

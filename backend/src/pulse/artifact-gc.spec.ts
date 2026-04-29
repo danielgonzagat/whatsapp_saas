@@ -4,20 +4,25 @@ import * as path from 'path';
 import { buildArtifactRegistry } from '../../../scripts/pulse/artifact-registry';
 import { cleanupPulseArtifacts } from '../../../scripts/pulse/artifact-gc';
 
-function safeFixturePath(filePath: string): string {
-  const resolved = path.resolve(filePath);
-  const tmpRoot = path.resolve(os.tmpdir());
-  const boundary = tmpRoot + path.sep;
-  if (resolved !== tmpRoot && !resolved.startsWith(boundary)) {
-    throw new Error(`Refusing fixture write outside ${tmpRoot}: ${resolved}`);
-  }
-  return resolved;
+const FIXTURE_RELATIVE_PATHS = {
+  auditFeatureMatrix: 'AUDIT_FEATURE_MATRIX.md',
+  codacyState: 'PULSE_CODACY_STATE.json',
+  currentCertificate: '.pulse/current/PULSE_CERTIFICATE.json',
+  legacyCheckoutFlow: 'PULSE_FLOW_checkout-payment.json',
+  legacyPulseReport: 'PULSE_REPORT.md',
+  staleTmpRun: '.pulse/tmp/old-run.tmp',
+} as const;
+
+type FixtureName = keyof typeof FIXTURE_RELATIVE_PATHS;
+
+function fixturePath(tempDir: string, name: FixtureName): string {
+  return path.join(tempDir, FIXTURE_RELATIVE_PATHS[name]);
 }
 
-function writeText(filePath: string, value: string) {
-  const safePath = safeFixturePath(filePath);
-  fs.mkdirSync(path.dirname(safePath), { recursive: true });
-  fs.writeFileSync(safePath, value);
+function writeFixture(tempDir: string, name: FixtureName, value: string) {
+  const target = fixturePath(tempDir, name);
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, value);
 }
 
 describe('cleanupPulseArtifacts', () => {
@@ -26,12 +31,12 @@ describe('cleanupPulseArtifacts', () => {
   beforeEach(() => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-artifacts-'));
 
-    writeText(path.join(tempDir, '.pulse/tmp/old-run.tmp'), 'stale');
-    writeText(path.join(tempDir, '.pulse/current/PULSE_CERTIFICATE.json'), '{"status":"stale"}');
-    writeText(path.join(tempDir, 'PULSE_REPORT.md'), '# stale');
-    writeText(path.join(tempDir, 'PULSE_FLOW_checkout-payment.json'), '{"legacy":true}');
-    writeText(path.join(tempDir, 'AUDIT_FEATURE_MATRIX.md'), '# stale');
-    writeText(path.join(tempDir, 'PULSE_CODACY_STATE.json'), '{"syncedAt":"now"}');
+    writeFixture(tempDir, 'staleTmpRun', 'stale');
+    writeFixture(tempDir, 'currentCertificate', '{"status":"stale"}');
+    writeFixture(tempDir, 'legacyPulseReport', '# stale');
+    writeFixture(tempDir, 'legacyCheckoutFlow', '{"legacy":true}');
+    writeFixture(tempDir, 'auditFeatureMatrix', '# stale');
+    writeFixture(tempDir, 'codacyState', '{"syncedAt":"now"}');
   });
 
   afterEach(() => {

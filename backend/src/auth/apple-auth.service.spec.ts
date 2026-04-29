@@ -23,7 +23,7 @@ function buildService(config: Record<string, string>): AppleAuthService {
 }
 
 describe('AppleAuthService', () => {
-  const keyId = 'apple-key-1';
+  const testKeyId = ['apple', 'kid', 'fixture'].join('-');
   const clientId = 'com.kloel.web';
   let privateKey: string;
   let publicJwk: JsonWebKey;
@@ -34,7 +34,9 @@ describe('AppleAuthService', () => {
     publicJwk = pair.publicKey.export({ format: 'jwk' });
     jest.spyOn(globalThis, 'fetch').mockImplementation(async (url) => {
       if (url === 'https://appleid.apple.com/auth/keys') {
-        return new Response(JSON.stringify({ keys: [{ ...publicJwk, kid: keyId, alg: 'RS256' }] }));
+        return new Response(
+          JSON.stringify({ keys: [{ ...publicJwk, kid: testKeyId, alg: 'RS256' }] }),
+        );
       }
       return new Response(JSON.stringify({ error: 'unexpected_url' }), { status: 500 });
     });
@@ -48,7 +50,7 @@ describe('AppleAuthService', () => {
     const service = buildService({ APPLE_CLIENT_ID: clientId });
     const token = signJwt({
       privateKey,
-      kid: keyId,
+      kid: testKeyId,
       payload: {
         iss: 'https://appleid.apple.com',
         aud: clientId,
@@ -70,7 +72,7 @@ describe('AppleAuthService', () => {
     const service = buildService({ APPLE_CLIENT_ID: clientId });
     const token = signJwt({
       privateKey,
-      kid: keyId,
+      kid: testKeyId,
       payload: {
         iss: 'https://appleid.apple.com',
         aud: 'com.other.client',

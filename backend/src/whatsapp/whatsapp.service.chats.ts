@@ -55,6 +55,11 @@ const isProviderMessage = (m: unknown): m is { timestamp: number } & Record<stri
   typeof m === 'object' &&
   typeof (m as { timestamp?: unknown }).timestamp === 'number';
 
+function buildLocalChatId(phone: string): string {
+  const digitsOnly = phone.replace(/\D/g, '');
+  return digitsOnly ? `${digitsOnly}@c.us` : 'unknown@c.us';
+}
+
 async function loadConversationsForListing(deps: ChatHelperDeps, workspaceId: string) {
   return (
     (await deps.prisma.conversation.findMany({
@@ -114,7 +119,7 @@ function mergeLocalConversationIntoListing(
       : conversation.unreadCount || 0;
 
   merged.set(phone, {
-    id: existing?.id || `${phone}@c.us`,
+    id: existing?.id || buildLocalChatId(phone),
     phone,
     name: existing?.name || conversation.contact?.name || conversation.contact?.phone || phone,
     unreadCount,

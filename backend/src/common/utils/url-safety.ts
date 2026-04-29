@@ -184,7 +184,7 @@ export async function safeStorageFetch(
   },
 ): Promise<Response> {
   const maxRedirects = options.maxRedirects ?? 5;
-  let currentUrl = (await assertSafeStorageUrl(rawUrl, options)).toString();
+  let currentUrl = await assertSafeStorageUrl(rawUrl, options);
 
   for (let i = 0; i <= maxRedirects; i += 1) {
     const headers = new Headers(options.init?.headers);
@@ -194,11 +194,12 @@ export async function safeStorageFetch(
       }
     }
 
-    const response = await fetch(currentUrl, {
+    const request = new Request(currentUrl, {
       ...(options.init ?? {}),
       headers,
       redirect: 'manual',
     });
+    const response = await fetch(request);
 
     const status = response.status;
     if (status >= 300 && status < 400) {
@@ -206,9 +207,7 @@ export async function safeStorageFetch(
       if (!location) {
         throw new BadRequestException('Redirect response missing Location header');
       }
-      const nextUrl = new URL(location, currentUrl).toString();
-      const validated = await assertSafeStorageUrl(nextUrl, options);
-      currentUrl = validated.toString();
+      currentUrl = await assertSafeStorageUrl(new URL(location, currentUrl).toString(), options);
       continue;
     }
 
