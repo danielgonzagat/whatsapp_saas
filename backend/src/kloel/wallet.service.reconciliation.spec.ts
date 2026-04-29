@@ -1,3 +1,4 @@
+import { Test } from '@nestjs/testing';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletLedgerService } from './wallet-ledger.service';
@@ -9,7 +10,7 @@ type ReconcileTxClient = {
 };
 
 describe('WalletService.reconcilePendingPayments', () => {
-  function makeService() {
+  async function makeService() {
     const prisma = {
       kloelWallet: {
         findMany: jest.fn(),
@@ -25,17 +26,20 @@ describe('WalletService.reconcilePendingPayments', () => {
     const walletLedger = {
       appendWithinTx: jest.fn().mockResolvedValue(undefined),
     };
-    const service = new WalletService(
-      prisma as unknown as PrismaService,
-      financialAlert as unknown as FinancialAlertService,
-      walletLedger as unknown as WalletLedgerService,
-    );
+    const moduleRef = await Test.createTestingModule({
+      providers: [
+        WalletService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: FinancialAlertService, useValue: financialAlert },
+        { provide: WalletLedgerService, useValue: walletLedger },
+      ],
+    }).compile();
 
-    return { financialAlert, prisma, service, walletLedger };
+    return { financialAlert, prisma, service: moduleRef.get(WalletService), walletLedger };
   }
 
   it('settles old pending credits into available balance with ledger pair', async () => {
-    const { prisma, service, walletLedger } = makeService();
+    const { prisma, service, walletLedger } = await makeService();
     const statusUpdate = jest.fn().mockResolvedValue({ count: 1 });
     const walletUpdate = jest.fn().mockResolvedValue({});
 
