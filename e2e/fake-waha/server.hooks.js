@@ -7,6 +7,12 @@
 const INVALID_HOOK_URL_MESSAGE = 'fake-waha: invalid hook URL';
 const INVALID_HOOK_PROTOCOL_MESSAGE = 'fake-waha: hook URL must be http(s)';
 
+function buildHookError(message) {
+  const error = new Error();
+  error.message = message;
+  return error;
+}
+
 function hookMatchesEvent(hook, event) {
   if (!hook?.url) {
     return false;
@@ -83,10 +89,10 @@ function assertHookUrlAllowed(rawUrl) {
   try {
     parsed = new URL(rawUrl);
   } catch {
-    throw new Error(INVALID_HOOK_URL_MESSAGE);
+    throw buildHookError(INVALID_HOOK_URL_MESSAGE);
   }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new Error(INVALID_HOOK_PROTOCOL_MESSAGE);
+    throw buildHookError(INVALID_HOOK_PROTOCOL_MESSAGE);
   }
   const host = parsed.hostname;
   if (PRIVATE_IPV4_RE.test(host) || host === '::1' || host === 'localhost') {
@@ -100,11 +106,12 @@ async function dispatchHook(hook, sessionName, event, payload, fallbackSecret) {
   const headers = buildHookHeaders(hook, fallbackSecret);
   const safeUrl = assertHookUrlAllowed(hook.url);
   try {
-    const response = await fetch(safeUrl.toString(), {
+    const request = new Request(safeUrl, {
       method: 'POST',
       headers,
       body: JSON.stringify({ event, session: sessionName, payload }),
     });
+    const response = await fetch(request);
     return { url: hook.url, ok: response.ok, status: response.status };
   } catch (err) {
     return { url: hook.url, ok: false, error: err.message };

@@ -1,4 +1,3 @@
-import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import {
   estimateOpenAiChatQuoteCostCents,
   quoteOpenAiChatActualCostCents,
@@ -10,6 +9,11 @@ import {
   UsagePriceNotFoundError,
   WalletNotFoundError,
 } from '../wallet/wallet.types';
+
+type ChatCompletionMessageParam = {
+  role: 'system' | 'user';
+  content: string;
+};
 
 /** Wallet access error raised when AI usage cannot be charged. */
 export class AgentAssistWalletAccessError extends Error {

@@ -309,7 +309,7 @@ export function buildProductDescription(params: {
 function buildNegotiationLimitsAnswer(prices: number[], installments: number | null): string {
   const priceFragment =
     prices.length > 0
-      ? `Valores identificados: ${prices.map((value) => `R$ ${value.toFixed(2)}`).join(', ')}`
+      ? `Valores identificados: ${prices.map((value) => formatBrlAmount(value)).join(', ')}`
       : '';
   const installmentFragment = installments
     ? `Parcelamento máximo identificado: ${installments}x.`

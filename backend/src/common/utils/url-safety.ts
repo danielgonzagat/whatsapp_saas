@@ -198,12 +198,13 @@ export async function safeStorageFetch(
     const timeoutMs = 30_000;
     const timer = setTimeout(() => controller.abort(new Error('Request timeout')), timeoutMs);
 
-    const response = await fetch(currentUrl.href, {
+    const request = new Request(currentUrl, {
       ...(options.init ?? {}),
       headers,
       signal: controller.signal,
       redirect: 'manual',
-    }).finally(() => clearTimeout(timer));
+    });
+    const response = await fetch(request).finally(() => clearTimeout(timer));
 
     const status = response.status;
     if (status >= 300 && status < 400) {

@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS "RAC_ProductCampaign" (
     id TEXT NOT NULL,
     "productId" TEXT NOT NULL,
     code TEXT NOT NULL,
-    name TEXT NOT NULL,
+    "name" TEXT NOT NULL,
     "pixelId" TEXT,
     "salesCount" INTEGER NOT NULL DEFAULT 0,
     "paidCount" INTEGER NOT NULL DEFAULT 0,
