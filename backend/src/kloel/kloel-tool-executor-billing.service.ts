@@ -36,6 +36,7 @@ export class KloelToolExecutorBillingService {
     workspaceId: string,
     args: ToolUpdateBillingInfoArgs,
   ): Promise<ToolResult> {
+    this.logger.log({ operation: 'toolUpdateBillingInfo', workspaceId });
     const { returnUrl } = args;
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },

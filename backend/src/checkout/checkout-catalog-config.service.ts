@@ -1,14 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildCheckoutShippingQuote } from './checkout-shipping-profile.util';
 
 /** Handles shipping calculation and config reset for checkout catalog. */
 @Injectable()
 export class CheckoutCatalogConfigService {
+  private readonly logger = new Logger(CheckoutCatalogConfigService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /** Calculate shipping. */
   async calculateShipping(slug: string, cep: string) {
+    this.logger.log({ operation: 'calculateShipping', slug, cep });
     const plan = await this.prisma.checkoutProductPlan.findUnique({
       where: { slug },
       include: { checkoutConfig: true },

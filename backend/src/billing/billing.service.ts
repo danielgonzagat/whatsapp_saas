@@ -9,6 +9,8 @@ import { BillingWebhookService } from './billing-webhook.service';
 import { StripeRuntime } from './stripe-runtime';
 import type { StripeClient, StripeInvoice } from './stripe-types';
 
+const VALID_PLANS = new Set(['FREE', 'STARTER', 'PRO', 'ENTERPRISE']);
+
 type StripeInvoiceWithSubscription = StripeInvoice & {
   subscription?: string | { id?: string | null } | null;
 };
@@ -189,6 +191,10 @@ export class BillingService {
 
   /** Create checkout session. */
   async createCheckoutSession(workspaceId: string, plan: string, userEmail: string) {
+    if (!VALID_PLANS.has(plan)) {
+      throw new Error(`Invalid plan: ${plan}. Allowed: ${[...VALID_PLANS].join(', ')}`);
+    }
+
     if (!this.stripe) {
       const nodeEnv = this.configService.get('NODE_ENV') || process.env.NODE_ENV;
       if (nodeEnv === 'production') {
