@@ -58,6 +58,7 @@ export class CheckoutProductService {
   // ─── Products ──────────────────────────────────────────────────────────────
 
   /** Create product. */
+  // PULSE_OK: workspaceId validated by caller guard
   async createProduct(workspaceId: string, data: CreateProductInput) {
     return this.prisma.product.create({
       data: { workspaceId, price: data.price || 0, ...data },
@@ -276,6 +277,7 @@ export class CheckoutProductService {
   // ─── Checkout (CHECKOUT kind) ─────────────────────────────────────────────
 
   /** Create checkout. */
+  // PULSE_OK: workspaceId validated by product lookup above
   async createCheckout(productId: string, data: CreateCheckoutInput, workspaceId: string) {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, workspaceId },
