@@ -127,13 +127,13 @@ export class NeuroCrmService {
       contact.purchaseProbability === 'HIGH' ||
       contact.purchaseProbability === 'VERY_HIGH'
     ) {
-      action = hoursSince > 12 ? 'CLOSE_NOW' : 'CTA_PREÇO';
+      action = hoursSince > 12 ? 'CLOSE_NOW' : 'CTA_PRECO';
       reason = 'lead quente';
     } else if (contact.sentiment === 'NEGATIVE') {
       action = 'TRATAR_OBJECAO';
       reason = 'sentimento negativo';
     } else if (hoursSince > 48) {
-      action = 'REAKTIVAR';
+      action = 'REATIVAR';
       reason = 'silêncio longo';
     }
 
@@ -156,12 +156,15 @@ export class NeuroCrmService {
       },
     });
     const points: ClusterPoint[] = contacts.map((c) => ({
-      contact: c,
+      contact: {
+        ...c,
+        leadScore: c.leadScore ?? 0,
+      },
       x: c.leadScore ?? 0,
       y: (Date.now() - c.updatedAt.getTime()) / 3600000,
     }));
 
-    const k = 3;
+    const k = Math.min(3, Math.max(1, points.length));
     let centroids = points.slice(0, k).map((p) => ({ x: p.x, y: p.y }));
     for (let iter = 0; iter < 5; iter++) {
       const buckets: ClusterPoint[][] = Array.from({ length: k }, () => []);
@@ -214,12 +217,7 @@ export class NeuroCrmService {
     goal: string;
   }) {
     if (!this.openai) {
-      return {
-        transcript: [
-          'Lead: Olá, tenho interesse mas tenho dúvidas.',
-          'Agente: Claro! Posso te ajudar com preço ou implementação?',
-        ],
-      };
+      return { transcript: [], unavailable: true, reason: 'OPENAI_API_KEY_NOT_CONFIGURED' };
     }
 
     const prompt = `
@@ -228,9 +226,7 @@ Cenário: ${input.scenario}
 Objetivo: ${input.goal}
 Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
 
-    if (input.workspaceId) {
-      await this.planLimits.ensureTokenBudget(input.workspaceId);
-    }
+    await this.planLimits.ensureTokenBudget(input.workspaceId);
     const completion = await chatCompletionWithRetry(
       this.openai,
       {
@@ -239,11 +235,9 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       },
       { maxRetries: 3 },
     );
-    if (input.workspaceId) {
-      await this.planLimits
-        .trackAiUsage(input.workspaceId, completion?.usage?.total_tokens ?? 500)
-        .catch(() => {});
-    }
+    await this.planLimits
+      .trackAiUsage(input.workspaceId, completion?.usage?.total_tokens ?? 500)
+      .catch(() => {});
     const transcript = completion.choices[0]?.message?.content || '';
     return { transcript };
   }
