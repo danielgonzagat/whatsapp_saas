@@ -290,6 +290,7 @@ export class CheckoutCatalogService {
 
   /** Validate coupon. */
   async validateCoupon(workspaceId: string, code: string, planId: string, orderValue: number) {
+    this.logger.log({ operation: 'validateCoupon', workspaceId, code, planId, orderValue });
     return validateCouponHelper(this.prisma, workspaceId, code, planId, orderValue);
   }
 
