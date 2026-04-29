@@ -7,7 +7,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: '{{ $labels.service }} is down'
+          summary: 'Service is down'
 
       - alert: HighErrorRate
         expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.05
@@ -15,7 +15,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: 'High 5xx rate on {{ $labels.service }}'
+          summary: 'High 5xx rate'
 
       - alert: HighLatency
         expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
@@ -23,7 +23,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'p95 latency > 1s on {{ $labels.service }}'
+          summary: 'p95 latency above 1s'
 
       - alert: QueueBacklog
         expr: bullmq_waiting_jobs > 100
@@ -31,4 +31,4 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: 'Queue backlog on {{ $labels.queue }}'
+          summary: 'Queue backlog above threshold'

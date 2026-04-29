@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""
-Start one or more servers, wait for readiness, run a command, then clean up.
+"""Start one or more servers, wait for readiness, run a command, then clean up.
 
 This helper is meant to be invoked by developers locally during webapp
 testing. It deliberately spawns child processes (subprocess) because that
@@ -33,11 +32,10 @@ import shutil
 import socket
 import sys
 import time
-from typing import List, Optional, Protocol, Sequence
+from typing import List, Optional, Sequence
 
 
-class ManagedProcess(Protocol):
-
+class ManagedProcess:
     """Minimal asyncio process surface used by this helper."""
 
     returncode: Optional[int]
@@ -78,7 +76,8 @@ _ALLOWED_EXECUTABLES = frozenset(
 
 
 def _resolve_executable(argv: Sequence[str]) -> str:
-    """Validate the spawn target and return its absolute path.
+    """
+    Validate the spawn target and return its absolute path.
 
     Refusing to launch a binary that is not on ``PATH`` materially shrinks the
     command-injection surface flagged by Bandit B603 and the Semgrep
@@ -104,9 +103,7 @@ async def _spawn_allowed_process(
 ) -> ManagedProcess:
     """Spawn an allow-listed executable using a literal command branch."""
     resolved = _resolve_executable(argv)
-    return await asyncio.create_subprocess_exec(
-        resolved, *argv[1:], stdout=stdout, stderr=stderr
-    )
+    return await asyncio.create_subprocess_exec(resolved, *argv[1:], stdout=stdout, stderr=stderr)
 
 
 def is_server_ready(port: int, timeout: int = _DEFAULT_READINESS_TIMEOUT_SEC) -> bool:

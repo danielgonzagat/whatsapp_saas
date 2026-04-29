@@ -52,8 +52,8 @@ def _capture_console(url: str) -> List[str]:
 def _persist_logs(console_logs: List[str], log_path: str) -> None:
     """Write the captured console transcript to ``log_path``."""
     os.makedirs(os.path.dirname(log_path) or '.', exist_ok=True)
-    with open(log_path, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(console_logs))
+    with open(log_path, 'w', encoding='utf-8') as log_file:
+        log_file.write('\n'.join(console_logs))
 
 
 def main(url: str = TARGET_URL, log_path: str = DEFAULT_LOG_PATH) -> None:

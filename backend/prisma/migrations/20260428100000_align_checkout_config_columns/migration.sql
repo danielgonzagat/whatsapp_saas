@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS "RAC_ProductCampaign" (
     id TEXT NOT NULL,
     "productId" TEXT NOT NULL,
     code TEXT NOT NULL,
-    "name" TEXT NOT NULL,
+    name TEXT NOT NULL,
     "pixelId" TEXT,
     "salesCount" INTEGER NOT NULL DEFAULT 0,
     "paidCount" INTEGER NOT NULL DEFAULT 0,
@@ -92,5 +92,4 @@ DROP CONSTRAINT IF EXISTS "RAC_ProductCampaign_productId_fkey";
 ALTER TABLE "RAC_ProductCampaign"
 ADD CONSTRAINT "RAC_ProductCampaign_productId_fkey"
 FOREIGN KEY ("productId") REFERENCES "RAC_Product" (id)
-ON DELETE CASCADE
-ON UPDATE CASCADE;
+ON DELETE CASCADE ON UPDATE CASCADE;
