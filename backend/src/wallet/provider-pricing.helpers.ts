@@ -175,7 +175,7 @@ export function normalizeInteger(value: BigNumberish, field: string): bigint {
     return BigInt(value);
   }
 
-  if (!/^\d+$/.test(value)) {
+  if ([...value].some((char) => char < '0' || char > '9')) {
     throw new RangeError(`${field} must be a non-negative integer`);
   }
 

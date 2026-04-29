@@ -194,12 +194,11 @@ export async function safeStorageFetch(
       }
     }
 
-    const request = new Request(currentUrl, {
+    const response = await fetch(currentUrl.href, {
       ...(options.init ?? {}),
       headers,
       redirect: 'manual',
     });
-    const response = await fetch(request);
 
     const status = response.status;
     if (status >= 300 && status < 400) {

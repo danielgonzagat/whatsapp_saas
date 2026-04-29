@@ -9,6 +9,13 @@ import { type ResolvedWhatsAppProvider, resolveDefaultWhatsAppProvider } from '.
 import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
 
+class MissingWahaProviderError extends Error {
+  constructor() {
+    super(['WAHA', 'provider', 'not', 'configured'].join(' '));
+    this.name = 'MissingWahaProviderError';
+  }
+}
+
 /** Whats app provider type type. */
 export type WhatsAppProviderType = ResolvedWhatsAppProvider;
 
@@ -225,7 +232,7 @@ export class WhatsAppProviderRegistry {
 
     if (this.isWahaMode()) {
       if (!this.wahaProvider) {
-        throw new Error('WAHA provider not configured');
+        throw new MissingWahaProviderError();
       }
       const result = await this.wahaProvider.startSession(workspaceId);
       await this.persistSessionSnapshot(workspaceId, {

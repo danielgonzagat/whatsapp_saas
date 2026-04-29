@@ -11,7 +11,10 @@ function signJwt(input: {
   kid: string;
   payload: Record<string, unknown>;
 }): string {
-  const signingInput = `${encodeJson({ alg: 'RS256', kid: input.kid })}.${encodeJson(input.payload)}`;
+  const signingInput = [
+    encodeJson({ alg: 'RS256', kid: input.kid }),
+    encodeJson(input.payload),
+  ].join('.');
   const signer = createSign('RSA-SHA256');
   signer.update(signingInput);
   signer.end();

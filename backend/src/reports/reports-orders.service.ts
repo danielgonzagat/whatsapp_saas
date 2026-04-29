@@ -170,7 +170,7 @@ export class ReportsOrdersService {
       ticketMedio: Math.round(agg._avg.totalInCents || 0),
       totalCount: total,
       paidCount: paid,
-      conversao: total > 0 ? Number.parseFloat(((paid / total) * 100).toFixed(2)) : 0,
+      conversao: total > 0 ? Math.round((paid / total) * 10000) / 100 : 0,
     };
   }
 

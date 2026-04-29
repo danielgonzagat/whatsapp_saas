@@ -201,8 +201,8 @@ describe('account-agent.util.helpers', () => {
 
     it('should handle non-digit after percentage', () => {
       const text = 'Valor 50% maior';
-      const matches = text.match(ACCOUNT_AGENT_REGEX.percentage);
-      expect(matches).toBeTruthy();
+      ACCOUNT_AGENT_REGEX.percentage.lastIndex = 0;
+      expect(ACCOUNT_AGENT_REGEX.percentage.test(text)).toBe(true);
     });
   });
 });

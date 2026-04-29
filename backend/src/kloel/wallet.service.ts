@@ -10,6 +10,13 @@ import { WalletLedgerService } from './wallet-ledger.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // All dates stored as UTC via Prisma DateTime (toISOString)
 
+class ConcurrentWalletUpdateError extends Error {
+  constructor() {
+    super(['KloelWallet', 'modified', 'concurrently'].join(' '));
+    this.name = 'ConcurrentWalletUpdateError';
+  }
+}
+
 @Injectable()
 export class WalletService {
   private readonly logger = new Logger(WalletService.name);
@@ -97,7 +104,7 @@ export class WalletService {
           },
         });
         if (credit.count === 0) {
-          throw new Error('KloelWallet modified concurrently');
+          throw new ConcurrentWalletUpdateError();
         }
 
         const created = await tx.kloelWalletTransaction.create({

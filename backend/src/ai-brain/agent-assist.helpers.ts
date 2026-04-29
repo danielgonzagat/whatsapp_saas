@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import {
   estimateOpenAiChatQuoteCostCents,
   quoteOpenAiChatActualCostCents,
@@ -185,7 +185,7 @@ export function classifySentimentLabel(raw: string): 'negative' | 'neutral' | 'p
 }
 
 /** Build the prompt + system message used by `analyzeSentiment`. */
-export function buildSentimentMessages(text: string): OpenAI.Chat.ChatCompletionMessageParam[] {
+export function buildSentimentMessages(text: string): ChatCompletionMessageParam[] {
   return [
     {
       role: 'system',
@@ -196,7 +196,7 @@ export function buildSentimentMessages(text: string): OpenAI.Chat.ChatCompletion
 }
 
 /** Build the prompt used to summarize a conversation history string. */
-export function buildSummaryMessages(history: string): OpenAI.Chat.ChatCompletionMessageParam[] {
+export function buildSummaryMessages(history: string): ChatCompletionMessageParam[] {
   return [
     { role: 'system', content: 'Resuma em 3 linhas, português.' },
     { role: 'user', content: history },
@@ -207,7 +207,7 @@ export function buildSummaryMessages(history: string): OpenAI.Chat.ChatCompletio
 export function buildSuggestReplyMessages(
   prompt: string | undefined,
   latest: string,
-): OpenAI.Chat.ChatCompletionMessageParam[] {
+): ChatCompletionMessageParam[] {
   return [
     { role: 'system', content: 'Responda curto e direto, tom humano.' },
     {
@@ -218,7 +218,7 @@ export function buildSuggestReplyMessages(
 }
 
 /** Build the prompt used by `generatePitch`. */
-export function buildPitchMessages(base: string): OpenAI.Chat.ChatCompletionMessageParam[] {
+export function buildPitchMessages(base: string): ChatCompletionMessageParam[] {
   return [
     {
       role: 'system',

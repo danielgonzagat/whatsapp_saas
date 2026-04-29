@@ -12,10 +12,15 @@ interface ProductForMemorySync {
   tags: string[];
 }
 
+const BRL_FORMATTER = new Intl.NumberFormat('pt-BR', {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
 function buildMemoryContent(product: ProductForMemorySync): string {
   return (
     `Produto: ${product.name}\n` +
-    `Preco: R$ ${Number(product.price.toFixed(2))}\n` +
+    `Preco: R$ ${BRL_FORMATTER.format(Number(product.price))}\n` +
     `Categoria: ${product.category || 'Geral'}\n` +
     `Descricao: ${product.description || ''}\n` +
     `Formato: ${product.format}\n` +

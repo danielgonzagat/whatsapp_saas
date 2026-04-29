@@ -26,8 +26,14 @@ function buildFallbackHook(event, fallbackUrl, fallbackSecret) {
   if (!fallbackUrl) {
     return null;
   }
-  const customHeaders = fallbackSecret ? [{ name: 'X-Api-Key', value: fallbackSecret }] : [];
-  return { url: fallbackUrl, events: [event], customHeaders };
+  if (!fallbackSecret) {
+    return { url: fallbackUrl, events: [event], customHeaders: [] };
+  }
+  return {
+    url: fallbackUrl,
+    events: [event],
+    customHeaders: [{ name: 'X-Api-Key', value: fallbackSecret }],
+  };
 }
 
 function resolveHooksToFire(session, event, config) {
