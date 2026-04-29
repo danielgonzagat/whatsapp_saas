@@ -20,7 +20,6 @@ import type {
   PulseStructuralNode,
   PulseTruthMode,
 } from './types';
-
 interface BuildExecutionMatrixInput {
   structuralGraph: PulseStructuralGraph;
   scopeState: PulseScopeState;
@@ -30,9 +29,7 @@ interface BuildExecutionMatrixInput {
   executionEvidence: PulseExecutionEvidence;
   externalSignalState?: PulseExternalSignalState;
 }
-
 type MatrixEvidence = PulseExecutionMatrixObservedEvidence;
-
 const TERMINAL_STATUSES: PulseExecutionMatrixPathStatus[] = [
   'observed_pass',
   'observed_fail',
@@ -42,7 +39,6 @@ const TERMINAL_STATUSES: PulseExecutionMatrixPathStatus[] = [
   'inferred_only',
   'not_executable',
 ];
-
 const MATRIX_SOURCES: PulseExecutionMatrixPathSource[] = [
   'execution_chain',
   'capability',
@@ -50,7 +46,6 @@ const MATRIX_SOURCES: PulseExecutionMatrixPathSource[] = [
   'structural_node',
   'scope_file',
 ];
-
 const MATRIX_ARTIFACTS = {
   runtime: 'PULSE_RUNTIME_EVIDENCE.json',
   browser: 'PULSE_BROWSER_EVIDENCE.json',
@@ -59,23 +54,19 @@ const MATRIX_ARTIFACTS = {
   external: 'PULSE_EXTERNAL_SIGNAL_STATE.json',
   static: 'PULSE_CERTIFICATE.json',
 };
-
 function unique(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
 }
-
 function includesAny(haystack: string, needles: string[]): boolean {
   const normalized = haystack.toLowerCase();
   return needles.some((needle) => needle.length > 0 && normalized.includes(needle.toLowerCase()));
 }
-
 function routeMatches(routePatterns: string[], value: string): boolean {
   if (routePatterns.length === 0 || value.length === 0) {
     return false;
   }
   return includesAny(value, routePatterns) || routePatterns.some((route) => value.includes(route));
 }
-
 function evidenceTextMatchesPath(args: {
   capabilityId: string | null;
   flowId: string | null;
@@ -89,22 +80,18 @@ function evidenceTextMatchesPath(args: {
     (value) => includesAny(value, needles) || routeMatches(args.routePatterns, value),
   );
 }
-
 function browserPassRateFailed(passRate: number | undefined): boolean {
   if (passRate === undefined) {
     return false;
   }
   return passRate > 1 ? passRate < 100 : passRate < 1;
 }
-
 function isCriticalCapability(capability: PulseCapability | null): boolean {
   return Boolean(capability?.runtimeCritical || capability?.userFacing);
 }
-
 function isCriticalFlow(flow: PulseFlowProjectionItem | null): boolean {
   return Boolean(flow && (flow.status === 'real' || flow.routePatterns.length > 0));
 }
-
 function buildRequiredEvidence(args: {
   capability: PulseCapability | null;
   flow: PulseFlowProjectionItem | null;
@@ -117,7 +104,6 @@ function buildRequiredEvidence(args: {
       reason: 'The path must be present in the static structural graph.',
     },
   ];
-
   if (args.routePatterns.length > 0) {
     requirements.push({
       kind: 'integration',
@@ -144,7 +130,6 @@ function buildRequiredEvidence(args: {
   }
   return requirements;
 }
-
 function collectObservedEvidence(args: {
   capability: PulseCapability | null;
   flow: PulseFlowProjectionItem | null;
@@ -156,7 +141,6 @@ function collectObservedEvidence(args: {
   const capabilityId = args.capability?.id ?? null;
   const flowId = args.flow?.id ?? null;
   const routePatterns = args.routePatterns;
-
   const browser = args.executionEvidence.browser;
   if (
     browser.attempted &&
@@ -179,7 +163,6 @@ function collectObservedEvidence(args: {
       summary: browser.summary,
     });
   }
-
   for (const probe of args.executionEvidence.runtime.probes) {
     if (
       routeMatches(routePatterns, probe.target) ||
@@ -196,7 +179,6 @@ function collectObservedEvidence(args: {
       });
     }
   }
-
   for (const result of args.executionEvidence.flows.results) {
     if (result.flowId === flowId || routeMatches(routePatterns, result.summary)) {
       evidence.push({
@@ -215,7 +197,6 @@ function collectObservedEvidence(args: {
       });
     }
   }
-
   for (const result of [
     ...args.executionEvidence.customer.results,
     ...args.executionEvidence.operator.results,
@@ -257,7 +238,6 @@ function collectObservedEvidence(args: {
       });
     }
   }
-
   for (const signal of args.externalSignalState?.signals ?? []) {
     if (
       (capabilityId && signal.capabilityIds.includes(capabilityId)) ||
@@ -274,7 +254,6 @@ function collectObservedEvidence(args: {
       });
     }
   }
-
   if (args.capability || args.flow) {
     evidence.push({
       source: 'static',
@@ -284,10 +263,8 @@ function collectObservedEvidence(args: {
       summary: 'Path is represented in static capability/flow reconstruction.',
     });
   }
-
   return evidence;
 }
-
 function buildBreakpoint(args: {
   chain: PulseExecutionChain | null;
   capability: PulseCapability | null;
@@ -314,7 +291,6 @@ function buildBreakpoint(args: {
         'Inspect failing observed evidence and rerun the path probe.',
     };
   }
-
   const failurePoint = args.chain?.failurePoints[0] ?? null;
   if (failurePoint) {
     const failedStep = args.chain ? findChainStepByIndex(args.chain, failurePoint.stepIndex) : null;
@@ -328,7 +304,6 @@ function buildBreakpoint(args: {
       recovery: failurePoint.recovery,
     };
   }
-
   if (args.status === 'unreachable') {
     return {
       stage: 'entrypoint',
@@ -340,7 +315,6 @@ function buildBreakpoint(args: {
       recovery: 'Connect the path to an interface/API entrypoint or mark it not_executable.',
     };
   }
-
   if (args.status === 'not_executable') {
     return {
       stage: 'entrypoint',
@@ -354,7 +328,6 @@ function buildBreakpoint(args: {
         'Connect this capability/flow to an execution chain, route, scenario, or runtime probe before requiring observed pass/fail evidence.',
     };
   }
-
   if (args.status === 'inferred_only' || args.status === 'untested') {
     const missingRuntimeEvidence = args.observedEvidence.every(
       (entry) => !entry.executed || entry.status === 'mapped' || entry.status === 'missing',
@@ -372,10 +345,8 @@ function buildBreakpoint(args: {
         'Run or attach a matching runtime, flow, actor, browser, or external probe before promoting this path to observed evidence.',
     };
   }
-
   return null;
 }
-
 function classifyPath(args: {
   capability: PulseCapability | null;
   flow: PulseFlowProjectionItem | null;
@@ -428,7 +399,6 @@ function classifyPath(args: {
   }
   return 'untested';
 }
-
 function buildValidationCommand(
   routePatterns: string[],
   pathId: string,
@@ -443,7 +413,6 @@ function buildValidationCommand(
   }
   return `node scripts/pulse/run.js --profile pulse-core-final --guidance --json # validate path ${pathId}`;
 }
-
 function deriveTruthMode(
   status: PulseExecutionMatrixPathStatus,
   evidence: MatrixEvidence[],
@@ -456,13 +425,11 @@ function deriveTruthMode(
   }
   return 'aspirational';
 }
-
 function chainKey(chain: PulseExecutionChain): string {
   return collectChainSteps(chain)
     .map((step) => step.nodeId)
     .join('|');
 }
-
 function collectChainSteps(chain: PulseExecutionChain): PulseExecutionChain['steps'] {
   return [
     chain.entrypoint,
@@ -470,7 +437,6 @@ function collectChainSteps(chain: PulseExecutionChain): PulseExecutionChain['ste
     ...chain.conditionalBranches.flatMap((branch) => branch.steps),
   ];
 }
-
 function findChainStepByIndex(
   chain: PulseExecutionChain,
   stepIndex: number,
@@ -478,7 +444,6 @@ function findChainStepByIndex(
   const primarySteps = [chain.entrypoint, ...chain.steps];
   return primarySteps[stepIndex] ?? collectChainSteps(chain)[stepIndex] ?? null;
 }
-
 function buildPathFromChain(args: {
   chain: PulseExecutionChain;
   index: number;
@@ -560,7 +525,6 @@ function buildPathFromChain(args: {
     routePatterns,
   };
 }
-
 function buildSyntheticPath(args: {
   source: 'capability' | 'flow';
   index: number;
@@ -632,7 +596,6 @@ function buildSyntheticPath(args: {
     routePatterns,
   };
 }
-
 function mapNodeRoleToChainRole(
   node: PulseStructuralNode,
 ): PulseExecutionMatrixPath['chain'][number]['role'] {
@@ -656,7 +619,6 @@ function mapNodeRoleToChainRole(
   }
   return node.role === 'interface' ? 'interface' : 'orchestration';
 }
-
 function routePatternsFromNode(node: PulseStructuralNode): string[] {
   const values = [
     node.metadata.route,
@@ -670,7 +632,6 @@ function routePatternsFromNode(node: PulseStructuralNode): string[] {
       .filter((value): value is string => typeof value === 'string' && value.startsWith('/')),
   );
 }
-
 function buildPathFromStructuralNode(args: {
   node: PulseStructuralNode;
   index: number;
@@ -727,7 +688,6 @@ function buildPathFromStructuralNode(args: {
                 : 'Connect this node to a route, scenario interaction, or execution chain before requiring observed terminal evidence.',
           }
         : null;
-
   return {
     pathId,
     capabilityId: null,
@@ -788,7 +748,6 @@ function buildPathFromStructuralNode(args: {
     routePatterns,
   };
 }
-
 function buildPathFromScopeFile(file: PulseScopeFile, index: number): PulseExecutionMatrixPath {
   const pathId = `matrix:file:${index}:${file.path}`;
   const executable =
@@ -855,7 +814,6 @@ function buildPathFromScopeFile(file: PulseScopeFile, index: number): PulseExecu
     routePatterns: [],
   };
 }
-
 function summarize(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix['summary'] {
   const byStatus = Object.fromEntries(
     TERMINAL_STATUSES.map((status) => [
@@ -895,7 +853,6 @@ function summarize(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix['sum
         : 100,
   };
 }
-
 function hasCriticalTerminalClassification(path: PulseExecutionMatrixPath): boolean {
   if (['observed_pass', 'observed_fail', 'blocked_human_required'].includes(path.status)) {
     return true;
@@ -908,7 +865,6 @@ function hasCriticalTerminalClassification(path: PulseExecutionMatrixPath): bool
   }
   return false;
 }
-
 function hasPreciseBreakpoint(breakpoint: PulseExecutionMatrixBreakpoint | null): boolean {
   if (!breakpoint) {
     return false;
@@ -916,7 +872,6 @@ function hasPreciseBreakpoint(breakpoint: PulseExecutionMatrixBreakpoint | null)
   const hasLocation = Boolean(breakpoint.filePath || breakpoint.nodeId || breakpoint.routePattern);
   return hasLocation && breakpoint.reason.length > 0 && breakpoint.recovery.length > 0;
 }
-
 /** Build the canonical matrix that classifies every discovered executable path. */
 export function buildExecutionMatrix(input: BuildExecutionMatrixInput): PulseExecutionMatrix {
   const paths: PulseExecutionMatrixPath[] = [];
@@ -924,7 +879,6 @@ export function buildExecutionMatrix(input: BuildExecutionMatrixInput): PulseExe
   const coveredFlowIds = new Set<string>();
   const coveredNodeIds = new Set<string>();
   const coveredFiles = new Set<string>();
-
   input.executionChains.chains.forEach((chain, index) => {
     const path = buildPathFromChain({
       chain,
@@ -948,7 +902,6 @@ export function buildExecutionMatrix(input: BuildExecutionMatrixInput): PulseExe
       coveredFiles.add(filePath);
     }
   });
-
   input.capabilityState.capabilities.forEach((capability, index) => {
     if (coveredCapabilityIds.has(capability.id)) {
       return;
@@ -970,7 +923,6 @@ export function buildExecutionMatrix(input: BuildExecutionMatrixInput): PulseExe
       coveredFiles.add(filePath);
     }
   });
-
   input.flowProjection.flows.forEach((flow, index) => {
     if (coveredFlowIds.has(flow.id)) {
       return;
@@ -993,7 +945,6 @@ export function buildExecutionMatrix(input: BuildExecutionMatrixInput): PulseExe
       coveredNodeIds.add(nodeId);
     }
   });
-
   input.structuralGraph.nodes.forEach((node, index) => {
     if (coveredNodeIds.has(node.id)) {
       return;
@@ -1010,22 +961,18 @@ export function buildExecutionMatrix(input: BuildExecutionMatrixInput): PulseExe
       coveredFiles.add(node.file);
     }
   });
-
   input.scopeState.files.forEach((file, index) => {
     if (coveredFiles.has(file.path)) {
       return;
     }
     paths.push(buildPathFromScopeFile(file, index));
   });
-
   return {
     generatedAt: new Date().toISOString(),
     summary: summarize(paths),
     paths: paths.sort((left, right) => {
       const riskDelta = Number(right.risk === 'high') - Number(left.risk === 'high');
-      if (riskDelta !== 0) {
-        return riskDelta;
-      }
+      if (riskDelta !== 0) return riskDelta;
       return left.pathId.localeCompare(right.pathId);
     }),
   };

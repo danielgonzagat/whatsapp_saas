@@ -14,7 +14,6 @@
  */
 import type { PulseAutonomyIterationRecord, PulseAutonomyState, PulseGateResult } from './types';
 import { gateFail } from './cert-gate-evaluators';
-
 /**
  * Minimal subset of the autonomy state the gate needs.
  * Wider shape from PulseAutonomyState is accepted; only `history` is read.
@@ -23,10 +22,8 @@ export interface PulseAutonomyStateSnapshot {
   /** Iteration history. */
   history?: PulseAutonomyIterationRecord[];
 }
-
 /** Required number of non-regressing real cycles for production autonomy. */
 export const REQUIRED_NON_REGRESSING_CYCLES = 3;
-
 interface CycleAnalysis {
   isRealExecuted: boolean;
   codexPassed: boolean;
@@ -42,7 +39,6 @@ interface CycleAnalysis {
   executionMatrixRegressions: string[];
   countsTowardConvergence: boolean;
 }
-
 type MatrixSummaryKey =
   | 'observedPass'
   | 'observedFail'
@@ -53,9 +49,7 @@ type MatrixSummaryKey =
   | 'unknownPaths'
   | 'criticalUnobservedPaths'
   | 'impreciseBreakpoints';
-
 type MatrixSummarySnapshot = Partial<Record<MatrixSummaryKey, number>>;
-
 const MATRIX_NON_REGRESSION_RULES: Array<{
   key: MatrixSummaryKey;
   direction: 'increase' | 'decrease';
@@ -70,7 +64,6 @@ const MATRIX_NON_REGRESSION_RULES: Array<{
   { key: 'criticalUnobservedPaths', direction: 'decrease' },
   { key: 'impreciseBreakpoints', direction: 'decrease' },
 ];
-
 /** True iff the iteration represents an executed Codex run (not a dry-run). */
 function isRealExecutedCycle(record: PulseAutonomyIterationRecord): boolean {
   const legacy = record as unknown as { status?: string; validationCommands?: unknown };
@@ -79,7 +72,6 @@ function isRealExecutedCycle(record: PulseAutonomyIterationRecord): boolean {
   }
   return record.codex?.executed === true;
 }
-
 function isCodexExecutionPassing(record: PulseAutonomyIterationRecord): boolean {
   if (!isRealExecutedCycle(record)) return false;
   const legacy = record as unknown as { status?: string; validationCommands?: unknown };
@@ -88,7 +80,6 @@ function isCodexExecutionPassing(record: PulseAutonomyIterationRecord): boolean 
   }
   return record.codex?.exitCode === 0;
 }
-
 /**
  * Runtime-touching command patterns. A validation command must match at least
  * one of these to prove that runtime behavior (not just static analysis) was
@@ -106,12 +97,10 @@ const RUNTIME_VALIDATION_PATTERNS = [
   /test:?e2e/i,
   /jest|vitest|mocha|ava/,
 ] as const;
-
 /** True if the command string touches runtime behavior (not just static). */
 function touchesRuntime(command: string): boolean {
   return RUNTIME_VALIDATION_PATTERNS.some((pattern) => pattern.test(command));
 }
-
 /** Validation status: whether commands are present, include runtime, and all returned 0. */
 function evaluateValidation(record: PulseAutonomyIterationRecord): {
   hasValidationCommands: boolean;
@@ -136,7 +125,6 @@ function evaluateValidation(record: PulseAutonomyIterationRecord): {
   const allCommandsZero = hasValidationCommands && commands.every((c) => c.exitCode === 0);
   return { hasValidationCommands, hasRuntimeValidation, allCommandsZero };
 }
-
 function evaluateAdapters(record: PulseAutonomyIterationRecord): {
   adapterClosed: boolean;
   adapterBlockers: string[];
@@ -155,21 +143,17 @@ function evaluateAdapters(record: PulseAutonomyIterationRecord): {
     adapterBlockers,
   };
 }
-
 function asObject(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : null;
 }
-
 function readNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
-
 function readMatrixSummary(candidate: unknown): MatrixSummarySnapshot | null {
   const object = asObject(candidate);
   if (!object) return null;
-
   const summaryObject = asObject(object.summary) || object;
   const summary: MatrixSummarySnapshot = {};
   for (const rule of MATRIX_NON_REGRESSION_RULES) {
@@ -178,10 +162,8 @@ function readMatrixSummary(candidate: unknown): MatrixSummarySnapshot | null {
       summary[rule.key] = value;
     }
   }
-
   return Object.keys(summary).length > 0 ? summary : null;
 }
-
 function readExecutionMatrixSummary(
   record: PulseAutonomyIterationRecord,
   phase: 'before' | 'after',
@@ -199,15 +181,12 @@ function readExecutionMatrixSummary(
     directive?.executionMatrixSummary,
     asObject(directive?.currentState)?.executionMatrixSummary,
   ];
-
   for (const candidate of candidates) {
     const summary = readMatrixSummary(candidate);
     if (summary) return summary;
   }
-
   return null;
 }
-
 function evaluateExecutionMatrixNonRegression(record: PulseAutonomyIterationRecord): {
   executionMatrixCompared: boolean;
   executionMatrixNonRegressing: boolean;
@@ -222,7 +201,6 @@ function evaluateExecutionMatrixNonRegression(record: PulseAutonomyIterationReco
       executionMatrixRegressions: [],
     };
   }
-
   const regressions: string[] = [];
   for (const rule of MATRIX_NON_REGRESSION_RULES) {
     const beforeValue = before[rule.key];
@@ -234,14 +212,12 @@ function evaluateExecutionMatrixNonRegression(record: PulseAutonomyIterationReco
       regressions.push(`${rule.key}:${beforeValue}->${afterValue}`);
     }
   }
-
   return {
     executionMatrixCompared: true,
     executionMatrixNonRegressing: regressions.length === 0,
     executionMatrixRegressions: regressions,
   };
 }
-
 /** Score non-regression: null on either side is neutral; otherwise after >= before. */
 function isScoreNonRegressing(record: PulseAutonomyIterationRecord): boolean {
   const beforeScore = record.directiveBefore?.score ?? null;
@@ -249,7 +225,6 @@ function isScoreNonRegressing(record: PulseAutonomyIterationRecord): boolean {
   if (beforeScore === null || afterScore === null) return true;
   return afterScore >= beforeScore;
 }
-
 /**
  * Blocking-tier non-regression: lower number = closer to certified.
  * Treat null as neutral; otherwise after must be <= before.
@@ -260,15 +235,12 @@ function isBlockingTierNonRegressing(record: PulseAutonomyIterationRecord): bool
   if (beforeTier === null || afterTier === null) return true;
   return afterTier <= beforeTier;
 }
-
 function formatCycleLabel(record: PulseAutonomyIterationRecord, index: number): string {
   return `cycle${record.iteration ?? index + 1}`;
 }
-
 function formatNumericTransition(before: number | null, after: number | null): string {
   return `${before ?? 'missing'}->${after ?? 'missing'}`;
 }
-
 function analyzeCycle(record: PulseAutonomyIterationRecord): CycleAnalysis {
   const isRealExecuted = isRealExecutedCycle(record);
   const codexPassed = isCodexExecutionPassing(record);
@@ -279,7 +251,6 @@ function analyzeCycle(record: PulseAutonomyIterationRecord): CycleAnalysis {
   const { adapterClosed, adapterBlockers } = evaluateAdapters(record);
   const { executionMatrixCompared, executionMatrixNonRegressing, executionMatrixRegressions } =
     evaluateExecutionMatrixNonRegression(record);
-
   // Cycle counts toward convergence ONLY if validation touched runtime.
   // Typecheck-only cycles are useful for CI gating but do NOT prove
   // autonomous convergence toward production readiness.
@@ -293,7 +264,6 @@ function analyzeCycle(record: PulseAutonomyIterationRecord): CycleAnalysis {
     blockingTierNonRegressing &&
     adapterClosed &&
     executionMatrixNonRegressing;
-
   return {
     isRealExecuted,
     codexPassed,
@@ -310,7 +280,6 @@ function analyzeCycle(record: PulseAutonomyIterationRecord): CycleAnalysis {
     countsTowardConvergence,
   };
 }
-
 /**
  * Evaluate the multiCycleConvergencePass gate.
  *
@@ -322,7 +291,6 @@ export function evaluateMultiCycleConvergenceGate(
   autonomyState: PulseAutonomyStateSnapshot | PulseAutonomyState | null | undefined,
 ): PulseGateResult {
   const history = autonomyState?.history ?? [];
-
   if (history.length === 0) {
     return gateFail(
       'multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles.',
@@ -330,7 +298,6 @@ export function evaluateMultiCycleConvergenceGate(
       { evidenceMode: 'observed', confidence: 'high' },
     );
   }
-
   let realExecuted = 0;
   let nonRegressing = 0;
   let regressedScore = 0;
@@ -345,7 +312,6 @@ export function evaluateMultiCycleConvergenceGate(
   const scoreRegressions = new Set<string>();
   const tierRegressions = new Set<string>();
   const adapterBlockers = new Set<string>();
-
   for (const [index, record] of history.entries()) {
     const analysis = analyzeCycle(record);
     if (analysis.isRealExecuted) {
@@ -397,7 +363,6 @@ export function evaluateMultiCycleConvergenceGate(
       nonRegressing += 1;
     }
   }
-
   if (nonRegressing >= REQUIRED_NON_REGRESSING_CYCLES) {
     return {
       status: 'pass',
@@ -406,7 +371,6 @@ export function evaluateMultiCycleConvergenceGate(
       confidence: 'high',
     };
   }
-
   const failureClass =
     failedValidation > 0 ||
     failedCodex > 0 ||
@@ -415,7 +379,6 @@ export function evaluateMultiCycleConvergenceGate(
     regressedExecutionMatrix > 0
       ? 'product_failure'
       : 'missing_evidence';
-
   const detail = [
     `recorded=${history.length}`,
     `realExecuted=${realExecuted}`,
@@ -437,7 +400,6 @@ export function evaluateMultiCycleConvergenceGate(
   ]
     .filter(Boolean)
     .join(', ');
-
   return gateFail(
     `multiCycleConvergence: ${nonRegressing}/${REQUIRED_NON_REGRESSING_CYCLES} non-regressing real cycles (${detail}).`,
     failureClass,

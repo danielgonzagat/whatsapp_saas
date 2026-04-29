@@ -1,26 +1,8 @@
 import { describe, expect, it } from 'vitest';
-
 import { buildExecutionMatrix } from '../execution-matrix';
-import {
-  evaluateBreakpointPrecisionGate,
-  evaluateCriticalPathObservedGate,
-  evaluateExecutionMatrixCompleteGate,
-} from '../cert-gate-execution-matrix';
-import type {
-  PulseActorEvidence,
-  PulseCapability,
-  PulseCapabilityState,
-  PulseExecutionChain,
-  PulseExecutionChainSet,
-  PulseExecutionEvidence,
-  PulseFlowProjection,
-  PulseFlowProjectionItem,
-  PulseScopeState,
-  PulseStructuralGraph,
-} from '../types';
-
+import { evaluateBreakpointPrecisionGate, evaluateCriticalPathObservedGate, evaluateExecutionMatrixCompleteGate } from '../cert-gate-execution-matrix';
+import type { PulseActorEvidence, PulseCapability, PulseCapabilityState, PulseExecutionChain, PulseExecutionChainSet, PulseExecutionEvidence, PulseFlowProjection, PulseFlowProjectionItem, PulseScopeState, PulseStructuralGraph } from '../types';
 const generatedAt = '2026-04-28T00:00:00.000Z';
-
 function makeCapability(overrides: Partial<PulseCapability> = {}): PulseCapability {
   return {
     id: 'checkout-capability',
@@ -69,7 +51,6 @@ function makeCapability(overrides: Partial<PulseCapability> = {}): PulseCapabili
     ...overrides,
   };
 }
-
 function makeFlow(overrides: Partial<PulseFlowProjectionItem> = {}): PulseFlowProjectionItem {
   return {
     id: 'checkout-flow',
@@ -96,7 +77,6 @@ function makeFlow(overrides: Partial<PulseFlowProjectionItem> = {}): PulseFlowPr
     ...overrides,
   };
 }
-
 function makeChain(overrides: Partial<PulseExecutionChain> = {}): PulseExecutionChain {
   return {
     id: 'chain:checkout',
@@ -138,7 +118,6 @@ function makeChain(overrides: Partial<PulseExecutionChain> = {}): PulseExecution
     ...overrides,
   };
 }
-
 function makeActorEvidence(actorKind: PulseActorEvidence['actorKind']): PulseActorEvidence {
   return {
     actorKind,
@@ -152,7 +131,6 @@ function makeActorEvidence(actorKind: PulseActorEvidence['actorKind']): PulseAct
     results: [],
   };
 }
-
 function makeEvidence(overrides: Partial<PulseExecutionEvidence> = {}): PulseExecutionEvidence {
   return {
     runtime: {
@@ -254,7 +232,6 @@ function makeEvidence(overrides: Partial<PulseExecutionEvidence> = {}): PulseExe
     ...overrides,
   };
 }
-
 function buildMatrix(args: {
   chain?: PulseExecutionChain;
   chains?: PulseExecutionChain[];
@@ -482,7 +459,6 @@ function buildMatrix(args: {
     executionEvidence: args.evidence ?? makeEvidence(),
   });
 }
-
 describe('buildExecutionMatrix', () => {
   it('maps a chain to capability and flow through node and capability ids', () => {
     const matrix = buildMatrix({});
@@ -490,7 +466,6 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.paths[0].capabilityId).toBe('checkout-capability');
     expect(matrix.paths[0].flowId).toBe('checkout-flow');
   });
-
   it('keeps structural paths terminally reasoned when no executed evidence exists', () => {
     const matrix = buildMatrix({});
     expect(matrix.paths[0].status).toBe('inferred_only');
@@ -498,7 +473,6 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.paths[0].breakpoint?.reason).toContain('lacks observed runtime');
     expect(matrix.summary.criticalUnobservedPaths).toBe(0);
   });
-
   it('marks a matching executed passing flow as observed_pass', () => {
     const evidence = makeEvidence({
       flows: {
@@ -526,7 +500,6 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.paths[0].status).toBe('observed_pass');
     expect(matrix.paths[0].truthMode).toBe('observed');
   });
-
   it('promotes matching actor route evidence to observed_pass', () => {
     const evidence = makeEvidence({
       customer: {
@@ -556,9 +529,7 @@ describe('buildExecutionMatrix', () => {
         ],
       },
     });
-
     const matrix = buildMatrix({ evidence });
-
     expect(matrix.paths[0].status).toBe('observed_pass');
     expect(matrix.paths[0].observedEvidence).toEqual(
       expect.arrayContaining([
@@ -570,15 +541,12 @@ describe('buildExecutionMatrix', () => {
       ]),
     );
   });
-
   it('keeps inferred critical paths explainable with a concrete missing evidence breakpoint', () => {
     const matrix = buildMatrix({});
-
     expect(matrix.paths[0].status).toBe('inferred_only');
     expect(matrix.paths[0].breakpoint?.reason).toContain('lacks observed runtime');
     expect(matrix.paths[0].breakpoint?.recovery).toContain('matching runtime');
   });
-
   it('keeps not-executable critical capabilities terminally explainable', () => {
     const matrix = buildMatrix({
       chains: [],
@@ -612,13 +580,11 @@ describe('buildExecutionMatrix', () => {
         edges: [],
       },
     });
-
     const capabilityPath = matrix.paths.find((path) => path.source === 'capability');
     expect(capabilityPath?.status).toBe('not_executable');
     expect(capabilityPath?.breakpoint?.reason).toContain('no executable chain');
     expect(matrix.summary.criticalUnobservedPaths).toBe(0);
   });
-
   it('marks a matching executed failing flow as observed_fail with breakpoint', () => {
     const evidence = makeEvidence({
       flows: {
@@ -648,7 +614,6 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.paths[0].breakpoint?.reason).toContain('500');
     expect(matrix.summary.impreciseBreakpoints).toBe(0);
   });
-
   it('maps matching browser failure evidence to an observed failure breakpoint', () => {
     const evidence = makeEvidence({
       browser: {
@@ -676,7 +641,6 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.paths[0].breakpoint?.routePattern).toBe('/api/checkout');
     expect(matrix.summary.impreciseBreakpoints).toBe(0);
   });
-
   it('includes conditional branch steps and files in the chain path', () => {
     const matrix = buildMatrix({
       chain: makeChain({
@@ -702,7 +666,6 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.paths[0].chain.map((step) => step.nodeId)).toContain('worker:checkout');
     expect(matrix.paths[0].filePaths).toContain('worker/checkout.worker.ts');
   });
-
   it('summarizes paths by source and terminal status for gates', () => {
     const matrix = buildMatrix({});
     expect(matrix.summary.bySource.execution_chain).toBe(1);
@@ -711,13 +674,11 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.summary.nonTerminalPaths).toBe(0);
     expect(matrix.summary.unknownPaths).toBe(0);
   });
-
   it('passes matrix completeness and critical terminal classification with precise reasons', () => {
     const matrix = buildMatrix({});
     expect(evaluateExecutionMatrixCompleteGate(matrix).status).toBe('pass');
     expect(evaluateCriticalPathObservedGate(matrix).status).toBe('pass');
   });
-
   it('passes critical observation and breakpoint precision after observed failure is precise', () => {
     const evidence = makeEvidence({
       flows: {
@@ -745,7 +706,6 @@ describe('buildExecutionMatrix', () => {
     expect(evaluateCriticalPathObservedGate(matrix).status).toBe('pass');
     expect(evaluateBreakpointPrecisionGate(matrix).status).toBe('pass');
   });
-
   it('adds uncovered structural nodes so parser-discovered code cannot escape scope', () => {
     const matrix = buildMatrix({
       structuralGraph: {
@@ -789,7 +749,6 @@ describe('buildExecutionMatrix', () => {
       'inferred_only',
     );
   });
-
   it('adds uncovered scope files so repo inventory cannot escape matrix classification', () => {
     const matrix = buildMatrix({
       scopeState: {
