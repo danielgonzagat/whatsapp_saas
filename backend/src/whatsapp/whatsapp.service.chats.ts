@@ -60,6 +60,14 @@ function buildLocalChatId(phone: string): string {
   return digitsOnly ? `${digitsOnly}@c.us` : 'unknown@c.us';
 }
 
+function sanitizeChatField(value?: string | null): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const normalized = value.replace(/[\r\n]/g, ' ').trim();
+  return normalized || null;
+}
+
 async function loadConversationsForListing(deps: ChatHelperDeps, workspaceId: string) {
   return (
     (await deps.prisma.conversation.findMany({
@@ -117,11 +125,17 @@ function mergeLocalConversationIntoListing(
     typeof existing?.unreadCount === 'number'
       ? existing.unreadCount
       : conversation.unreadCount || 0;
+  const safePhone = sanitizeChatField(phone) || '';
+  const fallbackName =
+    sanitizeChatField(existing?.name) ||
+    sanitizeChatField(conversation.contact?.name) ||
+    sanitizeChatField(conversation.contact?.phone) ||
+    safePhone;
 
-  merged.set(phone, {
-    id: existing?.id || buildLocalChatId(phone),
-    phone,
-    name: existing?.name || conversation.contact?.name || conversation.contact?.phone || phone,
+  merged.set(safePhone, {
+    id: sanitizeChatField(existing?.id) || buildLocalChatId(safePhone),
+    phone: safePhone,
+    name: fallbackName,
     unreadCount,
     pending: operational.pending,
     needsReply: operational.needsReply,
@@ -132,10 +146,10 @@ function mergeLocalConversationIntoListing(
     timestamp,
     lastMessageAt:
       deps.toIsoTimestamp(timestamp) || conversation.lastMessageAt?.toISOString?.() || null,
-    conversationId: conversation.id,
-    status: conversation.status || null,
-    mode: conversation.mode || null,
-    assignedAgentId: conversation.assignedAgentId || null,
+    conversationId: sanitizeChatField(conversation.id),
+    status: sanitizeChatField(conversation.status),
+    mode: sanitizeChatField(conversation.mode),
+    assignedAgentId: sanitizeChatField(conversation.assignedAgentId),
     source: existing ? 'waha+crm' : 'crm',
   });
 }
