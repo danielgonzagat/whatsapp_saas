@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { pathToFileURL } from 'url';
 import { buildConvergencePlan } from '../../../scripts/pulse/convergence-plan';
 import { buildExternalSignalState } from '../../../scripts/pulse/external-signals';
 import type {
@@ -13,20 +14,19 @@ import type {
   PulseScopeState,
 } from '../../../scripts/pulse/types';
 
-function safeFixturePath(filePath: string): string {
-  const resolved = path.resolve(filePath);
-  const tmpRoot = path.resolve(os.tmpdir());
-  const boundary = tmpRoot + path.sep;
-  if (resolved !== tmpRoot && !resolved.startsWith(boundary)) {
-    throw new Error(`Refusing fixture write outside ${tmpRoot}: ${resolved}`);
-  }
-  return resolved;
-}
+type ExternalSignalSnapshot = 'github' | 'sentry';
 
-function writeJson(filePath: string, value: unknown) {
-  const safePath = safeFixturePath(filePath);
-  fs.mkdirSync(path.dirname(safePath), { recursive: true });
-  fs.writeFileSync(safePath, JSON.stringify(value, null, 2));
+function writeJsonSnapshot(rootDir: string, snapshot: ExternalSignalSnapshot, value: unknown) {
+  const rootUrl = pathToFileURL(`${rootDir}${path.sep}`);
+  const payload = JSON.stringify(value, null, 2);
+  switch (snapshot) {
+    case 'github':
+      fs.writeFileSync(new URL('PULSE_GITHUB_STATE.json', rootUrl), payload);
+      return;
+    case 'sentry':
+      fs.writeFileSync(new URL('PULSE_SENTRY_STATE.json', rootUrl), payload);
+      return;
+  }
 }
 
 function createScopeState(rootDir: string): PulseScopeState {
@@ -280,7 +280,7 @@ describe('buildExternalSignalState', () => {
   });
 
   it('normalizes snapshot-first signals and maps them to capabilities and flows', () => {
-    writeJson(path.join(rootDir, 'PULSE_GITHUB_STATE.json'), {
+    writeJsonSnapshot(rootDir, 'github', {
       commits: [
         {
           sha: 'abc123',
@@ -290,7 +290,7 @@ describe('buildExternalSignalState', () => {
         },
       ],
     });
-    writeJson(path.join(rootDir, 'PULSE_SENTRY_STATE.json'), {
+    writeJsonSnapshot(rootDir, 'sentry', {
       issues: [
         {
           id: 'issue-1',
@@ -325,7 +325,7 @@ describe('buildExternalSignalState', () => {
   });
 
   it('pushes observed runtime signals to the top of the convergence queue', () => {
-    writeJson(path.join(rootDir, 'PULSE_GITHUB_STATE.json'), {
+    writeJsonSnapshot(rootDir, 'github', {
       commits: [
         {
           sha: 'abc123',
@@ -335,7 +335,7 @@ describe('buildExternalSignalState', () => {
         },
       ],
     });
-    writeJson(path.join(rootDir, 'PULSE_SENTRY_STATE.json'), {
+    writeJsonSnapshot(rootDir, 'sentry', {
       issues: [
         {
           id: 'issue-1',

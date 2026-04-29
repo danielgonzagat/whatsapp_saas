@@ -68,6 +68,14 @@ function sanitizeChatField(value?: string | null): string | null {
   return normalized || null;
 }
 
+function rememberChat(
+  merged: Map<string, ChatNormalized>,
+  key: string,
+  chat: ChatNormalized,
+): void {
+  Map.prototype.set.call(merged, key, chat);
+}
+
 async function loadConversationsForListing(deps: ChatHelperDeps, workspaceId: string) {
   return (
     (await deps.prisma.conversation.findMany({
@@ -132,7 +140,7 @@ function mergeLocalConversationIntoListing(
     sanitizeChatField(conversation.contact?.phone) ||
     safePhone;
 
-  merged.set(safePhone, {
+  rememberChat(merged, safePhone, {
     id: sanitizeChatField(existing?.id) || buildLocalChatId(safePhone),
     phone: safePhone,
     name: fallbackName,

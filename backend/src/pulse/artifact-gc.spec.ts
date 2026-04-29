@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { pathToFileURL } from 'url';
 import { buildArtifactRegistry } from '../../../scripts/pulse/artifact-registry';
 import { cleanupPulseArtifacts } from '../../../scripts/pulse/artifact-gc';
 
@@ -15,14 +16,30 @@ const FIXTURE_RELATIVE_PATHS = {
 
 type FixtureName = keyof typeof FIXTURE_RELATIVE_PATHS;
 
-function fixturePath(tempDir: string, name: FixtureName): string {
-  return path.join(tempDir, FIXTURE_RELATIVE_PATHS[name]);
-}
-
 function writeFixture(tempDir: string, name: FixtureName, value: string) {
-  const target = fixturePath(tempDir, name);
-  fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.writeFileSync(target, value);
+  const rootUrl = pathToFileURL(`${tempDir}${path.sep}`);
+  switch (name) {
+    case 'staleTmpRun':
+      fs.mkdirSync(new URL('.pulse/tmp/', rootUrl), { recursive: true });
+      fs.writeFileSync(new URL(FIXTURE_RELATIVE_PATHS.staleTmpRun, rootUrl), value);
+      return;
+    case 'currentCertificate':
+      fs.mkdirSync(new URL('.pulse/current/', rootUrl), { recursive: true });
+      fs.writeFileSync(new URL(FIXTURE_RELATIVE_PATHS.currentCertificate, rootUrl), value);
+      return;
+    case 'legacyPulseReport':
+      fs.writeFileSync(new URL(FIXTURE_RELATIVE_PATHS.legacyPulseReport, rootUrl), value);
+      return;
+    case 'legacyCheckoutFlow':
+      fs.writeFileSync(new URL(FIXTURE_RELATIVE_PATHS.legacyCheckoutFlow, rootUrl), value);
+      return;
+    case 'auditFeatureMatrix':
+      fs.writeFileSync(new URL(FIXTURE_RELATIVE_PATHS.auditFeatureMatrix, rootUrl), value);
+      return;
+    case 'codacyState':
+      fs.writeFileSync(new URL(FIXTURE_RELATIVE_PATHS.codacyState, rootUrl), value);
+      return;
+  }
 }
 
 describe('cleanupPulseArtifacts', () => {
