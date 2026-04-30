@@ -4,6 +4,8 @@ import * as os from 'os';
 import * as path from 'path';
 
 import { buildAstCallGraph } from '../ast-graph';
+import { buildBehaviorGraph } from '../behavior-graph';
+import { detectSourceRoots } from '../source-root-detector';
 
 describe('PULSE AST call graph', () => {
   it('resolves decorator applications through imported aliases and anchors edges to declarations', async () => {
@@ -60,5 +62,55 @@ describe('PULSE AST call graph', () => {
     expect(graph.edges.some((edge) => edge.from === `${controllerMethod?.filePath}:run:7`)).toBe(
       false,
     );
+  });
+
+  it('derives source roots from package and tsconfig metadata instead of Kloel-only defaults', async () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-source-roots-'));
+    const appDir = path.join(rootDir, 'apps/control-panel/src');
+    const serviceDir = path.join(rootDir, 'services/api/src');
+    fs.mkdirSync(appDir, { recursive: true });
+    fs.mkdirSync(serviceDir, { recursive: true });
+
+    fs.writeFileSync(
+      path.join(rootDir, 'package.json'),
+      JSON.stringify({ workspaces: ['apps/*', 'services/*'] }),
+    );
+    fs.writeFileSync(
+      path.join(rootDir, 'apps/control-panel/package.json'),
+      JSON.stringify({ name: '@opaque/control-panel' }),
+    );
+    fs.writeFileSync(
+      path.join(rootDir, 'apps/control-panel/tsconfig.json'),
+      JSON.stringify({ include: ['src/**/*.tsx'] }),
+    );
+    fs.writeFileSync(
+      path.join(rootDir, 'services/api/package.json'),
+      JSON.stringify({ name: '@opaque/api' }),
+    );
+    fs.writeFileSync(
+      path.join(rootDir, 'services/api/tsconfig.json'),
+      JSON.stringify({ include: ['src/**/*.ts'] }),
+    );
+    fs.writeFileSync(
+      path.join(appDir, 'Widget.tsx'),
+      ['export function Widget(): JSX.Element {', '  return <main />;', '}'].join('\n'),
+    );
+    fs.writeFileSync(
+      path.join(serviceDir, 'endpoint.ts'),
+      ['export function handler(): string {', "  return 'ok';", '}'].join('\n'),
+    );
+
+    const roots = detectSourceRoots(rootDir).map((root) => root.relativePath);
+    expect(roots).toEqual(['apps/control-panel/src', 'services/api/src']);
+
+    const graph = await buildAstCallGraph(rootDir);
+    expect(graph.symbols.some((symbol) => symbol.name === 'Widget')).toBe(true);
+    expect(graph.symbols.some((symbol) => symbol.name === 'handler')).toBe(true);
+
+    const behaviorGraph = buildBehaviorGraph(rootDir);
+    expect(behaviorGraph.nodes.map((node) => node.filePath).sort()).toEqual([
+      'apps/control-panel/src/Widget.tsx',
+      'services/api/src/endpoint.ts',
+    ]);
   });
 });

@@ -1,5 +1,7 @@
 import type { PulseExecutionMatrix, PulseExecutionMatrixPath, PulseGateResult } from './types';
 import { gateFail } from './cert-gate-evaluators';
+import { classifyExecutionReality } from './execution-reality-audit';
+import type { PulseExecutionRealityInput } from './types.execution-reality-audit';
 
 export interface PulsePathCoverageGateState {
   summary?: {
@@ -31,6 +33,28 @@ function isCriticalMatrixPath(path: PulseExecutionMatrixPath): boolean {
   return path.risk === 'high' || path.risk === 'critical';
 }
 
+function toExecutionRealityInput(
+  path: PulseExecutionMatrixPath,
+  evidence: PulseExecutionMatrixPath['observedEvidence'][number],
+): PulseExecutionRealityInput {
+  return {
+    id: `${path.pathId}:${evidence.source}:${evidence.artifactPath}`,
+    sourceArtifact: evidence.artifactPath,
+    status: evidence.status,
+    source: evidence.source,
+    executed: evidence.executed,
+    summary: evidence.summary,
+    artifactPaths: [evidence.artifactPath],
+  };
+}
+
+function hasObservedRealityProof(path: PulseExecutionMatrixPath): boolean {
+  return path.observedEvidence.some(
+    (evidence) =>
+      classifyExecutionReality(toExecutionRealityInput(path, evidence)).countsAsObservedProof,
+  );
+}
+
 /** Gate: every discovered executable path is classified by the matrix. */
 export function evaluateExecutionMatrixCompleteGate(
   matrix?: PulseExecutionMatrix | null,
@@ -57,7 +81,7 @@ export function evaluateExecutionMatrixCompleteGate(
   };
 }
 
-/** Gate: critical paths must be observed or carry a precise terminal reason. */
+/** Gate: critical paths must be observed. Terminal reasons route proof work, not pass evidence. */
 export function evaluateCriticalPathObservedGate(
   matrix?: PulseExecutionMatrix | null,
   pathCoverage?: PulsePathCoverageGateState | null,
@@ -104,6 +128,29 @@ export function evaluateCriticalPathObservedGate(
       },
     );
   }
+  const observedStatusWithoutRealityProof = matrix.paths.filter(
+    (path) =>
+      isCriticalMatrixPath(path) &&
+      (path.status === 'observed_pass' || path.status === 'observed_fail') &&
+      !hasObservedRealityProof(path),
+  );
+  if (observedStatusWithoutRealityProof.length > 0) {
+    const affected = observedStatusWithoutRealityProof.slice(0, 8);
+    return gateFail(
+      `${observedStatusWithoutRealityProof.length} critical path(s) claim observed status but PULSE_EXECUTION_REALITY_AUDIT classifies their evidence as non-observed proof: ${affected.map((path) => path.pathId).join(', ')}.`,
+      'missing_evidence',
+      {
+        affectedCapabilityIds: affected
+          .map((path) => path.capabilityId)
+          .filter((id): id is string => Boolean(id)),
+        affectedFlowIds: affected
+          .map((path) => path.flowId)
+          .filter((id): id is string => Boolean(id)),
+        evidenceMode: 'inferred',
+        confidence: 'high',
+      },
+    );
+  }
   const terminalWithoutObservedEvidence = matrix.paths.filter(
     (path) =>
       isCriticalMatrixPath(path) &&
@@ -111,15 +158,28 @@ export function evaluateCriticalPathObservedGate(
       path.status !== 'observed_fail' &&
       hasPreciseTerminalReason(path),
   );
-  const evidenceMode = terminalWithoutObservedEvidence.length > 0 ? 'inferred' : 'observed';
-  const terminalGapSummary =
-    terminalWithoutObservedEvidence.length > 0
-      ? ` ${terminalWithoutObservedEvidence.length} terminal critical path(s) still need observed proof; next ai_safe action is to run the path validation command from PULSE_EXECUTION_MATRIX.json and refresh PULSE_PATH_COVERAGE.json.`
-      : '';
+  if (terminalWithoutObservedEvidence.length > 0) {
+    const affected = terminalWithoutObservedEvidence.slice(0, 8);
+    return gateFail(
+      `${terminalWithoutObservedEvidence.length} terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: ${affected.map((path) => path.pathId).join(', ')}. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.`,
+      'missing_evidence',
+      {
+        affectedCapabilityIds: affected
+          .map((path) => path.capabilityId)
+          .filter((id): id is string => Boolean(id)),
+        affectedFlowIds: affected
+          .map((path) => path.flowId)
+          .filter((id): id is string => Boolean(id)),
+        evidenceMode: 'inferred',
+        confidence: 'high',
+      },
+    );
+  }
   return {
     status: 'pass',
-    reason: `All critical matrix paths are observed pass/fail or carry a precise terminal reason in PULSE_EXECUTION_MATRIX.json.${terminalGapSummary}`,
-    evidenceMode,
+    reason:
+      'All critical matrix paths have observed pass/fail evidence in PULSE_EXECUTION_MATRIX.json.',
+    evidenceMode: 'observed',
     confidence: 'high',
   };
 }

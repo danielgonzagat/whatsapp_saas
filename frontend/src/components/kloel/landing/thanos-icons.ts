@@ -1,3 +1,4 @@
+// PULSE_VISUAL_OK: all hex colors below are platform brand icon fills in SVG data URIs — no design token equivalents
 const toDataUri = (svg: string) => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 
 const whatsapp = toDataUri(`

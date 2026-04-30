@@ -1,0 +1,106 @@
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+
+import { detectConfig } from '../config';
+import { detectSourceRoots } from '../source-root-detector';
+
+function writeJson(filePath: string, value: unknown): void {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, JSON.stringify(value));
+}
+
+describe('PULSE source root detector', () => {
+  it('derives roots from manifests, project configs, build configs, and file evidence', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-source-root-detector-'));
+    const frontendDir = path.join(rootDir, 'apps/panel/src');
+    const backendDir = path.join(rootDir, 'services/api/server');
+    const workerDir = path.join(rootDir, 'jobs/queue-worker');
+
+    fs.mkdirSync(frontendDir, { recursive: true });
+    fs.mkdirSync(backendDir, { recursive: true });
+    fs.mkdirSync(workerDir, { recursive: true });
+    fs.mkdirSync(path.join(rootDir, 'db'), { recursive: true });
+
+    writeJson(path.join(rootDir, 'package.json'), {
+      workspaces: ['apps/*', 'services/*', 'jobs/*'],
+    });
+    writeJson(path.join(rootDir, 'apps/panel/package.json'), {
+      name: '@opaque/next-panel',
+      exports: './src/index.tsx',
+    });
+    fs.writeFileSync(path.join(rootDir, 'apps/panel/next.config.ts'), 'export default {};');
+    fs.writeFileSync(
+      path.join(frontendDir, 'index.tsx'),
+      'export function Panel() { return null; }',
+    );
+
+    writeJson(path.join(rootDir, 'services/api/package.json'), {
+      name: '@opaque/server-api',
+    });
+    writeJson(path.join(rootDir, 'services/api/jsconfig.json'), {
+      compilerOptions: { rootDir: 'server' },
+    });
+    writeJson(path.join(rootDir, 'services/api/nest-cli.json'), {
+      sourceRoot: 'server',
+    });
+    fs.writeFileSync(
+      path.join(backendDir, 'main.ts'),
+      "app.setGlobalPrefix('v1');\nexport const boot = true;",
+    );
+    fs.writeFileSync(
+      path.join(backendDir, 'health.controller.ts'),
+      'export class HealthController {}',
+    );
+
+    writeJson(path.join(rootDir, 'jobs/queue-worker/package.json'), {
+      name: '@opaque/queue-worker',
+      scripts: { start: 'ts-node bootstrap.ts' },
+    });
+    fs.writeFileSync(path.join(workerDir, 'bootstrap.ts'), 'export const worker = true;');
+    fs.writeFileSync(path.join(rootDir, 'db/schema.prisma'), 'model Example { id String @id }');
+
+    const roots = detectSourceRoots(rootDir);
+    const rootsByPath = new Map(roots.map((root) => [root.relativePath, root]));
+
+    expect(rootsByPath.get('apps/panel/src')?.evidenceBasis).toEqual(
+      expect.arrayContaining([
+        'package-manifest',
+        'package-export',
+        'build-config',
+        'file-evidence',
+      ]),
+    );
+    expect(rootsByPath.get('services/api/server')?.evidenceBasis).toEqual(
+      expect.arrayContaining(['jsconfig', 'build-config']),
+    );
+    expect(rootsByPath.get('jobs/queue-worker')?.evidenceBasis).toEqual(
+      expect.arrayContaining(['package-manifest']),
+    );
+    expect(roots.every((root) => root.weakCandidate)).toBe(false);
+
+    const config = detectConfig(rootDir);
+    expect(config.frontendDir).toBe(path.join(rootDir, 'apps/panel/src'));
+    expect(config.backendDir).toBe(path.join(rootDir, 'services/api/server'));
+    expect(config.workerDir).toBe(path.join(rootDir, 'jobs/queue-worker'));
+    expect(config.schemaPath).toBe(path.join(rootDir, 'db/schema.prisma'));
+    expect(config.globalPrefix).toBe('v1');
+  });
+
+  it('keeps conventional fallback as weak evidence when no manifest or file signal exists', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-source-root-weak-'));
+    fs.mkdirSync(path.join(rootDir, 'backend/src'), { recursive: true });
+
+    const roots = detectSourceRoots(rootDir);
+
+    expect(roots).toHaveLength(1);
+    expect(roots[0]).toEqual(
+      expect.objectContaining({
+        relativePath: 'backend/src',
+        evidenceBasis: ['weak-fallback'],
+        weakCandidate: true,
+        languageExtensions: [],
+      }),
+    );
+  });
+});

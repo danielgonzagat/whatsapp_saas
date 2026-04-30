@@ -97,6 +97,219 @@ import { handlePulseOutput } from './index-output';
 
 activateRuntimeParserEnv();
 
+type PulseIndexStageId =
+  | 'full-scan'
+  | 'runtime-evidence'
+  | 'observability-evidence'
+  | 'recovery-evidence'
+  | 'declared-flows'
+  | 'declared-invariants'
+  | 'synthetic-actors'
+  | 'self-trust-verification'
+  | 'final-certification'
+  | 'external-sources-orchestration';
+
+type StageArtifactOverrideSource = 'certification' | 'externalSignalState' | 'empty';
+
+type StageArtifactOverrideDescriptor = {
+  path: string;
+  source: StageArtifactOverrideSource;
+  objective: string;
+};
+
+type PulseIndexStageDescriptor = {
+  id: PulseIndexStageId;
+  objective: string;
+  dependencies: PulseIndexStageId[];
+  artifactOverrides?: StageArtifactOverrideDescriptor[];
+};
+
+const PULSE_INDEX_STAGE_DESCRIPTORS: PulseIndexStageDescriptor[] = [
+  {
+    id: 'full-scan',
+    objective:
+      'discover codebase, manifest, parser inventory, baseline health, and initial certification inputs',
+    dependencies: [],
+  },
+  {
+    id: 'runtime-evidence',
+    objective: 'collect registered runtime probes selected by the active profile',
+    dependencies: ['full-scan'],
+  },
+  {
+    id: 'observability-evidence',
+    objective: 'derive observability proof from the registered runtime evidence surface',
+    dependencies: ['runtime-evidence'],
+  },
+  {
+    id: 'recovery-evidence',
+    objective: 'derive recovery proof from repository operations evidence',
+    dependencies: ['runtime-evidence'],
+  },
+  {
+    id: 'declared-flows',
+    objective: 'execute manifest-declared flow checks selected by target metadata',
+    dependencies: ['full-scan', 'runtime-evidence'],
+  },
+  {
+    id: 'declared-invariants',
+    objective: 'evaluate manifest-declared invariant checks selected by target metadata',
+    dependencies: ['full-scan'],
+  },
+  {
+    id: 'synthetic-actors',
+    objective: 'execute synthetic actor scenarios requested by manifest/profile metadata',
+    dependencies: ['full-scan', 'runtime-evidence', 'declared-flows', 'declared-invariants'],
+  },
+  {
+    id: 'self-trust-verification',
+    objective: 'verify cross-artifact consistency using fresh registered in-memory artifacts',
+    dependencies: [
+      'full-scan',
+      'runtime-evidence',
+      'declared-flows',
+      'declared-invariants',
+      'synthetic-actors',
+    ],
+    artifactOverrides: [
+      {
+        path: 'PULSE_CERTIFICATE.json',
+        source: 'certification',
+        objective: 'avoid stale disk reads for the current certificate snapshot',
+      },
+      {
+        path: 'PULSE_CLI_DIRECTIVE.json',
+        source: 'empty',
+        objective: 'reserve directive slot until output publication writes fresh data',
+      },
+      {
+        path: 'PULSE_ARTIFACT_INDEX.json',
+        source: 'empty',
+        objective: 'reserve artifact-index slot until output publication writes fresh data',
+      },
+      {
+        path: '.pulse/current/PULSE_AUTONOMY_PROOF.json',
+        source: 'empty',
+        objective: 'reserve autonomy-proof slot until output publication writes fresh data',
+      },
+      {
+        path: '.pulse/current/PULSE_AUTONOMY_STATE.json',
+        source: 'empty',
+        objective: 'reserve autonomy-state slot until output publication writes fresh data',
+      },
+      {
+        path: '.pulse/current/PULSE_AGENT_ORCHESTRATION_STATE.json',
+        source: 'empty',
+        objective: 'reserve agent-orchestration slot until output publication writes fresh data',
+      },
+      {
+        path: '.pulse/current/PULSE_EXTERNAL_SIGNAL_STATE.json',
+        source: 'externalSignalState',
+        objective: 'attach fresh external signal state derived before self-trust',
+      },
+      {
+        path: '.pulse/current/PULSE_CONVERGENCE_PLAN.json',
+        source: 'empty',
+        objective: 'reserve convergence-plan slot until output publication writes fresh data',
+      },
+      {
+        path: '.pulse/current/PULSE_PRODUCT_VISION.json',
+        source: 'empty',
+        objective: 'reserve product-vision slot until output publication writes fresh data',
+      },
+    ],
+  },
+  {
+    id: 'final-certification',
+    objective: 'compute final certification from registered evidence and self-trust output',
+    dependencies: ['self-trust-verification'],
+  },
+  {
+    id: 'external-sources-orchestration',
+    objective: 'collect registered live external adapter evidence for final derived outputs',
+    dependencies: ['final-certification'],
+  },
+];
+
+const PULSE_INDEX_STAGE_REGISTRY = new Map(
+  PULSE_INDEX_STAGE_DESCRIPTORS.map((descriptor) => [descriptor.id, descriptor]),
+);
+
+function getRegisteredStage(stageId: PulseIndexStageId): PulseIndexStageDescriptor {
+  const descriptor = PULSE_INDEX_STAGE_REGISTRY.get(stageId);
+  if (!descriptor) {
+    throw new Error(`PULSE stage is not registered: ${stageId}`);
+  }
+  return descriptor;
+}
+
+function buildStageMetadata(
+  stageId: PulseIndexStageId,
+  metadata: Record<string, string | number | boolean> = {},
+): Record<string, string | number | boolean> {
+  const stage = getRegisteredStage(stageId);
+  return {
+    registeredStage: stage.id,
+    objective: stage.objective,
+    dependencies: stage.dependencies.length > 0 ? stage.dependencies.join(',') : 'none',
+    ...metadata,
+  };
+}
+
+function printRegisteredStagePlan(humanReadableOutput: boolean): void {
+  if (!humanReadableOutput) {
+    return;
+  }
+
+  console.log('  Registered stages/dependencies/objective:');
+  for (const stage of PULSE_INDEX_STAGE_DESCRIPTORS) {
+    const dependencies = stage.dependencies.length > 0 ? stage.dependencies.join(', ') : 'none';
+    console.log(
+      `    - ${stage.id} | dependencies: ${dependencies} | objective: ${stage.objective}`,
+    );
+  }
+}
+
+function cloneObjectRecord(value: object): Record<string, unknown> {
+  return { ...(value as Record<string, unknown>) };
+}
+
+function buildRegisteredArtifactOverrides(input: {
+  stageId: PulseIndexStageId;
+  certification: object;
+  externalSignalState: object;
+}): Record<string, Record<string, unknown>> {
+  const stage = getRegisteredStage(input.stageId);
+  const overrideDescriptors = stage.artifactOverrides || [];
+  return Object.fromEntries(
+    overrideDescriptors.map((descriptor) => {
+      const payload =
+        descriptor.source === 'certification'
+          ? cloneObjectRecord(input.certification)
+          : descriptor.source === 'externalSignalState'
+            ? cloneObjectRecord(input.externalSignalState)
+            : {};
+      return [descriptor.path, payload];
+    }),
+  );
+}
+
+async function runRegisteredStage<T>(
+  tracer: PulseExecutionTracer,
+  stageId: PulseIndexStageId,
+  fn: () => Promise<T> | T,
+  options: {
+    timeoutMs?: number;
+    metadata?: Record<string, string | number | boolean>;
+    onTimeout?: () => T | Promise<T>;
+  } = {},
+): Promise<T> {
+  return runPhaseWithTrace(tracer, stageId, fn, {
+    ...options,
+    metadata: buildStageMetadata(stageId, options.metadata),
+  });
+}
+
 function deriveFullScanTimeoutMs(
   config: ReturnType<typeof detectConfig>,
   includeParser: ((name: string) => boolean) | undefined,
@@ -175,10 +388,11 @@ async function main() {
     actorModes: effectiveRequestedSyntheticModes,
     loadedEnvFiles,
   });
+  printRegisteredStagePlan(humanReadableOutput);
 
   // 2. Full scan
   const startTime = Date.now();
-  let scanResult = await runPhaseWithTrace(
+  let scanResult = await runRegisteredStage(
     tracer,
     'full-scan',
     () =>
@@ -212,6 +426,7 @@ async function main() {
 
   const runtimeProbeIds = getRuntimeProbeIds(profileSelection?.runtimeProbeIds);
   tracer.startPhase('runtime-evidence', {
+    ...buildStageMetadata('runtime-evidence'),
     probeCount: runtimeProbeIds.length,
   });
   const runtimeProbes: PulseRuntimeProbe[] = [];
@@ -246,13 +461,13 @@ async function main() {
       failedProbes: runtimeEvidence.probes.filter((probe) => probe.status === 'failed').length,
     },
   });
-  const observabilityEvidence = await runPhaseWithTrace(
+  const observabilityEvidence = await runRegisteredStage(
     tracer,
     'observability-evidence',
     () => collectObservabilityEvidence(config.rootDir, runtimeEvidence),
     { timeoutMs: 10_000 },
   );
-  const recoveryEvidence = await runPhaseWithTrace(
+  const recoveryEvidence = await runRegisteredStage(
     tracer,
     'recovery-evidence',
     () => collectRecoveryEvidence(config.rootDir),
@@ -270,7 +485,7 @@ async function main() {
 
   const flowEnvironment = effectiveActorModeRequested ? 'total' : effectiveEnvironment;
 
-  const flowEvidence = await runPhaseWithTrace(
+  const flowEvidence = await runRegisteredStage(
     tracer,
     'declared-flows',
     () =>
@@ -292,7 +507,7 @@ async function main() {
     },
   );
 
-  const invariantEvidence = await runPhaseWithTrace(
+  const invariantEvidence = await runRegisteredStage(
     tracer,
     'declared-invariants',
     () =>
@@ -315,7 +530,7 @@ async function main() {
     },
   );
 
-  const syntheticEvidence = await runPhaseWithTrace(
+  const syntheticEvidence = await runRegisteredStage(
     tracer,
     'synthetic-actors',
     () =>
@@ -441,46 +656,13 @@ async function main() {
   });
   buildPathCoverageState(config.rootDir, derivedExecutionMatrix);
 
-  // TODO(pulse-pipeline): Restructure to generate non-cert artifacts (external-signal-state,
-  // convergence-plan, product-vision, autonomy-*) before self-trust runs, eliminating the
-  // need for the empty-object override workaround below. Two-phase artifact generation would
-  // also allow the post-write cross-artifact check to move into the cert flow directly.
+  const artifactsOverride = buildRegisteredArtifactOverrides({
+    stageId: 'self-trust-verification',
+    certification: scanResult.certification,
+    externalSignalState: derivedExternalSignalState,
+  });
 
-  // Self-trust cross-artifact consistency override map.
-  // ALL 9 DEFAULT_ARTIFACT_PATHS must be present to prevent stale disk reads
-  // from the previous run. Artifacts without fresh in-memory data at this
-  // pipeline stage use empty objects ({}), which contribute no fields and
-  // cause no false divergences.
-  //
-  // Fresh in-memory data:
-  //   .pulse/current/PULSE_EXTERNAL_SIGNAL_STATE.json  — derivedExternalSignalState
-  //   PULSE_CERTIFICATE.json                           — scanResult.certification
-  //
-  // Empty objects (not yet generated at this stage; stale disk reads avoided):
-  //   PULSE_CLI_DIRECTIVE.json
-  //   PULSE_ARTIFACT_INDEX.json
-  //   .pulse/current/PULSE_AUTONOMY_PROOF.json
-  //   .pulse/current/PULSE_AUTONOMY_STATE.json
-  //   .pulse/current/PULSE_AGENT_ORCHESTRATION_STATE.json
-  //   .pulse/current/PULSE_CONVERGENCE_PLAN.json
-  //   .pulse/current/PULSE_PRODUCT_VISION.json
-  //
-  // Full cross-artifact verification with all 9 fresh artifacts on disk
-  // happens post-write (see handlePulseOutput call below, line ~598).
-  const artifactsOverride: Record<string, Record<string, unknown>> = {
-    'PULSE_CERTIFICATE.json': scanResult.certification as unknown as Record<string, unknown>,
-    'PULSE_CLI_DIRECTIVE.json': {},
-    'PULSE_ARTIFACT_INDEX.json': {},
-    '.pulse/current/PULSE_AUTONOMY_PROOF.json': {},
-    '.pulse/current/PULSE_AUTONOMY_STATE.json': {},
-    '.pulse/current/PULSE_AGENT_ORCHESTRATION_STATE.json': {},
-    '.pulse/current/PULSE_EXTERNAL_SIGNAL_STATE.json':
-      derivedExternalSignalState as unknown as Record<string, unknown>,
-    '.pulse/current/PULSE_CONVERGENCE_PLAN.json': {},
-    '.pulse/current/PULSE_PRODUCT_VISION.json': {},
-  };
-
-  const selfTrustReport = await runPhaseWithTrace(
+  const selfTrustReport = await runRegisteredStage(
     tracer,
     'self-trust-verification',
     () =>
@@ -511,7 +693,7 @@ async function main() {
       `${config.rootDir}/.pulse/current/PULSE_AUTONOMY_STATE.json`,
     ) ?? null;
 
-  certification = await runPhaseWithTrace(
+  certification = await runRegisteredStage(
     tracer,
     'final-certification',
     () =>
@@ -633,7 +815,7 @@ async function main() {
   );
   const externalSourcesTimeoutMs = deriveExternalSourcesTimeoutMs(externalSourcesConfig);
 
-  const liveExternalState = await runPhaseWithTrace(
+  const liveExternalState = await runRegisteredStage(
     tracer,
     'external-sources-orchestration',
     () => externalSourcesTask,

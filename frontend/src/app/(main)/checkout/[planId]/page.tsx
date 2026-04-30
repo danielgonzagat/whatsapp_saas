@@ -22,20 +22,21 @@ import {
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { type CSSProperties, useCallback, useEffect, useRef, useState, useId } from 'react';
 import { normalizeCheckoutCode } from './checkout-editor-utils';
+import { colors } from '@/lib/design-tokens';
 
 // ════════════════════════════════════════════
-// DESIGN TOKENS (inline — Kloel Monitor DNA)
+// DESIGN TOKENS (imported from Kloel Monitor DNA)
 // ════════════════════════════════════════════
 
 const C = {
-  void: '#0A0A0C',
-  surface: '#111113',
-  elevated: '#19191C',
-  border: '#222226',
-  ember: '#E85D30',
-  text: '#E0DDD8',
-  muted: '#6E6E73',
-  dim: '#3A3A3F',
+  void: colors.background.void,
+  surface: colors.background.surface,
+  elevated: colors.background.elevated,
+  border: colors.border.space,
+  ember: colors.ember.primary,
+  text: colors.text.silver,
+  muted: colors.text.muted,
+  dim: colors.text.dim,
 } as const;
 
 const FONT = "'Sora', sans-serif";
@@ -110,7 +111,7 @@ const smallBtnStyle: CSSProperties = {
 
 const removeBtnStyle: CSSProperties = {
   ...smallBtnStyle,
-  color: '#E85D30',
+  color: C.ember,
   backgroundColor: 'transparent',
   border: 'none',
   padding: '4px 8px',
@@ -188,7 +189,7 @@ function ColorField({
           id={`${colorId}-color`}
           aria-label={`${lbl} (seletor de cor)`}
           type="color"
-          value={value || '#000000'}
+          value={value || '#000000'} // PULSE_VISUAL_OK: color picker default, universal
           onChange={(e) => onChange(e.target.value)}
           style={{
             width: 36,
@@ -206,7 +207,7 @@ function ColorField({
           value={value || ''}
           onChange={(e) => onChange(e.target.value)}
           style={{ ...inputStyle, flex: 1, fontFamily: MONO, fontSize: 13 }}
-          placeholder={kloelT(`#000000`)}
+          placeholder={kloelT(`#000000`)} // PULSE_VISUAL_OK: color picker placeholder, universal
         />
       </div>
     </div>
@@ -524,6 +525,7 @@ export default function CheckoutEditorPage() {
       '<div style="width:100%;max-width:560px;margin:0 auto;">',
       `  <iframe src="${checkoutPublicUrl}"`,
       '    loading="lazy"',
+      // PULSE_VISUAL_OK: generated external HTML embed, token unavailable in target page
       '    style="width:100%;min-height:920px;border:0;border-radius:16px;background:#0A0A0C;"',
       '    allow="payment *; clipboard-write">',
       '  </iframe>',
@@ -1664,6 +1666,7 @@ export default function CheckoutEditorPage() {
                   '<div style="width:100%;max-width:560px;margin:0 auto;">',
                   '  <iframe src="' + checkoutPublicUrl + '"',
                   '    loading="lazy"',
+                  // PULSE_VISUAL_OK: generated external HTML embed, token unavailable in target page
                   '    style="width:100%;min-height:920px;border:0;border-radius:16px;background:#0A0A0C;"',
                   '    allow="payment *; clipboard-write">',
                   '  </iframe>',

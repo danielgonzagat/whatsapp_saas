@@ -29,6 +29,7 @@ import {
   PRIORITY_RANK,
   SECURITY_PATTERNS,
 } from './convergence-plan.constants';
+import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from './finding-identity';
 
 interface BuildPulseConvergencePlanInput {
   health: { breaks: Break[] };
@@ -98,7 +99,9 @@ function humanize(value: string): string {
 
 function isBlockingBreak(item: Break): boolean {
   return (
-    (item.severity === 'critical' || item.severity === 'high') && !CHECKER_GAP_TYPES.has(item.type)
+    (item.severity === 'critical' || item.severity === 'high') &&
+    !CHECKER_GAP_TYPES.has(item.type) &&
+    isBlockingDynamicFinding(item)
   );
 }
 
@@ -107,14 +110,7 @@ function isSecurityBreak(item: Break): boolean {
 }
 
 function rankBreakTypes(breaks: Break[], limit: number = 8): string[] {
-  const counts = new Map<string, number>();
-  for (const item of breaks) {
-    counts.set(item.type, (counts.get(item.type) || 0) + 1);
-  }
-  return [...counts.entries()]
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .slice(0, limit)
-    .map(([type, count]) => (count > 1 ? `${type} (${count})` : type));
+  return summarizeDynamicFindingEvents(breaks, limit);
 }
 
 function rankFiles(breaks: Break[], limit: number = 10): string[] {
@@ -783,7 +779,7 @@ function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseConverge
         [
           gate.reason,
           securityBreaks.length > 0
-            ? `Top blocking types: ${rankBreakTypes(securityBreaks).join(', ')}.`
+            ? `Top blocking events: ${rankBreakTypes(securityBreaks).join(', ')}.`
             : '',
         ]
           .filter(Boolean)
@@ -812,7 +808,7 @@ function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseConverge
       exitCriteria: uniqueStrings([
         'securityPass returns pass in the next certification run.',
         securityBreaks.length > 0
-          ? `Blocking security break types are cleared: ${rankBreakTypes(securityBreaks, 8).join(', ')}.`
+          ? `Blocking security events are cleared: ${rankBreakTypes(securityBreaks, 8).join(', ')}.`
           : null,
       ]),
     },
@@ -850,7 +846,7 @@ function buildStaticUnit(input: BuildPulseConvergencePlanInput): PulseConvergenc
       productImpact: 'diagnostic',
       title: 'Reduce Remaining Static Critical And High Breakers',
       summary: compactText(
-        [gate.reason, `Top structural types: ${rankBreakTypes(blockingBreaks).join(', ')}.`].join(
+        [gate.reason, `Top structural events: ${rankBreakTypes(blockingBreaks).join(', ')}.`].join(
           ' ',
         ),
         320,
@@ -1783,7 +1779,9 @@ export function renderConvergencePlanMarkdown(plan: PulseConvergencePlan): strin
     lines.push(
       `- Async Expectations: ${unit.asyncExpectations.length > 0 ? unit.asyncExpectations.join(', ') : '—'}`,
     );
-    lines.push(`- Break Types: ${unit.breakTypes.length > 0 ? unit.breakTypes.join(', ') : '—'}`);
+    lines.push(
+      `- Finding Events: ${unit.breakTypes.length > 0 ? unit.breakTypes.join(', ') : '—'}`,
+    );
     lines.push(
       `- Related Files: ${unit.relatedFiles.length > 0 ? unit.relatedFiles.join(', ') : '—'}`,
     );

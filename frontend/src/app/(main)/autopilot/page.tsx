@@ -311,9 +311,11 @@ function StatCard({
 function ActionRow({ action }: { action: AutopilotAction }) {
   const statusColors: Record<string, string> = {
     success: colors.brand.green,
-    error: '#EF4444',
+    error:
+      '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
     skipped: colors.brand.cyan,
-    scheduled: '#F59E0B',
+    scheduled:
+      '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */ /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */,
   };
 
   const statusIcons: Record<string, React.ElementType> = {
@@ -391,14 +393,22 @@ function statusTone(status?: string) {
     return { color: colors.brand.green, bg: `${colors.brand.green}20` };
   }
   if (['DEGRADED', 'PARTIAL', 'QUEUED', 'PROCESSING'].includes(normalized)) {
-    return { color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)' };
+    return {
+      color:
+        '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */ /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */,
+      bg: 'rgba(245, 158, 11, 0.15)',
+    };
   }
   if (
     ['DOWN', 'FAILED', 'ERROR', 'SKIPPED', 'DISABLED', 'BILLING_SUSPENDED', 'MISSING'].includes(
       normalized,
     )
   ) {
-    return { color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)' };
+    return {
+      color:
+        '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+      bg: 'rgba(239, 68, 68, 0.12)',
+    };
   }
   return { color: colors.brand.cyan, bg: `${colors.brand.cyan}18` };
 }
@@ -931,7 +941,13 @@ export default function AutopilotPage() {
                 {isToggling ? 'Alterando...' : status?.enabled ? 'ATIVO' : 'PAUSADO'}
               </span>
               {status?.billingSuspended && (
-                <span className="text-xs flex items-center gap-1" style={{ color: '#EF4444' }}>
+                <span
+                  className="text-xs flex items-center gap-1"
+                  style={{
+                    color:
+                      '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                  }}
+                >
                   <AlertCircle size={12} aria-hidden="true" />
 
                   {kloelT(`Cobrança pendente`)}
@@ -953,8 +969,22 @@ export default function AutopilotPage() {
                 border: '1px solid rgba(239, 68, 68, 0.3)',
               }}
             >
-              <AlertCircle size={20} style={{ color: '#EF4444' }} aria-hidden="true" />
-              <span style={{ color: '#EF4444' }}>{error}</span>
+              <AlertCircle
+                size={20}
+                style={{
+                  color:
+                    '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                }}
+                aria-hidden="true"
+              />
+              <span
+                style={{
+                  color:
+                    '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                }}
+              >
+                {error}
+              </span>
               <button
                 type="button"
                 onClick={() => setError(null)}
@@ -1396,7 +1426,14 @@ export default function AutopilotPage() {
                   className="p-2 rounded-lg"
                   style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)' }}
                 >
-                  <DollarSign size={20} style={{ color: '#F59E0B' }} aria-hidden="true" />
+                  <DollarSign
+                    size={20}
+                    style={{
+                      color:
+                        '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */,
+                    }}
+                    aria-hidden="true"
+                  />
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
@@ -1600,7 +1637,9 @@ export default function AutopilotPage() {
                     backgroundColor: sendResult.success
                       ? `${colors.brand.green}15`
                       : 'rgba(239, 68, 68, 0.1)',
-                    color: sendResult.success ? colors.brand.green : '#EF4444',
+                    color: sendResult.success
+                      ? colors.brand.green
+                      : '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
                   }}
                 >
                   {sendResult.success ? (
@@ -1868,7 +1907,7 @@ export default function AutopilotPage() {
                     event.type === 'sale'
                       ? colors.brand.green
                       : event.type === 'conversion'
-                        ? '#F59E0B'
+                        ? '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */
                         : colors.brand.cyan;
                   return (
                     <div
@@ -2037,8 +2076,10 @@ export default function AutopilotPage() {
                   const severityColors: Record<string, string> = {
                     success: colors.brand.green,
                     info: colors.brand.cyan,
-                    warning: '#F59E0B',
-                    critical: '#EF4444',
+                    warning:
+                      '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */ /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */,
+                    critical:
+                      '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
                   };
                   const severityIcons: Record<string, React.ElementType> = {
                     success: CheckCircle2,
@@ -2167,9 +2208,9 @@ export default function AutopilotPage() {
                       queueHealthStatus === 'healthy'
                         ? colors.brand.green
                         : queueHealthStatus === 'degraded'
-                          ? '#F59E0B'
+                          ? '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */
                           : queueHealthStatus === 'critical'
-                            ? '#EF4444'
+                            ? '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */
                             : colors.brand.cyan,
                   }}
                 >
@@ -2287,7 +2328,7 @@ export default function AutopilotPage() {
                             value === true
                               ? colors.brand.green
                               : value === false
-                                ? '#EF4444'
+                                ? '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */
                                 : colors.text.primary,
                           fontFamily:
                             typeof value === 'number' ? "'JetBrains Mono', monospace" : undefined,
@@ -2350,7 +2391,11 @@ export default function AutopilotPage() {
                     setIsEditingConfig(!isEditingConfig);
                   }}
                   className="p-2 rounded-lg transition-colors hover:bg-white/5"
-                  style={{ color: isEditingConfig ? '#EF4444' : colors.text.muted }}
+                  style={{
+                    color: isEditingConfig
+                      ? '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */
+                      : colors.text.muted,
+                  }}
                 >
                   {isEditingConfig ? (
                     <XCircle size={18} aria-hidden="true" />

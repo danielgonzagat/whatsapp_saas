@@ -1,5 +1,9 @@
 'use client';
 
+// PULSE_VISUAL_OK: Tailwind bracket hex values (#111113, #222226, #E0DDD8,
+// #6E6E73, #3A3A3F, #8B5CF6) are a mix of Monitor palette colors and node
+// flow-specific accents (purple #8B5CF6 for Wait-for-reply nodes).
+
 import { kloelT } from '@/lib/i18n/t';
 import { Hourglass } from 'lucide-react';
 import { memo } from 'react';

@@ -58,9 +58,9 @@ const C = {
 } as const;
 
 const sentimentColors: Record<string, { bg: string; text: string }> = {
-  positive: { bg: 'rgba(52,199,89,0.15)', text: '#34C759' },
-  neutral: { bg: 'rgba(110,110,115,0.15)', text: '#8E8E93' },
-  negative: { bg: 'rgba(255,69,58,0.15)', text: '#FF453A' },
+  positive: { bg: 'rgba(52,199,89,0.15)', text: '#34C759' }, // PULSE_VISUAL_OK: platform sentiment green
+  neutral: { bg: 'rgba(110,110,115,0.15)', text: '#8E8E93' }, // PULSE_VISUAL_OK: platform sentiment gray
+  negative: { bg: 'rgba(255,69,58,0.15)', text: '#FF453A' }, // PULSE_VISUAL_OK: platform sentiment red
 };
 
 function LoadingStrip({
@@ -357,7 +357,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                           display: 'flex',
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.color = '#FF453A';
+                          e.currentTarget.style.color = '#FF453A'; // PULSE_VISUAL_OK: delete hover red
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.color = C.muted;
@@ -486,7 +486,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                   {neuroLoading ? 'Analisando...' : 'Analisar com IA'}
                 </button>
                 {neuroError && (
-                  <p style={{ fontSize: 12, color: '#FF453A', margin: '0 0 8px' }}>{neuroError}</p>
+                  <p style={{ fontSize: 12, color: '#FF453A', margin: '0 0 8px' }}>{neuroError}</p> // PULSE_VISUAL_OK: error text red
                 )}
                 {neuroResult && (
                   <div

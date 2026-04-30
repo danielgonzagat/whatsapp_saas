@@ -561,25 +561,28 @@ function pascalToKebab(name: string): string {
     .toLowerCase();
 }
 
-/**
- * Class-validator → primitive type mapping.
- */
-const VALIDATOR_TYPE_MAP: Record<string, string> = {
-  IsString: 'string',
-  IsNumber: 'number',
-  IsInt: 'number',
-  IsBoolean: 'boolean',
-  IsArray: 'array',
-  IsEmail: 'string',
-  IsUUID: 'string',
-  IsDate: 'string',
-  IsDateString: 'string',
-  IsEnum: 'string',
-  IsNotEmpty: 'string',
-  IsISO8601: 'string',
-  IsUrl: 'string',
-  IsJSON: 'string',
-};
+function inferPrimitiveTypeFromValidatorName(validatorName: string): string | null {
+  const normalized = validatorName.replace(/^Is/, '').toLowerCase();
+  if (normalized.includes('array')) return 'array';
+  if (normalized.includes('boolean')) return 'boolean';
+  if (
+    normalized.includes('number') ||
+    normalized.includes('int') ||
+    normalized.includes('float') ||
+    normalized.includes('decimal')
+  ) {
+    return 'number';
+  }
+  if (
+    normalized.includes('object') ||
+    normalized.includes('json') ||
+    normalized.includes('record')
+  ) {
+    return 'object';
+  }
+  if (normalized.length > 0) return 'string';
+  return null;
+}
 
 /**
  * Validate DTO decorator patterns from source code to infer schema shape.
@@ -667,7 +670,7 @@ function parseDtoSchema(
 
       const decoratorTypeMatch = trimmed.match(/^@(Is\w+)\(\s*(?:\{[^}]*\})?\s*\)/);
       if (decoratorTypeMatch) {
-        const mapped = VALIDATOR_TYPE_MAP[decoratorTypeMatch[1]];
+        const mapped = inferPrimitiveTypeFromValidatorName(decoratorTypeMatch[1]);
         if (mapped) {
           pendingType = mapped;
         }

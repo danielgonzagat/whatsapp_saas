@@ -29,6 +29,115 @@ function makeConfig(rootDir: string): PulseConfig {
 }
 
 describe('dynamic parser registry contracts', () => {
+  it('prefers declared parser metadata over check-name conventions and records operational evidence shape', () => {
+    const rootDir = makeRoot();
+    write(
+      rootDir,
+      'scripts/pulse/parsers/opaque-checker.ts',
+      [
+        'export const parserMetadata = {',
+        "  pluginId: 'opaque-parser',",
+        "  parserExport: 'runOpaqueEvidence',",
+        "  inputs: ['pulse-config', 'filesystem'],",
+        "  outputs: ['breaks', 'parser-inventory'],",
+        "  evidenceKind: 'static-contract',",
+        '  confidence: 0.93,',
+        '};',
+        'export function checkLegacyOpaque(config: unknown) { return []; }',
+        'export function runOpaqueEvidence(config: unknown) { return []; }',
+      ].join('\n'),
+    );
+
+    const [contract] = discoverParserContracts(rootDir) as Array<
+      ReturnType<typeof discoverParserContracts>[number] & {
+        confidence: number | null;
+        declaredExport: string | null;
+        discoveryAuthority: string;
+        evidenceKind: string | null;
+        inputs: string[];
+        legacyCompatibility: boolean;
+        outputs: string[];
+        pluginId: string | null;
+      }
+    >;
+
+    expect(contract).toEqual(
+      expect.objectContaining({
+        name: 'opaque-checker',
+        kind: 'active_parser',
+        parserExports: ['runOpaqueEvidence'],
+        declaredExport: 'parserMetadata',
+        discoveryAuthority: 'declared_metadata',
+        legacyCompatibility: false,
+        pluginId: 'opaque-parser',
+        inputs: ['pulse-config', 'filesystem'],
+        outputs: ['breaks', 'parser-inventory'],
+        evidenceKind: 'static-contract',
+        confidence: 0.93,
+        proof: expect.stringContaining('declared parser metadata'),
+      }),
+    );
+    expect(contract.proof).not.toContain('checkLegacyOpaque');
+  });
+
+  it('loads parser object exports with declared fn instead of relying on check prefixes', () => {
+    const rootDir = makeRoot();
+    write(
+      rootDir,
+      'scripts/pulse/parsers/object-parser.ts',
+      [
+        'function runObjectParser(config: unknown) { return []; }',
+        'export const objectParser = {',
+        "  kind: 'parser',",
+        '  fn: runObjectParser,',
+        "  inputs: ['pulse-config'],",
+        "  outputs: ['breaks'],",
+        "  evidenceKind: 'runtime-plugin',",
+        '  confidence: 0.82,',
+        '};',
+      ].join('\n'),
+    );
+
+    const inventory = loadParserInventory(makeConfig(rootDir));
+    const [contract] = inventory.contracts as Array<
+      ReturnType<typeof discoverParserContracts>[number] & {
+        discoveryAuthority: string;
+        evidenceKind: string | null;
+        inputs: string[];
+        outputs: string[];
+      }
+    >;
+
+    expect(contract).toEqual(
+      expect.objectContaining({
+        parserExports: ['objectParser'],
+        discoveryAuthority: 'declared_export',
+        inputs: ['pulse-config'],
+        outputs: ['breaks'],
+        evidenceKind: 'runtime-plugin',
+      }),
+    );
+    expect(inventory.discoveredChecks).toEqual(['object-parser']);
+    expect(inventory.loadedChecks).toHaveLength(1);
+    expect(
+      inventory.loadedChecks[0] as (typeof inventory.loadedChecks)[number] & {
+        confidence: number | null;
+        evidenceKind: string | null;
+        inputs: string[];
+        outputs: string[];
+      },
+    ).toEqual(
+      expect.objectContaining({
+        name: 'object-parser',
+        file: 'scripts/pulse/parsers/object-parser.ts',
+        inputs: ['pulse-config'],
+        outputs: ['breaks'],
+        evidenceKind: 'runtime-plugin',
+        confidence: 0.82,
+      }),
+    );
+  });
+
   it('classifies executable parsers by exported check contract and helpers by absence of that contract', () => {
     const rootDir = makeRoot();
     write(
@@ -49,6 +158,9 @@ describe('dynamic parser registry contracts', () => {
         name: 'opaque-checker',
         kind: 'active_parser',
         parserExports: ['checkOpaque'],
+        discoveryAuthority: 'legacy_weak_check_export',
+        legacyCompatibility: true,
+        confidence: 0.35,
       }),
     );
     expect(contracts).toContainEqual(

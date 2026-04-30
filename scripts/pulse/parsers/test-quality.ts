@@ -21,6 +21,7 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { analyzeTestAssertionSemantics } from '../test-assertion-semantics';
 
 const MONEY_TEST_RE =
   /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
@@ -51,17 +52,17 @@ export function checkTestQuality(config: PulseConfig): Break[] {
       const relFile = path.relative(config.rootDir, file);
       const lines = content.split('\n');
 
-      // CHECK 1: At least one expect() assertion
-      const expectCount = (content.match(/\bexpect\s*\(/g) || []).length;
-      if (expectCount === 0) {
+      // CHECK 1: At least one semantic assertion
+      const assertionSemantics = analyzeTestAssertionSemantics(content, relFile);
+      if (!assertionSemantics.hasAssertions) {
         breaks.push({
           type: 'TEST_NO_ASSERTION',
           severity: 'medium',
           file: relFile,
           line: 0,
-          description:
-            'Test file has no expect() assertions — tests pass vacuously and provide no value',
-          detail: `${relFile} has ${(content.match(/\bit\s*\(|test\s*\(/g) || []).length} test block(s) but zero expect() calls`,
+          source: 'ast:test-assertion-semantics',
+          description: 'Test file has no semantic assertion evidence from AST analysis.',
+          detail: `${relFile} has ${(content.match(/\bit\s*\(|test\s*\(/g) || []).length} test block(s), but PULSE did not find expect/assert/should/snapshot/custom assertion evidence.`,
         });
         continue; // No need to check further if no assertions at all
       }
@@ -77,6 +78,7 @@ export function checkTestQuality(config: PulseConfig): Break[] {
           severity: 'medium',
           file: relFile,
           line: 0,
+          source: 'ast:test-assertion-semantics',
           description:
             'All tests in this file are skipped (it.skip/xit/it.todo) — no coverage provided',
           detail: `${skippedCount} skipped test(s), 0 active tests in ${path.basename(file)}`,
@@ -96,6 +98,7 @@ export function checkTestQuality(config: PulseConfig): Break[] {
             severity: 'medium',
             file: relFile,
             line: 0,
+            source: 'ast:test-assertion-semantics',
             description:
               'Money-like test file has no error/rejection case tests — happy path only is insufficient',
             detail:
@@ -114,6 +117,7 @@ export function checkTestQuality(config: PulseConfig): Break[] {
           severity: 'medium',
           file: relFile,
           line: 0,
+          source: 'ast:test-assertion-semantics',
           description:
             'jest.mock() used without mock restoration — may cause test pollution across suites',
           detail:
@@ -132,6 +136,7 @@ export function checkTestQuality(config: PulseConfig): Break[] {
               severity: 'medium',
               file: relFile,
               line: i + 1,
+              source: 'ast:test-assertion-semantics',
               description: `Hardcoded sleep of ${match[1]}ms in test — use jest.useFakeTimers() or await event instead`,
               detail: line.slice(0, 120),
             });
@@ -152,6 +157,7 @@ export function checkTestQuality(config: PulseConfig): Break[] {
             severity: 'medium',
             file: relFile,
             line: i + 1,
+            source: 'ast:test-assertion-semantics',
             description:
               'Test has empty or placeholder description — tests must have meaningful names',
             detail: line.trim().slice(0, 120),
@@ -168,6 +174,7 @@ export function checkTestQuality(config: PulseConfig): Break[] {
             severity: 'medium',
             file: relFile,
             line: i + 1,
+            source: 'ast:test-assertion-semantics',
             description:
               'Test asserts on Math.random() or Date.now() — non-deterministic, will be flaky',
             detail:

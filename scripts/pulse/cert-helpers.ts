@@ -26,6 +26,7 @@ import {
   DEFAULT_CERTIFICATION_TIERS,
   DEFAULT_FINAL_READINESS_CRITERIA,
 } from './cert-constants';
+import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from './finding-identity';
 
 export function getEnvironment(): PulseEnvironment {
   if (process.env.PULSE_TOTAL === '1') return 'total';
@@ -205,6 +206,7 @@ export function filterBlockingBreaks(
     if (!isCriticalBreak(item)) return false;
     if (CHECKER_GAP_TYPES.has(item.type)) return false;
     if (manifest && isBreakTypeAccepted(manifest, item.type)) return false;
+    if (!isBlockingDynamicFinding(item)) return false;
     return predicate ? predicate(item) : true;
   });
 }
@@ -221,7 +223,7 @@ export function inferRuntimeCheckNames(parserInventory: PulseParserInventory): s
 }
 
 export function summarizeBreakTypes(breaks: Break[]): string[] {
-  return [...new Set(breaks.map((item) => item.type))].sort();
+  return summarizeDynamicFindingEvents(breaks);
 }
 
 export function unique<T>(values: T[]): T[] {

@@ -71,6 +71,8 @@ import { buildReplayState } from './replay-adapter';
 import { buildProductionProofState } from './production-proof';
 import { buildChaosCatalog } from './chaos-engine';
 import { buildPathCoverageState } from './path-coverage-engine';
+import { writePulseCommandGraphArtifact } from './command-graph-artifact';
+import { buildProofSynthesisState } from './proof-synthesis';
 import { buildProbabilisticRisk } from './probabilistic-risk';
 import { buildStructuralMemory } from './structural-memory';
 import { buildFPAdjudicationState } from './false-positive-adjudicator';
@@ -667,7 +669,14 @@ export async function fullScan(
     ),
   ]);
 
-  const failedPerfectnessRuns = perfectnessRuns.filter((run) => run.status === 'failed');
+  const proofSynthesisRun = await safeRun('proof-synthesis', () =>
+    buildProofSynthesisState(config.rootDir),
+  );
+  const commandGraphRun = await safeRun('command-graph', () =>
+    writePulseCommandGraphArtifact(config.rootDir),
+  );
+  const allPerfectnessRuns = [...perfectnessRuns, proofSynthesisRun, commandGraphRun];
+  const failedAllPerfectnessRuns = allPerfectnessRuns.filter((run) => run.status === 'failed');
   const perfectnessArtifactDir = path.join(config.rootDir, '.pulse', 'current');
   ensureDir(perfectnessArtifactDir, { recursive: true });
   writeTextFile(
@@ -675,11 +684,11 @@ export async function fullScan(
     JSON.stringify(
       {
         generatedAt: new Date().toISOString(),
-        status: failedPerfectnessRuns.length === 0 ? 'pass' : 'partial',
-        moduleCount: perfectnessRuns.length,
-        passedModules: perfectnessRuns.length - failedPerfectnessRuns.length,
-        failedModules: failedPerfectnessRuns.length,
-        runs: perfectnessRuns,
+        status: failedAllPerfectnessRuns.length === 0 ? 'pass' : 'partial',
+        moduleCount: allPerfectnessRuns.length,
+        passedModules: allPerfectnessRuns.length - failedAllPerfectnessRuns.length,
+        failedModules: failedAllPerfectnessRuns.length,
+        runs: allPerfectnessRuns,
       },
       null,
       2,
@@ -688,16 +697,16 @@ export async function fullScan(
 
   options.tracer?.finishPhase(
     'scan:perfectness',
-    failedPerfectnessRuns.length === 0 ? 'passed' : 'failed',
+    failedAllPerfectnessRuns.length === 0 ? 'passed' : 'failed',
     {
       errorSummary:
-        failedPerfectnessRuns.length === 0
+        failedAllPerfectnessRuns.length === 0
           ? undefined
-          : `${failedPerfectnessRuns.length} perfectness module(s) failed`,
+          : `${failedAllPerfectnessRuns.length} perfectness module(s) failed`,
       metadata: {
         durationMs: Date.now() - perfectnessStart,
-        moduleCount: 28,
-        failedModules: failedPerfectnessRuns.length,
+        moduleCount: allPerfectnessRuns.length,
+        failedModules: failedAllPerfectnessRuns.length,
       },
     },
   );

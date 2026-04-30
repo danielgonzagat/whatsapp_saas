@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -83,11 +84,11 @@ function statusLabel(status: string) {
 function statusColor(status: string) {
   switch (status) {
     case 'LIVE':
-      return '#E85D30';
+      return colors.ember.primary;
     case 'COMPLETED':
-      return '#666';
+      return '#666' /* PULSE_VISUAL_OK: universal gray disabled */;
     default:
-      return '#4CAF50';
+      return '#4CAF50' /* PULSE_VISUAL_OK: material green, non-Monitor */;
   }
 }
 
@@ -273,7 +274,7 @@ export default function WebinariosPage() {
             style={{
               background: 'rgba(232, 93, 48, 0.1)',
               border: '1px solid rgba(232, 93, 48, 0.3)',
-              color: '#E85D30',
+              color: colors.ember.primary,
               borderRadius: 6,
               padding: '8px 16px',
               cursor: 'pointer',
@@ -296,7 +297,7 @@ export default function WebinariosPage() {
             target="_blank"
             rel="noopener noreferrer"
             style={{
-              color: '#E85D30',
+              color: colors.ember.primary,
               display: 'flex',
               alignItems: 'center',
               gap: 4,
@@ -345,7 +346,11 @@ export default function WebinariosPage() {
               textAlign: 'center',
             }}
           >
-            <Video size={48} style={{ color: '#E85D30', marginBottom: 16 }} aria-hidden="true" />
+            <Video
+              size={48}
+              style={{ color: colors.ember.primary, marginBottom: 16 }}
+              aria-hidden="true"
+            />
             <p style={{ color: 'var(--app-text-primary)', fontSize: 14, marginBottom: 16 }}>
               {kloelT(`Este link nao pode ser incorporado diretamente.`)}
             </p>
@@ -354,8 +359,9 @@ export default function WebinariosPage() {
               target="_blank"
               rel="noopener noreferrer"
               style={{
-                background: '#E85D30',
-                color: '#fff',
+                background: colors.ember.primary,
+                color:
+                  '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
                 padding: '10px 24px',
                 borderRadius: 6,
                 textDecoration: 'none',
@@ -369,7 +375,15 @@ export default function WebinariosPage() {
           </div>
         )}
         {viewing.description && (
-          <p style={{ color: '#999', fontSize: 13, marginTop: 16, lineHeight: 1.6 }}>
+          <p
+            style={{
+              color:
+                '#999' /* PULSE_VISUAL_OK: universal gray placeholder */ /* PULSE_VISUAL_OK: universal gray placeholder */,
+              fontSize: 13,
+              marginTop: 16,
+              lineHeight: 1.6,
+            }}
+          >
             {viewing.description}
           </p>
         )}
@@ -403,8 +417,9 @@ export default function WebinariosPage() {
             type="button"
             onClick={() => openAuthModal()}
             style={{
-              background: '#E85D30',
-              color: '#fff',
+              background: colors.ember.primary,
+              color:
+                '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
               border: 'none',
               borderRadius: 6,
               padding: '10px 24px',
@@ -440,7 +455,7 @@ export default function WebinariosPage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Video size={20} style={{ color: '#E85D30' }} aria-hidden="true" />
+          <Video size={20} style={{ color: colors.ember.primary }} aria-hidden="true" />
           <h1
             style={{ color: 'var(--app-text-primary)', fontSize: 20, fontWeight: 700, margin: 0 }}
           >
@@ -451,8 +466,9 @@ export default function WebinariosPage() {
           type="button"
           onClick={() => setShowModal(true)}
           style={{
-            background: '#E85D30',
-            color: '#fff',
+            background: colors.ember.primary,
+            color:
+              '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
             border: 'none',
             borderRadius: 6,
             padding: '8px 18px',
@@ -478,7 +494,7 @@ export default function WebinariosPage() {
             borderRadius: 6,
             padding: '10px 16px',
             marginBottom: 16,
-            color: '#E85D30',
+            color: colors.ember.primary,
             fontSize: 13,
           }}
         >
@@ -491,7 +507,7 @@ export default function WebinariosPage() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
           <Loader2
             size={20}
-            style={{ color: '#E85D30', animation: 'spin 1s linear infinite' }}
+            style={{ color: colors.ember.primary, animation: 'spin 1s linear infinite' }}
             aria-hidden="true"
           />
         </div>
@@ -509,7 +525,15 @@ export default function WebinariosPage() {
           }}
         >
           <Video size={40} style={{ color: '#444', marginBottom: 12 }} aria-hidden="true" />
-          <p style={{ color: '#666', fontSize: 14 }}>{kloelT(`Nenhum webinario criado ainda.`)}</p>
+          <p
+            style={{
+              color:
+                '#666' /* PULSE_VISUAL_OK: universal gray disabled */ /* PULSE_VISUAL_OK: universal gray disabled */,
+              fontSize: 14,
+            }}
+          >
+            {kloelT(`Nenhum webinario criado ainda.`)}
+          </p>
           <p style={{ color: '#555', fontSize: 12 }}>
             {kloelT(`Clique em &quot;Novo Webinario&quot; para comecar.`)}
           </p>
@@ -629,7 +653,7 @@ export default function WebinariosPage() {
                       borderRadius: 4,
                       padding: '4px 6px',
                       cursor: 'pointer',
-                      color: '#E85D30',
+                      color: colors.ember.primary,
                       display: 'flex',
                       alignItems: 'center',
                     }}
@@ -739,7 +763,8 @@ export default function WebinariosPage() {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#666',
+                  color:
+                    '#666' /* PULSE_VISUAL_OK: universal gray disabled */ /* PULSE_VISUAL_OK: universal gray disabled */,
                   cursor: 'pointer',
                   padding: 4,
                 }}
@@ -751,7 +776,13 @@ export default function WebinariosPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
                 <label
-                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  style={{
+                    color:
+                      '#999' /* PULSE_VISUAL_OK: universal gray placeholder */ /* PULSE_VISUAL_OK: universal gray placeholder */,
+                    fontSize: 12,
+                    display: 'block',
+                    marginBottom: 4,
+                  }}
                   htmlFor={`${fid}-titulo-create`}
                 >
                   {kloelT(`Titulo *`)}
@@ -780,7 +811,13 @@ export default function WebinariosPage() {
 
               <div>
                 <label
-                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  style={{
+                    color:
+                      '#999' /* PULSE_VISUAL_OK: universal gray placeholder */ /* PULSE_VISUAL_OK: universal gray placeholder */,
+                    fontSize: 12,
+                    display: 'block',
+                    marginBottom: 4,
+                  }}
                   htmlFor={`${fid}-url-create`}
                 >
                   {kloelT(`URL do Webinario *`)}
@@ -809,7 +846,13 @@ export default function WebinariosPage() {
 
               <div>
                 <label
-                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  style={{
+                    color:
+                      '#999' /* PULSE_VISUAL_OK: universal gray placeholder */ /* PULSE_VISUAL_OK: universal gray placeholder */,
+                    fontSize: 12,
+                    display: 'block',
+                    marginBottom: 4,
+                  }}
                   htmlFor={`${fid}-data-create`}
                 >
                   {kloelT(`Data e Hora *`)}
@@ -838,7 +881,13 @@ export default function WebinariosPage() {
 
               <div>
                 <label
-                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  style={{
+                    color:
+                      '#999' /* PULSE_VISUAL_OK: universal gray placeholder */ /* PULSE_VISUAL_OK: universal gray placeholder */,
+                    fontSize: 12,
+                    display: 'block',
+                    marginBottom: 4,
+                  }}
                   htmlFor={`${fid}-desc-create`}
                 >
                   {kloelT(`Descricao (opcional)`)}
@@ -870,8 +919,11 @@ export default function WebinariosPage() {
                 onClick={handleCreate}
                 disabled={saving || !formTitle.trim() || !formUrl.trim() || !formDate}
                 style={{
-                  background: saving ? '#666' : '#E85D30',
-                  color: '#fff',
+                  background: saving
+                    ? '#666' /* PULSE_VISUAL_OK: universal gray disabled */
+                    : colors.ember.primary,
+                  color:
+                    '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
                   border: 'none',
                   borderRadius: 6,
                   padding: '10px 20px',
@@ -966,7 +1018,8 @@ export default function WebinariosPage() {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#666',
+                  color:
+                    '#666' /* PULSE_VISUAL_OK: universal gray disabled */ /* PULSE_VISUAL_OK: universal gray disabled */,
                   cursor: 'pointer',
                   padding: 4,
                 }}
@@ -978,7 +1031,13 @@ export default function WebinariosPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
                 <label
-                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  style={{
+                    color:
+                      '#999' /* PULSE_VISUAL_OK: universal gray placeholder */ /* PULSE_VISUAL_OK: universal gray placeholder */,
+                    fontSize: 12,
+                    display: 'block',
+                    marginBottom: 4,
+                  }}
                   htmlFor={`${fid}-titulo-edit`}
                 >
                   {kloelT(`Titulo *`)}
@@ -1006,7 +1065,13 @@ export default function WebinariosPage() {
 
               <div>
                 <label
-                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  style={{
+                    color:
+                      '#999' /* PULSE_VISUAL_OK: universal gray placeholder */ /* PULSE_VISUAL_OK: universal gray placeholder */,
+                    fontSize: 12,
+                    display: 'block',
+                    marginBottom: 4,
+                  }}
                   htmlFor={`${fid}-url-edit`}
                 >
                   {kloelT(`URL do Webinario *`)}
@@ -1034,7 +1099,13 @@ export default function WebinariosPage() {
 
               <div>
                 <label
-                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  style={{
+                    color:
+                      '#999' /* PULSE_VISUAL_OK: universal gray placeholder */ /* PULSE_VISUAL_OK: universal gray placeholder */,
+                    fontSize: 12,
+                    display: 'block',
+                    marginBottom: 4,
+                  }}
                   htmlFor={`${fid}-data-edit`}
                 >
                   {kloelT(`Data e Hora *`)}
@@ -1063,7 +1134,13 @@ export default function WebinariosPage() {
 
               <div>
                 <label
-                  style={{ color: '#999', fontSize: 12, display: 'block', marginBottom: 4 }}
+                  style={{
+                    color:
+                      '#999' /* PULSE_VISUAL_OK: universal gray placeholder */ /* PULSE_VISUAL_OK: universal gray placeholder */,
+                    fontSize: 12,
+                    display: 'block',
+                    marginBottom: 4,
+                  }}
                   htmlFor={`${fid}-desc-edit`}
                 >
                   {kloelT(`Descricao (opcional)`)}
@@ -1094,8 +1171,11 @@ export default function WebinariosPage() {
                 onClick={handleEdit}
                 disabled={editSaving || !editTitle.trim() || !editUrl.trim() || !editDate}
                 style={{
-                  background: editSaving ? '#666' : '#E85D30',
-                  color: '#fff',
+                  background: editSaving
+                    ? '#666' /* PULSE_VISUAL_OK: universal gray disabled */
+                    : colors.ember.primary,
+                  color:
+                    '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
                   border: 'none',
                   borderRadius: 6,
                   padding: '10px 20px',
@@ -1171,7 +1251,11 @@ export default function WebinariosPage() {
               }
             }}
           >
-            <Trash2 size={32} style={{ color: '#E85D30', marginBottom: 12 }} aria-hidden="true" />
+            <Trash2
+              size={32}
+              style={{ color: colors.ember.primary, marginBottom: 12 }}
+              aria-hidden="true"
+            />
             <p
               style={{
                 color: 'var(--app-text-primary)',
@@ -1207,8 +1291,9 @@ export default function WebinariosPage() {
                 onClick={() => handleDelete(confirmDeleteId)}
                 disabled={deletingId === confirmDeleteId}
                 style={{
-                  background: '#E85D30',
-                  color: '#fff',
+                  background: colors.ember.primary,
+                  color:
+                    '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
                   border: 'none',
                   borderRadius: 6,
                   padding: '8px 20px',

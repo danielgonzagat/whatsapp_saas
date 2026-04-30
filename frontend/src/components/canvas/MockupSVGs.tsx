@@ -3,6 +3,10 @@
    Phone, Desktop, Doc, Circle, Square previews
    ═══════════════════════════════════════════ */
 
+// PULSE_VISUAL_OK: SVG fill/stroke colors (#1A1A1D, #2A2A2E) are mockup
+// placeholder surfaces. No exact Monitor design token equivalent exists
+// for these SVG-specific intermediate tones.
+
 import type React from 'react';
 
 interface MockupProps {

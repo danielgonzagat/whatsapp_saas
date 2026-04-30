@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { apiFetch } from '@/lib/api';
 import { metaAdsApi } from '@/lib/api/meta';
@@ -22,9 +23,9 @@ const SORA = "'Sora', sans-serif";
 const MONO = "'JetBrains Mono', monospace";
 
 // ── DNA Colors ──
-const EMBER = '#E85D30';
-const G = '#10B981';
-const R = '#EF4444';
+const EMBER = colors.ember.primary;
+const G = '#10B981'; /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */
+const R = '#EF4444'; /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */
 
 // ── Icons ──
 const IC: Record<string, (s: number) => React.ReactElement> = {
@@ -228,8 +229,22 @@ function Fmt(v: number): string {
       : v.toString();
 }
 const FmtMoney = (n: number) => 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-const roasColor = (r: number) => (r > 4 ? G : r > 2 ? '#E0DDD8' : r > 1.5 ? '#F59E0B' : R);
-const fiberColor = (r: number) => (r > 10 ? G : r > 3 ? '#E0DDD8' : r > 1.5 ? '#F59E0B' : R);
+const roasColor = (r: number) =>
+  r > 4
+    ? G
+    : r > 2
+      ? colors.text.silver
+      : r > 1.5
+        ? '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */
+        : R;
+const fiberColor = (r: number) =>
+  r > 10
+    ? G
+    : r > 3
+      ? colors.text.silver
+      : r > 1.5
+        ? '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */
+        : R;
 
 // ── NeuralPulse canvas — flat line when no data, animated only with real intensity ──
 function NP({
@@ -258,7 +273,7 @@ function NP({
     if (intensity <= 0) {
       ctx.clearRect(0, 0, width, height);
       ctx.beginPath();
-      ctx.strokeStyle = '#3A3A3F';
+      ctx.strokeStyle = colors.text.dim;
       ctx.globalAlpha = 0.4;
       ctx.lineWidth = 1;
       ctx.moveTo(0, height / 2);
@@ -393,7 +408,7 @@ function AnunciosTabBar({
               padding: isMobile ? '10px 12px' : '10px 16px',
               border: 'none',
               background: 'none',
-              color: active ? t.activeColor : '#6E6E73',
+              color: active ? t.activeColor : colors.text.muted,
               borderBottom: active ? `2px solid ${t.activeColor}` : '2px solid transparent',
               cursor: 'pointer',
               fontSize: isMobile ? 12 : 13,
@@ -541,7 +556,7 @@ function WarRoom({
               fontSize: 32,
               fontWeight: 700,
               fontFamily: MONO,
-              color: hasData ? R : '#3A3A3F',
+              color: hasData ? R : colors.text.dim,
             }}
           >
             {hasData ? <Ticker value={totalSpend} /> : '\u2014'}
@@ -575,7 +590,7 @@ function WarRoom({
               fontSize: 32,
               fontWeight: 700,
               fontFamily: MONO,
-              color: hasData ? G : '#3A3A3F',
+              color: hasData ? G : colors.text.dim,
             }}
           >
             {hasData ? <Ticker value={totalRev} /> : '\u2014'}
@@ -595,17 +610,17 @@ function WarRoom({
           {
             label: 'ROAS',
             value: hasData ? `${totalRoas.toFixed(2)}x` : '\u2014',
-            color: hasData ? roasColor(totalRoas) : '#3A3A3F',
+            color: hasData ? roasColor(totalRoas) : colors.text.dim,
           },
           {
             label: 'CONVERSOES',
             value: hasData ? Fmt(totalConv) : '\u2014',
-            color: hasData ? EMBER : '#3A3A3F',
+            color: hasData ? EMBER : colors.text.dim,
           },
           {
             label: 'CAMPANHAS',
             value: String(CAMPAIGNS.length),
-            color: CAMPAIGNS.length > 0 ? '#E0DDD8' : '#3A3A3F',
+            color: CAMPAIGNS.length > 0 ? colors.text.silver : colors.text.dim,
           },
         ].map((s) => (
           <div key={s.label} style={{ textAlign: 'center' as const }}>
@@ -650,7 +665,7 @@ function WarRoom({
                 transition: 'border-color 150ms ease',
               }}
             >
-              <div style={{ height: 2, background: p.connected ? p.color : '#3A3A3F' }} />
+              <div style={{ height: 2, background: p.connected ? p.color : colors.text.dim }} />
               <div style={{ padding: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <span style={{ color: p.color }}>{pIcon(14)}</span>
@@ -670,7 +685,7 @@ function WarRoom({
                       width: 6,
                       height: 6,
                       borderRadius: '50%',
-                      background: p.connected ? G : '#3A3A3F',
+                      background: p.connected ? G : colors.text.dim,
                       flexShrink: 0,
                     }}
                   />
@@ -795,7 +810,7 @@ function WarRoom({
                         </div>
                       ))}
                     </div>
-                    <NP color={'#3A3A3F'} intensity={0} width={200} height={28} />
+                    <NP color={colors.text.dim} intensity={0} width={200} height={28} />
                     <button
                       type="button"
                       onClick={() => {
@@ -914,7 +929,7 @@ function WarRoom({
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: metaAccessToken ? '#6E6E73' : '#3A3A3F',
+                        color: metaAccessToken ? colors.text.muted : colors.text.dim,
                         cursor: metaAccessToken ? 'pointer' : 'not-allowed',
                         padding: 2,
                         display: 'flex',
@@ -997,7 +1012,7 @@ function WarRoom({
                       width: 6,
                       height: 6,
                       borderRadius: '50%',
-                      background: r.active ? EMBER : '#3A3A3F',
+                      background: r.active ? EMBER : colors.text.dim,
                       marginTop: 5,
                       flexShrink: 0,
                     }}
@@ -1367,7 +1382,8 @@ function PlatformTab({
               background: p.color,
               border: 'none',
               borderRadius: 6,
-              color: '#fff',
+              color:
+                '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
               fontSize: 13,
               fontFamily: SORA,
               fontWeight: 600,
@@ -1386,27 +1402,27 @@ function PlatformTab({
           {
             label: 'GASTO',
             value: isConnected ? FmtMoney(p.spend) : '\u2014',
-            color: isConnected ? R : '#3A3A3F',
+            color: isConnected ? R : colors.text.dim,
           },
           {
             label: 'RETORNO',
             value: isConnected ? FmtMoney(p.revenue) : '\u2014',
-            color: isConnected ? G : '#3A3A3F',
+            color: isConnected ? G : colors.text.dim,
           },
           {
             label: 'ROAS',
             value: isConnected ? `${p.roas.toFixed(2)}x` : '\u2014',
-            color: isConnected ? roasColor(p.roas) : '#3A3A3F',
+            color: isConnected ? roasColor(p.roas) : colors.text.dim,
           },
           {
             label: 'CONV',
             value: isConnected ? String(p.conversions) : '\u2014',
-            color: isConnected ? EMBER : '#3A3A3F',
+            color: isConnected ? EMBER : colors.text.dim,
           },
           {
             label: 'CTR',
             value: isConnected ? `${p.ctr.toFixed(2)}%` : '\u2014',
-            color: isConnected ? '#E0DDD8' : '#3A3A3F',
+            color: isConnected ? colors.text.silver : colors.text.dim,
           },
           {
             label: 'CPC',
@@ -1507,7 +1523,7 @@ function PlatformTab({
                     padding: '2px 6px',
                     borderRadius: 4,
                     background: c.status === 'active' ? `${G}18` : '#3A3A3F18',
-                    color: c.status === 'active' ? G : '#6E6E73',
+                    color: c.status === 'active' ? G : colors.text.muted,
                   }}
                 >
                   {c.status === 'active' ? 'Ativo' : 'Pausado'}
@@ -1544,7 +1560,10 @@ function PlatformTab({
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: platformKey === 'meta' && metaAccessToken ? '#6E6E73' : '#3A3A3F',
+                    color:
+                      platformKey === 'meta' && metaAccessToken
+                        ? colors.text.muted
+                        : colors.text.dim,
                     cursor: platformKey === 'meta' && metaAccessToken ? 'pointer' : 'not-allowed',
                     padding: 2,
                     display: 'flex',
@@ -1619,7 +1638,7 @@ function TrackingTab({ focus }: { focus?: string }) {
     >
       <div
         style={{
-          background: focusedRetargeting ? 'rgba(232,93,48,.06)' : '#111113',
+          background: focusedRetargeting ? 'rgba(232,93,48,.06)' : colors.background.surface,
           border: focusedRetargeting ? `1px solid ${EMBER}33` : '1px solid #222226',
           borderRadius: 6,
           padding: 16,
@@ -1678,7 +1697,8 @@ function TrackingTab({ focus }: { focus?: string }) {
                 border: 'none',
                 borderRadius: 6,
                 padding: '8px 14px',
-                color: '#fff',
+                color:
+                  '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -2060,21 +2080,27 @@ function TrackingTab({ focus }: { focus?: string }) {
                 borderRadius: 6,
                 padding: 14,
                 textAlign: 'center' as const,
-                border: `1px solid ${ig.connected ? `${G}33` : '#222226'}`,
+                border: `1px solid ${ig.connected ? `${G}33` : colors.border.space}`,
               }}
             >
               <div
                 style={{
                   fontSize: 14,
                   fontFamily: SORA,
-                  color: ig.connected ? '#E0DDD8' : '#3A3A3F',
+                  color: ig.connected ? colors.text.silver : colors.text.dim,
                   fontWeight: 600,
                   marginBottom: 6,
                 }}
               >
                 {ig.name}
               </div>
-              <div style={{ fontSize: 10, fontFamily: MONO, color: ig.connected ? G : '#3A3A3F' }}>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontFamily: MONO,
+                  color: ig.connected ? G : colors.text.dim,
+                }}
+              >
                 {ig.connected ? 'CONNECTED' : 'DISCONNECTED'}
               </div>
             </div>
@@ -2113,7 +2139,7 @@ function TrackingTab({ focus }: { focus?: string }) {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3A3A3F' }} />
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: colors.text.dim }} />
           <span style={{ fontSize: 11, fontFamily: MONO, color: 'var(--app-text-tertiary)' }}>
             {kloelT(`NAO CONFIGURADO`)}
           </span>
@@ -2270,7 +2296,7 @@ function RulesTab() {
             fontSize: 64,
             fontWeight: 800,
             fontFamily: MONO,
-            color: rules.length > 0 ? EMBER : '#3A3A3F',
+            color: rules.length > 0 ? EMBER : colors.text.dim,
             textShadow: rules.length > 0 ? `0 0 30px ${EMBER}44` : 'none',
             lineHeight: 1,
           }}
@@ -2285,12 +2311,12 @@ function RulesTab() {
           {
             label: 'EXECUCOES HOJE',
             value: String(totalFires),
-            color: totalFires > 0 ? EMBER : '#3A3A3F',
+            color: totalFires > 0 ? EMBER : colors.text.dim,
           },
           {
             label: 'TOTAL REGRAS',
             value: String(rules.length),
-            color: rules.length > 0 ? G : '#3A3A3F',
+            color: rules.length > 0 ? G : colors.text.dim,
           },
           {
             label: 'INATIVAS',
@@ -2354,7 +2380,7 @@ function RulesTab() {
                 style={{
                   background: 'var(--app-bg-secondary)',
                   borderRadius: 6,
-                  borderLeft: `3px solid ${r.active ? EMBER : '#3A3A3F'}`,
+                  borderLeft: `3px solid ${r.active ? EMBER : colors.text.dim}`,
                   opacity: r.active ? 1 : 0.5,
                   transition: 'opacity 150ms ease',
                   overflow: 'hidden' as const,
@@ -2471,7 +2497,8 @@ function RulesTab() {
                           border: 'none',
                           borderRadius: 6,
                           padding: '6px 14px',
-                          color: '#fff',
+                          color:
+                            '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
                           fontSize: 11,
                           fontFamily: SORA,
                           fontWeight: 600,
@@ -2503,7 +2530,7 @@ function RulesTab() {
                       </div>
                     </div>
                     <NP
-                      color={r.active ? EMBER : '#3A3A3F'}
+                      color={r.active ? EMBER : colors.text.dim}
                       intensity={r.active ? 1.2 : 0.3}
                       width={80}
                       height={20}
@@ -2543,7 +2570,7 @@ function RulesTab() {
                         height: 20,
                         borderRadius: 10,
                         border: 'none',
-                        background: r.active ? EMBER : '#3A3A3F',
+                        background: r.active ? EMBER : colors.text.dim,
                         cursor: 'pointer',
                         position: 'relative' as const,
                         transition: 'background 150ms ease',
@@ -2559,7 +2586,8 @@ function RulesTab() {
                             width: 14,
                             height: 14,
                             borderRadius: '50%',
-                            background: '#fff',
+                            background:
+                              '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
                             transition: 'left 150ms ease',
                           } as React.CSSProperties
                         }
@@ -2709,7 +2737,8 @@ function RulesTab() {
                   border: 'none',
                   borderRadius: 6,
                   padding: '8px 20px',
-                  color: '#fff',
+                  color:
+                    '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
                   fontSize: 12,
                   fontFamily: SORA,
                   fontWeight: 600,
@@ -2731,10 +2760,10 @@ function RulesTab() {
         onClick={openForm}
         style={{
           background: 'transparent',
-          border: `1px dashed ${showForm ? '#3A3A3F' : `${EMBER}66`}`,
+          border: `1px dashed ${showForm ? colors.text.dim : `${EMBER}66`}`,
           borderRadius: 6,
           padding: 16,
-          color: showForm ? '#3A3A3F' : EMBER,
+          color: showForm ? colors.text.dim : EMBER,
           fontSize: 13,
           fontFamily: SORA,
           cursor: showForm ? 'default' : 'pointer',

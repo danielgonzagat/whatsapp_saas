@@ -565,6 +565,7 @@ export class KloelController {
   }
 
   /** Search threads. */
+  // PULSE_TODO: verify if still needed, no caller detected
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads/search')
   @Get('conversations/search')
@@ -651,6 +652,7 @@ export class KloelController {
   }
 
   /** Add thread message. */
+  // PULSE_TODO: verify if still needed, no caller detected
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('threads/:id/messages')
   async addThreadMessage(
@@ -880,6 +882,7 @@ export class KloelController {
    * Exportar dados pessoais (LGPD portabilidade - Art. 18)
    * Retorna contatos, mensagens e vendas do workspace
    */
+  // PULSE_TODO: verify if still needed, no caller detected
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('data/export')
   async exportData(@Request() req: AuthenticatedRequest) {

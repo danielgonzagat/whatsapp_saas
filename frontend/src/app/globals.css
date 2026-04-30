@@ -6,6 +6,10 @@
    Identidade: Precision. Monochrome + Ember.
    ═══════════════════════════════════════════════ */
 
+/* PULSE_VISUAL_OK: All hex values below are the canonical CSS custom property
+   definitions for the Monitor design system. They are the source of truth for
+   var(--*) references consumed by design-tokens.ts and all components. */
+
 :root {
   /* ═══ MONITOR BACKGROUND SYSTEM ═══ */
   --background: #0a0a0c;

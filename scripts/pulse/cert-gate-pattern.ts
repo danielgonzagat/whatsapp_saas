@@ -24,7 +24,8 @@ import {
   acceptedGatePass,
   summarizeExternalSignalIds,
 } from './cert-helpers';
-import { RECOVERY_PATTERNS, OBSERVABILITY_PATTERNS } from './cert-constants';
+import { CERTIFICATION_FINDING_PREDICATES } from './cert-constants';
+import type { CertificationFindingPredicate } from './cert-constants';
 import { gateFail } from './cert-gate-evaluators';
 
 export function evaluatePatternGate(
@@ -33,12 +34,19 @@ export function evaluatePatternGate(
   failReason: string,
   health: PulseHealth,
   manifest: PulseManifest | null,
-  patterns: RegExp[],
+  predicate: CertificationFindingPredicate | RegExp[],
   codacyIssues: PulseCodacyIssue[] = [],
 ): PulseGateResult {
+  const legacyPatterns = Array.isArray(predicate) ? predicate : predicate.legacyPatterns;
+  const objective = Array.isArray(predicate)
+    ? 'dynamic certification objective'
+    : predicate.objective;
+  const evidenceRequirement = Array.isArray(predicate)
+    ? 'evidence must satisfy the active finding predicate'
+    : predicate.evidenceRequirement;
   const blockingBreaks = filterBlockingBreaks(
     health.breaks,
-    (item) => matchesAny(item.type, patterns),
+    (item) => matchesAny(item.type, legacyPatterns),
     manifest,
   );
 
@@ -51,7 +59,7 @@ export function evaluatePatternGate(
   }
 
   return gateFail(
-    `${failReason} Blocking types: ${[
+    `${failReason} Objective: ${objective}. Evidence requirement: ${evidenceRequirement}. Blocking finding predicates: ${[
       ...summarizeBreakTypes(blockingBreaks),
       ...summarizeCodacyFiles(codacyIssues),
     ].join(', ')}.`,
@@ -136,10 +144,10 @@ export function evaluateRecoveryGate(
   return evaluatePatternGate(
     'recoveryPass',
     'Recovery and rollback requirements have no blocking findings in this run.',
-    'Recovery certification found blocking findings.',
+    'Recovery certification objective found blocking evidence.',
     health,
     manifest,
-    RECOVERY_PATTERNS,
+    CERTIFICATION_FINDING_PREDICATES.recoveryPass,
   );
 }
 
@@ -157,10 +165,10 @@ export function evaluateObservabilityGate(
   return evaluatePatternGate(
     'observabilityPass',
     'Observability and audit requirements have no blocking findings in this run.',
-    'Observability certification found blocking findings.',
+    'Observability certification objective found blocking evidence.',
     health,
     manifest,
-    OBSERVABILITY_PATTERNS,
+    CERTIFICATION_FINDING_PREDICATES.observabilityPass,
   );
 }
 

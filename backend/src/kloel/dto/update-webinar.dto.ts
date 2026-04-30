@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsDateString, IsOptional, IsString, MaxLength } from 'class-validator';
 
 /** Update webinar dto. */
 export class UpdateWebinarDto {
@@ -16,7 +16,7 @@ export class UpdateWebinarDto {
 
   /** Date property. */
   @IsOptional()
-  @IsString()
+  @IsDateString()
   @MaxLength(255)
   date?: string;
 

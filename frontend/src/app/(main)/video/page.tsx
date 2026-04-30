@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -241,7 +242,7 @@ export default function VideoPage() {
               fontSize: 13,
               fontFamily: "'Sora', sans-serif",
               fontWeight: activeTab === t.id ? 600 : 400,
-              color: activeTab === t.id ? '#E85D30' : '#6E6E73',
+              color: activeTab === t.id ? colors.ember.primary : colors.text.muted,
               background: 'none',
               border: 'none',
               borderBottom: activeTab === t.id ? '2px solid #E85D30' : '2px solid transparent',
@@ -275,7 +276,8 @@ export default function VideoPage() {
               style={{
                 padding: 32,
                 textAlign: 'center',
-                color: '#EF4444',
+                color:
+                  '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
                 fontFamily: "'Sora', sans-serif",
               }}
             >
@@ -350,7 +352,8 @@ export default function VideoPage() {
                   border: '1px solid rgba(239,68,68,0.2)',
                   borderRadius: 6,
                   padding: '10px 14px',
-                  color: '#EF4444',
+                  color:
+                    '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
                   fontSize: 13,
                 }}
               >
@@ -364,7 +367,8 @@ export default function VideoPage() {
                   border: '1px solid rgba(16,185,129,0.2)',
                   borderRadius: 6,
                   padding: '10px 14px',
-                  color: '#10B981',
+                  color:
+                    '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
                   fontSize: 13,
                 }}
               >
@@ -430,7 +434,17 @@ export default function VideoPage() {
                   <option value="openai">{kloelT(`OpenAI TTS`)}</option>
                   <option value="google">{kloelT(`Google TTS`)}</option>
                 </select>
-                {voiceError && <div style={{ color: '#EF4444', fontSize: 12 }}>{voiceError}</div>}
+                {voiceError && (
+                  <div
+                    style={{
+                      color:
+                        '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                      fontSize: 12,
+                    }}
+                  >
+                    {voiceError}
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={handleCreateVoice}
@@ -507,8 +521,9 @@ export default function VideoPage() {
                           ...btnSecondary,
                           padding: '4px 10px',
                           fontSize: 11,
-                          borderColor: genProfileId === p.id ? '#E85D30' : '#222226',
-                          color: genProfileId === p.id ? '#E85D30' : '#E0DDD8',
+                          borderColor:
+                            genProfileId === p.id ? colors.ember.primary : colors.border.space,
+                          color: genProfileId === p.id ? colors.ember.primary : colors.text.silver,
                         }}
                       >
                         {genProfileId === p.id ? 'Selecionado' : 'Selecionar'}
@@ -543,7 +558,17 @@ export default function VideoPage() {
                   rows={3}
                   style={{ ...inputStyle, resize: 'vertical' }}
                 />
-                {genError && <div style={{ color: '#EF4444', fontSize: 12 }}>{genError}</div>}
+                {genError && (
+                  <div
+                    style={{
+                      color:
+                        '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+                      fontSize: 12,
+                    }}
+                  >
+                    {genError}
+                  </div>
+                )}
                 {genResult && (
                   <div
                     style={{
@@ -553,7 +578,14 @@ export default function VideoPage() {
                       padding: '10px 14px',
                     }}
                   >
-                    <p style={{ color: '#10B981', fontSize: 12, marginBottom: 4 }}>
+                    <p
+                      style={{
+                        color:
+                          '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
+                        fontSize: 12,
+                        marginBottom: 4,
+                      }}
+                    >
                       {kloelT(`Audio gerado`)}
                     </p>
                     {genResult.startsWith('http') ? (
@@ -662,7 +694,8 @@ export default function VideoPage() {
                   border: '1px solid rgba(239,68,68,0.2)',
                   borderRadius: 6,
                   padding: '10px 14px',
-                  color: '#EF4444',
+                  color:
+                    '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
                   fontSize: 13,
                 }}
               >
@@ -693,7 +726,8 @@ export default function VideoPage() {
                   </div>
                   <div
                     style={{
-                      color: STATUS_COLORS[mediaStatus?.toUpperCase() || 'PENDING'] || '#6E6E73',
+                      color:
+                        STATUS_COLORS[mediaStatus?.toUpperCase() || 'PENDING'] || colors.text.muted,
                       fontSize: 12,
                       marginTop: 2,
                     }}

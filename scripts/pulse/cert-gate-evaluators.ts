@@ -344,7 +344,7 @@ export function evaluateRuntimeGate(
 
   if (evidence.runtime.blockingBreakTypes.length > 0) {
     return gateFail(
-      `Runtime evidence found blocking break types: ${evidence.runtime.blockingBreakTypes.join(', ')}.`,
+      `Runtime evidence found blocking runtime events: ${evidence.runtime.blockingBreakTypes.join(', ')}.`,
       'product_failure',
     );
   }

@@ -9,6 +9,7 @@
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { readFileSafe, walkFiles } from './utils';
+import { discoverDesignTokens, isDiscoveredDesignColor } from '../design-token-discovery';
 
 const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx', '.css', '.scss'];
 const SKIP_FILE_RE =
@@ -22,31 +23,9 @@ const CHAT_FILE_HINT_RE =
   /(chat|inbox|conversation|composer|assistant|thread|onboarding-chat|kloel-message|kloel-chat)/i;
 const SPINNER_RE = /animate-spin|animation\s*:\s*['"`][^'"`]*spin/i;
 const SPINNER_ICON_RE = /Loader2|RefreshCw|RefreshCcw/;
-const ALLOWED_HEX_COLORS = new Set([
-  '#0A0A0A',
-  '#0A0A0C',
-  '#0F0F0F',
-  '#141414',
-  '#1A1A1A',
-  '#212121',
-  '#262626',
-  '#111113',
-  '#19191C',
-  '#222226',
-  '#333338',
-  '#E0DDD8',
-  '#6E6E73',
-  '#3A3A3F',
-  '#E85D30',
-  '#F5F5F5',
-]);
 
 function isSkippable(relPath: string): boolean {
   return SKIP_FILE_RE.test(relPath);
-}
-
-function normalizeHex(value: string): string {
-  return value.toUpperCase();
 }
 
 function pushLimited(
@@ -69,6 +48,7 @@ export function checkVisualDesign(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
   const perFileLimits = new Map<string, number>();
   const frontendFiles = walkFiles(config.frontendDir, SOURCE_EXTENSIONS);
+  const designTokens = discoverDesignTokens(config.rootDir);
 
   for (const file of frontendFiles) {
     const relFile = path.relative(config.rootDir, file);
@@ -88,7 +68,7 @@ export function checkVisualDesign(config: PulseConfig): Break[] {
 
       const hexMatches = line.match(HEX_COLOR_RE) || [];
       const violatingHexes = hexMatches.filter(
-        (value) => !ALLOWED_HEX_COLORS.has(normalizeHex(value)),
+        (value) => !isDiscoveredDesignColor(value, designTokens),
       );
       if (violatingHexes.length > 0) {
         pushLimited(
@@ -100,8 +80,10 @@ export function checkVisualDesign(config: PulseConfig): Break[] {
             severity: 'medium',
             file: relFile,
             line: index + 1,
-            description: 'Hardcoded hex color outside the approved visual token set.',
-            detail: `Replace raw colors ${violatingHexes.join(', ')} with design tokens/CSS variables so the screen converges to the Kloel visual contract.`,
+            source: 'design-token-discovery',
+            description:
+              'Raw color literal has no discovered design-token evidence in project token sources.',
+            detail: `Colors ${violatingHexes.join(', ')} were not discovered in CSS variables, Tailwind theme, token files, theme files, or component primitive styles scanned by PULSE.`,
           },
           5,
         );

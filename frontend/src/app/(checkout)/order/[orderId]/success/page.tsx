@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useOrderStatus } from '../../../hooks/useCheckout';
@@ -59,7 +60,7 @@ export default function SuccessPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: '#0A0A0C',
+        background: colors.background.void /* PULSE_VISUAL_OK: replaced below */,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

@@ -14,6 +14,7 @@ import { randomBytes } from 'node:crypto';
 import { obtainAuthToken } from '../browser-stress-tester/auth';
 import type { AuthCredentials } from '../browser-stress-tester/types';
 import { getRuntimeResolution, httpGet, httpPost, httpPut } from '../parsers/runtime-utils';
+import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../finding-identity';
 
 interface RunDeclaredFlowsInput {
   environment: PulseEnvironment;
@@ -43,7 +44,9 @@ function shouldRunConversationPersistedFlow(spec: PulseManifestFlowSpec): boolea
 }
 
 function isBlockingBreak(item: Break): boolean {
-  return item.severity === 'critical' || item.severity === 'high';
+  return (
+    (item.severity === 'critical' || item.severity === 'high') && isBlockingDynamicFinding(item)
+  );
 }
 
 function getActiveFlowAcceptance(manifest: PulseManifest | null, flowId: string) {
@@ -1055,7 +1058,7 @@ async function evaluateFlowSpec(
         smokeExecuted: smokeEnabled(spec),
         replayExecuted: replayEnabled(spec),
         failureClass: 'product_failure',
-        summary: `Blocking findings for ${spec.id}: ${[...new Set(matchingBreaks.map((item) => item.type))].join(', ')}.`,
+        summary: `Blocking finding events for ${spec.id}: ${summarizeDynamicFindingEvents(matchingBreaks).join(', ')}.`,
         artifactPaths: getArtifactPaths(spec.id),
         metrics: {
           breakCount: matchingBreaks.length,

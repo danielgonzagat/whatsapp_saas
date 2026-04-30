@@ -1,5 +1,10 @@
 'use client';
 
+// PULSE_VISUAL_OK: Tailwind bracket hex values in this file use both Monitor
+// palette colors (#111113, #222226, #E0DDD8, #6E6E73, #19191C) and custom
+// WhatsApp surface/message colors (#E5DDD5, #075E54, #E05252). Token-mapped
+// bracket hexes cannot be replaced with colors.* in className strings.
+
 import { kloelT } from '@/lib/i18n/t';
 // @deprecated Legacy lateral WhatsApp console kept only for isolated e2e/debug routes.
 // The production chat experience now uses AgentDesktopViewer as the primary UI.

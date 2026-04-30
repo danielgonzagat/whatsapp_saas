@@ -114,6 +114,33 @@ describe('buildPathCoverageState terminal proof routing', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-path-proof-'));
     const coverage = buildPathCoverageState(rootDir, makeMatrix([makeMatrixPath()]));
     const entry = coverage.paths[0];
+    const proofPlan = JSON.parse(
+      fs.readFileSync(path.join(rootDir, '.pulse/current/PULSE_PATH_PROOF_TASKS.json'), 'utf8'),
+    ) as {
+      tasks: Array<{
+        pathId: string;
+        status: string;
+        coverageCountsAsObserved: boolean;
+      }>;
+    };
+    const proofEvidence = JSON.parse(
+      fs.readFileSync(path.join(rootDir, '.pulse/current/PULSE_PATH_PROOF_EVIDENCE.json'), 'utf8'),
+    ) as {
+      artifact: string;
+      generatedAt: string;
+      summary: {
+        totalTasks: number;
+        runnerResults: number;
+        observedEvidenceLinks: number;
+        missingResult: number;
+      };
+      tasks: Array<{
+        pathId: string;
+        disposition: string;
+        result: unknown;
+        coverageCountsAsObserved: boolean;
+      }>;
+    };
 
     expect(entry.classification).toBe('probe_blueprint_generated');
     expect(entry.terminalProof).toEqual(
@@ -130,6 +157,31 @@ describe('buildPathCoverageState terminal proof routing', () => {
     expect(entry.terminalProof.reason).toContain('generated probe blueprint');
     expect(coverage.summary.criticalBlueprintReady).toBe(1);
     expect(coverage.summary.criticalInferredGap).toBe(0);
+    expect(proofPlan.tasks[0]).toEqual(
+      expect.objectContaining({
+        pathId: 'matrix:path:critical-checkout',
+        status: 'planned',
+        coverageCountsAsObserved: false,
+      }),
+    );
+    expect(proofEvidence.artifact).toBe('PULSE_PATH_PROOF_EVIDENCE');
+    expect(proofEvidence.generatedAt).toBe(coverage.generatedAt);
+    expect(proofEvidence.summary).toEqual(
+      expect.objectContaining({
+        totalTasks: 1,
+        runnerResults: 0,
+        observedEvidenceLinks: 0,
+        missingResult: 1,
+      }),
+    );
+    expect(proofEvidence.tasks[0]).toEqual(
+      expect.objectContaining({
+        pathId: 'matrix:path:critical-checkout',
+        disposition: 'missing_result',
+        result: null,
+        coverageCountsAsObserved: false,
+      }),
+    );
   });
 
   it('routes customer synthetic missing evidence as actionable PULSE machine proof debt', () => {

@@ -11,6 +11,7 @@ import {
   normalizeCanonicalArtifactValue,
 } from './artifacts.queue';
 import { buildAutonomyCycleProof } from './artifacts.autonomy';
+import { buildFindingEventSurface } from './finding-event-surface';
 import type {
   PulseArtifactSnapshot,
   PulseMachineReadiness,
@@ -264,6 +265,7 @@ export function buildReport(
   const noOverclaimPass = snapshot.certification.gates.noOverclaimPass?.status === 'pass';
   const principalBlocker = snapshot.productVision.topBlockers[0] ?? 'none';
   const nextAction = decisionQueue[0]?.title ?? 'none';
+  const findingEventSurface = buildFindingEventSurface(snapshot.health.breaks, 8);
 
   lines.push('## PULSE VERDICT');
   lines.push('');
@@ -323,6 +325,9 @@ export function buildReport(
   lines.push(
     `- Structural parity gaps: total=${snapshot.parityGaps.summary.totalGaps}, critical=${snapshot.parityGaps.summary.criticalGaps}, high=${snapshot.parityGaps.summary.highGaps}`,
   );
+  lines.push(
+    `- Finding events: totalSignals=${findingEventSurface.totalBreaks}, uniqueEvents=${findingEventSurface.uniqueEvents}, observed=${findingEventSurface.truthModeCounts.observed}, confirmedStatic=${findingEventSurface.truthModeCounts.confirmed_static}, weakSignals=${findingEventSurface.truthModeCounts.weak_signal}`,
+  );
   lines.push(`- Codacy HIGH issues: ${snapshot.codacyEvidence.summary.highIssues}`);
   // GitNexus code graph status
   const gitnexusSignals = snapshot.externalSignalState.signals.filter(
@@ -333,6 +338,20 @@ export function buildReport(
   lines.push(
     `- External signals: total=${snapshot.externalSignalState.summary.totalSignals}, runtime=${snapshot.externalSignalState.summary.runtimeSignals}, change=${snapshot.externalSignalState.summary.changeSignals}, dependency=${snapshot.externalSignalState.summary.dependencySignals}, high-impact=${snapshot.externalSignalState.summary.highImpactSignals}`,
   );
+  lines.push('');
+  lines.push('## Dynamic Finding Events');
+  lines.push('');
+  lines.push(
+    '- Operational finding names are derived from evidence text, source, location and truth mode. Internal parser labels are compatibility metadata, not final truth.',
+  );
+  for (const event of findingEventSurface.topEvents) {
+    lines.push(
+      `- ${event.eventName}: count=${event.count}, truth=${event.truthMode}, action=${event.actionability}, falsePositiveRisk=${Math.round(event.falsePositiveRisk * 100)}%`,
+    );
+  }
+  if (findingEventSurface.topEvents.length === 0) {
+    lines.push('- No finding events detected.');
+  }
   lines.push('');
   lines.push('## Coverage Truth');
   lines.push('');
@@ -593,6 +612,12 @@ export function buildCertificate(
       parityGapsSummary: snapshot.parityGaps.summary,
       parityGaps: snapshot.parityGaps.gaps.slice(0, 20),
       productVision: snapshot.productVision,
+      findingValidationState: {
+        artifact: 'PULSE_FINDING_VALIDATION_STATE',
+        operationalIdentity: 'dynamic_finding_event',
+        internalBreakTypeIsOperationalIdentity: false,
+        eventSurface: buildFindingEventSurface(snapshot.health.breaks, 20),
+      },
       convergencePlan: {
         totalUnits: convergencePlan.summary.totalUnits,
         governedValidationUnits: convergencePlan.summary.humanRequiredUnits,

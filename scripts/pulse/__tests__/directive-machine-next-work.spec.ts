@@ -1,5 +1,8 @@
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { join } from 'path';
 import { describe, expect, it } from 'vitest';
 import {
+  buildPathProofSurfaceForDirective,
   buildPulseAutonomyProofDebtNextWork,
   buildPulseCertificationProofDebtNextWork,
   buildPulseMachineNextWork,
@@ -119,6 +122,125 @@ describe('buildPulseMachineNextWork', () => {
     );
 
     expect(work).toHaveLength(0);
+  });
+});
+
+describe('buildPathProofSurfaceForDirective', () => {
+  it('reads canonical path proof tasks and coverage into the directive surface', () => {
+    const previousCwd = process.cwd();
+    const tempRoot = join(previousCwd, '.pulse', 'tmp');
+    mkdirSync(tempRoot, { recursive: true });
+    const rootDir = mkdtempSync(join(tempRoot, 'directive-proof-'));
+
+    try {
+      mkdirSync(join(rootDir, '.pulse', 'current'), { recursive: true });
+      writeFileSync(
+        join(rootDir, '.pulse', 'current', 'PULSE_PATH_PROOF_TASKS.json'),
+        JSON.stringify({
+          generatedAt: '2026-04-29T22:00:00.000Z',
+          summary: {
+            terminalWithoutObservedEvidence: 1,
+            plannedTasks: 1,
+            executableTasks: 1,
+            humanRequiredTasks: 0,
+            notExecutableTasks: 0,
+          },
+          tasks: [
+            {
+              taskId: 'path-proof:function:opaque-path',
+              pathId: 'opaque-path',
+              capabilityId: null,
+              flowId: null,
+              mode: 'function',
+              status: 'planned',
+              executed: false,
+              coverageCountsAsObserved: false,
+              autonomousExecutionAllowed: true,
+              command: 'node scripts/pulse/run.js --guidance # validate opaque-path',
+              reason: 'Path has no observed proof.',
+              sourceStatus: 'inferred_only',
+              risk: 'high',
+              entrypoint: {
+                nodeId: 'node:opaque-path',
+                filePath: 'scripts/pulse/opaque-path.ts',
+                routePattern: null,
+                description: 'opaque machine path',
+              },
+              breakpoint: {
+                stage: 'entrypoint',
+                stepIndex: 0,
+                filePath: 'scripts/pulse/opaque-path.ts',
+                nodeId: 'node:opaque-path',
+                routePattern: null,
+                reason: 'Runtime evidence is absent.',
+                recovery: 'Run the generated proof command.',
+              },
+              expectedEvidence: [
+                { kind: 'runtime', required: true, reason: 'Runtime proof is required.' },
+              ],
+              artifactLinks: [
+                {
+                  artifactPath: '.pulse/current/PULSE_PATH_PROOF_TASKS.json',
+                  relationship: 'proof_task_plan',
+                },
+              ],
+            },
+          ],
+        }),
+      );
+      writeFileSync(
+        join(rootDir, '.pulse', 'current', 'PULSE_PATH_COVERAGE.json'),
+        JSON.stringify({
+          generatedAt: '2026-04-29T21:55:00.000Z',
+          summary: {
+            totalPaths: 2,
+            observedPass: 1,
+            observedFail: 0,
+            testGenerated: 1,
+            probeBlueprintGenerated: 1,
+            inferredOnly: 1,
+            criticalInferredOnly: 1,
+            criticalUnobserved: 1,
+            criticalBlueprintReady: 1,
+            criticalTerminalReasoned: 0,
+            criticalInferredGap: 0,
+            coveragePercent: 50,
+          },
+          paths: [],
+        }),
+      );
+
+      process.chdir(rootDir);
+      const surface = buildPathProofSurfaceForDirective(
+        makeReadiness(
+          [
+            {
+              id: 'critical_path_terminal',
+              status: 'fail',
+              reason: 'One path still needs proof.',
+              evidence: {},
+            },
+          ],
+          'NOT_READY',
+        ),
+      );
+
+      expect(surface.counts).toMatchObject({
+        plannedTasks: 1,
+        executableUnprovedTasks: 1,
+        criticalUnobservedPaths: 1,
+        criticalBlueprintReady: 1,
+        coveragePercent: 50,
+      });
+      expect(surface.executionMode).toBe('ai_safe');
+      expect(surface.topExecutableUnprovedTasks[0]).toMatchObject({
+        pathId: 'opaque-path',
+        validationCommand: 'node scripts/pulse/run.js --guidance # validate opaque-path',
+      });
+    } finally {
+      process.chdir(previousCwd);
+      rmSync(rootDir, { recursive: true, force: true });
+    }
   });
 });
 

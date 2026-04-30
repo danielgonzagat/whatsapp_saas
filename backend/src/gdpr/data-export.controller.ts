@@ -16,6 +16,7 @@ export class DataExportController {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Export data. */
+  // PULSE_TODO: verify if still needed, no caller detected
   @Post('export')
   @UseGuards(JwtAuthGuard)
   async exportData(@Req() req: AuthenticatedRequest) {

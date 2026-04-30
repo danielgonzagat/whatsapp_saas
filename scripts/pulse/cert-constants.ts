@@ -1,6 +1,7 @@
 /**
- * Constants used across certification modules.
- * Pattern arrays, gate ordering, tier definitions, and readiness criteria.
+ * Compatibility internals used by certification modules.
+ * Regex collections and default gate ordering are baseline-derived fallbacks,
+ * not a universal definition of product truth.
  */
 import type {
   Break,
@@ -48,6 +49,51 @@ export const OBSERVABILITY_PATTERNS = [
   /^AUDIT_DELETION_NO_LOG$/,
   /^AUDIT_ADMIN_NO_LOG$/,
 ];
+
+export interface CertificationFindingPredicate {
+  gateName: PulseGateName;
+  objective: string;
+  evidenceRequirement: string;
+  legacyPatterns: RegExp[];
+}
+
+export const CERTIFICATION_FINDING_PREDICATES = {
+  securityPass: {
+    gateName: 'securityPass',
+    objective: 'dynamic security certification objective',
+    evidenceRequirement:
+      'runtime, static, or external evidence must not expose blocking security predicates',
+    legacyPatterns: SECURITY_PATTERNS,
+  },
+  isolationPass: {
+    gateName: 'isolationPass',
+    objective: 'dynamic tenant-isolation certification objective',
+    evidenceRequirement:
+      'workspace and tenant evidence must not expose blocking isolation predicates',
+    legacyPatterns: ISOLATION_PATTERNS,
+  },
+  recoveryPass: {
+    gateName: 'recoveryPass',
+    objective: 'dynamic recovery certification objective',
+    evidenceRequirement:
+      'backup, rollback, deploy, and disaster-recovery evidence must be executable',
+    legacyPatterns: RECOVERY_PATTERNS,
+  },
+  performancePass: {
+    gateName: 'performancePass',
+    objective: 'dynamic performance certification objective',
+    evidenceRequirement:
+      'latency, scale, browser, and resource evidence must not expose blocking performance predicates',
+    legacyPatterns: PERFORMANCE_PATTERNS,
+  },
+  observabilityPass: {
+    gateName: 'observabilityPass',
+    objective: 'dynamic observability certification objective',
+    evidenceRequirement:
+      'audit, deletion, admin, and telemetry evidence must not expose blocking observability predicates',
+    legacyPatterns: OBSERVABILITY_PATTERNS,
+  },
+} satisfies Partial<Record<PulseGateName, CertificationFindingPredicate>>;
 
 export const RUNTIME_PATTERNS = [
   /^BUILD_/,
@@ -167,3 +213,18 @@ export const DEFAULT_FINAL_READINESS_CRITERIA: PulseManifestFinalReadinessCriter
   requireNoAcceptedCriticalScenarios: true,
   requireWorldStateConvergence: true,
 };
+
+export interface BaselineDerivedThreshold {
+  value: number;
+  source: 'baseline-derived';
+  evidenceRequirement: string;
+}
+
+export function getTypeIntegrityEscapeHatchThreshold(): BaselineDerivedThreshold {
+  return {
+    value: 5,
+    source: 'baseline-derived',
+    evidenceRequirement:
+      'type-integrity evidence must stay below the baseline-derived escape-hatch ceiling',
+  };
+}

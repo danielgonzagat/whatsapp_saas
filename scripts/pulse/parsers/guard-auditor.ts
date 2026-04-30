@@ -5,15 +5,13 @@ import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
 
 const HTTP_DECORATORS = ['@Get(', '@Post(', '@Put(', '@Patch(', '@Delete('];
-const MONEY_STATE_RE =
-  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
-const MUTATING_HTTP_DECORATOR_RE = /@(Post|Put|Patch|Delete)\s*\(/;
-const AUTH_TENANT_RE =
-  /workspaceId|tenantId|@Workspace|CurrentWorkspace|JwtAuthGuard|UseGuards|roles/i;
-
-function isHighRiskController(content: string): boolean {
-  return MONEY_STATE_RE.test(content) && MUTATING_HTTP_DECORATOR_RE.test(content);
-}
+const MUTATING_HTTP_DECORATOR_RE = /^@(Post|Put|Patch|Delete)\s*\(/;
+const EXTERNAL_INPUT_RE =
+  /@(Body|Param|Query|Headers|Req|Request|UploadedFile|UploadedFiles)\b|\b(req|request|body|params|query)\b/i;
+const DURABLE_MUTATION_RE =
+  /\b(?:prisma|repository|repo|model)\.[\w.]+\.(?:create|update|upsert|delete|deleteMany|updateMany)\s*\(|\b(?:save|insert|update|delete)\s*\(/i;
+const ABUSE_OR_AUTH_EVIDENCE_RE =
+  /@Throttle\s*\(|ThrottlerGuard|RateLimit|rateLimit|idempotency|Idempotency|csrf|captcha|turnstile|recaptcha|@UseGuards\s*\(|Guard\b|Policy\b|authorize|permission/i;
 
 function hasDecoratorInRange(lines: string[], from: number, to: number, pattern: RegExp): boolean {
   for (let i = from; i < Math.min(to, lines.length); i++) {
@@ -22,6 +20,30 @@ function hasDecoratorInRange(lines: string[], from: number, to: number, pattern:
     }
   }
   return false;
+}
+
+function routeWindow(lines: string[], decoratorLine: number, blockEndLine: number): string {
+  const nextDecoratorLine = lines.findIndex(
+    (line, index) =>
+      index > decoratorLine &&
+      index < blockEndLine &&
+      /^@(Get|Post|Put|Patch|Delete)\s*\(/.test(line.trim()),
+  );
+  const endLine =
+    nextDecoratorLine === -1 ? Math.min(blockEndLine, decoratorLine + 40) : nextDecoratorLine;
+  return lines.slice(decoratorLine, endLine).join('\n');
+}
+
+function hasWeakBehavioralMutationSignal(
+  lines: string[],
+  decoratorLine: number,
+  blockEndLine: number,
+): boolean {
+  if (!MUTATING_HTTP_DECORATOR_RE.test(lines[decoratorLine]?.trim() ?? '')) {
+    return false;
+  }
+  const window = routeWindow(lines, decoratorLine, blockEndLine);
+  return EXTERNAL_INPUT_RE.test(window) && DURABLE_MUTATION_RE.test(window);
 }
 
 /**
@@ -80,8 +102,6 @@ export function checkGuards(config: PulseConfig): Break[] {
 
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
-    const highRiskMutatingController = isHighRiskController(content);
-    const hasTenantOrAuthContext = AUTH_TENANT_RE.test(content);
 
     // Find all @Controller blocks and their class-level guards / @Public / @Throttle
     interface ControllerBlock {
@@ -149,6 +169,12 @@ export function checkGuards(config: PulseConfig): Break[] {
         let methodHasGuard = hasDecoratorInRange(lines, scanFrom, i, /@UseGuards\s*\(/);
         let methodIsPublic = hasDecoratorInRange(lines, scanFrom, i, /@Public\s*\(\s*\)/);
         let methodHasThrottle = hasDecoratorInRange(lines, scanFrom, i, /@Throttle\s*\(/);
+        let methodHasAbuseOrAuthEvidence = hasDecoratorInRange(
+          lines,
+          scanFrom,
+          i,
+          ABUSE_OR_AUTH_EVIDENCE_RE,
+        );
 
         // Also scan up to 3 lines after the decorator (decorators can stack)
         methodHasGuard =
@@ -157,6 +183,9 @@ export function checkGuards(config: PulseConfig): Break[] {
           methodIsPublic || hasDecoratorInRange(lines, i + 1, i + 4, /@Public\s*\(\s*\)/);
         methodHasThrottle =
           methodHasThrottle || hasDecoratorInRange(lines, i + 1, i + 4, /@Throttle\s*\(/);
+        methodHasAbuseOrAuthEvidence =
+          methodHasAbuseOrAuthEvidence ||
+          hasDecoratorInRange(lines, i + 1, i + 4, ABUSE_OR_AUTH_EVIDENCE_RE);
 
         // A route is considered protected if:
         // 1. It has a class-level @UseGuards or @Public decorator, OR
@@ -180,20 +209,24 @@ export function checkGuards(config: PulseConfig): Break[] {
           });
         }
 
-        if (
-          highRiskMutatingController &&
-          hasTenantOrAuthContext &&
-          !methodHasThrottle &&
-          !block.hasClassThrottle
-        ) {
-          // Only flag if neither the class nor the method has a throttle or ThrottlerGuard
+        const hasWeakMutationSignal = hasWeakBehavioralMutationSignal(lines, i, block.endLine);
+        const hasAbuseOrAuthEvidence =
+          block.hasClassGuard ||
+          block.hasClassThrottle ||
+          hasGlobalAuthGuard ||
+          methodHasAbuseOrAuthEvidence ||
+          methodHasThrottle;
+
+        if (hasWeakMutationSignal && !hasAbuseOrAuthEvidence) {
           breaks.push({
-            type: 'FINANCIAL_NO_RATE_LIMIT',
-            severity: 'high',
+            type: 'behavioral-control-evidence-gap',
+            severity: 'low',
             file: relFile,
             line: i + 1,
-            description: 'Money-like mutating route has no @Throttle rate-limit decorator',
-            detail: `${trimmed.slice(0, 100)} — high-risk mutating endpoints must have @Throttle()`,
+            source: 'regex-weak-signal:guard-auditor:needs_probe',
+            description:
+              'External-input route appears to perform a durable mutation without nearby abuse-control or authorization evidence.',
+            detail: `${trimmed.slice(0, 100)} — regex-only weak signal; run AST/dataflow/runtime probes before treating this as operationally blocking.`,
           });
         }
       }

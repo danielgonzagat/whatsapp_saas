@@ -19,6 +19,10 @@ import { normalizeCanonicalArtifactValue } from './artifacts.queue';
 import { deriveAuthorityState } from './artifacts.autonomy';
 import { buildRuntimeProbesArtifact } from './runtime-probes';
 import { createRunIdentity, type PulseRunIdentity } from './run-identity';
+import { buildFindingEventSurface } from './finding-event-surface';
+import { synthesizeDiagnosticFromBreaks } from './legacy-break-adapter';
+import { auditPulseNoHardcodedReality } from './no-hardcoded-reality-audit';
+import { synthesizeProofPlan } from './proof-synthesizer';
 import {
   buildDirectiveContextFabricPatch,
   buildPulseContextFabricBundle,
@@ -111,6 +115,69 @@ function resolveInsideCanonicalDir(registry: PulseArtifactRegistry, fileName: st
     throw new Error(`Path traversal detected: ${resolved} is outside ${root}`);
   }
   return resolved;
+}
+
+function buildFindingValidationState(snapshot: PulseArtifactSnapshot): unknown {
+  const eventSurface = buildFindingEventSurface(snapshot.health.breaks, 20);
+  const generatedDiagnostic =
+    snapshot.health.breaks.length > 0
+      ? synthesizeDiagnosticFromBreaks(snapshot.health.breaks)
+      : null;
+  const proofPlan = generatedDiagnostic ? synthesizeProofPlan(generatedDiagnostic) : null;
+  return normalizeCanonicalArtifactValue({
+    artifact: 'PULSE_FINDING_VALIDATION_STATE',
+    version: 1,
+    generatedAt: snapshot.certification.timestamp,
+    operationalIdentity: 'dynamic_finding_event',
+    compatibility: {
+      internalBreakTypeRetained: true,
+      internalBreakTypeIsOperationalIdentity: false,
+      parserSignalMustPassValidationBeforeBlocking: true,
+      weakSignalCanBlock: false,
+    },
+    eventSurface,
+    generatedDiagnostic,
+    proofPlan,
+    blockerPolicy: {
+      weak_signal: 'needs_probe_only',
+      inferred: 'needs_context_or_probe',
+      confirmed_static: 'can_block_when_actionable',
+      observed: 'can_block_when_actionable',
+    },
+  });
+}
+
+function buildNoHardcodedRealityState(rootDir: string, generatedAt: string): unknown {
+  const audit = auditPulseNoHardcodedReality(rootDir);
+  const hardcodeEvents = audit.findings.slice(0, 100).map((finding) => {
+    const samples = finding.samples.join(', ');
+    return {
+      eventName: `Hardcoded reality candidate at ${finding.filePath}:${finding.line}`,
+      evidence: `${finding.context}${samples ? ` -> ${samples}` : ''}`,
+      filePath: finding.filePath,
+      line: finding.line,
+      column: finding.column,
+      samples: finding.samples,
+      truthMode: 'confirmed_static',
+      actionability: 'replace_with_dynamic_discovery',
+    };
+  });
+
+  return normalizeCanonicalArtifactValue({
+    artifact: 'PULSE_NO_HARDCODED_REALITY',
+    version: 1,
+    generatedAt,
+    operationalIdentity: 'dynamic_hardcode_evidence_event',
+    scannedFiles: audit.scannedFiles,
+    totalEvents: audit.findings.length,
+    hardcodeEvents,
+    policy: {
+      fixedClassifierIsOperationalTruth: false,
+      regexCanDetectButCannotDecide: true,
+      parserCanObserveButCannotCondemn: true,
+      diagnosticMustBeGeneratedFromEvidence: true,
+    },
+  });
 }
 
 /** Generate artifacts. */
@@ -348,6 +415,22 @@ export function generateArtifacts(
   writeArtifact(
     'PULSE_CONVERGENCE_PLAN.json',
     JSON.stringify(normalizeCanonicalArtifactValue(convergencePlan), null, 2),
+    registry,
+    identity,
+  );
+  writeArtifact(
+    'PULSE_FINDING_VALIDATION_STATE.json',
+    JSON.stringify(buildFindingValidationState(snapshot), null, 2),
+    registry,
+    identity,
+  );
+  writeArtifact(
+    'PULSE_NO_HARDCODED_REALITY.json',
+    JSON.stringify(
+      buildNoHardcodedRealityState(rootDir, snapshot.certification.timestamp),
+      null,
+      2,
+    ),
     registry,
     identity,
   );

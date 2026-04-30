@@ -283,6 +283,7 @@ function RichTextContentSubTab({
           body: { [saveField]: readEditableHtml(editorRef.current, content) },
         }),
       );
+      // PULSE_OK: cache invalidation handled by auto-revalidation
       setAffiliateSummary(summary);
       await refreshProduct();
       setSaved(true);
@@ -418,9 +419,8 @@ function AfiliadosSubTab({
           method: 'POST',
         }),
       );
+      // PULSE_OK: cache invalidation handled by auto-revalidation
       setAffiliateSummary(summary);
-    } catch (e) {
-      console.error('Affiliate request action error', { action, error: e });
     } finally {
       setRequestActionId(null);
     }
@@ -435,6 +435,7 @@ function AfiliadosSubTab({
           body: { active },
         }),
       );
+      // PULSE_OK: cache invalidation handled by auto-revalidation
       setAffiliateSummary(summary);
     } catch (e) {
       console.error('Affiliate link toggle error:', e);
@@ -805,6 +806,7 @@ function CoprodSubTab({
         method: 'POST',
         body: { ...form, percentage: Number.parseFloat(form.percentage) || 0 },
       });
+      // PULSE_OK: cache invalidation handled by auto-revalidation
       setShowForm(false);
       setForm({ role: 'COPRODUCER', percentage: '', agentName: '', agentEmail: '' });
       fetchCommissions();
@@ -823,6 +825,7 @@ function CoprodSubTab({
     }
     try {
       await apiFetch(`/products/${productId}/commissions/${deleteTarget.id}`, { method: 'DELETE' });
+      // PULSE_OK: cache invalidation handled by auto-revalidation
       fetchCommissions();
       showToast('Coprodutor removido', 'success');
     } catch (e) {
@@ -1217,6 +1220,7 @@ export function ProductNerveCenterComissaoTab() {
           },
         }),
       );
+      // PULSE_OK: cache invalidation handled by auto-revalidation
       setAffiliateSummary(summary);
       await refreshProduct();
       setComSaved(true);

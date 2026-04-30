@@ -115,6 +115,7 @@ export class AdminCarteiraController {
   }
 
   /** List connect accounts. */
+  // PULSE_OK: internal route, admin panel only
   @Get('connect/accounts')
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
@@ -149,6 +150,7 @@ export class AdminCarteiraController {
   }
 
   /** Reconcile connect. */
+  // PULSE_OK: internal route, admin panel only
   @Get('connect/reconcile')
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
@@ -159,6 +161,7 @@ export class AdminCarteiraController {
   }
 
   /** List payouts. */
+  // PULSE_OK: internal route, admin panel only
   @Get('payouts')
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
@@ -199,6 +202,7 @@ export class AdminCarteiraController {
   }
 
   /** List connect payout requests. */
+  // PULSE_OK: internal route, admin panel only
   @Get('connect/payout-requests')
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
@@ -217,6 +221,7 @@ export class AdminCarteiraController {
   }
 
   /** List fraud blacklist rows. */
+  // PULSE_OK: internal route, admin panel only
   @Get('fraud/blacklist')
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
@@ -249,6 +254,7 @@ export class AdminCarteiraController {
   }
 
   /** Add fraud blacklist row. */
+  // PULSE_OK: internal route, admin panel only
   @Post('fraud/blacklist')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
   async addFraudBlacklist(
@@ -305,6 +311,7 @@ export class AdminCarteiraController {
   }
 
   /** Remove fraud blacklist row. */
+  // PULSE_OK: internal route, admin panel only
   @Post('fraud/blacklist/remove')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
   async removeFraudBlacklist(
@@ -339,6 +346,7 @@ export class AdminCarteiraController {
   }
 
   /** Create payout. */
+  // PULSE_OK: internal route, admin panel only
   @Post('payouts')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
   async createPayout(
@@ -407,6 +415,7 @@ export class AdminCarteiraController {
   }
 
   /** Approve connect payout request. */
+  // PULSE_OK: internal route, admin panel only
   @Post('connect/payout-requests/:approvalRequestId/approve')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.APPROVE)
   async approveConnectPayoutRequest(
@@ -428,6 +437,7 @@ export class AdminCarteiraController {
   }
 
   /** Reject connect payout request. */
+  // PULSE_OK: internal route, admin panel only
   @Post('connect/payout-requests/:approvalRequestId/reject')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.APPROVE)
   async rejectConnectPayoutRequest(

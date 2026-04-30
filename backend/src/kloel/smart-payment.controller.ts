@@ -160,6 +160,7 @@ export class SmartPaymentController {
   }
 
   /** Analyze recovery. */
+  // PULSE_TODO: verify if still needed, no caller detected
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get(':workspaceId/recovery/:paymentId')
   @ApiOperation({

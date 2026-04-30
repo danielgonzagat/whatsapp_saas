@@ -96,7 +96,7 @@ export interface PulseConvergenceUnit {
   affectedFlowIds: string[];
   /** Async expectations property. */
   asyncExpectations: string[];
-  /** Break types property. */
+  /** Dynamic finding event labels property. */
   breakTypes: string[];
   /** Artifact paths property. */
   artifactPaths: string[];
@@ -216,7 +216,7 @@ export interface PulseRuntimeEvidence {
   executed: boolean;
   /** Executed checks property. */
   executedChecks: string[];
-  /** Blocking break types property. */
+  /** Blocking finding events property. */
   blockingBreakTypes: string[];
   /** Artifact paths property. */
   artifactPaths: string[];

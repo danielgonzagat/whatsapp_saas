@@ -45,6 +45,15 @@ export function normalizeArtifactKey(key: string): string {
   if (key === 'humanRequiredUnits') {
     return 'governedValidationUnits';
   }
+  if (key === 'breakTypes') {
+    return 'findingEvents';
+  }
+  if (key === 'blockingBreakTypes') {
+    return 'blockingFindingEvents';
+  }
+  if (key === 'topBreakTypes') {
+    return 'topFindingEvents';
+  }
   return key;
 }
 
@@ -59,7 +68,13 @@ export function normalizeArtifactText(text: string): string {
     .replaceAll('human-required', 'observation-only')
     .replaceAll('human required', 'observation-only')
     .replaceAll('Human approval required', 'Governed autonomous validation required')
-    .replaceAll('human approval required', 'governed autonomous validation required');
+    .replaceAll('human approval required', 'governed autonomous validation required')
+    .replaceAll('Break Types', 'Finding Events')
+    .replaceAll('break types', 'finding events')
+    .replaceAll('breakTypes', 'findingEvents')
+    .replaceAll('Blocking types', 'Blocking events')
+    .replaceAll('blocking break types', 'blocking finding events')
+    .replaceAll('blockingBreakTypes', 'blockingFindingEvents');
 }
 
 export function normalizeCanonicalArtifactValue(value: unknown): CanonicalArtifactValue {

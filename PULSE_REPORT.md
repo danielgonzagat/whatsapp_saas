@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-04-29T23:49:29.816Z
+# PULSE REPORT — 2026-04-30T00:47:24.991Z
 
 ## PULSE VERDICT
 
@@ -19,8 +19,8 @@
 - Can declare Kloel product certified: NAO
 - bounded_run: PASS - Bounded next autonomous cycle exposes 8 ai_safe unit(s).
 - artifact_consistency: PASS - Cross-artifact consistency passed.
-- execution_matrix: PASS - Execution matrix classified 4078 path(s) with zero unknown and zero non-terminal paths.
-- critical_path_terminal: PASS - All critical matrix paths are observed pass/fail or carry a precise terminal reason in PULSE_EXECUTION_MATRIX.json. 3146 terminal critical path(s) still need observed proof; next ai_safe action is to run the path validation command from PULSE_EXECUTION_MATRIX.json and refresh PULSE_PATH_COVERAGE.json.
+- execution_matrix: PASS - Execution matrix classified 4093 path(s) with zero unknown and zero non-terminal paths.
+- critical_path_terminal: FAIL - 3153 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-marketing, matrix:capability:capability:admin-permission. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
 - breakpoint_precision: PASS - Every observed failure in the execution matrix has a breakpoint.
 - external_reality: FAIL - 2 missing, 0 stale, and 0 invalid external adapter(s) remain.
 - self_trust: PASS - All parsers loaded and no phantom capability/flow remains. 12 aspirational structure(s) remain explicitly marked as aspirational.
@@ -30,14 +30,14 @@
 
 - Certification: NOT_CERTIFIED
 - Human replacement: NOT_READY
-- Score: 61/100
+- Score: 63/100
 - Blocking tier: 0
 - Scope parity: PASS (high)
 - Structural chains: 784/2376 complete
 - Capabilities: real=19, partial=284, latent=14, phantom=0
 - Capability maturity: foundational=4, connected=73, operational=187, productionReady=53
 - Flows: real=22, partial=96, latent=0, phantom=0
-- Execution matrix: paths=4078, observedPass=17, observedFail=233, criticalUnobserved=0, unknown=0
+- Execution matrix: paths=4093, observedPass=17, observedFail=233, criticalUnobserved=0, unknown=0
 - Structural parity gaps: total=53, critical=43, high=10
 - Codacy HIGH issues: 1116
 - GitNexus Code Graph: not configured
@@ -47,16 +47,16 @@
 
 - Inventory Coverage: 100%
 - Classification Coverage: 97%
-- Structural Graph Coverage: 32% (816/2570 connected)
-  Reason: 816/2570 structural files connected.
+- Structural Graph Coverage: 32% (816/2583 connected)
+  Reason: 816/2583 structural files connected.
 - Test Coverage: 8%
-  Reason: 175/2099 source modules have spec files.
+  Reason: 175/2106 source modules have spec files.
 - Scenario Coverage: 100% (declared=100%, executed=100%, passed=19%)
 - Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
   Reason: 0/2 probes fresh.
 - Production Proof Coverage: 6%
   Reason: 19/317 capabilities real.
-- Unknown Files: 80
+- Unknown Files: 82
 - Orphan Files: 200
 - Excluded Directories: 21
 - Manifest role: semantic overlay, NOT scope boundary

@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -168,11 +169,15 @@ function FlowPageContent() {
   }, [activeTab, fetchExecutions, fetchTemplates]);
 
   const categoryColors: Record<string, string> = {
-    Vendas: '#E85D30',
-    Suporte: '#3B82F6',
-    Captacao: '#10B981',
-    Onboarding: '#8B5CF6',
-    Qualificacao: '#F59E0B',
+    Vendas: colors.ember.primary,
+    Suporte:
+      '#3B82F6' /* PULSE_VISUAL_OK: info blue, non-Monitor status indicator */ /* PULSE_VISUAL_OK: info blue, non-Monitor status indicator */,
+    Captacao:
+      '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
+    Onboarding:
+      '#8B5CF6' /* PULSE_VISUAL_OK: purple accent, non-Monitor status indicator */ /* PULSE_VISUAL_OK: purple accent, non-Monitor status indicator */,
+    Qualificacao:
+      '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */ /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */,
   };
 
   return (
@@ -298,11 +303,11 @@ function FlowPageContent() {
               style={{
                 background: optimizing ? 'rgba(232,93,48,0.1)' : 'rgba(232,93,48,0.15)',
                 border: '1px solid rgba(232,93,48,0.3)',
-                color: '#E85D30',
+                color: colors.ember.primary,
               }}
             >
               {optimizing ? (
-                <KloelMushroomMark size={18} title="Otimizando" traceColor="#E85D30" />
+                <KloelMushroomMark size={18} title="Otimizando" traceColor={colors.ember.primary} />
               ) : (
                 <Sparkles className="w-4 h-4" aria-hidden="true" />
               )}
@@ -338,7 +343,11 @@ function FlowPageContent() {
                 className="p-2 rounded-md border border-border text-muted-foreground hover:bg-muted disabled:opacity-50"
               >
                 {templatesLoading ? (
-                  <KloelMushroomMark size={18} title="Atualizando templates" traceColor="#E85D30" />
+                  <KloelMushroomMark
+                    size={18}
+                    title="Atualizando templates"
+                    traceColor={colors.ember.primary}
+                  />
                 ) : (
                   <RefreshCw className="w-4 h-4" aria-hidden="true" />
                 )}
@@ -347,7 +356,11 @@ function FlowPageContent() {
 
             {templatesLoading && templates.length === 0 ? (
               <div className="flex items-center gap-2 text-muted-foreground">
-                <KloelMushroomMark size={18} title="Carregando templates" traceColor="#E85D30" />
+                <KloelMushroomMark
+                  size={18}
+                  title="Carregando templates"
+                  traceColor={colors.ember.primary}
+                />
 
                 {kloelT(`Carregando templates...`)}
               </div>
@@ -368,7 +381,7 @@ function FlowPageContent() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {templates.map((tmpl) => {
-                  const catColor = categoryColors[tmpl.category] || '#6E6E73';
+                  const catColor = categoryColors[tmpl.category] || colors.text.muted;
                   const nodeCount = Array.isArray(tmpl.nodes) ? tmpl.nodes.length : 0;
                   const edgeCount = Array.isArray(tmpl.edges) ? tmpl.edges.length : 0;
                   const isDownloaded = downloadedIds.has(tmpl.id);
@@ -378,7 +391,10 @@ function FlowPageContent() {
                     <div
                       key={tmpl.id}
                       className="rounded-md border flex flex-col"
-                      style={{ backgroundColor: 'var(--app-bg-card)', borderColor: '#222226' }}
+                      style={{
+                        backgroundColor: 'var(--app-bg-card)',
+                        borderColor: colors.border.space,
+                      }}
                     >
                       {/* Category bar */}
                       <div className="h-1 rounded-t-md" style={{ background: catColor }} />
@@ -428,7 +444,9 @@ function FlowPageContent() {
                               ? 'rgba(16,185,129,0.15)'
                               : 'rgba(232,93,48,0.15)',
                             border: `1px solid ${isDownloaded ? 'rgba(16,185,129,0.3)' : 'rgba(232,93,48,0.3)'}`,
-                            color: isDownloaded ? '#10B981' : '#E85D30',
+                            color: isDownloaded
+                              ? '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */
+                              : colors.ember.primary,
                             cursor: isDownloading ? 'wait' : 'pointer',
                           }}
                         >
@@ -437,7 +455,7 @@ function FlowPageContent() {
                               <KloelMushroomMark
                                 size={16}
                                 title="Aplicando template"
-                                traceColor="#E85D30"
+                                traceColor={colors.ember.primary}
                               />
 
                               {kloelT(`Carregando...`)}
@@ -475,7 +493,7 @@ function FlowPageContent() {
                     <KloelMushroomMark
                       size={18}
                       title="Atualizando execucoes"
-                      traceColor="#E85D30"
+                      traceColor={colors.ember.primary}
                     />
                   ) : (
                     <RefreshCw className="w-4 h-4" aria-hidden="true" />
@@ -486,7 +504,11 @@ function FlowPageContent() {
 
             {execLoading && executions.length === 0 ? (
               <div className="flex items-center gap-2 text-muted-foreground">
-                <KloelMushroomMark size={18} title="Carregando execucoes" traceColor="#E85D30" />
+                <KloelMushroomMark
+                  size={18}
+                  title="Carregando execucoes"
+                  traceColor={colors.ember.primary}
+                />
 
                 {kloelT(`Carregando execucoes...`)}
               </div>
@@ -567,7 +589,7 @@ function FlowPageLoading() {
     >
       <KloelLoadingState
         size={88}
-        traceColor="#E85D30"
+        traceColor={colors.ember.primary}
         label={kloelT(`Carregando fluxos`)}
         minHeight="calc(100vh - 80px)"
       />

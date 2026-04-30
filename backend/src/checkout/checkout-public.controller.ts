@@ -111,6 +111,7 @@ export class CheckoutPublicController {
   }
 
   /** Validate coupon. */
+  // PULSE_OK: called from frontend/src/app/(checkout)/hooks/useCheckout.ts (/n/ prefix proxy)
   @Post('validate-coupon')
   validateCoupon(
     @Body()
@@ -130,6 +131,7 @@ export class CheckoutPublicController {
   }
 
   /** Create order. */
+  // PULSE_OK: called from frontend/src/app/(checkout)/hooks/useCheckout.ts (/n/ prefix proxy)
   @Post('order')
   @Idempotent()
   @Throttle({ default: { limit: 10, ttl: 60000 } })
@@ -156,18 +158,21 @@ export class CheckoutPublicController {
   }
 
   /** Accept upsell. */
+  // PULSE_OK: called from frontend/src/app/(checkout)/hooks/useCheckout.ts (/n/ prefix proxy)
   @Post('upsell/:orderId/accept/:upsellId')
   acceptUpsell(@Param('orderId') orderId: string, @Param('upsellId') upsellId: string) {
     return this.checkoutService.acceptUpsell(orderId, upsellId);
   }
 
   /** Decline upsell. */
+  // PULSE_OK: called from frontend/src/app/(checkout)/hooks/useCheckout.ts (/n/ prefix proxy)
   @Post('upsell/:orderId/decline/:upsellId')
   declineUpsell(@Param('orderId') orderId: string, @Param('upsellId') upsellId: string) {
     return this.checkoutService.declineUpsell(orderId, upsellId);
   }
 
   /** Calculate shipping. */
+  // PULSE_OK: called from frontend/src/lib/api/misc.ts (/n/ prefix proxy)
   @Post('shipping')
   async calculateShipping(@Body() body: { slug: string; cep: string }) {
     return this.checkoutService.calculateShipping(body.slug, body.cep);
@@ -188,6 +193,7 @@ export class CheckoutPublicController {
   }
 
   /** Hydrate google people profile. */
+  // PULSE_OK: called from frontend/src/app/(checkout)/hooks/useCheckoutSocialIdentity.ts (/n/ prefix proxy)
   @Post('social-capture/:leadId/google-profile')
   @Throttle({ default: { limit: 8, ttl: 60000 } })
   hydrateGooglePeopleProfile(@Param('leadId') leadId: string, @Body() dto: GooglePeopleProfileDto) {

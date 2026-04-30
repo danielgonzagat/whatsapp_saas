@@ -11,16 +11,31 @@ import type {
 const MODEL_REGEX = /model\s+(\w+)\s*\{/g;
 
 // ── Prisma operation regexes (matches both `prisma.` and `tx.` prefixes) ──
-const CREATE_REGEX = /\.(?:prisma|tx)\.(\w+)\.(create|upsert)\(/g;
-const READ_REGEX =
-  /\.(?:prisma|tx)\.(\w+)\.(findUnique|findMany|findFirst|findFirstOrThrow|count|aggregate|groupBy)\(/g;
-const UPDATE_REGEX = /\.(?:prisma|tx)\.(\w+)\.(update|updateMany)\(/g;
-const DELETE_REGEX = /\.(?:prisma|tx)\.(\w+)\.(delete|deleteMany)\(/g;
+const PRISMA_CLIENT_PREFIX = String.raw`(?:\b|\.)`;
+const CREATE_REGEX = new RegExp(
+  `${PRISMA_CLIENT_PREFIX}(?:prisma|tx)\\.(\\w+)\\.(create|upsert)\\(`,
+  'g',
+);
+const READ_REGEX = new RegExp(
+  `${PRISMA_CLIENT_PREFIX}(?:prisma|tx)\\.(\\w+)\\.(findUnique|findMany|findFirst|findFirstOrThrow|count|aggregate|groupBy)\\(`,
+  'g',
+);
+const UPDATE_REGEX = new RegExp(
+  `${PRISMA_CLIENT_PREFIX}(?:prisma|tx)\\.(\\w+)\\.(update|updateMany)\\(`,
+  'g',
+);
+const DELETE_REGEX = new RegExp(
+  `${PRISMA_CLIENT_PREFIX}(?:prisma|tx)\\.(\\w+)\\.(delete|deleteMany)\\(`,
+  'g',
+);
 
-// ── AuditLog usage detection ──
-const AUDITLOG_CREATE_REGEX = /\.(?:prisma|tx)\.auditLog\.create\(/g;
+const MODEL_CREATE_REGEX = new RegExp(
+  `${PRISMA_CLIENT_PREFIX}(?:prisma|tx)\\.(\\w+)\\.create\\(`,
+  'g',
+);
+const TRANSACTION_REGEX = /(?:\b|\.)prisma\.\$transaction\(|\btx\.\w+\./;
 
-const PII_FIELD_PATTERNS = [
+const WEAK_PII_FIELD_SENSORS = [
   /^email/i,
   /^name$/i,
   /^(firstName|lastName)$/i,
@@ -59,7 +74,7 @@ const PII_FIELD_PATTERNS = [
 
 const AUDIT_FIELD_PATTERNS = [/^createdAt$/i, /^updatedAt$/i, /^deletedAt$/i];
 
-const MONEY_LIKE_FIELD_PATTERNS = [
+const WEAK_MONEY_FIELD_SENSORS = [
   /amount/i,
   /balance/i,
   /currency/i,
@@ -93,7 +108,7 @@ const MUTATION_STATE_FIELD_PATTERNS = [
   /idempotency/i,
 ];
 
-const ROLE_BY_PATH_PATTERNS: [RegExp, string][] = [
+const WEAK_ROLE_BY_PATH_SENSORS: [RegExp, string][] = [
   [/\/controllers?\//, 'controller'],
   [/\/services?\//, 'service'],
   [/\/workers?\//, 'worker'],
@@ -108,32 +123,32 @@ const ROLE_BY_PATH_PATTERNS: [RegExp, string][] = [
   [/\/scripts?\//, 'script'],
 ];
 
-const STATIC_ANALYSIS_ROLE_MAP: Record<string, string> = {
-  controller: 'controller',
-  controllers: 'controller',
-  service: 'service',
-  services: 'service',
-  worker: 'worker',
-  workers: 'worker',
-  queue_processor: 'queue_processor',
-  queue: 'queue_processor',
-  'queues/': 'queue_processor',
-  cron: 'cron_job',
-  crons: 'cron_job',
-  webhook: 'webhook_handler',
-  webhooks: 'webhook_handler',
-};
+const ROLE_BY_CONTENT_EVIDENCE: [RegExp, string][] = [
+  [/@Controller\s*\(/, 'controller'],
+  [/@Resolver\s*\(/, 'resolver'],
+  [/@Processor\s*\(|process\s*\(/, 'queue_processor'],
+  [/@Cron\s*\(|@Interval\s*\(|@Timeout\s*\(/, 'cron_job'],
+  [
+    /\bimplements\s+NestMiddleware\b|\buse\s*\([^)]*(?:Request|Response|NextFunction)/,
+    'middleware',
+  ],
+  [/\bimplements\s+CanActivate\b|\bcanActivate\s*\(/, 'guard'],
+  [/@Injectable\s*\(\)[\s\S]{0,240}\bclass\s+\w*Service\b/, 'service'],
+  [
+    /\bhandleWebhook\b|\bwebhook\b[\s\S]{0,120}@(?:Post|Get|Put|Patch|Delete)\s*\(/i,
+    'webhook_handler',
+  ],
+  [/\bWorker\b|\bQueue\b|\bQueueScheduler\b/, 'worker'],
+];
 
-function classifySourceRole(filePath: string): string {
-  const normalized = filePath.replace(/\\/g, '/');
-  for (const [pattern, role] of ROLE_BY_PATH_PATTERNS) {
-    if (pattern.test(normalized)) return role;
+function classifySourceRole(filePath: string, content: string): string {
+  for (const [pattern, role] of ROLE_BY_CONTENT_EVIDENCE) {
+    if (pattern.test(content)) return role;
   }
-  const basename = path.basename(filePath, path.extname(filePath));
-  for (const [suffix, role] of Object.entries(STATIC_ANALYSIS_ROLE_MAP)) {
-    if (basename.endsWith(`.${suffix}`) || basename.includes(`.${suffix}`)) {
-      return role;
-    }
+
+  const normalized = filePath.replace(/\\/g, '/');
+  for (const [pattern, role] of WEAK_ROLE_BY_PATH_SENSORS) {
+    if (pattern.test(normalized)) return `weak_path_signal:${role}`;
   }
   return 'unknown';
 }
@@ -202,8 +217,25 @@ function extractModelBlock(
   };
 }
 
-function parseModelFields(schemaContent: string): Map<string, string[]> {
-  const result = new Map<string, string[]>();
+interface PrismaFieldEvidence {
+  name: string;
+  type: string;
+  attributes: string;
+  relationFields: string[];
+  relationReferences: string[];
+}
+
+function parseBracketList(attributes: string, key: 'fields' | 'references'): string[] {
+  const match = new RegExp(`${key}:\\s*\\[([^\\]]*)\\]`).exec(attributes);
+  if (!match) return [];
+  return match[1]
+    .split(',')
+    .map((entry) => entry.trim().replace(/^"|"$/g, ''))
+    .filter(Boolean);
+}
+
+function parseModelFieldEvidence(schemaContent: string): Map<string, PrismaFieldEvidence[]> {
+  const result = new Map<string, PrismaFieldEvidence[]>();
   let match: RegExpExecArray | null;
   MODEL_REGEX.lastIndex = 0;
   while ((match = MODEL_REGEX.exec(schemaContent)) !== null) {
@@ -213,18 +245,37 @@ function parseModelFields(schemaContent: string): Map<string, string[]> {
 
     const block = extractModelBlock(schemaContent, openBraceIdx);
 
-    const fields: string[] = [];
+    const fields: PrismaFieldEvidence[] = [];
     const lines = block.text.split('\n');
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith('//') || trimmed.startsWith('@@')) continue;
-      const fieldMatch = trimmed.match(/^(\w+)\s+(\w+)/);
+      const fieldMatch = trimmed.match(/^(\w+)\s+([A-Za-z_]\w*)(.*)$/);
       if (fieldMatch) {
-        fields.push(fieldMatch[1]);
+        const attributes = fieldMatch[3] ?? '';
+        fields.push({
+          name: fieldMatch[1],
+          type: fieldMatch[2].replace(/[?[\]]/g, ''),
+          attributes,
+          relationFields: parseBracketList(attributes, 'fields'),
+          relationReferences: parseBracketList(attributes, 'references'),
+        });
       }
     }
 
     result.set(modelName, fields);
+  }
+  return result;
+}
+
+function parseModelFields(schemaContent: string): Map<string, string[]> {
+  const evidence = parseModelFieldEvidence(schemaContent);
+  const result = new Map<string, string[]>();
+  for (const [modelName, fields] of evidence) {
+    result.set(
+      modelName,
+      fields.map((field) => field.name),
+    );
   }
   return result;
 }
@@ -250,38 +301,135 @@ function parseEnums(schemaContent: string): Map<string, string[]> {
   return result;
 }
 
-export function classifyFinancialModel(_modelName: string, fields: string[] = []): boolean {
-  // 1. Field-based heuristic: >= 2 money-like fields
-  const moneyLikeFields = fields.filter((field) =>
-    MONEY_LIKE_FIELD_PATTERNS.some((pattern) => pattern.test(field)),
-  );
-  if (moneyLikeFields.length >= 2) {
+function isNumericMoneyStorage(field: PrismaFieldEvidence): boolean {
+  if (field.type === 'Decimal' || field.type === 'BigInt') return true;
+  if (
+    (field.type === 'Int' || field.type === 'Float') &&
+    /@map\(|\/\/|cent|amount|money/i.test(field.attributes)
+  ) {
     return true;
   }
-
-  // 2. Balance + currency pattern (catches PrepaidWallet, Treasury, ConnectAccountBalance)
-  const hasBalance = fields.some((f) => /\bbalance\b/i.test(f));
-  const hasCurrency = fields.some((f) => /^currency$/i.test(f));
-  if (hasBalance && hasCurrency) {
-    return true;
-  }
-
   return false;
 }
 
+function fieldHasWeakMoneySignal(fieldName: string): boolean {
+  return WEAK_MONEY_FIELD_SENSORS.some((pattern) => pattern.test(fieldName));
+}
+
+function fieldHasWeakPiiSignal(fieldName: string): boolean {
+  return WEAK_PII_FIELD_SENSORS.some((pattern) => pattern.test(fieldName));
+}
+
+function classifyFinancialFieldEvidence(fields: PrismaFieldEvidence[]): boolean {
+  const typedMoneyFields = fields.filter(
+    (field) => isNumericMoneyStorage(field) && fieldHasWeakMoneySignal(field.name),
+  );
+  if (typedMoneyFields.length > 0) {
+    return true;
+  }
+
+  const weakMoneySignals = fields.filter((field) => fieldHasWeakMoneySignal(field.name));
+  const hasCurrencyCompanion = weakMoneySignals.some((field) => /^currency$/i.test(field.name));
+  return weakMoneySignals.length >= 2 && hasCurrencyCompanion;
+}
+
+export function classifyFinancialModel(_modelName: string, fields: string[] = []): boolean {
+  const fieldEvidence = fields.map((field) => ({
+    name: field,
+    type: 'Unknown',
+    attributes: '',
+    relationFields: [],
+    relationReferences: [],
+  }));
+  return classifyFinancialFieldEvidence(fieldEvidence);
+}
+
+function detectPIIFieldEvidence(fields: PrismaFieldEvidence[]): string[] {
+  return fields
+    .filter((field) => {
+      if (/@sensitive\b|@pii\b/i.test(field.attributes)) return true;
+      return fieldHasWeakPiiSignal(field.name);
+    })
+    .map((field) => field.name);
+}
+
 export function detectPIIFields(_modelName: string, fields: string[]): string[] {
-  return fields.filter((field) => PII_FIELD_PATTERNS.some((pattern) => pattern.test(field)));
+  return fields.filter((field) => fieldHasWeakPiiSignal(field));
 }
 
 function hasBuiltInAuditTrail(fields: string[]): boolean {
-  return AUDIT_FIELD_PATTERNS.some((pattern) => fields.some((f) => pattern.test(f)));
+  const hasCreatedAt = fields.some((field) => /^createdAt$/i.test(field));
+  const hasUpdatedAt = fields.some((field) => /^updatedAt$/i.test(field));
+  const hasDeletedAt = fields.some((field) => /^deletedAt$/i.test(field));
+  return (hasCreatedAt && hasUpdatedAt) || hasDeletedAt;
 }
 
-/**
- * Checks if a model has a workspaceId field for tenant isolation.
- */
-function hasWorkspaceIsolation(fields: string[]): boolean {
-  return fields.some((f) => /^workspaceId$/i.test(f));
+function buildRelationInboundCounts(
+  fieldEvidenceByModel: Map<string, PrismaFieldEvidence[]>,
+): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const [modelName] of fieldEvidenceByModel) {
+    counts.set(modelName, 0);
+  }
+  for (const fields of fieldEvidenceByModel.values()) {
+    for (const field of fields) {
+      if (!counts.has(field.type)) continue;
+      counts.set(field.type, (counts.get(field.type) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
+function modelHasTenantRelationEvidence(
+  fields: PrismaFieldEvidence[],
+  relationInboundCounts: Map<string, number>,
+): boolean {
+  return fields.some((field) => {
+    if (field.relationFields.length === 0 || field.relationReferences.length === 0) return false;
+    const inboundCount = relationInboundCounts.get(field.type) ?? 0;
+    return inboundCount >= 2;
+  });
+}
+
+function discoverTenantAnchorModels(relationInboundCounts: Map<string, number>): Set<string> {
+  const anchors = new Set<string>();
+  for (const [modelName, inboundCount] of relationInboundCounts) {
+    if (inboundCount >= 2) {
+      anchors.add(modelName);
+    }
+  }
+  return anchors;
+}
+
+function hasWorkspaceIsolation(
+  fields: PrismaFieldEvidence[],
+  relationInboundCounts: Map<string, number>,
+): boolean {
+  return modelHasTenantRelationEvidence(fields, relationInboundCounts);
+}
+
+function discoverAuditModels(
+  fieldEvidenceByModel: Map<string, PrismaFieldEvidence[]>,
+): Set<string> {
+  const auditModels = new Set<string>();
+  for (const [modelName, fields] of fieldEvidenceByModel) {
+    const fieldNames = fields.map((field) => field.name);
+    const hasTimestamp = hasBuiltInAuditTrail(fieldNames);
+    const hasActorOrAction = fieldNames.some((field) =>
+      /^(action|event|kind|actorId|userId)$/i.test(field),
+    );
+    const hasEntityPointer = fieldNames.some((field) =>
+      /^(entity|entityId|model|recordId|targetId)$/i.test(field),
+    );
+    if (hasTimestamp && hasActorOrAction && hasEntityPointer) {
+      auditModels.add(modelName);
+    }
+  }
+  return auditModels;
+}
+
+function modelHasAuditWriteEvidence(explicitAuditFiles: string[], fields: string[]): boolean {
+  return hasBuiltInAuditTrail(fields) || explicitAuditFiles.length > 0;
 }
 
 /**
@@ -306,6 +454,15 @@ function hasVersionTable(modelName: string, allModelNames: string[]): boolean {
         m === `${modelName}Log` ||
         m.startsWith(modelName)),
   );
+}
+
+function modelPropertyName(modelName: string): string {
+  return modelName.charAt(0).toLowerCase() + modelName.slice(1);
+}
+
+function contextMentionsModel(context: string, modelName: string): boolean {
+  const property = modelPropertyName(modelName);
+  return new RegExp(`\\b(?:${modelName}|${property})\\b`, 'i').test(context);
 }
 
 // ── State machine extraction ──
@@ -461,6 +618,7 @@ interface ModelOperations {
 function scanBackendOperations(
   rootDir: string,
   modelNames: string[],
+  auditModelNames: Set<string> = new Set(),
 ): Map<string, ModelOperations> {
   const backendDir = safeJoin(rootDir, 'backend', 'src');
   const modelByPrismaProperty = new Map<string, string>();
@@ -515,7 +673,7 @@ function scanBackendOperations(
         try {
           const content = readTextFile(fullPath);
           const relativePath = path.relative(rootDir, fullPath);
-          const role = classifySourceRole(fullPath);
+          const role = classifySourceRole(fullPath, content);
           const source = role;
 
           const collect = (
@@ -534,22 +692,21 @@ function scanBackendOperations(
           collect(UPDATE_REGEX, 'updatedBy');
           collect(DELETE_REGEX, 'deletedBy');
 
-          // Check for explicit AuditLog usage patterns in this file
-          AUDITLOG_CREATE_REGEX.lastIndex = 0;
+          MODEL_CREATE_REGEX.lastIndex = 0;
           let auditMatch: RegExpExecArray | null;
-          while ((auditMatch = AUDITLOG_CREATE_REGEX.exec(content)) !== null) {
-            // Find the resource/model being audited in nearby lines
-            const beforeCtx = content.slice(Math.max(0, auditMatch.index - 300), auditMatch.index);
+          while ((auditMatch = MODEL_CREATE_REGEX.exec(content)) !== null) {
+            const auditModelName = modelByPrismaProperty.get(auditMatch[1]);
+            if (!auditModelName || !auditModelNames.has(auditModelName)) continue;
+
+            const beforeCtx = content.slice(Math.max(0, auditMatch.index - 400), auditMatch.index);
+            const afterCtx = content.slice(auditMatch.index, auditMatch.index + 400);
+            const context = `${beforeCtx}\n${afterCtx}`;
+            const hasDurableAuditEvidence =
+              TRANSACTION_REGEX.test(context) || /create\s*\(/.test(afterCtx);
+            if (!hasDurableAuditEvidence) continue;
+
             for (const modelName of modelNames) {
-              const lowerModel = modelName.toLowerCase();
-              if (
-                beforeCtx.includes(modelName) ||
-                beforeCtx.includes(lowerModel) ||
-                beforeCtx.includes(`'${lowerModel}'`) ||
-                beforeCtx.includes(`"${lowerModel}"`) ||
-                beforeCtx.includes(`resource: '${lowerModel}'`) ||
-                beforeCtx.includes(`resource: "${lowerModel}"`)
-              ) {
+              if (modelName !== auditModelName && contextMentionsModel(context, modelName)) {
                 const files = auditLogFilesByModel.get(modelName) ?? new Set();
                 files.add(relativePath);
                 auditLogFilesByModel.set(modelName, files);
@@ -630,12 +787,16 @@ export function buildDataflowState(rootDir: string): DataflowState {
   const schemaContent = readTextFile(schemaPath);
   const modelNames = parsePrismaSchema(schemaPath);
   const modelFields = parseModelFields(schemaContent);
+  const modelFieldEvidence = parseModelFieldEvidence(schemaContent);
+  const relationInboundCounts = buildRelationInboundCounts(modelFieldEvidence);
+  const tenantAnchorModels = discoverTenantAnchorModels(relationInboundCounts);
+  const auditModelNames = discoverAuditModels(modelFieldEvidence);
   const enums = parseEnums(schemaContent);
 
   const entities: EntityLifecycle[] = [];
   const mutations: DataflowStateMutation[] = [];
   const gaps: DataflowState['gaps'] = [];
-  const rawOps = scanBackendOperations(rootDir, modelNames) as Map<
+  const rawOps = scanBackendOperations(rootDir, modelNames, auditModelNames) as Map<
     string,
     ModelOperations & { _auditLogFiles: string[] }
   >;
@@ -671,12 +832,12 @@ export function buildDataflowState(rootDir: string): DataflowState {
         };
     operationsByModel.set(modelName, operations);
 
+    const fieldEvidence = modelFieldEvidence.get(modelName) ?? [];
     const fields = modelFields.get(modelName) ?? [];
-    const financial = classifyFinancialModel(modelName, fields);
-    const hasAudit = hasBuiltInAuditTrail(fields);
-    const piiFields = detectPIIFields(modelName, fields);
+    const financial = classifyFinancialFieldEvidence(fieldEvidence);
+    const piiFields = detectPIIFieldEvidence(fieldEvidence);
     const shownInUI = findModelInUI(rootDir, modelName);
-    const hasWorkspace = hasWorkspaceIsolation(fields);
+    const hasWorkspace = hasWorkspaceIsolation(fieldEvidence, relationInboundCounts);
     const mutableStateFields = fields.filter((f) =>
       MUTATION_STATE_FIELD_PATTERNS.some((p) => p.test(f)),
     );
@@ -711,11 +872,11 @@ export function buildDataflowState(rootDir: string): DataflowState {
     }
 
     // ── Gap: workspace isolation ──
-    if (!hasWorkspace && modelName !== 'Workspace') {
+    if (!hasWorkspace && !tenantAnchorModels.has(modelName)) {
       const severity = financial ? ('critical' as const) : ('high' as const);
       gaps.push({
         model: modelName,
-        missing: `Model "${modelName}" is missing workspaceId field — no tenant isolation${financial ? ' (FINANCIAL MODEL)' : ''}`,
+        missing: `Model "${modelName}" has no schema-backed tenant relation evidence${financial ? ' for a financial-like model' : ''}; weak field-name sensors are not treated as final isolation proof`,
         severity,
       });
     }
@@ -730,20 +891,24 @@ export function buildDataflowState(rootDir: string): DataflowState {
       });
     }
 
-    // ── Gap: financial model without explicit AuditLog usage ──
+    // ── Gap: financial model without schema-derived audit-write evidence ──
     if (financial && explicitAuditLogFiles.length === 0) {
       gaps.push({
         model: modelName,
-        missing: `Financial model "${modelName}" has no detected auditLog.create usage in its service files`,
+        missing: `Financial-like model "${modelName}" has no schema-derived audit-write evidence in observed service usage`,
         severity: 'high',
       });
     }
 
     // ── Gap: PII fields on financial model without audit trail ──
-    if (financial && piiFields.length > 0 && !hasAudit) {
+    if (
+      financial &&
+      piiFields.length > 0 &&
+      !modelHasAuditWriteEvidence(explicitAuditLogFiles, fields)
+    ) {
       gaps.push({
         model: modelName,
-        missing: `Financial model "${modelName}" with PII fields (${piiFields.join(', ')}) has no createdAt/updatedAt/deletedAt audit columns and no explicit AuditLog usage`,
+        missing: `Financial-like model "${modelName}" has weak PII field signals (${piiFields.join(', ')}) but no timestamp or schema-derived audit-write evidence`,
         severity: 'critical',
       });
     }
@@ -787,7 +952,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
       shownInUI,
       critical: financial,
       financial,
-      hasAuditTrail: hasAudit || explicitAuditLogFiles.length > 0,
+      hasAuditTrail: modelHasAuditWriteEvidence(explicitAuditLogFiles, fields),
       piiFields,
       hasWorkspaceIsolation: hasWorkspace,
       hasMutableState,

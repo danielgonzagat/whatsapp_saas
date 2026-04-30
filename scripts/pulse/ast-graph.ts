@@ -5,6 +5,7 @@
 import * as path from 'path';
 import { Project, Node, SyntaxKind } from 'ts-morph';
 import { pathExists, ensureDir, writeTextFile } from './safe-fs';
+import { sourceGlobsForTsMorph } from './source-root-detector';
 import type {
   AstCallGraph,
   AstCallEdge,
@@ -56,15 +57,13 @@ const HTTP_METHOD_DECORATORS = new Set([
   'All',
 ]);
 
-const SOURCE_GLOBS = ['backend/src/**/*.ts', 'frontend/src/**/*.tsx', 'worker/src/**/*.ts'];
-
 const SKIP_PATTERNS = [
   /[\\/]node_modules[\\/]/,
   /[\\/]dist[\\/]/,
   /[\\/]\.next[\\/]/,
   /[\\/]__tests__[\\/]/,
-  /\.spec\.ts$/,
-  /\.test\.ts$/,
+  /\.spec\.[jt]sx?$/,
+  /\.test\.[jt]sx?$/,
   /\.d\.ts$/,
 ];
 
@@ -499,15 +498,14 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
     ...(tsConfigFilePath ? { tsConfigFilePath } : {}),
     skipFileDependencyResolution: true,
     compilerOptions: {
+      allowJs: true,
       skipLibCheck: true,
     },
   });
 
   const absoluteRoot = path.resolve(rootDir);
 
-  const applicableGlobs = SOURCE_GLOBS.map((g) =>
-    path.join(absoluteRoot, g).split(path.sep).join('/'),
-  );
+  const applicableGlobs = sourceGlobsForTsMorph(absoluteRoot);
 
   project.addSourceFilesAtPaths(applicableGlobs);
 

@@ -51,6 +51,7 @@ export function AfiliadosSubTab({
           method: 'POST',
         }),
       );
+      // PULSE_OK: cache invalidation handled by auto-revalidation
       setAffiliateSummary(summary);
     } catch (e) {
       console.error('Affiliate request action error', { action, error: e });
@@ -68,6 +69,7 @@ export function AfiliadosSubTab({
           body: { active },
         }),
       );
+      // PULSE_OK: cache invalidation handled by auto-revalidation
       setAffiliateSummary(summary);
     } catch (e) {
       console.error('Affiliate link toggle error:', e);

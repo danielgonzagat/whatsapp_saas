@@ -22,6 +22,7 @@ import type {
 } from './types.continuous-daemon';
 import type { BehaviorGraph, BehaviorNode } from './types.behavior-graph';
 import { readBehaviorGraph } from './execution-harness';
+import { evaluateExecutorCycleMateriality } from './autonomous-executor-policy';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -606,9 +607,17 @@ export function startContinuousDaemon(
     let cycleSummary: string;
 
     if (hasStrategy && hasTestSteps) {
-      cycleResult = 'improvement';
-      cycleSummary = `Planned: ${planned.name} — ${planned.strategy.slice(0, 200)}`;
-      state.improvements++;
+      const materiality = evaluateExecutorCycleMateriality({
+        daemonMode: 'planner',
+        sandboxResult: null,
+        validationResult: null,
+        beforeAfterMetric: null,
+      });
+      cycleResult = materiality.acceptedMaterial ? 'improvement' : 'no_change';
+      cycleSummary = `Planned only: ${planned.name} — ${materiality.reason}`;
+      if (materiality.acceptedMaterial) {
+        state.improvements++;
+      }
       consecutiveFailures = 0;
     } else {
       cycleResult = 'error';

@@ -20,6 +20,8 @@ import type {
   PathCoverageStructuralSafetyClassification,
   PathCoverageTerminalProof,
 } from './types.path-coverage-engine';
+import { buildPathProofPlan } from './path-proof-runner';
+import { buildPathProofEvidenceArtifact } from './path-proof-evidence';
 import { readJsonFile, writeTextFile, ensureDir, pathExists } from './safe-fs';
 import { safeJoin } from './safe-path';
 
@@ -60,9 +62,10 @@ export function buildPathCoverageState(
 ): PathCoverageState {
   const matrixPath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_EXECUTION_MATRIX.json');
 
-  let matrixPaths: PulseExecutionMatrixPath[] = matrixOverride?.paths ?? [];
+  let matrix = matrixOverride;
+  let matrixPaths: PulseExecutionMatrixPath[] = matrix?.paths ?? [];
   if (!matrixOverride && pathExists(matrixPath)) {
-    const matrix = readJsonFile<PulseExecutionMatrix>(matrixPath);
+    matrix = readJsonFile<PulseExecutionMatrix>(matrixPath);
     matrixPaths = matrix.paths ?? [];
   }
 
@@ -161,6 +164,18 @@ export function buildPathCoverageState(
   const outputDir = safeJoin(rootDir, '.pulse', 'current');
   ensureDir(outputDir, { recursive: true });
   writeTextFile(safeJoin(outputDir, 'PULSE_PATH_COVERAGE.json'), JSON.stringify(state, null, 2));
+  if (matrix) {
+    const pathProofPlan = buildPathProofPlan(rootDir, {
+      matrix,
+      pathCoverage: state,
+      generatedAt: state.generatedAt,
+    });
+    buildPathProofEvidenceArtifact(rootDir, {
+      plan: pathProofPlan,
+      runnerResults: [],
+      generatedAt: state.generatedAt,
+    });
+  }
 
   return state;
 }

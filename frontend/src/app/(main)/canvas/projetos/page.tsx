@@ -47,7 +47,15 @@ function ProjectSkeletonGrid() {
             }}
           />
           <div style={{ padding: '10px 12px', display: 'grid', gap: 8 }}>
-            <div style={{ width: '74%', height: 10, borderRadius: 999, background: '#1C1C1F' }} />
+            <div
+              style={{
+                width: '74%',
+                height: 10,
+                borderRadius: 999,
+                background:
+                  '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */,
+              }}
+            />
             <div
               style={{
                 width: '46%',

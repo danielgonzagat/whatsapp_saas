@@ -4,13 +4,20 @@ import ts from 'typescript';
 
 type FindingKind =
   | 'fixed_product_route_collection'
+  | 'fixed_source_root_collection'
   | 'fixed_capability_id_collection'
   | 'fixed_flow_id_collection'
   | 'fixed_module_decision_collection'
   | 'fixed_product_catalog_collection'
+  | 'fixed_domain_criticality_collection'
   | 'fixed_domain_catalog_collection'
   | 'fixed_provider_catalog_collection'
-  | 'fixed_role_catalog_collection';
+  | 'fixed_role_catalog_collection'
+  | 'hardcoded_break_type_authority_risk'
+  | 'hardcoded_break_push_type_risk'
+  | 'hardcoded_parser_rule_blocker_risk'
+  | 'hardcoded_sql_reality_table_risk'
+  | 'hardcoded_gate_profile_threshold_risk';
 
 export interface NoHardcodedRealityFinding {
   filePath: string;
@@ -96,6 +103,15 @@ const REALITY_CATALOG_CONTEXT_TOKENS = [
 ];
 const PRODUCT_CONTEXT_TOKENS = ['product', 'products', 'surface', 'surfaces'];
 const DOMAIN_CONTEXT_TOKENS = ['domain', 'domains', 'module', 'modules', 'area', 'areas'];
+const SOURCE_ROOT_CONTEXT_TOKENS = ['source', 'sources'];
+const SOURCE_ROOT_COLLECTION_TOKENS = ['dir', 'dirs', 'glob', 'globs', 'root', 'roots'];
+const CRITICALITY_CONTEXT_TOKENS = [
+  'critical',
+  'criticality',
+  'musthave',
+  'must',
+  'runtimecritical',
+];
 const PROVIDER_CONTEXT_TOKENS = [
   'adapter',
   'adapters',
@@ -108,6 +124,15 @@ const PROVIDER_CONTEXT_TOKENS = [
 ];
 const ROLE_CONTEXT_TOKENS = ['actor', 'actors', 'persona', 'personas', 'role', 'roles'];
 const USER_ROLE_CONTEXT_TOKENS = ['user', 'users'];
+const DECISION_GATE_CONTEXT_TOKENS = [
+  'gate',
+  'gates',
+  'profile',
+  'profiles',
+  'threshold',
+  'thresholds',
+  'tier',
+];
 const STRUCTURAL_ROLE_VALUES = new Set([
   'interface',
   'orchestration',
@@ -119,6 +144,8 @@ const STRUCTURAL_ROLE_VALUES = new Set([
 const INFRASTRUCTURE_ROUTES = new Set(['/', '/health', '/diag-db']);
 const HTTP_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']);
 const ARTIFACT_FILE_RE = /^PULSE_[A-Z0-9_]+\.json$/;
+const SQL_REALITY_TABLE_RE =
+  /\b(?:from|join|update|into)\s+(?:"([A-Z][A-Za-z0-9_]*)"|`([A-Z][A-Za-z0-9_]*)`|([A-Z][A-Za-z0-9_]*))/gi;
 
 function isSkippedPath(relPath: string): boolean {
   const normalized = relPath.replace(/\\/g, '/');
@@ -260,6 +287,27 @@ function extractStringLiterals(node: ts.Node): string[] {
   return values;
 }
 
+function extractLiteralSamples(node: ts.Node): string[] {
+  const values: string[] = [];
+  const visit = (child: ts.Node): void => {
+    if (ts.isStringLiteral(child) || ts.isNoSubstitutionTemplateLiteral(child)) {
+      values.push(child.text);
+      return;
+    }
+    if (ts.isNumericLiteral(child)) {
+      values.push(child.text);
+      return;
+    }
+    if (child.kind === ts.SyntaxKind.TrueKeyword || child.kind === ts.SyntaxKind.FalseKeyword) {
+      values.push(child.getText());
+      return;
+    }
+    ts.forEachChild(child, visit);
+  };
+  ts.forEachChild(node, visit);
+  return values;
+}
+
 function isDecisionCollection(node: ts.Node): boolean {
   if (ts.isArrayLiteralExpression(node) || ts.isObjectLiteralExpression(node)) {
     return true;
@@ -277,6 +325,28 @@ function routeFindings(context: string, values: string[]): string[] {
     return [];
   }
   return values.filter((value) => isRouteLiteral(value));
+}
+
+function isSourceRootLiteral(value: string): boolean {
+  const normalized = value.replace(/\\/g, '/');
+  return (
+    /^[A-Za-z0-9_.@/-]+\/src(?:\/|$)/.test(normalized) ||
+    /^[A-Za-z0-9_.@/-]+\/(?:app|pages|lib)(?:\/|$)/.test(normalized) ||
+    /^[A-Za-z0-9_.@/-]+\/\*\*/.test(normalized)
+  );
+}
+
+function sourceRootFindings(context: string, values: string[]): string[] {
+  if (context === 'LEGACY_SOURCE_ROOTS') {
+    return [];
+  }
+  if (
+    !contextHasToken(context, SOURCE_ROOT_CONTEXT_TOKENS) ||
+    !contextHasToken(context, SOURCE_ROOT_COLLECTION_TOKENS)
+  ) {
+    return [];
+  }
+  return values.filter((value) => isSourceRootLiteral(value));
 }
 
 function capabilityFindings(context: string, values: string[]): string[] {
@@ -332,6 +402,17 @@ function domainCatalogFindings(context: string, values: string[]): string[] {
   return realityLabelFindings(values);
 }
 
+function domainCriticalityFindings(context: string, values: string[]): string[] {
+  if (
+    !contextHasToken(context, DOMAIN_CONTEXT_TOKENS) ||
+    !contextHasToken(context, CRITICALITY_CONTEXT_TOKENS) ||
+    contextHasAllowedRealityGrammar(context)
+  ) {
+    return [];
+  }
+  return realityLabelFindings(values);
+}
+
 function providerCatalogFindings(context: string, values: string[]): string[] {
   if (
     !contextLooksLikeRealityCatalog(context, PROVIDER_CONTEXT_TOKENS, {
@@ -358,6 +439,96 @@ function roleCatalogFindings(context: string, values: string[]): string[] {
   return realityLabelFindings(values).filter((value) => !STRUCTURAL_ROLE_VALUES.has(value));
 }
 
+function gateProfileThresholdFindings(context: string, values: string[]): string[] {
+  if (!contextHasToken(context, DECISION_GATE_CONTEXT_TOKENS)) {
+    return [];
+  }
+  return values.filter((value) => value.length > 0);
+}
+
+function stringLiteralValue(node: ts.Node): string | null {
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return node.text;
+  }
+  return null;
+}
+
+function breakTypeAuthorityFindings(node: ts.Node): string[] {
+  if (!ts.isTypeAliasDeclaration(node) || node.name.text !== 'BreakType') {
+    return [];
+  }
+  const samples: string[] = [];
+  const visit = (child: ts.Node): void => {
+    if (ts.isLiteralTypeNode(child)) {
+      const value = stringLiteralValue(child.literal);
+      if (value) {
+        samples.push(value);
+      }
+    }
+    ts.forEachChild(child, visit);
+  };
+  visit(node.type);
+  return samples;
+}
+
+function breakPushTypeFindings(node: ts.Node): string[] {
+  if (!ts.isCallExpression(node) || !ts.isPropertyAccessExpression(node.expression)) {
+    return [];
+  }
+  if (node.expression.name.text !== 'push' || node.expression.expression.getText() !== 'breaks') {
+    return [];
+  }
+  const [firstArg] = node.arguments;
+  if (!firstArg || !ts.isObjectLiteralExpression(firstArg)) {
+    return [];
+  }
+  const typeProperty = firstArg.properties.find(
+    (property): property is ts.PropertyAssignment =>
+      ts.isPropertyAssignment(property) && propertyNameText(property.name) === 'type',
+  );
+  if (!typeProperty) {
+    return [];
+  }
+  const value = stringLiteralValue(typeProperty.initializer);
+  return value ? [value] : [];
+}
+
+function parserRuleBlockerFindings(
+  node: ts.Node,
+  relPath: string,
+  sourceHasBreakPush: boolean,
+): string[] {
+  if (!sourceHasBreakPush || !relPath.replace(/\\/g, '/').includes('scripts/pulse/parsers/')) {
+    return [];
+  }
+  if (!ts.isVariableDeclaration(node) || !ts.isIdentifier(node.name)) {
+    return [];
+  }
+  const name = node.name.text;
+  if (!/^ALLOWED_[A-Z0-9_]+$/.test(name) && !/^[A-Z0-9_]+_RE$/.test(name)) {
+    return [];
+  }
+  return [name];
+}
+
+function sqlRealityTableFindings(node: ts.Node): string[] {
+  const value = stringLiteralValue(node);
+  if (!value || !/\b(?:select|insert|update|delete)\b/i.test(value)) {
+    return [];
+  }
+  const samples: string[] = [];
+  SQL_REALITY_TABLE_RE.lastIndex = 0;
+  let match = SQL_REALITY_TABLE_RE.exec(value);
+  while (match) {
+    const tableName = match[1] || match[2] || match[3];
+    if (tableName && tableName !== 'information_schema' && tableName !== '_prisma_migrations') {
+      samples.push(tableName);
+    }
+    match = SQL_REALITY_TABLE_RE.exec(value);
+  }
+  return samples;
+}
+
 function pushFinding(
   findings: NoHardcodedRealityFinding[],
   sourceFile: ts.SourceFile,
@@ -382,23 +553,81 @@ function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityF
   const source = fs.readFileSync(filePath, 'utf8');
   const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true);
   const findings: NoHardcodedRealityFinding[] = [];
+  const sourceHasBreakPush = source.includes('breaks.push');
 
   const visit = (node: ts.Node): void => {
+    const breakTypeAuthority = breakTypeAuthorityFindings(node);
+    if (breakTypeAuthority.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_break_type_authority_risk',
+        'BreakType',
+        breakTypeAuthority,
+      );
+    }
+
+    const pushedBreakTypes = breakPushTypeFindings(node);
+    if (pushedBreakTypes.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_break_push_type_risk',
+        'breaks.push.type',
+        pushedBreakTypes,
+      );
+    }
+
+    const parserRules = parserRuleBlockerFindings(node, relPath, sourceHasBreakPush);
+    if (parserRules.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_parser_rule_blocker_risk',
+        nearestCollectionContext(node),
+        parserRules,
+      );
+    }
+
+    const sqlTables = sqlRealityTableFindings(node);
+    if (sqlTables.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_sql_reality_table_risk',
+        'sql.reality_table',
+        sqlTables,
+      );
+    }
+
     if (!isDecisionCollection(node)) {
       ts.forEachChild(node, visit);
       return;
     }
 
     const context = nearestCollectionContext(node);
-    const values = extractStringLiterals(node).filter((value) => !isAllowedLiteral(value));
+    const rawValues = extractStringLiterals(node);
+    const values = rawValues.filter((value) => !isAllowedLiteral(value));
+    const literalSamples = extractLiteralSamples(node);
     const routes = routeFindings(context, values);
+    const sourceRoots = sourceRootFindings(context, rawValues);
     const capabilities = capabilityFindings(context, values);
     const flows = flowFindings(context, values);
     const modules = moduleFindings(context, values);
     const products = productCatalogFindings(context, values);
+    const criticalDomains = domainCriticalityFindings(context, values);
     const domains = domainCatalogFindings(context, values);
     const providers = providerCatalogFindings(context, values);
     const roles = roleCatalogFindings(context, values);
+    const gateProfileThresholds = gateProfileThresholdFindings(context, literalSamples);
 
     if (routes.length > 0) {
       pushFinding(
@@ -409,6 +638,17 @@ function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityF
         'fixed_product_route_collection',
         context,
         routes,
+      );
+    }
+    if (sourceRoots.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'fixed_source_root_collection',
+        context,
+        sourceRoots,
       );
     }
     if (capabilities.length > 0) {
@@ -447,6 +687,17 @@ function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityF
         products,
       );
     }
+    if (criticalDomains.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'fixed_domain_criticality_collection',
+        context,
+        criticalDomains,
+      );
+    }
     if (domains.length > 0) {
       pushFinding(
         findings,
@@ -478,6 +729,17 @@ function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityF
         'fixed_role_catalog_collection',
         context,
         roles,
+      );
+    }
+    if (gateProfileThresholds.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_gate_profile_threshold_risk',
+        context,
+        gateProfileThresholds,
       );
     }
 

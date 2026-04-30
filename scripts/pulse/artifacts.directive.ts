@@ -2,7 +2,7 @@
  * Pulse artifact directive builder.
  * Constructs the CLI directive JSON and artifact index.
  */
-import { compact, unique } from './artifacts.io';
+import { compact, readOptionalJson, unique } from './artifacts.io';
 import {
   buildDecisionQueue,
   buildAutonomyQueue,
@@ -25,6 +25,11 @@ import type { PulseAutonomyState, PulseConvergencePlan } from './types';
 import type { PulseCertification, PulseGateName, PulseGateResult } from './types';
 import type { PulseRunIdentity } from './run-identity';
 import type { QueueUnit } from './artifacts.queue';
+import { buildDirectiveProofSurface } from './directive-proof-surface';
+import { buildFindingEventSurface } from './finding-event-surface';
+import type { PathProofPlan } from './path-proof-runner';
+import type { PathCoverageState } from './types.path-coverage-engine';
+import { safeJoin } from './safe-path';
 import {
   buildPreconditions,
   buildAllowedActions,
@@ -37,6 +42,11 @@ type DirectiveExecutionMatrixSummary = PulseArtifactSnapshot['executionMatrix'][
 type DirectiveExternalSignalSummary = PulseArtifactSnapshot['externalSignalState']['summary'];
 type PulseMachineDirectiveUnit = Record<string, string | number | boolean | string[] | null>;
 type PulseAutonomyProof = ReturnType<typeof buildAutonomyProof>;
+type DirectivePathProofSurface = ReturnType<typeof buildDirectiveProofSurface>;
+
+const CURRENT_PULSE_ARTIFACT_DIR = '.pulse/current';
+const PATH_PROOF_TASKS_ARTIFACT = 'PULSE_PATH_PROOF_TASKS.json';
+const PATH_COVERAGE_ARTIFACT = 'PULSE_PATH_COVERAGE.json';
 
 const MACHINE_PROOF_GATE_ORDER: PulseGateName[] = [
   'runtimePass',
@@ -196,6 +206,21 @@ function normalizeExternalSignalSummaryForDirective(
 
 function artifactJsonReplacer(_key: string, value: unknown): unknown {
   return typeof value === 'string' ? normalizeArtifactText(value) : value;
+}
+
+function readCurrentPulseArtifact<T>(artifactName: string): T | null {
+  return readOptionalJson<T>(safeJoin(process.cwd(), CURRENT_PULSE_ARTIFACT_DIR, artifactName));
+}
+
+export function buildPathProofSurfaceForDirective(
+  machineReadiness: PulseMachineReadiness,
+): DirectivePathProofSurface {
+  return buildDirectiveProofSurface({
+    pathProofPlan: readCurrentPulseArtifact<PathProofPlan>(PATH_PROOF_TASKS_ARTIFACT),
+    pathCoverage: readCurrentPulseArtifact<PathCoverageState>(PATH_COVERAGE_ARTIFACT),
+    machineReadiness,
+    now: machineReadiness.generatedAt,
+  });
 }
 
 function buildDefaultExitCriteria(unit: QueueUnit): string[] {
@@ -735,6 +760,7 @@ export function buildDirective(
     autonomyQueue,
     previousAutonomyState,
   );
+  const findingEventSurface = buildFindingEventSurface(snapshot.health.breaks, 12);
   const nextAutonomousUnits = autonomyQueue
     .slice(0, 12)
     .map((unit) => buildDirectiveUnit(snapshot, unit));
@@ -831,6 +857,18 @@ export function buildDirective(
       certificationScope: snapshot.certification.certificationScope,
       pulseMachineReadiness,
       pulseMachineProofGates: summarizeMachineProofGates(snapshot.certification),
+      pathProofSurface: buildPathProofSurfaceForDirective(pulseMachineReadiness),
+      findingValidationState: {
+        artifact: 'PULSE_FINDING_VALIDATION_STATE',
+        operationalIdentity: 'dynamic_finding_event',
+        internalBreakTypeIsOperationalIdentity: false,
+        parserSignalMustPassValidationBeforeBlocking: true,
+        weakSignalCanBlock: false,
+        eventSurface: findingEventSurface,
+      },
+      topFindingEvents: findingEventSurface.topEvents,
+      findingTruthModeCounts: findingEventSurface.truthModeCounts,
+      findingActionabilityCounts: findingEventSurface.actionabilityCounts,
       autonomyVerdict: autonomyReadiness.verdict,
       autonomousNextStepVerdict: autonomyReadiness.verdict,
       zeroPromptProductionGuidanceVerdict: autonomyProof.verdicts.zeroPromptProductionGuidance,

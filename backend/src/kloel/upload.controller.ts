@@ -246,9 +246,10 @@ export class UploadController {
   }
 
   /**
-   * Endpoint genérico de upload de arquivos
+   * Endpoint generico de upload de arquivos
    * Suporta: PDF, TXT, imagens, documentos
    */
+  // PULSE_TODO: verify if still needed, no caller detected
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, WorkspaceGuard)

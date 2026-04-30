@@ -1,4 +1,5 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
@@ -29,6 +30,7 @@ export class KloelToolExecutorWhatsAppService {
     private readonly whatsappService: WhatsappService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly audioService: AudioService,
+    private readonly planLimits: PlanLimitsService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -116,6 +118,7 @@ export class KloelToolExecutorWhatsAppService {
       },
     });
     try {
+      await this.planLimits.ensureDailyMessageQuota(workspaceId);
       await this.whatsappService.sendMessage(workspaceId, normalizedPhone, message);
       await this.prisma.message.updateMany({
         where: { id: msg.id, workspaceId },
@@ -258,6 +261,7 @@ export class KloelToolExecutorWhatsAppService {
       const audioBuffer = await this.audioService.textToSpeech(text, voice, workspaceId);
       const dataUri = `data:audio/mpeg;base64,${audioBuffer.toString('base64')}`;
       const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
+      await this.planLimits.ensureDailyMessageQuota(workspaceId);
       await this.whatsappService.sendMessage(workspaceId, normalizedPhone, '', {
         mediaUrl: dataUri,
         mediaType: 'audio',
@@ -291,6 +295,7 @@ export class KloelToolExecutorWhatsAppService {
           success: false,
           error: 'Documento não encontrado. Forneça URL ou nome cadastrado.',
         };
+      await this.planLimits.ensureDailyMessageQuota(workspaceId);
       await this.whatsappService.sendMessage(workspaceId, normalizedPhone, caption || '', {
         mediaUrl: documentUrl,
         mediaType: 'document',

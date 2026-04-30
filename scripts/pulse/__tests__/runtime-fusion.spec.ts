@@ -366,7 +366,7 @@ describe('runtime-fusion', () => {
     ]);
   });
 
-  it('normalizes runtime, change, static, and dependency signals into operational evidence', () => {
+  it('derives dynamic signal semantics from payload, source capability, trend, and blast radius', () => {
     const { rootDir, currentDir } = createPulseRoot();
 
     writeJson(path.join(currentDir, 'PULSE_CAPABILITY_STATE.json'), {
@@ -400,18 +400,28 @@ describe('runtime-fusion', () => {
       signals: [
         {
           id: 'runtime-opaque',
-          type: 'runtime_timeout',
+          type: 'opaque_event',
           source: 'sentry',
           truthMode: 'observed',
-          severity: 0.9,
-          impactScore: 0.91,
+          severity: 0.35,
+          impactScore: 0.4,
+          runtimeBaselineScore: 0.92,
+          blastRadiusScore: 0.86,
+          affectedUsers: 1200,
+          trend: 'worsening',
           confidence: 0.96,
           summary: 'Opaque runtime processor timed out.',
           relatedFiles: ['backend/src/opaque/runtime.service.ts'],
+          observedPayload: {
+            traceId: 'trace-opaque',
+            statusCode: 504,
+            durationMs: 9100,
+            baselineP95Ms: 200,
+          },
         },
         {
           id: 'change-opaque',
-          type: 'pull_request_change',
+          type: 'opaque_event',
           source: 'github',
           truthMode: 'observed',
           severity: 0.6,
@@ -419,10 +429,14 @@ describe('runtime-fusion', () => {
           confidence: 0.88,
           summary: 'Opaque resolver changed.',
           affectedCapabilities: ['capability:opaque-runtime'],
+          observedPayload: {
+            commitSha: 'abc123',
+            changedFiles: ['backend/src/opaque/runtime.service.ts'],
+          },
         },
         {
           id: 'static-opaque',
-          type: 'static_complexity',
+          type: 'opaque_event',
           source: 'codacy',
           truthMode: 'observed',
           severity: 0.7,
@@ -430,10 +444,15 @@ describe('runtime-fusion', () => {
           confidence: 0.9,
           summary: 'Opaque resolver static complexity hotspot.',
           affectedFlows: ['flow:opaque-resolution'],
+          observedPayload: {
+            ruleId: 'complexity',
+            findingId: 'codacy-finding-1',
+            filePath: 'backend/src/opaque/runtime.service.ts',
+          },
         },
         {
           id: 'dependency-opaque',
-          type: 'dependency_vulnerability',
+          type: 'opaque_event',
           source: 'dependabot',
           truthMode: 'inferred',
           severity: 0.8,
@@ -441,6 +460,11 @@ describe('runtime-fusion', () => {
           confidence: 0.79,
           summary: 'Opaque dependency requires update.',
           affectedCapabilities: ['capability:opaque-runtime'],
+          observedPayload: {
+            packageName: 'opaque-runtime',
+            currentVersion: '1.0.0',
+            advisoryId: 'CVE-2099-0001',
+          },
         },
       ],
     });
@@ -449,6 +473,7 @@ describe('runtime-fusion', () => {
     const signalsById = new Map(state.signals.map((signal) => [signal.id, signal]));
 
     expect(state.summary.totalSignals).toBe(4);
+    expect(state.evidence.externalSignalState.reason).toContain('Dynamic signal semantics');
     expect([...signalsById.values()].map((signal) => signal.evidenceKind).sort()).toEqual([
       'change',
       'dependency',
@@ -471,6 +496,8 @@ describe('runtime-fusion', () => {
     expect(signalsById.get('runtime-opaque')?.affectedCapabilityIds).toEqual([
       'capability:opaque-runtime',
     ]);
+    expect(signalsById.get('runtime-opaque')?.severity).toBe('critical');
+    expect(signalsById.get('runtime-opaque')?.type).toBe('error');
     expect(signalsById.get('runtime-opaque')?.affectedFlowIds).toEqual(['flow:opaque-resolution']);
     expect(signalsById.get('change-opaque')?.affectedFlows).toEqual(['flow:opaque-resolution']);
     expect(signalsById.get('static-opaque')?.affectedCapabilities).toEqual([

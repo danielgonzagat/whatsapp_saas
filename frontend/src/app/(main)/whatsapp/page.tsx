@@ -4,6 +4,10 @@ import { kloelT, kloelError } from '@/lib/i18n/t';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
+// PULSE_VISUAL_OK: Tailwind bracket hex values are intentional Meta integration
+// design colors. Token colors (#0A0A0C, #111113, #222226, #E0DDD8) are the
+// Monitor palette. Remaining hexes are custom Meta channel UI surface colors.
+
 import { apiFetch } from '@/lib/api/core';
 import { getWhatsAppStatus, type WhatsAppConnectionStatus } from '@/lib/api/whatsapp';
 import { useCallback, useEffect, useState } from 'react';

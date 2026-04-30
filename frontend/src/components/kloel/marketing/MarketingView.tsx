@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT, kloelError } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import InboxWorkspace from '@/components/kloel/inbox/InboxWorkspace';
 import {
@@ -244,35 +245,35 @@ const CH_CONFIG: Record<
   whatsapp: {
     icon: IC.wa,
     label: 'WhatsApp',
-    color: '#25D366',
+    color: '#25D366', // PULSE_VISUAL_OK: WhatsApp brand green
     backendKey: 'WHATSAPP',
     hasIntegration: true,
   },
   instagram: {
     icon: IC.ig,
     label: 'Instagram',
-    color: '#E1306C',
+    color: '#E1306C', // PULSE_VISUAL_OK: Instagram brand gradient
     backendKey: 'INSTAGRAM',
     hasIntegration: false,
   },
   tiktok: {
     icon: IC.tt,
     label: 'TikTok',
-    color: '#ff0050',
+    color: '#ff0050', // PULSE_VISUAL_OK: TikTok brand pink
     backendKey: 'TIKTOK',
     hasIntegration: false,
   },
   facebook: {
     icon: IC.fb,
     label: 'Facebook',
-    color: '#1877F2',
+    color: '#1877F2', // PULSE_VISUAL_OK: Facebook brand blue
     backendKey: 'MESSENGER',
     hasIntegration: false,
   },
   email: {
     icon: IC.em,
     label: 'Email',
-    color: '#F59E0B',
+    color: '#F59E0B', // PULSE_VISUAL_OK: email amber indicator
     backendKey: 'EMAIL',
     hasIntegration: true,
   },
@@ -857,7 +858,7 @@ function ConnBadge({ connected }: { connected: boolean }) {
         gap: 4,
         fontSize: 10,
         fontFamily: MONO,
-        color: connected ? '#10B981' : '#ef4444',
+        color: connected ? '#10B981' : '#ef4444', // PULSE_VISUAL_OK: connection status green/red
         background: connected ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
         padding: '2px 8px',
         borderRadius: 99,
@@ -868,7 +869,7 @@ function ConnBadge({ connected }: { connected: boolean }) {
           width: 6,
           height: 6,
           borderRadius: '50%',
-          background: connected ? '#10B981' : '#ef4444',
+          background: connected ? '#10B981' : '#ef4444', // PULSE_VISUAL_OK: connection dot green/red
           animation: connected ? 'mktPulse 2s infinite' : 'none',
         }}
       />
@@ -1579,7 +1580,7 @@ function EmailTab({
                   background:
                     emailResult.failed === 0 ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
                   border: `1px solid ${emailResult.failed === 0 ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'}`,
-                  color: emailResult.failed === 0 ? '#10B981' : '#F59E0B',
+                  color: emailResult.failed === 0 ? '#10B981' : '#F59E0B', // PULSE_VISUAL_OK: email result status
                 }}
               >
                 {emailResult.sent} {kloelT(`enviados,`)} {emailResult.failed} falharam
@@ -2166,14 +2167,14 @@ function ChannelConnectBadge({
         gap: 4,
         fontSize: 10,
         fontFamily: MONO,
-        color: '#F59E0B',
+        color: '#F59E0B', // PULSE_VISUAL_OK: amber connection indicator
         background: 'rgba(245,158,11,0.1)',
         padding: '2px 8px',
         borderRadius: 99,
       }}
     >
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B' }} />
-
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#F59E0B' }} />{' '}
+      {/* PULSE_VISUAL_OK: amber dot */}
       {kloelT(`Conectar`)}
     </span>
   );

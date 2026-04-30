@@ -2,6 +2,7 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { authApi } from '@/lib/api';
+import { colors } from '@/lib/design-tokens';
 import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
 import Link from 'next/link';
 import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react';
@@ -312,13 +313,13 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const inputBase: React.CSSProperties = {
     width: '100%',
     height: 44,
-    background: '#111113',
-    border: '1px solid #222226',
+    background: colors.background.surface,
+    border: `1px solid ${colors.border.space}`,
     borderRadius: 6,
     padding: '0 14px',
     fontSize: 14,
     fontFamily: sora,
-    color: '#E0DDD8',
+    color: colors.text.silver,
     outline: 'none',
     transition: 'border-color 150ms ease',
     boxSizing: 'border-box',
@@ -330,7 +331,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
         display: 'flex',
         minHeight: '100vh',
         height: '100vh',
-        background: '#0A0A0C',
+        background: colors.background.void,
         fontFamily: sora,
         overflow: 'hidden',
       }}
@@ -377,7 +378,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   fontFamily: jetbrains,
                   fontSize: 11,
                   fontWeight: 500,
-                  color: '#E85D30',
+                  color: colors.ember.primary,
                   letterSpacing: '0.16em',
                   textTransform: 'uppercase',
                 }}
@@ -389,7 +390,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   fontFamily: sora,
                   fontSize: 'clamp(28px, 4vw, 34px)',
                   fontWeight: 700,
-                  color: '#E0DDD8',
+                  color: colors.text.silver,
                   lineHeight: 1.12,
                   margin: 0,
                   textWrap: 'balance',
@@ -401,7 +402,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                 style={{
                   fontFamily: sora,
                   fontSize: 14,
-                  color: '#6E6E73',
+                  color: colors.text.muted,
                   lineHeight: 1.6,
                   margin: 0,
                   maxWidth: 340,
@@ -417,7 +418,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                   style={{
                     fontFamily: jetbrains,
                     fontSize: 11,
-                    color: '#E85D30',
+                    color: colors.ember.primary,
                     lineHeight: 1.6,
                     margin: 0,
                     maxWidth: 360,
@@ -446,18 +447,18 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
 
             {/* divider */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
-              <div style={{ flex: 1, height: 1, background: '#222226' }} />
+              <div style={{ flex: 1, height: 1, background: colors.border.space }} />
               <span
                 style={{
                   fontFamily: sora,
                   fontSize: 12,
-                  color: '#3A3A3F',
+                  color: colors.text.dim,
                   textTransform: 'lowercase',
                 }}
               >
                 ou
               </span>
-              <div style={{ flex: 1, height: 1, background: '#222226' }} />
+              <div style={{ flex: 1, height: 1, background: colors.border.space }} />
             </div>
 
             {/* email/password form */}
@@ -501,15 +502,15 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             style={{
               fontFamily: sora,
               fontSize: 11,
-              color: '#3A3A3F',
+              color: colors.text.dim,
               textDecoration: 'none',
               transition: 'color 150ms ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#6E6E73';
+              e.currentTarget.style.color = colors.text.muted;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#3A3A3F';
+              e.currentTarget.style.color = colors.text.dim;
             }}
           >
             {kloelT(`Suporte`)}
@@ -519,15 +520,15 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             style={{
               fontFamily: sora,
               fontSize: 11,
-              color: '#3A3A3F',
+              color: colors.text.dim,
               textDecoration: 'none',
               transition: 'color 150ms ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#6E6E73';
+              e.currentTarget.style.color = colors.text.muted;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#3A3A3F';
+              e.currentTarget.style.color = colors.text.dim;
             }}
           >
             {kloelT(`Termos de Uso`)}
@@ -537,15 +538,15 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             style={{
               fontFamily: sora,
               fontSize: 11,
-              color: '#3A3A3F',
+              color: colors.text.dim,
               textDecoration: 'none',
               transition: 'color 150ms ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = '#6E6E73';
+              e.currentTarget.style.color = colors.text.muted;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = '#3A3A3F';
+              e.currentTarget.style.color = colors.text.dim;
             }}
           >
             {kloelT(`Privacidade`)}
@@ -554,7 +555,10 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
       </div>
 
       {/* RIGHT — THE MACHINE (hidden on mobile) */}
-      <div className="hidden md:flex" style={{ flex: 1, borderLeft: '1px solid #19191C' }}>
+      <div
+        className="hidden md:flex"
+        style={{ flex: 1, borderLeft: `1px solid ${colors.border.void}` }}
+      >
         <TheMachine />
       </div>
     </div>

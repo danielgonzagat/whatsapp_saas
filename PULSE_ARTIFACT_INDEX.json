@@ -1,6 +1,6 @@
 {
-  "runId": "910557d1-d065-4bc6-9011-419c24b6f000",
-  "generatedAt": "2026-04-29T23:49:33.895Z",
+  "runId": "456e3fb3-ea19-4bbc-b364-eca164826887",
+  "generatedAt": "2026-04-30T00:47:28.570Z",
   "authorityMode": "autonomous-execution",
   "advisoryOnly": false,
   "authorityReasons": [
@@ -14,6 +14,7 @@
     "canRunBoundedAutonomousCycle": true,
     "canDeclareKloelProductCertified": false,
     "blockers": [
+      "critical_path_terminal: 3153 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-marketing, matrix:capability:capability:admin-permission. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain."
     ]
   },

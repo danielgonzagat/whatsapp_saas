@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-04-29T23:49:33.895Z",
+  "generatedAt": "2026-04-30T00:47:28.570Z",
   "profile": null,
   "certificationScope": null,
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
     "status": "NOT_READY",
-    "generatedAt": "2026-04-29T23:49:29.816Z",
+    "generatedAt": "2026-04-30T00:47:24.991Z",
     "productCertificationStatus": "NOT_CERTIFIED",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": true,
@@ -18,8 +18,8 @@
         "evidence": {
           "nextExecutableUnitLimit": 8,
           "boundedExecutableUnits": 8,
-          "totalAutonomousUnits": 31,
-          "totalConvergenceUnits": 75
+          "totalAutonomousUnits": 32,
+          "totalConvergenceUnits": 76
         }
       },
       {
@@ -28,15 +28,15 @@
         "reason": "Cross-artifact consistency passed.",
         "evidence": {
           "selfTrustOverallPass": true,
-          "selfTrustScore": 99
+          "selfTrustScore": 100
         }
       },
       {
         "id": "execution_matrix",
         "status": "pass",
-        "reason": "Execution matrix classified 4078 path(s) with zero unknown and zero non-terminal paths.",
+        "reason": "Execution matrix classified 4093 path(s) with zero unknown and zero non-terminal paths.",
         "evidence": {
-          "totalPaths": 4078,
+          "totalPaths": 4093,
           "unknownPaths": 0,
           "criticalUnobservedPaths": 0,
           "impreciseBreakpoints": 0,
@@ -45,13 +45,13 @@
       },
       {
         "id": "critical_path_terminal",
-        "status": "pass",
-        "reason": "All critical matrix paths are observed pass/fail or carry a precise terminal reason in PULSE_EXECUTION_MATRIX.json. 3146 terminal critical path(s) still need observed proof; next ai_safe action is to run the path validation command from PULSE_EXECUTION_MATRIX.json and refresh PULSE_PATH_COVERAGE.json.",
+        "status": "fail",
+        "reason": "3153 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-marketing, matrix:capability:capability:admin-permission. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
         "evidence": {
           "criticalUnobservedPaths": 0,
           "observedPass": 17,
           "observedFail": 233,
-          "terminalWithoutObservedEvidence": 3146,
+          "terminalWithoutObservedEvidence": 3153,
           "firstTerminalPathId": "matrix:capability:capability:ad-rules",
           "terminalArtifact": "PULSE_EXECUTION_MATRIX.json",
           "coverageArtifact": "PULSE_PATH_COVERAGE.json",
@@ -91,7 +91,7 @@
         "evidence": {
           "overallPass": true,
           "confidence": "high",
-          "score": 99
+          "score": 100
         }
       },
       {
@@ -109,6 +109,7 @@
       }
     ],
     "blockers": [
+      "critical_path_terminal: 3153 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-marketing, matrix:capability:capability:admin-permission. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain."
     ]
   },
@@ -160,13 +161,13 @@
     },
     {
       "gate": "criticalPathObservedPass",
-      "status": "pass",
-      "reason": "All critical matrix paths are observed pass/fail or carry a precise terminal reason in PULSE_EXECUTION_MATRIX.json. 3146 terminal critical path(s) still need observed proof; next ai_safe action is to run the path validation command from PULSE_EXECUTION_MATRIX.json and refresh PULSE_PATH_COVERAGE.json."
+      "status": "fail",
+      "reason": "3153 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-marketing, matrix:capability:capability:admin-permission. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json."
     },
     {
       "gate": "executionMatrixCompletePass",
       "status": "pass",
-      "reason": "Execution matrix classified 4078 path(s) with zero unknown and zero non-terminal paths."
+      "reason": "Execution matrix classified 4093 path(s) with zero unknown and zero non-terminal paths."
     },
     {
       "gate": "breakpointPrecisionPass",
@@ -206,14 +207,14 @@
     "canWorkNow": true,
     "canContinueUntilReady": false,
     "canDeclareComplete": false,
-    "automationSafeUnits": 31,
+    "automationSafeUnits": 32,
     "blockers": [],
     "warnings": [
       "2 external adapter(s) are missing; production reality is incomplete but local convergence can still proceed."
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-04-29T23:49:29.816Z",
+    "generatedAt": "2026-04-30T00:47:24.991Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
@@ -234,27 +235,26 @@
     "advisoryOnly": false,
     "automationEligible": true,
     "firstExecutableUnit": {
-      "id": "capability-capability-ad-rules",
-      "kind": "capability",
-      "priority": "P1",
-      "productImpact": "material",
+      "id": "gate-critical-path-observed-pass",
+      "kind": "gate",
+      "priority": "P0",
+      "productImpact": "diagnostic",
       "executionMode": "ai_safe",
-      "title": "Materialize capability Ad Rules",
+      "title": "Clear Critical Path Observed Pass",
       "validationArtifacts": [
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_CERTIFICATE.json"
+        "PULSE_CERTIFICATE.json",
+        "PULSE_EXECUTION_MATRIX.json",
+        "PULSE_PATH_COVERAGE.json"
       ],
       "exitCriteria": [
-        "Validate structural chain for /ad-rules.",
-        "Re-run runtime evidence for this capability."
+        "Gate criticalPathObservedPass returns pass in the next certification run."
       ]
     },
     "criteria": [
       {
         "id": "guidance_executable",
         "status": "pass",
-        "evidence": "Next unit capability-capability-ad-rules is ai_safe and has 3 validation artifact(s)."
+        "evidence": "Next unit gate-critical-path-observed-pass is ai_safe and has 3 validation artifact(s)."
       },
       {
         "id": "authority_closed",
@@ -454,7 +454,7 @@
   "currentCheckpoint": {
     "tier": 0,
     "status": "NOT_CERTIFIED",
-    "score": 61
+    "score": 63
   },
   "targetCheckpoint": {
     "capabilityRealnessRatio": 1,
@@ -465,13 +465,13 @@
   "currentState": {
     "certificationStatus": "NOT_CERTIFIED",
     "blockingTier": 0,
-    "score": 61,
+    "score": 63,
     "scopeParity": {
       "status": "pass",
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "high",
       "reason": "Repo inventory completed and all observed Codacy hotspot files are covered.",
-      "inventoryFiles": 2907,
+      "inventoryFiles": 2922,
       "codacyObservedFiles": 60,
       "codacyObservedFilesCovered": 60,
       "missingCodacyFiles": []
@@ -486,7 +486,7 @@
     "gateReason": "All parsers loaded and no phantom capability/flow remains. 12 aspirational structure(s) remain explicitly marked as aspirational.",
     "overallPass": true,
     "confidence": "high",
-    "score": 99,
+    "score": 100,
     "crossArtifactConsistency": {
       "pass": true,
       "reason": null,
@@ -530,7 +530,7 @@
         "blocking": false,
         "proofBasis": "codacy_snapshot",
         "syncedAt": "2026-04-29T17:24:36.686Z",
-        "freshnessMinutes": 376
+        "freshnessMinutes": 435
       },
       {
         "source": "github",
@@ -769,7 +769,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-04-29T23:40:26.666Z",
+        "observedAt": "2026-04-30T00:40:06.853Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -813,7 +813,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-        "observedAt": "2026-04-29T23:40:26.666Z",
+        "observedAt": "2026-04-30T00:40:06.853Z",
         "relatedFiles": [
           "backend/src/auth/email.service.ts"
         ],
@@ -1038,7 +1038,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-        "observedAt": "2026-04-29T23:40:26.666Z",
+        "observedAt": "2026-04-30T00:40:06.853Z",
         "relatedFiles": [
           "backend/src/autopilot/autopilot.service.ts"
         ],
@@ -1217,7 +1217,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-04-29T23:40:26.666Z",
+        "observedAt": "2026-04-30T00:40:06.853Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -2063,13 +2063,13 @@
   },
   "executionMatrix": {
     "summary": {
-      "totalPaths": 4078,
+      "totalPaths": 4093,
       "bySource": {
         "execution_chain": 0,
         "capability": 317,
         "flow": 118,
         "structural_node": 1473,
-        "scope_file": 2170
+        "scope_file": 2185
       },
       "byStatus": {
         "observed_pass": 17,
@@ -2078,15 +2078,15 @@
         "observation_only": 0,
         "unreachable": 0,
         "inferred_only": 1438,
-        "not_executable": 2286
+        "not_executable": 2301
       },
       "observedPass": 17,
       "observedFail": 233,
       "untested": 104,
       "unreachable": 0,
       "inferredOnly": 1438,
-      "notExecutable": 2286,
-      "terminalPaths": 4078,
+      "notExecutable": 2301,
+      "terminalPaths": 4093,
       "nonTerminalPaths": 0,
       "unknownPaths": 0,
       "criticalUnobservedPaths": 0,
@@ -15211,6 +15211,84 @@
   "nextAutonomousUnits": [
     {
       "order": 34,
+      "id": "gate-critical-path-observed-pass",
+      "kind": "gate",
+      "priority": "P0",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "inferred",
+      "confidence": "high",
+      "productImpact": "diagnostic",
+      "ownerLane": "security",
+      "title": "Clear Critical Path Observed Pass",
+      "summary": "3153 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-dashbo...",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Critical Path Observed Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Critical Path Observed Pass as a blocking evidence layer.",
+      "targetState": "Gate criticalPathObservedPass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [
+        "capability:ad-rules",
+        "capability:admin-chat",
+        "capability:admin-clients",
+        "capability:admin-compliance",
+        "capability:admin-dashboard",
+        "capability:admin-destructive",
+        "capability:admin-marketing",
+        "capability:admin-permission"
+      ],
+      "affectedFlows": [],
+      "gateNames": [
+        "criticalPathObservedPass"
+      ],
+      "expectedGateShift": "Pass criticalPathObservedPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_EXECUTION_MATRIX.json",
+        "PULSE_PATH_COVERAGE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_EXECUTION_MATRIX.json",
+        "PULSE_PATH_COVERAGE.json"
+      ],
+      "relatedFiles": [],
+      "exitCriteria": [
+        "Gate criticalPathObservedPass returns pass in the next certification run."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "requiredValidations": [
+        "typecheck",
+        "affected-tests"
+      ]
+    },
+    {
+      "order": 35,
       "id": "capability-capability-ad-rules",
       "kind": "capability",
       "priority": "P1",
@@ -15290,7 +15368,7 @@
       ]
     },
     {
-      "order": 35,
+      "order": 36,
       "id": "capability-capability-admin-accounts",
       "kind": "capability",
       "priority": "P1",
@@ -15375,7 +15453,7 @@
       ]
     },
     {
-      "order": 36,
+      "order": 37,
       "id": "capability-capability-admin-audit",
       "kind": "capability",
       "priority": "P1",
@@ -15455,7 +15533,7 @@
       ]
     },
     {
-      "order": 37,
+      "order": 38,
       "id": "capability-capability-admin-auth",
       "kind": "capability",
       "priority": "P1",
@@ -15541,7 +15619,7 @@
       ]
     },
     {
-      "order": 38,
+      "order": 39,
       "id": "capability-capability-admin-carteira",
       "kind": "capability",
       "priority": "P1",
@@ -15629,7 +15707,7 @@
       ]
     },
     {
-      "order": 39,
+      "order": 40,
       "id": "capability-capability-admin-config",
       "kind": "capability",
       "priority": "P1",
@@ -15709,7 +15787,7 @@
       ]
     },
     {
-      "order": 43,
+      "order": 44,
       "id": "capability-capability-admin-dashboard",
       "kind": "capability",
       "priority": "P1",
@@ -15791,7 +15869,7 @@
       ]
     },
     {
-      "order": 44,
+      "order": 45,
       "id": "capability-capability-admin-marketing",
       "kind": "capability",
       "priority": "P1",
@@ -15872,7 +15950,7 @@
       ]
     },
     {
-      "order": 40,
+      "order": 41,
       "id": "capability-capability-admin-chat",
       "kind": "capability",
       "priority": "P1",
@@ -15959,7 +16037,7 @@
       ]
     },
     {
-      "order": 41,
+      "order": 42,
       "id": "capability-capability-admin-clients",
       "kind": "capability",
       "priority": "P1",
@@ -16045,7 +16123,7 @@
       ]
     },
     {
-      "order": 42,
+      "order": 43,
       "id": "capability-capability-admin-compliance",
       "kind": "capability",
       "priority": "P1",
@@ -16095,92 +16173,6 @@
         "Governed ai_safe validation: Run governed structural evidence validation for role orchestration on capability capability:admin-compliance.",
         "Governed ai_safe validation: Run governed structural evidence validation for role persistence on capability capability:admin-compliance.",
         "Governed ai_safe validation: Run targeted typecheck and tests that exercise capability capability:admin-compliance."
-      ],
-      "preconditions": [
-        "Structural evidence must be rechecked for accuracy.",
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
-        "All affected routes have working backend endpoints.",
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "requiredValidations": [
-        "typecheck",
-        "affected-tests"
-      ]
-    },
-    {
-      "order": 45,
-      "id": "capability-capability-admin-destructive",
-      "kind": "capability",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "inferred",
-      "confidence": "high",
-      "productImpact": "material",
-      "ownerLane": "operator-admin",
-      "title": "Materialize capability Admin Destructive",
-      "summary": "Capability Admin Destructive is partial. Maturity is connected (74%). Maturity is still missing: runtime_evidence, validation, scenario_coverage. Governed ai_safe blocker for scenario_coverage: Missing observed evidence for required role scenario_coverage. Expected validation: Run governed scenario or flow evidence ...",
-      "whyNow": "Moves capability Admin Destructive from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
-      "visionDelta": "Moves capability Admin Destructive from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
-      "targetState": "Capability Admin Destructive must become materially real or at least structurally partial with no illusion-only path.",
-      "affectedCapabilities": [
-        "capability:admin-destructive"
-      ],
-      "affectedFlows": [],
-      "gateNames": [
-        "truthExtractionPass"
-      ],
-      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
-      "validationTargets": [
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "relatedFiles": [
-        "backend/prisma/schema.prisma",
-        "backend/src/admin/destructive/admin-destructive.controller.ts",
-        "backend/src/admin/destructive/destructive-intent.service.ts",
-        "frontend-admin/src/components/admin/destructive-confirm-dialog.tsx",
-        "frontend-admin/src/lib/api/admin-destructive-api.ts"
-      ],
-      "exitCriteria": [
-        "Validate structural chain for /admin/destructive-intents.",
-        "Re-run runtime evidence for this capability.",
-        "Governed ai_safe validation: Run governed scenario or flow evidence for capability capability:admin-destructive.",
-        "Governed ai_safe validation: Run governed structural evidence validation for role interface on capability capability:admin-destructive.",
-        "Governed ai_safe validation: Run governed structural evidence validation for role orchestration on capability capability:admin-destructive.",
-        "Governed ai_safe validation: Run governed structural evidence validation for role persistence on capability capability:admin-destructive.",
-        "Governed ai_safe validation: Run governed structural evidence validation for role side_effect on capability capability:admin-destructive.",
-        "Governed ai_safe validation: Run targeted typecheck and tests that exercise capability capability:admin-destructive."
       ],
       "preconditions": [
         "Structural evidence must be rechecked for accuracy.",
@@ -17108,6 +17100,84 @@
   "nextProductExecutableUnits": [
     {
       "order": 34,
+      "id": "gate-critical-path-observed-pass",
+      "kind": "gate",
+      "priority": "P0",
+      "source": "pulse",
+      "executionMode": "ai_safe",
+      "riskLevel": "medium",
+      "evidenceMode": "inferred",
+      "confidence": "high",
+      "productImpact": "diagnostic",
+      "ownerLane": "security",
+      "title": "Clear Critical Path Observed Pass",
+      "summary": "3153 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-dashbo...",
+      "whyNow": "Improves trust in the reconstructed product state by clearing Critical Path Observed Pass as a blocking evidence layer.",
+      "visionDelta": "Improves trust in the reconstructed product state by clearing Critical Path Observed Pass as a blocking evidence layer.",
+      "targetState": "Gate criticalPathObservedPass must return pass with fresh evidence on the current commit.",
+      "affectedCapabilities": [
+        "capability:ad-rules",
+        "capability:admin-chat",
+        "capability:admin-clients",
+        "capability:admin-compliance",
+        "capability:admin-dashboard",
+        "capability:admin-destructive",
+        "capability:admin-marketing",
+        "capability:admin-permission"
+      ],
+      "affectedFlows": [],
+      "gateNames": [
+        "criticalPathObservedPass"
+      ],
+      "expectedGateShift": "Pass criticalPathObservedPass",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_EXECUTION_MATRIX.json",
+        "PULSE_PATH_COVERAGE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_EXECUTION_MATRIX.json",
+        "PULSE_PATH_COVERAGE.json"
+      ],
+      "relatedFiles": [],
+      "exitCriteria": [
+        "Gate criticalPathObservedPass returns pass in the next certification run."
+      ],
+      "preconditions": [
+        "Structural evidence must be rechecked for accuracy.",
+        "One or more affected capabilities are still partial or phantom."
+      ],
+      "allowedActions": [
+        "Code generation",
+        "File mutations",
+        "Integration setup",
+        "Test writing",
+        "Schema migrations",
+        "Configuration changes"
+      ],
+      "forbiddenActions": [
+        "Do not suppress Codacy or linting results",
+        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
+        "Do not use db push in production or CI",
+        "Do not reduce test coverage or delete existing tests",
+        "Do not commit secrets or credentials",
+        "Do not bypass payment, auth, or webhook validation",
+        "Do not rewrite git history or force pushes",
+        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
+      ],
+      "successCriteria": [
+        "All affected files pass linting and typecheck.",
+        "No new Codacy high/critical issues introduced.",
+        "Tests passing for affected modules."
+      ],
+      "requiredValidations": [
+        "typecheck",
+        "affected-tests"
+      ]
+    },
+    {
+      "order": 35,
       "id": "capability-capability-ad-rules",
       "kind": "capability",
       "priority": "P1",
@@ -17187,7 +17257,7 @@
       ]
     },
     {
-      "order": 35,
+      "order": 36,
       "id": "capability-capability-admin-accounts",
       "kind": "capability",
       "priority": "P1",
@@ -17272,7 +17342,7 @@
       ]
     },
     {
-      "order": 36,
+      "order": 37,
       "id": "capability-capability-admin-audit",
       "kind": "capability",
       "priority": "P1",
@@ -17352,7 +17422,7 @@
       ]
     },
     {
-      "order": 37,
+      "order": 38,
       "id": "capability-capability-admin-auth",
       "kind": "capability",
       "priority": "P1",
@@ -17438,7 +17508,7 @@
       ]
     },
     {
-      "order": 38,
+      "order": 39,
       "id": "capability-capability-admin-carteira",
       "kind": "capability",
       "priority": "P1",
@@ -17526,7 +17596,7 @@
       ]
     },
     {
-      "order": 39,
+      "order": 40,
       "id": "capability-capability-admin-config",
       "kind": "capability",
       "priority": "P1",
@@ -17606,7 +17676,7 @@
       ]
     },
     {
-      "order": 43,
+      "order": 44,
       "id": "capability-capability-admin-dashboard",
       "kind": "capability",
       "priority": "P1",
@@ -17686,87 +17756,6 @@
         "typecheck",
         "affected-tests"
       ]
-    },
-    {
-      "order": 44,
-      "id": "capability-capability-admin-marketing",
-      "kind": "capability",
-      "priority": "P1",
-      "source": "pulse",
-      "executionMode": "ai_safe",
-      "riskLevel": "medium",
-      "evidenceMode": "observed",
-      "confidence": "high",
-      "productImpact": "material",
-      "ownerLane": "operator-admin",
-      "title": "Materialize capability Admin Dashboard",
-      "summary": "Capability Admin Dashboard is partial. Maturity is operational (90%). Missing structural roles: side_effect. Maturity is still missing: side_effect. Governed ai_safe blocker for side_effect: Missing observed evidence for required role side_effect. Expected validation: Run governed structural evidence validation for ...",
-      "whyNow": "Moves capability Admin Dashboard from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
-      "visionDelta": "Moves capability Admin Dashboard from partial toward real operation by closing the missing structural roles and maturity gaps that still block product readiness.",
-      "targetState": "Capability Admin Dashboard must become materially real or at least structurally partial with no illusion-only path.",
-      "affectedCapabilities": [
-        "capability:admin-marketing"
-      ],
-      "affectedFlows": [],
-      "gateNames": [
-        "truthExtractionPass"
-      ],
-      "expectedGateShift": "Pass truthExtractionPass or reduce phantom capability count",
-      "validationTargets": [
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "validationArtifacts": [
-        "PULSE_CAPABILITY_STATE.json",
-        "PULSE_PRODUCT_VISION.json",
-        "PULSE_CERTIFICATE.json"
-      ],
-      "relatedFiles": [
-        "backend/prisma/schema.prisma",
-        "backend/src/admin/dashboard/admin-dashboard.service.ts",
-        "backend/src/admin/marketing/admin-marketing.controller.ts",
-        "backend/src/admin/marketing/admin-marketing.service.ts",
-        "frontend-admin/src/app/(admin)/marketing/page.tsx",
-        "frontend-admin/src/lib/api/admin-marketing-api.ts"
-      ],
-      "exitCriteria": [
-        "Validate structural chain for /admin/dashboard/home.",
-        "Re-run runtime evidence for this capability.",
-        "Governed ai_safe validation: Run governed structural evidence validation for role side_effect on capability capability:admin-marketing."
-      ],
-      "preconditions": [
-        "One or more affected capabilities are still partial or phantom."
-      ],
-      "allowedActions": [
-        "Code generation",
-        "File mutations",
-        "Integration setup",
-        "Test writing",
-        "Schema migrations",
-        "Configuration changes"
-      ],
-      "forbiddenActions": [
-        "Do not suppress Codacy or linting results",
-        "Do not edit governance-protected files (scripts/ops/*, CLAUDE.md, AGENTS.md, .codacy.yml)",
-        "Do not use db push in production or CI",
-        "Do not reduce test coverage or delete existing tests",
-        "Do not commit secrets or credentials",
-        "Do not bypass payment, auth, or webhook validation",
-        "Do not rewrite git history or force pushes",
-        "Pause work if critical external signals appear (Sentry error, Datadog alert, failed Action)"
-      ],
-      "successCriteria": [
-        "Capability status changed from LATENT/PHANTOM to REAL or PARTIAL.",
-        "All affected routes have working backend endpoints.",
-        "All affected files pass linting and typecheck.",
-        "No new Codacy high/critical issues introduced.",
-        "Tests passing for affected modules."
-      ],
-      "requiredValidations": [
-        "typecheck",
-        "affected-tests"
-      ]
     }
   ],
   "pulseMachineNextWork": [
@@ -17783,7 +17772,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Convert terminal critical paths into observed proof",
-      "summary": "All critical matrix paths are observed pass/fail or carry a precise terminal reason in PULSE_EXECUTION_MATRIX.json. 3146 terminal critical path(s) still need observed proof; next ai_safe action is to run the path validation command from PULSE_EXECUTION_MATRIX.json and refresh PULSE_PATH_COVERAGE.json.",
+      "summary": "3153 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-marketing, matrix:capability:capability:admin-permission. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -17946,9 +17935,9 @@
         "PULSE_PRODUCTION_PROOF.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/runtime-fusion.ts",
-        "scripts/pulse/runtime-probes.ts",
-        "scripts/pulse/production-proof.ts"
+        "scripts/pulse/parsers/performance-checker.ts",
+        "scripts/pulse/parsers/performance-response-time.ts",
+        "scripts/pulse/execution-matrix.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-performancePass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"performancePass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -18015,8 +18004,8 @@
       ],
       "relatedFiles": [
         "scripts/pulse/observability-coverage.ts",
-        "scripts/pulse/runtime-fusion.ts",
-        "scripts/pulse/external-signals.ts"
+        "scripts/pulse/parsers/observability-checker.ts",
+        "scripts/pulse/runtime-fusion.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-observabilityPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"observabilityPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -18084,9 +18073,9 @@
         "PULSE_PATH_COVERAGE.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/scenario-evidence.ts",
-        "scripts/pulse/execution-harness.ts",
-        "scripts/pulse/path-coverage-engine.ts"
+        "scripts/pulse/actors/playwright-runner.ts",
+        "scripts/pulse/actors/scenario-evaluator.ts",
+        "scripts/pulse/scenario-evidence-loader.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-customerPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"customerPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -18154,9 +18143,9 @@
         "PULSE_PATH_COVERAGE.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/scenario-evidence.ts",
-        "scripts/pulse/execution-harness.ts",
-        "scripts/pulse/path-coverage-engine.ts"
+        "scripts/pulse/actors/operator/index.ts",
+        "scripts/pulse/actors/scenario-evaluator.ts",
+        "scripts/pulse/scenario-evidence-loader.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-operatorPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"operatorPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -18224,9 +18213,9 @@
         "PULSE_PATH_COVERAGE.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/scenario-evidence.ts",
-        "scripts/pulse/execution-harness.ts",
-        "scripts/pulse/path-coverage-engine.ts"
+        "scripts/pulse/actors/soak/observer.ts",
+        "scripts/pulse/actors/soak/structural-checks.ts",
+        "scripts/pulse/cert-gate-evaluators-actor.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-soakPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"soakPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -18290,9 +18279,9 @@
         "PULSE_MACHINE_READINESS.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/execution-matrix.ts",
-        "scripts/pulse/path-coverage-engine.ts",
-        "scripts/pulse/execution-observation.ts"
+        "scripts/pulse/codebase-truth.ts",
+        "scripts/pulse/resolved-manifest.ts",
+        "scripts/pulse/cert-gate-evaluators.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-truthExtractionPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"truthExtractionPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -18321,6 +18310,200 @@
       "requiredValidations": [
         "affected-tests"
       ]
+    },
+    {
+      "order": 110,
+      "id": "pulse-proof-criticalPathObservedPass",
+      "kind": "pulse_machine",
+      "priority": "P0",
+      "source": "pulse_machine",
+      "executionMode": "ai_safe",
+      "riskLevel": "low",
+      "evidenceMode": "inferred",
+      "confidence": "high",
+      "productImpact": "machine",
+      "ownerLane": "pulse-proof",
+      "title": "Observe PULSE critical paths",
+      "summary": "3153 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-marketing, matrix:capability:capability:admin-permission. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
+      "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
+      "targetState": "Certification gate criticalPathObservedPass must pass or expose a precise non-product proof blocker.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "gateNames": [
+        "criticalPathObservedPass"
+      ],
+      "expectedGateShift": "Pass or sharpen criticalPathObservedPass without editing SaaS product code",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_MACHINE_READINESS.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_MACHINE_READINESS.json"
+      ],
+      "relatedFiles": [
+        "scripts/pulse/execution-matrix.ts",
+        "scripts/pulse/path-coverage-engine.ts",
+        "scripts/pulse/runtime-fusion.ts"
+      ],
+      "exitCriteria": [
+        "{\"id\":\"pulse-proof-criticalPathObservedPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"criticalPathObservedPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
+      ],
+      "preconditions": [
+        "Operate only on PULSE machine/proof code and generated PULSE artifacts.",
+        "Do not materialize SaaS product capabilities for this proof-debt unit."
+      ],
+      "allowedActions": [
+        "PULSE scanner changes",
+        "PULSE evidence generation",
+        "PULSE scenario/probe harness changes",
+        "PULSE test writing"
+      ],
+      "forbiddenActions": [
+        "Do not edit SaaS product code for this unit",
+        "Do not edit governance-protected files",
+        "Do not suppress Codacy, lint, or certification findings",
+        "Do not add secrets or credentials"
+      ],
+      "successCriteria": [
+        "criticalPathObservedPass is pass or has a more precise machine-owned blocker.",
+        "PULSE_CLI_DIRECTIVE keeps next work focused on PULSE proof machinery while production autonomy is NAO.",
+        "Targeted PULSE tests pass."
+      ],
+      "requiredValidations": [
+        "affected-tests"
+      ]
+    },
+    {
+      "order": 201,
+      "id": "pulse-proof-productionAutonomy",
+      "kind": "pulse_machine",
+      "priority": "P0",
+      "source": "pulse_machine",
+      "executionMode": "ai_safe",
+      "riskLevel": "low",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "machine",
+      "ownerLane": "pulse-proof",
+      "title": "Close PULSE production-autonomy proof debt",
+      "summary": "NAO: Authority mode is autonomous-execution, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 53 parity gap(s), 1116 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Codacy still reports 1116 HIGH issue(s). | Observed external high-impact signals remain active: 3. | Required external adapters are missing: 2.",
+      "whyNow": "PULSE cannot claim production autonomy while proof blockers remain; repair PULSE proof machinery before editing SaaS product code.",
+      "visionDelta": "Moves PULSE from next-step guidance toward certified zero-prompt technical replacement.",
+      "targetState": "productionAutonomyVerdict must be SIM or expose only precise machine blockers.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "gateNames": [
+        "productionAutonomy"
+      ],
+      "expectedGateShift": "productionAutonomyVerdict becomes SIM or a precise machine blocker",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_AUTONOMY_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_AUTONOMY_STATE.json"
+      ],
+      "relatedFiles": [
+        "scripts/pulse/artifacts.autonomy.ts",
+        "scripts/pulse/artifacts.directive.ts",
+        "scripts/pulse/autonomy-loop.ts",
+        "scripts/pulse/cert-gate-multi-cycle.ts"
+      ],
+      "exitCriteria": [
+        "{\"id\":\"pulse-proof-productionAutonomy-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_CLI_DIRECTIVE.json\",\"expected\":{\"productionAutonomyVerdict\":\"SIM\"},\"comparison\":\"eq\"}"
+      ],
+      "preconditions": [
+        "Operate only on PULSE machine/proof code and generated PULSE artifacts."
+      ],
+      "allowedActions": [
+        "PULSE proof engine changes",
+        "PULSE autonomy-loop evidence changes",
+        "PULSE test writing"
+      ],
+      "forbiddenActions": [
+        "Do not edit SaaS product code for this unit",
+        "Do not edit governance-protected files",
+        "Do not map proof debt to product relatedFiles",
+        "Do not suppress Codacy, lint, or certification findings"
+      ],
+      "successCriteria": [
+        "productionAutonomyVerdict is SIM or blocked by a precise PULSE-machine reason.",
+        "Targeted PULSE tests pass."
+      ],
+      "requiredValidations": [
+        "affected-tests"
+      ]
+    },
+    {
+      "order": 202,
+      "id": "pulse-proof-zeroPromptProductionGuidance",
+      "kind": "pulse_machine",
+      "priority": "P0",
+      "source": "pulse_machine",
+      "executionMode": "ai_safe",
+      "riskLevel": "low",
+      "evidenceMode": "observed",
+      "confidence": "high",
+      "productImpact": "machine",
+      "ownerLane": "pulse-proof",
+      "title": "Close PULSE zero-prompt production guidance",
+      "summary": "NAO: 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work.",
+      "whyNow": "A fresh PULSE worker must receive machine-owned executable guidance before product units are safe as the primary directive.",
+      "visionDelta": "Moves PULSE toward safe zero-prompt production convergence for fresh AI sessions.",
+      "targetState": "zeroPromptProductionGuidanceVerdict must be SIM or expose only precise machine blockers.",
+      "affectedCapabilities": [],
+      "affectedFlows": [],
+      "gateNames": [
+        "zeroPromptProductionGuidance"
+      ],
+      "expectedGateShift": "zeroPromptProductionGuidanceVerdict becomes SIM or a precise machine blocker",
+      "validationTargets": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_AUTONOMY_STATE.json"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_AUTONOMY_STATE.json"
+      ],
+      "relatedFiles": [
+        "scripts/pulse/artifacts.autonomy.ts",
+        "scripts/pulse/artifacts.directive.ts",
+        "scripts/pulse/autonomy-loop.ts",
+        "scripts/pulse/cert-gate-multi-cycle.ts"
+      ],
+      "exitCriteria": [
+        "{\"id\":\"pulse-proof-zeroPromptProductionGuidance-exit-0\",\"type\":\"artifact-assertion\",\"target\":\"PULSE_CLI_DIRECTIVE.json\",\"expected\":{\"zeroPromptProductionGuidanceVerdict\":\"SIM\"},\"comparison\":\"eq\"}"
+      ],
+      "preconditions": [
+        "Operate only on PULSE machine/proof code and generated PULSE artifacts."
+      ],
+      "allowedActions": [
+        "PULSE proof engine changes",
+        "PULSE autonomy-loop guidance changes",
+        "PULSE test writing"
+      ],
+      "forbiddenActions": [
+        "Do not edit SaaS product code for this unit",
+        "Do not edit governance-protected files",
+        "Do not map proof debt to product relatedFiles",
+        "Do not suppress Codacy, lint, or certification findings"
+      ],
+      "successCriteria": [
+        "zeroPromptProductionGuidanceVerdict is SIM or blocked by a precise PULSE-machine reason.",
+        "Targeted PULSE tests pass."
+      ],
+      "requiredValidations": [
+        "affected-tests"
+      ]
     }
   ],
   "machineFocusRequired": true,
@@ -18339,7 +18522,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Convert terminal critical paths into observed proof",
-      "summary": "All critical matrix paths are observed pass/fail or carry a precise terminal reason in PULSE_EXECUTION_MATRIX.json. 3146 terminal critical path(s) still need observed proof; next ai_safe action is to run the path validation command from PULSE_EXECUTION_MATRIX.json and refresh PULSE_PATH_COVERAGE.json.",
+      "summary": "3153 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-marketing, matrix:capability:capability:admin-permission. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -18502,9 +18685,9 @@
         "PULSE_PRODUCTION_PROOF.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/runtime-fusion.ts",
-        "scripts/pulse/runtime-probes.ts",
-        "scripts/pulse/production-proof.ts"
+        "scripts/pulse/parsers/performance-checker.ts",
+        "scripts/pulse/parsers/performance-response-time.ts",
+        "scripts/pulse/execution-matrix.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-performancePass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"performancePass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -18571,8 +18754,8 @@
       ],
       "relatedFiles": [
         "scripts/pulse/observability-coverage.ts",
-        "scripts/pulse/runtime-fusion.ts",
-        "scripts/pulse/external-signals.ts"
+        "scripts/pulse/parsers/observability-checker.ts",
+        "scripts/pulse/runtime-fusion.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-observabilityPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"observabilityPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -18640,9 +18823,9 @@
         "PULSE_PATH_COVERAGE.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/scenario-evidence.ts",
-        "scripts/pulse/execution-harness.ts",
-        "scripts/pulse/path-coverage-engine.ts"
+        "scripts/pulse/actors/playwright-runner.ts",
+        "scripts/pulse/actors/scenario-evaluator.ts",
+        "scripts/pulse/scenario-evidence-loader.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-customerPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"customerPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -18710,9 +18893,9 @@
         "PULSE_PATH_COVERAGE.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/scenario-evidence.ts",
-        "scripts/pulse/execution-harness.ts",
-        "scripts/pulse/path-coverage-engine.ts"
+        "scripts/pulse/actors/operator/index.ts",
+        "scripts/pulse/actors/scenario-evaluator.ts",
+        "scripts/pulse/scenario-evidence-loader.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-operatorPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"operatorPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -18780,9 +18963,9 @@
         "PULSE_PATH_COVERAGE.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/scenario-evidence.ts",
-        "scripts/pulse/execution-harness.ts",
-        "scripts/pulse/path-coverage-engine.ts"
+        "scripts/pulse/actors/soak/observer.ts",
+        "scripts/pulse/actors/soak/structural-checks.ts",
+        "scripts/pulse/cert-gate-evaluators-actor.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-soakPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"soakPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -18846,9 +19029,9 @@
         "PULSE_MACHINE_READINESS.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/execution-matrix.ts",
-        "scripts/pulse/path-coverage-engine.ts",
-        "scripts/pulse/execution-observation.ts"
+        "scripts/pulse/codebase-truth.ts",
+        "scripts/pulse/resolved-manifest.ts",
+        "scripts/pulse/cert-gate-evaluators.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-truthExtractionPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"truthExtractionPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -18893,7 +19076,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Convert terminal critical paths into observed proof",
-      "summary": "All critical matrix paths are observed pass/fail or carry a precise terminal reason in PULSE_EXECUTION_MATRIX.json. 3146 terminal critical path(s) still need observed proof; next ai_safe action is to run the path validation command from PULSE_EXECUTION_MATRIX.json and refresh PULSE_PATH_COVERAGE.json.",
+      "summary": "3153 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive, matrix:capability:capability:admin-marketing, matrix:capability:capability:admin-permission. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -19056,9 +19239,9 @@
         "PULSE_PRODUCTION_PROOF.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/runtime-fusion.ts",
-        "scripts/pulse/runtime-probes.ts",
-        "scripts/pulse/production-proof.ts"
+        "scripts/pulse/parsers/performance-checker.ts",
+        "scripts/pulse/parsers/performance-response-time.ts",
+        "scripts/pulse/execution-matrix.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-performancePass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"performancePass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -19125,8 +19308,8 @@
       ],
       "relatedFiles": [
         "scripts/pulse/observability-coverage.ts",
-        "scripts/pulse/runtime-fusion.ts",
-        "scripts/pulse/external-signals.ts"
+        "scripts/pulse/parsers/observability-checker.ts",
+        "scripts/pulse/runtime-fusion.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-observabilityPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"observabilityPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -19194,9 +19377,9 @@
         "PULSE_PATH_COVERAGE.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/scenario-evidence.ts",
-        "scripts/pulse/execution-harness.ts",
-        "scripts/pulse/path-coverage-engine.ts"
+        "scripts/pulse/actors/playwright-runner.ts",
+        "scripts/pulse/actors/scenario-evaluator.ts",
+        "scripts/pulse/scenario-evidence-loader.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-customerPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"customerPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -19264,9 +19447,9 @@
         "PULSE_PATH_COVERAGE.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/scenario-evidence.ts",
-        "scripts/pulse/execution-harness.ts",
-        "scripts/pulse/path-coverage-engine.ts"
+        "scripts/pulse/actors/operator/index.ts",
+        "scripts/pulse/actors/scenario-evaluator.ts",
+        "scripts/pulse/scenario-evidence-loader.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-operatorPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"operatorPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -19334,9 +19517,9 @@
         "PULSE_PATH_COVERAGE.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/scenario-evidence.ts",
-        "scripts/pulse/execution-harness.ts",
-        "scripts/pulse/path-coverage-engine.ts"
+        "scripts/pulse/actors/soak/observer.ts",
+        "scripts/pulse/actors/soak/structural-checks.ts",
+        "scripts/pulse/cert-gate-evaluators-actor.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-soakPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"soakPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -19400,9 +19583,9 @@
         "PULSE_MACHINE_READINESS.json"
       ],
       "relatedFiles": [
-        "scripts/pulse/execution-matrix.ts",
-        "scripts/pulse/path-coverage-engine.ts",
-        "scripts/pulse/execution-observation.ts"
+        "scripts/pulse/codebase-truth.ts",
+        "scripts/pulse/resolved-manifest.ts",
+        "scripts/pulse/cert-gate-evaluators.ts"
       ],
       "exitCriteria": [
         "{\"id\":\"pulse-proof-truthExtractionPass-exit-0\",\"type\":\"artifact-gate\",\"target\":\"PULSE_CERTIFICATE.json\",\"expected\":{\"gate\":\"truthExtractionPass\",\"status\":\"pass\"},\"comparison\":\"eq\"}"
@@ -19621,7 +19804,7 @@
     "leasesRef": "PULSE_WORKER_LEASES.json",
     "gitnexusRef": "gitnexus:c74dae23729dce78a2f6fa0c7124a5ccb11c6e30:2026-04-29T19:39:02.306Z",
     "beadsRef": "beads:60ac6e77ca29e058",
-    "contextDigest": "4c2b0dc2ac31a68b64ea1304d96cc2e861fc8d743a6917bfbd52b9f314389704",
+    "contextDigest": "bc7f7e919ebf4e7daf570b0dfe3e9ac62ec0d0c028aa7a3ecf542401bade76a4",
     "workerEnvelopeCount": 10,
     "contextBroadcastPass": true,
     "ownershipConflictPass": true,
@@ -19637,5 +19820,5 @@
     "Observed external high-impact signals remain active: 3.",
     "Required external adapters are missing: 2."
   ],
-  "runId": "910557d1-d065-4bc6-9011-419c24b6f000"
+  "runId": "456e3fb3-ea19-4bbc-b364-eca164826887"
 }

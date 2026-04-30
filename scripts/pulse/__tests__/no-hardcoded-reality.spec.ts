@@ -253,11 +253,199 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([]);
   });
 
+  it('fails fixed source root globs in new core PULSE code', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-hardcoded-source-roots-'));
+    const pulseDir = path.join(rootDir, 'scripts/pulse');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pulseDir, 'new-core-scanner.ts'),
+      [
+        "const SOURCE_GLOBS = ['backend/src/**/*.ts', 'frontend/src/**/*.tsx'];",
+        "const SOURCE_DIRS = ['backend/src', 'worker/src'];",
+      ].join('\n'),
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'fixed_source_root_collection',
+          context: 'SOURCE_GLOBS',
+          samples: ['backend/src/**/*.ts', 'frontend/src/**/*.tsx'],
+        }),
+        expect.objectContaining({
+          kind: 'fixed_source_root_collection',
+          context: 'SOURCE_DIRS',
+          samples: ['backend/src', 'worker/src'],
+        }),
+      ]),
+    );
+  });
+
+  it('allows the source-root detector legacy compatibility shim while blocking new fixed roots', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-legacy-source-roots-'));
+    const pulseDir = path.join(rootDir, 'scripts/pulse');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pulseDir, 'source-root-detector.ts'),
+      "const LEGACY_SOURCE_ROOTS = ['backend/src', 'frontend/src', 'worker/src'];",
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([]);
+  });
+
+  it('fails fixed critical domain catalogs by name in core PULSE code', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-critical-domain-names-'));
+    const pulseDir = path.join(rootDir, 'scripts/pulse');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pulseDir, 'criticality.ts'),
+      "const CRITICAL_DOMAINS = ['checkout', 'billing', 'wallet'];",
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([
+      expect.objectContaining({
+        kind: 'fixed_domain_criticality_collection',
+        context: 'CRITICAL_DOMAINS',
+        samples: ['checkout', 'billing', 'wallet'],
+      }),
+    ]);
+  });
+
+  it('classifies BreakType unions as hardcoded authority risk', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-breaktype-authority-'));
+    const pulseDir = path.join(rootDir, 'scripts/pulse');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pulseDir, 'types.break-types.ts'),
+      "export type BreakType = 'CHECKOUT_FIXED' | 'BILLING_FIXED';",
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([
+      expect.objectContaining({
+        kind: 'hardcoded_break_type_authority_risk',
+        context: 'BreakType',
+        samples: ['CHECKOUT_FIXED', 'BILLING_FIXED'],
+      }),
+    ]);
+  });
+
+  it('classifies direct breaks.push type strings as hardcoded blocker identity risk', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-break-push-type-'));
+    const parserDir = path.join(rootDir, 'scripts/pulse/parsers');
+    fs.mkdirSync(parserDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(parserDir, 'direct-blocker.ts'),
+      [
+        'export function check() {',
+        '  const breaks = [];',
+        "  breaks.push({ type: 'STATIC_PRODUCT_BLOCKER', severity: 'critical' });",
+        '  return breaks;',
+        '}',
+      ].join('\n'),
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([
+      expect.objectContaining({
+        kind: 'hardcoded_break_push_type_risk',
+        context: 'breaks.push.type',
+        samples: ['STATIC_PRODUCT_BLOCKER'],
+      }),
+    ]);
+  });
+
+  it('classifies parser ALLOWED and regex gates that emit direct blockers as evidence risk', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-parser-rule-blocker-'));
+    const parserDir = path.join(rootDir, 'scripts/pulse/parsers');
+    fs.mkdirSync(parserDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(parserDir, 'rule-blocker.ts'),
+      [
+        "const ALLOWED_PRODUCT_TABLES = ['Product'];",
+        'const PRODUCT_RE = /Product|CheckoutOrder/;',
+        'export function check() {',
+        '  const breaks = [];',
+        "  breaks.push({ type: 'STATIC_PRODUCT_BLOCKER', severity: 'critical' });",
+        '  return breaks;',
+        '}',
+      ].join('\n'),
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'hardcoded_parser_rule_blocker_risk',
+          context: 'ALLOWED_PRODUCT_TABLES',
+          samples: ['ALLOWED_PRODUCT_TABLES'],
+        }),
+        expect.objectContaining({
+          kind: 'hardcoded_parser_rule_blocker_risk',
+          context: 'PRODUCT_RE',
+          samples: ['PRODUCT_RE'],
+        }),
+      ]),
+    );
+  });
+
+  it('classifies SQL that names product tables as hardcoded reality evidence risk', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-sql-reality-table-'));
+    const pulseDir = path.join(rootDir, 'scripts/pulse');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pulseDir, 'sql-check.ts'),
+      'const query = `SELECT id, name FROM "Product" WHERE id = $1 LIMIT 1`;',
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([
+      expect.objectContaining({
+        kind: 'hardcoded_sql_reality_table_risk',
+        context: 'sql.reality_table',
+        samples: ['Product'],
+      }),
+    ]);
+  });
+
+  it('classifies fixed gate, profile, and threshold collections as decision risk', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-fixed-decision-gates-'));
+    const pulseDir = path.join(rootDir, 'scripts/pulse');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pulseDir, 'decision-gates.ts'),
+      [
+        "const REQUIRED_GATES = ['runtimePass', 'customerPass'];",
+        "const FINAL_PROFILES = ['production-final'];",
+        'const SCORE_THRESHOLDS = [90, 95];',
+      ].join('\n'),
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'hardcoded_gate_profile_threshold_risk',
+          context: 'REQUIRED_GATES',
+          samples: ['runtimePass', 'customerPass'],
+        }),
+        expect.objectContaining({
+          kind: 'hardcoded_gate_profile_threshold_risk',
+          context: 'FINAL_PROFILES',
+          samples: ['production-final'],
+        }),
+        expect.objectContaining({
+          kind: 'hardcoded_gate_profile_threshold_risk',
+          context: 'SCORE_THRESHOLDS',
+          samples: ['90', '95'],
+        }),
+      ]),
+    );
+  });
+
   it('keeps core PULSE free of hardcoded product reality decision collections', () => {
     const result = auditPulseNoHardcodedReality(process.cwd());
+    const fixedRealityCollections = result.findings.filter(
+      (finding) => !finding.kind.endsWith('_risk'),
+    );
 
     expect(result.scannedFiles).toBeGreaterThan(0);
-    expect(result.findings).toEqual([]);
+    expect(fixedRealityCollections).toEqual([]);
   });
 
   it('does not seed built-in product domain packs from the core', () => {

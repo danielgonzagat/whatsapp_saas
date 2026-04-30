@@ -223,7 +223,7 @@ export class FlowEngineGlobal {
         }
       })();
     } catch (e) {
-      console.error('NeuroTrigger Failed', e);
+      this.log.warn('NeuroTrigger Failed', e);
     }
     // -------------------------
 

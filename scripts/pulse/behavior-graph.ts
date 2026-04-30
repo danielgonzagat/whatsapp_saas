@@ -7,6 +7,7 @@ import * as path from 'path';
 import { readTextFile, readDir, ensureDir, writeTextFile } from './safe-fs';
 import { safeJoin } from './safe-path';
 import { pathExists } from './safe-fs';
+import { detectSourceRoots } from './source-root-detector';
 import type {
   BehaviorGraph,
   BehaviorNode,
@@ -40,9 +41,20 @@ function loadTsMorph(): boolean {
   }
 }
 
-// ===== Source directories to scan =====
-const SOURCE_DIRS = ['backend/src', 'frontend/src', 'worker/src'];
-const SKIP_DIRS = ['node_modules', 'dist', '.next', '__tests__', '.spec.ts', '.test.ts'];
+const SKIP_DIRS = [
+  'node_modules',
+  'dist',
+  '.next',
+  '__tests__',
+  '.spec.ts',
+  '.spec.tsx',
+  '.spec.js',
+  '.spec.jsx',
+  '.test.ts',
+  '.test.tsx',
+  '.test.js',
+  '.test.jsx',
+];
 
 // ===== NestJS decorator recognition =====
 const NESTJS_HTTP_METHODS = new Set([
@@ -922,14 +934,14 @@ function buildFuncNameMap(functions: ParsedFunc[]): Map<string, string[]> {
 function collectTsFiles(rootDir: string): string[] {
   const files: string[] = [];
 
-  for (const srcDir of SOURCE_DIRS) {
-    const dir = safeJoin(rootDir, srcDir);
+  for (const sourceRoot of detectSourceRoots(rootDir)) {
+    const dir = sourceRoot.absolutePath;
     if (!pathExists(dir)) continue;
 
     const entries = readDir(dir, { recursive: true }) as string[];
     for (const entry of entries) {
       const ext = path.extname(entry);
-      if (ext !== '.ts' && ext !== '.tsx') continue;
+      if (ext !== '.ts' && ext !== '.tsx' && ext !== '.js' && ext !== '.jsx') continue;
 
       const normalized = entry.split(path.sep).join('/');
       if (SKIP_DIRS.some((skip) => normalized.includes(skip))) continue;

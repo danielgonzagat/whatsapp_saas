@@ -656,10 +656,10 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                 }}
               >
                 {kloelT(`O Marketing morreu`)}{' '}
-                <span style={{ color: '#E85D30' }}>{kloelT(`Digital`)}</span>
+                <span style={{ color: colors.ember.primary }}>{kloelT(`Digital`)}</span>
                 <br />
                 {kloelT(`e ressuscitou`)}{' '}
-                <span style={{ color: '#E85D30' }}>{kloelT(`Artificial.`)}</span>
+                <span style={{ color: colors.ember.primary }}>{kloelT(`Artificial.`)}</span>
               </h1>
             </div>
 
@@ -964,7 +964,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                     </span>
                     <KloelMushroomVisual
                       size={28}
-                      traceColor={kloelT(`#FFFFFF`)}
+                      traceColor={kloelT(`#FFFFFF`)} // PULSE_VISUAL_OK: white trace on dark assistant bg
                       animated
                       spores="animated"
                       ariaHidden
@@ -1033,10 +1033,10 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                           transition: 'color 150ms ease',
                         }}
                         onMouseEnter={(e) => {
-                          (e.currentTarget as HTMLElement).style.color = '#6E6E73';
+                          (e.currentTarget as HTMLElement).style.color = colors.text.muted;
                         }}
                         onMouseLeave={(e) => {
-                          (e.currentTarget as HTMLElement).style.color = '#3A3A3F';
+                          (e.currentTarget as HTMLElement).style.color = colors.text.dim;
                         }}
                       >
                         {isAssistantCopied ? (
@@ -1138,10 +1138,10 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                 flexShrink: 0,
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.color = '#6E6E73';
+                (e.currentTarget as HTMLElement).style.color = colors.text.muted;
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.color = '#3A3A3F';
+                (e.currentTarget as HTMLElement).style.color = colors.text.dim;
               }}
             >
               <PaperclipIcon size={16} />
@@ -1207,13 +1207,13 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                   width: 28,
                   height: 28,
                   borderRadius: 6,
-                  background: chatInput.trim() ? '#E85D30' : 'transparent',
-                  border: chatInput.trim() ? 'none' : '1px solid #222226',
+                  background: chatInput.trim() ? colors.ember.primary : 'transparent',
+                  border: chatInput.trim() ? 'none' : `1px solid ${colors.border.space}`,
                   cursor: chatInput.trim() ? 'pointer' : 'default',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: chatInput.trim() ? '#0A0A0C' : '#3A3A3F',
+                  color: chatInput.trim() ? colors.background.void : colors.text.dim,
                   transition: 'all 150ms ease',
                   flexShrink: 0,
                 }}

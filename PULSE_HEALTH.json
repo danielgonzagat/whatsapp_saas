@@ -1,6 +1,6 @@
 {
-  "score": 61,
-  "totalNodes": 3083,
+  "score": 63,
+  "totalNodes": 2745,
   "breaks": [
     {
       "type": "AI_PROMPT_INCOMPLETE",
@@ -546,7 +546,7 @@
       "type": "DATA_WORKSPACE_NO_OWNER",
       "severity": "high",
       "file": "/Users/danielpenin/whatsapp_saas/backend/src/flows/flows.service.ts",
-      "line": 611,
+      "line": 615,
       "description": "Tenant/owner mutation without prior validation in flows.service.ts",
       "detail": "Function 'setVariable' mutates tenant/owner state without first validating the referenced workspace, tenant, member, or owner exists.",
       "source": "data-consistency"
@@ -816,7 +816,7 @@
       "type": "DATA_WORKSPACE_NO_OWNER",
       "severity": "high",
       "file": "/Users/danielpenin/whatsapp_saas/backend/src/partnerships/partnerships.service.ts",
-      "line": 592,
+      "line": 595,
       "description": "Tenant/owner mutation without prior validation in partnerships.service.ts",
       "detail": "Function 'sendMessage' mutates tenant/owner state without first validating the referenced workspace, tenant, member, or owner exists.",
       "source": "data-consistency"
@@ -2759,15 +2759,6 @@
     {
       "type": "OBSERVABILITY_NO_TRACING",
       "severity": "high",
-      "file": "backend/src/api-keys/api-keys.service.ts",
-      "line": 0,
-      "description": "Outbound HTTP call without correlation ID header — cannot trace request through external services",
-      "detail": "Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID",
-      "source": "observability-checker"
-    },
-    {
-      "type": "OBSERVABILITY_NO_TRACING",
-      "severity": "high",
       "file": "backend/src/audit/audit.interceptor.ts",
       "line": 0,
       "description": "Outbound HTTP call without correlation ID header — cannot trace request through external services",
@@ -4094,78 +4085,6 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/admin/accounts/admin-accounts.service.ts",
-      "line": 101,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/accounts/kyc/admin-kyc.service.ts",
-      "line": 40,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "kycApprovedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/accounts/kyc/admin-kyc.service.ts",
-      "line": 48,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "reviewedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/accounts/kyc/admin-kyc.service.ts",
-      "line": 93,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "reviewedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/auth/admin-auth.service.ts",
-      "line": 264,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { mfaEnabled: true, mfaPendingSetup: false, lastLoginAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/auth/admin-auth.service.ts",
-      "line": 293,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { lastLoginAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/auth/admin-auth.service.ts",
-      "line": 333,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { revokedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/auth/admin-auth.service.ts",
-      "line": 359,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { revokedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/admin/carteira/admin-carteira.controller.ts",
       "line": 102,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
@@ -4193,33 +4112,6 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/admin/chat/admin-chat.service.ts",
-      "line": 288,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { lastUsedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/chat/admin-chat.service.ts",
-      "line": 297,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "where: { adminUserId, expiresAt: { gt: new Date() } }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/chat/admin-chat.service.ts",
-      "line": 326,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "if (existing && existing.adminUserId === adminUserId && existing.expiresAt > new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/admin/clients/admin-clients.service.ts",
       "line": 113,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
@@ -4242,24 +4134,6 @@
       "line": 28,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const activeWindowFrom = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/dashboard/queries/series.query.ts",
-      "line": 55,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "date: new Date(row.day).toISOString().slice(0, 10), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/dashboard/queries/series.query.ts",
-      "line": 95,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "date: new Date(row.day).toISOString().slice(0, 10), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -4328,109 +4202,10 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/admin/dashboard/range.util.ts",
-      "line": 86,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "/** Anchor used to compute \"now\" — injected for testability. Defaults to `new Date()`. */ — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/dashboard/range.util.ts",
-      "line": 137,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = input.now ?? new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/destructive/destructive-intent.service.ts",
-      "line": 120,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/admin/destructive/destructive-intent.service.ts",
       "line": 121,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const expiresAt = new Date(now.getTime() + ttl * 1000); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/destructive/destructive-intent.service.ts",
-      "line": 164,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "confirmedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/destructive/destructive-intent.service.ts",
-      "line": 212,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "undoAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/destructive/destructive-intent.service.ts",
-      "line": 288,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "executedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/destructive/destructive-intent.service.ts",
-      "line": 308,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "executedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/destructive/destructive-intent.service.ts",
-      "line": 327,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "executedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/destructive/handlers/force-logout-global.handler.ts",
-      "line": 31,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/notifications/admin-notifications.service.ts",
-      "line": 150,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/notifications/admin-notifications.service.ts",
-      "line": 160,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -4458,51 +4233,6 @@
       "line": 44,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const date = new Date(item.paidAt || item.createdAt).toLocaleDateString('pt-BR', { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/sessions/admin-sessions.service.ts",
-      "line": 69,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { revokedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/support/admin-support.service.ts",
-      "line": 207,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { lastMessageAt: new Date(), unreadCount: 0 }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/transactions/admin-transactions.service.ts",
-      "line": 217,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "operatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/admin/transactions/admin-transactions.service.ts",
-      "line": 227,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "refundedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/analytics/analytics.controller.ts",
-      "line": 20,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const end = endDate ? new Date(endDate) : new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -4545,42 +4275,6 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/analytics/analytics.service.ts",
-      "line": 210,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const today = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/analytics/analytics.service.ts",
-      "line": 212,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const sevenDaysAgo = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/analytics/analytics.service.ts",
-      "line": 316,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const sevenDaysAgo = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/analytics/analytics.service.ts",
-      "line": 332,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const d = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/analytics/analytics.service.ts",
       "line": 569,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const daysAgo = Math.floor((now - new Date(s.createdAt).getTime()) / (24 * 60 * 60 * 1000)); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
@@ -4590,162 +4284,9 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/analytics/smart-time/smart-time.service.ts",
-      "line": 18,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const thirtyDaysAgo = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/analytics/smart-time/smart-time.service.ts",
       "line": 40,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const date = new Date(msg.createdAt); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/api-keys/api-keys.service.ts",
-      "line": 72,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { lastUsedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/app.controller.ts",
-      "line": 46,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "timestamp: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/app.controller.ts",
-      "line": 76,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "timestamp: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth-oauth.service.ts",
-      "line": 88,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastUsedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth-oauth.service.ts",
-      "line": 102,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastUsedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth-partner.service.ts",
-      "line": 128,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "approvedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth-partner.service.ts",
-      "line": 131,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "inviteAcceptedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth-verification.service.ts",
-      "line": 159,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "if (!magicLink || magicLink.usedAt || magicLink.expiresAt < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth-verification.service.ts",
-      "line": 201,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { agentId: agent.id, usedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth-verification.service.ts",
-      "line": 214,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { usedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth-verification.service.ts",
-      "line": 320,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "if (agent.emailVerificationExpiry && agent.emailVerificationExpiry < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth-whatsapp-password.service.ts",
-      "line": 255,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "if (!resetToken || resetToken.used || resetToken.expiresAt < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth.password.service.spec.helpers.ts",
-      "line": 61,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth.password.service.spec.helpers.ts",
-      "line": 62,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth.token.service.spec.helpers.ts",
-      "line": 72,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/auth/auth.token.service.spec.helpers.ts",
-      "line": 73,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -4814,55 +4355,10 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/autopilot/autopilot-cycle-executor.service.ts",
-      "line": 107,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const hour = new Date().getHours(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/autopilot/autopilot-cycle-money.service.ts",
-      "line": 38,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/autopilot/autopilot-cycle-money.service.ts",
-      "line": 155,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "scheduledAt = delay > 0 ? new Date(Date.now() + delay) : new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/autopilot/autopilot-cycle-money.service.ts",
       "line": 217,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "? Math.round((Date.now() - new Date(last.createdAt).getTime()) / 60000) — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/autopilot/autopilot-cycle.service.ts",
-      "line": 137,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const currentHour = new Date().getHours(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/autopilot/autopilot-cycle.service.ts",
-      "line": 166,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const currentHour = new Date().getHours(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -4887,15 +4383,6 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/autopilot/autopilot-ops-conversion.service.ts",
-      "line": 83,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "nextRetryAt: new Date(nextRetryAt).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/autopilot/autopilot-ops-conversion.service.ts",
       "line": 92,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "createdAt: { gte: new Date(now - 60 * 60 * 1000) }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
@@ -4905,45 +4392,9 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/autopilot/autopilot-ops-conversion.service.ts",
-      "line": 98,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const nextRetry = new Date(now + delayMs).toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/autopilot/autopilot-ops-conversion.service.ts",
       "line": 129,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const sinceLast = now - new Date(lastEvent.createdAt).getTime(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/autopilot/autopilot-ops-conversion.service.ts",
-      "line": 133,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const nextRetry = new Date(now + delayMs).toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/autopilot/autopilot-ops.service.ts",
-      "line": 203,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "queuedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/autopilot/autopilot.service.ts",
-      "line": 205,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastTransitionAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -4968,33 +4419,6 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/autopilot/segmentation.service.ts",
-      "line": 229,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/autopilot/segmentation.service.ts",
-      "line": 402,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": ": new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/autopilot/segmentation.service.ts",
-      "line": 485,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const thirtyDaysAgo = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/autopilot/segmentation.service.ts",
       "line": 497,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "return wonDeals.some((d) => new Date(d.createdAt) >= thirtyDaysAgo); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
@@ -5012,55 +4436,10 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/billing/billing-plan-features.ts",
-      "line": 82,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "plan: { name: plan, limits, activatedAt: new Date().toISOString() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/billing/billing-webhook.helpers.ts",
-      "line": 64,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/billing/billing-webhook.service.ts",
       "line": 196,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const periodEnd = currentPeriodEndRaw ? new Date(currentPeriodEndRaw * 1000) : undefined; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/billing/billing-webhook.service.ts",
-      "line": 203,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "currentPeriodEnd: periodEnd || new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/billing/billing-webhook.service.ts",
-      "line": 210,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "currentPeriodEnd: periodEnd || new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/billing/billing.service.ts",
-      "line": 86,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -5075,55 +4454,10 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/billing/billing.service.ts",
-      "line": 179,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: { gte: new Date(new Date().setDate(1)) }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/billing/plan-limits.service.ts",
-      "line": 171,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/billing/plan-limits.service.ts",
       "line": 178,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const daysInMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 0).getDate(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/billing/plan-limits.service.ts",
-      "line": 255,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const today = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/billing/plan-limits.service.ts",
-      "line": 331,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/billing/plan-limits.service.ts",
-      "line": 362,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -5201,60 +4535,6 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/campaigns/campaigns.service.ts",
-      "line": 125,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/checkout/checkout-catalog.helpers.ts",
-      "line": 48,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/checkout/checkout-order-query.service.ts",
-      "line": 98,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/checkout/checkout-order-support.ts",
-      "line": 239,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "return new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/checkout/checkout-order-support.ts",
-      "line": 318,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/checkout/checkout-payment.service.ts",
-      "line": 59,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "? new Date(pixAction.expires_at * 1000).toISOString() — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/checkout/checkout-payment.service.ts",
       "line": 228,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
@@ -5264,73 +4544,10 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/checkout/checkout-payment.service.ts",
-      "line": 528,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'PAID', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/checkout/checkout-product-config.service.ts",
-      "line": 41,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/checkout/checkout-public.controller.ts",
       "line": 60,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const mins = Math.floor((Date.now() - new Date(date).getTime()) / 60000); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/checkout/checkout-social-lead.service.ts",
-      "line": 390,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "convertedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/checkout/checkout-social-recovery.service.ts",
-      "line": 99,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "abandonedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/checkout/checkout-social-recovery.service.ts",
-      "line": 151,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "scheduledFor: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/checkout/checkout-social-recovery.service.ts",
-      "line": 158,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { recoveryWhatsAppSentAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/checkout/checkout-social-recovery.service.ts",
-      "line": 194,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { recoveryEmailSentAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -5390,204 +4607,6 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/cia/cia.service.ts",
-      "line": 157,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "resolvedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/cia/cia.service.ts",
-      "line": 207,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "resolvedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/common/ledger-reconciliation.service.ts",
-      "line": 244,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "scannedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/common/ledger-reconciliation.service.ts",
-      "line": 406,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "scannedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/compliance/compliance.service.ts",
-      "line": 105,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "revokedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/compliance/compliance.service.ts",
-      "line": 153,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "processedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/compliance/compliance.service.ts",
-      "line": 235,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "exportedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/compliance/compliance.service.ts",
-      "line": 275,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "completedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/compliance/compliance.service.ts",
-      "line": 292,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "revokedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/compliance/compliance.service.ts",
-      "line": 309,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { disabledAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/compliance/compliance.service.ts",
-      "line": 393,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "completedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/compliance/compliance.service.ts",
-      "line": 462,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "disabledAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/compliance/compliance.service.ts",
-      "line": 463,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "deletedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/compliance/compliance.service.ts",
-      "line": 480,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "revokedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/compliance/compliance.service.ts",
-      "line": 488,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { usedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/compliance/compliance.service.ts",
-      "line": 496,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "completedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/compliance/compliance.service.ts",
-      "line": 531,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "optedOutAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/cookie-consent/cookie-consent.service.ts",
-      "line": 29,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/crm/crm.service.ts",
-      "line": 557,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/crm/neuro-crm.service.ts",
-      "line": 575,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastNeuroCrmAnalysisAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/dashboard/dashboard.service.ts",
-      "line": 78,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const todayStart = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/dashboard/dashboard.service.ts",
-      "line": 149,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const snapshotNow = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/dashboard/dashboard.service.ts",
       "line": 155,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
@@ -5637,15 +4656,6 @@
       "line": 165,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const endOfPreviousMonth = new Date(startOfMonth.getTime() - 1); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/dashboard/dashboard.service.ts",
-      "line": 428,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -5769,16 +4779,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/flows/flows.service.ts",
-      "line": 439,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/flows/flows.service.ts",
-      "line": 440,
+      "line": 444,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const expired = state.waitExpiresAt ? now > new Date(state.waitExpiresAt) : false; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -5787,99 +4788,9 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/flows/flows.service.ts",
-      "line": 497,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/flows/flows.service.ts",
-      "line": 527,
+      "line": 531,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "if (now <= new Date(state.waitExpiresAt)) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/followup/followup.service.ts",
-      "line": 215,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "scheduledFor: { lte: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/followup/followup.service.ts",
-      "line": 238,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "sentAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/gdpr/data-delete.controller.ts",
-      "line": 42,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "details: { requestedAt: new Date().toISOString() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/gdpr/data-delete.controller.ts",
-      "line": 61,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "details: { completedAt: new Date().toISOString() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/gdpr/data-delete.controller.ts",
-      "line": 67,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "deletedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/gdpr/data-export.controller.ts",
-      "line": 79,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "exportedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/growth/money-machine.service.ts",
-      "line": 21,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const thirtyDaysAgo = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/growth/money-machine.service.ts",
-      "line": 33,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const name = `MoneyMachine - Reativação ${new Date().toISOString().split('T')[0]}`; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/growth/money-machine.service.ts",
-      "line": 86,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const today = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -5894,163 +4805,10 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/health/system-health.service.ts",
-      "line": 40,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "return { status: 'UP', timestamp: new Date().toISOString() }; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/health/system-health.service.ts",
-      "line": 58,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "timestamp: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/health/system-health.service.ts",
-      "line": 77,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "timestamp: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/i18n/i18n.service.ts",
-      "line": 365,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const hour = new Date().getHours(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/inbox/inbox.service.ts",
-      "line": 245,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const messageCreatedAt = this.normalizeDate(data.createdAt) || new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/kloel/ad-rules-engine.service.ts",
       "line": 110,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const lastFired = rule.lastFiredAt ? new Date(rule.lastFiredAt) : null; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/ad-rules-engine.service.ts",
-      "line": 156,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastFiredAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/cart-recovery.service.ts",
-      "line": 96,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "recoveryEmailSentAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/conversational-onboarding-tools.service.ts",
-      "line": 276,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/conversational-onboarding-tools.service.ts",
-      "line": 277,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/diagnostics.controller.ts",
-      "line": 65,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "timestamp: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/diagnostics.controller.ts",
-      "line": 99,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "timestamp: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/diagnostics.controller.ts",
-      "line": 138,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const today = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/diagnostics.controller.ts",
-      "line": 173,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const today = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/diagnostics.controller.ts",
-      "line": 295,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastCheck: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/diagnostics.controller.ts",
-      "line": 302,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastCheck: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/diagnostics.controller.ts",
-      "line": 313,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastCheck: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/diagnostics.controller.ts",
-      "line": 328,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const today = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -6065,370 +4823,10 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/kloel/guards/kloel-security.guard.ts",
-      "line": 276,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const today = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/guest-chat.service.ts",
-      "line": 86,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "conversation.lastMessageAt = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/guest-chat.service.ts",
-      "line": 283,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/guest-chat.service.ts",
-      "line": 284,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastMessageAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-chat-tools.service.ts",
-      "line": 216,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-chat-tools.service.ts",
-      "line": 319,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "dateFilter = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-lead-brain.service.ts",
-      "line": 147,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-lead-processor-helpers.ts",
-      "line": 133,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-reply-engine.service.ts",
-      "line": 78,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "}).format(new Date()), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-thinker-think.helpers.ts",
-      "line": 68,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const completedAt = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-thinker.helpers.ts",
-      "line": 99,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const completedAt = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-thinker.helpers.ts",
-      "line": 257,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const versionCreatedAt = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-thinker.helpers.ts",
-      "line": 280,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "regeneratedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-thread-summary.service.ts",
-      "line": 123,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { title, updatedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-thread-summary.service.ts",
-      "line": 212,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { summary, summaryUpdatedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-thread.service.ts",
-      "line": 160,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { updatedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-thread.service.ts",
-      "line": 210,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": ": new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-thread.service.ts",
-      "line": 228,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-thread.service.ts",
-      "line": 244,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-thread.service.ts",
-      "line": 253,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-thread.service.ts",
-      "line": 265,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-tool-executor-crm.service.ts",
-      "line": 189,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "dateFilter = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel-tool-executor.helpers.ts",
-      "line": 146,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.autonomy-proof.helpers.ts",
-      "line": 153,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastMessageAt: new Date(timestamp).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.controller.ts",
-      "line": 683,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { updatedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.controller.ts",
-      "line": 729,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "editedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.controller.ts",
-      "line": 743,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { updatedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.controller.ts",
-      "line": 799,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.controller.ts",
-      "line": 869,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "details: { requestedAt: new Date().toISOString() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/kloel.controller.ts",
-      "line": 906,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "return { contacts, messages, sales, exportedAt: new Date().toISOString() }; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/llm-budget.service.ts",
-      "line": 163,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/memory-management.service.ts",
-      "line": 189,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const cutoffDate = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/memory-management.service.ts",
-      "line": 219,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const defaultCutoff = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/memory-management.service.ts",
-      "line": 450,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const cutoff = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/kloel/memory-management.service.ts",
       "line": 520,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/memory-management.service.ts",
-      "line": 580,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "_prioritySetAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/middleware/audit-log.middleware.ts",
-      "line": 164,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "timestamp: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/order-alerts.service.ts",
-      "line": 232,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { resolved: true, resolvedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/order-alerts.service.ts",
-      "line": 234,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "return { ...alert, resolved: true, resolvedAt: new Date() }; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/payment.service.ts",
-      "line": 392,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/payment.service.ts",
-      "line": 410,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const startDate = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -6443,118 +4841,10 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/kloel/product-sub-resources/product-coupon.controller.ts",
-      "line": 164,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "if (coupon.expiresAt && coupon.expiresAt < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/sales-orders.controller.ts",
-      "line": 127,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "shippedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/sales-orders.controller.ts",
-      "line": 137,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "shippedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/sales-orders.controller.ts",
-      "line": 156,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'DELIVERED', deliveredAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/sales-orders.controller.ts",
-      "line": 158,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "return { order: { ...order, status: 'DELIVERED', deliveredAt: new Date() }, success: true }; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/sales-subscriptions.controller.ts",
-      "line": 117,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'PAUSED', pausedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/sales-subscriptions.controller.ts",
-      "line": 136,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "return { subscription: { ...sub, status: 'PAUSED', pausedAt: new Date() }, success: true }; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/sales-subscriptions.controller.ts",
-      "line": 189,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'CANCELLED', cancelledAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/sales-subscriptions.controller.ts",
-      "line": 209,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "subscription: { ...sub, status: 'CANCELLED', cancelledAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/sales-subscriptions.controller.ts",
-      "line": 237,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const planChangedAt = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/sales.controller.ts",
-      "line": 135,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const dayStart = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/kloel/sales.controller.ts",
       "line": 138,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const dayEnd = new Date(dayStart); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-actions-billing.service.ts",
-      "line": 79,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -6578,145 +4868,10 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-actions-billing.service.ts",
-      "line": 385,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "if (coupon.expiresAt && coupon.expiresAt < new Date()) — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-actions-crm.service.ts",
-      "line": 68,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-actions-crm.service.ts",
-      "line": 178,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-actions-crm.service.ts",
-      "line": 312,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "connectionInitiatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-actions-sales.service.ts",
-      "line": 392,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": ".update({ where: { id: contactId }, data: { updatedAt: new Date() } }) — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-actions-workspace.service.ts",
-      "line": 80,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-actions-workspace.service.ts",
-      "line": 124,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-actions-workspace.service.ts",
-      "line": 153,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-actions-workspace.service.ts",
-      "line": 220,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-actions-workspace.service.ts",
-      "line": 239,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-actions-workspace.service.ts",
-      "line": 264,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/kloel/unified-agent-actions-workspace.service.ts",
       "line": 335,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const scheduledDate = new Date(scheduleAt || Date.now()); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-actions-workspace.service.ts",
-      "line": 390,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "result.health = { status: 'healthy', lastActivity: new Date().toISOString(), warnings: [] }; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-context-data.service.ts",
-      "line": 179,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/unified-agent-context-data.service.ts",
-      "line": 193,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kloel/wallet.controller.ts",
-      "line": 193,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -6776,15 +4931,6 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/kloel/whatsapp-brain.controller.ts",
-      "line": 100,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "timestamp: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/kloel/whatsapp-brain.service.ts",
       "line": 51,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
@@ -6795,54 +4941,9 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/kyc/kyc.service.ts",
-      "line": 259,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "acceptedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kyc/kyc.service.ts",
       "line": 302,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "data.birthDate = new Date(dto.birthDate); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kyc/kyc.service.ts",
-      "line": 623,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { kycStatus: 'submitted', kycSubmittedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kyc/kyc.service.ts",
-      "line": 651,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "kycApprovedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/kyc/kyc.service.ts",
-      "line": 678,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "kycApprovedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/logging/structured-logger.ts",
-      "line": 17,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "timestamp: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -6858,36 +4959,9 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/marketplace-treasury/marketplace-treasury-maturation.service.ts",
-      "line": 52,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "now = new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/marketplace-treasury/marketplace-treasury-maturation.service.ts",
       "line": 55,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const dueBefore = new Date(now.getTime() - minAgeMs); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/marketplace-treasury/marketplace-treasury-reconcile.service.ts",
-      "line": 69,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "runAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/marketplace-treasury/marketplace-treasury-reconcile.service.ts",
-      "line": 127,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "runAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -6911,46 +4985,10 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/meta/meta-auth.controller.ts",
-      "line": 290,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/meta/meta-auth.controller.ts",
-      "line": 382,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "connection.tokenExpiresAt && new Date(connection.tokenExpiresAt) < new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/meta/meta-whatsapp.service.ts",
       "line": 142,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "connection?.tokenExpiresAt && new Date(connection.tokenExpiresAt).getTime() < Date.now(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/meta/meta-whatsapp.service.ts",
-      "line": 539,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastWebhookAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/meta/webhooks/meta-webhook.controller.ts",
-      "line": 263,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: msg?.timestamp ? new Date(Number(msg.timestamp) * 1000) : new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -6966,43 +5004,7 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/partnerships/partnerships.service.ts",
-      "line": 346,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "inviteSentAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/partnerships/partnerships.service.ts",
-      "line": 349,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "approvedAt: requiresInvite ? null : new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/partnerships/partnerships.service.ts",
-      "line": 404,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'ACTIVE', approvedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/partnerships/partnerships.service.ts",
-      "line": 442,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const currentYear = new Date().getUTCFullYear(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/partnerships/partnerships.service.ts",
-      "line": 443,
+      "line": 446,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "const currentYearStart = new Date(Date.UTC(currentYear, 0, 1)); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
@@ -7011,252 +5013,9 @@
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
       "file": "backend/src/partnerships/partnerships.service.ts",
-      "line": 565,
+      "line": 568,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/partnerships/partnerships.service.ts",
-      "line": 602,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { readAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/payments/connect/connect-payout-approval.service.ts",
-      "line": 241,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "respondedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/payments/connect/connect-payout-approval.service.ts",
-      "line": 344,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "respondedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/payments/connect/connect-payout-approval.service.ts",
-      "line": 422,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "respondedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/payments/fraud/fraud.engine.spec-helpers.ts",
-      "line": 80,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/payments/fraud/fraud.engine.spec-helpers.ts",
-      "line": 155,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: overrides.createdAt ?? new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/payments/fraud/fraud.engine.ts",
-      "line": 400,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/payments/ledger/connect-ledger-maturation.service.ts",
-      "line": 44,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "async matureDueEntries(now = new Date()): Promise<ConnectLedgerMaturationResult> { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/payments/ledger/connect-ledger-reconciliation.service.ts",
-      "line": 171,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "scannedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/payments/ledger/ledger.service.spec-helpers.ts",
-      "line": 112,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const next = { ...current, ...data, updatedAt: new Date() }; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/pulse-artifact.service.ts",
-      "line": 155,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/pulse.service.ts",
-      "line": 103,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "observedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/pulse.service.ts",
-      "line": 134,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "observedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/pulse.service.ts",
-      "line": 165,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "observedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/pulse.service.ts",
-      "line": 230,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "observedAtMs.length > 0 ? new Date(Math.max(...observedAtMs)).toISOString() : null, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/pulse.service.ts",
-      "line": 232,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "observedAtMs.length > 0 ? new Date(Math.min(...observedAtMs)).toISOString() : null, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/pulse.service.ts",
-      "line": 254,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/pulse.service.ts",
-      "line": 457,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "observedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/pulse.service.ts",
-      "line": 534,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/structural-reconstruction.fixtures.ts",
-      "line": 35,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/structural-reconstruction.fixtures.ts",
-      "line": 101,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/structural-reconstruction.fixtures.ts",
-      "line": 150,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "timestamp: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/structural-reconstruction.fixtures.ts",
-      "line": 311,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/structural-reconstruction.fixtures.ts",
-      "line": 322,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/pulse/structural-reconstruction.fixtures.ts",
-      "line": 323,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/queue/queue.ts",
-      "line": 176,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/queue/queue.ts",
-      "line": 265,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "failedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -7271,150 +5030,6 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/reports/reports-orders.service.ts",
-      "line": 27,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const end = f.endDate ? new Date(`${f.endDate}T23:59:59Z`) : new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/team/team.service.ts",
-      "line": 73,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const expiresAt = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/team/team.service.ts",
-      "line": 113,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "if (!invite || invite.expiresAt < new Date()) { — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/wallet/__test-support__/prepaid-wallet.controller.spec-helpers.ts",
-      "line": 79,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const merged = { ...existing, ...update, updatedAt: new Date() }; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/wallet/__test-support__/prepaid-wallet.controller.spec-helpers.ts",
-      "line": 96,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/wallet/__test-support__/prepaid-wallet.controller.spec-helpers.ts",
-      "line": 97,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/wallet/__test-support__/prepaid-wallet.controller.spec-helpers.ts",
-      "line": 115,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const next = { ...current, ...data, updatedAt: new Date() }; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/wallet/__test-support__/prepaid-wallet.controller.spec-helpers.ts",
-      "line": 143,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/wallet/__test-support__/prepaid-wallet.controller.spec-helpers.ts",
-      "line": 174,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/wallet/__test-support__/prepaid-wallet.controller.spec-helpers.ts",
-      "line": 175,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/payment-webhook-generic.controller.ts",
-      "line": 337,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/payment-webhook-generic.helpers.ts",
-      "line": 109,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/payment-webhook-generic.helpers.ts",
-      "line": 118,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const payload = { type: message, meta, requestId, at: new Date().toISOString() }; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/payment-webhook-stripe.controller.ts",
-      "line": 339,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/payment-webhook-stripe.controller.ts",
-      "line": 348,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const payload = { type: message, meta, requestId, at: new Date().toISOString() }; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/payment-webhook-stripe.handlers.ts",
-      "line": 52,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'REFUNDED', refundedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
       "line": 59,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
@@ -7424,199 +5039,10 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 74,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 113,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 162,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'PAID', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 174,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'CANCELED', canceledAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-      "line": 336,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'paid', paidAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/stripe-webhook-ledger.service.ts",
-      "line": 288,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/webhooks/stripe-webhook-ledger.service.ts",
       "line": 330,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "return new Date(base.getTime() + delayDays * 24 * 60 * 60 * 1000); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/webhook-dispatcher.service.ts",
-      "line": 35,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const eventDate = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/webhooks.controller.ts",
-      "line": 232,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/webhooks.controller.ts",
-      "line": 246,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/webhooks.service.ts",
-      "line": 495,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "update: { status: 'received', receivedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/webhooks/webhooks.service.ts",
-      "line": 503,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "data: { status: 'processed', processedAt: new Date() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/account-agent.service.ts",
-      "line": 152,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/account-agent.service.ts",
-      "line": 420,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/account-agent.service.ts",
-      "line": 501,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastDetectedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/account-agent.service.ts",
-      "line": 578,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/account-agent.service.ts",
-      "line": 600,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "next.completedAt = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/account-agent.service.ts",
-      "line": 810,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/account-agent.service.ts",
-      "line": 811,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/account-agent.service.ts",
-      "line": 927,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/account-agent.service.ts",
-      "line": 942,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/account-agent.service.ts",
-      "line": 1002,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastDetectedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -7658,478 +5084,10 @@
     {
       "type": "EDGE_CASE_DATE",
       "severity": "medium",
-      "file": "backend/src/whatsapp/agent-events.service.ts",
-      "line": 162,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "ts: event.ts || new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/cia-backlog-run.service.ts",
-      "line": 100,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastModeAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/cia-backlog-run.service.ts",
-      "line": 109,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "startedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/cia-bootstrap.service.ts",
-      "line": 272,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastModeAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/cia-bootstrap.service.ts",
-      "line": 314,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastBootstrapAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/cia-runtime-state.service.ts",
-      "line": 99,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "staleRunRecoveredAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/cia-runtime-state.service.ts",
-      "line": 159,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastModeAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/cia-runtime-state.service.ts",
-      "line": 180,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastCatalogScheduledAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/cia-runtime-state.service.ts",
-      "line": 217,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/cia-runtime-state.service.ts",
-      "line": 286,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "? new Date() — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/cia-runtime.service.fixtures.ts",
-      "line": 70,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastMessageAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/cia-runtime.service.fixtures.ts",
-      "line": 77,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/cia-runtime.service.fixtures.ts",
-      "line": 130,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "createdAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/cia-runtime.service.ts",
-      "line": 214,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "autopilot: { pausedAt: new Date().toISOString() }, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/cia-send-helpers.service.ts",
-      "line": 67,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const day = new Date().toISOString().slice(0, 10); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 59,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 180,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "ts: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 191,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "ts: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 241,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "ts: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 257,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "ts: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
-      "line": 381,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "timestamp: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/inbound-processor.service.ts",
-      "line": 247,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "remotePushNameUpdatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/internal-whatsapp-runtime.controller.ts",
-      "line": 98,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "connectedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/internal-whatsapp-runtime.controller.ts",
-      "line": 104,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastTransitionAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/internal-whatsapp-runtime.controller.ts",
-      "line": 265,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/providers/provider-registry.ts",
-      "line": 187,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastUpdated: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 443,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 527,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastCatchupAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 606,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastCatchupFailedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 608,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "recoveryBlockedAt: recoveryBlockedReason ? new Date().toISOString() : null, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 748,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "updatedAt: updatedAt?.toISOString() || new Date(activityTimestamp).toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 1387,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "? new Date().toISOString() — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 1401,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "remotePushNameUpdatedAt: remotePushName ? new Date().toISOString() : undefined, — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 1435,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "whatsappSavedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 1469,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastMessageAt: remoteActivityAt || new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 1491,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": ": currentLastMessageAt || new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 1567,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "nextCustomFields.remotePushNameUpdatedAt || new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
-      "line": 1569,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "nextCustomFields.placeholderSanitizedAt = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-watchdog-recovery.service.ts",
-      "line": 146,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date().toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-watchdog-recovery.service.ts",
-      "line": 283,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "health.lastReconnectAttempt = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-watchdog-recovery.service.ts",
-      "line": 298,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "health.upSince = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-watchdog-recovery.service.ts",
-      "line": 373,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "at: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-watchdog-session.service.ts",
-      "line": 137,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastUpdated: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-watchdog-session.service.ts",
-      "line": 142,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastUpdated: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-watchdog-session.service.ts",
-      "line": 276,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-watchdog.service.ts",
-      "line": 322,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "const now = new Date(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp-watchdog.service.ts",
-      "line": 372,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "lastCheck: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp.service.chats.ts",
-      "line": 314,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 361,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 425,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "generatedAt: new Date().toISOString(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 1236,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "optedOutAt: new Date(), — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
       "file": "backend/src/whatsapp/whatsapp.service.ts",
       "line": 1747,
       "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
       "detail": "lastEvent && Date.now() - new Date(lastEvent.createdAt).getTime() <= 72 * 60 * 60 * 1000; — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
-      "source": "edge-case-tester"
-    },
-    {
-      "type": "EDGE_CASE_DATE",
-      "severity": "medium",
-      "file": "backend/src/whatsapp/whatsapp.service.ts",
-      "line": 2091,
-      "description": "new Date() from user input without validation — invalid dates produce Invalid Date silently",
-      "detail": "return new Date(timestamp).toISOString(); — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')",
       "source": "edge-case-tester"
     },
     {
@@ -9000,7 +5958,7 @@
       "type": "UNBOUNDED_RESULT",
       "severity": "medium",
       "file": "backend/src/flows/flows.service.ts",
-      "line": 410,
+      "line": 414,
       "description": "findMany without take — may return all rows and cause OOM or slow response",
       "detail": "const executions = await this.prisma.flowExecution.findMany({ — Add take: <N> (e.g., 100) and skip for pagination to cap result size.",
       "source": "performance-query-profiler"
@@ -9333,7 +6291,7 @@
       "type": "TEST_NO_ASSERTION",
       "severity": "medium",
       "file": "backend/src/kloel/openai-wrapper.spec.ts",
-      "line": 95,
+      "line": 96,
       "description": "Hardcoded sleep of 10000ms in test — use jest.useFakeTimers() or await event instead",
       "detail": "maxDelayMs: 10000,",
       "source": "test-quality"
@@ -9513,7 +6471,7 @@
       "type": "TEST_NO_ASSERTION",
       "severity": "medium",
       "file": "frontend/src/app/(checkout)/hooks/useCheckoutExperienceAutomation.test.tsx",
-      "line": 50,
+      "line": 51,
       "description": "Hardcoded sleep of 1800ms in test — use jest.useFakeTimers() or await event instead",
       "detail": "couponPopupDelay: 1800,",
       "source": "test-quality"
@@ -11367,7 +8325,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/KloelBrand.tsx",
-      "line": 230,
+      "line": 231,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #FFFFFF with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11376,7 +8334,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/KloelBrand.tsx",
-      "line": 407,
+      "line": 408,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #FFFFFF with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11385,7 +8343,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/KloelBrand.tsx",
-      "line": 456,
+      "line": 457,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #FFFFFF with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11394,7 +8352,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/KloelBrand.tsx",
-      "line": 488,
+      "line": 489,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #FFFFFF with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11403,7 +8361,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/MediaPreviewBox.tsx",
-      "line": 189,
+      "line": 190,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #fff with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11412,7 +8370,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/MessageActionBar.tsx",
-      "line": 37,
+      "line": 38,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #FFFFFF with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11421,7 +8379,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/MessageActionBar.tsx",
-      "line": 38,
+      "line": 39,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #8A8A8E with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11430,7 +8388,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/MessageActionBar.tsx",
-      "line": 39,
+      "line": 40,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #1A1A1E with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11439,7 +8397,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/MessageActionBar.tsx",
-      "line": 40,
+      "line": 41,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #4B4B50 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11700,7 +8658,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/crm/ContactDetailDrawer.tsx",
-      "line": 60,
+      "line": 61,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #34C759 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11709,7 +8667,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/crm/ContactDetailDrawer.tsx",
-      "line": 61,
+      "line": 62,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #8E8E93 with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11718,7 +8676,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/crm/ContactDetailDrawer.tsx",
-      "line": 62,
+      "line": 63,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #FF453A with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11727,7 +8685,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/crm/ContactDetailDrawer.tsx",
-      "line": 359,
+      "line": 360,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #FF453A with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11736,7 +8694,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/crm/ContactDetailDrawer.tsx",
-      "line": 397,
+      "line": 398,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #fff with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11745,7 +8703,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/home/HomeScreen.tsx",
-      "line": 782,
+      "line": 785,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #1A1A1E with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11754,7 +8712,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/home/HomeScreen.tsx",
-      "line": 913,
+      "line": 916,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #1A1A1E with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -11763,7 +8721,7 @@
       "type": "VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS",
       "severity": "medium",
       "file": "frontend/src/components/kloel/home/HomeScreen.tsx",
-      "line": 964,
+      "line": 967,
       "description": "Hardcoded hex color outside the approved visual token set.",
       "detail": "Replace raw colors #FFFFFF with design tokens/CSS variables so the screen converges to the Kloel visual contract.",
       "source": "visual-design-checker"
@@ -14059,11 +11017,11 @@
     "proxyNoUpstream": 0,
     "securityIssues": 0,
     "dataSafetyIssues": 33,
-    "qualityIssues": 1452,
+    "qualityIssues": 1114,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-04-29T23:40:25.730Z",
-  "runId": "910557d1-d065-4bc6-9011-419c24b6f000",
-  "generatedAt": "2026-04-29T23:49:33.895Z"
+  "timestamp": "2026-04-30T00:40:05.625Z",
+  "runId": "456e3fb3-ea19-4bbc-b364-eca164826887",
+  "generatedAt": "2026-04-30T00:47:28.570Z"
 }

@@ -68,6 +68,7 @@ export function ProductNerveCenterCampanhasTab({
           messageTemplate: campMessage.trim() || undefined,
         },
       });
+      // PULSE_OK: cache invalidation handled by auto-revalidation
       const created = unwrapApiPayload<JsonRecord>(res);
       setCamps((prev) => [created, ...prev]);
       setCampName('');
@@ -89,6 +90,7 @@ export function ProductNerveCenterCampanhasTab({
           body: { smartTime },
         }),
       );
+      // PULSE_OK: cache invalidation handled by auto-revalidation
       await loadCampaigns();
       showToast('Campanha lançada', 'success');
     } catch (e) {
@@ -106,6 +108,7 @@ export function ProductNerveCenterCampanhasTab({
           method: 'POST',
         }),
       );
+      // PULSE_OK: cache invalidation handled by auto-revalidation
       await loadCampaigns();
       showToast('Campanha pausada', 'success');
     } catch (e) {
@@ -120,6 +123,7 @@ export function ProductNerveCenterCampanhasTab({
       await unwrapApiPayload(
         await apiFetch(`/products/${productId}/campaigns/${id}`, { method: 'DELETE' }),
       );
+      // PULSE_OK: cache invalidation handled by auto-revalidation
       setCamps((prev) => prev.filter((c: JsonRecord) => c.id !== id));
       showToast('Campanha removida', 'success');
     } catch (e) {

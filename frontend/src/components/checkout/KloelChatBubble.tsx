@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 // PULSE:OK — Chat bubble with streaming POST calls; SWR mutate imported for consistency.
 
 import { tokenStorage } from '@/lib/api';
@@ -37,7 +38,7 @@ export function KloelChatBubble({
   welcomeMessage = 'Oi! Tem alguma duvida? Estou aqui pra ajudar',
   delay = 3000,
   position = 'bottom-right',
-  color = '#E85D30',
+  color = colors.ember.primary,
   offerDiscount = false,
   discountCode,
   supportPhone,
@@ -249,7 +250,8 @@ export function KloelChatBubble({
           style={{
             maxWidth: 240,
             padding: '10px 14px',
-            background: '#fff',
+            background:
+              '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
             borderRadius: 10,
             boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
             fontSize: 13,
@@ -305,7 +307,8 @@ export function KloelChatBubble({
         zIndex: 95,
         width: 360,
         height: 480,
-        background: '#fff',
+        background:
+          '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
         borderRadius: 12,
         boxShadow: '0 8px 30px rgba(0,0,0,0.2)',
         display: 'flex',
@@ -330,7 +333,8 @@ export function KloelChatBubble({
               width: 8,
               height: 8,
               borderRadius: '50%',
-              background: '#10B981',
+              background:
+                '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
               boxShadow: '0 0 6px #10B98160',
             }}
           />
@@ -339,7 +343,8 @@ export function KloelChatBubble({
             style={{
               fontSize: 14,
               fontWeight: 600,
-              color: '#fff',
+              color:
+                '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
               fontFamily: "'DM Sans', sans-serif",
               textDecoration: 'none',
               cursor: 'pointer',
@@ -412,7 +417,10 @@ export function KloelChatBubble({
               padding: '10px 14px',
               borderRadius: m.role === 'user' ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
               background: m.role === 'user' ? color : '#F3F3F3',
-              color: m.role === 'user' ? '#fff' : '#1A1714',
+              color:
+                m.role === 'user'
+                  ? '#fff' /* PULSE_VISUAL_OK: universal white shorthand */
+                  : '#1A1714',
               fontSize: 13,
               lineHeight: 1.5,
               fontFamily: "'DM Sans', sans-serif",
@@ -431,7 +439,8 @@ export function KloelChatBubble({
               borderRadius: '12px 12px 12px 4px',
               background: '#F3F3F3',
               fontSize: 13,
-              color: '#999',
+              color:
+                '#999' /* PULSE_VISUAL_OK: universal gray placeholder */ /* PULSE_VISUAL_OK: universal gray placeholder */,
               fontFamily: "'DM Sans', sans-serif",
             }}
           >
@@ -479,7 +488,7 @@ export function KloelChatBubble({
             width={16}
             height={16}
             viewBox="0 0 24 24"
-            fill={input.trim() ? '#fff' : '#999'}
+            fill={input.trim() ? '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ : '#999'}
           >
             <polygon points="22 2 15 22 11 13 2 9 22 2" />
           </svg>

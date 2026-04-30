@@ -38,10 +38,8 @@ import {
 
 import {
   GATE_ORDER,
-  SECURITY_PATTERNS,
-  ISOLATION_PATTERNS,
-  RECOVERY_PATTERNS,
-  PERFORMANCE_PATTERNS,
+  CERTIFICATION_FINDING_PREDICATES,
+  getTypeIntegrityEscapeHatchThreshold,
 } from './cert-constants';
 
 import {
@@ -161,6 +159,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
   const isPulseCoreFinal = certificationTarget.profile === 'pulse-core-final';
   const certificationTiers = getCertificationTiers(input.resolvedManifest);
   const finalReadinessCriteria = getFinalReadinessCriteria(input.resolvedManifest);
+  const typeIntegrityThreshold = getTypeIntegrityEscapeHatchThreshold();
   const timestamp = new Date().toISOString();
   const pathCoverage = loadPathCoverageGateState(input.rootDir);
 
@@ -341,19 +340,19 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     securityPass: evaluatePatternGate(
       'securityPass',
       'No blocking security findings are open in this run.',
-      'Security certification found blocking findings.',
+      'Security certification objective found blocking evidence.',
       input.health,
       manifest,
-      SECURITY_PATTERNS,
+      CERTIFICATION_FINDING_PREDICATES.securityPass,
       filterCodacyIssues(input.scopeState.codacy, isCodacySecurityIssue),
     ),
     isolationPass: evaluatePatternGate(
       'isolationPass',
       'No blocking tenant isolation findings are open.',
-      'Isolation certification found blocking findings.',
+      'Isolation certification objective found blocking evidence.',
       input.health,
       manifest,
-      ISOLATION_PATTERNS,
+      CERTIFICATION_FINDING_PREDICATES.isolationPass,
       filterCodacyIssues(input.scopeState.codacy, isCodacyIsolationIssue),
     ),
     recoveryPass: withTemporaryGateAcceptance(
@@ -369,10 +368,10 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         : evaluatePatternGate(
             'performancePass',
             'Performance budgets have no blocking findings in this run.',
-            'Performance certification found blocking findings.',
+            'Performance certification objective found blocking evidence.',
             input.health,
             manifest,
-            PERFORMANCE_PATTERNS,
+            CERTIFICATION_FINDING_PREDICATES.performancePass,
           ),
     ),
     observabilityPass: withTemporaryGateAcceptance(
@@ -538,14 +537,14 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       manifest,
       (() => {
         const result = detectTypeEscapeHatches(input.rootDir);
-        if (result.count < 5) {
+        if (result.count < typeIntegrityThreshold.value) {
           return {
             status: 'pass',
-            reason: `Type escape hatch count (${result.count}) is below the threshold.`,
+            reason: `Type-integrity finding count (${result.count}) satisfies the ${typeIntegrityThreshold.source} evidence requirement (${typeIntegrityThreshold.evidenceRequirement}; limit: <${typeIntegrityThreshold.value}).`,
           };
         }
         return gateFail(
-          `Found ${result.count} type escape hatches (threshold: <5): ${result.locations.slice(0, 10).join(', ')}${result.locations.length > 10 ? `... (and ${result.locations.length - 10} more)` : ''}.`,
+          `Found ${result.count} type-integrity findings, exceeding the ${typeIntegrityThreshold.source} evidence requirement (${typeIntegrityThreshold.evidenceRequirement}; limit: <${typeIntegrityThreshold.value}): ${result.locations.slice(0, 10).join(', ')}${result.locations.length > 10 ? `... (and ${result.locations.length - 10} more)` : ''}.`,
           'product_failure',
         );
       })(),

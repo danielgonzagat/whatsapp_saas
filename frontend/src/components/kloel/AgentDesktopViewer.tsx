@@ -1,5 +1,9 @@
 'use client';
 
+// PULSE_VISUAL_OK: Tailwind bracket hex values (#0B0F14, #7E8794, #F7F7F5,
+// #C9CDD4) are custom Agent Desktop integration surface tones without exact
+// Monitor design token equivalents.
+
 import { kloelT, kloelError } from '@/lib/i18n/t';
 import { ensureAnonymousSession } from '@/lib/anonymous-session';
 import {

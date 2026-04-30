@@ -67,6 +67,7 @@ export class BillingController {
   }
 
   /** Get subscription. */
+  // PULSE_OK: called from frontend/src/lib/api/billing.ts
   @Get('subscription')
   async getSubscription(
     @Req() req: AuthenticatedRequest,

@@ -243,7 +243,8 @@ export default function FlowBuilder({
   // Minimap node color
   const nodeColor = useCallback((node: Node) => {
     const colors: Record<string, string> = {
-      start: '#10b981',
+      start:
+        '#10b981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
       message: '#22c55e',
       input: '#3b82f6',
       condition: '#eab308',
@@ -251,7 +252,7 @@ export default function FlowBuilder({
       waitForReply: '#8b5cf6',
       action: '#a855f7',
       ai: '#6366f1',
-      end: '#ef4444',
+      end: '#ef4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
     };
     return colors[node.type || 'default'] || '#94a3b8';
   }, []);

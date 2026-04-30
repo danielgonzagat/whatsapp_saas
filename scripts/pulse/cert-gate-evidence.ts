@@ -15,6 +15,7 @@ import type {
 } from './types';
 import { unique } from './cert-helpers';
 import { isRuntimeExternalSignal, isChangeExternalSignal } from './cert-helpers';
+import { isBlockingDynamicFinding } from './finding-identity';
 
 export function buildGateEvidence(
   health: PulseHealth,
@@ -28,6 +29,7 @@ export function buildGateEvidence(
   const staticBlocking = health.breaks.filter(
     (item) =>
       (item.severity === 'critical' || item.severity === 'high') &&
+      isBlockingDynamicFinding(item) &&
       !['CHECK_UNAVAILABLE', 'MANIFEST_MISSING', 'MANIFEST_INVALID', 'UNKNOWN_SURFACE'].includes(
         item.type,
       ),
@@ -110,7 +112,7 @@ export function buildGateEvidence(
         artifactPaths: evidence.runtime.artifactPaths,
         metrics: {
           executedChecks: evidence.runtime.executedChecks.length,
-          blockingBreakTypes: evidence.runtime.blockingBreakTypes.length,
+          blockingFindingEvents: evidence.runtime.blockingBreakTypes.length,
         },
       },
       {

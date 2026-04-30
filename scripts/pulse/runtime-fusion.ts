@@ -39,57 +39,69 @@ const OBSERVED_RUNTIME_TRACE_SOURCES = new Set([
 ]);
 const SKIPPED_ADAPTER_STATUSES = new Set(['optional_not_configured', 'skipped']);
 
-const SEVERITY_WEIGHTS: Record<SignalSeverity, number> = {
-  critical: 1.0,
-  high: 0.7,
-  medium: 0.4,
-  low: 0.2,
-  info: 0.1,
-};
+const DYNAMIC_SIGNAL_SEMANTICS_NOTE =
+  'Dynamic signal semantics derived from source capability, observed payload, runtime baseline, trend, impact, and blast-radius hints; legacy labels are weak calibration only.';
 
-const TYPE_MAP: Record<string, SignalType> = {
-  runtime: 'runtime',
-  error: 'error',
-  runtime_error: 'error',
-  exception: 'error',
-  crash: 'error',
-  latency: 'latency',
-  response_time: 'latency',
-  p95: 'latency',
-  p99: 'latency',
-  throughput: 'throughput',
-  rps: 'throughput',
-  error_rate: 'error_rate',
-  failure_rate: 'error_rate',
-  saturation: 'saturation',
-  cpu: 'saturation',
-  memory: 'saturation',
-  disk: 'saturation',
-  deploy_failure: 'deploy_failure',
-  ci_failure: 'deploy_failure',
-  build_failure: 'deploy_failure',
-  test_failure: 'test_failure',
-  flaky_test: 'test_failure',
-  coverage_drop: 'test_failure',
-  graph_staleness: 'graph_staleness',
-  stale_index: 'graph_staleness',
-  static: 'static',
-  static_hotspot: 'code_quality',
-  code_quality: 'code_quality',
-  codacy: 'code_quality',
-  issue: 'code_quality',
-  pull_request: 'change',
-  change: 'change',
-  dependency: 'dependency',
-  dependabot: 'dependency',
+const WEAK_SEMANTIC_HINTS: Record<OperationalEvidenceKind, readonly string[]> = {
+  runtime: [
+    'runtime',
+    'error',
+    'exception',
+    'crash',
+    'latency',
+    'response',
+    'p95',
+    'p99',
+    'throughput',
+    'rps',
+    'saturation',
+    'cpu',
+    'memory',
+    'disk',
+    'incident',
+    'timeout',
+    'trace',
+    'span',
+  ],
+  change: [
+    'change',
+    'pull',
+    'request',
+    'commit',
+    'deploy',
+    'build',
+    'ci',
+    'test',
+    'coverage',
+    'regression',
+    'workflow',
+  ],
+  static: [
+    'static',
+    'quality',
+    'codacy',
+    'lint',
+    'smell',
+    'complexity',
+    'duplication',
+    'hotspot',
+    'graph',
+    'stale',
+    'rule',
+  ],
+  dependency: [
+    'dependency',
+    'dependabot',
+    'vulnerability',
+    'vuln',
+    'cve',
+    'supply',
+    'package',
+    'lockfile',
+    'version',
+  ],
+  external: [],
 };
-
-const RUNTIME_TYPE_PATTERN =
-  /runtime|error|exception|crash|latency|response|p95|p99|throughput|rps|saturation|cpu|memory|disk|incident|timeout/i;
-const CHANGE_TYPE_PATTERN = /change|pull_request|commit|deploy|build|ci_|test|coverage|regression/i;
-const STATIC_TYPE_PATTERN =
-  /static|quality|codacy|lint|smell|complexity|duplication|hotspot|graph|stale_index/i;
-const DEPENDENCY_TYPE_PATTERN = /dependency|dependabot|vuln|supply|package|lockfile/i;
 
 // ─── Numeric → Categorical Mapping ──────────────────────────────────────────
 
@@ -105,25 +117,149 @@ function mapSeverity(score: number): SignalSeverity {
 }
 
 /**
- * Map a signal type string to a canonical {@link SignalType}.
+ * Keep legacy words as calibration only. They can break ties, but they do not
+ * define signal semantics without payload/source evidence.
  */
-function mapType(rawType: string): SignalType {
-  const lower = rawType.toLowerCase().replace(/[^a-z0-9_]/g, '_');
-  for (const [key, value] of Object.entries(TYPE_MAP)) {
-    if (lower.includes(key)) return value;
-  }
-  return 'external';
+function weakHintScore(kind: OperationalEvidenceKind, tokens: Set<string>): number {
+  const hints = WEAK_SEMANTIC_HINTS[kind];
+  if (hints.length === 0) return 0;
+  const matches = hints.filter((hint) => tokens.has(hint)).length;
+  return Math.min(0.18, matches * 0.04);
 }
 
-function classifyOperationalEvidenceKind(
-  source: SignalSource,
-  rawType: string,
-): OperationalEvidenceKind {
-  const haystack = `${source} ${rawType}`;
-  if (DEPENDENCY_TYPE_PATTERN.test(haystack)) return 'dependency';
-  if (RUNTIME_TYPE_PATTERN.test(haystack)) return 'runtime';
-  if (CHANGE_TYPE_PATTERN.test(haystack)) return 'change';
-  if (STATIC_TYPE_PATTERN.test(haystack)) return 'static';
+function sourceCapabilityScore(source: SignalSource, kind: OperationalEvidenceKind): number {
+  if (kind === 'runtime' && ['sentry', 'datadog', 'prometheus', 'otel_runtime'].includes(source)) {
+    return 0.35;
+  }
+  if (kind === 'change' && ['github', 'github_actions', 'codecov'].includes(source)) {
+    return 0.3;
+  }
+  if (kind === 'static' && ['codacy', 'codecov', 'gitnexus'].includes(source)) {
+    return 0.3;
+  }
+  if (kind === 'dependency' && source === 'dependabot') {
+    return 0.35;
+  }
+  if (kind === 'external') return 0.05;
+  return 0;
+}
+
+function flattenPayloadTokens(value: unknown): string[] {
+  if (typeof value === 'string') return tokenize(value);
+  if (typeof value === 'number' || typeof value === 'boolean') return [String(value)];
+  if (Array.isArray(value)) return value.flatMap(flattenPayloadTokens);
+  if (!isRecord(value)) return [];
+  return Object.entries(value).flatMap(([key, entry]) => [
+    ...tokenize(key),
+    ...flattenPayloadTokens(entry),
+  ]);
+}
+
+function payloadSignalScore(
+  kind: OperationalEvidenceKind,
+  signal: CanonicalExternalSignal,
+): number {
+  const payload = signal.observedPayload;
+  const payloadTokens = new Set(flattenPayloadTokens(payload));
+  const hasAny = (...keys: string[]): boolean => keys.some((key) => payloadTokens.has(key));
+
+  if (kind === 'runtime') {
+    let score = 0;
+    if (hasAny('trace', 'span', 'status', 'statuscode', 'exception', 'duration', 'latency')) {
+      score += 0.36;
+    }
+    if (signal.observedAt) score += 0.12;
+    if (signal.runtimeBaselineScore > 0) score += 0.15;
+    if (signal.trend === 'worsening') score += 0.1;
+    return Math.min(0.65, score);
+  }
+
+  if (kind === 'change') {
+    let score = 0;
+    if (hasAny('commit', 'pull', 'request', 'branch', 'workflow', 'deployment', 'build'))
+      score += 0.34;
+    if (hasAny('diff', 'changed', 'coverage', 'test', 'regression')) score += 0.18;
+    return Math.min(0.55, score);
+  }
+
+  if (kind === 'static') {
+    let score = 0;
+    if (hasAny('rule', 'finding', 'complexity', 'duplication', 'lint', 'graph', 'file'))
+      score += 0.34;
+    if (signal.relatedFiles.length > 0) score += 0.12;
+    return Math.min(0.55, score);
+  }
+
+  if (kind === 'dependency') {
+    let score = 0;
+    if (hasAny('package', 'dependency', 'version', 'lockfile', 'manifest')) score += 0.32;
+    if (hasAny('cve', 'vulnerability', 'advisory', 'supply')) score += 0.18;
+    return Math.min(0.55, score);
+  }
+
+  return 0;
+}
+
+function deriveOperationalEvidenceKind(signal: CanonicalExternalSignal): OperationalEvidenceKind {
+  const tokens = new Set([
+    ...tokenize(signal.source),
+    ...tokenize(signal.type),
+    ...tokenize(signal.summary),
+    ...signal.relatedFiles.flatMap(tokenize),
+    ...flattenPayloadTokens(signal.observedPayload),
+  ]);
+
+  const candidates: OperationalEvidenceKind[] = ['runtime', 'change', 'static', 'dependency'];
+  const ranked = candidates
+    .map((kind) => ({
+      kind,
+      score:
+        payloadSignalScore(kind, signal) +
+        sourceCapabilityScore(signal.source, kind) +
+        weakHintScore(kind, tokens),
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  const best = ranked[0];
+  return best && best.score >= 0.22 ? best.kind : 'external';
+}
+
+function deriveSignalType(
+  evidenceKind: OperationalEvidenceKind,
+  signal: CanonicalExternalSignal,
+): SignalType {
+  const tokens = new Set([
+    ...tokenize(signal.type),
+    ...tokenize(signal.summary),
+    ...flattenPayloadTokens(signal.observedPayload),
+  ]);
+  const hasAny = (...keys: string[]): boolean => keys.some((key) => tokens.has(key));
+
+  if (evidenceKind === 'runtime') {
+    if (hasAny('error', 'exception', 'crash', 'timeout', 'statuscode500', 'statuscode')) {
+      return 'error';
+    }
+    if (hasAny('latency', 'duration', 'response', 'p95', 'p99')) return 'latency';
+    if (hasAny('throughput', 'rps')) return 'throughput';
+    if (hasAny('saturation', 'cpu', 'memory', 'disk')) return 'saturation';
+    return 'runtime';
+  }
+
+  if (evidenceKind === 'change') {
+    if (hasAny('deploy', 'deployment', 'ci', 'build', 'workflow')) return 'deploy_failure';
+    if (hasAny('test', 'coverage', 'regression', 'flaky')) return 'test_failure';
+    return 'change';
+  }
+
+  if (evidenceKind === 'static') {
+    if (hasAny('stale', 'graph', 'index')) return 'graph_staleness';
+    if (hasAny('quality', 'codacy', 'lint', 'complexity', 'duplication', 'smell', 'rule')) {
+      return 'code_quality';
+    }
+    return 'static';
+  }
+
+  if (evidenceKind === 'dependency') return 'dependency';
   return 'external';
 }
 
@@ -178,6 +314,11 @@ function asNumber(value: unknown, fallback: number = 0): number {
   return fallback;
 }
 
+function asOptionalNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  return null;
+}
+
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -204,22 +345,22 @@ function syncAffectedAliases(signal: RuntimeSignal): void {
   signal.affectedFlows = signal.affectedFlowIds;
 }
 
-const SIGNAL_SOURCES: readonly SignalSource[] = [
-  'github',
-  'sentry',
-  'datadog',
-  'prometheus',
-  'github_actions',
-  'codacy',
-  'codecov',
-  'dependabot',
-  'gitnexus',
-  'otel_runtime',
-];
-const SIGNAL_SOURCE_SET = new Set<string>(SIGNAL_SOURCES);
-
 function isSignalSource(value: string): value is SignalSource {
-  return SIGNAL_SOURCE_SET.has(value);
+  switch (value) {
+    case 'github':
+    case 'sentry':
+    case 'datadog':
+    case 'prometheus':
+    case 'github_actions':
+    case 'codacy':
+    case 'codecov':
+    case 'dependabot':
+    case 'gitnexus':
+    case 'otel_runtime':
+      return true;
+    default:
+      return false;
+  }
 }
 
 function emptySourceCounts(): Record<SignalSource, number> {
@@ -244,12 +385,18 @@ interface CanonicalExternalSignal {
   truthMode: 'observed' | 'inferred';
   severity: number;
   impactScore: number;
+  runtimeBaselineScore: number;
+  blastRadiusScore: number;
   summary: string;
   observedAt: string | null;
   relatedFiles: string[];
   capabilityIds: string[];
   flowIds: string[];
   confidence: number;
+  frequency: number;
+  affectedUsers: number;
+  trend: RuntimeSignal['trend'];
+  observedPayload: Record<string, unknown>;
 }
 
 interface CanonicalExternalAdapter {
@@ -272,14 +419,24 @@ function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal |
   const truthModeRaw = asString(value.truthMode);
   const truthMode = truthModeRaw === 'inferred' ? 'inferred' : 'observed';
   const summary = asString(value.summary ?? value.message ?? value.title);
+  const explicitSeverity = asOptionalNumber(value.severity);
+  const explicitImpact = asOptionalNumber(value.impactScore);
+  const runtimeBaselineScore = clampScore(
+    asNumber(value.runtimeBaselineScore ?? value.baselineScore ?? value.baselineDelta, 0),
+  );
+  const blastRadiusScore = clampScore(
+    asNumber(value.blastRadiusScore ?? value.blastRadius ?? value.blastRadiusImpact, 0),
+  );
 
   return {
     id: asString(value.id) || `${sourceRaw}:${summary.slice(0, 80) || 'signal'}`,
     source: sourceRaw,
     type: asString(value.type) || 'external',
     truthMode,
-    severity: asNumber(value.severity, 0.5),
-    impactScore: asNumber(value.impactScore, asNumber(value.severity, 0.5)),
+    severity: clampScore(explicitSeverity ?? explicitImpact ?? 0.5),
+    impactScore: clampScore(explicitImpact ?? explicitSeverity ?? 0.5),
+    runtimeBaselineScore,
+    blastRadiusScore,
     summary: summary || `${sourceRaw} external signal`,
     observedAt: asString(value.observedAt) || null,
     relatedFiles: asStringArray(value.relatedFiles),
@@ -294,7 +451,21 @@ function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal |
       ...asStringArray(value.affectedFlows),
     ]),
     confidence: clampScore(asNumber(value.confidence, 0.8)),
+    frequency: Math.max(1, asNumber(value.frequency ?? value.count, 1)),
+    affectedUsers: Math.max(0, asNumber(value.affectedUsers ?? value.userCount, 0)),
+    trend: parseTrend(value.trend),
+    observedPayload: parseObservedPayload(value),
   };
+}
+
+function parseTrend(value: unknown): RuntimeSignal['trend'] {
+  if (value === 'worsening' || value === 'stable' || value === 'improving') return value;
+  return 'unknown';
+}
+
+function parseObservedPayload(value: Record<string, unknown>): Record<string, unknown> {
+  const observedPayload = value.observedPayload ?? value.payload ?? value.metrics ?? {};
+  return isRecord(observedPayload) ? observedPayload : {};
 }
 
 function parseCanonicalExternalAdapter(value: unknown): CanonicalExternalAdapter | null {
@@ -341,12 +512,29 @@ function canonicalExternalSignalToRuntimeSignal(
   signal: CanonicalExternalSignal,
   generatedAt: string,
 ): RuntimeSignal {
-  const severity = mapSeverity(signal.severity);
-  const type = mapType(signal.type);
+  const evidenceKind = deriveOperationalEvidenceKind(signal);
+  const type = deriveSignalType(evidenceKind, signal);
+  const semanticSeverityScore = clampScore(
+    Math.max(
+      signal.severity,
+      signal.impactScore * 0.8,
+      signal.runtimeBaselineScore,
+      signal.blastRadiusScore,
+      signal.trend === 'worsening' ? 0.7 : 0,
+    ),
+  );
+  const severity = mapSeverity(semanticSeverityScore);
   const observedAt = signal.observedAt || generatedAt;
-  const evidenceKind = classifyOperationalEvidenceKind(signal.source, signal.type);
   const affectedCapabilityIds = unique(signal.capabilityIds);
   const affectedFlowIds = unique(signal.flowIds);
+  const impactScore = clampScore(
+    Math.max(
+      signal.impactScore,
+      signal.runtimeBaselineScore,
+      signal.blastRadiusScore,
+      signal.affectedUsers > 0 ? Math.min(1, Math.log10(signal.affectedUsers + 1) / 6) : 0,
+    ),
+  );
 
   return {
     id: signal.id,
@@ -358,15 +546,15 @@ function canonicalExternalSignalToRuntimeSignal(
     affectedCapabilityIds,
     affectedFlowIds,
     affectedFilePaths: signal.relatedFiles,
-    frequency: 1,
-    affectedUsers: 0,
-    impactScore: clampScore(signal.impactScore),
+    frequency: signal.frequency,
+    affectedUsers: signal.affectedUsers,
+    impactScore,
     confidence: signal.confidence,
     evidenceKind,
     firstSeen: observedAt,
     lastSeen: observedAt,
-    count: 1,
-    trend: 'unknown',
+    count: signal.frequency,
+    trend: signal.trend,
     pinned: false,
     evidenceMode: signal.truthMode,
     sourceArtifact: EXTERNAL_SIGNAL_STATE_FILE,
@@ -445,8 +633,8 @@ function loadCanonicalExternalSignals(currentDir: string): {
       invalidAdapters,
       reason:
         state.signals.length > 0
-          ? `${state.signals.length} canonical external signal(s) loaded from ${EXTERNAL_SIGNAL_STATE_FILE}.`
-          : `No canonical external signals were present in ${EXTERNAL_SIGNAL_STATE_FILE}.`,
+          ? `${state.signals.length} canonical external signal(s) loaded from ${EXTERNAL_SIGNAL_STATE_FILE}. ${DYNAMIC_SIGNAL_SEMANTICS_NOTE}`
+          : `No canonical external signals were present in ${EXTERNAL_SIGNAL_STATE_FILE}. ${DYNAMIC_SIGNAL_SEMANTICS_NOTE}`,
     },
   };
 }
@@ -895,27 +1083,29 @@ function mapCapabilitiesFromFlows(
 // ─── Impact Score Computation ───────────────────────────────────────────────
 
 /**
- * Compute an impact score (0..1) for a runtime signal based on severity,
- * frequency, and affected user count.
- *
- * The formula is: severity_weight × log10(frequency + 1) × log10(affectedUsers + 1),
- * normalized to 0..1.
+ * Compute an impact score (0..1) for a runtime signal based on observed load,
+ * users, trend, and action semantics. Severity only contributes ordinal
+ * pressure; it is not a fixed authority table.
  *
  * @param signal - The runtime signal to score.
  * @returns Impact score in the range 0..1.
  */
 export function computeImpactScore(signal: RuntimeSignal): number {
-  const sevWeight = SEVERITY_WEIGHTS[signal.severity] ?? 0.5;
+  const severityOrder: SignalSeverity[] = ['info', 'low', 'medium', 'high', 'critical'];
+  const severityOrdinal = severityOrder.indexOf(signal.severity);
+  const severityPressure =
+    severityOrdinal >= 0 ? (severityOrdinal + 1) / severityOrder.length : 0.5;
   const freqLog = Math.log10(Math.max(signal.frequency, 1) + 1);
   const userLog = Math.log10(Math.max(signal.affectedUsers, 1) + 1);
+  const trendPressure =
+    signal.trend === 'worsening' ? 0.2 : signal.trend === 'improving' ? -0.1 : 0;
+  const actionPressure =
+    signal.action === 'block_deploy' ? 0.25 : signal.action === 'block_merge' ? 0.15 : 0;
 
-  const raw = sevWeight * freqLog * userLog;
+  const observedMagnitude = (freqLog + userLog) / 12;
+  const raw = observedMagnitude + severityPressure * 0.2 + trendPressure + actionPressure;
 
-  const maxFreq = 6; // log10(1e6 + 1) ≈ 6
-  const maxUser = 6; // log10(1e6 + 1) ≈ 6
-  const denom = 1.0 * maxFreq * maxUser;
-
-  return denom > 0 ? Math.min(1, raw / denom) : 0;
+  return clampScore(raw);
 }
 
 // ─── Priority Overrides ─────────────────────────────────────────────────────
@@ -973,7 +1163,7 @@ export function overridePriorities(
       capabilityId: capId,
       originalPriority,
       newPriority: 'P0',
-      reason: `Runtime ${hasCritical ? 'critical' : 'high'} signals from ${uniqueSources.join(', ')}: ${reasons.join('; ')}`,
+      reason: `Dynamic signal semantics found ${hasCritical ? 'critical' : 'high'} operational impact from ${uniqueSources.join(', ')}: ${reasons.join('; ')}`,
     });
   }
 
@@ -1143,8 +1333,6 @@ export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
     // Recompute impact score using the fusion formula
     signal.impactScore = Math.max(clampScore(signal.impactScore), computeImpactScore(signal));
     signal.confidence = clampScore(signal.confidence);
-    signal.evidenceKind =
-      signal.evidenceKind || classifyOperationalEvidenceKind(signal.source, signal.type);
     syncAffectedAliases(signal);
   }
 

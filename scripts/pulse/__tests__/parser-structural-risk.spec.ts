@@ -56,11 +56,15 @@ describe('parser structural risk inference', () => {
       config.rootDir,
       'backend/src/payment.controller.ts',
       `
-      import { Controller, Get } from '@nestjs/common';
+      import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
       @Controller('payment')
       export class PaymentController {
         @Get()
         list() { return []; }
+
+        @UseGuards(JwtAuthGuard)
+        @Post()
+        create(@Body() body: { amountCents: number; workspaceId: string }) { return body; }
       }
       `,
     );
@@ -85,9 +89,9 @@ describe('parser structural risk inference', () => {
     );
 
     expect(checkDataConsistency(config)).toEqual([]);
-    expect(checkGuards(config).filter((entry) => entry.type === 'FINANCIAL_NO_RATE_LIMIT')).toEqual(
-      [],
-    );
+    expect(
+      checkGuards(config).filter((entry) => entry.type === 'behavioral-control-evidence-gap'),
+    ).toEqual([]);
     expect(
       checkBrowserNetwork(config).filter((entry) => entry.type === 'NETWORK_OFFLINE_DATA_LOST'),
     ).toEqual([]);
@@ -98,7 +102,7 @@ describe('parser structural risk inference', () => {
     ).toEqual([]);
   });
 
-  it('classifies opaque surfaces from money-like fields and mutating behavior', () => {
+  it('classifies opaque surfaces from external input and durable mutation behavior', () => {
     const config = makeConfig();
 
     writeFile(
@@ -118,12 +122,13 @@ describe('parser structural risk inference', () => {
       config.rootDir,
       'backend/src/opaque.controller.ts',
       `
-      import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+      import { Body, Controller, Post } from '@nestjs/common';
       @Controller('opaque')
       export class OpaqueController {
-        @UseGuards(JwtAuthGuard)
         @Post()
-        create(@Body() body: { amountCents: number; workspaceId: string }) { return body; }
+        create(@Body() body: { amountCents: number }) {
+          return this.prisma.anything.create({ data: body });
+        }
       }
       `,
     );
@@ -149,7 +154,16 @@ describe('parser structural risk inference', () => {
     expect(checkDataConsistency(config).map((entry) => entry.type)).toContain(
       'DATA_PRODUCT_NO_PLAN',
     );
-    expect(checkGuards(config).map((entry) => entry.type)).toContain('FINANCIAL_NO_RATE_LIMIT');
+    const guardSignals = checkGuards(config);
+    expect(guardSignals.map((entry) => entry.type)).toContain('behavioral-control-evidence-gap');
+    expect(
+      guardSignals.find((entry) => entry.type === 'behavioral-control-evidence-gap'),
+    ).toMatchObject({
+      severity: 'low',
+      source: 'regex-weak-signal:guard-auditor:needs_probe',
+      description:
+        'External-input route appears to perform a durable mutation without nearby abuse-control or authorization evidence.',
+    });
     expect(checkBrowserNetwork(config).map((entry) => entry.type)).toContain(
       'NETWORK_OFFLINE_DATA_LOST',
     );

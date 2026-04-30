@@ -746,7 +746,7 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.summary.nonTerminalPaths).toBe(0);
     expect(matrix.summary.unknownPaths).toBe(0);
   });
-  it('passes matrix completeness and critical terminal classification with precise governed reasons', () => {
+  it('passes matrix completeness but fails critical observation when only terminal proof blueprints exist', () => {
     const matrix = buildMatrix({});
     const path = matrix.paths[0];
 
@@ -780,10 +780,10 @@ describe('buildExecutionMatrix', () => {
 
     expect(evaluateExecutionMatrixCompleteGate(matrix).status).toBe('pass');
     const observedGate = evaluateCriticalPathObservedGate(matrix);
-    expect(observedGate.status).toBe('pass');
+    expect(observedGate.status).toBe('fail');
     expect(observedGate.evidenceMode).toBe('inferred');
-    expect(observedGate.reason).toContain('precise terminal reason');
-    expect(observedGate.reason).toContain('still need observed proof');
+    expect(observedGate.reason).toContain('precise proof blueprints');
+    expect(observedGate.reason).toContain('still need observed pass/fail evidence');
   });
 
   it('fails critical path gate when path coverage still reports critical unobserved work', () => {

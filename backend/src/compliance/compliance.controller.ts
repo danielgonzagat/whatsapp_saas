@@ -43,18 +43,21 @@ export class ComplianceController {
   }
 
   /** Deletion status. */
+  // PULSE_OK: called from frontend/src/app/api/compliance/deletion-status/[code]/route.ts
   @Get('compliance/deletion-status/:code')
   async deletionStatus(@Param('code') code: string) {
     return this.complianceService.getDeletionStatus(code);
   }
 
   /** Data export. */
+  // PULSE_TODO: verify if still needed, no caller detected
   @Get('user/data-export')
   async dataExport(@Req() req: AuthenticatedRequest) {
     return this.complianceService.exportUserData(req.user.sub, req.user.workspaceId);
   }
 
   /** Delete current user. */
+  // PULSE_TODO: verify if still needed, no caller detected
   @Delete('user/data-deletion')
   async deleteCurrentUser(@Req() req: AuthenticatedRequest) {
     return this.complianceService.deleteCurrentUser(req.user.sub, req.user.workspaceId);
