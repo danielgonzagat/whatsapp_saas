@@ -12,7 +12,7 @@ import type {
   PulseAutonomyValidationCommandResult,
 } from './types';
 import type { PulseAutonomousDirective, PulseAutonomousDirectiveUnit } from './autonomy-types';
-import { toUnitSnapshot, selectParallelUnits } from './autonomy-loop.unit-ranking';
+import { toUnitSnapshot } from './autonomy-loop.unit-ranking';
 import { directiveDigest, getDirectiveSnapshot } from './autonomy-loop.state-io';
 import { summarizeBatchUnits } from './autonomy-loop.prompt';
 
@@ -56,11 +56,9 @@ export function buildBatchRecord(
 export function buildOrchestrationStateUpdate(
   orchestrationState: PulseAgentOrchestrationState,
   directiveAfter: PulseAutonomousDirective,
-  state: PulseAutonomyState,
-  parallelAgents: number,
-  riskProfile: 'safe' | 'balanced' | 'dangerous',
   workerFailure: boolean,
   validationFailure: boolean,
+  nextBatchUnits: PulseAutonomousDirectiveUnit[],
 ): Partial<PulseAgentOrchestrationState> {
   return {
     generatedAt: new Date().toISOString(),
@@ -68,7 +66,7 @@ export function buildOrchestrationStateUpdate(
     currentCheckpoint: directiveAfter.currentCheckpoint || orchestrationState.currentCheckpoint,
     targetCheckpoint: directiveAfter.targetCheckpoint || orchestrationState.targetCheckpoint,
     visionGap: directiveAfter.visionGap || orchestrationState.visionGap,
-    nextBatchUnits: selectParallelUnits(directiveAfter, parallelAgents, riskProfile, state)
+    nextBatchUnits: nextBatchUnits
       .map((unit) => toUnitSnapshot(unit))
       .filter((unit): unit is PulseAutonomyUnitSnapshot => Boolean(unit)),
     status:
@@ -152,7 +150,7 @@ export function buildStateUpdate(
   directiveAfter: PulseAutonomousDirective,
   orchestrationStatus: PulseAgentOrchestrationState['status'],
   rollbackSummary: string | null,
-  riskProfile: 'safe' | 'balanced' | 'dangerous',
+  nextActionableUnit: PulseAutonomousDirectiveUnit | null,
 ): Partial<PulseAutonomyState> {
   return {
     generatedAt: new Date().toISOString(),
@@ -160,9 +158,7 @@ export function buildStateUpdate(
     currentCheckpoint: directiveAfter.currentCheckpoint || state.currentCheckpoint,
     targetCheckpoint: directiveAfter.targetCheckpoint || state.targetCheckpoint,
     visionGap: directiveAfter.visionGap || state.visionGap,
-    nextActionableUnit: toUnitSnapshot(
-      selectParallelUnits(directiveAfter, 1, riskProfile, state)[0] || null,
-    ),
+    nextActionableUnit: toUnitSnapshot(nextActionableUnit),
     status: orchestrationStatus,
     stopReason: rollbackSummary,
   };
@@ -173,8 +169,8 @@ export function buildStopEarlyStates(
   orchestrationState: PulseAgentOrchestrationState,
   directive: PulseAutonomousDirective,
   stopReason: string,
-  parallelAgents: number,
-  riskProfile: 'safe' | 'balanced' | 'dangerous',
+  nextBatchUnits: PulseAutonomousDirectiveUnit[],
+  nextActionableUnit: PulseAutonomousDirectiveUnit | null,
 ): {
   state: Partial<PulseAutonomyState>;
   orchestrationState: Partial<PulseAgentOrchestrationState>;
@@ -188,9 +184,7 @@ export function buildStopEarlyStates(
       currentCheckpoint: directive.currentCheckpoint || state.currentCheckpoint,
       targetCheckpoint: directive.targetCheckpoint || state.targetCheckpoint,
       visionGap: directive.visionGap || state.visionGap,
-      nextActionableUnit: toUnitSnapshot(
-        selectParallelUnits(directive, 1, riskProfile, state)[0] || null,
-      ),
+      nextActionableUnit: toUnitSnapshot(nextActionableUnit),
       status: isCertified ? 'completed' : 'blocked',
       stopReason,
     },
@@ -200,7 +194,7 @@ export function buildStopEarlyStates(
       currentCheckpoint: directive.currentCheckpoint || orchestrationState.currentCheckpoint,
       targetCheckpoint: directive.targetCheckpoint || orchestrationState.targetCheckpoint,
       visionGap: directive.visionGap || orchestrationState.visionGap,
-      nextBatchUnits: selectParallelUnits(directive, parallelAgents, riskProfile, state)
+      nextBatchUnits: nextBatchUnits
         .map((unit) => toUnitSnapshot(unit))
         .filter((unit): unit is PulseAutonomyUnitSnapshot => Boolean(unit)),
       status: isCertified ? 'completed' : 'blocked',

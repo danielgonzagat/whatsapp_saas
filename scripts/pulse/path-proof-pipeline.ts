@@ -1,18 +1,15 @@
 import {
-  PATH_PROOF_EVIDENCE_ARTIFACT,
   buildPathProofEvidenceArtifact,
   type PathProofEvidenceArtifact,
-  type PathProofEvidenceDisposition,
-  type PathProofEvidenceEntry,
   type PathProofRunnerResult,
 } from './path-proof-evidence';
 import type { PathProofPlan } from './path-proof-runner';
 import {
   buildProofReadinessGateInput,
   evaluateProofReadinessGate,
-  type ProofReadinessEvidenceSummary,
   type ProofReadinessGateResult,
 } from './proof-readiness-gate';
+import { pathProofEntryToReadinessEvidence } from './proof-readiness-artifact';
 
 export interface BuildPathProofPipelineInput {
   plan: PathProofPlan;
@@ -25,50 +22,6 @@ export interface PathProofPipelineResult {
   readinessGate: ProofReadinessGateResult;
 }
 
-function statusForDisposition(disposition: PathProofEvidenceDisposition): string {
-  if (disposition === 'observed_pass' || disposition === 'observed_fail') {
-    return disposition;
-  }
-  return 'not_run';
-}
-
-function evidenceModeFor(entry: PathProofEvidenceEntry): 'observed' | 'planned' {
-  return entry.evidenceState === 'observed' ? 'observed' : 'planned';
-}
-
-function attemptsFor(entry: PathProofEvidenceEntry): number {
-  return entry.evidenceState === 'observed' ? 1 : 0;
-}
-
-function artifactPathsFor(entry: PathProofEvidenceEntry): string[] {
-  const artifactPaths = [
-    entry.observedEvidenceLink?.artifactPath,
-    entry.result?.artifactPath,
-    PATH_PROOF_EVIDENCE_ARTIFACT,
-  ].filter((artifactPath): artifactPath is string => Boolean(artifactPath));
-
-  return [...new Set(artifactPaths)];
-}
-
-function readinessEvidenceForEntry(entry: PathProofEvidenceEntry): ProofReadinessEvidenceSummary {
-  return {
-    id: entry.taskId,
-    taskId: entry.taskId,
-    pathId: entry.pathId,
-    sourceArtifact: entry.observedEvidenceLink?.artifactPath ?? PATH_PROOF_EVIDENCE_ARTIFACT,
-    status: statusForDisposition(entry.disposition),
-    evidenceMode: evidenceModeFor(entry),
-    executed: entry.evidenceState === 'observed',
-    attempts: attemptsFor(entry),
-    executionTimeMs: entry.result?.durationMs,
-    exitCode: entry.result?.exitCode,
-    startedAt: entry.result?.startedAt ?? null,
-    finishedAt: entry.result?.finishedAt ?? null,
-    artifactPaths: artifactPathsFor(entry),
-    summary: entry.reason,
-  };
-}
-
 export function buildPathProofPipeline(
   input: BuildPathProofPipelineInput,
 ): PathProofPipelineResult {
@@ -78,7 +31,7 @@ export function buildPathProofPipeline(
     generatedAt: input.generatedAt,
     writeArtifact: false,
   });
-  const readinessEvidence = evidenceArtifact.tasks.map(readinessEvidenceForEntry);
+  const readinessEvidence = evidenceArtifact.tasks.map(pathProofEntryToReadinessEvidence);
   const readinessGate = evaluateProofReadinessGate(
     buildProofReadinessGateInput(input.plan.tasks, readinessEvidence),
   );

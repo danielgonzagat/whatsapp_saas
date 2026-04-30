@@ -164,6 +164,7 @@ export interface PulseAutonomyArtifactSeedInput {
 }
 
 export interface PulseAgentOrchestrationArtifactSeedInput {
+  rootDir?: string;
   directive: PulseAutonomousDirective;
   previousState?: import('./types').PulseAgentOrchestrationState | null;
   codexCliAvailable?: boolean;

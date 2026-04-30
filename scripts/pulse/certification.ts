@@ -34,13 +34,10 @@ import {
   filterCodacyIssues,
   isCodacySecurityIssue,
   isCodacyIsolationIssue,
+  deriveGateOrderFromResults,
 } from './cert-helpers';
 
-import {
-  GATE_ORDER,
-  CERTIFICATION_FINDING_PREDICATES,
-  getTypeIntegrityEscapeHatchThreshold,
-} from './cert-constants';
+import { CERTIFICATION_FINDING_PREDICATES } from './cert-constants';
 
 import {
   gateFail,
@@ -76,9 +73,17 @@ import { buildDefaultEvidence, mergeExecutionEvidence } from './cert-evidence-de
 import { buildGateEvidence } from './cert-gate-evidence';
 import {
   evaluateNoOverclaimGate,
+  formatProofReadinessGap,
+  hasProductionProofReadinessGap,
   type PulseDirectiveSnapshot,
   type PulseCertificateSnapshot,
+  type PulseProofReadinessSummary,
 } from './cert-gate-overclaim';
+import {
+  PROOF_READINESS_ARTIFACT,
+  refreshProofReadinessArtifact,
+  type ProofReadinessArtifact,
+} from './proof-readiness-artifact';
 import {
   evaluateMultiCycleConvergenceGate,
   type PulseAutonomyStateSnapshot,
@@ -94,8 +99,16 @@ import {
   detectWeakStatusAssertions,
   detectTypeEscapeHatches,
 } from './test-honesty';
+import {
+  buildPulseNoHardcodedRealityState,
+  formatNoHardcodedRealityBlocker,
+  hasNoHardcodedRealityBlocker,
+  summarizeNoHardcodedRealityState,
+} from './no-hardcoded-reality-state';
 import { pathExists, readJsonFile } from './safe-fs';
 import { safeJoin } from './safe-path';
+
+const NO_HARDCODED_REALITY_ARTIFACT = 'PULSE_NO_HARDCODED_REALITY.json';
 
 interface ComputeCertificationInput {
   rootDir: string;
@@ -151,6 +164,29 @@ function loadPathCoverageGateState(rootDir: string): PulsePathCoverageGateState 
   }
 }
 
+function loadProofReadinessSummary(rootDir: string): PulseProofReadinessSummary | undefined {
+  try {
+    const refreshedArtifact = refreshProofReadinessArtifact(rootDir);
+    if (refreshedArtifact) {
+      return refreshedArtifact.summary;
+    }
+  } catch {
+    return undefined;
+  }
+
+  const filePath = safeJoin(rootDir, PROOF_READINESS_ARTIFACT);
+  if (!pathExists(filePath)) {
+    return undefined;
+  }
+
+  try {
+    const artifact = readJsonFile<ProofReadinessArtifact>(filePath);
+    return artifact.summary;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Compute certification. */
 export function computeCertification(input: ComputeCertificationInput): PulseCertification {
   const env = getEnvironment();
@@ -159,9 +195,13 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
   const isPulseCoreFinal = certificationTarget.profile === 'pulse-core-final';
   const certificationTiers = getCertificationTiers(input.resolvedManifest);
   const finalReadinessCriteria = getFinalReadinessCriteria(input.resolvedManifest);
-  const typeIntegrityThreshold = getTypeIntegrityEscapeHatchThreshold();
   const timestamp = new Date().toISOString();
   const pathCoverage = loadPathCoverageGateState(input.rootDir);
+  const proofReadinessSummary = loadProofReadinessSummary(input.rootDir);
+  const productionProofReadinessGap = hasProductionProofReadinessGap(proofReadinessSummary);
+  const noHardcodedRealityState = buildPulseNoHardcodedRealityState(input.rootDir, timestamp);
+  const noHardcodedRealitySummary = summarizeNoHardcodedRealityState(noHardcodedRealityState);
+  const noHardcodedRealityGap = hasNoHardcodedRealityBlocker(noHardcodedRealitySummary);
 
   const defaults = buildDefaultEvidence(
     env,
@@ -225,6 +265,45 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         artifactPaths: ['PULSE_EXECUTION_MATRIX.json'],
         metrics: {
           impreciseBreakpoints: input.executionMatrix.summary.impreciseBreakpoints,
+        },
+      },
+    ];
+  }
+  if (proofReadinessSummary) {
+    gateEvidence.noOverclaimPass = [
+      ...(gateEvidence.noOverclaimPass || []),
+      {
+        kind: 'artifact',
+        executed: true,
+        summary: productionProofReadinessGap
+          ? `Proof readiness blocks completion: ${formatProofReadinessGap(proofReadinessSummary)}.`
+          : `Proof readiness is complete: ${formatProofReadinessGap(proofReadinessSummary)}.`,
+        artifactPaths: [PROOF_READINESS_ARTIFACT],
+        metrics: {
+          canAdvance: proofReadinessSummary.canAdvance === true ? 1 : 0,
+          plannedEvidence: proofReadinessSummary.plannedEvidence ?? 0,
+          plannedOrUnexecutedEvidence: proofReadinessSummary.plannedOrUnexecutedEvidence ?? 0,
+          inferredEvidence: proofReadinessSummary.inferredEvidence ?? 0,
+          notAvailableEvidence: proofReadinessSummary.notAvailableEvidence ?? 0,
+          nonObservedEvidence: proofReadinessSummary.nonObservedEvidence ?? 0,
+          executableUnproved: proofReadinessSummary.executableUnproved ?? 0,
+          blockedHumanRequired: proofReadinessSummary.blockedHumanRequired ?? 0,
+          blockedNotExecutable: proofReadinessSummary.blockedNotExecutable ?? 0,
+        },
+      },
+    ];
+  }
+  if (noHardcodedRealityGap) {
+    gateEvidence.noOverclaimPass = [
+      ...(gateEvidence.noOverclaimPass || []),
+      {
+        kind: 'artifact',
+        executed: true,
+        summary: `No-hardcoded-reality state blocks completion: ${formatNoHardcodedRealityBlocker(noHardcodedRealitySummary)}`,
+        artifactPaths: [NO_HARDCODED_REALITY_ARTIFACT],
+        metrics: {
+          totalEvents: noHardcodedRealitySummary.totalEvents,
+          scannedFiles: noHardcodedRealitySummary.scannedFiles,
         },
       },
     ];
@@ -458,10 +537,12 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
           advisoryOnly: true,
           autonomyProof: {
             cycleProof: currentCycleProof,
+            proofReadiness: proofReadinessSummary,
           },
           autonomyReadiness: {
             canDeclareComplete: false,
           },
+          proofReadiness: proofReadinessSummary,
         };
         const currentCertificate: PulseCertificateSnapshot = {
           status: undefined, // Being computed; not yet final.
@@ -474,6 +555,20 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         );
         if (previousResult.status === 'fail') {
           return previousResult;
+        }
+        if (productionProofReadinessGap) {
+          return gateFail(
+            `overclaim:completionProofReadiness — certification cannot complete while ${PROOF_READINESS_ARTIFACT} has non-observed production proof (${formatProofReadinessGap(proofReadinessSummary ?? {})}).`,
+            'checker_gap',
+            { evidenceMode: 'observed', confidence: 'high' },
+          );
+        }
+        if (noHardcodedRealityGap) {
+          return gateFail(
+            `overclaim:noHardcodedRealityState — certification cannot complete while ${NO_HARDCODED_REALITY_ARTIFACT} reports hardcoded reality authority (${formatNoHardcodedRealityBlocker(noHardcodedRealitySummary)}).`,
+            'checker_gap',
+            { evidenceMode: 'observed', confidence: 'high' },
+          );
         }
         return evaluateNoOverclaimGate(currentDirective, currentCertificate);
       })(),
@@ -537,14 +632,14 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       manifest,
       (() => {
         const result = detectTypeEscapeHatches(input.rootDir);
-        if (result.count < typeIntegrityThreshold.value) {
+        if (result.count === 0) {
           return {
             status: 'pass',
-            reason: `Type-integrity finding count (${result.count}) satisfies the ${typeIntegrityThreshold.source} evidence requirement (${typeIntegrityThreshold.evidenceRequirement}; limit: <${typeIntegrityThreshold.value}).`,
+            reason: 'Type-integrity evidence has no escape-hatch findings.',
           };
         }
         return gateFail(
-          `Found ${result.count} type-integrity findings, exceeding the ${typeIntegrityThreshold.source} evidence requirement (${typeIntegrityThreshold.evidenceRequirement}; limit: <${typeIntegrityThreshold.value}): ${result.locations.slice(0, 10).join(', ')}${result.locations.length > 10 ? `... (and ${result.locations.length - 10} more)` : ''}.`,
+          `Found ${result.count} type-integrity escape-hatch finding(s): ${result.locations.slice(0, 10).join(', ')}${result.locations.length > 10 ? `... (and ${result.locations.length - 10} more)` : ''}.`,
           'product_failure',
         );
       })(),
@@ -575,7 +670,8 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     'assertionStrengthPass',
     'typeIntegrityPass',
   ];
-  const allPass = GATE_ORDER.every((gateName) => gates[gateName].status === 'pass');
+  const gateOrder = deriveGateOrderFromResults(gates);
+  const allPass = gateOrder.every((gateName) => gates[gateName].status === 'pass');
   const pulseCorePass = pulseCoreRequiredGates.every(
     (gateName) => gates[gateName].status === 'pass',
   );
@@ -591,13 +687,15 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     (!finalReadinessCriteria.requireNoAcceptedCriticalScenarios ||
       pendingCriticalScenarios.length === 0) &&
     (!finalReadinessCriteria.requireWorldStateConvergence ||
-      !worldStateHasPendingCriticalExpectations(evidenceSummary));
+      !worldStateHasPendingCriticalExpectations(evidenceSummary)) &&
+    !productionProofReadinessGap &&
+    !noHardcodedRealityGap;
 
   const rawScore = input.health.score;
   const score = computeScore(rawScore, gates);
-  const criticalFailures = GATE_ORDER.filter((g) => gates[g].status === 'fail').map(
-    (g) => `${g}: ${gates[g].reason}`,
-  );
+  const criticalFailures = gateOrder
+    .filter((g) => gates[g].status === 'fail')
+    .map((g) => `${g}: ${gates[g].reason}`);
 
   let status: PulseCertification['status'];
   if (isPulseCoreFinal) {
@@ -650,6 +748,12 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         : null,
       input.executionMatrix && input.executionMatrix.summary.criticalUnobservedPaths > 0
         ? `Execution matrix still has ${input.executionMatrix.summary.criticalUnobservedPaths} critical unobserved path(s).`
+        : null,
+      productionProofReadinessGap && proofReadinessSummary
+        ? `Proof readiness still has non-observed production proof: ${formatProofReadinessGap(proofReadinessSummary)}.`
+        : null,
+      noHardcodedRealityGap
+        ? `No-hardcoded-reality state still has hardcoded reality authority: ${formatNoHardcodedRealityBlocker(noHardcodedRealitySummary)}.`
         : null,
     ].filter(Boolean) as string[],
   );
@@ -707,5 +811,6 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     evidenceSummary,
     gateEvidence,
     dynamicBlockingReasons,
+    noHardcodedRealityState,
   };
 }

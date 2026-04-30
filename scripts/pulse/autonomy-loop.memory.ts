@@ -8,6 +8,7 @@ import type {
   PulseAutonomyState,
   PulseAgentOrchestrationState,
 } from './types';
+import { fingerprintStrategy } from './structural-memory';
 
 function buildAutonomyConceptConfidence(recurrence: number): 'low' | 'medium' | 'high' {
   if (recurrence >= 4) {
@@ -17,6 +18,26 @@ function buildAutonomyConceptConfidence(recurrence: number): 'low' | 'medium' | 
     return 'medium';
   }
   return 'low';
+}
+
+function autonomyRecordFailed(record: PulseAutonomyState['history'][number]): boolean {
+  if (record.improved === false) {
+    return true;
+  }
+  if (record.status === 'failed' || record.status === 'blocked') {
+    return true;
+  }
+  if (record.codex.executed && record.codex.exitCode !== null && record.codex.exitCode !== 0) {
+    return true;
+  }
+  return (
+    record.validation.executed &&
+    record.validation.commands.some((command) => command.exitCode !== 0)
+  );
+}
+
+function autonomyRecordStrategy(record: PulseAutonomyState['history'][number]): string {
+  return `${record.strategyMode ?? 'normal'}_${record.plannerMode}`;
 }
 
 /** Build pulse autonomy memory state. */
@@ -65,6 +86,60 @@ export function buildPulseAutonomyMemoryState(input: {
       unitIds: [unitId],
       iterations: entry.iterations,
       suggestedStrategy: 'narrow_scope',
+    });
+  }
+
+  const failedStrategyClusters = new Map<
+    string,
+    {
+      unitId: string;
+      title: string;
+      fingerprint: string;
+      strategy: string;
+      iterations: number[];
+      firstSeenAt: string | null;
+      lastSeenAt: string | null;
+    }
+  >();
+  for (const record of autonomyHistory) {
+    const unitId = record.unit?.id;
+    if (!unitId || !autonomyRecordFailed(record)) {
+      continue;
+    }
+    const strategy = autonomyRecordStrategy(record);
+    const fingerprint = fingerprintStrategy(strategy);
+    const key = `${unitId}:${fingerprint}`;
+    const current = failedStrategyClusters.get(key) || {
+      unitId,
+      title: record.unit?.title || unitId,
+      fingerprint,
+      strategy,
+      iterations: [],
+      firstSeenAt: record.startedAt || null,
+      lastSeenAt: record.finishedAt || null,
+    };
+    current.iterations.push(record.iteration);
+    current.firstSeenAt = current.firstSeenAt || record.startedAt || null;
+    current.lastSeenAt = record.finishedAt || current.lastSeenAt;
+    failedStrategyClusters.set(key, current);
+  }
+
+  for (const cluster of failedStrategyClusters.values()) {
+    if (cluster.iterations.length < 2) {
+      continue;
+    }
+    concepts.push({
+      id: `repeated-failed-strategy-${cluster.unitId}-${cluster.fingerprint}`,
+      type: 'repeated_stall',
+      title: `Repeated failed strategy on ${cluster.title}`,
+      summary: `Unit ${cluster.title} retried failed strategy fingerprint ${cluster.fingerprint} in ${cluster.iterations.length} iteration(s); avoid reusing ${cluster.strategy} without new evidence.`,
+      confidence: buildAutonomyConceptConfidence(cluster.iterations.length),
+      recurrence: cluster.iterations.length,
+      firstSeenAt: cluster.firstSeenAt,
+      lastSeenAt: cluster.lastSeenAt,
+      unitIds: [cluster.unitId],
+      iterations: cluster.iterations,
+      suggestedStrategy: 'escalated_validation',
     });
   }
 

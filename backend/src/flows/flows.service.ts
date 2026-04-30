@@ -71,7 +71,7 @@ export class FlowsService {
     });
 
     return this.prisma.flow.upsert({
-      where: { id: flowId },
+      where: { id: flowId, workspaceId },
       update: {
         nodes: data.nodes as Prisma.InputJsonValue,
         edges: data.edges as Prisma.InputJsonValue,
@@ -128,7 +128,7 @@ export class FlowsService {
 
     // Garante que o flow exista
     await this.prisma.flow.upsert({
-      where: { id: flowId },
+      where: { id: flowId, workspaceId },
       update: {},
       create: {
         id: flowId,

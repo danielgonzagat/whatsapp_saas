@@ -236,6 +236,7 @@ export class KnowledgeBaseService {
     kbId: string,
     type: 'TEXT' | 'URL' | 'PDF',
     content: string,
+    workspaceId?: string,
     options?: { requestId?: string },
   ) {
     const maxBytes = Number.parseInt(process.env.KB_FETCH_MAX_BYTES || '1048576', 10) || 1048576; // 1MB default
@@ -243,14 +244,14 @@ export class KnowledgeBaseService {
     const fetchTimeout = Number.parseInt(process.env.KB_FETCH_TIMEOUT_MS || '8000', 10) || 8000;
 
     const kb = await this.prisma.knowledgeBase.findUnique({
-      where: { id: kbId },
+      where: workspaceId ? { id: kbId, workspaceId } : { id: kbId },
       select: { workspaceId: true },
     });
     if (!kb) {
       throw new BadRequestException('Knowledge Base não encontrada');
     }
 
-    const workspaceId = kb.workspaceId;
+    const resolvedWorkspaceId = kb.workspaceId;
 
     // 0. Se for URL, busca conteúdo remoto e converte para texto simples
     // OBS: Para máxima performance, movemos o FETCH também para o Worker no futuro.
@@ -328,7 +329,7 @@ export class KnowledgeBaseService {
 
     if (providerQuote) {
       usageCharged = await this.chargeUsageIfNeeded({
-        workspaceId,
+        workspaceId: resolvedWorkspaceId,
         requestId,
         quotedCostCents: providerQuote.estimatedCostCents,
         metadata: usageMetadata,
@@ -358,7 +359,7 @@ export class KnowledgeBaseService {
       await memoryQueue.add(
         'ingest-source',
         {
-          workspaceId,
+          workspaceId: resolvedWorkspaceId,
           sourceId: source.id,
           content: finalContent,
           type,
@@ -373,7 +374,7 @@ export class KnowledgeBaseService {
       void this.opsAlert?.alertOnCriticalError(error, 'KnowledgeBaseService.add');
       if (usageCharged) {
         await this.refundUsageIfNeeded(
-          workspaceId,
+          resolvedWorkspaceId,
           requestId,
           'knowledge_base_ingestion_enqueue_failed',
           usageMetadata,

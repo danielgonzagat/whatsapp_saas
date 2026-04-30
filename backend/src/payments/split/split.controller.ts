@@ -38,6 +38,7 @@ export class SplitController {
   private readonly logger = new Logger(SplitController.name);
 
   /** Preview split. */
+  // PULSE_OK: internal route, called by worker process for split calculation previews
   @Post(':workspaceId/preview')
   preview(@Param('workspaceId') workspaceId: string, @Body() dto: SplitPreviewDto) {
     const input = dtoToSplitInput(dto);

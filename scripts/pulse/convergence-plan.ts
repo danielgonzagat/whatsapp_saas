@@ -7,6 +7,7 @@ import type {
   PulseConvergenceUnit,
   PulseConvergenceUnitPriority,
   PulseConvergenceUnitStatus,
+  PulseEvidenceRecord,
   PulseExecutionMatrix,
   PulseExternalSignalState,
   PulseParityGapsArtifact,
@@ -30,6 +31,12 @@ import {
   SECURITY_PATTERNS,
 } from './convergence-plan.constants';
 import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from './finding-identity';
+import {
+  formatNoHardcodedRealityBlocker,
+  hasNoHardcodedRealityBlocker,
+  summarizeNoHardcodedRealityState,
+  type PulseNoHardcodedRealityState,
+} from './no-hardcoded-reality-state';
 
 interface BuildPulseConvergencePlanInput {
   health: { breaks: Break[] };
@@ -41,6 +48,7 @@ interface BuildPulseConvergencePlanInput {
   parityGaps: PulseParityGapsArtifact;
   externalSignalState?: PulseExternalSignalState;
   executionMatrix?: PulseExecutionMatrix;
+  noHardcodedRealityState?: PulseNoHardcodedRealityState;
 }
 
 interface ScenarioAccumulator {
@@ -504,30 +512,60 @@ function summarizeScenario(
   return compactText(parts.join(' '), 320);
 }
 
+function gateEvidenceEntries(
+  gateEvidence: Partial<Record<PulseGateName, PulseEvidenceRecord[]>>,
+): Array<[PulseGateName, PulseEvidenceRecord[]]> {
+  return (Object.keys(gateEvidence) as PulseGateName[]).map((gateName) => [
+    gateName,
+    gateEvidence[gateName] || [],
+  ]);
+}
+
+function evidenceMetricMatches(
+  record: PulseEvidenceRecord,
+  key: string,
+  expected: string,
+): boolean {
+  const value = record.metrics?.[key];
+  return typeof value === 'string' && value === expected;
+}
+
+export function deriveScenarioGateNamesFromEvidence(
+  gateEvidence: Partial<Record<PulseGateName, PulseEvidenceRecord[]>>,
+  result: PulseScenarioResult,
+): PulseGateName[] {
+  return gateEvidenceEntries(gateEvidence)
+    .filter(([, records]) =>
+      records.some(
+        (record) =>
+          record.kind === 'actor' &&
+          (evidenceMetricMatches(record, 'scenarioId', result.scenarioId) ||
+            evidenceMetricMatches(record, 'actorKind', result.actorKind)),
+      ),
+    )
+    .map(([gateName]) => gateName);
+}
+
+export function deriveValidationArtifactsFromGateEvidence(
+  gateEvidence: Partial<Record<PulseGateName, PulseEvidenceRecord[]>>,
+  gateNames: PulseGateName[],
+): string[] {
+  return uniqueStrings(
+    gateNames.flatMap((gateName) =>
+      (gateEvidence[gateName] || []).flatMap((record) => record.artifactPaths),
+    ),
+  );
+}
+
 function buildValidationArtifacts(
+  certification: PulseCertification,
   gateNames: PulseGateName[],
   flowIds: string[],
   artifactPaths: string[],
 ): string[] {
-  const gateArtifacts = gateNames.flatMap((gateName) => {
-    if (gateName === 'customerPass') {
-      return ['PULSE_CUSTOMER_EVIDENCE.json'];
-    }
-    if (gateName === 'operatorPass') {
-      return ['PULSE_OPERATOR_EVIDENCE.json'];
-    }
-    if (gateName === 'adminPass') {
-      return ['PULSE_ADMIN_EVIDENCE.json'];
-    }
-    if (gateName === 'soakPass') {
-      return ['PULSE_SOAK_EVIDENCE.json'];
-    }
-    return [];
-  });
-
   return uniqueStrings([
     ...artifactPaths,
-    ...gateArtifacts,
+    ...deriveValidationArtifactsFromGateEvidence(certification.gateEvidence, gateNames),
     flowIds.length > 0 ? 'PULSE_FLOW_EVIDENCE.json' : null,
     'PULSE_CERTIFICATE.json',
     'PULSE_WORLD_STATE.json',
@@ -544,7 +582,7 @@ function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConverg
       (result) => [result.flowId, result] as const,
     ),
   );
-  const actorGateMap: Record<string, PulseGateName> = {
+  const fallbackActorGateGrammar: Record<string, PulseGateName> = {
     customer: 'customerPass',
     operator: 'operatorPass',
     admin: 'adminPass',
@@ -576,7 +614,16 @@ function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConverg
     const accumulator = ensureAccumulator(result.scenarioId);
     accumulator.results.push(result);
     accumulator.actorKinds.add(result.actorKind);
-    accumulator.gateNames.add(actorGateMap[result.actorKind]);
+    const evidenceGateNames = deriveScenarioGateNamesFromEvidence(
+      input.certification.gateEvidence,
+      result,
+    );
+    for (const gateName of evidenceGateNames) {
+      accumulator.gateNames.add(gateName);
+    }
+    if (evidenceGateNames.length === 0) {
+      accumulator.gateNames.add(fallbackActorGateGrammar[result.actorKind]);
+    }
     const requiresBrowser =
       Boolean(result.metrics?.requiresBrowser) || Boolean(accumulator.spec?.requiresBrowser);
     if (requiresBrowser) {
@@ -726,7 +773,12 @@ function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConverg
       breakTypes: rankBreakTypes(relatedBreaks, 6),
       artifactPaths,
       relatedFiles: rankFiles(relatedBreaks, 10),
-      validationArtifacts: buildValidationArtifacts(gateNames, flowIds, artifactPaths),
+      validationArtifacts: buildValidationArtifacts(
+        input.certification,
+        gateNames,
+        flowIds,
+        artifactPaths,
+      ),
       expectedGateShift:
         accumulator.gateNames.size > 0
           ? `Pass ${[...accumulator.gateNames].join(', ')}`
@@ -874,6 +926,61 @@ function buildStaticUnit(input: BuildPulseConvergencePlanInput): PulseConvergenc
         'staticPass returns pass in the next certification run.',
         `Blocking static break inventory reaches zero for the tracked set (${blockingBreaks.length} currently open).`,
       ]),
+    },
+  ];
+}
+
+function buildNoHardcodedRealityUnits(
+  input: BuildPulseConvergencePlanInput,
+): PulseConvergenceUnit[] {
+  const summary = summarizeNoHardcodedRealityState(input.noHardcodedRealityState);
+  if (!hasNoHardcodedRealityBlocker(summary)) {
+    return [];
+  }
+
+  return [
+    {
+      id: 'pulse-no-hardcoded-reality-state',
+      order: 0,
+      priority: 'P0',
+      kind: 'gate',
+      status: 'open',
+      source: 'pulse',
+      executionMode: 'ai_safe',
+      ownerLane: 'platform',
+      riskLevel: 'high',
+      evidenceMode: 'observed',
+      confidence: 'high',
+      productImpact: 'diagnostic',
+      title: 'Remove PULSE Hardcoded Reality Authority',
+      summary: compactText(formatNoHardcodedRealityBlocker(summary), 320),
+      visionDelta:
+        'Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.',
+      targetState: 'PULSE_NO_HARDCODED_REALITY.json reports zero dynamic hardcode evidence events.',
+      failureClass: 'checker_gap',
+      actorKinds: [],
+      gateNames: ['noOverclaimPass'],
+      scenarioIds: [],
+      moduleKeys: [],
+      routePatterns: [],
+      flowIds: [],
+      affectedCapabilityIds: [],
+      affectedFlowIds: [],
+      asyncExpectations: [],
+      breakTypes: ['dynamic_hardcode_evidence_event'],
+      artifactPaths: ['PULSE_NO_HARDCODED_REALITY.json', 'PULSE_CERTIFICATE.json'],
+      relatedFiles: summary.topFiles,
+      validationArtifacts: [
+        'PULSE_NO_HARDCODED_REALITY.json',
+        'PULSE_CONVERGENCE_PLAN.json',
+        'PULSE_CLI_DIRECTIVE.json',
+        'PULSE_CERTIFICATE.json',
+      ],
+      expectedGateShift: 'Pass noOverclaimPass and clear hardcoded reality state blockers',
+      exitCriteria: [
+        'PULSE_NO_HARDCODED_REALITY.json totalEvents equals 0.',
+        'PULSE_CERTIFICATE.json noOverclaimPass returns pass for hardcoded reality state.',
+      ],
     },
   ];
 }
@@ -1652,6 +1759,7 @@ export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): Pul
     ...buildScenarioUnits(input),
     ...buildSecurityUnit(input),
     ...buildGenericGateUnits(input),
+    ...buildNoHardcodedRealityUnits(input),
     ...buildCodacyStaticUnits(input),
     ...buildStaticUnit(input),
   ]

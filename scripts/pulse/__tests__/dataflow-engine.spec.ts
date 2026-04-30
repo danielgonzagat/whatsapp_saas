@@ -30,7 +30,7 @@ describe('PULSE dataflow engine evidence derivation', () => {
         workspaceId String
         account Account @relation(fields: [workspaceId], references: [id])
         amountCents BigInt
-        customerEmail String
+        customerEmail String // @pii
         status InvoiceStatus
         createdAt DateTime @default(now())
         updatedAt DateTime @updatedAt
@@ -49,6 +49,19 @@ describe('PULSE dataflow engine evidence derivation', () => {
         customerEmail String
       }
 
+      model WeakCommerceSignal {
+        id String @id
+        total String
+        currency String
+        customerEmail String
+      }
+
+      model PipelineRun {
+        id String @id
+        lifecycle PipelineRunLifecycle
+        createdAt DateTime @default(now())
+      }
+
       model LedgerAudit {
         id String @id
         action String
@@ -64,6 +77,11 @@ describe('PULSE dataflow engine evidence derivation', () => {
       enum InvoiceStatus {
         OPEN
         PAID
+      }
+
+      enum PipelineRunLifecycle {
+        QUEUED
+        FINISHED
       }
       `,
     );
@@ -109,6 +127,10 @@ describe('PULSE dataflow engine evidence derivation', () => {
     const state = buildDataflowState(rootDir);
     const invoice = state.entities.find((entity) => entity.model === 'Invoice');
     const loose = state.entities.find((entity) => entity.model === 'LooseRecord');
+    const weakCommerceSignal = state.entities.find(
+      (entity) => entity.model === 'WeakCommerceSignal',
+    );
+    const pipelineRun = state.entities.find((entity) => entity.model === 'PipelineRun');
     const tokenNamedAuditLog = state.entities.find((entity) => entity.model === 'AuditLog');
 
     expect(invoice).toMatchObject({
@@ -123,7 +145,49 @@ describe('PULSE dataflow engine evidence derivation', () => {
       financial: true,
       hasWorkspaceIsolation: false,
       hasAuditTrail: false,
-      piiFields: ['customerEmail'],
+      piiFields: [],
+    });
+    expect(loose?.rawSignals).toContainEqual(
+      expect.objectContaining({
+        detector: 'unclassified-schema-field',
+        field: 'customerEmail',
+        truthMode: 'weak_signal',
+      }),
+    );
+
+    expect(weakCommerceSignal).toMatchObject({
+      financial: false,
+      critical: false,
+      piiFields: [],
+    });
+    expect(weakCommerceSignal?.rawSignals).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          detector: 'unclassified-schema-field',
+          field: 'total',
+          truthMode: 'weak_signal',
+        }),
+        expect.objectContaining({
+          detector: 'unclassified-schema-field',
+          field: 'currency',
+          truthMode: 'weak_signal',
+        }),
+        expect.objectContaining({
+          detector: 'unclassified-schema-field',
+          field: 'customerEmail',
+          truthMode: 'weak_signal',
+        }),
+      ]),
+    );
+
+    expect(pipelineRun).toMatchObject({
+      hasMutableState: true,
+      hasVersionHistory: false,
+    });
+    expect(pipelineRun?.stateMachine?.[0]).toMatchObject({
+      field: 'lifecycle',
+      enumName: 'PipelineRunLifecycle',
+      totalEnumMembers: 2,
     });
 
     expect(tokenNamedAuditLog).toMatchObject({

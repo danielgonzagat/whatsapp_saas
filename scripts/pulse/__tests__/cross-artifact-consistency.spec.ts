@@ -12,6 +12,7 @@ import {
   type ArtifactDivergence,
   type ConsistencyResult,
 } from '../cross-artifact-consistency-check';
+import { checkCrossArtifactConsistency } from '../self-trust';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
@@ -277,6 +278,72 @@ describe('checkConsistency – productionAutonomyVerdict aliases', () => {
     const result = checkConsistency([cli, proof]);
     const div = result.divergences.find((d) => d.field === 'productionAutonomyVerdict');
     expect(div).toBeUndefined();
+  });
+});
+
+describe('checkConsistency – final production proof coherence', () => {
+  it('detects divergence between directive readiness and autonomy proof completion', () => {
+    const cli = makeArtifact('PULSE_CLI_DIRECTIVE.json', {
+      productionAutonomyVerdict: 'SIM',
+      autonomyReadiness: { canDeclareComplete: true },
+      generatedAt: '2026-04-25T03:15:42.931Z',
+    });
+    const proof = makeArtifact('.pulse/current/PULSE_AUTONOMY_PROOF.json', {
+      verdicts: { productionAutonomy: 'NAO', canDeclareComplete: false },
+      generatedAt: '2026-04-25T03:15:42.931Z',
+    });
+
+    const result = checkConsistency([cli, proof]);
+
+    expect(result.pass).toBe(false);
+    expect(result.divergences.some((d) => d.field === 'finalProduction.canDeclareComplete')).toBe(
+      true,
+    );
+  });
+
+  it('fails a completion claim when proof-readiness still has unobserved critical paths', () => {
+    const cli = makeArtifact('PULSE_CLI_DIRECTIVE.json', {
+      productionAutonomyVerdict: 'SIM',
+      autonomyReadiness: { canDeclareComplete: true },
+      generatedAt: '2026-04-25T03:15:42.931Z',
+    });
+    const proofReadiness = makeArtifact('.pulse/current/PULSE_PROOF_READINESS.json', {
+      status: 'READY',
+      summary: {
+        criticalUnobservedPaths: 3,
+        observedPass: 12,
+      },
+      generatedAt: '2026-04-25T03:15:42.931Z',
+    });
+
+    const result = checkConsistency([cli, proofReadiness]);
+
+    expect(result.pass).toBe(false);
+    const div = result.divergences.find((d) => d.field === 'finalProduction.observedProof');
+    expect(div).toBeDefined();
+    expect(
+      div!.values['.pulse/current/PULSE_PROOF_READINESS.json#summary.criticalUnobservedPaths'],
+    ).toBe(3);
+  });
+});
+
+describe('checkCrossArtifactConsistency – self-trust integration', () => {
+  it('returns a failing checkpoint when overridden artifacts claim complete without observed proof', () => {
+    const checkpoint = checkCrossArtifactConsistency(undefined, {
+      'PULSE_CLI_DIRECTIVE.json': {
+        productionAutonomyVerdict: 'SIM',
+        autonomyReadiness: { canDeclareComplete: true },
+        generatedAt: '2026-04-25T03:15:42.931Z',
+      },
+      '.pulse/current/PULSE_PROOF_READINESS.json': {
+        status: 'READY',
+        summary: { criticalUnobservedPaths: 1 },
+        generatedAt: '2026-04-25T03:15:42.931Z',
+      },
+    });
+
+    expect(checkpoint.pass).toBe(false);
+    expect(checkpoint.reason).toContain('finalProduction.observedProof');
   });
 });
 

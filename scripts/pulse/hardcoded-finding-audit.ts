@@ -4,6 +4,7 @@ export type HardcodedFindingRiskKind =
   | 'fixed_allowlist'
   | 'regex_only_break_emitter'
   | 'decision_token_regex'
+  | 'hardcoded_break_push_type_risk'
   | 'fixed_break_type_mass_emitter';
 
 export interface HardcodedFindingAuditSource {
@@ -184,6 +185,19 @@ function objectBreakType(node: ts.ObjectLiteralExpression): string | null {
   return null;
 }
 
+function isBreaksPushArgument(node: ts.ObjectLiteralExpression): boolean {
+  const parent = node.parent;
+  if (!ts.isCallExpression(parent) || parent.arguments[0] !== node) {
+    return false;
+  }
+  if (!ts.isPropertyAccessExpression(parent.expression)) {
+    return false;
+  }
+  return (
+    parent.expression.name.text === 'push' && parent.expression.expression.getText() === 'breaks'
+  );
+}
+
 function isBreakObject(node: ts.ObjectLiteralExpression): boolean {
   return objectBreakType(node) !== null;
 }
@@ -347,6 +361,15 @@ function auditSource(input: HardcodedFindingAuditSource): HardcodedFindingAuditF
         const current = breakTypesByFunction.get(owner) ?? new Set<string>();
         current.add(breakType);
         breakTypesByFunction.set(owner, current);
+      }
+      if (breakType && isBreaksPushArgument(node)) {
+        pushUniqueFinding(findings, sourceFile, node, {
+          kind: 'hardcoded_break_push_type_risk',
+          symbol: breakType,
+          evidence: breakType,
+          reason:
+            'Parser emits a fixed final break identity; parsers must emit evidence, not final diagnostics.',
+        });
       }
       const conditional = nearestConditional(node);
       if (

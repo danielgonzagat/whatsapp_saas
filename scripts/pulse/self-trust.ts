@@ -6,14 +6,16 @@
  */
 
 import * as path from 'path';
-import type { Break, PulseParserContract } from './types';
+import type { Break, PulseExecutionTrace, PulseParserContract } from './types';
 import { pathExists, readDir, readTextFile, statPath } from './safe-fs';
 import {
   runCrossArtifactConsistencyCheck,
   type ConsistencyResult,
 } from './cross-artifact-consistency-check';
-import { extractRunId, isPreservedArtifact } from './run-identity';
 import { discoverParserContracts } from './parser-registry';
+import { buildHardcodedFindingAuditArtifact } from './hardcoded-finding-audit';
+import { auditPulseNoHardcodedReality } from './no-hardcoded-reality-audit';
+import { getActiveExecutionTraceSnapshot, verifyExecutionTraceAuditTrail } from './execution-trace';
 
 const CRITICAL_PARSER_CONTRACT_NAMES = [
   'financial-arithmetic',
@@ -354,8 +356,98 @@ export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
   };
 }
 
+function collectParserAuditSources(
+  parsersDir: string,
+): Array<{ filePath: string; source: string }> {
+  if (!pathExists(parsersDir)) {
+    return [];
+  }
+
+  return (readDir(parsersDir, { recursive: true }) as string[])
+    .filter((entry) => entry.endsWith('.ts') && !entry.includes('__tests__'))
+    .sort()
+    .map((entry) => {
+      const absolutePath = path.join(parsersDir, entry);
+      return {
+        filePath: path.join('scripts/pulse/parsers', entry).replace(/\\/g, '/'),
+        source: readTextFile(absolutePath, 'utf-8'),
+      };
+    });
+}
+
+function collectParserHardcodedRealityDetails(parsersDir: string): string[] {
+  const repoRoot = path.resolve(parsersDir, '..', '..', '..');
+  return auditPulseNoHardcodedReality(repoRoot)
+    .findings.filter((finding) =>
+      finding.filePath.replace(/\\/g, '/').includes('scripts/pulse/parsers/'),
+    )
+    .filter(
+      (finding) =>
+        finding.kind === 'hardcoded_break_push_type_risk' ||
+        finding.kind === 'hardcoded_parser_rule_blocker_risk',
+    )
+    .map((finding) => {
+      const samples = finding.samples.length > 0 ? ` ${finding.samples.join(',')}` : '';
+      return `${finding.filePath}:${finding.line}:${finding.column} ${finding.kind}${samples}`;
+    });
+}
+
 /**
- * CHECK 6: Cross-Artifact Consistency
+ * CHECK 6: Parser Hardcoded Finding Audit
+ * Parser Break emitters must not freeze fixed labels or regex-only decisions as final truth.
+ */
+export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustCheckpoint {
+  const id = 'parser-hardcoded-finding-audit';
+
+  try {
+    const artifact = buildHardcodedFindingAuditArtifact(collectParserAuditSources(parsersDir));
+    const hardcodedRealityDetails = collectParserHardcodedRealityDetails(parsersDir);
+    const totalFindings = artifact.totalFindings + hardcodedRealityDetails.length;
+
+    if (totalFindings > 0) {
+      const findingAuditDetails = artifact.files
+        .flatMap((file) =>
+          file.findings.map(
+            (finding) =>
+              `${file.filePath}:${finding.line}:${finding.column} ${finding.kind} ${finding.symbol}`,
+          ),
+        )
+        .slice(0, 5);
+      const details = [...findingAuditDetails, ...hardcodedRealityDetails].slice(0, 5).join(' | ');
+      return {
+        id,
+        name: 'Parser Hardcoded Finding Audit',
+        description: 'Parser Break emitters must not promote fixed detector labels to final truth',
+        pass: false,
+        reason: `${totalFindings} parser hardcoded finding risk(s): ${details}`,
+        severity: 'critical',
+        score: 0,
+      };
+    }
+
+    return {
+      id,
+      name: 'Parser Hardcoded Finding Audit',
+      description: 'Parser Break emitters are free of hardcoded final-truth risks',
+      pass: true,
+      severity: 'critical',
+      score: 100,
+    };
+  } catch (err) {
+    return {
+      id,
+      name: 'Parser Hardcoded Finding Audit',
+      description: 'Parser hardcoded finding audit must complete without error',
+      pass: false,
+      reason: err instanceof Error ? err.message : String(err),
+      severity: 'critical',
+      score: 0,
+    };
+  }
+}
+
+/**
+ * CHECK 7: Cross-Artifact Consistency
  * Verify that key fields are coherent across all PULSE artifacts.
  * PULSE self-trust fails when artifacts contradict each other.
  */
@@ -409,6 +501,85 @@ export function checkCrossArtifactConsistency(
   }
 }
 
+function loadExecutionTraceCandidate(
+  repoRoot?: string,
+  executionTrace?: PulseExecutionTrace,
+): PulseExecutionTrace | null {
+  if (executionTrace) {
+    return executionTrace;
+  }
+
+  const activeTrace = getActiveExecutionTraceSnapshot();
+  if (activeTrace) {
+    return activeTrace;
+  }
+
+  const candidatePaths = [
+    process.env.PULSE_EXECUTION_TRACE_PATH?.trim(),
+    repoRoot ? path.join(repoRoot, 'PULSE_EXECUTION_TRACE.json') : undefined,
+    repoRoot ? path.join(repoRoot, '.pulse', 'current', 'PULSE_EXECUTION_TRACE.json') : undefined,
+  ].filter((candidate): candidate is string => Boolean(candidate));
+
+  for (const candidatePath of candidatePaths) {
+    if (!pathExists(candidatePath)) {
+      continue;
+    }
+    return JSON.parse(readTextFile(candidatePath, 'utf-8')) as PulseExecutionTrace;
+  }
+
+  return null;
+}
+
+/**
+ * CHECK 8: Execution Trace Audit Trail
+ * Verify the execution trace hash chain before convergence evidence can be trusted.
+ */
+export function checkExecutionTraceAuditTrail(config: {
+  repoRoot?: string;
+  executionTrace?: PulseExecutionTrace;
+}): SelfTrustCheckpoint {
+  const id = 'execution-trace-audit-trail';
+
+  try {
+    const trace = loadExecutionTraceCandidate(config.repoRoot, config.executionTrace);
+
+    if (!trace) {
+      return {
+        id,
+        name: 'Execution Trace Audit Trail',
+        description: 'Execution trace must be present before convergence evidence is trusted',
+        pass: false,
+        reason: 'No execution trace artifact or active tracer snapshot was found',
+        severity: 'critical',
+        score: 0,
+      };
+    }
+
+    const pass = verifyExecutionTraceAuditTrail(trace);
+    return {
+      id,
+      name: 'Execution Trace Audit Trail',
+      description: 'Execution trace phase history must match its immutable audit digest',
+      pass,
+      reason: pass
+        ? undefined
+        : 'Execution trace audit digest does not match current phase history',
+      severity: 'critical',
+      score: pass ? 100 : 0,
+    };
+  } catch (err) {
+    return {
+      id,
+      name: 'Execution Trace Audit Trail',
+      description: 'Execution trace audit verification must complete without error',
+      pass: false,
+      reason: err instanceof Error ? err.message : String(err),
+      severity: 'critical',
+      score: 0,
+    };
+  }
+}
+
 /**
  * Run all self-trust checks
  */
@@ -421,12 +592,18 @@ export function runSelfTrustChecks(config: {
   currentOutput?: unknown;
   breaks?: Break[];
   artifactsOverride?: Record<string, Record<string, unknown>>;
+  executionTrace?: PulseExecutionTrace;
 }): SelfTrustReport {
   const checks: SelfTrustCheckpoint[] = [
     checkManifestIntegrity(config.manifestPath),
     checkParserRegistry(config.parsersDir),
+    checkParserHardcodedFindingAudit(config.parsersDir),
     checkEvidenceFreshness(config.evidenceFile),
     checkCrossArtifactConsistency(config.repoRoot, config.artifactsOverride),
+    checkExecutionTraceAuditTrail({
+      repoRoot: config.repoRoot,
+      executionTrace: config.executionTrace,
+    }),
   ];
 
   if (config.lastOutput && config.currentOutput) {

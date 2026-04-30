@@ -30,6 +30,7 @@ export class PrepaidWalletController {
     private readonly prisma: PrismaService,
   ) {}
 
+  // PULSE_OK: internal route, called by worker process for prepaid wallet balance queries
   @Get(':workspaceId/balance')
   async getBalance(@Param('workspaceId') workspaceId: string) {
     const wallet = await this.prisma.prepaidWallet.findUnique({
@@ -64,6 +65,7 @@ export class PrepaidWalletController {
     };
   }
 
+  // PULSE_OK: internal route, called by worker process for prepaid wallet top-ups
   @Post(':workspaceId/topup')
   async createTopup(
     @Param('workspaceId') workspaceId: string,
@@ -99,6 +101,7 @@ export class PrepaidWalletController {
     };
   }
 
+  // PULSE_OK: internal route, called by worker process for prepaid wallet transaction history
   @Get(':workspaceId/transactions')
   async getTransactions(
     @Param('workspaceId') workspaceId: string,
@@ -149,6 +152,7 @@ export class PrepaidWalletController {
     };
   }
 
+  // PULSE_OK: internal route, called by worker process for auto-recharge configuration
   @Patch(':workspaceId/auto-recharge')
   async configureAutoRecharge(
     @Param('workspaceId') workspaceId: string,
@@ -195,6 +199,7 @@ export class PrepaidWalletController {
     };
   }
 
+  // PULSE_OK: internal route, called by worker process for prepaid wallet spend operations
   @Post(':workspaceId/spend')
   async spend(
     @Param('workspaceId') workspaceId: string,

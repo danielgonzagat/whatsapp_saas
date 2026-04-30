@@ -30,6 +30,95 @@ afterEach(() => {
 });
 
 describe('DoD real-status guardrails', () => {
+  it('keeps sparse structural evidence as a raw latent signal instead of a fixed-ratio decision', () => {
+    const root = makeTempRoot();
+    const pulseDir = path.join(root, '.pulse', 'current');
+    const sourceDir = path.join(root, 'src', 'opaque');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(sourceDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(sourceDir, 'opaque.service.ts'),
+      ['@Injectable()', 'export class OpaqueService {}'].join('\n'),
+    );
+
+    const capability: PulseCapability = {
+      id: 'capability:opaque-service-signal',
+      name: 'Opaque service signal',
+      truthMode: 'inferred',
+      status: 'latent',
+      confidence: 0.2,
+      userFacing: true,
+      runtimeCritical: false,
+      protectedByGovernance: false,
+      ownerLane: 'customer',
+      executionMode: 'ai_safe',
+      rolesPresent: ['orchestration'],
+      missingRoles: [],
+      filePaths: ['src/opaque/opaque.service.ts'],
+      nodeIds: [],
+      routePatterns: [],
+      evidenceSources: ['structural_graph'],
+      codacyIssueCount: 0,
+      highSeverityIssueCount: 0,
+      blockingReasons: [],
+      validationTargets: [],
+      maturity: {
+        stage: 'foundational',
+        score: 0.2,
+        dimensions: {
+          interfacePresent: false,
+          apiSurfacePresent: false,
+          orchestrationPresent: true,
+          persistencePresent: false,
+          sideEffectPresent: false,
+          runtimeEvidencePresent: false,
+          validationPresent: false,
+          scenarioCoveragePresent: false,
+          codacyHealthy: true,
+          simulationOnly: false,
+        },
+        missing: ['runtime_evidence'],
+      },
+      dod: {
+        status: 'latent',
+        missingRoles: ['runtime_evidence'],
+        blockers: [],
+        truthModeMet: false,
+      },
+    };
+
+    const capabilityState: PulseCapabilityState = {
+      generatedAt,
+      summary: {
+        totalCapabilities: 1,
+        realCapabilities: 0,
+        partialCapabilities: 0,
+        latentCapabilities: 1,
+        phantomCapabilities: 0,
+        humanRequiredCapabilities: 0,
+        foundationalCapabilities: 0,
+        connectedCapabilities: 0,
+        operationalCapabilities: 0,
+        productionReadyCapabilities: 0,
+        runtimeObservedCapabilities: 0,
+        scenarioCoveredCapabilities: 0,
+      },
+      capabilities: [capability],
+    };
+    fs.writeFileSync(
+      path.join(pulseDir, 'PULSE_CAPABILITY_STATE.json'),
+      JSON.stringify(capabilityState, null, 2),
+    );
+
+    buildDoDEngineState(root);
+
+    const dodState = JSON.parse(
+      fs.readFileSync(path.join(pulseDir, 'PULSE_DOD_STATE.json'), 'utf8'),
+    ) as DoDState;
+    expect(dodState.capabilities[0]?.classification).toBe('latent');
+    expect(dodState.capabilities[0]?.structuralChecks.has_service).toBe(true);
+  });
+
   it('does not classify a capability as real when required observed proof is not available', () => {
     const root = makeTempRoot();
     const pulseDir = path.join(root, '.pulse', 'current');
@@ -53,7 +142,7 @@ describe('DoD real-status guardrails', () => {
     );
     fs.writeFileSync(
       path.join(sourceDir, 'orders.controller.spec.ts'),
-      'describe("orders", () => { it("covers orders", () => { expect(true).toBe(true); }); });',
+      'describe("orders", () => { it("covers orders", () => { expect("orders").toContain("order"); }); });',
     );
 
     const capability: PulseCapability = {

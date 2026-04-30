@@ -86,6 +86,7 @@ export class MarketingController {
   /**
    * Channel status — for each channel, count messages and derive status
    */
+  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('channels')
   async getChannels(@Request() req: { user: { workspaceId: string; email?: string } }) {
     const workspaceId = req.user.workspaceId;

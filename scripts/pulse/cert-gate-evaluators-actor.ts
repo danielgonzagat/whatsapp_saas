@@ -17,8 +17,8 @@ import {
   getPendingCriticalScenarios,
   worldStateHasPendingCriticalExpectations,
   chooseStructuredFailureClass,
+  deriveGateOrderFromResults,
 } from './cert-helpers';
-import { GATE_ORDER } from './cert-constants';
 import { gateFail } from './cert-gate-evaluators';
 
 export { chooseStructuredFailureClass };
@@ -185,9 +185,10 @@ export function computeScore(
   rawScore: number,
   gates: Record<PulseGateName, PulseGateResult>,
 ): number {
-  const passed = GATE_ORDER.filter((gateName) => gates[gateName].status === 'pass').length;
-  const gateScore = Math.round((passed / GATE_ORDER.length) * 100);
-  if (passed === GATE_ORDER.length) return 100;
+  const gateOrder = deriveGateOrderFromResults(gates);
+  const passed = gateOrder.filter((gateName) => gates[gateName].status === 'pass').length;
+  const gateScore = gateOrder.length > 0 ? Math.round((passed / gateOrder.length) * 100) : 0;
+  if (passed === gateOrder.length) return 100;
   return Math.max(0, Math.min(rawScore, gateScore));
 }
 

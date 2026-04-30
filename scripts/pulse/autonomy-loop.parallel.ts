@@ -9,14 +9,11 @@ import type {
   PulseAutonomyValidationCommandResult,
 } from './types';
 import type { PulseAutonomyRunOptions } from './autonomy-loop.types';
-import {
-  toUnitSnapshot,
-  getPreferredAutomationSafeUnits,
-  selectParallelUnits,
-} from './autonomy-loop.unit-ranking';
+import { toUnitSnapshot } from './autonomy-loop.unit-ranking';
 import {
   directiveDigest,
   getDirectiveSnapshot,
+  selectMemoryAwareParallelUnits,
   buildPulseAutonomyStateSeed,
   buildPulseAgentOrchestrationStateSeed,
   writePulseAutonomyState,
@@ -128,6 +125,7 @@ export async function runParallelAutonomousLoop(
     stopReason: null,
   };
   let orchestrationState = buildPulseAgentOrchestrationStateSeed({
+    rootDir,
     directive: initialDirective,
     previousState: previousOrchestrationState,
     codexCliAvailable,
@@ -160,13 +158,21 @@ export async function runParallelAutonomousLoop(
     const directiveBefore = runPulseGuidance(rootDir);
     const stopReason = shouldStopForDirective(directiveBefore, options.riskProfile, state);
     if (stopReason) {
+      const nextBatchUnits = selectMemoryAwareParallelUnits(
+        rootDir,
+        directiveBefore,
+        options.parallelAgents,
+        options.riskProfile,
+        state,
+        plannerMode,
+      );
       const stopUpdates = buildStopEarlyStates(
         state,
         orchestrationState,
         directiveBefore,
         stopReason,
-        options.parallelAgents,
-        options.riskProfile,
+        nextBatchUnits,
+        nextBatchUnits[0] || null,
       );
       state = { ...state, ...stopUpdates.state };
       orchestrationState = { ...orchestrationState, ...stopUpdates.orchestrationState };
@@ -175,11 +181,13 @@ export async function runParallelAutonomousLoop(
       return state;
     }
 
-    const batchUnits = selectParallelUnits(
+    const batchUnits = selectMemoryAwareParallelUnits(
+      rootDir,
       directiveBefore,
       options.parallelAgents,
       options.riskProfile,
       state,
+      plannerMode,
     );
     if (batchUnits.length === 0) {
       const noUnitReason =
@@ -309,16 +317,19 @@ export async function runParallelAutonomousLoop(
     const directiveAfter = runPulseGuidance(rootDir);
     const beforeSnapshot = getDirectiveSnapshot(directiveBefore);
     const afterSnapshot = getDirectiveSnapshot(directiveAfter);
+    const nextBatchUnits = selectMemoryAwareParallelUnits(
+      rootDir,
+      directiveAfter,
+      options.parallelAgents,
+      options.riskProfile,
+      state,
+      plannerMode,
+    );
     const improved =
       directiveDigest(directiveBefore) !== directiveDigest(directiveAfter) ||
       afterSnapshot.score !== beforeSnapshot.score ||
       afterSnapshot.blockingTier !== beforeSnapshot.blockingTier ||
-      batchUnits.some(
-        (unit) =>
-          !getPreferredAutomationSafeUnits(directiveAfter, options.riskProfile, state).some(
-            (candidate) => candidate.id === unit.id,
-          ),
-      );
+      batchUnits.some((unit) => !nextBatchUnits.some((candidate) => candidate.id === unit.id));
 
     consecutiveNoImprovement = improved ? 0 : consecutiveNoImprovement + 1;
 
@@ -380,11 +391,9 @@ export async function runParallelAutonomousLoop(
       ...buildOrchestrationStateUpdate(
         orchestrationState,
         directiveAfter,
-        state,
-        options.parallelAgents,
-        options.riskProfile,
         workerFailure,
         validationFailure || regressionFailure,
+        nextBatchUnits,
       ),
     };
     writePulseAgentOrchestrationState(rootDir, orchestrationState);
@@ -412,7 +421,7 @@ export async function runParallelAutonomousLoop(
         directiveAfter,
         orchestrationState.status,
         rollbackSummary,
-        options.riskProfile,
+        nextBatchUnits[0] || null,
       ),
     };
     writePulseAutonomyState(rootDir, state);

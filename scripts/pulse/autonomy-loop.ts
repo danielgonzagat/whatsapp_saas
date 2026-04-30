@@ -22,12 +22,13 @@ import {
   readAgentsSdkVersion,
   commandExists,
 } from './autonomy-loop.utils';
-import { toUnitSnapshot, getPreferredAutomationSafeUnits } from './autonomy-loop.unit-ranking';
+import { toUnitSnapshot } from './autonomy-loop.unit-ranking';
 import {
   directiveDigest,
   getDirectiveSnapshot,
   buildPulseAutonomyStateSeed,
   buildPulseAgentOrchestrationStateSeed,
+  getMemoryAwarePreferredAutomationSafeUnits,
   writePulseAutonomyState,
   loadPulseAutonomyState,
   writePulseAgentOrchestrationState,
@@ -51,7 +52,11 @@ import {
   planWithAgent,
 } from './autonomy-loop.planner';
 import { runValidationCommands } from './autonomy-loop.execution';
-import { normalizeValidationCommands, buildUnitValidationCommands } from './autonomy-loop.prompt';
+import {
+  normalizeValidationCommands,
+  buildUnitValidationCommands,
+  buildCodexPrompt,
+} from './autonomy-loop.prompt';
 import { createExecutor, detectAvailableExecutor, type ExecutorKind } from './executor';
 import { runParallelAutonomousLoop } from './autonomy-loop.parallel';
 
@@ -234,7 +239,13 @@ export async function runPulseAutonomousLoop(
         targetCheckpoint: directiveBefore.targetCheckpoint || state.targetCheckpoint,
         visionGap: directiveBefore.visionGap || state.visionGap,
         nextActionableUnit: toUnitSnapshot(
-          getPreferredAutomationSafeUnits(directiveBefore, options.riskProfile, state)[0] || null,
+          getMemoryAwarePreferredAutomationSafeUnits(
+            rootDir,
+            directiveBefore,
+            options.riskProfile,
+            state,
+            plannerMode,
+          )[0] || null,
         ),
         status:
           directiveBefore.currentState?.certificationStatus === 'CERTIFIED'
@@ -276,7 +287,13 @@ export async function runPulseAutonomousLoop(
         targetCheckpoint: directiveBefore.targetCheckpoint || state.targetCheckpoint,
         visionGap: directiveBefore.visionGap || state.visionGap,
         nextActionableUnit: toUnitSnapshot(
-          getPreferredAutomationSafeUnits(directiveBefore, options.riskProfile, state)[0] || null,
+          getMemoryAwarePreferredAutomationSafeUnits(
+            rootDir,
+            directiveBefore,
+            options.riskProfile,
+            state,
+            plannerMode,
+          )[0] || null,
         ),
         status: 'blocked',
         stopReason: decision.stopReason || 'Planner stopped the autonomous loop.',
@@ -285,25 +302,41 @@ export async function runPulseAutonomousLoop(
       return state;
     }
 
+    const memoryAwareUnits = getMemoryAwarePreferredAutomationSafeUnits(
+      rootDir,
+      directiveBefore,
+      options.riskProfile,
+      state,
+      plannerMode,
+      decision.strategyMode,
+    );
     const selectedUnit =
-      getPreferredAutomationSafeUnits(directiveBefore, options.riskProfile, state).find(
-        (unit) => unit.id === decision.selectedUnitId,
-      ) || null;
+      memoryAwareUnits.find((unit) => unit.id === decision.selectedUnitId) ||
+      memoryAwareUnits[0] ||
+      null;
     if (!selectedUnit) {
       state = {
         ...state,
         generatedAt: new Date().toISOString(),
-        status: 'failed',
-        stopReason: `Planner selected unknown or non-ai_safe unit: ${decision.selectedUnitId}`,
+        status: 'blocked',
+        stopReason: `No memory-eligible ai_safe unit remains for strategy ${decision.strategyMode}_${plannerMode}.`,
       };
       writePulseAutonomyState(rootDir, state);
       return state;
     }
+    const selectedCodexPrompt =
+      selectedUnit.id === decision.selectedUnitId
+        ? decision.codexPrompt
+        : buildCodexPrompt(directiveBefore, selectedUnit);
+    const selectedValidationCommands =
+      selectedUnit.id === decision.selectedUnitId
+        ? decision.validationCommands
+        : validationCommands;
 
     const executionValidationCommands = buildUnitValidationCommands(
       directiveBefore,
       selectedUnit,
-      decision.validationCommands,
+      selectedValidationCommands,
     );
     const iterationStartedAt = new Date().toISOString();
     // RegressionGuard: capture pre-execution snapshot from on-disk Pulse artifacts.
@@ -335,7 +368,7 @@ export async function runPulseAutonomousLoop(
         return state;
       }
 
-      const executed = await executor.runUnit(rootDir, decision.codexPrompt, {
+      const executed = await executor.runUnit(rootDir, selectedCodexPrompt, {
         model: options.codexModel,
       });
       codexResult = {
@@ -365,9 +398,14 @@ export async function runPulseAutonomousLoop(
       directiveDigest(directiveBefore) !== directiveDigest(directiveAfter) ||
       afterSnapshot.score !== beforeSnapshot.score ||
       afterSnapshot.blockingTier !== beforeSnapshot.blockingTier ||
-      !getPreferredAutomationSafeUnits(directiveAfter, options.riskProfile, state).some(
-        (unit) => unit.id === selectedUnit.id,
-      );
+      !getMemoryAwarePreferredAutomationSafeUnits(
+        rootDir,
+        directiveAfter,
+        options.riskProfile,
+        state,
+        plannerMode,
+        decision.strategyMode,
+      ).some((unit) => unit.id === selectedUnit.id);
 
     const rollbackSummary =
       !options.dryRun && iterationStatus === 'failed'
@@ -443,7 +481,13 @@ export async function runPulseAutonomousLoop(
           targetCheckpoint: directiveAfter.targetCheckpoint || state.targetCheckpoint,
           visionGap: directiveAfter.visionGap || state.visionGap,
           nextActionableUnit: toUnitSnapshot(
-            getPreferredAutomationSafeUnits(directiveAfter, options.riskProfile, state)[0] || null,
+            getMemoryAwarePreferredAutomationSafeUnits(
+              rootDir,
+              directiveAfter,
+              options.riskProfile,
+              state,
+              plannerMode,
+            )[0] || null,
           ),
           status: 'failed',
           stopReason: `${reason} | ${rollbackOutcome.summary}`,
@@ -463,7 +507,13 @@ export async function runPulseAutonomousLoop(
       targetCheckpoint: directiveAfter.targetCheckpoint || state.targetCheckpoint,
       visionGap: directiveAfter.visionGap || state.visionGap,
       nextActionableUnit: toUnitSnapshot(
-        getPreferredAutomationSafeUnits(directiveAfter, options.riskProfile, state)[0] || null,
+        getMemoryAwarePreferredAutomationSafeUnits(
+          rootDir,
+          directiveAfter,
+          options.riskProfile,
+          state,
+          plannerMode,
+        )[0] || null,
       ),
       status:
         directiveAfter.currentState?.certificationStatus === 'CERTIFIED'

@@ -1,4 +1,4 @@
-import { ensureDir, readJsonFile, writeTextFile } from './safe-fs';
+import { ensureDir, pathExists, readJsonFile, writeTextFile } from './safe-fs';
 import { safeJoin } from './safe-path';
 import {
   PATH_PROOF_EVIDENCE_ARTIFACT,
@@ -40,44 +40,79 @@ export interface BuildProofReadinessArtifactInput {
   writeArtifact?: boolean;
 }
 
-function executionStartedAt(entry: PathProofEvidenceEntry): string | null {
-  return entry.result?.startedAt ?? null;
-}
+type PathProofReadinessStatus =
+  | 'observed_pass'
+  | 'observed_fail'
+  | 'planned'
+  | 'inferred'
+  | 'not_available';
 
-function executionFinishedAt(entry: PathProofEvidenceEntry): string | null {
-  return entry.result?.finishedAt ?? null;
-}
-
-function normalizeEvidenceStatus(entry: PathProofEvidenceEntry): string {
+function pathProofReadinessStatus(entry: PathProofEvidenceEntry): PathProofReadinessStatus {
   if (entry.disposition === 'observed_pass') {
     return 'observed_pass';
   }
   if (entry.disposition === 'observed_fail') {
     return 'observed_fail';
   }
-  return 'planned';
+  if (entry.mode === 'human_required' || entry.mode === 'not_executable') {
+    return 'not_available';
+  }
+  if (entry.disposition === 'planned_only' || entry.disposition === 'missing_result') {
+    return 'planned';
+  }
+  if (entry.disposition === 'not_run') {
+    return 'inferred';
+  }
+  return 'not_available';
 }
 
-function normalizeEvidenceMode(entry: PathProofEvidenceEntry): 'observed' | 'blueprint' {
-  return entry.observed && entry.coverageCountsAsObserved ? 'observed' : 'blueprint';
+function pathProofReadinessMode(
+  entry: PathProofEvidenceEntry,
+): 'observed' | 'planned' | 'inferred' | 'not_available' {
+  if (entry.observed && entry.coverageCountsAsObserved) {
+    return 'observed';
+  }
+  if (entry.mode === 'human_required' || entry.mode === 'not_executable') {
+    return 'not_available';
+  }
+  if (entry.disposition === 'planned_only' || entry.disposition === 'missing_result') {
+    return 'planned';
+  }
+  if (entry.disposition === 'not_run') {
+    return 'inferred';
+  }
+  return 'not_available';
 }
 
-function toReadinessEvidence(entry: PathProofEvidenceEntry): ProofReadinessEvidenceSummary {
+function pathProofReadinessArtifactPaths(entry: PathProofEvidenceEntry): string[] {
+  const artifactPaths = [
+    entry.observedEvidenceLink?.artifactPath,
+    entry.result?.artifactPath,
+    PATH_PROOF_EVIDENCE_ARTIFACT,
+  ].filter((artifactPath): artifactPath is string => Boolean(artifactPath));
+
+  return [...new Set(artifactPaths)];
+}
+
+export function pathProofEntryToReadinessEvidence(
+  entry: PathProofEvidenceEntry,
+): ProofReadinessEvidenceSummary {
   const executed = entry.result?.executed === true && entry.observed;
+  const status = pathProofReadinessStatus(entry);
 
   return {
     id: entry.taskId,
     taskId: entry.taskId,
     pathId: entry.pathId,
     sourceArtifact: PATH_PROOF_EVIDENCE_ARTIFACT,
-    status: normalizeEvidenceStatus(entry),
-    evidenceMode: normalizeEvidenceMode(entry),
+    status,
+    evidenceMode: pathProofReadinessMode(entry),
     executed,
     attempts: executed ? 1 : 0,
     exitCode: entry.result?.exitCode,
-    startedAt: executionStartedAt(entry),
-    finishedAt: executionFinishedAt(entry),
-    artifactPaths: entry.observedEvidenceLink ? [entry.observedEvidenceLink.artifactPath] : [],
+    startedAt: entry.result?.startedAt ?? null,
+    finishedAt: entry.result?.finishedAt ?? null,
+    artifactPaths: pathProofReadinessArtifactPaths(entry),
     summary: entry.reason,
   };
 }
@@ -95,13 +130,27 @@ function readPathProofEvidence(rootDir: string): PathProofEvidenceArtifact {
   return readJsonFile<PathProofEvidenceArtifact>(safeJoin(rootDir, PATH_PROOF_EVIDENCE_ARTIFACT));
 }
 
+export function pathProofReadinessInputsExist(rootDir: string): boolean {
+  return (
+    pathExists(safeJoin(rootDir, PATH_PROOF_TASKS_ARTIFACT)) &&
+    pathExists(safeJoin(rootDir, PATH_PROOF_EVIDENCE_ARTIFACT))
+  );
+}
+
+export function refreshProofReadinessArtifact(rootDir: string): ProofReadinessArtifact | null {
+  if (!pathProofReadinessInputsExist(rootDir)) {
+    return null;
+  }
+  return buildProofReadinessArtifact(rootDir);
+}
+
 export function buildProofReadinessArtifact(
   rootDir: string,
   input: BuildProofReadinessArtifactInput = {},
 ): ProofReadinessArtifact {
   const plan = input.plan ?? readPathProofPlan(rootDir);
   const evidenceArtifact = input.evidenceArtifact ?? readPathProofEvidence(rootDir);
-  const evidence = evidenceArtifact.tasks.map(toReadinessEvidence);
+  const evidence = evidenceArtifact.tasks.map(pathProofEntryToReadinessEvidence);
   const readinessGate = evaluateProofReadinessGate(
     buildProofReadinessGateInput(plan.tasks, evidence),
   );

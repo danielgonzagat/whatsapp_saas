@@ -21,11 +21,7 @@ import type {
   PulseResolvedManifest,
   PulseActorEvidence,
 } from './types';
-import {
-  CHECKER_GAP_TYPES,
-  DEFAULT_CERTIFICATION_TIERS,
-  DEFAULT_FINAL_READINESS_CRITERIA,
-} from './cert-constants';
+import { CHECKER_GAP_TYPES } from './cert-constants';
 import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from './finding-identity';
 
 export function getEnvironment(): PulseEnvironment {
@@ -46,15 +42,19 @@ export function getCertificationTarget(input?: PulseCertificationTarget): PulseC
 export function getCertificationTiers(
   resolvedManifest: PulseResolvedManifest,
 ): PulseManifestCertificationTier[] {
-  return resolvedManifest.certificationTiers.length > 0
-    ? [...resolvedManifest.certificationTiers].sort((a, b) => a.id - b.id)
-    : DEFAULT_CERTIFICATION_TIERS;
+  return [...resolvedManifest.certificationTiers].sort((a, b) => a.id - b.id);
 }
 
 export function getFinalReadinessCriteria(
   resolvedManifest: PulseResolvedManifest,
 ): PulseManifestFinalReadinessCriteria {
-  return resolvedManifest.finalReadinessCriteria || DEFAULT_FINAL_READINESS_CRITERIA;
+  return resolvedManifest.finalReadinessCriteria;
+}
+
+export function deriveGateOrderFromResults(
+  gates: Partial<Record<PulseGateName, PulseGateResult>>,
+): PulseGateName[] {
+  return (Object.keys(gates) as PulseGateName[]).filter((gateName) => gates[gateName]);
 }
 
 export function getCommitSha(rootDir: string): string {

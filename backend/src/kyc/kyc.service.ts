@@ -425,9 +425,9 @@ export class KycService {
   }
 
   /** Delete document. */
-  async deleteDocument(agentId: string, documentId: string) {
+  async deleteDocument(agentId: string, documentId: string, workspaceId?: string) {
     const doc = await this.prisma.kycDocument.findUnique({
-      where: { id: documentId },
+      where: workspaceId ? { id: documentId, workspaceId } : { id: documentId },
     });
     if (!doc) {
       throw new NotFoundException('Document not found');

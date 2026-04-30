@@ -9,6 +9,14 @@ export interface PlaceholderTestResult {
 export interface WeakAssertionResult {
   count: number;
   files: string[];
+  rawSignals: WeakAssertionRawSignal[];
+}
+
+export interface WeakAssertionRawSignal {
+  file: string;
+  evidenceKind: 'regex';
+  truthMode: 'weak_assertion';
+  blocking: true;
 }
 
 export interface TypeEscapeHatchResult {
@@ -62,6 +70,7 @@ export function detectPlaceholderTests(rootDir: string): PlaceholderTestResult {
 
 export function detectWeakStatusAssertions(rootDir: string): WeakAssertionResult {
   const files: string[] = [];
+  const rawSignals: WeakAssertionRawSignal[] = [];
   const specPattern = /\.(spec|test)\.(ts|tsx)$/;
   const weakPatterns = [
     /expect\(\s*response\.(status|statusCode)\s*\)\.toBeDefined\(\)/,
@@ -81,9 +90,16 @@ export function detectWeakStatusAssertions(rootDir: string): WeakAssertionResult
         scanDir(fullPath);
       } else if (entry.isFile() && specPattern.test(entry.name)) {
         const content = fs.readFileSync(fullPath, 'utf-8');
+        const relativePath = fullPath.replace(rootDir + path.sep, '');
         for (const pattern of weakPatterns) {
           if (pattern.test(content)) {
-            files.push(fullPath.replace(rootDir + path.sep, ''));
+            files.push(relativePath);
+            rawSignals.push({
+              file: relativePath,
+              evidenceKind: 'regex',
+              truthMode: 'weak_assertion',
+              blocking: true,
+            });
             break;
           }
         }
@@ -92,7 +108,7 @@ export function detectWeakStatusAssertions(rootDir: string): WeakAssertionResult
   }
 
   scanDir(rootDir);
-  return { count: files.length, files };
+  return { count: files.length, files, rawSignals };
 }
 
 export function detectTypeEscapeHatches(rootDir: string): TypeEscapeHatchResult {

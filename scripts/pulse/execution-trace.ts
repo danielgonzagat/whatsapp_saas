@@ -25,6 +25,8 @@ type AuditablePulseExecutionTrace = PulseExecutionTrace & {
   auditTrail: PulseExecutionTraceAuditTrail;
 };
 
+let activeExecutionTraceSnapshot: PulseExecutionTrace | null = null;
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -110,6 +112,10 @@ function buildTraceAuditTrail(trace: PulseExecutionTrace): PulseExecutionTraceAu
     chainHead,
     verified: true,
   };
+}
+
+function cloneTrace(trace: PulseExecutionTrace): PulseExecutionTrace {
+  return JSON.parse(JSON.stringify(trace)) as PulseExecutionTrace;
 }
 
 /** Pulse execution tracer. */
@@ -223,7 +229,7 @@ export class PulseExecutionTracer {
 
   /** Get snapshot. */
   getSnapshot(): PulseExecutionTrace {
-    return JSON.parse(JSON.stringify(this.trace)) as PulseExecutionTrace;
+    return cloneTrace(this.trace);
   }
 
   /** Get artifact path. */
@@ -233,9 +239,15 @@ export class PulseExecutionTracer {
 
   private flush(): void {
     this.trace.auditTrail = buildTraceAuditTrail(this.trace);
+    activeExecutionTraceSnapshot = cloneTrace(this.trace);
     ensureDir(path.dirname(this.artifactPath), { recursive: true });
     writeTextFile(this.artifactPath, JSON.stringify(this.trace, null, 2));
   }
+}
+
+/** Get the latest in-process execution trace snapshot, when a tracer has run in this process. */
+export function getActiveExecutionTraceSnapshot(): PulseExecutionTrace | null {
+  return activeExecutionTraceSnapshot ? cloneTrace(activeExecutionTraceSnapshot) : null;
 }
 
 /** Verify the immutable execution trace digest against its current phase history. */

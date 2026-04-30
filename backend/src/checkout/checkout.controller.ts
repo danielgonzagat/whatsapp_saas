@@ -200,7 +200,7 @@ export class CheckoutController {
     if (plan.kind !== 'PLAN') {
       throw new NotFoundException('Plano nao encontrado');
     }
-    const deletedPlan = await this.checkoutService.deletePlan(id);
+    const deletedPlan = await this.checkoutService.deletePlan(id, workspaceId);
     await syncAllWorkspaceCheckoutCouponsForProduct(this.prisma, workspaceId, plan.productId);
     return deletedPlan;
   }

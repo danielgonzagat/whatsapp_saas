@@ -406,8 +406,11 @@ const CANONICAL_ARTIFACTS: PulseArtifactDefinition[] = [
   defineArtifact({
     id: 'no-hardcoded-reality-state',
     relativePath: 'PULSE_NO_HARDCODED_REALITY.json',
-    schema: { module: './no-hardcoded-reality-audit', exportName: 'PulseNoHardcodedRealityState' },
-    producer: { module: './artifacts', exportName: 'buildNoHardcodedRealityState' },
+    schema: { module: './no-hardcoded-reality-state', exportName: 'PulseNoHardcodedRealityState' },
+    producer: {
+      module: './no-hardcoded-reality-state',
+      exportName: 'buildPulseNoHardcodedRealityState',
+    },
     consumers: ['./certification', './artifacts.directive'],
   }),
   defineArtifact({

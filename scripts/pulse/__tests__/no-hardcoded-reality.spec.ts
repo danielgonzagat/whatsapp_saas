@@ -220,7 +220,9 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       ].join('\n'),
     );
 
-    expect(auditPulseNoHardcodedReality(rootDir).findings.map((finding) => finding.kind)).toEqual([
+    const result = auditPulseNoHardcodedReality(rootDir);
+
+    expect(result.findings.map((finding) => finding.kind)).toEqual([
       'fixed_product_route_collection',
       'fixed_capability_id_collection',
       'fixed_flow_id_collection',
@@ -230,6 +232,82 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       'fixed_provider_catalog_collection',
       'fixed_role_catalog_collection',
     ]);
+    expect(result.summary).toEqual({
+      totalFindings: 8,
+      byKind: {
+        fixed_product_route_collection: 1,
+        fixed_capability_id_collection: 1,
+        fixed_flow_id_collection: 1,
+        fixed_module_decision_collection: 1,
+        fixed_product_catalog_collection: 1,
+        fixed_domain_catalog_collection: 1,
+        fixed_provider_catalog_collection: 1,
+        fixed_role_catalog_collection: 1,
+      },
+      topFiles: [
+        {
+          filePath: 'scripts/pulse/bad.ts',
+          findings: 8,
+        },
+      ],
+    });
+  });
+
+  it('limits zero-hardcode reality audit to PULSE machine code, not product code', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-hardcoded-scope-'));
+    const pulseDir = path.join(rootDir, 'scripts/pulse');
+    const backendDir = path.join(rootDir, 'backend/src/products');
+    const frontendDir = path.join(rootDir, 'frontend/src/app/checkout');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(backendDir, { recursive: true });
+    fs.mkdirSync(frontendDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pulseDir, 'machine-decision.ts'),
+      "const PRODUCT_CATALOG = ['pulse-should-report', 'pulse-other'];",
+    );
+    fs.writeFileSync(
+      path.join(backendDir, 'product-catalog.ts'),
+      "const PRODUCT_CATALOG = ['checkout-basic', 'crm-suite'];",
+    );
+    fs.writeFileSync(
+      path.join(frontendDir, 'routes.tsx'),
+      "const PRODUCT_ROUTES = ['/checkout', '/billing/status'];",
+    );
+
+    const result = auditPulseNoHardcodedReality(rootDir);
+    expect(result.findings).toEqual([
+      expect.objectContaining({
+        filePath: 'scripts/pulse/machine-decision.ts',
+        kind: 'fixed_product_catalog_collection',
+        samples: ['pulse-should-report', 'pulse-other'],
+      }),
+    ]);
+    expect(result.summary.topFiles).toEqual([
+      {
+        filePath: 'scripts/pulse/machine-decision.ts',
+        findings: 1,
+      },
+    ]);
+  });
+
+  it('does not scan arbitrary roots when scripts/pulse is absent', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-hardcoded-no-pulse-root-'));
+    const backendDir = path.join(rootDir, 'backend/src/products');
+    fs.mkdirSync(backendDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(backendDir, 'product-catalog.ts'),
+      "const PRODUCT_CATALOG = ['checkout-basic', 'crm-suite'];",
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir)).toEqual({
+      scannedFiles: 0,
+      findings: [],
+      summary: {
+        totalFindings: 0,
+        byKind: {},
+        topFiles: [],
+      },
+    });
   });
 
   it('allows kernel grammar collections that do not claim product reality', () => {
@@ -291,6 +369,40 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     );
 
     expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([]);
+  });
+
+  it('does not let the no-hardcode auditor hide its own bootstrap allowlists as final truth', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-auditor-bootstrap-hardcode-'));
+    const pulseDir = path.join(rootDir, 'scripts/pulse');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pulseDir, 'no-hardcoded-reality-audit.ts'),
+      [
+        "const ALLOWED_CONTEXT_TOKENS = ['artifact', 'grammar'];",
+        "const SKIPPED_PATH_SEGMENTS = ['__tests__', 'dist'];",
+        "const INFRASTRUCTURE_ROUTES = new Set(['/health', '/diag-db']);",
+      ].join('\n'),
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'hardcoded_auditor_bootstrap_reality_risk',
+          context: 'ALLOWED_CONTEXT_TOKENS',
+          samples: ['artifact', 'grammar'],
+        }),
+        expect.objectContaining({
+          kind: 'hardcoded_auditor_bootstrap_reality_risk',
+          context: 'SKIPPED_PATH_SEGMENTS',
+          samples: ['__tests__', 'dist'],
+        }),
+        expect.objectContaining({
+          kind: 'hardcoded_auditor_bootstrap_reality_risk',
+          context: 'INFRASTRUCTURE_ROUTES',
+          samples: ['/health', '/diag-db'],
+        }),
+      ]),
+    );
   });
 
   it('fails fixed critical domain catalogs by name in core PULSE code', () => {
@@ -536,8 +648,8 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     expect(classifyFinancialModel('Payment', ['id', 'createdAt', 'updatedAt'])).toBe(false);
   });
 
-  it('classifies money-like state from fields even when the model name is opaque', () => {
-    expect(classifyFinancialModel('Xpto', ['id', 'amountCents', 'currency', 'status'])).toBe(true);
+  it('does not classify money-like state from field names without schema/type evidence', () => {
+    expect(classifyFinancialModel('Xpto', ['id', 'amountCents', 'currency', 'status'])).toBe(false);
   });
 
   it('classifies API risk from contract shape instead of product path words', () => {

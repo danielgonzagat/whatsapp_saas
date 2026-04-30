@@ -3,12 +3,7 @@
  * Regex collections and default gate ordering are baseline-derived fallbacks,
  * not a universal definition of product truth.
  */
-import type {
-  Break,
-  PulseGateName,
-  PulseManifestCertificationTier,
-  PulseManifestFinalReadinessCriteria,
-} from './types';
+import type { Break, PulseGateName } from './types';
 
 export const SECURITY_PATTERNS = [
   /ROUTE_NO_AUTH/,
@@ -134,97 +129,3 @@ export const CHECKER_GAP_TYPES = new Set<Break['type']>([
   'MANIFEST_INVALID',
   'UNKNOWN_SURFACE',
 ]);
-
-export const GATE_ORDER: PulseGateName[] = [
-  'scopeClosed',
-  'adapterSupported',
-  'specComplete',
-  'truthExtractionPass',
-  'staticPass',
-  'runtimePass',
-  'changeRiskPass',
-  'productionDecisionPass',
-  'browserPass',
-  'flowPass',
-  'invariantPass',
-  'securityPass',
-  'isolationPass',
-  'recoveryPass',
-  'performancePass',
-  'observabilityPass',
-  'customerPass',
-  'operatorPass',
-  'adminPass',
-  'soakPass',
-  'syntheticCoveragePass',
-  'evidenceFresh',
-  'pulseSelfTrustPass',
-  'noOverclaimPass',
-  'executionMatrixCompletePass',
-  'criticalPathObservedPass',
-  'breakpointPrecisionPass',
-  'multiCycleConvergencePass',
-  'testHonestyPass',
-  'assertionStrengthPass',
-  'typeIntegrityPass',
-];
-
-export const DEFAULT_CERTIFICATION_TIERS: PulseManifestCertificationTier[] = [
-  {
-    id: 0,
-    name: 'Truth + Runtime Baseline',
-    gates: [
-      'truthExtractionPass',
-      'runtimePass',
-      'changeRiskPass',
-      'productionDecisionPass',
-      'syntheticCoveragePass',
-    ],
-  },
-  {
-    id: 1,
-    name: 'Customer Truth',
-    gates: ['browserPass', 'flowPass', 'customerPass'],
-    requireNoAcceptedFlows: true,
-  },
-  {
-    id: 2,
-    name: 'Operator + Admin Replacement',
-    gates: ['operatorPass', 'adminPass'],
-  },
-  {
-    id: 3,
-    name: 'Production Reliability',
-    gates: ['invariantPass', 'securityPass', 'recoveryPass', 'observabilityPass'],
-  },
-  {
-    id: 4,
-    name: 'Final Human Replacement',
-    gates: ['soakPass'],
-    requireNoAcceptedFlows: true,
-    requireNoAcceptedScenarios: true,
-    requireWorldStateConvergence: true,
-  },
-];
-
-export const DEFAULT_FINAL_READINESS_CRITERIA: PulseManifestFinalReadinessCriteria = {
-  requireAllTiersPass: true,
-  requireNoAcceptedCriticalFlows: true,
-  requireNoAcceptedCriticalScenarios: true,
-  requireWorldStateConvergence: true,
-};
-
-export interface BaselineDerivedThreshold {
-  value: number;
-  source: 'baseline-derived';
-  evidenceRequirement: string;
-}
-
-export function getTypeIntegrityEscapeHatchThreshold(): BaselineDerivedThreshold {
-  return {
-    value: 5,
-    source: 'baseline-derived',
-    evidenceRequirement:
-      'type-integrity evidence must stay below the baseline-derived escape-hatch ceiling',
-  };
-}

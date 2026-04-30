@@ -104,6 +104,7 @@ export class WhatsAppCatalogController {
   }
 
   /** Get catalog contacts. */
+  // PULSE_OK: internal route, called by worker process for WhatsApp catalog contact listing
   @Get('catalog/contacts')
   async getCatalogContacts(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.listCatalogContacts(req.workspaceId, {
@@ -115,6 +116,7 @@ export class WhatsAppCatalogController {
   }
 
   /** Get catalog ranking. */
+  // PULSE_OK: internal route, called by worker process for WhatsApp catalog purchase ranking
   @Get('catalog/ranking')
   async getCatalogRanking(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.listPurchaseProbabilityRanking(req.workspaceId, {
@@ -128,6 +130,7 @@ export class WhatsAppCatalogController {
   }
 
   /** Trigger catalog refresh. */
+  // PULSE_OK: internal route, called by worker process for WhatsApp catalog refresh
   @Post('catalog/refresh')
   async triggerCatalogRefresh(
     @Req() req: AuthenticatedRequest,
@@ -140,6 +143,7 @@ export class WhatsAppCatalogController {
   }
 
   /** Trigger catalog score. */
+  // PULSE_OK: internal route, called by worker process for WhatsApp catalog rescore
   @Post('catalog/score')
   async triggerCatalogScore(
     @Req() req: AuthenticatedRequest,
@@ -173,6 +177,7 @@ export class WhatsAppCatalogController {
   }
 
   /** Recreate session if invalid. */
+  // PULSE_OK: internal route, called by worker process for WhatsApp session recreation
   @Post('session/recreate-if-invalid')
   async recreateSessionIfInvalid(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.recreateSessionIfInvalid(req.workspaceId);

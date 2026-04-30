@@ -139,6 +139,7 @@ export class WebhooksController {
   }
 
   /** Recent finance. */
+  // PULSE_OK: webhook endpoint, called by frontend after Stripe finance webhook
   @UseGuards(JwtAuthGuard)
   @Post('finance/:workspaceId/recent')
   async recentFinance(

@@ -2,6 +2,7 @@ import * as path from 'path';
 import { safeJoin } from './lib/safe-path';
 import { readTextFile, writeTextFile, pathExists, readDir, ensureDir } from './safe-fs';
 import type {
+  DataflowRawSignal,
   DataflowCoverageStatus,
   DataflowState,
   DataflowStateMutation,
@@ -35,78 +36,7 @@ const MODEL_CREATE_REGEX = new RegExp(
 );
 const TRANSACTION_REGEX = /(?:\b|\.)prisma\.\$transaction\(|\btx\.\w+\./;
 
-const WEAK_PII_FIELD_SENSORS = [
-  /^email/i,
-  /^name$/i,
-  /^(firstName|lastName)$/i,
-  /^(fullName|displayName)$/i,
-  /^phone/i,
-  /^cpf$/i,
-  /^cnpj$/i,
-  /^document/i,
-  /^address$/i,
-  /^birth/i,
-  /^rg$/i,
-  /^passport$/i,
-  /^taxId$/i,
-  /^socialSecurity/i,
-  /^ssn$/i,
-  /^avatarUrl$/i,
-  /^photoUrl$/i,
-  /^bio$/i,
-  /^fullName$/i,
-  /^razaoSocial$/i,
-  /^nomeFantasia$/i,
-  /^inscricao/i,
-  /^cep$/i,
-  /^street$/i,
-  /^number$/i,
-  /^complement$/i,
-  /^neighborhood$/i,
-  /^city$/i,
-  /^state$/i,
-  /^holderName$/i,
-  /^holderDocument$/i,
-  /^customerName$/i,
-  /^customerEmail$/i,
-  /^customerPhone$/i,
-];
-
 const AUDIT_FIELD_PATTERNS = [/^createdAt$/i, /^updatedAt$/i, /^deletedAt$/i];
-
-const WEAK_MONEY_FIELD_SENSORS = [
-  /amount/i,
-  /balance/i,
-  /currency/i,
-  /cents/i,
-  /subtotal/i,
-  /total/i,
-  /price/i,
-  /tax/i,
-  /rate/i,
-  /fee/i,
-  /commission/i,
-  /revenue/i,
-  /payout/i,
-  /payOut/i,
-];
-
-const MUTATION_STATE_FIELD_PATTERNS = [
-  /^status$/i,
-  /^state$/i,
-  /^type$/i,
-  /^direction$/i,
-  /^kind$/i,
-  /^mode$/i,
-  /^role$/i,
-  /^bucket$/i,
-  /^gateway$/i,
-  /^method$/i,
-  /provider/i,
-  /external/i,
-  /reference/i,
-  /idempotency/i,
-];
 
 const WEAK_ROLE_BY_PATH_SENSORS: [RegExp, string][] = [
   [/\/controllers?\//, 'controller'],
@@ -302,35 +232,38 @@ function parseEnums(schemaContent: string): Map<string, string[]> {
 }
 
 function isNumericMoneyStorage(field: PrismaFieldEvidence): boolean {
-  if (field.type === 'Decimal' || field.type === 'BigInt') return true;
-  if (
-    (field.type === 'Int' || field.type === 'Float') &&
-    /@map\(|\/\/|cent|amount|money/i.test(field.attributes)
-  ) {
-    return true;
-  }
-  return false;
+  if (/@id\b|@unique\b/i.test(field.attributes)) return false;
+  return field.type === 'Decimal' || field.type === 'BigInt';
 }
 
-function fieldHasWeakMoneySignal(fieldName: string): boolean {
-  return WEAK_MONEY_FIELD_SENSORS.some((pattern) => pattern.test(fieldName));
+function hasSchemaSensitivityEvidence(field: PrismaFieldEvidence): boolean {
+  return /@sensitive\b|@pii\b/i.test(field.attributes);
 }
 
-function fieldHasWeakPiiSignal(fieldName: string): boolean {
-  return WEAK_PII_FIELD_SENSORS.some((pattern) => pattern.test(fieldName));
+function hasSupportedDataClassifierEvidence(field: PrismaFieldEvidence): boolean {
+  return isNumericMoneyStorage(field) || hasSchemaSensitivityEvidence(field);
 }
 
-function classifyFinancialFieldEvidence(fields: PrismaFieldEvidence[]): boolean {
-  const typedMoneyFields = fields.filter(
-    (field) => isNumericMoneyStorage(field) && fieldHasWeakMoneySignal(field.name),
-  );
-  if (typedMoneyFields.length > 0) {
-    return true;
-  }
+function collectUnclassifiedSchemaSignals(fields: PrismaFieldEvidence[]): DataflowRawSignal[] {
+  return fields
+    .filter((field) => !hasSupportedDataClassifierEvidence(field))
+    .map((field) => ({
+      detector: 'unclassified-schema-field',
+      field: field.name,
+      truthMode: 'weak_signal',
+      evidenceKind: 'schema',
+      evidence:
+        `Field "${field.name}" is schema-visible but lacks classifier proof; ` +
+        'promotion requires schema sensitivity metadata, explicit monetary storage type, or observed source/runtime usage evidence',
+    }));
+}
 
-  const weakMoneySignals = fields.filter((field) => fieldHasWeakMoneySignal(field.name));
-  const hasCurrencyCompanion = weakMoneySignals.some((field) => /^currency$/i.test(field.name));
-  return weakMoneySignals.length >= 2 && hasCurrencyCompanion;
+function classifyFinancialFieldEvidence(fields: PrismaFieldEvidence[]): {
+  financial: boolean;
+} {
+  return {
+    financial: fields.some((field) => isNumericMoneyStorage(field)),
+  };
 }
 
 export function classifyFinancialModel(_modelName: string, fields: string[] = []): boolean {
@@ -341,20 +274,25 @@ export function classifyFinancialModel(_modelName: string, fields: string[] = []
     relationFields: [],
     relationReferences: [],
   }));
-  return classifyFinancialFieldEvidence(fieldEvidence);
+  return classifyFinancialFieldEvidence(fieldEvidence).financial;
 }
 
-function detectPIIFieldEvidence(fields: PrismaFieldEvidence[]): string[] {
-  return fields
-    .filter((field) => {
-      if (/@sensitive\b|@pii\b/i.test(field.attributes)) return true;
-      return fieldHasWeakPiiSignal(field.name);
-    })
-    .map((field) => field.name);
+function detectPIIFieldEvidence(fields: PrismaFieldEvidence[]): {
+  piiFields: string[];
+} {
+  const piiFields: string[] = [];
+
+  for (const field of fields) {
+    if (hasSchemaSensitivityEvidence(field)) {
+      piiFields.push(field.name);
+    }
+  }
+
+  return { piiFields };
 }
 
 export function detectPIIFields(_modelName: string, fields: string[]): string[] {
-  return fields.filter((field) => fieldHasWeakPiiSignal(field));
+  return fields.filter((field) => /@sensitive\b|@pii\b/i.test(field));
 }
 
 function hasBuiltInAuditTrail(fields: string[]): boolean {
@@ -432,12 +370,16 @@ function modelHasAuditWriteEvidence(explicitAuditFiles: string[], fields: string
   return hasBuiltInAuditTrail(fields) || explicitAuditFiles.length > 0;
 }
 
-/**
- * Checks if a model has mutable state fields (enum status/state/type) that are
- * candidates for version/history tracking.
- */
-function hasMutableStateFields(fields: string[]): boolean {
-  return fields.some((f) => MUTATION_STATE_FIELD_PATTERNS.some((pattern) => pattern.test(f)));
+function discoverMutableStateFields(
+  fields: PrismaFieldEvidence[],
+  enums: Map<string, string[]>,
+): string[] {
+  return fields
+    .filter((field) => {
+      const members = enums.get(field.type);
+      return members !== undefined && members.length > 1;
+    })
+    .map((field) => field.name);
 }
 
 /**
@@ -558,17 +500,13 @@ function getStatusFieldEnums(
   const block = extractModelBlock(schemaContent, openBraceIdx);
 
   for (const field of fields) {
-    if (!MUTATION_STATE_FIELD_PATTERNS.some((p) => p.test(field))) continue;
     const findTypeInBlock = new RegExp(`^\\s*${field}\\s+(\\w+)`, 'm');
     const typeMatch = findTypeInBlock.exec(block.text);
     if (typeMatch) {
       const typeHint = typeMatch[1];
-      const possibleEnumNames = [typeHint, `${typeHint}Status`, `${typeHint}State`];
-      for (const enumName of possibleEnumNames) {
-        if (enums.has(enumName)) {
-          result.set(field, { enumName, members: enums.get(enumName)! });
-          break;
-        }
+      const members = enums.get(typeHint);
+      if (members !== undefined) {
+        result.set(field, { enumName: typeHint, members });
       }
     }
   }
@@ -834,13 +772,14 @@ export function buildDataflowState(rootDir: string): DataflowState {
 
     const fieldEvidence = modelFieldEvidence.get(modelName) ?? [];
     const fields = modelFields.get(modelName) ?? [];
-    const financial = classifyFinancialFieldEvidence(fieldEvidence);
-    const piiFields = detectPIIFieldEvidence(fieldEvidence);
+    const financialEvidence = classifyFinancialFieldEvidence(fieldEvidence);
+    const financial = financialEvidence.financial;
+    const piiEvidence = detectPIIFieldEvidence(fieldEvidence);
+    const piiFields = piiEvidence.piiFields;
+    const rawSignals = collectUnclassifiedSchemaSignals(fieldEvidence);
     const shownInUI = findModelInUI(rootDir, modelName);
     const hasWorkspace = hasWorkspaceIsolation(fieldEvidence, relationInboundCounts);
-    const mutableStateFields = fields.filter((f) =>
-      MUTATION_STATE_FIELD_PATTERNS.some((p) => p.test(f)),
-    );
+    const mutableStateFields = discoverMutableStateFields(fieldEvidence, enums);
     const hasMutableState = mutableStateFields.length > 0;
     const hasVersion = hasVersionTable(modelName, modelNames);
 
@@ -958,6 +897,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
       hasMutableState,
       hasVersionHistory: hasVersion,
       stateMachine: stateMachine.length > 0 ? stateMachine : undefined,
+      rawSignals,
     };
 
     entities.push(entity);

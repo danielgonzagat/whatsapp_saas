@@ -20,7 +20,8 @@ type FindingKind =
   | 'hardcoded_gate_profile_threshold_risk'
   | 'hardcoded_decision_enum_risk'
   | 'hardcoded_decision_regex_risk'
-  | 'hardcoded_path_decision_risk';
+  | 'hardcoded_path_decision_risk'
+  | 'hardcoded_auditor_bootstrap_reality_risk';
 
 export interface NoHardcodedRealityFinding {
   filePath: string;
@@ -34,6 +35,14 @@ export interface NoHardcodedRealityFinding {
 export interface NoHardcodedRealityAuditResult {
   scannedFiles: number;
   findings: NoHardcodedRealityFinding[];
+  summary: {
+    totalFindings: number;
+    byKind: Partial<Record<FindingKind, number>>;
+    topFiles: Array<{
+      filePath: string;
+      findings: number;
+    }>;
+  };
 }
 
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
@@ -507,6 +516,43 @@ function pathDecisionFindings(context: string, values: string[]): string[] {
   );
 }
 
+function auditorBootstrapRealityFindings(
+  relPath: string,
+  context: string,
+  values: string[],
+): string[] {
+  if (!relPath.replace(/\\/g, '/').endsWith('scripts/pulse/no-hardcoded-reality-audit.ts')) {
+    return [];
+  }
+
+  const contextTokens = splitIdentifierTokens(context);
+  const bootstrappedAuthorityTokens = [
+    'allowed',
+    'allowlist',
+    'criticality',
+    'decision',
+    'gate',
+    'grammar',
+    'infrastructure',
+    'path',
+    'reality',
+    'role',
+    'route',
+    'skipped',
+    'source',
+    'token',
+    'tokens',
+  ];
+  const isBootstrapDecisionSurface = bootstrappedAuthorityTokens.some((token) =>
+    contextTokens.has(token),
+  );
+  if (!isBootstrapDecisionSurface) {
+    return [];
+  }
+
+  return values.filter((value) => value.trim().length > 0);
+}
+
 function contextLooksLikeDecisionAuthority(context: string): boolean {
   return (
     contextHasToken(context, DECISION_AUTHORITY_CONTEXT_TOKENS) &&
@@ -753,6 +799,7 @@ function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityF
     const roles = roleCatalogFindings(context, values);
     const gateProfileThresholds = gateProfileThresholdFindings(context, literalSamples);
     const pathDecisions = pathDecisionFindings(context, rawValues);
+    const auditorBootstrapReality = auditorBootstrapRealityFindings(relPath, context, rawValues);
 
     if (routes.length > 0) {
       pushFinding(
@@ -878,6 +925,17 @@ function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityF
         pathDecisions,
       );
     }
+    if (auditorBootstrapReality.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_auditor_bootstrap_reality_risk',
+        context,
+        auditorBootstrapReality,
+      );
+    }
 
     ts.forEachChild(node, visit);
   };
@@ -886,10 +944,43 @@ function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityF
   return findings;
 }
 
+function summarizeNoHardcodedRealityFindings(
+  findings: NoHardcodedRealityFinding[],
+): NoHardcodedRealityAuditResult['summary'] {
+  const byKind: Partial<Record<FindingKind, number>> = {};
+  const byFile = new Map<string, number>();
+
+  for (const finding of findings) {
+    byKind[finding.kind] = (byKind[finding.kind] ?? 0) + 1;
+    byFile.set(finding.filePath, (byFile.get(finding.filePath) ?? 0) + 1);
+  }
+
+  const topFiles = [...byFile.entries()]
+    .map(([filePath, count]) => ({ filePath, findings: count }))
+    .sort((left, right) => {
+      if (right.findings !== left.findings) {
+        return right.findings - left.findings;
+      }
+      return left.filePath.localeCompare(right.filePath);
+    })
+    .slice(0, 20);
+
+  return {
+    totalFindings: findings.length,
+    byKind,
+    topFiles,
+  };
+}
+
 export function auditPulseNoHardcodedReality(rootDir: string): NoHardcodedRealityAuditResult {
-  const pulseDir = fs.existsSync(path.join(rootDir, 'scripts', 'pulse'))
-    ? path.join(rootDir, 'scripts', 'pulse')
-    : rootDir;
+  const pulseDir = path.join(rootDir, 'scripts', 'pulse');
+  if (!fs.existsSync(pulseDir)) {
+    return {
+      scannedFiles: 0,
+      findings: [],
+      summary: summarizeNoHardcodedRealityFindings([]),
+    };
+  }
   const files = walkSourceFiles(pulseDir).filter((file) => {
     const relPath = path.relative(rootDir, file);
     return !isSkippedPath(relPath);
@@ -899,5 +990,6 @@ export function auditPulseNoHardcodedReality(rootDir: string): NoHardcodedRealit
   return {
     scannedFiles: files.length,
     findings,
+    summary: summarizeNoHardcodedRealityFindings(findings),
   };
 }

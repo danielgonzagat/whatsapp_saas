@@ -195,7 +195,15 @@ export function evaluatePulseSelfTrustGate(
   parserInventory: PulseParserInventory,
   capabilityState?: PulseCapabilityState,
   flowProjection?: PulseFlowProjection,
-  selfTrustReport?: { checks?: Array<{ id: string; pass: boolean; reason?: string }> } | null,
+  selfTrustReport?: {
+    checks?: Array<{
+      id: string;
+      name?: string;
+      pass: boolean;
+      reason?: string;
+      severity?: 'critical' | 'high' | 'medium';
+    }>;
+  } | null,
   executionTrace?: PulseExecutionTrace,
 ): PulseGateResult {
   const passedParserPhases = new Set(
@@ -249,6 +257,26 @@ export function evaluatePulseSelfTrustGate(
   if (consistencyCheck && !consistencyCheck.pass) {
     return gateFail(
       `Cross-artifact consistency failed: ${consistencyCheck.reason ?? 'PULSE artifacts disagree on shared fields'}.`,
+      'checker_gap',
+    );
+  }
+
+  const executionTraceAuditCheck = selfTrustReport?.checks?.find(
+    (c) => c.id === 'execution-trace-audit-trail',
+  );
+  if (executionTraceAuditCheck && !executionTraceAuditCheck.pass) {
+    return gateFail(
+      `${executionTraceAuditCheck.name ?? 'Execution trace audit trail'} failed: ${executionTraceAuditCheck.reason ?? 'Execution trace audit trail is not trustworthy'}.`,
+      'checker_gap',
+    );
+  }
+
+  const parserHardcodedAuditCheck = selfTrustReport?.checks?.find(
+    (c) => c.id === 'parser-hardcoded-finding-audit',
+  );
+  if (parserHardcodedAuditCheck && !parserHardcodedAuditCheck.pass) {
+    return gateFail(
+      `${parserHardcodedAuditCheck.name ?? 'Parser hardcoded finding audit'} failed: ${parserHardcodedAuditCheck.reason ?? 'Parser Break emitters contain hardcoded final-truth risk'}.`,
       'checker_gap',
     );
   }

@@ -197,8 +197,15 @@ describe('path proof pipeline', () => {
     expect(
       output.readinessGate.evidence.map((entry) => [entry.id, entry.status, entry.mode]),
     ).toEqual([
-      [plannedTask.taskId, 'not_run', 'planned'],
-      [humanTask.taskId, 'not_run', 'planned'],
+      [plannedTask.taskId, 'planned', 'planned'],
+      [humanTask.taskId, 'not_available', 'inferred'],
     ]);
+    expect(output.readinessGate.summary).toEqual(
+      expect.objectContaining({
+        plannedEvidence: 1,
+        inferredEvidence: 1,
+        notAvailableEvidence: 1,
+      }),
+    );
   });
 });

@@ -7,11 +7,14 @@ import type {
   PulseAgentOrchestrationBatchRecord,
   PulseAgentOrchestrationState,
   PulseAutonomyIterationRecord,
+  PulseAutonomyMemoryConcept,
+  PulseAutonomyMemoryState,
   PulseAutonomyState,
   PulseAutonomyUnitSnapshot,
 } from './types';
 import type {
   PulseAutonomousDirective,
+  PulseAutonomousDirectiveUnit,
   PulseAutonomyArtifactSeedInput,
   PulseAgentOrchestrationArtifactSeedInput,
   PulseAutonomySummarySnapshot,
@@ -31,12 +34,13 @@ import {
 } from './autonomy-loop.utils';
 import {
   toUnitSnapshot,
-  getAiSafeUnits,
   getPreferredAutomationSafeUnits,
+  hasUnitConflict,
   buildStructuralQueueInfluence,
   buildRuntimeRealityQueueInfluence,
 } from './autonomy-loop.unit-ranking';
 import { buildPulseAutonomyMemoryState } from './autonomy-loop.memory';
+import { fingerprintStrategy } from './structural-memory';
 import type { FalsePositiveAdjudicationState } from './types.false-positive-adjudicator';
 import type { RuntimeFusionState } from './types.runtime-fusion';
 import type { StructuralMemoryState } from './types.structural-memory';
@@ -122,6 +126,125 @@ function readQueueInfluence(
     influence.runtimeRealityByUnitId.set(unitId, metadata);
   }
   return influence;
+}
+
+function readAutonomyMemoryConcepts(
+  rootDir: string,
+  previousState?: PulseAutonomyState | null,
+): PulseAutonomyMemoryConcept[] {
+  const artifact = readOptionalArtifact<PulseAutonomyMemoryState>(
+    getAutonomyMemoryArtifactPath(rootDir),
+  );
+  const derived = buildPulseAutonomyMemoryState({
+    autonomyState: previousState ?? null,
+  });
+  const conceptsById = new Map<string, PulseAutonomyMemoryConcept>();
+  for (const concept of [...(artifact?.concepts || []), ...derived.concepts]) {
+    conceptsById.set(concept.id, concept);
+  }
+  return [...conceptsById.values()];
+}
+
+function unitHasRepeatedFailedAutonomyStrategy(
+  unitId: string,
+  concepts: PulseAutonomyMemoryConcept[],
+  currentStrategy: string,
+  currentStrategyFingerprint: string,
+): boolean {
+  return concepts.some((concept) => {
+    if (
+      concept.suggestedStrategy !== 'escalated_validation' ||
+      !concept.id.startsWith(`repeated-failed-strategy-${unitId}-`) ||
+      !concept.unitIds.includes(unitId)
+    ) {
+      return false;
+    }
+    return (
+      concept.id.endsWith(currentStrategyFingerprint) || concept.summary.includes(currentStrategy)
+    );
+  });
+}
+
+function unitIsBlockedByMemory(
+  unitId: string,
+  structuralInfluence: ReturnType<typeof buildStructuralQueueInfluence>,
+  autonomyConcepts: PulseAutonomyMemoryConcept[],
+  currentStrategy: string,
+): boolean {
+  const recommendedStrategy = structuralInfluence.strategyByUnitId.get(unitId);
+  if (recommendedStrategy === 'observation_only') {
+    return true;
+  }
+
+  const currentStrategyFingerprint = fingerprintStrategy(currentStrategy);
+  if (
+    recommendedStrategy?.startsWith('avoid_strategy_fingerprint:') &&
+    recommendedStrategy.slice('avoid_strategy_fingerprint:'.length) === currentStrategyFingerprint
+  ) {
+    return true;
+  }
+
+  return unitHasRepeatedFailedAutonomyStrategy(
+    unitId,
+    autonomyConcepts,
+    currentStrategy,
+    currentStrategyFingerprint,
+  );
+}
+
+export function getMemoryAwarePreferredAutomationSafeUnits(
+  rootDir: string,
+  directive: PulseAutonomousDirective,
+  riskProfile: 'safe' | 'balanced' | 'dangerous',
+  previousState?: PulseAutonomyState | null,
+  plannerMode: 'agents_sdk' | 'deterministic' = 'deterministic',
+  strategyMode: 'normal' | 'adaptive_narrow_scope' = 'normal',
+): PulseAutonomousDirectiveUnit[] {
+  const structuralInfluence = readQueueInfluence(rootDir, directive);
+  const autonomyConcepts = readAutonomyMemoryConcepts(rootDir, previousState);
+  const currentStrategy = `${strategyMode}_${plannerMode}`;
+
+  return getPreferredAutomationSafeUnits(
+    directive,
+    riskProfile,
+    previousState,
+    structuralInfluence,
+  ).filter(
+    (unit) =>
+      !unitIsBlockedByMemory(unit.id, structuralInfluence, autonomyConcepts, currentStrategy),
+  );
+}
+
+export function selectMemoryAwareParallelUnits(
+  rootDir: string,
+  directive: PulseAutonomousDirective,
+  parallelAgents: number,
+  riskProfile: 'safe' | 'balanced' | 'dangerous',
+  previousState?: PulseAutonomyState | null,
+  plannerMode: 'agents_sdk' | 'deterministic' = 'deterministic',
+  strategyMode: 'normal' | 'adaptive_narrow_scope' = 'normal',
+): PulseAutonomousDirectiveUnit[] {
+  const preferredUnits = getMemoryAwarePreferredAutomationSafeUnits(
+    rootDir,
+    directive,
+    riskProfile,
+    previousState,
+    plannerMode,
+    strategyMode,
+  );
+  if (parallelAgents <= 1 || preferredUnits.length <= 1) {
+    return preferredUnits.slice(0, 1);
+  }
+
+  const selected: PulseAutonomousDirectiveUnit[] = [];
+  for (const unit of preferredUnits) {
+    if (selected.length >= parallelAgents) break;
+    if (selected.length === 0 || !hasUnitConflict(unit, selected)) {
+      selected.push(unit);
+    }
+  }
+
+  return selected.length > 0 ? selected : preferredUnits.slice(0, 1);
 }
 
 export function runPulseGuidance(rootDir: string): PulseAutonomousDirective {
@@ -220,20 +343,18 @@ export function buildPulseAutonomyStateSeed(
 ): PulseAutonomyState {
   const { directive } = input;
   const previousState = input.previousState as LegacyPulseAutonomyState | null | undefined;
-  const aiSafeUnits = getAiSafeUnits(directive);
   const blockedUnits = directive.blockedUnits || [];
   const history = buildSeedHistory(previousState);
   const riskProfile = input.riskProfile || previousState?.riskProfile || 'balanced';
-  const structuralInfluence = readQueueInfluence(input.rootDir ?? process.cwd(), directive);
+  const rootDir = input.rootDir ?? process.cwd();
   const nextActionableUnit = toUnitSnapshot(
-    getPreferredAutomationSafeUnits(
+    getMemoryAwarePreferredAutomationSafeUnits(
+      rootDir,
       directive,
       riskProfile,
       previousState,
-      structuralInfluence,
-    )[0] ||
-      aiSafeUnits[0] ||
-      null,
+      input.plannerMode || previousState?.plannerMode || 'deterministic',
+    )[0] || null,
   );
   const canWorkNow = Boolean(nextActionableUnit) && directive.autonomyReadiness?.verdict !== 'NAO';
   const certified = directive.currentState?.certificationStatus === 'CERTIFIED';
@@ -290,15 +411,15 @@ export function buildPulseAgentOrchestrationStateSeed(
   const { directive, previousState } = input;
   const history = buildAgentOrchestrationSeedHistory(previousState);
   const riskProfile = input.riskProfile || previousState?.riskProfile || 'balanced';
-  const structuralInfluence = readQueueInfluence(process.cwd(), directive);
-  const preferredUnits = getPreferredAutomationSafeUnits(
+  const preferredUnits = selectMemoryAwareParallelUnits(
+    input.rootDir ?? process.cwd(),
     directive,
+    input.parallelAgents || previousState?.parallelAgents || DEFAULT_PARALLEL_AGENTS,
     riskProfile,
     null,
-    structuralInfluence,
+    input.plannerMode || previousState?.plannerMode || 'deterministic',
   );
-  const nextBatchUnits = (preferredUnits.length > 0 ? preferredUnits : getAiSafeUnits(directive))
-    .slice(0, input.parallelAgents || previousState?.parallelAgents || DEFAULT_PARALLEL_AGENTS)
+  const nextBatchUnits = preferredUnits
     .map((unit) => toUnitSnapshot(unit))
     .filter((unit): unit is PulseAutonomyUnitSnapshot => Boolean(unit));
   const canWorkNow = nextBatchUnits.length > 0 && directive.autonomyReadiness?.verdict !== 'NAO';

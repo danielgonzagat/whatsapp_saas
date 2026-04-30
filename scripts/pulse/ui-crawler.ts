@@ -10,6 +10,7 @@
  */
 
 import * as path from 'path';
+import ts from 'typescript';
 import type {
   CrawlerRole,
   UICrawlerEvidence,
@@ -75,17 +76,6 @@ const DOM_HANDLER_PROPS = new Set([
   'onPointerUp',
 ]);
 
-const API_CALL_PATTERNS = [
-  /fetch\s*\(\s*(?:['"`](\/[^'"`]+)['"`]|`[^`]*\$\{[^}]*}(\/?[^`]*)`)/g,
-  /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`](\/[^'"`]+)['"`]|`[^`]*\$\{[^}]*}(\/?[^`]*)`)/g,
-  /axios(?:\.(?:get|post|put|patch|delete))?\s*\(\s*(?:['"`](\/[^'"`]+)['"`]|`[^`]*\$\{[^}]*}(\/?[^`]*)`)/g,
-  /useSWR\s*(?:<[^>]*>)?\s*\(\s*(?:['"`](\/[^'"`]+)['"`]|`[^`]*\$\{[^}]*}(\/?[^`]*)`)/g,
-  /useMutation\s*(?:<[^>]*>)?\s*\(\s*(?:['"`](\/[^'"`]+)['"`]|`[^`]*\$\{[^}]*}(\/?[^`]*)`)/g,
-  /useQuery\s*(?:<[^>]*>)?\s*\(\s*(?:['"`](\/[^'"`]+)['"`]|`[^`]*\$\{[^}]*}(\/?[^`]*)`)/g,
-];
-
-const FAKE_API_PATTERNS = [/\/mock/i, /\/fake/i, /\/stub/i, /\/fixture/i, /\/dummy/i];
-
 const NAVIGATION_PATTERNS = [
   /\brouter\s*\.\s*push\s*\(/,
   /\brouter\s*\.\s*replace\s*\(/,
@@ -96,7 +86,6 @@ const NAVIGATION_PATTERNS = [
 
 const AUTH_BOUNDARY_RE =
   /\b(?:middleware|guard|withAuth|requireAuth|useAuth|useSession|getServerSession|authOptions|canActivate|requireSession|requireUser|protectedRoute)\b/i;
-const ROUTE_GROUP_RE = /\(([^)]+)\)/g;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -240,24 +229,80 @@ function extractFormAction(line: string): string | null {
   return match ? match[1] : null;
 }
 
-/** Extract API endpoint URLs from text content. */
-function extractApiEndpoints(text: string): string[] {
-  const endpoints: string[] = [];
-  for (const pattern of API_CALL_PATTERNS) {
-    let m: RegExpExecArray | null;
-    while ((m = pattern.exec(text)) !== null) {
-      const raw = m[1] || m[2];
-      if (raw && raw.startsWith('/')) {
-        endpoints.push(raw);
-      }
+function endpointFromLiteralText(value: string): string | null {
+  return value.startsWith('/') ? value : null;
+}
+
+function endpointFromTemplateExpression(node: ts.TemplateExpression): string | null {
+  const templateParts = [node.head.text, ...node.templateSpans.map((span) => span.literal.text)];
+
+  for (const part of templateParts) {
+    if (part.startsWith('/')) {
+      return part;
     }
   }
+
+  return null;
+}
+
+function endpointFromExpression(node: ts.Expression): string | null {
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return endpointFromLiteralText(node.text);
+  }
+
+  if (ts.isTemplateExpression(node)) {
+    return endpointFromTemplateExpression(node);
+  }
+
+  return null;
+}
+
+/**
+ * Extract API endpoint URLs from TS/TSX syntax.
+ *
+ * This is a syntactic discovery pass: it records literal URL-shaped first
+ * arguments from call expressions, but it does not make final product, route,
+ * or risk decisions. Those decisions stay downstream and must use observed
+ * evidence.
+ */
+function extractApiEndpoints(text: string): string[] {
+  const endpoints: string[] = [];
+  const sourceFile = ts.createSourceFile(
+    'pulse-ui-crawler-snippet.tsx',
+    text,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TSX,
+  );
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node)) {
+      const firstArg = node.arguments[0];
+      const endpoint = firstArg ? endpointFromExpression(firstArg) : null;
+      if (endpoint) {
+        endpoints.push(endpoint);
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
   return Array.from(new Set(endpoints));
 }
 
-/** Check if an endpoint appears to be a mock/fake. */
-function isFakeEndpoint(endpoint: string): boolean {
-  return FAKE_API_PATTERNS.some((re) => re.test(endpoint));
+function isExplicitFakeSignal(sourceLine: string, handlerName: string | null): boolean {
+  const status = extractAttributeValue(sourceLine, 'data-pulse-status')?.toLowerCase();
+  if (status === 'fake') return true;
+  if (status === 'mock') return true;
+  if (status === 'stub') return true;
+
+  const handlerStatus = handlerName?.trim().toLowerCase();
+  if (handlerStatus === 'fake') return true;
+  if (handlerStatus === 'mock') return true;
+  if (handlerStatus === 'stub') return true;
+
+  return false;
 }
 
 /** Check if a handler expression is purely a navigation call. */
@@ -281,187 +326,80 @@ function buildSelector(
 // Risk classification
 // ---------------------------------------------------------------------------
 
-const CRITICAL_ROUTE_PATTERNS = [
-  /\/payments?\b/i,
-  /\/billing\b/i,
-  /\/checkout\b/i,
-  /\/carteira\b/i,
-  /\/wallet\b/i,
-  /\/auth\b/i,
-  /\/login\b/i,
-  /\/register\b/i,
-  /\/cadastr/i,
-  /\/order\b/i,
-  /\/pix\b/i,
-  /\/boleto\b/i,
-  /\/magic-link\b/i,
-  /\/reset-password\b/i,
-  /\/impersonate\b/i,
-  /\/verify-email\b/i,
-];
+interface ElementRiskEvidence {
+  kind: UIElementKind;
+  sourceLine: string;
+  handlerName: string | null;
+  apiEndpoint: string | null;
+  authRequired: boolean;
+}
 
-const CRITICAL_LABEL_PATTERNS = [
-  /pagamento/i,
-  /pagar/i,
-  /checkout/i,
-  /pix/i,
-  /boleto/i,
-  /cart[aã]o/i,
-  /credit\s*card/i,
-  /debit/i,
-  /carteira/i,
-  /saque/i,
-  /saldo/i,
-  /extrato/i,
-  /login/i,
-  /entrar/i,
-  /cadastr/i,
-  /registr/i,
-  /senha/i,
-  /password/i,
-  /assinatura/i,
-  /subscription/i,
-  /kyc/i,
-  /documento/i,
-  /cpf/i,
-  /cnpj/i,
-  /fiscal/i,
-  /dados\s*banc[aá]rios/i,
-  /bank/i,
-  /cobrança/i,
-  /cobrar/i,
-];
+function extractAttributeValue(line: string, attributeName: string): string | null {
+  const quoted = new RegExp(`${attributeName}\\s*=\\s*["'\`]([^"'\`]+)["'\`]`).exec(line);
+  if (quoted) return quoted[1];
 
-const HIGH_ROUTE_PATTERNS = [
-  /\/settings?\b/i,
-  /\/account\b/i,
-  /\/config/i,
-  /\/admin\b/i,
-  /\/whatsapp\b/i,
-  /\/produtos\/area-membros\b/i,
-  /\/products\/new\b/i,
-  /\/canvas\/editor\b/i,
-  /\/crm\b/i,
-  /\/pipeline\b/i,
-  /\/gest[aã]o/i,
-  /\/vendas\b/i,
-  /\/sales\b/i,
-  /\/an[uú]ncios\b/i,
-  /\/campaigns\b/i,
-  /\/scrapers\b/i,
-];
+  const braced = new RegExp(`${attributeName}\\s*=\\s*\\{\\s*["'\`]([^"'\`]+)["'\`]\\s*\\}`).exec(
+    line,
+  );
+  return braced ? braced[1] : null;
+}
 
-const HIGH_LABEL_PATTERNS = [
-  /salvar/i,
-  /save/i,
-  /edit/i,
-  /editar/i,
-  /delet/i,
-  /excluir/i,
-  /remover/i,
-  /remove/i,
-  /connect/i,
-  /conectar/i,
-  /desconectar/i,
-  /disconnect/i,
-  /upload/i,
-  /enviar/i,
-  /submit/i,
-  /confirmar/i,
-  /activate/i,
-  /ativar/i,
-  /desativar/i,
-  /deactivate/i,
-  /aprovar/i,
-  /approve/i,
-  /rejeitar/i,
-  /reject/i,
-  /configurar/i,
-  /configure/i,
-  /atualizar/i,
-  /update/i,
-  /modificar/i,
-  /alterar/i,
-  /assinante/i,
-  /afiliado/i,
-  /parceiro/i,
-  /convite/i,
-  /invite/i,
-  /criar/i,
-  /create/i,
-  /nova\s+campanha/i,
-  /novo\s+produto/i,
-];
+function riskFromDomAttribute(line: string): UIElementRisk | null {
+  for (const attrName of ['data-risk', 'data-pulse-risk', 'risk']) {
+    const value = extractAttributeValue(line, attrName)?.toLowerCase();
+    if (value === 'critical') return 'critical';
+    if (value === 'high') return 'high';
+    if (value === 'medium') return 'medium';
+    if (value === 'low') return 'low';
+  }
+  return null;
+}
 
-const LOW_LABEL_PATTERNS = [
-  /voltar/i,
-  /back/i,
-  /fechar/i,
-  /close/i,
-  /cancelar/i,
-  /cancel/i,
-  /ajuda/i,
-  /help/i,
-  /suporte/i,
-  /support/i,
-  /termos/i,
-  /terms/i,
-  /privacidade/i,
-  /privacy/i,
-  /cookies/i,
-  /sobre/i,
-  /about/i,
-  /logo/i,
-  /brand/i,
-  /theme/i,
-  /tema/i,
-  /modo\s+(claro|escuro)/i,
-  /(light|dark)\s*mode/i,
-];
+function extractHttpMethodSignal(text: string): string | null {
+  const attrMethod = extractAttributeValue(text, 'method');
+  if (attrMethod) return attrMethod.toUpperCase();
+
+  const propertyMethod = /\bmethod\s*:\s*["'`]([A-Za-z]+)["'`]/.exec(text);
+  return propertyMethod ? propertyMethod[1].toUpperCase() : null;
+}
+
+function isMutatingHttpMethod(method: string | null): boolean {
+  return method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE';
+}
+
+function hasDirectMutationSignal(evidence: ElementRiskEvidence): boolean {
+  const method = extractHttpMethodSignal(`${evidence.sourceLine}\n${evidence.handlerName ?? ''}`);
+  if (isMutatingHttpMethod(method)) return true;
+  if (evidence.kind === 'form' && method !== 'GET') return true;
+  if (evidence.apiEndpoint && evidence.kind !== 'link' && evidence.kind !== 'nav') return true;
+  return Boolean(evidence.handlerName && !isNavigationHandler(evidence.handlerName));
+}
 
 /**
- * Classify a UI element's risk level based on page route, label text,
- * element kind, and whether it sits behind auth.
+ * Classify a UI element's risk level from observed element evidence.
  *
- * Hierarchy (first-match wins): critical > high > medium > low
- *   - critical: payments, auth, wallet, billing, KYC, impersonation
- *   - high:     settings, data mutation, admin operations, form submissions
- *   - medium:   view/read, navigation to data pages, lists, filters
- *   - low:      cosmetic, help, navigation to static pages, read-only actions
+ * Product/domain words in routes or labels are raw signals only; they do not
+ * decide risk here. A higher risk needs DOM/source evidence such as an explicit
+ * risk attribute, mutating HTTP method, API endpoint, handler, form submission,
+ * or authenticated interactive control.
  */
-function classifyElementRisk(
-  kind: UIElementKind,
-  label: string,
-  pageUrl: string,
-  _authRequired: boolean,
-): UIElementRisk {
-  for (const pat of CRITICAL_ROUTE_PATTERNS) {
-    if (pat.test(pageUrl)) return 'critical';
-  }
-  for (const pat of CRITICAL_LABEL_PATTERNS) {
-    if (pat.test(label)) return 'critical';
-  }
+function classifyElementRisk(evidence: ElementRiskEvidence): UIElementRisk {
+  const explicitRisk = riskFromDomAttribute(evidence.sourceLine);
+  if (explicitRisk) return explicitRisk;
 
-  for (const pat of HIGH_ROUTE_PATTERNS) {
-    if (pat.test(pageUrl)) return 'high';
-  }
-  for (const pat of HIGH_LABEL_PATTERNS) {
-    if (pat.test(label)) return 'high';
-  }
-  if (kind === 'form' && !/(?:busca|filtro|search|filter|newsletter)/i.test(label)) {
+  if (hasDirectMutationSignal(evidence)) return 'high';
+  if (
+    evidence.authRequired &&
+    (evidence.kind === 'button' ||
+      evidence.kind === 'form' ||
+      evidence.kind === 'input' ||
+      evidence.kind === 'select' ||
+      evidence.kind === 'toggle')
+  ) {
     return 'high';
   }
-
-  for (const pat of LOW_LABEL_PATTERNS) {
-    if (pat.test(label)) return 'low';
-  }
-  if (kind === 'nav' || kind === 'link') {
-    const isStatic =
-      /^\/(?:terms|privacy|cookies|data-deletion|sobre|about|help|faq|blog)/i.test(pageUrl) ||
-      /navigate-to:\/(?:terms|privacy|cookies|data-deletion)/i.test(label);
-    if (isStatic) return 'low';
-  }
-
+  if (evidence.kind === 'link' || evidence.kind === 'nav') return 'low';
+  if (evidence.kind === 'input' || evidence.kind === 'select') return 'low';
   return 'medium';
 }
 
@@ -502,6 +440,48 @@ export function classifyRoleFromRoute(url: string): CrawlerRole {
 // Auth detection
 // ---------------------------------------------------------------------------
 
+function parseNextRouteGroups(relFromApp: string): string[] {
+  return relFromApp.split(path.sep).flatMap((segment) => {
+    const trimmed = segment.trim();
+    if (trimmed.length > 2 && trimmed.startsWith('(') && trimmed.endsWith(')')) {
+      return [trimmed.slice(1, -1).toLowerCase()];
+    }
+    return [];
+  });
+}
+
+function routeTokenFromAppSegment(segment: string): string | null {
+  if (segment === '.' || segment === '') {
+    return null;
+  }
+  if (segment.startsWith('(') && segment.endsWith(')')) {
+    return null;
+  }
+  if (segment.startsWith('[[...') && segment.endsWith(']]')) {
+    return `:${segment.slice(5, -2)}`;
+  }
+  if (segment.startsWith('[...') && segment.endsWith(']')) {
+    return `:${segment.slice(4, -1)}`;
+  }
+  if (segment.startsWith('[') && segment.endsWith(']')) {
+    return `:${segment.slice(1, -1)}`;
+  }
+  return segment;
+}
+
+function routeFromAppDir(dir: string): string {
+  const tokens = dir.split(path.sep).flatMap((segment) => {
+    const token = routeTokenFromAppSegment(segment);
+    return token ? [token] : [];
+  });
+
+  if (tokens.length === 0) {
+    return '/';
+  }
+
+  return `/${tokens.join('/')}`;
+}
+
 /**
  * Determine if a page file or its route group requires authentication.
  * Checks for middleware imports, auth guards, and route group prefixes.
@@ -509,9 +489,7 @@ export function classifyRoleFromRoute(url: string): CrawlerRole {
 function detectAuthRequired(filePath: string, relFromApp: string, content: string): boolean {
   if (AUTH_BOUNDARY_RE.test(content)) return true;
 
-  const routeGroups = Array.from(relFromApp.matchAll(ROUTE_GROUP_RE)).map((match) =>
-    match[1]?.toLowerCase(),
-  );
+  const routeGroups = parseNextRouteGroups(relFromApp);
   if (routeGroups.some((group) => group && AUTH_BOUNDARY_RE.test(group))) return true;
 
   const normalizedPath = filePath.toLowerCase();
@@ -547,16 +525,7 @@ export function discoverPages(rootDir: string): UIDiscoveredPage[] {
     const relFromApp = path.relative(appDir, absFile);
     const dir = path.dirname(relFromApp);
 
-    let route =
-      '/' +
-      dir
-        .replace(/\([^)]+\)\/?/g, '')
-        .replace(/\[\.\.\.(\w+)\]/g, ':$1')
-        .replace(/\[(\w+)\]/g, ':$1')
-        .replace(/\/+/g, '/')
-        .replace(/\/$/, '');
-
-    if (route === '/.' || route === '') route = '/';
+    const route = routeFromAppDir(dir);
 
     if (route.startsWith('/api/') || route.startsWith('/auth/') || dir.startsWith('e2e')) continue;
 
@@ -668,7 +637,7 @@ function resolveComponentFiles(
  */
 export function parseElementsFromFile(
   filePath: string,
-  pageUrl = '/',
+  _pageUrl = '/',
   authRequired = false,
 ): UIDiscoveredElement[] {
   let content: string;
@@ -740,9 +709,9 @@ export function parseElementsFromFile(
 
     if (!handlerName && kind !== 'input' && kind !== 'select') {
       status = 'no_handler';
-    } else if (apiEndpoint && isFakeEndpoint(apiEndpoint)) {
+    } else if (isExplicitFakeSignal(line, handlerName)) {
       status = 'fake';
-      errorMessage = `Endpoint ${apiEndpoint} appears to be a mock/stub`;
+      errorMessage = 'Element carries explicit fake/mock/stub evidence';
     } else if (handlerName && isNavigationHandler(handlerName)) {
       status = 'works';
     } else if (handlerName || apiEndpoint) {
@@ -763,7 +732,13 @@ export function parseElementsFromFile(
       linkedEndpoint: apiEndpoint,
       linkedFilePath: null,
       errorMessage,
-      risk: classifyElementRisk(kind, label, pageUrl, authRequired),
+      risk: classifyElementRisk({
+        kind,
+        sourceLine: line,
+        handlerName,
+        apiEndpoint,
+        authRequired,
+      }),
     });
   }
 
@@ -910,9 +885,6 @@ function classifyHandlerStatus(
   }
   if (!apiEndpoint && element.handlerAttached) {
     return { status: 'no_handler', reason: 'Handler exists but no API endpoint found' };
-  }
-  if (apiEndpoint && isFakeEndpoint(apiEndpoint)) {
-    return { status: 'fake', reason: `Calls fake endpoint: ${apiEndpoint}` };
   }
   return { status: 'works', reason: null };
 }
@@ -1071,7 +1043,7 @@ export function buildUICrawlerCatalog(rootDir: string): UICrawlerEvidence {
 
 /** Find the page.tsx file for a given route in the App Router. */
 function findPageFile(appDir: string, url: string): string | null {
-  const normalizedUrl = url === '/' ? '' : url.replace(/^\//, '');
+  const normalizedUrl = url === '/' ? '' : url.startsWith('/') ? url.slice(1) : url;
   const segments = normalizedUrl ? normalizedUrl.split('/') : [];
 
   const routeGroups = discoverRouteGroups(appDir);

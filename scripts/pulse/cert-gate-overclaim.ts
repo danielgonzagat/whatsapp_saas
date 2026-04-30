@@ -89,7 +89,9 @@ function resolveProofReadinessSummary(
   return directive.proofReadiness ?? directive.autonomyProof?.proofReadiness;
 }
 
-function hasProductionProofReadinessGap(summary: PulseProofReadinessSummary | undefined): boolean {
+export function hasProductionProofReadinessGap(
+  summary: PulseProofReadinessSummary | undefined,
+): boolean {
   if (!summary) {
     return false;
   }
@@ -107,7 +109,7 @@ function hasProductionProofReadinessGap(summary: PulseProofReadinessSummary | un
   );
 }
 
-function formatProofReadinessGap(summary: PulseProofReadinessSummary): string {
+export function formatProofReadinessGap(summary: PulseProofReadinessSummary): string {
   return [
     `status=${summary.status ?? 'unknown'}`,
     `canAdvance=${String(summary.canAdvance ?? 'unknown')}`,

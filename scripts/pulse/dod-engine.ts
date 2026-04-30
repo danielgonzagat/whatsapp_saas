@@ -895,6 +895,32 @@ function maxStructuralChecks(riskLevel: DoDRiskLevel): number {
   return STRUCTURAL_CHECKS.filter((c) => c[riskLevel] !== 'not_required').length;
 }
 
+function structuralEvidenceProfile(
+  checks: Record<string, boolean>,
+  riskLevel: DoDRiskLevel,
+): {
+  hasAnyEvidence: boolean;
+  hasMajorityEvidence: boolean;
+  hasCompleteEvidence: boolean;
+} {
+  const applicable = maxStructuralChecks(riskLevel);
+  const observed = countRequiredStructuralChecks(checks, riskLevel);
+
+  if (applicable === 0) {
+    return {
+      hasAnyEvidence: true,
+      hasMajorityEvidence: true,
+      hasCompleteEvidence: true,
+    };
+  }
+
+  return {
+    hasAnyEvidence: observed > 0,
+    hasMajorityEvidence: observed * 2 >= applicable,
+    hasCompleteEvidence: observed === applicable,
+  };
+}
+
 /**
  * Classify a capability based on structural evidence, gate status, and
  * runtime observation.
@@ -917,12 +943,10 @@ function classifyCapability(
   const runtimeObserved = gates.find((g) => g.name === 'runtime_observed')?.status === 'pass';
   const blockingPass = gates.every((g) => !g.blocking || g.status !== 'fail');
 
-  const structuralCount = countRequiredStructuralChecks(structuralChecks, riskLevel);
-  const maxStruct = maxStructuralChecks(riskLevel);
-  const structuralRatio = maxStruct > 0 ? structuralCount / maxStruct : 1;
+  const structuralProfile = structuralEvidenceProfile(structuralChecks, riskLevel);
 
   // phantom: truth mode is inferred with no structural backing
-  if (truthMode === 'inferred' && structuralRatio < 0.2) {
+  if (truthMode === 'inferred' && !structuralProfile.hasAnyEvidence) {
     return 'phantom';
   }
 
@@ -930,7 +954,7 @@ function classifyCapability(
   if (
     allRequiredPass &&
     blockingPass &&
-    structuralRatio >= 0.8 &&
+    structuralProfile.hasCompleteEvidence &&
     runtimeObserved &&
     requiredBeforeReal.length === 0
   ) {
@@ -938,12 +962,12 @@ function classifyCapability(
   }
 
   // real: enough structural evidence AND runtime observed
-  if (structuralRatio >= 0.5 && runtimeObserved && requiredBeforeReal.length === 0) {
+  if (structuralProfile.hasMajorityEvidence && runtimeObserved && requiredBeforeReal.length === 0) {
     return 'real';
   }
 
   // latent: some structural evidence (but not enough for real)
-  if (structuralRatio >= 0.2) {
+  if (structuralProfile.hasAnyEvidence) {
     return 'latent';
   }
 

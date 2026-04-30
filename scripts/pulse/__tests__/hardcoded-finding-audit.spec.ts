@@ -82,6 +82,49 @@ describe('hardcoded finding audit', () => {
     expect(kinds).toContain('fixed_break_type_mass_emitter');
   });
 
+  it('detects direct breaks.push type strings as hardcoded final break identities', () => {
+    const artifact = buildHardcodedFindingAuditArtifact([
+      {
+        filePath: 'scripts/pulse/parsers/final-break-checker.ts',
+        source: [
+          'export function parse(content: string): unknown[] {',
+          '  const breaks = [];',
+          "  breaks.push({ type: 'FINAL_STATIC_BREAK', evidence: content });",
+          '  return breaks;',
+          '}',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(artifact.files[0]?.findings).toEqual([
+      expect.objectContaining({
+        kind: 'hardcoded_break_push_type_risk',
+        symbol: 'FINAL_STATIC_BREAK',
+        line: 3,
+        column: 15,
+      }),
+    ]);
+  });
+
+  it('does not flag evidence objects without final break type authority', () => {
+    const artifact = buildHardcodedFindingAuditArtifact([
+      {
+        filePath: 'scripts/pulse/parsers/evidence-only-checker.ts',
+        source: [
+          'export function parse(content: string): unknown[] {',
+          "  const evidence = { source: 'runtime', sample: content };",
+          '  const breaks = [];',
+          '  breaks.push(evidence);',
+          '  return breaks;',
+          '}',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(artifact.files).toEqual([]);
+    expect(artifact.totalFindings).toBe(0);
+  });
+
   it('ignores non-parser sources until integration chooses a wider surface', () => {
     const artifact = buildHardcodedFindingAuditArtifact([
       {

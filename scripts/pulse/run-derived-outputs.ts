@@ -22,10 +22,15 @@ import { buildFunctionalMap } from './functional-map';
 import { generateFunctionalMapReport, renderFunctionalMapSummary } from './functional-map-report';
 import { PulseExecutionTracer, runPhaseWithTrace } from './execution-trace';
 import { renderDashboard } from './dashboard';
-import { generateArtifacts } from './artifacts';
+import {
+  generateArtifacts,
+  type PulseArtifactPaths,
+  type PulseArtifactSnapshot,
+} from './artifacts';
 import { formatSelfTrustReport, type SelfTrustReport } from './self-trust';
 import { readTextFile } from './safe-fs';
 import type { flags } from './cli-args';
+import { refreshProofReadinessArtifact } from './proof-readiness-artifact';
 
 export interface DerivedOutputsInput {
   config: PulseConfig;
@@ -35,6 +40,15 @@ export interface DerivedOutputsInput {
   tracer: PulseExecutionTracer;
   flags: typeof flags;
   queryModeRequested: boolean;
+}
+
+function generateArtifactsWithProofReadiness(
+  snapshot: PulseArtifactSnapshot,
+  rootDir: string,
+): PulseArtifactPaths {
+  const artifactPaths = generateArtifacts(snapshot, rootDir);
+  refreshProofReadinessArtifact(rootDir);
+  return artifactPaths;
 }
 
 export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<void> {
@@ -228,7 +242,7 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
       renderFunctionalMapSummary(fmapResult);
       const fmapPath = generateFunctionalMapReport(fmapResult, config.rootDir);
       console.log(`  Functional map saved to: ${fmapPath}`);
-      const artifactPaths = generateArtifacts(finalScanResult, config.rootDir);
+      const artifactPaths = generateArtifactsWithProofReadiness(finalScanResult, config.rootDir);
       console.log(`  Report saved to: ${artifactPaths.reportPath}`);
     }
     process.exit(0);
@@ -257,27 +271,27 @@ export async function runDerivedOutputs(input: DerivedOutputsInput): Promise<voi
       ),
     );
   } else if (flags.guidance) {
-    const artifactPaths = generateArtifacts(finalScanResult, config.rootDir);
+    const artifactPaths = generateArtifactsWithProofReadiness(finalScanResult, config.rootDir);
     const directive = JSON.parse(readTextFile(artifactPaths.cliDirectivePath, 'utf8'));
     console.log(JSON.stringify(directive, null, 2));
   } else if (flags.prove) {
-    const artifactPaths = generateArtifacts(finalScanResult, config.rootDir);
+    const artifactPaths = generateArtifactsWithProofReadiness(finalScanResult, config.rootDir);
     const directive = JSON.parse(readTextFile(artifactPaths.cliDirectivePath, 'utf8'));
     console.log(JSON.stringify(directive.autonomyProof, null, 2));
   } else if (flags.vision) {
-    generateArtifacts(finalScanResult, config.rootDir);
+    generateArtifactsWithProofReadiness(finalScanResult, config.rootDir);
     console.log(JSON.stringify(finalScanResult.productVision, null, 2));
   } else if (flags.selfTrust) {
     console.log('\n Self-Trust Verification Report\n');
     console.log(formatSelfTrustReport(selfTrustReport));
   } else if (flags.report) {
-    const artifactPaths = generateArtifacts(finalScanResult, config.rootDir);
+    const artifactPaths = generateArtifactsWithProofReadiness(finalScanResult, config.rootDir);
     renderDashboard(health, certification, { verbose: flags.verbose });
     console.log(`  Report saved to: ${artifactPaths.reportPath}`);
   } else {
     renderDashboard(health, certification, { verbose: flags.verbose });
     if (!flags.watch) {
-      const artifactPaths = generateArtifacts(finalScanResult, config.rootDir);
+      const artifactPaths = generateArtifactsWithProofReadiness(finalScanResult, config.rootDir);
       console.log(`  Report saved to: ${artifactPaths.reportPath}`);
     }
   }

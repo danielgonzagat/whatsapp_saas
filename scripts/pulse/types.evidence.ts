@@ -35,6 +35,7 @@ import type {
   PulseRecoveryEvidence,
   PulseScenarioResult,
 } from './types.convergence';
+import type { PulseNoHardcodedRealityState } from './no-hardcoded-reality-state';
 
 /** Pulse actor evidence shape. */
 export interface PulseActorEvidence {
@@ -389,4 +390,6 @@ export interface PulseCertification {
   dynamicBlockingReasons: string[];
   /** PULSE self-trust report property. */
   selfTrustReport?: PulseSelfTrustReport | null;
+  /** No-hardcoded-reality state used by certification and downstream artifacts. */
+  noHardcodedRealityState?: PulseNoHardcodedRealityState | null;
 }

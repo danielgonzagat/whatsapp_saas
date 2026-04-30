@@ -25,7 +25,7 @@ import { buildRuntimeProbesArtifact } from './runtime-probes';
 import { createRunIdentity, type PulseRunIdentity } from './run-identity';
 import { buildFindingEventSurface } from './finding-event-surface';
 import { synthesizeDiagnosticFromBreaks } from './legacy-break-adapter';
-import { auditPulseNoHardcodedReality } from './no-hardcoded-reality-audit';
+import { buildPulseNoHardcodedRealityState } from './no-hardcoded-reality-state';
 import { synthesizeProofPlan } from './proof-synthesizer';
 import {
   buildDirectiveContextFabricPatch,
@@ -171,39 +171,6 @@ function buildFindingValidationState(snapshot: PulseArtifactSnapshot): unknown {
   });
 }
 
-function buildNoHardcodedRealityState(rootDir: string, generatedAt: string): unknown {
-  const audit = auditPulseNoHardcodedReality(rootDir);
-  const hardcodeEvents = audit.findings.slice(0, 100).map((finding) => {
-    const samples = finding.samples.join(', ');
-    return {
-      eventName: `Hardcoded reality candidate at ${finding.filePath}:${finding.line}`,
-      evidence: `${finding.context}${samples ? ` -> ${samples}` : ''}`,
-      filePath: finding.filePath,
-      line: finding.line,
-      column: finding.column,
-      samples: finding.samples,
-      truthMode: 'confirmed_static',
-      actionability: 'replace_with_dynamic_discovery',
-    };
-  });
-
-  return normalizeCanonicalArtifactValue({
-    artifact: 'PULSE_NO_HARDCODED_REALITY',
-    version: 1,
-    generatedAt,
-    operationalIdentity: 'dynamic_hardcode_evidence_event',
-    scannedFiles: audit.scannedFiles,
-    totalEvents: audit.findings.length,
-    hardcodeEvents,
-    policy: {
-      fixedClassifierIsOperationalTruth: false,
-      regexCanDetectButCannotDecide: true,
-      parserCanObserveButCannotCondemn: true,
-      diagnosticMustBeGeneratedFromEvidence: true,
-    },
-  });
-}
-
 /** Generate artifacts. */
 export function generateArtifacts(
   snapshot: PulseArtifactSnapshot,
@@ -221,20 +188,31 @@ export function generateArtifacts(
     'agent-orchestration-state',
   );
   const cleanupReport = cleanupPulseArtifacts(registry);
+  const noHardcodedRealityState =
+    snapshot.certification.noHardcodedRealityState ??
+    buildPulseNoHardcodedRealityState(rootDir, snapshot.certification.timestamp);
+  const snapshotWithNoHardcodedRealityState: PulseArtifactSnapshot = {
+    ...snapshot,
+    certification: {
+      ...snapshot.certification,
+      noHardcodedRealityState,
+    },
+  };
   const convergencePlan = buildConvergencePlan({
     health: snapshot.health,
     resolvedManifest: snapshot.resolvedManifest,
-    scopeState: snapshot.scopeState,
-    certification: snapshot.certification,
+    scopeState: snapshotWithNoHardcodedRealityState.scopeState,
+    certification: snapshotWithNoHardcodedRealityState.certification,
     capabilityState: snapshot.capabilityState,
     flowProjection: snapshot.flowProjection,
     parityGaps: snapshot.parityGaps,
     externalSignalState: snapshot.externalSignalState,
     executionMatrix: snapshot.executionMatrix,
+    noHardcodedRealityState,
   });
-  const authority = deriveAuthorityState(snapshot, convergencePlan);
+  const authority = deriveAuthorityState(snapshotWithNoHardcodedRealityState, convergencePlan);
   const machineReadiness = buildPulseMachineReadiness(
-    snapshot,
+    snapshotWithNoHardcodedRealityState,
     convergencePlan,
     previousAutonomyState,
   );
@@ -242,9 +220,18 @@ export function generateArtifacts(
   const reportPath = writeRegisteredArtifact(
     registry,
     'report',
-    buildReport(snapshot, convergencePlan, cleanupReport, previousAutonomyState),
+    buildReport(
+      snapshotWithNoHardcodedRealityState,
+      convergencePlan,
+      cleanupReport,
+      previousAutonomyState,
+    ),
   );
-  const certificateContent = buildCertificate(snapshot, convergencePlan, previousAutonomyState);
+  const certificateContent = buildCertificate(
+    snapshotWithNoHardcodedRealityState,
+    convergencePlan,
+    previousAutonomyState,
+  );
   const certificatePath = writeRegisteredArtifact(
     registry,
     'certificate',
@@ -258,10 +245,11 @@ export function generateArtifacts(
     identity,
   );
   const directiveContent = buildDirective(
-    snapshot,
+    snapshotWithNoHardcodedRealityState,
     convergencePlan,
     previousAutonomyState,
     machineReadiness,
+    noHardcodedRealityState,
   );
   const cliDirectivePath = writeRegisteredArtifact(
     registry,
@@ -450,11 +438,7 @@ export function generateArtifacts(
   writeRegisteredArtifact(
     registry,
     'no-hardcoded-reality-state',
-    JSON.stringify(
-      buildNoHardcodedRealityState(rootDir, snapshot.certification.timestamp),
-      null,
-      2,
-    ),
+    JSON.stringify(normalizeCanonicalArtifactValue(noHardcodedRealityState), null, 2),
     identity,
   );
   const autonomyState = buildPulseAutonomyStateSeed({

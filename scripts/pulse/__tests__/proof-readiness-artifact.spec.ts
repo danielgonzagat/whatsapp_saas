@@ -9,7 +9,11 @@ import {
   mergePathProofRunnerResults,
   type PathProofRunnerResult,
 } from '../path-proof-evidence';
-import { PROOF_READINESS_ARTIFACT, buildProofReadinessArtifact } from '../proof-readiness-artifact';
+import {
+  PROOF_READINESS_ARTIFACT,
+  buildProofReadinessArtifact,
+  refreshProofReadinessArtifact,
+} from '../proof-readiness-artifact';
 import type { PathProofPlan, PathProofTask } from '../path-proof-runner';
 
 const tempRoots: string[] = [];
@@ -207,5 +211,81 @@ describe('proof readiness artifact', () => {
       plannedTask.taskId,
       unexecutedTask.taskId,
     ]);
+  });
+
+  it('exposes planned, inferred, and not_available proof debt from path proof evidence', () => {
+    const plannedTask = makeTask({
+      taskId: 'path-proof:endpoint:planned',
+      pathId: 'matrix:path:planned',
+    });
+    const notRunTask = makeTask({
+      taskId: 'path-proof:endpoint:not-run',
+      pathId: 'matrix:path:not-run',
+    });
+    const humanTask = makeTask({
+      taskId: 'path-proof:human:provider-console',
+      pathId: 'matrix:path:provider-console',
+      mode: 'human_required',
+      autonomousExecutionAllowed: false,
+    });
+    const plan = makePlan([plannedTask, notRunTask, humanTask]);
+    const evidence = mergePathProofRunnerResults(
+      plan,
+      [
+        result(plannedTask, { status: 'planned_only', executed: false, plannedOnly: true }),
+        result(notRunTask, { status: 'not_run', executed: false }),
+      ],
+      '2026-04-29T22:06:00.000Z',
+    );
+
+    const artifact = buildProofReadinessArtifact(makeTempRoot(), {
+      plan,
+      evidenceArtifact: evidence,
+      generatedAt: '2026-04-29T22:07:00.000Z',
+      writeArtifact: false,
+    });
+
+    expect(artifact.summary).toEqual(
+      expect.objectContaining({
+        plannedEvidence: 1,
+        inferredEvidence: 2,
+        notAvailableEvidence: 1,
+        nonObservedEvidence: 3,
+        plannedOrUnexecutedEvidence: 3,
+      }),
+    );
+    expect(
+      artifact.readinessGate.evidence.map((entry) => [
+        entry.id,
+        entry.status,
+        entry.evidenceMode,
+        entry.mode,
+      ]),
+    ).toEqual([
+      [plannedTask.taskId, 'planned', 'planned', 'planned'],
+      [notRunTask.taskId, 'inferred', 'inferred', 'inferred'],
+      [humanTask.taskId, 'not_available', 'not_available', 'inferred'],
+    ]);
+  });
+
+  it('regenerates proof readiness only when path proof inputs are available', () => {
+    const rootDir = makeTempRoot();
+
+    expect(refreshProofReadinessArtifact(rootDir)).toBeNull();
+
+    const observedTask = makeTask();
+    const plan = makePlan([observedTask]);
+    const evidence = mergePathProofRunnerResults(
+      plan,
+      [result(observedTask)],
+      '2026-04-29T22:08:00.000Z',
+    );
+    writeJson(rootDir, PATH_PROOF_TASKS_ARTIFACT, plan);
+    writeJson(rootDir, PATH_PROOF_EVIDENCE_ARTIFACT, evidence);
+
+    const artifact = refreshProofReadinessArtifact(rootDir);
+
+    expect(artifact?.artifact).toBe('PULSE_PROOF_READINESS');
+    expect(fs.existsSync(path.join(rootDir, PROOF_READINESS_ARTIFACT))).toBe(true);
   });
 });

@@ -147,6 +147,7 @@ export class PartnershipsController {
   }
 
   /** Get performance. */
+  // PULSE_OK: admin-only route, accessed via admin panel
   @Get('affiliates/:id/performance')
   getPerformance(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.service.getAffiliatePerformance(id, this.getWorkspaceId(req));

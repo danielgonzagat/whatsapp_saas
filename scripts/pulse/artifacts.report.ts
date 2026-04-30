@@ -600,6 +600,7 @@ export function buildCertificate(
       gates: snapshot.certification.gates,
       criticalFailures: snapshot.certification.criticalFailures,
       dynamicBlockingReasons: snapshot.certification.dynamicBlockingReasons,
+      noHardcodedRealityState: snapshot.certification.noHardcodedRealityState ?? null,
       selfTrustReport: snapshot.certification.selfTrustReport || null,
       scopeStateSummary: snapshot.scopeState.summary,
       codacySummary: snapshot.certification.codacySummary,

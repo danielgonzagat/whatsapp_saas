@@ -31,6 +31,13 @@ import type { PulseRunIdentity } from './run-identity';
 import type { QueueUnit } from './artifacts.queue';
 import { buildDirectiveProofSurface } from './directive-proof-surface';
 import { buildFindingEventSurface } from './finding-event-surface';
+import type { PulseProofReadinessSummary } from './cert-gate-overclaim';
+import {
+  formatNoHardcodedRealityBlocker,
+  hasNoHardcodedRealityBlocker,
+  summarizeNoHardcodedRealityState,
+  type PulseNoHardcodedRealityState,
+} from './no-hardcoded-reality-state';
 import type { PathProofPlan } from './path-proof-runner';
 import type { PathCoverageState } from './types.path-coverage-engine';
 import { safeJoin } from './safe-path';
@@ -51,6 +58,7 @@ type DirectivePathProofSurface = ReturnType<typeof buildDirectiveProofSurface>;
 const CURRENT_PULSE_ARTIFACT_DIR = '.pulse/current';
 const PATH_PROOF_TASKS_ARTIFACT = 'PULSE_PATH_PROOF_TASKS.json';
 const PATH_COVERAGE_ARTIFACT = 'PULSE_PATH_COVERAGE.json';
+const PROOF_READINESS_ARTIFACT = 'PULSE_PROOF_READINESS.json';
 
 const WEAK_COMPAT_MACHINE_PROOF_DEBT_FILES = [
   'scripts/pulse/artifacts.autonomy.ts',
@@ -120,6 +128,141 @@ function artifactJsonReplacer(_key: string, value: unknown): unknown {
 
 function readCurrentPulseArtifact<T>(artifactName: string): T | null {
   return readOptionalJson<T>(safeJoin(process.cwd(), CURRENT_PULSE_ARTIFACT_DIR, artifactName));
+}
+
+type DirectiveProofReadinessArtifact = {
+  summary?: Partial<PulseProofReadinessSummary>;
+  readinessGate?: {
+    canAdvance?: boolean;
+    status?: string;
+    summary?: Partial<PulseProofReadinessSummary>;
+  };
+};
+
+type DirectiveAutonomyClaims = {
+  productionAutonomyVerdict: 'SIM' | 'NAO';
+  productionAutonomyReason: string;
+  canDeclareComplete: boolean;
+  autonomyReadiness: ReturnType<typeof buildAutonomyReadiness>;
+  autonomyProof: PulseAutonomyProof & { proofReadiness?: PulseProofReadinessSummary };
+};
+
+function finiteCount(value: unknown): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+}
+
+function firstFiniteCount(...values: unknown[]): number {
+  return values.map(finiteCount).find((value) => value > 0) ?? 0;
+}
+
+export function buildProofReadinessSummaryForDirective(
+  artifact: DirectiveProofReadinessArtifact | null,
+): PulseProofReadinessSummary | null {
+  if (!artifact) {
+    return null;
+  }
+
+  const source = artifact.summary ?? artifact.readinessGate?.summary;
+  if (!source && artifact.readinessGate?.canAdvance === undefined) {
+    return null;
+  }
+
+  return {
+    canAdvance: source?.canAdvance ?? artifact.readinessGate?.canAdvance,
+    status: source?.status ?? artifact.readinessGate?.status,
+    plannedEvidence: finiteCount(source?.plannedEvidence),
+    inferredEvidence: finiteCount(source?.inferredEvidence),
+    notAvailableEvidence: finiteCount(source?.notAvailableEvidence),
+    nonObservedEvidence: finiteCount(source?.nonObservedEvidence),
+    executableUnproved: finiteCount(source?.executableUnproved),
+    plannedOrUnexecutedEvidence: finiteCount(source?.plannedOrUnexecutedEvidence),
+    blockedHumanRequired: finiteCount(source?.blockedHumanRequired),
+    blockedNotExecutable: finiteCount(source?.blockedNotExecutable),
+  };
+}
+
+function hasProofReadinessProductionBlocker(summary: PulseProofReadinessSummary | null): boolean {
+  if (!summary) {
+    return false;
+  }
+
+  return (
+    summary.canAdvance === false ||
+    (summary.status !== undefined && summary.status !== 'ready') ||
+    firstFiniteCount(summary.plannedEvidence, summary.plannedOrUnexecutedEvidence) > 0 ||
+    finiteCount(summary.inferredEvidence) > 0 ||
+    finiteCount(summary.notAvailableEvidence) > 0 ||
+    firstFiniteCount(summary.nonObservedEvidence, summary.plannedOrUnexecutedEvidence) > 0 ||
+    finiteCount(summary.executableUnproved) > 0 ||
+    finiteCount(summary.blockedHumanRequired) > 0 ||
+    finiteCount(summary.blockedNotExecutable) > 0
+  );
+}
+
+function proofReadinessProductionBlockerReason(summary: PulseProofReadinessSummary): string {
+  return [
+    `proofReadiness status=${summary.status ?? 'unknown'}`,
+    `canAdvance=${String(summary.canAdvance ?? 'unknown')}`,
+    `planned=${firstFiniteCount(summary.plannedEvidence, summary.plannedOrUnexecutedEvidence)}`,
+    `inferred=${finiteCount(summary.inferredEvidence)}`,
+    `not_available=${finiteCount(summary.notAvailableEvidence)}`,
+    `nonObserved=${firstFiniteCount(summary.nonObservedEvidence, summary.plannedOrUnexecutedEvidence)}`,
+    `executableUnproved=${finiteCount(summary.executableUnproved)}`,
+  ].join(', ');
+}
+
+function directiveVerdict(value: string): 'SIM' | 'NAO' {
+  return value === 'SIM' ? 'SIM' : 'NAO';
+}
+
+export function applyProofReadinessToAutonomyClaims(
+  autonomyReadiness: ReturnType<typeof buildAutonomyReadiness>,
+  autonomyProof: PulseAutonomyProof,
+  proofReadiness: PulseProofReadinessSummary | null,
+): DirectiveAutonomyClaims {
+  const productionBlocked = hasProofReadinessProductionBlocker(proofReadiness);
+  if (!productionBlocked || !proofReadiness) {
+    return {
+      productionAutonomyVerdict: directiveVerdict(autonomyProof.verdicts.productionAutonomy),
+      productionAutonomyReason: autonomyProof.productionAutonomyReason,
+      canDeclareComplete: autonomyProof.verdicts.canDeclareComplete,
+      autonomyReadiness,
+      autonomyProof: proofReadiness
+        ? {
+            ...autonomyProof,
+            proofReadiness,
+          }
+        : autonomyProof,
+    };
+  }
+
+  const reason = `NAO: production proof readiness is not fully observed (${proofReadinessProductionBlockerReason(proofReadiness)}).`;
+  const productionAutonomyReason =
+    autonomyProof.verdicts.productionAutonomy === 'SIM'
+      ? reason
+      : `${autonomyProof.productionAutonomyReason} | ${reason}`;
+
+  return {
+    productionAutonomyVerdict: 'NAO',
+    productionAutonomyReason,
+    canDeclareComplete: false,
+    autonomyReadiness: {
+      ...autonomyReadiness,
+      canDeclareComplete: false,
+      warnings: unique([...autonomyReadiness.warnings, reason]),
+    },
+    autonomyProof: {
+      ...autonomyProof,
+      productionAutonomyAnswer: 'NAO',
+      productionAutonomyReason,
+      verdicts: {
+        ...autonomyProof.verdicts,
+        productionAutonomy: 'NAO',
+        canDeclareComplete: false,
+      },
+      proofReadiness,
+    },
+  };
 }
 
 export function buildPathProofSurfaceForDirective(
@@ -724,6 +867,7 @@ export function buildDirective(
   convergencePlan: PulseConvergencePlan,
   previousAutonomyState: PulseAutonomyState | null,
   providedPulseMachineReadiness?: PulseMachineReadiness,
+  noHardcodedRealityState?: PulseNoHardcodedRealityState,
 ): string {
   const decisionQueue = buildDecisionQueue(convergencePlan);
   const autonomyQueue = buildAutonomyQueue(convergencePlan);
@@ -739,6 +883,23 @@ export function buildDirective(
     autonomyQueue,
     previousAutonomyState,
   );
+  const proofReadiness = buildProofReadinessSummaryForDirective(
+    readCurrentPulseArtifact<DirectiveProofReadinessArtifact>(PROOF_READINESS_ARTIFACT),
+  );
+  const noHardcodedReality = (() => {
+    const summary = summarizeNoHardcodedRealityState(noHardcodedRealityState);
+    const blocksProduction = hasNoHardcodedRealityBlocker(summary);
+    return {
+      summary,
+      blocksProduction,
+      reason: blocksProduction ? formatNoHardcodedRealityBlocker(summary) : null,
+    };
+  })();
+  const autonomyClaims = applyProofReadinessToAutonomyClaims(
+    autonomyReadiness,
+    autonomyProof,
+    proofReadiness,
+  );
   const findingEventSurface = buildFindingEventSurface(snapshot.health.breaks, 12);
   const nextAutonomousUnits = autonomyQueue
     .slice(0, 12)
@@ -751,12 +912,12 @@ export function buildDirective(
   const pulseMachineNextWork = [
     ...buildPulseMachineNextWork(pulseMachineReadiness),
     ...buildPulseCertificationProofDebtNextWork(snapshot.certification),
-    ...buildPulseAutonomyProofDebtNextWork(autonomyProof),
+    ...buildPulseAutonomyProofDebtNextWork(autonomyClaims.autonomyProof),
   ];
   const machineFocusRequired =
     pulseMachineReadiness.status !== 'READY' ||
     pulseMachineNextWork.length > 0 ||
-    autonomyProof.verdicts.productionAutonomy !== 'SIM' ||
+    autonomyClaims.productionAutonomyVerdict !== 'SIM' ||
     autonomyProof.verdicts.zeroPromptProductionGuidance !== 'SIM';
   const nextExecutableUnits =
     machineFocusRequired && pulseMachineNextWork.length > 0
@@ -852,14 +1013,24 @@ export function buildDirective(
       autonomousNextStepVerdict: autonomyReadiness.verdict,
       zeroPromptProductionGuidanceVerdict: autonomyProof.verdicts.zeroPromptProductionGuidance,
       zeroPromptProductionGuidanceReason: autonomyProof.zeroPromptProductionGuidanceReason,
-      productionAutonomyVerdict: autonomyProof.verdicts.productionAutonomy,
-      productionAutonomyReason: autonomyProof.productionAutonomyReason,
+      productionAutonomyVerdict: autonomyClaims.productionAutonomyVerdict,
+      productionAutonomyReason: autonomyClaims.productionAutonomyReason,
       canWorkNow: autonomyProof.verdicts.canWorkNow,
       canContinueUntilReady: autonomyProof.verdicts.canContinueUntilReady,
       canWorkUntilProductionReady: autonomyProof.verdicts.canContinueUntilReady,
-      canDeclareComplete: autonomyProof.verdicts.canDeclareComplete,
-      autonomyReadiness,
-      autonomyProof,
+      canDeclareComplete: autonomyClaims.canDeclareComplete,
+      autonomyReadiness: autonomyClaims.autonomyReadiness,
+      autonomyProof: autonomyClaims.autonomyProof,
+      proofReadiness,
+      noHardcodedReality,
+      noOverclaim: {
+        gateStatus: snapshot.certification.gates.noOverclaimPass?.status ?? null,
+        gateReason: snapshot.certification.gates.noOverclaimPass?.reason ?? null,
+        proofReadinessBlocksProduction: hasProofReadinessProductionBlocker(proofReadiness),
+        proofReadinessReason: proofReadiness
+          ? proofReadinessProductionBlockerReason(proofReadiness)
+          : null,
+      },
       authorityMode: authority.mode,
       advisoryOnly: authority.advisoryOnly,
       automationEligible: authority.automationEligible,

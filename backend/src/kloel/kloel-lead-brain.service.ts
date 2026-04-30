@@ -110,10 +110,13 @@ export class KloelLeadBrainService {
     return lead;
   }
 
-  private async getLeadConversationHistory(leadId: string): Promise<ChatMessage[]> {
+  private async getLeadConversationHistory(
+    leadId: string,
+    workspaceId: string,
+  ): Promise<ChatMessage[]> {
     try {
       const messages = await this.prisma.kloelConversation.findMany({
-        where: { leadId },
+        where: { lead: { id: leadId, workspaceId } },
         orderBy: { createdAt: 'asc' },
         take: 30,
         select: { role: true, content: true },
@@ -124,8 +127,21 @@ export class KloelLeadBrainService {
     }
   }
 
-  async saveLeadMessage(leadId: string, role: string, content: string): Promise<void> {
+  async saveLeadMessage(
+    leadId: string,
+    workspaceId: string,
+    role: string,
+    content: string,
+  ): Promise<void> {
     try {
+      // Validate lead ownership before creating conversation
+      const lead = await this.prisma.kloelLead.findUnique({
+        where: { id: leadId, workspaceId },
+        select: { id: true },
+      });
+      if (!lead) {
+        return;
+      }
       await this.prisma.kloelConversation.create({ data: { leadId, role, content } });
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'KloelLeadBrainService.create');
@@ -261,7 +277,7 @@ export class KloelLeadBrainService {
         providerSettings.autopilotEnabled === true;
 
       const lead = await this.getOrCreateLead(workspaceId, normalizedPhone || senderPhone);
-      await this.saveLeadMessage(lead.id, 'user', message);
+      await this.saveLeadMessage(lead.id, workspaceId, 'user', message);
 
       let contactId: string | null = null;
       if (normalizedPhone) {
@@ -295,7 +311,7 @@ export class KloelLeadBrainService {
           });
           const agentResponse =
             unifiedResult?.reply || unifiedResult?.response || 'Olá! Como posso ajudar?';
-          await this.saveLeadMessage(lead.id, 'assistant', agentResponse);
+          await this.saveLeadMessage(lead.id, workspaceId, 'assistant', agentResponse);
           await this.updateLeadFromConversation(workspaceId, lead.id, message, agentResponse);
           return agentResponse;
         } catch (agentErr: unknown) {
@@ -308,7 +324,7 @@ export class KloelLeadBrainService {
         }
       }
 
-      const conversationHistory = await this.getLeadConversationHistory(lead.id);
+      const conversationHistory = await this.getLeadConversationHistory(lead.id, workspaceId);
       const context = await getWorkspaceContext(workspaceId);
       const salesSystemPrompt = KLOEL_SALES_PROMPT(workspace?.name || 'nossa empresa', context);
       const messages: ChatMessage[] = [
@@ -334,7 +350,7 @@ export class KloelLeadBrainService {
 
       const kloelResponse =
         response.choices[0]?.message?.content || 'Olá! Como posso ajudá-lo hoje?';
-      await this.saveLeadMessage(lead.id, 'assistant', kloelResponse);
+      await this.saveLeadMessage(lead.id, workspaceId, 'assistant', kloelResponse);
       await this.updateLeadFromConversation(workspaceId, lead.id, message, kloelResponse);
       return kloelResponse;
     } catch (error: unknown) {

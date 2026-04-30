@@ -15,6 +15,14 @@ export interface StateMachineEntry {
   missingEnumMembers?: string[];
 }
 
+export interface DataflowRawSignal {
+  detector: 'unclassified-schema-field';
+  field: string;
+  truthMode: 'weak_signal';
+  evidenceKind: 'schema';
+  evidence: string;
+}
+
 export interface EntityLifecycle {
   model: string;
   createdBy: Array<{ source: string; filePath: string; status: DataflowCoverageStatus }>;
@@ -30,6 +38,7 @@ export interface EntityLifecycle {
   hasMutableState: boolean;
   hasVersionHistory: boolean;
   stateMachine?: StateMachineEntry[];
+  rawSignals?: DataflowRawSignal[];
 }
 
 export interface DataflowStateMutation {

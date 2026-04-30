@@ -143,7 +143,7 @@ export class KycController {
   /** Delete document. */
   @Delete('documents/:id')
   async deleteDocument(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
-    return this.kycService.deleteDocument(req.user.sub, id);
+    return this.kycService.deleteDocument(req.user.sub, id, req.user.workspaceId);
   }
 
   // ═══ BANK ═══

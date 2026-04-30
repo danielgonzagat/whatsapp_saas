@@ -12,6 +12,11 @@ import {
   writeFile,
 } from './safe-fs';
 import { IGNORED_DIRECTORIES } from './scope-state.constants';
+import {
+  isProtectedFile as isGovernanceProtectedFile,
+  loadGovernanceBoundary,
+  type GovernanceBoundary,
+} from './scope-state-classify';
 import { detectSourceRoots } from './source-root-detector';
 import type {
   ScopeEngineState,
@@ -65,16 +70,6 @@ const GENERATED_FILE_PATTERNS = [
   /\.generated\.(ts|tsx|js|jsx)$/,
   /\/generated\//,
   /\.prisma\/client/,
-];
-
-const PROTECTED_PATH_PATTERNS = [
-  /\/ops\//,
-  /\/\.github\/workflows\//,
-  /\/scripts\/ops\//,
-  /\/governance\//,
-  /\/secrets\//,
-  /\/cert(ification|s)?\//,
-  /\/prisma\/migrations\//,
 ];
 
 const ROLE_BY_PATH_PATTERNS: [RegExp, ScopeFileRole][] = [
@@ -173,11 +168,13 @@ function isGeneratedFile(filePath: string): boolean {
   return false;
 }
 
-function isProtectedFile(filePath: string): boolean {
-  for (const pattern of PROTECTED_PATH_PATTERNS) {
-    if (pattern.test(filePath)) return true;
-  }
-  return false;
+function isProtectedFile(
+  rootDir: string,
+  filePath: string,
+  governanceBoundary: GovernanceBoundary,
+): boolean {
+  const relativePath = assertWithinRoot(filePath, rootDir);
+  return isGovernanceProtectedFile(relativePath, governanceBoundary);
 }
 
 function isSourceFile(filePath: string, extension: string): boolean {
@@ -329,7 +326,8 @@ export function detectNewFile(rootDir: string, filePath: string): ScopeFileEntry
   const role = classifyFileRole(filePath, content);
   const isTest = isTestFile(filePath);
   const isGenerated = isGeneratedFile(filePath);
-  const isProtected = isProtectedFile(filePath);
+  const governanceBoundary = loadGovernanceBoundary(rootDir);
+  const isProtected = isProtectedFile(rootDir, filePath, governanceBoundary);
   const executionMode = computeExecutionMode(filePath, extension, isProtected);
   const contentHash = computeContentHash(content);
   const now = new Date().toISOString();
@@ -382,6 +380,7 @@ export function buildScopeEngineState(
   const allFilePaths: string[] = [];
   walkFiles(rootDir, allFilePaths);
 
+  const governanceBoundary = loadGovernanceBoundary(rootDir);
   const knownPaths = new Set(allFilePaths);
   const entries: ScopeFileEntry[] = [];
   const previousMap = new Map<string, ScopeFileEntry>();
@@ -414,7 +413,7 @@ export function buildScopeEngineState(
     const role = classifyFileRole(filePath, content);
     const isTest = isTestFile(filePath);
     const isGenerated = isGeneratedFile(filePath);
-    const isProtected = isProtectedFile(filePath);
+    const isProtected = isProtectedFile(rootDir, filePath, governanceBoundary);
     const executionMode = computeExecutionMode(filePath, extension, isProtected);
     const contentHash = computeContentHash(content);
     const now = new Date().toISOString();
@@ -678,16 +677,6 @@ interface ScopeWatcherState {
   stopped: boolean;
 }
 
-const WATCHABLE_FALLBACK_DIRECTORIES = [
-  'backend/src',
-  'frontend/src',
-  'frontend-admin/src',
-  'worker/src',
-  'scripts',
-  'prisma',
-  'docs',
-];
-
 function discoverPrismaRoots(rootDir: string): string[] {
   const roots = new Set<string>();
   try {
@@ -704,14 +693,69 @@ function discoverPrismaRoots(rootDir: string): string[] {
   return [...roots];
 }
 
-function discoverWatchableDirectories(rootDir: string): string[] {
+function hasScannableDescendant(dir: string, depthRemaining = 4): boolean {
+  let entries: string[];
+  try {
+    entries = readDir(dir);
+  } catch {
+    return false;
+  }
+
+  for (const entry of entries) {
+    if (IGNORED_DIRECTORIES.has(entry) || entry.startsWith('.')) continue;
+    const fullPath = safeJoin(dir, entry);
+    let stats;
+    try {
+      stats = statPath(fullPath);
+    } catch {
+      continue;
+    }
+    if (stats.isFile() && SCANNABLE_EXTENSIONS.has(path.extname(entry).toLowerCase())) {
+      return true;
+    }
+    if (
+      stats.isDirectory() &&
+      depthRemaining > 0 &&
+      hasScannableDescendant(fullPath, depthRemaining - 1)
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function discoverFallbackWatchRoots(rootDir: string): string[] {
+  let entries: string[];
+  try {
+    entries = readDir(rootDir);
+  } catch {
+    return [];
+  }
+
+  const roots: string[] = [];
+  for (const entry of entries) {
+    if (IGNORED_DIRECTORIES.has(entry) || entry.startsWith('.')) continue;
+    const candidate = safeJoin(rootDir, entry);
+    try {
+      if (statPath(candidate).isDirectory() && hasScannableDescendant(candidate)) {
+        roots.push(candidate);
+      }
+    } catch {
+      continue;
+    }
+  }
+  return roots;
+}
+
+export function discoverWatchableDirectories(rootDir: string): string[] {
   const dynamicRoots = detectSourceRoots(rootDir)
     .filter((root) => root.availability === 'inferred')
     .map((root) => root.absolutePath);
   const prismaRoots = discoverPrismaRoots(rootDir);
   const inferred = [...new Set([...dynamicRoots, ...prismaRoots])];
   if (inferred.length > 0) return inferred;
-  return WATCHABLE_FALLBACK_DIRECTORIES.map((d) => safeJoin(rootDir, d));
+  return discoverFallbackWatchRoots(rootDir);
 }
 
 function watchableAbsolutePaths(rootDir: string): string[] {

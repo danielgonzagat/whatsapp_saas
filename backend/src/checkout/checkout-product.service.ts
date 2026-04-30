@@ -204,7 +204,7 @@ export class CheckoutProductService {
       });
     } catch (error: unknown) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        throw new NotFoundException('CheckoutProductPlan not found');
+        throw new NotFoundException('Product not found');
       }
       throw error;
     }
@@ -214,9 +214,12 @@ export class CheckoutProductService {
   async deletePlan(id: string, workspaceId?: string) {
     const existing = await this.prisma.checkoutProductPlan.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, product: { select: { workspaceId: true } } },
     });
     if (!existing) {
+      throw new NotFoundException('CheckoutProductPlan not found');
+    }
+    if (workspaceId && existing.product.workspaceId !== workspaceId) {
       throw new NotFoundException('CheckoutProductPlan not found');
     }
     await this.auditService.log({
