@@ -1,6 +1,6 @@
 import type { PulseDynamicRiskResult } from './dynamic-risk-model';
 import type { PulsePredicateGraph } from './predicate-graph';
-import type { PulseSignalGraph } from './signal-graph';
+import type { PulseSignalGraph, PulseSignalNode, PulseSignalTruthMode } from './signal-graph';
 
 export interface PulseGeneratedDiagnostic {
   id: string;
@@ -17,9 +17,64 @@ function sentenceCase(value: string): string {
   return normalized ? `${normalized[0]?.toUpperCase() ?? ''}${normalized.slice(1)}` : 'Finding';
 }
 
-function strongestEvidence(signalGraph: PulseSignalGraph): string {
-  const [first] = [...signalGraph.nodes].sort((left, right) => right.confidence - left.confidence);
-  return first?.summary ?? 'Evidence collected by Pulse';
+const TRUTH_MODE_PRIORITY: Record<PulseSignalTruthMode, number> = {
+  observed: 4,
+  confirmed_static: 3,
+  inferred: 2,
+  weak_signal: 1,
+};
+
+function compareSignals(left: PulseSignalNode, right: PulseSignalNode): number {
+  const truthDelta = TRUTH_MODE_PRIORITY[right.truthMode] - TRUTH_MODE_PRIORITY[left.truthMode];
+  if (truthDelta !== 0) return truthDelta;
+  const confidenceDelta = right.confidence - left.confidence;
+  if (confidenceDelta !== 0) return confidenceDelta;
+  return left.id.localeCompare(right.id);
+}
+
+function strongestSignal(signalGraph: PulseSignalGraph): PulseSignalNode | undefined {
+  const [first] = [...signalGraph.nodes].sort(compareSignals);
+  return first;
+}
+
+function predicateTruthPriority(
+  signalIds: readonly string[],
+  signalGraph: PulseSignalGraph,
+): number {
+  const signalsById = new Map(signalGraph.nodes.map((signal) => [signal.id, signal]));
+  return signalIds.reduce((best, signalId) => {
+    const signal = signalsById.get(signalId);
+    return Math.max(best, signal ? TRUTH_MODE_PRIORITY[signal.truthMode] : 0);
+  }, 0);
+}
+
+function titleBasisFrom(
+  signalGraph: PulseSignalGraph,
+  predicateGraph: PulsePredicateGraph,
+): string {
+  const strongest = strongestSignal(signalGraph);
+  if (strongest) {
+    return strongest.summary;
+  }
+
+  const [predicate] = [...predicateGraph.predicates]
+    .filter(
+      (item) =>
+        !item.kind.startsWith('truth_') &&
+        !item.kind.startsWith('source_') &&
+        !item.kind.startsWith('detector_'),
+    )
+    .sort((left, right) => {
+      const truthDelta =
+        predicateTruthPriority(right.signalIds, signalGraph) -
+        predicateTruthPriority(left.signalIds, signalGraph);
+      if (truthDelta !== 0) return truthDelta;
+      const confidenceDelta = right.confidence - left.confidence;
+      if (confidenceDelta !== 0) return confidenceDelta;
+      return left.kind.localeCompare(right.kind);
+    });
+
+  return predicate?.kind ?? 'evidence_gap';
 }
 
 export function synthesizeDiagnostic(
@@ -28,16 +83,17 @@ export function synthesizeDiagnostic(
   risk: PulseDynamicRiskResult,
 ): PulseGeneratedDiagnostic {
   const predicateKinds = [...new Set(predicateGraph.predicates.map((predicate) => predicate.kind))];
-  const titleBasis = predicateKinds[0] ?? 'evidence_gap';
+  const titleBasis = titleBasisFrom(signalGraph, predicateGraph);
   const evidenceIds = signalGraph.nodes.map((signal) => signal.id);
   const id = `diagnostic:${signalGraph.generatedAt}:${evidenceIds.join('-')}`;
+  const strongest = strongestSignal(signalGraph);
 
   return {
     id,
     title: sentenceCase(titleBasis),
-    summary: `${strongestEvidence(signalGraph)}; predicates=${predicateKinds.join(', ') || 'none'}`,
+    summary: `${strongest?.summary ?? 'Evidence collected by Pulse'}; predicates=${predicateKinds.join(', ') || 'none'}`,
     riskScore: risk.score,
-    confidence: Math.min(risk.confidence, signalGraph.nodes[0]?.confidence ?? risk.confidence),
+    confidence: Math.min(risk.confidence, strongest?.confidence ?? risk.confidence),
     evidenceIds,
     predicateKinds,
   };

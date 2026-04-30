@@ -46,6 +46,9 @@ export interface ProofReadinessGateResult {
     blockedNotExecutable: number;
     observedEvidence: number;
     nonObservedEvidence: number;
+    plannedEvidence: number;
+    inferredEvidence: number;
+    notAvailableEvidence: number;
   };
   blockers: ProofReadinessGateBlocker[];
   evidence: PulseExecutionRealityRecord[];
@@ -69,6 +72,16 @@ function evidenceKeys(evidence: ProofReadinessEvidenceSummary): string[] {
   return [evidence.id, evidence.taskId, evidence.pathId].filter((value): value is string =>
     Boolean(value),
   );
+}
+
+function normalizedEvidenceMarkers(evidence: ProofReadinessEvidenceSummary): string[] {
+  return [evidence.status, evidence.truthMode, evidence.evidenceMode, evidence.source]
+    .filter((value): value is string => Boolean(value))
+    .map((value) => value.trim().toLowerCase().replace(/\s+/g, '_'));
+}
+
+function hasNotAvailableMarker(evidence: ProofReadinessEvidenceSummary): boolean {
+  return normalizedEvidenceMarkers(evidence).includes('not_available');
 }
 
 function hasObservedEvidence(
@@ -106,6 +119,7 @@ export function evaluateProofReadinessGate(
   const evidence = input.evidence.map((record) => classifyExecutionReality(record));
   const observedEvidence = evidence.filter((record) => record.countsAsObservedProof);
   const observedEvidenceKeys = new Set(observedEvidence.flatMap(evidenceKeys));
+  const notAvailableEvidence = input.evidence.filter(hasNotAvailableMarker).length;
   const blockers: ProofReadinessGateBlocker[] = [];
 
   let executableTasks = 0;
@@ -169,6 +183,9 @@ export function evaluateProofReadinessGate(
       blockedNotExecutable,
       observedEvidence: observedEvidence.length,
       nonObservedEvidence: evidence.length - observedEvidence.length,
+      plannedEvidence: evidence.filter((record) => record.mode === 'planned').length,
+      inferredEvidence: evidence.filter((record) => record.mode === 'inferred').length,
+      notAvailableEvidence,
     },
     blockers,
     evidence,

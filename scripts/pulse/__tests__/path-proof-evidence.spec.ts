@@ -158,6 +158,7 @@ describe('path proof evidence artifact', () => {
       observedEvidenceLinks: 2,
       observedPass: 1,
       observedFail: 1,
+      notRun: 5,
       plannedOnly: 1,
       skipped: 1,
       stale: 1,
@@ -171,22 +172,41 @@ describe('path proof evidence artifact', () => {
     expect(
       artifact.tasks
         .filter((task) => task.observedEvidenceLink)
-        .map((task) => [task.taskId, task.disposition, task.coverageCountsAsObserved]),
+        .map((task) => [
+          task.taskId,
+          task.disposition,
+          task.evidenceState,
+          task.coverageCountsAsObserved,
+          task.freshness.status,
+        ]),
     ).toEqual([
-      ['path-proof:endpoint:pass', 'observed_pass', true],
-      ['path-proof:endpoint:fail', 'observed_fail', true],
+      ['path-proof:endpoint:pass', 'observed_pass', 'observed', true, 'fresh'],
+      ['path-proof:endpoint:fail', 'observed_fail', 'observed', true, 'fresh'],
     ]);
     expect(
       artifact.tasks
         .filter((task) => !task.observed)
-        .map((task) => [task.taskId, task.disposition, task.coverageCountsAsObserved]),
+        .map((task) => [
+          task.taskId,
+          task.disposition,
+          task.evidenceState,
+          task.coverageCountsAsObserved,
+          task.freshness.status,
+        ]),
     ).toEqual([
-      ['path-proof:endpoint:planned', 'planned_only', false],
-      ['path-proof:endpoint:skipped', 'skipped', false],
-      ['path-proof:endpoint:stale', 'stale', false],
-      ['path-proof:endpoint:commandless', 'not_observed', false],
-      ['path-proof:endpoint:missing', 'missing_result', false],
+      ['path-proof:endpoint:planned', 'planned_only', 'not_run', false, 'not_run'],
+      ['path-proof:endpoint:skipped', 'skipped', 'not_run', false, 'not_run'],
+      ['path-proof:endpoint:stale', 'stale', 'not_run', false, 'stale'],
+      ['path-proof:endpoint:commandless', 'not_observed', 'not_run', false, 'not_run'],
+      ['path-proof:endpoint:missing', 'missing_result', 'not_run', false, 'not_run'],
     ]);
+    expect(artifact.tasks[0].observedEvidenceLink).toEqual(
+      expect.objectContaining({
+        startedAt: '2026-04-29T21:01:00.000Z',
+        finishedAt: '2026-04-29T21:01:01.000Z',
+        observedAt: '2026-04-29T21:01:01.000Z',
+      }),
+    );
   });
 
   it('keeps executed false and planned_only outside observed proof even with passing status', () => {
@@ -202,6 +222,10 @@ describe('path proof evidence artifact', () => {
     ).toBe(false);
     expect(resultCountsAsObservedPathProof(result('actual-pass', { status: 'passed' }))).toBe(true);
     expect(resultCountsAsObservedPathProof(result('actual-fail', { status: 'failed' }))).toBe(true);
+    const missingTimestamps = result('missing-timestamps', { status: 'passed' });
+    delete missingTimestamps.startedAt;
+    delete missingTimestamps.finishedAt;
+    expect(resultCountsAsObservedPathProof(missingTimestamps)).toBe(false);
   });
 
   it('adapts execution-runner observed statuses without losing pass/fail semantics', async () => {
@@ -246,11 +270,29 @@ describe('path proof evidence artifact', () => {
         entry.disposition,
         entry.observed,
         entry.coverageCountsAsObserved,
+        entry.result?.startedAt,
+        entry.result?.finishedAt,
       ]),
     ).toEqual([
-      [passTask.taskId, 'passed', 'observed_pass', true, true],
-      [failTask.taskId, 'failed', 'observed_fail', true, true],
-      [skippedTask.taskId, 'skipped', 'skipped', false, false],
+      [
+        passTask.taskId,
+        'passed',
+        'observed_pass',
+        true,
+        true,
+        expect.any(String),
+        expect.any(String),
+      ],
+      [
+        failTask.taskId,
+        'failed',
+        'observed_fail',
+        true,
+        true,
+        expect.any(String),
+        expect.any(String),
+      ],
+      [skippedTask.taskId, 'skipped', 'skipped', false, false, undefined, undefined],
     ]);
     expect(artifact.summary).toEqual(
       expect.objectContaining({

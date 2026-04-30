@@ -18,6 +18,7 @@ export interface OverclaimCheckInput {
     authorityAutomationEligible: boolean;
     nextStepAvailable: boolean;
     canContinueUntilReady: boolean;
+    productionProofEvidence?: OverclaimProductionProofEvidence;
   };
 }
 
@@ -25,6 +26,15 @@ export interface OverclaimGovernedValidationEvidence {
   openUnitCount: number;
   openGateCount: number;
   blockers: readonly string[];
+}
+
+export interface OverclaimProductionProofEvidence {
+  plannedEvidence: number;
+  inferredEvidence: number;
+  notAvailableEvidence: number;
+  nonObservedEvidence: number;
+  executableUnproved?: number;
+  blockers?: readonly string[];
 }
 
 export interface OverclaimResult {
@@ -45,10 +55,30 @@ export function hasOpenGovernedValidationGap(
   );
 }
 
+export function hasOpenProductionProofEvidenceGap(
+  evidence: OverclaimProductionProofEvidence | undefined,
+): boolean {
+  if (!evidence) {
+    return false;
+  }
+
+  return (
+    evidence.plannedEvidence > 0 ||
+    evidence.inferredEvidence > 0 ||
+    evidence.notAvailableEvidence > 0 ||
+    evidence.nonObservedEvidence > 0 ||
+    (evidence.executableUnproved ?? 0) > 0 ||
+    Boolean(evidence.blockers?.length)
+  );
+}
+
 export function evaluateOverclaimPass(input: OverclaimCheckInput): OverclaimResult {
   const violations: string[] = [];
   const governedValidationGapOpen = hasOpenGovernedValidationGap(
     input.gateStatus.governedValidationEvidence,
+  );
+  const productionProofEvidenceGapOpen = hasOpenProductionProofEvidenceGap(
+    input.gateStatus.productionProofEvidence,
   );
 
   // zeroPromptProductionGuidance requires all supporting gates to be green
@@ -84,6 +114,12 @@ export function evaluateOverclaimPass(input: OverclaimCheckInput): OverclaimResu
         'zeroPromptProductionGuidance=SIM but cycleProofPassed=false. Cannot claim proven convergence without ≥3 successful non-regressing cycles.',
       );
     }
+    if (productionProofEvidenceGapOpen) {
+      const evidence = input.gateStatus.productionProofEvidence;
+      violations.push(
+        `zeroPromptProductionGuidance=SIM but productionProofEvidenceGapOpen=true. Production proof still has planned=${evidence?.plannedEvidence ?? 0}, inferred=${evidence?.inferredEvidence ?? 0}, not_available=${evidence?.notAvailableEvidence ?? 0}, nonObserved=${evidence?.nonObservedEvidence ?? 0}, executableUnproved=${evidence?.executableUnproved ?? 0}.`,
+      );
+    }
   }
 
   // productionAutonomy requires all supporting gates to be green
@@ -108,12 +144,24 @@ export function evaluateOverclaimPass(input: OverclaimCheckInput): OverclaimResu
         'productionAutonomy=SIM but governedValidationGapOpen=true. Governed validation blockers remain open.',
       );
     }
+    if (productionProofEvidenceGapOpen) {
+      const evidence = input.gateStatus.productionProofEvidence;
+      violations.push(
+        `productionAutonomy=SIM but productionProofEvidenceGapOpen=true. Production proof still has planned=${evidence?.plannedEvidence ?? 0}, inferred=${evidence?.inferredEvidence ?? 0}, not_available=${evidence?.notAvailableEvidence ?? 0}, nonObserved=${evidence?.nonObservedEvidence ?? 0}, executableUnproved=${evidence?.executableUnproved ?? 0}.`,
+      );
+    }
   }
 
   // canDeclareComplete requires production autonomy
   if (input.verdicts.canDeclareComplete && input.verdicts.productionAutonomy !== 'SIM') {
     violations.push(
       'canDeclareComplete=true but productionAutonomy≠SIM. Cannot declare completion without production autonomy.',
+    );
+  }
+  if (input.verdicts.canDeclareComplete && productionProofEvidenceGapOpen) {
+    const evidence = input.gateStatus.productionProofEvidence;
+    violations.push(
+      `canDeclareComplete=true but productionProofEvidenceGapOpen=true. Complete requires observed production proof; planned=${evidence?.plannedEvidence ?? 0}, inferred=${evidence?.inferredEvidence ?? 0}, not_available=${evidence?.notAvailableEvidence ?? 0}, nonObserved=${evidence?.nonObservedEvidence ?? 0}.`,
     );
   }
 

@@ -75,7 +75,13 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
         debounceTimers.delete(filePath);
         const changeKind = classifyWatchChange(filePath, config);
         if (shouldRescanForWatchChange(changeKind)) {
-          scanResult = await refreshScanResultForWatchChange(config, scanResult, changeKind);
+          scanResult = await refreshScanResultForWatchChange(
+            config,
+            scanResult,
+            changeKind,
+            {},
+            filePath,
+          );
           renderDashboard(scanResult.health, scanResult.certification, { watching: true });
         }
       }, 500),

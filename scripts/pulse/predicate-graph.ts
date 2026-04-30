@@ -1,16 +1,6 @@
 import type { PulseSignalGraph, PulseSignalNode } from './signal-graph';
 
-export type PulsePredicateKind =
-  | 'external_input'
-  | 'durable_mutation'
-  | 'external_effect'
-  | 'public_exposure'
-  | 'missing_control_evidence'
-  | 'observed_failure'
-  | 'validation_gap'
-  | 'observability_gap'
-  | 'recovery_gap'
-  | 'hardcoded_reality';
+export type PulsePredicateKind = string;
 
 export interface PulsePredicateNode {
   id: string;
@@ -25,39 +15,6 @@ export interface PulsePredicateGraph {
   predicates: PulsePredicateNode[];
 }
 
-interface PredicateRule {
-  kind: PulsePredicateKind;
-  evidence: RegExp;
-}
-
-const PREDICATE_RULES: PredicateRule[] = [
-  {
-    kind: 'external_input',
-    evidence: /\b(input|request|form|query|body|param|payload|webhook)\b/i,
-  },
-  {
-    kind: 'durable_mutation',
-    evidence: /\b(write|create|update|delete|persist|database|schema|mutation)\b/i,
-  },
-  {
-    kind: 'external_effect',
-    evidence: /\b(send|call|provider|api|webhook|queue|email|message)\b/i,
-  },
-  { kind: 'public_exposure', evidence: /\b(public|route|endpoint|ui|page|browser|external)\b/i },
-  {
-    kind: 'missing_control_evidence',
-    evidence: /\b(missing|without|no evidence|absent|uncovered)\b/i,
-  },
-  { kind: 'observed_failure', evidence: /\b(fail|error|exception|timeout|regression|observed)\b/i },
-  { kind: 'validation_gap', evidence: /\b(validation|schema|contract|assertion|boundary)\b/i },
-  { kind: 'observability_gap', evidence: /\b(metric|trace|log|alert|observability)\b/i },
-  { kind: 'recovery_gap', evidence: /\b(recovery|rollback|backup|restore|retry)\b/i },
-  {
-    kind: 'hardcoded_reality',
-    evidence: /\b(hardcode|allowlist|fixed list|literal|threshold|gate|profile)\b/i,
-  },
-];
-
 function predicateId(kind: PulsePredicateKind, signal: PulseSignalNode): string {
   return `${kind}:${signal.id}`;
 }
@@ -66,21 +23,87 @@ function evidenceText(signal: PulseSignalNode): string {
   return `${signal.summary} ${signal.detail ?? ''} ${signal.tags.join(' ')}`;
 }
 
+function normalizeToken(value: string): string {
+  let normalized = '';
+
+  for (const char of value.toLowerCase()) {
+    const code = char.charCodeAt(0);
+    const isAsciiLetter = code >= 97 && code <= 122;
+    const isAsciiDigit = code >= 48 && code <= 57;
+    normalized += isAsciiLetter || isAsciiDigit ? char : '_';
+  }
+
+  return normalized
+    .split('_')
+    .filter((part) => part.length > 2)
+    .join('_');
+}
+
+function tokensFrom(value: string): string[] {
+  const tokens: string[] = [];
+  let current = '';
+
+  for (const char of value) {
+    const code = char.charCodeAt(0);
+    const isAsciiLetter = (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+    const isAsciiDigit = code >= 48 && code <= 57;
+
+    if (isAsciiLetter || isAsciiDigit) {
+      current += char;
+      continue;
+    }
+
+    if (current.length > 2) {
+      tokens.push(normalizeToken(current));
+    }
+    current = '';
+  }
+
+  if (current.length > 2) {
+    tokens.push(normalizeToken(current));
+  }
+
+  return tokens.filter(Boolean);
+}
+
+function predicateKindsFor(signal: PulseSignalNode): PulsePredicateKind[] {
+  const textTokens = tokensFrom(evidenceText(signal));
+  const sourceToken = normalizeToken(signal.source);
+  const detectorToken = normalizeToken(signal.detector);
+  const kinds = new Set<PulsePredicateKind>();
+
+  kinds.add(`truth_${signal.truthMode}`);
+  if (sourceToken) {
+    kinds.add(`source_${sourceToken}`);
+  }
+  if (detectorToken) {
+    kinds.add(`detector_${detectorToken}`);
+  }
+
+  for (let index = 0; index < textTokens.length; index += 1) {
+    const first = textTokens[index];
+    const second = textTokens[index + 1];
+    if (first && second) {
+      kinds.add(`evidence_${first}_${second}`);
+    } else if (first) {
+      kinds.add(`evidence_${first}`);
+    }
+  }
+
+  return [...kinds];
+}
+
 export function buildPredicateGraph(signalGraph: PulseSignalGraph): PulsePredicateGraph {
   const predicates: PulsePredicateNode[] = [];
 
   for (const signal of signalGraph.nodes) {
-    const text = evidenceText(signal);
-    for (const rule of PREDICATE_RULES) {
-      if (!rule.evidence.test(text)) {
-        continue;
-      }
+    for (const kind of predicateKindsFor(signal)) {
       predicates.push({
-        id: predicateId(rule.kind, signal),
-        kind: rule.kind,
+        id: predicateId(kind, signal),
+        kind,
         signalIds: [signal.id],
         confidence: signal.confidence,
-        summary: `${rule.kind} inferred from ${signal.source}/${signal.detector}`,
+        summary: `${kind} derived from ${signal.source}/${signal.detector}`,
       });
     }
   }

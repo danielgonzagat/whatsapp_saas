@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { EmailService } from '../auth/email.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
@@ -7,8 +8,10 @@ import { ReportFiltersDto } from './dto/report-filters.dto';
 import { ReportsService } from './reports.service';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
+@UseGuards(ThrottlerGuard)
 @Controller('reports')
 @UseGuards(JwtAuthGuard)
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class ReportsController {
   constructor(
     private readonly reportsService: ReportsService,

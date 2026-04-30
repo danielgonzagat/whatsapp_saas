@@ -4,19 +4,24 @@
  * Optional adapters must not block.
  */
 
-import { mkdtempSync, rmSync, writeFileSync } from 'fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import * as path from 'path';
 import { describe, it, expect } from 'vitest';
 import { evaluateMultiCycleConvergenceGate } from '../cert-gate-multi-cycle';
 import { buildExternalSignalState } from '../external-signals';
 import {
+  classifyLiveExternalSource,
+  discoverExternalSourceCapabilities,
   isAdapterRequired,
   normalizeExternalSignalProfile,
 } from '../adapters/external-sources-orchestrator';
 import type { BuildExternalSignalStateInput } from '../external-signals';
 import type { PulseAutonomyIterationRecord } from '../types';
-import type { ConsolidatedExternalState } from '../adapters/external-sources-orchestrator';
+import type {
+  ConsolidatedExternalState,
+  ExternalSourceRunResult,
+} from '../adapters/external-sources-orchestrator';
 
 type LegacyAdapterStatus =
   | 'ready'
@@ -48,7 +53,13 @@ interface LegacyConvergenceState {
 
 type LiveExternalSourceInput = Omit<
   ConsolidatedExternalState['sources'][number],
-  'requiredness' | 'requirement' | 'required' | 'blocking' | 'proofBasis' | 'missingReason'
+  | 'requiredness'
+  | 'requirement'
+  | 'required'
+  | 'blocking'
+  | 'proofBasis'
+  | 'missingReason'
+  | 'sourceCapability'
 >;
 
 function legacyCycle(input: LegacyConvergenceCycleInput): LegacyConvergenceCycle {
@@ -226,6 +237,7 @@ function buildLiveExternalState(sources: LiveExternalSourceInput[]): Consolidate
     generatedAt: '2026-04-29T21:00:00.000Z',
     profile: 'pulse-core-final',
     certificationScope: 'pulse-core-final',
+    sourceCapabilities: [],
     sources: sources.map((source) => ({
       ...source,
       requiredness: 'optional',
@@ -234,6 +246,17 @@ function buildLiveExternalState(sources: LiveExternalSourceInput[]): Consolidate
       blocking: false,
       proofBasis: 'live_adapter',
       missingReason: null,
+      sourceCapability: {
+        source: source.source,
+        discovered: true,
+        operational: source.status === 'ready',
+        truthAuthority: 'discovered_capability',
+        capabilityKinds: ['repo'],
+        evidence: [],
+        compatRequiredness: 'optional',
+        compatRequired: false,
+        missingOperationalRequirements: [],
+      },
     })),
     allSignals: [],
     signalsBySource: {},
@@ -259,6 +282,148 @@ describe('external-adapters — required vs optional', () => {
     it('normalizes the legacy production-final alias to full-product', () => {
       expect(normalizeExternalSignalProfile('production-final')).toBe('full-product');
       expect(isAdapterRequired('prometheus', 'production-final')).toBe(true);
+    });
+
+    it('keeps compat requiredness out of operational truth when no source capability is discovered', () => {
+      const rootDir = mkdtempSync(path.join(tmpdir(), 'pulse-external-capability-discovery-'));
+      try {
+        const capabilities = discoverExternalSourceCapabilities(
+          {
+            rootDir,
+            env: {},
+            githubOwner: '',
+            githubRepo: '',
+            gitHubRemote: null,
+          },
+          'pulse-core-final',
+        );
+        const codecov = capabilities.find((capability) => capability.source === 'codecov');
+
+        expect(isAdapterRequired('codecov', 'pulse-core-final')).toBe(true);
+        expect(codecov).toEqual(
+          expect.objectContaining({
+            discovered: false,
+            operational: false,
+            truthAuthority: 'compat_adapter',
+            compatRequired: true,
+          }),
+        );
+      } finally {
+        rmSync(rootDir, { recursive: true, force: true });
+      }
+    });
+
+    it('turns repo CI discovery into source capability metadata and blocks that discovered source', () => {
+      const rootDir = mkdtempSync(path.join(tmpdir(), 'pulse-external-ci-discovery-'));
+      try {
+        const workflowsDir = path.join(rootDir, '.github', 'workflows');
+        writeFileSync(path.join(rootDir, 'README.md'), '# Fixture\n');
+        writeFileSync(path.join(rootDir, '.gitkeep'), '');
+        mkdirSync(workflowsDir, { recursive: true });
+        writeFileSync(path.join(workflowsDir, 'ci.yml'), 'name: CI\non: [push]\n');
+
+        const capabilities = discoverExternalSourceCapabilities(
+          {
+            rootDir,
+            env: {},
+            githubOwner: '',
+            githubRepo: '',
+            gitHubRemote: null,
+          },
+          'pulse-core-final',
+        );
+        const actionsCapability = capabilities.find(
+          (capability) => capability.source === 'github_actions',
+        );
+        expect(actionsCapability).toBeDefined();
+        if (!actionsCapability) {
+          throw new Error('github_actions capability metadata was not discovered.');
+        }
+        const actionsRun: ExternalSourceRunResult = {
+          source: 'github_actions',
+          status: 'not_available',
+          signalCount: 0,
+          syncedAt: '2026-04-29T21:00:00.000Z',
+          reason: 'GitHub Actions owner/repo were not configured for the live adapter.',
+        };
+        const actions = classifyLiveExternalSource(
+          actionsRun,
+          'pulse-core-final',
+          actionsCapability,
+        );
+
+        expect(actions).toEqual(
+          expect.objectContaining({
+            status: 'not_available',
+            required: true,
+            blocking: true,
+          }),
+        );
+        expect(actions.sourceCapability).toEqual(
+          expect.objectContaining({
+            discovered: true,
+            operational: false,
+            truthAuthority: 'discovered_capability',
+            capabilityKinds: expect.arrayContaining(['ci']),
+            missingOperationalRequirements: expect.arrayContaining(['github_owner_repo']),
+          }),
+        );
+      } finally {
+        rmSync(rootDir, { recursive: true, force: true });
+      }
+    });
+
+    it('does not let compat-required adapters become operational blockers without discovery', () => {
+      const rootDir = mkdtempSync(path.join(tmpdir(), 'pulse-external-no-discovery-'));
+      try {
+        const capabilities = discoverExternalSourceCapabilities(
+          {
+            rootDir,
+            env: {},
+            githubOwner: '',
+            githubRepo: '',
+            gitHubRemote: null,
+          },
+          'pulse-core-final',
+        );
+        const codecovCapability = capabilities.find(
+          (capability) => capability.source === 'codecov',
+        );
+        expect(codecovCapability).toBeDefined();
+        if (!codecovCapability) {
+          throw new Error('codecov capability metadata was not produced.');
+        }
+        const codecovRun: ExternalSourceRunResult = {
+          source: 'codecov',
+          status: 'not_available',
+          signalCount: 0,
+          syncedAt: '2026-04-29T21:00:00.000Z',
+          reason: 'Codecov owner/repo were not configured for the live adapter.',
+        };
+        const codecov = classifyLiveExternalSource(
+          codecovRun,
+          'pulse-core-final',
+          codecovCapability,
+        );
+
+        expect(codecov).toEqual(
+          expect.objectContaining({
+            status: 'optional_not_configured',
+            required: false,
+            blocking: false,
+          }),
+        );
+        expect(codecov.sourceCapability).toEqual(
+          expect.objectContaining({
+            discovered: false,
+            truthAuthority: 'compat_adapter',
+            compatRequired: true,
+          }),
+        );
+        expect(codecov.reason).toContain('compat requiredness profile-dependent is metadata only');
+      } finally {
+        rmSync(rootDir, { recursive: true, force: true });
+      }
     });
 
     it('classifies optional unavailable adapters without adding them to required blockers', () => {

@@ -104,25 +104,42 @@ function isObserved(path: PulseExecutionMatrixPath): boolean {
   return path.status === 'observed_pass' || path.status === 'observed_fail';
 }
 
+function isTerminallyClassifiedWithoutAutonomousProof(path: PulseExecutionMatrixPath): boolean {
+  return (
+    path.status === 'not_executable' ||
+    path.status === 'unreachable' ||
+    path.status === 'observation_only' ||
+    path.status === 'blocked_human_required' ||
+    path.executionMode === 'human_required' ||
+    path.executionMode === 'observation_only' ||
+    touchesProtectedGovernance(path)
+  );
+}
+
+function hasAutonomousProofEntrypoint(path: PulseExecutionMatrixPath): boolean {
+  return Boolean(
+    path.routePatterns.length > 0 ||
+    path.entrypoint.routePattern ||
+    path.entrypoint.nodeId ||
+    path.entrypoint.filePath ||
+    path.capabilityId ||
+    path.flowId ||
+    path.chain.length > 0,
+  );
+}
+
 function isTerminalProofCandidate(path: PulseExecutionMatrixPath): boolean {
-  return isCriticalMatrixPath(path) && !isObserved(path) && hasPreciseTerminalReason(path);
+  return (
+    isCriticalMatrixPath(path) &&
+    !isObserved(path) &&
+    !isTerminallyClassifiedWithoutAutonomousProof(path) &&
+    hasAutonomousProofEntrypoint(path) &&
+    hasPreciseTerminalReason(path)
+  );
 }
 
 function unique(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
-}
-
-function pathText(path: PulseExecutionMatrixPath): string {
-  return unique([
-    path.pathId,
-    path.entrypoint.description,
-    path.entrypoint.filePath ?? '',
-    path.entrypoint.routePattern ?? '',
-    ...path.filePaths,
-    ...path.routePatterns,
-  ])
-    .join(' ')
-    .toLowerCase();
 }
 
 function touchesProtectedGovernance(path: PulseExecutionMatrixPath): boolean {
@@ -146,17 +163,25 @@ function classifyTaskMode(path: PulseExecutionMatrixPath): PathProofTaskMode {
     return 'human_required';
   }
 
-  const text = pathText(path);
-  if (/\b(webhook|callback|signature|x-hub|x-signature)\b/.test(text)) {
+  const chainRoles = new Set(path.chain.map((step) => step.role));
+  if (
+    chainRoles.has('side_effect') &&
+    path.requiredEvidence.some((requirement) => requirement.kind === 'external')
+  ) {
     return 'webhook';
   }
   if (path.routePatterns.length > 0 || Boolean(path.entrypoint.routePattern)) {
     return 'endpoint';
   }
-  if (/\b(worker|processor|queue|bullmq|job)\b/.test(text)) {
+  if (chainRoles.has('worker') || chainRoles.has('queue')) {
     return 'worker';
   }
-  if (/\bfrontend\/|\.tsx\b|\.jsx\b|\/app\/|\/pages\//.test(text)) {
+  if (
+    chainRoles.has('trigger') ||
+    chainRoles.has('interface') ||
+    chainRoles.has('feedback_ui') ||
+    path.requiredEvidence.some((requirement) => requirement.kind === 'e2e')
+  ) {
     return 'ui';
   }
   return 'function';
@@ -219,7 +244,7 @@ function buildTaskReason(
   return (
     coverageEntry?.terminalProof.reason ??
     path.breakpoint?.reason ??
-    'Terminal critical path still needs observed pass/fail proof.'
+    `Terminal critical path for ${path.capabilityId ?? path.entrypoint.description} still needs observed pass/fail proof.`
   );
 }
 

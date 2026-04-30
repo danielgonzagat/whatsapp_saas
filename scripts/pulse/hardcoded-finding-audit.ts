@@ -3,7 +3,7 @@ import ts from 'typescript';
 export type HardcodedFindingRiskKind =
   | 'fixed_allowlist'
   | 'regex_only_break_emitter'
-  | 'domain_specific_token_regex'
+  | 'decision_token_regex'
   | 'fixed_break_type_mass_emitter';
 
 export interface HardcodedFindingAuditSource {
@@ -39,10 +39,8 @@ const MASS_EMITTER_TYPE_THRESHOLD = 3;
 const ALLOWLIST_NAME_RE =
   /(?:^|[^a-z])(?:allow(?:ed|list)?|denylist|blocklist|known|fixed|supported|permitted|accepted|whitelist|blacklist)(?:$|[^a-z])/i;
 const BREAK_TYPE_RE = /^[A-Z][A-Z0-9_]{2,}$/;
-const DOMAIN_REGEX_NAME_RE =
-  /\b(?:money|billing|payment|payout|withdrawal|wallet|ledger|stripe|mercado|pix|whatsapp|waha|auth|tenant|workspace|kyc|gdpr|lgpd|checkout|product|order|invoice|subscription|commission|supplier|customer|admin|state|status|role|provider)\b/i;
-const DOMAIN_REGEX_BODY_RE =
-  /(?:money|billing|payment|payout|withdrawal|wallet|ledger|stripe|mercado|pix|whatsapp|waha|auth|tenant|workspace|kyc|gdpr|lgpd|checkout|product|order|invoice|subscription|commission|supplier|customer|admin|approved|pending|failed|paid|cancelled)/i;
+const DECISION_REGEX_NAME_RE =
+  /(?:^|[^a-z])(?:domain|gate|profile|threshold|route|path|capability|flow|module|provider|role|decision|risk|critical|state|status)(?:$|[^a-z])/i;
 
 function locationOf(sourceFile: ts.SourceFile, node: ts.Node): { line: number; column: number } {
   const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
@@ -160,6 +158,17 @@ function regexBody(node: ts.Node): string {
     return node.arguments[0].getText();
   }
   return node.getText();
+}
+
+function isDecisionTokenRegex(name: string, body: string): boolean {
+  if (!DECISION_REGEX_NAME_RE.test(name)) {
+    return false;
+  }
+  const hasBranchingAlternatives = body.includes('|');
+  const hasPathPattern = /\/[A-Za-z0-9_*:.-]+/.test(body);
+  const hasNumericDecision = /\\d|\[[0-9]|[<>]=?/.test(body);
+  const hasNamedCapture = /\?<[^>]+>/.test(body);
+  return hasBranchingAlternatives || hasPathPattern || hasNumericDecision || hasNamedCapture;
 }
 
 function objectBreakType(node: ts.ObjectLiteralExpression): string | null {
@@ -293,12 +302,12 @@ function auditSource(input: HardcodedFindingAuditSource): HardcodedFindingAuditF
 
         if (isRegexNode(initializer)) {
           const body = regexBody(initializer);
-          if (DOMAIN_REGEX_NAME_RE.test(name) || DOMAIN_REGEX_BODY_RE.test(body)) {
+          if (isDecisionTokenRegex(name, body)) {
             pushUniqueFinding(findings, sourceFile, node, {
-              kind: 'domain_specific_token_regex',
+              kind: 'decision_token_regex',
               symbol: name,
               evidence: body,
-              reason: 'Domain-specific token regex can freeze product reality in a parser rule.',
+              reason: 'Decision-token regex can freeze parser evidence into final PULSE truth.',
             });
           }
         }
@@ -308,12 +317,12 @@ function auditSource(input: HardcodedFindingAuditSource): HardcodedFindingAuditF
     if (ts.isRegularExpressionLiteral(node) && !ts.isVariableDeclaration(node.parent)) {
       const name = declarationName(node);
       const body = regexBody(node);
-      if (DOMAIN_REGEX_NAME_RE.test(name) || DOMAIN_REGEX_BODY_RE.test(body)) {
+      if (isDecisionTokenRegex(name, body)) {
         pushUniqueFinding(findings, sourceFile, node, {
-          kind: 'domain_specific_token_regex',
+          kind: 'decision_token_regex',
           symbol: name,
           evidence: body,
-          reason: 'Domain-specific token regex can freeze product reality in a parser rule.',
+          reason: 'Decision-token regex can freeze parser evidence into final PULSE truth.',
         });
       }
     }

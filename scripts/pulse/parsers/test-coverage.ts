@@ -12,9 +12,7 @@
  * 6. Reports which specific files are dragging coverage below threshold
  *
  * REQUIRES: PULSE_DEEP=1, jest installed in backend/frontend, coverage output available
- * BREAK TYPES:
- *   COVERAGE_FINANCIAL_LOW(medium) — financial module coverage below 80%
- *   COVERAGE_CORE_LOW(medium)      — core module coverage below 60%
+ * Emits coverage evidence gaps; diagnostic identity and priority are synthesized downstream.
  */
 import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
@@ -37,8 +35,36 @@ interface CoverageRunResult {
   reason: string | null;
 }
 
-const FINANCIAL_PATH_RE = /checkout|wallet|billing|payment|kloel/i;
-const CORE_PATH_RE = /auth|workspace|products|kyc/i;
+const FINANCIAL_PATH_SIGNAL = /checkout|wallet|billing|payment|kloel/i;
+const CORE_PATH_SIGNAL = /auth|workspace|products|kyc/i;
+
+function coverageFinding(input: {
+  file: string;
+  line?: number;
+  description: string;
+  detail: string;
+}): Break {
+  return {
+    type: 'coverage-evidence-gap',
+    severity: 'medium',
+    file: input.file,
+    line: input.line ?? 0,
+    description: input.description,
+    detail: input.detail,
+    source: 'parser:confirmed_static:coverage-summary',
+    surface: 'test-evidence',
+  };
+}
+
+function deriveCoverageFloor(filePath: string, observedTotalPct: number | null): number {
+  if (FINANCIAL_PATH_SIGNAL.test(filePath)) {
+    return Math.max(80, observedTotalPct ?? 0);
+  }
+  if (CORE_PATH_SIGNAL.test(filePath)) {
+    return Math.max(60, observedTotalPct ?? 0);
+  }
+  return Math.max(50, observedTotalPct ?? 0);
+}
 
 function coverageSummaryPath(dir: string): string {
   return safeJoin(dir, 'coverage', 'coverage-summary.json');
@@ -113,14 +139,14 @@ function pushCoverageRunBreak(
     return;
   }
 
-  breaks.push({
-    type: 'COVERAGE_CORE_LOW',
-    severity: 'medium',
-    file: relativeSummaryPath,
-    line: 0,
-    description: `${target} coverage generation did not complete cleanly within the PULSE parser budget`,
-    detail: `${run.reason}; ${pathExists(summaryPath) ? `reused existing coverage summary (${coverageSummaryAge(summaryPath)})` : 'no reusable coverage summary was available'}`,
-  });
+  breaks.push(
+    coverageFinding({
+      file: relativeSummaryPath,
+      line: 0,
+      description: `${target} coverage generation did not complete cleanly within the PULSE parser budget`,
+      detail: `${run.reason}; ${pathExists(summaryPath) ? `reused existing coverage summary (${coverageSummaryAge(summaryPath)})` : 'no reusable coverage summary was available'}`,
+    }),
+  );
 }
 
 /** Check test coverage. */
@@ -139,16 +165,16 @@ export function checkTestCoverage(config: PulseConfig): Break[] {
   const backendCoverage = readCoverage(config.backendDir);
 
   if (!backendCoverage) {
-    breaks.push({
-      type: 'COVERAGE_CORE_LOW',
-      severity: 'medium',
-      file: 'backend/coverage/coverage-summary.json',
-      line: 0,
-      description: 'Backend coverage report not found — run jest --coverage to generate',
-      detail:
-        backendRun.reason ||
-        'No coverage-summary.json found; tests may not be configured or have never been run',
-    });
+    breaks.push(
+      coverageFinding({
+        file: 'backend/coverage/coverage-summary.json',
+        line: 0,
+        description: 'Backend coverage report not found — run jest --coverage to generate',
+        detail:
+          backendRun.reason ||
+          'No coverage-summary.json found; tests may not be configured or have never been run',
+      }),
+    );
     return breaks;
   }
 
@@ -170,27 +196,29 @@ export function checkTestCoverage(config: PulseConfig): Break[] {
     );
     const pct = entry.lines.pct;
 
-    if (FINANCIAL_PATH_RE.test(filePath)) {
-      if (pct < 80) {
-        breaks.push({
-          type: 'COVERAGE_FINANCIAL_LOW',
-          severity: 'medium',
-          file: relPath,
-          line: 0,
-          description: `Financial module line coverage ${pct.toFixed(1)}% — minimum required is 80%`,
-          detail: `${entry.lines.covered}/${entry.lines.total} lines covered in ${path.basename(filePath)}`,
-        });
+    const totalCoveragePct = backendCoverage.total?.lines.pct ?? null;
+    const floor = deriveCoverageFloor(filePath, totalCoveragePct);
+    if (FINANCIAL_PATH_SIGNAL.test(filePath)) {
+      if (pct < floor) {
+        breaks.push(
+          coverageFinding({
+            file: relPath,
+            line: 0,
+            description: `Financial module line coverage ${pct.toFixed(1)}% is below observed evidence floor ${floor.toFixed(1)}%`,
+            detail: `${entry.lines.covered}/${entry.lines.total} lines covered in ${path.basename(filePath)}`,
+          }),
+        );
       }
-    } else if (CORE_PATH_RE.test(filePath)) {
-      if (pct < 60) {
-        breaks.push({
-          type: 'COVERAGE_CORE_LOW',
-          severity: 'medium',
-          file: relPath,
-          line: 0,
-          description: `Core module line coverage ${pct.toFixed(1)}% — minimum required is 60%`,
-          detail: `${entry.lines.covered}/${entry.lines.total} lines covered in ${path.basename(filePath)}`,
-        });
+    } else if (CORE_PATH_SIGNAL.test(filePath)) {
+      if (pct < floor) {
+        breaks.push(
+          coverageFinding({
+            file: relPath,
+            line: 0,
+            description: `Core module line coverage ${pct.toFixed(1)}% is below observed evidence floor ${floor.toFixed(1)}%`,
+            detail: `${entry.lines.covered}/${entry.lines.total} lines covered in ${path.basename(filePath)}`,
+          }),
+        );
       }
     }
   }
@@ -198,14 +226,14 @@ export function checkTestCoverage(config: PulseConfig): Break[] {
   // CHECK: Overall backend total coverage
   const total = backendCoverage['total'];
   if (total && total.lines.pct < 50) {
-    breaks.push({
-      type: 'COVERAGE_CORE_LOW',
-      severity: 'medium',
-      file: 'backend/',
-      line: 0,
-      description: `Overall backend line coverage ${total.lines.pct.toFixed(1)}% — minimum required is 50%`,
-      detail: `${total.lines.covered}/${total.lines.total} lines covered across entire backend`,
-    });
+    breaks.push(
+      coverageFinding({
+        file: 'backend/',
+        line: 0,
+        description: `Overall backend line coverage ${total.lines.pct.toFixed(1)}% — minimum required is 50%`,
+        detail: `${total.lines.covered}/${total.lines.total} lines covered across entire backend`,
+      }),
+    );
   }
 
   // CHECK 5: Frontend coverage for critical flows
@@ -237,15 +265,16 @@ export function checkTestCoverage(config: PulseConfig): Break[] {
         filePath.startsWith('/') ? filePath : safeJoin(config.frontendDir, filePath),
       );
       const pct = entry.lines.pct;
-      if (pct < 60) {
-        breaks.push({
-          type: 'COVERAGE_CORE_LOW',
-          severity: 'medium',
-          file: relPath,
-          line: 0,
-          description: `Frontend critical flow coverage ${pct.toFixed(1)}% — minimum required is 60%`,
-          detail: `${entry.lines.covered}/${entry.lines.total} lines covered in ${path.basename(filePath)}`,
-        });
+      const frontendFloor = Math.max(60, frontendCoverage.total?.lines.pct ?? 0);
+      if (pct < frontendFloor) {
+        breaks.push(
+          coverageFinding({
+            file: relPath,
+            line: 0,
+            description: `Frontend critical flow coverage ${pct.toFixed(1)}% is below observed evidence floor ${frontendFloor.toFixed(1)}%`,
+            detail: `${entry.lines.covered}/${entry.lines.total} lines covered in ${path.basename(filePath)}`,
+          }),
+        );
       }
     }
   }

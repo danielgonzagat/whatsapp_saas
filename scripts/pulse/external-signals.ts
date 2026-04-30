@@ -57,6 +57,7 @@ export function createExternalSignalProfileState(
     profile: profile || undefined,
     certificationScope: certificationScope || profile || undefined,
     sources: [],
+    sourceCapabilities: [],
     allSignals: [],
     signalsBySource: {},
     criticalSignals: [],

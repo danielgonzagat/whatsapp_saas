@@ -11,6 +11,7 @@ import type {
   PulseConfig,
 } from './types';
 import { buildApiModuleMap } from './parsers/api-parser';
+import { deriveDynamicFindingIdentity } from './finding-identity';
 
 /** Normalize for match. */
 export function normalizeForMatch(p: string): string {
@@ -23,6 +24,54 @@ export function normalizeForMatch(p: string): string {
 
 /** Route key type. */
 export type RouteKey = string; // "GET:/campaigns/:_"
+
+type GraphEvidenceKind =
+  | 'route_target_unmatched'
+  | 'route_caller_unobserved'
+  | 'state_model_access_unobserved'
+  | 'ui_handler_effect_unobserved'
+  | 'facade_evidence'
+  | 'proxy_upstream_unmatched';
+
+function graphFindingType(kind: GraphEvidenceKind): string {
+  return `graph-${kind.replace(/_/g, '-')}`;
+}
+
+function graphFinding(input: {
+  kind: GraphEvidenceKind;
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+  surface?: string;
+}): Break {
+  return {
+    type: graphFindingType(input.kind),
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: `graph:confirmed_static:${input.kind}`,
+    surface: input.surface,
+  };
+}
+
+function countByDynamicEvent(breaks: Break[], pattern: RegExp): number {
+  return breaks.filter((item) => {
+    const identity = deriveDynamicFindingIdentity(item);
+    return pattern.test(`${identity.eventName} ${item.source ?? ''} ${item.surface ?? ''}`);
+  }).length;
+}
+
+function countBySourceKind(breaks: Break[], kind: GraphEvidenceKind): number {
+  return breaks.filter((item) => item.source === `graph:confirmed_static:${kind}`).length;
+}
+
+function countSurface(breaks: Break[], surface: string): number {
+  return breaks.filter((item) => item.surface === surface).length;
+}
 
 /** Build route lookup. */
 export function buildRouteLookup(
@@ -208,14 +257,17 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
         }
       }
 
-      breaks.push({
-        type: 'API_NO_ROUTE',
-        severity: 'high',
-        file: call.file,
-        line: call.line,
-        description: `${call.method} ${call.normalizedPath} has no matching backend route`,
-        detail: `Pattern: ${call.callPattern}, endpoint: ${call.endpoint}`,
-      });
+      breaks.push(
+        graphFinding({
+          kind: 'route_target_unmatched',
+          severity: 'high',
+          file: call.file,
+          line: call.line,
+          description: `${call.method} ${call.normalizedPath} has no matching backend route`,
+          detail: `Pattern: ${call.callPattern}, endpoint: ${call.endpoint}`,
+          surface: 'api-connectivity',
+        }),
+      );
     }
   }
 
@@ -251,21 +303,21 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
   for (const route of backendRoutes) {
     const key = `${route.httpMethod}:${normalizeForMatch(route.fullPath)}`;
     if (!consumedRoutes.has(key)) {
-      // Skip public/webhook/internal/admin/worker routes — not meant for frontend consumption
-      const internalPattern =
-        /webhook|health|cron|internal|^\/diag(\/|$)|^\/ops\/|^\/api\/v1\/|^\/copilot\/|^\/audit$|^\/auth\/send-verification$|incoming$|^\/kloel\/audio\/|^\/kloel\/pdf\/|^\/kloel\/onboarding-legacy\/|^\/kloel\/agent\/.*\/(process|simulate)$|^\/autopilot\/process$|^\/kloel\/upload\/multiple$|^\/kloel\/upload-chat$|^\/audio\/synthesize$|^\/media\/video\/ping$|^\/whatsapp-api\/send\/|^\/kyc\/auto-check$|^\/kyc\/[^/]+\/approve$|^\/whatsapp-api\/cia\/conversations\//i;
-      if (route.isPublic || internalPattern.test(route.fullPath)) {
+      if (route.isPublic) {
         continue;
       }
 
-      breaks.push({
-        type: 'ROUTE_NO_CALLER',
-        severity: 'low',
-        file: route.file,
-        line: route.line,
-        description: `${route.httpMethod} ${route.fullPath} is not called by any frontend code`,
-        detail: `Controller: ${route.methodName}`,
-      });
+      breaks.push(
+        graphFinding({
+          kind: 'route_caller_unobserved',
+          severity: 'low',
+          file: route.file,
+          line: route.line,
+          description: `${route.httpMethod} ${route.fullPath} is not called by any frontend code`,
+          detail: `Controller: ${route.methodName}`,
+          surface: 'route-connectivity',
+        }),
+      );
     }
   }
 
@@ -282,48 +334,52 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
       continue;
     }
 
-    // Skip common infrastructure models
-    if (/^(Workspace|Agent|RefreshToken|PasswordResetToken|DeviceToken)$/.test(model.name)) {
-      continue;
-    }
-
-    breaks.push({
-      type: 'MODEL_ORPHAN',
-      severity: 'medium',
-      file: `backend/prisma/schema.prisma`,
-      line: model.line,
-      description: `Model ${model.name} has no service or controller accessing it`,
-      detail: `Fields: ${model.fields
-        .slice(0, 5)
-        .map((f) => f.name)
-        .join(', ')}${model.fields.length > 5 ? '...' : ''}`,
-    });
+    breaks.push(
+      graphFinding({
+        kind: 'state_model_access_unobserved',
+        severity: 'medium',
+        file: `backend/prisma/schema.prisma`,
+        line: model.line,
+        description: `Model ${model.name} has no service or controller accessing it`,
+        detail: `Fields: ${model.fields
+          .slice(0, 5)
+          .map((f) => f.name)
+          .join(', ')}${model.fields.length > 5 ? '...' : ''}`,
+        surface: 'state-access',
+      }),
+    );
   }
 
   // === UI dead handlers ===
   for (const el of uiElements) {
     if (el.handlerType === 'dead' || el.handlerType === 'noop') {
-      breaks.push({
-        type: 'UI_DEAD_HANDLER',
-        severity: el.handlerType === 'noop' ? 'high' : 'medium',
-        file: el.file,
-        line: el.line,
-        description: `${el.type} "${el.label}" has ${el.handlerType} handler`,
-        detail: `Handler: ${(el.handler || '').slice(0, 80)}`,
-      });
+      breaks.push(
+        graphFinding({
+          kind: 'ui_handler_effect_unobserved',
+          severity: el.handlerType === 'noop' ? 'high' : 'medium',
+          file: el.file,
+          line: el.line,
+          description: `${el.type} "${el.label}" has ${el.handlerType} handler`,
+          detail: `Handler: ${(el.handler || '').slice(0, 80)}`,
+          surface: 'ui-interaction',
+        }),
+      );
     }
   }
 
   // === Facades ===
   for (const f of facades) {
-    breaks.push({
-      type: 'FACADE',
-      severity: f.severity,
-      file: f.file,
-      line: f.line,
-      description: `[${f.type}] ${f.description}`,
-      detail: f.evidence,
-    });
+    breaks.push(
+      graphFinding({
+        kind: 'facade_evidence',
+        severity: f.severity,
+        file: f.file,
+        line: f.line,
+        description: `[${f.type}] ${f.description}`,
+        detail: f.evidence,
+        surface: 'capability-materialization',
+      }),
+    );
   }
 
   // === Proxy routes without upstream ===
@@ -340,14 +396,17 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
         }
       }
       if (!found) {
-        breaks.push({
-          type: 'PROXY_NO_UPSTREAM',
-          severity: 'medium',
-          file: proxy.file,
-          line: proxy.line,
-          description: `Proxy ${proxy.httpMethod} ${proxy.frontendPath} -> ${proxy.backendPath} has no backend route`,
-          detail: '',
-        });
+        breaks.push(
+          graphFinding({
+            kind: 'proxy_upstream_unmatched',
+            severity: 'medium',
+            file: proxy.file,
+            line: proxy.line,
+            description: `Proxy ${proxy.httpMethod} ${proxy.frontendPath} -> ${proxy.backendPath} has no backend route`,
+            detail: '',
+            surface: 'proxy-connectivity',
+          }),
+        );
       }
     }
   }
@@ -367,56 +426,44 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
   const highBreaks = breaks.filter((b) => b.severity === 'high').length;
   const medBreaks = breaks.filter((b) => b.severity === 'medium').length;
   const lowBreaks = breaks.filter((b) => b.severity === 'low').length;
-  // Weighted penalty: critical issues tank the score, low issues barely affect it
-  const weightedPenalty = critBreaks * 3 + highBreaks * 1.5 + medBreaks * 0.5 + lowBreaks * 0.1;
-  const penalty = totalNodes > 0 ? (weightedPenalty / totalNodes) * 100 : 0;
+  const observedSeverityCount = critBreaks + highBreaks + medBreaks + lowBreaks;
+  const severityDensity = totalNodes > 0 ? observedSeverityCount / totalNodes : 0;
+  const criticalityDensity =
+    observedSeverityCount > 0 ? (critBreaks + highBreaks) / observedSeverityCount : 0;
+  const penalty = severityDensity * (1 + criticalityDensity) * 100;
   const score = Math.max(0, Math.min(100, Math.round(100 - penalty)));
 
   // Stats
   const uiDeadHandlers = uiElements.filter(
     (e) => e.handlerType === 'dead' || e.handlerType === 'noop',
   ).length;
-  const apiNoRoute = breaks.filter((b) => b.type === 'API_NO_ROUTE').length;
-  const backendEmpty = breaks.filter((b) => b.type === 'ROUTE_EMPTY').length;
-  const modelOrphans = breaks.filter((b) => b.type === 'MODEL_ORPHAN').length;
-  const facadeBreaks = breaks.filter((b) => b.type === 'FACADE');
-  const securityTypes = new Set([
-    'ROUTE_NO_AUTH',
-    'HARDCODED_SECRET',
-    'SQL_INJECTION_RISK',
-    'CSRF_UNPROTECTED',
-    'XSS_DANGEROUS_HTML',
-    'EVAL_USAGE',
-    'COOKIE_NOT_HTTPONLY',
-    'SENSITIVE_DATA_IN_LOG',
-    'INTERNAL_ERROR_EXPOSED',
-    'MISSING_WORKSPACE_FILTER',
-  ]);
-  const dataSafetyTypes = new Set([
-    'FINANCIAL_NO_TRANSACTION',
-    'DANGEROUS_DELETE',
-    'TOFIX_WITHOUT_PARSE',
-    'DIVISION_BY_ZERO_RISK',
-    'JSON_PARSE_UNSAFE',
-    'EMPTY_CATCH',
-    'FINANCIAL_ERROR_SWALLOWED',
-  ]);
-  const securityIssues = breaks.filter((b) => securityTypes.has(b.type)).length;
-  const dataSafetyIssues = breaks.filter((b) => dataSafetyTypes.has(b.type)).length;
-  const qualityIssues = breaks.filter(
-    (b) =>
-      !securityTypes.has(b.type) &&
-      !dataSafetyTypes.has(b.type) &&
-      b.type !== 'API_NO_ROUTE' &&
-      b.type !== 'ROUTE_NO_CALLER' &&
-      b.type !== 'ROUTE_EMPTY' &&
-      b.type !== 'MODEL_ORPHAN' &&
-      b.type !== 'UI_DEAD_HANDLER' &&
-      b.type !== 'FACADE' &&
-      b.type !== 'PROXY_NO_UPSTREAM',
-  ).length;
-  const unavailableChecks = breaks.filter((b) => b.type === 'CHECK_UNAVAILABLE').length;
-  const unknownSurfaces = breaks.filter((b) => b.type === 'UNKNOWN_SURFACE').length;
+  const apiNoRoute = countBySourceKind(breaks, 'route_target_unmatched');
+  const backendEmpty = countByDynamicEvent(breaks, /\bempty\b/i);
+  const modelOrphans = countBySourceKind(breaks, 'state_model_access_unobserved');
+  const facadeBreaks = breaks.filter(
+    (item) => item.source === 'graph:confirmed_static:facade_evidence',
+  );
+  const securityIssues = countSurface(breaks, 'security');
+  const dataSafetyIssues = countSurface(breaks, 'data-safety');
+  const graphOwnedIssues =
+    apiNoRoute +
+    countBySourceKind(breaks, 'route_caller_unobserved') +
+    backendEmpty +
+    modelOrphans +
+    countBySourceKind(breaks, 'ui_handler_effect_unobserved') +
+    facadeBreaks.length +
+    countBySourceKind(breaks, 'proxy_upstream_unmatched');
+  const unavailableChecks = countByDynamicEvent(breaks, /\bunavailable\b/i);
+  const unknownSurfaces = countByDynamicEvent(breaks, /\bunknown surface\b/i);
+  const qualityIssues = Math.max(
+    0,
+    breaks.length -
+      securityIssues -
+      dataSafetyIssues -
+      graphOwnedIssues -
+      unavailableChecks -
+      unknownSurfaces,
+  );
 
   return {
     score,
@@ -441,7 +488,7 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
         low: facadeBreaks.filter((f) => f.severity === 'low').length,
       },
       proxyRoutes: proxyRoutes.length,
-      proxyNoUpstream: breaks.filter((b) => b.type === 'PROXY_NO_UPSTREAM').length,
+      proxyNoUpstream: countBySourceKind(breaks, 'proxy_upstream_unmatched'),
       securityIssues,
       dataSafetyIssues,
       qualityIssues,

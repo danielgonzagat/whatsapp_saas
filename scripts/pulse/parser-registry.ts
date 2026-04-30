@@ -7,6 +7,7 @@ import type {
   PulseParserInventory,
 } from './types';
 import { pathExists, readDir, readTextFile, statPath } from './safe-fs';
+import { discoverPlugins, loadPlugin } from './plugin-system';
 
 interface LoadParserInventoryOptions {
   includeParser?: (name: string) => boolean;
@@ -32,6 +33,7 @@ const FUNCTION_REFERENCE_PROPERTY_RE = (property: string): RegExp =>
 type ParserDiscoveryAuthority =
   | 'declared_metadata'
   | 'declared_export'
+  | 'plugin_registry'
   | 'legacy_weak_check_export'
   | 'helper';
 
@@ -47,6 +49,40 @@ interface ParserOperationalMetadata {
 }
 
 type ParserContractWithOperationalMetadata = PulseParserContract & ParserOperationalMetadata;
+type ParserDefinitionWithOperationalMetadata = PulseParserDefinition & ParserOperationalMetadata;
+
+interface PluginParserProvider {
+  parsers?: () => unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object';
+}
+
+function isParserDefinition(value: unknown): value is PulseParserDefinition {
+  return (
+    isRecord(value) &&
+    typeof value.name === 'string' &&
+    typeof value.file === 'string' &&
+    typeof value.fn === 'function'
+  );
+}
+
+function toPluginParserDefinitions(value: unknown): PulseParserDefinition[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const definitions: PulseParserDefinition[] = [];
+  for (const item of value) {
+    if (!isParserDefinition(item)) {
+      return null;
+    }
+    definitions.push(item);
+  }
+
+  return definitions;
+}
 
 interface DeclaredParserExport {
   authority: Exclude<ParserDiscoveryAuthority, 'helper' | 'legacy_weak_check_export'>;
@@ -304,6 +340,34 @@ function buildParserContract(
   };
 }
 
+function buildPluginParserContract(
+  rootDir: string,
+  pluginId: string,
+  entrypoint: string,
+  parserName: string,
+): ParserContractWithOperationalMetadata {
+  const sourceMtime = pathExists(entrypoint) ? statPath(entrypoint).mtime.toISOString() : null;
+
+  return {
+    name: parserName,
+    file: path.relative(rootDir, entrypoint),
+    kind: 'active_parser',
+    parserExports: [`plugin:${pluginId}`],
+    exportedFunctions: ['parsers'],
+    proof: `active parser contract registered dynamically by plugin ${pluginId}`,
+    sourceMtime,
+    ...buildOperationalMetadata({
+      confidence: 0.8,
+      declaredExport: 'parsers',
+      discoveryAuthority: 'plugin_registry',
+      evidenceKind: 'plugin-parser',
+      inputs: ['pulse-config'],
+      outputs: ['breaks'],
+      pluginId,
+    }),
+  };
+}
+
 /** Discover parser module contracts without loading the modules. */
 export function discoverParserContracts(rootDir: string): PulseParserContract[] {
   const parsersDir = safeJoin(rootDir, 'scripts', 'pulse', 'parsers');
@@ -314,6 +378,105 @@ export function discoverParserContracts(rootDir: string): PulseParserContract[] 
   return files
     .map((file) => buildParserContract(rootDir, parsersDir, file))
     .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function loadParserPluginDefinitions(
+  config: PulseConfig,
+  options: LoadParserInventoryOptions,
+): {
+  contracts: ParserContractWithOperationalMetadata[];
+  loadedChecks: ParserDefinitionWithOperationalMetadata[];
+  unavailableChecks: PulseParserInventory['unavailableChecks'];
+} {
+  const contracts: ParserContractWithOperationalMetadata[] = [];
+  const loadedChecks: ParserDefinitionWithOperationalMetadata[] = [];
+  const unavailableChecks: PulseParserInventory['unavailableChecks'] = [];
+
+  for (const pluginDescriptor of discoverPlugins(config.rootDir).filter(
+    (plugin) => plugin.kind === 'parser',
+  )) {
+    const plugin = loadPlugin(pluginDescriptor.path);
+    const file = path.relative(config.rootDir, pluginDescriptor.path);
+    if (!plugin) {
+      unavailableChecks.push({
+        name: pluginDescriptor.id,
+        file,
+        reason: 'Parser plugin entrypoint did not load or failed PulsePlugin contract validation.',
+      });
+      continue;
+    }
+
+    const parserProvider = plugin as typeof plugin & PluginParserProvider;
+    if (typeof parserProvider.parsers !== 'function') {
+      unavailableChecks.push({
+        name: plugin.id,
+        file,
+        reason: 'Parser plugin loaded but did not expose parsers().',
+      });
+      continue;
+    }
+
+    let parserDefinitions: PulseParserDefinition[] | null = null;
+    try {
+      parserDefinitions = toPluginParserDefinitions(parserProvider.parsers());
+    } catch (error) {
+      unavailableChecks.push({
+        name: plugin.id,
+        file,
+        reason: error instanceof Error ? error.message : String(error),
+      });
+      continue;
+    }
+
+    if (!parserDefinitions) {
+      unavailableChecks.push({
+        name: plugin.id,
+        file,
+        reason: 'Parser plugin parsers() did not return PulseParserDefinition[].',
+      });
+      continue;
+    }
+
+    for (const parserDefinition of parserDefinitions) {
+      if (options.includeParser && !options.includeParser(parserDefinition.name)) {
+        continue;
+      }
+
+      if (!PARSER_NAME_RE.test(parserDefinition.name)) {
+        unavailableChecks.push({
+          name: parserDefinition.name,
+          file,
+          reason: 'Plugin parser name failed safe-identifier validation.',
+        });
+        continue;
+      }
+
+      const metadata = buildOperationalMetadata({
+        confidence: 0.8,
+        declaredExport: 'parsers',
+        discoveryAuthority: 'plugin_registry',
+        evidenceKind: 'plugin-parser',
+        inputs: ['pulse-config'],
+        outputs: ['breaks'],
+        pluginId: plugin.id,
+      });
+      contracts.push(
+        buildPluginParserContract(
+          config.rootDir,
+          plugin.id,
+          pluginDescriptor.path,
+          parserDefinition.name,
+        ),
+      );
+      loadedChecks.push({
+        ...parserDefinition,
+        file: parserDefinition.file || file,
+        ...metadata,
+      });
+    }
+  }
+
+  return { contracts, loadedChecks, unavailableChecks };
 }
 
 function resolveParserFunction(
@@ -355,7 +518,11 @@ export function loadParserInventory(
   options: LoadParserInventoryOptions = {},
 ): PulseParserInventory {
   const generatedAt = new Date().toISOString();
-  const contracts = discoverParserContracts(config.rootDir);
+  const filesystemContracts = discoverParserContracts(config.rootDir);
+  const pluginInventory = loadParserPluginDefinitions(config, options);
+  const contracts = [...filesystemContracts, ...pluginInventory.contracts].sort((left, right) =>
+    left.name.localeCompare(right.name),
+  );
   const checks = contracts
     .filter((contract) => contract.kind === 'active_parser')
     .map((contract) => contract.name);
@@ -363,9 +530,11 @@ export function loadParserInventory(
     .filter((contract) => contract.kind === 'helper')
     .map((contract) => contract.name);
   const loadedChecks: PulseParserDefinition[] = [];
-  const unavailableChecks: PulseParserInventory['unavailableChecks'] = [];
+  const unavailableChecks: PulseParserInventory['unavailableChecks'] = [
+    ...pluginInventory.unavailableChecks,
+  ];
 
-  for (const contract of contracts.filter((item) => item.kind === 'active_parser')) {
+  for (const contract of filesystemContracts.filter((item) => item.kind === 'active_parser')) {
     const name = contract.name;
     if (options.includeParser && !options.includeParser(name)) {
       continue;
@@ -409,6 +578,7 @@ export function loadParserInventory(
       });
     }
   }
+  loadedChecks.push(...pluginInventory.loadedChecks);
 
   return {
     contracts,

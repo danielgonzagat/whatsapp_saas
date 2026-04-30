@@ -9,7 +9,11 @@ import {
   buildPulseAgentOrchestrationStateSeed,
   buildPulseAutonomyStateSeed,
 } from './autonomy-loop';
-import { buildArtifactRegistry, type PulseArtifactRegistry } from './artifact-registry';
+import {
+  buildArtifactRegistry,
+  resolveArtifactRelativePath,
+  type PulseArtifactRegistry,
+} from './artifact-registry';
 import { cleanupPulseArtifacts } from './artifact-gc';
 import { buildConvergencePlan } from './convergence-plan';
 import { readOptionalJson, writeArtifact } from './artifacts.io';
@@ -117,6 +121,26 @@ function resolveInsideCanonicalDir(registry: PulseArtifactRegistry, fileName: st
   return resolved;
 }
 
+function readRegisteredJson<T>(registry: PulseArtifactRegistry, artifactId: string): T | null {
+  return readOptionalJson<T>(
+    resolveInsideCanonicalDir(registry, resolveArtifactRelativePath(registry, artifactId)),
+  );
+}
+
+function writeRegisteredArtifact(
+  registry: PulseArtifactRegistry,
+  artifactId: string,
+  content: string,
+  identity?: PulseRunIdentity,
+): string {
+  return writeArtifact(
+    resolveArtifactRelativePath(registry, artifactId),
+    content,
+    registry,
+    identity,
+  );
+}
+
 function buildFindingValidationState(snapshot: PulseArtifactSnapshot): unknown {
   const eventSurface = buildFindingEventSurface(snapshot.health.breaks, 20);
   const generatedDiagnostic =
@@ -191,11 +215,10 @@ export function generateArtifacts(
   const identity = createRunIdentity(runMode ?? 'scan', profile);
   registry.runId = identity.runId;
 
-  const previousAutonomyState = readOptionalJson<PulseAutonomyState>(
-    resolveInsideCanonicalDir(registry, 'PULSE_AUTONOMY_STATE.json'),
-  );
-  const previousAgentOrchestrationState = readOptionalJson<PulseAgentOrchestrationState>(
-    resolveInsideCanonicalDir(registry, 'PULSE_AGENT_ORCHESTRATION_STATE.json'),
+  const previousAutonomyState = readRegisteredJson<PulseAutonomyState>(registry, 'autonomy-state');
+  const previousAgentOrchestrationState = readRegisteredJson<PulseAgentOrchestrationState>(
+    registry,
+    'agent-orchestration-state',
   );
   const cleanupReport = cleanupPulseArtifacts(registry);
   const convergencePlan = buildConvergencePlan({
@@ -216,22 +239,22 @@ export function generateArtifacts(
     previousAutonomyState,
   );
 
-  const reportPath = writeArtifact(
-    'PULSE_REPORT.md',
-    buildReport(snapshot, convergencePlan, cleanupReport, previousAutonomyState),
+  const reportPath = writeRegisteredArtifact(
     registry,
+    'report',
+    buildReport(snapshot, convergencePlan, cleanupReport, previousAutonomyState),
   );
   const certificateContent = buildCertificate(snapshot, convergencePlan, previousAutonomyState);
-  const certificatePath = writeArtifact(
-    'PULSE_CERTIFICATE.json',
-    certificateContent,
+  const certificatePath = writeRegisteredArtifact(
     registry,
+    'certificate',
+    certificateContent,
     identity,
   );
-  const machineReadinessPath = writeArtifact(
-    'PULSE_MACHINE_READINESS.json',
-    JSON.stringify(machineReadiness, null, 2),
+  const machineReadinessPath = writeRegisteredArtifact(
     registry,
+    'machine-readiness',
+    JSON.stringify(machineReadiness, null, 2),
     identity,
   );
   const directiveContent = buildDirective(
@@ -240,10 +263,10 @@ export function generateArtifacts(
     previousAutonomyState,
     machineReadiness,
   );
-  const cliDirectivePath = writeArtifact(
-    'PULSE_CLI_DIRECTIVE.json',
-    directiveContent,
+  const cliDirectivePath = writeRegisteredArtifact(
     registry,
+    'directive',
+    directiveContent,
     identity,
   );
   const contextBundle = buildPulseContextFabricBundle({
@@ -254,34 +277,34 @@ export function generateArtifacts(
     directiveContent,
     certificateContent,
   });
-  writeArtifact(
-    'PULSE_GITNEXUS_STATE.json',
+  writeRegisteredArtifact(
+    registry,
+    'gitnexus-state',
     JSON.stringify(contextBundle.gitnexusState, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_BEADS_STATE.json',
+  writeRegisteredArtifact(
+    registry,
+    'beads-state',
     JSON.stringify(contextBundle.beadsState, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_CONTEXT_BROADCAST.json',
+  writeRegisteredArtifact(
+    registry,
+    'context-broadcast',
     JSON.stringify(contextBundle.broadcast, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_WORKER_LEASES.json',
+  writeRegisteredArtifact(
+    registry,
+    'worker-leases',
     JSON.stringify(contextBundle.leases, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_CONTEXT_DELTA.json',
-    JSON.stringify(contextBundle.delta, null, 2),
+  writeRegisteredArtifact(
     registry,
+    'context-delta',
+    JSON.stringify(contextBundle.delta, null, 2),
     identity,
   );
   const augmentedDirectiveContent = (() => {
@@ -327,111 +350,111 @@ export function generateArtifacts(
       return directiveContent;
     }
   })();
-  writeArtifact('PULSE_CLI_DIRECTIVE.json', augmentedDirectiveContent, registry, identity);
+  writeRegisteredArtifact(registry, 'directive', augmentedDirectiveContent, identity);
   const directivePayload =
     readOptionalJson<Parameters<typeof buildPulseAutonomyStateSeed>[0]['directive']>(
       cliDirectivePath,
     ) || {};
-  writeArtifact(
-    'PULSE_AUTONOMY_PROOF.json',
-    JSON.stringify((directivePayload as { autonomyProof?: unknown }).autonomyProof || {}, null, 2),
+  writeRegisteredArtifact(
     registry,
+    'autonomy-proof',
+    JSON.stringify((directivePayload as { autonomyProof?: unknown }).autonomyProof || {}, null, 2),
     identity,
   );
-  const artifactIndexPath = writeArtifact(
-    'PULSE_ARTIFACT_INDEX.json',
-    buildArtifactIndex(registry, cleanupReport, authority, identity, machineReadiness),
+  const artifactIndexPath = writeRegisteredArtifact(
     registry,
+    'artifact-index',
+    buildArtifactIndex(registry, cleanupReport, authority, identity, machineReadiness),
     identity,
   );
 
-  writeArtifact('PULSE_HEALTH.json', buildHealth(snapshot), registry, identity);
-  writeArtifact(
-    'PULSE_SCOPE_STATE.json',
+  writeRegisteredArtifact(registry, 'health', buildHealth(snapshot), identity);
+  writeRegisteredArtifact(
+    registry,
+    'scope-state',
     JSON.stringify(snapshot.scopeState, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_CODACY_EVIDENCE.json',
+  writeRegisteredArtifact(
+    registry,
+    'codacy-evidence',
     JSON.stringify(snapshot.codacyEvidence, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_STRUCTURAL_GRAPH.json',
+  writeRegisteredArtifact(
+    registry,
+    'structural-graph',
     JSON.stringify(snapshot.structuralGraph, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_EXECUTION_CHAINS.json',
+  writeRegisteredArtifact(
+    registry,
+    'execution-chains',
     JSON.stringify(snapshot.executionChains, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_EXECUTION_MATRIX.json',
+  writeRegisteredArtifact(
+    registry,
+    'execution-matrix',
     JSON.stringify(normalizeCanonicalArtifactValue(snapshot.executionMatrix), null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_PRODUCT_GRAPH.json',
+  writeRegisteredArtifact(
+    registry,
+    'product-graph',
     JSON.stringify(snapshot.productGraph, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_CAPABILITY_STATE.json',
+  writeRegisteredArtifact(
+    registry,
+    'capability-state',
     JSON.stringify(snapshot.capabilityState, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_FLOW_PROJECTION.json',
+  writeRegisteredArtifact(
+    registry,
+    'flow-projection',
     JSON.stringify(snapshot.flowProjection, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_PARITY_GAPS.json',
+  writeRegisteredArtifact(
+    registry,
+    'parity-gaps',
     JSON.stringify(snapshot.parityGaps, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_EXTERNAL_SIGNAL_STATE.json',
+  writeRegisteredArtifact(
+    registry,
+    'external-signal-state',
     JSON.stringify(snapshot.externalSignalState, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_PRODUCT_VISION.json',
+  writeRegisteredArtifact(
+    registry,
+    'product-vision',
     JSON.stringify(snapshot.productVision, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_CONVERGENCE_PLAN.json',
+  writeRegisteredArtifact(
+    registry,
+    'convergence-plan',
     JSON.stringify(normalizeCanonicalArtifactValue(convergencePlan), null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_FINDING_VALIDATION_STATE.json',
+  writeRegisteredArtifact(
+    registry,
+    'finding-validation-state',
     JSON.stringify(buildFindingValidationState(snapshot), null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_NO_HARDCODED_REALITY.json',
+  writeRegisteredArtifact(
+    registry,
+    'no-hardcoded-reality-state',
     JSON.stringify(
       buildNoHardcodedRealityState(rootDir, snapshot.certification.timestamp),
       null,
       2,
     ),
-    registry,
     identity,
   );
   const autonomyState = buildPulseAutonomyStateSeed({
@@ -442,10 +465,10 @@ export function generateArtifacts(
     parallelAgents: previousAutonomyState?.parallelAgents || 1,
     maxWorkerRetries: previousAutonomyState?.maxWorkerRetries || 1,
   });
-  writeArtifact(
-    'PULSE_AUTONOMY_STATE.json',
-    JSON.stringify(normalizeCanonicalArtifactValue(autonomyState), null, 2),
+  writeRegisteredArtifact(
     registry,
+    'autonomy-state',
+    JSON.stringify(normalizeCanonicalArtifactValue(autonomyState), null, 2),
     identity,
   );
   const orchestrationState = buildPulseAgentOrchestrationStateSeed({
@@ -455,8 +478,9 @@ export function generateArtifacts(
     maxWorkerRetries: previousAgentOrchestrationState?.maxWorkerRetries || 1,
     plannerMode: previousAgentOrchestrationState?.plannerMode || 'deterministic',
   });
-  writeArtifact(
-    'PULSE_AUTONOMY_MEMORY.json',
+  writeRegisteredArtifact(
+    registry,
+    'autonomy-memory',
     JSON.stringify(
       buildPulseAutonomyMemoryState({
         autonomyState,
@@ -465,23 +489,23 @@ export function generateArtifacts(
       null,
       2,
     ),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_AGENT_ORCHESTRATION_STATE.json',
+  writeRegisteredArtifact(
+    registry,
+    'agent-orchestration-state',
     JSON.stringify(orchestrationState, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_RUNTIME_EVIDENCE.json',
+  writeRegisteredArtifact(
+    registry,
+    'runtime-evidence',
     JSON.stringify(snapshot.certification.evidenceSummary.runtime, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_RUNTIME_PROBES.json',
+  writeRegisteredArtifact(
+    registry,
+    'runtime-probes',
     JSON.stringify(
       buildRuntimeProbesArtifact(snapshot.certification.evidenceSummary.runtime, {
         generatedAt: identity.generatedAt,
@@ -490,91 +514,90 @@ export function generateArtifacts(
       null,
       2,
     ),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_BROWSER_EVIDENCE.json',
+  writeRegisteredArtifact(
+    registry,
+    'browser-evidence',
     JSON.stringify(snapshot.certification.evidenceSummary.browser, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_FLOW_EVIDENCE.json',
+  writeRegisteredArtifact(
+    registry,
+    'flow-evidence',
     JSON.stringify(snapshot.certification.evidenceSummary.flows, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_INVARIANT_EVIDENCE.json',
+  writeRegisteredArtifact(
+    registry,
+    'invariant-evidence',
     JSON.stringify(snapshot.certification.evidenceSummary.invariants, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_OBSERVABILITY_EVIDENCE.json',
+  writeRegisteredArtifact(
+    registry,
+    'observability-evidence',
     JSON.stringify(snapshot.certification.evidenceSummary.observability, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_RECOVERY_EVIDENCE.json',
+  writeRegisteredArtifact(
+    registry,
+    'recovery-evidence',
     JSON.stringify(snapshot.certification.evidenceSummary.recovery, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_CUSTOMER_EVIDENCE.json',
+  writeRegisteredArtifact(
+    registry,
+    'customer-evidence',
     JSON.stringify(snapshot.certification.evidenceSummary.customer, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_OPERATOR_EVIDENCE.json',
+  writeRegisteredArtifact(
+    registry,
+    'operator-evidence',
     JSON.stringify(snapshot.certification.evidenceSummary.operator, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_ADMIN_EVIDENCE.json',
+  writeRegisteredArtifact(
+    registry,
+    'admin-evidence',
     JSON.stringify(snapshot.certification.evidenceSummary.admin, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_SOAK_EVIDENCE.json',
+  writeRegisteredArtifact(
+    registry,
+    'soak-evidence',
     JSON.stringify(snapshot.certification.evidenceSummary.soak, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_SCENARIO_COVERAGE.json',
+  writeRegisteredArtifact(
+    registry,
+    'scenario-coverage',
     JSON.stringify(snapshot.certification.evidenceSummary.syntheticCoverage, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_WORLD_STATE.json',
+  writeRegisteredArtifact(
+    registry,
+    'world-state',
     JSON.stringify(snapshot.certification.evidenceSummary.worldState, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_EXECUTION_TRACE.json',
+  writeRegisteredArtifact(
+    registry,
+    'execution-trace',
     JSON.stringify(snapshot.certification.evidenceSummary.executionTrace, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_CODEBASE_TRUTH.json',
+  writeRegisteredArtifact(
+    registry,
+    'codebase-truth',
     JSON.stringify(snapshot.codebaseTruth, null, 2),
-    registry,
     identity,
   );
-  writeArtifact(
-    'PULSE_RESOLVED_MANIFEST.json',
-    JSON.stringify(snapshot.resolvedManifest, null, 2),
+  writeRegisteredArtifact(
     registry,
+    'resolved-manifest',
+    JSON.stringify(snapshot.resolvedManifest, null, 2),
     identity,
   );
 

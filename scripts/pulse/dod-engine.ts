@@ -910,6 +910,7 @@ function classifyCapability(
   gates: DoDGate[],
   riskLevel: DoDRiskLevel,
   truthMode: string,
+  requiredBeforeReal: string[],
 ): DoDCapabilityClassification {
   const allRequiredPass = gates.filter((g) => g.required).every((g) => g.status === 'pass');
 
@@ -926,17 +927,18 @@ function classifyCapability(
   }
 
   // production: all blocking + required gates pass AND structural checks complete
-  if (allRequiredPass && blockingPass && structuralRatio >= 0.8 && runtimeObserved) {
+  if (
+    allRequiredPass &&
+    blockingPass &&
+    structuralRatio >= 0.8 &&
+    runtimeObserved &&
+    requiredBeforeReal.length === 0
+  ) {
     return 'production';
   }
 
   // real: enough structural evidence AND runtime observed
-  if (structuralRatio >= 0.5 && runtimeObserved) {
-    return 'real';
-  }
-
-  // real: all required pass even without runtime (strong static evidence)
-  if (allRequiredPass && structuralRatio >= 0.6) {
+  if (structuralRatio >= 0.5 && runtimeObserved && requiredBeforeReal.length === 0) {
     return 'real';
   }
 
@@ -998,28 +1000,39 @@ function computeScore(
 
 // ── Required-before-real ───────────────────────────────────────────────────
 
-function determineRequiredBeforeReal(capability: CapabilityInput): string[] {
+function findGateStatus(gates: DoDGate[], gateName: string): DoDGate['status'] | null {
+  return gates.find((gate) => gate.name === gateName)?.status ?? null;
+}
+
+function determineRequiredBeforeReal(capability: CapabilityInput, gates: DoDGate[]): string[] {
   const required: string[] = [];
   const hasApi = hasNodeKind(capability.nodeIds, 'api') || hasNodeKind(capability.nodeIds, 'route');
   const hasPersistence = hasNodeKind(capability.nodeIds, 'persistence');
   const hasSideEffect = hasNodeKind(capability.nodeIds, 'side-effect');
   const hasUi = hasNodeKind(capability.nodeIds, 'ui');
+  const integrationStatus = findGateStatus(gates, 'integration_tests_pass');
+  const runtimeStatus = findGateStatus(gates, 'runtime_observed');
+  const persistenceStatus = findGateStatus(gates, 'persistence_exists');
+  const sideEffectStatus = findGateStatus(gates, 'side_effects_exist');
 
-  if (hasUi) {
+  if (runtimeStatus !== 'pass') {
+    required.push(`Observed runtime proof for ${capability.name}`);
+  }
+  if (hasUi && integrationStatus !== 'pass') {
     required.push(`End-to-end browser scenario for ${capability.name} through Playwright`);
   }
-  if (hasApi) {
+  if (hasApi && integrationStatus !== 'pass') {
     required.push(`API integration test covering ${capability.name} endpoints`);
   }
-  if (hasPersistence) {
+  if (hasPersistence && persistenceStatus !== 'pass') {
     required.push(`Database persistence verified for ${capability.name}`);
   }
-  if (hasSideEffect) {
+  if (hasSideEffect && sideEffectStatus !== 'pass') {
     required.push(
       `Side-effect replay verified for ${capability.name} (webhook/queue/external API)`,
     );
   }
-  if (hasPersistence && hasSideEffect) {
+  if (hasPersistence && hasSideEffect && integrationStatus !== 'pass') {
     required.push(`Idempotency guarantee for ${capability.name} side effects`);
   }
 
@@ -1077,11 +1090,13 @@ function evaluateCapability(
   );
 
   const structuralChecks = evaluateStructuralChecks(input, rootDir, riskLevel);
+  const requiredBeforeProduction = determineRequiredBeforeReal(input, gates);
   const classification = classifyCapability(
     structuralChecks,
     gates,
     riskLevel,
     cap.truthMode ?? 'inferred',
+    requiredBeforeProduction,
   );
 
   const blockingGates = gates.filter((g) => g.blocking && g.status === 'fail').map((g) => g.name);
@@ -1099,8 +1114,6 @@ function evaluateCapability(
         : overallStatus === 'blocked'
           ? 0.3
           : 0.0;
-
-  const requiredBeforeProduction = determineRequiredBeforeReal(input);
 
   const dod: CapabilityDoD = {
     capabilityId: cap.id,

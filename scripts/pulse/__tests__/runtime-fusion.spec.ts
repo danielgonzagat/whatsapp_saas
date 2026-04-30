@@ -505,4 +505,109 @@ describe('runtime-fusion', () => {
     ]);
     expect(signalsById.get('dependency-opaque')?.evidenceMode).toBe('inferred');
   });
+
+  it('gives observed runtime evidence higher priority and impact than lint-only findings', () => {
+    const { rootDir, currentDir } = createPulseRoot();
+
+    writeJson(path.join(currentDir, 'PULSE_CAPABILITY_STATE.json'), {
+      capabilities: [
+        {
+          id: 'capability:runtime-checkout',
+          name: 'Runtime Checkout',
+          filePaths: ['backend/src/runtime-checkout.ts'],
+        },
+        {
+          id: 'capability:lint-checkout',
+          name: 'Lint Checkout',
+          filePaths: ['backend/src/lint-checkout.ts'],
+        },
+      ],
+    });
+    writeJson(path.join(currentDir, 'PULSE_CONVERGENCE_PLAN.json'), {
+      priorities: {
+        'capability:runtime-checkout': 'P2',
+        'capability:lint-checkout': 'P2',
+      },
+    });
+    writeJson(path.join(currentDir, 'PULSE_EXTERNAL_SIGNAL_STATE.json'), {
+      generatedAt: '2026-04-29T21:00:00.000Z',
+      truthMode: 'observed',
+      adapters: [
+        { source: 'sentry', status: 'ready' },
+        { source: 'codacy', status: 'ready' },
+      ],
+      signals: [
+        {
+          id: 'sentry-runtime-checkout',
+          type: 'opaque_event',
+          source: 'sentry',
+          truthMode: 'observed',
+          severity: 0.74,
+          impactScore: 0.74,
+          runtimeBaselineScore: 0.9,
+          summary: 'Checkout runtime timeout.',
+          relatedFiles: ['backend/src/runtime-checkout.ts'],
+          observedPayload: {
+            traceId: 'trace-runtime-checkout',
+            statusCode: 504,
+            durationMs: 7200,
+          },
+        },
+        {
+          id: 'codacy-lint-checkout',
+          type: 'opaque_event',
+          source: 'codacy',
+          truthMode: 'observed',
+          severity: 1,
+          impactScore: 1,
+          summary: 'Checkout lint complexity hotspot.',
+          relatedFiles: ['backend/src/lint-checkout.ts'],
+          observedPayload: {
+            ruleId: 'complexity',
+            findingId: 'codacy-finding-2',
+            filePath: 'backend/src/lint-checkout.ts',
+          },
+        },
+      ],
+    });
+
+    const state = buildRuntimeFusionState(rootDir);
+    const runtimeSignal = state.signals.find((signal) => signal.id === 'sentry-runtime-checkout');
+    const lintSignal = state.signals.find((signal) => signal.id === 'codacy-lint-checkout');
+
+    expect(runtimeSignal?.evidenceKind).toBe('runtime');
+    expect(lintSignal?.evidenceKind).toBe('static');
+    expect(runtimeSignal?.impactScore).toBeGreaterThan(lintSignal?.impactScore ?? 0);
+    expect(state.summary.topImpactCapabilities[0]).toEqual(
+      expect.objectContaining({ capabilityId: 'capability:runtime-checkout' }),
+    );
+    expect(state.priorityOverrides).toEqual([
+      expect.objectContaining({ capabilityId: 'capability:runtime-checkout', newPriority: 'P0' }),
+    ]);
+  });
+
+  it('reports empty external adapter output as not_available instead of observed proof', () => {
+    const { rootDir, currentDir } = createPulseRoot();
+
+    writeJson(path.join(currentDir, 'PULSE_EXTERNAL_SIGNAL_STATE.json'), {
+      generatedAt: '2026-04-29T21:10:00.000Z',
+      truthMode: 'observed',
+      adapters: [{ source: 'datadog', status: 'not_available' }],
+      signals: [],
+    });
+
+    const state = buildRuntimeFusionState(rootDir);
+
+    expect(state.evidence.externalSignalState.status).toBe('not_available');
+    expect(state.evidence.externalSignalState.notAvailableAdapters).toEqual(['datadog']);
+    expect(state.machineImprovementSignals).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          targetEngine: 'external-sources-orchestrator',
+          truthMode: 'not_available',
+          sourceStatus: 'not_available',
+        }),
+      ]),
+    );
+  });
 });

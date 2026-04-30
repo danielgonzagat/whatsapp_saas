@@ -12,6 +12,9 @@ import type { StructuralRole, TruthMode } from './types.structural-roles';
 
 export type { StructuralRole, TruthMode };
 
+/** Evidence certainty used by DoD. `not_available` is an explicit proof gap. */
+export type DoDEvidenceTruthMode = TruthMode | 'not_available';
+
 /** Evidence record for a single structural role within a capability. */
 export interface CapabilityRoleEvidence {
   /** The architectural role being evidenced. */
@@ -19,7 +22,7 @@ export interface CapabilityRoleEvidence {
   /** Whether evidence of this role was found. */
   present: boolean;
   /** The epistemic certainty level of the evidence. */
-  truthMode: TruthMode;
+  truthMode: DoDEvidenceTruthMode;
   /** Optional file/symbol path where evidence was located. */
   evidencePath?: string;
 }
@@ -84,28 +87,35 @@ const TRUTH_MODE_RANK: Record<TruthMode, number> = {
   aspirational: 0,
 };
 
+const DOD_TRUTH_MODE_RANK: Record<DoDEvidenceTruthMode, number> = {
+  observed: 2,
+  inferred: 1,
+  aspirational: 0,
+  not_available: -1,
+};
+
 /**
  * Returns the best (highest-certainty) TruthMode among all present evidence
- * entries. Returns 'aspirational' when no evidence is present.
+ * entries. Returns 'not_available' when no evidence is present.
  */
-function bestTruthMode(evidence: CapabilityRoleEvidence[]): TruthMode {
+function bestTruthMode(evidence: CapabilityRoleEvidence[]): DoDEvidenceTruthMode {
   const presentEvidence = evidence.filter((e) => e.present);
   if (presentEvidence.length === 0) {
-    return 'aspirational';
+    return 'not_available';
   }
-  return presentEvidence.reduce<TruthMode>((best, e) => {
-    return TRUTH_MODE_RANK[e.truthMode] > TRUTH_MODE_RANK[best] ? e.truthMode : best;
-  }, 'aspirational');
+  return presentEvidence.reduce<DoDEvidenceTruthMode>((best, e) => {
+    return DOD_TRUTH_MODE_RANK[e.truthMode] > DOD_TRUTH_MODE_RANK[best] ? e.truthMode : best;
+  }, 'not_available');
 }
 
-function bestRoleTruthMode(evidence: CapabilityRoleEvidence[]): TruthMode | null {
+function bestRoleTruthMode(evidence: CapabilityRoleEvidence[]): DoDEvidenceTruthMode | null {
   const presentEvidence = evidence.filter((e) => e.present);
   if (presentEvidence.length === 0) {
     return null;
   }
-  return presentEvidence.reduce<TruthMode>((best, e) => {
-    return TRUTH_MODE_RANK[e.truthMode] > TRUTH_MODE_RANK[best] ? e.truthMode : best;
-  }, 'aspirational');
+  return presentEvidence.reduce<DoDEvidenceTruthMode>((best, e) => {
+    return DOD_TRUTH_MODE_RANK[e.truthMode] > DOD_TRUTH_MODE_RANK[best] ? e.truthMode : best;
+  }, 'not_available');
 }
 
 function expectedValidationForRole(input: CapabilityDoneInput, role: StructuralRole): string {
@@ -195,7 +205,7 @@ export function evaluateDone(input: CapabilityDoneInput): CapabilityDoneResult {
     const roleTruthMode = bestRoleTruthMode(presentByRole.get(role) || []);
     return (
       roleTruthMode !== null &&
-      TRUTH_MODE_RANK[roleTruthMode] < TRUTH_MODE_RANK[input.truthModeTarget]
+      DOD_TRUTH_MODE_RANK[roleTruthMode] < TRUTH_MODE_RANK[input.truthModeTarget]
     );
   });
   const truthModeMet = missingRoles.length === 0 && insufficientEvidenceRoles.length === 0;

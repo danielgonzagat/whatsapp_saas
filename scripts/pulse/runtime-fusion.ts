@@ -280,6 +280,40 @@ function deriveAction(severity: SignalSeverity, type: SignalType): SignalAction 
   return 'log_only';
 }
 
+function runtimeRealityWeight(signal: RuntimeSignal): number {
+  if (signal.evidenceMode === 'observed' && signal.evidenceKind === 'runtime') return 1;
+  if (
+    signal.evidenceMode === 'observed' &&
+    (signal.evidenceKind === 'change' || signal.evidenceKind === 'dependency')
+  ) {
+    return 0.86;
+  }
+  if (signal.evidenceMode === 'observed' && signal.evidenceKind === 'static') return 0.58;
+  if (signal.evidenceMode === 'inferred' && signal.evidenceKind === 'runtime') return 0.62;
+  if (signal.evidenceMode === 'inferred') return 0.42;
+  return 0.25;
+}
+
+function normalizeImpactByRuntimeReality(signal: RuntimeSignal, impactScore: number): number {
+  const weighted = clampScore(impactScore) * runtimeRealityWeight(signal);
+  if (signal.evidenceMode === 'observed' && signal.evidenceKind === 'runtime') {
+    return clampScore(Math.max(weighted, signal.type === 'error' ? 0.82 : 0.72));
+  }
+  if (signal.evidenceKind === 'static') {
+    return Math.min(0.69, weighted);
+  }
+  return clampScore(weighted);
+}
+
+function isDecisiveRuntimeRealitySignal(signal: RuntimeSignal): boolean {
+  return (
+    signal.evidenceMode === 'observed' &&
+    (signal.evidenceKind === 'runtime' ||
+      signal.evidenceKind === 'change' ||
+      signal.evidenceKind === 'dependency')
+  );
+}
+
 // ─── JSON Parsing ───────────────────────────────────────────────────────────
 
 function safeJsonParse(raw: string): Record<string, unknown> | null {
@@ -611,12 +645,16 @@ function loadCanonicalExternalSignals(currentDir: string): {
 
   const observedSignals = state.signals.filter((signal) => signal.truthMode === 'observed').length;
   const inferredSignals = state.signals.length - observedSignals;
-  const status: RuntimeFusionEvidenceStatus =
-    state.signals.length > 0
-      ? state.truthMode
-      : skippedAdapters.length > 0
-        ? 'skipped'
-        : 'observed';
+  let status: RuntimeFusionEvidenceStatus = 'not_available';
+  if (state.signals.length > 0) {
+    status = state.truthMode;
+  } else if (invalidAdapters.length > 0 || notAvailableAdapters.length > 0) {
+    status = 'not_available';
+  } else if (staleAdapters.length > 0) {
+    status = 'inferred';
+  } else if (skippedAdapters.length > 0) {
+    status = 'skipped';
+  }
 
   return {
     signals,
@@ -1010,6 +1048,7 @@ export function mapSignalToCapabilities(
 
   if (capabilityState?.capabilities) {
     const messageTokens = new Set(tokenize(signal.message));
+    const hasObservedFileHints = signal.affectedFilePaths.length > 0;
 
     for (const capability of capabilityState.capabilities) {
       const nameTokens = tokenize(capability.name);
@@ -1024,7 +1063,7 @@ export function mapSignalToCapabilities(
         ),
       );
 
-      if (hasNameMatch || hasFilePathMatch) {
+      if (hasFilePathMatch || (!hasObservedFileHints && hasNameMatch)) {
         ids.add(capability.id);
       }
     }
@@ -1130,8 +1169,8 @@ export function overridePriorities(
   const overrides = fusionState.priorityOverrides.slice();
 
   for (const capId of Object.keys(fusionState.summary.signalsByCapability)) {
-    const capabilitySignals = fusionState.signals.filter((s) =>
-      s.affectedCapabilityIds.includes(capId),
+    const capabilitySignals = fusionState.signals.filter(
+      (s) => s.affectedCapabilityIds.includes(capId) && isDecisiveRuntimeRealitySignal(s),
     );
 
     const hasCritical = capabilitySignals.some((s) => s.severity === 'critical');
@@ -1191,7 +1230,9 @@ const PRIORITY_RANK: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
 export function rankByRuntimeReality(signals: RuntimeSignal[], staticPriority: string): string {
   if (signals.length === 0) return staticPriority;
 
-  const activeSignals = signals.filter((s) => !s.pinned || s.severity !== 'info');
+  const activeSignals = signals.filter(
+    (s) => (!s.pinned || s.severity !== 'info') && isDecisiveRuntimeRealitySignal(s),
+  );
   if (activeSignals.length === 0) return staticPriority;
 
   const severities = activeSignals.map((s) => s.severity);
@@ -1331,7 +1372,10 @@ export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
       ...mapCapabilitiesFromFlows(signal, flowProjection),
     ]);
     // Recompute impact score using the fusion formula
-    signal.impactScore = Math.max(clampScore(signal.impactScore), computeImpactScore(signal));
+    signal.impactScore = normalizeImpactByRuntimeReality(
+      signal,
+      Math.max(clampScore(signal.impactScore), computeImpactScore(signal)),
+    );
     signal.confidence = clampScore(signal.confidence);
     syncAffectedAliases(signal);
   }

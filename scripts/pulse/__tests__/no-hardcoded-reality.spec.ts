@@ -438,6 +438,40 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     );
   });
 
+  it('classifies structural enum, regex, and path decisions without product-domain assumptions', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-structural-hardcodes-'));
+    const pulseDir = path.join(rootDir, 'scripts/pulse');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pulseDir, 'structural-decisions.ts'),
+      [
+        "enum GateProfile { Final = 'production-final', Audit = 'audit-only' }",
+        'const ROUTE_DECISION_RE = /\\/api\\/(alpha|beta)\\b/;',
+        "const PATH_DECISIONS = ['/api/alpha', 'services/core/src/**/*.ts'];",
+      ].join('\n'),
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'hardcoded_decision_enum_risk',
+          context: 'GateProfile',
+          samples: ['production-final', 'audit-only'],
+        }),
+        expect.objectContaining({
+          kind: 'hardcoded_decision_regex_risk',
+          context: 'ROUTE_DECISION_RE',
+          samples: ['/\\/api\\/(alpha|beta)\\b/'],
+        }),
+        expect.objectContaining({
+          kind: 'hardcoded_path_decision_risk',
+          context: 'PATH_DECISIONS',
+          samples: ['/api/alpha', 'services/core/src/**/*.ts'],
+        }),
+      ]),
+    );
+  });
+
   it('keeps core PULSE free of hardcoded product reality decision collections', () => {
     const result = auditPulseNoHardcodedReality(process.cwd());
     const fixedRealityCollections = result.findings.filter(

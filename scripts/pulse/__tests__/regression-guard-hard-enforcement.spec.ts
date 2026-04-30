@@ -19,6 +19,13 @@ interface PulseSnapshot {
   gatesPass: Record<string, boolean>;
   scenarioPass: Record<string, boolean>;
   runtimeHighSignals: number;
+  executionMatrixSummary?: {
+    observedPass?: number;
+    observedFail?: number;
+    untested?: number;
+    inferredOnly?: number;
+    criticalUnobservedPaths?: number;
+  };
 }
 
 function makeSnapshot(overrides: Partial<PulseSnapshot> = {}): PulseSnapshot {
@@ -144,6 +151,46 @@ describe('throwOnRegression — hard enforcement', () => {
         throw new Error(
           `Expected 'Runtime HIGH signals increased' in message, got: ${err.message}`,
         );
+      }
+    }
+  });
+
+  it('throws RegressionError when score improves only from planned or inferred evidence', () => {
+    const before = makeSnapshot({
+      score: 80,
+      executionMatrixSummary: {
+        observedPass: 10,
+        observedFail: 0,
+        untested: 3,
+        inferredOnly: 2,
+        criticalUnobservedPaths: 1,
+      },
+    });
+    const after = makeSnapshot({
+      score: 85,
+      executionMatrixSummary: {
+        observedPass: 10,
+        observedFail: 0,
+        untested: 1,
+        inferredOnly: 1,
+        criticalUnobservedPaths: 0,
+      },
+    });
+    const result = detectRegression(before, after);
+    try {
+      throwOnRegression(result);
+      throw new Error(ERR_SHOULD_HAVE_THROWN);
+    } catch (err) {
+      if (!(err instanceof RegressionError)) {
+        throw err;
+      }
+      if (err.message.indexOf('planned/inferred-only reductions') === -1) {
+        throw new Error(
+          `Expected 'planned/inferred-only reductions' in message, got: ${err.message}`,
+        );
+      }
+      if (!err.deltas.unsupportedScoreIncrease.includes('executionMatrix.inferredOnly:2->1')) {
+        throw new Error('Expected inferredOnly reduction in unsupportedScoreIncrease');
       }
     }
   });

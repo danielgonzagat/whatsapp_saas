@@ -11,6 +11,7 @@
 
 import * as path from 'path';
 import * as fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import type { PulseStructuralGraph, PulseStructuralNode } from './types';
 import type {
   FuzzStrategy,
@@ -21,6 +22,7 @@ import type {
   PropertyKind,
   PropertyTestCase,
   PropertyTestEvidence,
+  PropertyTestStatus,
   PureFunctionCandidate,
 } from './types.property-tester';
 import { ensureDir, pathExists, readTextFile, readDir } from './safe-fs';
@@ -28,15 +30,14 @@ import { safeJoin } from './lib/safe-path';
 
 const CANONICAL_ARTIFACT_FILENAME = 'PULSE_PROPERTY_EVIDENCE.json';
 
-const FAST_CHECK_IMPORT_PATTERN = /(?:require\(|from\s+)['"]fast-check['"]/;
-const FAST_CHECK_ASSERT_PATTERN = /fc\.assert\s*\(/;
-const FAST_CHECK_PROPERTY_PATTERN = /\bfc\.property\s*\(/;
-const FAST_CHECK_BARE_PROPERTY_PATTERN = /\bproperty\s*\(\s*\(/;
-
-const SPEC_FILE_PATTERN = /\.(spec|test)\.(ts|tsx|js|jsx)$/;
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx)$/;
+const TEST_FILE_NAME_HINT_PATTERN = /(?:^|[./_-])(?:spec|test|property)(?:[./_-]|$)/i;
+const PROPERTY_ASSERTION_SENSOR = /\b(?:fc\.)?assert\s*\(\s*(?:fc\.)?property\s*\(/;
+const PROPERTY_USAGE_SENSOR = /\b(?:fc\.)?property\s*\(/;
+const PROPERTY_LIBRARY_SENSOR = /(?:require\(|from\s+|import\s+)[^;'\n]*['"]fast-check['"]/;
+const TEST_RUNTIME_SENSOR = /\b(?:describe|it|test)\s*\(/;
 
-const EXCLUDE_DIRS = new Set([
+const DIRECTORY_SKIP_HINTS = new Set([
   'node_modules',
   '.git',
   'dist',
@@ -64,6 +65,38 @@ interface DiscoveredExport {
   params: string[];
   hasReturnType: boolean;
   categoryHint: CandidateCategory | null;
+}
+
+interface EndpointDescriptor {
+  method: string;
+  path: string;
+  filePath: string;
+  requiresAuth?: boolean;
+  requiresTenant?: boolean;
+  rateLimit?: unknown;
+  requestSchema?: unknown;
+  responseSchema?: unknown;
+}
+
+type EndpointRisk = 'high' | 'medium' | 'low';
+type ProofInputType = 'none' | 'path_parameter' | 'query_parameter' | 'request_body' | 'schema';
+type EntrypointType = 'read_endpoint' | 'state_endpoint' | 'external_receiver';
+type StateEffect = 'read_only' | 'state_mutation' | 'destructive_mutation';
+
+interface EndpointProofProfile {
+  inputTypes: Set<ProofInputType>;
+  entrypointType: EntrypointType;
+  stateEffect: StateEffect;
+  hasExternalEffect: boolean;
+  hasSchema: boolean;
+  runtimeExposure: 'public' | 'protected' | 'unknown';
+}
+
+interface PropertyExecutionResult {
+  status: Extract<PropertyTestStatus, 'passed' | 'failed'> | 'not_executed';
+  failures: number;
+  durationMs: number;
+  counterexample: { input: unknown; expected: unknown; actual: unknown } | null;
 }
 
 /**
@@ -174,16 +207,14 @@ export function buildPropertyTestEvidence(
  * @param rootDir  Absolute path to the repository root.
  * @returns        List of endpoint descriptors with method, path, and filePath.
  */
-export function discoverEndpoints(
-  rootDir: string,
-): Array<{ method: string; path: string; filePath: string }> {
+export function discoverEndpoints(rootDir: string): EndpointDescriptor[] {
   const structuralPath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_STRUCTURAL_GRAPH.json');
 
   if (pathExists(structuralPath)) {
     try {
       const raw = readTextFile(structuralPath, 'utf-8');
       const graph: PulseStructuralGraph = JSON.parse(raw);
-      const endpoints: Array<{ method: string; path: string; filePath: string }> = [];
+      const endpoints: EndpointDescriptor[] = [];
 
       for (const node of graph.nodes) {
         if (node.kind === 'backend_route' || node.kind === 'proxy_route') {
@@ -264,14 +295,42 @@ function normalizeRoute(value: string): string {
   );
 }
 
+function shouldScanDirectory(entryName: string): boolean {
+  if (!entryName) return false;
+  if (DIRECTORY_SKIP_HINTS.has(entryName)) return false;
+  if (entryName.startsWith('.') && entryName !== '.github') return false;
+  return true;
+}
+
+function isSourceFileName(fileName: string): boolean {
+  return SOURCE_FILE_PATTERN.test(fileName);
+}
+
+function isTestLikeFile(fileName: string, content: string): boolean {
+  const hasTestRuntime = TEST_RUNTIME_SENSOR.test(content);
+  const hasPropertySignal =
+    PROPERTY_ASSERTION_SENSOR.test(content) ||
+    PROPERTY_USAGE_SENSOR.test(content) ||
+    PROPERTY_LIBRARY_SENSOR.test(content);
+
+  if (hasTestRuntime && hasPropertySignal) return true;
+  return TEST_FILE_NAME_HINT_PATTERN.test(fileName) && (hasTestRuntime || hasPropertySignal);
+}
+
+function hasPropertyEvidence(content: string): boolean {
+  const hasPropertyAssertion = PROPERTY_ASSERTION_SENSOR.test(content);
+  const hasPropertyUsage = PROPERTY_USAGE_SENSOR.test(content);
+  const hasPropertyLibrary = PROPERTY_LIBRARY_SENSOR.test(content);
+
+  return hasPropertyAssertion || (hasPropertyUsage && hasPropertyLibrary);
+}
+
 /**
  * Fallback: discover endpoints by scanning source files for NestJS HTTP method
  * decorators (Get, Post, Put, Delete, Patch) combined with Controller decorators.
  */
-function discoverEndpointsFromSource(
-  rootDir: string,
-): Array<{ method: string; path: string; filePath: string }> {
-  const endpoints: Array<{ method: string; path: string; filePath: string }> = [];
+function discoverEndpointsFromSource(rootDir: string): EndpointDescriptor[] {
+  const endpoints: EndpointDescriptor[] = [];
   const httpMethodPattern = /@(Get|Post|Put|Delete|Patch|Options|Head|All)\(\s*(['"])([^'"]*)\2/;
   const controllerPattern = /@Controller\(\s*(['"])([^'"]*)\1/;
   const standalonePattern =
@@ -290,10 +349,10 @@ function discoverEndpointsFromSource(
       const fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        if (!entry.name.startsWith('.') && !EXCLUDE_DIRS.has(entry.name)) {
+        if (shouldScanDirectory(entry.name)) {
           scanDir(fullPath, controllerPrefix);
         }
-      } else if (entry.isFile() && SOURCE_FILE_PATTERN.test(entry.name)) {
+      } else if (entry.isFile() && isSourceFileName(entry.name)) {
         try {
           const content = fs.readFileSync(fullPath, 'utf-8');
           const controllerMatch = controllerPattern.exec(content);
@@ -348,10 +407,8 @@ function joinRoutes(prefix: string, route: string): string {
 /**
  * Fallback scan targeting the backend/src directory structure specifically.
  */
-function discoverEndpointsFromBackendDir(
-  rootDir: string,
-): Array<{ method: string; path: string; filePath: string }> {
-  const endpoints: Array<{ method: string; path: string; filePath: string }> = [];
+function discoverEndpointsFromBackendDir(rootDir: string): EndpointDescriptor[] {
+  const endpoints: EndpointDescriptor[] = [];
   const backendDir = path.join(rootDir, 'backend', 'src');
 
   if (!fs.existsSync(backendDir)) return endpoints;
@@ -372,10 +429,10 @@ function discoverEndpointsFromBackendDir(
       const fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        if (!entry.name.startsWith('.') && !EXCLUDE_DIRS.has(entry.name)) {
+        if (shouldScanDirectory(entry.name)) {
           scanDir(fullPath, controllerPrefix);
         }
-      } else if (entry.isFile() && SOURCE_FILE_PATTERN.test(entry.name)) {
+      } else if (entry.isFile() && isSourceFileName(entry.name)) {
         try {
           const content = fs.readFileSync(fullPath, 'utf-8');
           const controllerMatch = controllerPattern.exec(content);
@@ -419,28 +476,83 @@ function discoverEndpointsFromBackendDir(
  * @param endpoint  The normalized route path or endpoint descriptor.
  * @returns          "high", "medium", or "low".
  */
-export function classifyEndpointRisk(
-  endpoint: string | { method: string; path: string; filePath?: string },
-): 'high' | 'medium' | 'low' {
-  const method = typeof endpoint === 'string' ? 'GET' : endpoint.method.toUpperCase();
-  const endpointPath = typeof endpoint === 'string' ? endpoint : endpoint.path;
-  const segments = endpointPath.split('/').filter(Boolean);
-  const dynamicSegmentCount = segments.filter((segment) => segment.startsWith(':')).length;
-  const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
-  const hasExternalReceiverShape =
-    method === 'POST' &&
-    (/\bwebhook\b/i.test(endpointPath) ||
-      /\bcallback\b/i.test(endpointPath) ||
-      /\bevent\b/i.test(endpointPath));
+export function classifyEndpointRisk(endpoint: string | EndpointDescriptor): EndpointRisk {
+  const profile = buildEndpointProofProfile(
+    typeof endpoint === 'string' ? { method: 'GET', path: endpoint, filePath: '' } : endpoint,
+  );
 
-  if (method === 'DELETE') return 'high';
-  if (isMutation && (dynamicSegmentCount > 0 || hasExternalReceiverShape)) return 'high';
-  if (isMutation) return 'medium';
-  if (hasExternalReceiverShape || dynamicSegmentCount >= 2) {
+  if (profile.stateEffect === 'destructive_mutation') return 'high';
+  if (profile.hasExternalEffect && profile.runtimeExposure !== 'protected') return 'high';
+  if (profile.stateEffect === 'state_mutation' && profile.runtimeExposure === 'public') {
+    return 'high';
+  }
+  if (
+    profile.stateEffect === 'state_mutation' &&
+    (profile.hasSchema || profile.inputTypes.has('path_parameter'))
+  ) {
+    return 'high';
+  }
+  if (profile.stateEffect === 'state_mutation' || profile.hasExternalEffect) return 'medium';
+  if (profile.inputTypes.has('path_parameter') && profile.inputTypes.has('query_parameter')) {
     return 'medium';
   }
 
   return 'low';
+}
+
+function buildEndpointProofProfile(endpoint: EndpointDescriptor): EndpointProofProfile {
+  const method = endpoint.method.toUpperCase();
+  const segments = endpoint.path.split('/').filter(Boolean);
+  const inputTypes = new Set<ProofInputType>();
+  const routeText = `${endpoint.path} ${endpoint.filePath}`;
+  const hasSchema = Boolean(endpoint.requestSchema);
+  const acceptsBody = hasSchema || ['POST', 'PUT', 'PATCH'].includes(method);
+  const hasExternalReceiverShape = /\b(webhook|callback|event|receiver|listener)\b/i.test(
+    routeText,
+  );
+
+  if (segments.some((segment) => segment.startsWith(':'))) {
+    inputTypes.add('path_parameter');
+  }
+  if (/[?&][A-Za-z_]/.test(endpoint.path)) {
+    inputTypes.add('query_parameter');
+  }
+  if (acceptsBody) {
+    inputTypes.add('request_body');
+  }
+  if (hasSchema) {
+    inputTypes.add('schema');
+  }
+  if (inputTypes.size === 0) {
+    inputTypes.add('none');
+  }
+
+  const stateEffect: StateEffect =
+    method === 'DELETE'
+      ? 'destructive_mutation'
+      : ['POST', 'PUT', 'PATCH'].includes(method)
+        ? 'state_mutation'
+        : 'read_only';
+  const runtimeExposure =
+    endpoint.requiresAuth === true || endpoint.requiresTenant === true
+      ? 'protected'
+      : endpoint.requiresAuth === false || endpoint.requiresTenant === false
+        ? 'public'
+        : 'unknown';
+  const entrypointType: EntrypointType = hasExternalReceiverShape
+    ? 'external_receiver'
+    : stateEffect === 'read_only'
+      ? 'read_endpoint'
+      : 'state_endpoint';
+
+  return {
+    inputTypes,
+    entrypointType,
+    stateEffect,
+    hasExternalEffect: hasExternalReceiverShape || entrypointType === 'external_receiver',
+    hasSchema,
+    runtimeExposure,
+  };
 }
 
 /**
@@ -450,34 +562,33 @@ export function classifyEndpointRisk(
  * @param endpoints  Endpoint descriptors with method, path, and filePath.
  * @returns          Array of fuzz test case metadata.
  */
-export function generateFuzzCasesFromEndpoints(
-  endpoints: Array<{ method: string; path: string; filePath: string }>,
-): FuzzTestCase[] {
+export function generateFuzzCasesFromEndpoints(endpoints: EndpointDescriptor[]): FuzzTestCase[] {
   const cases: FuzzTestCase[] = [];
-  const strategies: FuzzStrategy[] = ['valid_only', 'invalid_only', 'boundary', 'random'];
 
   let counter = 0;
 
   for (const endpoint of endpoints) {
+    const profile = buildEndpointProofProfile(endpoint);
+    const strategies = synthesizeFuzzStrategies(profile);
     for (const strategy of strategies) {
       const risk = classifyEndpointRisk(endpoint);
       const testId = `fuzz-${String(++counter).padStart(4, '0')}`;
-      const expectedStatuses = generateExpectedStatusCodes(endpoint.method, strategy);
+      const expectedStatuses = generateExpectedStatusCodes(endpoint, strategy, profile);
 
       const securityIssues: Array<{ type: string; description: string; payload: unknown }> = [];
 
-      if (risk === 'high' && strategy === 'invalid_only') {
+      if (risk === 'high' && strategy === 'invalid_only' && !profile.inputTypes.has('none')) {
         securityIssues.push({
           type: 'injection',
-          description: `High-risk endpoint ${endpoint.method} ${endpoint.path} requires SQL injection and XSS fuzzing`,
+          description: `High-risk input surface ${endpoint.method} ${endpoint.path} requires injection and XSS fuzzing`,
           payload: null,
         });
       }
 
-      if (risk === 'high' && strategy === 'boundary') {
+      if (risk === 'high' && strategy === 'boundary' && profile.inputTypes.size > 0) {
         securityIssues.push({
           type: 'boundary',
-          description: `High-risk endpoint ${endpoint.method} ${endpoint.path} requires numeric boundary testing`,
+          description: `High-risk input surface ${endpoint.method} ${endpoint.path} requires boundary testing`,
           payload: null,
         });
       }
@@ -488,7 +599,7 @@ export function generateFuzzCasesFromEndpoints(
         method: endpoint.method,
         strategy,
         status: 'planned',
-        requestCount: estimateRequestCount(strategy),
+        requestCount: estimateRequestCount(strategy, profile),
         statusCodes: expectedStatuses,
         failures: 0,
         securityIssues,
@@ -500,65 +611,100 @@ export function generateFuzzCasesFromEndpoints(
   return cases;
 }
 
-function estimateRequestCount(strategy: FuzzStrategy): number {
+function synthesizeFuzzStrategies(profile: EndpointProofProfile): FuzzStrategy[] {
+  const strategies = new Set<FuzzStrategy>(['valid_only']);
+
+  if (!profile.inputTypes.has('none') || profile.hasSchema) {
+    strategies.add('invalid_only');
+  }
+  if (
+    profile.inputTypes.has('path_parameter') ||
+    profile.inputTypes.has('request_body') ||
+    profile.hasSchema ||
+    profile.stateEffect !== 'read_only'
+  ) {
+    strategies.add('boundary');
+  }
+  if (
+    profile.entrypointType === 'external_receiver' ||
+    profile.runtimeExposure !== 'protected' ||
+    profile.hasSchema
+  ) {
+    strategies.add('random');
+  }
+  if (profile.stateEffect !== 'read_only' && profile.hasSchema) {
+    strategies.add('both');
+  }
+
+  return [...strategies];
+}
+
+function estimateRequestCount(strategy: FuzzStrategy, profile: EndpointProofProfile): number {
+  const inputMultiplier = Math.max(1, profile.inputTypes.size);
+  const exposureMultiplier = profile.runtimeExposure === 'public' ? 2 : 1;
+
   switch (strategy) {
     case 'valid_only':
-      return 3;
+      return 2 + inputMultiplier;
     case 'invalid_only':
-      return 8;
+      return (4 + inputMultiplier * 2) * exposureMultiplier;
     case 'boundary':
-      return 12;
+      return (6 + inputMultiplier * 3) * exposureMultiplier;
     case 'random':
-      return 20;
+      return (10 + inputMultiplier * 4) * exposureMultiplier;
     case 'both':
-      return 11;
+      return (6 + inputMultiplier * 2) * exposureMultiplier;
     default:
       return 5;
   }
 }
 
 function generateExpectedStatusCodes(
-  method: string,
+  endpoint: EndpointDescriptor,
   strategy: FuzzStrategy,
+  profile: EndpointProofProfile,
 ): Record<number, number> {
   const codes: Record<number, number> = {};
+  const method = endpoint.method.toUpperCase();
+  const successCode = method === 'POST' ? 201 : 200;
 
   switch (strategy) {
     case 'valid_only':
-      codes[method === 'POST' || method === 'PUT' ? 201 : 200] = 1;
+      codes[successCode] = 1;
       break;
     case 'invalid_only':
       codes[400] = 3;
       codes[422] = 2;
-      codes[401] = 1;
-      codes[403] = 1;
-      codes[500] = 1;
+      if (profile.runtimeExposure === 'protected') {
+        codes[401] = 1;
+        codes[403] = 1;
+      }
       break;
     case 'boundary':
-      codes[200] = 3;
-      codes[201] = 1;
+      codes[successCode] = 3;
       codes[400] = 4;
       codes[422] = 2;
-      codes[413] = 1;
-      codes[500] = 1;
+      if (profile.inputTypes.has('request_body')) {
+        codes[413] = 1;
+      }
       break;
     case 'random':
-      codes[200] = 6;
-      codes[201] = 2;
+      codes[successCode] = 4;
       codes[400] = 4;
-      codes[401] = 2;
-      codes[403] = 1;
       codes[404] = 1;
       codes[422] = 2;
-      codes[429] = 1;
-      codes[500] = 1;
+      if (endpoint.rateLimit !== undefined && endpoint.rateLimit !== null) {
+        codes[429] = 1;
+      }
+      if (profile.runtimeExposure === 'protected') {
+        codes[401] = 2;
+        codes[403] = 1;
+      }
       break;
     case 'both':
-      codes[200] = 3;
-      codes[201] = 1;
+      codes[successCode] = 2;
       codes[400] = 3;
       codes[422] = 2;
-      codes[500] = 2;
       break;
     default:
       break;
@@ -592,21 +738,22 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
       const fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        if (!entry.name.startsWith('.') && !EXCLUDE_DIRS.has(entry.name)) {
+        if (shouldScanDirectory(entry.name)) {
           scanDir(fullPath);
         }
-      } else if (entry.isFile() && SPEC_FILE_PATTERN.test(entry.name)) {
+      } else if (entry.isFile() && isSourceFileName(entry.name)) {
         try {
           const content = fs.readFileSync(fullPath, 'utf-8');
-          const hasFastCheckImport = FAST_CHECK_IMPORT_PATTERN.test(content);
-          const hasFastCheckUsage =
-            FAST_CHECK_ASSERT_PATTERN.test(content) ||
-            FAST_CHECK_PROPERTY_PATTERN.test(content) ||
-            FAST_CHECK_BARE_PROPERTY_PATTERN.test(content);
+          if (!isTestLikeFile(entry.name, content)) {
+            continue;
+          }
+          const hasFastCheckImport = PROPERTY_LIBRARY_SENSOR.test(content);
+          const hasFastCheckUsage = hasPropertyEvidence(content);
 
           if (hasFastCheckImport || hasFastCheckUsage) {
             const testCount = countPropertyTestsInContent(content);
             const relativePath = fullPath.replace(rootDir + path.sep, '');
+            const executionResult = executePropertyTestFile(rootDir, relativePath);
 
             for (let i = 0; i < testCount; i++) {
               results.push({
@@ -616,10 +763,12 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
                 filePath: relativePath,
                 strategy: hasFastCheckImport ? 'both' : 'valid_only',
                 inputCount: 0,
-                failures: 0,
-                status: 'not_executed',
-                counterexamples: [],
-                durationMs: 0,
+                failures: executionResult.failures,
+                status: executionResult.status,
+                counterexamples: executionResult.counterexample
+                  ? [executionResult.counterexample]
+                  : [],
+                durationMs: executionResult.durationMs,
               });
             }
 
@@ -631,10 +780,12 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
                 filePath: relativePath,
                 strategy: hasFastCheckImport ? 'both' : 'valid_only',
                 inputCount: 0,
-                failures: 0,
-                status: 'not_executed',
-                counterexamples: [],
-                durationMs: 0,
+                failures: executionResult.failures,
+                status: executionResult.status,
+                counterexamples: executionResult.counterexample
+                  ? [executionResult.counterexample]
+                  : [],
+                durationMs: executionResult.durationMs,
               });
             }
           }
@@ -649,9 +800,96 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
   return results;
 }
 
+function executePropertyTestFile(rootDir: string, relativePath: string): PropertyExecutionResult {
+  const runner = resolvePropertyRunner(rootDir, relativePath);
+  if (!runner) {
+    return {
+      status: 'not_executed',
+      failures: 0,
+      durationMs: 0,
+      counterexample: null,
+    };
+  }
+
+  const startedAt = Date.now();
+
+  try {
+    execFileSync(runner.command, runner.args, {
+      cwd: runner.cwd,
+      encoding: 'utf-8',
+      stdio: 'pipe',
+      timeout: 120000,
+      env: {
+        ...process.env,
+        CI: process.env.CI ?? '1',
+      },
+    });
+
+    return {
+      status: 'passed',
+      failures: 0,
+      durationMs: Date.now() - startedAt,
+      counterexample: null,
+    };
+  } catch (error) {
+    return {
+      status: 'failed',
+      failures: 1,
+      durationMs: Date.now() - startedAt,
+      counterexample: {
+        input: relativePath,
+        expected: 'property test runner exits with code 0',
+        actual: extractProcessFailure(error),
+      },
+    };
+  }
+}
+
+function resolvePropertyRunner(
+  rootDir: string,
+  relativePath: string,
+): { command: string; args: string[]; cwd: string } | null {
+  const absolutePath = path.join(rootDir, relativePath);
+  const rootVitest = path.join(rootDir, 'node_modules', '.bin', 'vitest');
+  if (fs.existsSync(rootVitest)) {
+    return {
+      command: rootVitest,
+      args: ['run', absolutePath],
+      cwd: rootDir,
+    };
+  }
+
+  if (relativePath.startsWith(`backend${path.sep}`) || relativePath.startsWith('backend/')) {
+    const backendJest = path.join(rootDir, 'backend', 'node_modules', '.bin', 'jest');
+    if (fs.existsSync(backendJest)) {
+      return {
+        command: backendJest,
+        args: ['--runInBand', '--findRelatedTests', absolutePath],
+        cwd: path.join(rootDir, 'backend'),
+      };
+    }
+  }
+
+  return null;
+}
+
+function extractProcessFailure(error: unknown): string {
+  if (!error || typeof error !== 'object') {
+    return 'unknown runner failure';
+  }
+
+  const output = error as { stdout?: unknown; stderr?: unknown; message?: unknown };
+  const parts = [output.stdout, output.stderr, output.message]
+    .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+    .map((part) => part.trim());
+
+  const text = parts.join('\n').replace(/\s+/g, ' ').slice(0, 500);
+  return text || 'property test runner exited with a non-zero status';
+}
+
 function countPropertyTestsInContent(content: string): number {
   let count = 0;
-  const re = /fc\.assert\s*\(/g;
+  const re = new RegExp(PROPERTY_ASSERTION_SENSOR.source, 'g');
   let match: RegExpExecArray | null;
   while ((match = re.exec(content)) !== null) {
     count++;
@@ -660,7 +898,7 @@ function countPropertyTestsInContent(content: string): number {
 }
 
 function inferCapabilityId(filePath: string): string {
-  const segments = filePath.replace(/\.(spec|test)\.(ts|tsx|js|jsx)$/, '').split(/[\\/]/);
+  const segments = filePath.replace(/\.(spec|test|property)\.(ts|tsx|js|jsx)$/, '').split(/[\\/]/);
 
   const meaningful = segments.filter(
     (s) => s && s !== 'src' && s !== 'tests' && s !== '__tests__' && s !== 'test' && s !== 'spec',
@@ -672,7 +910,7 @@ function inferCapabilityId(filePath: string): string {
 function extractTargetFunction(filePath: string): string {
   const base = path
     .basename(filePath)
-    .replace(/\.(spec|test)\.(ts|tsx|js|jsx)$/, '')
+    .replace(/\.(spec|test|property)\.(ts|tsx|js|jsx)$/, '')
     .replace(/\.property$/, '')
     .replace(/\.prop$/, '');
   return base;
@@ -859,14 +1097,19 @@ function collectLowCoverageCandidates(rootDir: string): string[] {
       const fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        if (!entry.name.startsWith('.') && !EXCLUDE_DIRS.has(entry.name)) {
+        if (shouldScanDirectory(entry.name)) {
           scanDir(fullPath);
         }
-      } else if (
-        entry.isFile() &&
-        SOURCE_FILE_PATTERN.test(entry.name) &&
-        !SPEC_FILE_PATTERN.test(entry.name)
-      ) {
+      } else if (entry.isFile() && isSourceFileName(entry.name)) {
+        let content = '';
+        try {
+          content = fs.readFileSync(fullPath, 'utf-8');
+        } catch {
+          continue;
+        }
+        if (isTestLikeFile(entry.name, content)) {
+          continue;
+        }
         const relativePath = fullPath.replace(rootDir + path.sep, '');
 
         if (
@@ -1098,16 +1341,15 @@ export function discoverPureFunctionCandidates(rootDir: string): PureFunctionCan
       const fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        if (!entry.name.startsWith('.') && !EXCLUDE_DIRS.has(entry.name)) {
+        if (shouldScanDirectory(entry.name)) {
           scanDir(fullPath);
         }
-      } else if (
-        entry.isFile() &&
-        SOURCE_FILE_PATTERN.test(entry.name) &&
-        !SPEC_FILE_PATTERN.test(entry.name)
-      ) {
+      } else if (entry.isFile() && isSourceFileName(entry.name)) {
         try {
           const content = fs.readFileSync(fullPath, 'utf-8');
+          if (isTestLikeFile(entry.name, content)) {
+            continue;
+          }
           const relativePath = fullPath.replace(rootDir + path.sep, '');
 
           for (const discovered of discoverExportedPropertyCandidates(content)) {
@@ -1283,7 +1525,7 @@ export function generatePropertyTestCases(rootDir: string): GeneratedPropertyFun
       capabilityId: candidate.category,
       filePath: candidate.filePath || 'generated',
       property: combinePropertyKinds(propertyKinds),
-      strategy: getStrategyForCategory(candidate.category),
+      strategy: synthesizePropertyStrategy(candidate, propertyKinds),
       inputCount: totalInputs,
       expectedPassCount: expectedPass,
       expectedFailCount: expectedFail,
@@ -1323,19 +1565,32 @@ function combinePropertyKinds(kinds: PropertyKind[]): PropertyKind {
   return 'general_purity';
 }
 
-function getStrategyForCategory(category: PureFunctionCandidate['category']): FuzzStrategy {
-  switch (category) {
-    case 'validation':
-    case 'parsing':
-      return 'invalid_only';
-    case 'formatting':
-      return 'valid_only';
-    case 'numeric':
-    case 'money_handler':
-      return 'boundary';
-    default:
-      return 'both';
-  }
+function synthesizePropertyStrategy(
+  candidate: PureFunctionCandidate,
+  propertyKinds: PropertyKind[],
+): FuzzStrategy {
+  const hasExternalInputShape = propertyKinds.some(
+    (property) =>
+      property === 'injection' ||
+      property === 'required_field' ||
+      property === 'type_constraint' ||
+      property === 'string_id',
+  );
+  const hasBoundaryShape = propertyKinds.some(
+    (property) =>
+      property === 'length_boundary' ||
+      property === 'money_precision' ||
+      property === 'non_negative',
+  );
+  const hasSchemaLikeContract = candidate.params.length > 0 || candidate.hasReturnType;
+  const isPureTransform = propertyKinds.includes('idempotency') && !hasBoundaryShape;
+
+  if (hasBoundaryShape) return 'boundary';
+  if (hasExternalInputShape && !isPureTransform) return 'invalid_only';
+  if (isPureTransform && hasSchemaLikeContract) return 'valid_only';
+  if (hasSchemaLikeContract) return 'both';
+
+  return 'random';
 }
 
 function generateInputsForProperty(

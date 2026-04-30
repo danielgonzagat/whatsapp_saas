@@ -18,17 +18,52 @@
  * 7. Checks that sensitive fields (password, token) are never logged in AuditLog
  *
  * REQUIRES: PULSE_DEEP=1
- * BREAK TYPES:
- *   AUDIT_FINANCIAL_NO_TRAIL(critical) — financial operation without AuditLog write
- *   AUDIT_DELETION_NO_LOG(high)        — data deletion without audit record
- *   AUDIT_ADMIN_NO_LOG(high)           — admin action without audit record
+ * DIAGNOSTICS:
+ *   Emits evidence gaps with source/truth-mode metadata. Regex/list matches are
+ *   weak sensors, not final authority.
  */
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
-const FINANCIAL_OPERATIONS = [
+type AuditTrailTruthMode = 'weak_signal' | 'confirmed_static';
+
+type AuditTrailDiagnosticBreak = Break & {
+  truthMode: AuditTrailTruthMode;
+};
+
+interface AuditTrailDiagnosticInput {
+  predicateKinds: string[];
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+  sourceKind: 'regex-heuristic' | 'schema-static';
+  truthMode: AuditTrailTruthMode;
+}
+
+function buildAuditTrailDiagnostic(input: AuditTrailDiagnosticInput): AuditTrailDiagnosticBreak {
+  const predicateToken = input.predicateKinds
+    .map((predicate) => predicate.replace(/[^a-z0-9]+/gi, '-').toLowerCase())
+    .filter(Boolean)
+    .join('+');
+
+  return {
+    type: `diagnostic:audit-trail-checker:${predicateToken || 'audit-evidence-observation'}`,
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: `${input.sourceKind}:audit-trail-checker;truthMode=${input.truthMode};predicates=${input.predicateKinds.join(',')}`,
+    surface: 'audit-trail',
+    truthMode: input.truthMode,
+  };
+}
+
+const FINANCIAL_OPERATION_SIGNAL_RE = [
   /createPayment|processPayment|chargeCustomer/i,
   /initiateWithdrawal|processWithdrawal|createWithdrawal/i,
   /createRefund|processRefund|issueRefund/i,
@@ -37,17 +72,17 @@ const FINANCIAL_OPERATIONS = [
   /createCommission|processCommission|payCommission/i,
 ];
 
-const AUDIT_LOG_WRITE_RE =
+const APPEND_ONLY_AUDIT_EVIDENCE_RE =
   /AuditLog|AdminAuditService|auditLog|this\.auditLog|auditService|this\.audit\.append|audit\.append|writeAudit|createAuditEntry/i;
 const TRANSACTION_RE = /prisma\.\$transaction|\$transaction\s*\(\s*\[/;
 
-const ADMIN_OPERATIONS = [
+const ADMIN_OPERATION_SIGNAL_RE = [
   /\b(?:impersonat\w*|sudo|actAs|loginAs)\b/i,
   /\b(?:suspendWorkspace|banWorkspace|overridePlan)\b/i,
   /\b(?:forceReset|adminReset|bypassLimit)\b/i,
 ];
 
-const SENSITIVE_DELETE_RE =
+const SENSITIVE_DELETE_SIGNAL_RE =
   /\b(?:user|customer|contact|lead|workspace|agent|account|message|chat|conversation|product|order|payment|transaction|wallet|subscription|file|media|pii|personal)\b/i;
 
 function hasSensitiveDeletion(content: string): boolean {
@@ -62,7 +97,7 @@ function hasSensitiveDeletion(content: string): boolean {
     ) {
       continue;
     }
-    if (SENSITIVE_DELETE_RE.test(context)) {
+    if (SENSITIVE_DELETE_SIGNAL_RE.test(context)) {
       return true;
     }
   }
@@ -83,16 +118,20 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
 
   const hasAuditLogModel = /^model\s+AuditLog\s*\{/m.test(schemaContent);
   if (!hasAuditLogModel) {
-    breaks.push({
-      type: 'AUDIT_FINANCIAL_NO_TRAIL',
-      severity: 'critical',
-      file: path.relative(config.rootDir, config.schemaPath),
-      line: 0,
-      description:
-        'AuditLog model not found in Prisma schema — financial operations cannot be audited',
-      detail:
-        'Add an AuditLog model with: id, workspaceId, userId, action, amount, before, after, ip, timestamp',
-    });
+    breaks.push(
+      buildAuditTrailDiagnostic({
+        predicateKinds: ['audit_log_model_not_observed'],
+        severity: 'critical',
+        file: path.relative(config.rootDir, config.schemaPath),
+        line: 0,
+        description:
+          'AuditLog model not observed in Prisma schema; financial auditability cannot be proven from schema evidence.',
+        detail:
+          'Schema evidence should expose an append-only audit model with actor, workspace, action, state transition, IP, and timestamp fields.',
+        sourceKind: 'schema-static',
+        truthMode: 'confirmed_static',
+      }),
+    );
   }
 
   // CHECK 6: AuditLog immutability (no delete endpoint for audit logs)
@@ -111,15 +150,19 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
     const relFile = path.relative(config.rootDir, file);
 
     if (/@Delete\s*\(|\.delete\s*\(/.test(content) && /auditLog|AuditLog/i.test(content)) {
-      breaks.push({
-        type: 'AUDIT_FINANCIAL_NO_TRAIL',
-        severity: 'critical',
-        file: relFile,
-        line: 0,
-        description: 'AuditLog records are deletable — audit trail is not immutable',
-        detail:
-          'Remove any DELETE endpoints or deleteMany calls targeting AuditLog; audit logs must be append-only',
-      });
+      breaks.push(
+        buildAuditTrailDiagnostic({
+          predicateKinds: ['audit_log_delete_signal'],
+          severity: 'critical',
+          file: relFile,
+          line: 0,
+          description: 'AuditLog deletion signal observed; append-only audit behavior needs proof.',
+          detail:
+            'Regex-only weak signal; confirm whether the delete path targets audit records before treating this as operationally blocking.',
+          sourceKind: 'regex-heuristic',
+          truthMode: 'weak_signal',
+        }),
+      );
     }
   }
 
@@ -142,35 +185,47 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
 
     const relFile = path.relative(config.rootDir, file);
 
-    const hasFinancialOp = FINANCIAL_OPERATIONS.some((re) => re.test(content));
-    const hasAuditLog = AUDIT_LOG_WRITE_RE.test(content);
+    const hasFinancialOp = FINANCIAL_OPERATION_SIGNAL_RE.some((re) => re.test(content));
+    const hasAuditLog = APPEND_ONLY_AUDIT_EVIDENCE_RE.test(content);
     const hasTransaction = TRANSACTION_RE.test(content);
 
     if (hasFinancialOp && !hasAuditLog) {
-      breaks.push({
-        type: 'AUDIT_FINANCIAL_NO_TRAIL',
-        severity: 'critical',
-        file: relFile,
-        line: 0,
-        description:
-          'Financial operation without AuditLog write — cannot reconstruct transaction history',
-        detail:
-          'Every financial mutation must write an AuditLog entry with before/after state, amount, and actor',
-      });
+      breaks.push(
+        buildAuditTrailDiagnostic({
+          predicateKinds: ['financial_mutation_signal', 'audit_write_not_observed'],
+          severity: 'critical',
+          file: relFile,
+          line: 0,
+          description:
+            'Financial mutation signal observed without nearby append-only audit evidence.',
+          detail:
+            'Regex/list-only weak signal; confirm with AST/dataflow or runtime evidence before treating this as final truth.',
+          sourceKind: 'regex-heuristic',
+          truthMode: 'weak_signal',
+        }),
+      );
     }
 
     // CHECK 5: AuditLog inside transaction
     if (hasFinancialOp && hasAuditLog && !hasTransaction) {
-      breaks.push({
-        type: 'AUDIT_FINANCIAL_NO_TRAIL',
-        severity: 'critical',
-        file: relFile,
-        line: 0,
-        description:
-          'AuditLog written outside $transaction — audit record may exist for a rolled-back operation',
-        detail:
-          'Wrap both the financial operation and the AuditLog.create() inside prisma.$transaction()',
-      });
+      breaks.push(
+        buildAuditTrailDiagnostic({
+          predicateKinds: [
+            'financial_mutation_signal',
+            'audit_write_observed',
+            'transaction_not_observed',
+          ],
+          severity: 'critical',
+          file: relFile,
+          line: 0,
+          description:
+            'Audit evidence appears outside transaction context; atomic audit behavior needs proof.',
+          detail:
+            'Regex-only weak signal; confirm control flow before treating the audit write as non-atomic.',
+          sourceKind: 'regex-heuristic',
+          truthMode: 'weak_signal',
+        }),
+      );
     }
   }
 
@@ -187,16 +242,24 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
     }
     const relFile = path.relative(config.rootDir, file);
 
-    if (/password|token|secret|cpf|ssn/i.test(content) && AUDIT_LOG_WRITE_RE.test(content)) {
-      breaks.push({
-        type: 'AUDIT_FINANCIAL_NO_TRAIL',
-        severity: 'critical',
-        file: relFile,
-        line: 0,
-        description: 'Potentially sensitive fields (password/token/CPF) may be logged in AuditLog',
-        detail:
-          'Sanitize before logging: omit password, token, secret fields; mask CPF/CNPJ to last 4 digits',
-      });
+    if (
+      /password|token|secret|cpf|ssn/i.test(content) &&
+      APPEND_ONLY_AUDIT_EVIDENCE_RE.test(content)
+    ) {
+      breaks.push(
+        buildAuditTrailDiagnostic({
+          predicateKinds: ['sensitive_field_signal', 'audit_write_observed'],
+          severity: 'critical',
+          file: relFile,
+          line: 0,
+          description:
+            'Sensitive field token observed near audit evidence; log redaction needs proof.',
+          detail:
+            'Regex-only weak signal; confirm serialized audit payloads and redaction behavior before treating this as a leak.',
+          sourceKind: 'regex-heuristic',
+          truthMode: 'weak_signal',
+        }),
+      );
     }
   }
 
@@ -219,17 +282,21 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
     const relFile = path.relative(config.rootDir, file);
 
     if (hasSensitiveDeletion(content)) {
-      if (!AUDIT_LOG_WRITE_RE.test(content)) {
-        breaks.push({
-          type: 'AUDIT_DELETION_NO_LOG',
-          severity: 'high',
-          file: relFile,
-          line: 0,
-          description:
-            'Data deletion/anonymization without audit log — cannot prove LGPD compliance',
-          detail:
-            'Log every deletion: AuditLog.create({ action: "USER_DATA_DELETED", entityId, requestedBy, timestamp })',
-        });
+      if (!APPEND_ONLY_AUDIT_EVIDENCE_RE.test(content)) {
+        breaks.push(
+          buildAuditTrailDiagnostic({
+            predicateKinds: ['sensitive_deletion_signal', 'audit_write_not_observed'],
+            severity: 'high',
+            file: relFile,
+            line: 0,
+            description:
+              'Sensitive deletion/anonymization signal observed without nearby audit evidence.',
+            detail:
+              'Regex/list-only weak signal; confirm deletion semantics and audit append behavior before treating this as final truth.',
+            sourceKind: 'regex-heuristic',
+            truthMode: 'weak_signal',
+          }),
+        );
       }
     }
   }
@@ -249,16 +316,21 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
 
     const relFile = path.relative(config.rootDir, file);
 
-    const hasAdminOp = ADMIN_OPERATIONS.some((re) => re.test(content));
-    if (hasAdminOp && !AUDIT_LOG_WRITE_RE.test(content)) {
-      breaks.push({
-        type: 'AUDIT_ADMIN_NO_LOG',
-        severity: 'high',
-        file: relFile,
-        line: 0,
-        description: 'Admin operation without audit log — privileged actions are unaccountable',
-        detail: 'Log all admin actions with: action, adminUserId, targetId, reason, timestamp, ip',
-      });
+    const hasAdminOp = ADMIN_OPERATION_SIGNAL_RE.some((re) => re.test(content));
+    if (hasAdminOp && !APPEND_ONLY_AUDIT_EVIDENCE_RE.test(content)) {
+      breaks.push(
+        buildAuditTrailDiagnostic({
+          predicateKinds: ['admin_action_signal', 'audit_write_not_observed'],
+          severity: 'high',
+          file: relFile,
+          line: 0,
+          description: 'Privileged action signal observed without nearby audit evidence.',
+          detail:
+            'Regex/list-only weak signal; confirm privileged semantics and audit append behavior before treating this as final truth.',
+          sourceKind: 'regex-heuristic',
+          truthMode: 'weak_signal',
+        }),
+      );
     }
   }
 

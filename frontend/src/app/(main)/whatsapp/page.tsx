@@ -5,7 +5,7 @@ import { kloelT, kloelError } from '@/lib/i18n/t';
 export const dynamic = 'force-dynamic';
 
 // PULSE_VISUAL_OK: Tailwind bracket hex values are intentional Meta integration
-// design colors. Token colors (#0A0A0C, #111113, #222226, #E0DDD8) are the
+// design colors. Token colors (colors.background.void, colors.background.surface, colors.border.space, colors.text.silver) are the
 // Monitor palette. Remaining hexes are custom Meta channel UI surface colors.
 
 import { apiFetch } from '@/lib/api/core';
@@ -65,9 +65,9 @@ function ChannelCard({
   meta?: string[];
 }) {
   return (
-    <div className="rounded-2xl border border-[#222226] bg-[#111113] p-5">
+    <div className="rounded-2xl border border-[colors.border.space] bg-[colors.background.surface] p-5">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[#E0DDD8]">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[colors.text.silver]">
           {title}
         </h2>
         <span
@@ -151,9 +151,9 @@ export default function WhatsAppPage() {
     Boolean(metaStatus?.channels?.whatsapp?.connected) && Boolean(whatsAppStatus?.connected);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0C] px-6 py-8 text-[#EAEAF0]">
+    <div className="min-h-screen bg-[colors.background.void] px-6 py-8 text-[#EAEAF0]">
       <div className="mx-auto max-w-5xl">
-        <div className="mb-8 rounded-[28px] border border-[#222226] bg-[linear-gradient(135deg,#161619_0%,#0E0E11_100%)] p-8">
+        <div className="mb-8 rounded-[28px] border border-[colors.border.space] bg-[linear-gradient(135deg,#161619_0%,#0E0E11_100%)] p-8">
           <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="max-w-2xl">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#7E7E85]">
@@ -189,7 +189,7 @@ export default function WhatsAppPage() {
                 <button
                   type="button"
                   onClick={() => void handleConnect()}
-                  className="rounded-full bg-[#E0DDD8] px-5 py-2 text-sm font-semibold text-[#111113]"
+                  className="rounded-full bg-[colors.text.silver] px-5 py-2 text-sm font-semibold text-[colors.background.surface]"
                 >
                   {kloelT(`Conectar com Meta`)}
                 </button>
@@ -264,7 +264,7 @@ export default function WhatsAppPage() {
           />
         </div>
 
-        <div className="rounded-[24px] border border-[#222226] bg-[#111113] p-6">
+        <div className="rounded-[24px] border border-[colors.border.space] bg-[colors.background.surface] p-6">
           <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[#7E7E85]">
             {kloelT(`Estado atual`)}
           </h2>
@@ -272,7 +272,7 @@ export default function WhatsAppPage() {
             <p className="mt-4 text-sm text-[#A9A9B0]">{kloelT(`Carregando integracao Meta...`)}</p>
           ) : (
             <div className="mt-4 grid gap-3 text-sm text-[#D4D4DA] md:grid-cols-2">
-              <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
+              <div className="rounded-2xl border border-[colors.border.space] bg-[#0E0E10] px-4 py-3">
                 <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
                   {kloelT(`Meta Auth`)}
                 </div>
@@ -281,19 +281,19 @@ export default function WhatsAppPage() {
                   {metaStatus?.tokenExpired ? ' com token expirado' : ''}
                 </div>
               </div>
-              <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
+              <div className="rounded-2xl border border-[colors.border.space] bg-[#0E0E10] px-4 py-3">
                 <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
                   {kloelT(`Provider ativo`)}
                 </div>
                 <div className="mt-2">{String(whatsAppStatus?.provider || 'meta-cloud')}</div>
               </div>
-              <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
+              <div className="rounded-2xl border border-[colors.border.space] bg-[#0E0E10] px-4 py-3">
                 <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
                   {kloelT(`Runtime degradado`)}
                 </div>
                 <div className="mt-2">{whatsAppStatus?.degraded ? 'Sim' : 'Nao'}</div>
               </div>
-              <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
+              <div className="rounded-2xl border border-[colors.border.space] bg-[#0E0E10] px-4 py-3">
                 <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
                   {kloelT(`Motivo atual`)}
                 </div>

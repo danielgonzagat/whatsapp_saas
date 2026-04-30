@@ -9,8 +9,7 @@
  * 3. DB: check configured sellable entities without a monetized child relation.
  * 4. Static: verify prompt-building agent code loads discovered config context.
  *
- * BREAK TYPES:
- * - E2E_AI_CONFIG_MISSING (critical) — AI config is never loaded into the LLM prompt
+ * Emits E2E config evidence gaps; diagnostic identity is synthesized downstream.
  */
 
 import * as path from 'path';
@@ -38,6 +37,24 @@ const PERSISTED_CONTEXT_RE =
   /(?:config|settings|profile|prompt|instruction|behavior|preference|policy|rule|context|memory|knowledge|history)/i;
 
 type PersistedContextRelation = RelationConfigModel;
+
+function whatsappE2eFinding(input: {
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+}): Break {
+  return {
+    type: 'diagnostic:e2e-whatsapp:config-context-evidence-gap',
+    severity: 'critical',
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: 'runtime:e2e:whatsapp-config',
+    surface: 'whatsapp-agent-config',
+  };
+}
 
 function quoteIdent(identifier: string): string {
   return `"${identifier.replace(/"/g, '""')}"`;
@@ -190,39 +207,39 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
     );
 
     if (configModels.length === 0) {
-      breaks.push({
-        type: 'E2E_AI_CONFIG_MISSING',
-        severity: 'critical',
-        file: schemaPath
-          ? path.relative(config.rootDir, schemaPath)
-          : 'backend/prisma/schema.prisma',
-        line: 1,
-        description: 'No relation-backed AI/config model discovered in Prisma schema',
-        detail:
-          'Expected a config/settings/profile model with a parent @relation so agent prompts can be grounded in persisted configuration.',
-      });
+      breaks.push(
+        whatsappE2eFinding({
+          file: schemaPath
+            ? path.relative(config.rootDir, schemaPath)
+            : 'backend/prisma/schema.prisma',
+          line: 1,
+          description: 'No relation-backed AI/config model discovered in Prisma schema',
+          detail:
+            'Expected a config/settings/profile model with a parent @relation so agent prompts can be grounded in persisted configuration.',
+        }),
+      );
     } else if (agentConfigConsumers.length === 0) {
-      breaks.push({
-        type: 'E2E_AI_CONFIG_MISSING',
-        severity: 'critical',
-        file: config.backendDir,
-        line: 1,
-        description: 'No prompt-building agent code consumes discovered config models',
-        detail: `Discovered config models: ${configModels
-          .map(({ configModel }) => configModel.name)
-          .join(', ')}`,
-      });
+      breaks.push(
+        whatsappE2eFinding({
+          file: config.backendDir,
+          line: 1,
+          description: 'No prompt-building agent code consumes discovered config models',
+          detail: `Discovered config models: ${configModels
+            .map(({ configModel }) => configModel.name)
+            .join(', ')}`,
+        }),
+      );
     }
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
-    breaks.push({
-      type: 'E2E_AI_CONFIG_MISSING',
-      severity: 'critical',
-      file: config.backendDir,
-      line: 1,
-      description: 'Static analysis of prompt/config wiring failed',
-      detail: message,
-    });
+    breaks.push(
+      whatsappE2eFinding({
+        file: config.backendDir,
+        line: 1,
+        description: 'Static analysis of prompt/config wiring failed',
+        detail: message,
+      }),
+    );
   }
 
   for (const activeModel of activeAutonomousModels) {
@@ -231,15 +248,15 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
     );
 
     if (compatibleRelations.length === 0) {
-      breaks.push({
-        type: 'E2E_AI_CONFIG_MISSING',
-        severity: 'critical',
-        file: schemaPath ? path.relative(config.rootDir, schemaPath) : config.backendDir,
-        line: 1,
-        description: `Active autonomous model ${activeModel.name} has no compatible persisted config/context relation`,
-        detail:
-          'Autopilot/agent execution can become active, but the schema does not expose a same-parent or workspace-scoped persisted config/context model to ground its prompts.',
-      });
+      breaks.push(
+        whatsappE2eFinding({
+          file: schemaPath ? path.relative(config.rootDir, schemaPath) : config.backendDir,
+          line: 1,
+          description: `Active autonomous model ${activeModel.name} has no compatible persisted config/context relation`,
+          detail:
+            'Autopilot/agent execution can become active, but the schema does not expose a same-parent or workspace-scoped persisted config/context model to ground its prompts.',
+        }),
+      );
       continue;
     }
 
@@ -262,16 +279,16 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
         }
 
         if (persistedContextCount === 0) {
-          breaks.push({
-            type: 'E2E_AI_CONFIG_MISSING',
-            severity: 'critical',
-            file: schemaPath ? path.relative(config.rootDir, schemaPath) : config.backendDir,
-            line: 1,
-            description: `${activeCount} active ${activeModel.name} records exist but compatible persisted config/context tables are empty`,
-            detail: `Compatible context models checked: ${compatibleRelations
-              .map((relation) => relation.configModel.name)
-              .join(', ')}`,
-          });
+          breaks.push(
+            whatsappE2eFinding({
+              file: schemaPath ? path.relative(config.rootDir, schemaPath) : config.backendDir,
+              line: 1,
+              description: `${activeCount} active ${activeModel.name} records exist but compatible persisted config/context tables are empty`,
+              detail: `Compatible context models checked: ${compatibleRelations
+                .map((relation) => relation.configModel.name)
+                .join(', ')}`,
+            }),
+          );
         }
       }
     } catch {
@@ -299,15 +316,15 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
         const activeParents = parseInt(String(activeRows[0]?.count ?? '0'), 10);
 
         if (activeParents > 5) {
-          breaks.push({
-            type: 'E2E_AI_CONFIG_MISSING',
-            severity: 'critical',
-            file: schemaPath ? path.relative(config.rootDir, schemaPath) : config.backendDir,
-            line: 1,
-            description: `${activeParents} active parent records exist but ${relation.configModel.name} table is empty`,
-            detail:
-              'Discovered relation-backed config table has no rows despite active parent data; agent responses may be generic.',
-          });
+          breaks.push(
+            whatsappE2eFinding({
+              file: schemaPath ? path.relative(config.rootDir, schemaPath) : config.backendDir,
+              line: 1,
+              description: `${activeParents} active parent records exist but ${relation.configModel.name} table is empty`,
+              detail:
+                'Discovered relation-backed config table has no rows despite active parent data; agent responses may be generic.',
+            }),
+          );
         }
       }
     } catch {
@@ -325,17 +342,17 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
       );
 
       if (orphanRows.length > 0) {
-        breaks.push({
-          type: 'E2E_AI_CONFIG_MISSING',
-          severity: 'critical',
-          file: schemaPath ? path.relative(config.rootDir, schemaPath) : config.backendDir,
-          line: 1,
-          description: `${orphanRows.length} ${relation.configModel.name} records reference missing ${relation.parentModel.name} rows`,
-          detail: `Sample orphan config IDs: ${orphanRows
-            .slice(0, 3)
-            .map((row) => String(row.id))
-            .join(', ')}`,
-        });
+        breaks.push(
+          whatsappE2eFinding({
+            file: schemaPath ? path.relative(config.rootDir, schemaPath) : config.backendDir,
+            line: 1,
+            description: `${orphanRows.length} ${relation.configModel.name} records reference missing ${relation.parentModel.name} rows`,
+            detail: `Sample orphan config IDs: ${orphanRows
+              .slice(0, 3)
+              .map((row) => String(row.id))
+              .join(', ')}`,
+          }),
+        );
       }
     } catch {
       // Table doesn't exist or join failed — skip.
@@ -362,14 +379,14 @@ export async function checkE2eWhatsapp(config: PulseConfig): Promise<Break[]> {
           );
 
           if (unreadyRows.length > 0) {
-            breaks.push({
-              type: 'E2E_AI_CONFIG_MISSING',
-              severity: 'critical',
-              file: schemaPath ? path.relative(config.rootDir, schemaPath) : config.backendDir,
-              line: 1,
-              description: `${unreadyRows.length} configured active ${relation.parentModel.name} records have no monetized child relation`,
-              detail: `Expected at least one ${monetizedChild.name} row per configured active parent before an agent can safely offer it.`,
-            });
+            breaks.push(
+              whatsappE2eFinding({
+                file: schemaPath ? path.relative(config.rootDir, schemaPath) : config.backendDir,
+                line: 1,
+                description: `${unreadyRows.length} configured active ${relation.parentModel.name} records have no monetized child relation`,
+                detail: `Expected at least one ${monetizedChild.name} row per configured active parent before an agent can safely offer it.`,
+              }),
+            );
           }
         } catch {
           // Schema mismatch or table missing — skip.

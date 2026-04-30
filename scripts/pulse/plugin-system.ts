@@ -10,6 +10,54 @@ import type { PluginKind, PluginRegistry, PulsePlugin } from './types.plugin-sys
 const ARTIFACT_FILE_NAME = 'PULSE_PLUGIN_REGISTRY.json';
 const PLUGINS_DIR_NAME = 'plugins';
 const DOMAIN_PACK_PREFIX = 'domain-pack-';
+const PLUGIN_KIND_PROPERTY_RE = /\bkind\s*:\s*['"]([^'"]+)['"]/;
+const KNOWN_PLUGIN_KINDS: readonly PluginKind[] = [
+  'parser',
+  'adapter',
+  'evidence_provider',
+  'gate_provider',
+  'executor',
+  'domain_pack',
+];
+
+interface PluginDescriptor {
+  id: string;
+  path: string;
+  kind: PluginKind;
+}
+
+type PluginLoadStatus = 'loaded' | 'contract_invalid' | 'load_failed' | 'execution_failed';
+
+interface PluginExecutionProbe {
+  name: 'discover' | 'link' | 'evidence' | 'gates';
+  status: 'pass' | 'fail' | 'not_run';
+  count: number;
+  error: string | null;
+}
+
+type PluginRegistryEntry = PluginRegistry['plugins'][number] & {
+  status: PluginLoadStatus;
+  execution: PluginExecutionProbe[];
+};
+
+function isPluginKind(value: string): value is PluginKind {
+  return KNOWN_PLUGIN_KINDS.some((kind) => kind === value);
+}
+
+function readDeclaredPluginKind(pluginDir: string): PluginKind | null {
+  const indexPath = path.join(pluginDir, 'index.ts');
+  if (!pathExists(indexPath)) {
+    return null;
+  }
+
+  try {
+    const source = fs.readFileSync(indexPath, 'utf8');
+    const declaredKind = source.match(PLUGIN_KIND_PROPERTY_RE)?.[1];
+    return declaredKind && isPluginKind(declaredKind) ? declaredKind : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Discover all available plugins from the filesystem.
@@ -21,10 +69,8 @@ const DOMAIN_PACK_PREFIX = 'domain-pack-';
  * @param rootDir - Repository root directory
  * @returns Array of discovered plugin descriptors with their kind
  */
-export function discoverPlugins(
-  rootDir: string,
-): Array<{ id: string; path: string; kind: PluginKind }> {
-  const discovered: Array<{ id: string; path: string; kind: PluginKind }> = [];
+export function discoverPlugins(rootDir: string): PluginDescriptor[] {
+  const discovered: PluginDescriptor[] = [];
 
   const pluginsDir = path.join(rootDir, 'scripts', 'pulse', PLUGINS_DIR_NAME);
 
@@ -48,7 +94,7 @@ export function discoverPlugins(
         continue;
       }
 
-      const kind = inferPluginKind(entry.name, pluginDir);
+      const kind = readDeclaredPluginKind(pluginDir) ?? inferPluginKind(entry.name, pluginDir);
       discovered.push({
         id: entry.name,
         path: indexPath,
@@ -95,13 +141,83 @@ function inferPluginKind(dirName: string, _pluginDir: string): PluginKind {
  * @returns The loaded plugin instance, or null if loading fails
  */
 export function loadPlugin(pluginPath: string): PulsePlugin | null {
+  return loadPluginAttempt(pluginPath).plugin;
+}
+
+function loadPluginAttempt(pluginPath: string): {
+  plugin: PulsePlugin | null;
+  error: string | null;
+  status: Extract<PluginLoadStatus, 'loaded' | 'contract_invalid' | 'load_failed'>;
+} {
   try {
     const mod = require(pluginPath);
     const plugin = mod.default ?? mod;
-    return validatePlugin(plugin) ? plugin : null;
-  } catch {
-    return null;
+    if (validatePlugin(plugin)) {
+      return { plugin, error: null, status: 'loaded' };
+    }
+    return {
+      plugin: null,
+      error: 'Plugin module loaded but did not satisfy PulsePlugin contract.',
+      status: 'contract_invalid',
+    };
+  } catch (error) {
+    return {
+      plugin: null,
+      error: error instanceof Error ? error.message : String(error),
+      status: 'load_failed',
+    };
   }
+}
+
+function runPluginExecutionProbe(
+  plugin: PulsePlugin,
+  name: PluginExecutionProbe['name'],
+  nodes: ReturnType<PulsePlugin['discover']>,
+): PluginExecutionProbe {
+  try {
+    const result = name === 'link' ? plugin.link(nodes) : plugin[name]();
+    return {
+      name,
+      status: 'pass',
+      count: Array.isArray(result) ? result.length : 0,
+      error: null,
+    };
+  } catch (error) {
+    return {
+      name,
+      status: 'fail',
+      count: 0,
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+function executePlugin(plugin: PulsePlugin): PluginExecutionProbe[] {
+  let nodes: ReturnType<PulsePlugin['discover']> = [];
+  const discoverProbe = (() => {
+    try {
+      nodes = plugin.discover();
+      return {
+        name: 'discover' as const,
+        status: 'pass' as const,
+        count: nodes.length,
+        error: null,
+      };
+    } catch (error) {
+      return {
+        name: 'discover' as const,
+        status: 'fail' as const,
+        count: 0,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  })();
+  return [
+    discoverProbe,
+    runPluginExecutionProbe(plugin, 'link', nodes),
+    runPluginExecutionProbe(plugin, 'evidence', nodes),
+    runPluginExecutionProbe(plugin, 'gates', nodes),
+  ];
 }
 
 /**
@@ -156,35 +272,61 @@ export function isDomainPack(pluginId: string, _rootDir: string): boolean {
  */
 export function loadPluginRegistry(rootDir: string): PluginRegistry {
   const discovered = discoverPlugins(rootDir);
-  const plugins: PluginRegistry['plugins'] = [];
+  const plugins: PluginRegistryEntry[] = [];
   let loadedCount = 0;
   let failedCount = 0;
+  let executionFailedCount = 0;
 
   for (const desc of discovered) {
-    const plugin = loadPlugin(desc.path);
+    const loadAttempt = loadPluginAttempt(desc.path);
+    const plugin = loadAttempt.plugin;
     const sourceMtime = pathExists(desc.path) ? statPath(desc.path).mtime.toISOString() : null;
     const entrypoint = path.relative(rootDir, desc.path);
 
     if (plugin) {
+      const execution = executePlugin(plugin);
+      const executionFailed = execution.some((probe) => probe.status === 'fail');
+      if (executionFailed) {
+        executionFailedCount++;
+      }
       plugins.push({
         id: desc.id,
-        kind: desc.kind,
-        loaded: true,
-        error: null,
+        kind: plugin.kind,
+        loaded: !executionFailed,
+        status: executionFailed ? 'execution_failed' : 'loaded',
+        error:
+          execution
+            .filter((probe) => probe.error)
+            .map((probe) => `${probe.name}: ${probe.error}`)
+            .join('; ') || null,
         entrypoint,
         sourceMtime,
-        proof: `loaded ${desc.kind} plugin from filesystem entrypoint`,
+        proof: executionFailed
+          ? `loaded ${plugin.kind} plugin contract but execution probe failed`
+          : `loaded ${plugin.kind} plugin from filesystem entrypoint and executed lifecycle probes`,
+        execution,
       });
-      loadedCount++;
+      if (executionFailed) {
+        failedCount++;
+      } else {
+        loadedCount++;
+      }
     } else {
       plugins.push({
         id: desc.id,
         kind: desc.kind,
         loaded: false,
-        error: `Failed to load plugin from ${desc.path}`,
+        status: loadAttempt.status,
+        error: loadAttempt.error ?? `Failed to load plugin from ${desc.path}`,
         entrypoint,
         sourceMtime,
-        proof: `discovered ${desc.kind} plugin entrypoint but module contract validation failed`,
+        proof: `discovered ${desc.kind} plugin entrypoint but module did not execute`,
+        execution: [
+          { name: 'discover', status: 'not_run', count: 0, error: null },
+          { name: 'link', status: 'not_run', count: 0, error: null },
+          { name: 'evidence', status: 'not_run', count: 0, error: null },
+          { name: 'gates', status: 'not_run', count: 0, error: null },
+        ],
       });
       failedCount++;
     }
@@ -209,7 +351,7 @@ export function loadPluginRegistry(rootDir: string): PluginRegistry {
       proof:
         discovered.length === 0
           ? `No plugin entrypoints found under scripts/pulse/${PLUGINS_DIR_NAME}`
-          : `${discovered.length} plugin entrypoint(s) discovered from scripts/pulse/${PLUGINS_DIR_NAME}; ${loadedCount} loaded`,
+          : `${discovered.length} plugin entrypoint(s) discovered from scripts/pulse/${PLUGINS_DIR_NAME}; ${loadedCount} executed; ${executionFailedCount} failed lifecycle execution`,
     },
     summary: {
       total: discovered.length,

@@ -13,6 +13,7 @@ import {
 } from '../execution-harness';
 import {
   buildPropertyTestEvidence,
+  classifyEndpointRisk as classifyPropertyEndpointRisk,
   discoverPureFunctionCandidates,
   generateFuzzCasesFromEndpoints,
   generatePropertyTestCases,
@@ -306,6 +307,59 @@ describe('PULSE execution blueprints', () => {
     expect(evidence.summary.passedPropertyTests).toBe(0);
     expect(evidence.summary.passedFuzzTests).toBe(0);
     expect(evidence.summary.notExecutedPropertyTests).toBeGreaterThan(0);
+  });
+
+  it('discovers property tests and fuzz strategies from proof shape sensors', () => {
+    const root = makeTempRoot('pulse-property-shape-');
+    writeFile(
+      root,
+      'src/arithmetic.property.ts',
+      `
+        import fc from 'fast-check';
+        describe('arithmetic laws', () => {
+          it('keeps integers closed', () => {
+            fc.assert(fc.property(fc.integer(), (value) => Number.isInteger(value)));
+          });
+        });
+      `,
+    );
+
+    const scanned = scanForExistingPropertyTests(root);
+    const publicSchemaEndpoint = {
+      method: 'POST',
+      path: '/opaque',
+      filePath: 'backend/src/opaque.controller.ts',
+      requiresAuth: false,
+      requestSchema: { dtoType: 'CreateOpaqueDto', source: 'inferred' },
+    };
+    const readEndpoint = {
+      method: 'GET',
+      path: '/opaque',
+      filePath: 'backend/src/opaque.controller.ts',
+      requiresAuth: false,
+      requestSchema: null,
+    };
+    const fuzzCases = generateFuzzCasesFromEndpoints([publicSchemaEndpoint, readEndpoint]);
+    const publicStrategies = fuzzCases
+      .filter((test) => test.endpoint === 'POST /opaque')
+      .map((test) => test.strategy);
+    const readStrategies = fuzzCases
+      .filter((test) => test.endpoint === 'GET /opaque')
+      .map((test) => test.strategy);
+
+    expect(scanned).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          filePath: 'src/arithmetic.property.ts',
+          status: 'not_executed',
+        }),
+      ]),
+    );
+    expect(classifyPropertyEndpointRisk(publicSchemaEndpoint)).toBe('high');
+    expect(publicStrategies).toEqual(
+      expect.arrayContaining(['valid_only', 'invalid_only', 'boundary', 'random', 'both']),
+    );
+    expect(readStrategies).toEqual(['valid_only', 'random']);
   });
 
   it('generates fail-closed harness blueprints instead of weak runnable tests', () => {

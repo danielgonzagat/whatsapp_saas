@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -18,8 +19,10 @@ class CreateEventDto {
 /** Calendar controller. */
 @ApiTags('Calendar')
 @ApiBearerAuth()
+@UseGuards(ThrottlerGuard)
 @Controller('calendar')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
 

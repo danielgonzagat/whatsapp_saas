@@ -42,17 +42,29 @@ export interface PathProofObservedEvidenceLink {
   exitCode?: number;
   startedAt?: string;
   finishedAt?: string;
+  observedAt: string;
   summary: string;
 }
 
 export type PathProofEvidenceDisposition =
   | 'observed_pass'
   | 'observed_fail'
+  | 'not_run'
   | 'planned_only'
   | 'skipped'
   | 'stale'
   | 'missing_result'
   | 'not_observed';
+
+export type PathProofEvidenceState = 'observed' | 'not_run';
+
+export interface PathProofEvidenceFreshness {
+  status: 'fresh' | 'stale' | 'not_run';
+  generatedAt: string;
+  observedAt: string | null;
+  ageMs: number | null;
+  reason: string;
+}
 
 export interface PathProofEvidenceEntry {
   taskId: string;
@@ -67,8 +79,10 @@ export interface PathProofEvidenceEntry {
   command: string;
   expectedEvidence: PathProofTask['expectedEvidence'];
   disposition: PathProofEvidenceDisposition;
+  evidenceState: PathProofEvidenceState;
   observed: boolean;
   coverageCountsAsObserved: boolean;
+  freshness: PathProofEvidenceFreshness;
   reason: string;
   result: PathProofRunnerResult | null;
   observedEvidenceLink: PathProofObservedEvidenceLink | null;
@@ -88,6 +102,7 @@ export interface PathProofEvidenceArtifact {
     observedEvidenceLinks: number;
     observedPass: number;
     observedFail: number;
+    notRun: number;
     plannedOnly: number;
     skipped: number;
     stale: number;
@@ -134,6 +149,9 @@ export function pathProofExecutionResultToRunnerResult(
     executed: result.executed,
     plannedOnly: result.status === 'planned_only',
     skipped: result.status === 'execution_skipped',
+    startedAt: result.startedAt,
+    finishedAt: result.finishedAt,
+    durationMs: result.durationMs,
     summary: result.reason,
     ...(typeof result.exitCode === 'number' ? { exitCode: result.exitCode } : {}),
   };
@@ -158,7 +176,11 @@ function resultIsPlannedOnly(result: PathProofRunnerResult): boolean {
 }
 
 function resultIsSkipped(result: PathProofRunnerResult): boolean {
-  return result.skipped === true || result.status === 'skipped' || result.status === 'not_run';
+  return result.skipped === true || result.status === 'skipped';
+}
+
+function resultIsNotRun(result: PathProofRunnerResult): boolean {
+  return result.status === 'not_run';
 }
 
 function resultIsStale(result: PathProofRunnerResult): boolean {
@@ -169,6 +191,20 @@ function resultHasCommandProof(result: PathProofRunnerResult): boolean {
   return result.command.trim().length > 0;
 }
 
+function parseTimestamp(value: string | undefined): number | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function resultHasExecutionWindow(result: PathProofRunnerResult): boolean {
+  const startedAt = parseTimestamp(result.startedAt);
+  const finishedAt = parseTimestamp(result.finishedAt);
+  return startedAt !== null && finishedAt !== null && finishedAt >= startedAt;
+}
+
 export function resultCountsAsObservedPathProof(result: PathProofRunnerResult): boolean {
   return (
     result.executed === true &&
@@ -176,6 +212,7 @@ export function resultCountsAsObservedPathProof(result: PathProofRunnerResult): 
     !resultIsSkipped(result) &&
     !resultIsStale(result) &&
     resultHasCommandProof(result) &&
+    resultHasExecutionWindow(result) &&
     isPassFailStatus(result.status)
   );
 }
@@ -201,6 +238,9 @@ function dispositionFor(result: PathProofRunnerResult | undefined): PathProofEvi
   if (resultIsSkipped(result)) {
     return 'skipped';
   }
+  if (resultIsNotRun(result)) {
+    return 'not_run';
+  }
   if (resultIsPlannedOnly(result) || result.executed === false) {
     return 'planned_only';
   }
@@ -224,8 +264,14 @@ function reasonFor(
   if (disposition === 'skipped') {
     return 'Runner result was skipped or not run and cannot count as observed.';
   }
+  if (disposition === 'not_run') {
+    return 'Runner result explicitly reports not_run and cannot count as observed.';
+  }
   if (disposition === 'planned_only') {
     return 'Runner result is planned-only or unexecuted and remains blueprint evidence.';
+  }
+  if (!resultHasExecutionWindow(result)) {
+    return 'Runner result lacks a valid startedAt/finishedAt execution window.';
   }
   if (!resultHasCommandProof(result)) {
     return 'Runner result lacks command proof and cannot count as observed.';
@@ -252,17 +298,55 @@ function observedLinkFor(
     exitCode: result.exitCode,
     startedAt: result.startedAt,
     finishedAt: result.finishedAt,
+    observedAt: result.finishedAt ?? result.startedAt ?? new Date().toISOString(),
     summary:
       result.summary ?? `Observed ${disposition.replace('observed_', '')} for ${result.taskId}.`,
+  };
+}
+
+function buildFreshness(
+  result: PathProofRunnerResult | undefined,
+  disposition: PathProofEvidenceDisposition,
+  generatedAt: string,
+): PathProofEvidenceFreshness {
+  if (disposition !== 'observed_pass' && disposition !== 'observed_fail') {
+    return {
+      status: disposition === 'stale' ? 'stale' : 'not_run',
+      generatedAt,
+      observedAt: null,
+      ageMs: null,
+      reason:
+        disposition === 'stale'
+          ? 'Runner result is marked stale.'
+          : 'No observed execution window is attached to this task.',
+    };
+  }
+
+  const observedAt = result?.finishedAt ?? null;
+  const observedAtMs = parseTimestamp(observedAt ?? undefined);
+  const generatedAtMs = parseTimestamp(generatedAt);
+
+  return {
+    status: 'fresh',
+    generatedAt,
+    observedAt,
+    ageMs:
+      observedAtMs !== null && generatedAtMs !== null
+        ? Math.max(0, generatedAtMs - observedAtMs)
+        : null,
+    reason: 'Observed command proof has a valid execution window for this artifact run.',
   };
 }
 
 function buildEvidenceEntry(
   task: PathProofTask,
   result: PathProofRunnerResult | undefined,
+  generatedAt: string,
 ): PathProofEvidenceEntry {
   const disposition = dispositionFor(result);
   const observedEvidenceLink = result ? observedLinkFor(result, disposition) : null;
+  const evidenceState: PathProofEvidenceState =
+    observedEvidenceLink !== null ? 'observed' : 'not_run';
 
   return {
     taskId: task.taskId,
@@ -277,8 +361,10 @@ function buildEvidenceEntry(
     command: task.command,
     expectedEvidence: task.expectedEvidence,
     disposition,
+    evidenceState,
     observed: observedEvidenceLink !== null,
     coverageCountsAsObserved: observedEvidenceLink !== null,
+    freshness: buildFreshness(result, disposition, generatedAt),
     reason: reasonFor(task, result, disposition),
     result: result ?? null,
     observedEvidenceLink,
@@ -296,6 +382,7 @@ function summarize(
     observedEvidenceLinks: tasks.filter((task) => task.observedEvidenceLink !== null).length,
     observedPass: tasks.filter((task) => task.disposition === 'observed_pass').length,
     observedFail: tasks.filter((task) => task.disposition === 'observed_fail').length,
+    notRun: tasks.filter((task) => task.evidenceState === 'not_run').length,
     plannedOnly: tasks.filter((task) => task.disposition === 'planned_only').length,
     skipped: tasks.filter((task) => task.disposition === 'skipped').length,
     stale: tasks.filter((task) => task.disposition === 'stale').length,
@@ -315,7 +402,7 @@ export function mergePathProofRunnerResults(
 ): PathProofEvidenceArtifact {
   const resultsByTaskId = resultByTaskId(runnerResults);
   const tasks = plan.tasks.map((task) =>
-    buildEvidenceEntry(task, resultsByTaskId.get(task.taskId)),
+    buildEvidenceEntry(task, resultsByTaskId.get(task.taskId), generatedAt),
   );
 
   return {

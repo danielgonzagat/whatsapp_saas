@@ -20,7 +20,7 @@ import type {
   PulseExternalSignalSource,
   PulseSignal,
 } from '../types';
-import { pathExists, readTextFile } from '../safe-fs';
+import { isDirectory, pathExists, readDir, readTextFile } from '../safe-fs';
 import { safeJoin } from '../safe-path';
 
 /**
@@ -141,12 +141,33 @@ export interface ExternalSourcesConfig {
   certificationScope?: string;
 }
 
-interface ExternalSourceRunResult {
+export interface ExternalSourceRunResult {
   source: PulseExternalSignalSource;
   status: PulseExternalAdapterStatus;
   signalCount: number;
   syncedAt: string;
   reason: string;
+}
+
+type ExternalSourceCapabilityKind = 'repo' | 'ci' | 'env' | 'tool' | 'config' | 'artifact';
+
+interface ExternalSourceCapabilityEvidence {
+  kind: ExternalSourceCapabilityKind;
+  key: string;
+  present: boolean;
+  reason: string;
+}
+
+export interface ExternalSourceCapabilityMetadata {
+  source: PulseExternalSignalSource;
+  discovered: boolean;
+  operational: boolean;
+  truthAuthority: 'discovered_capability' | 'compat_adapter';
+  capabilityKinds: ExternalSourceCapabilityKind[];
+  evidence: ExternalSourceCapabilityEvidence[];
+  compatRequiredness: AdapterRequiredness;
+  compatRequired: boolean;
+  missingOperationalRequirements: string[];
 }
 
 export interface ConsolidatedExternalSource extends ExternalSourceRunResult {
@@ -156,6 +177,7 @@ export interface ConsolidatedExternalSource extends ExternalSourceRunResult {
   blocking: boolean;
   proofBasis: PulseExternalAdapterProofBasis;
   missingReason: string | null;
+  sourceCapability: ExternalSourceCapabilityMetadata;
 }
 
 /** Consolidated external state shape. */
@@ -164,6 +186,8 @@ export interface ConsolidatedExternalState {
   generatedAt: string;
   /** Sources property. */
   sources: ConsolidatedExternalSource[];
+  /** Source capability metadata discovered from repo, CI, env, and local tools. */
+  sourceCapabilities: ExternalSourceCapabilityMetadata[];
   /** All signals property. */
   allSignals: PulseSignal[];
   /** Signals by source property. */
@@ -185,6 +209,7 @@ function buildLiveMissingReason(
   required: boolean,
   proofBasis: PulseExternalAdapterProofBasis,
   profile: PulseCertificationProfile | undefined,
+  sourceCapability: ExternalSourceCapabilityMetadata,
 ): string | null {
   if (
     entry.status !== 'not_available' &&
@@ -198,24 +223,28 @@ function buildLiveMissingReason(
   const profileLabel = profile || 'default';
   const requirementLabel = required ? 'required' : 'optional';
   const disposition = required ? 'blocking external proof closure' : 'tracked as non-blocking';
-  return `${entry.source} is ${requirementLabel} under profile=${profileLabel}; proofBasis=${proofBasis}; status=${entry.status}; ${disposition}. ${entry.reason}`;
+  return `${entry.source} is ${requirementLabel} under profile=${profileLabel}; proofBasis=${proofBasis}; status=${entry.status}; sourceCapability=${sourceCapability.truthAuthority}; operational=${sourceCapability.operational}; ${disposition}. ${entry.reason}`;
 }
 
-function classifyLiveExternalSource(
+export function classifyLiveExternalSource(
   entry: ExternalSourceRunResult,
   profile: PulseCertificationProfile | undefined,
+  sourceCapability: ExternalSourceCapabilityMetadata,
 ): ConsolidatedExternalSource {
-  const required = isAdapterRequired(entry.source, profile);
+  const required = sourceCapability.discovered;
   const status: PulseExternalAdapterStatus =
-    entry.status === 'not_available' && !required ? 'optional_not_configured' : entry.status;
+    entry.status === 'not_available' && !sourceCapability.discovered
+      ? 'optional_not_configured'
+      : entry.status;
   const proofBasis: PulseExternalAdapterProofBasis = 'live_adapter';
   const requirement: PulseExternalAdapterRequirement = required ? 'required' : 'optional';
+  const profileLabel = profile || 'default';
   const classifiedEntry = {
     ...entry,
     status,
     reason:
-      entry.status === 'not_available' && !required
-        ? `${entry.source} adapter is optional under profile=${profile || 'default'} and was not configured.`
+      entry.status === 'not_available' && !sourceCapability.discovered
+        ? `${entry.source} adapter has no discovered repo/CI/env/tool capability under profile=${profileLabel}; compat requiredness ${sourceCapability.compatRequiredness} is metadata only.`
         : entry.reason,
     requiredness: getAdapterRequiredness(entry.source),
     requirement,
@@ -223,11 +252,18 @@ function classifyLiveExternalSource(
     blocking:
       required && (status === 'not_available' || status === 'invalid' || status === 'stale'),
     proofBasis,
+    sourceCapability,
   };
 
   return {
     ...classifiedEntry,
-    missingReason: buildLiveMissingReason(classifiedEntry, required, proofBasis, profile),
+    missingReason: buildLiveMissingReason(
+      classifiedEntry,
+      required,
+      proofBasis,
+      profile,
+      sourceCapability,
+    ),
   };
 }
 
@@ -317,6 +353,310 @@ function readGitHubCliToken(): string | undefined {
   } catch {
     return undefined;
   }
+}
+
+function commandAvailable(command: string, args: string[] = ['--version']): boolean {
+  try {
+    execFileSync(command, args, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'ignore', 'ignore'],
+      timeout: 3_000,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function repoPathExists(rootDir: string, relativePath: string): boolean {
+  return pathExists(safeJoin(rootDir, relativePath));
+}
+
+function repoDirHasFile(
+  rootDir: string,
+  relativePath: string,
+  predicate: (fileName: string) => boolean,
+): boolean {
+  const dirPath = safeJoin(rootDir, relativePath);
+  if (!pathExists(dirPath) || !isDirectory(dirPath)) {
+    return false;
+  }
+  return readDir(dirPath).some(predicate);
+}
+
+function repoFilesContain(rootDir: string, relativePaths: string[], pattern: RegExp): boolean {
+  return relativePaths.some((relativePath) => {
+    const filePath = safeJoin(rootDir, relativePath);
+    if (!pathExists(filePath)) {
+      return false;
+    }
+    try {
+      return pattern.test(readTextFile(filePath, 'utf8'));
+    } catch {
+      return false;
+    }
+  });
+}
+
+function hasEnvValue(env: Record<string, string | undefined>, keys: string[]): boolean {
+  return keys.some((key) => Boolean(env[key]));
+}
+
+function presentEvidence(
+  kind: ExternalSourceCapabilityKind,
+  key: string,
+  present: boolean,
+  reason: string,
+): ExternalSourceCapabilityEvidence {
+  return { kind, key, present, reason };
+}
+
+interface ExternalSourceDiscoveryContext {
+  rootDir: string;
+  env: Record<string, string | undefined>;
+  githubOwner: string;
+  githubRepo: string;
+  githubToken?: string;
+  gitHubRemote: { owner: string; repo: string } | null;
+}
+
+function sourceCapability(
+  source: PulseExternalSignalSource,
+  profile: PulseCertificationProfile | undefined,
+  evidence: ExternalSourceCapabilityEvidence[],
+  operationalRequirements: Array<{ key: string; present: boolean }>,
+): ExternalSourceCapabilityMetadata {
+  const presentEvidenceItems = evidence.filter((item) => item.present);
+  const missingOperationalRequirements = operationalRequirements
+    .filter((requirement) => !requirement.present)
+    .map((requirement) => requirement.key);
+  const discovered = presentEvidenceItems.length > 0;
+  const compatRequiredness = getAdapterRequiredness(source);
+  return {
+    source,
+    discovered,
+    operational: discovered && missingOperationalRequirements.length === 0,
+    truthAuthority: discovered ? 'discovered_capability' : 'compat_adapter',
+    capabilityKinds: [...new Set(presentEvidenceItems.map((item) => item.kind))],
+    evidence,
+    compatRequiredness,
+    compatRequired: isAdapterRequired(source, profile),
+    missingOperationalRequirements,
+  };
+}
+
+export function discoverExternalSourceCapabilities(
+  context: ExternalSourceDiscoveryContext,
+  profile: PulseCertificationProfile | undefined,
+): ExternalSourceCapabilityMetadata[] {
+  const workflowFilesPresent = repoDirHasFile(context.rootDir, '.github/workflows', (fileName) =>
+    /\.ya?ml$/i.test(fileName),
+  );
+  const codecovConfigPresent =
+    repoPathExists(context.rootDir, '.codecov.yml') ||
+    repoPathExists(context.rootDir, 'codecov.yml') ||
+    repoFilesContain(context.rootDir, ['README.md', 'readme.md'], /codecov/i) ||
+    repoFilesContain(
+      context.rootDir,
+      ['.github/workflows/ci.yml', '.github/workflows/ci-cd.yml'],
+      /codecov/i,
+    );
+  const dependabotConfigPresent =
+    repoPathExists(context.rootDir, '.github/dependabot.yml') ||
+    repoPathExists(context.rootDir, '.github/dependabot.yaml');
+  const sentryConfigPresent =
+    repoPathExists(context.rootDir, '.sentryclirc') ||
+    repoPathExists(context.rootDir, 'sentry.properties');
+  const datadogConfigPresent =
+    repoPathExists(context.rootDir, 'datadog.yaml') ||
+    repoPathExists(context.rootDir, 'datadog.yml') ||
+    repoPathExists(context.rootDir, '.datadog');
+  const prometheusConfigPresent =
+    repoPathExists(context.rootDir, 'prometheus.yml') ||
+    repoPathExists(context.rootDir, 'prometheus.yaml') ||
+    repoPathExists(context.rootDir, 'ops/prometheus.yml') ||
+    repoPathExists(context.rootDir, 'ops/prometheus.yaml');
+  const gitNexusArtifactPresent =
+    repoPathExists(context.rootDir, 'PULSE_GITNEXUS_STATE.json') ||
+    repoPathExists(context.rootDir, '.pulse/current/PULSE_GITNEXUS_STATE.json') ||
+    repoPathExists(context.rootDir, '.pulse/current/PULSE_GITNEXUS_EVIDENCE.json');
+  const ghToolAvailable = commandAvailable('gh');
+  const gitNexusToolAvailable = commandAvailable('gitnexus') || commandAvailable('git-nexus');
+
+  return [
+    sourceCapability(
+      'github',
+      profile,
+      [
+        presentEvidence(
+          'repo',
+          'git_remote_origin',
+          Boolean(context.gitHubRemote),
+          'GitHub remote origin was discovered from the local repository.',
+        ),
+        presentEvidence(
+          'env',
+          'GITHUB_OWNER/GITHUB_REPO',
+          Boolean(context.githubOwner && context.githubRepo),
+          'GitHub owner/repo were discovered from config, env, or git remote.',
+        ),
+        presentEvidence('tool', 'gh', ghToolAvailable, 'GitHub CLI is available locally.'),
+      ],
+      [{ key: 'github_owner_repo', present: Boolean(context.githubOwner && context.githubRepo) }],
+    ),
+    sourceCapability(
+      'github_actions',
+      profile,
+      [
+        presentEvidence(
+          'ci',
+          '.github/workflows',
+          workflowFilesPresent,
+          'GitHub Actions workflow files were discovered in the repository.',
+        ),
+        presentEvidence('tool', 'gh', ghToolAvailable, 'GitHub CLI is available locally.'),
+      ],
+      [
+        { key: 'github_owner_repo', present: Boolean(context.githubOwner && context.githubRepo) },
+        { key: 'workflow_files', present: workflowFilesPresent },
+      ],
+    ),
+    sourceCapability(
+      'codecov',
+      profile,
+      [
+        presentEvidence(
+          'config',
+          'codecov_config_or_badge',
+          codecovConfigPresent,
+          'Codecov config, workflow, or badge evidence was discovered in the repository.',
+        ),
+        presentEvidence(
+          'env',
+          'CODECOV_TOKEN',
+          hasEnvValue(context.env, ['CODECOV_TOKEN']),
+          'Codecov token is available in the PULSE environment.',
+        ),
+      ],
+      [{ key: 'github_owner_repo', present: Boolean(context.githubOwner && context.githubRepo) }],
+    ),
+    sourceCapability(
+      'sentry',
+      profile,
+      [
+        presentEvidence(
+          'config',
+          'sentry_config',
+          sentryConfigPresent,
+          'Sentry config file was discovered in the repository.',
+        ),
+        presentEvidence(
+          'env',
+          'SENTRY_AUTH_TOKEN/SENTRY_ORG/SENTRY_PROJECT',
+          hasEnvValue(context.env, ['SENTRY_AUTH_TOKEN']) ||
+            hasEnvValue(context.env, ['SENTRY_ORG', 'SENTRY_PROJECT']),
+          'Sentry env configuration is available to PULSE.',
+        ),
+      ],
+      [
+        { key: 'SENTRY_AUTH_TOKEN', present: hasEnvValue(context.env, ['SENTRY_AUTH_TOKEN']) },
+        { key: 'SENTRY_ORG', present: hasEnvValue(context.env, ['SENTRY_ORG']) },
+        { key: 'SENTRY_PROJECT', present: hasEnvValue(context.env, ['SENTRY_PROJECT']) },
+      ],
+    ),
+    sourceCapability(
+      'datadog',
+      profile,
+      [
+        presentEvidence(
+          'config',
+          'datadog_config',
+          datadogConfigPresent,
+          'Datadog config file was discovered in the repository.',
+        ),
+        presentEvidence(
+          'env',
+          'DATADOG_API_KEY/DATADOG_APP_KEY',
+          hasEnvValue(context.env, ['DATADOG_API_KEY', 'DATADOG_APP_KEY']),
+          'Datadog env configuration is available to PULSE.',
+        ),
+      ],
+      [
+        { key: 'DATADOG_API_KEY', present: hasEnvValue(context.env, ['DATADOG_API_KEY']) },
+        { key: 'DATADOG_APP_KEY', present: hasEnvValue(context.env, ['DATADOG_APP_KEY']) },
+      ],
+    ),
+    sourceCapability(
+      'prometheus',
+      profile,
+      [
+        presentEvidence(
+          'config',
+          'prometheus_config',
+          prometheusConfigPresent,
+          'Prometheus config file was discovered in the repository.',
+        ),
+        presentEvidence(
+          'env',
+          'PROMETHEUS_BASE_URL/PULSE_PROMETHEUS_URL',
+          hasEnvValue(context.env, ['PROMETHEUS_BASE_URL', 'PULSE_PROMETHEUS_URL']),
+          'Prometheus endpoint is available to PULSE.',
+        ),
+      ],
+      [
+        {
+          key: 'prometheus_base_url',
+          present: hasEnvValue(context.env, ['PROMETHEUS_BASE_URL', 'PULSE_PROMETHEUS_URL']),
+        },
+      ],
+    ),
+    sourceCapability(
+      'dependabot',
+      profile,
+      [
+        presentEvidence(
+          'config',
+          '.github/dependabot.yml',
+          dependabotConfigPresent,
+          'Dependabot config was discovered in the repository.',
+        ),
+        presentEvidence(
+          'env',
+          'GITHUB_TOKEN',
+          Boolean(context.githubToken),
+          'GitHub token is available for Dependabot alert access.',
+        ),
+      ],
+      [
+        { key: 'github_owner_repo', present: Boolean(context.githubOwner && context.githubRepo) },
+        { key: 'GITHUB_TOKEN', present: Boolean(context.githubToken) },
+      ],
+    ),
+    sourceCapability(
+      'gitnexus',
+      profile,
+      [
+        presentEvidence(
+          'artifact',
+          'PULSE_GITNEXUS_STATE',
+          gitNexusArtifactPresent,
+          'GitNexus PULSE artifact was discovered.',
+        ),
+        presentEvidence(
+          'tool',
+          'gitnexus',
+          gitNexusToolAvailable,
+          'GitNexus CLI is available locally.',
+        ),
+      ],
+      [
+        {
+          key: 'gitnexus_artifact_or_tool',
+          present: gitNexusArtifactPresent || gitNexusToolAvailable,
+        },
+      ],
+    ),
+  ];
 }
 
 /** Run external sources orchestrator. */
@@ -678,8 +1018,27 @@ export async function runExternalSourcesOrchestrator(
     config.certificationScope || config.profile,
   );
   const requirednessProfile = certificationScope || profile;
+  const sourceCapabilities = discoverExternalSourceCapabilities(
+    {
+      rootDir: config.rootDir,
+      env: mergedEnv,
+      githubOwner,
+      githubRepo,
+      githubToken,
+      gitHubRemote,
+    },
+    requirednessProfile,
+  );
+  const sourceCapabilityBySource = new Map(
+    sourceCapabilities.map((capability) => [capability.source, capability]),
+  );
   const refinedSources = sources.map((entry) =>
-    classifyLiveExternalSource(entry, requirednessProfile),
+    classifyLiveExternalSource(
+      entry,
+      requirednessProfile,
+      sourceCapabilityBySource.get(entry.source) ??
+        sourceCapability(entry.source, requirednessProfile, [], []),
+    ),
   );
 
   return {
@@ -687,6 +1046,7 @@ export async function runExternalSourcesOrchestrator(
     profile,
     certificationScope,
     sources: refinedSources,
+    sourceCapabilities,
     allSignals,
     signalsBySource,
     criticalSignals,

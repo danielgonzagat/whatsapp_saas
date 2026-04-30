@@ -236,6 +236,15 @@ describe('buildPathProofPlan', () => {
       makeMatrixPath({
         pathId: 'b-worker',
         routePatterns: [],
+        chain: [
+          {
+            role: 'worker',
+            nodeId: 'worker:sync',
+            filePath: 'worker/src/sync.worker.ts',
+            description: 'sync queue worker',
+            truthMode: 'inferred',
+          },
+        ],
         entrypoint: {
           nodeId: 'worker:sync',
           filePath: 'worker/src/sync.worker.ts',
@@ -247,10 +256,35 @@ describe('buildPathProofPlan', () => {
       makeMatrixPath({
         pathId: 'c-webhook',
         routePatterns: ['/stripe/webhook'],
+        chain: [
+          {
+            role: 'side_effect',
+            nodeId: 'webhook:stripe',
+            filePath: 'backend/src/stripe/webhook.controller.ts',
+            description: 'provider callback side effect',
+            truthMode: 'inferred',
+          },
+        ],
+        requiredEvidence: [
+          {
+            kind: 'external',
+            required: true,
+            reason: 'Provider callback must be proven by external signal evidence.',
+          },
+        ],
       }),
       makeMatrixPath({
         pathId: 'd-function',
         routePatterns: [],
+        chain: [
+          {
+            role: 'orchestration',
+            nodeId: 'fn:score',
+            filePath: 'scripts/pulse/scoring.ts',
+            description: 'score function',
+            truthMode: 'inferred',
+          },
+        ],
         entrypoint: {
           nodeId: 'fn:score',
           filePath: 'scripts/pulse/scoring.ts',
@@ -309,8 +343,6 @@ describe('buildPathProofPlan', () => {
       ['b-worker', 'worker'],
       ['c-webhook', 'webhook'],
       ['d-function', 'function'],
-      ['e-not-executable', 'not_executable'],
-      ['f-human-required', 'human_required'],
       ['z-endpoint', 'endpoint'],
     ];
 
@@ -321,10 +353,11 @@ describe('buildPathProofPlan', () => {
     expect(modesByPath.has('observed-excluded')).toBe(false);
     expect(plan.summary).toEqual(
       expect.objectContaining({
-        terminalWithoutObservedEvidence: 7,
+        terminalWithoutObservedEvidence: 5,
+        plannedTasks: 5,
         executableTasks: 5,
-        humanRequiredTasks: 1,
-        notExecutableTasks: 1,
+        humanRequiredTasks: 0,
+        notExecutableTasks: 0,
       }),
     );
   });

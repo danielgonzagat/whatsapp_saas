@@ -37,14 +37,14 @@ describe('hardcoded finding audit', () => {
     expect(artifact.files[0]?.findings[0]?.evidence).toContain('#E85D30');
   });
 
-  it('detects MONEY_STATE_RE-like domain regexes without treating them as final truth', () => {
+  it('detects structural decision regexes without product-domain assumptions', () => {
     const artifact = buildHardcodedFindingAuditArtifact([
       {
-        filePath: 'scripts/pulse/parsers/financial-arithmetic.ts',
+        filePath: 'scripts/pulse/parsers/route-decision.ts',
         source: [
-          'const MONEY_STATE_RE = /\\b(?:paid|pending|refunded|chargeback)\\b/i;',
+          'const ROUTE_DECISION_RE = /\\/api\\/(alpha|beta|gamma)\\b/i;',
           'export function parseLine(line: string): boolean {',
-          '  return MONEY_STATE_RE.test(line);',
+          '  return ROUTE_DECISION_RE.test(line);',
           '}',
         ].join('\n'),
       },
@@ -52,12 +52,12 @@ describe('hardcoded finding audit', () => {
 
     expect(artifact.totalFindings).toBe(1);
     expect(artifact.files[0]?.findings[0]).toMatchObject({
-      kind: 'domain_specific_token_regex',
-      symbol: 'MONEY_STATE_RE',
+      kind: 'decision_token_regex',
+      symbol: 'ROUTE_DECISION_RE',
       line: 1,
       column: 7,
     });
-    expect(artifact.files[0]?.findings[0]?.reason).toContain('product reality');
+    expect(artifact.files[0]?.findings[0]?.reason).toContain('final PULSE truth');
   });
 
   it('detects regex-only break emitters and fixed break-type mass emitters', () => {

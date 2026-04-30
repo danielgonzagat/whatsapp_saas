@@ -49,6 +49,9 @@ export interface PathProofExecutionResult {
   coverageCountsAsObserved: boolean;
   exitCode: number | null;
   reason: string;
+  startedAt?: string;
+  finishedAt?: string;
+  durationMs?: number;
   stdout?: string;
   stderr?: string;
 }
@@ -354,8 +357,12 @@ export async function executePathProofPlan(
     }
 
     attemptedTasks += 1;
+    const startedAtMs = Date.now();
+    const startedAt = new Date(startedAtMs).toISOString();
     try {
       const execution = await executor({ ...policy.parsed, cwd, timeoutMs, task });
+      const finishedAtMs = Date.now();
+      const finishedAt = new Date(finishedAtMs).toISOString();
       const status: PathProofExecutionStatus =
         execution.exitCode === 0 ? 'observed_pass' : 'observed_fail';
       results.push({
@@ -366,6 +373,9 @@ export async function executePathProofPlan(
         executed: true,
         coverageCountsAsObserved: true,
         exitCode: execution.exitCode,
+        startedAt,
+        finishedAt,
+        durationMs: Math.max(0, finishedAtMs - startedAtMs),
         reason: execution.timedOut
           ? `Command timed out after ${timeoutMs}ms.`
           : `Command exited with code ${execution.exitCode ?? 'unknown'}.`,
@@ -374,6 +384,8 @@ export async function executePathProofPlan(
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      const finishedAtMs = Date.now();
+      const finishedAt = new Date(finishedAtMs).toISOString();
       results.push({
         taskId: task.taskId,
         pathId: task.pathId,
@@ -382,6 +394,9 @@ export async function executePathProofPlan(
         executed: true,
         coverageCountsAsObserved: true,
         exitCode: null,
+        startedAt,
+        finishedAt,
+        durationMs: Math.max(0, finishedAtMs - startedAtMs),
         reason: `Executor threw before producing an exit code: ${message}`,
       });
     }

@@ -29,15 +29,15 @@ function statusForDisposition(disposition: PathProofEvidenceDisposition): string
   if (disposition === 'observed_pass' || disposition === 'observed_fail') {
     return disposition;
   }
-  return disposition;
+  return 'not_run';
 }
 
 function evidenceModeFor(entry: PathProofEvidenceEntry): 'observed' | 'planned' {
-  return entry.observedEvidenceLink ? 'observed' : 'planned';
+  return entry.evidenceState === 'observed' ? 'observed' : 'planned';
 }
 
 function attemptsFor(entry: PathProofEvidenceEntry): number {
-  return entry.observedEvidenceLink ? 1 : 0;
+  return entry.evidenceState === 'observed' ? 1 : 0;
 }
 
 function artifactPathsFor(entry: PathProofEvidenceEntry): string[] {
@@ -58,7 +58,7 @@ function readinessEvidenceForEntry(entry: PathProofEvidenceEntry): ProofReadines
     sourceArtifact: entry.observedEvidenceLink?.artifactPath ?? PATH_PROOF_EVIDENCE_ARTIFACT,
     status: statusForDisposition(entry.disposition),
     evidenceMode: evidenceModeFor(entry),
-    executed: entry.observed,
+    executed: entry.evidenceState === 'observed',
     attempts: attemptsFor(entry),
     executionTimeMs: entry.result?.durationMs,
     exitCode: entry.result?.exitCode,

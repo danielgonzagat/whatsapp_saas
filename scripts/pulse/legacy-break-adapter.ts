@@ -20,13 +20,36 @@ function truthModeFromBreak(item: Break): PulseSignalEvidence['truthMode'] {
   return 'inferred';
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function normalizeText(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
+function withoutLegacyLabel(value: string, label: string): string {
+  const normalizedLabel = normalizeText(label);
+  if (!normalizedLabel) return normalizeText(value);
+
+  return normalizeText(value.replace(new RegExp(escapeRegExp(normalizedLabel), 'gi'), ''));
+}
+
+function sanitizedLegacyText(value: string, item: Break, fallback: string): string {
+  const sanitized = withoutLegacyLabel(value, item.type);
+  return sanitized || fallback;
+}
+
 export function convertBreakToSignal(item: Break): PulseSignalEvidence {
+  const source = sanitizedLegacyText(item.source ?? '', item, 'legacy-break-adapter');
+  const detail = withoutLegacyLabel(item.detail, item.type);
+
   return {
-    source: item.source ?? 'legacy-break-adapter',
+    source,
     detector: 'legacy-compatibility',
     truthMode: truthModeFromBreak(item),
-    summary: item.description,
-    detail: item.detail,
+    summary: sanitizedLegacyText(item.description, item, 'Legacy compatibility evidence'),
+    detail: detail || undefined,
     location: {
       file: item.file,
       line: item.line,

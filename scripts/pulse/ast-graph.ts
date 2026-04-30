@@ -21,41 +21,72 @@ type AstTargetSymbol = TsMorphSymbol & {
 };
 type AstTypeChecker = ReturnType<Project['getTypeChecker']>;
 
-const NESTJS_DECORATORS = new Set([
-  'Controller',
-  'Get',
-  'Post',
-  'Put',
-  'Delete',
-  'Patch',
-  'Options',
-  'Head',
-  'All',
-  'Cron',
-  'Interval',
-  'Timeout',
-  'MessagePattern',
-  'EventPattern',
-  'SubscribeMessage',
-  'Injectable',
-  'Module',
-  'WebSocketGateway',
-  'Resolver',
-  'Query',
-  'Mutation',
-  'Subscription',
-]);
+type DecoratorSemanticRole =
+  | 'class_controller'
+  | 'framework_module'
+  | 'provider'
+  | 'http_route'
+  | 'schedule'
+  | 'queue_handler'
+  | 'event_handler'
+  | 'realtime_gateway'
+  | 'graphql_resolver';
 
-const HTTP_METHOD_DECORATORS = new Set([
-  'Get',
-  'Post',
-  'Put',
-  'Delete',
-  'Patch',
-  'Options',
-  'Head',
-  'All',
-]);
+type FrameworkDecoratorHint = {
+  language: 'typescript';
+  framework: string;
+  pluginScope: 'language_framework_frontend';
+  authority: 'weak_compatibility_hint';
+  decorators: Record<
+    string,
+    {
+      roles: DecoratorSemanticRole[];
+      httpMethod?: string;
+      routePathArgument?: number;
+    }
+  >;
+};
+
+const TYPESCRIPT_FRAMEWORK_DECORATOR_HINTS: FrameworkDecoratorHint[] = [
+  {
+    language: 'typescript',
+    framework: 'nestjs',
+    pluginScope: 'language_framework_frontend',
+    authority: 'weak_compatibility_hint',
+    decorators: {
+      All: { roles: ['http_route'], httpMethod: 'ALL', routePathArgument: 0 },
+      Controller: { roles: ['class_controller'], routePathArgument: 0 },
+      Cron: { roles: ['schedule'] },
+      Delete: { roles: ['http_route'], httpMethod: 'DELETE', routePathArgument: 0 },
+      EventPattern: { roles: ['queue_handler'] },
+      Get: { roles: ['http_route'], httpMethod: 'GET', routePathArgument: 0 },
+      Head: { roles: ['http_route'], httpMethod: 'HEAD', routePathArgument: 0 },
+      Injectable: { roles: ['provider'] },
+      Interval: { roles: ['schedule'] },
+      MessagePattern: { roles: ['queue_handler'] },
+      Module: { roles: ['framework_module'] },
+      Options: { roles: ['http_route'], httpMethod: 'OPTIONS', routePathArgument: 0 },
+      Patch: { roles: ['http_route'], httpMethod: 'PATCH', routePathArgument: 0 },
+      Post: { roles: ['http_route'], httpMethod: 'POST', routePathArgument: 0 },
+      Put: { roles: ['http_route'], httpMethod: 'PUT', routePathArgument: 0 },
+      SubscribeMessage: { roles: ['event_handler'] },
+      Timeout: { roles: ['schedule'] },
+      WebSocketGateway: { roles: ['realtime_gateway'], routePathArgument: 0 },
+    },
+  },
+  {
+    language: 'typescript',
+    framework: 'graphql',
+    pluginScope: 'language_framework_frontend',
+    authority: 'weak_compatibility_hint',
+    decorators: {
+      Mutation: { roles: ['graphql_resolver'] },
+      Query: { roles: ['graphql_resolver'] },
+      Resolver: { roles: ['graphql_resolver'] },
+      Subscription: { roles: ['graphql_resolver'] },
+    },
+  },
+];
 
 const SKIP_PATTERNS = [
   /[\\/]node_modules[\\/]/,
@@ -94,65 +125,82 @@ function resolveSymbolId(symbol: { getName(): string }, filePath: string, line: 
   return buildSymbolId(filePath, symbol.getName(), line);
 }
 
-interface NestjsMeta {
+interface FrameworkDecoratorMeta {
   decorator: string | null;
+  frameworkHints: string[];
+  semanticRoles: DecoratorSemanticRole[];
   httpMethod: string | null;
   routePath: string | null;
+  authority: 'weak_compatibility_hint' | 'unclassified_decorator';
 }
 
-function extractNestjsMeta(
+function pathArgumentText(
+  decorator: { getArguments(): Array<{ getText(): string }> },
+  argumentIndex: number,
+): string | null {
+  const args = decorator.getArguments();
+  const raw = args[argumentIndex]?.getText() ?? '';
+  return raw ? raw.replace(/^['"]|['"]$/g, '') : null;
+}
+
+function extractFrameworkDecoratorMeta(
   decorators: Iterable<{ getName(): string; getArguments(): Array<{ getText(): string }> }>,
-): NestjsMeta {
+): FrameworkDecoratorMeta {
   let decorator: string | null = null;
   let httpMethod: string | null = null;
   let routePath: string | null = null;
+  const frameworkHints = new Set<string>();
+  const semanticRoles = new Set<DecoratorSemanticRole>();
 
   for (const d of decorators) {
     const name = d.getName();
 
-    if (name === 'Controller' || name === 'WebSocketGateway') {
-      decorator = name;
-      const args = d.getArguments();
-      if (args.length > 0) {
-        const raw = args[0]?.getText() ?? '';
-        routePath = raw.replace(/^['"]|['"]$/g, '');
+    for (const frameworkHint of TYPESCRIPT_FRAMEWORK_DECORATOR_HINTS) {
+      const hint = frameworkHint.decorators[name];
+      if (!hint) continue;
+      decorator ??= name;
+      frameworkHints.add(frameworkHint.framework);
+      for (const role of hint.roles) {
+        semanticRoles.add(role);
       }
-    }
-
-    if (HTTP_METHOD_DECORATORS.has(name)) {
-      httpMethod = name.toUpperCase();
-      const args = d.getArguments();
-      if (args.length > 0) {
-        const raw = args[0]?.getText() ?? '';
-        routePath = raw.replace(/^['"]|['"]$/g, '');
+      httpMethod ??= hint.httpMethod ?? null;
+      if (hint.routePathArgument != null) {
+        routePath ??= pathArgumentText(d, hint.routePathArgument);
       }
-    }
-
-    if (NESTJS_DECORATORS.has(name) && decorator === null) {
-      decorator = name;
     }
   }
 
-  return { decorator, httpMethod, routePath };
+  return {
+    decorator,
+    frameworkHints: [...frameworkHints],
+    semanticRoles: [...semanticRoles],
+    httpMethod,
+    routePath,
+    authority: frameworkHints.size > 0 ? 'weak_compatibility_hint' : 'unclassified_decorator',
+  };
+}
+
+function hasSemanticRole(
+  decoratorMeta: FrameworkDecoratorMeta,
+  role: DecoratorSemanticRole,
+): boolean {
+  return decoratorMeta.semanticRoles.includes(role);
 }
 
 function classifySymbolKind(
   symbolName: string,
-  decoratorMeta: NestjsMeta,
+  decoratorMeta: FrameworkDecoratorMeta,
   node: Node,
   parentClass?: string | null,
 ): AstResolvedNodeKind {
   if (Node.isMethodDeclaration(node) || Node.isMethodSignature(node)) {
     if (node.getName() === 'constructor') return 'constructor';
 
-    if (decoratorMeta.httpMethod) return 'api_route';
-    if (decoratorMeta.decorator === 'Cron' || decoratorMeta.decorator === 'Interval')
-      return 'cron_job';
-    if (decoratorMeta.decorator === 'MessagePattern' || decoratorMeta.decorator === 'EventPattern')
-      return 'queue_processor';
-    if (decoratorMeta.decorator === 'SubscribeMessage') return 'websocket_gateway';
-    if (decoratorMeta.decorator === 'Query' || decoratorMeta.decorator === 'Mutation')
-      return 'graphql_resolver';
+    if (hasSemanticRole(decoratorMeta, 'http_route')) return 'api_route';
+    if (hasSemanticRole(decoratorMeta, 'schedule')) return 'cron_job';
+    if (hasSemanticRole(decoratorMeta, 'queue_handler')) return 'queue_processor';
+    if (hasSemanticRole(decoratorMeta, 'event_handler')) return 'websocket_gateway';
+    if (hasSemanticRole(decoratorMeta, 'graphql_resolver')) return 'graphql_resolver';
 
     return 'class_method';
   }
@@ -161,11 +209,11 @@ function classifySymbolKind(
   if (Node.isArrowFunction(node)) return 'arrow_function';
 
   if (Node.isClassDeclaration(node)) {
-    if (decoratorMeta.decorator === 'Controller') return 'controller';
-    if (decoratorMeta.decorator === 'Resolver') return 'resolver';
-    if (decoratorMeta.decorator === 'WebSocketGateway') return 'websocket_gateway';
-    if (decoratorMeta.decorator === 'Module') return 'module';
-    if (decoratorMeta.decorator === 'Injectable') return 'service';
+    if (hasSemanticRole(decoratorMeta, 'class_controller')) return 'controller';
+    if (hasSemanticRole(decoratorMeta, 'graphql_resolver')) return 'resolver';
+    if (hasSemanticRole(decoratorMeta, 'realtime_gateway')) return 'websocket_gateway';
+    if (hasSemanticRole(decoratorMeta, 'framework_module')) return 'module';
+    if (hasSemanticRole(decoratorMeta, 'provider')) return 'service';
     return 'provider';
   }
 
@@ -533,7 +581,14 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
         const name = node.getName() ?? '<anonymous>';
         const decorators = extractDecoratorNames(node);
 
-        let nestjsMeta: NestjsMeta = { decorator: null, httpMethod: null, routePath: null };
+        let decoratorMeta: FrameworkDecoratorMeta = {
+          decorator: null,
+          frameworkHints: [],
+          semanticRoles: [],
+          httpMethod: null,
+          routePath: null,
+          authority: 'unclassified_decorator',
+        };
         if (Node.isClassDeclaration(node)) {
           const classNode = node as unknown as {
             getDecorators(): Array<{
@@ -542,11 +597,11 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
             }>;
           };
           if (typeof classNode.getDecorators === 'function') {
-            nestjsMeta = extractNestjsMeta(classNode.getDecorators());
+            decoratorMeta = extractFrameworkDecoratorMeta(classNode.getDecorators());
           }
         }
 
-        const kind = classifySymbolKind(name, nestjsMeta, node, null);
+        const kind = classifySymbolKind(name, decoratorMeta, node, null);
         const id = buildSymbolId(filePath, name, node.getStartLineNumber());
 
         if (seenSymbolIds.has(id)) return;
@@ -563,9 +618,9 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
           isDefaultExport: isDefaultExport(
             node as unknown as Parameters<typeof isDefaultExport>[0],
           ),
-          nestjsDecorator: nestjsMeta.decorator,
-          httpMethod: nestjsMeta.httpMethod,
-          routePath: nestjsMeta.routePath,
+          nestjsDecorator: decoratorMeta.decorator,
+          httpMethod: decoratorMeta.httpMethod,
+          routePath: decoratorMeta.routePath,
           parameterTypes: [],
           returnType: null,
           decorators,
@@ -610,8 +665,13 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
                 }>;
               }
             ).getDecorators?.() ?? [];
-          const nestjsMeta = extractNestjsMeta(decorators);
-          const kind = classifySymbolKind(methodName, nestjsMeta, node, parentClassName);
+          const decoratorMeta = extractFrameworkDecoratorMeta(decorators);
+          const kind = classifySymbolKind(
+            methodName,
+            decoratorMeta,
+            method as unknown as Node,
+            parentClassName,
+          );
 
           const id = buildSymbolId(filePath, methodName, method.getStartLineNumber());
           if (seenSymbolIds.has(id)) continue;
@@ -628,9 +688,9 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
               ? isSymbolExported(node as unknown as Parameters<typeof isSymbolExported>[0])
               : false,
             isDefaultExport: false,
-            nestjsDecorator: nestjsMeta.decorator,
-            httpMethod: nestjsMeta.httpMethod,
-            routePath: nestjsMeta.routePath,
+            nestjsDecorator: decoratorMeta.decorator,
+            httpMethod: decoratorMeta.httpMethod,
+            routePath: decoratorMeta.routePath,
             parameterTypes: extractParameterTypes(method as unknown as Node),
             returnType: extractReturnType(
               method as unknown as Parameters<typeof extractReturnType>[0],

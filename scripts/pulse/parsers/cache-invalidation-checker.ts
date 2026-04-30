@@ -16,14 +16,51 @@
  *    or be invalidated on write, not cached for long periods
  *
  * REQUIRES: PULSE_DEEP=1
- * BREAK TYPES:
- *   CACHE_STALE_AFTER_WRITE(high) — SWR cache not invalidated after mutation
- *   CACHE_REDIS_STALE(high)        — Redis cache not invalidated after DB write
+ * DIAGNOSTICS:
+ *   Emits cache-consistency evidence gaps with predicate metadata. Regex/list
+ *   matches are weak sensors, not authority by themselves.
  */
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+
+type CacheInvalidationTruthMode = 'weak_signal' | 'confirmed_static';
+
+type CacheInvalidationDiagnosticBreak = Break & {
+  truthMode: CacheInvalidationTruthMode;
+};
+
+interface CacheInvalidationDiagnosticInput {
+  predicateKinds: string[];
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+  truthMode: CacheInvalidationTruthMode;
+}
+
+function buildCacheInvalidationDiagnostic(
+  input: CacheInvalidationDiagnosticInput,
+): CacheInvalidationDiagnosticBreak {
+  const predicateToken = input.predicateKinds
+    .map((predicate) => predicate.replace(/[^a-z0-9]+/gi, '-').toLowerCase())
+    .filter(Boolean)
+    .join('+');
+
+  return {
+    type: `diagnostic:cache-invalidation-checker:${predicateToken || 'cache-consistency-observation'}`,
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: `regex-heuristic:cache-invalidation-checker;truthMode=${input.truthMode};predicates=${input.predicateKinds.join(',')}`,
+    surface: 'cache-consistency',
+    truthMode: input.truthMode,
+  };
+}
 
 const WRITE_METHOD_RE = /\bpost\b|\bput\b|\bpatch\b|\bdelete\b/i;
 const SWR_MUTATE_RE = /\bmutate\s*\(|\brevalidate\s*\(|\buseSWRConfig|mutate\s*\(/;
@@ -85,16 +122,19 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
     const hasMutate = SWR_MUTATE_RE.test(content);
 
     if (!hasMutate) {
-      breaks.push({
-        type: 'CACHE_STALE_AFTER_WRITE',
-        severity: 'high',
-        file: relFile,
-        line: 0,
-        description:
-          'Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation',
-        detail:
-          'Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys',
-      });
+      breaks.push(
+        buildCacheInvalidationDiagnostic({
+          predicateKinds: ['write_call', 'swr_invalidation_not_observed'],
+          severity: 'high',
+          file: relFile,
+          line: 0,
+          description:
+            'Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation',
+          detail:
+            'Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys',
+          truthMode: 'weak_signal',
+        }),
+      );
     }
 
     // CHECK 4: Money-like state specifically — must always invalidate
@@ -103,16 +143,19 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
         !hasMutate &&
         !/router\.refresh\(\)|router\.push\(|window\.location\.reload/i.test(content)
       ) {
-        breaks.push({
-          type: 'CACHE_STALE_AFTER_WRITE',
-          severity: 'high',
-          file: relFile,
-          line: 0,
-          description:
-            'Money-like write missing a cache invalidation strategy — user may see wrong balance or totals',
-          detail:
-            'After money-like mutations, call mutate() immediately to show updated balance or totals',
-        });
+        breaks.push(
+          buildCacheInvalidationDiagnostic({
+            predicateKinds: ['money_like_write', 'cache_refresh_not_observed'],
+            severity: 'high',
+            file: relFile,
+            line: 0,
+            description:
+              'Money-like write missing a cache invalidation strategy — user may see wrong balance or totals',
+            detail:
+              'After money-like mutations, call mutate() immediately to show updated balance or totals',
+            truthMode: 'weak_signal',
+          }),
+        );
       }
     }
 
@@ -128,15 +171,18 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
             // Static key without tenant scoping — potential cross-tenant cache leakage
             // (flagged only if in a page/component that has workspace context)
             if (/workspace|tenant/i.test(content)) {
-              breaks.push({
-                type: 'CACHE_STALE_AFTER_WRITE',
-                severity: 'high',
-                file: relFile,
-                line: i + 1,
-                description:
-                  'SWR cache key is not scoped to workspace — cross-tenant cache leakage risk',
-                detail: `Key ${key} should include workspaceId: \`/api/resource/\${workspaceId}\``,
-              });
+              breaks.push(
+                buildCacheInvalidationDiagnostic({
+                  predicateKinds: ['swr_key', 'workspace_scope_not_observed'],
+                  severity: 'high',
+                  file: relFile,
+                  line: i + 1,
+                  description:
+                    'SWR cache key is not scoped to workspace — cross-tenant cache leakage risk',
+                  detail: `Key ${key} should include workspaceId: \`/api/resource/\${workspaceId}\``,
+                  truthMode: 'weak_signal',
+                }),
+              );
             }
           }
         }
@@ -170,16 +216,19 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
     const hasRedisInvalidation = REDIS_DEL_RE.test(content);
 
     if (hasRedisWrite && hasDbWrite && !hasRedisInvalidation) {
-      breaks.push({
-        type: 'CACHE_REDIS_STALE',
-        severity: 'high',
-        file: relFile,
-        line: 0,
-        description:
-          'Service writes to both Redis and DB but never invalidates Redis cache — reads return stale data',
-        detail:
-          'After DB write, call redis.del(key) or redis.expire(key, 0) to invalidate affected cache entries',
-      });
+      breaks.push(
+        buildCacheInvalidationDiagnostic({
+          predicateKinds: ['redis_write', 'db_write', 'redis_invalidation_not_observed'],
+          severity: 'high',
+          file: relFile,
+          line: 0,
+          description:
+            'Service writes to both Redis and DB but never invalidates Redis cache — reads return stale data',
+          detail:
+            'After DB write, call redis.del(key) or redis.expire(key, 0) to invalidate affected cache entries',
+          truthMode: 'weak_signal',
+        }),
+      );
     }
 
     // CHECK 6: Money-like Redis cache TTL check
@@ -197,28 +246,34 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
             const ttl = parseInt(ttlMatch[1] || ttlMatch[2] || ttlMatch[3] || '0', 10);
             if (ttl > 300) {
               // 5 minutes
-              breaks.push({
-                type: 'CACHE_REDIS_STALE',
-                severity: 'high',
-                file: relFile,
-                line: i + 1,
-                description: `Money-like data cached in Redis with TTL of ${ttl}s — too long, user may see stale balances or totals`,
-                detail:
-                  'Money-like cache TTL should be ≤60s; prefer invalidation-on-write over time-based expiry',
-              });
+              breaks.push(
+                buildCacheInvalidationDiagnostic({
+                  predicateKinds: ['money_like_redis_write', 'ttl_too_long'],
+                  severity: 'high',
+                  file: relFile,
+                  line: i + 1,
+                  description: `Money-like data cached in Redis with TTL of ${ttl}s — too long, user may see stale balances or totals`,
+                  detail:
+                    'Money-like cache TTL should be ≤60s; prefer invalidation-on-write over time-based expiry',
+                  truthMode: 'weak_signal',
+                }),
+              );
             }
           } else {
             // No TTL — cache never expires
-            breaks.push({
-              type: 'CACHE_REDIS_STALE',
-              severity: 'high',
-              file: relFile,
-              line: i + 1,
-              description:
-                'Money-like data cached in Redis without TTL — cache never expires, will always be stale',
-              detail:
-                'Set EX (expire) on all Redis cache writes; money-like data should use ≤60s TTL',
-            });
+            breaks.push(
+              buildCacheInvalidationDiagnostic({
+                predicateKinds: ['money_like_redis_write', 'ttl_not_observed'],
+                severity: 'high',
+                file: relFile,
+                line: i + 1,
+                description:
+                  'Money-like data cached in Redis without TTL — cache never expires, will always be stale',
+                detail:
+                  'Set EX (expire) on all Redis cache writes; money-like data should use ≤60s TTL',
+                truthMode: 'weak_signal',
+              }),
+            );
           }
         }
       }

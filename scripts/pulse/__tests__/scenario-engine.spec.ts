@@ -326,6 +326,16 @@ describe('scenario-engine', () => {
     const state = buildScenarioCatalog(rootDir);
     const byId = new Map(state.scenarios.map((scenario) => [scenario.id, scenario]));
 
+    expect(state.summary).toEqual(
+      expect.objectContaining({
+        passed: 0,
+        failed: 0,
+        notRun: state.scenarios.length,
+        generated: state.scenarios.length,
+        coreScenariosPassed: 0,
+      }),
+    );
+
     expect(byId.get('flow-auth')?.steps.map((step) => step.kind)).toEqual([
       'navigate',
       'type',
@@ -348,6 +358,13 @@ describe('scenario-engine', () => {
       expect(steps).toContain('submit');
       expect(steps).toContain('api_call');
       expect(steps).toContain('cleanup');
+    }
+
+    for (const scenario of state.scenarios) {
+      expect(scenario.status).toBe('not_run');
+      expect(scenario.lastRun).toBeNull();
+      expect(scenario.durationMs).toBeNull();
+      expect(scenario.evidence).toEqual([]);
     }
 
     for (const id of ['flow-checkout', 'flow-workspace', 'flow-product', 'flow-wallet']) {

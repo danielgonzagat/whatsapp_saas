@@ -3,6 +3,10 @@
  * Layer 14: Business Logic Integrity
  * Mode: DEEP (requires codebase scan + optional runtime validation)
  *
+ * DIAGNOSTICS:
+ * Regex and curated status tokens are weak sensors only. They identify state
+ * transition evidence that needs validation; they are not domain authority.
+ *
  * CHECKS:
  * 1. Stateful flows must check current status before assigning a new terminal status
  * 2. Status changes that carry money-like state require an intermediate processing guard
@@ -12,14 +16,51 @@
  * 6. Checks that invalid transitions are explicitly rejected (throw, not silent ignore)
  *
  * REQUIRES: PULSE_DEEP=1
- * BREAK TYPES:
- *   STATE_INVALID_TRANSITION(high)    — code allows skipping states in state machine
- *   STATE_PAYMENT_INVALID(critical)   — payment status set without proper transition guard
+ * DIAGNOSTIC TYPES:
+ *   Derived from observed predicates, for example:
+ *   diagnostic:state-machine-checker:direct-status-assignment+missing-nearby-current-state-evidence
  */
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+
+type StateMachineTruthMode = 'weak_signal' | 'confirmed_static';
+
+type StateMachineDiagnosticBreak = Break & {
+  truthMode: StateMachineTruthMode;
+};
+
+interface StateMachineDiagnosticInput {
+  predicateKinds: string[];
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+  truthMode: StateMachineTruthMode;
+}
+
+function buildStateMachineDiagnostic(
+  input: StateMachineDiagnosticInput,
+): StateMachineDiagnosticBreak {
+  const predicateToken = input.predicateKinds
+    .map((predicate) => predicate.replace(/[^a-z0-9]+/gi, '-').toLowerCase())
+    .filter(Boolean)
+    .join('+');
+
+  return {
+    type: `diagnostic:state-machine-checker:${predicateToken || 'state-transition-observation'}`,
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: `regex-heuristic:state-machine-checker;truthMode=${input.truthMode};predicates=${input.predicateKinds.join(',')}`,
+    surface: 'state-machine',
+    truthMode: input.truthMode,
+  };
+}
 
 // Direct status assignment patterns (not using a transition function)
 const DIRECT_STATUS_SET_RE =
@@ -95,19 +136,21 @@ export function checkStateMachine(config: PulseConfig): Break[] {
 
         if (!guardedByCheck) {
           directSetFiles.push(relFile);
-          breaks.push({
-            type: 'STATE_INVALID_TRANSITION',
-            severity: 'high',
-            file: relFile,
-            line: i + 1,
-            description:
-              'Status set directly without checking current state — invalid transition possible',
-            detail: `${line.slice(0, 120)} — add a transition guard that validates the current status before updating`,
-          });
+          breaks.push(
+            buildStateMachineDiagnostic({
+              severity: 'high',
+              file: relFile,
+              line: i + 1,
+              description: 'Static state-change signal lacks nearby current-state evidence',
+              detail: `${line.slice(0, 120)} — weak static signal from assignment/update syntax; verify a current-state guard or transition validator before treating this as an invalid-transition finding`,
+              predicateKinds: ['direct-status-assignment', 'missing-nearby-current-state-evidence'],
+              truthMode: 'weak_signal',
+            }),
+          );
         }
       }
 
-      // CHECK 3: Payment PAID set without PROCESSING guard
+      // CHECK 3: Money-like terminal state signal without nearby intermediate-state evidence
       if (PAYMENT_PAID_RE.test(line) && MONEY_STATE_RE.test(content)) {
         const context = lines.slice(Math.max(0, i - 40), i + 2).join('\n');
         const hasProcessingCheck =
@@ -115,38 +158,48 @@ export function checkStateMachine(config: PulseConfig): Break[] {
           /validatePaymentTransition\s*\([\s\S]*['"`](?:APPROVED|PAID)['"`]/.test(context);
 
         if (!hasProcessingCheck) {
-          breaks.push({
-            type: 'STATE_PAYMENT_INVALID',
-            severity: 'critical',
-            file: relFile,
-            line: i + 1,
-            description:
-              'Money-like status set to PAID without verifying PROCESSING intermediate state',
-            detail: `${line.slice(0, 120)} — money-like state must transition PENDING → PROCESSING → PAID, never jump directly`,
-          });
+          breaks.push(
+            buildStateMachineDiagnostic({
+              severity: 'critical',
+              file: relFile,
+              line: i + 1,
+              description:
+                'Money-like state-change signal lacks nearby intermediate-state evidence',
+              detail: `${line.slice(0, 120)} — weak static signal from money-like content plus terminal status syntax; verify the domain transition source of truth before treating this as a skipped-intermediate-state finding`,
+              predicateKinds: [
+                'money-like-content',
+                'terminal-status-syntax',
+                'missing-processing-evidence',
+              ],
+              truthMode: 'weak_signal',
+            }),
+          );
         }
       }
     }
   }
 
-  // CHECK 5: State transitions centralized in a state machine module?
+  // CHECK 5: Centralized state-machine evidence by filename convention.
   const stateMachineFiles = walkFiles(config.backendDir, ['.ts']).filter((f) =>
     /state-machine|stateMachine|fsm|transitions/i.test(path.basename(f)),
   );
 
   if (stateMachineFiles.length === 0 && directSetFiles.length > 3) {
-    breaks.push({
-      type: 'STATE_INVALID_TRANSITION',
-      severity: 'high',
-      file: 'backend/src/',
-      line: 0,
-      description: `State transitions scattered across ${directSetFiles.length} files — no centralized state machine module`,
-      detail:
-        'Create a state-machine.ts or transitions.ts that defines all valid state transitions and is used everywhere',
-    });
+    breaks.push(
+      buildStateMachineDiagnostic({
+        severity: 'high',
+        file: 'backend/src/',
+        line: 0,
+        description: `Static scan found state-change signals across ${directSetFiles.length} files without centralized filename evidence`,
+        detail:
+          'Filename and regex evidence did not identify a state-machine/transitions module. This is a weak architecture signal; confirm the real transition authority before prescribing a module shape.',
+        predicateKinds: ['direct-status-assignment-files', 'missing-centralized-filename-evidence'],
+        truthMode: 'weak_signal',
+      }),
+    );
   }
 
-  // CHECK 6: Invalid transitions explicitly rejected
+  // CHECK 6: Nearby explicit rejection evidence for state transition code.
   for (const file of backendFiles) {
     if (!/service/i.test(file)) {
       continue;
@@ -171,16 +224,21 @@ export function checkStateMachine(config: PulseConfig): Break[] {
           content,
         )
       ) {
-        breaks.push({
-          type: 'STATE_INVALID_TRANSITION',
-          severity: 'high',
-          file: relFile,
-          line: 0,
-          description:
-            'State transitions not explicitly rejected — invalid transitions may be silently ignored',
-          detail:
-            'Add `throw new BadRequestException("Invalid state transition")` for disallowed status changes',
-        });
+        breaks.push(
+          buildStateMachineDiagnostic({
+            severity: 'high',
+            file: relFile,
+            line: 0,
+            description: 'Static state-change signal lacks explicit rejection evidence',
+            detail:
+              'Weak static scan found status assignment/update syntax without a nearby invalid-transition rejection pattern. Confirm the real state-machine authority before prescribing exception text.',
+            predicateKinds: [
+              'direct-status-assignment',
+              'missing-invalid-transition-rejection-evidence',
+            ],
+            truthMode: 'weak_signal',
+          }),
+        );
       }
     }
   }

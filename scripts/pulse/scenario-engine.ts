@@ -884,7 +884,6 @@ function buildScenario(
     ctx.primaryEntity,
   );
 
-  const surface = getSurface(ctx.productGraph, ctx.primarySurfaceId);
   const capabilities = getCapabilitiesForSurface(ctx.productGraph, ctx.primarySurfaceId);
   const capabilityIds = capabilities.map((c) => c.id);
   const entityOps = getEntityOperations(ctx.primaryEntity);
@@ -903,10 +902,7 @@ function buildScenario(
     status: 'not_run' as ScenarioStatus,
     lastRun: null,
     durationMs: null,
-    evidence: [
-      SCENARIO_EVIDENCE_FILENAME,
-      ...(surface?.artifactIds || []).filter((a) => !a.includes(':')).slice(0, 5),
-    ],
+    evidence: [],
   };
 
   if (evidenceLinks.length > 0) {

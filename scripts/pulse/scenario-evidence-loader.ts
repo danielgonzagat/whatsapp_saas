@@ -25,6 +25,8 @@ const CONTRACT_EVIDENCE_FILES = [
   'PULSE_SOAK_EVIDENCE.json',
 ] as const;
 
+const OBSERVED_TERMINAL_STATUSES = ['passed', 'failed'] as const;
+
 function normalizeActorEvidenceKey(value: unknown): ActorEvidenceKey | null {
   return normalizeEvidenceKey(value);
 }
@@ -82,6 +84,18 @@ function isFresh(filePath: string): boolean {
   return Date.now() - stat.mtime.getTime() <= FRESHNESS_WINDOW_MS;
 }
 
+function parseTimestampMs(value: unknown): number | null {
+  if (typeof value !== 'string' || value.trim() === '') {
+    return null;
+  }
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function isFreshTimestamp(timestampMs: number, nowMs: number): boolean {
+  return nowMs - timestampMs >= 0 && nowMs - timestampMs <= FRESHNESS_WINDOW_MS;
+}
+
 function normalizeStringArray(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((entry): entry is string => typeof entry === 'string')
@@ -92,12 +106,12 @@ function buildSyntheticMachineWork(
   scenarioId: string,
   actorEvidenceKey: ActorEvidenceKey,
   status: PulseScenarioResult['status'],
-  executed: boolean,
+  observedTerminalExecution: boolean,
 ): PulseScenarioResult['machineWork'] | undefined {
   if (actorEvidenceKey !== 'customer' && actorEvidenceKey !== 'soak') {
     return undefined;
   }
-  if (executed && (status === 'passed' || status === 'failed')) {
+  if (observedTerminalExecution) {
     return undefined;
   }
 
@@ -113,6 +127,36 @@ function buildSyntheticMachineWork(
     terminalProofReason: `${scenarioLane} synthetic scenario ${scenarioId} has no runtime-observed terminal proof; this is PULSE machine work, not product capability evidence.`,
     actionable: true,
   };
+}
+
+function hasObservedExecutionMetadata(
+  item: Record<string, unknown>,
+  normalizedStatus: PulseScenarioResult['status'],
+  fileFresh: boolean,
+): boolean {
+  if (!fileFresh || item.executed !== true) {
+    return false;
+  }
+  if (
+    !OBSERVED_TERMINAL_STATUSES.includes(
+      normalizedStatus as (typeof OBSERVED_TERMINAL_STATUSES)[number],
+    )
+  ) {
+    return false;
+  }
+  if (typeof item.command !== 'string' || item.command.trim() === '') {
+    return false;
+  }
+  if (item.exitCode !== 0) {
+    return false;
+  }
+
+  const startedAt = parseTimestampMs(item.startedAt);
+  const finishedAt = parseTimestampMs(item.finishedAt);
+  if (startedAt === null || finishedAt === null || finishedAt < startedAt) {
+    return false;
+  }
+  return isFreshTimestamp(finishedAt, Date.now());
 }
 
 function normalizeScenarioResult(
@@ -146,6 +190,7 @@ function normalizeScenarioResult(
         : 'checker_gap';
   const actorKind = normalizeActorEvidenceKey(item.actorKind) ?? fallbackActorKind;
   const executed = item.executed === true;
+  const observedTerminalExecution = hasObservedExecutionMetadata(item, normalizedStatus, fresh);
 
   return {
     scenarioId,
@@ -160,12 +205,12 @@ function normalizeScenarioResult(
       typeof item.runner === 'string' ? (item.runner as PulseScenarioResult['runner']) : 'derived',
     status: normalizedStatus,
     executed,
-    truthMode: fresh ? 'observed-from-disk' : 'inferred',
+    truthMode: observedTerminalExecution ? 'observed-from-disk' : 'inferred',
     machineWork: buildSyntheticMachineWork(
       scenarioId,
       fallbackActorKind,
       normalizedStatus,
-      executed,
+      observedTerminalExecution,
     ),
     providerModeUsed:
       typeof item.providerModeUsed === 'string'

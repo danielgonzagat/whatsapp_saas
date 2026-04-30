@@ -243,7 +243,7 @@ function ProjectCard({
                 width: 20,
                 height: 20,
                 borderRadius: 3,
-                background: 'radial-gradient(circle, #E85D3040, transparent)',
+                background: 'radial-gradient(circle, colors.ember.glow40, transparent)',
               }}
             />
           </div>

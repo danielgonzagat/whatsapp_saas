@@ -4,7 +4,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { evaluateOverclaimPass, hasOpenGovernedValidationGap } from '../overclaim-guard';
+import {
+  evaluateOverclaimPass,
+  hasOpenGovernedValidationGap,
+  hasOpenProductionProofEvidenceGap,
+} from '../overclaim-guard';
 
 const NO_GOVERNED_VALIDATION_GAP = {
   openUnitCount: 0,
@@ -215,6 +219,72 @@ describe('overclaim-guard', () => {
     expect(result.violations.length).toBeGreaterThan(0);
   });
 
+  it('keeps canWorkNow separate from canDeclareComplete when production proof is not observed', () => {
+    const result = evaluateOverclaimPass({
+      verdicts: {
+        nextStepAutonomy: 'SIM',
+        zeroPromptProductionGuidance: 'NAO',
+        productionAutonomy: 'NAO',
+        canDeclareComplete: false,
+      },
+      gateStatus: {
+        structuralDebtClosed: true,
+        cycleProofPassed: true,
+        externalAdaptersClosed: true,
+        governedValidationEvidence: NO_GOVERNED_VALIDATION_GAP,
+        authorityAutomationEligible: true,
+        nextStepAvailable: true,
+        canContinueUntilReady: false,
+        productionProofEvidence: {
+          plannedEvidence: 1,
+          inferredEvidence: 1,
+          notAvailableEvidence: 1,
+          nonObservedEvidence: 3,
+          executableUnproved: 1,
+        },
+      },
+    });
+
+    expect(result.pass).toBe(true);
+    expect(result.violations).toHaveLength(0);
+  });
+
+  it('blocks production and completion claims when proof evidence is planned, inferred, or not_available', () => {
+    const result = evaluateOverclaimPass({
+      verdicts: {
+        nextStepAutonomy: 'SIM',
+        zeroPromptProductionGuidance: 'SIM',
+        productionAutonomy: 'SIM',
+        canDeclareComplete: true,
+      },
+      gateStatus: {
+        structuralDebtClosed: true,
+        cycleProofPassed: true,
+        externalAdaptersClosed: true,
+        governedValidationEvidence: NO_GOVERNED_VALIDATION_GAP,
+        authorityAutomationEligible: true,
+        nextStepAvailable: true,
+        canContinueUntilReady: true,
+        productionProofEvidence: {
+          plannedEvidence: 1,
+          inferredEvidence: 1,
+          notAvailableEvidence: 1,
+          nonObservedEvidence: 3,
+          executableUnproved: 1,
+        },
+      },
+    });
+
+    expect(result.pass).toBe(false);
+    expect(result.violations).toContainEqual(
+      expect.stringContaining('productionAutonomy=SIM but productionProofEvidenceGapOpen=true'),
+    );
+    expect(result.violations).toContainEqual(
+      expect.stringContaining('canDeclareComplete=true but productionProofEvidenceGapOpen=true'),
+    );
+    expect(result.violations.join('\n')).toContain('not_available=1');
+  });
+
   it('should pass when all gates are green and verdicts agree', () => {
     const result = evaluateOverclaimPass({
       verdicts: {
@@ -243,6 +313,17 @@ describe('overclaim-guard', () => {
       openUnitCount: 0,
       openGateCount: 0,
       blockers: ['Path coverage still has observation-only governed validation work.'],
+    });
+
+    expect(result).toBe(true);
+  });
+
+  it('detects open production proof evidence gaps independently from next-step autonomy', () => {
+    const result = hasOpenProductionProofEvidenceGap({
+      plannedEvidence: 0,
+      inferredEvidence: 0,
+      notAvailableEvidence: 1,
+      nonObservedEvidence: 1,
     });
 
     expect(result).toBe(true);

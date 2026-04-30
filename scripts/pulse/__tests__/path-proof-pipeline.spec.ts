@@ -184,6 +184,7 @@ describe('path proof pipeline', () => {
       expect.objectContaining({
         plannedOnly: 1,
         missingResult: 1,
+        notRun: 2,
         observedEvidenceLinks: 0,
       }),
     );
@@ -192,6 +193,12 @@ describe('path proof pipeline', () => {
     expect(output.readinessGate.blockers.map((blocker) => blocker.reason)).toEqual([
       'executable_without_observed_evidence',
       'human_required',
+    ]);
+    expect(
+      output.readinessGate.evidence.map((entry) => [entry.id, entry.status, entry.mode]),
+    ).toEqual([
+      [plannedTask.taskId, 'not_run', 'planned'],
+      [humanTask.taskId, 'not_run', 'planned'],
     ]);
   });
 });

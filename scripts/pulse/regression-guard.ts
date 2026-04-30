@@ -35,6 +35,8 @@ export interface PulseSnapshot {
   runtimeHighSignals: number;
   /** Execution matrix summary. One-way metrics must not regress when present. */
   executionMatrixSummary?: Partial<PulseExecutionMatrixSummary>;
+  /** Proof-readiness summary. Planned/unexecuted evidence must not inflate score. */
+  proofReadinessSummary?: Partial<PulseProofReadinessSummary>;
 }
 
 /** Detailed result of a before/after regression comparison. */
@@ -59,7 +61,18 @@ export interface RegressionResult {
     runtimeHighDelta: number;
     /** Execution matrix metric regressions. */
     executionMatrixRegressions: string[];
+    /** Score increases rejected because only planned/inferred debt improved. */
+    unsupportedScoreIncrease: string[];
   };
+}
+
+interface PulseProofReadinessSummary {
+  observedEvidence: number;
+  observedPass: number;
+  observedFail: number;
+  plannedEvidence: number;
+  plannedOrUnexecutedEvidence: number;
+  nonObservedEvidence: number;
 }
 
 type MatrixRegressionMetric =
@@ -88,6 +101,51 @@ const MATRIX_REGRESSION_RULES: Array<{
   { key: 'impreciseBreakpoints', direction: 'decrease' },
 ];
 
+const MATRIX_OBSERVED_SUPPORT_RULES: Array<{
+  key: Extract<MatrixRegressionMetric, 'observedPass' | 'observedFail'>;
+  direction: 'increase' | 'decrease';
+}> = [
+  { key: 'observedPass', direction: 'increase' },
+  { key: 'observedFail', direction: 'decrease' },
+];
+
+const MATRIX_PLANNED_OR_INFERRED_DEBT_RULES: Array<{
+  key: Exclude<MatrixRegressionMetric, 'observedPass' | 'observedFail'>;
+  direction: 'decrease';
+}> = [
+  { key: 'untested', direction: 'decrease' },
+  { key: 'blockedHumanRequired', direction: 'decrease' },
+  { key: 'unreachable', direction: 'decrease' },
+  { key: 'inferredOnly', direction: 'decrease' },
+  { key: 'unknownPaths', direction: 'decrease' },
+  { key: 'criticalUnobservedPaths', direction: 'decrease' },
+  { key: 'impreciseBreakpoints', direction: 'decrease' },
+];
+
+const PROOF_OBSERVED_SUPPORT_RULES: Array<{
+  key: Extract<
+    keyof PulseProofReadinessSummary,
+    'observedEvidence' | 'observedPass' | 'observedFail'
+  >;
+  direction: 'increase' | 'decrease';
+}> = [
+  { key: 'observedEvidence', direction: 'increase' },
+  { key: 'observedPass', direction: 'increase' },
+  { key: 'observedFail', direction: 'decrease' },
+];
+
+const PROOF_PLANNED_DEBT_RULES: Array<{
+  key: Extract<
+    keyof PulseProofReadinessSummary,
+    'plannedEvidence' | 'plannedOrUnexecutedEvidence' | 'nonObservedEvidence'
+  >;
+  direction: 'decrease';
+}> = [
+  { key: 'plannedEvidence', direction: 'decrease' },
+  { key: 'plannedOrUnexecutedEvidence', direction: 'decrease' },
+  { key: 'nonObservedEvidence', direction: 'decrease' },
+];
+
 function detectExecutionMatrixRegressions(
   before: Partial<PulseExecutionMatrixSummary>,
   after: Partial<PulseExecutionMatrixSummary>,
@@ -106,6 +164,86 @@ function detectExecutionMatrixRegressions(
     }
   }
   return regressions;
+}
+
+function movedInSupportedDirection(
+  beforeValue: number,
+  afterValue: number,
+  direction: 'increase' | 'decrease',
+): boolean {
+  return direction === 'increase' ? afterValue > beforeValue : afterValue < beforeValue;
+}
+
+function detectMatrixObservedSupport(
+  before: Partial<PulseExecutionMatrixSummary>,
+  after: Partial<PulseExecutionMatrixSummary>,
+): string[] {
+  const supported: string[] = [];
+  for (const rule of MATRIX_OBSERVED_SUPPORT_RULES) {
+    const beforeValue = before[rule.key];
+    const afterValue = after[rule.key];
+    if (typeof beforeValue !== 'number' || typeof afterValue !== 'number') {
+      continue;
+    }
+    if (movedInSupportedDirection(beforeValue, afterValue, rule.direction)) {
+      supported.push(`executionMatrix.${rule.key}:${beforeValue}->${afterValue}`);
+    }
+  }
+  return supported;
+}
+
+function detectMatrixPlannedOrInferredDebtReduction(
+  before: Partial<PulseExecutionMatrixSummary>,
+  after: Partial<PulseExecutionMatrixSummary>,
+): string[] {
+  const reductions: string[] = [];
+  for (const rule of MATRIX_PLANNED_OR_INFERRED_DEBT_RULES) {
+    const beforeValue = before[rule.key];
+    const afterValue = after[rule.key];
+    if (typeof beforeValue !== 'number' || typeof afterValue !== 'number') {
+      continue;
+    }
+    if (movedInSupportedDirection(beforeValue, afterValue, rule.direction)) {
+      reductions.push(`executionMatrix.${rule.key}:${beforeValue}->${afterValue}`);
+    }
+  }
+  return reductions;
+}
+
+function detectProofObservedSupport(
+  before: Partial<PulseProofReadinessSummary>,
+  after: Partial<PulseProofReadinessSummary>,
+): string[] {
+  const supported: string[] = [];
+  for (const rule of PROOF_OBSERVED_SUPPORT_RULES) {
+    const beforeValue = before[rule.key];
+    const afterValue = after[rule.key];
+    if (typeof beforeValue !== 'number' || typeof afterValue !== 'number') {
+      continue;
+    }
+    if (movedInSupportedDirection(beforeValue, afterValue, rule.direction)) {
+      supported.push(`proofReadiness.${rule.key}:${beforeValue}->${afterValue}`);
+    }
+  }
+  return supported;
+}
+
+function detectProofPlannedDebtReduction(
+  before: Partial<PulseProofReadinessSummary>,
+  after: Partial<PulseProofReadinessSummary>,
+): string[] {
+  const reductions: string[] = [];
+  for (const rule of PROOF_PLANNED_DEBT_RULES) {
+    const beforeValue = before[rule.key];
+    const afterValue = after[rule.key];
+    if (typeof beforeValue !== 'number' || typeof afterValue !== 'number') {
+      continue;
+    }
+    if (movedInSupportedDirection(beforeValue, afterValue, rule.direction)) {
+      reductions.push(`proofReadiness.${rule.key}:${beforeValue}->${afterValue}`);
+    }
+  }
+  return reductions;
 }
 
 /**
@@ -186,6 +324,34 @@ export function detectRegression(before: PulseSnapshot, after: PulseSnapshot): R
     reasons.push(`Execution matrix regressed: ${executionMatrixRegressions.join(', ')}.`);
   }
 
+  const observedSupport = [
+    ...detectMatrixObservedSupport(
+      before.executionMatrixSummary ?? {},
+      after.executionMatrixSummary ?? {},
+    ),
+    ...detectProofObservedSupport(
+      before.proofReadinessSummary ?? {},
+      after.proofReadinessSummary ?? {},
+    ),
+  ];
+  const plannedOrInferredDebtReduced = [
+    ...detectMatrixPlannedOrInferredDebtReduction(
+      before.executionMatrixSummary ?? {},
+      after.executionMatrixSummary ?? {},
+    ),
+    ...detectProofPlannedDebtReduction(
+      before.proofReadinessSummary ?? {},
+      after.proofReadinessSummary ?? {},
+    ),
+  ];
+  const unsupportedScoreIncrease =
+    scoreDelta > 0 && observedSupport.length === 0 ? plannedOrInferredDebtReduced : [];
+  if (unsupportedScoreIncrease.length > 0) {
+    reasons.push(
+      `Pulse score increased from ${before.score} to ${after.score} without observed evidence improvement; planned/inferred-only reductions cannot improve score alone: ${unsupportedScoreIncrease.join(', ')}.`,
+    );
+  }
+
   return {
     regressed: reasons.length > 0,
     reasons,
@@ -197,6 +363,7 @@ export function detectRegression(before: PulseSnapshot, after: PulseSnapshot): R
       scenariosRegressed,
       runtimeHighDelta,
       executionMatrixRegressions,
+      unsupportedScoreIncrease,
     },
   };
 }
@@ -261,6 +428,7 @@ export function captureRegressionSnapshot(rootDir: string): PulseSnapshot {
   const codacyPath = findArtifact(rootDir, 'PULSE_CODACY_STATE.json');
   const healthPath = findArtifact(rootDir, 'PULSE_HEALTH.json');
   const executionMatrixPath = findArtifact(rootDir, 'PULSE_EXECUTION_MATRIX.json');
+  const proofReadinessPath = findArtifact(rootDir, 'PULSE_PROOF_READINESS.json');
 
   const certificate = certPath
     ? readJsonArtifact<{
@@ -278,6 +446,9 @@ export function captureRegressionSnapshot(rootDir: string): PulseSnapshot {
     : null;
   const executionMatrix = executionMatrixPath
     ? readJsonArtifact<{ summary?: PulseExecutionMatrixSummary }>(executionMatrixPath)
+    : null;
+  const proofReadiness = proofReadinessPath
+    ? readJsonArtifact<{ summary?: Partial<PulseProofReadinessSummary> }>(proofReadinessPath)
     : null;
 
   const gatesPass: Record<string, boolean> = {};
@@ -306,6 +477,7 @@ export function captureRegressionSnapshot(rootDir: string): PulseSnapshot {
     scenarioPass,
     runtimeHighSignals,
     executionMatrixSummary: executionMatrix?.summary ?? {},
+    proofReadinessSummary: proofReadiness?.summary ?? {},
   };
 }
 

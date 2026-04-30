@@ -9,6 +9,15 @@ const DAG_FILE = 'merkle-dag.json';
 
 const SKIP_PATTERNS = ['node_modules', 'dist', '.next', '.git', '.pulse'];
 
+interface BuildMerkleDagOptions {
+  changedFilePaths?: string[];
+}
+
+interface FileHashResult {
+  contentHash: string;
+  reused: boolean;
+}
+
 function walkDir(dir: string, rootDir: string): string[] {
   const result: string[] = [];
   const entries = readDir(dir, { withFileTypes: true });
@@ -75,6 +84,7 @@ export function buildMerkleDag(
     nodes: Array<{ id: string; file: string; label: string }>;
     edges: Array<{ from: string; to: string }>;
   },
+  options: BuildMerkleDagOptions = {},
 ): MerkleDag {
   const cacheDir = path.join(rootDir, CACHE_DIR);
   ensureDir(cacheDir, { recursive: true });
@@ -85,30 +95,28 @@ export function buildMerkleDag(
   const prevNodes = prevDag?.nodes ?? {};
   const nodes: Record<string, MerkleNode> = {};
   let changedCount = 0;
+  const changedFileSet = normalizeChangedFileSet(rootDir, options.changedFilePaths ?? []);
 
   const filePaths = walkDir(rootDir, rootDir).sort();
 
   for (const relPath of filePaths) {
     const absPath = path.join(rootDir, relPath);
-    let contentHash: string;
-    try {
-      const raw = readFileSync(absPath);
-      contentHash = computeSha256(raw);
-    } catch {
+    const fileHash = computeFileHash(absPath, relPath, prevNodes, changedFileSet);
+    if (!fileHash) {
       continue;
     }
 
     const prev = prevNodes[relPath];
-    const changed = !prev || prev.contentHash !== contentHash;
+    const changed = !prev || prev.contentHash !== fileHash.contentHash;
 
     nodes[relPath] = {
       id: relPath,
       kind: 'file',
-      contentHash,
+      contentHash: fileHash.contentHash,
       derivedHash: '', // computed bottom-up later
       children: [],
       dependsOn: [],
-      lastComputed: nowISO(),
+      lastComputed: fileHash.reused && prev ? prev.lastComputed : nowISO(),
       changed,
     };
 
@@ -253,6 +261,38 @@ export function buildMerkleDag(
   return dag;
 }
 
+function normalizeChangedFileSet(rootDir: string, changedFilePaths: string[]): Set<string> {
+  const normalized = new Set<string>();
+  for (const filePath of changedFilePaths) {
+    const relPath = path.isAbsolute(filePath) ? path.relative(rootDir, filePath) : filePath;
+    const normalizedPath = relPath.replace(/\\/g, '/');
+    if (!normalizedPath || normalizedPath.startsWith('../')) {
+      continue;
+    }
+    normalized.add(normalizedPath);
+  }
+  return normalized;
+}
+
+function computeFileHash(
+  absPath: string,
+  relPath: string,
+  prevNodes: Record<string, MerkleNode>,
+  changedFileSet: Set<string>,
+): FileHashResult | null {
+  const prev = prevNodes[relPath];
+  if (prev && changedFileSet.size > 0 && !changedFileSet.has(relPath)) {
+    return { contentHash: prev.contentHash, reused: true };
+  }
+
+  try {
+    const raw = readFileSync(absPath);
+    return { contentHash: computeSha256(raw), reused: false };
+  } catch {
+    return null;
+  }
+}
+
 function topologicalSort(nodes: Record<string, MerkleNode>): string[] {
   const visited = new Set<string>();
   const result: string[] = [];
@@ -346,13 +386,16 @@ function addAncestors(
  * @param nodeId  The id of the node to recompute.
  * @returns The updated DAG (same object reference).
  */
-export function recomputeNode(dag: MerkleDag, nodeId: string): MerkleDag {
+export function recomputeNode(dag: MerkleDag, nodeId: string, rootDir?: string): MerkleDag {
   const node = dag.nodes[nodeId];
   if (!node) return dag;
 
+  const previousDerivedHash = node.derivedHash;
+  const previousContentHash = node.contentHash;
+
   if (node.kind === 'file') {
     try {
-      const raw = readFileSync(node.id);
+      const raw = readFileSync(rootDir ? path.join(rootDir, node.id) : node.id);
       node.contentHash = computeSha256(raw);
     } catch {
       node.contentHash = '';
@@ -360,16 +403,13 @@ export function recomputeNode(dag: MerkleDag, nodeId: string): MerkleDag {
   }
 
   if (node.kind === 'capability' || node.kind === 'flow' || node.kind === 'graph_root') {
-    const childHashes = node.children
-      .map((id) => dag.nodes[id]?.contentHash ?? '')
-      .filter(Boolean)
-      .sort()
-      .join('');
-    node.contentHash = computeSha256(childHashes);
+    node.contentHash = computeAggregateContentHash(node, dag.nodes);
   }
 
   node.derivedHash = deriveHash(node, dag.nodes);
   node.lastComputed = nowISO();
+  node.changed =
+    previousContentHash !== node.contentHash || previousDerivedHash !== node.derivedHash;
 
   const parentMap = buildParentMap(dag.nodes);
   const ancestors = new Set<string>();
@@ -379,14 +419,30 @@ export function recomputeNode(dag: MerkleDag, nodeId: string): MerkleDag {
   for (const ancestorId of ancestorList) {
     const anc = dag.nodes[ancestorId];
     if (!anc) continue;
+    const ancestorPreviousContentHash = anc.contentHash;
+    const ancestorPreviousDerivedHash = anc.derivedHash;
+    anc.contentHash = computeAggregateContentHash(anc, dag.nodes);
     anc.derivedHash = deriveHash(anc, dag.nodes);
     anc.lastComputed = nowISO();
+    anc.changed =
+      ancestorPreviousContentHash !== anc.contentHash ||
+      ancestorPreviousDerivedHash !== anc.derivedHash;
   }
 
   dag.rootHash = dag.nodes['root']?.derivedHash ?? '';
   dag.generatedAt = nowISO();
+  dag.changedNodes = Object.values(dag.nodes).filter((item) => item.changed).length;
 
   return dag;
+}
+
+function computeAggregateContentHash(node: MerkleNode, nodes: Record<string, MerkleNode>): string {
+  const childHashes = node.children
+    .map((id) => nodes[id]?.contentHash ?? '')
+    .filter(Boolean)
+    .sort()
+    .join('');
+  return computeSha256(childHashes);
 }
 
 /**

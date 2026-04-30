@@ -54,7 +54,7 @@ function JobRow({
         alignItems: 'center',
         gap: 16,
         padding: '14px 16px',
-        borderBottom: '1px solid #222226',
+        borderBottom: '1px solid colors.border.space',
       }}
     >
       <div

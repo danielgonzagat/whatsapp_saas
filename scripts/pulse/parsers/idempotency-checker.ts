@@ -18,10 +18,7 @@
  *    are idempotent (same result on retry as on first call)
  *
  * REQUIRES: PULSE_DEEP=1, PULSE_CHAOS=1 for runtime tests
- * BREAK TYPES:
- *   IDEMPOTENCY_MISSING(high)     — non-idempotent endpoint without idempotency key support
- *   IDEMPOTENCY_FINANCIAL(critical) — payment endpoint not idempotent
- *   IDEMPOTENCY_JOB(high)           — BullMQ job not deduplicated
+ * Emits idempotency evidence gaps; diagnostic identity is synthesized downstream.
  */
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -35,6 +32,25 @@ const UPSERT_RE = /\.upsert\s*\(|createOrUpdate|findOrCreate/i;
 const DUPLICATE_CHECK_RE = /alreadyExists|isDuplicate|existingRecord|externalId.*unique|@@unique/i;
 const MUTATING_WEBHOOK_RE =
   /prisma\.[A-Za-z_$]\w*\.(?:create|update|upsert|delete)|this\.[A-Za-z_$]\w*Service\.[A-Za-z_$]\w*\(|process[A-Za-z]+Webhook|handle[A-Za-z]+Event/i;
+
+function idempotencyFinding(input: {
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+}): Break {
+  return {
+    type: 'idempotency-evidence-gap',
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: 'parser:weak_signal:idempotency',
+    surface: 'request-safety',
+  };
+}
 
 /** Check idempotency. */
 export function checkIdempotency(config: PulseConfig): Break[] {
@@ -64,30 +80,32 @@ export function checkIdempotency(config: PulseConfig): Break[] {
       const hasDuplicateCheck = DUPLICATE_CHECK_RE.test(content);
 
       if (!hasIdempotencyKey && !hasUpsert && !hasDuplicateCheck) {
-        breaks.push({
-          type: 'IDEMPOTENCY_FINANCIAL',
-          severity: 'critical',
-          file: relFile,
-          line: 0,
-          description:
-            'Payment creation endpoint without idempotency key — network retry causes double charge',
-          detail:
-            'Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key',
-        });
+        breaks.push(
+          idempotencyFinding({
+            severity: 'critical',
+            file: relFile,
+            line: 0,
+            description:
+              'Payment creation endpoint without idempotency key — network retry causes double charge',
+            detail:
+              'Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key',
+          }),
+        );
       }
 
       // Specifically verify Stripe calls pass idempotency key
       if (/stripe/i.test(content) && !IDEMPOTENCY_KEY_RE.test(content)) {
-        breaks.push({
-          type: 'IDEMPOTENCY_FINANCIAL',
-          severity: 'critical',
-          file: relFile,
-          line: 0,
-          description:
-            'Stripe payment call without idempotency key — provider retry can create duplicate financial operations',
-          detail:
-            'Pass the idempotency key to Stripe requests to prevent duplicate financial operations at provider level',
-        });
+        breaks.push(
+          idempotencyFinding({
+            severity: 'critical',
+            file: relFile,
+            line: 0,
+            description:
+              'Stripe payment call without idempotency key — provider retry can create duplicate financial operations',
+            detail:
+              'Pass the idempotency key to Stripe requests to prevent duplicate financial operations at provider level',
+          }),
+        );
       }
     }
 
@@ -106,16 +124,17 @@ export function checkIdempotency(config: PulseConfig): Break[] {
           // Only flag if the POST creates a resource (create/save/add in method body)
           const createsResource = /\.create\s*\(|\.save\s*\(|\.insert\s*\(/.test(context);
           if (createsResource && !hasIdempotency) {
-            breaks.push({
-              type: 'IDEMPOTENCY_MISSING',
-              severity: 'high',
-              file: relFile,
-              line: i + 1,
-              description:
-                'POST endpoint creates resource without idempotency — safe retry not possible',
-              detail:
-                'Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent',
-            });
+            breaks.push(
+              idempotencyFinding({
+                severity: 'high',
+                file: relFile,
+                line: i + 1,
+                description:
+                  'POST endpoint creates resource without idempotency — safe retry not possible',
+                detail:
+                  'Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent',
+              }),
+            );
           }
         }
       }
@@ -125,16 +144,17 @@ export function checkIdempotency(config: PulseConfig): Break[] {
     if (/queue|Queue|addJob|add\s*\(/.test(content) && /bull|BullMQ/i.test(content)) {
       const hasJobId = JOB_ID_RE.test(content);
       if (!hasJobId) {
-        breaks.push({
-          type: 'IDEMPOTENCY_JOB',
-          severity: 'high',
-          file: relFile,
-          line: 0,
-          description:
-            'BullMQ job enqueued without deduplication jobId — same job may run multiple times on retry',
-          detail:
-            'Pass { jobId: uniqueKey } option when adding jobs; BullMQ will skip duplicate jobIds',
-        });
+        breaks.push(
+          idempotencyFinding({
+            severity: 'high',
+            file: relFile,
+            line: 0,
+            description:
+              'BullMQ job enqueued without deduplication jobId — same job may run multiple times on retry',
+            detail:
+              'Pass { jobId: uniqueKey } option when adding jobs; BullMQ will skip duplicate jobIds',
+          }),
+        );
       }
     }
 
@@ -146,16 +166,17 @@ export function checkIdempotency(config: PulseConfig): Break[] {
       const mutatesWebhookState = MUTATING_WEBHOOK_RE.test(content);
 
       if (mutatesWebhookState && !hasIdempotencyCheck && !hasWebhookEventModel) {
-        breaks.push({
-          type: 'IDEMPOTENCY_MISSING',
-          severity: 'high',
-          file: relFile,
-          line: 0,
-          description:
-            'Webhook handler without idempotency check — duplicate webhooks will be processed twice',
-          detail:
-            'Store processed webhook IDs in WebhookEvent model; reject duplicates with 200 (not 409)',
-        });
+        breaks.push(
+          idempotencyFinding({
+            severity: 'high',
+            file: relFile,
+            line: 0,
+            description:
+              'Webhook handler without idempotency check — duplicate webhooks will be processed twice',
+            detail:
+              'Store processed webhook IDs in WebhookEvent model; reject duplicates with 200 (not 409)',
+          }),
+        );
       }
     }
 
@@ -169,16 +190,17 @@ export function checkIdempotency(config: PulseConfig): Break[] {
         !/idempotent|idempotency|requestId|once.*retry|retryOnce|skipDuplicate/i.test(content) &&
         /sendEmail|sendSMS|sendWhatsApp|charge|processPayment/i.test(content)
       ) {
-        breaks.push({
-          type: 'IDEMPOTENCY_MISSING',
-          severity: 'high',
-          file: relFile,
-          line: 0,
-          description:
-            'Retry logic around operations with external side effects without idempotency guard',
-          detail:
-            'Retrying email/SMS/payment sends can cause duplicates; ensure idempotency before configuring retries',
-        });
+        breaks.push(
+          idempotencyFinding({
+            severity: 'high',
+            file: relFile,
+            line: 0,
+            description:
+              'Retry logic around operations with external side effects without idempotency guard',
+            detail:
+              'Retrying email/SMS/payment sends can cause duplicates; ensure idempotency before configuring retries',
+          }),
+        );
       }
     }
   }

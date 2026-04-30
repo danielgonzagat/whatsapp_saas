@@ -224,6 +224,7 @@ export class FlowEngineGlobal {
       })();
     } catch (e) {
       this.log.warn('NeuroTrigger Failed', e);
+      this.log.warn('Context', e);
     }
     // -------------------------
 

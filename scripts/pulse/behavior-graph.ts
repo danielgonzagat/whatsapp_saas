@@ -56,32 +56,81 @@ const SKIP_DIRS = [
   '.test.jsx',
 ];
 
-// ===== NestJS decorator recognition =====
-const NESTJS_HTTP_METHODS = new Set([
-  'Get',
-  'Post',
-  'Put',
-  'Delete',
-  'Patch',
-  'Options',
-  'Head',
-  'All',
-]);
-const NESTJS_INPUT_DECORATORS: Record<string, BehaviorInputKind> = {
-  Body: 'body',
-  Query: 'query',
-  Param: 'params',
-  Headers: 'headers',
-  Req: 'context',
-  Res: 'context',
+type BehaviorDecoratorRole =
+  | 'http_route'
+  | 'queue_consumer'
+  | 'cron_job'
+  | 'event_listener'
+  | 'request_body'
+  | 'request_query'
+  | 'request_params'
+  | 'request_headers'
+  | 'request_context'
+  | 'auth_guard';
+
+type BehaviorClassNameRole =
+  | 'controller_like'
+  | 'gateway_like'
+  | 'guard_like'
+  | 'validation_like'
+  | 'service_like'
+  | 'queue_like';
+
+type BehaviorFrameworkHint = {
+  language: 'typescript';
+  framework: string;
+  pluginScope: 'language_framework_frontend';
+  authority: 'weak_compatibility_hint';
+  decorators?: Record<string, BehaviorDecoratorRole[]>;
+  classNameSuffixes?: Record<string, BehaviorClassNameRole>;
 };
-const NESTJS_GUARD_CLASSES = new Set([
-  'AuthGuard',
-  'JwtAuthGuard',
-  'RolesGuard',
-  'ThrottlerGuard',
-  'PermissionsGuard',
-]);
+
+const TYPESCRIPT_BEHAVIOR_HINTS: BehaviorFrameworkHint[] = [
+  {
+    language: 'typescript',
+    framework: 'nestjs',
+    pluginScope: 'language_framework_frontend',
+    authority: 'weak_compatibility_hint',
+    decorators: {
+      All: ['http_route'],
+      AuthGuard: ['auth_guard'],
+      Body: ['request_body'],
+      Cron: ['cron_job'],
+      Delete: ['http_route'],
+      EventPattern: ['queue_consumer'],
+      Get: ['http_route'],
+      Head: ['http_route'],
+      Headers: ['request_headers'],
+      Interval: ['cron_job'],
+      JwtAuthGuard: ['auth_guard'],
+      MessagePattern: ['queue_consumer'],
+      Options: ['http_route'],
+      Param: ['request_params'],
+      Patch: ['http_route'],
+      PermissionsGuard: ['auth_guard'],
+      Post: ['http_route'],
+      Put: ['http_route'],
+      Query: ['request_query'],
+      Req: ['request_context'],
+      Res: ['request_context'],
+      RolesGuard: ['auth_guard'],
+      SubscribeMessage: ['event_listener'],
+      ThrottlerGuard: ['auth_guard'],
+      Timeout: ['cron_job'],
+    },
+    classNameSuffixes: {
+      consumer: 'queue_like',
+      controller: 'controller_like',
+      gateway: 'gateway_like',
+      guard: 'guard_like',
+      pipe: 'validation_like',
+      processor: 'queue_like',
+      repository: 'service_like',
+      service: 'service_like',
+      validator: 'validation_like',
+    },
+  },
+];
 
 const EXTERNAL_RECEIVER_PATTERN =
   /\b(?:this\.)?([A-Za-z_$][\w$]*(?:Client|Provider|Gateway|Api|SDK|Sdk|Http|Service))\.(get|post|put|patch|delete|request|send|create|update|confirm|refund|call|emit|transfer|charge|payout|capture|authorize|process|payment|billing|invoice|subscription|upload)\s*\(/g;
@@ -145,6 +194,34 @@ type SourceExternalContext = {
   packageProviders: string[];
   importedBindings: Set<string>;
 };
+
+function decoratorRoles(decorator: string): BehaviorDecoratorRole[] {
+  return TYPESCRIPT_BEHAVIOR_HINTS.flatMap((hint) => hint.decorators?.[decorator] ?? []);
+}
+
+function hasDecoratorRole(decorators: string[], role: BehaviorDecoratorRole): boolean {
+  return decorators.some((decorator) => decoratorRoles(decorator).includes(role));
+}
+
+function inputKindFromDecorator(decorator: string): BehaviorInputKind | null {
+  const roles = decoratorRoles(decorator);
+  if (roles.includes('request_body')) return 'body';
+  if (roles.includes('request_query')) return 'query';
+  if (roles.includes('request_params')) return 'params';
+  if (roles.includes('request_headers')) return 'headers';
+  if (roles.includes('request_context')) return 'context';
+  return null;
+}
+
+function classNameRole(className: string): BehaviorClassNameRole | null {
+  const lowerClass = className.toLowerCase();
+  for (const hint of TYPESCRIPT_BEHAVIOR_HINTS) {
+    for (const [suffix, role] of Object.entries(hint.classNameSuffixes ?? {})) {
+      if (lowerClass.includes(suffix)) return role;
+    }
+  }
+  return null;
+}
 
 function extractFunctionsFromSource(filePath: string, source: string): ParsedFunc[] {
   if (source.length > FULL_BODY_EXTRACTION_BUDGET_BYTES) {
@@ -420,32 +497,25 @@ function extractLargeFileFunctionStubs(source: string): ParsedFunc[] {
 function determineKind(func: ParsedFunc): BehaviorNodeKind {
   const { decorators, className, name } = func;
 
-  if (decorators.some((d) => NESTJS_HTTP_METHODS.has(d))) return 'api_endpoint';
-  if (
-    decorators.includes('Cron') ||
-    decorators.includes('Interval') ||
-    decorators.includes('Timeout')
-  )
-    return 'cron_job';
-  if (decorators.includes('MessagePattern') || decorators.includes('EventPattern'))
-    return 'queue_consumer';
-  if (decorators.includes('SubscribeMessage')) return 'event_listener';
+  if (hasDecoratorRole(decorators, 'http_route')) return 'api_endpoint';
+  if (hasDecoratorRole(decorators, 'cron_job')) return 'cron_job';
+  if (hasDecoratorRole(decorators, 'queue_consumer')) return 'queue_consumer';
+  if (hasDecoratorRole(decorators, 'event_listener')) return 'event_listener';
 
   if (className) {
-    const lowerClass = className.toLowerCase();
-    if (lowerClass.includes('controller')) {
-      if (decorators.some((d) => NESTJS_HTTP_METHODS.has(d))) return 'api_endpoint';
+    const role = classNameRole(className);
+    if (role === 'controller_like') {
+      if (hasDecoratorRole(decorators, 'http_route')) return 'api_endpoint';
       return 'handler';
     }
-    if (lowerClass.includes('gateway')) return 'event_listener';
-    if (lowerClass.includes('guard')) return 'auth_check';
-    if (lowerClass.includes('pipe') || lowerClass.includes('validator')) return 'validation';
-    if (lowerClass.includes('service') || lowerClass.includes('repository')) {
+    if (role === 'gateway_like') return 'event_listener';
+    if (role === 'guard_like') return 'auth_check';
+    if (role === 'validation_like') return 'validation';
+    if (role === 'service_like') {
       if (/^use[A-Z]/.test(name) || /^on[A-Z]/.test(name)) return 'lifecycle_hook';
       return 'handler';
     }
-    if (lowerClass.includes('consumer') || lowerClass.includes('processor'))
-      return 'queue_consumer';
+    if (role === 'queue_like') return 'queue_consumer';
   }
 
   const lower = name.toLowerCase();
@@ -458,7 +528,7 @@ function determineKind(func: ParsedFunc): BehaviorNodeKind {
 // ===== Input extraction =====
 function extractInputs(func: ParsedFunc): BehaviorInput[] {
   const inputs: BehaviorInput[] = [];
-  const { parameters, decorators, className } = func;
+  const { parameters, decorators } = func;
 
   for (const param of parameters) {
     const input: BehaviorInput = {
@@ -470,11 +540,9 @@ function extractInputs(func: ParsedFunc): BehaviorInput[] {
       source: param.name,
     };
 
-    const nestedDeco = decorators
-      .filter((d) => d === 'Body' || d === 'Query' || d === 'Param' || d === 'Headers')
-      .pop();
-    if (nestedDeco && nestedDeco in NESTJS_INPUT_DECORATORS) {
-      input.kind = NESTJS_INPUT_DECORATORS[nestedDeco];
+    const nestedInputKind = decorators.map(inputKindFromDecorator).filter(Boolean).pop();
+    if (nestedInputKind) {
+      input.kind = nestedInputKind;
     }
 
     if (func.bodyText.includes(`validate`) && func.bodyText.includes(param.name)) {
@@ -806,7 +874,7 @@ function determineExecutionMode(
 ): BehaviorNode['executionMode'] {
   if (risk === 'critical' || risk === 'high') return 'ai_safe';
 
-  if (decorators.some((d) => NESTJS_GUARD_CLASSES.has(d))) return 'ai_safe';
+  if (hasDecoratorRole(decorators, 'auth_guard')) return 'ai_safe';
 
   const sendsMessagesOrPayments = hasMessageOrPaymentSending(bodyText, externalCalls);
   if (sendsMessagesOrPayments) return 'ai_safe';

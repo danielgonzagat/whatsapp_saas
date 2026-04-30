@@ -2,7 +2,7 @@
  * Scenario Evidence Loader Tests
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { loadScenarioEvidenceFromDisk } from '../scenario-evidence-loader';
@@ -10,6 +10,10 @@ import { loadScenarioEvidenceFromDisk } from '../scenario-evidence-loader';
 describe('scenario-evidence-loader', () => {
   const testRootDir = '/tmp/test-pulse-evidence';
   const evidenceDir = path.join(testRootDir, '.pulse/current');
+
+  function recentIso(offsetMs = 0): string {
+    return new Date(Date.now() - offsetMs).toISOString();
+  }
 
   beforeEach(() => {
     if (!fs.existsSync(evidenceDir)) {
@@ -38,6 +42,10 @@ describe('scenario-evidence-loader', () => {
           status: 'passed',
           executed: true,
           critical: true,
+          command: 'npx playwright test scenario-1.spec.ts',
+          exitCode: 0,
+          startedAt: recentIso(1000),
+          finishedAt: recentIso(),
         },
       ],
     };
@@ -54,6 +62,84 @@ describe('scenario-evidence-loader', () => {
     expect(result.customer?.results).toHaveLength(1);
     expect(result.customer?.results[0].truthMode).toBe('observed-from-disk');
     expect(result.summary).toContain('customer: fresh');
+  });
+
+  it('should keep fresh not_run evidence inferred instead of observed execution', () => {
+    fs.writeFileSync(
+      path.join(evidenceDir, 'PULSE_CUSTOMER_EVIDENCE.json'),
+      JSON.stringify({
+        actorKind: 'customer',
+        declared: ['scenario-plan-only'],
+        executed: [],
+        missing: ['scenario-plan-only'],
+        passed: [],
+        failed: [],
+        summary: 'plan generated without runtime execution',
+        results: [
+          {
+            scenarioId: 'scenario-plan-only',
+            status: 'not_run',
+            executed: false,
+            critical: true,
+            startedAt: recentIso(1000),
+            finishedAt: recentIso(),
+          },
+        ],
+      }),
+    );
+
+    const result = loadScenarioEvidenceFromDisk(testRootDir);
+
+    expect(result.customer?.results[0]).toEqual(
+      expect.objectContaining({
+        status: 'skipped',
+        executed: false,
+        truthMode: 'inferred',
+      }),
+    );
+    expect(result.customer?.results[0].machineWork?.terminalProofReason).toContain(
+      'has no runtime-observed terminal proof',
+    );
+  });
+
+  it('should require fresh execution timestamps before observing disk evidence', () => {
+    fs.writeFileSync(
+      path.join(evidenceDir, 'PULSE_CUSTOMER_EVIDENCE.json'),
+      JSON.stringify({
+        actorKind: 'customer',
+        declared: ['scenario-old-finish'],
+        executed: ['scenario-old-finish'],
+        missing: [],
+        passed: ['scenario-old-finish'],
+        failed: [],
+        summary: 'terminal status with stale execution timestamp',
+        results: [
+          {
+            scenarioId: 'scenario-old-finish',
+            status: 'passed',
+            executed: true,
+            critical: true,
+            command: 'npx playwright test scenario-old-finish.spec.ts',
+            exitCode: 0,
+            startedAt: recentIso(26 * 60 * 60 * 1000),
+            finishedAt: recentIso(25 * 60 * 60 * 1000),
+          },
+        ],
+      }),
+    );
+
+    const result = loadScenarioEvidenceFromDisk(testRootDir);
+
+    expect(result.customer?.results[0]).toEqual(
+      expect.objectContaining({
+        status: 'passed',
+        executed: true,
+        truthMode: 'inferred',
+      }),
+    );
+    expect(result.customer?.results[0].machineWork?.terminalProofReason).toContain(
+      'has no runtime-observed terminal proof',
+    );
   });
 
   it('should detect stale evidence (>24h old)', () => {

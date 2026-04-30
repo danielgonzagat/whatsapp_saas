@@ -12,6 +12,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
@@ -32,8 +33,10 @@ interface SendChatMessageBody {
 }
 
 /** Partnerships controller. */
+@UseGuards(ThrottlerGuard)
 @Controller('partnerships')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class PartnershipsController {
   constructor(private readonly service: PartnershipsService) {}
 

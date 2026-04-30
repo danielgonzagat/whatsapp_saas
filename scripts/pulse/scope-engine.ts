@@ -12,6 +12,7 @@ import {
   writeFile,
 } from './safe-fs';
 import { IGNORED_DIRECTORIES } from './scope-state.constants';
+import { detectSourceRoots } from './source-root-detector';
 import type {
   ScopeEngineState,
   ScopeEngineSummary,
@@ -677,7 +678,7 @@ interface ScopeWatcherState {
   stopped: boolean;
 }
 
-const WATCHABLE_DIRECTORIES = [
+const WATCHABLE_FALLBACK_DIRECTORIES = [
   'backend/src',
   'frontend/src',
   'frontend-admin/src',
@@ -687,8 +688,34 @@ const WATCHABLE_DIRECTORIES = [
   'docs',
 ];
 
+function discoverPrismaRoots(rootDir: string): string[] {
+  const roots = new Set<string>();
+  try {
+    for (const entry of readDir(rootDir, { recursive: true }) as string[]) {
+      const normalized = String(entry).split(path.sep).join('/');
+      if (normalized.split('/').some((part) => IGNORED_DIRECTORIES.has(part))) continue;
+      if (path.basename(normalized) === 'schema.prisma') {
+        roots.add(path.dirname(safeJoin(rootDir, normalized)));
+      }
+    }
+  } catch {
+    return [];
+  }
+  return [...roots];
+}
+
+function discoverWatchableDirectories(rootDir: string): string[] {
+  const dynamicRoots = detectSourceRoots(rootDir)
+    .filter((root) => root.availability === 'inferred')
+    .map((root) => root.absolutePath);
+  const prismaRoots = discoverPrismaRoots(rootDir);
+  const inferred = [...new Set([...dynamicRoots, ...prismaRoots])];
+  if (inferred.length > 0) return inferred;
+  return WATCHABLE_FALLBACK_DIRECTORIES.map((d) => safeJoin(rootDir, d));
+}
+
 function watchableAbsolutePaths(rootDir: string): string[] {
-  const candidates = WATCHABLE_DIRECTORIES.map((d) => safeJoin(rootDir, d));
+  const candidates = discoverWatchableDirectories(rootDir);
   return candidates.filter((p) => {
     try {
       return statPath(p).isDirectory();

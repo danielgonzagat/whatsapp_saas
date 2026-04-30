@@ -24,10 +24,7 @@
  * 6. Unsubscribe mechanism in marketing emails (LGPD requirement)
  *
  * REQUIRES: PULSE_DEEP=1
- * BREAK TYPES:
- *   EMAIL_NO_AUTH(high)              — email sent without DKIM/SPF → goes to spam
- *   PUSH_NOT_IMPLEMENTED(medium)     — push notifications not implemented
- *   NOTIFICATION_SALE_MISSING(high)  — workspace owner not notified of sale
+ * Emits communication reliability evidence gaps; diagnostic identity is synthesized downstream.
  */
 import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
@@ -41,6 +38,25 @@ const DKIM_RE = /dkim|DKIM_PRIVATE_KEY|privateKey.*email|email.*privateKey/i;
 const EMAIL_SERVICE_RE = /sendgrid|resend|ses|postmark|mailgun|nodemailer/i;
 const SALE_NOTIFICATION_RE = /orderPaid|paymentConfirmed|saleMade|notifyOwner|ownerNotif/i;
 const PAYMENT_WEBHOOK_RE = /webhook.*payment|payment.*webhook|checkout.*webhook/i;
+
+function communicationFinding(input: {
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+}): Break {
+  return {
+    type: 'communication-evidence-gap',
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: 'parser:weak_signal:communication-reliability',
+    surface: 'notification-reliability',
+  };
+}
 
 /** Check communication. */
 export function checkCommunication(config: PulseConfig): Break[] {
@@ -114,43 +130,46 @@ export function checkCommunication(config: PulseConfig): Break[] {
     // Check env var config
     const hasDKIMEnv = !!process.env.DKIM_PRIVATE_KEY || !!process.env.EMAIL_DKIM_PRIVATE_KEY;
     if (!hasDKIM && !hasDKIMEnv) {
-      breaks.push({
-        type: 'EMAIL_NO_AUTH',
-        severity: 'high',
-        file: 'backend/src/',
-        line: 0,
-        description:
-          'Email sent without DKIM configuration — emails will be marked as spam by major providers',
-        detail:
-          'Configure DKIM_PRIVATE_KEY env var and add DKIM signing to email transport; also set SPF and DMARC DNS records',
-      });
+      breaks.push(
+        communicationFinding({
+          severity: 'high',
+          file: 'backend/src/',
+          line: 0,
+          description:
+            'Email sent without DKIM configuration — emails will be marked as spam by major providers',
+          detail:
+            'Configure DKIM_PRIVATE_KEY env var and add DKIM signing to email transport; also set SPF and DMARC DNS records',
+        }),
+      );
     }
 
     // CHECK 1b: Use a proper email service
     if (!hasEmailService) {
-      breaks.push({
-        type: 'EMAIL_NO_AUTH',
+      breaks.push(
+        communicationFinding({
+          severity: 'high',
+          file: 'backend/src/',
+          line: 0,
+          description:
+            'No dedicated email service (SendGrid/Resend/SES) detected — raw SMTP has poor deliverability',
+          detail:
+            'Use Resend or SendGrid for transactional email; they handle DKIM, bounce handling, and deliverability',
+        }),
+      );
+    }
+  } else {
+    // No email sending at all
+    breaks.push(
+      communicationFinding({
         severity: 'high',
         file: 'backend/src/',
         line: 0,
         description:
-          'No dedicated email service (SendGrid/Resend/SES) detected — raw SMTP has poor deliverability',
+          'No email sending found in backend — transactional emails (welcome, reset, receipt) not implemented',
         detail:
-          'Use Resend or SendGrid for transactional email; they handle DKIM, bounce handling, and deliverability',
-      });
-    }
-  } else {
-    // No email sending at all
-    breaks.push({
-      type: 'EMAIL_NO_AUTH',
-      severity: 'high',
-      file: 'backend/src/',
-      line: 0,
-      description:
-        'No email sending found in backend — transactional emails (welcome, reset, receipt) not implemented',
-      detail:
-        'Add email sending for: welcome, password reset, order confirmation, payment failure, trial expiry',
-    });
+          'Add email sending for: welcome, password reset, order confirmation, payment failure, trial expiry',
+      }),
+    );
   }
 
   // CHECK 2: Push notifications
@@ -168,30 +187,32 @@ export function checkCommunication(config: PulseConfig): Break[] {
   );
 
   if (hasPWAManifest && !hasPushImpl) {
-    breaks.push({
-      type: 'PUSH_NOT_IMPLEMENTED',
-      severity: 'medium',
-      file: 'frontend/public/manifest.json',
-      line: 0,
-      description:
-        'PWA manifest exists but push notifications are not implemented — key retention feature missing',
-      detail:
-        'Implement Web Push (FCM) for sale alerts, message notifications, and trial reminders',
-    });
+    breaks.push(
+      communicationFinding({
+        severity: 'medium',
+        file: 'frontend/public/manifest.json',
+        line: 0,
+        description:
+          'PWA manifest exists but push notifications are not implemented — key retention feature missing',
+        detail:
+          'Implement Web Push (FCM) for sale alerts, message notifications, and trial reminders',
+      }),
+    );
   }
 
   // CHECK 3: Sale notification
   if (hasPaymentWebhookHandler && !hasSaleNotification) {
-    breaks.push({
-      type: 'NOTIFICATION_SALE_MISSING',
-      severity: 'high',
-      file: 'backend/src/',
-      line: 0,
-      description:
-        'Payment webhook processed without notifying workspace owner of sale — seller does not know when they earn money',
-      detail:
-        'After PAYMENT_CONFIRMED webhook, send email + WhatsApp notification to workspace owner with sale details',
-    });
+    breaks.push(
+      communicationFinding({
+        severity: 'high',
+        file: 'backend/src/',
+        line: 0,
+        description:
+          'Payment webhook processed without notifying workspace owner of sale — seller does not know when they earn money',
+        detail:
+          'After PAYMENT_CONFIRMED webhook, send email + WhatsApp notification to workspace owner with sale details',
+      }),
+    );
   }
 
   // CHECK 4: Transactional email coverage
@@ -210,15 +231,16 @@ export function checkCommunication(config: PulseConfig): Break[] {
   }
 
   if (hasEmailSending && missingEmails.length > 0) {
-    breaks.push({
-      type: 'NOTIFICATION_SALE_MISSING',
-      severity: 'high',
-      file: 'backend/src/',
-      line: 0,
-      description: `Missing transactional emails: ${missingEmails.join(', ')}`,
-      detail:
-        'Implement the missing email templates; each is critical for user experience and trust',
-    });
+    breaks.push(
+      communicationFinding({
+        severity: 'high',
+        file: 'backend/src/',
+        line: 0,
+        description: `Missing transactional emails: ${missingEmails.join(', ')}`,
+        detail:
+          'Implement the missing email templates; each is critical for user experience and trust',
+      }),
+    );
   }
 
   // CHECK 6: Unsubscribe in marketing emails
@@ -233,15 +255,16 @@ export function checkCommunication(config: PulseConfig): Break[] {
     const relFile = path.relative(config.rootDir, file);
 
     if (EMAIL_SEND_RE.test(content) && !/unsubscribe|descadastrar|optOut|opt.out/i.test(content)) {
-      breaks.push({
-        type: 'EMAIL_NO_AUTH',
-        severity: 'high',
-        file: relFile,
-        line: 0,
-        description: 'Marketing email sent without unsubscribe link — violates LGPD and CAN-SPAM',
-        detail:
-          'Add unsubscribe link to all marketing emails; track opt-outs in DB and honor them immediately',
-      });
+      breaks.push(
+        communicationFinding({
+          severity: 'high',
+          file: relFile,
+          line: 0,
+          description: 'Marketing email sent without unsubscribe link — violates LGPD and CAN-SPAM',
+          detail:
+            'Add unsubscribe link to all marketing emails; track opt-outs in DB and honor them immediately',
+        }),
+      );
     }
   }
 

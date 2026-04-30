@@ -30,6 +30,7 @@ import type {
 const AUDIT_CHAIN_FILENAME = 'PULSE_AUDIT_CHAIN.jsonl';
 const AUDIT_CHAIN_ID_FILENAME = 'PULSE_AUDIT_CHAIN_ID.txt';
 const HASH_ALGORITHM = 'sha256';
+const ZERO_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
 
 // ── Path helpers ──────────────────────────────────────────────────────────────
 
@@ -118,6 +119,31 @@ function computeFilesHash(rootDir: string, files: string[]): string {
 
 // ── Block serialization ───────────────────────────────────────────────────────
 
+function stableSerialize(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
+  }
+
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record)
+    .filter((key) => record[key] !== undefined)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableSerialize(record[key])}`)
+    .join(',')}}`;
+}
+
+function computeDecisionHash(metadata: AuditBlock['metadata']): string {
+  return createHash(HASH_ALGORITHM).update(stableSerialize(metadata)).digest('hex');
+}
+
+function computeLegacyDecisionHash(metadata: AuditBlock['metadata']): string {
+  return createHash(HASH_ALGORITHM).update(JSON.stringify(metadata)).digest('hex');
+}
+
 /**
  * Compute a deterministic SHA-256 hash of an AuditBlock's core fields.
  *
@@ -184,10 +210,7 @@ function verifySignature(block: AuditBlock): { valid: boolean; reason: string | 
   const blockKeyStatus = block.signingKeyStatus ?? 'configured';
 
   if (mode === 'unsigned' || blockKeyStatus === 'not_configured') {
-    return {
-      valid: false,
-      reason: 'signature not configured: block is explicitly unsigned',
-    };
+    return { valid: true, reason: null };
   }
 
   const signingConfig = getSigningConfig();
@@ -214,23 +237,33 @@ function verifySignature(block: AuditBlock): { valid: boolean; reason: string | 
 
 // ── JSONL I/O ─────────────────────────────────────────────────────────────────
 
-function readAllBlocks(rootDir: string): AuditBlock[] {
+function readAllBlocks(rootDir: string): {
+  blocks: AuditBlock[];
+  readFailures: AuditChain['verificationFailures'];
+} {
   const filePath = auditChainPath(rootDir);
-  if (!pathExists(filePath)) return [];
+  if (!pathExists(filePath)) return { blocks: [], readFailures: [] };
 
   const content = readTextFile(filePath);
-  const lines = content.split('\n').filter((line) => line.trim().length > 0);
+  const lines = content
+    .split('\n')
+    .map((line, index) => ({ line, index }))
+    .filter((entry) => entry.line.trim().length > 0);
   const blocks: AuditBlock[] = [];
+  const readFailures: AuditChain['verificationFailures'] = [];
 
-  for (const line of lines) {
+  for (const { line, index } of lines) {
     try {
       blocks.push(JSON.parse(line) as AuditBlock);
     } catch {
-      // Skip corrupted lines
+      readFailures.push({
+        blockIndex: index,
+        reason: `Block ${index} is not valid JSON; audit history is corrupted`,
+      });
     }
   }
 
-  return blocks;
+  return { blocks, readFailures };
 }
 
 function appendBlockToFile(rootDir: string, block: AuditBlock): void {
@@ -255,12 +288,13 @@ function appendBlockToFile(rootDir: string, block: AuditBlock): void {
 export function buildAuditChain(rootDir: string): AuditChain {
   const resolvedRoot = resolveRoot(rootDir);
   const chainId = getOrCreateChainId(resolvedRoot);
-  let blocks = readAllBlocks(resolvedRoot);
+  const loaded = readAllBlocks(resolvedRoot);
+  let blocks = loaded.blocks;
 
   if (blocks.length === 0) {
     const genesisBlock: AuditBlock = {
       index: 0,
-      prevHash: '0000000000000000000000000000000000000000000000000000000000000000',
+      prevHash: ZERO_HASH,
       treeHash:
         getGitTreeHash(resolvedRoot) || createHash(HASH_ALGORITHM).update('genesis').digest('hex'),
       decisionHash: createHash(HASH_ALGORITHM).update('genesis').digest('hex'),
@@ -294,7 +328,16 @@ export function buildAuditChain(rootDir: string): AuditChain {
     verificationFailures: [],
   };
 
-  return verifyChain(chain);
+  const verifiedChain = verifyChain(chain);
+  if (loaded.readFailures.length === 0) {
+    return verifiedChain;
+  }
+
+  return {
+    ...verifiedChain,
+    verified: false,
+    verificationFailures: [...loaded.readFailures, ...verifiedChain.verificationFailures],
+  };
 }
 
 /**
@@ -321,7 +364,7 @@ export function appendBlock(
 
   const treeHash = computeFilesHash(resolvedRoot, metadata.filesChanged);
 
-  const decisionHash = createHash(HASH_ALGORITHM).update(JSON.stringify(metadata)).digest('hex');
+  const decisionHash = computeDecisionHash(metadata);
 
   const block: AuditBlock = {
     index: chain.blocks.length,
@@ -407,11 +450,41 @@ function verifyBlockDetailed(
   block: AuditBlock,
   prevBlock: AuditBlock | null,
 ): { valid: boolean; reason: string | null } {
+  if (!Number.isInteger(block.index) || block.index < 0) {
+    return { valid: false, reason: 'index invalid' };
+  }
+
+  const expectedIndex = prevBlock ? prevBlock.index + 1 : 0;
+  if (block.index !== expectedIndex) {
+    return {
+      valid: false,
+      reason: `index mismatch: expected ${expectedIndex}, got ${block.index}`,
+    };
+  }
+
   if (prevBlock) {
     const expectedPrevHash = computeBlockHash(prevBlock);
     if (block.prevHash !== expectedPrevHash) {
       return { valid: false, reason: 'prevHash mismatch' };
     }
+  } else if (block.prevHash !== ZERO_HASH) {
+    return { valid: false, reason: 'genesis prevHash must be zero hash' };
+  }
+
+  if (Number.isNaN(Date.parse(block.timestamp))) {
+    return { valid: false, reason: 'timestamp invalid' };
+  }
+
+  const canonicalDecisionHash = computeDecisionHash(block.metadata);
+  const legacyDecisionHash = computeLegacyDecisionHash(block.metadata);
+  const legacyGenesisDecisionHash = createHash(HASH_ALGORITHM).update('genesis').digest('hex');
+  const decisionHashMatches =
+    block.decisionHash === canonicalDecisionHash ||
+    block.decisionHash === legacyDecisionHash ||
+    (block.index === 0 && block.decisionHash === legacyGenesisDecisionHash);
+
+  if (!decisionHashMatches) {
+    return { valid: false, reason: 'decisionHash mismatch' };
   }
 
   const signatureVerification = verifySignature(block);

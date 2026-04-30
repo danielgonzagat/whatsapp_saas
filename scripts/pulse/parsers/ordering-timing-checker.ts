@@ -17,10 +17,7 @@
  * 7. Stale-while-revalidate cache: verifies SWR config doesn't serve stale money-like data
  *
  * REQUIRES: PULSE_DEEP=1
- * BREAK TYPES:
- *   ORDERING_WEBHOOK_OOO(high)         — webhook handler ignores event ordering
- *   CLOCK_SKEW_TOO_STRICT(medium)      — JWT/session validation has zero skew tolerance
- *   TIMEZONE_REPORT_MISMATCH(high)     — money-like data stored or compared in local TZ
+ * Emits temporal-consistency evidence gaps; diagnostic identity is synthesized downstream.
  */
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -31,6 +28,25 @@ const MONEY_STATE_RE =
   /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
 const TEMPORAL_AGGREGATION_RE =
   /\b(?:createdAt|updatedAt|startDate|endDate|dateRange|period|aggregate|groupBy)\b/i;
+
+function temporalFinding(input: {
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+}): Break {
+  return {
+    type: 'temporal-consistency-evidence-gap',
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: 'parser:weak_signal:temporal-consistency',
+    surface: 'temporal-correctness',
+  };
+}
 
 function hasMoneyLikeState(content: string): boolean {
   return MONEY_STATE_RE.test(content);
@@ -85,16 +101,17 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
         /alreadyProcessed|isDuplicate|externalId.*unique|webhookEvent/i.test(content);
 
       if (!hasTimestampCheck && !hasAlreadyProcessed) {
-        breaks.push({
-          type: 'ORDERING_WEBHOOK_OOO',
-          severity: 'high',
-          file: relFile,
-          line: 0,
-          description:
-            'Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state',
-          detail:
-            'Check event.dateCreated/timestamp before applying; reject events older than current entity state',
-        });
+        breaks.push(
+          temporalFinding({
+            severity: 'high',
+            file: relFile,
+            line: 0,
+            description:
+              'Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state',
+            detail:
+              'Check event.dateCreated/timestamp before applying; reject events older than current entity state',
+          }),
+        );
       }
     }
 
@@ -106,16 +123,17 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
         // Look at surrounding context for clockTolerance / clockSkew
         const context = lines.slice(Math.max(0, i - 3), i + 5).join('\n');
         if (!/clockTolerance|clockSkew|leeway|allowedClockSkew/i.test(context)) {
-          breaks.push({
-            type: 'CLOCK_SKEW_TOO_STRICT',
-            severity: 'medium',
-            file: relFile,
-            line: i + 1,
-            description:
-              'JWT verification without clock skew tolerance — users may be spuriously logged out',
-            detail:
-              'Add clockTolerance: 30 to jwt.verify() options to handle clock drift between servers',
-          });
+          breaks.push(
+            temporalFinding({
+              severity: 'medium',
+              file: relFile,
+              line: i + 1,
+              description:
+                'JWT verification without clock skew tolerance — users may be spuriously logged out',
+              detail:
+                'Add clockTolerance: 30 to jwt.verify() options to handle clock drift between servers',
+            }),
+          );
           break; // One report per file
         }
       }
@@ -137,15 +155,16 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
         }
 
         if (localTzPatterns.some((re) => re.test(line))) {
-          breaks.push({
-            type: 'TIMEZONE_REPORT_MISMATCH',
-            severity: 'high',
-            file: relFile,
-            line: i + 1,
-            description:
-              'Local timezone used in money-like/report date operation — data inconsistency across server timezones',
-            detail: `${line.slice(0, 120)} — use UTC explicitly: new Date().toISOString() or dayjs.utc()`,
-          });
+          breaks.push(
+            temporalFinding({
+              severity: 'high',
+              file: relFile,
+              line: i + 1,
+              description:
+                'Local timezone used in money-like/report date operation — data inconsistency across server timezones',
+              detail: `${line.slice(0, 120)} — use UTC explicitly: new Date().toISOString() or dayjs.utc()`,
+            }),
+          );
         }
       }
 
@@ -159,17 +178,18 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
         const line = lines[i].trim();
         // Cron expression that might be confused as local time
         if (/Cron\s*\(\s*['"`]\d+\s+\d+/i.test(line) && !/UTC|utc|timezone/i.test(line)) {
-          breaks.push({
-            type: 'TIMEZONE_REPORT_MISMATCH',
-            severity: 'high',
-            file: relFile,
-            line: i + 1,
-            description:
-              'Cron expression without explicit timezone — will run in server local time, not UTC',
-            detail:
-              line.slice(0, 120) +
-              " — document or configure timezone explicitly (e.g., cronOptions: { timeZone: 'UTC' })",
-          });
+          breaks.push(
+            temporalFinding({
+              severity: 'high',
+              file: relFile,
+              line: i + 1,
+              description:
+                'Cron expression without explicit timezone — will run in server local time, not UTC',
+              detail:
+                line.slice(0, 120) +
+                " — document or configure timezone explicitly (e.g., cronOptions: { timeZone: 'UTC' })",
+            }),
+          );
         }
       }
     }
@@ -181,15 +201,16 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
         if (/gte.*startDate|lte.*endDate|createdAt.*gt\s/i.test(line)) {
           // gt instead of gte is potentially off-by-one for date ranges
           if (/createdAt.*:\s*\{\s*gt\s*:/i.test(line) && !/gte/.test(line)) {
-            breaks.push({
-              type: 'ORDERING_WEBHOOK_OOO',
-              severity: 'high',
-              file: relFile,
-              line: i + 1,
-              description:
-                'Date range query uses `gt` (strictly greater) — records at exact boundary excluded',
-              detail: `${line.slice(0, 120)} — use \`gte\` (greater than or equal) for inclusive date ranges`,
-            });
+            breaks.push(
+              temporalFinding({
+                severity: 'high',
+                file: relFile,
+                line: i + 1,
+                description:
+                  'Date range query uses `gt` (strictly greater) — records at exact boundary excluded',
+                detail: `${line.slice(0, 120)} — use \`gte\` (greater than or equal) for inclusive date ranges`,
+              }),
+            );
           }
         }
       }
@@ -221,16 +242,17 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
         /revalidateOnFocus\s*:\s*false/.test(content) &&
         !/refreshInterval|revalidateOnMount\s*:\s*true/.test(content);
       if (hasStaleConfig) {
-        breaks.push({
-          type: 'ORDERING_WEBHOOK_OOO',
-          severity: 'high',
-          file: relFile,
-          line: 0,
-          description:
-            'SWR for money-like data has revalidateOnFocus: false without refreshInterval — user sees stale balance or totals',
-          detail:
-            'Add refreshInterval: 30000 or use mutate() after write operations to keep money-like data fresh',
-        });
+        breaks.push(
+          temporalFinding({
+            severity: 'high',
+            file: relFile,
+            line: 0,
+            description:
+              'SWR for money-like data has revalidateOnFocus: false without refreshInterval — user sees stale balance or totals',
+            detail:
+              'Add refreshInterval: 30000 or use mutate() after write operations to keep money-like data fresh',
+          }),
+        );
       }
     }
   }

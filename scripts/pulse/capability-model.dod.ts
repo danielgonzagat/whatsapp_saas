@@ -2,6 +2,7 @@ import type { PulseStructuralRole } from './types';
 import type { PulseDoDStatus } from './types.capabilities';
 import type {
   CapabilityRoleEvidence,
+  DoDEvidenceTruthMode,
   StructuralRole as DoDStructuralRole,
 } from './definition-of-done';
 
@@ -23,6 +24,7 @@ export const CAPABILITY_REQUIRED_DOD_ROLES: DoDStructuralRole[] = [
   'orchestration',
   'persistence',
   'side_effect',
+  'runtime_evidence',
   'validation',
   'scenario_coverage',
 ];
@@ -35,7 +37,7 @@ export function buildCapabilityDoDEvidence(args: {
   hasObservability: boolean;
   hasValidation: boolean;
   highSeverityIssueCount: number;
-  truthMode: 'observed' | 'inferred' | 'aspirational';
+  truthMode: DoDEvidenceTruthMode;
 }): CapabilityRoleEvidence[] {
   const evidence: CapabilityRoleEvidence[] = [];
   const tm = args.truthMode;
@@ -49,22 +51,22 @@ export function buildCapabilityDoDEvidence(args: {
   evidence.push({
     role: 'runtime_evidence',
     present: args.hasRuntimeEvidence,
-    truthMode: args.hasRuntimeEvidence ? 'observed' : 'aspirational',
+    truthMode: args.hasRuntimeEvidence ? 'observed' : 'not_available',
   });
   evidence.push({
     role: 'validation',
     present: args.hasValidation,
-    truthMode: args.hasValidation ? tm : 'aspirational',
+    truthMode: args.hasValidation ? tm : 'not_available',
   });
   evidence.push({
     role: 'scenario_coverage',
     present: args.hasScenarioCoverage,
-    truthMode: args.hasScenarioCoverage ? 'observed' : 'aspirational',
+    truthMode: args.hasScenarioCoverage ? 'observed' : 'not_available',
   });
   evidence.push({
     role: 'observability',
     present: args.hasObservability,
-    truthMode: args.hasObservability ? 'inferred' : 'aspirational',
+    truthMode: args.hasObservability ? 'inferred' : 'not_available',
   });
   evidence.push({
     role: 'codacy_hygiene',

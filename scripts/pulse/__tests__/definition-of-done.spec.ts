@@ -9,8 +9,9 @@ import {
   type CapabilityDoneInput,
   type CapabilityDoneResult,
   type CapabilityRoleEvidence,
+  type DoDEvidenceTruthMode,
 } from '../definition-of-done';
-import type { StructuralRole, TruthMode } from '../types.structural-roles';
+import type { StructuralRole } from '../types.structural-roles';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -19,7 +20,7 @@ import type { StructuralRole, TruthMode } from '../types.structural-roles';
 function makeEvidence(
   role: StructuralRole,
   present: boolean,
-  truthMode: TruthMode,
+  truthMode: DoDEvidenceTruthMode,
   evidencePath?: string,
 ): CapabilityRoleEvidence {
   return { role, present, truthMode, evidencePath };
@@ -298,8 +299,25 @@ describe('evaluateDone — truth mode mismatch', () => {
       }),
     );
 
-    // No present evidence → bestTruthMode = 'aspirational' < 'observed'
+    // No present evidence -> bestTruthMode = 'not_available' < 'observed'
     expect(result.truthModeMet).toBe(false);
+  });
+
+  it('treats explicit not_available proof as insufficient for required roles', () => {
+    const result = evaluateDone(
+      makeInput({
+        evidence: [
+          makeEvidence('interface', true, 'observed'),
+          makeEvidence('api_surface', true, 'not_available'),
+          makeEvidence('persistence', true, 'observed'),
+        ],
+        truthModeTarget: 'observed',
+      }),
+    );
+
+    expect(result.done).toBe(false);
+    expect(result.truthModeMet).toBe(false);
+    expect(result.insufficientEvidenceRoles).toEqual(['api_surface']);
   });
 });
 

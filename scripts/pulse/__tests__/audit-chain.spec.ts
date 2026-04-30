@@ -33,7 +33,7 @@ function withSigningKey(value: string | null, run: () => void): void {
 }
 
 describe('audit chain signing', () => {
-  it('marks blocks unsigned and unverified when no signing key is configured', () => {
+  it('marks blocks unsigned while preserving hash-chain verification when no signing key is configured', () => {
     withSigningKey(null, () => {
       withTempRoot((rootDir) => {
         const chain = buildAuditChain(rootDir);
@@ -42,8 +42,8 @@ describe('audit chain signing', () => {
         expect(genesis.signature).toBe('');
         expect(genesis.signatureMode).toBe('unsigned');
         expect(genesis.signingKeyStatus).toBe('not_configured');
-        expect(chain.verified).toBe(false);
-        expect(chain.verificationFailures[0]?.reason).toContain('explicitly unsigned');
+        expect(chain.verified).toBe(true);
+        expect(chain.verificationFailures).toEqual([]);
       });
     });
   });
@@ -80,6 +80,88 @@ describe('audit chain signing', () => {
         expect(appended.signingKeyStatus).toBe('configured');
         expect(verified.verified).toBe(true);
         expect(verified.verificationFailures).toEqual([]);
+      });
+    });
+  });
+
+  it('rejects mutable history when block decision metadata no longer matches its digest', () => {
+    withSigningKey(null, () => {
+      withTempRoot((rootDir) => {
+        const chain = buildAuditChain(rootDir);
+        const nextChain = appendBlock(
+          chain,
+          {
+            iteration: 1,
+            unitId: 'audit-chain-mutation',
+            agent: 'codex',
+            scoreBefore: 63,
+            scoreAfter: 64,
+            filesChanged: ['scripts/pulse/audit-chain.ts'],
+          },
+          rootDir,
+        );
+
+        const tampered = {
+          ...nextChain,
+          blocks: nextChain.blocks.map((block) =>
+            block.index === 1
+              ? {
+                  ...block,
+                  metadata: {
+                    ...block.metadata,
+                    scoreAfter: 99,
+                  },
+                }
+              : block,
+          ),
+        };
+
+        const verified = verifyChain(tampered);
+
+        expect(verified.verified).toBe(false);
+        expect(verified.verificationFailures).toContainEqual({
+          blockIndex: 1,
+          reason: 'Block 1 decisionHash mismatch',
+        });
+      });
+    });
+  });
+
+  it('rejects reordered or missing block indexes in the audit chain', () => {
+    withSigningKey(null, () => {
+      withTempRoot((rootDir) => {
+        const chain = buildAuditChain(rootDir);
+        const nextChain = appendBlock(
+          chain,
+          {
+            iteration: 1,
+            unitId: 'audit-chain-index',
+            agent: 'codex',
+            scoreBefore: 63,
+            scoreAfter: 64,
+            filesChanged: ['scripts/pulse/audit-chain.ts'],
+          },
+          rootDir,
+        );
+
+        const tampered = {
+          ...nextChain,
+          blocks: nextChain.blocks.map((block) =>
+            block.index === 1
+              ? {
+                  ...block,
+                  index: 7,
+                }
+              : block,
+          ),
+        };
+
+        const verified = verifyChain(tampered);
+
+        expect(verified.verified).toBe(false);
+        expect(verified.verificationFailures[0]?.reason).toBe(
+          'Block 1 index mismatch: expected 1, got 7',
+        );
       });
     });
   });

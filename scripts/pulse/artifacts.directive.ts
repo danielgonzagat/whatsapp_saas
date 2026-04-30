@@ -19,7 +19,11 @@ import {
 } from './artifacts.autonomy';
 import { deriveRequiredValidations } from './autonomy-decision';
 import type { PulseArtifactSnapshot, PulseMachineReadiness } from './artifacts.types';
-import type { PulseArtifactRegistry } from './artifact-registry';
+import {
+  buildArtifactRegistry,
+  type PulseArtifactDefinition,
+  type PulseArtifactRegistry,
+} from './artifact-registry';
 import type { PulseArtifactCleanupReport } from './artifact-gc';
 import type { PulseAutonomyState, PulseConvergencePlan } from './types';
 import type { PulseCertification, PulseGateName, PulseGateResult } from './types';
@@ -48,103 +52,7 @@ const CURRENT_PULSE_ARTIFACT_DIR = '.pulse/current';
 const PATH_PROOF_TASKS_ARTIFACT = 'PULSE_PATH_PROOF_TASKS.json';
 const PATH_COVERAGE_ARTIFACT = 'PULSE_PATH_COVERAGE.json';
 
-const MACHINE_PROOF_GATE_ORDER: PulseGateName[] = [
-  'runtimePass',
-  'performancePass',
-  'observabilityPass',
-  'customerPass',
-  'operatorPass',
-  'adminPass',
-  'soakPass',
-  'syntheticCoveragePass',
-  'truthExtractionPass',
-  'criticalPathObservedPass',
-  'executionMatrixCompletePass',
-  'breakpointPrecisionPass',
-  'multiCycleConvergencePass',
-  'pulseSelfTrustPass',
-  'noOverclaimPass',
-];
-
-const MACHINE_GATE_PROOF_FILES: Partial<Record<PulseGateName, string[]>> = {
-  runtimePass: [
-    'scripts/pulse/runtime-evidence.ts',
-    'scripts/pulse/runtime-probes.ts',
-    'scripts/pulse/runtime-fusion.ts',
-  ],
-  performancePass: [
-    'scripts/pulse/parsers/performance-checker.ts',
-    'scripts/pulse/parsers/performance-response-time.ts',
-    'scripts/pulse/execution-matrix.ts',
-  ],
-  observabilityPass: [
-    'scripts/pulse/observability-coverage.ts',
-    'scripts/pulse/parsers/observability-checker.ts',
-    'scripts/pulse/runtime-fusion.ts',
-  ],
-  customerPass: [
-    'scripts/pulse/actors/playwright-runner.ts',
-    'scripts/pulse/actors/scenario-evaluator.ts',
-    'scripts/pulse/scenario-evidence-loader.ts',
-  ],
-  operatorPass: [
-    'scripts/pulse/actors/operator/index.ts',
-    'scripts/pulse/actors/scenario-evaluator.ts',
-    'scripts/pulse/scenario-evidence-loader.ts',
-  ],
-  adminPass: [
-    'scripts/pulse/actors/admin/index.ts',
-    'scripts/pulse/actors/scenario-evaluator.ts',
-    'scripts/pulse/scenario-evidence-loader.ts',
-  ],
-  soakPass: [
-    'scripts/pulse/actors/soak/observer.ts',
-    'scripts/pulse/actors/soak/structural-checks.ts',
-    'scripts/pulse/cert-gate-evaluators-actor.ts',
-  ],
-  truthExtractionPass: [
-    'scripts/pulse/codebase-truth.ts',
-    'scripts/pulse/resolved-manifest.ts',
-    'scripts/pulse/cert-gate-evaluators.ts',
-  ],
-  syntheticCoveragePass: [
-    'scripts/pulse/actors/coverage.ts',
-    'scripts/pulse/cert-gate-evaluators-actor.ts',
-    'scripts/pulse/scenario-engine.ts',
-  ],
-  executionMatrixCompletePass: [
-    'scripts/pulse/execution-matrix.ts',
-    'scripts/pulse/path-coverage-engine.ts',
-    'scripts/pulse/execution-observation.ts',
-  ],
-  criticalPathObservedPass: [
-    'scripts/pulse/execution-matrix.ts',
-    'scripts/pulse/path-coverage-engine.ts',
-    'scripts/pulse/runtime-fusion.ts',
-  ],
-  breakpointPrecisionPass: [
-    'scripts/pulse/execution-matrix.ts',
-    'scripts/pulse/path-coverage-engine.ts',
-    'scripts/pulse/types.execution-matrix.ts',
-  ],
-  multiCycleConvergencePass: [
-    'scripts/pulse/autonomy-loop.ts',
-    'scripts/pulse/cert-gate-multi-cycle.ts',
-    'scripts/pulse/artifacts.autonomy.ts',
-  ],
-  pulseSelfTrustPass: [
-    'scripts/pulse/self-trust.ts',
-    'scripts/pulse/cross-artifact-consistency-check.ts',
-    'scripts/pulse/artifacts.directive.ts',
-  ],
-  noOverclaimPass: [
-    'scripts/pulse/overclaim-guard.ts',
-    'scripts/pulse/artifacts.autonomy.ts',
-    'scripts/pulse/cert-gate-overclaim.ts',
-  ],
-};
-
-const MACHINE_PROOF_DEBT_FILES = [
+const WEAK_COMPAT_MACHINE_PROOF_DEBT_FILES = [
   'scripts/pulse/artifacts.autonomy.ts',
   'scripts/pulse/artifacts.directive.ts',
   'scripts/pulse/autonomy-loop.ts',
@@ -154,15 +62,17 @@ const MACHINE_PROOF_DEBT_FILES = [
 function summarizeMachineProofGates(
   certification: PulseCertification,
 ): Array<{ gate: PulseGateName; status: PulseGateResult['status']; reason: string }> {
-  return MACHINE_PROOF_GATE_ORDER.map((gate) => {
-    const result = certification.gates[gate];
-    return result ? { gate, status: result.status, reason: result.reason } : null;
-  }).filter(
-    (
-      result,
-    ): result is { gate: PulseGateName; status: PulseGateResult['status']; reason: string } =>
-      result !== null,
-  );
+  return deriveMachineProofGateNames(certification.gates)
+    .map((gate) => {
+      const result = certification.gates[gate];
+      return result ? { gate, status: result.status, reason: result.reason } : null;
+    })
+    .filter(
+      (
+        result,
+      ): result is { gate: PulseGateName; status: PulseGateResult['status']; reason: string } =>
+        result !== null,
+    );
 }
 
 function normalizeMatrixStatusForDirective(status: string): string {
@@ -323,16 +233,6 @@ function machineUnitFiles(criterionId: string): string[] {
   return ['scripts/pulse/artifacts.report.ts', 'scripts/pulse/artifacts.directive.ts'];
 }
 
-function machineProofGateFiles(gateName: PulseGateName): string[] {
-  return (
-    MACHINE_GATE_PROOF_FILES[gateName] ?? [
-      'scripts/pulse/certification.ts',
-      'scripts/pulse/cert-gate-evaluators.ts',
-      'scripts/pulse/artifacts.directive.ts',
-    ]
-  );
-}
-
 function machineProofGateTitle(gateName: PulseGateName): string {
   if (gateName === 'runtimePass') return 'Make PULSE runtime proof executable';
   if (gateName === 'performancePass') return 'Make PULSE performance proof executable';
@@ -352,48 +252,125 @@ function machineProofGateTitle(gateName: PulseGateName): string {
   return `Repair PULSE proof gate ${gateName}`;
 }
 
+type MachineProofRegistryEvidence = {
+  authority: 'artifact_registry' | 'weak_compat_fallback';
+  artifactPaths: string[];
+  relatedFiles: string[];
+  proofBasis: string[];
+};
+
+function tokenizeGateName(gateName: PulseGateName): string[] {
+  const spaced = gateName
+    .replace(/Pass$/, '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .toLowerCase();
+  return unique(spaced.split(/\s+/).filter((token) => token.length > 2));
+}
+
+function artifactRegistrySearchText(artifact: PulseArtifactDefinition): string {
+  return [
+    artifact.id,
+    artifact.relativePath,
+    artifact.schema.module,
+    artifact.schema.exportName,
+    artifact.producer.module,
+    artifact.producer.exportName,
+    ...artifact.consumers,
+    artifact.freshness.mode,
+    artifact.truthMode,
+  ]
+    .join(' ')
+    .toLowerCase();
+}
+
+function moduleRefToPulseFile(moduleRef: string): string | null {
+  if (!moduleRef.startsWith('./')) {
+    return null;
+  }
+  const normalized = moduleRef.replace(/^\.\//, '');
+  if (!/^[a-z0-9./-]+$/i.test(normalized)) {
+    return null;
+  }
+  return `scripts/pulse/${normalized}.ts`;
+}
+
+function artifactRelatedFiles(artifact: PulseArtifactDefinition): string[] {
+  return unique(
+    [
+      moduleRefToPulseFile(artifact.schema.module),
+      moduleRefToPulseFile(artifact.producer.module),
+      ...artifact.consumers.map(moduleRefToPulseFile),
+    ].filter((filePath): filePath is string => filePath !== null),
+  );
+}
+
+function buildMachineProofRegistryEvidence(
+  gateName: PulseGateName,
+  registry: PulseArtifactRegistry = buildArtifactRegistry(process.cwd()),
+): MachineProofRegistryEvidence {
+  const tokens = tokenizeGateName(gateName);
+  const artifacts = registry.artifacts.filter((artifact) => {
+    const searchText = artifactRegistrySearchText(artifact);
+    return tokens.some((token) => searchText.includes(token));
+  });
+  const artifactPaths = unique(artifacts.map((artifact) => artifact.relativePath));
+  const relatedFiles = unique(artifacts.flatMap(artifactRelatedFiles)).filter((filePath) =>
+    filePath.startsWith('scripts/pulse/'),
+  );
+
+  if (artifactPaths.length > 0 && relatedFiles.length > 0) {
+    return {
+      authority: 'artifact_registry',
+      artifactPaths,
+      relatedFiles,
+      proofBasis: artifacts.map(
+        (artifact) =>
+          `${artifact.id}:${artifact.producer.module}.${artifact.producer.exportName}:${artifact.freshness.mode}:${artifact.truthMode}`,
+      ),
+    };
+  }
+
+  return {
+    authority: 'weak_compat_fallback',
+    artifactPaths: [],
+    relatedFiles: WEAK_COMPAT_MACHINE_PROOF_DEBT_FILES,
+    proofBasis: [
+      `weak compat fallback: no registry artifact producer/consumer/freshness evidence matched ${gateName}`,
+    ],
+  };
+}
+
 function isMachineProofGate(gateName: PulseGateName, gate: PulseGateResult): boolean {
   if (gate.status !== 'fail') {
     return false;
   }
-  if (MACHINE_PROOF_GATE_ORDER.includes(gateName)) {
-    return true;
-  }
   return gate.failureClass === 'missing_evidence' || gate.failureClass === 'checker_gap';
+}
+
+function deriveMachineProofGateNames(
+  gates: Partial<Record<PulseGateName, PulseGateResult>>,
+): PulseGateName[] {
+  return (Object.keys(gates) as PulseGateName[]).filter((gateName) => {
+    const gate = gates[gateName];
+    return gate ? isMachineProofGate(gateName, gate) : false;
+  });
 }
 
 export function buildPulseCertificationProofDebtNextWork(certification: {
   gates: Partial<Record<PulseGateName, PulseGateResult>>;
 }): PulseMachineDirectiveUnit[] {
-  const seen = new Set<PulseGateName>();
-  const orderedGateNames = [
-    ...MACHINE_PROOF_GATE_ORDER,
-    ...(Object.keys(certification.gates) as PulseGateName[]),
-  ].filter((gateName) => {
-    if (seen.has(gateName)) return false;
-    seen.add(gateName);
-    return true;
-  });
-
-  return orderedGateNames.flatMap((gateName, index) => {
+  return deriveMachineProofGateNames(certification.gates).flatMap((gateName, index) => {
     const gate = certification.gates[gateName];
     if (!gate || !isMachineProofGate(gateName, gate)) {
       return [];
     }
+    const registryEvidence = buildMachineProofRegistryEvidence(gateName);
     const validationArtifacts = [
       'PULSE_CERTIFICATE.json',
       'PULSE_CLI_DIRECTIVE.json',
       'PULSE_MACHINE_READINESS.json',
-      ...(gateName === 'observabilityPass' ? ['PULSE_OBSERVABILITY_EVIDENCE.json'] : []),
-      ...(gateName === 'runtimePass' || gateName === 'performancePass'
-        ? ['PULSE_RUNTIME_EVIDENCE.json', 'PULSE_PRODUCTION_PROOF.json']
-        : []),
-      ...(gateName === 'customerPass' ||
-      gateName === 'operatorPass' ||
-      gateName === 'adminPass' ||
-      gateName === 'soakPass'
-        ? ['PULSE_SCENARIO_EVIDENCE.json', 'PULSE_PATH_COVERAGE.json']
-        : []),
+      ...registryEvidence.artifactPaths,
     ];
     return [
       {
@@ -424,9 +401,11 @@ export function buildPulseCertificationProofDebtNextWork(certification: {
         affectedFlows: [],
         gateNames: [gateName],
         expectedGateShift: `Pass or sharpen ${gateName} without editing SaaS product code`,
-        validationTargets: validationArtifacts,
-        validationArtifacts,
-        relatedFiles: machineProofGateFiles(gateName),
+        proofAuthority: registryEvidence.authority,
+        proofBasis: registryEvidence.proofBasis,
+        validationTargets: unique(validationArtifacts),
+        validationArtifacts: unique(validationArtifacts),
+        relatedFiles: registryEvidence.relatedFiles,
         exitCriteria: [
           JSON.stringify({
             id: `pulse-proof-${gateName}-exit-0`,
@@ -505,7 +484,7 @@ export function buildPulseAutonomyProofDebtNextWork(
         'PULSE_CLI_DIRECTIVE.json',
         'PULSE_AUTONOMY_STATE.json',
       ],
-      relatedFiles: MACHINE_PROOF_DEBT_FILES,
+      relatedFiles: WEAK_COMPAT_MACHINE_PROOF_DEBT_FILES,
       exitCriteria: [
         JSON.stringify({
           id: 'pulse-proof-productionAutonomy-exit-0',
@@ -571,7 +550,7 @@ export function buildPulseAutonomyProofDebtNextWork(
         'PULSE_CLI_DIRECTIVE.json',
         'PULSE_AUTONOMY_STATE.json',
       ],
-      relatedFiles: MACHINE_PROOF_DEBT_FILES,
+      relatedFiles: WEAK_COMPAT_MACHINE_PROOF_DEBT_FILES,
       exitCriteria: [
         JSON.stringify({
           id: 'pulse-proof-zeroPromptProductionGuidance-exit-0',
@@ -1075,6 +1054,18 @@ export function buildArtifactIndex(
       canonicalDir: registry.canonicalDir,
       tempDir: registry.tempDir,
       officialArtifacts: registry.artifacts.map((artifact) => artifact.relativePath).sort(),
+      officialArtifactMetadata: registry.artifacts
+        .map((artifact) => ({
+          id: artifact.id,
+          relativePath: artifact.relativePath,
+          schema: artifact.schema,
+          producer: artifact.producer,
+          consumers: artifact.consumers,
+          freshness: artifact.freshness,
+          truthMode: artifact.truthMode,
+          mirrorToRoot: artifact.mirrorToRoot === true,
+        }))
+        .sort((left, right) => left.relativePath.localeCompare(right.relativePath)),
       compatibilityMirrors: registry.mirrors,
       removedLegacyPulseArtifacts: cleanupReport.removedLegacyPulseArtifacts,
       rootStateMode: 'local-only',

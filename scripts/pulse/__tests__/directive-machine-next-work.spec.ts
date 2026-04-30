@@ -245,7 +245,7 @@ describe('buildPathProofSurfaceForDirective', () => {
 });
 
 describe('buildPulseCertificationProofDebtNextWork', () => {
-  it('maps failed proof gates to executable PULSE-machine files, not product files', () => {
+  it('maps failed proof gates from artifact-registry evidence, not fixed product files', () => {
     const failingGate: PulseGateResult = {
       status: 'fail',
       reason: 'Evidence is missing.',
@@ -279,19 +279,36 @@ describe('buildPulseCertificationProofDebtNextWork', () => {
     ]);
     expect(work.every((unit) => unit.kind === 'pulse_machine')).toBe(true);
     expect(work.every((unit) => unit.source === 'pulse_machine')).toBe(true);
-    expect(collectRelatedFiles(work)).toEqual(
-      expect.arrayContaining([
-        'scripts/pulse/parsers/performance-checker.ts',
-        'scripts/pulse/observability-coverage.ts',
-        'scripts/pulse/actors/playwright-runner.ts',
-        'scripts/pulse/actors/soak/observer.ts',
-        'scripts/pulse/codebase-truth.ts',
-      ]),
+    expect(work.some((unit) => unit.proofAuthority === 'artifact_registry')).toBe(true);
+    expect(work.every((unit) => Array.isArray(unit.proofBasis))).toBe(true);
+    expect(work.flatMap((unit) => unit.validationArtifacts ?? [])).toEqual(
+      expect.arrayContaining(['PULSE_OBSERVABILITY_COVERAGE.json', 'PULSE_CODEBASE_TRUTH.json']),
     );
     expect(
       collectRelatedFiles(work).every((filePath) => filePath.startsWith('scripts/pulse/')),
     ).toBe(true);
     expect(work[0].forbiddenActions).toContain('Do not edit SaaS product code for this unit');
+  });
+
+  it('marks registry misses as weak compatibility fallback instead of gate authority', () => {
+    const work = buildPulseCertificationProofDebtNextWork({
+      gates: {
+        noOverclaimPass: {
+          status: 'fail',
+          reason: 'No-overclaim proof is missing.',
+          failureClass: 'missing_evidence',
+        },
+      },
+    });
+
+    expect(work).toHaveLength(1);
+    expect(work[0]).toMatchObject({
+      gateNames: ['noOverclaimPass'],
+      proofAuthority: 'weak_compat_fallback',
+    });
+    expect(work[0].proofBasis).toEqual([
+      expect.stringContaining('weak compat fallback: no registry artifact'),
+    ]);
   });
 
   it('does not convert product-failure gates into machine proof work', () => {

@@ -2,21 +2,9 @@ import * as path from 'path';
 import type { PulseConfig } from './types';
 import { pathExists, readDir, readJsonFile } from './safe-fs';
 import { safeJoin } from './safe-path';
+import { detectSourceRoots } from './source-root-detector';
 
-const IGNORED_ROOT_DIRS = new Set([
-  '.git',
-  '.next',
-  '.pulse',
-  'backend',
-  'dist',
-  'docker',
-  'docs',
-  'e2e',
-  'node_modules',
-  'nginx',
-  'scripts',
-  'worker',
-]);
+const IGNORED_ROOT_DIRS = new Set(['.git', '.next', '.pulse', 'dist', 'node_modules']);
 
 function unique(values: string[]): string[] {
   return [...new Set(values)];
@@ -39,6 +27,12 @@ function hasFrontendStructure(sourceDir: string): boolean {
 
 function discoverFrontendSourceDirs(config: PulseConfig): string[] {
   const discovered: string[] = [];
+  for (const root of detectSourceRoots(config.rootDir)) {
+    if (root.availability === 'inferred' && root.kind === 'frontend') {
+      discovered.push(root.absolutePath);
+    }
+  }
+
   const rootEntries = readDir(config.rootDir, { withFileTypes: true });
 
   for (const entry of rootEntries) {

@@ -28,26 +28,48 @@ function runtimeImpactScore(input: PulseDynamicRiskInput): number {
   return samples.reduce((sum, value) => sum + value, 0) / samples.length;
 }
 
+function predicateWeight(confidence: number): number {
+  return Math.max(0.1, clamp01(confidence));
+}
+
+function truthDriverPriority(kind: string): number {
+  if (kind === 'truth_observed') return 4;
+  if (kind === 'truth_confirmed_static') return 3;
+  if (kind === 'truth_inferred') return 2;
+  if (kind === 'truth_weak_signal') return 1;
+  return 0;
+}
+
 export function calculateDynamicRisk(input: PulseDynamicRiskInput): PulseDynamicRiskResult {
   const drivers = new Set<string>();
-  let predicateScore = 0;
+  let weightedPredicateScore = 0;
   let confidenceTotal = 0;
+  let weightTotal = 0;
 
   for (const predicate of input.predicateGraph.predicates) {
-    predicateScore += predicate.confidence;
-    confidenceTotal += predicate.confidence;
+    const weight = predicateWeight(predicate.confidence);
+    weightedPredicateScore += predicate.confidence * weight;
+    confidenceTotal += predicate.confidence * weight;
+    weightTotal += weight;
     drivers.add(predicate.kind);
   }
 
-  const predicateCount = Math.max(1, input.predicateGraph.predicates.length);
-  const confidence = clamp01(confidenceTotal / predicateCount);
-  const predicateRisk = clamp01(predicateScore / predicateCount);
+  const normalizedWeight = Math.max(1, weightTotal);
+  const confidence = clamp01(confidenceTotal / normalizedWeight);
+  const predicateRisk = clamp01(weightedPredicateScore / normalizedWeight);
   const runtimeRisk = runtimeImpactScore(input);
   const score = clamp01((predicateRisk + runtimeRisk) / (runtimeRisk > 0 ? 2 : 1));
 
   return {
     score,
     confidence,
-    drivers: [...drivers].sort(),
+    drivers: [...drivers].sort((left, right) => {
+      const truthDelta = truthDriverPriority(right) - truthDriverPriority(left);
+      if (truthDelta !== 0) return truthDelta;
+      const leftPredicate = input.predicateGraph.predicates.find((item) => item.kind === left);
+      const rightPredicate = input.predicateGraph.predicates.find((item) => item.kind === right);
+      const confidenceDelta = (rightPredicate?.confidence ?? 0) - (leftPredicate?.confidence ?? 0);
+      return confidenceDelta !== 0 ? confidenceDelta : left.localeCompare(right);
+    }),
   };
 }

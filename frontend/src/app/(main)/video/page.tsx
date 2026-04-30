@@ -231,7 +231,14 @@ export default function VideoPage() {
       description={kloelT(`Jobs de geracao e processamento de video`)}
     >
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #222226', marginBottom: 20 }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 0,
+          borderBottom: '1px solid colors.border.space',
+          marginBottom: 20,
+        }}
+      >
         {tabs.map((t) => (
           <button
             type="button"
@@ -245,7 +252,8 @@ export default function VideoPage() {
               color: activeTab === t.id ? colors.ember.primary : colors.text.muted,
               background: 'none',
               border: 'none',
-              borderBottom: activeTab === t.id ? '2px solid #E85D30' : '2px solid transparent',
+              borderBottom:
+                activeTab === t.id ? '2px solid colors.ember.primary' : '2px solid transparent',
               cursor: 'pointer',
               marginBottom: -1,
             }}

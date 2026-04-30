@@ -34,6 +34,7 @@ const TERMINAL_STATUSES: PulseExecutionMatrixPathStatus[] = [
   'observed_pass',
   'observed_fail',
   'untested',
+  'observation_only',
   'blocked_human_required',
   'unreachable',
   'inferred_only',
@@ -341,6 +342,19 @@ function buildBreakpoint(args: {
         'Connect this capability/flow to an execution chain, route, scenario, or runtime probe before requiring observed pass/fail evidence.',
     };
   }
+  if (args.status === 'observation_only' || args.status === 'blocked_human_required') {
+    return {
+      stage: args.chain?.entrypoint.role ?? 'entrypoint',
+      stepIndex: 0,
+      filePath: args.chain?.entrypoint.filesInvolved[0] ?? args.capability?.filePaths[0] ?? null,
+      nodeId: args.chain?.entrypoint.nodeId ?? args.capability?.nodeIds[0] ?? null,
+      routePattern: args.flow?.routePatterns[0] ?? args.capability?.routePatterns[0] ?? null,
+      reason:
+        'Path maps to governed or protected execution and requires observation-only proof routing before pass/fail evidence can be claimed.',
+      recovery:
+        'Collect governed validation evidence without autonomous mutation, then attach the resulting observed artifact to this path.',
+    };
+  }
   if (args.status === 'inferred_only' || args.status === 'untested') {
     const machineProofDebt = args.observedEvidence.find(
       (entry) =>
@@ -375,10 +389,8 @@ function classifyPath(args: {
   chain: PulseExecutionChain | null;
   observedEvidence: MatrixEvidence[];
   requiredEvidence: PulseExecutionMatrixEvidenceRequirement[];
+  hasExecutableEntrypoint: boolean;
 }): PulseExecutionMatrixPathStatus {
-  if (!args.chain && !args.capability?.routePatterns.length && !args.flow?.routePatterns.length) {
-    return 'not_executable';
-  }
   if (args.chain && args.chain.failurePoints.length > 0) {
     return args.observedEvidence.some((entry) => entry.status === 'failed')
       ? 'observed_fail'
@@ -397,17 +409,21 @@ function classifyPath(args: {
     return 'observed_pass';
   }
   if (
+    args.capability?.executionMode === 'human_required' ||
+    args.capability?.executionMode === 'observation_only' ||
+    args.capability?.protectedByGovernance
+  ) {
+    return 'observation_only';
+  }
+  if (!args.chain && !args.hasExecutableEntrypoint) {
+    return 'not_executable';
+  }
+  if (
     !requiredRuntimeLike &&
     args.capability?.status === 'real' &&
     args.capability.truthMode === 'observed'
   ) {
     return 'observed_pass';
-  }
-  if (
-    (args.capability?.routePatterns.length ?? 0) === 0 &&
-    (args.flow?.routePatterns.length ?? 0) === 0
-  ) {
-    return 'unreachable';
   }
   if (
     args.chain?.truthMode === 'inferred' ||
@@ -504,6 +520,7 @@ function buildPathFromChain(args: {
     chain: args.chain,
     observedEvidence,
     requiredEvidence,
+    hasExecutableEntrypoint: true,
   });
   const breakpoint = buildBreakpoint({
     chain: args.chain,
@@ -577,6 +594,9 @@ function buildSyntheticPath(args: {
     chain: null,
     observedEvidence,
     requiredEvidence,
+    hasExecutableEntrypoint: Boolean(
+      routePatterns.length > 0 || args.capability?.nodeIds.length || args.flow?.startNodeIds.length,
+    ),
   });
   const breakpoint = buildBreakpoint({
     chain: null,
@@ -675,9 +695,11 @@ function buildPathFromStructuralNode(args: {
     ? 'observed_fail'
     : observedEvidence.some((entry) => entry.executed && entry.status === 'passed')
       ? 'observed_pass'
-      : routePatterns.length > 0 || args.node.role === 'interface'
-        ? 'inferred_only'
-        : 'not_executable';
+      : args.node.protectedByGovernance
+        ? 'observation_only'
+        : routePatterns.length > 0 || args.node.role === 'interface'
+          ? 'inferred_only'
+          : 'not_executable';
   const pathId = `matrix:node:${args.index}:${args.node.id}`;
   const breakpoint =
     status === 'observed_fail'
@@ -692,7 +714,7 @@ function buildPathFromStructuralNode(args: {
             'Structural node has observed failing evidence.',
           recovery: 'Inspect the node evidence and regenerate PULSE_EXECUTION_MATRIX.json.',
         }
-      : status === 'inferred_only' || status === 'not_executable'
+      : status === 'inferred_only' || status === 'not_executable' || status === 'observation_only'
         ? {
             stage: mapNodeRoleToChainRole(args.node),
             stepIndex: 0,
@@ -700,13 +722,17 @@ function buildPathFromStructuralNode(args: {
             nodeId: args.node.id,
             routePattern: routePatterns[0] ?? null,
             reason:
-              routePatterns.length > 0
-                ? 'Structural node has a route-like entrypoint but no matching observed runtime, browser, flow, actor, or external evidence.'
-                : 'Structural node has no route-like entrypoint, so it cannot be promoted by an HTTP probe without additional parser mapping.',
+              status === 'observation_only'
+                ? 'Structural node maps to protected governance or observation-only execution; autonomous pass/fail probing is not permitted.'
+                : routePatterns.length > 0
+                  ? 'Structural node has a route-like entrypoint but no matching observed runtime, browser, flow, actor, or external evidence.'
+                  : 'Structural node has no route-like entrypoint, so it cannot be promoted by an HTTP probe without additional parser mapping.',
             recovery:
-              routePatterns.length > 0
-                ? 'Attach route-matching runtime/browser/flow/actor evidence or record an observed failure for this structural node.'
-                : 'Connect this node to a route, scenario interaction, or execution chain before requiring observed terminal evidence.',
+              status === 'observation_only'
+                ? 'Collect governed observation evidence without autonomous mutation and attach the resulting artifact to the matrix.'
+                : routePatterns.length > 0
+                  ? 'Attach route-matching runtime/browser/flow/actor evidence or record an observed failure for this structural node.'
+                  : 'Connect this node to a route, scenario interaction, or execution chain before requiring observed terminal evidence.',
           }
         : null;
   return {
@@ -882,6 +908,9 @@ function hasCriticalTerminalClassification(path: PulseExecutionMatrixPath): bool
     return true;
   }
   if (path.status === 'not_executable' || path.status === 'unreachable') {
+    return hasPreciseBreakpoint(path.breakpoint);
+  }
+  if (path.status === 'observation_only' || path.status === 'blocked_human_required') {
     return hasPreciseBreakpoint(path.breakpoint);
   }
   if (path.status === 'inferred_only' || path.status === 'untested') {

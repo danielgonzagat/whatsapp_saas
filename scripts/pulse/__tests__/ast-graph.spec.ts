@@ -113,4 +113,54 @@ describe('PULSE AST call graph', () => {
       'services/api/src/endpoint.ts',
     ]);
   });
+
+  it('keeps TypeScript framework decorators as weak hints instead of universal route authority', async () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-weak-decorator-hints-'));
+    const srcDir = path.join(rootDir, 'backend/src/opaque');
+    fs.mkdirSync(srcDir, { recursive: true });
+
+    fs.writeFileSync(
+      path.join(srcDir, 'decorators.ts'),
+      [
+        'export function Command(_path?: string): MethodDecorator { return () => undefined; }',
+        'export function Workflow(): ClassDecorator { return () => undefined; }',
+      ].join('\n'),
+    );
+    fs.writeFileSync(
+      path.join(srcDir, 'workflow.ts'),
+      [
+        "import { Command, Workflow } from './decorators';",
+        '@Workflow()',
+        'export class OpaqueWorkflow {',
+        "  @Command('/run')",
+        '  run(): string {',
+        "    return 'ok';",
+        '  }',
+        '}',
+      ].join('\n'),
+    );
+
+    const graph = await buildAstCallGraph(rootDir);
+    const workflowMethod = graph.symbols.find((symbol) => symbol.name === 'OpaqueWorkflow.run');
+
+    expect(workflowMethod).toEqual(
+      expect.objectContaining({
+        decorators: ['Command'],
+        httpMethod: null,
+        kind: 'class_method',
+        routePath: null,
+      }),
+    );
+    expect(graph.summary.apiRoutesFound).toBe(0);
+
+    const behaviorGraph = buildBehaviorGraph(rootDir);
+    const behaviorNode = behaviorGraph.nodes.find((node) => node.name === 'run');
+    expect(behaviorNode).toEqual(
+      expect.objectContaining({
+        decorators: expect.arrayContaining(['Command']),
+        kind: 'function_definition',
+      }),
+    );
+    expect(behaviorGraph.summary.apiEndpointNodes).toBe(0);
+  });
 });

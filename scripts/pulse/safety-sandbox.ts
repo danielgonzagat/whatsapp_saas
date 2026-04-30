@@ -11,6 +11,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
+import { buildPulseCommandGraph, type PulseCommandPurpose } from './command-graph';
 import { ensureDir, pathExists, readJsonFile, writeTextFile } from './safe-fs';
 import type {
   DestructiveAction,
@@ -30,19 +31,46 @@ interface ProtectedGovernanceConfig {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Risk Level Mapping
+// Effect Graph Calibration
 // ────────────────────────────────────────────────────────────────────────────
 
-/**
- * Map each destructive action kind to its corresponding risk level
- * following the Agent Operating Protocol Risk Classes:
- *
- *   Risk 0 (safe)     — docs, tests, minor UI
- *   Risk 1 (normal)   — frontend, hooks, API clients, non-financial services
- *   Risk 2 (high)     — auth, workspace isolation, WhatsApp, queues, external integrations
- *   Risk 3 (critical) — payments, wallet, ledger, split, payout, KYC, secrets, CI/CD, governance
- */
-const KIND_RISK_MAP: Record<DestructiveActionKind, SandboxRiskLevel> = {
+interface ActionSafetyRequirements {
+  requiresGovernedSandbox: boolean;
+  requiresDryRun: boolean;
+  requiresBackup: boolean;
+  requiresRollbackProof: boolean;
+  sandboxOnly: boolean;
+}
+
+interface FileEffectGraph {
+  relativePath: string;
+  protectedByGovernance: boolean;
+  fileEffects: Set<
+    | 'migration_surface'
+    | 'infra_surface'
+    | 'secret_surface'
+    | 'governance_surface'
+    | 'access_boundary_surface'
+    | 'test_surface'
+    | 'documentation_surface'
+  >;
+  patchEffects: Set<
+    | 'persistent_delete'
+    | 'external_mutation'
+    | 'access_boundary_change'
+    | 'secret_evidence'
+    | 'destructive_sql'
+    | 'rollback_evidence'
+    | 'backup_evidence'
+  >;
+  reversible: boolean;
+  rollbackAvailable: boolean;
+  backupAvailable: boolean;
+}
+
+const RISK_ORDER: SandboxRiskLevel[] = ['safe', 'normal', 'high', 'critical'];
+
+const WEAK_KIND_RISK_CALIBRATION: Record<DestructiveActionKind, SandboxRiskLevel> = {
   migration: 'critical',
   external_state_mutation: 'critical',
   access_boundary_change: 'high',
@@ -53,25 +81,9 @@ const KIND_RISK_MAP: Record<DestructiveActionKind, SandboxRiskLevel> = {
   protected_file_edit: 'critical',
 };
 
-// ────────────────────────────────────────────────────────────────────────────
-// Action Kind Requirements
-// ────────────────────────────────────────────────────────────────────────────
-
-/**
- * Action kind definitions with their safety requirements.
- *
- * Each destructive action kind carries a default set of requirements:
- * sandbox validation, dry-run validation, backup creation, and isolated execution.
- */
-const ACTION_KIND_REQUIREMENTS: Record<
+const WEAK_ACTION_KIND_REQUIREMENT_CALIBRATION: Record<
   DestructiveActionKind,
-  {
-    requiresGovernedSandbox: boolean;
-    requiresDryRun: boolean;
-    requiresBackup: boolean;
-    requiresRollbackProof: boolean;
-    sandboxOnly: boolean;
-  }
+  ActionSafetyRequirements
 > = {
   migration: {
     requiresGovernedSandbox: true,
@@ -136,12 +148,12 @@ const ACTION_KIND_REQUIREMENTS: Record<
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
- * Default sandbox isolation rules for each destructive action kind.
+ * Weak fallback sandbox isolation rules for each destructive action kind.
  *
- * These rules define the minimum sandbox configuration required before
- * a destructive change of the corresponding kind can be validated.
+ * Runtime safety decisions derive validation commands from the command graph
+ * when a repository root is available; these values keep legacy callers stable.
  */
-const DEFAULT_ISOLATION_RULES: Record<DestructiveActionKind, SandboxIsolationRules> = {
+const WEAK_ISOLATION_RULE_CALIBRATION: Record<DestructiveActionKind, SandboxIsolationRules> = {
   migration: {
     kind: 'migration',
     requiresSeparateWorktree: true,
@@ -225,35 +237,8 @@ const DEFAULT_ISOLATION_RULES: Record<DestructiveActionKind, SandboxIsolationRul
 };
 
 // ────────────────────────────────────────────────────────────────────────────
-// File Pattern Detection
+// Effect Graph Detection
 // ────────────────────────────────────────────────────────────────────────────
-
-const DESTRUCTIVE_FILE_PATTERNS: Array<{
-  pattern: RegExp;
-  kind: DestructiveActionKind;
-  description: string;
-}> = [
-  { pattern: /prisma\/migrations\//, kind: 'migration', description: 'Database migration change' },
-  { pattern: /prisma\/schema\.prisma$/, kind: 'migration', description: 'Database schema change' },
-  { pattern: /\.github\/workflows\//, kind: 'infra_change', description: 'CI/CD workflow change' },
-  {
-    pattern: /docker|dockerfile/i,
-    kind: 'infra_change',
-    description: 'Container/infrastructure change',
-  },
-  { pattern: /\.env/, kind: 'secret_access', description: 'Environment variable access' },
-  { pattern: /secret|credential/i, kind: 'secret_access', description: 'Secret/credential access' },
-  {
-    pattern: /\.codacy\.yml$/,
-    kind: 'governance_change',
-    description: 'Codacy configuration change',
-  },
-  {
-    pattern: /ops\/governance/,
-    kind: 'governance_change',
-    description: 'Governance configuration change',
-  },
-];
 
 const EXTERNAL_MUTATION_RE =
   /\b(?:fetch|axios|httpService|request)\s*(?:<[^>]*>)?\s*\(|\.(?:post|put|patch|delete)\s*\(|\b(?:charge|transfer|refund|withdraw|deposit|capture|authorize|send|dispatch|publish)\w*\s*\(/i;
@@ -261,34 +246,246 @@ const ACCESS_BOUNDARY_RE =
   /\b(?:CanActivate|UseGuards|AuthGuard|guard|authorize|authenticate|permission|role|session|token|jwt|signature|verify)\b/i;
 const DELETE_OPERATION_RE =
   /\b(?:deleteMany|delete\s*\(|remove\s*\(|truncate|drop\s+table|drop\s+column)\b/i;
+const DESTRUCTIVE_SQL_RE =
+  /\b(?:drop\s+(?:table|column|index)|truncate|delete\s+from|alter\s+table\b.*\bdrop\b)\b/i;
+const SECRET_EVIDENCE_RE =
+  /\b(?:secret|credential|password|private[_-]?key|api[_-]?key|access[_-]?token|refresh[_-]?token)\b/i;
+const ROLLBACK_EVIDENCE_RE = /\b(?:rollback|revert|down\s+migration|restore|compensat\w*)\b/i;
+const BACKUP_EVIDENCE_RE = /\b(?:backup|snapshot|dump|restore)\b/i;
 
-// ────────────────────────────────────────────────────────────────────────────
-// Structural Content Classification
-// ────────────────────────────────────────────────────────────────────────────
+function normalizeRepoPath(value: string): string {
+  return value.replace(/\\/g, '/').replace(/^\.\//, '');
+}
 
-function classifyStructuralDestructiveActions(
-  relativePath: string,
-  content: string,
-): Array<{ kind: DestructiveActionKind; description: string }> {
-  const actions: Array<{ kind: DestructiveActionKind; description: string }> = [];
+function hasPathSegment(relativePath: string, segment: string): boolean {
+  return normalizeRepoPath(relativePath).split('/').includes(segment);
+}
 
+function addPathDerivedFileEffects(graph: FileEffectGraph): void {
+  const relativePath = normalizeRepoPath(graph.relativePath);
+  const basename = path.basename(relativePath).toLowerCase();
+  const extension = path.extname(relativePath).toLowerCase();
+
+  if (hasPathSegment(relativePath, 'migrations') || basename === 'schema.prisma') {
+    graph.fileEffects.add('migration_surface');
+  }
+  if (
+    hasPathSegment(relativePath, '.github') ||
+    basename.includes('dockerfile') ||
+    ['.yml', '.yaml', '.tf'].includes(extension)
+  ) {
+    graph.fileEffects.add('infra_surface');
+  }
+  if (basename.startsWith('.env') || SECRET_EVIDENCE_RE.test(relativePath)) {
+    graph.fileEffects.add('secret_surface');
+  }
+  if (
+    graph.protectedByGovernance ||
+    relativePath === '.codacy.yml' ||
+    hasPathSegment(relativePath, 'ops')
+  ) {
+    graph.fileEffects.add('governance_surface');
+  }
+  if (/\.(?:guard|auth|session|permission|role)\.(?:ts|tsx|js|jsx)$/.test(relativePath)) {
+    graph.fileEffects.add('access_boundary_surface');
+  }
+  if (/\.(?:spec|test)\.(?:ts|tsx|js|jsx)$/.test(relativePath)) {
+    graph.fileEffects.add('test_surface');
+  }
+  if (/\.(?:md|mdx|txt|adoc)$/.test(relativePath)) {
+    graph.fileEffects.add('documentation_surface');
+  }
+}
+
+function addContentDerivedPatchEffects(graph: FileEffectGraph, content: string): void {
   if (DELETE_OPERATION_RE.test(content)) {
-    actions.push({ kind: 'delete_operation', description: 'Delete or drop operation detected' });
+    graph.patchEffects.add('persistent_delete');
   }
   if (EXTERNAL_MUTATION_RE.test(content)) {
+    graph.patchEffects.add('external_mutation');
+  }
+  if (ACCESS_BOUNDARY_RE.test(content)) {
+    graph.patchEffects.add('access_boundary_change');
+  }
+  if (SECRET_EVIDENCE_RE.test(content)) {
+    graph.patchEffects.add('secret_evidence');
+  }
+  if (DESTRUCTIVE_SQL_RE.test(content)) {
+    graph.patchEffects.add('destructive_sql');
+  }
+  if (ROLLBACK_EVIDENCE_RE.test(content)) {
+    graph.patchEffects.add('rollback_evidence');
+  }
+  if (BACKUP_EVIDENCE_RE.test(content)) {
+    graph.patchEffects.add('backup_evidence');
+  }
+}
+
+function buildFileEffectGraph(input: {
+  relativePath: string;
+  content: string;
+  protectedByGovernance: boolean;
+}): FileEffectGraph {
+  const graph: FileEffectGraph = {
+    relativePath: normalizeRepoPath(input.relativePath),
+    protectedByGovernance: input.protectedByGovernance,
+    fileEffects: new Set(),
+    patchEffects: new Set(),
+    reversible: true,
+    rollbackAvailable: false,
+    backupAvailable: false,
+  };
+
+  addPathDerivedFileEffects(graph);
+  addContentDerivedPatchEffects(graph, input.content);
+
+  graph.rollbackAvailable = graph.patchEffects.has('rollback_evidence');
+  graph.backupAvailable = graph.patchEffects.has('backup_evidence');
+  graph.reversible =
+    graph.rollbackAvailable ||
+    (!graph.patchEffects.has('persistent_delete') &&
+      !graph.patchEffects.has('destructive_sql') &&
+      !graph.fileEffects.has('migration_surface'));
+
+  return graph;
+}
+
+function deriveActionKindsFromEffectGraph(graph: FileEffectGraph): Array<{
+  kind: DestructiveActionKind;
+  description: string;
+}> {
+  const actions: Array<{ kind: DestructiveActionKind; description: string }> = [];
+
+  if (graph.protectedByGovernance) {
     actions.push({
-      kind: 'external_state_mutation',
-      description: 'External or persistent state mutation boundary detected',
+      kind: 'protected_file_edit',
+      description: 'Protected governance file effect detected',
     });
   }
-  if (ACCESS_BOUNDARY_RE.test(content) || /\.guard\.(?:ts|tsx|js|jsx)$/.test(relativePath)) {
+  if (graph.fileEffects.has('governance_surface')) {
+    actions.push({ kind: 'governance_change', description: 'Governance surface effect detected' });
+  }
+  if (graph.fileEffects.has('secret_surface') || graph.patchEffects.has('secret_evidence')) {
+    actions.push({ kind: 'secret_access', description: 'Secret or credential evidence detected' });
+  }
+  if (graph.fileEffects.has('migration_surface') || graph.patchEffects.has('destructive_sql')) {
+    actions.push({
+      kind: 'migration',
+      description: 'Database schema or migration effect detected',
+    });
+  }
+  if (graph.fileEffects.has('infra_surface')) {
+    actions.push({ kind: 'infra_change', description: 'Infrastructure surface effect detected' });
+  }
+  if (graph.patchEffects.has('persistent_delete')) {
+    actions.push({ kind: 'delete_operation', description: 'Persistent delete effect detected' });
+  }
+  if (graph.patchEffects.has('external_mutation')) {
+    actions.push({
+      kind: 'external_state_mutation',
+      description: 'External or persistent state mutation effect detected',
+    });
+  }
+  if (
+    graph.fileEffects.has('access_boundary_surface') ||
+    graph.patchEffects.has('access_boundary_change')
+  ) {
     actions.push({
       kind: 'access_boundary_change',
-      description: 'Access-control boundary detected',
+      description: 'Access boundary effect detected',
     });
   }
 
   return actions;
+}
+
+function maxRisk(...levels: SandboxRiskLevel[]): SandboxRiskLevel {
+  return levels.reduce((max, level) =>
+    RISK_ORDER.indexOf(level) > RISK_ORDER.indexOf(max) ? level : max,
+  );
+}
+
+function deriveRiskLevelFromEffectGraph(
+  kind: DestructiveActionKind,
+  graph: FileEffectGraph | null,
+): SandboxRiskLevel {
+  if (!graph) {
+    return WEAK_KIND_RISK_CALIBRATION[kind];
+  }
+
+  let risk: SandboxRiskLevel = graph.fileEffects.has('test_surface') ? 'safe' : 'normal';
+  if (graph.fileEffects.has('documentation_surface') && graph.patchEffects.size === 0) {
+    risk = 'safe';
+  }
+  if (
+    graph.fileEffects.has('infra_surface') ||
+    graph.fileEffects.has('access_boundary_surface') ||
+    graph.patchEffects.has('access_boundary_change') ||
+    graph.patchEffects.has('external_mutation')
+  ) {
+    risk = maxRisk(risk, 'high');
+  }
+  if (
+    graph.protectedByGovernance ||
+    graph.fileEffects.has('governance_surface') ||
+    graph.fileEffects.has('secret_surface') ||
+    graph.patchEffects.has('secret_evidence') ||
+    (graph.patchEffects.has('destructive_sql') && !graph.rollbackAvailable) ||
+    (!graph.reversible && !graph.rollbackAvailable)
+  ) {
+    risk = maxRisk(risk, 'critical');
+  }
+  if (kind === 'migration' && graph.reversible && graph.rollbackAvailable) {
+    risk = maxRisk(risk, 'high');
+  }
+
+  return risk;
+}
+
+function deriveRequirementsFromEffectGraph(
+  kind: DestructiveActionKind,
+  graph: FileEffectGraph,
+): ActionSafetyRequirements {
+  const calibration = WEAK_ACTION_KIND_REQUIREMENT_CALIBRATION[kind];
+  const riskLevel = deriveRiskLevelFromEffectGraph(kind, graph);
+  const irreversible = !graph.reversible;
+  const persistentOrExternal =
+    graph.patchEffects.has('persistent_delete') ||
+    graph.patchEffects.has('destructive_sql') ||
+    graph.patchEffects.has('external_mutation') ||
+    graph.fileEffects.has('migration_surface');
+  const boundary =
+    graph.protectedByGovernance ||
+    graph.fileEffects.has('governance_surface') ||
+    graph.fileEffects.has('secret_surface') ||
+    graph.patchEffects.has('secret_evidence');
+
+  return {
+    requiresGovernedSandbox:
+      calibration.requiresGovernedSandbox ||
+      riskLevel !== 'safe' ||
+      boundary ||
+      persistentOrExternal,
+    requiresDryRun:
+      calibration.requiresDryRun || (!boundary && (persistentOrExternal || riskLevel === 'high')),
+    requiresBackup:
+      calibration.requiresBackup ||
+      irreversible ||
+      graph.fileEffects.has('migration_surface') ||
+      boundary,
+    requiresRollbackProof:
+      calibration.requiresRollbackProof ||
+      irreversible ||
+      persistentOrExternal ||
+      boundary ||
+      riskLevel === 'critical',
+    sandboxOnly:
+      calibration.sandboxOnly ||
+      (!boundary &&
+        (riskLevel === 'high' ||
+          graph.patchEffects.has('external_mutation') ||
+          persistentOrExternal)),
+  };
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -371,7 +568,12 @@ export function classifyDestructiveActions(rootDir: string): DestructiveAction[]
     }
 
     for (const entry of entries) {
-      if (entry.name.startsWith('.') && entry.name !== '.github') {
+      if (
+        entry.name.startsWith('.') &&
+        entry.name !== '.github' &&
+        !entry.name.startsWith('.env') &&
+        entry.name !== '.codacy.yml'
+      ) {
         continue;
       }
       if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '.next') {
@@ -384,32 +586,6 @@ export function classifyDestructiveActions(rootDir: string): DestructiveAction[]
       if (entry.isDirectory()) {
         walk(full);
       } else if (entry.isFile()) {
-        for (const { pattern, kind, description } of DESTRUCTIVE_FILE_PATTERNS) {
-          if (pattern.test(relative) && !seen.has(`${kind}:${relative}`)) {
-            seen.add(`${kind}:${relative}`);
-            const reqs = ACTION_KIND_REQUIREMENTS[kind];
-            const riskLevel = KIND_RISK_MAP[kind];
-            const isProtected = protectedFiles.some(
-              (pf) => pf === relative || relative.startsWith(pf + path.sep),
-            );
-
-            actions.push({
-              actionId: `${kind}:${relative}`,
-              kind,
-              description: `${description}: ${relative}`,
-              targetFile: relative,
-              riskLevel,
-              requiresHumanApproval: false,
-              requiresGovernedSandbox: reqs.requiresGovernedSandbox || isProtected,
-              requiresDryRun: reqs.requiresDryRun,
-              requiresBackup: reqs.requiresBackup,
-              requiresRollbackProof: reqs.requiresRollbackProof || isProtected,
-              sandboxOnly: reqs.sandboxOnly,
-            });
-            break;
-          }
-        }
-
         let content = '';
         try {
           content = fs.readFileSync(full, 'utf8');
@@ -417,29 +593,37 @@ export function classifyDestructiveActions(rootDir: string): DestructiveAction[]
           content = '';
         }
 
-        for (const { kind, description } of classifyStructuralDestructiveActions(
-          relative,
-          content,
-        )) {
-          if (seen.has(`${kind}:${relative}`)) continue;
-          seen.add(`${kind}:${relative}`);
-          const reqs = ACTION_KIND_REQUIREMENTS[kind];
-          const riskLevel = KIND_RISK_MAP[kind];
-          const isProtected = protectedFiles.some(
-            (pf) => pf === relative || relative.startsWith(pf + path.sep),
+        const normalizedRelative = normalizeRepoPath(relative);
+        const isProtected = protectedFiles.some((protectedFile) => {
+          const normalizedProtected = normalizeRepoPath(protectedFile);
+          return (
+            normalizedProtected === normalizedRelative ||
+            normalizedRelative.startsWith(`${normalizedProtected}/`)
           );
+        });
+        const effectGraph = buildFileEffectGraph({
+          relativePath: normalizedRelative,
+          content,
+          protectedByGovernance: isProtected,
+        });
+
+        for (const { kind, description } of deriveActionKindsFromEffectGraph(effectGraph)) {
+          if (seen.has(`${kind}:${normalizedRelative}`)) continue;
+          seen.add(`${kind}:${normalizedRelative}`);
+          const reqs = deriveRequirementsFromEffectGraph(kind, effectGraph);
+          const riskLevel = deriveRiskLevelFromEffectGraph(kind, effectGraph);
 
           actions.push({
-            actionId: `${kind}:${relative}`,
+            actionId: `${kind}:${normalizedRelative}`,
             kind,
-            description: `${description}: ${relative}`,
-            targetFile: relative,
+            description: `${description}: ${normalizedRelative}`,
+            targetFile: normalizedRelative,
             riskLevel,
             requiresHumanApproval: false,
-            requiresGovernedSandbox: reqs.requiresGovernedSandbox || isProtected,
+            requiresGovernedSandbox: reqs.requiresGovernedSandbox,
             requiresDryRun: reqs.requiresDryRun,
             requiresBackup: reqs.requiresBackup,
-            requiresRollbackProof: reqs.requiresRollbackProof || isProtected,
+            requiresRollbackProof: reqs.requiresRollbackProof,
             sandboxOnly: reqs.sandboxOnly,
           });
         }
@@ -456,7 +640,7 @@ export function classifyDestructiveActions(rootDir: string): DestructiveAction[]
 // ────────────────────────────────────────────────────────────────────────────
 
 export function classifyRiskLevel(kind: DestructiveActionKind): SandboxRiskLevel {
-  return KIND_RISK_MAP[kind];
+  return deriveRiskLevelFromEffectGraph(kind, null);
 }
 
 export function isActionAllowedInAutonomy(action: DestructiveAction): boolean {
@@ -654,14 +838,13 @@ export function createLogicalSandbox(params: {
 }): SandboxWorkspace {
   const now = new Date();
   const maxRisk = params.actionKinds.reduce<SandboxRiskLevel>((max, kind) => {
-    const risk = KIND_RISK_MAP[kind] ?? 'safe';
-    const order: SandboxRiskLevel[] = ['safe', 'normal', 'high', 'critical'];
-    return order.indexOf(risk) > order.indexOf(max) ? risk : max;
+    const risk = deriveRiskLevelFromEffectGraph(kind, null);
+    return RISK_ORDER.indexOf(risk) > RISK_ORDER.indexOf(max) ? risk : max;
   }, 'safe' as SandboxRiskLevel);
 
   // Determine max active minutes from the most restrictive rule
   const maxMinutes = params.actionKinds.reduce((max, kind) => {
-    const rules = DEFAULT_ISOLATION_RULES[kind];
+    const rules = WEAK_ISOLATION_RULE_CALIBRATION[kind];
     return rules ? Math.max(max, rules.maxActiveMinutes) : max;
   }, 15);
 
@@ -688,12 +871,58 @@ export function createLogicalSandbox(params: {
 // Isolation Rules Access
 // ────────────────────────────────────────────────────────────────────────────
 
-export function getIsolationRules(kind: DestructiveActionKind): SandboxIsolationRules {
-  return DEFAULT_ISOLATION_RULES[kind];
+function commandsByPurpose(rootDir: string, purposes: PulseCommandPurpose[]): string[] {
+  try {
+    const purposeSet = new Set<PulseCommandPurpose>(purposes);
+    return buildPulseCommandGraph(rootDir)
+      .commands.filter((command) => purposeSet.has(command.purpose))
+      .sort((left, right) => {
+        const byConfidence =
+          ['high', 'medium', 'low'].indexOf(left.confidence) -
+          ['high', 'medium', 'low'].indexOf(right.confidence);
+        return byConfidence === 0 ? left.command.localeCompare(right.command) : byConfidence;
+      })
+      .map((command) => command.command);
+  } catch {
+    return [];
+  }
 }
 
-export function getAllIsolationRules(): SandboxIsolationRules[] {
-  return Object.values(DEFAULT_ISOLATION_RULES);
+function deriveIsolationRules(
+  kind: DestructiveActionKind,
+  rootDir: string | null,
+): SandboxIsolationRules {
+  const fallback = WEAK_ISOLATION_RULE_CALIBRATION[kind];
+  if (!rootDir) {
+    return fallback;
+  }
+
+  const preValidationCommands = commandsByPurpose(rootDir, ['lint', 'typecheck']);
+  const postValidationCommands = commandsByPurpose(
+    rootDir,
+    kind === 'infra_change' ? ['test', 'build'] : ['test'],
+  );
+
+  return {
+    ...fallback,
+    preValidationCommands:
+      preValidationCommands.length > 0 ? preValidationCommands : fallback.preValidationCommands,
+    postValidationCommands:
+      postValidationCommands.length > 0 ? postValidationCommands : fallback.postValidationCommands,
+  };
+}
+
+export function getIsolationRules(
+  kind: DestructiveActionKind,
+  rootDir: string | null = null,
+): SandboxIsolationRules {
+  return deriveIsolationRules(kind, rootDir);
+}
+
+export function getAllIsolationRules(rootDir: string | null = null): SandboxIsolationRules[] {
+  return (Object.keys(WEAK_ISOLATION_RULE_CALIBRATION) as DestructiveActionKind[]).map((kind) =>
+    deriveIsolationRules(kind, rootDir),
+  );
 }
 
 /**
@@ -704,7 +933,7 @@ export function validateWorkspaceForAction(
   workspace: SandboxWorkspace,
   actionKind: DestructiveActionKind,
 ): { valid: boolean; missingRules: string[] } {
-  const rules = DEFAULT_ISOLATION_RULES[actionKind];
+  const rules = WEAK_ISOLATION_RULE_CALIBRATION[actionKind];
   if (!rules) {
     return { valid: true, missingRules: [] };
   }
@@ -747,7 +976,7 @@ export function buildSandboxState(rootDir: string): SandboxState {
     critical: destructiveActions.filter((a) => a.riskLevel === 'critical').length,
   };
 
-  const isolationRules = getAllIsolationRules();
+  const isolationRules = getAllIsolationRules(rootDir);
 
   const state: SandboxState = {
     generatedAt: new Date().toISOString(),

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
@@ -26,8 +27,10 @@ type LegacyBulkBody = {
  * Camada de compatibilidade para contratos antigos /whatsapp/:workspaceId/*
  * enquanto o runtime interno permanece WAHA-only.
  */
+@UseGuards(ThrottlerGuard)
 @Controller('whatsapp/:workspaceId')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class WhatsappController {
   constructor(private readonly whatsappService: WhatsappService) {}
 

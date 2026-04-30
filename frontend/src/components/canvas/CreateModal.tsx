@@ -189,9 +189,10 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
                   alignItems: 'center',
                   gap: 9,
                   padding: '8px 14px',
-                  background: cat === c.id ? '#E85D3008' : 'none',
+                  background: cat === c.id ? 'colors.ember.bg' : 'none',
                   border: 'none',
-                  borderLeft: cat === c.id ? '2px solid #E85D30' : '2px solid transparent',
+                  borderLeft:
+                    cat === c.id ? '2px solid colors.ember.primary' : '2px solid transparent',
                   cursor: 'pointer',
                   fontFamily: S,
                   fontSize: 12,
@@ -419,7 +420,7 @@ function CustomSizePanel({
               })
             }
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#E85D3040';
+              e.currentTarget.style.borderColor = 'colors.ember.glow40';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor =
@@ -573,8 +574,8 @@ function FormatGrid({
               onClick={() => setSf(s)}
               style={{
                 padding: '5px 12px',
-                background: sf === s ? '#E85D3010' : 'none',
-                border: `1px solid ${sf === s ? '#E85D3030' : '#1C1C1F'}`,
+                background: sf === s ? 'colors.ember.glow10' : 'none',
+                border: `1px solid ${sf === s ? 'colors.ember.glow30' : '#1C1C1F'}`,
                 borderRadius: 4,
                 color: sf === s ? colors.ember.primary : colors.text.muted,
                 fontSize: 11,
@@ -714,7 +715,7 @@ function FormatGrid({
           <button
             type="button"
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#E85D3040';
+              e.currentTarget.style.borderColor = 'colors.ember.glow40';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor =
@@ -736,7 +737,7 @@ function FormatGrid({
                 width: 34,
                 height: 34,
                 borderRadius: 4,
-                background: 'linear-gradient(135deg,#E85D3020,#E85D3008)',
+                background: 'linear-gradient(135deg,colors.ember.glow10,colors.ember.bg)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',

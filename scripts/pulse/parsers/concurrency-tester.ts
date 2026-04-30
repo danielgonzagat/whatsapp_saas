@@ -17,10 +17,9 @@
  * 6. Verifies BullMQ job processing uses locks (not processed by multiple workers)
  *
  * REQUIRES: PULSE_DEEP=1, PULSE_CHAOS=1, running backend + DB
- * BREAK TYPES:
- *   RACE_CONDITION_DATA_CORRUPTION(critical) — concurrent writes produce inconsistent state
- *   RACE_CONDITION_FINANCIAL(critical)        — double-spend or negative balance possible
- *   RACE_CONDITION_OVERWRITE(high)            — last-write-wins without version check
+ * DIAGNOSTICS:
+ *   Emits regex-heuristic weak signals with predicate metadata. Static regex/list
+ *   matches are evidence that a probe is needed, not authority by themselves.
  */
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
@@ -40,10 +39,44 @@ const OPTIMISTIC_LOCK_RE =
   /version|updatedAt.*where|where.*version|prisma\.\$executeRaw|SELECT\s+FOR\s+UPDATE/i;
 const TRANSACTION_RE = /prisma\.\$transaction|\$transaction\s*\(\s*\[/;
 
+type ParserTruthMode = 'weak_signal' | 'confirmed_static';
+
+type ConcurrencyDiagnosticBreak = Break & {
+  truthMode: ParserTruthMode;
+};
+
 type FunctionBlock = {
   start: number;
   lines: string[];
 };
+
+interface ConcurrencyDiagnosticInput {
+  predicateKinds: string[];
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+  truthMode: ParserTruthMode;
+}
+
+function buildConcurrencyDiagnostic(input: ConcurrencyDiagnosticInput): ConcurrencyDiagnosticBreak {
+  const predicateToken = input.predicateKinds
+    .map((predicate) => predicate.replace(/[^a-z0-9]+/gi, '-').toLowerCase())
+    .filter(Boolean)
+    .join('+');
+
+  return {
+    type: `diagnostic:concurrency-tester:${predicateToken || 'concurrency-observation'}`,
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: `regex-heuristic:concurrency-tester;truthMode=${input.truthMode};predicates=${input.predicateKinds.join(',')}`,
+    truthMode: input.truthMode,
+  };
+}
 
 function countBraces(line: string): number {
   let depth = 0;
@@ -177,30 +210,34 @@ export function checkConcurrency(config: PulseConfig): Break[] {
         continue;
       }
 
-      breaks.push({
-        type: 'RACE_CONDITION_DATA_CORRUPTION',
-        severity: 'critical',
-        file: relFile,
-        line: unprotected.findLine,
-        description:
-          'Read-modify-write without transaction or optimistic lock — race condition possible',
-        detail: `findFirst/findUnique at line ${unprotected.findLine} followed by update at line ${unprotected.updateLine} without $transaction or version check`,
-      });
+      breaks.push(
+        buildConcurrencyDiagnostic({
+          predicateKinds: ['read_modify_write', 'no_transaction_or_optimistic_lock'],
+          severity: 'critical',
+          file: relFile,
+          line: unprotected.findLine,
+          description: 'Read-modify-write observed without transaction or optimistic lock evidence',
+          detail: `findFirst/findUnique at line ${unprotected.findLine} followed by update at line ${unprotected.updateLine} without $transaction or version check`,
+          truthMode: 'weak_signal',
+        }),
+      );
     }
 
     // CHECK: Wallet/balance operations without transaction
     if (FINANCIAL_PATH_RE.test(file) && /wallet|balance|saldo/i.test(content)) {
       if (functionBlocks.some(hasDirectBalanceMutationWithoutTransaction)) {
-        breaks.push({
-          type: 'RACE_CONDITION_FINANCIAL',
-          severity: 'critical',
-          file: relFile,
-          line: 0,
-          description:
-            'Wallet/balance operations without $transaction — double-spend race condition possible',
-          detail:
-            'All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment',
-        });
+        breaks.push(
+          buildConcurrencyDiagnostic({
+            predicateKinds: ['balance_mutation', 'no_transaction_observed'],
+            severity: 'critical',
+            file: relFile,
+            line: 0,
+            description: 'Wallet/balance mutation observed without $transaction evidence',
+            detail:
+              'All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment',
+            truthMode: 'weak_signal',
+          }),
+        );
       }
     }
 
@@ -208,16 +245,18 @@ export function checkConcurrency(config: PulseConfig): Break[] {
     // level so transaction-protected financial mutations do not become false positives.
     const unprotectedSharedUpdate = functionBlocks.find(hasUnprotectedSharedUpdate);
     if (unprotectedSharedUpdate) {
-      breaks.push({
-        type: 'RACE_CONDITION_OVERWRITE',
-        severity: 'high',
-        file: relFile,
-        line: unprotectedSharedUpdate.start + 1,
-        description:
-          'Update without optimistic lock version check — concurrent updates may silently overwrite each other',
-        detail:
-          'Add a `version` field or protect the mutation with a transaction/conditional WHERE to detect conflicts',
-      });
+      breaks.push(
+        buildConcurrencyDiagnostic({
+          predicateKinds: ['shared_update', 'no_optimistic_lock_observed'],
+          severity: 'high',
+          file: relFile,
+          line: unprotectedSharedUpdate.start + 1,
+          description: 'Shared-resource update observed without optimistic lock evidence',
+          detail:
+            'Add a `version` field or protect the mutation with a transaction/conditional WHERE to detect conflicts',
+          truthMode: 'weak_signal',
+        }),
+      );
     }
   }
 

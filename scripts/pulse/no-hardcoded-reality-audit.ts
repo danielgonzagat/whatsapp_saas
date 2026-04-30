@@ -17,7 +17,10 @@ type FindingKind =
   | 'hardcoded_break_push_type_risk'
   | 'hardcoded_parser_rule_blocker_risk'
   | 'hardcoded_sql_reality_table_risk'
-  | 'hardcoded_gate_profile_threshold_risk';
+  | 'hardcoded_gate_profile_threshold_risk'
+  | 'hardcoded_decision_enum_risk'
+  | 'hardcoded_decision_regex_risk'
+  | 'hardcoded_path_decision_risk';
 
 export interface NoHardcodedRealityFinding {
   filePath: string;
@@ -132,6 +135,55 @@ const DECISION_GATE_CONTEXT_TOKENS = [
   'threshold',
   'thresholds',
   'tier',
+];
+const PATH_DECISION_CONTEXT_TOKENS = [
+  'path',
+  'paths',
+  'route',
+  'routes',
+  'glob',
+  'globs',
+  'pattern',
+  'patterns',
+];
+const DECISION_AUTHORITY_CONTEXT_TOKENS = [
+  ...DECISION_GATE_CONTEXT_TOKENS,
+  ...PATH_DECISION_CONTEXT_TOKENS,
+  'capability',
+  'capabilities',
+  'critical',
+  'criticality',
+  'decision',
+  'decisions',
+  'domain',
+  'domains',
+  'flow',
+  'flows',
+  'module',
+  'modules',
+  'provider',
+  'providers',
+  'role',
+  'roles',
+];
+const STRUCTURAL_GRAMMAR_CONTEXT_TOKENS = [
+  'ast',
+  'class',
+  'enum',
+  'grammar',
+  'http',
+  'interface',
+  'kernel',
+  'schema',
+  'severity',
+  'source',
+  'status',
+  'syntax',
+  'token',
+  'tokens',
+  'truth',
+  'type',
+  'types',
 ];
 const STRUCTURAL_ROLE_VALUES = new Set([
   'interface',
@@ -446,6 +498,51 @@ function gateProfileThresholdFindings(context: string, values: string[]): string
   return values.filter((value) => value.length > 0);
 }
 
+function pathDecisionFindings(context: string, values: string[]): string[] {
+  if (!contextHasToken(context, ['path', 'paths', 'glob', 'globs'])) {
+    return [];
+  }
+  return values.filter(
+    (value) => isRouteLiteral(value) || isSourceRootLiteral(value) || value.includes('*'),
+  );
+}
+
+function contextLooksLikeDecisionAuthority(context: string): boolean {
+  return (
+    contextHasToken(context, DECISION_AUTHORITY_CONTEXT_TOKENS) &&
+    !contextHasToken(context, STRUCTURAL_GRAMMAR_CONTEXT_TOKENS)
+  );
+}
+
+function enumDecisionFindings(node: ts.Node): string[] {
+  if (!ts.isEnumDeclaration(node) || !contextLooksLikeDecisionAuthority(node.name.text)) {
+    return [];
+  }
+  const values = node.members.flatMap((member) => {
+    if (member.initializer) {
+      const value = stringLiteralValue(member.initializer);
+      return value ? [value] : [];
+    }
+    return [propertyNameText(member.name)];
+  });
+  return values.length >= 2 ? values : [];
+}
+
+function regexDecisionFindings(node: ts.Node): string[] {
+  if (!ts.isRegularExpressionLiteral(node)) {
+    return [];
+  }
+  const context = nearestCollectionContext(node);
+  if (!contextLooksLikeDecisionAuthority(context)) {
+    return [];
+  }
+  const text = node.text;
+  const hasAlternation = text.includes('|');
+  const hasPathShape = /\/[A-Za-z0-9_*:.-]+/.test(text);
+  const hasThresholdShape = /\\d|\[[0-9]|[<>]=?/.test(text);
+  return hasAlternation || hasPathShape || hasThresholdShape ? [text] : [];
+}
+
 function stringLiteralValue(node: ts.Node): string | null {
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
     return node.text;
@@ -608,6 +705,33 @@ function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityF
       );
     }
 
+    const enumDecisions = enumDecisionFindings(node);
+    if (enumDecisions.length > 0) {
+      const enumContext = ts.isEnumDeclaration(node) ? node.name.text : 'enum.decision';
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_decision_enum_risk',
+        enumContext,
+        enumDecisions,
+      );
+    }
+
+    const regexDecisions = regexDecisionFindings(node);
+    if (regexDecisions.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_decision_regex_risk',
+        nearestCollectionContext(node),
+        regexDecisions,
+      );
+    }
+
     if (!isDecisionCollection(node)) {
       ts.forEachChild(node, visit);
       return;
@@ -628,6 +752,7 @@ function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityF
     const providers = providerCatalogFindings(context, values);
     const roles = roleCatalogFindings(context, values);
     const gateProfileThresholds = gateProfileThresholdFindings(context, literalSamples);
+    const pathDecisions = pathDecisionFindings(context, rawValues);
 
     if (routes.length > 0) {
       pushFinding(
@@ -740,6 +865,17 @@ function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityF
         'hardcoded_gate_profile_threshold_risk',
         context,
         gateProfileThresholds,
+      );
+    }
+    if (pathDecisions.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_path_decision_risk',
+        context,
+        pathDecisions,
       );
     }
 

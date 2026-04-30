@@ -93,7 +93,11 @@ describe('parser structural risk inference', () => {
       checkGuards(config).filter((entry) => entry.type === 'behavioral-control-evidence-gap'),
     ).toEqual([]);
     expect(
-      checkBrowserNetwork(config).filter((entry) => entry.type === 'NETWORK_OFFLINE_DATA_LOST'),
+      checkBrowserNetwork(config).filter(
+        (entry) =>
+          entry.type === 'browser-network-evidence-gap' &&
+          entry.description.includes('offline protection'),
+      ),
     ).toEqual([]);
     expect(
       checkTestQuality(config).filter((entry) =>
@@ -165,10 +169,22 @@ describe('parser structural risk inference', () => {
         'External-input route appears to perform a durable mutation without nearby abuse-control or authorization evidence.',
     });
     expect(checkBrowserNetwork(config).map((entry) => entry.type)).toContain(
-      'NETWORK_OFFLINE_DATA_LOST',
+      'browser-network-evidence-gap',
     );
-    expect(checkCacheInvalidation(config).map((entry) => entry.type)).toContain(
-      'CACHE_STALE_AFTER_WRITE',
+    const cacheSignals = checkCacheInvalidation(config);
+    expect(cacheSignals.map((entry) => entry.type)).toContain(
+      'diagnostic:cache-invalidation-checker:money-like-write+cache-refresh-not-observed',
     );
+    expect(
+      cacheSignals.find((entry) =>
+        entry.type.includes('money-like-write+cache-refresh-not-observed'),
+      ),
+    ).toMatchObject({
+      severity: 'high',
+      source:
+        'regex-heuristic:cache-invalidation-checker;truthMode=weak_signal;predicates=money_like_write,cache_refresh_not_observed',
+      surface: 'cache-consistency',
+      truthMode: 'weak_signal',
+    });
   });
 });

@@ -64,6 +64,9 @@ describe('proof readiness gate', () => {
         blockedNotExecutable: 0,
         observedEvidence: 0,
         nonObservedEvidence: 1,
+        plannedEvidence: 1,
+        inferredEvidence: 0,
+        notAvailableEvidence: 0,
       }),
     );
     expect(result.blockers).toEqual([
@@ -105,6 +108,9 @@ describe('proof readiness gate', () => {
         executableObserved: 2,
         executableUnproved: 0,
         observedEvidence: 2,
+        plannedEvidence: 0,
+        inferredEvidence: 0,
+        notAvailableEvidence: 0,
       }),
     );
     expect(result.blockers).toEqual([]);
@@ -144,5 +150,40 @@ describe('proof readiness gate', () => {
       'human_required',
       'not_executable',
     ]);
+  });
+
+  it('reports not_available evidence separately from inferred proof debt', () => {
+    const result = evaluateProofReadinessGate({
+      tasks: [task()],
+      evidence: [
+        observedEvidence({
+          status: 'not_available',
+          evidenceMode: 'not_available',
+          executed: false,
+          attempts: 0,
+          startedAt: null,
+          finishedAt: null,
+        }),
+      ],
+    });
+
+    expect(result.canAdvance).toBe(false);
+    expect(result.summary).toEqual(
+      expect.objectContaining({
+        executableTasks: 1,
+        executableObserved: 0,
+        executableUnproved: 1,
+        observedEvidence: 0,
+        nonObservedEvidence: 1,
+        inferredEvidence: 1,
+        notAvailableEvidence: 1,
+      }),
+    );
+    expect(result.evidence[0]).toEqual(
+      expect.objectContaining({
+        mode: 'inferred',
+        countsAsObservedProof: false,
+      }),
+    );
   });
 });

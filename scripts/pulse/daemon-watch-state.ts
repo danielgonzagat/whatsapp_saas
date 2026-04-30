@@ -20,12 +20,15 @@ import { buildExternalSignalState } from './external-signals';
 import type { PulseExecutionTracer } from './execution-trace';
 import { fullScan, type FullScanOptions, type FullScanResult } from './daemon';
 import { getWatchRefreshMode, type PulseWatchChangeKind } from './daemon-watch-classifier';
+import { buildMerkleDag } from './merkle-cache';
 
 interface RebuildDerivedScanStateOptions {
   /** Tracer property. */
   tracer?: PulseExecutionTracer;
   /** Refresh manifest property. */
   refreshManifest?: boolean;
+  /** Changed path from the daemon watcher, absolute or repo-relative. */
+  changedFilePath?: string;
 }
 
 /** Rebuild derived scan state. */
@@ -151,7 +154,7 @@ export function rebuildDerivedScanState(
     },
   });
 
-  return {
+  const next: FullScanResult = {
     ...previous,
     health,
     codebaseTruth,
@@ -171,6 +174,23 @@ export function rebuildDerivedScanState(
     productVision,
     certification,
   };
+
+  refreshMerkleEvidence(config, next, options.changedFilePath);
+
+  return next;
+}
+
+function refreshMerkleEvidence(
+  config: PulseConfig,
+  scanResult: FullScanResult,
+  changedFilePath?: string,
+): void {
+  if (!changedFilePath) {
+    return;
+  }
+  buildMerkleDag(config.rootDir, scanResult.structuralGraph, {
+    changedFilePaths: [changedFilePath],
+  });
 }
 
 /** Refresh scan result for watch change. */
@@ -179,6 +199,7 @@ export async function refreshScanResultForWatchChange(
   previous: FullScanResult,
   kind: PulseWatchChangeKind | null,
   options: FullScanOptions = {},
+  changedFilePath?: string,
 ): Promise<FullScanResult> {
   const refreshMode = getWatchRefreshMode(kind);
   if (refreshMode === 'none') {
@@ -188,6 +209,7 @@ export async function refreshScanResultForWatchChange(
     return rebuildDerivedScanState(config, previous, {
       tracer: options.tracer,
       refreshManifest: kind === 'manifest',
+      changedFilePath,
     });
   }
   return fullScan(config, options);

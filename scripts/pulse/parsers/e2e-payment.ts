@@ -13,8 +13,7 @@
  * 3. Arithmetic sanity: verify wallet transaction amounts are positive
  * 4. Check WebhookEvent table: every PAID order should have a recorded webhook event
  *
- * BREAK TYPES:
- * - E2E_PAYMENT_BROKEN (critical) — checkout init fails, webhook not processed, wallet not credited
+ * Emits E2E payment lifecycle evidence failures; diagnostic identity is synthesized downstream.
  */
 
 import type { Break, PulseConfig } from '../types';
@@ -26,6 +25,24 @@ import {
   isDeepMode,
   getBackendUrl,
 } from './runtime-utils';
+
+function paymentE2eFinding(input: {
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+}): Break {
+  return {
+    type: 'e2e-flow-evidence-failure',
+    severity: 'critical',
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: 'runtime:e2e:payment-lifecycle',
+    surface: 'payment-lifecycle',
+  };
+}
 
 /** Check e2e payment. */
 export async function checkE2ePayment(config: PulseConfig): Promise<Break[]> {
@@ -49,14 +66,14 @@ export async function checkE2ePayment(config: PulseConfig): Promise<Break[]> {
     const saleTxs = parseInt(txCountRows[0]?.count || '0', 10);
 
     if (paidOrders > 0 && saleTxs === 0) {
-      breaks.push({
-        type: 'E2E_PAYMENT_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/kloel/wallet.controller.ts',
-        line: 1,
-        description: `${paidOrders} PAID orders exist but 0 SALE wallet transactions — payment webhook not crediting wallets`,
-        detail: `PAID orders: ${paidOrders}, SALE transactions: ${saleTxs}`,
-      });
+      breaks.push(
+        paymentE2eFinding({
+          file: 'backend/src/kloel/wallet.controller.ts',
+          line: 1,
+          description: `${paidOrders} PAID orders exist but 0 SALE wallet transactions — payment webhook not crediting wallets`,
+          detail: `PAID orders: ${paidOrders}, SALE transactions: ${saleTxs}`,
+        }),
+      );
     }
   } catch (err: any) {
     // DB unavailable — skip
@@ -76,17 +93,17 @@ export async function checkE2ePayment(config: PulseConfig): Promise<Break[]> {
     );
 
     if (orphanRows.length > 0) {
-      breaks.push({
-        type: 'E2E_PAYMENT_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/kloel/wallet.controller.ts',
-        line: 1,
-        description: `${orphanRows.length} PAID orders have no corresponding wallet transaction (orphaned)`,
-        detail: `Sample orphan order IDs: ${orphanRows
-          .slice(0, 3)
-          .map((r: any) => r.id)
-          .join(', ')}`,
-      });
+      breaks.push(
+        paymentE2eFinding({
+          file: 'backend/src/kloel/wallet.controller.ts',
+          line: 1,
+          description: `${orphanRows.length} PAID orders have no corresponding wallet transaction (orphaned)`,
+          detail: `Sample orphan order IDs: ${orphanRows
+            .slice(0, 3)
+            .map((r: any) => r.id)
+            .join(', ')}`,
+        }),
+      );
     }
   } catch (err: any) {
     // Table may not have orderId column — try alternate check
@@ -103,14 +120,14 @@ export async function checkE2ePayment(config: PulseConfig): Promise<Break[]> {
 
       // If ratio is severely off (paid >> txs by more than 2x), flag it
       if (paid > 5 && txs < paid / 2) {
-        breaks.push({
-          type: 'E2E_PAYMENT_BROKEN',
-          severity: 'critical',
-          file: 'backend/src/kloel/wallet.controller.ts',
-          line: 1,
-          description: `PAID orders (${paid}) significantly outnumber SALE wallet transactions (${txs}) — possible webhook processing gap`,
-          detail: `Ratio: ${txs}/${paid} = ${((txs / paid) * 100).toFixed(1)}%`,
-        });
+        breaks.push(
+          paymentE2eFinding({
+            file: 'backend/src/kloel/wallet.controller.ts',
+            line: 1,
+            description: `PAID orders (${paid}) significantly outnumber SALE wallet transactions (${txs}) — possible webhook processing gap`,
+            detail: `Ratio: ${txs}/${paid} = ${((txs / paid) * 100).toFixed(1)}%`,
+          }),
+        );
       }
     } catch {
       // DB fully unavailable
@@ -126,14 +143,14 @@ export async function checkE2ePayment(config: PulseConfig): Promise<Break[]> {
     const negCount = parseInt(negativeRows[0]?.count || '0', 10);
 
     if (negCount > 0) {
-      breaks.push({
-        type: 'E2E_PAYMENT_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/kloel/wallet.controller.ts',
-        line: 1,
-        description: `${negCount} SALE wallet transactions have non-positive amounts — arithmetic error in payment processing`,
-        detail: `SALE transactions with amount <= 0: ${negCount}`,
-      });
+      breaks.push(
+        paymentE2eFinding({
+          file: 'backend/src/kloel/wallet.controller.ts',
+          line: 1,
+          description: `${negCount} SALE wallet transactions have non-positive amounts — arithmetic error in payment processing`,
+          detail: `SALE transactions with amount <= 0: ${negCount}`,
+        }),
+      );
     }
   } catch {
     // Skip if table or column doesn't exist
@@ -154,14 +171,14 @@ export async function checkE2ePayment(config: PulseConfig): Promise<Break[]> {
 
     // If there are paid orders but zero processed Stripe webhooks, that's suspicious
     if (paidOrders > 0 && processedWebhooks === 0) {
-      breaks.push({
-        type: 'E2E_PAYMENT_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/kloel/wallet.controller.ts',
-        line: 1,
-        description: `${paidOrders} PAID orders exist but no processed Stripe WebhookEvents — webhook audit trail missing`,
-        detail: `PAID orders: ${paidOrders}, processed Stripe webhooks: ${processedWebhooks}`,
-      });
+      breaks.push(
+        paymentE2eFinding({
+          file: 'backend/src/kloel/wallet.controller.ts',
+          line: 1,
+          description: `${paidOrders} PAID orders exist but no processed Stripe WebhookEvents — webhook audit trail missing`,
+          detail: `PAID orders: ${paidOrders}, processed Stripe webhooks: ${processedWebhooks}`,
+        }),
+      );
     }
   } catch {
     // WebhookEvent table or status column may not exist — skip

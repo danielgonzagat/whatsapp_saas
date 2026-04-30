@@ -526,7 +526,7 @@ export default function CheckoutEditorPage() {
       `  <iframe src="${checkoutPublicUrl}"`,
       '    loading="lazy"',
       // PULSE_VISUAL_OK: generated external HTML embed, token unavailable in target page
-      '    style="width:100%;min-height:920px;border:0;border-radius:16px;background:#0A0A0C;"',
+      '    style="width:100%;min-height:920px;border:0;border-radius:16px;background:colors.background.void;"',
       '    allow="payment *; clipboard-write">',
       '  </iframe>',
       '</div>',
@@ -1667,7 +1667,7 @@ export default function CheckoutEditorPage() {
                   '  <iframe src="' + checkoutPublicUrl + '"',
                   '    loading="lazy"',
                   // PULSE_VISUAL_OK: generated external HTML embed, token unavailable in target page
-                  '    style="width:100%;min-height:920px;border:0;border-radius:16px;background:#0A0A0C;"',
+                  '    style="width:100%;min-height:920px;border:0;border-radius:16px;background:colors.background.void;"',
                   '    allow="payment *; clipboard-write">',
                   '  </iframe>',
                   '</div>',

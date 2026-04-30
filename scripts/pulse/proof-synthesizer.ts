@@ -11,14 +11,21 @@ export interface PulseSynthesizedProofPlan {
 }
 
 function proofKindFor(predicateKind: string): string {
-  if (predicateKind.includes('observability')) return 'runtime_signal_probe';
-  if (predicateKind.includes('recovery')) return 'rollback_or_recovery_probe';
-  if (predicateKind.includes('validation')) return 'contract_or_boundary_probe';
-  if (predicateKind.includes('hardcoded')) return 'dynamic_discovery_replacement_proof';
-  if (predicateKind.includes('durable') || predicateKind.includes('mutation'))
-    return 'state_effect_probe';
-  if (predicateKind.includes('external')) return 'boundary_effect_probe';
-  return 'evidence_confirmation_probe';
+  const normalized = predicateKind
+    .toLowerCase()
+    .split('')
+    .map((char) => {
+      const code = char.charCodeAt(0);
+      const isAsciiLetter = code >= 97 && code <= 122;
+      const isAsciiDigit = code >= 48 && code <= 57;
+      return isAsciiLetter || isAsciiDigit ? char : '_';
+    })
+    .join('')
+    .split('_')
+    .filter(Boolean)
+    .join('_');
+
+  return normalized ? `prove_${normalized}` : 'prove_evidence';
 }
 
 export function synthesizeProofPlan(
@@ -31,7 +38,7 @@ export function synthesizeProofPlan(
 
   if (requirements.length === 0) {
     requirements.push({
-      kind: 'evidence_confirmation_probe',
+      kind: 'prove_evidence',
       reason: 'No predicate carried enough confidence to produce a specialized proof.',
     });
   }

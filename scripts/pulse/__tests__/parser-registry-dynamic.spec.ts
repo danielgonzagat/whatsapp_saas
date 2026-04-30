@@ -196,6 +196,83 @@ describe('dynamic parser registry contracts', () => {
     );
   });
 
+  it('loads parser definitions contributed by parser plugins without core parser filename conventions', () => {
+    const rootDir = makeRoot();
+    write(
+      rootDir,
+      'scripts/pulse/plugins/parser-runtime-evidence/index.ts',
+      [
+        'function runRuntimeEvidence(config: unknown) { return []; }',
+        'export default {',
+        "  id: 'parser-runtime-evidence',",
+        "  kind: 'parser',",
+        "  version: '1.0.0',",
+        '  discover() { return []; },',
+        '  link() { return []; },',
+        '  evidence() { return []; },',
+        '  gates() { return []; },',
+        '  parsers() {',
+        '    return [{',
+        "      name: 'runtime-evidence-plugin',",
+        "      file: 'scripts/pulse/plugins/parser-runtime-evidence/index.ts',",
+        '      fn: runRuntimeEvidence,',
+        '    }];',
+        '  },',
+        '};',
+      ].join('\n'),
+    );
+
+    const inventory = loadParserInventory(makeConfig(rootDir));
+
+    expect(inventory.discoveredChecks).toContain('runtime-evidence-plugin');
+    expect(inventory.loadedChecks).toContainEqual(
+      expect.objectContaining({
+        name: 'runtime-evidence-plugin',
+        file: 'scripts/pulse/plugins/parser-runtime-evidence/index.ts',
+        discoveryAuthority: 'plugin_registry',
+        pluginId: 'parser-runtime-evidence',
+        evidenceKind: 'plugin-parser',
+      }),
+    );
+    expect(inventory.contracts).toContainEqual(
+      expect.objectContaining({
+        name: 'runtime-evidence-plugin',
+        parserExports: ['plugin:parser-runtime-evidence'],
+        proof: expect.stringContaining('registered dynamically by plugin'),
+      }),
+    );
+  });
+
+  it('reports parser plugins honestly when they load but expose no executable parser list', () => {
+    const rootDir = makeRoot();
+    write(
+      rootDir,
+      'scripts/pulse/plugins/parser-empty/index.ts',
+      [
+        'export default {',
+        "  id: 'parser-empty',",
+        "  kind: 'parser',",
+        "  version: '1.0.0',",
+        '  discover() { return []; },',
+        '  link() { return []; },',
+        '  evidence() { return []; },',
+        '  gates() { return []; },',
+        '};',
+      ].join('\n'),
+    );
+
+    const inventory = loadParserInventory(makeConfig(rootDir));
+
+    expect(inventory.loadedChecks).toEqual([]);
+    expect(inventory.unavailableChecks).toContainEqual(
+      expect.objectContaining({
+        name: 'parser-empty',
+        file: 'scripts/pulse/plugins/parser-empty/index.ts',
+        reason: expect.stringContaining('did not expose parsers()'),
+      }),
+    );
+  });
+
   it('publishes plugin discovery health and freshness proof even when no plugins exist', () => {
     const rootDir = makeRoot();
 
@@ -211,5 +288,46 @@ describe('dynamic parser registry contracts', () => {
       }),
     );
     expect(artifact.health).toEqual(registry.health);
+  });
+
+  it('records plugin lifecycle execution failures instead of marking broken plugins as loaded', () => {
+    const rootDir = makeRoot();
+    write(
+      rootDir,
+      'scripts/pulse/plugins/gate-runtime/index.ts',
+      [
+        'export default {',
+        "  id: 'gate-runtime',",
+        "  kind: 'gate_provider',",
+        "  version: '1.0.0',",
+        '  discover() { return []; },',
+        '  link() { return []; },',
+        '  evidence() { return []; },',
+        "  gates() { throw new Error('gate provider unavailable'); },",
+        '};',
+      ].join('\n'),
+    );
+
+    const registry = loadPluginRegistry(rootDir);
+
+    expect(registry.health.status).toBe('partial');
+    expect(registry.summary).toEqual({ total: 1, loaded: 0, failed: 1 });
+    expect(registry.plugins).toContainEqual(
+      expect.objectContaining({
+        id: 'gate-runtime',
+        kind: 'gate_provider',
+        loaded: false,
+        status: 'execution_failed',
+        error: expect.stringContaining('gate provider unavailable'),
+        proof: expect.stringContaining('execution probe failed'),
+        execution: expect.arrayContaining([
+          expect.objectContaining({
+            name: 'gates',
+            status: 'fail',
+            error: 'gate provider unavailable',
+          }),
+        ]),
+      }),
+    );
   });
 });

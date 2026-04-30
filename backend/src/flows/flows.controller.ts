@@ -12,6 +12,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -27,8 +28,10 @@ import { FlowTemplateService } from './flow-template.service';
 import { FlowsService } from './flows.service';
 
 /** Flows controller. */
+@UseGuards(ThrottlerGuard)
 @Controller('flows')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class FlowsController {
   constructor(
     private readonly flows: FlowsService,

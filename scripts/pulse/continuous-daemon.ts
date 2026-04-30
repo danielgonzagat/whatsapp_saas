@@ -21,13 +21,17 @@ import type {
   DaemonCycleResult,
 } from './types.continuous-daemon';
 import type { BehaviorGraph, BehaviorNode } from './types.behavior-graph';
-import { readBehaviorGraph } from './execution-harness';
 import { evaluateExecutorCycleMateriality } from './autonomous-executor-policy';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const AUTONOMY_STATE_FILENAME = 'PULSE_AUTONOMY_STATE.json';
 const BEHAVIOR_GRAPH_ARTIFACT = '.pulse/current/PULSE_BEHAVIOR_GRAPH.json';
+const CERTIFICATE_ARTIFACT = '.pulse/current/PULSE_CERTIFICATE.json';
+const DIRECTIVE_ARTIFACT = '.pulse/current/PULSE_CLI_DIRECTIVE.json';
+const PROOF_SYNTHESIS_ARTIFACT = '.pulse/current/PULSE_PROOF_SYNTHESIS.json';
+const PATH_PROOF_EVIDENCE_ARTIFACT = '.pulse/current/PULSE_PATH_PROOF_EVIDENCE.json';
+const PROBABILISTIC_RISK_ARTIFACT = '.pulse/current/PULSE_PROBABILISTIC_RISK.json';
 
 const DEFAULT_TARGET_SCORE = 100;
 const DEFAULT_MAX_ITERATIONS = 100;
@@ -38,6 +42,99 @@ const MAX_CONSECUTIVE_PLANNING_FAILURES = 5;
 
 const LEASE_DIR = '.pulse/leases';
 const LEASE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+type CalibrationSource =
+  | 'artifact'
+  | 'history'
+  | 'evidence_graph'
+  | 'dynamic_risk'
+  | 'weak_fallback';
+
+interface CalibrationValue {
+  value: number;
+  source: CalibrationSource;
+  detail: string;
+}
+
+interface DaemonCalibrationSnapshot {
+  generatedAt: string;
+  targetScore: CalibrationValue;
+  maxIterations: CalibrationValue;
+  cooldownCycles: CalibrationValue;
+  leaseTtlMs: CalibrationValue;
+  kindPriority: Record<string, CalibrationValue>;
+  riskPriority: Record<string, CalibrationValue>;
+  fileEvidenceDeficits: Record<string, number>;
+  fileRiskImpact: Record<string, number>;
+  weakFallbacks: string[];
+}
+
+type CalibratedDaemonState = ContinuousDaemonState & {
+  calibration?: DaemonCalibrationSnapshot;
+};
+
+interface PulseCertificateArtifact {
+  status?: string;
+  score?: number;
+  rawScore?: number;
+  certificationTarget?: {
+    final?: boolean | null;
+    tier?: string | null;
+    profile?: string | null;
+    certificationScope?: string | null;
+  } | null;
+  targetScore?: number;
+  objective?: string;
+}
+
+interface PulseDirectiveArtifact {
+  productionAutonomyVerdict?: string;
+  autonomyVerdict?: string;
+  targetCheckpoint?: Record<string, number | string | boolean | null>;
+  visionGap?: string;
+}
+
+interface PathProofEvidenceArtifact {
+  summary?: {
+    totalTasks?: number;
+    executableTasks?: number;
+    missingResult?: number;
+    notObserved?: number;
+  };
+}
+
+interface ProofSynthesisArtifact {
+  summary?: {
+    totalPlans?: number;
+    observedPlans?: number;
+    plannedPlans?: number;
+  };
+  targets?: ProofSynthesisTarget[];
+}
+
+interface ProofSynthesisTarget {
+  filePath?: string;
+  sourceKind?: string;
+  plans?: Array<{
+    observed?: boolean;
+    countsAsObserved?: boolean;
+  }>;
+}
+
+interface ProbabilisticRiskArtifact {
+  summary?: {
+    avgReliability?: number;
+    minReliability?: number;
+    capabilitiesWithLowReliability?: number;
+  };
+  reliabilities?: Array<{
+    capabilityId?: string;
+    capabilityName?: string;
+    expectedImpact?: number;
+    reliabilityP?: number;
+    observations?: number;
+  }>;
+}
 
 interface FileLease {
   filePath: string;
@@ -110,6 +207,16 @@ function saveAutonomyState(rootDir: string, state: ContinuousDaemonState): void 
   writeTextFile(filePath, JSON.stringify(state, null, 2));
 }
 
+function loadOptionalArtifact<T>(rootDir: string, artifactPath: string): T | null {
+  const fullPath = path.join(rootDir, artifactPath);
+  if (!pathExists(fullPath)) return null;
+  try {
+    return readJsonFile<T>(fullPath);
+  } catch {
+    return null;
+  }
+}
+
 // ── Behavior graph loading ───────────────────────────────────────────────────
 
 function loadBehaviorGraph(rootDir: string): BehaviorGraph | null {
@@ -120,6 +227,354 @@ function loadBehaviorGraph(rootDir: string): BehaviorGraph | null {
   } catch {
     return null;
   }
+}
+
+// ── Dynamic daemon calibration ────────────────────────────────────────────────
+
+function buildDaemonCalibration(
+  rootDir: string,
+  graph: BehaviorGraph,
+  existing: ContinuousDaemonState | null,
+): DaemonCalibrationSnapshot {
+  const certificate = loadOptionalArtifact<PulseCertificateArtifact>(rootDir, CERTIFICATE_ARTIFACT);
+  const directive = loadOptionalArtifact<PulseDirectiveArtifact>(rootDir, DIRECTIVE_ARTIFACT);
+  const proofSynthesis = loadOptionalArtifact<ProofSynthesisArtifact>(
+    rootDir,
+    PROOF_SYNTHESIS_ARTIFACT,
+  );
+  const pathProof = loadOptionalArtifact<PathProofEvidenceArtifact>(
+    rootDir,
+    PATH_PROOF_EVIDENCE_ARTIFACT,
+  );
+  const risk = loadOptionalArtifact<ProbabilisticRiskArtifact>(
+    rootDir,
+    PROBABILISTIC_RISK_ARTIFACT,
+  );
+
+  const targetScore = deriveTargetScore(certificate, directive);
+  const fileEvidenceDeficits = deriveFileEvidenceDeficits(proofSynthesis);
+  const kindPriority = deriveKindPriority(graph, proofSynthesis);
+  const riskPriority = deriveRiskPriority(graph, risk);
+  const fileRiskImpact = deriveFileRiskImpact(risk);
+  const maxIterations = deriveMaxIterations(graph, pathProof, proofSynthesis, targetScore.value);
+  const cooldownCycles = deriveCooldownCycles(existing, risk);
+  const leaseTtlMs = deriveLeaseTtlMs(existing);
+
+  return {
+    generatedAt: new Date().toISOString(),
+    targetScore,
+    maxIterations,
+    cooldownCycles,
+    leaseTtlMs,
+    kindPriority,
+    riskPriority,
+    fileEvidenceDeficits,
+    fileRiskImpact,
+    weakFallbacks: [
+      targetScore,
+      maxIterations,
+      cooldownCycles,
+      leaseTtlMs,
+      ...Object.values(kindPriority),
+      ...Object.values(riskPriority),
+    ]
+      .filter((entry) => entry.source === 'weak_fallback')
+      .map((entry) => entry.detail),
+  };
+}
+
+function derived(value: number, source: CalibrationSource, detail: string): CalibrationValue {
+  return { value, source, detail };
+}
+
+function deriveTargetScore(
+  certificate: PulseCertificateArtifact | null,
+  directive: PulseDirectiveArtifact | null,
+): CalibrationValue {
+  if (typeof certificate?.targetScore === 'number') {
+    return derived(certificate.targetScore, 'artifact', 'certificate.targetScore');
+  }
+
+  const checkpoint = directive?.targetCheckpoint;
+  if (checkpoint) {
+    const numericTargets = Object.values(checkpoint).filter(
+      (value): value is number => typeof value === 'number' && Number.isFinite(value),
+    );
+    if (numericTargets.length > 0) {
+      const normalized = numericTargets.every((value) => value <= 1)
+        ? Math.round(Math.max(...numericTargets) * 100)
+        : Math.round(Math.max(...numericTargets));
+      return derived(normalized, 'artifact', 'directive.targetCheckpoint');
+    }
+  }
+
+  if (
+    certificate?.certificationTarget ||
+    certificate?.status ||
+    directive?.productionAutonomyVerdict
+  ) {
+    return derived(
+      DEFAULT_TARGET_SCORE,
+      'artifact',
+      'certification objective requires full target when certificate is not explicitly capped',
+    );
+  }
+
+  return derived(
+    DEFAULT_TARGET_SCORE,
+    'weak_fallback',
+    'DEFAULT_TARGET_SCORE without objective artifact',
+  );
+}
+
+function deriveMaxIterations(
+  graph: BehaviorGraph,
+  pathProof: PathProofEvidenceArtifact | null,
+  proofSynthesis: ProofSynthesisArtifact | null,
+  targetScore: number,
+): CalibrationValue {
+  const currentScore = computeCurrentScore(graph);
+  const scoreGap = Math.max(1, targetScore - currentScore);
+  const proofSummary = pathProof?.summary;
+  const missingPathTasks = Math.max(
+    proofSummary?.missingResult ?? 0,
+    proofSummary?.notObserved ?? 0,
+    (proofSynthesis?.summary?.plannedPlans ?? 0) - (proofSynthesis?.summary?.observedPlans ?? 0),
+  );
+
+  if (missingPathTasks > 0) {
+    const executableRatio = Math.max(
+      1,
+      Math.ceil(
+        (proofSummary?.totalTasks ?? graph.summary.totalNodes) /
+          Math.max(1, proofSummary?.executableTasks ?? 1),
+      ),
+    );
+    return derived(
+      Math.max(scoreGap, Math.ceil(missingPathTasks / executableRatio)),
+      'evidence_graph',
+      'unobserved path/proof evidence divided by executable evidence ratio',
+    );
+  }
+
+  if (graph.summary.totalNodes > 0) {
+    const autonomyDensity = Math.max(
+      1,
+      Math.ceil(graph.summary.totalNodes / Math.max(1, graph.summary.aiSafeNodes)),
+    );
+    return derived(
+      scoreGap * autonomyDensity,
+      'artifact',
+      'score gap scaled by behavior graph autonomy density',
+    );
+  }
+
+  return derived(
+    DEFAULT_MAX_ITERATIONS,
+    'weak_fallback',
+    'DEFAULT_MAX_ITERATIONS without graph evidence',
+  );
+}
+
+function deriveCooldownCycles(
+  existing: ContinuousDaemonState | null,
+  risk: ProbabilisticRiskArtifact | null,
+): CalibrationValue {
+  const recentFailures =
+    existing?.cycles.filter((cycle) => cycle.result === 'blocked' || cycle.result === 'error') ??
+    [];
+  if (recentFailures.length > 0) {
+    const distinctUnits = new Set(recentFailures.map((cycle) => cycle.unitId).filter(Boolean));
+    return derived(
+      Math.max(1, distinctUnits.size),
+      'history',
+      'distinct blocked/error units in daemon history',
+    );
+  }
+
+  const lowReliability = risk?.summary?.capabilitiesWithLowReliability;
+  if (typeof lowReliability === 'number' && lowReliability > 0) {
+    return derived(
+      Math.max(1, Math.ceil(Math.log2(lowReliability + 1))),
+      'dynamic_risk',
+      'low-reliability capability count from probabilistic risk',
+    );
+  }
+
+  return derived(
+    COOLDOWN_CYCLE_COUNT,
+    'weak_fallback',
+    'COOLDOWN_CYCLE_COUNT without history/risk evidence',
+  );
+}
+
+function deriveLeaseTtlMs(existing: ContinuousDaemonState | null): CalibrationValue {
+  const durations = existing?.cycles
+    .map((cycle) => cycle.durationMs)
+    .filter((duration) => Number.isFinite(duration) && duration > 0)
+    .sort((a, b) => a - b);
+
+  if (durations && durations.length > 0) {
+    const percentileIndex = Math.max(0, Math.ceil(durations.length * 0.9) - 1);
+    return derived(durations[percentileIndex], 'history', 'p90 daemon cycle duration');
+  }
+
+  return derived(LEASE_TTL_MS, 'weak_fallback', 'LEASE_TTL_MS without duration history');
+}
+
+function deriveFileEvidenceDeficits(
+  proofSynthesis: ProofSynthesisArtifact | null,
+): Record<string, number> {
+  const deficits: Record<string, number> = {};
+  for (const target of proofSynthesis?.targets ?? []) {
+    if (!target.filePath) continue;
+    const missingPlans = (target.plans ?? []).filter(
+      (plan) => plan.observed !== true && plan.countsAsObserved !== true,
+    ).length;
+    if (missingPlans > 0) {
+      deficits[target.filePath] = (deficits[target.filePath] ?? 0) + missingPlans;
+    }
+  }
+  return deficits;
+}
+
+function deriveKindPriority(
+  graph: BehaviorGraph,
+  proofSynthesis: ProofSynthesisArtifact | null,
+): Record<string, CalibrationValue> {
+  const counts: Record<string, number> = {};
+  for (const target of proofSynthesis?.targets ?? []) {
+    const kind = normalizeProofSourceKind(target.sourceKind);
+    if (!kind) continue;
+    const missingPlans = (target.plans ?? []).filter(
+      (plan) => plan.observed !== true && plan.countsAsObserved !== true,
+    ).length;
+    counts[kind] = (counts[kind] ?? 0) + missingPlans;
+  }
+
+  if (Object.keys(counts).length > 0) {
+    return mapCountsToCalibration(
+      counts,
+      'evidence_graph',
+      'unobserved proof plans by behavior kind',
+    );
+  }
+
+  for (const node of graph.nodes) {
+    counts[node.kind] = (counts[node.kind] ?? 0) + 1;
+  }
+
+  if (Object.keys(counts).length > 0) {
+    return mapCountsToCalibration(counts, 'artifact', 'behavior graph node distribution');
+  }
+
+  return {
+    api_endpoint: derived(5, 'weak_fallback', 'legacy api_endpoint priority'),
+    handler: derived(4, 'weak_fallback', 'legacy handler priority'),
+    function_definition: derived(3, 'weak_fallback', 'legacy function_definition priority'),
+    lifecycle_hook: derived(2, 'weak_fallback', 'legacy lifecycle_hook priority'),
+    validation: derived(1, 'weak_fallback', 'legacy validation priority'),
+  };
+}
+
+function deriveRiskPriority(
+  graph: BehaviorGraph,
+  risk: ProbabilisticRiskArtifact | null,
+): Record<string, CalibrationValue> {
+  const counts: Record<string, number> = {};
+  for (const node of graph.nodes) {
+    if (node.executionMode !== 'ai_safe') continue;
+    counts[node.risk] = (counts[node.risk] ?? 0) + 1;
+  }
+
+  if (risk?.summary?.avgReliability !== undefined) {
+    const uncertaintyBoost = Math.max(1, Math.round((1 - risk.summary.avgReliability) * 10));
+    for (const key of Object.keys(counts)) {
+      counts[key] += uncertaintyBoost;
+    }
+    return mapCountsToCalibration(
+      counts,
+      'dynamic_risk',
+      'ai-safe risk bins boosted by reliability gap',
+    );
+  }
+
+  if (Object.keys(counts).length > 0) {
+    return mapCountsToCalibration(counts, 'artifact', 'ai-safe behavior risk distribution');
+  }
+
+  return {
+    low: derived(5, 'weak_fallback', 'legacy low-risk priority'),
+    medium: derived(3, 'weak_fallback', 'legacy medium-risk priority'),
+    none: derived(1, 'weak_fallback', 'legacy no-risk priority'),
+  };
+}
+
+function mapCountsToCalibration(
+  counts: Record<string, number>,
+  source: CalibrationSource,
+  detail: string,
+): Record<string, CalibrationValue> {
+  const values = Object.values(counts);
+  const max = Math.max(...values, 1);
+  const result: Record<string, CalibrationValue> = {};
+  for (const [key, count] of Object.entries(counts)) {
+    result[key] = derived(Math.max(1, Math.round((count / max) * 10)), source, detail);
+  }
+  return result;
+}
+
+function normalizeProofSourceKind(sourceKind: string | undefined): string | null {
+  switch (sourceKind) {
+    case 'endpoint':
+      return 'api_endpoint';
+    case 'pure_function':
+      return 'function_definition';
+    case 'worker':
+      return 'queue_consumer';
+    case 'webhook':
+      return 'webhook_receiver';
+    case 'state_mutation':
+      return 'db_writer';
+    case 'ui_action':
+      return 'ui_action';
+    default:
+      return sourceKind ?? null;
+  }
+}
+
+function deriveFileRiskImpact(risk: ProbabilisticRiskArtifact | null): Record<string, number> {
+  const impacts: Record<string, number> = {};
+  const reliabilities = risk?.reliabilities ?? [];
+  const maxImpact = Math.max(...reliabilities.map((entry) => entry.expectedImpact ?? 0), 0);
+  if (maxImpact <= 0) return impacts;
+
+  for (const entry of reliabilities) {
+    const id = entry.capabilityId ?? entry.capabilityName;
+    const expectedImpact = entry.expectedImpact ?? 0;
+    if (!id || expectedImpact <= 0) continue;
+    impacts[normalizeCapabilityToken(id)] = Math.round((expectedImpact / maxImpact) * 10);
+  }
+  return impacts;
+}
+
+function normalizeCapabilityToken(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/^capability:/, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+function riskImpactForFile(filePath: string, fileRiskImpact: Record<string, number>): number {
+  const normalizedPath = normalizeCapabilityToken(filePath);
+  let maxImpact = 0;
+  for (const [token, impact] of Object.entries(fileRiskImpact)) {
+    if (token && normalizedPath.includes(token)) {
+      maxImpact = Math.max(maxImpact, impact);
+    }
+  }
+  return maxImpact;
 }
 
 // ── Scoring ───────────────────────────────────────────────────────────────────
@@ -144,37 +599,29 @@ interface PlannedUnit {
   kind: string;
   risk: string;
   priority: number;
+  prioritySource: string;
   strategy: string;
 }
-
-const KIND_PRIORITY: Record<string, number> = {
-  api_endpoint: 5,
-  handler: 4,
-  function_definition: 3,
-  lifecycle_hook: 2,
-  validation: 1,
-};
-
-const RISK_PRIORITY: Record<string, number> = {
-  low: 5,
-  medium: 3,
-  none: 1,
-};
 
 /**
  * Pick the highest-value ai_safe unit from the behavior graph.
  *
  * Priority scoring:
- *   - kind priority: api_endpoint > handler > function_definition > lifecycle > validation
- *   - risk priority lower-risk first: low > medium > none (ai_safe units are never high/critical)
+ *   - kind priority is derived from unobserved proof/evidence graph gaps
+ *   - risk priority is derived from behavior graph risk distribution and dynamic risk
  *   - prefers units with observability (hasLogging, hasMetrics, hasTracing)
  *   - excludes recently planned units (cooldown)
  *
  * @param graph       The behavior graph containing all nodes.
  * @param recentUnits Set of unit IDs from recent cycles to exclude.
+ * @param calibration Dynamic daemon calibration loaded from PULSE artifacts/history.
  * @returns The selected unit with a strategy description, or null.
  */
-function pickNextUnit(graph: BehaviorGraph, recentUnits: Set<string>): PlannedUnit | null {
+function pickNextUnit(
+  graph: BehaviorGraph,
+  recentUnits: Set<string>,
+  calibration: DaemonCalibrationSnapshot,
+): PlannedUnit | null {
   const aiSafeNodes = graph.nodes.filter(
     (n): n is BehaviorNode & { executionMode: 'ai_safe' } => n.executionMode === 'ai_safe',
   );
@@ -188,36 +635,42 @@ function pickNextUnit(graph: BehaviorGraph, recentUnits: Set<string>): PlannedUn
     const allEligible = aiSafeNodes;
     const scored = allEligible.map((node) => ({
       node,
-      score:
-        (KIND_PRIORITY[node.kind] ?? 0) +
-        (RISK_PRIORITY[node.risk] ?? 0) +
-        (node.hasLogging ? 1 : 0) +
-        (node.hasMetrics ? 1 : 0) +
-        (node.hasTracing ? 1 : 0),
+      score: scoreNodePriority(node, calibration),
     }));
     scored.sort((a, b) => b.score - a.score);
     const best = scored[0];
     if (!best) return null;
-    return buildPlannedUnit(best.node);
+    return buildPlannedUnit(best.node, best.score, calibration);
   }
 
   const scored = eligible.map((node) => ({
     node,
-    score:
-      (KIND_PRIORITY[node.kind] ?? 0) +
-      (RISK_PRIORITY[node.risk] ?? 0) +
-      (node.hasLogging ? 1 : 0) +
-      (node.hasMetrics ? 1 : 0) +
-      (node.hasTracing ? 1 : 0),
+    score: scoreNodePriority(node, calibration),
   }));
 
   scored.sort((a, b) => b.score - a.score);
   const best = scored[0];
   if (!best) return null;
-  return buildPlannedUnit(best.node);
+  return buildPlannedUnit(best.node, best.score, calibration);
 }
 
-function buildPlannedUnit(node: BehaviorNode): PlannedUnit {
+function scoreNodePriority(node: BehaviorNode, calibration: DaemonCalibrationSnapshot): number {
+  return (
+    (calibration.kindPriority[node.kind]?.value ?? 0) +
+    (calibration.riskPriority[node.risk]?.value ?? 0) +
+    (calibration.fileEvidenceDeficits[node.filePath] ?? 0) +
+    riskImpactForFile(node.filePath, calibration.fileRiskImpact) +
+    (node.hasLogging ? 1 : 0) +
+    (node.hasMetrics ? 1 : 0) +
+    (node.hasTracing ? 1 : 0)
+  );
+}
+
+function buildPlannedUnit(
+  node: BehaviorNode,
+  priority: number,
+  calibration: DaemonCalibrationSnapshot,
+): PlannedUnit {
   const strategyParts: string[] = [];
 
   if (node.hasErrorHandler) {
@@ -229,6 +682,12 @@ function buildPlannedUnit(node: BehaviorNode): PlannedUnit {
   if (!node.hasLogging) strategyParts.push('add structured logging');
   if (!node.hasMetrics) strategyParts.push('add metrics instrumentation');
   if (!node.hasTracing) strategyParts.push('add tracing span');
+  if ((calibration.fileEvidenceDeficits[node.filePath] ?? 0) > 0) {
+    strategyParts.push('close unobserved proof plans from evidence graph');
+  }
+  if (riskImpactForFile(node.filePath, calibration.fileRiskImpact) > 0) {
+    strategyParts.push('prioritize dynamic-risk capability impact');
+  }
 
   const strategy =
     strategyParts.length > 0
@@ -241,7 +700,11 @@ function buildPlannedUnit(node: BehaviorNode): PlannedUnit {
     name: node.name,
     kind: node.kind,
     risk: node.risk,
-    priority: (KIND_PRIORITY[node.kind] ?? 0) + (RISK_PRIORITY[node.risk] ?? 0),
+    priority,
+    prioritySource: [
+      calibration.kindPriority[node.kind]?.source ?? 'missing_kind_calibration',
+      calibration.riskPriority[node.risk]?.source ?? 'missing_risk_calibration',
+    ].join('+'),
     strategy,
   };
 }
@@ -260,6 +723,7 @@ function acquireFileLease(
   filePath: string,
   unitId: string,
   iteration: number,
+  leaseTtlMs: number,
 ): boolean {
   ensureDir(leaseDirPath(rootDir), { recursive: true });
   const leasePath = leaseFilePath(rootDir, filePath);
@@ -284,7 +748,7 @@ function acquireFileLease(
     unitId,
     iteration,
     acquiredAt: now.toISOString(),
-    expiresAt: new Date(now.getTime() + LEASE_TTL_MS).toISOString(),
+    expiresAt: new Date(now.getTime() + leaseTtlMs).toISOString(),
     agentId: `pulse-planner-${process.pid ?? 'unknown'}`,
   };
 
@@ -423,12 +887,11 @@ export function startContinuousDaemon(
   options: { maxCycles?: number } = {},
 ): ContinuousDaemonState {
   const resolvedRoot = resolveRoot(rootDir);
-  const maxCycles = options.maxCycles ?? DEFAULT_MAX_ITERATIONS;
 
   const existing = loadAutonomyState(resolvedRoot);
   const now = new Date().toISOString();
 
-  let state: ContinuousDaemonState;
+  let state: CalibratedDaemonState;
 
   if (existing && existing.status === 'running') {
     state = existing;
@@ -441,7 +904,7 @@ export function startContinuousDaemon(
       regressions: 0,
       rollbacks: 0,
       currentScore: 0,
-      targetScore: DEFAULT_TARGET_SCORE,
+      targetScore: existing?.targetScore ?? 0,
       milestones: [],
       cycles: [],
       status: 'running',
@@ -477,8 +940,11 @@ export function startContinuousDaemon(
   }
 
   const initialScore = computeCurrentScore(behaviorGraph);
+  const calibration = buildDaemonCalibration(resolvedRoot, behaviorGraph, existing);
+  const maxCycles = options.maxCycles ?? calibration.maxIterations.value;
   state.currentScore = initialScore;
-  state.targetScore = DEFAULT_TARGET_SCORE;
+  state.targetScore = calibration.targetScore.value;
+  state.calibration = calibration;
 
   let consecutiveFailures = 0;
 
@@ -504,8 +970,12 @@ export function startContinuousDaemon(
       break;
     }
 
+    const calibrationHistory = state.cycles.length > 0 ? state : existing;
+    const freshCalibration = buildDaemonCalibration(resolvedRoot, freshGraph, calibrationHistory);
     const newScore = computeCurrentScore(freshGraph);
     state.currentScore = newScore;
+    state.targetScore = freshCalibration.targetScore.value;
+    state.calibration = freshCalibration;
 
     // Check if certified
     if (state.currentScore >= state.targetScore) {
@@ -527,7 +997,7 @@ export function startContinuousDaemon(
 
     // Cooldown: don't re-plan recently planned units
     const recentUnits = new Set<string>();
-    const recentCycles = state.cycles.slice(-COOLDOWN_CYCLE_COUNT);
+    const recentCycles = state.cycles.slice(-freshCalibration.cooldownCycles.value);
     for (const cycle of recentCycles) {
       if (cycle.unitId && (cycle.result === 'error' || cycle.result === 'blocked')) {
         recentUnits.add(cycle.unitId);
@@ -535,7 +1005,7 @@ export function startContinuousDaemon(
     }
 
     // Step 1: Pick highest-value ai_safe unit
-    const planned = pickNextUnit(freshGraph, recentUnits);
+    const planned = pickNextUnit(freshGraph, recentUnits, freshCalibration);
 
     if (!planned) {
       if (consecutiveFailures >= MAX_CONSECUTIVE_PLANNING_FAILURES) {
@@ -577,6 +1047,7 @@ export function startContinuousDaemon(
       planned.filePath,
       planned.unitId,
       state.totalCycles + 1,
+      freshCalibration.leaseTtlMs.value,
     );
 
     if (!leaseAcquired) {
@@ -614,7 +1085,7 @@ export function startContinuousDaemon(
         beforeAfterMetric: null,
       });
       cycleResult = materiality.acceptedMaterial ? 'improvement' : 'no_change';
-      cycleSummary = `Planned only: ${planned.name} — ${materiality.reason}`;
+      cycleSummary = `Planned only: ${planned.name} — ${materiality.reason}; priority=${planned.priority}; calibration=${planned.prioritySource}`;
       if (materiality.acceptedMaterial) {
         state.improvements++;
       }

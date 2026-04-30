@@ -27,8 +27,7 @@
  * - Valid test JWT with OWNER role (PULSE_TEST_JWT)
  * - Test workspace (PULSE_TEST_WORKSPACE_ID)
  *
- * BREAK TYPES:
- * - E2E_PRODUCT_BROKEN (critical) — any step in product→plan→checkout config fails
+ * Emits E2E flow evidence failures; diagnostic identity is synthesized downstream.
  */
 
 import type { Break, PulseConfig } from '../types';
@@ -41,6 +40,24 @@ import {
   isDeepMode,
   getBackendUrl,
 } from './runtime-utils';
+
+function productE2eFinding(input: {
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+}): Break {
+  return {
+    type: 'e2e-flow-evidence-failure',
+    severity: 'critical',
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: 'runtime:e2e:product-creation',
+    surface: 'product-flow',
+  };
+}
 
 /** Check e2e product creation. */
 export async function checkE2eProductCreation(config: PulseConfig): Promise<Break[]> {
@@ -97,14 +114,14 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
     );
 
     if (!createRes.ok || (createRes.status !== 201 && createRes.status !== 200)) {
-      breaks.push({
-        type: 'E2E_PRODUCT_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/kloel/product.controller.ts',
-        line: 164,
-        description: `POST /products returned ${createRes.status} — product creation broken`,
-        detail: `Body: ${JSON.stringify(createRes.body).slice(0, 300)}`,
-      });
+      breaks.push(
+        productE2eFinding({
+          file: 'backend/src/kloel/product.controller.ts',
+          line: 164,
+          description: `POST /products returned ${createRes.status} — product creation broken`,
+          detail: `Body: ${JSON.stringify(createRes.body).slice(0, 300)}`,
+        }),
+      );
       return breaks; // Can't test further without a product
     }
 
@@ -113,39 +130,39 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
     productId = product?.id || null;
 
     if (!productId) {
-      breaks.push({
-        type: 'E2E_PRODUCT_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/kloel/product.controller.ts',
-        line: 201,
-        description: 'POST /products response missing product.id',
-        detail: `Response: ${JSON.stringify(body).slice(0, 300)}`,
-      });
+      breaks.push(
+        productE2eFinding({
+          file: 'backend/src/kloel/product.controller.ts',
+          line: 201,
+          description: 'POST /products response missing product.id',
+          detail: `Response: ${JSON.stringify(body).slice(0, 300)}`,
+        }),
+      );
       return breaks;
     }
 
     // ── Step 2: GET /products/:id — verify data matches ──────────────────
     const getRes = await httpGet(`/products/${productId}`, { jwt });
     if (!getRes.ok) {
-      breaks.push({
-        type: 'E2E_PRODUCT_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/kloel/product.controller.ts',
-        line: 146,
-        description: `GET /products/${productId} returned ${getRes.status} after creation`,
-        detail: `Body: ${JSON.stringify(getRes.body).slice(0, 200)}`,
-      });
+      breaks.push(
+        productE2eFinding({
+          file: 'backend/src/kloel/product.controller.ts',
+          line: 146,
+          description: `GET /products/${productId} returned ${getRes.status} after creation`,
+          detail: `Body: ${JSON.stringify(getRes.body).slice(0, 200)}`,
+        }),
+      );
     } else {
       const fetchedProduct = getRes.body?.product || getRes.body;
       if (fetchedProduct?.name !== '__pulse_test__product') {
-        breaks.push({
-          type: 'E2E_PRODUCT_BROKEN',
-          severity: 'critical',
-          file: 'backend/src/kloel/product.controller.ts',
-          line: 150,
-          description: 'GET /products/:id returned product with wrong name — data mismatch',
-          detail: `Expected: __pulse_test__product, Got: ${fetchedProduct?.name}`,
-        });
+        breaks.push(
+          productE2eFinding({
+            file: 'backend/src/kloel/product.controller.ts',
+            line: 150,
+            description: 'GET /products/:id returned product with wrong name — data mismatch',
+            detail: `Expected: __pulse_test__product, Got: ${fetchedProduct?.name}`,
+          }),
+        );
       }
     }
 
@@ -155,14 +172,14 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
       const products: any[] = listRes.body?.products || listRes.body || [];
       const found = Array.isArray(products) ? products.some((p: any) => p.id === productId) : false;
       if (!found) {
-        breaks.push({
-          type: 'E2E_PRODUCT_BROKEN',
-          severity: 'critical',
-          file: 'backend/src/kloel/product.controller.ts',
-          line: 86,
-          description: 'Newly created product not found in GET /products list',
-          detail: `productId: ${productId}, list count: ${Array.isArray(products) ? products.length : 'N/A'}`,
-        });
+        breaks.push(
+          productE2eFinding({
+            file: 'backend/src/kloel/product.controller.ts',
+            line: 86,
+            description: 'Newly created product not found in GET /products list',
+            detail: `productId: ${productId}, list count: ${Array.isArray(products) ? products.length : 'N/A'}`,
+          }),
+        );
       }
     }
 
@@ -172,27 +189,27 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
         productId,
       ]);
       if (dbRows.length === 0) {
-        breaks.push({
-          type: 'E2E_PRODUCT_BROKEN',
-          severity: 'critical',
-          file: 'backend/src/kloel/product.controller.ts',
-          line: 170,
-          description: 'Product not found in DB after creation — possible fake save',
-          detail: `productId: ${productId}`,
-        });
+        breaks.push(
+          productE2eFinding({
+            file: 'backend/src/kloel/product.controller.ts',
+            line: 170,
+            description: 'Product not found in DB after creation — possible fake save',
+            detail: `productId: ${productId}`,
+          }),
+        );
       }
     } catch {
       // DB not available — skip DB verification
     }
   } catch (err: any) {
-    breaks.push({
-      type: 'E2E_PRODUCT_BROKEN',
-      severity: 'critical',
-      file: 'backend/src/kloel/product.controller.ts',
-      line: 164,
-      description: 'E2E product creation test threw an unexpected error',
-      detail: err?.message || String(err),
-    });
+    breaks.push(
+      productE2eFinding({
+        file: 'backend/src/kloel/product.controller.ts',
+        line: 164,
+        description: 'E2E product creation test threw an unexpected error',
+        detail: err?.message || String(err),
+      }),
+    );
   } finally {
     // ── Cleanup: DELETE /products/:id ─────────────────────────────────────
     if (productId && jwt) {

@@ -15,11 +15,13 @@ describe('PULSE source root detector', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-source-root-detector-'));
     const frontendDir = path.join(rootDir, 'apps/panel/src');
     const backendDir = path.join(rootDir, 'services/api/server');
-    const workerDir = path.join(rootDir, 'jobs/queue-worker');
+    const workerDir = path.join(rootDir, 'jobs/job-runner');
+    const importGraphDir = path.join(rootDir, 'unpackaged/http-core/src');
 
     fs.mkdirSync(frontendDir, { recursive: true });
     fs.mkdirSync(backendDir, { recursive: true });
     fs.mkdirSync(workerDir, { recursive: true });
+    fs.mkdirSync(importGraphDir, { recursive: true });
     fs.mkdirSync(path.join(rootDir, 'db'), { recursive: true });
 
     writeJson(path.join(rootDir, 'package.json'), {
@@ -54,10 +56,15 @@ describe('PULSE source root detector', () => {
     );
 
     writeJson(path.join(rootDir, 'jobs/queue-worker/package.json'), {
-      name: '@opaque/queue-worker',
+      name: '@opaque/jobs',
+      dependencies: { bullmq: '1.0.0' },
       scripts: { start: 'ts-node bootstrap.ts' },
     });
     fs.writeFileSync(path.join(workerDir, 'bootstrap.ts'), 'export const worker = true;');
+    fs.writeFileSync(
+      path.join(importGraphDir, 'shape.controller.ts'),
+      'import { Controller } from "@nestjs/common"; @Controller("shape") export class Shape {}',
+    );
     fs.writeFileSync(path.join(rootDir, 'db/schema.prisma'), 'model Example { id String @id }');
 
     const roots = detectSourceRoots(rootDir);
@@ -68,21 +75,31 @@ describe('PULSE source root detector', () => {
         'package-manifest',
         'package-export',
         'build-config',
-        'file-evidence',
+        'import-graph',
       ]),
     );
+    expect(rootsByPath.get('apps/panel/src')?.kind).toBe('frontend');
     expect(rootsByPath.get('services/api/server')?.evidenceBasis).toEqual(
       expect.arrayContaining(['jsconfig', 'build-config']),
     );
-    expect(rootsByPath.get('jobs/queue-worker')?.evidenceBasis).toEqual(
+    expect(rootsByPath.get('services/api/server')?.kind).toBe('backend');
+    expect(rootsByPath.get('jobs/job-runner')?.evidenceBasis).toEqual(
       expect.arrayContaining(['package-manifest']),
+    );
+    expect(rootsByPath.get('jobs/job-runner')?.kind).toBe('worker');
+    expect(rootsByPath.get('unpackaged/http-core/src')).toEqual(
+      expect.objectContaining({
+        kind: 'backend',
+        evidenceBasis: expect.arrayContaining(['import-graph']),
+        availability: 'inferred',
+      }),
     );
     expect(roots.every((root) => root.weakCandidate)).toBe(false);
 
     const config = detectConfig(rootDir);
     expect(config.frontendDir).toBe(path.join(rootDir, 'apps/panel/src'));
     expect(config.backendDir).toBe(path.join(rootDir, 'services/api/server'));
-    expect(config.workerDir).toBe(path.join(rootDir, 'jobs/queue-worker'));
+    expect(config.workerDir).toBe(path.join(rootDir, 'jobs/job-runner'));
     expect(config.schemaPath).toBe(path.join(rootDir, 'db/schema.prisma'));
     expect(config.globalPrefix).toBe('v1');
   });
@@ -97,6 +114,8 @@ describe('PULSE source root detector', () => {
     expect(roots[0]).toEqual(
       expect.objectContaining({
         relativePath: 'backend/src',
+        availability: 'not_available',
+        unavailableReason: 'source root exists but no scannable source files were found',
         evidenceBasis: ['weak-fallback'],
         weakCandidate: true,
         languageExtensions: [],

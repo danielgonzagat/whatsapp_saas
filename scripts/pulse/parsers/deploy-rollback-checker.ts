@@ -18,10 +18,9 @@
  * 6. Database backup before migration: CI pipeline runs backup before applying migrations
  *
  * REQUIRES: PULSE_DEEP=1, CI/CD config accessible
- * BREAK TYPES:
- *   DEPLOY_NO_ROLLBACK(high)        — deployment cannot be quickly rolled back
- *   MIGRATION_NO_ROLLBACK(high)     — destructive migration with no down migration
- *   DEPLOY_NO_FEATURE_FLAGS(medium) — risky features deployed without feature flags
+ * DIAGNOSTICS:
+ *   Emits static weak signals with predicate metadata. Regex/list matches are
+ *   evidence that a probe is needed, not authority by themselves.
  */
 import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
@@ -30,6 +29,42 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
 const SQL_COMMENT_RE = /--.*$|\/\*[\s\S]*?\*\//gm;
+
+type DeployRollbackTruthMode = 'weak_signal' | 'confirmed_static';
+
+type DeployRollbackDiagnosticBreak = Break & {
+  truthMode: DeployRollbackTruthMode;
+};
+
+interface DeployRollbackDiagnosticInput {
+  predicateKinds: string[];
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+  truthMode: DeployRollbackTruthMode;
+}
+
+function buildDeployRollbackDiagnostic(
+  input: DeployRollbackDiagnosticInput,
+): DeployRollbackDiagnosticBreak {
+  const predicateToken = input.predicateKinds
+    .map((predicate) => predicate.replace(/[^a-z0-9]+/gi, '-').toLowerCase())
+    .filter(Boolean)
+    .join('+');
+
+  return {
+    type: `diagnostic:deploy-rollback-checker:${predicateToken || 'deployment-safety-observation'}`,
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: `static-heuristic:deploy-rollback-checker;truthMode=${input.truthMode};predicates=${input.predicateKinds.join(',')}`,
+    truthMode: input.truthMode,
+  };
+}
 
 const DESTRUCTIVE_MIGRATION_STATEMENT_RE = [
   /\bDROP\s+TABLE\b/i,
@@ -111,16 +146,19 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
   }
 
   if (!hasRollbackConfig) {
-    breaks.push({
-      type: 'DEPLOY_NO_ROLLBACK',
-      severity: 'high',
-      file: '.github/workflows/',
-      line: 0,
-      description:
-        'No deployment rollback mechanism configured — bad deploy cannot be reverted quickly',
-      detail:
-        'Configure Railway instant rollback or Docker image versioning with a CI step to revert to previous image tag',
-    });
+    breaks.push(
+      buildDeployRollbackDiagnostic({
+        predicateKinds: ['rollback_mechanism', 'not_observed'],
+        severity: 'high',
+        file: '.github/workflows/',
+        line: 0,
+        description:
+          'No deployment rollback mechanism configured — bad deploy cannot be reverted quickly',
+        detail:
+          'Configure Railway instant rollback or Docker image versioning with a CI step to revert to previous image tag',
+        truthMode: 'weak_signal',
+      }),
+    );
   }
 
   // CHECK 2: Migration reversibility
@@ -152,15 +190,18 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
             pathExists(safeJoin(migDir2, 'migration.down.sql'));
 
           if (!hasDownInDir) {
-            breaks.push({
-              type: 'MIGRATION_NO_ROLLBACK',
-              severity: 'high',
-              file: relFile,
-              line: 0,
-              description:
-                'Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback',
-              detail: `Detected destructive SQL in ${path.basename(migFile)}; create a .down.sql that reverses these changes`,
-            });
+            breaks.push(
+              buildDeployRollbackDiagnostic({
+                predicateKinds: ['destructive_migration', 'down_migration_not_observed'],
+                severity: 'high',
+                file: relFile,
+                line: 0,
+                description:
+                  'Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback',
+                detail: `Detected destructive SQL in ${path.basename(migFile)}; create a .down.sql that reverses these changes`,
+                truthMode: 'weak_signal',
+              }),
+            );
           }
         }
       }
@@ -195,16 +236,19 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
   }
 
   if (!hasFeatureFlags) {
-    breaks.push({
-      type: 'DEPLOY_NO_FEATURE_FLAGS',
-      severity: 'medium',
-      file: 'backend/src/',
-      line: 0,
-      description:
-        'No feature flag system detected — risky features deployed to all users simultaneously',
-      detail:
-        'Implement feature flags (LaunchDarkly, Unleash, or custom FEATURE_* env vars) for gradual rollout',
-    });
+    breaks.push(
+      buildDeployRollbackDiagnostic({
+        predicateKinds: ['feature_flag_system', 'not_observed'],
+        severity: 'medium',
+        file: 'backend/src/',
+        line: 0,
+        description:
+          'No feature flag system detected — risky features deployed to all users simultaneously',
+        detail:
+          'Implement feature flags (LaunchDarkly, Unleash, or custom FEATURE_* env vars) for gradual rollout',
+        truthMode: 'weak_signal',
+      }),
+    );
   }
 
   // CHECK 4: Graceful shutdown (SIGTERM handling)
@@ -228,16 +272,19 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
     if (
       !/SIGTERM|enableShutdownHooks|beforeApplicationShutdown|onApplicationShutdown/i.test(content)
     ) {
-      breaks.push({
-        type: 'DEPLOY_NO_ROLLBACK',
-        severity: 'high',
-        file: relFile,
-        line: 0,
-        description:
-          'No graceful shutdown (SIGTERM) handling — in-flight requests may be interrupted on deploy',
-        detail:
-          'Add app.enableShutdownHooks() in main.ts and implement OnApplicationShutdown in critical services',
-      });
+      breaks.push(
+        buildDeployRollbackDiagnostic({
+          predicateKinds: ['graceful_shutdown', 'sigterm_handler_not_observed'],
+          severity: 'high',
+          file: relFile,
+          line: 0,
+          description:
+            'No graceful shutdown (SIGTERM) handling — in-flight requests may be interrupted on deploy',
+          detail:
+            'Add app.enableShutdownHooks() in main.ts and implement OnApplicationShutdown in critical services',
+          truthMode: 'weak_signal',
+        }),
+      );
     }
   }
 
@@ -270,15 +317,18 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
         }
       });
       if (hasMigrationInCI) {
-        breaks.push({
-          type: 'MIGRATION_NO_ROLLBACK',
-          severity: 'high',
-          file: '.github/workflows/',
-          line: 0,
-          description: 'CI runs Prisma migrations without taking a DB backup first',
-          detail:
-            'Add a pg_dump step before prisma migrate deploy in CI/CD to enable point-in-time restore if migration fails',
-        });
+        breaks.push(
+          buildDeployRollbackDiagnostic({
+            predicateKinds: ['ci_migration', 'backup_step_not_observed'],
+            severity: 'high',
+            file: '.github/workflows/',
+            line: 0,
+            description: 'CI runs Prisma migrations without taking a DB backup first',
+            detail:
+              'Add a pg_dump step before prisma migrate deploy in CI/CD to enable point-in-time restore if migration fails',
+            truthMode: 'weak_signal',
+          }),
+        );
       }
     }
   }

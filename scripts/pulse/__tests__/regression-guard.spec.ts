@@ -315,6 +315,96 @@ describe('detectRegression', () => {
       expect(result.deltas.executionMatrixRegressions).toContain('observedPass:10->9');
       expect(result.deltas.executionMatrixRegressions).toContain('criticalUnobservedPaths:2->3');
     });
+
+    it('blocks score improvement when only planned or inferred debt improves', () => {
+      const before = makeSnapshot({
+        score: 80,
+        executionMatrixSummary: {
+          observedPass: 10,
+          observedFail: 0,
+          untested: 4,
+          inferredOnly: 3,
+          criticalUnobservedPaths: 2,
+          impreciseBreakpoints: 0,
+          unknownPaths: 0,
+        },
+        proofReadinessSummary: {
+          observedEvidence: 2,
+          observedPass: 2,
+          observedFail: 0,
+          plannedEvidence: 5,
+          plannedOrUnexecutedEvidence: 5,
+          nonObservedEvidence: 5,
+        },
+      });
+      const after = makeSnapshot({
+        score: 85,
+        executionMatrixSummary: {
+          observedPass: 10,
+          observedFail: 0,
+          untested: 2,
+          inferredOnly: 1,
+          criticalUnobservedPaths: 1,
+          impreciseBreakpoints: 0,
+          unknownPaths: 0,
+        },
+        proofReadinessSummary: {
+          observedEvidence: 2,
+          observedPass: 2,
+          observedFail: 0,
+          plannedEvidence: 3,
+          plannedOrUnexecutedEvidence: 3,
+          nonObservedEvidence: 3,
+        },
+      });
+
+      const result = detectRegression(before, after);
+
+      expect(result.regressed).toBe(true);
+      expect(result.deltas.scoreDelta).toBe(5);
+      expect(result.deltas.unsupportedScoreIncrease).toContain('executionMatrix.untested:4->2');
+      expect(result.deltas.unsupportedScoreIncrease).toContain('executionMatrix.inferredOnly:3->1');
+      expect(result.deltas.unsupportedScoreIncrease).toContain(
+        'proofReadiness.plannedOrUnexecutedEvidence:5->3',
+      );
+      expect(
+        result.reasons.some((reason) =>
+          reason.includes('planned/inferred-only reductions cannot improve score alone'),
+        ),
+      ).toBe(true);
+    });
+
+    it('allows score improvement when observed evidence improves', () => {
+      const before = makeSnapshot({
+        score: 80,
+        executionMatrixSummary: {
+          observedPass: 10,
+          observedFail: 1,
+          untested: 4,
+          inferredOnly: 3,
+          criticalUnobservedPaths: 2,
+          impreciseBreakpoints: 0,
+          unknownPaths: 0,
+        },
+      });
+      const after = makeSnapshot({
+        score: 85,
+        executionMatrixSummary: {
+          observedPass: 11,
+          observedFail: 0,
+          untested: 2,
+          inferredOnly: 1,
+          criticalUnobservedPaths: 1,
+          impreciseBreakpoints: 0,
+          unknownPaths: 0,
+        },
+      });
+
+      const result = detectRegression(before, after);
+
+      expect(result.regressed).toBe(false);
+      expect(result.deltas.unsupportedScoreIncrease).toHaveLength(0);
+    });
   });
 
   describe('edge cases', () => {

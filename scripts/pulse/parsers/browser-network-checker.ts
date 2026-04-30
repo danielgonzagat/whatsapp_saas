@@ -20,10 +20,7 @@
  * 7. Viewport meta tag present in layout
  *
  * REQUIRES: PULSE_DEEP=1
- * BREAK TYPES:
- *   BROWSER_INCOMPATIBLE(medium)       — CSS/JS feature without cross-browser fallback
- *   NETWORK_SLOW_UNUSABLE(medium)      — page has no loading state for slow network
- *   NETWORK_OFFLINE_DATA_LOST(high)    — form data lost on offline/connection drop
+ * Emits browser/network evidence gaps; diagnostic identity is synthesized downstream.
  */
 import { safeJoin } from '../safe-path';
 import * as path from 'path';
@@ -46,6 +43,28 @@ const MONEY_FORM_RE =
 
 function hasMoneyLikeFormState(content: string): boolean {
   return MONEY_FORM_RE.test(content);
+}
+
+function browserNetworkFinding(input: {
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+  observed?: boolean;
+}): Break {
+  return {
+    type: 'browser-network-evidence-gap',
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: input.observed
+      ? 'parser:confirmed_static:browser-network'
+      : 'parser:weak_signal:browser-network',
+    surface: 'client-resilience',
+  };
 }
 
 /** Check browser network. */
@@ -84,14 +103,16 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
         const context = lines.slice(Math.max(0, i - 5), i + 5).join('\n');
         const hasFallback = /@supports|@-webkit|webkit-|moz-|fallback/i.test(context);
         if (!hasFallback) {
-          breaks.push({
-            type: 'BROWSER_INCOMPATIBLE',
-            severity: 'medium',
-            file: relFile,
-            line: i + 1,
-            description: 'CSS feature with limited browser support used without @supports fallback',
-            detail: `${line.slice(0, 120)} — Safari/Firefox may not support this; add @supports() fallback`,
-          });
+          breaks.push(
+            browserNetworkFinding({
+              severity: 'medium',
+              file: relFile,
+              line: i + 1,
+              description:
+                'CSS feature with limited browser support used without @supports fallback',
+              detail: `${line.slice(0, 120)} — Safari/Firefox may not support this; add @supports() fallback`,
+            }),
+          );
         }
       }
     }
@@ -117,15 +138,17 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
     const hasLoadingState = LOADING_STATE_RE.test(content);
 
     if (fetchesData && !hasLoadingState) {
-      breaks.push({
-        type: 'NETWORK_SLOW_UNUSABLE',
-        severity: 'medium',
-        file: relFile,
-        line: 0,
-        description:
-          'Page fetches async data but has no loading state — blank/broken UI on slow network',
-        detail: 'Add skeleton loader, spinner, or loading placeholder while data is being fetched',
-      });
+      breaks.push(
+        browserNetworkFinding({
+          severity: 'medium',
+          file: relFile,
+          line: 0,
+          description:
+            'Page fetches async data but has no loading state — blank/broken UI on slow network',
+          detail:
+            'Add skeleton loader, spinner, or loading placeholder while data is being fetched',
+        }),
+      );
     }
   }
 
@@ -168,16 +191,17 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
       !isControlledFormChild &&
       hasMoneyLikeFormState(content)
     ) {
-      breaks.push({
-        type: 'NETWORK_OFFLINE_DATA_LOST',
-        severity: 'high',
-        file: relFile,
-        line: 0,
-        description:
-          'Money-like form has no offline protection — user loses entered data on connection drop',
-        detail:
-          'Save form progress to localStorage on every field change; restore on mount; show offline indicator',
-      });
+      breaks.push(
+        browserNetworkFinding({
+          severity: 'high',
+          file: relFile,
+          line: 0,
+          description:
+            'Money-like form has no offline protection — user loses entered data on connection drop',
+          detail:
+            'Save form progress to localStorage on every field change; restore on mount; show offline indicator',
+        }),
+      );
     }
   }
 
@@ -206,14 +230,16 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
       /service.?worker|sw\.ts|sw\.js/i.test(path.basename(f)),
     );
     if (!hasServiceWorker) {
-      breaks.push({
-        type: 'BROWSER_INCOMPATIBLE',
-        severity: 'medium',
-        file: relManifest,
-        line: 0,
-        description: 'PWA manifest exists but no service worker found — app is not installable',
-        detail: 'Add a service worker (sw.js) that handles offline caching and install prompt',
-      });
+      breaks.push(
+        browserNetworkFinding({
+          severity: 'medium',
+          file: relManifest,
+          line: 0,
+          description: 'PWA manifest exists but no service worker found — app is not installable',
+          detail: 'Add a service worker (sw.js) that handles offline caching and install prompt',
+          observed: true,
+        }),
+      );
     }
 
     // Check icon sizes
@@ -221,14 +247,16 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
     const has192 = icons.some((i) => /192/.test(i.sizes || ''));
     const has512 = icons.some((i) => /512/.test(i.sizes || ''));
     if (!has192 || !has512) {
-      breaks.push({
-        type: 'BROWSER_INCOMPATIBLE',
-        severity: 'medium',
-        file: relManifest,
-        line: 0,
-        description: `PWA manifest missing required icon sizes (need 192x192 and 512x512) — ${!has192 ? '192 missing' : '512 missing'}`,
-        detail: 'Add icons array with 192x192 and 512x512 PNG icons to manifest.json',
-      });
+      breaks.push(
+        browserNetworkFinding({
+          severity: 'medium',
+          file: relManifest,
+          line: 0,
+          description: `PWA manifest missing required icon sizes (need 192x192 and 512x512) — ${!has192 ? '192 missing' : '512 missing'}`,
+          detail: 'Add icons array with 192x192 and 512x512 PNG icons to manifest.json',
+          observed: true,
+        }),
+      );
     }
   }
 
@@ -253,16 +281,18 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
         content,
       )
     ) {
-      breaks.push({
-        type: 'NETWORK_SLOW_UNUSABLE',
-        severity: 'medium',
-        file: path.relative(config.rootDir, nextConfigFile),
-        line: 0,
-        description:
-          'No bundle size budget or analyzer configured — bundle may grow without notice',
-        detail:
-          'Add @next/bundle-analyzer or bundlemon to track bundle size; set size budgets in CI',
-      });
+      breaks.push(
+        browserNetworkFinding({
+          severity: 'medium',
+          file: path.relative(config.rootDir, nextConfigFile),
+          line: 0,
+          description:
+            'No bundle size budget or analyzer configured — bundle may grow without notice',
+          detail:
+            'Add @next/bundle-analyzer or bundlemon to track bundle size; set size budgets in CI',
+          observed: true,
+        }),
+      );
     }
   }
 
@@ -278,15 +308,18 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
       continue;
     }
     if (!/viewport|initial-scale|width=device-width/i.test(content)) {
-      breaks.push({
-        type: 'BROWSER_INCOMPATIBLE',
-        severity: 'medium',
-        file: path.relative(config.rootDir, file),
-        line: 0,
-        description: 'Root layout missing viewport meta tag — mobile users see desktop-scaled view',
-        detail:
-          'Add: export const viewport = { width: "device-width", initialScale: 1 } to layout.tsx',
-      });
+      breaks.push(
+        browserNetworkFinding({
+          severity: 'medium',
+          file: path.relative(config.rootDir, file),
+          line: 0,
+          description:
+            'Root layout missing viewport meta tag — mobile users see desktop-scaled view',
+          detail:
+            'Add: export const viewport = { width: "device-width", initialScale: 1 } to layout.tsx',
+          observed: true,
+        }),
+      );
       break; // One report for root layout
     }
   }

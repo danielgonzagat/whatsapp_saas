@@ -2,49 +2,42 @@
 //
 // Classifies HIGH severity Codacy issues into:
 //   - ACTIONABLE HIGH    : real findings the team can fix in product code.
-//   - NON-ACTIONABLE HIGH: HIGH severity findings produced by Codacy
-//                         demo/template patterns that are not applicable to
-//                         this codebase. They cannot be silenced via comment
-//                         suppressions (see REGRA DE CODACY in CLAUDE.md);
-//                         they must be disabled upstream at the canonical
-//                         Codacy enforcer with explicit human authorization.
+//   - NON-ACTIONABLE HIGH: findings backed by repeated human adjudication,
+//                         issue/path context, and expiry-on-file-change proof.
 //
-// The classifier is intentionally CONSERVATIVE: only patterns that have been
-// proven to be Codacy demo/template rules (or otherwise mis-targeted at this
-// codebase) are listed. Adding a new entry requires evidence of why the
-// pattern is non-actionable and what authorization is required to disable it.
+// The classifier is intentionally CONSERVATIVE: fixed pattern ids are treated
+// only as legacy signals. They never adjudicate a false positive by themselves.
 
+import { createHash } from 'node:crypto';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import type { PulseCodacySummary } from './types.truth';
 import type { CodacyClassification } from './types.codacy-classification';
+import type {
+  AdjudicatedFinding,
+  FalsePositiveAdjudicationState,
+} from './types.false-positive-adjudicator';
 
 export type { CodacyClassification } from './types.codacy-classification';
 
-/**
- * Patterns Codacy reports against this repo that are NOT actionable findings.
- *
- * Each entry MUST be documented with:
- *   - Pattern source (Codacy registry / Semgrep registry / etc.).
- *   - Why it is non-actionable in this codebase.
- *   - What human authorization is required to disable it upstream.
- *
- * Entries are matched by exact patternId equality against
- * `PulseCodacyIssue.patternId`.
- */
-export const NON_ACTIONABLE_PATTERNS: ReadonlyArray<string> = [
-  // Semgrep DEMO/template rule from the Codacy `generic.sql` rule pack.
-  // Requires every SQL identifier (table/column/view) to start with the
-  // literal prefix `RAC_`. This is a registry demonstration pattern from the
-  // r2c "Return After Continue" / RAC sample bundle and is not applicable to
-  // KLOEL's domain schema (107 Prisma models, none of which use the RAC_
-  // prefix). Renaming all SQL identifiers to satisfy this demo rule would
-  // break every migration, every Prisma model, and every reporting query.
-  // Authorization required: repository owner must disable this pattern via
-  // `scripts/ops/codacy-enforce-max-rigor.mjs` (canonical Codacy enforcer)
-  // before the staticPass gate can clear.
-  'Semgrep_codacy.generic.sql.rac-table-access',
-];
+const LEGACY_RAC_TABLE_ACCESS_SIGNAL = 'Semgrep_codacy.generic.sql.rac-table-access';
+const MIN_REPEATED_HUMAN_DECISIONS = 2;
 
-const NON_ACTIONABLE_SET: ReadonlySet<string> = new Set(NON_ACTIONABLE_PATTERNS);
+interface CodacyIssueLike {
+  issueId: string;
+  filePath: string;
+  lineNumber: number;
+  patternId: string;
+  category: string;
+  severityLevel: string;
+  tool: string;
+  message: string;
+}
+
+interface CodacyClassificationContext {
+  rootDir?: string;
+  adjudicationState?: FalsePositiveAdjudicationState | null;
+}
 
 function isHighIssue(severityLevel: string): boolean {
   return severityLevel === 'HIGH';
@@ -54,12 +47,156 @@ function buildHumanRequiredAction(byPattern: Record<string, number>): string {
   const entries = Object.entries(byPattern).sort((left, right) => right[1] - left[1]);
   const formatted = entries.map(([pattern, count]) => `${pattern} (${count})`).join('; ');
   return [
-    'Codacy reports HIGH severity issues from non-actionable demo/template patterns.',
-    'Suppression via inline comments is forbidden by REGRA DE CODACY (CLAUDE.md).',
-    'Repository owner must disable the following pattern(s) via the canonical',
-    'Codacy enforcer at scripts/ops/codacy-enforce-max-rigor.mjs after authorization:',
+    'Codacy reports HIGH severity issues with repeated human false-positive adjudication.',
+    'The classifier required issue metadata, file/path context, and expiresOnFileChange evidence.',
+    'Suppression via inline comments remains forbidden by REGRA DE CODACY (CLAUDE.md).',
+    'Repository owner must review the adjudication artifact before any canonical Codacy action:',
     formatted,
   ].join(' ');
+}
+
+function loadAdjudicationState(rootDir: string): FalsePositiveAdjudicationState | null {
+  const artifactPath = path.join(rootDir, '.pulse', 'current', 'PULSE_FP_ADJUDICATION.json');
+  if (!fs.existsSync(artifactPath)) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(fs.readFileSync(artifactPath, 'utf8')) as unknown;
+    if (!isFalsePositiveAdjudicationState(parsed)) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function isFalsePositiveAdjudicationState(value: unknown): value is FalsePositiveAdjudicationState {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  const candidate = value as { findings?: unknown };
+  return Array.isArray(candidate.findings);
+}
+
+function makeFindingId(issue: CodacyIssueLike): string {
+  const title = issue.patternId || issue.category;
+  const raw = `codacy:${issue.filePath}:${title}:${issue.lineNumber ?? 'no-line'}`;
+  return createHash('sha256').update(raw).digest('hex').substring(0, 16);
+}
+
+function hashFile(rootDir: string, filePath: string): string | null {
+  const absolutePath = path.isAbsolute(filePath) ? filePath : path.join(rootDir, filePath);
+  if (!fs.existsSync(absolutePath)) {
+    return null;
+  }
+  return createHash('sha256').update(fs.readFileSync(absolutePath)).digest('hex');
+}
+
+function isSuppressedHumanDecision(finding: AdjudicatedFinding): boolean {
+  return (
+    finding.source === 'codacy' &&
+    (finding.status === 'false_positive' || finding.status === 'accepted_risk') &&
+    finding.expiresOnFileChange &&
+    Boolean(finding.fileHashAtSuppression) &&
+    Boolean(finding.proof)
+  );
+}
+
+function matchesIssue(finding: AdjudicatedFinding, issue: CodacyIssueLike): boolean {
+  return (
+    finding.findingId === makeFindingId(issue) ||
+    (finding.filePath === issue.filePath &&
+      finding.line === issue.lineNumber &&
+      finding.title === (issue.patternId || issue.category))
+  );
+}
+
+function hasUnexpiredFileEvidence(
+  finding: AdjudicatedFinding,
+  issue: CodacyIssueLike,
+  rootDir?: string,
+): boolean {
+  if (!isSuppressedHumanDecision(finding)) {
+    return false;
+  }
+  if (!rootDir) {
+    return true;
+  }
+  const currentHash = hashFile(rootDir, issue.filePath);
+  return currentHash !== null && currentHash === finding.fileHashAtSuppression;
+}
+
+function countRepeatedHumanDecisions(
+  issue: CodacyIssueLike,
+  adjudicationState: FalsePositiveAdjudicationState | null,
+): number {
+  if (!adjudicationState) {
+    return 0;
+  }
+  return adjudicationState.findings.filter(
+    (finding) =>
+      isSuppressedHumanDecision(finding) && finding.title === (issue.patternId || issue.category),
+  ).length;
+}
+
+function hasMatchingHumanDecision(
+  issue: CodacyIssueLike,
+  adjudicationState: FalsePositiveAdjudicationState | null,
+  rootDir?: string,
+): boolean {
+  if (!adjudicationState) {
+    return false;
+  }
+  return adjudicationState.findings.some(
+    (finding) => matchesIssue(finding, issue) && hasUnexpiredFileEvidence(finding, issue, rootDir),
+  );
+}
+
+function hasGovernanceOrPathContext(issue: CodacyIssueLike): boolean {
+  const normalizedPath = issue.filePath.replace(/\\/g, '/');
+  return (
+    normalizedPath === 'AGENTS.md' ||
+    normalizedPath === 'CLAUDE.md' ||
+    normalizedPath === 'CODEX.md' ||
+    normalizedPath === '.codacy.yml' ||
+    normalizedPath === 'package.json' ||
+    normalizedPath === '.husky/pre-push' ||
+    normalizedPath.startsWith('ops/') ||
+    normalizedPath.startsWith('scripts/ops/') ||
+    normalizedPath.startsWith('.github/workflows/') ||
+    normalizedPath.startsWith('docs/codacy/') ||
+    normalizedPath.endsWith('/migration.sql') ||
+    normalizedPath.includes('/migrations/')
+  );
+}
+
+function hasIssueMetadataEvidence(issue: CodacyIssueLike): boolean {
+  const metadata =
+    `${issue.patternId} ${issue.category} ${issue.tool} ${issue.message}`.toLowerCase();
+  const hasLegacySignal = issue.patternId === LEGACY_RAC_TABLE_ACCESS_SIGNAL;
+  const namesDemoOrTemplateRule =
+    metadata.includes('demo') ||
+    metadata.includes('template') ||
+    metadata.includes('generic.sql') ||
+    metadata.includes('rac_') ||
+    metadata.includes('rac-table-access');
+
+  return issue.tool.toLowerCase() === 'semgrep' && hasLegacySignal && namesDemoOrTemplateRule;
+}
+
+function hasFalsePositiveEvidence(
+  issue: CodacyIssueLike,
+  adjudicationState: FalsePositiveAdjudicationState | null,
+  rootDir?: string,
+): boolean {
+  return (
+    hasGovernanceOrPathContext(issue) &&
+    hasIssueMetadataEvidence(issue) &&
+    countRepeatedHumanDecisions(issue, adjudicationState) >= MIN_REPEATED_HUMAN_DECISIONS &&
+    hasMatchingHumanDecision(issue, adjudicationState, rootDir)
+  );
 }
 
 /**
@@ -67,15 +204,23 @@ function buildHumanRequiredAction(byPattern: Record<string, number>): string {
  * buckets. The summary parameter accepts a parsed `PULSE_CODACY_STATE.json`
  * shape (`PulseCodacySummary`).
  */
-export function classifyCodacyIssues(state: PulseCodacySummary): CodacyClassification {
+export function classifyCodacyIssues(
+  state: PulseCodacySummary,
+  context: CodacyClassificationContext = {},
+): CodacyClassification {
   const totalHigh = state.severityCounts.HIGH || 0;
   const nonActionableByPattern: Record<string, number> = {};
+  const rootDir = context.rootDir || process.cwd();
+  const adjudicationState =
+    context.adjudicationState === undefined
+      ? loadAdjudicationState(rootDir)
+      : context.adjudicationState;
 
   for (const issue of state.highPriorityBatch) {
     if (!isHighIssue(issue.severityLevel)) {
       continue;
     }
-    if (!NON_ACTIONABLE_SET.has(issue.patternId)) {
+    if (!hasFalsePositiveEvidence(issue, adjudicationState, rootDir)) {
       continue;
     }
     nonActionableByPattern[issue.patternId] = (nonActionableByPattern[issue.patternId] || 0) + 1;

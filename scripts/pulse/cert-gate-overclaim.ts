@@ -20,14 +20,32 @@ export interface PulseCycleProof {
 
 /** Minimal shape of the autonomyReadiness sub-object in the directive. */
 export interface PulseAutonomyReadiness {
+  /** Whether PULSE has a safe next autonomous unit. This is not completion proof. */
+  canWorkNow?: boolean;
   /** Whether the system can declare completion without human confirmation. */
   canDeclareComplete?: boolean;
+}
+
+/** Minimal proof-readiness summary used to prevent planned/inferred proof overclaims. */
+export interface PulseProofReadinessSummary {
+  canAdvance?: boolean;
+  status?: string;
+  plannedEvidence?: number;
+  inferredEvidence?: number;
+  notAvailableEvidence?: number;
+  nonObservedEvidence?: number;
+  executableUnproved?: number;
+  plannedOrUnexecutedEvidence?: number;
+  blockedHumanRequired?: number;
+  blockedNotExecutable?: number;
 }
 
 /** Minimal shape of the autonomyProof sub-object in the directive. */
 export interface PulseAutonomyProof {
   /** The cycle proof that backs production-autonomy verdicts. */
   cycleProof?: PulseCycleProof;
+  /** Optional proof-readiness summary embedded by newer directive artifacts. */
+  proofReadiness?: PulseProofReadinessSummary;
 }
 
 /**
@@ -47,6 +65,8 @@ export interface PulseDirectiveSnapshot {
   advisoryOnly?: boolean;
   /** Readiness sub-object. */
   autonomyReadiness?: PulseAutonomyReadiness;
+  /** Optional top-level proof-readiness summary from PULSE_PROOF_READINESS. */
+  proofReadiness?: PulseProofReadinessSummary;
 }
 
 /**
@@ -57,6 +77,46 @@ export interface PulseCertificateSnapshot {
   status?: string;
   /** Stringified content – used for textual contradiction scan. */
   rawContent?: string;
+}
+
+function firstNumber(...values: Array<number | undefined>): number {
+  return values.find((value): value is number => typeof value === 'number') ?? 0;
+}
+
+function resolveProofReadinessSummary(
+  directive: PulseDirectiveSnapshot,
+): PulseProofReadinessSummary | undefined {
+  return directive.proofReadiness ?? directive.autonomyProof?.proofReadiness;
+}
+
+function hasProductionProofReadinessGap(summary: PulseProofReadinessSummary | undefined): boolean {
+  if (!summary) {
+    return false;
+  }
+
+  return (
+    summary.canAdvance === false ||
+    (summary.status !== undefined && summary.status !== 'ready') ||
+    firstNumber(summary.plannedEvidence, summary.plannedOrUnexecutedEvidence) > 0 ||
+    firstNumber(summary.inferredEvidence) > 0 ||
+    firstNumber(summary.notAvailableEvidence) > 0 ||
+    firstNumber(summary.nonObservedEvidence, summary.plannedOrUnexecutedEvidence) > 0 ||
+    firstNumber(summary.executableUnproved) > 0 ||
+    firstNumber(summary.blockedHumanRequired) > 0 ||
+    firstNumber(summary.blockedNotExecutable) > 0
+  );
+}
+
+function formatProofReadinessGap(summary: PulseProofReadinessSummary): string {
+  return [
+    `status=${summary.status ?? 'unknown'}`,
+    `canAdvance=${String(summary.canAdvance ?? 'unknown')}`,
+    `planned=${firstNumber(summary.plannedEvidence, summary.plannedOrUnexecutedEvidence)}`,
+    `inferred=${firstNumber(summary.inferredEvidence)}`,
+    `not_available=${firstNumber(summary.notAvailableEvidence)}`,
+    `nonObserved=${firstNumber(summary.nonObservedEvidence, summary.plannedOrUnexecutedEvidence)}`,
+    `executableUnproved=${firstNumber(summary.executableUnproved)}`,
+  ].join(', ');
 }
 
 /**
@@ -87,6 +147,8 @@ export function evaluateNoOverclaimGate(
   }
 
   const cycleProof = directive.autonomyProof?.cycleProof;
+  const proofReadiness = resolveProofReadinessSummary(directive);
+  const productionProofReadinessGap = hasProductionProofReadinessGap(proofReadiness);
 
   // Rule a: zeroPromptProductionGuidanceVerdict=SIM but cycleProof not proven
   if (directive.zeroPromptProductionGuidanceVerdict === 'SIM') {
@@ -110,12 +172,26 @@ export function evaluateNoOverclaimGate(
       );
     }
   }
+  if (directive.productionAutonomyVerdict === 'SIM' && productionProofReadinessGap) {
+    return gateFail(
+      `overclaim:productionAutonomyVerdict — directive claims SIM but proofReadiness has non-observed production proof (${formatProofReadinessGap(proofReadiness ?? {})}).`,
+      'checker_gap',
+      { evidenceMode: 'observed', confidence: 'high' },
+    );
+  }
 
   // Rule c: canDeclareComplete=true but productionAutonomyVerdict is not SIM
   if (directive.autonomyReadiness?.canDeclareComplete === true) {
     if (directive.productionAutonomyVerdict !== 'SIM') {
       return gateFail(
         `overclaim:autonomyReadiness.canDeclareComplete — readiness claims true but productionAutonomyVerdict="${directive.productionAutonomyVerdict ?? 'missing'}".`,
+        'checker_gap',
+        { evidenceMode: 'observed', confidence: 'high' },
+      );
+    }
+    if (productionProofReadinessGap) {
+      return gateFail(
+        `overclaim:autonomyReadiness.canDeclareComplete — readiness claims true but proofReadiness has non-observed production proof (${formatProofReadinessGap(proofReadiness ?? {})}).`,
         'checker_gap',
         { evidenceMode: 'observed', confidence: 'high' },
       );
