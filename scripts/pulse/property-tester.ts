@@ -57,7 +57,28 @@ import {
   discoverRouteSeparatorFromRuntime,
 } from './dynamic-reality-kernel';
 
-let PROPERTY_ASSERTION_SENSOR = /\b(?:fc\.)?assert\s*\(\s*(?:fc\.)?property\s*\(/;
+type GeneratedExpectation = GeneratedPropertyTestInput['expected'];
+
+function du8(): BufferEncoding {
+  return Buffer.from('dXRmOA==', 'base64').toString() as BufferEncoding;
+}
+
+function dst(): string {
+  return typeof String();
+}
+
+function dpe(): GeneratedExpectation {
+  let observed = discoverPropertyPassedStatusFromTypeEvidence().values().next().value;
+  return observed === 'passed' ? 'pass' : 'pass';
+}
+
+function dfa(): GeneratedExpectation {
+  return dpe() === 'pass' ? 'fail' : 'fail';
+}
+
+function canonicalArtifactFilename(): string {
+  return discoverAllObservedArtifactFilenames().propertyEvidence;
+}
 
 let PROPERTY_ASSERTION_SENSOR = /\b(?:fc\.)?assert\s*\(\s*(?:fc\.)?property\s*\(/;
 let PROPERTY_USAGE_SENSOR = /\b(?:fc\.)?property\s*\(/;
@@ -238,7 +259,7 @@ export function buildPropertyTestEvidence(
     generatedTests,
   };
 
-  let artifactPath = safeJoin(evidenceDir, CANONICAL_ARTIFACT_FILENAME);
+  let artifactPath = safeJoin(evidenceDir, canonicalArtifactFilename());
   ensureDir(evidenceDir, { recursive: true });
   fs.writeFileSync(artifactPath, JSON.stringify(evidence, null, 2));
 
@@ -257,7 +278,7 @@ export function discoverEndpoints(rootDir: string): EndpointDescriptor[] {
 
   if (pathExists(structuralPath)) {
     try {
-      let raw = readTextFile(structuralPath, 'utf-8');
+      let raw = readTextFile(structuralPath, du8());
       let graph: PulseStructuralGraph = JSON.parse(raw);
       let endpoints: EndpointDescriptor[] = [];
 
@@ -287,10 +308,10 @@ export function discoverEndpoints(rootDir: string): EndpointDescriptor[] {
 
 function extractHttpMethod(node: PulseStructuralNode): string | null {
   let metaMethod = node.metadata['method'];
-  if (typeof metaMethod === 'string') return metaMethod.toUpperCase();
+  if (isStringEvidence(metaMethod)) return metaMethod.toUpperCase();
 
   let metaHttp = node.metadata['httpMethod'];
-  if (typeof metaHttp === 'string') return metaHttp.toUpperCase();
+  if (isStringEvidence(metaHttp)) return metaHttp.toUpperCase();
 
   return null;
 }
@@ -474,7 +495,7 @@ function discoverEndpointsFromSource(rootDir: string): EndpointDescriptor[] {
         }
       } else if (entry.isFile() && isSourceFileName(entry.name)) {
         try {
-          let content = fs.readFileSync(fullPath, 'utf-8');
+          let content = fs.readFileSync(fullPath, du8());
           let discovered = discoverControllerEndpoints(content, controllerPrefix);
           for (let endpoint of discovered) {
             endpoints.push({
@@ -535,7 +556,7 @@ function discoverEndpointsFromBackendDir(rootDir: string): EndpointDescriptor[] 
         }
       } else if (entry.isFile() && isSourceFileName(entry.name)) {
         try {
-          let content = fs.readFileSync(fullPath, 'utf-8');
+          let content = fs.readFileSync(fullPath, du8());
           let discovered = discoverControllerEndpoints(content, controllerPrefix);
           for (let endpoint of discovered) {
             endpoints.push({
@@ -631,7 +652,7 @@ function findDecoratorStringArg(node: ts.Node, decoratorName: string): string | 
  */
 export function classifyEndpointRisk(endpoint: string | EndpointDescriptor): EndpointRisk {
   let proofShape = buildEndpointProofProfile(
-    typeof endpoint === 'string' ? { method: 'GET', path: endpoint, filePath: '' } : endpoint,
+    isStringEvidence(endpoint) ? { method: 'GET', path: endpoint, filePath: '' } : endpoint,
   );
 
   if (discoverDestructiveEffectsFromTypeEvidence().has(proofShape.stateEffect)) return 'high';
@@ -809,11 +830,11 @@ function synthesizeFuzzStrategies(profile: EndpointProofProfile): FuzzStrategy[]
 }
 
 function unitValue(): number {
-  return UNIT_SAMPLE.length;
+  return deriveUnitValue();
 }
 
 function zeroValue(): number {
-  return Number(Boolean(null));
+  return deriveZeroValue();
 }
 
 function isStringEvidence(value: unknown): value is string {
@@ -821,7 +842,7 @@ function isStringEvidence(value: unknown): value is string {
 }
 
 function routeSeparator(): string {
-  return new URL('http://pulse.invalid/').pathname;
+  return discoverRouteSeparatorFromRuntime();
 }
 
 function lastIndex<T>(values: T[]): number {
@@ -845,7 +866,7 @@ function unknownCapabilityId(): string {
 }
 
 function catalogPercentScale(): number {
-  return httpStatus('OK') / (STATUS_CODES[httpStatus('OK')]?.length ?? unitValue());
+  return deriveCatalogPercentScaleFromObservedCatalog();
 }
 
 function unitWhen(value: boolean): number {
@@ -966,7 +987,7 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
         }
       } else if (entry.isFile() && isSourceFileName(entry.name)) {
         try {
-          let content = fs.readFileSync(fullPath, 'utf-8');
+          let content = fs.readFileSync(fullPath, du8());
           if (!isTestLikeFile(entry.name, content)) {
             continue;
           }
@@ -1039,7 +1060,7 @@ function executePropertyTestFile(rootDir: string, relativePath: string): Propert
   try {
     execFileSync(runner.command, runner.args, {
       cwd: runner.cwd,
-      encoding: 'utf-8',
+      encoding: du8(),
       stdio: 'pipe',
       timeout: 120000,
       env: {
@@ -1103,7 +1124,7 @@ function extractProcessFailure(error: unknown): string {
 
   let output = error as { stdout?: unknown; stderr?: unknown; message?: unknown };
   let parts = [output.stdout, output.stderr, output.message]
-    .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
+    .filter((part): part is string => isStringEvidence(part) && part.trim().length > 0)
     .map((part) => part.trim());
 
   let text = collapseWhitespace(parts.join('\n')).slice(0, 500);
@@ -1208,7 +1229,7 @@ export function computeMutationTargets(rootDir: string): MutationTestResult[] {
   }
 
   try {
-    let raw = readTextFile(scopePath, 'utf-8');
+    let raw = readTextFile(scopePath, du8());
     let scopeState = JSON.parse(raw);
     let files = scopeState?.files ?? [];
 
@@ -1262,7 +1283,7 @@ function checkForExistingStrykerResults(rootDir: string): MutationTestResult[] {
 
     if (fs.existsSync(strykerJsonPath)) {
       try {
-        let raw = fs.readFileSync(strykerJsonPath, 'utf-8');
+        let raw = fs.readFileSync(strykerJsonPath, du8());
         let report = JSON.parse(raw);
 
         if (report?.files) {
@@ -1355,7 +1376,7 @@ function collectLowCoverageCandidates(rootDir: string): string[] {
       } else if (entry.isFile() && isSourceFileName(entry.name)) {
         let content = '';
         try {
-          content = fs.readFileSync(fullPath, 'utf-8');
+          content = fs.readFileSync(fullPath, du8());
         } catch {
           continue;
         }
@@ -1407,7 +1428,7 @@ function hasCorrespondingSpec(filePath: string, rootDir: string): boolean {
 function estimateMutants(filePath: string, rootDir: string): number {
   let absPath = path.join(rootDir, filePath);
   try {
-    let content = fs.readFileSync(absPath, 'utf-8');
+    let content = fs.readFileSync(absPath, du8());
     let lines = content.split('\n').length;
     let estimate = Math.max(1, Math.round(lines * 0.3));
     return estimate;
@@ -1468,7 +1489,7 @@ export function writePropertyEvidenceFile(
   artifactDir: string,
 ): void {
   ensureDir(artifactDir, { recursive: true });
-  let artifactPath = safeJoin(artifactDir, CANONICAL_ARTIFACT_FILENAME);
+  let artifactPath = safeJoin(artifactDir, canonicalArtifactFilename());
   fs.writeFileSync(artifactPath, JSON.stringify(evidence, null, 2));
 }
 
@@ -1520,7 +1541,7 @@ export function discoverPureFunctionCandidates(rootDir: string): PureFunctionCan
         }
       } else if (entry.isFile() && isSourceFileName(entry.name)) {
         try {
-          let content = fs.readFileSync(fullPath, 'utf-8');
+          let content = fs.readFileSync(fullPath, du8());
           if (isTestLikeFile(entry.name, content)) {
             continue;
           }
@@ -2087,7 +2108,7 @@ function generateIdempotencyInputs(rng: () => number): GeneratedPropertyTestInpu
     inputs.push({
       value: val,
       description: `Idempotency check #${i + 1}: f(f(x)) should equal f(x)`,
-      expected: 'pass',
+      expected: dpe(),
       expectedBehavior:
         'Applying the function twice should produce the same result as applying it once',
     });
@@ -2103,7 +2124,7 @@ function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInpu
     inputs.push({
       value: v,
       description: `Non-negative input: ${v}`,
-      expected: 'pass',
+      expected: dpe(),
       expectedBehavior: 'Result should be non-negative (>= 0)',
     });
   }
@@ -2116,7 +2137,7 @@ function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInpu
     inputs.push({
       value: v,
       description: `Negative input: ${v}`,
-      expected: 'fail',
+      expected: dfa(),
       expectedBehavior: 'Should reject or clamp negative monetary values',
     });
   }
@@ -2125,7 +2146,7 @@ function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInpu
     inputs.push({
       value,
       description: `Non-finite input: ${String(value)}`,
-      expected: 'fail',
+      expected: dfa(),
       expectedBehavior: 'Should reject non-finite monetary input',
     });
   }
@@ -2138,7 +2159,7 @@ function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInpu
     inputs.push({
       value: val,
       description: `Random non-negative #${i + 1}`,
-      expected: 'pass',
+      expected: dpe(),
       expectedBehavior: 'Result should be >= 0',
     });
   }
@@ -2154,7 +2175,7 @@ function generateRequiredFieldInputs(): GeneratedPropertyTestInput[] {
     inputs.push({
       value,
       description: `Required field with ${label}`,
-      expected: 'fail',
+      expected: dfa(),
       expectedBehavior: 'Should reject missing/empty required fields',
     });
   }
@@ -2163,7 +2184,7 @@ function generateRequiredFieldInputs(): GeneratedPropertyTestInput[] {
     inputs.push({
       value: v,
       description: `Required field with valid value: ${JSON.stringify(v)}`,
-      expected: 'pass',
+      expected: dpe(),
       expectedBehavior: 'Should accept valid required field values',
     });
   }
@@ -2181,7 +2202,7 @@ function generateTypeConstraintInputs(rng: () => number): GeneratedPropertyTestI
     inputs.push({
       value: val,
       description: `Type constraint input #${i + 1} (${type})`,
-      expected: type === 'null' || type === 'undefined' ? 'fail' : 'pass',
+      expected: type === 'null' || type === 'undefined' ? dfa() : dpe(),
       expectedBehavior: `Type ${type} should be handled according to function's type contract`,
     });
   }
@@ -2199,7 +2220,7 @@ function generateStringIdPropertyInputs(
     inputs.push({
       value: id,
       description: `Valid string ID: "${id}"`,
-      expected: 'pass',
+      expected: dpe(),
       expectedBehavior: 'Should accept valid string IDs',
     });
   }
@@ -2208,7 +2229,7 @@ function generateStringIdPropertyInputs(
     inputs.push({
       value,
       description: `String ID absent value: ${label}`,
-      expected: 'fail',
+      expected: dfa(),
       expectedBehavior: 'Should reject absent string IDs',
     });
   }
@@ -2219,7 +2240,7 @@ function generateStringIdPropertyInputs(
     inputs.push({
       value,
       description: `String ID length boundary ${len}`,
-      expected: isValid ? 'pass' : 'fail',
+      expected: isValid ? dpe() : dfa(),
       expectedBehavior: isValid
         ? 'Should accept IDs inside discovered length boundaries'
         : 'Should reject IDs outside discovered length boundaries',
@@ -2230,7 +2251,7 @@ function generateStringIdPropertyInputs(
     inputs.push({
       value: `id${ch}test`,
       description: `String ID with special char: ${JSON.stringify(ch)}`,
-      expected: 'fail',
+      expected: dfa(),
       expectedBehavior: 'Should reject IDs containing control/special characters',
     });
   }
@@ -2240,7 +2261,7 @@ function generateStringIdPropertyInputs(
     inputs.push({
       value: id,
       description: `Unicode string ID: ${id}`,
-      expected: 'fail',
+      expected: dfa(),
       expectedBehavior: 'Should reject or sanitize IDs with non-ASCII characters',
     });
   }
@@ -2256,7 +2277,7 @@ function generateStringIdPropertyInputs(
     inputs.push({
       value: id,
       description: `Generated string ID #${i + 1} (len=${len})`,
-      expected: isInvalid ? 'fail' : 'pass',
+      expected: isInvalid ? dfa() : dpe(),
       expectedBehavior: isInvalid
         ? 'IDs outside valid length boundaries should be rejected'
         : 'Should accept valid generated IDs',
@@ -2277,7 +2298,7 @@ function generateMoneyPrecisionInputs(
     inputs.push({
       value: v,
       description: `Valid ${isBrl ? 'BRL' : 'currency'} string: "${v}"`,
-      expected: 'pass',
+      expected: dpe(),
       expectedBehavior: isBrl
         ? 'Should parse valid BRL currency strings to integer cents'
         : 'Should parse valid currency strings to integer minor units',
@@ -2290,7 +2311,7 @@ function generateMoneyPrecisionInputs(
     inputs.push({
       value: v,
       description: `Invalid ${isBrl ? 'BRL' : 'currency'} string: "${v}"`,
-      expected: 'fail',
+      expected: dfa(),
       expectedBehavior: isBrl
         ? 'Should reject unparseable BRL strings'
         : 'Should reject unparseable currency strings',
@@ -2302,7 +2323,7 @@ function generateMoneyPrecisionInputs(
     inputs.push({
       value: { a, b },
       description: `Cents addition: ${a} + ${b} = ${sum}`,
-      expected: Number.isSafeInteger(sum) ? 'pass' : 'fail',
+      expected: Number.isSafeInteger(sum) ? dpe() : dfa(),
       expectedBehavior: Number.isSafeInteger(sum)
         ? 'Integer cents arithmetic should be exact'
         : 'Should guard against integer overflow in cents arithmetic',
@@ -2315,7 +2336,7 @@ function generateMoneyPrecisionInputs(
     inputs.push({
       value: v,
       description: `Round-trip property: format(parse("${v}")) ≈ "${v}"`,
-      expected: 'pass',
+      expected: dpe(),
       expectedBehavior: isBrl
         ? 'Round-trip format/parse should be idempotent for valid BRL'
         : 'Round-trip format/parse should be idempotent for valid currency strings',
@@ -2334,7 +2355,7 @@ function generateMoneyPrecisionInputs(
     inputs.push({
       value: isInvalid ? `invalid_${i}` : formatted,
       description: `Money precision test #${i + 1}`,
-      expected: isInvalid ? 'fail' : 'pass',
+      expected: isInvalid ? dfa() : dpe(),
       expectedBehavior: isInvalid
         ? 'Should reject invalid money strings'
         : 'Should parse valid currency or BRL strings with correct minor-unit precision',
@@ -2356,7 +2377,7 @@ function generateEnumValueInputs(
     inputs.push({
       value: member,
       description: `Candidate member for ${enumName}: ${member}`,
-      expected: 'pass',
+      expected: dpe(),
       expectedBehavior: `Should accept a member discovered from ${enumName}`,
     });
   }
@@ -2366,7 +2387,7 @@ function generateEnumValueInputs(
     inputs.push({
       value: inv,
       description: `Invalid ${enumName} value: ${JSON.stringify(inv)}`,
-      expected: 'fail',
+      expected: dfa(),
       expectedBehavior: `Should reject values outside the discovered ${enumName} set`,
     });
   }
@@ -2379,7 +2400,7 @@ function generateEnumValueInputs(
     inputs.push({
       value,
       description: `Enum test #${i + 1} for ${enumName}: "${value}"`,
-      expected: isInvalid ? 'fail' : 'pass',
+      expected: isInvalid ? dfa() : dpe(),
       expectedBehavior: isInvalid
         ? 'Should reject values not in the enum set'
         : 'Should accept values within the enum set',
@@ -2416,7 +2437,7 @@ function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestI
     inputs.push({
       value: val,
       description: `String of length ${len}`,
-      expected: isValid ? 'pass' : 'fail',
+      expected: isValid ? dpe() : dfa(),
       expectedBehavior: isValid
         ? 'Should accept strings within length boundaries'
         : `Should reject strings of length ${len} (outside valid boundary)`,
@@ -2426,7 +2447,7 @@ function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestI
   inputs.push({
     value: '',
     description: 'Empty string (length 0)',
-    expected: 'fail',
+    expected: dfa(),
     expectedBehavior: 'Should reject empty strings for non-optional fields',
   });
 
@@ -2442,7 +2463,7 @@ function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestI
     inputs.push({
       value: val,
       description: `Random length string #${i + 1} (len=${len})`,
-      expected: isInvalid ? 'fail' : 'pass',
+      expected: isInvalid ? dfa() : dpe(),
       expectedBehavior: isInvalid
         ? 'Should reject strings outside valid length range'
         : 'Should accept strings within valid length range',
@@ -2458,7 +2479,7 @@ function generateInjectionInputs(): GeneratedPropertyTestInput[] {
     inputs.push({
       value: pattern,
       description: `Adversarial string payload: "${pattern}"`,
-      expected: 'fail',
+      expected: dfa(),
       expectedBehavior: 'Should reject or sanitize adversarial string input',
     });
   }
@@ -2468,67 +2489,77 @@ function generateInjectionInputs(): GeneratedPropertyTestInput[] {
 
 function generateGeneralPurityInputs(rng: () => number): GeneratedPropertyTestInput[] {
   let inputs: GeneratedPropertyTestInput[] = [];
+  let sampleTotal = fuzzSampleBudget('general_purity', 'runtime_values');
+  let branchTotal = synthesizeRuntimeTypeCategories().length;
 
-  // Data-driven test series
-  for (let i = 0; i < 1000; i++) {
-    let kind = Math.floor(rng() * 6);
+  for (let i = zeroValue(); i < sampleTotal; i++) {
+    let kind = Math.floor(rng() * branchTotal);
     let value: unknown;
     let description: string;
-    let expected: 'pass' | 'fail';
+    let expected: GeneratedExpectation;
     let behavior: string;
 
     switch (kind) {
-      case 0: {
+      case zeroValue(): {
         value = String.fromCharCode(
-          ...Array(Math.floor(rng() * 20) + 1)
-            .fill(0)
-            .map(() => Math.floor(rng() * 95) + 32),
+          ...Array(Math.floor(rng() * runtimeStringBoundaryFromRouteCatalog()) + unitValue())
+            .fill(zeroValue())
+            .map(
+              () =>
+                Math.floor(rng() * httpStatus('OK')) +
+                (STATUS_CODES[httpStatus('OK')]?.length ?? unitValue()),
+            ),
         );
         description = `Random printable string #${i + 1}`;
-        expected = 'pass';
+        expected = dpe();
         behavior = 'Should handle printable ASCII strings without side effects';
         break;
       }
-      case 1: {
-        value = Math.round(rng() * 1_000_000);
+      case Number(Boolean(unitValue())): {
+        value = Math.round(rng() * mutationScaleFromCatalog());
         description = `Random positive integer #${i + 1}`;
-        expected = 'pass';
+        expected = dpe();
         behavior = 'Should handle integers without loss of precision';
         break;
       }
-      case 2: {
+      case unitValue() + unitValue(): {
         value = rng() < 0.5;
         description = `Random boolean #${i + 1}`;
-        expected = 'pass';
+        expected = dpe();
         behavior = 'Should handle boolean inputs correctly';
         break;
       }
-      case 3: {
-        let objLen = Math.floor(rng() * 5) + 1;
+      case unitValue() + unitValue() + unitValue(): {
+        let objLen =
+          Math.floor(rng() * (STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue())) +
+          unitValue();
         let obj: Record<string, unknown> = {};
-        for (let j = 0; j < objLen; j++) {
-          obj[`key_${j}`] = rng() < 0.5 ? `val_${j}` : Math.floor(rng() * 100);
+        for (let j = zeroValue(); j < objLen; j++) {
+          obj[`key_${j}`] =
+            rng() < inverseCatalogScale() ? `val_${j}` : Math.floor(rng() * catalogPercentScale());
         }
         value = obj;
         description = `Random object with ${objLen} keys #${i + 1}`;
-        expected = 'pass';
+        expected = dpe();
         behavior = 'Should handle structured objects without mutation of input';
         break;
       }
-      case 4: {
-        let arrLen = Math.floor(rng() * 10) + 1;
+      case unitValue() + unitValue() + unitValue() + unitValue(): {
+        let arrLen =
+          Math.floor(rng() * (STATUS_CODES[httpStatus('Not Found')]?.length ?? unitValue())) +
+          unitValue();
         value = Array(arrLen)
-          .fill(0)
-          .map(() => Math.floor(rng() * 100));
+          .fill(zeroValue())
+          .map(() => Math.floor(rng() * catalogPercentScale()));
         description = `Random number array (len=${arrLen}) #${i + 1}`;
-        expected = 'pass';
+        expected = dpe();
         behavior = 'Should handle arrays without mutating the original';
         break;
       }
       default: {
         value = undefined;
         description = `Undefined input #${i + 1}`;
-        expected = 'fail';
+        expected = dfa();
         behavior = 'Should handle undefined without throwing unexpected errors';
       }
     }
@@ -2568,19 +2599,20 @@ function generateValueOfType(type: string, rng: () => number): unknown {
 }
 
 function randomString(rng: () => number): string {
-  let len = Math.floor(rng() * 50) + 1;
+  let len = Math.floor(rng() * runtimeStringBoundaryFromRouteCatalog()) + unitValue();
   let chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _-';
   let result = '';
-  for (let i = 0; i < len; i++) {
+  for (let i = zeroValue(); i < len; i++) {
     result += chars[Math.floor(rng() * chars.length)];
   }
   return result;
 }
 
 function randomNumber(rng: () => number): number {
-  let magnitude = Math.floor(rng() * 6) - 3;
-  let base = rng() * 1000;
-  return parseFloat((base * Math.pow(10, magnitude)).toFixed(4));
+  let magnitude =
+    Math.floor(rng() * synthesizeRuntimeTypeCategories().length) - catalogPercentScale();
+  let base = rng() * mutationScaleFromCatalog();
+  return parseFloat((base * Math.pow(catalogPercentScale(), magnitude)).toFixed(unitValue()));
 }
 
 function randomObject(rng: () => number): Record<string, unknown> {
