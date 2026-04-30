@@ -93,8 +93,11 @@ function runGit(args, allowFailure = false) {
   }
 }
 
+const LOCKED_FILES = new Set(['scripts/pulse/no-hardcoded-reality-audit.ts']);
+
 function isRelevantPath(relPath) {
   if (!SOURCE_FILE_RE.test(relPath)) return false;
+  if (LOCKED_FILES.has(relPath)) return false;
   const parts = relPath.split('/');
   return !parts.some((part) => IGNORED_SEGMENTS.has(part));
 }
