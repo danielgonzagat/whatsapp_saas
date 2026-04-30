@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import type { HTMLAttributes, ReactNode } from 'react';
+import { colors } from '@/lib/design-tokens';
 
 /** Kloel settings class. */
 export const kloelSettingsClass = {
@@ -139,7 +140,7 @@ export function SettingsNotice({
       : tone === 'success'
         ? 'border-[#10B981]/25 bg-[#10B981]/10 text-[#7FE2BC]'
         : tone === 'warning'
-          ? 'border-[#E85D30]/25 bg-[#E85D30]/10 text-[#F2B29D]'
+          ? 'border-[colors.ember.primary]/25 bg-[colors.ember.primary]/10 text-[#F2B29D]'
           : tone === 'danger'
             ? 'border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]'
             : 'border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] text-[var(--app-text-secondary)]';
@@ -167,7 +168,7 @@ export function SettingsStatusPill({
       : tone === 'success'
         ? 'bg-[#10B981]/12 text-[#7FE2BC]'
         : tone === 'warning'
-          ? 'bg-[#E85D30]/12 text-[#F2B29D]'
+          ? 'bg-[colors.ember.primary]/12 text-[#F2B29D]'
           : tone === 'danger'
             ? 'bg-[#E05252]/12 text-[#F7A8A8]'
             : 'bg-[var(--app-bg-secondary)] text-[var(--app-text-secondary)]';

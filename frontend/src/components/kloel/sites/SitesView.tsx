@@ -9,6 +9,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect, useRef, useCallback, useMemo, startTransition } from 'react';
 import { mutate } from 'swr';
 import { secureRandomFloat } from '@/lib/secure-random';
+import { colors } from '@/lib/design-tokens';
 
 // ── Site item shape returned by the backend ──
 interface SiteItem {
@@ -382,7 +383,12 @@ function Badge({ children, color = EMBER }: { children: React.ReactNode; color?:
 }
 
 function StatusDot({ status }: { status: 'online' | 'offline' | 'warning' | 'building' }) {
-  const colors = { online: '#10B981', offline: '#6E6E73', warning: '#F59E0B', building: '#8b5cf6' };
+  const colors = {
+    online: '#10B981',
+    offline: 'colors.text.muted',
+    warning: '#F59E0B',
+    building: '#8b5cf6',
+  };
   return (
     <span
       style={{

@@ -6,6 +6,7 @@ import { type CanvasDesign, useCanvasDesigns } from '@/hooks/useCanvasDesigns';
 import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { colors } from '@/lib/design-tokens';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -191,7 +192,7 @@ function ProjectCard({
       onMouseLeave={() => setH(false)}
       style={{
         background: 'var(--app-bg-card)',
-        border: `1px solid ${h ? '#E85D3050' : '#1C1C1F'}`,
+        border: `1px solid ${h ? 'colors.ember.primary50' : '#1C1C1F'}`,
         borderRadius: 6,
         overflow: 'hidden',
         textAlign: 'left',

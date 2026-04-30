@@ -131,17 +131,18 @@ const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
 /* ── Icons (extracted into VendasView.icons.tsx) ── */
 import { IC } from './VendasView.icons';
+import { colors } from '@/lib/design-tokens';
 
 /* ── Status configs ── */
 const SALE_STATUS: Record<string, { label: string; color: string }> = {
-  paid: { label: 'Pago', color: '#E85D30' },
+  paid: { label: 'Pago', color: 'colors.ember.primary' },
   pending: { label: 'Pendente', color: '#F59E0B' },
   refunded: { label: 'Reembolsado', color: 'var(--app-text-secondary)' },
   cancelled: { label: 'Cancelado', color: 'var(--app-text-tertiary)' },
   overdue: { label: 'Atrasado', color: '#EF4444' },
 };
 const SUB_STATUS: Record<string, { label: string; color: string }> = {
-  ACTIVE: { label: 'Ativa', color: '#E85D30' },
+  ACTIVE: { label: 'Ativa', color: 'colors.ember.primary' },
   PAST_DUE: { label: 'Atrasada', color: '#F59E0B' },
   CANCELLED: { label: 'Cancelada', color: 'var(--app-text-tertiary)' },
   PAUSED: { label: 'Pausada', color: 'var(--app-text-secondary)' },
@@ -150,12 +151,12 @@ const SUB_STATUS: Record<string, { label: string; color: string }> = {
 const ORDER_STATUS: Record<string, { label: string; color: string }> = {
   PROCESSING: { label: 'Processando', color: '#F59E0B' },
   SHIPPED: { label: 'Enviado', color: '#3B82F6' },
-  DELIVERED: { label: 'Entregue', color: '#E85D30' },
+  DELIVERED: { label: 'Entregue', color: 'colors.ember.primary' },
   RETURNED: { label: 'Devolvido', color: 'var(--app-text-secondary)' },
   CANCELLED: { label: 'Cancelado', color: 'var(--app-text-tertiary)' },
 };
 const PAY_METHODS: Record<string, string> = {
-  PIX: '#E85D30',
+  PIX: 'colors.ember.primary',
   CREDIT_CARD: '#3B82F6',
   BOLETO: '#F59E0B',
   DEBIT: '#10B981',
@@ -282,7 +283,7 @@ function TH({ children }: { children: React.ReactNode }) {
   );
 }
 
-function MiniChart({ data, color = '#E85D30' }: { data: number[]; color?: string }) {
+function MiniChart({ data, color = 'colors.ember.primary' }: { data: number[]; color?: string }) {
   const max = Math.max(...data, 1);
   const bars = data.map((value, idx) => ({
     id: `bar-${idx}-of-${data.length}-${value}`,
@@ -580,7 +581,7 @@ function SmartPaymentModal({
                         rel="noopener noreferrer"
                         style={{
                           fontSize: 12,
-                          color: '#E85D30',
+                          color: 'colors.ember.primary',
                           fontFamily: SORA,
                           textDecoration: 'underline',
                         }}
@@ -626,7 +627,7 @@ function SmartPaymentModal({
                   style={{
                     flex: 1,
                     padding: '10px 16px',
-                    background: '#E85D30',
+                    background: 'colors.ember.primary',
                     border: 'none',
                     borderRadius: 6,
                     color: 'var(--app-text-on-accent)',
@@ -787,7 +788,7 @@ function SmartPaymentModal({
                     padding: '10px 16px',
                     background:
                       form.amount && form.customerName && form.customerPhone
-                        ? '#E85D30'
+                        ? 'colors.ember.primary'
                         : 'var(--app-bg-secondary)',
                     border: 'none',
                     borderRadius: 6,
@@ -987,12 +988,16 @@ function DetailModal({
           >
             {(
               [
-                { l: 'Valor', v: fmtBRL(item.amount || 0), c: '#E85D30' },
+                { l: 'Valor', v: fmtBRL(item.amount || 0), c: 'colors.ember.primary' },
                 item.paymentMethod && { l: 'Metodo', v: item.paymentMethod },
                 { l: 'Data', v: fmtDate(item.createdAt || item.startedAt || new Date()) },
                 detailType === 'sub' &&
                   item.nextBillingAt && { l: 'Proxima cobranca', v: fmtDate(item.nextBillingAt) },
-                detailType === 'sub' && { l: 'LTV', v: fmtBRL(item.totalPaid || 0), c: '#E85D30' },
+                detailType === 'sub' && {
+                  l: 'LTV',
+                  v: fmtBRL(item.totalPaid || 0),
+                  c: 'colors.ember.primary',
+                },
                 detailType === 'order' && {
                   l: 'Rastreamento',
                   v: item.trackingCode || 'Aguardando',
@@ -1094,9 +1099,9 @@ function DetailModal({
                     flex: 1,
                     padding: '10px 16px',
                     background: 'none',
-                    border: '1px solid #E85D30',
+                    border: '1px solid colors.ember.primary',
                     borderRadius: 6,
-                    color: '#E85D30',
+                    color: 'colors.ember.primary',
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: 'pointer',
@@ -1141,7 +1146,7 @@ function DetailModal({
                 style={{
                   flex: 1,
                   padding: '10px 16px',
-                  background: '#E85D30',
+                  background: 'colors.ember.primary',
                   border: 'none',
                   borderRadius: 6,
                   color: 'var(--app-text-on-accent)',
@@ -1168,7 +1173,7 @@ function DetailModal({
                 style={{
                   flex: 1,
                   padding: '10px 16px',
-                  background: '#E85D30',
+                  background: 'colors.ember.primary',
                   border: 'none',
                   borderRadius: 6,
                   color: 'var(--app-text-on-accent)',
@@ -1367,7 +1372,9 @@ function ShipModal({
             style={{
               flex: 1,
               padding: '10px 16px',
-              background: shipTrackingCode.trim() ? '#E85D30' : 'var(--app-bg-secondary)',
+              background: shipTrackingCode.trim()
+                ? 'colors.ember.primary'
+                : 'var(--app-bg-secondary)',
               border: 'none',
               borderRadius: 6,
               color: shipTrackingCode.trim()
@@ -1421,7 +1428,7 @@ function GestaoVendas({
         <Stat
           label={kloelT(`Faturamento total`)}
           value={fmtBRL(st.totalRevenue || 0)}
-          color="#E85D30"
+          color="colors.ember.primary"
           trend={st.revenueTrend}
         />
         <Stat
@@ -1530,10 +1537,10 @@ function GestaoVendas({
               onClick={() => onFilterStatusChange(f)}
               style={{
                 padding: '7px 14px',
-                background: filterStatus === f ? 'var(--app-bg-card)' : '#E85D30',
-                border: '1px solid #E85D30',
+                background: filterStatus === f ? 'var(--app-bg-card)' : 'colors.ember.primary',
+                border: '1px solid colors.ember.primary',
                 borderRadius: 6,
-                color: filterStatus === f ? '#E85D30' : 'var(--app-text-on-accent)',
+                color: filterStatus === f ? 'colors.ember.primary' : 'var(--app-text-on-accent)',
                 fontSize: 11,
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -1635,7 +1642,12 @@ function GestaoVendas({
                     </span>
                   </div>
                   <span
-                    style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E85D30' }}
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: 'colors.ember.primary',
+                    }}
                   >
                     {fmtBRL(s.amount)}
                   </span>
@@ -1729,7 +1741,7 @@ function GestaoVendas({
                     fontFamily: MONO,
                     fontSize: 13,
                     fontWeight: 600,
-                    color: '#E85D30',
+                    color: 'colors.ember.primary',
                     alignSelf: 'center',
                   }}
                 >
@@ -1791,7 +1803,7 @@ function GestaoAssinaturas({
           marginBottom: 24,
         }}
       >
-        <Stat label="MRR" value={fmtBRL(st.mrr || 0)} color="#E85D30" trend={5.8} />
+        <Stat label="MRR" value={fmtBRL(st.mrr || 0)} color="colors.ember.primary" trend={5.8} />
         <Stat label={kloelT(`Assinaturas ativas`)} value={String(st.activeCount || 0)} />
         <Stat
           label={kloelT(`Churn rate`)}
@@ -1799,7 +1811,11 @@ function GestaoAssinaturas({
           color={(st.churnRate || 0) > 5 ? '#EF4444' : '#10B981'}
         />
         <Stat label={kloelT(`LTV medio`)} value={fmtBRL(st.avgLtv || 0)} />
-        <Stat label={kloelT(`ARR projetado`)} value={fmtBRL(st.arr || 0)} color="#E85D30" />
+        <Stat
+          label={kloelT(`ARR projetado`)}
+          value={fmtBRL(st.arr || 0)}
+          color="colors.ember.primary"
+        />
       </div>
       {/* Lifecycle */}
       <div
@@ -1807,7 +1823,7 @@ function GestaoAssinaturas({
       >
         {[
           { label: 'Trial', count: lc.trial || 0, color: '#3B82F6' },
-          { label: 'Ativas', count: lc.active || 0, color: '#E85D30' },
+          { label: 'Ativas', count: lc.active || 0, color: 'colors.ember.primary' },
           { label: 'Atrasadas', count: lc.past_due || 0, color: '#F59E0B' },
           { label: 'Pausadas', count: lc.paused || 0, color: 'var(--app-text-secondary)' },
           { label: 'Canceladas', count: lc.cancelled || 0, color: 'var(--app-text-tertiary)' },
@@ -1980,7 +1996,7 @@ function GestaoAssinaturas({
                 style={{
                   fontFamily: MONO,
                   fontSize: 12,
-                  color: '#E85D30',
+                  color: 'colors.ember.primary',
                   fontWeight: 600,
                   alignSelf: 'center',
                 }}
@@ -2035,7 +2051,11 @@ function GestaoFisicos({
           color="#F59E0B"
         />
         <Stat label={kloelT(`Em transito`)} value={String(st.shipped || 0)} color="#3B82F6" />
-        <Stat label={kloelT(`Entregues`)} value={String(st.delivered || 0)} color="#E85D30" />
+        <Stat
+          label={kloelT(`Entregues`)}
+          value={String(st.delivered || 0)}
+          color="colors.ember.primary"
+        />
       </div>
       {/* Pipeline */}
       <div
@@ -2071,7 +2091,7 @@ function GestaoFisicos({
           <div
             style={{
               width: `${((pl.delivered || 0) / total) * 100}%`,
-              background: '#E85D30',
+              background: 'colors.ember.primary',
               borderRadius: '0 4px 4px 0',
             }}
           />
@@ -2080,7 +2100,7 @@ function GestaoFisicos({
           {[
             { l: 'Processando', c: '#F59E0B', n: pl.processing || 0 },
             { l: 'Enviados', c: '#3B82F6', n: pl.shipped || 0 },
-            { l: 'Entregues', c: '#E85D30', n: pl.delivered || 0 },
+            { l: 'Entregues', c: 'colors.ember.primary', n: pl.delivered || 0 },
           ].map((s) => (
             <span
               key={s.l}
@@ -2433,7 +2453,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         <Stat
           label={kloelT(`Receita viva`)}
           value={fmtBRL(salesStats.totalRevenue || 0)}
-          color="#E85D30"
+          color="colors.ember.primary"
           sub={kloelT(`Volume do período`)}
         />
         <Stat
@@ -2538,7 +2558,14 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
             >
               {card.desc}
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 11, color: '#E85D30', marginTop: 10 }}>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 11,
+                color: 'colors.ember.primary',
+                marginTop: 10,
+              }}
+            >
               {card.metric}
             </div>
             <button
@@ -2547,7 +2574,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
               style={{
                 marginTop: 14,
                 padding: '8px 16px',
-                background: '#E85D30',
+                background: 'colors.ember.primary',
                 border: 'none',
                 borderRadius: 6,
                 color: 'var(--app-text-on-accent)',
@@ -2781,7 +2808,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                             width: 8,
                             height: 8,
                             borderRadius: '50%',
-                            background: stage.color || '#E85D30',
+                            background: stage.color || 'colors.ember.primary',
                             flexShrink: 0,
                           }}
                         />

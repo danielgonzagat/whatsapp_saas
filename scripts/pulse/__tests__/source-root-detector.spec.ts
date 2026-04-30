@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { describe, expect, it } from 'vitest';
 
 import { detectConfig } from '../config';
 import { detectSourceRoots } from '../source-root-detector';
@@ -34,7 +35,7 @@ describe('PULSE source root detector', () => {
     fs.writeFileSync(path.join(rootDir, 'apps/panel/next.config.ts'), 'export default {};');
     fs.writeFileSync(
       path.join(frontendDir, 'index.tsx'),
-      'export function Panel() { return null; }',
+      'import React from "react"; export function Panel() { return React.createElement("main"); }',
     );
 
     writeJson(path.join(rootDir, 'services/api/package.json'), {
@@ -55,7 +56,7 @@ describe('PULSE source root detector', () => {
       'export class HealthController {}',
     );
 
-    writeJson(path.join(rootDir, 'jobs/queue-worker/package.json'), {
+    writeJson(path.join(rootDir, 'jobs/job-runner/package.json'), {
       name: '@opaque/jobs',
       dependencies: { bullmq: '1.0.0' },
       scripts: { start: 'ts-node bootstrap.ts' },

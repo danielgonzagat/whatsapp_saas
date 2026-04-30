@@ -5,6 +5,7 @@ import { apiFetch } from '@/lib/api';
 import { toYouTubeEmbedUrl } from '@/lib/video-embed';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { colors } from '@/lib/design-tokens';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const _MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -176,7 +177,7 @@ export default function MemberAreaPreviewPage() {
       <div
         style={{
           background: 'rgba(232,93,48,0.06)',
-          borderBottom: '1px solid #E85D30',
+          borderBottom: '1px solid colors.ember.primary',
           padding: '10px 24px',
           display: 'flex',
           alignItems: 'center',
@@ -188,14 +189,21 @@ export default function MemberAreaPreviewPage() {
           height={16}
           viewBox="0 0 24 24"
           fill="none"
-          stroke="#E85D30"
+          stroke="colors.ember.primary"
           strokeWidth={2}
           aria-hidden="true"
         >
           <path d={kloelT(`M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z`)} />
           <circle cx="12" cy="12" r="3" />
         </svg>
-        <span style={{ fontSize: 12, fontWeight: 600, color: '#E85D30', letterSpacing: '.04em' }}>
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            color: 'colors.ember.primary',
+            letterSpacing: '.04em',
+          }}
+        >
           {kloelT(`MODO DE PRE-VISUALIZACAO — VISAO DO ALUNO`)}
         </span>
       </div>
@@ -206,7 +214,7 @@ export default function MemberAreaPreviewPage() {
           style={{
             width: 280,
             background: 'var(--app-bg-card)',
-            borderRight: '1px solid #222226',
+            borderRight: '1px solid colors.border.space',
             padding: '20px 0',
             overflowY: 'auto',
             flexShrink: 0,
@@ -269,7 +277,7 @@ export default function MemberAreaPreviewPage() {
                     border: 'none',
                     textAlign: 'left',
                     cursor: 'pointer',
-                    color: activeModuleId === mod.id ? '#E0DDD8' : '#6E6E73',
+                    color: activeModuleId === mod.id ? 'colors.text.silver' : 'colors.text.muted',
                     fontSize: 13,
                     fontWeight: 600,
                     fontFamily: SORA,
@@ -291,7 +299,8 @@ export default function MemberAreaPreviewPage() {
                         border: 'none',
                         textAlign: 'left',
                         cursor: 'pointer',
-                        color: activeLessonId === les.id ? '#E85D30' : '#3A3A3F',
+                        color:
+                          activeLessonId === les.id ? 'colors.ember.primary' : 'colors.text.dim',
                         fontSize: 12,
                         fontFamily: SORA,
                         display: 'flex',
@@ -421,7 +430,7 @@ export default function MemberAreaPreviewPage() {
                     height={48}
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="#3A3A3F"
+                    stroke="colors.text.dim"
                     strokeWidth={1.5}
                     style={{ margin: '0 auto 12px' }}
                     aria-hidden="true"

@@ -13,6 +13,7 @@ import { CanvasBottomBar } from './canvas-editor-bottom-bar';
 import { CanvasContextMenu } from './canvas-editor-context-menu';
 import { PropertyBar } from './canvas-editor-property-bar';
 import { SidebarPanels } from './canvas-editor-sidebar-panels';
+import { colors } from '@/lib/design-tokens';
 import {
   FONT_SORA as S,
   SIDEBAR_TABS,
@@ -301,7 +302,8 @@ export default function CanvasEditor() {
     const nextMode = !ed.canvas.isDrawingMode;
     (ed.canvas as { isDrawingMode: boolean }).isDrawingMode = nextMode;
     if (nextMode && ed.canvas.freeDrawingBrush) {
-      (ed.canvas.freeDrawingBrush as { color: string; width: number }).color = '#E85D30';
+      (ed.canvas.freeDrawingBrush as { color: string; width: number }).color =
+        'colors.ember.primary';
       (ed.canvas.freeDrawingBrush as { color: string; width: number }).width = 3;
     }
     setIsDrawing(nextMode);
@@ -315,9 +317,9 @@ export default function CanvasEditor() {
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
-        background: '#0A0A0C',
+        background: 'colors.background.void',
         fontFamily: S,
-        color: '#E0DDD8',
+        color: 'colors.text.silver',
         overflow: 'hidden',
         userSelect: 'none',
       }}
@@ -354,7 +356,7 @@ export default function CanvasEditor() {
           <div
             style={{
               width: 56,
-              background: '#0A0A0C',
+              background: 'colors.background.void',
               borderRight: '1px solid #1C1C1F',
               display: 'flex',
               flexDirection: 'column',
@@ -378,7 +380,7 @@ export default function CanvasEditor() {
                     borderRadius: 8,
                     border: 'none',
                     background: active ? '#1C1C1F' : 'transparent',
-                    color: active ? '#E85D30' : '#6E6E73',
+                    color: active ? 'colors.ember.primary' : 'colors.text.muted',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
@@ -409,7 +411,7 @@ export default function CanvasEditor() {
             <div
               style={{
                 width: 280,
-                background: '#0A0A0C',
+                background: 'colors.background.void',
                 overflowY: 'auto',
                 padding: 16,
                 borderRight: '1px solid #1C1C1F',
@@ -445,13 +447,13 @@ export default function CanvasEditor() {
         <section
           style={{
             flex: 1,
-            background: '#19191C',
+            background: 'colors.background.elevated',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             position: 'relative',
             overflow: 'hidden',
-            border: canvasDragOver ? '2px dashed #E85D30' : '2px solid transparent',
+            border: canvasDragOver ? '2px dashed colors.ember.primary' : '2px solid transparent',
           }}
           onDragOver={(e) => {
             e.preventDefault();

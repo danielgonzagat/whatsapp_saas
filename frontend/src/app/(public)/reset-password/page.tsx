@@ -16,7 +16,7 @@ function EyeIcon() {
       height="16"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#3A3A3F"
+      stroke="colors.text.dim"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -35,7 +35,7 @@ function EyeOffIcon() {
       height="16"
       viewBox="0 0 24 24"
       fill="none"
-      stroke="#3A3A3F"
+      stroke="colors.text.dim"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -70,13 +70,13 @@ function ResetPasswordContent() {
   const inputBase: React.CSSProperties = {
     width: '100%',
     height: 44,
-    background: '#111113',
-    border: '1px solid #222226',
+    background: 'colors.background.surface',
+    border: '1px solid colors.border.space',
     borderRadius: 6,
     padding: '0 14px',
     fontSize: 14,
     fontFamily: sora,
-    color: '#E0DDD8',
+    color: 'colors.text.silver',
     outline: 'none',
     transition: 'border-color 150ms ease',
     boxSizing: 'border-box',
@@ -318,10 +318,10 @@ function ResetPasswordContent() {
                       onChange={(e) => setPassword(e.target.value)}
                       style={{ ...inputBase, paddingRight: 42 }}
                       onFocus={(e) => {
-                        e.target.style.borderColor = '#333338';
+                        e.target.style.borderColor = 'colors.border.default';
                       }}
                       onBlur={(e) => {
-                        e.target.style.borderColor = '#222226';
+                        e.target.style.borderColor = 'colors.border.space';
                       }}
                     />
                     <button
@@ -368,10 +368,10 @@ function ResetPasswordContent() {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       style={{ ...inputBase, paddingRight: 42 }}
                       onFocus={(e) => {
-                        e.target.style.borderColor = '#333338';
+                        e.target.style.borderColor = 'colors.border.default';
                       }}
                       onBlur={(e) => {
-                        e.target.style.borderColor = '#222226';
+                        e.target.style.borderColor = 'colors.border.space';
                       }}
                     />
                     <button

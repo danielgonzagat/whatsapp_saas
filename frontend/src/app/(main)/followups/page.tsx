@@ -24,6 +24,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { formatDate, formatPhone, getStatusLabel } from './followups.helpers';
+import { colors } from '@/lib/design-tokens';
 
 interface Followup {
   id: string;
@@ -187,7 +188,11 @@ export default function FollowupsPage() {
             className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-[#D04E25] disabled:bg-primary/50 text-primary-foreground font-medium rounded-lg transition-colors"
           >
             {isLoading ? (
-              <KloelMushroomMark size={18} title="Atualizando follow-ups" traceColor="#0A0A0C" />
+              <KloelMushroomMark
+                size={18}
+                title="Atualizando follow-ups"
+                traceColor="colors.background.void"
+              />
             ) : (
               <RefreshCw className="w-4 h-4" aria-hidden="true" />
             )}
@@ -355,7 +360,11 @@ export default function FollowupsPage() {
         {/* Loading State */}
         {isLoading && followups.length === 0 && (
           <div className="flex items-center justify-center py-20">
-            <KloelMushroomMark size={36} title="Carregando follow-ups" traceColor="#E85D30" />
+            <KloelMushroomMark
+              size={36}
+              title="Carregando follow-ups"
+              traceColor="colors.ember.primary"
+            />
           </div>
         )}
 

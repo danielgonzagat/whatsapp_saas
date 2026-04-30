@@ -388,7 +388,7 @@ function AnunciosTabBar({
       style={{
         display: 'flex',
         gap: 2,
-        borderBottom: '1px solid #222226',
+        borderBottom: '1px solid colors.border.space',
         padding: isMobile ? '0 12px' : '0 16px',
         overflowX: 'auto' as const,
       }}
@@ -1472,7 +1472,7 @@ function PlatformTab({
             display: 'grid',
             gridTemplateColumns: '2fr 0.8fr 1fr 1fr 0.8fr 0.6fr 0.8fr 0.8fr',
             padding: '10px 16px',
-            borderBottom: '1px solid #222226',
+            borderBottom: '1px solid colors.border.space',
           }}
         >
           {['Campanha', 'Status', 'Gasto', 'Retorno', 'ROAS', 'Conv', 'CPC', 'Acoes'].map((h) => (
@@ -1522,7 +1522,7 @@ function PlatformTab({
                     fontFamily: MONO,
                     padding: '2px 6px',
                     borderRadius: 4,
-                    background: c.status === 'active' ? `${G}18` : '#3A3A3F18',
+                    background: c.status === 'active' ? `${G}18` : 'colors.text.dim18',
                     color: c.status === 'active' ? G : colors.text.muted,
                   }}
                 >
@@ -1639,7 +1639,7 @@ function TrackingTab({ focus }: { focus?: string }) {
       <div
         style={{
           background: focusedRetargeting ? 'rgba(232,93,48,.06)' : colors.background.surface,
-          border: focusedRetargeting ? `1px solid ${EMBER}33` : '1px solid #222226',
+          border: focusedRetargeting ? `1px solid ${EMBER}33` : '1px solid colors.border.space',
           borderRadius: 6,
           padding: 16,
         }}
@@ -2260,7 +2260,7 @@ function RulesTab() {
     width: '100%',
     padding: '10px 12px',
     background: 'var(--app-bg-secondary)',
-    border: '1px solid #3A3A3F',
+    border: '1px solid colors.text.dim',
     borderRadius: 6,
     color: 'var(--app-text-primary)',
     fontSize: 13,
@@ -2418,7 +2418,7 @@ function RulesTab() {
                           width: '100%',
                           padding: '7px 10px',
                           background: 'var(--app-bg-card)',
-                          border: '1px solid #3A3A3F',
+                          border: '1px solid colors.text.dim',
                           borderRadius: 6,
                           color: 'var(--app-text-primary)',
                           fontSize: 12,
@@ -2460,7 +2460,7 @@ function RulesTab() {
                           width: '100%',
                           padding: '7px 10px',
                           background: 'var(--app-bg-card)',
-                          border: '1px solid #3A3A3F',
+                          border: '1px solid colors.text.dim',
                           borderRadius: 6,
                           color: 'var(--app-text-primary)',
                           fontSize: 12,
@@ -2477,7 +2477,7 @@ function RulesTab() {
                         onClick={cancelEdit}
                         style={{
                           background: 'none',
-                          border: '1px solid #3A3A3F',
+                          border: '1px solid colors.text.dim',
                           borderRadius: 6,
                           padding: '6px 12px',
                           color: 'var(--app-text-secondary)',
@@ -2717,7 +2717,7 @@ function RulesTab() {
                 }}
                 style={{
                   background: 'none',
-                  border: '1px solid #3A3A3F',
+                  border: '1px solid colors.text.dim',
                   borderRadius: 6,
                   padding: '8px 16px',
                   color: 'var(--app-text-secondary)',

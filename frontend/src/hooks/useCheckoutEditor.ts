@@ -4,6 +4,7 @@ import { apiFetch } from '@/lib/api';
 import { swrFetcher } from '@/lib/fetcher';
 import { useCallback, useRef } from 'react';
 import useSWR from 'swr';
+import { colors } from '@/lib/design-tokens';
 
 /* ── Types ── */
 
@@ -243,11 +244,11 @@ export interface CheckoutConfig {
 /** Default_config. */
 export const DEFAULT_CONFIG: CheckoutConfig = {
   theme: 'NOIR',
-  accentColor: '#E85D30',
+  accentColor: 'colors.ember.primary',
   accentColor2: '#D14E25',
-  backgroundColor: '#0A0A0C',
-  cardColor: '#111113',
-  textColor: '#E0DDD8',
+  backgroundColor: 'colors.background.void',
+  cardColor: 'colors.background.surface',
+  textColor: 'colors.text.silver',
   brandName: '',
   brandLogo: '',
   headerMessage: '',

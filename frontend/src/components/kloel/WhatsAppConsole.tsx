@@ -18,6 +18,7 @@ import Image from 'next/image';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { AgentActivity } from './AgentConsole';
 import { KloelMushroomVisual } from './KloelBrand';
+import { colors } from '@/lib/design-tokens';
 import {
   type ChatPreview,
   extractPreviewText,
@@ -77,8 +78,8 @@ class WhatsAppConsoleErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <aside className="fixed right-0 top-0 z-50 flex h-full w-[340px] flex-col border-l border-[#222226] bg-[#111113] px-4 py-6 shadow-2xl">
-          <div className="rounded-3xl border border-[#E05252]/20 bg-[#111113] px-4 py-4 shadow-sm">
+        <aside className="fixed right-0 top-0 z-50 flex h-full w-[340px] flex-col border-l border-[colors.border.space] bg-[colors.background.surface] px-4 py-6 shadow-2xl">
+          <div className="rounded-3xl border border-[#E05252]/20 bg-[colors.background.surface] px-4 py-4 shadow-sm">
             <div className="text-sm font-semibold text-slate-900">
               {kloelT(`O painel do WhatsApp caiu, mas o restante da aplicação continua vivo.`)}
             </div>
@@ -99,17 +100,17 @@ class WhatsAppConsoleErrorBoundary extends React.Component<
 function getActivityTone(activity: AgentActivity) {
   switch (activity.type) {
     case 'message_sent':
-      return 'bg-[#E0DDD8]/10 text-[#E0DDD8] border-[#E0DDD8]/15';
+      return 'bg-[colors.text.silver]/10 text-[colors.text.silver] border-[colors.text.silver]/15';
     case 'message_received':
-      return 'bg-[#19191C] text-[#6E6E73] border-[#222226]';
+      return 'bg-[colors.background.elevated] text-[colors.text.muted] border-[colors.border.space]';
     case 'lead_qualified':
-      return 'bg-[#E0DDD8]/10 text-[#E0DDD8] border-[#E0DDD8]/15';
+      return 'bg-[colors.text.silver]/10 text-[colors.text.silver] border-[colors.text.silver]/15';
     case 'follow_up_scheduled':
-      return 'bg-[#6E6E73]/10 text-[#6E6E73] border-[#6E6E73]/15';
+      return 'bg-[colors.text.muted]/10 text-[colors.text.muted] border-[colors.text.muted]/15';
     case 'error':
       return 'bg-[#E05252]/10 text-[#E05252] border-[#E05252]/15';
     default:
-      return 'bg-[#6E6E73]/10 text-[#6E6E73] border-[#6E6E73]/15';
+      return 'bg-[colors.text.muted]/10 text-[colors.text.muted] border-[colors.text.muted]/15';
   }
 }
 
@@ -151,7 +152,7 @@ function WhatsAppLiveView({
 
           <div className="max-h-[420px] min-h-[420px] space-y-2 overflow-y-auto bg-[linear-gradient(180deg,rgba(10,10,20,0.6),rgba(10,10,20,0.3))] px-3 py-3">
             {renderedMessages.length === 0 ? (
-              <div className="rounded-md bg-[#111113]/90 px-3 py-4 text-center text-xs text-[#6E6E73] shadow-sm">
+              <div className="rounded-md bg-[colors.background.surface]/90 px-3 py-4 text-center text-xs text-[colors.text.muted] shadow-sm">
                 {kloelT(`Nenhuma conversa sincronizada ainda. Assim que a sessão estiver ativa, as mensagens
                 e ações do agente aparecem aqui.`)}
               </div>
@@ -165,8 +166,8 @@ function WhatsAppLiveView({
                   className={cn(
                     'max-w-[82%] rounded-md px-3 py-2 text-[13px] leading-relaxed shadow-sm',
                     outbound
-                      ? 'ml-auto rounded-br-md bg-[#E85D30]/20 text-[#E0DDD8]'
-                      : 'mr-auto rounded-bl-md bg-[#19191C] text-[#E0DDD8]',
+                      ? 'ml-auto rounded-br-md bg-[colors.ember.primary]/20 text-[colors.text.silver]'
+                      : 'mr-auto rounded-bl-md bg-[colors.background.elevated] text-[colors.text.silver]',
                   )}
                 >
                   <div>{message.content || '[mensagem sem texto]'}</div>
@@ -191,7 +192,7 @@ function WhatsAppLiveView({
             ))}
 
             {isThinking && !isPaused ? (
-              <div className="mr-auto max-w-[65%] rounded-md rounded-bl-md bg-[#19191C] px-3 py-2 text-xs text-[#6E6E73] shadow-sm">
+              <div className="mr-auto max-w-[65%] rounded-md rounded-bl-md bg-[colors.background.elevated] px-3 py-2 text-xs text-[colors.text.muted] shadow-sm">
                 {kloelT(`digitando...`)}
               </div>
             ) : null}
@@ -279,7 +280,7 @@ function QrConnectCard({
               className="mx-auto h-56 w-56 rounded-md bg-white p-3 shadow-sm"
             />
           ) : (
-            <div className="flex h-56 flex-col items-center justify-center rounded-md border border-dashed border-[#333338] bg-[#19191C] text-center">
+            <div className="flex h-56 flex-col items-center justify-center rounded-md border border-dashed border-[colors.border.default] bg-[colors.background.elevated] text-center">
               <div className="mb-3">
                 <KloelMushroomVisual
                   size={44}
@@ -559,7 +560,7 @@ function WhatsAppConsoleInner({
         <button
           type="button"
           onClick={onToggle}
-          className="fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-2xl border border-r-0 border-[#222226] bg-[#111113] px-3 py-2 shadow-lg transition-all hover:pr-5"
+          className="fixed right-0 top-1/2 z-40 -translate-y-1/2 rounded-l-2xl border border-r-0 border-[colors.border.space] bg-[colors.background.surface] px-3 py-2 shadow-lg transition-all hover:pr-5"
         >
           <div className="flex items-center gap-2">
             <ChevronLeft className="h-4 w-4 text-slate-500" aria-hidden="true" />
@@ -575,7 +576,7 @@ function WhatsAppConsoleInner({
 
       <aside
         className={cn(
-          'fixed right-0 top-0 z-50 flex h-full flex-col border-l border-[#222226] bg-[#111113] transition-transform duration-200',
+          'fixed right-0 top-0 z-50 flex h-full flex-col border-l border-[colors.border.space] bg-[colors.background.surface] transition-transform duration-200',
           isOpen ? 'translate-x-0' : 'translate-x-full',
           className,
         )}

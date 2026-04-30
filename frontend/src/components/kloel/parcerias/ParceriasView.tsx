@@ -22,6 +22,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { startTransition, useEffect, useRef, useState, useId } from 'react';
 import useSWR from 'swr';
 import { IC } from './ParceriasView.icons';
+import { colors } from '@/lib/design-tokens';
 
 /* ── Local view types (mirrors API shape) ── */
 interface Agent {
@@ -160,7 +161,7 @@ const MONTH_LABELS = [
    ═══════════════════════════════════════════════ */
 
 const ROLES: { value: string; label: string; color: string }[] = [
-  { value: 'admin', label: 'Admin', color: '#E85D30' },
+  { value: 'admin', label: 'Admin', color: 'colors.ember.primary' },
   { value: 'manager', label: 'Manager', color: '#3B82F6' },
   { value: 'support', label: 'Support', color: '#10B981' },
   { value: 'finance', label: 'Finance', color: '#F59E0B' },

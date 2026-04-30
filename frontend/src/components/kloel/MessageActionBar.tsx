@@ -192,7 +192,7 @@ export function MessageActionBar({
                     whiteSpace: 'nowrap',
                     padding: '4px 8px',
                     borderRadius: 4,
-                    border: '1px solid #222226', // PULSE_VISUAL_OK: tooltip border, matches design border.space
+                    border: '1px solid colors.border.space', // PULSE_VISUAL_OK: tooltip border, matches design border.space
                     boxShadow: `0 12px 28px rgba(0, 0, 0, 0.35)`,
                     zIndex: 5,
                     opacity: 1,

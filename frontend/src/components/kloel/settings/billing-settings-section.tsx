@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BillingLegacyProvidersSection } from './billing-legacy-providers-section';
+import { colors } from '@/lib/design-tokens';
 import {
   SettingsCard,
   SettingsHeader,
@@ -270,7 +271,7 @@ export function BillingSettingsSection({
         <div className="grid gap-4 md:grid-cols-3">
           <SettingsInset className="p-4">
             <div className="flex items-center gap-2">
-              <Wallet className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
+              <Wallet className="h-4 w-4 text-[colors.ember.primary]" aria-hidden="true" />
               <p className="text-xs uppercase tracking-wide text-[var(--app-text-secondary)]">
                 {kloelT(`Creditos`)}
               </p>
@@ -283,7 +284,7 @@ export function BillingSettingsSection({
             </p>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--app-bg-secondary)]">
               <div
-                className="h-full rounded-full bg-[#E85D30]"
+                className="h-full rounded-full bg-[colors.ember.primary]"
                 style={{ width: `${creditPercent}%` }}
               />
             </div>
@@ -291,7 +292,7 @@ export function BillingSettingsSection({
 
           <SettingsInset className="p-4">
             <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
+              <Activity className="h-4 w-4 text-[colors.ember.primary]" aria-hidden="true" />
               <p className="text-xs uppercase tracking-wide text-[var(--app-text-secondary)]">
                 {kloelT(`Vendas processadas`)}
               </p>
@@ -331,7 +332,7 @@ export function BillingSettingsSection({
 
           <SettingsInset className="p-4">
             <div className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
+              <Lock className="h-4 w-4 text-[colors.ember.primary]" aria-hidden="true" />
               <p className="text-xs uppercase tracking-wide text-[var(--app-text-secondary)]">
                 {kloelT(`Operacao financeira`)}
               </p>
@@ -359,12 +360,12 @@ export function BillingSettingsSection({
             <div className="rounded-md border border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] p-4">
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2 text-[var(--app-text-primary)]">
-                  <Check className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
+                  <Check className="h-4 w-4 text-[colors.ember.primary]" aria-hidden="true" />
 
                   {kloelT(`Checkout e cobranca operados pelo Kloel`)}
                 </div>
                 <div className="flex items-center gap-2 text-[var(--app-text-primary)]">
-                  <Check className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
+                  <Check className="h-4 w-4 text-[colors.ember.primary]" aria-hidden="true" />
 
                   {kloelT(`Area de membros, afiliados e produtos no mesmo fluxo`)}
                 </div>
@@ -450,7 +451,10 @@ export function BillingSettingsSection({
               >
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--app-border-primary)] bg-[var(--app-bg-primary)]">
-                    <CreditCard className="h-4 w-4 text-[#E85D30]" aria-hidden="true" />
+                    <CreditCard
+                      className="h-4 w-4 text-[colors.ember.primary]"
+                      aria-hidden="true"
+                    />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-[var(--app-text-primary)]">

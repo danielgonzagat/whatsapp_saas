@@ -31,6 +31,7 @@ import {
 } from './contract';
 import { errorMessage, formatMoney } from './crm-settings-section.helpers';
 import { ContactCard, SegmentationCard, StatCard, fieldClass } from './crm-settings-section.parts';
+import { colors } from '@/lib/design-tokens';
 
 /** Crm settings section. */
 export function CrmSettingsSection() {
@@ -329,7 +330,11 @@ export function CrmSettingsSection() {
             disabled={saving}
           >
             {saving ? (
-              <KloelMushroomMark size={18} title="Auto-segmentando" traceColor="#E85D30" />
+              <KloelMushroomMark
+                size={18}
+                title="Auto-segmentando"
+                traceColor="colors.ember.primary"
+              />
             ) : (
               <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
             )}
@@ -344,7 +349,11 @@ export function CrmSettingsSection() {
             disabled={loading}
           >
             {loading ? (
-              <KloelMushroomMark size={18} title="Atualizando CRM" traceColor="#E85D30" />
+              <KloelMushroomMark
+                size={18}
+                title="Atualizando CRM"
+                traceColor="colors.ember.primary"
+              />
             ) : (
               <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
             )}

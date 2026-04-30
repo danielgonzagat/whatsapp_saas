@@ -24,6 +24,7 @@ import {
   type JsonValue,
 } from './product-nerve-center.shared';
 import type { ProductEditorCheckoutView } from './product-nerve-center.view-models';
+import { colors } from '@/lib/design-tokens';
 
 interface ProductNerveCenterCheckoutsTabProps {
   ckEdit: string | null;
@@ -480,7 +481,7 @@ function CheckoutConfigPanel({
     enableTimer: Boolean(ckLocal.enableTimer),
     timerMinutes: Number(ckLocal.timerMinutes || 15),
     timerMessage: ckLocal.timerMessage || '',
-    accentColor: ckLocal.accentColor || '#E85D30',
+    accentColor: ckLocal.accentColor || 'colors.ember.primary',
   });
   const originalConfigSignature = JSON.stringify({
     brandName: ckCfg?.brandName || '',
@@ -492,7 +493,7 @@ function CheckoutConfigPanel({
     enableTimer: Boolean(ckCfg?.enableTimer),
     timerMinutes: Number(ckCfg?.timerMinutes || 15),
     timerMessage: ckCfg?.timerMessage || '',
-    accentColor: ckCfg?.accentColor || '#E85D30',
+    accentColor: ckCfg?.accentColor || 'colors.ember.primary',
   });
   const hasUnsavedChanges =
     currentConfigSignature !== originalConfigSignature ||
@@ -716,7 +717,7 @@ function CheckoutConfigPanel({
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input
                 type="color"
-                value={String(ckLocal.accentColor ?? '#E85D30')}
+                value={String(ckLocal.accentColor ?? 'colors.ember.primary')}
                 onChange={(e) => patch('accentColor', e.target.value)}
                 style={{
                   width: 36,
@@ -730,7 +731,7 @@ function CheckoutConfigPanel({
               />
               <input
                 type="text"
-                value={String(ckLocal.accentColor ?? '#E85D30')}
+                value={String(ckLocal.accentColor ?? 'colors.ember.primary')}
                 onChange={(e) => patch('accentColor', e.target.value)}
                 style={{
                   flex: 1,
@@ -742,7 +743,7 @@ function CheckoutConfigPanel({
                   fontSize: 13,
                   fontFamily: 'JetBrains Mono, monospace',
                 }}
-                placeholder={kloelT(`#E85D30`)}
+                placeholder={kloelT(`colors.ember.primary`)}
               />
             </div>
           </div>
@@ -762,7 +763,8 @@ function CheckoutConfigPanel({
               <input
                 type="color"
                 value={String(
-                  ckLocal.backgroundColor || (ckLocal.theme === 'NOIR' ? '#0A0A0C' : '#ffffff'),
+                  ckLocal.backgroundColor ||
+                    (ckLocal.theme === 'NOIR' ? 'colors.background.void' : '#ffffff'),
                 )}
                 onChange={(e) => patch('backgroundColor', e.target.value)}
                 style={{
@@ -778,7 +780,8 @@ function CheckoutConfigPanel({
               <input
                 type="text"
                 value={String(
-                  ckLocal.backgroundColor || (ckLocal.theme === 'NOIR' ? '#0A0A0C' : '#ffffff'),
+                  ckLocal.backgroundColor ||
+                    (ckLocal.theme === 'NOIR' ? 'colors.background.void' : '#ffffff'),
                 )}
                 onChange={(e) => patch('backgroundColor', e.target.value)}
                 style={{
@@ -791,7 +794,7 @@ function CheckoutConfigPanel({
                   fontSize: 13,
                   fontFamily: 'JetBrains Mono, monospace',
                 }}
-                placeholder={ckLocal.theme === 'NOIR' ? '#0A0A0C' : '#ffffff'}
+                placeholder={ckLocal.theme === 'NOIR' ? 'colors.background.void' : '#ffffff'}
               />
             </div>
           </div>

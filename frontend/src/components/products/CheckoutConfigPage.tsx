@@ -4,6 +4,7 @@ import { apiFetch } from '@/lib/api';
 import { Save } from 'lucide-react';
 import { type CSSProperties, useCallback, useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
+import { colors } from '@/lib/design-tokens';
 
 interface CheckoutConfigState {
   checkoutName: string;
@@ -40,15 +41,15 @@ interface Props {
 
 /* ── Design Tokens ── */
 
-const VOID = 'var(--bg-void, #0A0A0C)';
-const SURFACE = 'var(--bg-space, #111113)';
-const ELEVATED = 'var(--bg-nebula, #19191C)';
-const BORDER = 'var(--border-space, #222226)';
-const TEXT = 'var(--text-starlight, #E0DDD8)';
-const SECONDARY = 'var(--text-moonlight, #6E6E73)';
-const FAINT = 'var(--text-dust, #3A3A3F)';
+const VOID = 'var(--bg-void, colors.background.void)';
+const SURFACE = 'var(--bg-space, colors.background.surface)';
+const ELEVATED = 'var(--bg-nebula, colors.background.elevated)';
+const BORDER = 'var(--border-space, colors.border.space)';
+const TEXT = 'var(--text-starlight, colors.text.silver)';
+const SECONDARY = 'var(--text-moonlight, colors.text.muted)';
+const FAINT = 'var(--text-dust, colors.text.dim)';
 const TEXT_ON_ACCENT = 'var(--app-text-on-accent, #FFFFFF)';
-const EMBER = '#E85D30';
+const EMBER = 'colors.ember.primary';
 const GREEN = '#10B981';
 
 /* ── Shared Styles ── */
@@ -765,7 +766,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
     chatWelcomeMessage: '',
     chatDelay: 5,
     chatPosition: 'bottom-right',
-    chatColor: '#E85D30',
+    chatColor: 'colors.ember.primary',
     chatOfferDiscount: false,
     chatDiscountCode: '',
     chatSupportPhone: '',

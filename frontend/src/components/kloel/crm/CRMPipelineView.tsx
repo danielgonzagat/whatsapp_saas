@@ -4,6 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { useCRMMutations, useDeals, usePipelines } from '@/hooks/useCRM';
 import { type FormEvent, type DragEvent as ReactDragEvent, useCallback, useState } from 'react';
 import { CRM_ICONS } from './crm-pipeline-icons';
+import { colors } from '@/lib/design-tokens';
 import {
   DealCardSkeleton,
   DetailRow,
@@ -406,7 +407,7 @@ export default function CRMPipelineView() {
                       {sDeals.length}
                     </span>
                   </div>
-                  <span style={{ fontFamily: MONO, fontSize: 11, color: '#E85D30' }}>
+                  <span style={{ fontFamily: MONO, fontSize: 11, color: 'colors.ember.primary' }}>
                     {fmtBRL(total)}
                   </span>
                 </div>
@@ -448,10 +449,12 @@ export default function CRMPipelineView() {
                             opacity: dragDealId === did ? 0.5 : 1,
                           }}
                           onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLDivElement).style.borderColor = '#333338';
+                            (e.currentTarget as HTMLDivElement).style.borderColor =
+                              'colors.border.default';
                           }}
                           onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLDivElement).style.borderColor = '#222226';
+                            (e.currentTarget as HTMLDivElement).style.borderColor =
+                              'colors.border.space';
                           }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
@@ -482,7 +485,7 @@ export default function CRMPipelineView() {
                               style={{
                                 fontFamily: MONO,
                                 fontSize: 11,
-                                color: '#E85D30',
+                                color: 'colors.ember.primary',
                                 fontWeight: 600,
                               }}
                             >
@@ -554,7 +557,7 @@ export default function CRMPipelineView() {
                           disabled={submitting}
                           style={{
                             ...btnStyle,
-                            background: '#E85D30',
+                            background: 'colors.ember.primary',
                             color: '#fff',
                             flex: 1,
                             opacity: submitting ? 0.6 : 1,
@@ -595,7 +598,7 @@ export default function CRMPipelineView() {
                         justifyContent: 'center',
                         gap: 4,
                         background: 'transparent',
-                        border: '1px dashed #222226',
+                        border: '1px dashed colors.border.space',
                         borderRadius: 6,
                         color: 'var(--app-text-secondary)',
                         fontSize: 11,
@@ -605,10 +608,12 @@ export default function CRMPipelineView() {
                         transition: 'border-color 150ms',
                       }}
                       onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLButtonElement).style.borderColor = '#E85D30';
+                        (e.currentTarget as HTMLButtonElement).style.borderColor =
+                          'colors.ember.primary';
                       }}
                       onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLButtonElement).style.borderColor = '#222226';
+                        (e.currentTarget as HTMLButtonElement).style.borderColor =
+                          'colors.border.space';
                       }}
                     >
                       {IC.plus(12)} {kloelT(`Novo deal`)}

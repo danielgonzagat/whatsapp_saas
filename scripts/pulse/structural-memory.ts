@@ -54,7 +54,8 @@ type StructuralMemoryExtensions = {
   adjudicationProof: string | null;
 };
 
-type ExtendedUnitMemory = UnitMemory & Partial<StructuralMemoryExtensions>;
+type ExtendedUnitMemory = Omit<UnitMemory, keyof StructuralMemoryExtensions> &
+  Partial<StructuralMemoryExtensions>;
 
 type LegacyUnitMemory = Omit<UnitMemory, 'status'> &
   Partial<Pick<UnitMemory, StrategyFingerprintFields>> &
@@ -92,11 +93,26 @@ function normalizeUnitStatus(status: LegacyUnitMemoryStatus): UnitMemoryStatus {
   return status === 'needs_human_review' ? REPEATED_FAILURE_STATUS : status;
 }
 
-function normalizeUnitMemory(unit: LegacyUnitMemory): UnitMemory {
+function normalizeAdjudicationStatus(
+  status: string | null | undefined,
+): StructuralAdjudicationStatus | null {
+  if (
+    status === 'confirmed' ||
+    status === 'false_positive' ||
+    status === 'accepted_risk' ||
+    status === 'stale'
+  ) {
+    return status;
+  }
+  return null;
+}
+
+function normalizeUnitMemory(unit: LegacyUnitMemory): ExtendedUnitMemory {
   const strategyFingerprints = unit.strategyFingerprints ?? [];
   const strategyFingerprintCounts = unit.strategyFingerprintCounts ?? {};
   const failedStrategyFingerprints = unit.failedStrategyFingerprints ?? [];
   const failedStrategyFingerprintCounts = unit.failedStrategyFingerprintCounts ?? {};
+  const adjudicationStatus = normalizeAdjudicationStatus(unit.adjudicationStatus);
   return {
     ...unit,
     status: normalizeUnitStatus(unit.status),
@@ -110,7 +126,7 @@ function normalizeUnitMemory(unit: LegacyUnitMemory): UnitMemory {
     lastFailedStrategyFingerprint: unit.lastFailedStrategyFingerprint ?? null,
     repeatedFailedStrategyAttempts: unit.repeatedFailedStrategyAttempts ?? 0,
     avoidFailedStrategyFingerprint: unit.avoidFailedStrategyFingerprint ?? null,
-    adjudicationStatus: unit.adjudicationStatus ?? (unit.falsePositive ? 'false_positive' : null),
+    adjudicationStatus: adjudicationStatus ?? (unit.falsePositive ? 'false_positive' : null),
     adjudicationProof: unit.adjudicationProof ?? unit.fpProof ?? null,
   };
 }
@@ -278,7 +294,7 @@ function persistMemory(rootDir: string, memory: StructuralMemoryState): void {
 
 // ── Unit memory factory ──────────────────────────────────────────────────────
 
-function createUnitMemory(unitId: string): UnitMemory {
+function createUnitMemory(unitId: string): ExtendedUnitMemory {
   return {
     unitId,
     attempts: 0,
@@ -679,11 +695,11 @@ export function buildStructuralMemory(rootDir: string): StructuralMemoryState {
   const autonomyState = loadAutonomyState(rootDir);
   const now = new Date().toISOString();
 
-  const unitMap = new Map<string, UnitMemory>();
+  const unitMap = new Map<string, ExtendedUnitMemory>();
 
   if (priorState?.units) {
     for (const prior of priorState.units) {
-      unitMap.set(prior.unitId, { ...prior });
+      unitMap.set(prior.unitId, normalizeUnitMemory(prior as LegacyUnitMemory));
     }
   }
 
@@ -692,7 +708,8 @@ export function buildStructuralMemory(rootDir: string): StructuralMemoryState {
       if (!iteration.unit?.id) continue;
 
       const unitId = iteration.unit.id;
-      const existing = unitMap.get(unitId) ?? createUnitMemory(unitId);
+      const existing: ExtendedUnitMemory =
+        (unitMap.get(unitId) as ExtendedUnitMemory | undefined) ?? createUnitMemory(unitId);
 
       const status: AttemptStatus =
         iteration.status === 'completed' || iteration.status === 'validated'
@@ -752,7 +769,8 @@ export function buildStructuralMemory(rootDir: string): StructuralMemoryState {
           result: status,
           evidence: iteration.summary,
           falsePositive: existing.falsePositive,
-          adjudicationStatus: existing.adjudicationStatus ?? null,
+          adjudicationStatus: (existing.adjudicationStatus ??
+            null) as StructuralAdjudicationStatus | null,
         };
       appendAuditEntry(rootDir, auditEntry);
 

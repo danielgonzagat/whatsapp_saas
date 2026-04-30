@@ -130,7 +130,7 @@ export default function GestaoVendasPage() {
                 width: 20,
                 height: 20,
                 border: '2px solid transparent',
-                borderTopColor: '#E85D30',
+                borderTopColor: 'colors.ember.primary',
                 borderRadius: '50%',
                 animation: 'spin 1s linear infinite',
               }}

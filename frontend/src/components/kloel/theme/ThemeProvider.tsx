@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelError } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import {
   KLOEL_APP_THEME_STORAGE_SLOT,
   type KloelAppTheme,
@@ -26,7 +27,7 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function themeColorFor(theme: KloelAppTheme) {
-  return theme === 'dark' ? '#0A0A0C' : '#FFFFFF';
+  return theme === 'dark' ? 'colors.background.void' : '#FFFFFF';
 }
 
 function commitThemeColor(theme: KloelAppTheme) {

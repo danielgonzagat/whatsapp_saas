@@ -3,6 +3,7 @@
 import { addNextjsError } from '@datadog/browser-rum-nextjs';
 import { kloelT } from '@/lib/i18n/t';
 import { useEffect, type CSSProperties } from 'react';
+import { colors } from '@/lib/design-tokens';
 
 const datadogRumEnabled =
   process.env.NEXT_PUBLIC_DD_RUM_ENABLED !== 'false' &&
@@ -15,8 +16,8 @@ const shellStyle: CSSProperties = {
   alignItems: 'center',
   justifyContent: 'center',
   padding: '32px 20px',
-  background: '#0A0A0C',
-  color: '#E0DDD8',
+  background: 'colors.background.void',
+  color: 'colors.text.silver',
   fontFamily: "var(--font-sora), 'Sora', sans-serif",
 };
 
@@ -58,7 +59,7 @@ const primaryButtonStyle: CSSProperties = {
   padding: '12px 18px',
   borderRadius: 8,
   border: 'none',
-  background: '#E85D30',
+  background: 'colors.ember.primary',
   color: '#FFFFFF',
   fontSize: 13,
   fontWeight: 600,
@@ -68,7 +69,7 @@ const primaryButtonStyle: CSSProperties = {
 const secondaryButtonStyle: CSSProperties = {
   ...primaryButtonStyle,
   background: 'transparent',
-  color: '#E0DDD8',
+  color: 'colors.text.silver',
   border: '1px solid rgba(224, 221, 216, 0.16)',
 };
 
