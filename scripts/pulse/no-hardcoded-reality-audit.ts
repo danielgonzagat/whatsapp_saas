@@ -1120,17 +1120,52 @@ function isPredeclaredAuthorityContextNode(node: ts.Identifier): boolean {
     if (ts.isVariableStatement(statement) && ts.isSourceFile(statement.parent)) {
       return false;
     }
-    return parent.initializer !== undefined && contextLooksLikePredeclaredAuthority(node.text);
+    return (
+      parent.initializer !== undefined &&
+      hasPredeclaredAuthorityInitializer(parent.initializer) &&
+      contextLooksLikePredeclaredAuthority(node.text)
+    );
   }
 
   if (ts.isPropertyAssignment(parent) && parent.name === node) {
-    return contextLooksLikePredeclaredAuthority(node.text);
+    return (
+      hasPredeclaredAuthorityInitializer(parent.initializer) &&
+      contextLooksLikePredeclaredAuthority(node.text)
+    );
   }
 
-  if (ts.isParameter(parent) && parent.name === node) {
-    return contextLooksLikePredeclaredAuthority(node.text);
-  }
+  return false;
+}
 
+function hasPredeclaredAuthorityInitializer(node: ts.Expression): boolean {
+  if (
+    ts.isStringLiteral(node) ||
+    ts.isNoSubstitutionTemplateLiteral(node) ||
+    ts.isNumericLiteral(node) ||
+    node.kind === ts.SyntaxKind.TrueKeyword ||
+    node.kind === ts.SyntaxKind.FalseKeyword ||
+    ts.isRegularExpressionLiteral(node)
+  ) {
+    return true;
+  }
+  if (ts.isArrayLiteralExpression(node)) {
+    return node.elements.some(
+      (element) =>
+        ts.isStringLiteral(element) ||
+        ts.isNoSubstitutionTemplateLiteral(element) ||
+        ts.isNumericLiteral(element) ||
+        element.kind === ts.SyntaxKind.TrueKeyword ||
+        element.kind === ts.SyntaxKind.FalseKeyword,
+    );
+  }
+  if (ts.isObjectLiteralExpression(node)) {
+    return node.properties.some((property) => {
+      if (!ts.isPropertyAssignment(property)) {
+        return false;
+      }
+      return hasPredeclaredAuthorityInitializer(property.initializer);
+    });
+  }
   return false;
 }
 
