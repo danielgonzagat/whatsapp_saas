@@ -60,29 +60,98 @@ function humanize(value: string): string {
   return titleCaseStructural(value);
 }
 
-const CAPABILITY_STATUS_SCORE: Record<PulseCapabilityStatus, number> = {
-  real: 1,
-  partial: 0.65,
-  latent: 0.35,
-  phantom: 0,
-};
+function deriveStatusOrder<State extends string>(
+  summary: Record<string, unknown>,
+  summarySuffix: string,
+  observedStatuses: State[],
+): State[] {
+  const observed = unique(observedStatuses);
+  const suffixLength = summarySuffix.length;
+  const discovered = Object.keys(summary)
+    .filter((key) => key.endsWith(summarySuffix))
+    .map((key) => key.slice(0, key.length - suffixLength))
+    .filter((key): key is State => observed.includes(key as State));
 
-const FLOW_STATUS_SCORE: Record<PulseFlowProjectionStatus, number> = {
-  real: 1,
-  partial: 0.65,
-  latent: 0.35,
-  phantom: 0,
-};
+  return unique([...discovered, ...observed]);
+}
+
+function statusScore<State extends string>(status: State, statusOrder: State[]): number {
+  const index = statusOrder.indexOf(status);
+  if (index < 0) {
+    return 0;
+  }
+
+  const denominator = Math.max(statusOrder.length - 1, 1);
+  return clamp((denominator - index) / denominator);
+}
+
+function strongestStatus<State extends string>(statusOrder: State[]): State | undefined {
+  return statusOrder[0];
+}
+
+function weakestStatus<State extends string>(statusOrder: State[]): State | undefined {
+  return statusOrder[statusOrder.length - 1];
+}
+
+function isMaterializedStatus<State extends string>(status: State, statusOrder: State[]): boolean {
+  const index = statusOrder.indexOf(status);
+  if (index < 0) {
+    return false;
+  }
+
+  return index < Math.ceil(statusOrder.length / 2);
+}
+
+function statusFromCompletion<State extends string>(
+  completion: number,
+  statusOrder: State[],
+): State | undefined {
+  if (statusOrder.length === 0) {
+    return undefined;
+  }
+
+  for (let index = 0; index < statusOrder.length - 1; index += 1) {
+    const current = statusOrder[index];
+    const next = statusOrder[index + 1];
+    const boundary = (statusScore(current, statusOrder) + statusScore(next, statusOrder)) / 2;
+    if (completion >= boundary) {
+      return current;
+    }
+  }
+
+  return weakestStatus(statusOrder);
+}
 
 function getProjectedReadiness(
   capabilityRatio: number,
   flowRatio: number,
   highIssues: number,
+  capabilityStatusOrder: PulseCapabilityStatus[],
+  flowStatusOrder: PulseFlowProjectionStatus[],
 ): 'red' | 'yellow' | 'green' {
-  if (capabilityRatio >= 0.8 && flowRatio >= 0.8 && highIssues === 0) {
+  const capabilityGreenFloor = ratio(
+    statusScore(capabilityStatusOrder[0], capabilityStatusOrder) +
+      statusScore(capabilityStatusOrder[1] ?? capabilityStatusOrder[0], capabilityStatusOrder),
+    2,
+  );
+  const flowGreenFloor = ratio(
+    statusScore(flowStatusOrder[0], flowStatusOrder) +
+      statusScore(flowStatusOrder[1] ?? flowStatusOrder[0], flowStatusOrder),
+    2,
+  );
+  const capabilityYellowFloor = statusScore(
+    capabilityStatusOrder[Math.floor(capabilityStatusOrder.length / 2)] ?? capabilityStatusOrder[0],
+    capabilityStatusOrder,
+  );
+  const flowYellowFloor = statusScore(
+    flowStatusOrder[Math.floor(flowStatusOrder.length / 2)] ?? flowStatusOrder[0],
+    flowStatusOrder,
+  );
+
+  if (capabilityRatio >= capabilityGreenFloor && flowRatio >= flowGreenFloor && highIssues === 0) {
     return 'green';
   }
-  if (capabilityRatio >= 0.45 || flowRatio >= 0.45) {
+  if (capabilityRatio >= capabilityYellowFloor || flowRatio >= flowYellowFloor) {
     return 'yellow';
   }
   return 'red';
@@ -118,21 +187,37 @@ function summarizeEvidenceBasis(
 function bestStatus(
   capabilityStatuses: PulseCapabilityStatus[],
   flowStatuses: PulseFlowProjectionStatus[],
+  capabilityStatusOrder: PulseCapabilityStatus[],
 ): PulseCapabilityStatus {
   const all = [...capabilityStatuses, ...flowStatuses];
   if (all.length === 0) {
-    return 'phantom';
+    return weakestStatus(capabilityStatusOrder) ?? 'phantom';
   }
-  if (all.includes('real')) {
-    return all.includes('phantom') ? 'partial' : 'real';
+
+  const ranked = unique(all)
+    .map((status) => ({
+      status: status as PulseCapabilityStatus,
+      index: capabilityStatusOrder.indexOf(status as PulseCapabilityStatus),
+    }))
+    .filter((entry) => entry.index >= 0)
+    .sort((left, right) => left.index - right.index);
+
+  const strongest = ranked[0]?.status;
+  if (!strongest) {
+    return weakestStatus(capabilityStatusOrder) ?? 'phantom';
   }
-  if (all.includes('partial')) {
-    return 'partial';
+
+  const weakest = ranked[ranked.length - 1]?.status;
+  if (
+    weakest &&
+    strongest === strongestStatus(capabilityStatusOrder) &&
+    weakest === weakestStatus(capabilityStatusOrder) &&
+    capabilityStatusOrder.length > 1
+  ) {
+    return capabilityStatusOrder[1];
   }
-  if (all.includes('latent')) {
-    return 'latent';
-  }
-  return 'phantom';
+
+  return strongest;
 }
 
 function moduleFamilies(
@@ -236,16 +321,24 @@ function buildSurfaceBlockers(
   capabilityMatches: PulseCapability[],
   flowMatches: PulseFlowProjectionItem[],
   moduleEntry: BuildProductVisionInput['resolvedManifest']['modules'][number],
+  capabilityStatusOrder: PulseCapabilityStatus[],
+  flowStatusOrder: PulseFlowProjectionStatus[],
 ): string[] {
+  const strongestCapabilityStatus = strongestStatus(capabilityStatusOrder);
+  const strongestFlowStatus = strongestStatus(flowStatusOrder);
+
   return unique([
     ...capabilityMatches
-      .filter((capability) => capability.status !== 'real' || capability.highSeverityIssueCount > 0)
+      .filter(
+        (capability) =>
+          capability.status !== strongestCapabilityStatus || capability.highSeverityIssueCount > 0,
+      )
       .map(
         (capability) =>
           capability.blockingReasons[0] || `${capability.name} remains ${capability.status}.`,
       ),
     ...flowMatches
-      .filter((flow) => flow.status !== 'real')
+      .filter((flow) => flow.status !== strongestFlowStatus)
       .map((flow) => flow.blockingReasons[0] || `${flow.name} remains ${flow.status}.`),
     moduleEntry.coverageStatus === 'declared_only'
       ? `${moduleEntry.name} is declared in the promise model but has no discovered implementation yet.`
@@ -258,10 +351,12 @@ function buildSurfaceBlockers(
 function buildCapabilityCompletion(
   capabilities: PulseCapability[],
   flows: PulseFlowProjectionItem[],
+  capabilityStatusOrder: PulseCapabilityStatus[],
+  flowStatusOrder: PulseFlowProjectionStatus[],
 ): number {
   const scores = [
-    ...capabilities.map((capability) => CAPABILITY_STATUS_SCORE[capability.status]),
-    ...flows.map((flow) => FLOW_STATUS_SCORE[flow.status]),
+    ...capabilities.map((capability) => statusScore(capability.status, capabilityStatusOrder)),
+    ...flows.map((flow) => statusScore(flow.status, flowStatusOrder)),
   ];
   if (scores.length === 0) {
     return 0;

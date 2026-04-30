@@ -1,6 +1,45 @@
 import type { PulseCapability } from './types';
 import { readTextFile } from './safe-fs';
 import { deriveStructuralFamilies, familiesOverlap } from './structural-family';
+import ts from 'typescript';
+
+interface CapabilityEvidenceFacts {
+  hasRoutes: boolean;
+  hasFiles: boolean;
+  interfacePresent: boolean;
+  implementationPresent: boolean;
+  orchestrationPresent: boolean;
+  runtimeEvidencePresent: boolean;
+  validationPresent: boolean;
+  simulationOnly: boolean;
+  dodComplete: boolean;
+}
+
+function hasItems<T>(items: readonly T[]): boolean {
+  return Boolean(items.length);
+}
+
+function hasNoItems<T>(items: readonly T[]): boolean {
+  return !hasItems(items);
+}
+
+function capabilityFacts(capability: PulseCapability): CapabilityEvidenceFacts {
+  const dimensions = capability.maturity.dimensions;
+  return {
+    hasRoutes: hasItems(capability.routePatterns),
+    hasFiles: hasItems(capability.filePaths),
+    interfacePresent: dimensions.interfacePresent,
+    implementationPresent: dimensions.persistencePresent || dimensions.sideEffectPresent,
+    orchestrationPresent: dimensions.orchestrationPresent,
+    runtimeEvidencePresent: dimensions.runtimeEvidencePresent,
+    validationPresent: dimensions.validationPresent || dimensions.codacyHealthy,
+    simulationOnly: dimensions.simulationOnly,
+    dodComplete:
+      hasNoItems(capability.dod.missingRoles) &&
+      hasNoItems(capability.dod.blockers) &&
+      capability.dod.truthModeMet,
+  };
+}
 
 function frontendAppBranch(filePath: string): string[] {
   const normalized = String(filePath || '')
@@ -49,56 +88,63 @@ function branchesOverlap(left: string[], right: string[]): boolean {
 
 /** Is framework shell capability. */
 export function isFrameworkShellCapability(capability: PulseCapability): boolean {
-  if (capability.routePatterns.length > 0) {
-    return false;
-  }
+  const facts = capabilityFacts(capability);
 
-  const hasOnlyInterface = capability.rolesPresent.every((role) => role === 'interface');
-  if (!hasOnlyInterface) {
-    return false;
-  }
-
-  return capability.filePaths.length > 0 && capability.filePaths.every(isFrameworkShellFilePath);
+  return (
+    !facts.hasRoutes &&
+    facts.interfacePresent &&
+    !facts.implementationPresent &&
+    !facts.orchestrationPresent &&
+    !facts.simulationOnly &&
+    facts.hasFiles &&
+    capability.filePaths.every(isFrameworkShellFilePath)
+  );
 }
 
 function isFrameworkShellFilePath(filePath: string): boolean {
   const normalized = filePath.split('\\').join('/');
-  const baseName = normalized.slice(normalized.lastIndexOf('/') + 1);
-  const stem = baseName.slice(
-    0,
-    baseName.indexOf('.') > 0 ? baseName.indexOf('.') : baseName.length,
-  );
-  return ['layout', 'global-error', 'error', 'loading', 'not-found', 'template'].includes(stem);
+  const branch = frontendAppBranch(normalized);
+  if (!hasItems(branch)) {
+    return Boolean(undefined);
+  }
+
+  const source = readCapabilitySource(filePath);
+  return !sourceHasRuntimeIntegrationIntent(source) && hasNoItems(extractReferencedRoutes(source));
 }
 
 /** Is materialized capability. */
 export function isMaterializedCapability(capability: PulseCapability): boolean {
+  const facts = capabilityFacts(capability);
   return (
     !isFrameworkShellCapability(capability) &&
-    capability.status === 'real' &&
-    capability.rolesPresent.includes('interface') &&
-    (capability.rolesPresent.includes('persistence') ||
-      capability.rolesPresent.includes('side_effect')) &&
-    capability.routePatterns.length > 0
+    facts.dodComplete &&
+    facts.interfacePresent &&
+    facts.implementationPresent &&
+    facts.hasRoutes
   );
 }
 
 /** Is interface only without routes. */
 export function isInterfaceOnlyWithoutRoutes(capability: PulseCapability): boolean {
+  const facts = capabilityFacts(capability);
   return (
-    capability.routePatterns.length === 0 &&
-    capability.rolesPresent.length > 0 &&
-    capability.rolesPresent.every((role) => role === 'interface')
+    !facts.hasRoutes &&
+    facts.interfacePresent &&
+    !facts.implementationPresent &&
+    !facts.orchestrationPresent &&
+    !facts.simulationOnly
   );
 }
 
 /** Is operational readiness capability. */
 export function isOperationalReadinessCapability(capability: PulseCapability): boolean {
+  const facts = capabilityFacts(capability);
   return (
-    capability.routePatterns.length > 0 &&
+    facts.hasRoutes &&
     !capability.userFacing &&
-    capability.ownerLane === 'reliability' &&
-    capability.maturity.dimensions.runtimeEvidencePresent
+    facts.runtimeEvidencePresent &&
+    facts.validationPresent &&
+    !facts.implementationPresent
   );
 }
 
@@ -181,24 +227,86 @@ function stripRouteSearchAndHash(route: string): string {
 
 function extractReferencedRoutes(source: string): string[] {
   const routes = new Set<string>();
+  const sourceFile = ts.createSourceFile(
+    'capability-source.tsx',
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+  );
 
-  for (let index = 0; index < source.length; index++) {
-    const literal = readQuotedRouteLiteral(source, index);
-    if (!literal) {
-      continue;
+  const visit = (node: ts.Node): void => {
+    if (!ts.isStringLiteralLike(node) || isImportStringLiteral(node)) {
+      ts.forEachChild(node, visit);
+      return;
     }
-    index = literal.end - 1;
-    const raw = literal.raw;
+    const raw = node.text.trim();
     if (!raw.startsWith('/') || raw === '/') {
-      continue;
-    }
-    if (isImportSourceLine(source, literal.start)) {
-      continue;
+      ts.forEachChild(node, visit);
+      return;
     }
     routes.add(stripRouteSearchAndHash(raw));
-  }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
 
   return [...routes];
+}
+
+function isImportStringLiteral(node: ts.Node): boolean {
+  let current: ts.Node | undefined = node.parent;
+  while (current) {
+    if (ts.isImportDeclaration(current) || ts.isExportDeclaration(current)) {
+      return true;
+    }
+    current = current.parent;
+  }
+  return Boolean(undefined);
+}
+
+function sourceHasRuntimeIntegrationIntent(source: string): boolean {
+  if (!source.trim()) {
+    return Boolean(undefined);
+  }
+
+  const sourceFile = ts.createSourceFile(
+    'capability-source.tsx',
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+  );
+  let found = Boolean(undefined);
+
+  const visit = (node: ts.Node): void => {
+    if (found) {
+      return;
+    }
+
+    if (ts.isCallExpression(node)) {
+      const expressionText = node.expression.getText(sourceFile).toLowerCase();
+      const expressionFamilies = deriveStructuralFamilies([expressionText]);
+      const hasRuntimeFamily = expressionFamilies.some((family) =>
+        familiesOverlap(family, ['fetch', 'swr', 'api']),
+      );
+      if (hasRuntimeFamily) {
+        found = true;
+        return;
+      }
+    }
+
+    if (ts.isImportDeclaration(node) && ts.isStringLiteralLike(node.moduleSpecifier)) {
+      const moduleFamilies = deriveStructuralFamilies([node.moduleSpecifier.text]);
+      if (moduleFamilies.some((family) => familiesOverlap(family, 'api'))) {
+        found = true;
+        return;
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return found;
 }
 
 /** Is roadmap catalog capability. */
@@ -212,66 +320,76 @@ export function isRoadmapCatalogCapability(capability: PulseCapability): boolean
     return false;
   }
 
-  const hasApiIntent =
-    source.includes('apiFetch(') ||
-    source.includes('fetch(') ||
-    source.includes('useSWR(') ||
-    source.includes('@/lib/api');
+  const hasApiIntent = sourceHasRuntimeIntegrationIntent(source);
   const exportedCollectionCount = countUppercaseCollectionDeclarations(source);
   const handlerCount = countHandlerAssignments(source);
   const referencedRoutes = extractReferencedRoutes(source);
 
-  return exportedCollectionCount > handlerCount && referencedRoutes.length === 0 && !hasApiIntent;
+  return exportedCollectionCount > handlerCount && hasNoItems(referencedRoutes) && !hasApiIntent;
 }
 
 function countUppercaseCollectionDeclarations(source: string): number {
   let count = 0;
-  const declarations = source.split('const ');
-  for (const declaration of declarations.slice(1)) {
-    const name = readIdentifier(declaration);
-    if (!name || name !== name.toUpperCase()) {
-      continue;
+  const sourceFile = ts.createSourceFile(
+    'capability-source.tsx',
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+  );
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isVariableDeclaration(node) && isConstVariableDeclaration(node)) {
+      const name = ts.isIdentifier(node.name) ? node.name.text : '';
+      const initializer = node.initializer;
+      if (
+        name &&
+        name === name.toUpperCase() &&
+        initializer &&
+        (ts.isArrayLiteralExpression(initializer) || ts.isObjectLiteralExpression(initializer))
+      ) {
+        count++;
+      }
     }
-    const equalsIndex = declaration.indexOf('=');
-    if (equalsIndex < 0) {
-      continue;
-    }
-    const assigned = declaration.slice(equalsIndex + 1).trimStart();
-    if (assigned.startsWith('[') || assigned.startsWith('{')) {
-      count++;
-    }
-  }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
   return count;
 }
 
 function countHandlerAssignments(source: string): number {
   let count = 0;
-  const parts = source.split('on');
-  for (const part of parts.slice(1)) {
-    if (part.length === 0 || part[0] < 'A' || part[0] > 'Z') {
-      continue;
-    }
-    const equalsIndex = part.indexOf('=');
-    const newlineIndex = part.indexOf('\n');
-    if (equalsIndex >= 0 && (newlineIndex < 0 || equalsIndex < newlineIndex)) {
+  const sourceFile = ts.createSourceFile(
+    'capability-source.tsx',
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+  );
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isJsxAttribute(node) && ts.isIdentifier(node.name) && isHandlerName(node.name.text)) {
       count++;
     }
-  }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
   return count;
 }
 
-function readIdentifier(value: string): string {
-  let output = '';
-  for (const char of value.trimStart()) {
-    const isLetter = char.toLowerCase() >= 'a' && char.toLowerCase() <= 'z';
-    const isDigit = char >= '0' && char <= '9';
-    if (isLetter || isDigit || char === '_') {
-      output += char;
-      continue;
-    }
-    break;
-  }
-  return output;
+function isConstVariableDeclaration(node: ts.VariableDeclaration): boolean {
+  const declarationList = node.parent;
+  return (
+    ts.isVariableDeclarationList(declarationList) &&
+    Boolean(declarationList.flags & ts.NodeFlags.Const)
+  );
+}
+
+function isHandlerName(name: string): boolean {
+  const words = deriveStructuralFamilies([name]);
+  return words.some((word) => familiesOverlap(word, 'on'));
 }
 
 function deriveFamiliesForCapability(
@@ -285,13 +403,14 @@ export function isCoveredByMaterializedRouteFamily(
   capability: PulseCapability,
   allCapabilities: PulseCapability[],
 ): boolean {
-  if (capability.routePatterns.length === 0) {
-    return false;
-  }
+  const facts = capabilityFacts(capability);
 
+  if (!facts.hasRoutes) {
+    return Boolean(undefined);
+  }
   const capabilityFamilies = deriveFamiliesForCapability(capability);
-  if (capabilityFamilies.length === 0) {
-    return false;
+  if (hasNoItems(capabilityFamilies)) {
+    return Boolean(undefined);
   }
 
   return allCapabilities.some((candidate) => {
@@ -307,22 +426,23 @@ export function isCoveredByProductSurfaceRouteFamily(
   capability: PulseCapability,
   allCapabilities: PulseCapability[],
 ): boolean {
-  if (capability.routePatterns.length === 0) {
-    return false;
-  }
+  const facts = capabilityFacts(capability);
 
+  if (!facts.hasRoutes) {
+    return Boolean(undefined);
+  }
   const capabilityFamilies = deriveFamiliesForCapability(capability);
-  if (capabilityFamilies.length === 0) {
-    return false;
+  if (hasNoItems(capabilityFamilies)) {
+    return Boolean(undefined);
   }
 
   return allCapabilities.some((candidate) => {
     if (
       candidate.id === capability.id ||
       !candidate.userFacing ||
-      candidate.routePatterns.length === 0
+      hasNoItems(candidate.routePatterns)
     ) {
-      return false;
+      return Boolean(undefined);
     }
 
     return familiesOverlap(capabilityFamilies, deriveFamiliesForCapability(candidate));
@@ -334,32 +454,32 @@ export function isIncludedInRoutedCapability(
   capability: PulseCapability,
   allCapabilities: PulseCapability[],
 ): boolean {
-  if (capability.routePatterns.length > 0 || capability.filePaths.length === 0) {
-    return false;
+  const facts = capabilityFacts(capability);
+  if (facts.hasRoutes || !facts.hasFiles) {
+    return Boolean(undefined);
   }
 
   const capabilityFiles = new Set(capability.filePaths);
   return allCapabilities.some((candidate) => {
     if (
       candidate.id === capability.id ||
-      candidate.routePatterns.length === 0 ||
+      hasNoItems(candidate.routePatterns) ||
       candidate.filePaths.length <= capability.filePaths.length
     ) {
-      return false;
+      return Boolean(undefined);
     }
 
     const candidateFiles = new Set(candidate.filePaths);
     const allFilesIncluded = capability.filePaths.every((filePath) => candidateFiles.has(filePath));
     if (!allFilesIncluded) {
-      return false;
+      return Boolean(undefined);
     }
 
-    const candidateRoles = new Set(candidate.rolesPresent);
+    const candidateFacts = capabilityFacts(candidate);
     return (
-      candidateRoles.has('interface') ||
-      candidateRoles.has('orchestration') ||
-      candidateRoles.has('persistence') ||
-      candidateRoles.has('side_effect')
+      candidateFacts.interfacePresent ||
+      candidateFacts.orchestrationPresent ||
+      candidateFacts.implementationPresent
     );
   });
 }
@@ -369,19 +489,18 @@ export function isCoveredByMaterializedAppBranch(
   capability: PulseCapability,
   allCapabilities: PulseCapability[],
 ): boolean {
-  if (capability.routePatterns.length > 0) {
-    return false;
+  const facts = capabilityFacts(capability);
+  if (facts.hasRoutes) {
+    return Boolean(undefined);
   }
 
   if (!isInterfaceOnlyWithoutRoutes(capability)) {
-    return false;
+    return Boolean(undefined);
   }
 
-  const capabilityBranches = capability.filePaths
-    .map(frontendAppBranch)
-    .filter((branch) => branch.length > 0);
-  if (capabilityBranches.length === 0) {
-    return false;
+  const capabilityBranches = capability.filePaths.map(frontendAppBranch).filter(hasItems);
+  if (hasNoItems(capabilityBranches)) {
+    return Boolean(undefined);
   }
 
   return allCapabilities.some((candidate) => {
@@ -403,13 +522,13 @@ export function isCoveredByMaterializedEntryPoint(
   allCapabilities: PulseCapability[],
 ): boolean {
   if (!isInterfaceOnlyWithoutRoutes(capability)) {
-    return false;
+    return Boolean(undefined);
   }
 
   const source = capability.filePaths.map(readCapabilitySource).join('\n');
   const referencedRoutes = extractReferencedRoutes(source);
-  if (referencedRoutes.length === 0) {
-    return false;
+  if (hasNoItems(referencedRoutes)) {
+    return Boolean(undefined);
   }
 
   const capabilityFamilies = deriveStructuralFamilies([
@@ -418,8 +537,8 @@ export function isCoveredByMaterializedEntryPoint(
     ...capability.filePaths,
   ]);
   const referencedRouteFamilies = deriveStructuralFamilies(referencedRoutes);
-  if (capabilityFamilies.length === 0 || referencedRouteFamilies.length === 0) {
-    return false;
+  if (hasNoItems(capabilityFamilies) || hasNoItems(referencedRouteFamilies)) {
+    return Boolean(undefined);
   }
 
   return allCapabilities.some((candidate) => {

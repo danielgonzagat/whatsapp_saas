@@ -1,6 +1,11 @@
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+
 import { describe, expect, it } from 'vitest';
 
-import { evaluateLongRunEvidence } from '../perfectness-test';
+import { computeVerdict, evaluateGate, evaluateLongRunEvidence } from '../perfectness-test';
+import type { PerfectnessGate } from '../types.perfectness-test';
 
 const HOUR_MS = 60 * 60 * 1000;
 const START = '2026-04-26T00:00:00.000Z';
@@ -95,5 +100,40 @@ describe('perfectness 72h long-run evidence', () => {
     expect(result.passed).toBe(true);
     expect(result.observedHours).toBe(73);
     expect(result.maxGapHours).toBe(4);
+  });
+});
+
+describe('perfectness dynamic gate predicates', () => {
+  it('computes verdict thresholds from the observed suite size', () => {
+    const gates: PerfectnessGate[] = Array.from({ length: 4 }, (_, index) => ({
+      name: `gate-${index}`,
+      description: `gate ${index}`,
+      target: 'observed predicate',
+      actual: 'observed',
+      passed: index < 3,
+      evidence: 'test evidence',
+    }));
+
+    expect(computeVerdict(gates)).toBe('ALMOST_PERFECT');
+  });
+
+  it('discovers browser proof from certificate gate evidence instead of one fixed gate key', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-perfectness-gate-'));
+    const pulseDir = path.join(rootDir, '.pulse', 'current');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pulseDir, 'PULSE_CERTIFICATE.json'),
+      JSON.stringify({
+        score: 74,
+        gates: {
+          browserReplayEvidence: { status: 'passed' },
+        },
+      }),
+    );
+
+    const gate = evaluateGate('e2e-core-pass', rootDir, 74, START);
+
+    expect(gate.passed).toBe(true);
+    expect(gate.actual).toContain('browser gate = passed');
   });
 });

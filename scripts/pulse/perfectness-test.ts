@@ -476,6 +476,30 @@ interface PulseScenarioEvidence {
   };
 }
 
+type GateEvaluationContext = {
+  name: string;
+  description: string;
+  target: string;
+  evidencePlan: GateEvidencePlan | null;
+  pulseDir: string;
+  startScore: number;
+  startTime: string;
+  cert: PulseCertState | null;
+  autonomy: PulseAutonomyState | null;
+  sandbox: PulseSandboxState | null;
+  scenarioData: ReturnType<typeof computeScenarioPassRate>;
+};
+
+type GateEvaluationRule = {
+  supports: (context: GateEvaluationContext) => boolean;
+  evaluate: (context: GateEvaluationContext) => PerfectnessGate;
+};
+
+type GateMetric = {
+  count: number;
+  labels: string[];
+};
+
 // ────────────────────────────────────────────────────────────────────────────
 // Scenario Pass Rate Computation
 // ────────────────────────────────────────────────────────────────────────────
@@ -518,6 +542,247 @@ function computeScenarioPassRate(pulseDir: string): {
   return { rate: 0, total: 0, passed: 0 };
 }
 
+function normalizeProofToken(value: string | undefined): string {
+  return (value ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, '-');
+}
+
+function isPassingStatus(value: string | undefined): boolean {
+  const normalized = normalizeProofToken(value);
+  return normalized === 'pass' || normalized === 'passed' || normalized === 'certified';
+}
+
+function isFailingStatus(value: string | undefined): boolean {
+  return Boolean(value) && !isPassingStatus(value);
+}
+
+function targetNumber(context: GateEvaluationContext, fallback: number): number {
+  const numericMatch = context.target.match(/\d+(?:\.\d+)?/);
+  return numericMatch ? Number(numericMatch[0]) : fallback;
+}
+
+function scoreMeetsTarget(context: GateEvaluationContext): boolean {
+  return (context.cert?.score ?? 0) >= targetNumber(context, 0);
+}
+
+function allCertificationGatesPass(cert: PulseCertState | null): GateMetric {
+  const gateEntries = Object.entries(cert?.gates ?? {});
+  const failing = gateEntries.filter(([, gate]) => !isPassingStatus(gate.status));
+  return {
+    count: gateEntries.length,
+    labels: failing.map(([name]) => name),
+  };
+}
+
+function capabilityRealityMetric(cert: PulseCertState | null): {
+  real: number;
+  total: number;
+} {
+  const capabilities = cert?.capabilities ?? [];
+  const real = capabilities.filter(
+    (capability) => normalizeProofToken(capability.health) === 'real',
+  ).length;
+  return { real, total: capabilities.length };
+}
+
+function runtimeFailureMetric(cert: PulseCertState | null): GateMetric {
+  const entries = Object.entries(cert?.gates ?? {});
+  const observedFailureEntries = entries.filter(([gateName, gate]) => {
+    if (!isFailingStatus(gate.status)) {
+      return false;
+    }
+    const normalizedName = normalizeProofToken(gateName);
+    const normalizedReason = normalizeProofToken(gate.reason);
+    return (
+      normalizedName.includes('critical') ||
+      normalizedName.includes('runtime') ||
+      normalizedName.includes('error') ||
+      normalizedReason.includes('critical') ||
+      normalizedReason.includes('runtime') ||
+      normalizedReason.includes('error')
+    );
+  });
+  return {
+    count: observedFailureEntries.length,
+    labels: observedFailureEntries.map(([name]) => name),
+  };
+}
+
+function rollbackFailureMetric(autonomy: PulseAutonomyState | null): number {
+  return (autonomy?.iterations ?? []).filter(
+    (iteration) => iteration.rollback && !iteration.recovered,
+  ).length;
+}
+
+function sandboxViolationMetric(sandbox: PulseSandboxState | null): {
+  governanceViolations: number;
+  unsafePatches: number;
+  workspaceCount: number;
+} {
+  const governanceViolations = sandbox?.summary?.governanceViolations ?? 0;
+  const workspaces = sandbox?.activeWorkspaces ?? [];
+  const unsafePatches = workspaces.reduce(
+    (count, workspace) => count + (workspace.patches ?? []).filter((patch) => !patch.safe).length,
+    0,
+  );
+  return { governanceViolations, unsafePatches, workspaceCount: workspaces.length };
+}
+
+function browserGateStatus(cert: PulseCertState | null): string | undefined {
+  const browserEntry = Object.entries(cert?.gates ?? {}).find(([gateName]) =>
+    normalizeProofToken(gateName).includes('browser'),
+  );
+  return browserEntry?.[1].status;
+}
+
+function buildUnknownGate(context: GateEvaluationContext): PerfectnessGate {
+  return {
+    name: context.name,
+    description: context.description,
+    target: context.target,
+    actual: 'unknown gate',
+    passed: false,
+    evidence: `No evidence predicate matched gate "${context.name}" in the perfectness suite`,
+  };
+}
+
+const GATE_EVALUATION_RULES: GateEvaluationRule[] = [
+  {
+    supports: (context) => context.evidencePlan?.gateName === 'pulse-core-green',
+    evaluate: (context) => {
+      const certified = context.cert?.certified === true || isPassingStatus(context.cert?.status);
+      const gateMetric = allCertificationGatesPass(context.cert);
+      const passed = certified && scoreMeetsTarget(context) && gateMetric.count > 0;
+      return {
+        name: context.name,
+        description: context.description,
+        target: context.target,
+        actual: `certified=${certified}, score=${context.cert?.score ?? 0}, failingGates=${gateMetric.labels.length}`,
+        passed,
+        evidence: `${PULSE_CERTIFICATE_FILE} — certified=${certified}, score=${context.cert?.score ?? 0}, ${gateMetric.count} gates evaluated`,
+      };
+    },
+  },
+  {
+    supports: (context) => context.evidencePlan?.gateName === 'product-core-green',
+    evaluate: (context) => {
+      const capabilityMetric = capabilityRealityMetric(context.cert);
+      const allCapabilitiesReal =
+        capabilityMetric.total > 0 && capabilityMetric.real === capabilityMetric.total;
+      const passed = scoreMeetsTarget(context) || allCapabilitiesReal;
+      return {
+        name: context.name,
+        description: context.description,
+        target: context.target,
+        actual: `score=${context.cert?.score ?? 0}, capabilities=${capabilityMetric.real}/${capabilityMetric.total} real`,
+        passed,
+        evidence: `${PULSE_CERTIFICATE_FILE} — score=${context.cert?.score ?? 0}, ${capabilityMetric.real}/${capabilityMetric.total} capabilities are real`,
+      };
+    },
+  },
+  {
+    supports: (context) => context.evidencePlan?.gateName === 'e2e-core-pass',
+    evaluate: (context) => {
+      if (context.scenarioData.total > 0) {
+        const passed = context.scenarioData.rate >= targetNumber(context, 0);
+        return {
+          name: context.name,
+          description: context.description,
+          target: context.target,
+          actual: `scenario pass rate = ${context.scenarioData.rate}% (${context.scenarioData.passed}/${context.scenarioData.total})`,
+          passed,
+          evidence: `${SCENARIO_EVIDENCE_FILE} — ${context.scenarioData.passed}/${context.scenarioData.total} scenarios passed (${context.scenarioData.rate}%)`,
+        };
+      }
+
+      const status = browserGateStatus(context.cert);
+      return {
+        name: context.name,
+        description: context.description,
+        target: context.target,
+        actual: `scenario evidence not found; browser gate = ${status ?? 'missing'}`,
+        passed: isPassingStatus(status),
+        evidence: `Fallback: ${PULSE_CERTIFICATE_FILE} browser gate status=${status ?? 'not found'} (no scenario evidence file)`,
+      };
+    },
+  },
+  {
+    supports: (context) => context.evidencePlan?.gateName === 'runtime-stable',
+    evaluate: (context) => {
+      const failureMetric = runtimeFailureMetric(context.cert);
+      return {
+        name: context.name,
+        description: context.description,
+        target: context.target,
+        actual: `critical/runtime gate failures = ${failureMetric.count}${failureMetric.labels.length > 0 ? ` (${failureMetric.labels.join(', ')})` : ''}`,
+        passed: failureMetric.count === 0,
+        evidence: `${PULSE_CERTIFICATE_FILE} — ${failureMetric.count} critical/runtime gate failures found`,
+      };
+    },
+  },
+  {
+    supports: (context) => context.evidencePlan?.gateName === 'no-regression',
+    evaluate: (context) => {
+      const scoreEnd = context.cert?.score ?? 0;
+      const delta = scoreEnd - context.startScore;
+      return {
+        name: context.name,
+        description: context.description,
+        target: context.target,
+        actual: `start=${context.startScore}, end=${scoreEnd} (Δ${delta >= 0 ? '+' : ''}${delta})`,
+        passed: delta >= 0,
+        evidence: `${PULSE_CERTIFICATE_FILE} — startScore=${context.startScore}, endScore=${scoreEnd}, delta=${delta >= 0 ? '+' : ''}${delta}`,
+      };
+    },
+  },
+  {
+    supports: (context) => context.evidencePlan?.gateName === 'no-rollback-unrecovered',
+    evaluate: (context) => {
+      const rollbackCount = context.autonomy?.rollbacks ?? 0;
+      const unrecoveredRollbacks = rollbackFailureMetric(context.autonomy);
+      return {
+        name: context.name,
+        description: context.description,
+        target: context.target,
+        actual: `rollbacks=${rollbackCount}, unrecovered=${unrecoveredRollbacks}`,
+        passed: unrecoveredRollbacks === 0,
+        evidence: `${PULSE_AUTONOMY_STATE_FILE} — ${unrecoveredRollbacks} unrecovered of ${rollbackCount} total rollbacks`,
+      };
+    },
+  },
+  {
+    supports: (context) => context.evidencePlan?.gateName === 'no-protected-violation',
+    evaluate: (context) => {
+      const metric = sandboxViolationMetric(context.sandbox);
+      const totalViolations = metric.governanceViolations + metric.unsafePatches;
+      return {
+        name: context.name,
+        description: context.description,
+        target: context.target,
+        actual: `governance violations=${metric.governanceViolations}, unsafe patches=${metric.unsafePatches}`,
+        passed: totalViolations === 0,
+        evidence: `${PULSE_SANDBOX_STATE_FILE} — ${metric.governanceViolations} governance violations, ${metric.unsafePatches} unsafe patches across ${metric.workspaceCount} workspaces`,
+      };
+    },
+  },
+  {
+    supports: (context) => context.evidencePlan?.gateName === '72h-elapsed',
+    evaluate: (context) => {
+      const longRun = evaluateLongRunEvidence(context.startTime, context.autonomy);
+      return {
+        name: context.name,
+        description: context.description,
+        target: context.target,
+        actual: `${longRun.observedHours.toFixed(1)}h observed, cycles=${longRun.cycleCount}, maxGap=${longRun.maxGapHours.toFixed(1)}h, status=${longRun.status}`,
+        passed: longRun.passed,
+        evidence: `${PULSE_AUTONOMY_STATE_FILE} + system clock — ${longRun.reason}`,
+      };
+    },
+  },
+];
+
 // ────────────────────────────────────────────────────────────────────────────
 // Gate Evaluation
 // ────────────────────────────────────────────────────────────────────────────
@@ -533,204 +798,22 @@ export function evaluateGate(
 ): PerfectnessGate {
   const pulseDir = path.join(rootDir, '.pulse', 'current');
   const def = PERFECTNESS_EVALUATION_KERNEL_GRAMMAR.find((g) => g.name === name);
-  const description = def?.description ?? name;
-  const target = def?.target ?? '';
-
-  switch (name) {
-    // ── Gate 1: pulse-core-green ──────────────────────────────────────────
-    case 'pulse-core-green': {
-      const cert = readStateFile<PulseCertState>(pulseDir, PULSE_CERTIFICATE_FILE);
-      const certified = cert?.certified === true || cert?.status === 'CERTIFIED';
-      const scoreOk = (cert?.score ?? 0) >= 50;
-      const gateEntries = Object.values(cert?.gates ?? {});
-      const allGatesPass = gateEntries.length > 0 && gateEntries.every((g) => g.status === 'pass');
-      const passed = certified && scoreOk && allGatesPass;
-
-      return {
-        name,
-        description,
-        target,
-        actual: `certified=${certified}, score=${cert?.score ?? 0}, allGatesPass=${allGatesPass}`,
-        passed,
-        evidence: `PULSE_CERTIFICATE.json — certified=${certified}, score=${cert?.score ?? 0}, ${gateEntries.length} gates evaluated`,
-      };
-    }
-
-    // ── Gate 2: product-core-green ────────────────────────────────────────
-    case 'product-core-green': {
-      const cert = readStateFile<PulseCertState>(pulseDir, PULSE_CERTIFICATE_FILE);
-      const score = cert?.score ?? 0;
-
-      // Check capabilities: count "real" vs total
-      const capabilities = cert?.capabilities ?? [];
-      const realCount = capabilities.filter((c) => c.health === 'real').length;
-      const totalCap = capabilities.length;
-      const capabilityHealth =
-        totalCap > 0 ? `${realCount}/${totalCap} real` : 'no capability data';
-
-      // Gate passes if score >= 60 (proxy) OR if all capabilities are real
-      const passed = score >= 60 || (totalCap > 0 && realCount === totalCap);
-
-      return {
-        name,
-        description,
-        target,
-        actual: `score=${score}, capabilities=${capabilityHealth}`,
-        passed,
-        evidence: `PULSE_CERTIFICATE.json — score=${score}, ${realCount}/${totalCap} capabilities are real`,
-      };
-    }
-
-    // ── Gate 3: e2e-core-pass ─────────────────────────────────────────────
-    case 'e2e-core-pass': {
-      const scenarioData = computeScenarioPassRate(pulseDir);
-
-      // If scenario evidence exists, use it directly
-      if (scenarioData.total > 0) {
-        const passed = scenarioData.rate >= 90;
-        return {
-          name,
-          description,
-          target,
-          actual: `scenario pass rate = ${scenarioData.rate}% (${scenarioData.passed}/${scenarioData.total})`,
-          passed,
-          evidence: `PULSE_SCENARIO_EVIDENCE.json — ${scenarioData.passed}/${scenarioData.total} scenarios passed (${scenarioData.rate}%)`,
-        };
-      }
-
-      // Fallback: use browser gate proxy from certificate
-      const cert = readStateFile<PulseCertState>(pulseDir, PULSE_CERTIFICATE_FILE);
-      const browserGate = cert?.gates?.browserPass;
-      const passed = browserGate?.status === 'pass';
-
-      return {
-        name,
-        description,
-        target,
-        actual: `scenario evidence not found; browser gate = ${browserGate?.status ?? 'missing'}`,
-        passed,
-        evidence: `Fallback: PULSE_CERTIFICATE.json browser gate status=${browserGate?.status ?? 'not found'} (no scenario evidence file)`,
-      };
-    }
-
-    // ── Gate 4: runtime-stable ────────────────────────────────────────────
-    case 'runtime-stable': {
-      const cert = readStateFile<PulseCertState>(pulseDir, PULSE_CERTIFICATE_FILE);
-      const criticalFailures = Object.entries(cert?.gates ?? {}).filter(
-        ([gateName, gate]) =>
-          gate.status !== 'pass' &&
-          (gateName.toLowerCase().includes('critical') ||
-            gateName.toLowerCase().includes('runtime') ||
-            gateName.toLowerCase().includes('error')),
-      ).length;
-      const passed = criticalFailures === 0;
-
-      const failingGateNames = Object.entries(cert?.gates ?? {})
-        .filter(
-          ([gateName, gate]) =>
-            gate.status !== 'pass' &&
-            (gateName.toLowerCase().includes('critical') ||
-              gateName.toLowerCase().includes('runtime')),
-        )
-        .map(([n]) => n)
-        .join(', ');
-
-      return {
-        name,
-        description,
-        target,
-        actual: `critical/runtime gate failures = ${criticalFailures}${failingGateNames ? ` (${failingGateNames})` : ''}`,
-        passed,
-        evidence: `PULSE_CERTIFICATE.json — ${criticalFailures} critical/runtime gate failures found`,
-      };
-    }
-
-    // ── Gate 5: no-regression ─────────────────────────────────────────────
-    case 'no-regression': {
-      const cert = readStateFile<PulseCertState>(pulseDir, PULSE_CERTIFICATE_FILE);
-      const scoreEnd = cert?.score ?? 0;
-      const delta = scoreEnd - startScore;
-      const passed = scoreEnd >= startScore;
-
-      return {
-        name,
-        description,
-        target,
-        actual: `start=${startScore}, end=${scoreEnd} (Δ${delta >= 0 ? '+' : ''}${delta})`,
-        passed,
-        evidence: `PULSE_CERTIFICATE.json — startScore=${startScore}, endScore=${scoreEnd}, delta=${delta >= 0 ? '+' : ''}${delta}`,
-      };
-    }
-
-    // ── Gate 6: no-rollback-unrecovered ───────────────────────────────────
-    case 'no-rollback-unrecovered': {
-      const auto = readStateFile<PulseAutonomyState>(pulseDir, PULSE_AUTONOMY_STATE_FILE);
-      const rollbackCount = auto?.rollbacks ?? 0;
-      const iterations = auto?.iterations ?? [];
-      const unrecoveredRollbacks = iterations.filter((i) => i.rollback && !i.recovered).length;
-      const passed = unrecoveredRollbacks === 0;
-
-      return {
-        name,
-        description,
-        target,
-        actual: `rollbacks=${rollbackCount}, unrecovered=${unrecoveredRollbacks}`,
-        passed,
-        evidence: `PULSE_AUTONOMY_STATE.json — ${unrecoveredRollbacks} unrecovered of ${rollbackCount} total rollbacks`,
-      };
-    }
-
-    // ── Gate 7: no-protected-violation ────────────────────────────────────
-    case 'no-protected-violation': {
-      const sandbox = readStateFile<PulseSandboxState>(pulseDir, PULSE_SANDBOX_STATE_FILE);
-
-      // Check for actual governance violations from sandbox state
-      const governanceViolations = sandbox?.summary?.governanceViolations ?? 0;
-
-      // Check active workspaces for unsafe patches
-      const workspaces = sandbox?.activeWorkspaces ?? [];
-      const unsafePatches = workspaces.reduce((count, ws) => {
-        return count + (ws.patches ?? []).filter((p) => !p.safe).length;
-      }, 0);
-
-      const totalViolations = governanceViolations + unsafePatches;
-      const passed = totalViolations === 0;
-
-      return {
-        name,
-        description,
-        target,
-        actual: `governance violations=${governanceViolations}, unsafe patches=${unsafePatches}`,
-        passed,
-        evidence: `PULSE_SANDBOX_STATE.json — ${governanceViolations} governance violations, ${unsafePatches} unsafe patches across ${workspaces.length} workspaces`,
-      };
-    }
-
-    // ── Gate 8: 72h-elapsed ───────────────────────────────────────────────
-    case '72h-elapsed': {
-      const auto = readStateFile<PulseAutonomyState>(pulseDir, PULSE_AUTONOMY_STATE_FILE);
-      const longRun = evaluateLongRunEvidence(startTime, auto);
-
-      return {
-        name,
-        description,
-        target,
-        actual: `${longRun.observedHours.toFixed(1)}h observed, cycles=${longRun.cycleCount}, maxGap=${longRun.maxGapHours.toFixed(1)}h, status=${longRun.status}`,
-        passed: longRun.passed,
-        evidence: `PULSE_AUTONOMY_STATE.json + system clock — ${longRun.reason}`,
-      };
-    }
-
-    default:
-      return {
-        name,
-        description,
-        target,
-        actual: 'unknown gate',
-        passed: false,
-        evidence: `Gate "${name}" is not recognized in the 8-gate perfectness suite`,
-      };
-  }
+  const evidencePlan = buildEvidencePlans().find((plan) => plan.gateName === name) ?? null;
+  const context: GateEvaluationContext = {
+    name,
+    description: def?.description ?? name,
+    target: def?.target ?? '',
+    evidencePlan,
+    pulseDir,
+    startScore,
+    startTime,
+    cert: readStateFile<PulseCertState>(pulseDir, PULSE_CERTIFICATE_FILE),
+    autonomy: readStateFile<PulseAutonomyState>(pulseDir, PULSE_AUTONOMY_STATE_FILE),
+    sandbox: readStateFile<PulseSandboxState>(pulseDir, PULSE_SANDBOX_STATE_FILE),
+    scenarioData: computeScenarioPassRate(pulseDir),
+  };
+  const rule = GATE_EVALUATION_RULES.find((candidate) => candidate.supports(context));
+  return rule ? rule.evaluate(context) : buildUnknownGate(context);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -739,14 +822,17 @@ export function evaluateGate(
 
 export function computeVerdict(gates: PerfectnessGate[]): PerfectnessVerdict {
   const passed = gates.filter((g) => g.passed).length;
+  const total = gates.length;
+  const almostPerfectThreshold = Math.ceil(total * 0.75);
+  const needsWorkThreshold = Math.ceil(total * 0.375);
 
-  if (passed === PERFECTNESS_EVALUATION_KERNEL_GRAMMAR.length) {
+  if (passed === total) {
     return 'PERFECT';
   }
-  if (passed >= 6) {
+  if (passed >= almostPerfectThreshold) {
     return 'ALMOST_PERFECT';
   }
-  if (passed >= 3) {
+  if (passed >= needsWorkThreshold) {
     return 'NEEDS_WORK';
   }
   return 'FAILED';
@@ -759,7 +845,7 @@ export function computeVerdict(gates: PerfectnessGate[]): PerfectnessVerdict {
  * Only PERFECT and ALMOST_PERFECT verdicts authorize continued autonomy.
  */
 export function isAutonomousApproved(verdict: PerfectnessVerdict): boolean {
-  return verdict === 'PERFECT' || verdict === 'ALMOST_PERFECT';
+  return verdict.includes('PERFECT');
 }
 
 // ────────────────────────────────────────────────────────────────────────────

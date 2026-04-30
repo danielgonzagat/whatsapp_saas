@@ -27,7 +27,8 @@ type FindingKind =
   | 'hardcoded_identity_normalization_regex_risk'
   | 'hardcoded_fixed_literal_decision_risk'
   | 'hardcoded_fixed_boolean_decision_risk'
-  | 'hardcoded_const_declaration_risk';
+  | 'hardcoded_const_declaration_risk'
+  | 'hardcoded_predeclared_authority_context_risk';
 
 type PredicateKind = 'hardcoded_branch_decision_predicate';
 
@@ -1048,6 +1049,54 @@ function constDeclarationFindings(node: ts.Node, sourceHasDirectBreakPushType: b
     .filter((name) => ts.isSourceFile(node.parent) || name === 'breaks');
 }
 
+function predeclaredAuthorityContextFindings(node: ts.Node): string[] {
+  if (!ts.isIdentifier(node)) {
+    return [];
+  }
+  return isPredeclaredAuthorityContextNode(node) ? [node.text] : [];
+}
+
+function isPredeclaredAuthorityContextNode(node: ts.Identifier): boolean {
+  const parent = node.parent;
+  if (
+    ts.isImportClause(parent) ||
+    ts.isImportSpecifier(parent) ||
+    ts.isImportDeclaration(parent) ||
+    ts.isTypeAliasDeclaration(parent) ||
+    ts.isInterfaceDeclaration(parent) ||
+    ts.isPropertyAccessExpression(parent)
+  ) {
+    return false;
+  }
+
+  if (ts.isVariableDeclaration(parent) && parent.name === node) {
+    const declarationList = parent.parent;
+    const statement = declarationList.parent;
+    if (ts.isVariableStatement(statement) && ts.isSourceFile(statement.parent)) {
+      return false;
+    }
+    return parent.initializer !== undefined && contextLooksLikePredeclaredAuthority(node.text);
+  }
+
+  if (ts.isPropertyAssignment(parent) && parent.name === node) {
+    return contextLooksLikePredeclaredAuthority(node.text);
+  }
+
+  if (ts.isParameter(parent) && parent.name === node) {
+    return contextLooksLikePredeclaredAuthority(node.text);
+  }
+
+  return false;
+}
+
+function contextLooksLikePredeclaredAuthority(context: string): boolean {
+  return (
+    contextLooksLikeUniversalHardcode(context) ||
+    contextLooksLikeDecisionAuthority(context) ||
+    contextHasToken(context, REALITY_CATALOG_CONTEXT_KERNEL_GRAMMAR_TOKENS)
+  );
+}
+
 function sqlRealityTableFindings(node: ts.Node): string[] {
   const value = stringLiteralValue(node);
   if (!value || !/\b(?:select|insert|update|delete)\b/i.test(value)) {
@@ -1121,6 +1170,19 @@ function auditSourceFile(
   const sourceHasDirectBreakPushType = /breaks\.push\s*\(\s*\{[\s\S]{0,300}\btype\s*:/.test(source);
 
   const visit = (node: ts.Node): void => {
+    const predeclaredAuthorityContexts = predeclaredAuthorityContextFindings(node);
+    if (predeclaredAuthorityContexts.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_predeclared_authority_context_risk',
+        nearestExecutableContext(node),
+        predeclaredAuthorityContexts,
+      );
+    }
+
     const constDeclarations = constDeclarationFindings(node, sourceHasDirectBreakPushType);
     if (constDeclarations.length > 0) {
       pushFinding(

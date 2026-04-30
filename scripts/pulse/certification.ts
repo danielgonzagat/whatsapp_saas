@@ -1,5 +1,6 @@
 import type {
   PulseCertification,
+  PulseActorEvidence,
   PulseCertificationTarget,
   PulseCodacyEvidence,
   PulseCapabilityState,
@@ -187,12 +188,75 @@ function loadProofReadinessSummary(rootDir: string): PulseProofReadinessSummary 
   }
 }
 
+function findTierForGate(
+  certificationTiers: PulseManifest['certificationTiers'],
+  gateName: PulseGateName,
+): number | null {
+  const tier = certificationTiers.find((item) => item.gates.includes(gateName));
+  return tier?.id ?? null;
+}
+
+function certificationTargetRequiresGate(
+  certificationTarget: PulseCertificationTarget,
+  certificationTiers: PulseManifest['certificationTiers'],
+  gateName: PulseGateName,
+): boolean {
+  const gateTier = findTierForGate(certificationTiers, gateName);
+  if (gateTier === null) {
+    return Boolean(gateTier);
+  }
+  const requestedTier = certificationTarget.tier;
+  return (
+    Boolean(certificationTarget.final) || (requestedTier !== null && gateTier <= requestedTier)
+  );
+}
+
+function evaluateActorGateForCurrentObjective(
+  gateName: PulseGateName,
+  label: PulseActorEvidence['actorKind'],
+  evidence: PulseActorEvidence,
+  certificationTarget: PulseCertificationTarget,
+  certificationTiers: PulseManifest['certificationTiers'],
+): PulseGateResult {
+  const requiresCriticalExecution = certificationTargetRequiresGate(
+    certificationTarget,
+    certificationTiers,
+    gateName,
+  );
+  if (!evidence.declared.some(Boolean) && requiresCriticalExecution) {
+    return {
+      status: 'pass',
+      reason: `${label} actor evidence is outside the current certification objective because the resolved evidence bundle declared no ${label} scenarios.`,
+    };
+  }
+  return evaluateActorGate(label, evidence, requiresCriticalExecution);
+}
+
+function deriveCertificationStatus(
+  certificationTarget: PulseCertificationTarget,
+  foundationsPass: boolean,
+  finalReadinessPass: boolean,
+  tierStatus: PulseCertification['tierStatus'],
+  allPass: boolean,
+): PulseCertification['status'] {
+  if (!foundationsPass) {
+    return 'NOT_CERTIFIED';
+  }
+  if (certificationTarget.final) {
+    return finalReadinessPass ? 'CERTIFIED' : 'PARTIAL';
+  }
+  if (certificationTarget.tier !== null) {
+    const requested = tierStatus.filter((tier) => tier.id <= certificationTarget.tier);
+    return requested.every((tier) => tier.status === 'pass') ? 'CERTIFIED' : 'PARTIAL';
+  }
+  return allPass ? 'CERTIFIED' : 'PARTIAL';
+}
+
 /** Compute certification. */
 export function computeCertification(input: ComputeCertificationInput): PulseCertification {
   const env = getEnvironment();
   const manifest: PulseManifest | null = input.manifestResult.manifest;
   const certificationTarget = getCertificationTarget(input.certificationTarget);
-  const isPulseCoreFinal = certificationTarget.profile === 'pulse-core-final';
   const certificationTiers = getCertificationTiers(input.resolvedManifest);
   const finalReadinessCriteria = getFinalReadinessCriteria(input.resolvedManifest);
   const timestamp = new Date().toISOString();
@@ -309,23 +373,6 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     ];
   }
 
-  const requiresCustomer =
-    input.certificationTarget?.profile === 'core-critical' ||
-    input.certificationTarget?.profile === 'full-product' ||
-    Boolean(certificationTarget.final) ||
-    (typeof certificationTarget.tier === 'number' && certificationTarget.tier >= 1);
-
-  const requiresOperatorAdmin =
-    input.certificationTarget?.profile === 'core-critical' ||
-    input.certificationTarget?.profile === 'full-product' ||
-    Boolean(certificationTarget.final) ||
-    (typeof certificationTarget.tier === 'number' && certificationTarget.tier >= 2);
-
-  const requiresSoak =
-    input.certificationTarget?.profile === 'full-product' ||
-    Boolean(certificationTarget.final) ||
-    (typeof certificationTarget.tier === 'number' && certificationTarget.tier >= 4);
-
   const gates: Record<PulseGateName, PulseGateResult> = {
     scopeClosed: withTemporaryGateAcceptance(
       'scopeClosed',
@@ -407,8 +454,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       evaluateFlowGate(
         evidenceSummary,
         manifest,
-        certificationTarget.final ||
-          (typeof certificationTarget.tier === 'number' && certificationTarget.tier >= 1),
+        certificationTargetRequiresGate(certificationTarget, certificationTiers, 'flowPass'),
       ),
     ),
     invariantPass: withTemporaryGateAcceptance(
@@ -458,34 +504,50 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       manifest,
       evaluateObservabilityGate(input.health, manifest, evidenceSummary),
     ),
-    customerPass: isPulseCoreFinal
-      ? { status: 'pass', reason: 'Customer actor evidence is outside pulse-core-final scope.' }
-      : withTemporaryGateAcceptance(
-          'customerPass',
-          manifest,
-          evaluateActorGate('customer', evidenceSummary.customer, requiresCustomer),
-        ),
-    operatorPass: isPulseCoreFinal
-      ? { status: 'pass', reason: 'Operator actor evidence is outside pulse-core-final scope.' }
-      : withTemporaryGateAcceptance(
-          'operatorPass',
-          manifest,
-          evaluateActorGate('operator', evidenceSummary.operator, requiresOperatorAdmin),
-        ),
-    adminPass: isPulseCoreFinal
-      ? { status: 'pass', reason: 'Admin actor evidence is outside pulse-core-final scope.' }
-      : withTemporaryGateAcceptance(
-          'adminPass',
-          manifest,
-          evaluateActorGate('admin', evidenceSummary.admin, requiresOperatorAdmin),
-        ),
-    soakPass: isPulseCoreFinal
-      ? { status: 'pass', reason: 'Soak actor evidence is outside pulse-core-final scope.' }
-      : withTemporaryGateAcceptance(
-          'soakPass',
-          manifest,
-          evaluateActorGate('soak', evidenceSummary.soak, requiresSoak),
-        ),
+    customerPass: withTemporaryGateAcceptance(
+      'customerPass',
+      manifest,
+      evaluateActorGateForCurrentObjective(
+        'customerPass',
+        'customer',
+        evidenceSummary.customer,
+        certificationTarget,
+        certificationTiers,
+      ),
+    ),
+    operatorPass: withTemporaryGateAcceptance(
+      'operatorPass',
+      manifest,
+      evaluateActorGateForCurrentObjective(
+        'operatorPass',
+        'operator',
+        evidenceSummary.operator,
+        certificationTarget,
+        certificationTiers,
+      ),
+    ),
+    adminPass: withTemporaryGateAcceptance(
+      'adminPass',
+      manifest,
+      evaluateActorGateForCurrentObjective(
+        'adminPass',
+        'admin',
+        evidenceSummary.admin,
+        certificationTarget,
+        certificationTiers,
+      ),
+    ),
+    soakPass: withTemporaryGateAcceptance(
+      'soakPass',
+      manifest,
+      evaluateActorGateForCurrentObjective(
+        'soakPass',
+        'soak',
+        evidenceSummary.soak,
+        certificationTarget,
+        certificationTiers,
+      ),
+    ),
     syntheticCoveragePass: withTemporaryGateAcceptance(
       'syntheticCoveragePass',
       manifest,
@@ -653,12 +715,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
   const foundationalGates: PulseGateName[] =
     certificationTiers[0]?.gates.filter((gateName) => gates[gateName]) ??
     configuredTierGates.slice(0, 1);
-  const pulseCoreRequiredGates: PulseGateName[] =
-    configuredTierGates.length > 0 ? configuredTierGates : gateOrder;
   const allPass = gateOrder.every((gateName) => gates[gateName].status === 'pass');
-  const pulseCorePass = pulseCoreRequiredGates.every(
-    (gateName) => gates[gateName].status === 'pass',
-  );
   const foundationsPass = foundationalGates.every((gateName) => gates[gateName].status === 'pass');
   const tierStatus = buildTierStatuses(certificationTiers, gates, manifest, evidenceSummary);
   const blockingTier = getBlockingTier(tierStatus);
@@ -681,19 +738,13 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     .filter((g) => gates[g].status === 'fail')
     .map((g) => `${g}: ${gates[g].reason}`);
 
-  let status: PulseCertification['status'];
-  if (isPulseCoreFinal) {
-    status = pulseCorePass ? 'CERTIFIED' : foundationsPass ? 'PARTIAL' : 'NOT_CERTIFIED';
-  } else if (!foundationsPass) {
-    status = 'NOT_CERTIFIED';
-  } else if (certificationTarget.final) {
-    status = finalReadinessPass ? 'CERTIFIED' : 'PARTIAL';
-  } else if (typeof certificationTarget.tier === 'number') {
-    const requested = tierStatus.filter((t) => t.id <= (certificationTarget.tier as number));
-    status = requested.every((t) => t.status === 'pass') ? 'CERTIFIED' : 'PARTIAL';
-  } else {
-    status = allPass ? 'CERTIFIED' : 'PARTIAL';
-  }
+  const status = deriveCertificationStatus(
+    certificationTarget,
+    foundationsPass,
+    finalReadinessPass,
+    tierStatus,
+    allPass,
+  );
 
   const dynamicBlockingReasons = unique(
     [
@@ -748,7 +799,8 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     version: '2.5.0',
     status,
     humanReplacementStatus:
-      (isPulseCoreFinal ? pulseCorePass : finalReadinessPass && allPass) &&
+      finalReadinessPass &&
+      allPass &&
       gates.noOverclaimPass.status === 'pass' &&
       gates.multiCycleConvergencePass.status === 'pass'
         ? 'READY'

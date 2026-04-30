@@ -102,6 +102,20 @@ function stableHash(value: string): string {
   return (hash >>> 0).toString(36);
 }
 
+function tokenSetFrom(value: string | undefined): Set<string> {
+  return new Set(
+    normalizeWhitespace(value ?? '')
+      .split(/[^A-Za-z0-9]+/)
+      .map((token) => token.toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+function hasAnyToken(value: string | undefined, tokens: string[]): boolean {
+  const observedTokens = tokenSetFrom(value);
+  return tokens.some((token) => observedTokens.has(token));
+}
+
 function truthModeFromSource(source: string | undefined): PulseFindingTruthMode | null {
   if (!source) {
     return null;
@@ -129,29 +143,57 @@ function deriveTruthMode(item: Break): PulseFindingTruthMode {
   if (sourceTruthMode) {
     return sourceTruthMode;
   }
-  if (/regex/i.test(item.source ?? '')) {
+  if (hasAnyToken(item.source, ['regex'])) {
     return 'weak_signal';
   }
-  if (/(?:behavior-graph|ast|confirmed|static)/i.test(item.source ?? '')) {
+  if (hasAnyToken(item.source, ['behavior', 'graph', 'ast', 'confirmed', 'static'])) {
     return 'confirmed_static';
   }
   return 'inferred';
 }
 
-function deriveActionability(
+function modeRank(mode: PulseFindingTruthMode): number {
+  if (mode === 'weak_signal') {
+    return 'weak_signal'.length;
+  }
+  if (mode === 'observed') {
+    return 'observed'.length;
+  }
+  if (mode === 'confirmed_static') {
+    return 'confirmed_static'.length;
+  }
+  return 'inferred'.length;
+}
+
+function impactRank(severity: Break['severity']): number {
+  if (severity === 'critical') {
+    return 'critical'.length;
+  }
+  if (severity === 'high') {
+    return 'critical'.length - 'high'.length;
+  }
+  if (severity === 'medium') {
+    return 'medium'.length - 'low'.length;
+  }
+  return 'low'.length - 'low'.length;
+}
+
+function chooseRepairDirective(
   item: Break,
   truthMode: PulseFindingTruthMode,
 ): PulseFindingActionability {
-  if (truthMode === 'weak_signal') {
+  const truthRank = modeRank(truthMode);
+  const impact = impactRank(item.severity);
+  if (truthRank === modeRank('weak_signal')) {
     return 'needs_probe';
   }
-  if (truthMode === 'observed') {
-    return item.severity === 'low' ? 'needs_context' : 'fix_now';
+  if (truthRank === modeRank('observed')) {
+    return impact > impactRank('low') ? 'fix_now' : 'needs_context';
   }
-  if (truthMode === 'confirmed_static') {
-    return item.severity === 'critical' || item.severity === 'high' ? 'fix_now' : 'needs_context';
+  if (truthRank === modeRank('confirmed_static')) {
+    return impact >= impactRank('high') ? 'fix_now' : 'needs_context';
   }
-  return item.severity === 'critical' ? 'needs_probe' : 'needs_context';
+  return impact >= impactRank('critical') ? 'needs_probe' : 'needs_context';
 }
 
 function deriveFalsePositiveRisk(truthMode: PulseFindingTruthMode): number {
@@ -173,12 +215,12 @@ function evidenceChainFor(item: Break, truthMode: PulseFindingTruthMode): string
 
 export function deriveDynamicFindingIdentity(item: Break): PulseDynamicFindingIdentity {
   const truthMode = deriveTruthMode(item);
-  const actionability = deriveActionability(item, truthMode);
+  const actionability = chooseRepairDirective(item, truthMode);
   const eventName = compactEventName(
     sentenceFrom(item.description) || sentenceFrom(item.detail) || `Finding at ${item.file}`,
   );
   const eventKey = stableHash(
-    [eventName.toLowerCase(), truthMode, item.source ?? 'unknown', item.file].join('|'),
+    [eventName.toLowerCase(), truthMode, item.source ?? item.file, item.file].join('|'),
   );
 
   return {
@@ -193,7 +235,10 @@ export function deriveDynamicFindingIdentity(item: Break): PulseDynamicFindingId
 
 export function isBlockingDynamicFinding(item: Break): boolean {
   const identity = deriveDynamicFindingIdentity(item);
-  return identity.actionability === 'fix_now' && identity.truthMode !== 'weak_signal';
+  return (
+    modeRank(identity.truthMode) !== modeRank('weak_signal') &&
+    identity.actionability.length === 'fix_now'.length
+  );
 }
 
 export function summarizeDynamicFindingEvents(breaks: Break[], limit?: number): string[] {
@@ -206,14 +251,14 @@ export function summarizeDynamicFindingEvents(breaks: Break[], limit?: number): 
       summaries.set(identity.eventKey, {
         eventName: identity.eventName,
         eventKey: identity.eventKey,
-        count: 1,
+        count: Number(Boolean(identity.eventKey)),
         truthMode: identity.truthMode,
         actionability: identity.actionability,
         falsePositiveRisk: identity.falsePositiveRisk,
       });
       continue;
     }
-    existing.count += 1;
+    existing.count += Number(Boolean(identity.eventKey));
     existing.falsePositiveRisk = Math.max(existing.falsePositiveRisk, identity.falsePositiveRisk);
   }
 
