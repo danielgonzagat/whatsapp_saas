@@ -11,7 +11,7 @@
 
 import * as path from 'node:path';
 import { safeJoin, safeResolve } from './safe-path';
-import { ensureDir, pathExists, readJsonFile, writeTextFile } from './safe-fs';
+import { ensureDir, pathExists, readJsonFile, readTextFile, writeTextFile } from './safe-fs';
 import { walkFiles, readFileSafe } from './parsers/utils';
 import type {
   CapabilityObservability,
@@ -30,7 +30,11 @@ import type {
   PulseCapabilityState,
   PulseFlowProjection,
   PulseFlowProjectionItem,
+  PulseObservabilityEvidence,
+  PulseRuntimeEvidence,
 } from './types';
+import type { BehaviorGraph, BehaviorNode } from './types.behavior-graph';
+import type { RuntimeFusionState, RuntimeSignal } from './types.runtime-fusion';
 
 const ARTIFACT_FILE_NAME = 'PULSE_OBSERVABILITY_COVERAGE.json';
 
@@ -53,6 +57,17 @@ interface PillarScanResult {
   source: string;
   reason: string;
   filePaths: string[];
+}
+
+interface ObservabilityRuntimeContext {
+  pillars: ObservabilityPillar[];
+  observabilityEvidence: PulseObservabilityEvidence | null;
+  runtimeEvidence: PulseRuntimeEvidence | null;
+  runtimeFusion: RuntimeFusionState | null;
+  behaviorGraph: BehaviorGraph | null;
+  behaviorNodesByFile: Map<string, BehaviorNode[]>;
+  runtimeSignalsByCapability: Map<string, RuntimeSignal[]>;
+  runtimeSignalsByFlow: Map<string, RuntimeSignal[]>;
 }
 
 const TRUSTED_OBSERVED_KINDS = new Set<ObservabilityEvidenceKind>([

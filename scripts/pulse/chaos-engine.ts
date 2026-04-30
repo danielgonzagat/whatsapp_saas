@@ -495,6 +495,39 @@ function loadMatrixPaths(rootDir: string): PulseExecutionMatrix['paths'] {
   }
 }
 
+function loadRuntimeEvidence(rootDir: string): PulseRuntimeEvidence | null {
+  const runtimePath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_RUNTIME_EVIDENCE.json');
+  if (!pathExists(runtimePath)) {
+    return null;
+  }
+  try {
+    return readJsonFile<PulseRuntimeEvidence>(runtimePath);
+  } catch {
+    return null;
+  }
+}
+
+function loadExecutionTrace(rootDir: string): PulseExecutionTrace | null {
+  const tracePath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_EXECUTION_TRACE.json');
+  if (!pathExists(tracePath)) {
+    return null;
+  }
+  try {
+    return readJsonFile<PulseExecutionTrace>(tracePath);
+  } catch {
+    return null;
+  }
+}
+
+function loadEffectGraphRecords(rootDir: string): Record<string, unknown>[] {
+  return [
+    ...loadArtifactRecords(rootDir, 'PULSE_BEHAVIOR_GRAPH.json'),
+    ...loadArtifactRecords(rootDir, 'PULSE_STRUCTURAL_GRAPH.json'),
+    ...loadArtifactRecords(rootDir, 'PULSE_EFFECT_GRAPH.json'),
+    ...loadArtifactRecords(rootDir, 'PULSE_RUNTIME_FUSION.json'),
+  ];
+}
+
 // ── Blast-radius computation ──────────────────────────────────────────────
 
 /** Find all capabilities that structurally depend on a target class. */
