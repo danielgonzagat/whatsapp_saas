@@ -136,7 +136,7 @@ function parseRouteParameters(locatorText: string): string[] {
 
   while (match) {
     params.push(match[1]);
-    match = routeParameterGrammar.exec(routePath);
+    match = routeParameterGrammar.exec(locatorText);
   }
 
   return unique(params);
@@ -1220,12 +1220,12 @@ export function generateFixturesForTarget(
  * targets for execution feasibility.
  */
 export function readBehaviorGraph(rootDir: string): BehaviorGraph | null {
-  const artifactPath = safeJoin(rootDir, behaviorGraphArtifactPath());
-  if (!pathExists(artifactPath)) {
+  const behaviorGraphFile = safeJoin(rootDir, behaviorGraphArtifactPath());
+  if (!pathExists(behaviorGraphFile)) {
     return null;
   }
   try {
-    return readJsonFile<BehaviorGraph>(artifactPath);
+    return readJsonFile<BehaviorGraph>(behaviorGraphFile);
   } catch {
     return null;
   }
@@ -1265,7 +1265,7 @@ export function classifyExecutionFeasibility(
   behaviorNodes: Map<string, BehaviorNode>,
   rootDir?: string,
 ): { feasibility: ExecutionFeasibility; reason: string } {
-  const targetKey = `${target.filePath}:${target.methodName ?? constructorMemberName()}`;
+  const targetLookupId = `${target.filePath}:${target.methodName ?? constructorMemberName()}`;
 
   // ── Check 1: no method means we cannot execute ──
   if (!target.methodName || isConstructorMemberName(target.methodName)) {
@@ -1289,7 +1289,7 @@ export function classifyExecutionFeasibility(
   }
 
   // ── Look up behavior node for richer context ──
-  const behaviorNode = behaviorNodes.get(targetKey);
+  const behaviorNode = behaviorNodes.get(targetLookupId);
 
   // ── Check 3: behavior graph requires governed staging execution ──
   if (behaviorNode && behaviorNode.executionMode === 'human_required') {
@@ -1301,10 +1301,10 @@ export function classifyExecutionFeasibility(
 
   // ── Check 4: external API calls ──
   if (behaviorNode?.externalCalls && behaviorNode.externalCalls.length > 0) {
-    const providers = [...new Set(behaviorNode.externalCalls.map((c) => c.provider))];
+    const externalProviderNames = [...new Set(behaviorNode.externalCalls.map((c) => c.provider))];
     return {
       feasibility: 'needs_staging',
-      reason: `Behavior graph detects external calls to: ${providers.join(', ')}`,
+      reason: `Behavior graph detects external calls to: ${externalProviderNames.join(', ')}`,
     };
   }
 
@@ -1362,13 +1362,15 @@ export function classifyExecutionFeasibility(
   };
 }
 
-function readHarnessTargetSource(rootDir: string, filePath: string): string {
-  const absolutePath = path.isAbsolute(filePath) ? filePath : safeJoin(rootDir, filePath);
-  if (!pathExists(absolutePath)) {
+function readHarnessTargetSource(rootDir: string, sourceLocator: string): string {
+  const absoluteSourceFile = path.isAbsolute(sourceLocator)
+    ? sourceLocator
+    : safeJoin(rootDir, sourceLocator);
+  if (!pathExists(absoluteSourceFile)) {
     return '';
   }
   try {
-    return readTextFile(absolutePath);
+    return readTextFile(absoluteSourceFile);
   } catch {
     return '';
   }
@@ -1411,7 +1413,7 @@ function buildHarnessBlueprintCode(
   executionMode: 'ai_safe' | 'governed_validation',
   terminalReason: string,
 ): string {
-  const requiredAssertions = buildHarnessRequiredAssertions(target);
+  const assertionList = buildHarnessRequiredAssertions(target);
   const blueprint = {
     targetId: target.targetId,
     kind: target.kind,
@@ -1459,7 +1461,7 @@ function buildHarnessBlueprintCode(
         name: fixture.name,
         description: fixture.description,
       })),
-    requiredAssertions,
+    requiredAssertions: assertionList,
   };
 
   return [
