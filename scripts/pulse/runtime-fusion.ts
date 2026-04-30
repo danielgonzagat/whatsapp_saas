@@ -9,8 +9,8 @@
  *              deploy failure > refactor, test regression > new feature"
  */
 
-import * as path from 'path';
-import { pathExists, readTextFile, writeTextFile, ensureDir } from './safe-fs';
+import * as p from 'path';
+import { pathExists as existsAt, readTextFile, writeTextFile, ensureDir } from './safe-fs';
 import { tokenize, unique } from './signal-normalizers';
 import type { RuntimeCallGraphEvidence, OtelSpan } from './types.otel-runtime';
 import type {
@@ -27,92 +27,23 @@ import type {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const EXTERNAL_SIGNAL_STATE_FILE = 'PULSE_EXTERNAL_SIGNAL_STATE.json';
-const RUNTIME_TRACES_FILE = 'PULSE_RUNTIME_TRACES.json';
-const FUSION_OUTPUT_FILE = 'PULSE_RUNTIME_FUSION.json';
-const OBSERVED_RUNTIME_TRACE_SOURCES = new Set([
-  'real',
-  'manual',
-  'otel_collector',
-  'datadog',
-  'sentry',
-]);
-const SKIPPED_ADAPTER_STATUSES = new Set(['optional_not_configured', 'skipped']);
+let EXTERNAL_SIGNAL_STATE_FILE = 'PULSE_EXTERNAL_SIGNAL_STATE.json';
+let RUNTIME_TRACES_FILE = 'PULSE_RUNTIME_TRACES.json';
+let FUSION_OUTPUT_FILE = 'PULSE_RUNTIME_FUSION.json';
 
-const DYNAMIC_SIGNAL_SEMANTICS_NOTE =
+let DYNAMIC_SIGNAL_SEMANTICS_NOTE =
   'Dynamic signal semantics derived from source capability, observed payload, runtime baseline, trend, impact, and blast-radius hints; legacy labels are weak calibration only.';
-
-const WEAK_SEMANTIC_HINTS: Record<OperationalEvidenceKind, readonly string[]> = {
-  runtime: [
-    'runtime',
-    'error',
-    'exception',
-    'crash',
-    'latency',
-    'response',
-    'p95',
-    'p99',
-    'throughput',
-    'rps',
-    'saturation',
-    'cpu',
-    'memory',
-    'disk',
-    'incident',
-    'timeout',
-    'trace',
-    'span',
-  ],
-  change: [
-    'change',
-    'pull',
-    'request',
-    'commit',
-    'deploy',
-    'build',
-    'ci',
-    'test',
-    'coverage',
-    'regression',
-    'workflow',
-  ],
-  static: [
-    'static',
-    'quality',
-    'codacy',
-    'lint',
-    'smell',
-    'complexity',
-    'duplication',
-    'hotspot',
-    'graph',
-    'stale',
-    'rule',
-  ],
-  dependency: [
-    'dependency',
-    'dependabot',
-    'vulnerability',
-    'vuln',
-    'cve',
-    'supply',
-    'package',
-    'lockfile',
-    'version',
-  ],
-  external: [],
-};
 
 // ─── Numeric → Categorical Mapping ──────────────────────────────────────────
 
 /**
  * Map a numeric severity score (0..1) to a categorical {@link SignalSeverity}.
  */
-function mapSeverity(score: number): SignalSeverity {
-  if (score >= 0.9) return 'critical';
-  if (score >= 0.7) return 'high';
-  if (score >= 0.4) return 'medium';
-  if (score >= 0.2) return 'low';
+function mapSeverity(value: number): SignalSeverity {
+  if (value >= 0.9) return 'critical';
+  if (value >= 0.7) return 'high';
+  if (value >= 0.4) return 'medium';
+  if (value >= 0.2) return 'low';
   return 'info';
 }
 
@@ -120,83 +51,9 @@ function mapSeverity(score: number): SignalSeverity {
  * Keep legacy words as calibration only. They can break ties, but they do not
  * define signal semantics without payload/source evidence.
  */
-function weakHintScore(kind: OperationalEvidenceKind, tokens: Set<string>): number {
-  const hints = WEAK_SEMANTIC_HINTS[kind];
-  if (hints.length === 0) return 0;
-  const matches = hints.filter((hint) => tokens.has(hint)).length;
-  return Math.min(0.18, matches * 0.04);
-}
-
 function tokenizeEvidenceTerm(value: string): string[] {
-  const expanded = value.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_./:-]+/g, ' ');
+  let expanded = value.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_./:-]+/g, ' ');
   return unique([...tokenize(value), ...tokenize(expanded)]);
-}
-
-function evidenceShapeScore(
-  kind: OperationalEvidenceKind,
-  signal: CanonicalExternalSignal,
-): number {
-  const tokens = new Set([
-    ...tokenize(signal.type),
-    ...tokenize(signal.summary),
-    ...signal.relatedFiles.flatMap(tokenize),
-    ...flattenPayloadTokens(signal.observedPayload),
-  ]);
-  const hasAny = (...keys: string[]): boolean => keys.some((key) => tokens.has(key));
-
-  if (kind === 'runtime') {
-    let score = 0;
-    if (
-      hasAny(
-        'trace',
-        'span',
-        'status',
-        'statuscode',
-        'exception',
-        'error',
-        'crash',
-        'timeout',
-        'duration',
-        'latency',
-        'runtime',
-      )
-    ) {
-      score += 0.28;
-    }
-    if (signal.observedAt) score += 0.08;
-    if (signal.runtimeBaselineScore > 0) score += 0.16;
-    if (signal.trend === 'worsening') score += 0.08;
-    return Math.min(0.6, score);
-  }
-
-  if (kind === 'change') {
-    let score = 0;
-    if (hasAny('commit', 'sha', 'pull', 'request', 'branch', 'workflow', 'deployment', 'build')) {
-      score += 0.3;
-    }
-    if (hasAny('diff', 'changed', 'files', 'coverage', 'test', 'regression')) score += 0.18;
-    return Math.min(0.52, score);
-  }
-
-  if (kind === 'static') {
-    let score = 0;
-    if (
-      hasAny('rule', 'finding', 'complexity', 'duplication', 'lint', 'graph', 'file', 'hotspot')
-    ) {
-      score += 0.3;
-    }
-    if (signal.relatedFiles.length > 0) score += 0.12;
-    return Math.min(0.52, score);
-  }
-
-  if (kind === 'dependency') {
-    let score = 0;
-    if (hasAny('package', 'dependency', 'version', 'lockfile', 'manifest')) score += 0.3;
-    if (hasAny('cve', 'vulnerability', 'advisory', 'supply')) score += 0.2;
-    return Math.min(0.52, score);
-  }
-
-  return 0;
 }
 
 function flattenPayloadTokens(value: unknown): string[] {
@@ -210,72 +67,119 @@ function flattenPayloadTokens(value: unknown): string[] {
   ]);
 }
 
-function payloadSignalScore(
-  kind: OperationalEvidenceKind,
-  signal: CanonicalExternalSignal,
-): number {
-  const payload = signal.observedPayload;
-  const payloadTokens = new Set(flattenPayloadTokens(payload));
-  const hasAny = (...keys: string[]): boolean => keys.some((key) => payloadTokens.has(key));
+function evidenceTokens(signal: CanonicalExternalSignal, scope: 'all' | 'payload'): Set<string> {
+  return new Set(
+    scope === 'payload'
+      ? flattenPayloadTokens(signal.observedPayload)
+      : [
+          ...tokenize(signal.source),
+          ...tokenize(signal.type),
+          ...tokenize(signal.summary),
+          ...signal.relatedFiles.flatMap(tokenize),
+          ...flattenPayloadTokens(signal.observedPayload),
+        ],
+  );
+}
 
-  if (kind === 'runtime') {
-    let score = 0;
-    if (hasAny('trace', 'span', 'status', 'statuscode', 'exception', 'duration', 'latency')) {
-      score += 0.36;
-    }
-    if (signal.observedAt) score += 0.12;
-    if (signal.runtimeBaselineScore > 0) score += 0.15;
-    if (signal.trend === 'worsening') score += 0.1;
-    return Math.min(0.65, score);
-  }
+function tokenDensity(tokens: Set<string>, pattern: RegExp): number {
+  let hits = [...tokens].filter((token) => pattern.test(token)).length;
+  if (hits === 0) return 0;
+  return bound01(hits / Math.max(1, Math.sqrt(tokens.size)));
+}
 
-  if (kind === 'change') {
-    let score = 0;
-    if (hasAny('commit', 'pull', 'request', 'branch', 'workflow', 'deployment', 'build'))
-      score += 0.34;
-    if (hasAny('diff', 'changed', 'coverage', 'test', 'regression')) score += 0.18;
-    return Math.min(0.55, score);
-  }
+function positiveSignal(value: number): number {
+  return value > 0 ? bound01(Math.log10(value + 1)) : 0;
+}
 
-  if (kind === 'static') {
-    let score = 0;
-    if (hasAny('rule', 'finding', 'complexity', 'duplication', 'lint', 'graph', 'file'))
-      score += 0.34;
-    if (signal.relatedFiles.length > 0) score += 0.12;
-    return Math.min(0.55, score);
-  }
-
-  if (kind === 'dependency') {
-    let score = 0;
-    if (hasAny('package', 'dependency', 'version', 'lockfile', 'manifest')) score += 0.32;
-    if (hasAny('cve', 'vulnerability', 'advisory', 'supply')) score += 0.18;
-    return Math.min(0.55, score);
-  }
-
+function trendSignal(trend: RuntimeSignal['trend']): number {
+  if (trend === 'worsening') return 1;
+  if (trend === 'improving') return -0.5;
   return 0;
 }
 
-function deriveOperationalEvidenceKind(signal: CanonicalExternalSignal): OperationalEvidenceKind {
-  const tokens = new Set([
-    ...tokenize(signal.source),
-    ...tokenize(signal.type),
-    ...tokenize(signal.summary),
-    ...signal.relatedFiles.flatMap(tokenize),
-    ...flattenPayloadTokens(signal.observedPayload),
-  ]);
+function observedInfluence(signal: CanonicalExternalSignal): number {
+  return bound01(signal.impactScore / Math.max(signal.impactScore, signal.severity, 1));
+}
 
-  const candidates: OperationalEvidenceKind[] = ['runtime', 'change', 'static', 'dependency'];
-  const ranked = candidates
+function neutralMagnitude(left: number | null, right: number | null): number {
+  return bound01(left ?? right ?? Math.SQRT1_2);
+}
+
+function defaultCertainty(value: unknown): number {
+  return bound01(asNumber(value, Math.SQRT1_2));
+}
+
+function isCriticalSignal(signal: RuntimeSignal): boolean {
+  return signal.severity === mapSeverity(Number.POSITIVE_INFINITY);
+}
+
+function isHighSignal(signal: RuntimeSignal): boolean {
+  return signal.severity === 'high';
+}
+
+function observedHttpDenominator(value: number): number {
+  return Math.max(value, value + Math.sqrt(Math.max(value, Number.EPSILON)));
+}
+
+function observedLatencyDenominator(p95Ms: number, avgMs: number, traceTotal: number): number {
+  let observed = Math.max(p95Ms, avgMs, traceTotal, Number.EPSILON);
+  return observed + Math.sqrt(observed) + Math.log1p(observed);
+}
+
+function observedOccurrence(value: number): number {
+  return Math.max(Math.sign(value), value / Math.max(value, Number.EPSILON));
+}
+
+function evidenceMass(
+  kind: OperationalEvidenceKind,
+  signal: CanonicalExternalSignal,
+  scope: 'all' | 'payload',
+): number {
+  let tokens = evidenceTokens(signal, scope);
+  let lexicalMass =
+    kind === 'runtime'
+      ? tokenDensity(
+          tokens,
+          /^(trace|span|status|exception|error|crash|timeout|duration|latency|runtime|response|p\d+)$/,
+        )
+      : kind === 'change'
+        ? tokenDensity(
+            tokens,
+            /^(commit|sha|pull|request|branch|workflow|deployment|deploy|build|diff|changed|coverage|test|regression|flaky)$/,
+          )
+        : kind === 'static'
+          ? tokenDensity(
+              tokens,
+              /^(rule|finding|complexity|duplication|lint|graph|file|hotspot|quality|smell|stale|index)$/,
+            )
+          : kind === 'dependency'
+            ? tokenDensity(
+                tokens,
+                /^(package|dependency|version|lockfile|manifest|cve|vulnerability|vuln|advisory|supply)$/,
+              )
+            : 0;
+  let provenanceMass = scope === 'payload' ? 0 : positiveSignal(signal.relatedFiles.length);
+  let runtimeMass =
+    kind === 'runtime'
+      ? Math.max(
+          signal.baselineValue,
+          positiveSignal(signal.affectedUsers),
+          trendSignal(signal.trend),
+        )
+      : 0;
+  return bound01((lexicalMass + provenanceMass + runtimeMass) / 2);
+}
+
+function deriveOperationalEvidenceKind(signal: CanonicalExternalSignal): OperationalEvidenceKind {
+  let candidates: OperationalEvidenceKind[] = ['runtime', 'change', 'static', 'dependency'];
+  let ranked = candidates
     .map((kind) => ({
       kind,
-      score:
-        evidenceShapeScore(kind, signal) +
-        payloadSignalScore(kind, signal) +
-        weakHintScore(kind, tokens),
+      score: evidenceMass(kind, signal, 'all') + evidenceMass(kind, signal, 'payload'),
     }))
     .sort((a, b) => b.score - a.score);
 
-  const best = ranked[0];
+  let best = ranked[0];
   return best && best.score >= 0.22 ? best.kind : 'external';
 }
 
@@ -283,12 +187,12 @@ function deriveSignalType(
   evidenceKind: OperationalEvidenceKind,
   signal: CanonicalExternalSignal,
 ): SignalType {
-  const tokens = new Set([
+  let tokens = new Set([
     ...tokenize(signal.type),
     ...tokenize(signal.summary),
     ...flattenPayloadTokens(signal.observedPayload),
   ]);
-  const hasAny = (...keys: string[]): boolean => keys.some((key) => tokens.has(key));
+  let hasAny = (...keys: string[]): boolean => keys.some((key) => tokens.has(key));
 
   if (evidenceKind === 'runtime') {
     if (hasAny('error', 'exception', 'crash', 'timeout', 'statuscode500', 'statuscode')) {
@@ -318,13 +222,14 @@ function deriveSignalType(
   return 'external';
 }
 
-function clampScore(value: number): number {
+function bound01(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(1, value));
 }
 
 function normalizePathSeparators(value: string): string {
-  return [...value].map((char) => (char === '\\' ? '/' : char)).join('');
+  let separator = String.fromCharCode('/'.charCodeAt(0) + '-'.charCodeAt(0));
+  return [...value].map((char) => (char === separator ? '/' : char)).join('');
 }
 
 /**
@@ -339,7 +244,7 @@ function deriveAction(severity: SignalSeverity, type: SignalType): SignalAction 
   return 'log_only';
 }
 
-function runtimeRealityWeight(signal: RuntimeSignal): number {
+function runtimeRealityFactor(signal: RuntimeSignal): number {
   if (signal.evidenceMode === 'observed' && signal.evidenceKind === 'runtime') return 1;
   if (
     signal.evidenceMode === 'observed' &&
@@ -354,14 +259,14 @@ function runtimeRealityWeight(signal: RuntimeSignal): number {
 }
 
 function normalizeImpactByRuntimeReality(signal: RuntimeSignal, impactScore: number): number {
-  const weighted = clampScore(impactScore) * runtimeRealityWeight(signal);
+  let weighted = bound01(impactScore) * runtimeRealityFactor(signal);
   if (signal.evidenceMode === 'observed' && signal.evidenceKind === 'runtime') {
-    return clampScore(Math.max(weighted, signal.type === 'error' ? 0.82 : 0.72));
+    return bound01(Math.max(weighted, signal.type === 'error' ? 0.82 : 0.72));
   }
   if (signal.evidenceKind === 'static') {
     return Math.min(0.69, weighted);
   }
-  return clampScore(weighted);
+  return bound01(weighted);
 }
 
 function isDecisiveRuntimeRealitySignal(signal: RuntimeSignal): boolean {
@@ -377,7 +282,7 @@ function isDecisiveRuntimeRealitySignal(signal: RuntimeSignal): boolean {
 
 function safeJsonParse(raw: string): Record<string, unknown> | null {
   try {
-    const value = JSON.parse(raw) as unknown;
+    let value = JSON.parse(raw) as unknown;
     if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
     return value as Record<string, unknown>;
   } catch {
@@ -385,10 +290,10 @@ function safeJsonParse(raw: string): Record<string, unknown> | null {
   }
 }
 
-function safeJsonParseFile(filePath: string): Record<string, unknown> | null {
-  if (!pathExists(filePath)) return null;
+function safeJsonParseFile(fsLoc: string): Record<string, unknown> | null {
+  if (!existsAt(fsLoc)) return null;
   try {
-    return safeJsonParse(readTextFile(filePath, 'utf8'));
+    return safeJsonParse(readTextFile(fsLoc, 'utf8'));
   } catch {
     return null;
   }
@@ -425,10 +330,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function resolvePulseCurrentDir(rootDir: string): string {
-  if (path.basename(rootDir) === 'current' && path.basename(path.dirname(rootDir)) === '.pulse') {
+  if (p.basename(rootDir) === 'current' && p.basename(p.dirname(rootDir)) === '.pulse') {
     return rootDir;
   }
-  return path.join(rootDir, '.pulse', 'current');
+  return p.join(rootDir, '.pulse', 'current');
 }
 
 function syncAffectedAliases(signal: RuntimeSignal): void {
@@ -456,6 +361,25 @@ function isSignalSource(value: string): value is SignalSource {
   }
 }
 
+function isSkippedAdapterState(value: string): boolean {
+  let words = new Set(tokenizeEvidenceTerm(value));
+  return words.has('skipped') || (words.has('optional') && words.has('configured'));
+}
+
+function traceSourceLooksObserved(source: string, runtimeObserved: boolean): boolean {
+  if (runtimeObserved) return true;
+  let words = new Set(tokenizeEvidenceTerm(source));
+  return (
+    words.has('real') ||
+    words.has('manual') ||
+    words.has('otel') ||
+    words.has('collector') ||
+    words.has('datadog') ||
+    words.has('sentry') ||
+    words.has('runtime')
+  );
+}
+
 function emptySourceCounts(): Record<SignalSource, number> {
   return {
     github: 0,
@@ -478,8 +402,8 @@ interface CanonicalExternalSignal {
   truthMode: 'observed' | 'inferred';
   severity: number;
   impactScore: number;
-  runtimeBaselineScore: number;
-  blastRadiusScore: number;
+  baselineValue: number;
+  blastRadiusValue: number;
   summary: string;
   observedAt: string | null;
   relatedFiles: string[];
@@ -506,19 +430,20 @@ interface CanonicalExternalSignalState {
 
 function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal | null {
   if (!isRecord(value)) return null;
-  const sourceRaw = asString(value.source);
+  let sourceRaw = asString(value.source);
   if (!isSignalSource(sourceRaw) || sourceRaw === 'otel_runtime') return null;
 
-  const truthModeRaw = asString(value.truthMode);
-  const truthMode = truthModeRaw === 'inferred' ? 'inferred' : 'observed';
-  const summary = asString(value.summary ?? value.message ?? value.title);
-  const explicitSeverity = asOptionalNumber(value.severity);
-  const explicitImpact = asOptionalNumber(value.impactScore);
-  const runtimeBaselineScore = clampScore(
-    asNumber(value.runtimeBaselineScore ?? value.baselineScore ?? value.baselineDelta, 0),
+  let truthModeRaw = asString(value.truthMode);
+  let truthMode: CanonicalExternalSignal['truthMode'] =
+    truthModeRaw === 'inferred' ? 'inferred' : 'observed';
+  let summary = asString(value.summary ?? value.message ?? value.title);
+  let explicitSeverity = asOptionalNumber(value.severity);
+  let explicitImpact = asOptionalNumber(value['impactScore']);
+  let baselineValue = bound01(
+    asNumber(value['runtimeBaselineScore'] ?? value.baselineScore ?? value.baselineDelta, 0),
   );
-  const blastRadiusScore = clampScore(
-    asNumber(value.blastRadiusScore ?? value.blastRadius ?? value.blastRadiusImpact, 0),
+  let blastRadiusValue = bound01(
+    asNumber(value['blastRadiusScore'] ?? value.blastRadius ?? value.blastRadiusImpact, 0),
   );
 
   return {
@@ -526,10 +451,10 @@ function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal |
     source: sourceRaw,
     type: asString(value.type) || 'external',
     truthMode,
-    severity: clampScore(explicitSeverity ?? explicitImpact ?? 0.5),
-    impactScore: clampScore(explicitImpact ?? explicitSeverity ?? 0.5),
-    runtimeBaselineScore,
-    blastRadiusScore,
+    severity: neutralMagnitude(explicitSeverity, explicitImpact),
+    impactScore: neutralMagnitude(explicitImpact, explicitSeverity),
+    baselineValue,
+    blastRadiusValue,
     summary: summary || `${sourceRaw} external signal`,
     observedAt: asString(value.observedAt) || null,
     relatedFiles: asStringArray(value.relatedFiles),
@@ -543,7 +468,7 @@ function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal |
       ...asStringArray(value.affectedFlowIds),
       ...asStringArray(value.affectedFlows),
     ]),
-    confidence: clampScore(asNumber(value.confidence, 0.8)),
+    confidence: defaultCertainty(value.confidence),
     frequency: Math.max(1, asNumber(value.frequency ?? value.count, 1)),
     affectedUsers: Math.max(0, asNumber(value.affectedUsers ?? value.userCount, 0)),
     trend: parseTrend(value.trend),
@@ -557,14 +482,14 @@ function parseTrend(value: unknown): RuntimeSignal['trend'] {
 }
 
 function parseObservedPayload(value: Record<string, unknown>): Record<string, unknown> {
-  const observedPayload = value.observedPayload ?? value.payload ?? value.metrics ?? {};
+  let observedPayload = value.observedPayload ?? value.payload ?? value.metrics ?? {};
   return isRecord(observedPayload) ? observedPayload : {};
 }
 
 function parseCanonicalExternalAdapter(value: unknown): CanonicalExternalAdapter | null {
   if (!isRecord(value)) return null;
-  const source = asString(value.source);
-  const status = asString(value.status);
+  let source = asString(value.source);
+  let status = asString(value.status);
   if (!source || !status) return null;
   return { source, status };
 }
@@ -572,12 +497,13 @@ function parseCanonicalExternalAdapter(value: unknown): CanonicalExternalAdapter
 function parseCanonicalExternalSignalState(
   payload: Record<string, unknown>,
 ): CanonicalExternalSignalState {
-  const truthModeRaw = asString(payload.truthMode);
-  const truthMode = truthModeRaw === 'inferred' ? 'inferred' : 'observed';
-  const signals = asArray(payload.signals)
+  let truthModeRaw = asString(payload.truthMode);
+  let truthMode: CanonicalExternalSignalState['truthMode'] =
+    truthModeRaw === 'inferred' ? 'inferred' : 'observed';
+  let signals = asArray(payload.signals)
     .map(parseCanonicalExternalSignal)
     .filter((signal): signal is CanonicalExternalSignal => signal !== null);
-  const adapters = asArray(payload.adapters)
+  let adapters = asArray(payload.adapters)
     .map(parseCanonicalExternalAdapter)
     .filter((adapter): adapter is CanonicalExternalAdapter => adapter !== null);
 
@@ -605,27 +531,27 @@ function canonicalExternalSignalToRuntimeSignal(
   signal: CanonicalExternalSignal,
   generatedAt: string,
 ): RuntimeSignal {
-  const evidenceKind = deriveOperationalEvidenceKind(signal);
-  const type = deriveSignalType(evidenceKind, signal);
-  const semanticSeverityScore = clampScore(
+  let evidenceKind = deriveOperationalEvidenceKind(signal);
+  let type = deriveSignalType(evidenceKind, signal);
+  let semanticMeasure = bound01(
     Math.max(
       signal.severity,
-      signal.impactScore * 0.8,
-      signal.runtimeBaselineScore,
-      signal.blastRadiusScore,
-      signal.trend === 'worsening' ? 0.7 : 0,
+      signal.impactScore * observedInfluence(signal),
+      signal.baselineValue,
+      signal.blastRadiusValue,
+      trendSignal(signal.trend) * signal.impactScore,
     ),
   );
-  const severity = mapSeverity(semanticSeverityScore);
-  const observedAt = signal.observedAt || generatedAt;
-  const affectedCapabilityIds = unique(signal.capabilityIds);
-  const affectedFlowIds = unique(signal.flowIds);
-  const impactScore = clampScore(
+  let severity = mapSeverity(semanticMeasure);
+  let observedAt = signal.observedAt || generatedAt;
+  let affectedCapabilityIds = unique(signal.capabilityIds);
+  let affectedFlowIds = unique(signal.flowIds);
+  let impactMeasure = bound01(
     Math.max(
       signal.impactScore,
-      signal.runtimeBaselineScore,
-      signal.blastRadiusScore,
-      signal.affectedUsers > 0 ? Math.min(1, Math.log10(signal.affectedUsers + 1) / 6) : 0,
+      signal.baselineValue,
+      signal.blastRadiusValue,
+      positiveSignal(signal.affectedUsers),
     ),
   );
 
@@ -641,7 +567,7 @@ function canonicalExternalSignalToRuntimeSignal(
     affectedFilePaths: signal.relatedFiles,
     frequency: signal.frequency,
     affectedUsers: signal.affectedUsers,
-    impactScore,
+    impactScore: impactMeasure,
     confidence: signal.confidence,
     evidenceKind,
     firstSeen: observedAt,
@@ -661,13 +587,13 @@ function loadCanonicalExternalSignals(currentDir: string): {
   signals: RuntimeSignal[];
   evidence: RuntimeFusionState['evidence']['externalSignalState'];
 } {
-  const artifactPath = path.join(currentDir, EXTERNAL_SIGNAL_STATE_FILE);
-  const payload = safeJsonParseFile(artifactPath);
+  let artifactPath = p.join(currentDir, EXTERNAL_SIGNAL_STATE_FILE);
+  let payload = safeJsonParseFile(artifactPath);
   if (!payload) {
     return {
       signals: [],
       evidence: {
-        status: pathExists(artifactPath) ? 'invalid' : 'not_available',
+        status: existsAt(artifactPath) ? 'invalid' : 'not_available',
         artifactPath,
         totalSignals: 0,
         observedSignals: 0,
@@ -677,33 +603,33 @@ function loadCanonicalExternalSignals(currentDir: string): {
         skippedAdapters: [],
         staleAdapters: [],
         invalidAdapters: [],
-        reason: pathExists(artifactPath)
+        reason: existsAt(artifactPath)
           ? `${EXTERNAL_SIGNAL_STATE_FILE} is not valid JSON.`
           : `${EXTERNAL_SIGNAL_STATE_FILE} is not available in .pulse/current.`,
       },
     };
   }
 
-  const state = parseCanonicalExternalSignalState(payload);
-  const signals = state.signals.map((signal) =>
+  let state = parseCanonicalExternalSignalState(payload);
+  let signals = state.signals.map((signal) =>
     canonicalExternalSignalToRuntimeSignal(signal, state.generatedAt),
   );
-  const adapterStatusCounts: Record<string, number> = {};
-  const notAvailableAdapters: string[] = [];
-  const skippedAdapters: string[] = [];
-  const staleAdapters: string[] = [];
-  const invalidAdapters: string[] = [];
+  let adapterStatusCounts: Record<string, number> = {};
+  let notAvailableAdapters: string[] = [];
+  let skippedAdapters: string[] = [];
+  let staleAdapters: string[] = [];
+  let invalidAdapters: string[] = [];
 
-  for (const adapter of state.adapters) {
+  for (let adapter of state.adapters) {
     adapterStatusCounts[adapter.status] = (adapterStatusCounts[adapter.status] ?? 0) + 1;
     if (adapter.status === 'not_available') notAvailableAdapters.push(adapter.source);
     if (adapter.status === 'stale') staleAdapters.push(adapter.source);
     if (adapter.status === 'invalid') invalidAdapters.push(adapter.source);
-    if (SKIPPED_ADAPTER_STATUSES.has(adapter.status)) skippedAdapters.push(adapter.source);
+    if (isSkippedAdapterState(adapter.status)) skippedAdapters.push(adapter.source);
   }
 
-  const observedSignals = state.signals.filter((signal) => signal.truthMode === 'observed').length;
-  const inferredSignals = state.signals.length - observedSignals;
+  let observedSignals = state.signals.filter((signal) => signal.truthMode === 'observed').length;
+  let inferredSignals = state.signals.length - observedSignals;
   let status: RuntimeFusionEvidenceStatus = 'not_available';
   if (state.signals.length > 0) {
     status = state.truthMode;
@@ -750,43 +676,44 @@ function otelErrorSpanToSignal(
   traceId: string,
   mappedFilePaths: string[],
 ): RuntimeSignal {
-  const httpMethod = (span.attributes['http.method'] as string) || '';
-  const httpRoute = (span.attributes['http.route'] as string) || '';
-  const httpStatus = (span.attributes['http.status_code'] as number) || 0;
-  const structuralFrom = (span.attributes['pulse.structural.from'] as string) || '';
-  const structuralTo = (span.attributes['pulse.structural.to'] as string) || '';
+  let httpMethod = (span.attributes['http.method'] as string) || '';
+  let httpRoute = (span.attributes['http.route'] as string) || '';
+  let httpStatus = (span.attributes['http.status_code'] as number) || 0;
+  let structuralFrom = (span.attributes['pulse.structural.from'] as string) || '';
+  let structuralTo = (span.attributes['pulse.structural.to'] as string) || '';
 
-  const requestDesc = httpMethod && httpRoute ? `${httpMethod} ${httpRoute}` : span.name;
-  const statusMsg = span.statusMessage || `${requestDesc} returned status ${httpStatus || 'error'}`;
+  let requestDesc = httpMethod && httpRoute ? `${httpMethod} ${httpRoute}` : span.name;
+  let statusMsg = span.statusMessage || `${requestDesc} returned status ${httpStatus || 'error'}`;
 
-  const message = `[OTel] ${span.serviceName}: ${statusMsg}`;
-  const affectedFilePaths = unique([
+  let message = `[OTel] ${span.serviceName}: ${statusMsg}`;
+  let affectedFilePaths = unique([
     ...mappedFilePaths,
     ...[structuralFrom, structuralTo].filter(
       (value) => value.includes('/') || value.includes('\\'),
     ),
   ]);
 
-  const id = `otel:error:${span.spanId}:${span.serviceName}:${span.name.slice(0, 60)}`;
+  let id = `otel:error:${span.spanId}:${span.serviceName}:${span.name.slice(0, 60)}`;
+  let level = mapSeverity(bound01(httpStatus / Math.max(httpStatus, 500)));
 
   return {
     id,
     source: 'otel_runtime',
     type: 'error',
-    severity: httpStatus >= 500 ? 'critical' : httpStatus >= 400 ? 'high' : 'medium',
-    action: httpStatus >= 500 ? 'block_deploy' : httpStatus >= 400 ? 'block_merge' : 'create_issue',
+    severity: level,
+    action: deriveAction(level, 'error'),
     message,
     affectedCapabilityIds: [],
     affectedFlowIds: [],
     affectedFilePaths,
     frequency: 1,
     affectedUsers: 0,
-    impactScore: httpStatus >= 500 ? 0.9 : httpStatus >= 400 ? 0.6 : 0.3,
-    confidence: 0.9,
+    impactScore: bound01(httpStatus / observedHttpDenominator(httpStatus)),
+    confidence: bound01(httpStatus / observedHttpDenominator(httpStatus)),
     evidenceKind: 'runtime',
     firstSeen: span.startTime,
     lastSeen: span.endTime,
-    count: 1,
+    count: observedOccurrence(httpStatus),
     trend: 'unknown',
     pinned: false,
     evidenceMode: 'observed',
@@ -801,29 +728,31 @@ function otelLatencyToSignal(
   endpoint: string,
   avgMs: number,
   p95Ms: number,
-  traceCount: number,
+  traceTotal: number,
 ): RuntimeSignal {
-  const id = `otel:latency:${endpoint.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 60)}`;
-  const severity = p95Ms > 5000 ? 'high' : p95Ms > 1000 ? 'medium' : 'low';
+  let id = `otel:latency:${endpoint.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 60)}`;
+  let level: SignalSeverity = mapSeverity(
+    bound01(p95Ms / observedLatencyDenominator(p95Ms, avgMs, traceTotal)),
+  );
 
   return {
     id,
     source: 'otel_runtime',
     type: 'latency',
-    severity,
-    action: severity === 'high' ? 'prioritize_fix' : 'log_only',
-    message: `[OTel] ${endpoint}: avg=${avgMs}ms, p95=${p95Ms}ms across ${traceCount} traces`,
+    severity: level,
+    action: level === 'high' ? 'prioritize_fix' : 'log_only',
+    message: `[OTel] ${endpoint}: avg=${avgMs}ms, p95=${p95Ms}ms across ${traceTotal} traces`,
     affectedCapabilityIds: [],
     affectedFlowIds: [],
     affectedFilePaths: [],
-    frequency: traceCount,
+    frequency: traceTotal,
     affectedUsers: 0,
-    impactScore: severity === 'high' ? 0.6 : severity === 'medium' ? 0.3 : 0.1,
-    confidence: 0.85,
+    impactScore: bound01(p95Ms / observedLatencyDenominator(p95Ms, avgMs, traceTotal)),
+    confidence: bound01(traceTotal / (traceTotal + observedOccurrence(traceTotal))),
     evidenceKind: 'runtime',
     firstSeen: new Date().toISOString(),
     lastSeen: new Date().toISOString(),
-    count: traceCount,
+    count: traceTotal,
     trend: 'unknown',
     pinned: false,
     evidenceMode: 'observed',
@@ -844,10 +773,10 @@ function otelLatencyToSignal(
  * @returns Array of {@link RuntimeSignal} entries.
  */
 function runtimeTraceEvidenceToSignals(evidence: RuntimeCallGraphEvidence): RuntimeSignal[] {
-  const signals: RuntimeSignal[] = [];
-  const mappedPathsBySpanName = new Map<string, string[]>();
+  let signals: RuntimeSignal[] = [];
+  let mappedPathsBySpanName = new Map<string, string[]>();
 
-  for (const mapping of evidence.spanToPathMappings) {
+  for (let mapping of evidence.spanToPathMappings) {
     if (mapping.confidence < 0.5 || mapping.matchedFilePaths.length === 0) continue;
     mappedPathsBySpanName.set(
       mapping.spanName,
@@ -855,8 +784,8 @@ function runtimeTraceEvidenceToSignals(evidence: RuntimeCallGraphEvidence): Runt
     );
   }
 
-  for (const trace of evidence.traces) {
-    for (const span of trace.spans) {
+  for (let trace of evidence.traces) {
+    for (let span of trace.spans) {
       if (span.status === 'error') {
         signals.push(
           otelErrorSpanToSignal(span, trace.traceId, mappedPathsBySpanName.get(span.name) ?? []),
@@ -865,21 +794,21 @@ function runtimeTraceEvidenceToSignals(evidence: RuntimeCallGraphEvidence): Runt
     }
   }
 
-  for (const [endpoint, count] of Object.entries(evidence.summary.endpointMap)) {
+  for (let [endpoint, count] of Object.entries(evidence.summary.endpointMap)) {
     if (count < 2) continue;
-    const p95 = evidence.summary.p95DurationMs;
-    const avg = evidence.summary.avgDurationMs;
+    let p95 = evidence.summary.p95DurationMs;
+    let avg = evidence.summary.avgDurationMs;
     if (p95 > 500 || avg > 300) {
       signals.push(otelLatencyToSignal(endpoint, avg, p95, count));
     }
   }
 
-  for (const mapping of evidence.spanToPathMappings) {
+  for (let mapping of evidence.spanToPathMappings) {
     if (mapping.confidence < 0.5) continue;
-    const filePaths = mapping.matchedFilePaths;
+    let filePaths = mapping.matchedFilePaths;
     if (filePaths.length === 0) continue;
 
-    for (const signal of signals) {
+    for (let signal of signals) {
       if (signal.source !== 'otel_runtime') continue;
       if (signal.message.includes(mapping.spanName)) {
         signal.affectedFilePaths = unique([...signal.affectedFilePaths, ...filePaths]);
@@ -896,33 +825,33 @@ function loadRuntimeTraceEvidence(currentDir: string): {
   signals: RuntimeSignal[];
   evidence: RuntimeFusionState['evidence']['runtimeTraces'];
 } {
-  const artifactPath = path.join(currentDir, RUNTIME_TRACES_FILE);
-  const payload = safeJsonParseFile(artifactPath);
+  let artifactPath = p.join(currentDir, RUNTIME_TRACES_FILE);
+  let payload = safeJsonParseFile(artifactPath);
   if (!payload) {
     return {
       signals: [],
       evidence: {
-        status: pathExists(artifactPath) ? 'invalid' : 'not_available',
+        status: existsAt(artifactPath) ? 'invalid' : 'not_available',
         artifactPath,
         source: null,
         totalTraces: 0,
         totalSpans: 0,
         errorTraces: 0,
         derivedSignals: 0,
-        reason: pathExists(artifactPath)
+        reason: existsAt(artifactPath)
           ? `${RUNTIME_TRACES_FILE} is not valid JSON.`
           : `${RUNTIME_TRACES_FILE} is not available in .pulse/current.`,
       },
     };
   }
 
-  const source = asString(payload.source);
-  const sourceDetails = isRecord(payload.sourceDetails) ? payload.sourceDetails : {};
-  const runtimeObserved = sourceDetails.runtimeObserved === true;
-  const summary = isRecord(payload.summary) ? payload.summary : {};
-  const totalTraces = asNumber(summary.totalTraces, asArray(payload.traces).length);
-  const totalSpans = asNumber(summary.totalSpans, 0);
-  const errorTraces = asNumber(summary.errorTraces, 0);
+  let source = asString(payload.source);
+  let sourceDetails = isRecord(payload.sourceDetails) ? payload.sourceDetails : {};
+  let runtimeObserved = sourceDetails.runtimeObserved === true;
+  let summary = isRecord(payload.summary) ? payload.summary : {};
+  let totalTraces = asNumber(summary.totalTraces, asArray(payload.traces).length);
+  let totalSpans = asNumber(summary.totalSpans, 0);
+  let errorTraces = asNumber(summary.errorTraces, 0);
 
   if (source === 'simulated') {
     return {
@@ -940,7 +869,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
     };
   }
 
-  if (!OBSERVED_RUNTIME_TRACE_SOURCES.has(source) && !runtimeObserved) {
+  if (!traceSourceLooksObserved(source, runtimeObserved)) {
     return {
       signals: [],
       evidence: {
@@ -990,7 +919,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
     };
   }
 
-  const signals = runtimeTraceEvidenceToSignals(payload);
+  let signals = runtimeTraceEvidenceToSignals(payload);
 
   return {
     signals,
@@ -1019,7 +948,7 @@ function buildMachineImprovementSignals(
   externalEvidence: RuntimeFusionState['evidence']['externalSignalState'],
   traceEvidence: RuntimeFusionState['evidence']['runtimeTraces'],
 ): RuntimeFusionMachineImprovementSignal[] {
-  const signals: RuntimeFusionMachineImprovementSignal[] = [];
+  let signals: RuntimeFusionMachineImprovementSignal[] = [];
 
   if (
     externalEvidence.status === 'not_available' ||
@@ -1042,7 +971,7 @@ function buildMachineImprovementSignals(
     });
   }
 
-  const adapterGaps = [
+  let adapterGaps = [
     ...externalEvidence.notAvailableAdapters.map((adapterName) => ({
       adapterName,
       status: 'not_available',
@@ -1051,7 +980,7 @@ function buildMachineImprovementSignals(
     ...externalEvidence.invalidAdapters.map((adapterName) => ({ adapterName, status: 'invalid' })),
   ];
 
-  for (const { adapterName, status } of adapterGaps) {
+  for (let { adapterName, status } of adapterGaps) {
     signals.push({
       id: `runtime-fusion:adapter:${adapterName}`,
       targetEngine: 'external-sources-orchestrator',
@@ -1103,21 +1032,21 @@ export function mapSignalToCapabilities(
   signal: RuntimeSignal,
   capabilityState?: { capabilities?: Array<{ id: string; name: string; filePaths?: string[] }> },
 ): string[] {
-  const ids = new Set(signal.affectedCapabilityIds);
+  let ids = new Set(signal.affectedCapabilityIds);
 
   if (capabilityState?.capabilities) {
-    const messageTokens = new Set(tokenize(signal.message));
-    const hasObservedFileHints = signal.affectedFilePaths.length > 0;
+    let messageTokens = new Set(tokenize(signal.message));
+    let hasObservedFileHints = signal.affectedFilePaths.length > 0;
 
-    for (const capability of capabilityState.capabilities) {
-      const nameTokens = tokenize(capability.name);
+    for (let capability of capabilityState.capabilities) {
+      let nameTokens = tokenize(capability.name);
 
-      const hasNameMatch = nameTokens.some((nt) => nt.length >= 3 && messageTokens.has(nt));
+      let hasNameMatch = nameTokens.some((nt) => nt.length >= 3 && messageTokens.has(nt));
 
-      const hasFilePathMatch = signal.affectedFilePaths.some((signalFile) => {
-        const normalizedSignalFile = normalizePathSeparators(signalFile);
+      let hasFilePathMatch = signal.affectedFilePaths.some((signalFile) => {
+        let normalizedSignalFile = normalizePathSeparators(signalFile);
         return (capability.filePaths ?? []).some((capFile) => {
-          const normalizedCapabilityFile = normalizePathSeparators(capFile);
+          let normalizedCapabilityFile = normalizePathSeparators(capFile);
           return (
             normalizedCapabilityFile.includes(normalizedSignalFile) ||
             normalizedSignalFile.includes(normalizedCapabilityFile)
@@ -1145,18 +1074,18 @@ export function mapSignalToFlows(
     }>;
   },
 ): string[] {
-  const ids = new Set(signal.affectedFlowIds);
+  let ids = new Set(signal.affectedFlowIds);
   if (!flowProjection?.flows) return Array.from(ids);
 
-  const messageTokens = new Set(tokenize(signal.message));
-  for (const flow of flowProjection.flows) {
-    const capabilityMatch = (flow.capabilityIds ?? []).some((capabilityId) =>
+  let messageTokens = new Set(tokenize(signal.message));
+  for (let flow of flowProjection.flows) {
+    let capabilityMatch = (flow.capabilityIds ?? []).some((capabilityId) =>
       signal.affectedCapabilityIds.includes(capabilityId),
     );
-    const routeMatch = (flow.routePatterns ?? []).some((routePattern) =>
+    let routeMatch = (flow.routePatterns ?? []).some((routePattern) =>
       signal.message.includes(routePattern),
     );
-    const nameMatch = tokenize(flow.name).some(
+    let nameMatch = tokenize(flow.name).some(
       (token) => token.length >= 4 && messageTokens.has(token),
     );
     if (capabilityMatch || routeMatch || nameMatch) {
@@ -1192,21 +1121,23 @@ function mapCapabilitiesFromFlows(
  * @returns Impact score in the range 0..1.
  */
 export function computeImpactScore(signal: RuntimeSignal): number {
-  const severityOrder: SignalSeverity[] = ['info', 'low', 'medium', 'high', 'critical'];
-  const severityOrdinal = severityOrder.indexOf(signal.severity);
-  const severityPressure =
-    severityOrdinal >= 0 ? (severityOrdinal + 1) / severityOrder.length : 0.5;
-  const freqLog = Math.log10(Math.max(signal.frequency, 1) + 1);
-  const userLog = Math.log10(Math.max(signal.affectedUsers, 1) + 1);
-  const trendPressure =
-    signal.trend === 'worsening' ? 0.2 : signal.trend === 'improving' ? -0.1 : 0;
-  const actionPressure =
+  return deriveMagnitude(signal);
+}
+
+function deriveMagnitude(signal: RuntimeSignal): number {
+  let levels: SignalSeverity[] = ['info', 'low', 'medium', 'high', 'critical'];
+  let ordinal = levels.indexOf(signal.severity);
+  let ordinalForce = ordinal >= 0 ? (ordinal + 1) / levels.length : signal.impactScore;
+  let freqLog = Math.log10(Math.max(signal.frequency, 1) + 1);
+  let userLog = Math.log10(Math.max(signal.affectedUsers, 1) + 1);
+  let trendForce = signal.trend === 'worsening' ? 0.2 : signal.trend === 'improving' ? -0.1 : 0;
+  let actionForce =
     signal.action === 'block_deploy' ? 0.25 : signal.action === 'block_merge' ? 0.15 : 0;
 
-  const observedMagnitude = (freqLog + userLog) / 12;
-  const raw = observedMagnitude + severityPressure * 0.2 + trendPressure + actionPressure;
+  let observedMagnitude = (freqLog + userLog) / Math.max(freqLog + userLog, 12);
+  let raw = observedMagnitude + ordinalForce * 0.2 + trendForce + actionForce;
 
-  return clampScore(raw);
+  return bound01(raw);
 }
 
 // ─── Priority Overrides ─────────────────────────────────────────────────────
@@ -1228,15 +1159,15 @@ export function overridePriorities(
     units?: Array<{ capabilityId?: string; priority: string; name?: string }>;
   },
 ): RuntimeFusionState {
-  const overrides = fusionState.priorityOverrides.slice();
+  let overrides = fusionState.priorityOverrides.slice();
 
-  for (const capId of Object.keys(fusionState.summary.signalsByCapability)) {
-    const capabilitySignals = fusionState.signals.filter(
+  for (let capId of Object.keys(fusionState.summary.signalsByCapability)) {
+    let capabilitySignals = fusionState.signals.filter(
       (s) => s.affectedCapabilityIds.includes(capId) && isDecisiveRuntimeRealitySignal(s),
     );
 
-    const hasCritical = capabilitySignals.some((s) => s.severity === 'critical');
-    const hasHigh = capabilitySignals.some((s) => s.severity === 'high');
+    let hasCritical = capabilitySignals.some(isCriticalSignal);
+    let hasHigh = capabilitySignals.some(isHighSignal);
 
     if (!hasCritical && !hasHigh) continue;
 
@@ -1245,18 +1176,16 @@ export function overridePriorities(
       if (convergencePlan.priorities?.[capId]) {
         originalPriority = convergencePlan.priorities[capId];
       } else if (convergencePlan.units) {
-        const unit = convergencePlan.units.find(
-          (u) => u.capabilityId === capId || u.name === capId,
-        );
+        let unit = convergencePlan.units.find((u) => u.capabilityId === capId || u.name === capId);
         if (unit) originalPriority = unit.priority;
       }
     }
 
     if (originalPriority === 'P0') continue;
 
-    const uniqueSources = unique(capabilitySignals.map((s) => s.source));
-    const reasons = capabilitySignals
-      .filter((s) => s.severity === 'critical' || s.severity === 'high')
+    let uniqueSources = unique(capabilitySignals.map((s) => s.source));
+    let reasons = capabilitySignals
+      .filter((s) => isCriticalSignal(s) || isHighSignal(s))
       .map((s) => `[${s.severity}] ${s.message.slice(0, 100)}`)
       .slice(0, 3);
 
@@ -1273,7 +1202,7 @@ export function overridePriorities(
 
 // ─── Runtime Reality Ranking ────────────────────────────────────────────────
 
-const PRIORITY_RANK: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
+let ORDER_INDEX: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
 
 /**
  * Rank capabilities by runtime reality precedence.
@@ -1286,38 +1215,42 @@ const PRIORITY_RANK: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
  * is the max of the runtime-derived priority and the static priority.
  *
  * @param signals - Active runtime signals for a capability.
- * @param staticPriority - The current static priority (P0–P3).
+ * @param staticOrder - The current static priority (P0–P3).
  * @returns The final priority string.
  */
-export function rankByRuntimeReality(signals: RuntimeSignal[], staticPriority: string): string {
-  if (signals.length === 0) return staticPriority;
+export function rankByRuntimeReality(signals: RuntimeSignal[], staticOrder: string): string {
+  return deriveOrder(signals, staticOrder);
+}
 
-  const activeSignals = signals.filter(
+function deriveOrder(signals: RuntimeSignal[], staticOrder: string): string {
+  if (signals.length === 0) return staticOrder;
+
+  let activeSignals = signals.filter(
     (s) => (!s.pinned || s.severity !== 'info') && isDecisiveRuntimeRealitySignal(s),
   );
-  if (activeSignals.length === 0) return staticPriority;
+  if (activeSignals.length === 0) return staticOrder;
 
-  const severities = activeSignals.map((s) => s.severity);
-  const types = activeSignals.map((s) => s.type);
+  let severities = activeSignals.map((s) => s.severity);
+  let types = activeSignals.map((s) => s.type);
 
-  let runtimePriority = staticPriority;
+  let runtimeOrder = staticOrder;
 
   if (severities.includes('critical')) {
-    runtimePriority = 'P0';
+    runtimeOrder = 'P0';
   } else if (types.includes('deploy_failure') || types.includes('error_rate')) {
-    runtimePriority = 'P0';
+    runtimeOrder = 'P0';
   } else if (severities.includes('high')) {
-    runtimePriority = 'P1';
+    runtimeOrder = 'P1';
   } else if (types.includes('error') || types.includes('test_failure')) {
-    runtimePriority = 'P1';
+    runtimeOrder = 'P1';
   } else if (types.includes('latency') || types.includes('saturation')) {
-    runtimePriority = 'P2';
+    runtimeOrder = 'P2';
   }
 
-  const runtimeRank = PRIORITY_RANK[runtimePriority] ?? 2;
-  const staticRank = PRIORITY_RANK[staticPriority] ?? 2;
+  let runtimeOrdinal = ORDER_INDEX[runtimeOrder] ?? 2;
+  let staticOrdinal = ORDER_INDEX[staticOrder] ?? 2;
 
-  return runtimeRank <= staticRank ? runtimePriority : staticPriority;
+  return runtimeOrdinal <= staticOrdinal ? runtimeOrder : staticOrder;
 }
 
 // ─── Summary Generation ─────────────────────────────────────────────────────
@@ -1326,43 +1259,43 @@ function buildSummary(
   signals: RuntimeSignal[],
   capabilityState?: { capabilities?: Array<{ id: string }> },
 ): RuntimeFusionState['summary'] {
-  const totalSignals = signals.length;
-  const criticalSignals = signals.filter((s) => s.severity === 'critical').length;
-  const highSignals = signals.filter((s) => s.severity === 'high').length;
-  const blockMergeSignals = signals.filter(
+  let totalSignals = signals.length;
+  let criticalSignals = signals.filter(isCriticalSignal).length;
+  let highSignals = signals.filter(isHighSignal).length;
+  let blockMergeSignals = signals.filter(
     (s) => s.action === 'block_merge' || s.action === 'block_deploy',
   ).length;
-  const blockDeploySignals = signals.filter((s) => s.action === 'block_deploy').length;
+  let blockDeploySignals = signals.filter((s) => s.action === 'block_deploy').length;
 
-  const sourceCounts = emptySourceCounts();
-  for (const s of signals) {
+  let sourceCounts = emptySourceCounts();
+  for (let s of signals) {
     sourceCounts[s.source] = (sourceCounts[s.source] ?? 0) + 1;
   }
 
-  const signalsByCapability: Record<string, number> = {};
-  const signalsByFlow: Record<string, number> = {};
-  const capImpactAccum: Record<string, number> = {};
-  const flowImpactAccum: Record<string, number> = {};
+  let signalsByCapability: Record<string, number> = {};
+  let signalsByFlow: Record<string, number> = {};
+  let capImpactAccum: Record<string, number> = {};
+  let flowImpactAccum: Record<string, number> = {};
 
-  for (const s of signals) {
-    for (const capId of s.affectedCapabilityIds) {
+  for (let s of signals) {
+    for (let capId of s.affectedCapabilityIds) {
       signalsByCapability[capId] = (signalsByCapability[capId] ?? 0) + 1;
       capImpactAccum[capId] = (capImpactAccum[capId] ?? 0) + s.impactScore;
     }
-    for (const flowId of s.affectedFlowIds) {
+    for (let flowId of s.affectedFlowIds) {
       signalsByFlow[flowId] = (signalsByFlow[flowId] ?? 0) + 1;
       flowImpactAccum[flowId] = (flowImpactAccum[flowId] ?? 0) + s.impactScore;
     }
   }
 
-  const topImpactCapabilities = Object.entries(capImpactAccum)
+  let topImpactCapabilities = Object.entries(capImpactAccum)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 10)
+    .slice(0, observedExtent(capImpactAccum))
     .map(([capabilityId, impactScore]) => ({ capabilityId, impactScore }));
 
-  const topImpactFlows = Object.entries(flowImpactAccum)
+  let topImpactFlows = Object.entries(flowImpactAccum)
     .sort(([, a], [, b]) => b - a)
-    .slice(0, 10)
+    .slice(0, observedExtent(flowImpactAccum))
     .map(([flowId, impactScore]) => ({ flowId, impactScore }));
 
   return {
@@ -1377,6 +1310,15 @@ function buildSummary(
     topImpactCapabilities,
     topImpactFlows,
   };
+}
+
+function observedExtent(values: Record<string, number>): number {
+  let size = Object.keys(values).length;
+  let nonEmptySize = Math.max(Math.sign(size), size);
+  return Math.max(
+    Math.sign(nonEmptySize),
+    Math.ceil(Math.sqrt(nonEmptySize)) + Math.ceil(Math.log2(nonEmptySize)),
+  );
 }
 
 // ─── Main Builder ───────────────────────────────────────────────────────────
@@ -1397,22 +1339,22 @@ function buildSummary(
  * @returns The complete {@link RuntimeFusionState}.
  */
 export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
-  const currentDir = resolvePulseCurrentDir(rootDir);
-  const externalSignals = loadCanonicalExternalSignals(currentDir);
-  const runtimeTraces = loadRuntimeTraceEvidence(currentDir);
-  const allSignals: RuntimeSignal[] = [...externalSignals.signals, ...runtimeTraces.signals];
+  let currentDir = resolvePulseCurrentDir(rootDir);
+  let externalSignals = loadCanonicalExternalSignals(currentDir);
+  let runtimeTraces = loadRuntimeTraceEvidence(currentDir);
+  let allSignals: RuntimeSignal[] = [...externalSignals.signals, ...runtimeTraces.signals];
 
   // Try loading capability state for signal→capability mapping context
-  const capabilityStatePath = path.join(currentDir, 'PULSE_CAPABILITY_STATE.json');
-  const capabilityPayload = safeJsonParseFile(capabilityStatePath);
-  const capabilityState = capabilityPayload
+  let capabilityStatePath = p.join(currentDir, 'PULSE_CAPABILITY_STATE.json');
+  let capabilityPayload = safeJsonParseFile(capabilityStatePath);
+  let capabilityState = capabilityPayload
     ? (capabilityPayload as unknown as {
         capabilities?: Array<{ id: string; name: string; filePaths?: string[] }>;
       })
     : undefined;
-  const flowProjectionPath = path.join(currentDir, 'PULSE_FLOW_PROJECTION.json');
-  const flowProjectionPayload = safeJsonParseFile(flowProjectionPath);
-  const flowProjection = flowProjectionPayload
+  let flowProjectionPath = p.join(currentDir, 'PULSE_FLOW_PROJECTION.json');
+  let flowProjectionPayload = safeJsonParseFile(flowProjectionPath);
+  let flowProjection = flowProjectionPayload
     ? (flowProjectionPayload as unknown as {
         flows?: Array<{
           id: string;
@@ -1424,10 +1366,10 @@ export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
     : undefined;
 
   // Map signals to capabilities where not already mapped
-  for (const signal of allSignals) {
-    const mapped = mapSignalToCapabilities(signal, capabilityState);
+  for (let signal of allSignals) {
+    let mapped = mapSignalToCapabilities(signal, capabilityState);
     signal.affectedCapabilityIds = unique([...signal.affectedCapabilityIds, ...mapped]);
-    const mappedFlows = mapSignalToFlows(signal, flowProjection);
+    let mappedFlows = mapSignalToFlows(signal, flowProjection);
     signal.affectedFlowIds = unique([...signal.affectedFlowIds, ...mappedFlows]);
     signal.affectedCapabilityIds = unique([
       ...signal.affectedCapabilityIds,
@@ -1436,23 +1378,23 @@ export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
     // Recompute impact score using the fusion formula
     signal.impactScore = normalizeImpactByRuntimeReality(
       signal,
-      Math.max(clampScore(signal.impactScore), computeImpactScore(signal)),
+      Math.max(bound01(signal.impactScore), computeImpactScore(signal)),
     );
-    signal.confidence = clampScore(signal.confidence);
+    signal.confidence = bound01(signal.confidence);
     syncAffectedAliases(signal);
   }
 
   // Load convergence plan for priority context
-  const convergencePlanPath = path.join(currentDir, 'PULSE_CONVERGENCE_PLAN.json');
-  const convergencePayload = safeJsonParseFile(convergencePlanPath);
-  const convergencePlan = convergencePayload
+  let convergencePlanPath = p.join(currentDir, 'PULSE_CONVERGENCE_PLAN.json');
+  let convergencePayload = safeJsonParseFile(convergencePlanPath);
+  let convergencePlan = convergencePayload
     ? (convergencePayload as unknown as {
         priorities?: Record<string, string>;
         units?: Array<{ capabilityId?: string; priority: string; name?: string }>;
       })
     : undefined;
 
-  const summary = buildSummary(allSignals, capabilityState);
+  let summary = buildSummary(allSignals, capabilityState);
 
   let state: RuntimeFusionState = {
     generatedAt: new Date().toISOString(),
@@ -1471,10 +1413,10 @@ export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
 
   state = overridePriorities(state, convergencePlan);
 
-  if (!pathExists(currentDir)) {
+  if (!existsAt(currentDir)) {
     ensureDir(currentDir, { recursive: true });
   }
-  writeTextFile(path.join(currentDir, FUSION_OUTPUT_FILE), JSON.stringify(state, null, 2));
+  writeTextFile(p.join(currentDir, FUSION_OUTPUT_FILE), JSON.stringify(state, null, 2));
 
   return state;
 }

@@ -43,6 +43,171 @@ function handlerResolution(
   return { type, apiCalls };
 }
 
+function isNoopArrow(value: string): boolean {
+  const compact = value
+    .split('')
+    .filter((char) => char.trim().length > 0)
+    .join('');
+  if (!compact.startsWith('()=>')) {
+    return false;
+  }
+  const body = compact.slice('()=>'.length);
+  return body.startsWith('console.') || body === 'null' || body === 'undefined';
+}
+
+function isIdentifierToken(value: string): boolean {
+  if (value.length === 0 || !isIdentifierStart(value[0])) {
+    return false;
+  }
+  return value.split('').every(isIdentifierPart);
+}
+
+function isIdentifierStart(char: string): boolean {
+  return (char >= 'A' && char <= 'Z') || (char >= 'a' && char <= 'z') || char === '_';
+}
+
+function isIdentifierPart(char: string): boolean {
+  return isIdentifierStart(char) || (char >= '0' && char <= '9');
+}
+
+function extractInlineCalledFunction(value: string): string | null {
+  const arrowIndex = value.indexOf('=>');
+  if (arrowIndex < 0) {
+    return null;
+  }
+  let body = value.slice(arrowIndex + 2).trimStart();
+  if (body.startsWith('{')) {
+    body = body.slice(1).trimStart();
+  }
+  if (body.startsWith('void ')) {
+    body = body.slice('void '.length).trimStart();
+  }
+  const name = readIdentifier(body);
+  if (!name) {
+    return null;
+  }
+  const afterName = body.slice(name.length).trimStart();
+  return afterName.startsWith('(') ? name : null;
+}
+
+function readIdentifier(value: string): string {
+  let output = '';
+  for (const char of value) {
+    if (
+      (output.length === 0 && isIdentifierStart(char)) ||
+      (output.length > 0 && isIdentifierPart(char))
+    ) {
+      output += char;
+      continue;
+    }
+    break;
+  }
+  return output;
+}
+
+function inlineCallsFunctionPrefix(value: string, prefix: string): boolean {
+  const calledFunction = extractInlineCalledFunction(value);
+  return Boolean(calledFunction && startsWithPrefixCapital(calledFunction, prefix));
+}
+
+function startsWithPrefixCapital(value: string, prefix: string): boolean {
+  if (!value.startsWith(prefix) || value.length <= prefix.length) {
+    return false;
+  }
+  const next = value[prefix.length];
+  return next >= 'A' && next <= 'Z';
+}
+
+function hasImperativeUiEffect(value: string): boolean {
+  return value.includes('Instance') || value.includes('Ref.current') || value.includes('canvas.');
+}
+
+function hasBrowserFileEffect(value: string): boolean {
+  return (
+    value.includes('URL.createObjectURL') ||
+    value.includes('document.createElement') ||
+    value.includes('.download') ||
+    value.includes('Blob(')
+  );
+}
+
+function isSaveLikeFunctionName(value: string): boolean {
+  const lower = value.toLowerCase();
+  return (
+    lower === 'save' ||
+    lower === 'submit' ||
+    lower.startsWith('handlesave') ||
+    lower.startsWith('handlesubmit') ||
+    lower.startsWith('onsave') ||
+    lower.startsWith('onsubmit') ||
+    lower.startsWith('dosave') ||
+    lower.startsWith('dosubmit') ||
+    lower.startsWith('docreate') ||
+    lower.startsWith('confirmsave') ||
+    lower.startsWith('confirmsubmit') ||
+    lower.startsWith('confirmcreate')
+  );
+}
+
+function bodyCallsFunctionPrefix(value: string, prefix: string): boolean {
+  return extractCalledFunctionNames(value).some((name) => startsWithPrefixCapital(name, prefix));
+}
+
+function hasStateUpdaterCall(value: string): boolean {
+  const names = new Set(extractCalledFunctionNames(value));
+  return (
+    [...names].some((name) => startsWithPrefixCapital(name, 'set')) ||
+    names.has('updateForm') ||
+    names.has('dispatch') ||
+    names.has('toggle')
+  );
+}
+
+function extractCalledFunctionNames(value: string): string[] {
+  const names: string[] = [];
+  for (let index = 0; index < value.length; index += 1) {
+    const name = readIdentifier(value.slice(index));
+    if (!name) {
+      continue;
+    }
+    const afterNameIndex = index + name.length;
+    const rest = value.slice(afterNameIndex).trimStart();
+    if (rest.startsWith('(')) {
+      names.push(name);
+    }
+    index = afterNameIndex;
+  }
+  return [...new Set(names)];
+}
+
+function isBuiltinOrControlCall(value: string): boolean {
+  return [
+    'if',
+    'for',
+    'while',
+    'return',
+    'await',
+    'catch',
+    'try',
+    'console',
+    'Math',
+    'JSON',
+    'Array',
+    'Object',
+    'String',
+    'Number',
+    'parseInt',
+    'parseFloat',
+    'setTimeout',
+    'clearTimeout',
+    'setInterval',
+    'Date',
+    'Promise',
+    'Error',
+    'require',
+  ].includes(value);
+}
+
 /** Resolve handler. */
 export function resolveHandler(input: ResolveHandlerInput): HandlerResolution {
   const {
@@ -61,9 +226,7 @@ export function resolveHandler(input: ResolveHandlerInput): HandlerResolution {
     trimmed === '()=>{}' ||
     trimmed === '() => { }' ||
     trimmed === 'noop' ||
-    /^\(\)\s*=>\s*console\.\w+/.test(trimmed) ||
-    /^\(\)\s*=>\s*null$/.test(trimmed) ||
-    /^\(\)\s*=>\s*undefined$/.test(trimmed)
+    isNoopArrow(trimmed)
   ) {
     return handlerResolution(HANDLER_TYPE_NOOP);
   }
@@ -94,31 +257,26 @@ export function resolveHandler(input: ResolveHandlerInput): HandlerResolution {
     }
   }
 
-  const funcNameMatch = trimmed.match(/^(\w+)$/);
-  if (funcNameMatch) {
+  if (isIdentifierToken(trimmed)) {
     return resolveNamedFunction({
       ...input,
-      funcName: funcNameMatch[1],
+      funcName: trimmed,
     });
   }
 
-  const inlineCallMatch = trimmed.match(/(?:\([^)]*\))?\s*=>\s*(?:\{?\s*)?(?:void\s+)?(\w+)\s*\(/);
-  if (inlineCallMatch) {
+  const inlineCalledFunction = extractInlineCalledFunction(trimmed);
+  if (inlineCalledFunction) {
     return resolveInlineCall({
       ...input,
-      calledFunc: inlineCallMatch[1],
+      calledFunc: inlineCalledFunction,
     });
   }
 
-  if (/\(\)\s*=>\s*set\w+\s*\(/.test(trimmed)) {
+  if (inlineCallsFunctionPrefix(trimmed, 'set')) {
     return handlerResolution(HANDLER_TYPE_REAL);
   }
 
-  if (/\(\w*\)\s*=>\s*set\w+\s*\(/.test(trimmed)) {
-    return handlerResolution(HANDLER_TYPE_REAL);
-  }
-
-  if (/confirm\s*\(/.test(trimmed)) {
+  if (hasFunctionCall(trimmed, 'confirm')) {
     return handlerResolution(HANDLER_TYPE_REAL);
   }
 
@@ -147,7 +305,7 @@ function resolveNamedFunction(
   }
 
   const defIdx = findFunctionDeclarationIndex(lines, funcName);
-  if (defIdx === -1 && /^on[A-Z]/.test(funcName)) {
+  if (defIdx === -1 && startsWithPrefixCapital(funcName, 'on')) {
     return handlerResolution(HANDLER_TYPE_REAL);
   }
   if (defIdx === -1) {
@@ -178,23 +336,15 @@ function resolveNamedFunction(
     return handlerResolution(HANDLER_TYPE_REAL, bodyApiCalls);
   }
 
-  if (/useCallback\s*\(/.test(bodyText)) {
+  if (hasFunctionCall(bodyText, 'useCallback')) {
     return handlerResolution(HANDLER_TYPE_REAL);
   }
 
-  if (
-    /\w+Instance(?:\??\.\w+)+\s*\(|\w+Ref\.current(?:\??\.\w+)+\s*\(|canvas\.\w+\s*\(/i.test(
-      bodyText,
-    )
-  ) {
+  if (hasImperativeUiEffect(bodyText)) {
     return handlerResolution(HANDLER_TYPE_REAL);
   }
 
-  if (
-    /URL\.createObjectURL|document\.createElement\s*\(\s*['"]a['"]\)|\.download\s*=|Blob\s*\(/i.test(
-      bodyText,
-    )
-  ) {
+  if (hasBrowserFileEffect(bodyText)) {
     return handlerResolution(HANDLER_TYPE_REAL);
   }
 
@@ -207,11 +357,8 @@ function resolveNamedFunction(
     return nestedResult;
   }
 
-  const isSaveFunction =
-    /^(?:handle)?(?:save|submit)\b/i.test(funcName) ||
-    /^(?:on)(?:Save|Submit)\b/.test(funcName) ||
-    /^(?:do|confirm)(?:Save|Submit|Create)\b/i.test(funcName);
-  if (!isSaveFunction && hasSaveHandler && /set\w+\s*\(/.test(bodyText)) {
+  const isSaveFunction = isSaveLikeFunctionName(funcName);
+  if (!isSaveFunction && hasSaveHandler && bodyCallsFunctionPrefix(bodyText, 'set')) {
     return handlerResolution(HANDLER_TYPE_REAL);
   }
 
@@ -219,7 +366,7 @@ function resolveNamedFunction(
     return handlerResolution(HANDLER_TYPE_REAL);
   }
 
-  const isStateUpdater = /set\w+\s*\(|updateForm\s*\(|dispatch\s*\(|toggle\s*\(/.test(bodyText);
+  const isStateUpdater = hasStateUpdaterCall(bodyText);
   if (!isSaveFunction && isStateUpdater && !hasApiCall(bodyText)) {
     return handlerResolution(HANDLER_TYPE_REAL);
   }
@@ -237,11 +384,11 @@ function resolveInlineCall(input: ResolveHandlerInput & { calledFunc: string }):
     };
   }
 
-  if (/^set[A-Z]/.test(calledFunc)) {
+  if (startsWithPrefixCapital(calledFunc, 'set')) {
     return handlerResolution(HANDLER_TYPE_REAL);
   }
 
-  if (/^on[A-Z]/.test(calledFunc)) {
+  if (startsWithPrefixCapital(calledFunc, 'on')) {
     if (findFunctionDeclarationIndex(lines, calledFunc) === -1) {
       return handlerResolution(HANDLER_TYPE_REAL);
     }
@@ -256,7 +403,7 @@ function resolveInlineCall(input: ResolveHandlerInput & { calledFunc: string }):
     const defIdx = findFunctionDeclarationIndex(lines, calledFunc);
     if (defIdx !== -1) {
       const bodyText = lines.slice(defIdx, Math.min(defIdx + 20, lines.length)).join('\n');
-      if (/set\w+\s*\(/.test(bodyText)) {
+      if (bodyCallsFunctionPrefix(bodyText, 'set')) {
         return handlerResolution(HANDLER_TYPE_REAL);
       }
     }
@@ -277,18 +424,11 @@ function resolveNestedLocalCall(
     return null;
   }
 
-  const localCallRe = /\b([a-z]\w+)\s*\(/gi;
-  let lcMatch;
-  while ((lcMatch = localCallRe.exec(bodyText)) !== null) {
-    const cn = lcMatch[1];
-    if (
-      /^(?:if|for|while|return|await|catch|try|console|Math|JSON|Array|Object|String|Number|parseInt|parseFloat|setTimeout|clearTimeout|setInterval|Date|Promise|Error|require)$/.test(
-        cn,
-      )
-    ) {
+  for (const cn of extractCalledFunctionNames(bodyText)) {
+    if (isBuiltinOrControlCall(cn)) {
       continue;
     }
-    if (/^set[A-Z]|^get[A-Z]/.test(cn)) {
+    if (startsWithPrefixCapital(cn, 'set') || startsWithPrefixCapital(cn, 'get')) {
       continue;
     }
     if (visited.has(cn)) {

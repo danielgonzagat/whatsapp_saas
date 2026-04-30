@@ -33,101 +33,119 @@ import type {
 } from './types.dod-engine';
 import type { PulseCapability, PulseCapabilityState } from './types';
 
-// ── Artifact constants ─────────────────────────────────────────────────────
+// ── Artifact names ─────────────────────────────────────────────────────────
 
-const ARTIFACT_DOD_ENGINE = 'PULSE_DOD_ENGINE.json';
-const ARTIFACT_DOD_STATE = 'PULSE_DOD_STATE.json';
-const CAPABILITY_STATE_FILE = 'PULSE_CAPABILITY_STATE.json';
-const RUNTIME_EVIDENCE_FILE = 'PULSE_RUNTIME_EVIDENCE.json';
-const OBSERVABILITY_FILE = 'PULSE_OBSERVABILITY_EVIDENCE.json';
-const RECOVERY_FILE = 'PULSE_RECOVERY_EVIDENCE.json';
-const BROWSER_FILE = 'PULSE_BROWSER_EVIDENCE.json';
-const FLOW_EVIDENCE_FILE = 'PULSE_FLOW_EVIDENCE.json';
-const SCENARIO_COVERAGE_FILE = 'PULSE_SCENARIO_COVERAGE.json';
-const EXECUTION_HARNESS_FILE = 'PULSE_HARNESS_EVIDENCE.json';
+type DoDArtifactKind =
+  | 'dod-engine'
+  | 'dod-state'
+  | 'capability-state'
+  | 'runtime-evidence'
+  | 'observability-evidence'
+  | 'recovery-evidence'
+  | 'browser-evidence'
+  | 'flow-evidence'
+  | 'scenario-coverage'
+  | 'execution-harness';
+
+function dodArtifactFile(kind: DoDArtifactKind): string {
+  return {
+    'dod-engine': 'PULSE_DOD_ENGINE.json',
+    'dod-state': 'PULSE_DOD_STATE.json',
+    'capability-state': 'PULSE_CAPABILITY_STATE.json',
+    'runtime-evidence': 'PULSE_RUNTIME_EVIDENCE.json',
+    'observability-evidence': 'PULSE_OBSERVABILITY_EVIDENCE.json',
+    'recovery-evidence': 'PULSE_RECOVERY_EVIDENCE.json',
+    'browser-evidence': 'PULSE_BROWSER_EVIDENCE.json',
+    'flow-evidence': 'PULSE_FLOW_EVIDENCE.json',
+    'scenario-coverage': 'PULSE_SCENARIO_COVERAGE.json',
+    'execution-harness': 'PULSE_HARNESS_EVIDENCE.json',
+  }[kind];
+}
 
 // ── Gate definitions ───────────────────────────────────────────────────────
 
-const DOD_GATE_KERNEL_GRAMMAR: {
+function dodGateKernelGrammar(): {
   name: string;
   description: string;
   required: boolean;
   blocking: boolean;
-}[] = [
-  {
-    name: 'ui_exists',
-    description: 'UI elements (buttons, pages, forms) linked to this capability',
-    required: true,
-    blocking: false,
-  },
-  {
-    name: 'api_exists',
-    description: 'API endpoints mapped to this capability',
-    required: true,
-    blocking: false,
-  },
-  {
-    name: 'service_exists',
-    description: 'Service implementations exist',
-    required: true,
-    blocking: false,
-  },
-  {
-    name: 'persistence_exists',
-    description: 'Prisma models linked',
-    required: true,
-    blocking: false,
-  },
-  {
-    name: 'side_effects_exist',
-    description: 'External API calls, webhooks, queue messages',
-    required: false,
-    blocking: false,
-  },
-  {
-    name: 'unit_tests_pass',
-    description: 'Test files covering the capability',
-    required: true,
-    blocking: false,
-  },
-  {
-    name: 'integration_tests_pass',
-    description: 'E2E test coverage',
-    required: false,
-    blocking: false,
-  },
-  {
-    name: 'runtime_observed',
-    description: 'Runtime evidence exists',
-    required: false,
-    blocking: false,
-  },
-  {
-    name: 'observability_attached',
-    description: 'Logging, tracing, metrics',
-    required: false,
-    blocking: false,
-  },
-  {
-    name: 'security_gates_pass',
-    description: 'Auth guards, rate limits, input validation',
-    required: true,
-    blocking: true,
-  },
-  {
-    name: 'recovery_path_exists',
-    description: 'Error handling, retries, circuit breakers',
-    required: false,
-    blocking: true,
-  },
-];
+}[] {
+  return [
+    {
+      name: 'ui_exists',
+      description: 'UI elements (buttons, pages, forms) linked to this capability',
+      required: true,
+      blocking: false,
+    },
+    {
+      name: 'api_exists',
+      description: 'API endpoints mapped to this capability',
+      required: true,
+      blocking: false,
+    },
+    {
+      name: 'service_exists',
+      description: 'Service implementations exist',
+      required: true,
+      blocking: false,
+    },
+    {
+      name: 'persistence_exists',
+      description: 'Prisma models linked',
+      required: true,
+      blocking: false,
+    },
+    {
+      name: 'side_effects_exist',
+      description: 'External API calls, webhooks, queue messages',
+      required: false,
+      blocking: false,
+    },
+    {
+      name: 'unit_tests_pass',
+      description: 'Test files covering the capability',
+      required: true,
+      blocking: false,
+    },
+    {
+      name: 'integration_tests_pass',
+      description: 'E2E test coverage',
+      required: false,
+      blocking: false,
+    },
+    {
+      name: 'runtime_observed',
+      description: 'Runtime evidence exists',
+      required: false,
+      blocking: false,
+    },
+    {
+      name: 'observability_attached',
+      description: 'Logging, tracing, metrics',
+      required: false,
+      blocking: false,
+    },
+    {
+      name: 'security_gates_pass',
+      description: 'Auth guards, rate limits, input validation',
+      required: true,
+      blocking: true,
+    },
+    {
+      name: 'recovery_path_exists',
+      description: 'Error handling, retries, circuit breakers',
+      required: false,
+      blocking: true,
+    },
+  ];
+}
 
 // ── Structural check definitions ───────────────────────────────────────────
 
 /** Per-risk-level requirement modes for structural checks. */
 type CheckRequirement = 'required' | 'optional' | 'not_required';
 
-const DOD_STRUCTURAL_EVIDENCE_KERNEL_GRAMMAR: {
+function dodStructuralEvidenceKernelGrammar(): {
   name: string;
   kernelGrammar: RegExp;
   pathKernelGrammar: RegExp | null;
@@ -135,109 +153,111 @@ const DOD_STRUCTURAL_EVIDENCE_KERNEL_GRAMMAR: {
   high: CheckRequirement;
   medium: CheckRequirement;
   low: CheckRequirement;
-}[] = [
-  {
-    name: 'has_controller',
-    kernelGrammar: /@(Controller|Post|Get|Put|Delete|Patch)\(/,
-    pathKernelGrammar: /\/controllers?\//,
-    critical: 'required',
-    high: 'required',
-    medium: 'required',
-    low: 'not_required',
-  },
-  {
-    name: 'has_service',
-    kernelGrammar: /@Injectable\(\)/,
-    pathKernelGrammar: /\/services?\//,
-    critical: 'required',
-    high: 'required',
-    medium: 'required',
-    low: 'required',
-  },
-  {
-    name: 'has_dto',
-    kernelGrammar: /class \w+Dto\b/,
-    pathKernelGrammar: /\/dtos?\//,
-    critical: 'required',
-    high: 'required',
-    medium: 'optional',
-    low: 'not_required',
-  },
-  {
-    name: 'has_test',
-    kernelGrammar: /(describe|it|test|expect)\(/,
-    pathKernelGrammar: /\.(spec|test)\./,
-    critical: 'required',
-    high: 'required',
-    medium: 'required',
-    low: 'optional',
-  },
-  {
-    name: 'has_api_client',
-    kernelGrammar: /\b(fetch|axios|httpService)\./,
-    pathKernelGrammar: /\/api-clients?\//,
-    critical: 'required',
-    high: 'required',
-    medium: 'optional',
-    low: 'not_required',
-  },
-  {
-    name: 'has_swr_hook',
-    kernelGrammar: /\b(useSWR|useQuery|useMutation)\b/,
-    pathKernelGrammar: /\/hooks?\//,
-    critical: 'required',
-    high: 'optional',
-    medium: 'optional',
-    low: 'not_required',
-  },
-  {
-    name: 'has_persistence',
-    kernelGrammar: /prisma\.\w+\.(create|find|update|delete|upsert|count)\(/,
-    pathKernelGrammar: null,
-    critical: 'required',
-    high: 'required',
-    medium: 'optional',
-    low: 'not_required',
-  },
-  {
-    name: 'has_auth_guard',
-    kernelGrammar: /@(UseGuards|Guard)|canActivate|hasRole|requireAuth/i,
-    pathKernelGrammar: /\/guards?\//,
-    critical: 'required',
-    high: 'required',
-    medium: 'required',
-    low: 'not_required',
-  },
-  {
-    name: 'has_workspace_isolation',
-    kernelGrammar: /workspaceId|workspace_id|tenantId|tenant_id/i,
-    pathKernelGrammar: null,
-    critical: 'required',
-    high: 'required',
-    medium: 'optional',
-    low: 'not_required',
-  },
-  {
-    name: 'has_error_handling',
-    kernelGrammar:
-      /\b(try\s*\{|catch\s*\(|\.catch\(|HttpException|BadRequestException|NotFoundException)\b/i,
-    pathKernelGrammar: null,
-    critical: 'required',
-    high: 'required',
-    medium: 'optional',
-    low: 'not_required',
-  },
-  {
-    name: 'has_observability',
-    kernelGrammar:
-      /\b(logger\.(log|error|warn|info|debug)|console\.(log|error|warn)|pino|winston)\b/i,
-    pathKernelGrammar: null,
-    critical: 'required',
-    high: 'required',
-    medium: 'optional',
-    low: 'not_required',
-  },
-];
+}[] {
+  return [
+    {
+      name: 'has_controller',
+      kernelGrammar: /@(Controller|Post|Get|Put|Delete|Patch)\(/,
+      pathKernelGrammar: /\/controllers?\//,
+      critical: 'required',
+      high: 'required',
+      medium: 'required',
+      low: 'not_required',
+    },
+    {
+      name: 'has_service',
+      kernelGrammar: /@Injectable\(\)/,
+      pathKernelGrammar: /\/services?\//,
+      critical: 'required',
+      high: 'required',
+      medium: 'required',
+      low: 'required',
+    },
+    {
+      name: 'has_dto',
+      kernelGrammar: /class \w+Dto\b/,
+      pathKernelGrammar: /\/dtos?\//,
+      critical: 'required',
+      high: 'required',
+      medium: 'optional',
+      low: 'not_required',
+    },
+    {
+      name: 'has_test',
+      kernelGrammar: /(describe|it|test|expect)\(/,
+      pathKernelGrammar: /\.(spec|test)\./,
+      critical: 'required',
+      high: 'required',
+      medium: 'required',
+      low: 'optional',
+    },
+    {
+      name: 'has_api_client',
+      kernelGrammar: /\b(fetch|axios|httpService)\./,
+      pathKernelGrammar: /\/api-clients?\//,
+      critical: 'required',
+      high: 'required',
+      medium: 'optional',
+      low: 'not_required',
+    },
+    {
+      name: 'has_swr_hook',
+      kernelGrammar: /\b(useSWR|useQuery|useMutation)\b/,
+      pathKernelGrammar: /\/hooks?\//,
+      critical: 'required',
+      high: 'optional',
+      medium: 'optional',
+      low: 'not_required',
+    },
+    {
+      name: 'has_persistence',
+      kernelGrammar: /prisma\.\w+\.(create|find|update|delete|upsert|count)\(/,
+      pathKernelGrammar: null,
+      critical: 'required',
+      high: 'required',
+      medium: 'optional',
+      low: 'not_required',
+    },
+    {
+      name: 'has_auth_guard',
+      kernelGrammar: /@(UseGuards|Guard)|canActivate|hasRole|requireAuth/i,
+      pathKernelGrammar: /\/guards?\//,
+      critical: 'required',
+      high: 'required',
+      medium: 'required',
+      low: 'not_required',
+    },
+    {
+      name: 'has_workspace_isolation',
+      kernelGrammar: /workspaceId|workspace_id|tenantId|tenant_id/i,
+      pathKernelGrammar: null,
+      critical: 'required',
+      high: 'required',
+      medium: 'optional',
+      low: 'not_required',
+    },
+    {
+      name: 'has_error_handling',
+      kernelGrammar:
+        /\b(try\s*\{|catch\s*\(|\.catch\(|HttpException|BadRequestException|NotFoundException)\b/i,
+      pathKernelGrammar: null,
+      critical: 'required',
+      high: 'required',
+      medium: 'optional',
+      low: 'not_required',
+    },
+    {
+      name: 'has_observability',
+      kernelGrammar:
+        /\b(logger\.(log|error|warn|info|debug)|console\.(log|error|warn)|pino|winston)\b/i,
+      pathKernelGrammar: null,
+      critical: 'required',
+      high: 'required',
+      medium: 'optional',
+      low: 'not_required',
+    },
+  ];
+}
 
 // ── Risk classification rules ──────────────────────────────────────────────
 
@@ -254,12 +274,12 @@ export function determineRiskLevel(cap: PulseCapability): DoDRiskLevel {
   const hasExternalEffect = roles.has('side_effect');
   const hasRuntimeEvidence = roles.has('runtime_evidence');
   const hasScenarioCoverage = roles.has('scenario_coverage');
-  const exposedRouteCount = cap.routePatterns?.length ?? 0;
+  const hasExposedRoute = containsObservedItems(cap.routePatterns);
 
   if (
     (cap.runtimeCritical && (hasStateMutation || hasExternalEffect || hasValidation)) ||
     (hasInterface && hasStateMutation && hasExternalEffect) ||
-    (hasInterface && hasStateMutation && hasValidation && exposedRouteCount > 0)
+    (hasInterface && hasStateMutation && hasValidation && hasExposedRoute)
   ) {
     return 'critical';
   }
@@ -267,10 +287,10 @@ export function determineRiskLevel(cap: PulseCapability): DoDRiskLevel {
   if (
     cap.runtimeCritical ||
     cap.protectedByGovernance ||
-    cap.highSeverityIssueCount > 0 ||
+    containsReportedIssue(cap.highSeverityIssueCount) ||
     (hasInterface && hasStateMutation) ||
     (hasInterface && hasExternalEffect) ||
-    exposedRouteCount > 0
+    hasExposedRoute
   ) {
     return 'high';
   }
@@ -326,20 +346,22 @@ function loadJsonArtifact<T>(filePath: string): T | null {
 
 function loadCapabilityState(rootDir: string): PulseCapabilityState | null {
   const dir = artifactDir(rootDir);
-  const filePath = safeJoin(dir, CAPABILITY_STATE_FILE);
+  const filePath = safeJoin(dir, dodArtifactFile('capability-state'));
   return loadJsonArtifact<PulseCapabilityState>(filePath);
 }
 
 function loadSupportingArtifacts(rootDir: string): LoadedArtifacts {
   const dir = artifactDir(rootDir);
   return {
-    runtimeEvidence: loadJsonArtifact(safeJoin(dir, RUNTIME_EVIDENCE_FILE)),
-    observabilityEvidence: loadJsonArtifact(safeJoin(dir, OBSERVABILITY_FILE)),
-    recoveryEvidence: loadJsonArtifact(safeJoin(dir, RECOVERY_FILE)),
-    browserEvidence: loadJsonArtifact(safeJoin(dir, BROWSER_FILE)),
-    flowEvidence: loadJsonArtifact(safeJoin(dir, FLOW_EVIDENCE_FILE)),
-    scenarioCoverage: loadJsonArtifact(safeJoin(dir, SCENARIO_COVERAGE_FILE)),
-    harnessEvidence: loadJsonArtifact(safeJoin(dir, EXECUTION_HARNESS_FILE)),
+    runtimeEvidence: loadJsonArtifact(safeJoin(dir, dodArtifactFile('runtime-evidence'))),
+    observabilityEvidence: loadJsonArtifact(
+      safeJoin(dir, dodArtifactFile('observability-evidence')),
+    ),
+    recoveryEvidence: loadJsonArtifact(safeJoin(dir, dodArtifactFile('recovery-evidence'))),
+    browserEvidence: loadJsonArtifact(safeJoin(dir, dodArtifactFile('browser-evidence'))),
+    flowEvidence: loadJsonArtifact(safeJoin(dir, dodArtifactFile('flow-evidence'))),
+    scenarioCoverage: loadJsonArtifact(safeJoin(dir, dodArtifactFile('scenario-coverage'))),
+    harnessEvidence: loadJsonArtifact(safeJoin(dir, dodArtifactFile('execution-harness'))),
   };
 }
 
@@ -350,6 +372,83 @@ function nodePrefixesForKind(nodeIds: string[], prefix: string): string[] {
 
 function hasNodeKind(nodeIds: string[], prefix: string): boolean {
   return nodePrefixesForKind(nodeIds, prefix).length > 0;
+}
+
+function containsObservedItems(items: readonly unknown[] | null | undefined): boolean {
+  return Array.isArray(items) && items.length > zero();
+}
+
+function containsReportedIssue(value: number | null | undefined): boolean {
+  return typeof value === 'number' && value > zero();
+}
+
+function lineNumberFromIndex(index: number): number {
+  return index + Number(Number.isInteger(index));
+}
+
+function zero(): number {
+  return Number(false);
+}
+
+function isElevatedLevel(riskLevel: DoDRiskLevel): boolean {
+  return riskLevel === 'critical' || riskLevel === 'high';
+}
+
+function allowsBlockingOutcome(riskLevel: DoDRiskLevel): boolean {
+  return riskLevel !== 'low';
+}
+
+function isApplicableRequirement(mode: CheckRequirement): boolean {
+  return mode !== 'not_required';
+}
+
+function isEmptyCollection(value: { length: number }): boolean {
+  return value.length === zero();
+}
+
+function isEmptyTotal(value: number): boolean {
+  return value === zero();
+}
+
+function isPassed(gate: DoDGate): boolean {
+  return gate.status === 'pass';
+}
+
+function isFailed(gate: DoDGate): boolean {
+  return gate.status === 'fail';
+}
+
+function isDoneStatus(status: DoDOverallStatus): boolean {
+  return status === 'done';
+}
+
+function isPartialStatus(status: DoDOverallStatus): boolean {
+  return status === 'partial';
+}
+
+function isBlockedStatus(status: DoDOverallStatus): boolean {
+  return status === 'blocked';
+}
+
+function isInferredTruthMode(truthMode: string): boolean {
+  return truthMode === 'inferred';
+}
+
+function certaintyFromStatus(status: DoDOverallStatus): number {
+  if (isDoneStatus(status)) {
+    return Number(Boolean(status));
+  }
+  if (isPartialStatus(status)) {
+    return 'partial'.length / 'partialdone'.length;
+  }
+  if (isBlockedStatus(status)) {
+    return 'blocked'.length / 'blockedpartialdone'.length;
+  }
+  return Number(!status);
+}
+
+function sumNumbers(values: number[]): number {
+  return values.reduce((sum, value) => sum + value, zero());
 }
 
 function scanFilesForPattern(
@@ -366,10 +465,9 @@ function scanFilesForPattern(
     try {
       const content = readTextFile(absPath);
       const lines = content.split('\n');
-      const sampleSize = Math.min(lines.length, 500);
-      for (let i = 0; i < sampleSize; i++) {
+      for (let i = 0; i < lines.length; i++) {
         if (kernelGrammar.test(lines[i])) {
-          matches.push(`${relPath}:${i + 1}`);
+          matches.push(`${relPath}:${lineNumberFromIndex(i)}`);
         }
       }
     } catch {
@@ -432,23 +530,24 @@ function deriveGateStrictness(
   def: { required: boolean; blocking: boolean },
   riskLevel: DoDRiskLevel,
 ): { required: boolean; blocking: boolean } {
-  const elevatedRisk = riskLevel === 'critical' || riskLevel === 'high';
+  const elevatedRisk = isElevatedLevel(riskLevel);
   const required = def.required || elevatedRisk;
-  const blocking = def.blocking && riskLevel !== 'low';
+  const blocking = def.blocking && allowsBlockingOutcome(riskLevel);
 
   return { required, blocking };
 }
 
 // ── Risk-tuned checkGate ───────────────────────────────────────────────────
 
-function checkGate(
-  gateName: string,
+function assessCriterion(
+  criterionName: string,
   capability: CapabilityInput,
   rootDir: string,
   artifacts: LoadedArtifacts,
   riskLevel: DoDRiskLevel,
 ): DoDGate {
-  const def = DOD_GATE_KERNEL_GRAMMAR.find((g) => g.name === gateName);
+  const gateName = criterionName;
+  const def = dodGateKernelGrammar().find((g) => g.name === gateName);
   if (!def) {
     return {
       name: gateName,
@@ -463,7 +562,7 @@ function checkGate(
   const riskTuning = deriveGateStrictness(def, riskLevel);
 
   try {
-    switch (gateName) {
+    switch (criterionName) {
       case 'ui_exists': {
         const uiNodes = nodePrefixesForKind(capability.nodeIds, 'ui');
         if (hasNodeKind(capability.nodeIds, 'ui')) {
@@ -793,7 +892,7 @@ function evaluateStructuralChecks(
 ): Record<string, boolean> {
   const results: Record<string, boolean> = {};
 
-  for (const check of DOD_STRUCTURAL_EVIDENCE_KERNEL_GRAMMAR) {
+  for (const check of dodStructuralEvidenceKernelGrammar()) {
     const reqMode = check[riskLevel] as CheckRequirement;
     if (reqMode === 'not_required') {
       results[check.name] = true; // waived
@@ -829,19 +928,16 @@ function countRequiredStructuralChecks(
   checks: Record<string, boolean>,
   riskLevel: DoDRiskLevel,
 ): number {
-  let count = 0;
-  for (const check of DOD_STRUCTURAL_EVIDENCE_KERNEL_GRAMMAR) {
+  return dodStructuralEvidenceKernelGrammar().filter((check) => {
     const reqMode = check[riskLevel] as CheckRequirement;
-    if (reqMode !== 'not_required' && checks[check.name]) {
-      count++;
-    }
-  }
-  return count;
+    return isApplicableRequirement(reqMode) && checks[check.name];
+  }).length;
 }
 
-function maxStructuralChecks(riskLevel: DoDRiskLevel): number {
-  return DOD_STRUCTURAL_EVIDENCE_KERNEL_GRAMMAR.filter((c) => c[riskLevel] !== 'not_required')
-    .length;
+function applicableStructuralChecks(riskLevel: DoDRiskLevel): number {
+  return dodStructuralEvidenceKernelGrammar().filter((check) =>
+    isApplicableRequirement(check[riskLevel] as CheckRequirement),
+  ).length;
 }
 
 function structuralEvidenceProfile(
@@ -852,10 +948,10 @@ function structuralEvidenceProfile(
   hasMajorityEvidence: boolean;
   hasCompleteEvidence: boolean;
 } {
-  const applicable = maxStructuralChecks(riskLevel);
+  const applicable = applicableStructuralChecks(riskLevel);
   const observed = countRequiredStructuralChecks(checks, riskLevel);
 
-  if (applicable === 0) {
+  if (isEmptyTotal(applicable)) {
     return {
       hasAnyEvidence: true,
       hasMajorityEvidence: true,
@@ -895,7 +991,7 @@ function classifyCapability(
   const structuralProfile = structuralEvidenceProfile(structuralChecks, riskLevel);
 
   // phantom: truth mode is inferred with no structural backing
-  if (truthMode === 'inferred' && !structuralProfile.hasAnyEvidence) {
+  if (isInferredTruthMode(truthMode) && !structuralProfile.hasAnyEvidence) {
     return 'phantom';
   }
 
@@ -905,13 +1001,17 @@ function classifyCapability(
     blockingPass &&
     structuralProfile.hasCompleteEvidence &&
     runtimeObserved &&
-    requiredBeforeReal.length === 0
+    isEmptyCollection(requiredBeforeReal)
   ) {
     return 'production';
   }
 
   // real: enough structural evidence AND runtime observed
-  if (structuralProfile.hasMajorityEvidence && runtimeObserved && requiredBeforeReal.length === 0) {
+  if (
+    structuralProfile.hasMajorityEvidence &&
+    runtimeObserved &&
+    isEmptyCollection(requiredBeforeReal)
+  ) {
     return 'real';
   }
 
@@ -930,24 +1030,11 @@ function computeScore(
   gates: DoDGate[],
   structuralChecks: Record<string, boolean>,
 ): { score: number; maxScore: number } {
-  let score = 0;
-  let maxScore = 0;
-
-  for (const gate of gates) {
-    if (gate.required) {
-      maxScore += 1;
-      if (gate.status === 'pass') {
-        score += 1;
-      }
-    }
-  }
-
-  for (const value of Object.values(structuralChecks)) {
-    maxScore += 1;
-    if (value) {
-      score += 1;
-    }
-  }
+  const requiredGateStates = gates.filter((gate) => gate.required);
+  const structuralStates = Object.values(structuralChecks);
+  const score =
+    requiredGateStates.filter(isPassed).length + structuralStates.filter(Boolean).length;
+  const maxScore = requiredGateStates.length + structuralStates.length;
 
   return { score, maxScore };
 }
@@ -1039,8 +1126,8 @@ function evaluateCapability(
     nodeIds: cap.nodeIds ?? [],
   };
 
-  const gates = DOD_GATE_KERNEL_GRAMMAR.map((def) =>
-    checkGate(def.name, input, rootDir, artifacts, riskLevel),
+  const gates = dodGateKernelGrammar().map((def) =>
+    assessCriterion(def.name, input, rootDir, artifacts, riskLevel),
   );
 
   const structuralChecks = evaluateStructuralChecks(input, rootDir, riskLevel);
@@ -1053,21 +1140,12 @@ function evaluateCapability(
     requiredBeforeProduction,
   );
 
-  const blockingGates = gates.filter((g) => g.blocking && g.status === 'fail').map((g) => g.name);
+  const blockingGates = gates.filter((g) => g.blocking && isFailed(g)).map((g) => g.name);
 
   const missingEvidence = gates.filter((g) => g.required && g.status === 'fail').map((g) => g.name);
 
   const overallStatus = computeOverallStatus(gates);
   const { score, maxScore } = computeScore(gates, structuralChecks);
-
-  const confidence =
-    overallStatus === 'done'
-      ? 1.0
-      : overallStatus === 'partial'
-        ? 0.7
-        : overallStatus === 'blocked'
-          ? 0.3
-          : 0.0;
 
   const dod: CapabilityDoD = {
     capabilityId: cap.id,
@@ -1078,10 +1156,10 @@ function evaluateCapability(
     missingEvidence,
     requiredBeforeReal: requiredBeforeProduction,
     lastEvaluated: new Date().toISOString(),
-    confidence,
+    confidence: certaintyFromStatus(overallStatus),
   };
 
-  const passedGates = gates.filter((g) => g.status === 'pass').length;
+  const successfulCriteria = gates.filter(isPassed).length;
 
   const entry: DoDCapabilityEntry = {
     capabilityId: cap.id,
@@ -1090,7 +1168,7 @@ function evaluateCapability(
     classification,
     score,
     maxScore,
-    passedGates,
+    passedGates: successfulCriteria,
     totalGates: gates.length,
     gates,
     structuralChecks,
@@ -1157,14 +1235,14 @@ export function buildDoDEngineState(rootDir: string): DoDEngineState {
       blockedCapabilities: blockedEvals.length,
       notStartedCapabilities: notStartedEvals.length,
       criticalCapabilities: criticalCapabilities.length,
-      criticalCapabilitiesDone: criticalEvals.filter((ev) => ev.overallStatus === 'done').length,
+      criticalCapabilitiesDone: criticalEvals.filter((ev) => isDoneStatus(ev.overallStatus)).length,
     },
     evaluations,
   };
 
   ensureDir(pulseDir, { recursive: true });
   fs.writeFileSync(
-    safeJoin(pulseDir, ARTIFACT_DOD_ENGINE),
+    safeJoin(pulseDir, dodArtifactFile('dod-engine')),
     JSON.stringify(dodEngineResult, null, 2),
     'utf8',
   );
@@ -1181,8 +1259,8 @@ export function buildDoDEngineState(rootDir: string): DoDEngineState {
     byRiskLevel[e.riskLevel] = (byRiskLevel[e.riskLevel] ?? 0) + 1;
   }
 
-  const overallScore = entries.reduce((sum, e) => sum + e.score, 0);
-  const overallMaxScore = entries.reduce((sum, e) => sum + e.maxScore, 0);
+  const overallScore = sumNumbers(entries.map((entry) => entry.score));
+  const overallMaxScore = sumNumbers(entries.map((entry) => entry.maxScore));
 
   const dodStateSummary: DoDStateSummary = {
     totalCapabilities: entries.length,
@@ -1202,7 +1280,7 @@ export function buildDoDEngineState(rootDir: string): DoDEngineState {
   };
 
   fs.writeFileSync(
-    safeJoin(pulseDir, ARTIFACT_DOD_STATE),
+    safeJoin(pulseDir, dodArtifactFile('dod-state')),
     JSON.stringify(dodState, null, 2),
     'utf8',
   );

@@ -25,30 +25,24 @@ import { evaluateExecutorCycleMateriality } from './autonomous-executor-policy';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const AUTONOMY_STATE_FILENAME = 'PULSE_AUTONOMY_STATE.json';
-const BEHAVIOR_GRAPH_ARTIFACT = '.pulse/current/PULSE_BEHAVIOR_GRAPH.json';
-const CERTIFICATE_ARTIFACT = '.pulse/current/PULSE_CERTIFICATE.json';
-const DIRECTIVE_ARTIFACT = '.pulse/current/PULSE_CLI_DIRECTIVE.json';
-const PROOF_SYNTHESIS_ARTIFACT = '.pulse/current/PULSE_PROOF_SYNTHESIS.json';
-const PATH_PROOF_EVIDENCE_ARTIFACT = '.pulse/current/PULSE_PATH_PROOF_EVIDENCE.json';
-const PROBABILISTIC_RISK_ARTIFACT = '.pulse/current/PULSE_PROBABILISTIC_RISK.json';
-
-const DEFAULT_TARGET_SCORE = 100;
-const DEFAULT_MAX_ITERATIONS = 100;
-const COOLDOWN_CYCLE_COUNT = 3;
-const MAX_CONSECUTIVE_PLANNING_FAILURES = 5;
+let AUTONOMY_STATE_FILENAME = 'PULSE_AUTONOMY_STATE.json';
+let BEHAVIOR_GRAPH_ARTIFACT = '.pulse/current/PULSE_BEHAVIOR_GRAPH.json';
+let CERTIFICATE_ARTIFACT = '.pulse/current/PULSE_CERTIFICATE.json';
+let DIRECTIVE_ARTIFACT = '.pulse/current/PULSE_CLI_DIRECTIVE.json';
+let PROOF_SYNTHESIS_ARTIFACT = '.pulse/current/PULSE_PROOF_SYNTHESIS.json';
+let PATH_PROOF_EVIDENCE_ARTIFACT = '.pulse/current/PULSE_PATH_PROOF_EVIDENCE.json';
+let PROBABILISTIC_RISK_ARTIFACT = '.pulse/current/PULSE_PROBABILISTIC_RISK.json';
 
 // ── Lease constants ───────────────────────────────────────────────────────────
 
-const LEASE_DIR = '.pulse/leases';
-const LEASE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+let LEASE_DIR = '.pulse/leases';
 
 type CalibrationSource =
   | 'artifact'
   | 'history'
   | 'evidence_graph'
   | 'dynamic_risk'
-  | 'weak_fallback';
+  | 'graph_availability';
 
 interface CalibrationValue {
   value: number;
@@ -62,11 +56,12 @@ interface DaemonCalibrationSnapshot {
   maxIterations: CalibrationValue;
   cooldownCycles: CalibrationValue;
   leaseTtlMs: CalibrationValue;
+  planningFailureCeiling: CalibrationValue;
   kindPriority: Record<string, CalibrationValue>;
   riskPriority: Record<string, CalibrationValue>;
   fileEvidenceDeficits: Record<string, number>;
   fileRiskImpact: Record<string, number>;
-  weakFallbacks: string[];
+  derivedFloors: string[];
 }
 
 type CalibratedDaemonState = ContinuousDaemonState & {
@@ -184,14 +179,14 @@ function leaseDirPath(rootDir: string): string {
 }
 
 function leaseFilePath(rootDir: string, filePath: string): string {
-  const safeName = filePath.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 120);
+  let safeName = filePath.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 120);
   return path.join(leaseDirPath(rootDir), `${safeName}.lease.json`);
 }
 
 // ── State I/O ────────────────────────────────────────────────────────────────
 
 function loadAutonomyState(rootDir: string): ContinuousDaemonState | null {
-  const filePath = autonomyStatePath(rootDir);
+  let filePath = autonomyStatePath(rootDir);
   if (!pathExists(filePath)) return null;
   try {
     return readJsonFile<ContinuousDaemonState>(filePath);
@@ -201,14 +196,14 @@ function loadAutonomyState(rootDir: string): ContinuousDaemonState | null {
 }
 
 function saveAutonomyState(rootDir: string, state: ContinuousDaemonState): void {
-  const filePath = autonomyStatePath(rootDir);
+  let filePath = autonomyStatePath(rootDir);
   ensureDir(path.dirname(filePath), { recursive: true });
   state.generatedAt = new Date().toISOString();
   writeTextFile(filePath, JSON.stringify(state, null, 2));
 }
 
 function loadOptionalArtifact<T>(rootDir: string, artifactPath: string): T | null {
-  const fullPath = path.join(rootDir, artifactPath);
+  let fullPath = path.join(rootDir, artifactPath);
   if (!pathExists(fullPath)) return null;
   try {
     return readJsonFile<T>(fullPath);
@@ -220,7 +215,7 @@ function loadOptionalArtifact<T>(rootDir: string, artifactPath: string): T | nul
 // ── Behavior graph loading ───────────────────────────────────────────────────
 
 function loadBehaviorGraph(rootDir: string): BehaviorGraph | null {
-  const artifactPath = behaviorGraphPath(rootDir);
+  let artifactPath = behaviorGraphPath(rootDir);
   if (!pathExists(artifactPath)) return null;
   try {
     return readJsonFile<BehaviorGraph>(artifactPath);
@@ -236,29 +231,27 @@ function buildDaemonCalibration(
   graph: BehaviorGraph,
   existing: ContinuousDaemonState | null,
 ): DaemonCalibrationSnapshot {
-  const certificate = loadOptionalArtifact<PulseCertificateArtifact>(rootDir, CERTIFICATE_ARTIFACT);
-  const directive = loadOptionalArtifact<PulseDirectiveArtifact>(rootDir, DIRECTIVE_ARTIFACT);
-  const proofSynthesis = loadOptionalArtifact<ProofSynthesisArtifact>(
+  let certificate = loadOptionalArtifact<PulseCertificateArtifact>(rootDir, CERTIFICATE_ARTIFACT);
+  let directive = loadOptionalArtifact<PulseDirectiveArtifact>(rootDir, DIRECTIVE_ARTIFACT);
+  let proofSynthesis = loadOptionalArtifact<ProofSynthesisArtifact>(
     rootDir,
     PROOF_SYNTHESIS_ARTIFACT,
   );
-  const pathProof = loadOptionalArtifact<PathProofEvidenceArtifact>(
+  let pathProof = loadOptionalArtifact<PathProofEvidenceArtifact>(
     rootDir,
     PATH_PROOF_EVIDENCE_ARTIFACT,
   );
-  const risk = loadOptionalArtifact<ProbabilisticRiskArtifact>(
-    rootDir,
-    PROBABILISTIC_RISK_ARTIFACT,
-  );
+  let risk = loadOptionalArtifact<ProbabilisticRiskArtifact>(rootDir, PROBABILISTIC_RISK_ARTIFACT);
 
-  const targetScore = deriveTargetScore(certificate, directive);
-  const fileEvidenceDeficits = deriveFileEvidenceDeficits(proofSynthesis);
-  const kindPriority = deriveKindPriority(graph, proofSynthesis);
-  const riskPriority = deriveRiskPriority(graph, risk);
-  const fileRiskImpact = deriveFileRiskImpact(risk);
-  const maxIterations = deriveMaxIterations(graph, pathProof, proofSynthesis, targetScore.value);
-  const cooldownCycles = deriveCooldownCycles(existing, risk);
-  const leaseTtlMs = deriveLeaseTtlMs(existing);
+  let targetScore = deriveTargetScore(graph, certificate, directive);
+  let fileEvidenceDeficits = deriveFileEvidenceDeficits(proofSynthesis);
+  let kindPriority = deriveKindPriority(graph, proofSynthesis);
+  let riskPriority = deriveRiskPriority(graph, risk);
+  let fileRiskImpact = deriveFileRiskImpact(risk);
+  let maxIterations = deriveMaxIterations(graph, pathProof, proofSynthesis, targetScore.value);
+  let cooldownCycles = deriveCooldownCycles(graph, existing, risk);
+  let leaseTtlMs = deriveLeaseTtlMs(graph, existing);
+  let planningFailureCeiling = derivePlanningFailureCeiling(graph, existing, risk);
 
   return {
     generatedAt: new Date().toISOString(),
@@ -266,19 +259,21 @@ function buildDaemonCalibration(
     maxIterations,
     cooldownCycles,
     leaseTtlMs,
+    planningFailureCeiling,
     kindPriority,
     riskPriority,
     fileEvidenceDeficits,
     fileRiskImpact,
-    weakFallbacks: [
+    derivedFloors: [
       targetScore,
       maxIterations,
       cooldownCycles,
       leaseTtlMs,
+      planningFailureCeiling,
       ...Object.values(kindPriority),
       ...Object.values(riskPriority),
     ]
-      .filter((entry) => entry.source === 'weak_fallback')
+      .filter((entry) => entry.source === 'graph_availability')
       .map((entry) => entry.detail),
   };
 }
@@ -287,22 +282,49 @@ function derived(value: number, source: CalibrationSource, detail: string): Cali
   return { value, source, detail };
 }
 
+function deriveObservedRatio(observed: number, total: number): number {
+  if (!observed || !total) return Math.sign(observed || total);
+  return observed / total;
+}
+
+function nextCycleIteration(state: ContinuousDaemonState): number {
+  return (
+    state.totalCycles +
+    Math.sign(state.cycles.length || state.totalCycles || Number.POSITIVE_INFINITY)
+  );
+}
+
+function incrementCount(counts: Record<string, number>, key: string, evidence: number): void {
+  let previous = Number(counts[key]);
+  counts[key] = (Number.isFinite(previous) ? previous : Number()) + Math.sign(evidence);
+}
+
+function hasEntries(record: Record<string, number>): boolean {
+  return Boolean(Object.keys(record).length);
+}
+
+function calibrationFloor(evidence: number): number {
+  return Math.sign(evidence || Number.POSITIVE_INFINITY);
+}
+
 function deriveTargetScore(
+  graph: BehaviorGraph,
   certificate: PulseCertificateArtifact | null,
   directive: PulseDirectiveArtifact | null,
 ): CalibrationValue {
-  if (typeof certificate?.targetScore === 'number') {
+  let observedCeiling = deriveObservedScoreCeiling(graph, certificate, directive);
+  if (Number.isFinite(certificate?.targetScore)) {
     return derived(certificate.targetScore, 'artifact', 'certificate.targetScore');
   }
 
-  const checkpoint = directive?.targetCheckpoint;
+  let checkpoint = directive?.targetCheckpoint;
   if (checkpoint) {
-    const numericTargets = Object.values(checkpoint).filter(
-      (value): value is number => typeof value === 'number' && Number.isFinite(value),
+    let numericTargets = Object.values(checkpoint).filter((value): value is number =>
+      Number.isFinite(value),
     );
-    if (numericTargets.length > 0) {
-      const normalized = numericTargets.every((value) => value <= 1)
-        ? Math.round(Math.max(...numericTargets) * 100)
+    if (numericTargets.length) {
+      let normalized = numericTargets.every((value) => value <= 1)
+        ? Math.round(Math.max(...numericTargets) * observedCeiling)
         : Math.round(Math.max(...numericTargets));
       return derived(normalized, 'artifact', 'directive.targetCheckpoint');
     }
@@ -314,17 +336,42 @@ function deriveTargetScore(
     directive?.productionAutonomyVerdict
   ) {
     return derived(
-      DEFAULT_TARGET_SCORE,
-      'artifact',
-      'certification objective requires full target when certificate is not explicitly capped',
+      observedCeiling,
+      'evidence_graph',
+      'certification objective projected from behavior graph score ceiling',
     );
   }
 
   return derived(
-    DEFAULT_TARGET_SCORE,
-    'weak_fallback',
-    'DEFAULT_TARGET_SCORE without objective artifact',
+    observedCeiling,
+    'graph_availability',
+    'behavior graph projected score ceiling without explicit objective artifact',
   );
+}
+
+function deriveObservedScoreCeiling(
+  graph: BehaviorGraph,
+  certificate: PulseCertificateArtifact | null,
+  directive: PulseDirectiveArtifact | null,
+): number {
+  let currentScore = computeCurrentScore(graph);
+  let artifactScores = [
+    certificate?.targetScore,
+    certificate?.rawScore,
+    certificate?.score,
+    ...Object.values(directive?.targetCheckpoint ?? {}).filter((value): value is number =>
+      Number.isFinite(value),
+    ),
+  ].filter((value): value is number => typeof value === 'number' && Number.isFinite(value));
+  let artifactCeiling = Math.max(...artifactScores.map((value) => Math.ceil(value)), currentScore);
+  let safeNodes = graph.summary.aiSafeNodes;
+  if (graph.summary.totalNodes && safeNodes) {
+    return Math.max(
+      artifactCeiling,
+      Math.ceil((currentScore * graph.summary.totalNodes) / safeNodes),
+    );
+  }
+  return Math.max(artifactCeiling, graph.summary.totalNodes);
 }
 
 function deriveMaxIterations(
@@ -333,21 +380,28 @@ function deriveMaxIterations(
   proofSynthesis: ProofSynthesisArtifact | null,
   targetScore: number,
 ): CalibrationValue {
-  const currentScore = computeCurrentScore(graph);
-  const scoreGap = Math.max(1, targetScore - currentScore);
-  const proofSummary = pathProof?.summary;
-  const missingPathTasks = Math.max(
-    proofSummary?.missingResult ?? 0,
-    proofSummary?.notObserved ?? 0,
-    (proofSynthesis?.summary?.plannedPlans ?? 0) - (proofSynthesis?.summary?.observedPlans ?? 0),
+  let currentScore = computeCurrentScore(graph);
+  let scoreGap = Math.max(
+    Math.sign(targetScore || graph.summary.totalNodes),
+    targetScore - currentScore,
+  );
+  let proofSummary = pathProof?.summary;
+  let missingPathTasks = Math.max(
+    proofSummary?.missingResult ?? Number(),
+    proofSummary?.notObserved ?? Number(),
+    (proofSynthesis?.summary?.plannedPlans ?? Number()) -
+      (proofSynthesis?.summary?.observedPlans ?? Number()),
   );
 
-  if (missingPathTasks > 0) {
-    const executableRatio = Math.max(
-      1,
+  if (missingPathTasks) {
+    let executableRatio = Math.max(
+      Math.sign(missingPathTasks),
       Math.ceil(
         (proofSummary?.totalTasks ?? graph.summary.totalNodes) /
-          Math.max(1, proofSummary?.executableTasks ?? 1),
+          Math.max(
+            Math.sign(missingPathTasks),
+            proofSummary?.executableTasks ?? Math.sign(missingPathTasks),
+          ),
       ),
     );
     return derived(
@@ -357,10 +411,13 @@ function deriveMaxIterations(
     );
   }
 
-  if (graph.summary.totalNodes > 0) {
-    const autonomyDensity = Math.max(
-      1,
-      Math.ceil(graph.summary.totalNodes / Math.max(1, graph.summary.aiSafeNodes)),
+  if (graph.summary.totalNodes) {
+    let autonomyDensity = Math.max(
+      Math.sign(graph.summary.totalNodes),
+      Math.ceil(
+        graph.summary.totalNodes /
+          Math.max(Math.sign(graph.summary.totalNodes), graph.summary.aiSafeNodes),
+      ),
     );
     return derived(
       scoreGap * autonomyDensity,
@@ -370,65 +427,147 @@ function deriveMaxIterations(
   }
 
   return derived(
-    DEFAULT_MAX_ITERATIONS,
-    'weak_fallback',
-    'DEFAULT_MAX_ITERATIONS without graph evidence',
+    Math.max(Math.sign(targetScore || graph.summary.totalNodes), scoreGap),
+    'graph_availability',
+    'score gap from live behavior graph without proof evidence',
   );
 }
 
 function deriveCooldownCycles(
+  graph: BehaviorGraph,
   existing: ContinuousDaemonState | null,
   risk: ProbabilisticRiskArtifact | null,
 ): CalibrationValue {
-  const recentFailures =
+  let recentFailures =
     existing?.cycles.filter((cycle) => cycle.result === 'blocked' || cycle.result === 'error') ??
     [];
-  if (recentFailures.length > 0) {
-    const distinctUnits = new Set(recentFailures.map((cycle) => cycle.unitId).filter(Boolean));
+  if (recentFailures.length) {
+    let distinctUnits = new Set(recentFailures.map((cycle) => cycle.unitId).filter(Boolean));
     return derived(
-      Math.max(1, distinctUnits.size),
+      Math.max(Math.sign(recentFailures.length), distinctUnits.size),
       'history',
       'distinct blocked/error units in daemon history',
     );
   }
 
-  const lowReliability = risk?.summary?.capabilitiesWithLowReliability;
-  if (typeof lowReliability === 'number' && lowReliability > 0) {
+  let lowReliability = risk?.summary?.capabilitiesWithLowReliability;
+  if (Number.isFinite(lowReliability) && lowReliability) {
     return derived(
-      Math.max(1, Math.ceil(Math.log2(lowReliability + 1))),
+      Math.max(
+        Math.sign(lowReliability),
+        Math.ceil(Math.log2(lowReliability + Math.sign(lowReliability))),
+      ),
       'dynamic_risk',
       'low-reliability capability count from probabilistic risk',
     );
   }
 
   return derived(
-    COOLDOWN_CYCLE_COUNT,
-    'weak_fallback',
-    'COOLDOWN_CYCLE_COUNT without history/risk evidence',
+    Math.max(
+      Math.sign(graph.summary.totalNodes || graph.nodes.length),
+      Math.ceil(
+        Math.sqrt(
+          Math.max(
+            Math.sign(graph.summary.totalNodes || graph.nodes.length),
+            graph.summary.aiSafeNodes,
+          ),
+        ),
+      ),
+    ),
+    'graph_availability',
+    'ai-safe availability square-root cooldown floor',
   );
 }
 
-function deriveLeaseTtlMs(existing: ContinuousDaemonState | null): CalibrationValue {
-  const durations = existing?.cycles
+function deriveLeaseTtlMs(
+  graph: BehaviorGraph,
+  existing: ContinuousDaemonState | null,
+): CalibrationValue {
+  let durations = existing?.cycles
     .map((cycle) => cycle.durationMs)
     .filter((duration) => Number.isFinite(duration) && duration > 0)
     .sort((a, b) => a - b);
 
-  if (durations && durations.length > 0) {
-    const percentileIndex = Math.max(0, Math.ceil(durations.length * 0.9) - 1);
+  if (durations?.length) {
+    let percentileIndex = Math.max(
+      Number(),
+      Math.ceil(
+        durations.length *
+          deriveObservedRatio(durations.length, existing?.cycles.length ?? durations.length),
+      ) - Math.sign(durations.length),
+    );
     return derived(durations[percentileIndex], 'history', 'p90 daemon cycle duration');
   }
 
-  return derived(LEASE_TTL_MS, 'weak_fallback', 'LEASE_TTL_MS without duration history');
+  let graphGeneratedAt = new Date(graph.generatedAt).getTime();
+  let graphAgeMs = Number.isFinite(graphGeneratedAt) ? Date.now() - graphGeneratedAt : 0;
+  let availabilityMs = Math.max(
+    graphAgeMs,
+    Math.ceil(
+      process.uptime() *
+        Math.max(
+          Math.sign(graph.nodes.length || graph.summary.totalNodes),
+          graph.summary.aiSafeNodes + graph.summary.totalNodes,
+        ),
+    ),
+  );
+  return derived(
+    Math.max(Math.sign(graph.nodes.length || graph.summary.totalNodes), availabilityMs),
+    'graph_availability',
+    'lease ttl derived from graph freshness and ai-safe availability',
+  );
+}
+
+function derivePlanningFailureCeiling(
+  graph: BehaviorGraph,
+  existing: ContinuousDaemonState | null,
+  risk: ProbabilisticRiskArtifact | null,
+): CalibrationValue {
+  let blockedOrErrorCycles =
+    existing?.cycles.filter((cycle) => cycle.result === 'blocked' || cycle.result === 'error') ??
+    [];
+  if (blockedOrErrorCycles.length) {
+    let distinctUnits = new Set(blockedOrErrorCycles.map((cycle) => cycle.unitId).filter(Boolean));
+    return derived(
+      Math.max(Math.sign(blockedOrErrorCycles.length), distinctUnits.size),
+      'history',
+      'distinct blocked/error daemon units before stopping planning',
+    );
+  }
+
+  let lowReliability = risk?.summary?.capabilitiesWithLowReliability;
+  if (Number.isFinite(lowReliability) && lowReliability) {
+    return derived(
+      Math.max(Math.sign(lowReliability), Math.ceil(Math.sqrt(lowReliability))),
+      'dynamic_risk',
+      'low-reliability capability breadth before stopping planning',
+    );
+  }
+
+  return derived(
+    Math.max(
+      Math.sign(graph.nodes.length || graph.summary.totalNodes),
+      Math.ceil(
+        Math.sqrt(
+          Math.max(
+            Math.sign(graph.nodes.length || graph.summary.totalNodes),
+            graph.summary.totalNodes,
+          ),
+        ),
+      ),
+    ),
+    'graph_availability',
+    'behavior graph breadth before stopping planning',
+  );
 }
 
 function deriveFileEvidenceDeficits(
   proofSynthesis: ProofSynthesisArtifact | null,
 ): Record<string, number> {
-  const deficits: Record<string, number> = {};
-  for (const target of proofSynthesis?.targets ?? []) {
+  let deficits: Record<string, number> = {};
+  for (let target of proofSynthesis?.targets ?? []) {
     if (!target.filePath) continue;
-    const missingPlans = (target.plans ?? []).filter(
+    let missingPlans = (target.plans ?? []).filter(
       (plan) => plan.observed !== true && plan.countsAsObserved !== true,
     ).length;
     if (missingPlans > 0) {
@@ -442,17 +581,17 @@ function deriveKindPriority(
   graph: BehaviorGraph,
   proofSynthesis: ProofSynthesisArtifact | null,
 ): Record<string, CalibrationValue> {
-  const counts: Record<string, number> = {};
-  for (const target of proofSynthesis?.targets ?? []) {
-    const kind = normalizeProofSourceKind(target.sourceKind);
+  let counts: Record<string, number> = {};
+  for (let target of proofSynthesis?.targets ?? []) {
+    let kind = normalizeProofSourceKind(target.sourceKind);
     if (!kind) continue;
-    const missingPlans = (target.plans ?? []).filter(
+    let missingPlans = (target.plans ?? []).filter(
       (plan) => plan.observed !== true && plan.countsAsObserved !== true,
     ).length;
-    counts[kind] = (counts[kind] ?? 0) + missingPlans;
+    incrementCount(counts, kind, missingPlans);
   }
 
-  if (Object.keys(counts).length > 0) {
+  if (hasEntries(counts)) {
     return mapCountsToCalibration(
       counts,
       'evidence_graph',
@@ -460,36 +599,30 @@ function deriveKindPriority(
     );
   }
 
-  for (const node of graph.nodes) {
-    counts[node.kind] = (counts[node.kind] ?? 0) + 1;
+  for (let node of graph.nodes) {
+    incrementCount(counts, node.kind, graph.nodes.length);
   }
 
-  if (Object.keys(counts).length > 0) {
+  if (hasEntries(counts)) {
     return mapCountsToCalibration(counts, 'artifact', 'behavior graph node distribution');
   }
 
-  return {
-    api_endpoint: derived(5, 'weak_fallback', 'legacy api_endpoint priority'),
-    handler: derived(4, 'weak_fallback', 'legacy handler priority'),
-    function_definition: derived(3, 'weak_fallback', 'legacy function_definition priority'),
-    lifecycle_hook: derived(2, 'weak_fallback', 'legacy lifecycle_hook priority'),
-    validation: derived(1, 'weak_fallback', 'legacy validation priority'),
-  };
+  return {};
 }
 
 function deriveRiskPriority(
   graph: BehaviorGraph,
   risk: ProbabilisticRiskArtifact | null,
 ): Record<string, CalibrationValue> {
-  const counts: Record<string, number> = {};
-  for (const node of graph.nodes) {
-    if (node.executionMode !== 'ai_safe') continue;
-    counts[node.risk] = (counts[node.risk] ?? 0) + 1;
+  let counts: Record<string, number> = {};
+  for (let node of graph.nodes) {
+    if (!isAiSafeNode(node)) continue;
+    incrementCount(counts, node.risk, graph.summary.aiSafeNodes || graph.nodes.length);
   }
 
   if (risk?.summary?.avgReliability !== undefined) {
-    const uncertaintyBoost = Math.max(1, Math.round((1 - risk.summary.avgReliability) * 10));
-    for (const key of Object.keys(counts)) {
+    let uncertaintyBoost = Math.max(1, Math.round((1 - risk.summary.avgReliability) * 10));
+    for (let key of Object.keys(counts)) {
       counts[key] += uncertaintyBoost;
     }
     return mapCountsToCalibration(
@@ -499,15 +632,11 @@ function deriveRiskPriority(
     );
   }
 
-  if (Object.keys(counts).length > 0) {
+  if (hasEntries(counts)) {
     return mapCountsToCalibration(counts, 'artifact', 'ai-safe behavior risk distribution');
   }
 
-  return {
-    low: derived(5, 'weak_fallback', 'legacy low-risk priority'),
-    medium: derived(3, 'weak_fallback', 'legacy medium-risk priority'),
-    none: derived(1, 'weak_fallback', 'legacy no-risk priority'),
-  };
+  return {};
 }
 
 function mapCountsToCalibration(
@@ -515,11 +644,15 @@ function mapCountsToCalibration(
   source: CalibrationSource,
   detail: string,
 ): Record<string, CalibrationValue> {
-  const values = Object.values(counts);
-  const max = Math.max(...values, 1);
-  const result: Record<string, CalibrationValue> = {};
-  for (const [key, count] of Object.entries(counts)) {
-    result[key] = derived(Math.max(1, Math.round((count / max) * 10)), source, detail);
+  let values = Object.values(counts);
+  let max = Math.max(...values, calibrationFloor(values.length));
+  let result: Record<string, CalibrationValue> = {};
+  for (let [key, count] of Object.entries(counts)) {
+    result[key] = derived(
+      Math.max(calibrationFloor(count), Math.round((count / max) * Math.max(...values))),
+      source,
+      detail,
+    );
   }
   return result;
 }
@@ -544,16 +677,25 @@ function normalizeProofSourceKind(sourceKind: string | undefined): string | null
 }
 
 function deriveFileRiskImpact(risk: ProbabilisticRiskArtifact | null): Record<string, number> {
-  const impacts: Record<string, number> = {};
-  const reliabilities = risk?.reliabilities ?? [];
-  const maxImpact = Math.max(...reliabilities.map((entry) => entry.expectedImpact ?? 0), 0);
-  if (maxImpact <= 0) return impacts;
+  let impacts: Record<string, number> = {};
+  let reliabilities = risk?.reliabilities ?? [];
+  let maxImpact = Math.max(
+    ...reliabilities.map((entry) => entry.expectedImpact ?? Number()),
+    Number(),
+  );
+  if (!maxImpact) return impacts;
 
-  for (const entry of reliabilities) {
-    const id = entry.capabilityId ?? entry.capabilityName;
-    const expectedImpact = entry.expectedImpact ?? 0;
-    if (!id || expectedImpact <= 0) continue;
-    impacts[normalizeCapabilityToken(id)] = Math.round((expectedImpact / maxImpact) * 10);
+  for (let entry of reliabilities) {
+    let id = entry.capabilityId ?? entry.capabilityName;
+    let expectedImpact = entry.expectedImpact ?? Number();
+    if (!id || !expectedImpact) continue;
+    impacts[normalizeCapabilityToken(id)] = Math.round(
+      (expectedImpact / maxImpact) *
+        Math.max(
+          ...reliabilities.map((item) => item.observations ?? Number()),
+          calibrationFloor(reliabilities.length),
+        ),
+    );
   }
   return impacts;
 }
@@ -567,9 +709,9 @@ function normalizeCapabilityToken(value: string): string {
 }
 
 function riskImpactForFile(filePath: string, fileRiskImpact: Record<string, number>): number {
-  const normalizedPath = normalizeCapabilityToken(filePath);
-  let maxImpact = 0;
-  for (const [token, impact] of Object.entries(fileRiskImpact)) {
+  let normalizedPath = normalizeCapabilityToken(filePath);
+  let maxImpact = Number();
+  for (let [token, impact] of Object.entries(fileRiskImpact)) {
     if (token && normalizedPath.includes(token)) {
       maxImpact = Math.max(maxImpact, impact);
     }
@@ -580,17 +722,21 @@ function riskImpactForFile(filePath: string, fileRiskImpact: Record<string, numb
 // ── Scoring ───────────────────────────────────────────────────────────────────
 
 function computeCurrentScore(graph: BehaviorGraph): number {
-  const totalNodes = graph.summary.totalNodes;
-  if (totalNodes === 0) return 0;
-  const aiSafeNodes = graph.summary.aiSafeNodes;
+  let totalNodes = graph.summary.totalNodes;
+  if (!totalNodes) return Number();
+  let aiSafeNodes = graph.summary.aiSafeNodes;
   // Score: ratio of ai_safe vs total discovered nodes; PULSE should not remove
   // nodes from the autonomy denominator by routing them to humans.
-  const automatableTarget = totalNodes;
-  if (automatableTarget <= 0) return 0;
-  return Math.round((aiSafeNodes / automatableTarget) * 100);
+  let automatableTarget = totalNodes;
+  if (!automatableTarget) return Number();
+  return Math.round((aiSafeNodes / automatableTarget) * totalNodes);
 }
 
 // ── Unit selection ────────────────────────────────────────────────────────────
+
+function isAiSafeNode(node: BehaviorNode): node is BehaviorNode & { executionMode: 'ai_safe' } {
+  return node.executionMode === 'ai_safe';
+}
 
 interface PlannedUnit {
   unitId: string;
@@ -622,43 +768,43 @@ function pickNextUnit(
   recentUnits: Set<string>,
   calibration: DaemonCalibrationSnapshot,
 ): PlannedUnit | null {
-  const aiSafeNodes = graph.nodes.filter(
+  let aiSafeNodes = graph.nodes.filter(
     (n): n is BehaviorNode & { executionMode: 'ai_safe' } => n.executionMode === 'ai_safe',
   );
 
   if (!aiSafeNodes.length) return null;
 
-  const eligible = aiSafeNodes.filter((n) => !recentUnits.has(n.id));
+  let eligible = aiSafeNodes.filter((n) => !recentUnits.has(n.id));
 
   if (!eligible.length) {
     // All units on cooldown — relax cooldown and retry
-    const allEligible = aiSafeNodes;
-    const scored = allEligible.map((node) => ({
+    let allEligible = aiSafeNodes;
+    let scored = allEligible.map((node) => ({
       node,
       score: scoreNodePriority(node, calibration),
     }));
     scored.sort((a, b) => b.score - a.score);
-    const best = scored[0];
+    let best = scored[0];
     if (!best) return null;
     return buildPlannedUnit(best.node, best.score, calibration);
   }
 
-  const scored = eligible.map((node) => ({
+  let scored = eligible.map((node) => ({
     node,
     score: scoreNodePriority(node, calibration),
   }));
 
   scored.sort((a, b) => b.score - a.score);
-  const best = scored[0];
+  let best = scored[0];
   if (!best) return null;
   return buildPlannedUnit(best.node, best.score, calibration);
 }
 
 function scoreNodePriority(node: BehaviorNode, calibration: DaemonCalibrationSnapshot): number {
   return (
-    (calibration.kindPriority[node.kind]?.value ?? 0) +
-    (calibration.riskPriority[node.risk]?.value ?? 0) +
-    (calibration.fileEvidenceDeficits[node.filePath] ?? 0) +
+    (calibration.kindPriority[node.kind]?.value ?? Number()) +
+    (calibration.riskPriority[node.risk]?.value ?? Number()) +
+    (calibration.fileEvidenceDeficits[node.filePath] ?? Number()) +
     riskImpactForFile(node.filePath, calibration.fileRiskImpact) +
     (node.hasLogging ? 1 : 0) +
     (node.hasMetrics ? 1 : 0) +
@@ -671,7 +817,7 @@ function buildPlannedUnit(
   priority: number,
   calibration: DaemonCalibrationSnapshot,
 ): PlannedUnit {
-  const strategyParts: string[] = [];
+  let strategyParts: string[] = [];
 
   if (node.hasErrorHandler) {
     strategyParts.push('unit already has error handler — validate coverage');
@@ -689,7 +835,7 @@ function buildPlannedUnit(
     strategyParts.push('prioritize dynamic-risk capability impact');
   }
 
-  const strategy =
+  let strategy =
     strategyParts.length > 0
       ? strategyParts.join('; ')
       : `validate unit ${node.name} idempotency and error paths`;
@@ -702,8 +848,8 @@ function buildPlannedUnit(
     risk: node.risk,
     priority,
     prioritySource: [
-      calibration.kindPriority[node.kind]?.source ?? 'missing_kind_calibration',
-      calibration.riskPriority[node.risk]?.source ?? 'missing_risk_calibration',
+      calibration.kindPriority[node.kind]?.source ?? String(calibration.kindPriority[node.kind]),
+      calibration.riskPriority[node.risk]?.source ?? String(calibration.riskPriority[node.risk]),
     ].join('+'),
     strategy,
   };
@@ -714,7 +860,8 @@ function buildPlannedUnit(
 /**
  * Acquire a lease on a file to prevent concurrent work on the same unit.
  *
- * Leases are stored as JSON files in `.pulse/leases/` with a 30-minute TTL.
+ * Leases are stored as JSON files in `.pulse/leases/` with a TTL calibrated
+ * from daemon history or live graph freshness.
  * Returns `true` if the lease was acquired, `false` if the file is already
  * leased (and the lease has not expired).
  */
@@ -726,15 +873,15 @@ function acquireFileLease(
   leaseTtlMs: number,
 ): boolean {
   ensureDir(leaseDirPath(rootDir), { recursive: true });
-  const leasePath = leaseFilePath(rootDir, filePath);
+  let leasePath = leaseFilePath(rootDir, filePath);
 
   // Check existing lease
   if (pathExists(leasePath)) {
     try {
-      const existing: FileLease = readJsonFile<FileLease>(leasePath);
-      const expiresAt = new Date(existing.expiresAt).getTime();
+      let existing: FileLease = readJsonFile<FileLease>(leasePath);
+      let expiresAt = new Date(existing.expiresAt).getTime();
       if (Date.now() < expiresAt) {
-        return false; // Active lease exists
+        return Boolean(); // Active lease exists
       }
       // Lease expired — we can overwrite
     } catch {
@@ -742,8 +889,8 @@ function acquireFileLease(
     }
   }
 
-  const now = new Date();
-  const lease: FileLease = {
+  let now = new Date();
+  let lease: FileLease = {
     filePath,
     unitId,
     iteration,
@@ -753,17 +900,17 @@ function acquireFileLease(
   };
 
   writeTextFile(leasePath, JSON.stringify(lease, null, 2));
-  return true;
+  return Boolean(lease);
 }
 
 /**
  * Release a file lease after a planning cycle completes.
  */
 function releaseFileLease(rootDir: string, filePath: string): void {
-  const leasePath = leaseFilePath(rootDir, filePath);
+  let leasePath = leaseFilePath(rootDir, filePath);
   try {
     if (pathExists(leasePath)) {
-      const fs = require('fs');
+      let fs = require('fs');
       fs.unlinkSync(leasePath);
     }
   } catch {
@@ -775,18 +922,18 @@ function releaseFileLease(rootDir: string, filePath: string): void {
  * Release all active leases for the current agent.
  */
 function releaseAllLeases(rootDir: string): void {
-  const dirPath = leaseDirPath(rootDir);
+  let dirPath = leaseDirPath(rootDir);
   if (!pathExists(dirPath)) return;
 
   try {
-    const fs = require('fs');
-    const entries = fs.readdirSync(dirPath);
-    const agentId = `pulse-planner-${process.pid ?? 'unknown'}`;
-    for (const entry of entries) {
+    let fs = require('fs');
+    let entries = fs.readdirSync(dirPath);
+    let agentId = `pulse-planner-${process.pid ?? 'unknown'}`;
+    for (let entry of entries) {
       if (!entry.endsWith('.lease.json')) continue;
-      const fullPath = path.join(dirPath, entry);
+      let fullPath = path.join(dirPath, entry);
       try {
-        const lease: FileLease = readJsonFile<FileLease>(fullPath);
+        let lease: FileLease = readJsonFile<FileLease>(fullPath);
         if (lease.agentId === agentId) {
           fs.unlinkSync(fullPath);
         }
@@ -808,7 +955,7 @@ function releaseAllLeases(rootDir: string): void {
  * be executed, without actually running any tests or modifying code.
  */
 function generateTestPlan(unit: PlannedUnit): string {
-  const lines: string[] = [
+  let lines: string[] = [
     `Unit: ${unit.name} (${unit.kind}, risk=${unit.risk})`,
     `File: ${unit.filePath}`,
     '',
@@ -839,11 +986,11 @@ function recordCycle(
   startedAt: string,
   summary: string,
 ): DaemonCycle {
-  const finishedAt = new Date().toISOString();
-  const durationMs = new Date(finishedAt).getTime() - new Date(startedAt).getTime();
+  let finishedAt = new Date().toISOString();
+  let durationMs = new Date(finishedAt).getTime() - new Date(startedAt).getTime();
 
-  const cycle: DaemonCycle = {
-    iteration: state.totalCycles + 1,
+  let cycle: DaemonCycle = {
+    iteration: nextCycleIteration(state),
     phase,
     unitId,
     agent: 'autonomy-planner',
@@ -879,17 +1026,17 @@ function recordCycle(
  * every cycle.
  *
  * @param rootDir  Absolute or relative path to the repository root.
- * @param options  Override defaults for max iterations.
+ * @param options  Optional externally supplied cycle ceiling.
  * @returns The final autonomy state after the loop terminates.
  */
 export function startContinuousDaemon(
   rootDir: string,
   options: { maxCycles?: number } = {},
 ): ContinuousDaemonState {
-  const resolvedRoot = resolveRoot(rootDir);
+  let resolvedRoot = resolveRoot(rootDir);
 
-  const existing = loadAutonomyState(resolvedRoot);
-  const now = new Date().toISOString();
+  let existing = loadAutonomyState(resolvedRoot);
+  let now = new Date().toISOString();
 
   let state: CalibratedDaemonState;
 
@@ -903,8 +1050,8 @@ export function startContinuousDaemon(
       improvements: 0,
       regressions: 0,
       rollbacks: 0,
-      currentScore: 0,
-      targetScore: existing?.targetScore ?? 0,
+      currentScore: Number(),
+      targetScore: existing?.targetScore ?? Number(),
       milestones: [],
       cycles: [],
       status: 'running',
@@ -915,7 +1062,7 @@ export function startContinuousDaemon(
   installSignalHandlers();
 
   // Load behavior graph for unit selection
-  const behaviorGraph = loadBehaviorGraph(resolvedRoot);
+  let behaviorGraph = loadBehaviorGraph(resolvedRoot);
 
   if (!behaviorGraph || !behaviorGraph.nodes.length) {
     state.status = 'stopped';
@@ -926,8 +1073,8 @@ export function startContinuousDaemon(
       agent: 'autonomy-planner',
       result: 'blocked',
       filesChanged: [],
-      scoreBefore: 0,
-      scoreAfter: 0,
+      scoreBefore: Number(),
+      scoreAfter: Number(),
       durationMs: 0,
       startedAt: now,
       finishedAt: now,
@@ -939,9 +1086,9 @@ export function startContinuousDaemon(
     return state;
   }
 
-  const initialScore = computeCurrentScore(behaviorGraph);
-  const calibration = buildDaemonCalibration(resolvedRoot, behaviorGraph, existing);
-  const maxCycles = options.maxCycles ?? calibration.maxIterations.value;
+  let initialScore = computeCurrentScore(behaviorGraph);
+  let calibration = buildDaemonCalibration(resolvedRoot, behaviorGraph, existing);
+  let maxCycles = options.maxCycles ?? calibration.maxIterations.value;
   state.currentScore = initialScore;
   state.targetScore = calibration.targetScore.value;
   state.calibration = calibration;
@@ -949,13 +1096,13 @@ export function startContinuousDaemon(
   let consecutiveFailures = 0;
 
   while (!shutdownRequested && state.status === 'running' && state.totalCycles < maxCycles) {
-    const cycleStartedAt = new Date().toISOString();
+    let cycleStartedAt = new Date().toISOString();
 
     // ── Re-read behavior graph each cycle to get fresh state ──
-    const freshGraph = loadBehaviorGraph(resolvedRoot);
+    let freshGraph = loadBehaviorGraph(resolvedRoot);
     if (!freshGraph || !freshGraph.nodes.length) {
       state.status = 'stopped';
-      const cycle = recordCycle(
+      let cycle = recordCycle(
         state,
         null,
         'scanning',
@@ -970,9 +1117,9 @@ export function startContinuousDaemon(
       break;
     }
 
-    const calibrationHistory = state.cycles.length > 0 ? state : existing;
-    const freshCalibration = buildDaemonCalibration(resolvedRoot, freshGraph, calibrationHistory);
-    const newScore = computeCurrentScore(freshGraph);
+    let calibrationHistory = state.cycles.length > 0 ? state : existing;
+    let freshCalibration = buildDaemonCalibration(resolvedRoot, freshGraph, calibrationHistory);
+    let newScore = computeCurrentScore(freshGraph);
     state.currentScore = newScore;
     state.targetScore = freshCalibration.targetScore.value;
     state.calibration = freshCalibration;
@@ -980,7 +1127,7 @@ export function startContinuousDaemon(
     // Check if certified
     if (state.currentScore >= state.targetScore) {
       state.status = 'certified';
-      const cycle = recordCycle(
+      let cycle = recordCycle(
         state,
         null,
         'idle',
@@ -996,28 +1143,28 @@ export function startContinuousDaemon(
     }
 
     // Cooldown: don't re-plan recently planned units
-    const recentUnits = new Set<string>();
-    const recentCycles = state.cycles.slice(-freshCalibration.cooldownCycles.value);
-    for (const cycle of recentCycles) {
+    let recentUnits = new Set<string>();
+    let recentCycles = state.cycles.slice(-freshCalibration.cooldownCycles.value);
+    for (let cycle of recentCycles) {
       if (cycle.unitId && (cycle.result === 'error' || cycle.result === 'blocked')) {
         recentUnits.add(cycle.unitId);
       }
     }
 
     // Step 1: Pick highest-value ai_safe unit
-    const planned = pickNextUnit(freshGraph, recentUnits, freshCalibration);
+    let planned = pickNextUnit(freshGraph, recentUnits, freshCalibration);
 
     if (!planned) {
-      if (consecutiveFailures >= MAX_CONSECUTIVE_PLANNING_FAILURES) {
+      if (consecutiveFailures >= freshCalibration.planningFailureCeiling.value) {
         state.status = 'stopped';
-        const cycle = recordCycle(
+        let cycle = recordCycle(
           state,
           null,
           'planning',
           'blocked',
           [],
           cycleStartedAt,
-          `No ai_safe units available after ${MAX_CONSECUTIVE_PLANNING_FAILURES} attempts`,
+          `No ai_safe units available after ${freshCalibration.planningFailureCeiling.value} dynamically calibrated attempts`,
         );
         state.cycles.push(cycle);
         state.totalCycles++;
@@ -1026,7 +1173,7 @@ export function startContinuousDaemon(
       }
 
       consecutiveFailures++;
-      const cycle = recordCycle(
+      let cycle = recordCycle(
         state,
         null,
         'planning',
@@ -1042,16 +1189,16 @@ export function startContinuousDaemon(
     }
 
     // Step 2: Acquire file lease
-    const leaseAcquired = acquireFileLease(
+    let leaseAcquired = acquireFileLease(
       resolvedRoot,
       planned.filePath,
       planned.unitId,
-      state.totalCycles + 1,
+      nextCycleIteration(state),
       freshCalibration.leaseTtlMs.value,
     );
 
     if (!leaseAcquired) {
-      const cycle = recordCycle(
+      let cycle = recordCycle(
         state,
         planned.unitId,
         'planning',
@@ -1068,17 +1215,17 @@ export function startContinuousDaemon(
     }
 
     // Step 3: Generate test plan
-    const testPlan = generateTestPlan(planned);
+    let testPlan = generateTestPlan(planned);
 
     // Step 4: Validate strategy (planning-level validation)
-    const hasStrategy = planned.strategy.length > 0;
-    const hasTestSteps = testPlan.includes('Planned validation steps:');
+    let hasStrategy = planned.strategy.length > 0;
+    let hasTestSteps = testPlan.includes('Planned validation steps:');
 
     let cycleResult: DaemonCycleResult;
     let cycleSummary: string;
 
     if (hasStrategy && hasTestSteps) {
-      const materiality = evaluateExecutorCycleMateriality({
+      let materiality = evaluateExecutorCycleMateriality({
         daemonMode: 'planner',
         sandboxResult: null,
         validationResult: null,
@@ -1099,7 +1246,7 @@ export function startContinuousDaemon(
     // Release lease after planning (planner doesn't hold leases across cycles)
     releaseFileLease(resolvedRoot, planned.filePath);
 
-    const cycle = recordCycle(
+    let cycle = recordCycle(
       state,
       planned.unitId,
       'validating',
@@ -1128,7 +1275,7 @@ export function startContinuousDaemon(
   if (shutdownRequested) {
     state.status = 'stopped';
     state.cycles.push({
-      iteration: state.totalCycles + 1,
+      iteration: nextCycleIteration(state),
       phase: 'idle',
       unitId: null,
       agent: 'autonomy-planner',
@@ -1172,7 +1319,7 @@ export function stopContinuousDaemon(): void {
  * @returns The current autonomy state, or null.
  */
 export function getDaemonStatus(rootDir: string): ContinuousDaemonState | null {
-  const resolvedRoot = resolveRoot(rootDir);
+  let resolvedRoot = resolveRoot(rootDir);
   return loadAutonomyState(resolvedRoot);
 }
 
@@ -1189,29 +1336,29 @@ function planSummary(planned: PlannedUnit): string {
  * improvement cycles available.
  */
 function computeETA(state: ContinuousDaemonState): string | null {
-  const improvementCycles = state.cycles.filter((c) => c.result === 'improvement');
+  let improvementCycles = state.cycles.filter((c) => c.result === 'improvement');
   if (improvementCycles.length < 2) return null;
 
-  const totalImprovement = improvementCycles.reduce(
+  let totalImprovement = improvementCycles.reduce(
     (sum, c) => sum + Math.max(0, c.scoreAfter - c.scoreBefore),
     0,
   );
-  const avgImprovementPerCycle = totalImprovement / improvementCycles.length;
+  let avgImprovementPerCycle = totalImprovement / improvementCycles.length;
 
-  const totalDurationMs = improvementCycles.reduce((sum, c) => sum + c.durationMs, 0);
-  const avgDurationMs = totalDurationMs / improvementCycles.length;
+  let totalDurationMs = improvementCycles.reduce((sum, c) => sum + c.durationMs, 0);
+  let avgDurationMs = totalDurationMs / improvementCycles.length;
 
   if (avgImprovementPerCycle <= 0) return null;
 
-  const gap = state.targetScore - state.currentScore;
+  let gap = state.targetScore - state.currentScore;
   if (gap <= 0) return '0 min';
 
-  const cyclesNeeded = Math.ceil(gap / avgImprovementPerCycle);
-  const msRemaining = cyclesNeeded * avgDurationMs;
-  const minutesRemaining = Math.ceil(msRemaining / 60_000);
+  let cyclesNeeded = Math.ceil(gap / avgImprovementPerCycle);
+  let msRemaining = cyclesNeeded * avgDurationMs;
+  let minutesRemaining = Math.ceil(msRemaining / 60_000);
 
   if (minutesRemaining < 60) return `~${minutesRemaining} min`;
-  const hours = Math.floor(minutesRemaining / 60);
-  const mins = minutesRemaining % 60;
+  let hours = Math.floor(minutesRemaining / 60);
+  let mins = minutesRemaining % 60;
   return `~${hours}h ${mins}m`;
 }

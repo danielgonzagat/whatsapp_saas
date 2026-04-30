@@ -39,6 +39,7 @@ function normalizeWhitespace(value: string): string {
 }
 
 function stripStaticTypeTokens(value: string): string {
+  if (!value) return '';
   return normalizeWhitespace(
     value
       .split(' ')
@@ -124,7 +125,7 @@ function truthModeFromSource(source: string | undefined): PulseFindingTruthMode 
 }
 
 function deriveTruthMode(item: Break): PulseFindingTruthMode {
-  let sourceTruthMode = truthModeFromSource(item.source);
+  const sourceTruthMode = truthModeFromSource(item.source);
   if (sourceTruthMode) {
     return sourceTruthMode;
   }
@@ -171,12 +172,12 @@ function evidenceChainFor(item: Break, truthMode: PulseFindingTruthMode): string
 }
 
 export function deriveDynamicFindingIdentity(item: Break): PulseDynamicFindingIdentity {
-  let truthMode = deriveTruthMode(item);
-  let actionability = deriveActionability(item, truthMode);
-  let eventName = compactEventName(
+  const truthMode = deriveTruthMode(item);
+  const actionability = deriveActionability(item, truthMode);
+  const eventName = compactEventName(
     sentenceFrom(item.description) || sentenceFrom(item.detail) || `Finding at ${item.file}`,
   );
-  let eventKey = stableHash(
+  const eventKey = stableHash(
     [eventName.toLowerCase(), truthMode, item.source ?? 'unknown', item.file].join('|'),
   );
 
@@ -191,7 +192,7 @@ export function deriveDynamicFindingIdentity(item: Break): PulseDynamicFindingId
 }
 
 export function isBlockingDynamicFinding(item: Break): boolean {
-  let identity = deriveDynamicFindingIdentity(item);
+  const identity = deriveDynamicFindingIdentity(item);
   return identity.actionability === 'fix_now' && identity.truthMode !== 'weak_signal';
 }
 
@@ -199,8 +200,8 @@ export function summarizeDynamicFindingEvents(breaks: Break[], limit?: number): 
   let summaries = new Map<string, PulseFindingEventSummary>();
 
   for (const item of breaks) {
-    let identity = deriveDynamicFindingIdentity(item);
-    let existing = summaries.get(identity.eventKey);
+    const identity = deriveDynamicFindingIdentity(item);
+    const existing = summaries.get(identity.eventKey);
     if (!existing) {
       summaries.set(identity.eventKey, {
         eventName: identity.eventName,

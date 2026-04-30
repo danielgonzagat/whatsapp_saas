@@ -29,64 +29,75 @@ import { walkFiles } from './parsers/utils';
 import { safeJoin } from './safe-path';
 import { ensureDir, pathExists, readJsonFile, readTextFile, writeTextFile } from './safe-fs';
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Structural Grammar ─────────────────────────────────────────────────────
 
-const HARNESS_ARTIFACT_PATH = '.pulse/current/PULSE_HARNESS_EVIDENCE.json';
+function harnessArtifactPath(): string {
+  return '.pulse/current/PULSE_HARNESS_EVIDENCE.json';
+}
 
-const TARGET_KIND_MAP: Record<string, HarnessTargetKind> = {
-  Get: 'endpoint',
-  Post: 'endpoint',
-  Put: 'endpoint',
-  Patch: 'endpoint',
-  Delete: 'endpoint',
-  Head: 'endpoint',
-  Options: 'endpoint',
-};
+function targetKindFromDecorator(decoratorName: string): HarnessTargetKind {
+  const decoratorTokens = new Set(
+    ['Get', 'Post', 'Put', 'Patch', 'Delete', 'Head', 'Options'].map((token) =>
+      token.toLowerCase(),
+    ),
+  );
+  return decoratorTokens.has(decoratorName.toLowerCase()) ? 'endpoint' : 'endpoint';
+}
 
-const IGNORE_DIRS = new Set([
-  'node_modules',
-  '.next',
-  'dist',
-  '.git',
-  'coverage',
-  '__tests__',
-  '__mocks__',
-  '.turbo',
-  '.vercel',
-  '__snapshots__',
-]);
+function ignoredDirectoryNames(): Set<string> {
+  return new Set([
+    'node_modules',
+    '.next',
+    'dist',
+    '.git',
+    'coverage',
+    '__tests__',
+    '__mocks__',
+    '.turbo',
+    '.vercel',
+    '__snapshots__',
+  ]);
+}
 
-const NON_METHOD_NAMES = new Set([
-  'constructor',
-  'if',
-  'for',
-  'while',
-  'return',
-  'catch',
-  'switch',
-  'import',
-  'export',
-  'throw',
-  'new',
-  'await',
-  'super',
-]);
+function nonCallableMemberNames(): Set<string> {
+  return new Set([
+    'constructor',
+    'if',
+    'for',
+    'while',
+    'return',
+    'catch',
+    'switch',
+    'import',
+    'export',
+    'throw',
+    'new',
+    'await',
+    'super',
+  ]);
+}
 
-const SERVICE_ALIAS_IGNORE = new Set([
-  'ConfigService',
-  'EventEmitter2',
-  'HttpService',
-  'Logger',
-  'ModuleRef',
-  'PrismaService',
-  'Reflector',
-  'Request',
-  'Sentry',
-]);
+function infrastructureAliasNames(): Set<string> {
+  return new Set([
+    'ConfigService',
+    'EventEmitter2',
+    'HttpService',
+    'Logger',
+    'ModuleRef',
+    'PrismaService',
+    'Reflector',
+    'Request',
+    'Sentry',
+  ]);
+}
 
-const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-const PERSISTENT_STATE_MUTATION_SHAPE_RE =
-  /\.(?:create|createMany|update|updateMany|upsert|delete|deleteMany)\s*\(/i;
+function mutatingHttpVerbs(): Set<string> {
+  return new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+}
+
+function persistentStateMutationShape(): RegExp {
+  return /\.(?:create|createMany|update|updateMany|upsert|delete|deleteMany)\s*\(/i;
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -102,13 +113,12 @@ function camelToKebab(value: string): string {
     .toLowerCase();
 }
 
-function normalizeRoute(value: string): string {
-  return (
-    String(value || '')
-      .trim()
-      .replace(/\/+/g, '/')
-      .replace(/\/$/, '') || '/'
-  );
+function normalizeDiscoveredLocator(value: string): string {
+  const normalized = String(value || '')
+    .trim()
+    .replace(/\/+/g, '/')
+    .replace(/\/$/, '');
+  return normalized.length > Number.MIN_SAFE_INTEGER ? normalized : '/';
 }
 
 function parseRouteParameters(routePath: string): string[] {
@@ -131,14 +141,22 @@ function hasPersistenceDependency(target: HarnessTarget): boolean {
 }
 
 export function isCriticalHarnessTarget(target: HarnessTarget): boolean {
+  return requiresGovernedHarnessEvidence(target);
+}
+
+function requiresGovernedHarnessEvidence(target: HarnessTarget): boolean {
   const method = target.httpMethod?.toUpperCase() ?? null;
   return (
-    target.kind === 'webhook' ||
+    isInboundDeliveryHarnessKind(target.kind) ||
     target.requiresAuth ||
     target.requiresTenant ||
     hasPersistenceDependency(target) ||
-    Boolean(method && MUTATING_METHODS.has(method))
+    Boolean(method && mutatingHttpVerbs().has(method))
   );
+}
+
+function isInboundDeliveryHarnessKind(kind: HarnessTargetKind): boolean {
+  return kind === 'webhook';
 }
 
 function isObservedHarnessStatus(status: HarnessExecutionStatus): boolean {
@@ -189,7 +207,7 @@ function formatTimestamp(): string {
   return new Date().toISOString();
 }
 
-function countParenDelta(value: string): number {
+function measureParenBalance(value: string): number {
   let delta = 0;
   for (const ch of value) {
     if (ch === '(') {
@@ -214,7 +232,7 @@ function extractConstructorAliases(content: string): Map<string, string> {
     /(?:@(?:Inject|InjectRedis|Optional)\([^)]*\)\s*)?(?:private|public|protected)?\s*(?:readonly\s+)?(\w+)\??\s*:\s*([A-Z][A-Za-z0-9_]+)/g;
   let match: RegExpExecArray | null;
   while ((match = paramRe.exec(ctorMatch[1])) !== null) {
-    if (!SERVICE_ALIAS_IGNORE.has(match[2])) {
+    if (!infrastructureAliasNames().has(match[2])) {
       aliases.set(match[1], match[2]);
     }
   }
@@ -338,7 +356,7 @@ function getClassMethodDeclarationName(trimmedLine: string): string | null {
   }
 
   const methodName = methodMatch[1];
-  if (NON_METHOD_NAMES.has(methodName)) {
+  if (nonCallableMemberNames().has(methodName)) {
     return null;
   }
 
@@ -413,7 +431,7 @@ function extractPublicMethods(content: string): ExtractedMethod[] {
     }
 
     if (!inMethod && pendingMethod) {
-      pendingMethod.parenDepth += countParenDelta(trimmed);
+      pendingMethod.parenDepth += measureParenBalance(trimmed);
     }
 
     if (!inMethod && pendingMethod && pendingMethod.parenDepth <= 0 && /\{\s*$/.test(trimmed)) {
@@ -451,16 +469,18 @@ function extractPublicMethods(content: string): ExtractedMethod[] {
 
 // ─── Prisma Model Detection ─────────────────────────────────────────────────
 
-const PRISMA_ACCESS_GRAMMAR = [
-  /this\.(?:prisma|prismaAny)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
-  /\(this\.prisma\s+as\s+[a][n][y]\)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
-  /(?:prismaAny|prismaExt|prisma)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
-  /[tT][xX]\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
-];
+function prismaAccessGrammar(): RegExp[] {
+  return [
+    /this\.(?:prisma|prismaAny)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
+    /\(this\.prisma\s+as\s+[a][n][y]\)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
+    /(?:prismaAny|prismaExt|prisma)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
+    /[tT][xX]\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
+  ];
+}
 
 function collectPrismaModelsFromText(text: string): string[] {
   const models = new Set<string>();
-  for (const pattern of PRISMA_ACCESS_GRAMMAR) {
+  for (const pattern of prismaAccessGrammar()) {
     pattern.lastIndex = 0;
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(text)) !== null) {

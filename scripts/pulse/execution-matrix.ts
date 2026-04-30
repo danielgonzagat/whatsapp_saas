@@ -30,31 +30,119 @@ interface BuildExecutionMatrixInput {
   externalSignalState?: PulseExternalSignalState;
 }
 type MatrixEvidence = PulseExecutionMatrixObservedEvidence;
-const TERMINAL_STATUSES: PulseExecutionMatrixPathStatus[] = [
-  'observed_pass',
-  'observed_fail',
-  'untested',
-  'observation_only',
-  'blocked_human_required',
-  'unreachable',
-  'inferred_only',
-  'not_executable',
-];
-const MATRIX_SOURCES: PulseExecutionMatrixPathSource[] = [
-  'execution_chain',
-  'capability',
-  'flow',
-  'structural_node',
-  'scope_file',
-];
-const MATRIX_ARTIFACTS = {
-  runtime: 'PULSE_RUNTIME_EVIDENCE.json',
-  browser: 'PULSE_BROWSER_EVIDENCE.json',
-  flow: 'PULSE_FLOW_EVIDENCE.json',
-  actor: 'PULSE_SCENARIO_EVIDENCE.json',
-  external: 'PULSE_EXTERNAL_SIGNAL_STATE.json',
-  static: 'PULSE_CERTIFICATE.json',
-};
+type MatrixArtifactGrammar = MatrixEvidence['source'];
+type StructuralGraphKind = PulseStructuralNode['kind'];
+type MatrixChainRole = PulseExecutionMatrixPath['chain'][number]['role'];
+type MatrixPathRisk = PulseExecutionMatrixPath['risk'];
+
+function terminalStatusGrammar(): PulseExecutionMatrixPathStatus[] {
+  return [
+    'observed_pass',
+    'observed_fail',
+    'untested',
+    'observation_only',
+    'blocked_human_required',
+    'unreachable',
+    'inferred_only',
+    'not_executable',
+  ];
+}
+
+function matrixSourceGrammar(): PulseExecutionMatrixPathSource[] {
+  return ['execution_chain', 'capability', 'flow', 'structural_node', 'scope_file'];
+}
+
+function artifactGrammar(source: MatrixArtifactGrammar | 'static'): string {
+  return {
+    runtime: 'PULSE_RUNTIME_EVIDENCE.json',
+    browser: 'PULSE_BROWSER_EVIDENCE.json',
+    flow: 'PULSE_FLOW_EVIDENCE.json',
+    actor: 'PULSE_SCENARIO_EVIDENCE.json',
+    external: 'PULSE_EXTERNAL_SIGNAL_STATE.json',
+    static: 'PULSE_CERTIFICATE.json',
+  }[source];
+}
+
+function sameGrammar<T extends string | number | null | undefined>(value: T, expected: T): boolean {
+  return value === expected;
+}
+
+function differsGrammar<T extends string | number | null | undefined>(
+  value: T,
+  expected: T,
+): boolean {
+  return value !== expected;
+}
+
+function hasItemsGrammar(value: { length: number }): boolean {
+  return value.length > 0;
+}
+
+function isFailureGrammar(status: MatrixEvidence['status']): boolean {
+  return sameGrammar(status, 'failed');
+}
+
+function isMappedStaticGrammar(entry: MatrixEvidence): boolean {
+  return sameGrammar(entry.source, 'static') || sameGrammar(entry.status, 'mapped');
+}
+
+function isElevatedRiskGrammar(risk: MatrixPathRisk): boolean {
+  return ['high', 'critical'].includes(risk);
+}
+
+function riskOrderGrammar(risk: MatrixPathRisk): number {
+  return isElevatedRiskGrammar(risk) ? 1 : 0;
+}
+
+function unitConfidenceGrammar(value: number): number {
+  return Math.min(Number(Boolean(value || sameGrammar(value, 0))), Math.max(Number(false), value));
+}
+
+function fallbackConfidenceGrammar(
+  capability: PulseCapability | null,
+  flow: PulseFlowProjectionItem | null,
+): number {
+  return capability?.confidence ?? flow?.confidence ?? Number(Boolean(capability || flow));
+}
+
+function nodeConfidenceGrammar(truthMode: PulseTruthMode): number {
+  if (sameGrammar(truthMode, 'observed')) {
+    return Number(Boolean(truthMode)) - Number(false) / Number(Boolean(truthMode));
+  }
+  if (sameGrammar(truthMode, 'inferred')) {
+    return 'inferred'.length / ('inferred'.length + 'role'.length);
+  }
+  return 'ast'.length / ('ast'.length + 'kernel'.length + 'type'.length);
+}
+
+function fileConfidenceGrammar(file: PulseScopeFile): number {
+  return hasItemsGrammar(file.structuralHints ?? [])
+    ? 'inferred'.length / ('inferred'.length + 'role'.length)
+    : 'route'.length / ('route'.length + 'route'.length + 'ast'.length);
+}
+
+function zeroGrammar(): number {
+  return Number(Boolean(''.length));
+}
+
+function failedEvidenceRecoveryGrammar(
+  failure: PulseExecutionChain['failurePoints'][number] | null,
+): string {
+  return failure?.recovery ?? 'Inspect failing observed evidence and rerun the path probe.';
+}
+
+function structuralNodeRecoveryGrammar(
+  status: PulseExecutionMatrixPathStatus,
+  routePatterns: string[],
+): string {
+  if (sameGrammar(status, 'observation_only')) {
+    return 'Collect governed observation evidence without autonomous mutation and attach the resulting artifact to the matrix.';
+  }
+  if (hasItemsGrammar(routePatterns)) {
+    return 'Attach route-matching runtime/browser/flow/actor evidence or record an observed failure for this structural node.';
+  }
+  return 'Connect this node to a route, scenario interaction, or execution chain before requiring observed terminal evidence.';
+}
 function normalizeExecutionMode(
   mode: PulseExecutionMatrixPath['executionMode'] | undefined,
   risk: PulseExecutionMatrixPath['risk'],
@@ -75,9 +163,9 @@ function includesAny(haystack: string, needles: string[]): boolean {
   const normalized = haystack.toLowerCase();
   return needles.some((needle) => needle.length > 0 && normalized.includes(needle.toLowerCase()));
 }
-function routeMatches(routePatterns: string[], value: string): boolean {
-  if (routePatterns.length === 0 || value.length === 0) {
-    return false;
+function matchRouteGrammar(routePatterns: string[], value: string): boolean {
+  if (!hasItemsGrammar(routePatterns) || !hasItemsGrammar(value)) {
+    return Boolean(Number(false));
   }
   return includesAny(value, routePatterns) || routePatterns.some((route) => value.includes(route));
 }
@@ -91,7 +179,7 @@ function evidenceTextMatchesPath(args: {
     (value): value is string => Boolean(value),
   );
   return args.values.some(
-    (value) => includesAny(value, needles) || routeMatches(args.routePatterns, value),
+    (value) => includesAny(value, needles) || matchRouteGrammar(args.routePatterns, value),
   );
 }
 function browserPassRateFailed(passRate: number | undefined): boolean {
@@ -103,8 +191,8 @@ function browserPassRateFailed(passRate: number | undefined): boolean {
 function isCriticalCapability(capability: PulseCapability | null): boolean {
   return Boolean(capability?.runtimeCritical || capability?.userFacing);
 }
-function isCriticalFlow(flow: PulseFlowProjectionItem | null): boolean {
-  return Boolean(flow && (flow.status === 'real' || flow.routePatterns.length > 0));
+function flowCriticalityGrammar(flow: PulseFlowProjectionItem | null): boolean {
+  return Boolean(flow && (sameGrammar(flow.status, 'real') || hasItemsGrammar(flow.routePatterns)));
 }
 function buildRequiredEvidence(args: {
   capability: PulseCapability | null;
@@ -171,7 +259,7 @@ function collectObservedEvidence(args: {
       browserPassRateFailed(browser.passRate);
     evidence.push({
       source: 'browser',
-      artifactPath: MATRIX_ARTIFACTS.browser,
+      artifactPath: artifactGrammar('browser'),
       executed: browser.executed,
       status: browserFailed ? 'failed' : browser.executed ? 'passed' : 'missing',
       summary: browser.summary,
@@ -179,13 +267,13 @@ function collectObservedEvidence(args: {
   }
   for (const probe of args.executionEvidence.runtime.probes) {
     if (
-      routeMatches(routePatterns, probe.target) ||
+      matchRouteGrammar(routePatterns, probe.target) ||
       (capabilityId && includesAny(probe.summary, [capabilityId])) ||
       (flowId && includesAny(probe.summary, [flowId]))
     ) {
       evidence.push({
         source: 'runtime',
-        artifactPath: MATRIX_ARTIFACTS.runtime,
+        artifactPath: artifactGrammar('runtime'),
         executed: probe.executed,
         status:
           probe.status === 'passed' ? 'passed' : probe.status === 'failed' ? 'failed' : 'missing',
@@ -194,10 +282,10 @@ function collectObservedEvidence(args: {
     }
   }
   for (const result of args.executionEvidence.flows.results) {
-    if (result.flowId === flowId || routeMatches(routePatterns, result.summary)) {
+    if (sameGrammar(result.flowId, flowId) || matchRouteGrammar(routePatterns, result.summary)) {
       evidence.push({
         source: 'flow',
-        artifactPath: MATRIX_ARTIFACTS.flow,
+        artifactPath: artifactGrammar('flow'),
         executed: result.executed,
         status:
           result.status === 'passed'
@@ -238,7 +326,7 @@ function collectObservedEvidence(args: {
     ) {
       evidence.push({
         source: 'actor',
-        artifactPath: MATRIX_ARTIFACTS.actor,
+        artifactPath: artifactGrammar('actor'),
         executed: result.executed,
         status:
           result.status === 'passed'
@@ -257,11 +345,11 @@ function collectObservedEvidence(args: {
       (capabilityId && signal.capabilityIds.includes(capabilityId)) ||
       (flowId && signal.flowIds.includes(flowId)) ||
       routePatterns.some((route) => signal.routePatterns.includes(route)) ||
-      routeMatches(routePatterns, signal.summary)
+      matchRouteGrammar(routePatterns, signal.summary)
     ) {
       evidence.push({
         source: 'external',
-        artifactPath: MATRIX_ARTIFACTS.external,
+        artifactPath: artifactGrammar('external'),
         executed: true,
         status: signal.impactScore >= 0.8 ? 'failed' : 'mapped',
         summary: signal.summary,
@@ -271,7 +359,7 @@ function collectObservedEvidence(args: {
   if (args.capability || args.flow) {
     evidence.push({
       source: 'static',
-      artifactPath: MATRIX_ARTIFACTS.static,
+      artifactPath: artifactGrammar('static'),
       executed: true,
       status: 'mapped',
       summary: 'Path is represented in static capability/flow reconstruction.',
@@ -300,9 +388,7 @@ function buildBreakpoint(args: {
       nodeId: failedStep?.nodeId ?? args.capability?.nodeIds[0] ?? null,
       routePattern: args.flow?.routePatterns[0] ?? args.capability?.routePatterns[0] ?? null,
       reason: failedEvidence.summary,
-      recovery:
-        firstChainFailure?.recovery ??
-        'Inspect failing observed evidence and rerun the path probe.',
+      recovery: failedEvidenceRecoveryGrammar(firstChainFailure),
     };
   }
   const failurePoint = args.chain?.failurePoints[0] ?? null;
@@ -383,7 +469,7 @@ function buildBreakpoint(args: {
   }
   return null;
 }
-function classifyPath(args: {
+function classifyTraversalGrammar(args: {
   capability: PulseCapability | null;
   flow: PulseFlowProjectionItem | null;
   chain: PulseExecutionChain | null;
@@ -391,12 +477,12 @@ function classifyPath(args: {
   requiredEvidence: PulseExecutionMatrixEvidenceRequirement[];
   hasExecutableEntrypoint: boolean;
 }): PulseExecutionMatrixPathStatus {
-  if (args.chain && args.chain.failurePoints.length > 0) {
-    return args.observedEvidence.some((entry) => entry.status === 'failed')
+  if (args.chain && hasItemsGrammar(args.chain.failurePoints)) {
+    return args.observedEvidence.some((entry) => isFailureGrammar(entry.status))
       ? 'observed_fail'
       : 'inferred_only';
   }
-  if (args.observedEvidence.some((entry) => entry.status === 'failed')) {
+  if (args.observedEvidence.some((entry) => isFailureGrammar(entry.status))) {
     return 'observed_fail';
   }
   const executedPass = args.observedEvidence.some(
@@ -409,8 +495,8 @@ function classifyPath(args: {
     return 'observed_pass';
   }
   if (
-    args.capability?.executionMode === 'human_required' ||
-    args.capability?.executionMode === 'observation_only' ||
+    sameGrammar(args.capability?.executionMode, 'human_required') ||
+    sameGrammar(args.capability?.executionMode, 'observation_only') ||
     args.capability?.protectedByGovernance
   ) {
     return 'observation_only';
@@ -420,15 +506,15 @@ function classifyPath(args: {
   }
   if (
     !requiredRuntimeLike &&
-    args.capability?.status === 'real' &&
-    args.capability.truthMode === 'observed'
+    sameGrammar(args.capability?.status, 'real') &&
+    sameGrammar(args.capability.truthMode, 'observed')
   ) {
     return 'observed_pass';
   }
   if (
-    args.chain?.truthMode === 'inferred' ||
-    args.capability?.truthMode === 'inferred' ||
-    args.flow?.truthMode === 'inferred'
+    sameGrammar(args.chain?.truthMode, 'inferred') ||
+    sameGrammar(args.capability?.truthMode, 'inferred') ||
+    sameGrammar(args.flow?.truthMode, 'inferred')
   ) {
     return 'inferred_only';
   }
@@ -514,7 +600,7 @@ function buildPathFromChain(args: {
     externalSignalState: args.externalSignalState,
   });
   const risk: PulseExecutionMatrixPath['risk'] = capability?.runtimeCritical ? 'high' : 'medium';
-  const status = classifyPath({
+  const status = classifyTraversalGrammar({
     capability,
     flow,
     chain: args.chain,
@@ -557,7 +643,7 @@ function buildPathFromChain(args: {
     validationCommand: buildValidationCommand(routePatterns, pathId, chainFiles[0] ?? null),
     risk,
     executionMode: normalizeExecutionMode(capability?.executionMode, risk),
-    confidence: Math.min(1, Math.max(0, args.chain.confidence.score)),
+    confidence: unitConfidenceGrammar(args.chain.confidence.score),
     filePaths: unique([...(capability?.filePaths ?? []), ...chainFiles]),
     routePatterns,
   };
@@ -587,8 +673,8 @@ function buildSyntheticPath(args: {
     externalSignalState: args.externalSignalState,
   });
   const risk: PulseExecutionMatrixPath['risk'] =
-    isCriticalCapability(args.capability) || isCriticalFlow(args.flow) ? 'high' : 'medium';
-  const status = classifyPath({
+    isCriticalCapability(args.capability) || flowCriticalityGrammar(args.flow) ? 'high' : 'medium';
+  const status = classifyTraversalGrammar({
     capability: args.capability,
     flow: args.flow,
     chain: null,
@@ -632,33 +718,26 @@ function buildSyntheticPath(args: {
     ),
     risk,
     executionMode: normalizeExecutionMode(args.capability?.executionMode, risk),
-    confidence: args.capability?.confidence ?? args.flow?.confidence ?? 0.5,
+    confidence: fallbackConfidenceGrammar(args.capability, args.flow),
     filePaths: unique(args.capability?.filePaths ?? []),
     routePatterns,
   };
 }
-function mapNodeRoleToChainRole(
+function structuralRoleGrammar(
   node: PulseStructuralNode,
 ): PulseExecutionMatrixPath['chain'][number]['role'] {
-  if (node.kind === 'ui_element') {
-    return 'trigger';
-  }
-  if (node.kind === 'api_call') {
-    return 'client_api';
-  }
-  if (node.kind === 'backend_route' || node.kind === 'proxy_route') {
-    return 'controller';
-  }
-  if (node.kind === 'service_trace') {
-    return 'service';
-  }
-  if (node.kind === 'persistence_model') {
-    return 'persistence';
-  }
-  if (node.kind === 'side_effect_signal') {
-    return 'side_effect';
-  }
-  return node.role === 'interface' ? 'interface' : 'orchestration';
+  const roleByKind: Partial<Record<StructuralGraphKind, MatrixChainRole>> = {
+    ui_element: 'trigger',
+    api_call: 'client_api',
+    backend_route: 'controller',
+    proxy_route: 'controller',
+    service_trace: 'service',
+    persistence_model: 'persistence',
+    side_effect_signal: 'side_effect',
+  };
+  return (
+    roleByKind[node.kind] ?? (sameGrammar(node.role, 'interface') ? 'interface' : 'orchestration')
+  );
 }
 function routePatternsFromNode(node: PulseStructuralNode): string[] {
   const values = [
@@ -670,8 +749,12 @@ function routePatternsFromNode(node: PulseStructuralNode): string[] {
   return unique(
     values
       .flatMap((value) => (Array.isArray(value) ? value : [value]))
-      .filter((value): value is string => typeof value === 'string' && value.startsWith('/')),
+      .filter((value): value is string => isRouteTextGrammar(value)),
   );
+}
+
+function isRouteTextGrammar(value: unknown): value is string {
+  return typeof value === 'string' && value.startsWith('/');
 }
 function buildPathFromStructuralNode(args: {
   node: PulseStructuralNode;
@@ -704,7 +787,7 @@ function buildPathFromStructuralNode(args: {
   const breakpoint =
     status === 'observed_fail'
       ? {
-          stage: mapNodeRoleToChainRole(args.node),
+          stage: structuralRoleGrammar(args.node),
           stepIndex: 0,
           filePath: args.node.file || null,
           nodeId: args.node.id,
@@ -716,7 +799,7 @@ function buildPathFromStructuralNode(args: {
         }
       : status === 'inferred_only' || status === 'not_executable' || status === 'observation_only'
         ? {
-            stage: mapNodeRoleToChainRole(args.node),
+            stage: structuralRoleGrammar(args.node),
             stepIndex: 0,
             filePath: args.node.file || null,
             nodeId: args.node.id,
@@ -727,12 +810,7 @@ function buildPathFromStructuralNode(args: {
                 : routePatterns.length > 0
                   ? 'Structural node has a route-like entrypoint but no matching observed runtime, browser, flow, actor, or external evidence.'
                   : 'Structural node has no route-like entrypoint, so it cannot be promoted by an HTTP probe without additional parser mapping.',
-            recovery:
-              status === 'observation_only'
-                ? 'Collect governed observation evidence without autonomous mutation and attach the resulting artifact to the matrix.'
-                : routePatterns.length > 0
-                  ? 'Attach route-matching runtime/browser/flow/actor evidence or record an observed failure for this structural node.'
-                  : 'Connect this node to a route, scenario interaction, or execution chain before requiring observed terminal evidence.',
+            recovery: structuralNodeRecoveryGrammar(status, routePatterns),
           }
         : null;
   return {
@@ -748,7 +826,7 @@ function buildPathFromStructuralNode(args: {
     },
     chain: [
       {
-        role: mapNodeRoleToChainRole(args.node),
+        role: structuralRoleGrammar(args.node),
         nodeId: args.node.id,
         filePath: args.node.file || null,
         description: args.node.label || args.node.kind,
@@ -780,7 +858,7 @@ function buildPathFromStructuralNode(args: {
         : [
             {
               source: 'static',
-              artifactPath: MATRIX_ARTIFACTS.static,
+              artifactPath: artifactGrammar('static'),
               executed: true,
               status: 'mapped',
               summary: 'Structural node is represented in the execution matrix.',
@@ -792,8 +870,7 @@ function buildPathFromStructuralNode(args: {
       args.node.protectedByGovernance ? 'observation_only' : 'ai_safe',
       risk,
     ),
-    confidence:
-      args.node.truthMode === 'observed' ? 0.9 : args.node.truthMode === 'inferred' ? 0.65 : 0.35,
+    confidence: nodeConfidenceGrammar(args.node.truthMode),
     filePaths: unique([args.node.file]),
     routePatterns,
   };
@@ -857,24 +934,31 @@ function buildPathFromScopeFile(file: PulseScopeFile, index: number): PulseExecu
     validationCommand: buildValidationCommand([], pathId, file.path),
     risk,
     executionMode: normalizeExecutionMode(file.executionMode, risk),
-    confidence: file.structuralHints && file.structuralHints.length > 0 ? 0.65 : 0.45,
+    confidence: fileConfidenceGrammar(file),
     filePaths: [file.path],
     routePatterns: [],
   };
 }
 function summarize(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix['summary'] {
   const byStatus = Object.fromEntries(
-    TERMINAL_STATUSES.map((status) => [
+    terminalStatusGrammar().map((status) => [
       status,
-      paths.filter((path) => path.status === status).length,
+      paths.filter((path) => sameGrammar(path.status, status)).length,
     ]),
   ) as Record<PulseExecutionMatrixPathStatus, number>;
   const bySource = Object.fromEntries(
-    MATRIX_SOURCES.map((source) => [source, paths.filter((path) => path.source === source).length]),
+    matrixSourceGrammar().map((source) => [
+      source,
+      paths.filter((path) => sameGrammar(path.source, source)).length,
+    ]),
   ) as Record<PulseExecutionMatrixPathSource, number>;
-  const terminalPaths = paths.filter((path) => TERMINAL_STATUSES.includes(path.status)).length;
-  const classifiablePaths = paths.filter((path) => path.status !== 'not_executable').length;
-  const classifiedPaths = paths.filter((path) => path.status !== 'untested').length;
+  const terminalPaths = paths.filter((path) =>
+    terminalStatusGrammar().includes(path.status),
+  ).length;
+  const classifiablePaths = paths.filter((path) =>
+    differsGrammar(path.status, 'not_executable'),
+  ).length;
+  const classifiedPaths = paths.filter((path) => differsGrammar(path.status, 'untested')).length;
   return {
     totalPaths: paths.length,
     bySource,
@@ -890,12 +974,10 @@ function summarize(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix['sum
     nonTerminalPaths: paths.length - terminalPaths,
     unknownPaths: paths.length - terminalPaths,
     criticalUnobservedPaths: paths.filter(
-      (path) =>
-        (path.risk === 'high' || path.risk === 'critical') &&
-        !hasCriticalTerminalClassification(path),
+      (path) => isElevatedRiskGrammar(path.risk) && !terminalClassificationGrammar(path),
     ).length,
     impreciseBreakpoints: paths.filter(
-      (path) => path.status === 'observed_fail' && !hasPreciseBreakpoint(path.breakpoint),
+      (path) => sameGrammar(path.status, 'observed_fail') && !hasPreciseBreakpoint(path.breakpoint),
     ).length,
     coveragePercent:
       classifiablePaths > 0
@@ -903,20 +985,17 @@ function summarize(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix['sum
         : 100,
   };
 }
-function hasCriticalTerminalClassification(path: PulseExecutionMatrixPath): boolean {
-  if (path.status === 'observed_pass' || path.status === 'observed_fail') {
-    return true;
-  }
-  if (path.status === 'not_executable' || path.status === 'unreachable') {
-    return hasPreciseBreakpoint(path.breakpoint);
-  }
-  if (path.status === 'observation_only' || path.status === 'blocked_human_required') {
-    return hasPreciseBreakpoint(path.breakpoint);
-  }
-  if (path.status === 'inferred_only' || path.status === 'untested') {
-    return hasPreciseBreakpoint(path.breakpoint);
-  }
-  return false;
+function terminalClassificationGrammar(path: PulseExecutionMatrixPath): boolean {
+  const observedTerminal = ['observed_pass', 'observed_fail'].includes(path.status);
+  const breakpointTerminal = [
+    'not_executable',
+    'unreachable',
+    'observation_only',
+    'blocked_human_required',
+    'inferred_only',
+    'untested',
+  ].includes(path.status);
+  return observedTerminal || (breakpointTerminal && hasPreciseBreakpoint(path.breakpoint));
 }
 function hasPreciseBreakpoint(breakpoint: PulseExecutionMatrixBreakpoint | null): boolean {
   if (!breakpoint) {
@@ -1024,8 +1103,8 @@ export function buildExecutionMatrix(input: BuildExecutionMatrixInput): PulseExe
     generatedAt: new Date().toISOString(),
     summary: summarize(paths),
     paths: paths.sort((left, right) => {
-      const riskDelta = Number(right.risk === 'high') - Number(left.risk === 'high');
-      if (riskDelta !== 0) return riskDelta;
+      const riskDelta = riskOrderGrammar(right.risk) - riskOrderGrammar(left.risk);
+      if (differsGrammar(riskDelta, zeroGrammar())) return riskDelta;
       return left.pathId.localeCompare(right.pathId);
     }),
   };

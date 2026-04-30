@@ -3,7 +3,9 @@ import { readTextFile } from './safe-fs';
 import { deriveStructuralFamilies, familiesOverlap } from './structural-family';
 
 function frontendAppBranch(filePath: string): string[] {
-  const normalized = String(filePath || '').replace(/\\/g, '/');
+  const normalized = String(filePath || '')
+    .split('\\')
+    .join('/');
   const appIndex = normalized.indexOf('/src/app/');
   const rootAppIndex = normalized.startsWith('app/') ? 0 : -1;
   const appPath =
@@ -19,9 +21,17 @@ function frontendAppBranch(filePath: string): string[] {
   return appPath
     .split('/')
     .filter(Boolean)
-    .filter((part) => !/^\(.+\)$/.test(part))
-    .filter((part) => !/^\[.+\]$/.test(part))
-    .filter((part) => !/\.[jt]sx?$/.test(part));
+    .filter((part) => !isWrappedRouteSegment(part, '(', ')'))
+    .filter((part) => !isWrappedRouteSegment(part, '[', ']'))
+    .filter((part) => !isJavascriptSourceFileName(part));
+}
+
+function isWrappedRouteSegment(part: string, open: string, close: string): boolean {
+  return part.length > 2 && part.startsWith(open) && part.endsWith(close);
+}
+
+function isJavascriptSourceFileName(part: string): boolean {
+  return ['.ts', '.tsx', '.js', '.jsx'].some((extension) => part.endsWith(extension));
 }
 
 function branchesOverlap(left: string[], right: string[]): boolean {
@@ -48,12 +58,17 @@ export function isFrameworkShellCapability(capability: PulseCapability): boolean
     return false;
   }
 
-  return (
-    capability.filePaths.length > 0 &&
-    capability.filePaths.every((filePath) =>
-      /(?:^|\/)(?:layout|global-error|error|loading|not-found|template)\.[jt]sx?$/.test(filePath),
-    )
+  return capability.filePaths.length > 0 && capability.filePaths.every(isFrameworkShellFilePath);
+}
+
+function isFrameworkShellFilePath(filePath: string): boolean {
+  const normalized = filePath.split('\\').join('/');
+  const baseName = normalized.slice(normalized.lastIndexOf('/') + 1);
+  const stem = baseName.slice(
+    0,
+    baseName.indexOf('.') > 0 ? baseName.indexOf('.') : baseName.length,
   );
+  return ['layout', 'global-error', 'error', 'loading', 'not-found', 'template'].includes(stem);
 }
 
 /** Is materialized capability. */
@@ -197,16 +212,66 @@ export function isRoadmapCatalogCapability(capability: PulseCapability): boolean
     return false;
   }
 
-  const hasApiIntent = /\bapiFetch\s*\(|\bfetch\s*\(|\buseSWR\s*\(|from\s+['"]@\/lib\/api/.test(
-    source,
-  );
-  const exportedCollectionCount = (
-    source.match(/\b(?:const|export\s+const)\s+[A-Z][A-Z0-9_]*\s*=\s*(?:\[|\{)/g) || []
-  ).length;
-  const handlerCount = (source.match(/\bon[A-Z][A-Za-z0-9_]*\s*=/g) || []).length;
+  const hasApiIntent =
+    source.includes('apiFetch(') ||
+    source.includes('fetch(') ||
+    source.includes('useSWR(') ||
+    source.includes('@/lib/api');
+  const exportedCollectionCount = countUppercaseCollectionDeclarations(source);
+  const handlerCount = countHandlerAssignments(source);
   const referencedRoutes = extractReferencedRoutes(source);
 
   return exportedCollectionCount > handlerCount && referencedRoutes.length === 0 && !hasApiIntent;
+}
+
+function countUppercaseCollectionDeclarations(source: string): number {
+  let count = 0;
+  const declarations = source.split('const ');
+  for (const declaration of declarations.slice(1)) {
+    const name = readIdentifier(declaration);
+    if (!name || name !== name.toUpperCase()) {
+      continue;
+    }
+    const equalsIndex = declaration.indexOf('=');
+    if (equalsIndex < 0) {
+      continue;
+    }
+    const assigned = declaration.slice(equalsIndex + 1).trimStart();
+    if (assigned.startsWith('[') || assigned.startsWith('{')) {
+      count++;
+    }
+  }
+  return count;
+}
+
+function countHandlerAssignments(source: string): number {
+  let count = 0;
+  const parts = source.split('on');
+  for (const part of parts.slice(1)) {
+    if (part.length === 0 || part[0] < 'A' || part[0] > 'Z') {
+      continue;
+    }
+    const equalsIndex = part.indexOf('=');
+    const newlineIndex = part.indexOf('\n');
+    if (equalsIndex >= 0 && (newlineIndex < 0 || equalsIndex < newlineIndex)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+function readIdentifier(value: string): string {
+  let output = '';
+  for (const char of value.trimStart()) {
+    const isLetter = char.toLowerCase() >= 'a' && char.toLowerCase() <= 'z';
+    const isDigit = char >= '0' && char <= '9';
+    if (isLetter || isDigit || char === '_') {
+      output += char;
+      continue;
+    }
+    break;
+  }
+  return output;
 }
 
 function deriveFamiliesForCapability(

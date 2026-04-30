@@ -159,13 +159,31 @@ function extractSessionsFromExternalSignals(filePath: string): ReplaySession[] {
 }
 
 function mapSignalSource(raw: string): ReplaySource | null {
-  const normalized = raw
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '_')
-    .replace(/^_+|_+$/g, '');
+  const normalized = normalizeSignalSourceToken(raw);
 
   return normalized.length > 0 ? normalized : null;
+}
+
+function normalizeSignalSourceToken(raw: string): string {
+  const output: string[] = [];
+  for (const char of raw.trim().toLowerCase()) {
+    const isLetter = char >= 'a' && char <= 'z';
+    const isDigit = char >= '0' && char <= '9';
+    if (isLetter || isDigit) {
+      output.push(char);
+      continue;
+    }
+    if (output.length > 0 && output[output.length - 1] !== '_') {
+      output.push('_');
+    }
+  }
+  while (output[0] === '_') {
+    output.shift();
+  }
+  while (output[output.length - 1] === '_') {
+    output.pop();
+  }
+  return output.join('');
 }
 
 function resolveStatePath(rootDir: string): string {

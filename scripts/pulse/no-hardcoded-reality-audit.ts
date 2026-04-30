@@ -66,14 +66,6 @@ export interface NoHardcodedRealityAuditResult {
 }
 
 const SOURCE_EXTENSION_KERNEL_GRAMMAR = new Set(['.ts', '.tsx', '.js', '.jsx']);
-const SKIPPED_PATH_KERNEL_GRAMMAR = new Set([
-  '__diagnostics__',
-  '__fixtures__',
-  '__tests__',
-  'dist',
-  'node_modules',
-]);
-
 const ALLOWED_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
   'artifact',
   'class',
@@ -347,13 +339,6 @@ function isInfrastructureRouteKernelGrammar(value: string): boolean {
     return true;
   }
   return /^\/(?:health|diag(?:-[a-z0-9]+)?)$/.test(value);
-}
-
-function isSkippedPath(relPath: string): boolean {
-  const normalized = relPath.replace(/\\/g, '/');
-  return normalized
-    .split('/')
-    .some((segment) => SKIPPED_PATH_KERNEL_GRAMMAR.has(segment) || segment.endsWith('.d.ts'));
 }
 
 function walkSourceFiles(dir: string): string[] {
@@ -1048,14 +1033,19 @@ function parserRuleBlockerFindings(
   return [name];
 }
 
-function constDeclarationFindings(node: ts.Node): string[] {
+function constDeclarationFindings(node: ts.Node, sourceHasDirectBreakPushType: boolean): string[] {
   if (!ts.isVariableStatement(node)) {
     return [];
   }
   if ((node.declarationList.flags & ts.NodeFlags.Const) === 0) {
     return [];
   }
-  return node.declarationList.declarations.map((declaration) => propertyNameText(declaration.name));
+  if (!ts.isSourceFile(node.parent) && !sourceHasDirectBreakPushType) {
+    return [];
+  }
+  return node.declarationList.declarations
+    .map((declaration) => propertyNameText(declaration.name))
+    .filter((name) => ts.isSourceFile(node.parent) || name === 'breaks');
 }
 
 function sqlRealityTableFindings(node: ts.Node): string[] {
@@ -1128,9 +1118,10 @@ function auditSourceFile(
   const findings: NoHardcodedRealityFinding[] = [];
   const predicates: NoHardcodedRealityPredicate[] = [];
   const sourceHasBreakPush = source.includes('breaks.push');
+  const sourceHasDirectBreakPushType = /breaks\.push\s*\(\s*\{[\s\S]{0,300}\btype\s*:/.test(source);
 
   const visit = (node: ts.Node): void => {
-    const constDeclarations = constDeclarationFindings(node);
+    const constDeclarations = constDeclarationFindings(node, sourceHasDirectBreakPushType);
     if (constDeclarations.length > 0) {
       pushFinding(
         findings,
@@ -1512,10 +1503,7 @@ export function auditPulseNoHardcodedReality(rootDir: string): NoHardcodedRealit
       summary: summarizeNoHardcodedRealityFindings([], []),
     };
   }
-  const files = walkSourceFiles(pulseDir).filter((file) => {
-    const relPath = path.relative(rootDir, file);
-    return !isSkippedPath(relPath);
-  });
+  const files = walkSourceFiles(pulseDir);
   const results = files.map((file) => auditSourceFile(file, path.relative(rootDir, file)));
   const findings = results.flatMap((result) => result.findings);
   const predicates = results.flatMap((result) => result.predicates);

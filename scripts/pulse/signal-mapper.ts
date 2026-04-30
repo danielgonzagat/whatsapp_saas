@@ -79,24 +79,30 @@ export function selectLane(values: PulseConvergenceOwnerLane[]): PulseConvergenc
 }
 
 export function isDependencySignal(signal: Pick<PulseSignal, 'source' | 'type'>): boolean {
-  return signal.source === 'dependabot' || /dependency|vuln|supply/i.test(signal.type);
+  const terms = new Set(tokenize(signal.type));
+  return (
+    signal.source === 'dependabot' ||
+    ['dependency', 'vuln', 'supply'].some((term) => terms.has(term))
+  );
 }
 
 export function isChangeSignal(signal: Pick<PulseSignal, 'source' | 'type'>): boolean {
+  const terms = new Set(tokenize(signal.type));
   return (
     signal.source === 'github' ||
     signal.source === 'github_actions' ||
     signal.source === 'codecov' ||
-    /change|build|deploy|test|coverage/i.test(signal.type)
+    ['change', 'build', 'deploy', 'test', 'coverage'].some((term) => terms.has(term))
   );
 }
 
 export function isRuntimeSignal(signal: Pick<PulseSignal, 'source' | 'type'>): boolean {
+  const terms = new Set(tokenize(signal.type));
   return (
     signal.source === 'sentry' ||
     signal.source === 'datadog' ||
     signal.source === 'prometheus' ||
-    /runtime|latency|error|incident|timeout/i.test(signal.type)
+    ['runtime', 'latency', 'error', 'incident', 'timeout'].some((term) => terms.has(term))
   );
 }
 

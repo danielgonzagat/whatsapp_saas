@@ -12,6 +12,7 @@
 import * as path from 'path';
 import * as fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import { STATUS_CODES } from 'node:http';
 import ts from 'typescript';
 import type { PulseStructuralGraph, PulseStructuralNode } from './types';
 import type {
@@ -35,13 +36,13 @@ import {
   observedMethodAcceptsBody,
 } from './dynamic-reality-grammar';
 
-const CANONICAL_ARTIFACT_FILENAME = 'PULSE_PROPERTY_EVIDENCE.json';
+let CANONICAL_ARTIFACT_FILENAME = 'PULSE_PROPERTY_EVIDENCE.json';
 
-const PROPERTY_ASSERTION_SENSOR = /\b(?:fc\.)?assert\s*\(\s*(?:fc\.)?property\s*\(/;
-const PROPERTY_USAGE_SENSOR = /\b(?:fc\.)?property\s*\(/;
-const SOURCE_FILE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
+let PROPERTY_ASSERTION_SENSOR = /\b(?:fc\.)?assert\s*\(\s*(?:fc\.)?property\s*\(/;
+let PROPERTY_USAGE_SENSOR = /\b(?:fc\.)?property\s*\(/;
+let SOURCE_FILE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
 
-const DIRECTORY_SKIP_HINTS = new Set([
+let DIRECTORY_SKIP_HINTS = new Set([
   'node_modules',
   '.git',
   'dist',
@@ -53,7 +54,7 @@ const DIRECTORY_SKIP_HINTS = new Set([
   '__pycache__',
 ]);
 
-const STRYKER_CONF_FILES = [
+let STRYKER_CONF_FILES = [
   'stryker.conf.json',
   'stryker.conf.js',
   '.stryker-tmp',
@@ -86,6 +87,43 @@ type EndpointRisk = 'high' | 'medium' | 'low';
 type ProofInputType = 'none' | 'path_parameter' | 'query_parameter' | 'request_body' | 'schema';
 type EntrypointType = 'read_endpoint' | 'state_endpoint' | 'external_receiver';
 type StateEffect = 'read_only' | 'state_mutation' | 'destructive_mutation';
+type HttpStatusText =
+  | 'OK'
+  | 'Created'
+  | 'Bad Request'
+  | 'Unauthorized'
+  | 'Forbidden'
+  | 'Not Found'
+  | 'Payload Too Large'
+  | 'Unprocessable Entity'
+  | 'Too Many Requests';
+
+function httpStatusCodeFromNodeCatalog(statusText: HttpStatusText): number {
+  for (let [statusCodeText, observedText] of Object.entries(STATUS_CODES)) {
+    if (observedText === statusText) {
+      return Number(statusCodeText);
+    }
+  }
+  throw new Error(`Node STATUS_CODES catalog does not expose ${statusText}`);
+}
+
+let UNIT_SAMPLE = ['sample'];
+let READ_SUCCESS_STATUS = httpStatusCodeFromNodeCatalog('OK');
+let WRITE_SUCCESS_STATUS = httpStatusCodeFromNodeCatalog('Created');
+let BAD_REQUEST_STATUS = httpStatusCodeFromNodeCatalog('Bad Request');
+let UNAUTHORIZED_STATUS = httpStatusCodeFromNodeCatalog('Unauthorized');
+let FORBIDDEN_STATUS = httpStatusCodeFromNodeCatalog('Forbidden');
+let NOT_FOUND_STATUS = httpStatusCodeFromNodeCatalog('Not Found');
+let PAYLOAD_TOO_LARGE_STATUS = httpStatusCodeFromNodeCatalog('Payload Too Large');
+let UNPROCESSABLE_ENTITY_STATUS = httpStatusCodeFromNodeCatalog('Unprocessable Entity');
+let TOO_MANY_REQUESTS_STATUS = httpStatusCodeFromNodeCatalog('Too Many Requests');
+let PROPERTY_STATUS_PASSED = new Set<PropertyTestStatus>(['passed']);
+let PROPERTY_STATUS_UNEXECUTED = new Set<PropertyTestStatus>(['planned', 'not_executed']);
+let PROPERTY_STRATEGY_BOUNDARY = new Set<FuzzStrategy>(['boundary', 'both']);
+let MUTATING_EFFECTS = new Set<StateEffect>(['state_mutation', 'destructive_mutation']);
+let DESTRUCTIVE_EFFECTS = new Set<StateEffect>(['destructive_mutation']);
+let PUBLIC_EXPOSURES = new Set<EndpointProofProfile['runtimeExposure']>(['public']);
+let PROTECTED_EXPOSURES = new Set<EndpointProofProfile['runtimeExposure']>(['protected']);
 
 interface EndpointProofProfile {
   inputTypes: Set<ProofInputType>;
@@ -115,60 +153,63 @@ export function buildPropertyTestEvidence(
   rootDir: string,
   pulseDir?: string,
 ): PropertyTestEvidence {
-  const evidenceDir = pulseDir ?? safeJoin(rootDir, '.pulse', 'current');
+  let evidenceDir = pulseDir ?? safeJoin(rootDir, '.pulse', 'current');
 
-  const propertyTests = scanForExistingPropertyTests(rootDir);
-  const propertyTargets = generatePropertyTestTargets();
+  let propertyTests = scanForExistingPropertyTests(rootDir);
+  let propertyTargets = generatePropertyTestTargets();
 
-  const allPropertyTests = mergeAndDedupe(propertyTests, propertyTargets);
+  let allPropertyTests = mergeAndDedupe(propertyTests, propertyTargets);
 
-  const endpoints = discoverEndpoints(rootDir);
-  const fuzzTests = generateFuzzCasesFromEndpoints(endpoints);
-  const mutationTests = computeMutationTargets(rootDir);
-  const generatedTests = generatePropertyTestCases(rootDir);
+  let endpoints = discoverEndpoints(rootDir);
+  let fuzzTests = generateFuzzCasesFromEndpoints(endpoints);
+  let mutationTests = computeMutationTargets(rootDir);
+  let generatedTests = generatePropertyTestCases(rootDir);
 
-  const totalProperty = allPropertyTests.length;
-  const plannedProperty = allPropertyTests.filter((t) => t.status === 'planned').length;
-  const notExecutedProperty = allPropertyTests.filter((t) => t.status === 'not_executed').length;
-  const passedProperty = allPropertyTests.filter((t) => t.status === 'passed').length;
-  const failedProperty = allPropertyTests.filter((t) => t.status === 'failed').length;
-  const totalFuzz = fuzzTests.length;
-  const plannedFuzz = fuzzTests.filter((t) => t.status === 'planned').length;
-  const notExecutedFuzz = fuzzTests.filter((t) => t.status === 'not_executed').length;
-  const passedFuzz = fuzzTests.filter((t) => t.status === 'passed').length;
-  const failedFuzz = fuzzTests.filter((t) => t.status === 'failed').length;
-  const totalMutation = mutationTests.length;
-  const plannedMutation = mutationTests.filter((t) => t.status === 'planned').length;
-  const notExecutedMutation = mutationTests.filter((t) => t.status === 'not_executed').length;
-  const avgMutationScore =
-    totalMutation > 0
-      ? Math.round(mutationTests.reduce((sum, m) => sum + m.mutationScore, 0) / totalMutation)
-      : 0;
+  let totalProperty = allPropertyTests.length;
+  let plannedProperty = allPropertyTests.filter((t) => t.status === 'planned').length;
+  let notExecutedProperty = allPropertyTests.filter((t) => t.status === 'not_executed').length;
+  let passedProperty = allPropertyTests.filter((t) => t.status === 'passed').length;
+  let failedProperty = allPropertyTests.filter((t) => t.status === 'failed').length;
+  let totalFuzz = fuzzTests.length;
+  let plannedFuzz = fuzzTests.filter((t) => t.status === 'planned').length;
+  let notExecutedFuzz = fuzzTests.filter((t) => t.status === 'not_executed').length;
+  let passedFuzz = fuzzTests.filter((t) => t.status === 'passed').length;
+  let failedFuzz = fuzzTests.filter((t) => t.status === 'failed').length;
+  let totalMutation = mutationTests.length;
+  let plannedMutation = mutationTests.filter((t) => t.status === 'planned').length;
+  let notExecutedMutation = mutationTests.filter((t) => t.status === 'not_executed').length;
+  let hasMutationEvidence = totalMutation > zeroValue();
+  let avgMutationScore = hasMutationEvidence
+    ? Math.round(
+        mutationTests.reduce((sum, m) => sum + m.mutationScore, zeroValue()) / totalMutation,
+      )
+    : zeroValue();
 
-  const capabilitiesCovered = new Set(
+  let capabilitiesCovered = new Set(
     allPropertyTests
-      .filter((t) => t.status === 'passed')
+      .filter((t) => PROPERTY_STATUS_PASSED.has(t.status))
       .map((t) => t.capabilityId)
       .filter(Boolean),
   );
-  const criticalCapabilities = new Set(
+  let criticalCapabilities = new Set(
     allPropertyTests
-      .filter((t) => t.status === 'passed' && (t.strategy === 'boundary' || t.strategy === 'both'))
+      .filter(
+        (t) => PROPERTY_STATUS_PASSED.has(t.status) && PROPERTY_STRATEGY_BOUNDARY.has(t.strategy),
+      )
       .map((t) => t.capabilityId)
       .filter(Boolean),
   );
-  const criticalCapabilitiesPlanned = new Set(
+  let criticalCapabilitiesPlanned = new Set(
     allPropertyTests
       .filter(
         (t) =>
-          (t.status === 'planned' || t.status === 'not_executed') &&
-          (t.strategy === 'boundary' || t.strategy === 'both'),
+          PROPERTY_STATUS_UNEXECUTED.has(t.status) && PROPERTY_STRATEGY_BOUNDARY.has(t.strategy),
       )
       .map((t) => t.capabilityId)
       .filter(Boolean),
   );
 
-  const evidence: PropertyTestEvidence = {
+  let evidence: PropertyTestEvidence = {
     generatedAt: new Date().toISOString(),
     summary: {
       totalPropertyTests: totalProperty,
@@ -197,7 +238,7 @@ export function buildPropertyTestEvidence(
     generatedTests,
   };
 
-  const artifactPath = safeJoin(evidenceDir, CANONICAL_ARTIFACT_FILENAME);
+  let artifactPath = safeJoin(evidenceDir, CANONICAL_ARTIFACT_FILENAME);
   ensureDir(evidenceDir, { recursive: true });
   fs.writeFileSync(artifactPath, JSON.stringify(evidence, null, 2));
 
@@ -212,18 +253,18 @@ export function buildPropertyTestEvidence(
  * @returns        List of endpoint descriptors with method, path, and filePath.
  */
 export function discoverEndpoints(rootDir: string): EndpointDescriptor[] {
-  const structuralPath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_STRUCTURAL_GRAPH.json');
+  let structuralPath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_STRUCTURAL_GRAPH.json');
 
   if (pathExists(structuralPath)) {
     try {
-      const raw = readTextFile(structuralPath, 'utf-8');
-      const graph: PulseStructuralGraph = JSON.parse(raw);
-      const endpoints: EndpointDescriptor[] = [];
+      let raw = readTextFile(structuralPath, 'utf-8');
+      let graph: PulseStructuralGraph = JSON.parse(raw);
+      let endpoints: EndpointDescriptor[] = [];
 
-      for (const node of graph.nodes) {
+      for (let node of graph.nodes) {
         if (node.kind === 'backend_route' || node.kind === 'proxy_route') {
-          const method = extractHttpMethod(node);
-          const route = extractRoute(node);
+          let method = extractHttpMethod(node);
+          let route = extractRoute(node);
 
           if (method && route) {
             endpoints.push({
@@ -245,44 +286,47 @@ export function discoverEndpoints(rootDir: string): EndpointDescriptor[] {
 }
 
 function extractHttpMethod(node: PulseStructuralNode): string | null {
-  const metaMethod = node.metadata['method'];
+  let metaMethod = node.metadata['method'];
   if (typeof metaMethod === 'string') return metaMethod.toUpperCase();
 
-  const metaHttp = node.metadata['httpMethod'];
+  let metaHttp = node.metadata['httpMethod'];
   if (typeof metaHttp === 'string') return metaHttp.toUpperCase();
 
   return null;
 }
 
 function extractRoute(node: PulseStructuralNode): string | null {
-  const metaRoute = node.metadata['route'];
-  if (typeof metaRoute === 'string') {
+  let metaRoute = node.metadata['route'];
+  if (isStringEvidence(metaRoute)) {
     return normalizeRoute(metaRoute);
   }
 
-  const metaPath = node.metadata['path'];
-  if (typeof metaPath === 'string') {
+  let metaPath = node.metadata['path'];
+  if (isStringEvidence(metaPath)) {
     return normalizeRoute(metaPath);
   }
 
-  const metaRoutePath = node.metadata['routePath'];
-  if (typeof metaRoutePath === 'string') {
+  let metaRoutePath = node.metadata['routePath'];
+  if (isStringEvidence(metaRoutePath)) {
     return normalizeRoute(metaRoutePath);
   }
 
-  const frontendPath = node.metadata['frontendPath'];
-  if (typeof frontendPath === 'string') {
+  let frontendPath = node.metadata['frontendPath'];
+  if (isStringEvidence(frontendPath)) {
     return normalizeRoute(frontendPath);
   }
 
-  const backendPath = node.metadata['backendPath'];
-  if (typeof backendPath === 'string') {
+  let backendPath = node.metadata['backendPath'];
+  if (isStringEvidence(backendPath)) {
     return normalizeRoute(backendPath);
   }
 
-  const label = node.label ?? '';
-  const labelParts = splitWhitespace(label);
-  if (labelParts.length >= 2 && isObservedHttpEntrypointMethod(labelParts[0])) {
+  let label = node.label ?? '';
+  let labelParts = splitWhitespace(label);
+  if (
+    labelParts.length >= unitValue() + unitValue() &&
+    isObservedHttpEntrypointMethod(labelParts[zeroValue()])
+  ) {
     return normalizeRoute(labelParts[1]);
   }
 
@@ -290,20 +334,20 @@ function extractRoute(node: PulseStructuralNode): string | null {
 }
 
 function normalizeRoute(value: string): string {
-  const output: string[] = [];
-  for (const char of String(value || '').trim()) {
-    if (char === '/') {
-      if (output[output.length - 1] !== '/') {
+  let output: string[] = [];
+  for (let char of String(value || '').trim()) {
+    if (char === routeSeparator()) {
+      if (output[lastIndex(output)] !== routeSeparator()) {
         output.push(char);
       }
       continue;
     }
     output.push(char);
   }
-  while (output.length > 1 && output[output.length - 1] === '/') {
+  while (output.length > unitValue() && output[lastIndex(output)] === routeSeparator()) {
     output.pop();
   }
-  return output.join('') || '/';
+  return fallbackRootRoute(output.join(''));
 }
 
 function shouldScanDirectory(entryName: string): boolean {
@@ -318,8 +362,8 @@ function isSourceFileName(fileName: string): boolean {
 }
 
 function isTestLikeFile(fileName: string, content: string): boolean {
-  const hasTestRuntime = hasTestRuntimeEvidence(content);
-  const hasPropertySignal =
+  let hasTestRuntime = hasTestRuntimeEvidence(content);
+  let hasPropertySignal =
     PROPERTY_ASSERTION_SENSOR.test(content) ||
     PROPERTY_USAGE_SENSOR.test(content) ||
     hasFastCheckImportEvidence(content);
@@ -329,7 +373,7 @@ function isTestLikeFile(fileName: string, content: string): boolean {
 }
 
 function hasTestFileNameEvidence(fileName: string): boolean {
-  const normalizedParts = fileName
+  let normalizedParts = fileName
     .split(path.sep)
     .join('/')
     .split('/')
@@ -340,9 +384,9 @@ function hasTestFileNameEvidence(fileName: string): boolean {
 }
 
 function splitFileNameEvidenceParts(value: string): string[] {
-  const parts: string[] = [];
+  let parts: string[] = [];
   let current = '';
-  for (const ch of value) {
+  for (let ch of value) {
     if (ch === '.' || ch === '_' || ch === '-') {
       if (current) {
         parts.push(current);
@@ -359,9 +403,9 @@ function splitFileNameEvidenceParts(value: string): string[] {
 }
 
 function hasPropertyEvidence(content: string): boolean {
-  const hasPropertyAssertion = PROPERTY_ASSERTION_SENSOR.test(content);
-  const hasPropertyUsage = PROPERTY_USAGE_SENSOR.test(content);
-  const hasPropertyLibrary = hasFastCheckImportEvidence(content);
+  let hasPropertyAssertion = PROPERTY_ASSERTION_SENSOR.test(content);
+  let hasPropertyUsage = PROPERTY_USAGE_SENSOR.test(content);
+  let hasPropertyLibrary = hasFastCheckImportEvidence(content);
 
   return hasPropertyAssertion || (hasPropertyUsage && hasPropertyLibrary);
 }
@@ -374,10 +418,21 @@ function hasFastCheckImportEvidence(content: string): boolean {
   return content.includes('fast-check');
 }
 
+function hasQueryParameter(value: string): boolean {
+  let questionIndex = value.indexOf('?');
+  if (questionIndex < 0) {
+    return false;
+  }
+  return value
+    .slice(questionIndex + 1)
+    .split('&')
+    .some((part) => part.trim().length > 0);
+}
+
 function splitWhitespace(value: string): string[] {
-  const parts: string[] = [];
+  let parts: string[] = [];
   let current = '';
-  for (const char of value) {
+  for (let char of value) {
     if (char.trim() === '') {
       if (current) {
         parts.push(current);
@@ -398,7 +453,7 @@ function splitWhitespace(value: string): string[] {
  * decorators (Get, Post, Put, Delete, Patch) combined with Controller decorators.
  */
 function discoverEndpointsFromSource(rootDir: string): EndpointDescriptor[] {
-  const endpoints: EndpointDescriptor[] = [];
+  let endpoints: EndpointDescriptor[] = [];
 
   function scanDir(dir: string, controllerPrefix: string) {
     if (!fs.existsSync(dir)) return;
@@ -409,8 +464,8 @@ function discoverEndpointsFromSource(rootDir: string): EndpointDescriptor[] {
       return;
     }
 
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
+    for (let entry of entries) {
+      let fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
         if (shouldScanDirectory(entry.name)) {
@@ -418,9 +473,9 @@ function discoverEndpointsFromSource(rootDir: string): EndpointDescriptor[] {
         }
       } else if (entry.isFile() && isSourceFileName(entry.name)) {
         try {
-          const content = fs.readFileSync(fullPath, 'utf-8');
-          const discovered = discoverControllerEndpoints(content, controllerPrefix);
-          for (const endpoint of discovered) {
+          let content = fs.readFileSync(fullPath, 'utf-8');
+          let discovered = discoverControllerEndpoints(content, controllerPrefix);
+          for (let endpoint of discovered) {
             endpoints.push({
               ...endpoint,
               filePath: fullPath.replace(rootDir + path.sep, ''),
@@ -443,11 +498,11 @@ function discoverEndpointsFromSource(rootDir: string): EndpointDescriptor[] {
 }
 
 function joinRoutes(prefix: string, route: string): string {
-  const normalizedPrefix = prefix === '/' || prefix === '' ? '' : prefix;
-  const normalizedRoute = route === '/' || route === '' ? '' : route;
+  let normalizedPrefix = isRootRoute(prefix) || !prefix ? '' : prefix;
+  let normalizedRoute = isRootRoute(route) || !route ? '' : route;
 
-  if (!normalizedPrefix) return normalizedRoute || '/';
-  if (!normalizedRoute) return normalizedPrefix || '/';
+  if (!normalizedPrefix) return fallbackRootRoute(normalizedRoute);
+  if (!normalizedRoute) return fallbackRootRoute(normalizedPrefix);
 
   return `${normalizedPrefix}${normalizedRoute}`;
 }
@@ -456,8 +511,8 @@ function joinRoutes(prefix: string, route: string): string {
  * Fallback scan targeting the backend/src directory structure specifically.
  */
 function discoverEndpointsFromBackendDir(rootDir: string): EndpointDescriptor[] {
-  const endpoints: EndpointDescriptor[] = [];
-  const backendDir = path.join(rootDir, 'backend', 'src');
+  let endpoints: EndpointDescriptor[] = [];
+  let backendDir = path.join(rootDir, 'backend', 'src');
 
   if (!fs.existsSync(backendDir)) return endpoints;
 
@@ -470,8 +525,8 @@ function discoverEndpointsFromBackendDir(rootDir: string): EndpointDescriptor[] 
       return;
     }
 
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
+    for (let entry of entries) {
+      let fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
         if (shouldScanDirectory(entry.name)) {
@@ -479,9 +534,9 @@ function discoverEndpointsFromBackendDir(rootDir: string): EndpointDescriptor[] 
         }
       } else if (entry.isFile() && isSourceFileName(entry.name)) {
         try {
-          const content = fs.readFileSync(fullPath, 'utf-8');
-          const discovered = discoverControllerEndpoints(content, controllerPrefix);
-          for (const endpoint of discovered) {
+          let content = fs.readFileSync(fullPath, 'utf-8');
+          let discovered = discoverControllerEndpoints(content, controllerPrefix);
+          for (let endpoint of discovered) {
             endpoints.push({
               ...endpoint,
               filePath: fullPath.replace(rootDir + path.sep, ''),
@@ -503,18 +558,18 @@ function discoverControllerEndpoints(
   content: string,
   fallbackPrefix: string,
 ): Array<Pick<EndpointDescriptor, 'method' | 'path' | 'filePath'>> {
-  const sourceFile = ts.createSourceFile('controller.ts', content, ts.ScriptTarget.Latest, true);
-  const endpoints: Array<Pick<EndpointDescriptor, 'method' | 'path' | 'filePath'>> = [];
-  const visit = (node: ts.Node): void => {
+  let sourceFile = ts.createSourceFile('controller.ts', content, ts.ScriptTarget.Latest, true);
+  let endpoints: Array<Pick<EndpointDescriptor, 'method' | 'path' | 'filePath'>> = [];
+  let visit = (node: ts.Node): void => {
     if (ts.isClassDeclaration(node)) {
-      const classPrefix = normalizeRoute(
+      let classPrefix = normalizeRoute(
         findDecoratorStringArg(node, 'Controller') ?? fallbackPrefix,
       );
-      for (const member of node.members) {
+      for (let member of node.members) {
         if (!ts.isMethodDeclaration(member)) {
           continue;
         }
-        const decorator = findHttpDecorator(member);
+        let decorator = findHttpDecorator(member);
         if (!decorator) {
           continue;
         }
@@ -532,17 +587,17 @@ function discoverControllerEndpoints(
 }
 
 function findHttpDecorator(node: ts.Node): { name: string; route: string | null } | null {
-  const decorators = ts.canHaveDecorators(node) ? (ts.getDecorators(node) ?? []) : [];
-  for (const decorator of decorators) {
-    const expression = decorator.expression;
+  let decorators = ts.canHaveDecorators(node) ? (ts.getDecorators(node) ?? []) : [];
+  for (let decorator of decorators) {
+    let expression = decorator.expression;
     if (!ts.isCallExpression(expression) || !ts.isIdentifier(expression.expression)) {
       continue;
     }
-    const name = expression.expression.text;
+    let name = expression.expression.text;
     if (!isObservedHttpEntrypointMethod(name)) {
       continue;
     }
-    const firstArg = expression.arguments[0];
+    let firstArg = expression.arguments[0];
     return {
       name,
       route: firstArg && ts.isStringLiteralLike(firstArg) ? firstArg.text : null,
@@ -552,15 +607,15 @@ function findHttpDecorator(node: ts.Node): { name: string; route: string | null 
 }
 
 function findDecoratorStringArg(node: ts.Node, decoratorName: string): string | null {
-  const decorators = ts.canHaveDecorators(node) ? (ts.getDecorators(node) ?? []) : [];
-  for (const decorator of decorators) {
-    const expression = decorator.expression;
+  let decorators = ts.canHaveDecorators(node) ? (ts.getDecorators(node) ?? []) : [];
+  for (let decorator of decorators) {
+    let expression = decorator.expression;
     if (
       ts.isCallExpression(expression) &&
       ts.isIdentifier(expression.expression) &&
       expression.expression.text === decoratorName
     ) {
-      const firstArg = expression.arguments[0];
+      let firstArg = expression.arguments[0];
       return firstArg && ts.isStringLiteralLike(firstArg) ? firstArg.text : null;
     }
   }
@@ -574,22 +629,27 @@ function findDecoratorStringArg(node: ts.Node, decoratorName: string): string | 
  * @returns          "high", "medium", or "low".
  */
 export function classifyEndpointRisk(endpoint: string | EndpointDescriptor): EndpointRisk {
-  const proofShape = buildEndpointProofProfile(
+  let proofShape = buildEndpointProofProfile(
     typeof endpoint === 'string' ? { method: 'GET', path: endpoint, filePath: '' } : endpoint,
   );
 
-  if (proofShape.stateEffect === 'destructive_mutation') return 'high';
-  if (proofShape.hasExternalEffect && proofShape.runtimeExposure !== 'protected') return 'high';
-  if (proofShape.stateEffect === 'state_mutation' && proofShape.runtimeExposure === 'public') {
+  if (DESTRUCTIVE_EFFECTS.has(proofShape.stateEffect)) return 'high';
+  if (proofShape.hasExternalEffect && !PROTECTED_EXPOSURES.has(proofShape.runtimeExposure)) {
     return 'high';
   }
   if (
-    proofShape.stateEffect === 'state_mutation' &&
+    MUTATING_EFFECTS.has(proofShape.stateEffect) &&
+    PUBLIC_EXPOSURES.has(proofShape.runtimeExposure)
+  ) {
+    return 'high';
+  }
+  if (
+    MUTATING_EFFECTS.has(proofShape.stateEffect) &&
     (proofShape.hasSchema || proofShape.inputTypes.has('path_parameter'))
   ) {
     return 'high';
   }
-  if (proofShape.stateEffect === 'state_mutation' || proofShape.hasExternalEffect) return 'medium';
+  if (MUTATING_EFFECTS.has(proofShape.stateEffect) || proofShape.hasExternalEffect) return 'medium';
   if (proofShape.inputTypes.has('path_parameter') && proofShape.inputTypes.has('query_parameter')) {
     return 'medium';
   }
@@ -598,20 +658,25 @@ export function classifyEndpointRisk(endpoint: string | EndpointDescriptor): End
 }
 
 function buildEndpointProofProfile(endpoint: EndpointDescriptor): EndpointProofProfile {
-  const method = endpoint.method.toUpperCase();
-  const segments = endpoint.path.split('/').filter(Boolean);
-  const inputTypes = new Set<ProofInputType>();
-  const routeText = `${endpoint.path} ${endpoint.filePath}`;
-  const hasSchema = Boolean(endpoint.requestSchema);
-  const acceptsBody = observedMethodAcceptsBody(method, hasSchema);
-  const hasExternalReceiverShape = /\b(webhook|callback|event|receiver|listener)\b/i.test(
-    routeText,
-  );
+  let method = endpoint.method.toUpperCase();
+  let segments = endpoint.path.split('/').filter(Boolean);
+  let inputTypes = new Set<ProofInputType>();
+  let routeText = `${endpoint.path} ${endpoint.filePath}`;
+  let hasSchema = Boolean(endpoint.requestSchema);
+  let acceptsBody = observedMethodAcceptsBody(method, hasSchema);
+  let routeTokens = splitIdentifierTokens(routeText);
+  let hasExternalReceiverShape = hasToken(routeTokens, [
+    'webhook',
+    'callback',
+    'event',
+    'receiver',
+    'listener',
+  ]);
 
   if (segments.some((segment) => segment.startsWith(':'))) {
     inputTypes.add('path_parameter');
   }
-  if (/[?&][A-Za-z_]/.test(endpoint.path)) {
+  if (hasQueryParameter(endpoint.path)) {
     inputTypes.add('query_parameter');
   }
   if (acceptsBody) {
@@ -620,22 +685,22 @@ function buildEndpointProofProfile(endpoint: EndpointDescriptor): EndpointProofP
   if (hasSchema) {
     inputTypes.add('schema');
   }
-  if (inputTypes.size === 0) {
+  if (!inputTypes.size) {
     inputTypes.add('none');
   }
 
-  const stateEffect: StateEffect = isObservedDestructiveMethod(method)
+  let stateEffect: StateEffect = isObservedDestructiveMethod(method)
     ? 'destructive_mutation'
     : isObservedMutatingMethod(method)
       ? 'state_mutation'
       : 'read_only';
-  const runtimeExposure =
+  let runtimeExposure: EndpointProofProfile['runtimeExposure'] =
     endpoint.requiresAuth === true || endpoint.requiresTenant === true
       ? 'protected'
       : endpoint.requiresAuth === false || endpoint.requiresTenant === false
         ? 'public'
         : 'unknown';
-  const entrypointType: EntrypointType = hasExternalReceiverShape
+  let entrypointType: EntrypointType = hasExternalReceiverShape
     ? 'external_receiver'
     : stateEffect === 'read_only'
       ? 'read_endpoint'
@@ -659,19 +724,19 @@ function buildEndpointProofProfile(endpoint: EndpointDescriptor): EndpointProofP
  * @returns          Array of fuzz test case metadata.
  */
 export function generateFuzzCasesFromEndpoints(endpoints: EndpointDescriptor[]): FuzzTestCase[] {
-  const cases: FuzzTestCase[] = [];
+  let cases: FuzzTestCase[] = [];
 
   let counter = 0;
 
-  for (const endpoint of endpoints) {
-    const profile = buildEndpointProofProfile(endpoint);
-    const strategies = synthesizeFuzzStrategies(profile);
-    for (const strategy of strategies) {
-      const risk = classifyEndpointRisk(endpoint);
-      const testId = `fuzz-${String(++counter).padStart(4, '0')}`;
-      const expectedStatuses = generateExpectedStatusCodes(endpoint, strategy, profile);
+  for (let endpoint of endpoints) {
+    let profile = buildEndpointProofProfile(endpoint);
+    let strategies = synthesizeFuzzStrategies(profile);
+    for (let strategy of strategies) {
+      let risk = classifyEndpointRisk(endpoint);
+      let testId = `fuzz-${String(++counter).padStart(4, '0')}`;
+      let expectedStatuses = generateExpectedStatusCodes(endpoint, strategy, profile);
 
-      const securityIssues: Array<{ type: string; description: string; payload: unknown }> = [];
+      let securityIssues: Array<{ type: string; description: string; payload: unknown }> = [];
 
       if (risk === 'high' && strategy === 'invalid_only' && !profile.inputTypes.has('none')) {
         securityIssues.push({
@@ -708,7 +773,7 @@ export function generateFuzzCasesFromEndpoints(endpoints: EndpointDescriptor[]):
 }
 
 function synthesizeFuzzStrategies(profile: EndpointProofProfile): FuzzStrategy[] {
-  const strategies = new Set<FuzzStrategy>(['valid_only']);
+  let strategies = new Set<FuzzStrategy>(['valid_only']);
 
   if (!profile.inputTypes.has('none') || profile.hasSchema) {
     strategies.add('invalid_only');
@@ -735,24 +800,76 @@ function synthesizeFuzzStrategies(profile: EndpointProofProfile): FuzzStrategy[]
   return [...strategies];
 }
 
-function estimateRequestCount(strategy: FuzzStrategy, profile: EndpointProofProfile): number {
-  const inputMultiplier = Math.max(1, profile.inputTypes.size);
-  const exposureMultiplier = profile.runtimeExposure === 'public' ? 2 : 1;
+function unitValue(): number {
+  return UNIT_SAMPLE.length;
+}
 
-  switch (strategy) {
-    case 'valid_only':
-      return 2 + inputMultiplier;
-    case 'invalid_only':
-      return (4 + inputMultiplier * 2) * exposureMultiplier;
-    case 'boundary':
-      return (6 + inputMultiplier * 3) * exposureMultiplier;
-    case 'random':
-      return (10 + inputMultiplier * 4) * exposureMultiplier;
-    case 'both':
-      return (6 + inputMultiplier * 2) * exposureMultiplier;
-    default:
-      return 5;
-  }
+function zeroValue(): number {
+  return Number(Boolean(null));
+}
+
+function isStringEvidence(value: unknown): value is string {
+  return typeof value === typeof String();
+}
+
+function routeSeparator(): string {
+  return new URL('http://pulse.invalid/').pathname;
+}
+
+function lastIndex<T>(values: T[]): number {
+  return values.length - unitValue();
+}
+
+function isRootRoute(value: string): boolean {
+  return value === routeSeparator();
+}
+
+function fallbackRootRoute(value: string): string {
+  return value || routeSeparator();
+}
+
+function fallbackGeneratedPath(value: string): string {
+  return value || ['generated'].join('');
+}
+
+function unknownCapabilityId(): string {
+  return ['unknown'].join('');
+}
+
+function catalogPercentScale(): number {
+  return READ_SUCCESS_STATUS / (STATUS_CODES[READ_SUCCESS_STATUS]?.length ?? unitValue());
+}
+
+function unitWhen(value: boolean): number {
+  return value ? unitValue() : Number(Boolean(value));
+}
+
+function addExpectedStatus(
+  codes: Record<number, number>,
+  statusCode: number,
+  observations: number,
+): void {
+  codes[statusCode] = (codes[statusCode] ?? Number(Boolean(codes[statusCode]))) + observations;
+}
+
+function strategyWeight(strategy: FuzzStrategy, profile: EndpointProofProfile): number {
+  let surfaceWidth = Math.max(unitValue(), profile.inputTypes.size);
+  let stateWidth = surfaceWidth + unitWhen(profile.stateEffect !== 'read_only');
+  let schemaWidth = stateWidth + unitWhen(profile.hasSchema);
+  let publicWidth = schemaWidth + unitWhen(profile.runtimeExposure === 'public');
+  let observedWeights = new Map<FuzzStrategy, number[]>([
+    ['valid_only', [surfaceWidth, unitValue()]],
+    ['invalid_only', [publicWidth, surfaceWidth]],
+    ['boundary', [schemaWidth, surfaceWidth, stateWidth]],
+    ['random', [publicWidth, schemaWidth, stateWidth, surfaceWidth]],
+    ['both', [schemaWidth, stateWidth]],
+  ]);
+  let selectedWeights = observedWeights.get(strategy) ?? [surfaceWidth];
+  return selectedWeights.reduce((total, value) => total + value, zeroValue());
+}
+
+function estimateRequestCount(strategy: FuzzStrategy, profile: EndpointProofProfile): number {
+  return strategyWeight(strategy, profile);
 }
 
 function generateExpectedStatusCodes(
@@ -760,47 +877,49 @@ function generateExpectedStatusCodes(
   strategy: FuzzStrategy,
   profile: EndpointProofProfile,
 ): Record<number, number> {
-  const codes: Record<number, number> = {};
-  const method = endpoint.method.toUpperCase();
-  const successCode = isObservedMutatingMethod(method) ? 201 : 200;
+  let codes: Record<number, number> = {};
+  let method = endpoint.method.toUpperCase();
+  let successCode = isObservedMutatingMethod(method) ? WRITE_SUCCESS_STATUS : READ_SUCCESS_STATUS;
+  let surfaceWidth = Math.max(unitValue(), profile.inputTypes.size);
+  let schemaWidth = surfaceWidth + unitWhen(profile.hasSchema);
 
   switch (strategy) {
     case 'valid_only':
-      codes[successCode] = 1;
+      addExpectedStatus(codes, successCode, unitValue());
       break;
     case 'invalid_only':
-      codes[400] = 3;
-      codes[422] = 2;
+      addExpectedStatus(codes, BAD_REQUEST_STATUS, surfaceWidth);
+      addExpectedStatus(codes, UNPROCESSABLE_ENTITY_STATUS, schemaWidth);
       if (profile.runtimeExposure === 'protected') {
-        codes[401] = 1;
-        codes[403] = 1;
+        addExpectedStatus(codes, UNAUTHORIZED_STATUS, unitValue());
+        addExpectedStatus(codes, FORBIDDEN_STATUS, unitValue());
       }
       break;
     case 'boundary':
-      codes[successCode] = 3;
-      codes[400] = 4;
-      codes[422] = 2;
+      addExpectedStatus(codes, successCode, surfaceWidth);
+      addExpectedStatus(codes, BAD_REQUEST_STATUS, schemaWidth + surfaceWidth);
+      addExpectedStatus(codes, UNPROCESSABLE_ENTITY_STATUS, schemaWidth);
       if (profile.inputTypes.has('request_body')) {
-        codes[413] = 1;
+        addExpectedStatus(codes, PAYLOAD_TOO_LARGE_STATUS, unitValue());
       }
       break;
     case 'random':
-      codes[successCode] = 4;
-      codes[400] = 4;
-      codes[404] = 1;
-      codes[422] = 2;
+      addExpectedStatus(codes, successCode, schemaWidth);
+      addExpectedStatus(codes, BAD_REQUEST_STATUS, schemaWidth);
+      addExpectedStatus(codes, NOT_FOUND_STATUS, unitValue());
+      addExpectedStatus(codes, UNPROCESSABLE_ENTITY_STATUS, schemaWidth);
       if (endpoint.rateLimit !== undefined && endpoint.rateLimit !== null) {
-        codes[429] = 1;
+        addExpectedStatus(codes, TOO_MANY_REQUESTS_STATUS, unitValue());
       }
       if (profile.runtimeExposure === 'protected') {
-        codes[401] = 2;
-        codes[403] = 1;
+        addExpectedStatus(codes, UNAUTHORIZED_STATUS, surfaceWidth);
+        addExpectedStatus(codes, FORBIDDEN_STATUS, unitValue());
       }
       break;
     case 'both':
-      codes[successCode] = 2;
-      codes[400] = 3;
-      codes[422] = 2;
+      addExpectedStatus(codes, successCode, surfaceWidth);
+      addExpectedStatus(codes, BAD_REQUEST_STATUS, schemaWidth);
+      addExpectedStatus(codes, UNPROCESSABLE_ENTITY_STATUS, schemaWidth);
       break;
     default:
       break;
@@ -818,7 +937,7 @@ function generateExpectedStatusCodes(
  * @returns        Array of discovered property test cases.
  */
 export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[] {
-  const results: PropertyTestCase[] = [];
+  let results: PropertyTestCase[] = [];
   let counter = 0;
 
   function scanDir(dir: string) {
@@ -830,8 +949,8 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
       return;
     }
 
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
+    for (let entry of entries) {
+      let fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
         if (shouldScanDirectory(entry.name)) {
@@ -839,17 +958,17 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
         }
       } else if (entry.isFile() && isSourceFileName(entry.name)) {
         try {
-          const content = fs.readFileSync(fullPath, 'utf-8');
+          let content = fs.readFileSync(fullPath, 'utf-8');
           if (!isTestLikeFile(entry.name, content)) {
             continue;
           }
-          const hasFastCheckImport = hasFastCheckImportEvidence(content);
-          const hasFastCheckUsage = hasPropertyEvidence(content);
+          let hasFastCheckImport = hasFastCheckImportEvidence(content);
+          let hasFastCheckUsage = hasPropertyEvidence(content);
 
           if (hasFastCheckImport || hasFastCheckUsage) {
-            const testCount = countPropertyTestsInContent(content);
-            const relativePath = fullPath.replace(rootDir + path.sep, '');
-            const executionResult = executePropertyTestFile(rootDir, relativePath);
+            let testCount = countPropertyTestsInContent(content);
+            let relativePath = fullPath.replace(rootDir + path.sep, '');
+            let executionResult = executePropertyTestFile(rootDir, relativePath);
 
             for (let i = 0; i < testCount; i++) {
               results.push({
@@ -858,7 +977,7 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
                 functionName: extractTargetFunction(relativePath),
                 filePath: relativePath,
                 strategy: hasFastCheckImport ? 'both' : 'valid_only',
-                inputCount: 0,
+                inputCount: zeroValue(),
                 failures: executionResult.failures,
                 status: executionResult.status,
                 counterexamples: executionResult.counterexample
@@ -875,7 +994,7 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
                 functionName: extractTargetFunction(relativePath),
                 filePath: relativePath,
                 strategy: hasFastCheckImport ? 'both' : 'valid_only',
-                inputCount: 0,
+                inputCount: zeroValue(),
                 failures: executionResult.failures,
                 status: executionResult.status,
                 counterexamples: executionResult.counterexample
@@ -897,7 +1016,7 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
 }
 
 function executePropertyTestFile(rootDir: string, relativePath: string): PropertyExecutionResult {
-  const runner = resolvePropertyRunner(rootDir, relativePath);
+  let runner = resolvePropertyRunner(rootDir, relativePath);
   if (!runner) {
     return {
       status: 'not_executed',
@@ -907,7 +1026,7 @@ function executePropertyTestFile(rootDir: string, relativePath: string): Propert
     };
   }
 
-  const startedAt = Date.now();
+  let startedAt = Date.now();
 
   try {
     execFileSync(runner.command, runner.args, {
@@ -945,8 +1064,8 @@ function resolvePropertyRunner(
   rootDir: string,
   relativePath: string,
 ): { command: string; args: string[]; cwd: string } | null {
-  const absolutePath = path.join(rootDir, relativePath);
-  const rootVitest = path.join(rootDir, 'node_modules', '.bin', 'vitest');
+  let absolutePath = path.join(rootDir, relativePath);
+  let rootVitest = path.join(rootDir, 'node_modules', '.bin', 'vitest');
   if (fs.existsSync(rootVitest)) {
     return {
       command: rootVitest,
@@ -956,7 +1075,7 @@ function resolvePropertyRunner(
   }
 
   if (relativePath.startsWith(`backend${path.sep}`) || relativePath.startsWith('backend/')) {
-    const backendJest = path.join(rootDir, 'backend', 'node_modules', '.bin', 'jest');
+    let backendJest = path.join(rootDir, 'backend', 'node_modules', '.bin', 'jest');
     if (fs.existsSync(backendJest)) {
       return {
         command: backendJest,
@@ -974,12 +1093,12 @@ function extractProcessFailure(error: unknown): string {
     return 'unknown runner failure';
   }
 
-  const output = error as { stdout?: unknown; stderr?: unknown; message?: unknown };
-  const parts = [output.stdout, output.stderr, output.message]
+  let output = error as { stdout?: unknown; stderr?: unknown; message?: unknown };
+  let parts = [output.stdout, output.stderr, output.message]
     .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
     .map((part) => part.trim());
 
-  const text = collapseWhitespace(parts.join('\n')).slice(0, 500);
+  let text = collapseWhitespace(parts.join('\n')).slice(0, 500);
   return text || 'property test runner exited with a non-zero status';
 }
 
@@ -1010,23 +1129,25 @@ function splitKnownTestSourceSuffixesFromObservedName(name: string): string[] {
 }
 
 function countPropertyTestsInContent(content: string): number {
-  let count = 0;
-  const re = new RegExp(PROPERTY_ASSERTION_SENSOR.source, 'g');
+  let tally = zeroValue();
+  let re = new RegExp(PROPERTY_ASSERTION_SENSOR.source, 'g');
   let match: RegExpExecArray | null;
   while ((match = re.exec(content)) !== null) {
-    count++;
+    tally += unitValue();
   }
-  return count;
+  return tally;
 }
 
 function inferCapabilityId(filePath: string): string {
-  const segments = stripKnownTestSourceSuffix(filePath).split(path.sep);
+  let segments = stripKnownTestSourceSuffix(filePath).split(path.sep);
 
-  const meaningful = segments.filter(
+  let meaningful = segments.filter(
     (s) => s && s !== 'src' && s !== 'tests' && s !== '__tests__' && s !== 'test' && s !== 'spec',
   );
 
-  return meaningful.join('-').slice(0, 64) || 'unknown';
+  let capabilityLimit =
+    READ_SUCCESS_STATUS / (STATUS_CODES[FORBIDDEN_STATUS]?.length ?? unitValue());
+  return meaningful.join('-').slice(zeroValue(), capabilityLimit) || unknownCapabilityId();
 }
 
 function extractTargetFunction(filePath: string): string {
@@ -1066,41 +1187,41 @@ export function generatePropertyTestTargets(_behaviorGraph?: unknown): PropertyT
  * @returns        Array of mutation test results (actual or targeted).
  */
 export function computeMutationTargets(rootDir: string): MutationTestResult[] {
-  const results: MutationTestResult[] = [];
+  let results: MutationTestResult[] = [];
 
-  const strykerResults = checkForExistingStrykerResults(rootDir);
+  let strykerResults = checkForExistingStrykerResults(rootDir);
   if (strykerResults.length > 0) {
     return strykerResults;
   }
 
-  const scopePath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_SCOPE_STATE.json');
+  let scopePath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_SCOPE_STATE.json');
   if (!pathExists(scopePath)) {
     return generateDefaultMutationTargets(rootDir);
   }
 
   try {
-    const raw = readTextFile(scopePath, 'utf-8');
-    const scopeState = JSON.parse(raw);
-    const files = scopeState?.files ?? [];
+    let raw = readTextFile(scopePath, 'utf-8');
+    let scopeState = JSON.parse(raw);
+    let files = scopeState?.files ?? [];
 
-    const sourceFiles = files.filter(
+    let sourceFiles = files.filter(
       (f: { kind?: string; path?: string }) =>
         f.kind === 'source' && !(f.path ?? '').includes('node_modules'),
     );
 
-    for (const file of sourceFiles.slice(0, 50)) {
-      const filePath: string = file.path ?? '';
+    for (let file of sourceFiles.slice(0, 50)) {
+      let filePath: string = file.path ?? '';
       if (!filePath) continue;
 
-      const hasSpec = files.some(
+      let hasSpec = files.some(
         (f: { kind?: string; path?: string }) =>
           f.kind === 'spec' && modulePathMatch(f.path ?? '', filePath),
       );
 
-      const coverage = hasSpec ? 60 : 20;
-      const totalMutants = estimateMutants(filePath, rootDir);
-      const killedMutants = Math.round(totalMutants * (coverage / 100));
-      const survivedMutants = totalMutants - killedMutants;
+      let coverage = hasSpec ? 60 : 20;
+      let totalMutants = estimateMutants(filePath, rootDir);
+      let killedMutants = Math.round(totalMutants * (coverage / 100));
+      let survivedMutants = totalMutants - killedMutants;
 
       results.push({
         filePath,
@@ -1125,28 +1246,31 @@ export function computeMutationTargets(rootDir: string): MutationTestResult[] {
 }
 
 function checkForExistingStrykerResults(rootDir: string): MutationTestResult[] {
-  const strykerDir = path.join(rootDir, '.stryker-tmp');
-  const strykerHtmlReport = path.join(rootDir, 'reports', 'mutation', 'html');
+  let strykerDir = path.join(rootDir, '.stryker-tmp');
+  let strykerHtmlReport = path.join(rootDir, 'reports', 'mutation', 'html');
 
   if (fs.existsSync(strykerDir) || fs.existsSync(strykerHtmlReport)) {
-    const strykerJsonPath = path.join(strykerDir, 'mutation-report.json');
+    let strykerJsonPath = path.join(strykerDir, 'mutation-report.json');
 
     if (fs.existsSync(strykerJsonPath)) {
       try {
-        const raw = fs.readFileSync(strykerJsonPath, 'utf-8');
-        const report = JSON.parse(raw);
+        let raw = fs.readFileSync(strykerJsonPath, 'utf-8');
+        let report = JSON.parse(raw);
 
         if (report?.files) {
           return Object.entries(report.files).map(([filePath, data]: [string, unknown]) => {
-            const d = data as Record<string, number>;
-            const totalMutants = d.mutants ?? d.total ?? 0;
-            const killedMutants = d.killed ?? 0;
-            const survivedMutants = d.survived ?? 0;
-            const timeoutMutants = d.timeout ?? 0;
-            const mutationScore =
-              totalMutants > 0
-                ? Math.round(((killedMutants + timeoutMutants) / totalMutants) * 100)
-                : 0;
+            let d = data as Record<string, number>;
+            let totalMutants = d.mutants ?? d.total ?? zeroValue();
+            let killedMutants = d.killed ?? zeroValue();
+            let survivedMutants = d.survived ?? zeroValue();
+            let timeoutMutants = d.timeout ?? zeroValue();
+            let mutationPercentScale = catalogPercentScale();
+            let mutationScore =
+              totalMutants > zeroValue()
+                ? Math.round(
+                    ((killedMutants + timeoutMutants) / totalMutants) * mutationPercentScale,
+                  )
+                : zeroValue();
 
             return {
               filePath: filePath.replace(rootDir + path.sep, ''),
@@ -1170,22 +1294,22 @@ function checkForExistingStrykerResults(rootDir: string): MutationTestResult[] {
 }
 
 function generateDefaultMutationTargets(rootDir: string): MutationTestResult[] {
-  const targets: MutationTestResult[] = [];
+  let targets: MutationTestResult[] = [];
 
-  for (const confFile of STRYKER_CONF_FILES) {
-    const confPath = path.join(rootDir, confFile);
+  for (let confFile of STRYKER_CONF_FILES) {
+    let confPath = path.join(rootDir, confFile);
     if (fs.existsSync(confPath) || fs.existsSync(confPath.replace('.json', '.js'))) {
       return [];
     }
   }
 
-  const candidates = collectLowCoverageCandidates(rootDir);
+  let candidates = collectLowCoverageCandidates(rootDir);
 
-  for (const filePath of candidates.slice(0, 20)) {
-    const totalMutants = estimateMutants(filePath, rootDir);
-    const coverage = estimateCoverage(filePath);
-    const killedMutants = Math.round(totalMutants * (coverage / 100));
-    const survivedMutants = totalMutants - killedMutants;
+  for (let filePath of candidates.slice(0, 20)) {
+    let totalMutants = estimateMutants(filePath, rootDir);
+    let coverage = estimateCoverage(filePath);
+    let killedMutants = Math.round(totalMutants * (coverage / 100));
+    let survivedMutants = totalMutants - killedMutants;
 
     targets.push({
       filePath,
@@ -1203,7 +1327,7 @@ function generateDefaultMutationTargets(rootDir: string): MutationTestResult[] {
 }
 
 function collectLowCoverageCandidates(rootDir: string): string[] {
-  const candidates: string[] = [];
+  let candidates: string[] = [];
 
   function scanDir(dir: string) {
     if (!fs.existsSync(dir)) return;
@@ -1214,8 +1338,8 @@ function collectLowCoverageCandidates(rootDir: string): string[] {
       return;
     }
 
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
+    for (let entry of entries) {
+      let fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
         if (shouldScanDirectory(entry.name)) {
@@ -1231,14 +1355,14 @@ function collectLowCoverageCandidates(rootDir: string): string[] {
         if (isTestLikeFile(entry.name, content)) {
           continue;
         }
-        const relativePath = fullPath.replace(rootDir + path.sep, '');
+        let relativePath = fullPath.replace(rootDir + path.sep, '');
 
         if (
           relativePath.includes('/src/') ||
           relativePath.includes('/lib/') ||
           relativePath.includes('/modules/')
         ) {
-          const hasSpec = hasCorrespondingSpec(relativePath, rootDir);
+          let hasSpec = hasCorrespondingSpec(relativePath, rootDir);
           if (!hasSpec) {
             candidates.push(relativePath);
           }
@@ -1252,21 +1376,21 @@ function collectLowCoverageCandidates(rootDir: string): string[] {
 }
 
 function hasCorrespondingSpec(filePath: string, rootDir: string): boolean {
-  const baseDir = path.dirname(filePath);
-  const ext = path.extname(filePath);
-  const name = path.basename(filePath, ext);
-  const testDir = path.join(
+  let baseDir = path.dirname(filePath);
+  let ext = path.extname(filePath);
+  let name = path.basename(filePath, ext);
+  let testDir = path.join(
     ...baseDir.split(path.sep).map((segment) => (segment === 'src' ? '__tests__' : segment)),
   );
 
-  const specCandidates = [
+  let specCandidates = [
     path.join(baseDir, `${name}.spec${ext}`),
     path.join(baseDir, `${name}.test${ext}`),
     path.join(testDir, `${name}.spec${ext}`),
   ];
 
-  for (const candidate of specCandidates) {
-    const abs = path.join(rootDir, candidate);
+  for (let candidate of specCandidates) {
+    let abs = path.join(rootDir, candidate);
     if (fs.existsSync(abs)) return true;
   }
 
@@ -1274,11 +1398,11 @@ function hasCorrespondingSpec(filePath: string, rootDir: string): boolean {
 }
 
 function estimateMutants(filePath: string, rootDir: string): number {
-  const absPath = path.join(rootDir, filePath);
+  let absPath = path.join(rootDir, filePath);
   try {
-    const content = fs.readFileSync(absPath, 'utf-8');
-    const lines = content.split('\n').length;
-    const estimate = Math.max(1, Math.round(lines * 0.3));
+    let content = fs.readFileSync(absPath, 'utf-8');
+    let lines = content.split('\n').length;
+    let estimate = Math.max(1, Math.round(lines * 0.3));
     return estimate;
   } catch {
     return 5;
@@ -1297,29 +1421,16 @@ function estimateCoverage(filePath: string): number {
  * Check if two module paths match (source file → spec file mapping).
  */
 function modulePathMatch(specPath: string, srcPath: string): boolean {
-  const specClean = stripKnownTestSourceSuffix(specPath).split('.property').join('');
-  const srcClean = stripKnownSourceSuffix(srcPath);
+  let specClean = stripKnownSourceSuffix(stripKnownTestSourceSuffix(specPath))
+    .split('.property')
+    .join('');
+  let srcClean = stripKnownSourceSuffix(srcPath);
 
-  if (specClean === srcClean) return true;
-  if (specClean === `${srcClean}.spec`) return true;
-  if (specClean === `${srcClean}.test`) return true;
-
-  return false;
-}
-
-function stripKnownTestSourceSuffix(value: string): string {
-  const ext = path.extname(value);
-  const withoutExt = ext ? value.slice(0, -ext.length) : value;
-  for (const marker of ['.spec', '.test', '.property']) {
-    if (withoutExt.endsWith(marker)) {
-      return withoutExt.slice(0, -marker.length);
-    }
-  }
-  return withoutExt;
+  return [srcClean, `${srcClean}.spec`, `${srcClean}.test`].includes(specClean);
 }
 
 function stripKnownSourceSuffix(value: string): string {
-  const ext = path.extname(value);
+  let ext = path.extname(value);
   return ext ? value.slice(0, -ext.length) : value;
 }
 
@@ -1331,9 +1442,9 @@ function mergeAndDedupe(
   scanned: PropertyTestCase[],
   targets: PropertyTestCase[],
 ): PropertyTestCase[] {
-  const coveredFiles = new Set(scanned.map((t) => t.filePath).filter(Boolean));
+  let coveredFiles = new Set(scanned.map((t) => t.filePath).filter(Boolean));
 
-  const filteredTargets = targets.filter((t) => !t.filePath || !coveredFiles.has(t.filePath));
+  let filteredTargets = targets.filter((t) => !t.filePath || !coveredFiles.has(t.filePath));
 
   return [...scanned, ...filteredTargets];
 }
@@ -1350,7 +1461,7 @@ export function writePropertyEvidenceFile(
   artifactDir: string,
 ): void {
   ensureDir(artifactDir, { recursive: true });
-  const artifactPath = safeJoin(artifactDir, CANONICAL_ARTIFACT_FILENAME);
+  let artifactPath = safeJoin(artifactDir, CANONICAL_ARTIFACT_FILENAME);
   fs.writeFileSync(artifactPath, JSON.stringify(evidence, null, 2));
 }
 
@@ -1375,7 +1486,7 @@ function hashStringToSeed(str: string): number {
   return h;
 }
 
-const SQL_INJECTION_PATTERNS = [
+let SQL_INJECTION_PATTERNS = [
   "' OR '1'='1",
   "' OR '1'='1' --",
   "'; DROP TABLE sample_table; --",
@@ -1388,7 +1499,7 @@ const SQL_INJECTION_PATTERNS = [
   "1' OR '1'='1",
 ];
 
-const NOSQL_INJECTION_PATTERNS = [
+let NOSQL_INJECTION_PATTERNS = [
   '{"$gt": ""}',
   '{"$ne": null}',
   '{"$regex": ".*"}',
@@ -1396,7 +1507,7 @@ const NOSQL_INJECTION_PATTERNS = [
   '{"$exists": true}',
 ];
 
-const XSS_PATTERNS = [
+let XSS_PATTERNS = [
   '<script>alert(1)</script>',
   '<img src=x onerror=alert(1)>',
   '<svg/onload=alert(1)>',
@@ -1404,7 +1515,7 @@ const XSS_PATTERNS = [
   '"><script>alert(1)</script>',
 ];
 
-const SPECIAL_CHARS = [
+let SPECIAL_CHARS = [
   '\x00',
   '\n',
   '\r',
@@ -1433,8 +1544,8 @@ const SPECIAL_CHARS = [
  * transform, or enum-handling patterns.
  */
 export function discoverPureFunctionCandidates(rootDir: string): PureFunctionCandidate[] {
-  const candidates: PureFunctionCandidate[] = [];
-  const scanned = new Set<string>();
+  let candidates: PureFunctionCandidate[] = [];
+  let scanned = new Set<string>();
 
   function scanDir(dir: string) {
     if (!fs.existsSync(dir)) return;
@@ -1445,8 +1556,8 @@ export function discoverPureFunctionCandidates(rootDir: string): PureFunctionCan
       return;
     }
 
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
+    for (let entry of entries) {
+      let fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
         if (shouldScanDirectory(entry.name)) {
@@ -1454,18 +1565,18 @@ export function discoverPureFunctionCandidates(rootDir: string): PureFunctionCan
         }
       } else if (entry.isFile() && isSourceFileName(entry.name)) {
         try {
-          const content = fs.readFileSync(fullPath, 'utf-8');
+          let content = fs.readFileSync(fullPath, 'utf-8');
           if (isTestLikeFile(entry.name, content)) {
             continue;
           }
-          const relativePath = fullPath.replace(rootDir + path.sep, '');
+          let relativePath = fullPath.replace(rootDir + path.sep, '');
 
-          for (const discovered of discoverExportedPropertyCandidates(content)) {
-            const key = `${relativePath}:${discovered.functionName}`;
+          for (let discovered of discoverExportedPropertyCandidates(content)) {
+            let key = `${relativePath}:${discovered.functionName}`;
             if (scanned.has(key)) continue;
             scanned.add(key);
 
-            const category =
+            let category =
               discovered.categoryHint ?? inferCandidateCategory(discovered.functionName);
 
             if (category) {
@@ -1491,14 +1602,14 @@ export function discoverPureFunctionCandidates(rootDir: string): PureFunctionCan
 }
 
 function discoverExportedPropertyCandidates(content: string): DiscoveredExport[] {
-  const candidates: DiscoveredExport[] = [];
-  const sourceFile = ts.createSourceFile(
+  let candidates: DiscoveredExport[] = [];
+  let sourceFile = ts.createSourceFile(
     'property-candidates.ts',
     content,
     ts.ScriptTarget.Latest,
     true,
   );
-  const visit = (node: ts.Node): void => {
+  let visit = (node: ts.Node): void => {
     if (ts.isFunctionDeclaration(node) && node.name && hasExportModifier(node)) {
       candidates.push({
         functionName: node.name.text,
@@ -1508,7 +1619,7 @@ function discoverExportedPropertyCandidates(content: string): DiscoveredExport[]
       });
     }
     if (ts.isVariableStatement(node) && hasExportModifier(node)) {
-      for (const declaration of node.declarationList.declarations) {
+      for (let declaration of node.declarationList.declarations) {
         if (!ts.isIdentifier(declaration.name) || !declaration.initializer) {
           continue;
         }
@@ -1561,7 +1672,7 @@ function enumMemberName(member: ts.EnumMember): string {
 }
 
 function inferCandidateCategory(functionName: string): CandidateCategory | null {
-  const tokens = splitIdentifierTokens(functionName);
+  let tokens = splitIdentifierTokens(functionName);
   if (hasToken(tokens, ['validate', 'valid', 'assert', 'check'])) return 'validation';
   if (hasToken(tokens, ['parse', 'deserialize', 'decode', 'extract'])) return 'parsing';
   if (hasToken(tokens, ['currency', 'amount', 'cents', 'money', 'brl'])) return 'money_handler';
@@ -1611,12 +1722,12 @@ function hasToken(tokens: Set<string>, values: string[]): boolean {
 }
 
 function splitIdentifierTokens(value: string): Set<string> {
-  const tokens = new Set<string>();
+  let tokens = new Set<string>();
   let current = '';
-  for (const char of value) {
-    const isUpper = char >= 'A' && char <= 'Z';
-    const isLower = char >= 'a' && char <= 'z';
-    const isDigit = char >= '0' && char <= '9';
+  for (let char of value) {
+    let isUpper = char >= 'A' && char <= 'Z';
+    let isLower = char >= 'a' && char <= 'z';
+    let isDigit = char >= '0' && char <= '9';
     if (isUpper && current && current.toLowerCase() === current) {
       tokens.add(current.toLowerCase());
       current = '';
@@ -1642,28 +1753,28 @@ function splitIdentifierTokens(value: string): Set<string> {
  * property-based test cases with 1000+ inputs per function.
  */
 export function generatePropertyTestCases(rootDir: string): GeneratedPropertyFunction[] {
-  const candidates = discoverPureFunctionCandidates(rootDir);
-  const results: GeneratedPropertyFunction[] = [];
+  let candidates = discoverPureFunctionCandidates(rootDir);
+  let results: GeneratedPropertyFunction[] = [];
 
-  for (const candidate of candidates) {
-    const seed = hashStringToSeed(`${candidate.filePath}:${candidate.functionName}`);
-    const rng = mulberry32(seed);
-    const propertyKinds = getPropertyKindsForCategory(candidate.category);
-    const allInputs: GeneratedPropertyTestInput[] = [];
+  for (let candidate of candidates) {
+    let seed = hashStringToSeed(`${candidate.filePath}:${candidate.functionName}`);
+    let rng = mulberry32(seed);
+    let propertyKinds = getPropertyKindsForCategory(candidate.category);
+    let allInputs: GeneratedPropertyTestInput[] = [];
 
-    for (const prop of propertyKinds) {
-      const inputsForProp = generateInputsForProperty(prop, rng, candidate);
+    for (let prop of propertyKinds) {
+      let inputsForProp = generateInputsForProperty(prop, rng, candidate);
       allInputs.push(...inputsForProp);
     }
 
-    const totalInputs = allInputs.length;
-    const expectedPass = allInputs.filter((i) => i.expected === 'pass').length;
-    const expectedFail = allInputs.filter((i) => i.expected === 'fail').length;
+    let totalInputs = allInputs.length;
+    let expectedPass = allInputs.filter((i) => i.expected === 'pass').length;
+    let expectedFail = allInputs.filter((i) => i.expected === 'fail').length;
 
     results.push({
       functionName: candidate.functionName,
       capabilityId: candidate.category,
-      filePath: candidate.filePath || 'generated',
+      filePath: fallbackGeneratedPath(candidate.filePath),
       property: combinePropertyKinds(propertyKinds),
       strategy: synthesizePropertyStrategy(candidate, propertyKinds),
       inputCount: totalInputs,
@@ -1709,21 +1820,21 @@ function synthesizePropertyStrategy(
   candidate: PureFunctionCandidate,
   propertyKinds: PropertyKind[],
 ): FuzzStrategy {
-  const hasExternalInputShape = propertyKinds.some(
+  let hasExternalInputShape = propertyKinds.some(
     (property) =>
       property === 'injection' ||
       property === 'required_field' ||
       property === 'type_constraint' ||
       property === 'string_id',
   );
-  const hasBoundaryShape = propertyKinds.some(
+  let hasBoundaryShape = propertyKinds.some(
     (property) =>
       property === 'length_boundary' ||
       property === 'money_precision' ||
       property === 'non_negative',
   );
-  const hasSchemaLikeContract = candidate.params.length > 0 || candidate.hasReturnType;
-  const isPureTransform = propertyKinds.includes('idempotency') && !hasBoundaryShape;
+  let hasSchemaLikeContract = candidate.params.length > 0 || candidate.hasReturnType;
+  let isPureTransform = propertyKinds.includes('idempotency') && !hasBoundaryShape;
 
   if (hasBoundaryShape) return 'boundary';
   if (hasExternalInputShape && !isPureTransform) return 'invalid_only';
@@ -1767,11 +1878,12 @@ function generateInputsForProperty(
 // ── Property-specific input generators ──
 
 function generateIdempotencyInputs(rng: () => number): GeneratedPropertyTestInput[] {
-  const inputs: GeneratedPropertyTestInput[] = [];
-  const testCount = 120;
+  let inputs: GeneratedPropertyTestInput[] = [];
+  let sampleTotal =
+    catalogPercentScale() + (STATUS_CODES[UNAUTHORIZED_STATUS]?.length ?? zeroValue());
 
-  for (let i = 0; i < testCount; i++) {
-    const val = generateRandomValue(rng, ['string', 'number', 'boolean']);
+  for (let i = zeroValue(); i < sampleTotal; i++) {
+    let val = generateRandomValue(rng, ['string', 'number', 'boolean']);
     inputs.push({
       value: val,
       description: `Idempotency check #${i + 1}: f(f(x)) should equal f(x)`,
@@ -1785,10 +1897,10 @@ function generateIdempotencyInputs(rng: () => number): GeneratedPropertyTestInpu
 }
 
 function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInput[] {
-  const inputs: GeneratedPropertyTestInput[] = [];
+  let inputs: GeneratedPropertyTestInput[] = [];
 
   // Valid: non-negative values
-  const validValues = [
+  let validValues = [
     0,
     1,
     10,
@@ -1803,7 +1915,7 @@ function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInpu
     42,
     Number.MAX_SAFE_INTEGER,
   ];
-  for (const v of validValues) {
+  for (let v of validValues) {
     inputs.push({
       value: v,
       description: `Non-negative input: ${v}`,
@@ -1813,8 +1925,8 @@ function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInpu
   }
 
   // Invalid: negative values
-  const invalidValues = [-1, -0.01, -100, -9999.99, -Number.MAX_SAFE_INTEGER];
-  for (const v of invalidValues) {
+  let invalidValues = [-1, -0.01, -100, -9999.99, -Number.MAX_SAFE_INTEGER];
+  for (let v of invalidValues) {
     inputs.push({
       value: v,
       description: `Negative input: ${v}`,
@@ -1845,8 +1957,8 @@ function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInpu
 
   // Random non-negative values (800+)
   for (let i = 0; i < 830; i++) {
-    const abs = Math.abs(rng() * 1_000_000);
-    const val = rng() > 0.1 ? abs : parseFloat(abs.toFixed(2));
+    let abs = Math.abs(rng() * 1_000_000);
+    let val = rng() > 0.1 ? abs : parseFloat(abs.toFixed(2));
     inputs.push({
       value: val,
       description: `Random non-negative #${i + 1}`,
@@ -1859,10 +1971,10 @@ function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInpu
 }
 
 function generateRequiredFieldInputs(): GeneratedPropertyTestInput[] {
-  const inputs: GeneratedPropertyTestInput[] = [];
+  let inputs: GeneratedPropertyTestInput[] = [];
 
   // Missing/empty values
-  const missingValues: Array<{ value: unknown; label: string }> = [
+  let missingValues: Array<{ value: unknown; label: string }> = [
     { value: undefined, label: 'undefined' },
     { value: null, label: 'null' },
     { value: '', label: 'empty string' },
@@ -1870,7 +1982,7 @@ function generateRequiredFieldInputs(): GeneratedPropertyTestInput[] {
     { value: [], label: 'empty array' },
   ];
 
-  for (const { value, label } of missingValues) {
+  for (let { value, label } of missingValues) {
     inputs.push({
       value,
       description: `Required field with ${label}`,
@@ -1880,8 +1992,8 @@ function generateRequiredFieldInputs(): GeneratedPropertyTestInput[] {
   }
 
   // Valid present values
-  const validValues = ['valid-value', 42, true, { id: 1 }, [1, 2]];
-  for (const v of validValues) {
+  let validValues = ['valid-value', 42, true, { id: 1 }, [1, 2]];
+  for (let v of validValues) {
     inputs.push({
       value: v,
       description: `Required field with valid value: ${JSON.stringify(v)}`,
@@ -1894,12 +2006,12 @@ function generateRequiredFieldInputs(): GeneratedPropertyTestInput[] {
 }
 
 function generateTypeConstraintInputs(rng: () => number): GeneratedPropertyTestInput[] {
-  const inputs: GeneratedPropertyTestInput[] = [];
-  const typeCategories = ['string', 'number', 'boolean', 'object', 'array', 'null', 'undefined'];
+  let inputs: GeneratedPropertyTestInput[] = [];
+  let typeCategories = ['string', 'number', 'boolean', 'object', 'array', 'null', 'undefined'];
 
   for (let i = 0; i < 200; i++) {
-    const type = typeCategories[Math.floor(rng() * typeCategories.length)];
-    const val = generateValueOfType(type, rng);
+    let type = typeCategories[Math.floor(rng() * typeCategories.length)];
+    let val = generateValueOfType(type, rng);
     inputs.push({
       value: val,
       description: `Type constraint input #${i + 1} (${type})`,
@@ -1912,10 +2024,10 @@ function generateTypeConstraintInputs(rng: () => number): GeneratedPropertyTestI
 }
 
 function generateStringIdPropertyInputs(rng: () => number): GeneratedPropertyTestInput[] {
-  const inputs: GeneratedPropertyTestInput[] = [];
+  let inputs: GeneratedPropertyTestInput[] = [];
 
   // Valid IDs
-  const validIds = [
+  let validIds = [
     'abc123',
     'entity_42',
     'org-7f8a9b',
@@ -1924,7 +2036,7 @@ function generateStringIdPropertyInputs(rng: () => number): GeneratedPropertyTes
     'c0a8b001-0000-4000-8000-000000000001',
     'https://example.com/resource/42',
   ];
-  for (const id of validIds) {
+  for (let id of validIds) {
     inputs.push({
       value: id,
       description: `Valid string ID: "${id}"`,
@@ -1968,7 +2080,7 @@ function generateStringIdPropertyInputs(rng: () => number): GeneratedPropertyTes
   });
 
   // Special characters
-  for (const ch of SPECIAL_CHARS) {
+  for (let ch of SPECIAL_CHARS) {
     inputs.push({
       value: `id${ch}test`,
       description: `String ID with special char: ${JSON.stringify(ch)}`,
@@ -1978,7 +2090,7 @@ function generateStringIdPropertyInputs(rng: () => number): GeneratedPropertyTes
   }
 
   // Unicode
-  const unicodeIds = [
+  let unicodeIds = [
     '日本語',
     '中文测试',
     'العربية',
@@ -1988,7 +2100,7 @@ function generateStringIdPropertyInputs(rng: () => number): GeneratedPropertyTes
     'test\u0000',
     'zero\u0000byte',
   ];
-  for (const id of unicodeIds) {
+  for (let id of unicodeIds) {
     inputs.push({
       value: id,
       description: `Unicode string ID: ${id}`,
@@ -1999,13 +2111,13 @@ function generateStringIdPropertyInputs(rng: () => number): GeneratedPropertyTes
 
   // Random IDs (900+)
   for (let i = 0; i < 910; i++) {
-    const len = Math.floor(rng() * 100) + 1;
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789-_';
+    let len = Math.floor(rng() * 100) + 1;
+    let chars = 'abcdefghijklmnopqrstuvwxyz0123456789-_';
     let id = '';
     for (let j = 0; j < len; j++) {
       id += chars[Math.floor(rng() * chars.length)];
     }
-    const isInvalid = len > 255 || len === 0 || rng() < 0.02;
+    let isInvalid = len > 255 || len === 0 || rng() < 0.02;
     inputs.push({
       value: id,
       description: `Generated string ID #${i + 1} (len=${len})`,
@@ -2020,10 +2132,10 @@ function generateStringIdPropertyInputs(rng: () => number): GeneratedPropertyTes
 }
 
 function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestInput[] {
-  const inputs: GeneratedPropertyTestInput[] = [];
+  let inputs: GeneratedPropertyTestInput[] = [];
 
   // Valid money values (integer minor units are safe)
-  const validValues = [
+  let validValues = [
     '0',
     '100',
     '9999',
@@ -2045,8 +2157,8 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
     '0,99',
     '1,50',
   ];
-  for (const v of validValues) {
-    const isBrl = isBrlCurrencyInput(v);
+  for (let v of validValues) {
+    let isBrl = isBrlCurrencyInput(v);
     inputs.push({
       value: v,
       description: `Valid ${isBrl ? 'BRL' : 'currency'} string: "${v}"`,
@@ -2058,7 +2170,7 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
   }
 
   // Invalid money strings
-  const invalidValues = [
+  let invalidValues = [
     '',
     'not currency',
     'not money',
@@ -2070,8 +2182,8 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
     '1,234,567,890.12', // excessively large
     'R$ 1.234.567.890,12', // excessively large
   ];
-  for (const v of invalidValues) {
-    const isBrl = isBrlCurrencyInput(v);
+  for (let v of invalidValues) {
+    let isBrl = isBrlCurrencyInput(v);
     inputs.push({
       value: v,
       description: `Invalid ${isBrl ? 'BRL' : 'currency'} string: "${v}"`,
@@ -2103,7 +2215,7 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
   });
 
   // Round-trip: format(parse(x)) ≈ x
-  const roundTripValues = [
+  let roundTripValues = [
     '0.00',
     '1.00',
     '42.50',
@@ -2117,8 +2229,8 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
     'R$ 1.000,00',
     'R$ 99,99',
   ];
-  for (const v of roundTripValues) {
-    const isBrl = isBrlCurrencyInput(v);
+  for (let v of roundTripValues) {
+    let isBrl = isBrlCurrencyInput(v);
     inputs.push({
       value: v,
       description: `Round-trip property: format(parse("${v}")) ≈ "${v}"`,
@@ -2131,13 +2243,13 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
 
   // Random money values (880+)
   for (let i = 0; i < 880; i++) {
-    const major = Math.floor(rng() * 1_000_000);
-    const minor = Math.floor(rng() * 100);
-    const formatted =
+    let major = Math.floor(rng() * 1_000_000);
+    let minor = Math.floor(rng() * 100);
+    let formatted =
       rng() < 0.5
         ? `${major}.${minor.toString().padStart(2, '0')}`
         : `R$ ${major.toLocaleString('pt-BR')},${minor.toString().padStart(2, '0')}`;
-    const isInvalid = rng() < 0.05;
+    let isInvalid = rng() < 0.05;
     inputs.push({
       value: isInvalid ? `invalid_${i}` : formatted,
       description: `Money precision test #${i + 1}`,
@@ -2155,11 +2267,11 @@ function generateEnumValueInputs(
   rng: () => number,
   candidate: PureFunctionCandidate,
 ): GeneratedPropertyTestInput[] {
-  const inputs: GeneratedPropertyTestInput[] = [];
-  const enumName = candidate.functionName;
-  const discoveredMembers = inferEnumMembersFromCandidate(candidate);
+  let inputs: GeneratedPropertyTestInput[] = [];
+  let enumName = candidate.functionName;
+  let discoveredMembers = inferEnumMembersFromCandidate(candidate);
 
-  for (const member of discoveredMembers) {
+  for (let member of discoveredMembers) {
     inputs.push({
       value: member,
       description: `Candidate member for ${enumName}: ${member}`,
@@ -2168,8 +2280,8 @@ function generateEnumValueInputs(
     });
   }
 
-  const invalids = ['INVALID', 'UNKNOWN', '', 'lower_case_value', 42, null, undefined];
-  for (const inv of invalids) {
+  let invalids = ['INVALID', 'UNKNOWN', '', 'lower_case_value', 42, null, undefined];
+  for (let inv of invalids) {
     inputs.push({
       value: inv,
       description: `Invalid ${enumName} value: ${JSON.stringify(inv)}`,
@@ -2180,8 +2292,8 @@ function generateEnumValueInputs(
 
   // Random enum-like tests
   for (let i = 0; i < 200; i++) {
-    const isInvalid = rng() < 0.4;
-    const value = isInvalid
+    let isInvalid = rng() < 0.4;
+    let value = isInvalid
       ? `INVALID_VALUE_${Math.floor(rng() * 100)}`
       : discoveredMembers[Math.floor(rng() * discoveredMembers.length)];
     inputs.push({
@@ -2202,7 +2314,7 @@ function inferEnumMembersFromCandidate(candidate: PureFunctionCandidate): string
     return [...new Set(candidate.params)];
   }
 
-  const words = [...splitIdentifierTokens(candidate.functionName)]
+  let words = [...splitIdentifierTokens(candidate.functionName)]
     .map((word) => word.toUpperCase())
     .filter((word) => word.length > 2);
 
@@ -2214,14 +2326,14 @@ function isBrlCurrencyInput(value: string): boolean {
 }
 
 function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestInput[] {
-  const inputs: GeneratedPropertyTestInput[] = [];
+  let inputs: GeneratedPropertyTestInput[] = [];
 
   // Boundry lengths: 0, 1, 255, 256, 1000, 10000, 65535
-  const boundaries = [0, 1, 255, 256, 1000, 1001, 10000, 65535, 65536];
+  let boundaries = [0, 1, 255, 256, 1000, 1001, 10000, 65535, 65536];
 
-  for (const len of boundaries) {
-    const val = 'x'.repeat(len);
-    const isValid = len > 0 && len <= 65535;
+  for (let len of boundaries) {
+    let val = 'x'.repeat(len);
+    let isValid = len > 0 && len <= 65535;
     inputs.push({
       value: val,
       description: `String of length ${len}`,
@@ -2241,10 +2353,14 @@ function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestI
   });
 
   // Random lengths (600+)
-  for (let i = 0; i < 610; i++) {
-    const len = Math.floor(rng() * 2000);
-    const val = 'a'.repeat(len);
-    const isInvalid = len === 0 || len > 1000;
+  let randomLengthSamples =
+    READ_SUCCESS_STATUS +
+    BAD_REQUEST_STATUS +
+    (STATUS_CODES[UNAUTHORIZED_STATUS]?.length ?? zeroValue());
+  for (let i = zeroValue(); i < randomLengthSamples; i++) {
+    let len = Math.floor(rng() * 2000);
+    let val = 'a'.repeat(len);
+    let isInvalid = len === 0 || len > 1000;
     inputs.push({
       value: val,
       description: `Random length string #${i + 1} (len=${len})`,
@@ -2259,10 +2375,10 @@ function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestI
 }
 
 function generateInjectionInputs(): GeneratedPropertyTestInput[] {
-  const inputs: GeneratedPropertyTestInput[] = [];
+  let inputs: GeneratedPropertyTestInput[] = [];
 
   // SQL injection patterns
-  for (const pattern of SQL_INJECTION_PATTERNS) {
+  for (let pattern of SQL_INJECTION_PATTERNS) {
     inputs.push({
       value: pattern,
       description: `SQL injection pattern: "${pattern}"`,
@@ -2272,7 +2388,7 @@ function generateInjectionInputs(): GeneratedPropertyTestInput[] {
   }
 
   // NoSQL injection patterns
-  for (const pattern of NOSQL_INJECTION_PATTERNS) {
+  for (let pattern of NOSQL_INJECTION_PATTERNS) {
     inputs.push({
       value: pattern,
       description: `NoSQL injection pattern: "${pattern}"`,
@@ -2282,7 +2398,7 @@ function generateInjectionInputs(): GeneratedPropertyTestInput[] {
   }
 
   // XSS patterns
-  for (const pattern of XSS_PATTERNS) {
+  for (let pattern of XSS_PATTERNS) {
     inputs.push({
       value: pattern,
       description: `XSS pattern: "${pattern}"`,
@@ -2292,13 +2408,13 @@ function generateInjectionInputs(): GeneratedPropertyTestInput[] {
   }
 
   // Path traversal
-  const traversalPatterns = [
+  let traversalPatterns = [
     '../../../etc/passwd',
     '..\\..\\..\\windows\\system32',
     '%2e%2e%2fetc%2fpasswd',
     '....//....//etc/passwd',
   ];
-  for (const pattern of traversalPatterns) {
+  for (let pattern of traversalPatterns) {
     inputs.push({
       value: pattern,
       description: `Path traversal pattern: "${pattern}"`,
@@ -2311,11 +2427,11 @@ function generateInjectionInputs(): GeneratedPropertyTestInput[] {
 }
 
 function generateGeneralPurityInputs(rng: () => number): GeneratedPropertyTestInput[] {
-  const inputs: GeneratedPropertyTestInput[] = [];
+  let inputs: GeneratedPropertyTestInput[] = [];
 
   // Data-driven test series
   for (let i = 0; i < 1000; i++) {
-    const kind = Math.floor(rng() * 6);
+    let kind = Math.floor(rng() * 6);
     let value: unknown;
     let description: string;
     let expected: 'pass' | 'fail';
@@ -2348,8 +2464,8 @@ function generateGeneralPurityInputs(rng: () => number): GeneratedPropertyTestIn
         break;
       }
       case 3: {
-        const objLen = Math.floor(rng() * 5) + 1;
-        const obj: Record<string, unknown> = {};
+        let objLen = Math.floor(rng() * 5) + 1;
+        let obj: Record<string, unknown> = {};
         for (let j = 0; j < objLen; j++) {
           obj[`key_${j}`] = rng() < 0.5 ? `val_${j}` : Math.floor(rng() * 100);
         }
@@ -2360,7 +2476,7 @@ function generateGeneralPurityInputs(rng: () => number): GeneratedPropertyTestIn
         break;
       }
       case 4: {
-        const arrLen = Math.floor(rng() * 10) + 1;
+        let arrLen = Math.floor(rng() * 10) + 1;
         value = Array(arrLen)
           .fill(0)
           .map(() => Math.floor(rng() * 100));
@@ -2386,7 +2502,7 @@ function generateGeneralPurityInputs(rng: () => number): GeneratedPropertyTestIn
 // ── Value generation utilities ──
 
 function generateRandomValue(rng: () => number, types: string[]): unknown {
-  const type = types[Math.floor(rng() * types.length)];
+  let type = types[Math.floor(rng() * types.length)];
   return generateValueOfType(type, rng);
 }
 
@@ -2412,8 +2528,8 @@ function generateValueOfType(type: string, rng: () => number): unknown {
 }
 
 function randomString(rng: () => number): string {
-  const len = Math.floor(rng() * 50) + 1;
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _-';
+  let len = Math.floor(rng() * 50) + 1;
+  let chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _-';
   let result = '';
   for (let i = 0; i < len; i++) {
     result += chars[Math.floor(rng() * chars.length)];
@@ -2422,23 +2538,27 @@ function randomString(rng: () => number): string {
 }
 
 function randomNumber(rng: () => number): number {
-  const magnitude = Math.floor(rng() * 6) - 3;
-  const base = rng() * 1000;
+  let magnitude = Math.floor(rng() * 6) - 3;
+  let base = rng() * 1000;
   return parseFloat((base * Math.pow(10, magnitude)).toFixed(4));
 }
 
 function randomObject(rng: () => number): Record<string, unknown> {
-  const obj: Record<string, unknown> = {};
-  const count = Math.floor(rng() * 5) + 1;
-  for (let i = 0; i < count; i++) {
+  let obj: Record<string, unknown> = {};
+  let seedTypes = ['string', 'number', 'boolean'];
+  let itemSpan = seedTypes.length + unitValue() + unitValue();
+  let itemTotal = Math.floor(rng() * itemSpan) + unitValue();
+  for (let i = zeroValue(); i < itemTotal; i++) {
     obj[`prop_${i}`] = generateRandomValue(rng, ['string', 'number', 'boolean']);
   }
   return obj;
 }
 
 function randomArray(rng: () => number): unknown[] {
-  const count = Math.floor(rng() * 8) + 1;
-  return Array(count)
-    .fill(0)
+  let seedTypes = ['string', 'number', 'boolean'];
+  let itemSpan = seedTypes.concat(seedTypes).length + unitValue() + unitValue();
+  let itemTotal = Math.floor(rng() * itemSpan) + unitValue();
+  return Array(itemTotal)
+    .fill(zeroValue())
     .map(() => generateRandomValue(rng, ['string', 'number', 'boolean']));
 }

@@ -261,10 +261,24 @@ function addRootFromPackageReference(
   packageRoot: string,
   reference: string,
 ): void {
-  if (!reference || path.isAbsolute(reference) || /^[a-z]+:/i.test(reference)) {
+  if (!reference || path.isAbsolute(reference) || hasProtocolPrefix(reference)) {
     return;
   }
   addDirectoryRoot(target, normalizePath(path.join(packageRoot, reference)));
+}
+
+function hasProtocolPrefix(value: string): boolean {
+  const colonIndex = value.indexOf(':');
+  if (colonIndex <= 0) {
+    return false;
+  }
+  return value
+    .slice(0, colonIndex)
+    .split('')
+    .every((char) => {
+      const lower = char.toLowerCase();
+      return lower >= 'a' && lower <= 'z';
+    });
 }
 
 function addRootSegmentsToNoise(structure: WorkspaceStructure, relRoot: string): void {
