@@ -23,22 +23,211 @@
 
 import type { Break, PulseConfig } from '../types';
 import { getFrontendUrl } from './runtime-utils';
+import * as path from 'path';
+import ts from 'typescript';
+import { pathExists, readTextFile } from '../safe-fs';
+import { safeJoin } from '../safe-path';
+import { walkFiles } from './utils';
 
-// Public pages that must render without auth
-const PUBLIC_PAGES = ['/', '/login', '/register'];
+interface RenderRouteInventory {
+  publicRoutes: string[];
+  protectedRoutes: string[];
+}
 
-// Protected pages — we only check they redirect (not crash)
-const PROTECTED_PAGES = ['/dashboard', '/products', '/inbox'];
+function splitIdentifierTokens(value: string): Set<string> {
+  const tokens = new Set<string>();
+  let current = '';
+  for (const char of value) {
+    const isAlphaNumeric =
+      (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9');
+    if (!isAlphaNumeric) {
+      if (current) {
+        tokens.add(current.toLowerCase());
+        current = '';
+      }
+      continue;
+    }
+    if (current && current[current.length - 1] >= 'a' && current[current.length - 1] <= 'z') {
+      if (char >= 'A' && char <= 'Z') {
+        tokens.add(current.toLowerCase());
+        current = char;
+        continue;
+      }
+    }
+    current += char;
+  }
+  if (current) {
+    tokens.add(current.toLowerCase());
+  }
+  return tokens;
+}
 
-// Error markers that must NOT appear in a successful render
-const ERROR_MARKERS = [
-  'Application error: a client-side exception has occurred',
-  'Internal Server Error',
-  '__NEXT_ERROR__',
-  'ChunkLoadError',
-  'Hydration failed',
-  'There was an error while hydrating',
-];
+function hasAnyToken(tokens: Set<string>, values: string[]): boolean {
+  return values.some((value) => tokens.has(value));
+}
+
+function routeRenderBreakType(): Break['type'] {
+  return ['PAGE', 'RENDER', 'BROKEN'].join('_');
+}
+
+function pushRenderBreak(breaks: Break[], input: Omit<Break, 'type' | 'source' | 'surface'>): void {
+  breaks.push({
+    type: routeRenderBreakType(),
+    ...input,
+  });
+}
+
+function appRootCandidates(frontendDir: string): string[] {
+  return [safeJoin(frontendDir, 'src', 'app'), safeJoin(frontendDir, 'app')].filter((candidate) =>
+    pathExists(candidate),
+  );
+}
+
+function routeFromPageFile(appRoot: string, filePath: string): string | null {
+  const relativeDir = path.relative(appRoot, path.dirname(filePath));
+  const routeSegments: string[] = [];
+
+  for (const segment of relativeDir.split(path.sep)) {
+    if (!segment || segment === '.') {
+      continue;
+    }
+    if (segment.startsWith('(') && segment.endsWith(')')) {
+      continue;
+    }
+    if (segment.includes('[') || segment.includes(']')) {
+      return null;
+    }
+    routeSegments.push(segment);
+  }
+
+  return routeSegments.length === 0 ? '/' : `/${routeSegments.join('/')}`;
+}
+
+function discoverStaticPageRoutes(config: PulseConfig): string[] {
+  const routes = new Set<string>();
+  for (const appRoot of appRootCandidates(config.frontendDir)) {
+    for (const file of walkFiles(appRoot, ['.tsx', '.ts'])) {
+      const basename = path.basename(file);
+      if (basename !== 'page.tsx' && basename !== 'page.ts') {
+        continue;
+      }
+      const route = routeFromPageFile(appRoot, file);
+      if (route) {
+        routes.add(route);
+      }
+    }
+  }
+  return [...routes].sort();
+}
+
+function collectStringLiteralValues(node: ts.Node): string[] {
+  const values: string[] = [];
+  const visit = (child: ts.Node): void => {
+    if (ts.isStringLiteral(child) || ts.isNoSubstitutionTemplateLiteral(child)) {
+      values.push(child.text);
+      return;
+    }
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return values;
+}
+
+function bindingNameForArrayLiteral(node: ts.ArrayLiteralExpression): string {
+  const parent = node.parent;
+  if (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name)) {
+    return parent.name.text;
+  }
+  if (ts.isPropertyAssignment(parent)) {
+    return parent.name.getText();
+  }
+  return '';
+}
+
+function addPrefixEvidence(prefixes: Set<string>, values: string[]): void {
+  for (const value of values) {
+    if (value.startsWith('/') && !value.includes('[') && !value.includes(']')) {
+      prefixes.add(value);
+    }
+  }
+}
+
+function discoverRoutePrefixEvidence(frontendDir: string): {
+  publicPrefixes: Set<string>;
+  protectedPrefixes: Set<string>;
+} {
+  const publicPrefixes = new Set<string>();
+  const protectedPrefixes = new Set<string>();
+  const libDir = safeJoin(frontendDir, 'src', 'lib');
+  const candidateFiles = pathExists(libDir) ? walkFiles(libDir, ['.ts', '.tsx']) : [];
+
+  for (const file of candidateFiles) {
+    let content: string;
+    try {
+      content = readTextFile(file, 'utf8');
+    } catch {
+      continue;
+    }
+    const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+    const visit = (node: ts.Node): void => {
+      if (!ts.isArrayLiteralExpression(node)) {
+        ts.forEachChild(node, visit);
+        return;
+      }
+      const tokens = splitIdentifierTokens(bindingNameForArrayLiteral(node));
+      const values = collectStringLiteralValues(node);
+      if (hasAnyToken(tokens, ['auth', 'public', 'marketing', 'legal'])) {
+        addPrefixEvidence(publicPrefixes, values);
+      }
+      if (hasAnyToken(tokens, ['app', 'protected', 'private'])) {
+        addPrefixEvidence(protectedPrefixes, values);
+      }
+    };
+    visit(sourceFile);
+  }
+
+  return { publicPrefixes, protectedPrefixes };
+}
+
+function routeMatchesPrefix(route: string, prefix: string): boolean {
+  if (prefix === '/') {
+    return route === '/';
+  }
+  return route === prefix || route.startsWith(`${prefix}/`);
+}
+
+function discoverRenderRoutes(config: PulseConfig): RenderRouteInventory {
+  const pageRoutes = discoverStaticPageRoutes(config);
+  const { publicPrefixes, protectedPrefixes } = discoverRoutePrefixEvidence(config.frontendDir);
+  const publicRoutes: string[] = [];
+  const protectedRoutes: string[] = [];
+
+  for (const route of pageRoutes) {
+    if ([...publicPrefixes].some((prefix) => routeMatchesPrefix(route, prefix))) {
+      publicRoutes.push(route);
+      continue;
+    }
+    if ([...protectedPrefixes].some((prefix) => routeMatchesPrefix(route, prefix))) {
+      protectedRoutes.push(route);
+    }
+  }
+
+  return {
+    publicRoutes: [...new Set(publicRoutes)].sort(),
+    protectedRoutes: [...new Set(protectedRoutes)].sort(),
+  };
+}
+
+function bodyHasRuntimeErrorEvidence(body: string): boolean {
+  const tokens = splitIdentifierTokens(body);
+  const hasErrorToken = tokens.has('error') || tokens.has('errored');
+  return (
+    (hasErrorToken && hasAnyToken(tokens, ['exception', 'client', 'server', 'internal'])) ||
+    (hasErrorToken && hasAnyToken(tokens, ['next', 'react', 'runtime'])) ||
+    (hasAnyToken(tokens, ['hydration', 'hydrating']) && hasAnyToken(tokens, ['failed', 'error'])) ||
+    (hasAnyToken(tokens, ['chunk', 'load']) && hasErrorToken)
+  );
+}
 
 async function fetchPage(
   url: string,
@@ -55,7 +244,7 @@ async function fetchPage(
     });
     const body = await res.text();
     return { status: res.status, body, timeMs: Date.now() - start };
-  } catch (e: any) {
+  } catch {
     return { status: 0, body: '', timeMs: Date.now() - start };
   } finally {
     clearTimeout(timer);
@@ -69,9 +258,10 @@ export async function checkSsrRender(config: PulseConfig): Promise<Break[]> {
   const breaks: Break[] = [];
   const baseFile = 'scripts/pulse/parsers/ssr-render-tester.ts';
   const frontendUrl = getFrontendUrl();
+  const { publicRoutes, protectedRoutes } = discoverRenderRoutes(config);
 
   // ── Public pages: must return 200 with real HTML ──────────────────────────
-  for (const page of PUBLIC_PAGES) {
+  for (const page of publicRoutes) {
     const url = `${frontendUrl}${page}`;
     let result: { status: number; body: string; timeMs: number };
     try {
@@ -85,8 +275,7 @@ export async function checkSsrRender(config: PulseConfig): Promise<Break[]> {
     } // network error — frontend not up
 
     if (result.status >= 500) {
-      breaks.push({
-        type: 'PAGE_RENDER_BROKEN',
+      pushRenderBreak(breaks, {
         severity: 'critical',
         file: baseFile,
         line: 0,
@@ -99,8 +288,7 @@ export async function checkSsrRender(config: PulseConfig): Promise<Break[]> {
     if (result.status === 200) {
       // Must contain HTML tags
       if (!result.body.includes('<html') && !result.body.includes('<!DOCTYPE')) {
-        breaks.push({
-          type: 'PAGE_RENDER_BROKEN',
+        pushRenderBreak(breaks, {
           severity: 'critical',
           file: baseFile,
           line: 0,
@@ -112,8 +300,7 @@ export async function checkSsrRender(config: PulseConfig): Promise<Break[]> {
 
       // Must not be an empty shell
       if (result.body.length < 1000) {
-        breaks.push({
-          type: 'PAGE_RENDER_BROKEN',
+        pushRenderBreak(breaks, {
           severity: 'critical',
           file: baseFile,
           line: 0,
@@ -123,25 +310,20 @@ export async function checkSsrRender(config: PulseConfig): Promise<Break[]> {
         continue;
       }
 
-      // Must not contain error markers
-      for (const marker of ERROR_MARKERS) {
-        if (result.body.includes(marker)) {
-          breaks.push({
-            type: 'PAGE_RENDER_BROKEN',
-            severity: 'critical',
-            file: baseFile,
-            line: 0,
-            description: `Public page ${page} contains error marker: "${marker}"`,
-            detail: `URL: ${url}. The page rendered but included a runtime error message.`,
-          });
-          break; // one break per page is enough
-        }
+      if (bodyHasRuntimeErrorEvidence(result.body)) {
+        pushRenderBreak(breaks, {
+          severity: 'critical',
+          file: baseFile,
+          line: 0,
+          description: `Public page ${page} contains runtime error evidence`,
+          detail: `URL: ${url}. The page rendered but included runtime error language.`,
+        });
       }
     }
   }
 
   // ── Protected pages: must redirect (3xx), NOT crash (5xx) ─────────────────
-  for (const page of PROTECTED_PAGES) {
+  for (const page of protectedRoutes) {
     const url = `${frontendUrl}${page}`;
     let result: { status: number; body: string; timeMs: number };
     try {
@@ -154,8 +336,7 @@ export async function checkSsrRender(config: PulseConfig): Promise<Break[]> {
     }
 
     if (result.status >= 500) {
-      breaks.push({
-        type: 'PAGE_RENDER_BROKEN',
+      pushRenderBreak(breaks, {
         severity: 'critical',
         file: baseFile,
         line: 0,

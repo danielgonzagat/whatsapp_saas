@@ -22,6 +22,7 @@ export async function creditAvailableByAdjustmentImpl(
     );
   }
 
+  // PULSE_OK: already in $transaction
   return prisma.$transaction(async (tx) => {
     const existing = await tx.connectLedgerEntry.findFirst({
       where: {

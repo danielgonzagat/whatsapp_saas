@@ -16,6 +16,10 @@
  */
 
 import * as path from 'path';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
@@ -29,18 +33,43 @@ interface AiGuardrailBreakInput {
   predicates: readonly string[];
 }
 
+function diagnosticToken(value: string): string {
+  return value
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+}
+
 function buildAiGuardrailBreak(input: AiGuardrailBreakInput): Break {
-  const type = ['AI', 'GUARDRAIL', 'BROKEN'].join('_');
-  const predicateEvidence = input.predicates.join(',');
+  const signal: PulseSignalEvidence = {
+    source: `grammar-kernel:ai-guardrails;predicates=${input.predicates.join(',')}`,
+    detector: 'ai-guardrails',
+    truthMode: 'confirmed_static',
+    summary: input.description,
+    detail: input.detail,
+    location: {
+      file: input.file,
+      line: input.line,
+    },
+  };
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const diagnostic = synthesizeDiagnostic(
+    signalGraph,
+    predicateGraph,
+    calculateDynamicRisk({ predicateGraph }),
+  );
+  const predicateToken = input.predicates.map(diagnosticToken).filter(Boolean).join('+');
 
   return {
-    type,
+    type: `diagnostic:ai-guardrails:${predicateToken || diagnostic.id}`,
     severity: input.severity,
     file: input.file,
     line: input.line,
-    description: input.description,
-    detail: `${input.detail} Evidence predicates: ${predicateEvidence}.`,
-    source: `grammar-kernel:ai-guardrails;truthMode=confirmed_static;predicates=${predicateEvidence}`,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; ${input.detail}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
+    surface: 'ai-guardrails',
   };
 }
 

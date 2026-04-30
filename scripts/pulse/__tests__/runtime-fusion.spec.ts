@@ -506,6 +506,64 @@ describe('runtime-fusion', () => {
     expect(signalsById.get('dependency-opaque')?.evidenceMode).toBe('inferred');
   });
 
+  it('derives signal ontology from observed evidence shape instead of provider identity', () => {
+    const { rootDir, currentDir } = createPulseRoot();
+
+    writeJson(path.join(currentDir, 'PULSE_EXTERNAL_SIGNAL_STATE.json'), {
+      generatedAt: '2026-04-29T20:30:00.000Z',
+      truthMode: 'observed',
+      adapters: [
+        { source: 'sentry', status: 'ready' },
+        { source: 'codacy', status: 'ready' },
+      ],
+      signals: [
+        {
+          id: 'sentry-static-shape',
+          type: 'opaque_event',
+          source: 'sentry',
+          truthMode: 'observed',
+          severity: 0.62,
+          impactScore: 0.61,
+          confidence: 0.91,
+          summary: 'Opaque rule finding in checkout resolver.',
+          relatedFiles: ['backend/src/checkout/checkout.service.ts'],
+          observedPayload: {
+            ruleId: 'complexity',
+            findingId: 'static-finding-1',
+            filePath: 'backend/src/checkout/checkout.service.ts',
+          },
+        },
+        {
+          id: 'codacy-runtime-shape',
+          type: 'opaque_event',
+          source: 'codacy',
+          truthMode: 'observed',
+          severity: 0.55,
+          impactScore: 0.57,
+          runtimeBaselineScore: 0.84,
+          trend: 'worsening',
+          confidence: 0.93,
+          summary: 'Opaque checkout request timed out.',
+          observedPayload: {
+            traceId: 'trace-checkout-timeout',
+            spanId: 'span-checkout-timeout',
+            statusCode: 504,
+            durationMs: 6400,
+          },
+        },
+      ],
+    });
+
+    const state = buildRuntimeFusionState(rootDir);
+    const signalsById = new Map(state.signals.map((signal) => [signal.id, signal]));
+
+    expect(signalsById.get('sentry-static-shape')?.evidenceKind).toBe('static');
+    expect(signalsById.get('sentry-static-shape')?.type).toBe('code_quality');
+    expect(signalsById.get('codacy-runtime-shape')?.evidenceKind).toBe('runtime');
+    expect(signalsById.get('codacy-runtime-shape')?.type).toBe('error');
+    expect(signalsById.get('codacy-runtime-shape')?.severity).toBe('high');
+  });
+
   it('gives observed runtime evidence higher priority and impact than lint-only findings', () => {
     const { rootDir, currentDir } = createPulseRoot();
 

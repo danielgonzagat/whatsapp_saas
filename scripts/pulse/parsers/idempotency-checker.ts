@@ -25,13 +25,107 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
-const IDEMPOTENCY_KEY_RE = /idempotencyKey|idempotency.key|X-Idempotency-Key|idempotent/i;
-const JOB_ID_RE = /jobId\s*:|opts.*jobId|deduplication|deduplicate/i;
-const PAYMENT_ENDPOINT_RE = /createPayment|createCharge|createBilling|checkout.*create|pay\s*\(/i;
-const UPSERT_RE = /\.upsert\s*\(|createOrUpdate|findOrCreate/i;
-const DUPLICATE_CHECK_RE = /alreadyExists|isDuplicate|existingRecord|externalId.*unique|@@unique/i;
-const MUTATING_WEBHOOK_RE =
-  /prisma\.[A-Za-z_$]\w*\.(?:create|update|upsert|delete)|this\.[A-Za-z_$]\w*Service\.[A-Za-z_$]\w*\(|process[A-Za-z]+Webhook|handle[A-Za-z]+Event/i;
+function splitIdentifier(value: string): Set<string> {
+  const tokens = new Set<string>();
+  let current = '';
+  for (const char of value) {
+    const isAlphaNumeric =
+      (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9');
+    if (!isAlphaNumeric) {
+      if (current) {
+        tokens.add(current.toLowerCase());
+        current = '';
+      }
+      continue;
+    }
+    if (current && current[current.length - 1] <= 'z' && current[current.length - 1] >= 'a') {
+      if (char >= 'A' && char <= 'Z') {
+        tokens.add(current.toLowerCase());
+        current = char;
+        continue;
+      }
+    }
+    current += char;
+  }
+  if (current) {
+    tokens.add(current.toLowerCase());
+  }
+  return tokens;
+}
+
+function hasTokenPrefix(tokens: Set<string>, prefix: string): boolean {
+  return [...tokens].some((token) => token.startsWith(prefix));
+}
+
+function hasIdempotencyEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    hasTokenPrefix(tokens, 'idempot') ||
+    (tokens.has('request') && tokens.has('id')) ||
+    hasTokenPrefix(tokens, 'dedup') ||
+    tokens.has('duplicate') ||
+    tokens.has('unique') ||
+    tokens.has('existing') ||
+    tokens.has('upsert')
+  );
+}
+
+function hasCreateOrUpdateEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    tokens.has('create') ||
+    tokens.has('update') ||
+    tokens.has('save') ||
+    tokens.has('insert') ||
+    tokens.has('upsert') ||
+    (tokens.has('find') && tokens.has('create'))
+  );
+}
+
+function hasExternalEffectCreateEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    hasCreateOrUpdateEvidence(value) &&
+    (tokens.has('charge') || tokens.has('billing') || tokens.has('pay'))
+  );
+}
+
+function hasQueueEnqueueEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return tokens.has('queue') || tokens.has('job') || tokens.has('add');
+}
+
+function hasWebhookEvidence(value: string): boolean {
+  return hasTokenPrefix(splitIdentifier(value), 'webhook');
+}
+
+function hasMutationEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    hasCreateOrUpdateEvidence(value) ||
+    tokens.has('delete') ||
+    tokens.has('process') ||
+    tokens.has('handle')
+  );
+}
+
+function hasRetryEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return tokens.has('retry') || tokens.has('retries') || tokens.has('backoff');
+}
+
+function hasExternalSideEffectEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    tokens.has('send') ||
+    tokens.has('email') ||
+    tokens.has('sms') ||
+    tokens.has('message') ||
+    tokens.has('charge') ||
+    tokens.has('payment') ||
+    tokens.has('external')
+  );
+}
 
 function idempotencyFinding(input: {
   severity: Break['severity'];
@@ -72,67 +166,52 @@ export function checkIdempotency(config: PulseConfig): Break[] {
 
     const relFile = path.relative(config.rootDir, file);
     const normalizedRelFile = relFile.replace(/\\/g, '/');
+    const fileTokens = splitIdentifier(normalizedRelFile);
 
-    // CHECK 2: Payment idempotency
-    if (PAYMENT_ENDPOINT_RE.test(content) && /service/i.test(file)) {
-      const hasIdempotencyKey = IDEMPOTENCY_KEY_RE.test(content);
-      const hasUpsert = UPSERT_RE.test(content);
-      const hasDuplicateCheck = DUPLICATE_CHECK_RE.test(content);
-
-      if (!hasIdempotencyKey && !hasUpsert && !hasDuplicateCheck) {
+    if (hasExternalEffectCreateEvidence(content) && fileTokens.has('service')) {
+      if (!hasIdempotencyEvidence(content)) {
         breaks.push(
           idempotencyFinding({
             severity: 'critical',
             file: relFile,
             line: 0,
-            description:
-              'Payment creation endpoint without idempotency key — network retry causes double charge',
+            description: 'External-effect creation path lacks idempotency evidence',
             detail:
-              'Accept X-Idempotency-Key header; store key+response in Redis/DB; return cached response on duplicate key',
+              'Accept and preserve a request identity or prove duplicate-safe mutation behavior with observed evidence.',
           }),
         );
       }
 
-      // Specifically verify Stripe calls pass idempotency key
-      if (/stripe/i.test(content) && !IDEMPOTENCY_KEY_RE.test(content)) {
+      if (hasExternalSideEffectEvidence(content) && !hasIdempotencyEvidence(content)) {
         breaks.push(
           idempotencyFinding({
             severity: 'critical',
             file: relFile,
             line: 0,
-            description:
-              'Stripe payment call without idempotency key — provider retry can create duplicate financial operations',
+            description: 'External provider call lacks request identity evidence',
             detail:
-              'Pass the idempotency key to Stripe requests to prevent duplicate financial operations at provider level',
+              'Forward or derive a stable request identity for external effects, then prove duplicate-safe retry behavior.',
           }),
         );
       }
     }
 
-    // CHECK 1: General POST endpoints without idempotency
-    if (/controller/i.test(file)) {
+    if (fileTokens.has('controller')) {
       const lines = content.split('\n');
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        if (/@Post\s*\(/.test(line)) {
-          // Check surrounding method for idempotency handling
+        if (line.startsWith('@Post') && line.includes('(')) {
           const context = lines.slice(i, Math.min(lines.length, i + 30)).join('\n');
-          const hasIdempotency =
-            IDEMPOTENCY_KEY_RE.test(context) ||
-            UPSERT_RE.test(context) ||
-            DUPLICATE_CHECK_RE.test(context);
-          // Only flag if the POST creates a resource (create/save/add in method body)
-          const createsResource = /\.create\s*\(|\.save\s*\(|\.insert\s*\(/.test(context);
-          if (createsResource && !hasIdempotency) {
+          const createsResource = hasCreateOrUpdateEvidence(context);
+          if (createsResource && !hasIdempotencyEvidence(context)) {
             breaks.push(
               idempotencyFinding({
                 severity: 'high',
                 file: relFile,
                 line: i + 1,
-                description:
-                  'POST endpoint creates resource without idempotency — safe retry not possible',
+                description: 'POST endpoint performs creation without idempotency evidence',
                 detail:
-                  'Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent',
+                  'Support a stable request identity or prove duplicate-safe mutation behavior with observed evidence.',
               }),
             );
           }
@@ -140,65 +219,49 @@ export function checkIdempotency(config: PulseConfig): Break[] {
       }
     }
 
-    // CHECK 3: BullMQ job idempotency
-    if (/queue|Queue|addJob|add\s*\(/.test(content) && /bull|BullMQ/i.test(content)) {
-      const hasJobId = JOB_ID_RE.test(content);
-      if (!hasJobId) {
+    if (hasQueueEnqueueEvidence(content)) {
+      if (!hasIdempotencyEvidence(content)) {
         breaks.push(
           idempotencyFinding({
             severity: 'high',
             file: relFile,
             line: 0,
-            description:
-              'BullMQ job enqueued without deduplication jobId — same job may run multiple times on retry',
+            description: 'Queued work is enqueued without deduplication evidence',
             detail:
-              'Pass { jobId: uniqueKey } option when adding jobs; BullMQ will skip duplicate jobIds',
+              'Derive a stable job identity or prove duplicate-safe queue behavior with observed evidence.',
           }),
         );
       }
     }
 
-    // CHECK 4: Webhook idempotency (at-most-once processing)
-    if (/webhook/i.test(file) && /controller/i.test(file)) {
-      const hasIdempotencyCheck =
-        DUPLICATE_CHECK_RE.test(content) || IDEMPOTENCY_KEY_RE.test(content);
-      const hasWebhookEventModel = /WebhookEvent|webhookEvent/i.test(content);
-      const mutatesWebhookState = MUTATING_WEBHOOK_RE.test(content);
+    if (hasWebhookEvidence(normalizedRelFile) && fileTokens.has('controller')) {
+      const hasIdempotencyCheck = hasIdempotencyEvidence(content);
+      const mutatesWebhookState = hasMutationEvidence(content);
 
-      if (mutatesWebhookState && !hasIdempotencyCheck && !hasWebhookEventModel) {
+      if (mutatesWebhookState && !hasIdempotencyCheck) {
         breaks.push(
           idempotencyFinding({
             severity: 'high',
             file: relFile,
             line: 0,
-            description:
-              'Webhook handler without idempotency check — duplicate webhooks will be processed twice',
+            description: 'Webhook-like handler mutates state without duplicate-processing evidence',
             detail:
-              'Store processed webhook IDs in WebhookEvent model; reject duplicates with 200 (not 409)',
+              'Store or derive a processed-event identity and prove duplicate delivery is acknowledged without duplicate mutation.',
           }),
         );
       }
     }
 
-    // CHECK 5: Retry-unsafe operations (operations with side effects that are not guarded)
-    if (
-      /retry|Retry|maxRetries|backoff/i.test(content) &&
-      !/\.module\.ts$/i.test(normalizedRelFile)
-    ) {
-      // Check if retried operations are marked as idempotent or have guards
-      if (
-        !/idempotent|idempotency|requestId|once.*retry|retryOnce|skipDuplicate/i.test(content) &&
-        /sendEmail|sendSMS|sendWhatsApp|charge|processPayment/i.test(content)
-      ) {
+    if (hasRetryEvidence(content) && !normalizedRelFile.toLowerCase().endsWith('.module.ts')) {
+      if (!hasIdempotencyEvidence(content) && hasExternalSideEffectEvidence(content)) {
         breaks.push(
           idempotencyFinding({
             severity: 'high',
             file: relFile,
             line: 0,
-            description:
-              'Retry logic around operations with external side effects without idempotency guard',
+            description: 'Retry logic wraps external side effects without idempotency evidence',
             detail:
-              'Retrying email/SMS/payment sends can cause duplicates; ensure idempotency before configuring retries',
+              'Retrying external effects can create duplicates; prove stable request identity before configuring retries.',
           }),
         );
       }

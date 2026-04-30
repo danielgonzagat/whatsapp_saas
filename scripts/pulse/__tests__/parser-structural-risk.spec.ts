@@ -159,14 +159,24 @@ describe('parser structural risk inference', () => {
       'DATA_PRODUCT_NO_PLAN',
     );
     const guardSignals = checkGuards(config);
-    expect(guardSignals.map((entry) => entry.type)).toContain('behavioral-control-evidence-gap');
     expect(
-      guardSignals.find((entry) => entry.type === 'behavioral-control-evidence-gap'),
+      guardSignals.some((entry) =>
+        entry.type.includes(
+          'external-input-route+durable-mutation-evidence+missing-nearby-control-evidence',
+        ),
+      ),
+    ).toBe(true);
+    expect(
+      guardSignals.find((entry) =>
+        entry.type.includes(
+          'external-input-route+durable-mutation-evidence+missing-nearby-control-evidence',
+        ),
+      ),
     ).toMatchObject({
       severity: 'low',
-      source: 'regex-weak-signal:guard-auditor:needs_probe',
+      source: 'syntax-weak-signal:guard-auditor:needs_probe',
       description:
-        'External-input route appears to perform a durable mutation without nearby abuse-control or authorization evidence.',
+        'External-input route appears to perform a durable mutation without nearby control evidence.',
     });
     expect(checkBrowserNetwork(config).map((entry) => entry.type)).toContain(
       'browser-network-evidence-gap',

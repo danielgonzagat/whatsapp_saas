@@ -19,7 +19,7 @@
  *
  * REQUIRES: PULSE_DEEP=1
  * DIAGNOSTICS:
- *   Emits evidence gaps with source/truth-mode metadata. Regex/list matches are
+ *   Emits evidence gaps with source/truth-mode metadata. Syntax/token matches are
  *   weak sensors, not final authority.
  */
 import * as path from 'path';
@@ -40,7 +40,7 @@ interface AuditTrailDiagnosticInput {
   line: number;
   description: string;
   detail: string;
-  sourceKind: 'regex-heuristic' | 'schema-static';
+  sourceKind: 'syntax-heuristic' | 'schema-static';
   truthMode: AuditTrailTruthMode;
 }
 
@@ -63,41 +63,106 @@ function buildAuditTrailDiagnostic(input: AuditTrailDiagnosticInput): AuditTrail
   };
 }
 
-const FINANCIAL_OPERATION_SIGNAL_RE = [
-  /createPayment|processPayment|chargeCustomer/i,
-  /initiateWithdrawal|processWithdrawal|createWithdrawal/i,
-  /createRefund|processRefund|issueRefund/i,
-  /createTransaction|debitWallet|creditWallet/i,
-  /updateBalance|adjustBalance|transferBalance/i,
-  /createCommission|processCommission|payCommission/i,
-];
+function splitIdentifier(value: string): Set<string> {
+  const spaced = value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .toLowerCase();
+  return new Set(spaced.split(/\s+/).filter(Boolean));
+}
 
-const APPEND_ONLY_AUDIT_EVIDENCE_RE =
-  /AuditLog|AdminAuditService|auditLog|this\.auditLog|auditService|this\.audit\.append|audit\.append|writeAudit|createAuditEntry/i;
-const TRANSACTION_RE = /prisma\.\$transaction|\$transaction\s*\(\s*\[/;
+function hasTokenPrefix(tokens: Set<string>, prefix: string): boolean {
+  return [...tokens].some((token) => token.startsWith(prefix));
+}
 
-const ADMIN_OPERATION_SIGNAL_RE = [
-  /\b(?:impersonat\w*|sudo|actAs|loginAs)\b/i,
-  /\b(?:suspendWorkspace|banWorkspace|overridePlan)\b/i,
-  /\b(?:forceReset|adminReset|bypassLimit)\b/i,
-];
+function hasMutationSignal(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    tokens.has('create') ||
+    tokens.has('process') ||
+    tokens.has('update') ||
+    tokens.has('adjust') ||
+    tokens.has('transfer') ||
+    tokens.has('debit') ||
+    tokens.has('credit') ||
+    tokens.has('charge') ||
+    tokens.has('refund') ||
+    tokens.has('delete') ||
+    tokens.has('anonymize') ||
+    tokens.has('erase')
+  );
+}
 
-const SENSITIVE_DELETE_SIGNAL_RE =
-  /\b(?:user|customer|contact|lead|workspace|agent|account|message|chat|conversation|product|order|payment|transaction|wallet|subscription|file|media|pii|personal)\b/i;
+function hasValueCarrierSignal(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    tokens.has('amount') ||
+    tokens.has('total') ||
+    tokens.has('balance') ||
+    tokens.has('currency') ||
+    tokens.has('fee') ||
+    tokens.has('commission') ||
+    tokens.has('transaction') ||
+    tokens.has('charge') ||
+    tokens.has('refund')
+  );
+}
+
+function hasAppendOnlyAuditEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    tokens.has('audit') &&
+    (tokens.has('log') ||
+      tokens.has('append') ||
+      tokens.has('write') ||
+      tokens.has('entry') ||
+      tokens.has('event') ||
+      tokens.has('record'))
+  );
+}
+
+function hasTransactionEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return tokens.has('transaction') || value.includes('$transaction');
+}
+
+function hasPrivilegedActionSignal(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    tokens.has('admin') ||
+    tokens.has('sudo') ||
+    tokens.has('override') ||
+    tokens.has('bypass') ||
+    tokens.has('impersonate') ||
+    tokens.has('suspend') ||
+    hasTokenPrefix(tokens, 'privileg')
+  );
+}
+
+function hasSensitiveSubjectSignal(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    tokens.has('password') ||
+    tokens.has('token') ||
+    tokens.has('secret') ||
+    tokens.has('personal') ||
+    tokens.has('pii') ||
+    tokens.has('identity') ||
+    tokens.has('credential')
+  );
+}
 
 function hasSensitiveDeletion(content: string): boolean {
   const lines = content.split('\n');
   for (let i = 0; i < lines.length; i++) {
-    if (!/\.delete\s*\(|deleteMany|anonymize|erase/i.test(lines[i])) {
+    if (!hasMutationSignal(lines[i])) {
       continue;
     }
     const context = lines.slice(Math.max(0, i - 3), Math.min(lines.length, i + 4)).join('\n');
-    if (
-      /\b(?:adminPermission|permission|rolePermission)\.(?:delete|deleteMany)\s*\(/i.test(context)
-    ) {
+    if (splitIdentifier(context).has('permission')) {
       continue;
     }
-    if (SENSITIVE_DELETE_SIGNAL_RE.test(context)) {
+    if (hasSensitiveSubjectSignal(context)) {
       return true;
     }
   }
@@ -149,7 +214,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
     }
     const relFile = path.relative(config.rootDir, file);
 
-    if (/@Delete\s*\(|\.delete\s*\(/.test(content) && /auditLog|AuditLog/i.test(content)) {
+    if (hasMutationSignal(content) && hasAppendOnlyAuditEvidence(content)) {
       breaks.push(
         buildAuditTrailDiagnostic({
           predicateKinds: ['audit_log_delete_signal'],
@@ -158,8 +223,8 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
           line: 0,
           description: 'AuditLog deletion signal observed; append-only audit behavior needs proof.',
           detail:
-            'Regex-only weak signal; confirm whether the delete path targets audit records before treating this as operationally blocking.',
-          sourceKind: 'regex-heuristic',
+            'Syntax-only weak signal; confirm whether the mutation path targets audit records before treating this as operationally blocking.',
+          sourceKind: 'syntax-heuristic',
           truthMode: 'weak_signal',
         }),
       );
@@ -167,11 +232,9 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
   }
 
   // CHECK 1: Financial operations without AuditLog
-  const financialFiles = backendFiles.filter(
-    (f) => /checkout|wallet|billing|payment|commission|kloel/i.test(f) && /service/i.test(f),
-  );
+  const mutationCarrierFiles = backendFiles.filter((f) => splitIdentifier(f).has('service'));
 
-  for (const file of financialFiles) {
+  for (const file of mutationCarrierFiles) {
     if (/\.spec\.ts$|migration|seed/i.test(file)) {
       continue;
     }
@@ -185,11 +248,11 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
 
     const relFile = path.relative(config.rootDir, file);
 
-    const hasFinancialOp = FINANCIAL_OPERATION_SIGNAL_RE.some((re) => re.test(content));
-    const hasAuditLog = APPEND_ONLY_AUDIT_EVIDENCE_RE.test(content);
-    const hasTransaction = TRANSACTION_RE.test(content);
+    const hasValueMutation = hasMutationSignal(content) && hasValueCarrierSignal(content);
+    const hasAuditLog = hasAppendOnlyAuditEvidence(content);
+    const hasTransaction = hasTransactionEvidence(content);
 
-    if (hasFinancialOp && !hasAuditLog) {
+    if (hasValueMutation && !hasAuditLog) {
       breaks.push(
         buildAuditTrailDiagnostic({
           predicateKinds: ['financial_mutation_signal', 'audit_write_not_observed'],
@@ -200,14 +263,14 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
             'Financial mutation signal observed without nearby append-only audit evidence.',
           detail:
             'Regex/list-only weak signal; confirm with AST/dataflow or runtime evidence before treating this as final truth.',
-          sourceKind: 'regex-heuristic',
+          sourceKind: 'syntax-heuristic',
           truthMode: 'weak_signal',
         }),
       );
     }
 
     // CHECK 5: AuditLog inside transaction
-    if (hasFinancialOp && hasAuditLog && !hasTransaction) {
+    if (hasValueMutation && hasAuditLog && !hasTransaction) {
       breaks.push(
         buildAuditTrailDiagnostic({
           predicateKinds: [
@@ -222,7 +285,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
             'Audit evidence appears outside transaction context; atomic audit behavior needs proof.',
           detail:
             'Regex-only weak signal; confirm control flow before treating the audit write as non-atomic.',
-          sourceKind: 'regex-heuristic',
+          sourceKind: 'syntax-heuristic',
           truthMode: 'weak_signal',
         }),
       );
@@ -242,10 +305,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
     }
     const relFile = path.relative(config.rootDir, file);
 
-    if (
-      /password|token|secret|cpf|ssn/i.test(content) &&
-      APPEND_ONLY_AUDIT_EVIDENCE_RE.test(content)
-    ) {
+    if (hasSensitiveSubjectSignal(content) && hasAppendOnlyAuditEvidence(content)) {
       breaks.push(
         buildAuditTrailDiagnostic({
           predicateKinds: ['sensitive_field_signal', 'audit_write_observed'],
@@ -256,7 +316,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
             'Sensitive field token observed near audit evidence; log redaction needs proof.',
           detail:
             'Regex-only weak signal; confirm serialized audit payloads and redaction behavior before treating this as a leak.',
-          sourceKind: 'regex-heuristic',
+          sourceKind: 'syntax-heuristic',
           truthMode: 'weak_signal',
         }),
       );
@@ -265,10 +325,14 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
 
   // CHECK 2: Data deletion audit
   for (const file of backendFiles) {
-    if (/\.spec\.ts$|migration|seed/i.test(file)) {
+    if (
+      file.endsWith('.spec.ts') ||
+      splitIdentifier(file).has('migration') ||
+      splitIdentifier(file).has('seed')
+    ) {
       continue;
     }
-    if (!/service/i.test(file)) {
+    if (!splitIdentifier(file).has('service')) {
       continue;
     }
 
@@ -282,7 +346,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
     const relFile = path.relative(config.rootDir, file);
 
     if (hasSensitiveDeletion(content)) {
-      if (!APPEND_ONLY_AUDIT_EVIDENCE_RE.test(content)) {
+      if (!hasAppendOnlyAuditEvidence(content)) {
         breaks.push(
           buildAuditTrailDiagnostic({
             predicateKinds: ['sensitive_deletion_signal', 'audit_write_not_observed'],
@@ -292,8 +356,8 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
             description:
               'Sensitive deletion/anonymization signal observed without nearby audit evidence.',
             detail:
-              'Regex/list-only weak signal; confirm deletion semantics and audit append behavior before treating this as final truth.',
-            sourceKind: 'regex-heuristic',
+              'Syntax/token-only weak signal; confirm deletion semantics and audit append behavior before treating this as final truth.',
+            sourceKind: 'syntax-heuristic',
             truthMode: 'weak_signal',
           }),
         );
@@ -303,7 +367,11 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
 
   // CHECK 3: Admin actions audit
   for (const file of backendFiles) {
-    if (/\.spec\.ts$|migration|seed/i.test(file)) {
+    if (
+      file.endsWith('.spec.ts') ||
+      splitIdentifier(file).has('migration') ||
+      splitIdentifier(file).has('seed')
+    ) {
       continue;
     }
 
@@ -316,8 +384,8 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
 
     const relFile = path.relative(config.rootDir, file);
 
-    const hasAdminOp = ADMIN_OPERATION_SIGNAL_RE.some((re) => re.test(content));
-    if (hasAdminOp && !APPEND_ONLY_AUDIT_EVIDENCE_RE.test(content)) {
+    const hasPrivilegedOp = hasPrivilegedActionSignal(content);
+    if (hasPrivilegedOp && !hasAppendOnlyAuditEvidence(content)) {
       breaks.push(
         buildAuditTrailDiagnostic({
           predicateKinds: ['admin_action_signal', 'audit_write_not_observed'],
@@ -327,7 +395,7 @@ export function checkAuditTrail(config: PulseConfig): Break[] {
           description: 'Privileged action signal observed without nearby audit evidence.',
           detail:
             'Regex/list-only weak signal; confirm privileged semantics and audit append behavior before treating this as final truth.',
-          sourceKind: 'regex-heuristic',
+          sourceKind: 'syntax-heuristic',
           truthMode: 'weak_signal',
         }),
       );

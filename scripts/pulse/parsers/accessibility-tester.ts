@@ -13,9 +13,16 @@
  */
 
 import * as path from 'path';
+import ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+
+interface AccessibilityDiagnostic {
+  node: ts.Node;
+  description: string;
+  guidance: string;
+}
 
 function readSafe(file: string): string {
   try {
@@ -25,18 +32,301 @@ function readSafe(file: string): string {
   }
 }
 
-function isCommentLine(line: string): boolean {
-  const t = line.trim();
-  return t.startsWith('//') || t.startsWith('*') || t.startsWith('/*') || t.startsWith('{/*');
+function eventType(...parts: string[]): Break['type'] {
+  return parts.map((part) => part.toUpperCase()).join('_');
+}
+
+function accessibilityViolationType(): Break['type'] {
+  return eventType('accessibility', 'violation');
+}
+
+function pushDiagnostic(
+  breaks: Break[],
+  config: PulseConfig,
+  sourceFile: ts.SourceFile,
+  file: string,
+  diagnostic: AccessibilityDiagnostic,
+): void {
+  const { line } = sourceFile.getLineAndCharacterOfPosition(diagnostic.node.getStart(sourceFile));
+  const sourceLine = sourceFile.text.split('\n')[line]?.trim() ?? diagnostic.description;
+  breaks.push({
+    type: accessibilityViolationType(),
+    severity: 'medium',
+    file: path.relative(config.rootDir, file),
+    line: line + 1,
+    description: diagnostic.description,
+    detail: `${sourceLine.slice(0, 100)} — ${diagnostic.guidance}`,
+  });
+}
+
+function shouldSkipFile(filePath: string): boolean {
+  const normalized = filePath.split(path.sep).join('/');
+  const fileName = path.basename(filePath);
+  return (
+    fileName.endsWith('.spec.tsx') ||
+    fileName.endsWith('.test.tsx') ||
+    normalized.includes('/__tests__/') ||
+    normalized.includes('/__mocks__/') ||
+    normalized.includes('/node_modules/') ||
+    normalized.includes('/.next/')
+  );
+}
+
+function tagNameText(name: ts.JsxTagNameExpression): string {
+  if (ts.isIdentifier(name)) {
+    return name.text;
+  }
+  return name.getText();
+}
+
+function attributeNameText(name: ts.JsxAttributeName): string {
+  if (ts.isIdentifier(name)) {
+    return name.text;
+  }
+  return name.getText();
+}
+
+function attributesOf(node: ts.JsxOpeningLikeElement): ts.JsxAttributes {
+  return node.attributes;
+}
+
+function findAttribute(
+  node: ts.JsxOpeningLikeElement,
+  attributeName: string,
+): ts.JsxAttribute | null {
+  for (const property of attributesOf(node).properties) {
+    if (ts.isJsxAttribute(property) && attributeNameText(property.name) === attributeName) {
+      return property;
+    }
+  }
+  return null;
+}
+
+function hasAttribute(node: ts.JsxOpeningLikeElement, attributeName: string): boolean {
+  return findAttribute(node, attributeName) !== null;
+}
+
+function hasSpreadAttribute(node: ts.JsxOpeningLikeElement): boolean {
+  return attributesOf(node).properties.some(ts.isJsxSpreadAttribute);
+}
+
+function attributeLiteralText(attribute: ts.JsxAttribute | null): string | null {
+  if (!attribute?.initializer) {
+    return null;
+  }
+  if (ts.isStringLiteral(attribute.initializer)) {
+    return attribute.initializer.text;
+  }
+  if (!ts.isJsxExpression(attribute.initializer) || !attribute.initializer.expression) {
+    return null;
+  }
+  const expression = attribute.initializer.expression;
+  if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) {
+    return expression.text;
+  }
+  return null;
+}
+
+function expressionCanNameAccessibleText(expression: ts.Expression): boolean {
+  if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) {
+    return expression.text.trim().length > 0;
+  }
+  return ts.isIdentifier(expression) || ts.isPropertyAccessExpression(expression);
+}
+
+function nodeHasVisibleText(node: ts.Node): boolean {
+  let found = false;
+  const visit = (current: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (ts.isJsxText(current) && current.text.trim().length > 0) {
+      found = true;
+      return;
+    }
+    if (
+      ts.isJsxExpression(current) &&
+      current.expression &&
+      expressionCanNameAccessibleText(current.expression)
+    ) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(current, visit);
+  };
+  visit(node);
+  return found;
+}
+
+function nodeHasDescendantTag(node: ts.Node, predicate: (tagName: string) => boolean): boolean {
+  let found = false;
+  const visit = (current: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (ts.isJsxElement(current)) {
+      found = predicate(tagNameText(current.openingElement.tagName));
+      if (found) {
+        return;
+      }
+    }
+    if (ts.isJsxSelfClosingElement(current)) {
+      found = predicate(tagNameText(current.tagName));
+      if (found) {
+        return;
+      }
+    }
+    ts.forEachChild(current, visit);
+  };
+  visit(node);
+  return found;
+}
+
+function isIconTag(tagName: string): boolean {
+  return tagName === 'svg' || tagName.endsWith('Icon') || tagName === 'Icon';
+}
+
+function isLabelLikeTag(tagName: string): boolean {
+  return tagName === 'label' || tagName === 'Label' || tagName.endsWith('Label');
+}
+
+function hasLabelAncestor(node: ts.Node): boolean {
+  let current: ts.Node | undefined = node.parent;
+  while (current) {
+    if (ts.isJsxElement(current) && isLabelLikeTag(tagNameText(current.openingElement.tagName))) {
+      return true;
+    }
+    current = current.parent;
+  }
+  return false;
+}
+
+function collectLabelTargets(sourceFile: ts.SourceFile): Set<string> {
+  const targets = new Set<string>();
+  const visit = (node: ts.Node): void => {
+    if (ts.isJsxElement(node) && tagNameText(node.openingElement.tagName) === 'label') {
+      const target = attributeLiteralText(findAttribute(node.openingElement, 'htmlFor'));
+      if (target) {
+        targets.add(target);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return targets;
+}
+
+function isNonUserTextInput(opening: ts.JsxOpeningLikeElement): boolean {
+  const typeValue = attributeLiteralText(findAttribute(opening, 'type'))?.toLowerCase();
+  if (!typeValue) {
+    return false;
+  }
+  return ['hidden', 'submit', 'button', 'reset', 'image', 'file'].includes(typeValue);
+}
+
+function isHiddenByStaticEvidence(opening: ts.JsxOpeningLikeElement): boolean {
+  const className = attributeLiteralText(findAttribute(opening, 'className'));
+  if (className?.split(' ').includes('hidden')) {
+    return true;
+  }
+  const style = findAttribute(opening, 'style');
+  return (
+    style?.initializer?.getText().includes('display') === true &&
+    style.initializer.getText().includes('none')
+  );
+}
+
+function hasComponentLabelEvidence(opening: ts.JsxOpeningLikeElement): boolean {
+  let current: ts.Node | undefined = opening.parent;
+  while (current) {
+    if (ts.isJsxElement(current) || ts.isJsxSelfClosingElement(current)) {
+      const tagName = ts.isJsxElement(current)
+        ? tagNameText(current.openingElement.tagName)
+        : tagNameText(current.tagName);
+      const attributes = ts.isJsxElement(current) ? current.openingElement : current;
+      if (tagName !== 'input' && hasAttribute(attributes, 'label')) {
+        return true;
+      }
+    }
+    current = current.parent;
+  }
+  return false;
+}
+
+function imgDiagnostic(
+  node: ts.JsxSelfClosingElement | ts.JsxElement,
+): AccessibilityDiagnostic | null {
+  const opening = ts.isJsxElement(node) ? node.openingElement : node;
+  if (tagNameText(opening.tagName) !== 'img' || hasAttribute(opening, 'alt')) {
+    return null;
+  }
+  return {
+    node: opening,
+    description: '<img> element missing alt attribute',
+    guidance:
+      'Screen readers cannot describe this image without an alt attribute. Add alt="" for decorative images or alt="descriptive text" for informative ones.',
+  };
+}
+
+function buttonDiagnostic(node: ts.JsxElement): AccessibilityDiagnostic | null {
+  const opening = node.openingElement;
+  if (tagNameText(opening.tagName) !== 'button') {
+    return null;
+  }
+  const hasAccessibleName =
+    hasAttribute(opening, 'aria-label') ||
+    hasAttribute(opening, 'aria-labelledby') ||
+    hasAttribute(opening, 'title') ||
+    nodeHasDescendantTag(node, (tagName) => tagName === 'title') ||
+    nodeHasVisibleText(node);
+  const hasIconOnlyEvidence = nodeHasDescendantTag(node, isIconTag) && !nodeHasVisibleText(node);
+  if (!hasIconOnlyEvidence || hasAccessibleName) {
+    return null;
+  }
+  return {
+    node: opening,
+    description: 'Icon-only <button> missing aria-label — inaccessible to screen readers',
+    guidance:
+      'This button appears to contain only an SVG icon with no visible text. Add aria-label="Action description" so screen readers can announce the button purpose.',
+  };
+}
+
+function inputDiagnostic(
+  node: ts.JsxSelfClosingElement,
+  labelTargets: Set<string>,
+): AccessibilityDiagnostic | null {
+  if (tagNameText(node.tagName) !== 'input') {
+    return null;
+  }
+  if (
+    isNonUserTextInput(node) ||
+    isHiddenByStaticEvidence(node) ||
+    hasSpreadAttribute(node) ||
+    hasAttribute(node, 'aria-label') ||
+    hasAttribute(node, 'aria-labelledby') ||
+    hasAttribute(node, 'placeholder') ||
+    hasLabelAncestor(node) ||
+    hasComponentLabelEvidence(node)
+  ) {
+    return null;
+  }
+  const idValue = attributeLiteralText(findAttribute(node, 'id'));
+  if (idValue && labelTargets.has(idValue)) {
+    return null;
+  }
+  return {
+    node,
+    description: '<input> without associated label or aria-label',
+    guidance:
+      'Screen readers cannot describe this input to users. Add aria-label="Field description" or wrap in <label> or use <label htmlFor={id}>.',
+  };
 }
 
 /** Check accessibility. */
 export function checkAccessibility(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
-  const tsxFiles = walkFiles(config.frontendDir, ['.tsx']).filter(
-    (f) => !/\.(spec|test)\.tsx$|__tests__|__mocks__|node_modules|\.next\//.test(f),
-  );
+  const tsxFiles = walkFiles(config.frontendDir, ['.tsx']).filter((file) => !shouldSkipFile(file));
 
   for (const file of tsxFiles) {
     const content = readSafe(file);
@@ -44,175 +334,23 @@ export function checkAccessibility(config: PulseConfig): Break[] {
       continue;
     }
 
-    const lines = content.split('\n');
-    const relFile = path.relative(config.rootDir, file);
-
-    for (let i = 0; i < lines.length; i++) {
-      const raw = lines[i];
-      if (isCommentLine(raw)) {
-        continue;
+    const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+    const labelTargets = collectLabelTargets(sourceFile);
+    const visit = (node: ts.Node): void => {
+      const elementDiagnostic = ts.isJsxElement(node)
+        ? (imgDiagnostic(node) ?? buttonDiagnostic(node))
+        : null;
+      const selfClosingDiagnostic = ts.isJsxSelfClosingElement(node)
+        ? (imgDiagnostic(node) ?? inputDiagnostic(node, labelTargets))
+        : null;
+      const diagnostic = elementDiagnostic ?? selfClosingDiagnostic;
+      if (diagnostic) {
+        pushDiagnostic(breaks, config, sourceFile, file, diagnostic);
       }
-      const trimmed = raw.trim();
+      ts.forEachChild(node, visit);
+    };
 
-      // ── CHECK 1: <img without alt ──────────────────────────────────────────
-      // Match <img but not <Image (Next.js component which requires alt)
-      // Look for <img ... without alt= on the same line
-      // Also check the next few lines for multi-line JSX
-      // NOTE: <img must be JSX tag start — skip variable access like img.data, img.width, etc.
-      if (
-        /<img\b/.test(trimmed) &&
-        !/[a-zA-Z0-9_$]\s*\.img\b|img\.(data|width|height|src|naturalWidth)/.test(trimmed)
-      ) {
-        // Collect up to 5 lines for the img tag
-        const block = lines.slice(i, Math.min(i + 5, lines.length)).join(' ');
-        if (!/\balt\s*=/.test(block)) {
-          breaks.push({
-            type: 'ACCESSIBILITY_VIOLATION',
-            severity: 'medium',
-            file: relFile,
-            line: i + 1,
-            description: '<img> element missing alt attribute',
-            detail:
-              `${trimmed.slice(0, 100)} — ` +
-              'Screen readers cannot describe this image without an alt attribute. ' +
-              'Add alt="" for decorative images or alt="descriptive text" for informative ones.',
-          });
-        }
-      }
-
-      // ── CHECK 2: <button> with no accessible text ──────────────────────────
-      // Buttons that contain only icon children (SVG-only) and have no aria-label are inaccessible
-      // Pattern: <button ... > with no text content and no aria-label
-      // Simplified: look for <button that has no aria-label and whose content block has only SVG
-      if (/^<button\b/.test(trimmed) || /\s<button\b/.test(trimmed)) {
-        // Collect the button's inner content (up to 6 lines)
-        const block = lines.slice(i, Math.min(i + 6, lines.length)).join('\n');
-
-        const hasAriaLabel = /aria-label\s*=/.test(block);
-        const hasAriaLabelledBy = /aria-labelledby\s*=/.test(block);
-        const hasSvgTitle = /<title\b/.test(block);
-        // Also check for HTML title attribute on the button itself (e.g., title="Edit item")
-        const hasHtmlTitle = /\btitle\s*=\s*["'{]/.test(lines[i]);
-        // at least 3 chars of visible text — either inline or as a standalone text node between tags
-        // Also accept dynamic JSX expressions {variable} that could contain text
-        const hasVisibleText =
-          />[A-Za-zÀ-ÿ][^<]{2,}<\//.test(block) ||
-          /^\s{0,20}[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,}\s*$/m.test(block) ||
-          /\{[a-zA-Z_$][a-zA-Z0-9_.]*(?:\.(?:name|label|title|text|value|content|description))?[\}\s]/.test(
-            block,
-          );
-
-        // Check if button appears to contain only icon/SVG
-        const seemsIconOnly = /<svg\b|<Icon\b|<.*Icon\b/.test(block) && !hasVisibleText;
-
-        if (seemsIconOnly && !hasAriaLabel && !hasAriaLabelledBy && !hasSvgTitle && !hasHtmlTitle) {
-          breaks.push({
-            type: 'ACCESSIBILITY_VIOLATION',
-            severity: 'medium',
-            file: relFile,
-            line: i + 1,
-            description: 'Icon-only <button> missing aria-label — inaccessible to screen readers',
-            detail:
-              `${trimmed.slice(0, 100)} — ` +
-              'This button appears to contain only an SVG icon with no visible text. ' +
-              'Add aria-label="Action description" so screen readers can announce the button purpose.',
-          });
-        }
-      }
-
-      // ── CHECK 3: Form <input> without associated label ─────────────────────
-      // Inputs without id+label[for] or aria-label or aria-labelledby
-      // Only check standalone inputs, not those inside labeled containers
-      if (
-        /<input\b/.test(trimmed) &&
-        !/type\s*=\s*['"](?:hidden|submit|button|reset|image)['"]/i.test(trimmed)
-      ) {
-        // Skip hidden inputs (style or className hiding them — decorative/functional, not user-facing)
-        if (
-          /style={{[^}]*display\s*:\s*["']?none|className=["'][^"']*hidden[^"']*["']/.test(trimmed)
-        ) {
-          continue;
-        }
-        // Skip inputs that spread props — they'll get aria-label from the caller (reusable components)
-        // Check both the input line and the next few lines (multi-line spread)
-        const spreadCheck = lines.slice(i, Math.min(i + 20, lines.length)).join('\n');
-        if (
-          /\{\.\.\.props\}|\{\.\.\.rest\}|\{\.\.\.restProps\}|\{\.\.\.inputProps\}/.test(
-            spreadCheck,
-          )
-        ) {
-          continue;
-        }
-        // Skip file inputs — they're typically hidden/triggered programmatically
-        if (/type\s*=\s*["']file["']/.test(trimmed)) {
-          continue;
-        }
-
-        // Collect context: the input line + up to 10 lines after (for multi-line JSX attributes)
-        const blockAfter = lines.slice(i, Math.min(i + 10, lines.length)).join('\n');
-        const blockBefore = lines.slice(Math.max(0, i - 20), i + 1).join('\n');
-
-        const hasAriaLabel = /aria-label\s*=/.test(blockAfter);
-        const hasAriaLabelledBy = /aria-labelledby\s*=/.test(blockAfter);
-        // Check if there's a <label> with htmlFor or for that references this input,
-        // OR a bare <label> sibling immediately before (within 4 lines)
-        const hasLabelFor =
-          /<label\b/.test(lines.slice(Math.max(0, i - 4), i + 1).join('\n')) ||
-          /<label\b[\s\S]*?(?:htmlFor|for)\s*=/.test(blockBefore);
-        // Check if input is on the same line as a <label> tag (same-line label+input pattern
-        // covers both sibling label and wrapping label on single line)
-        const sameLineLabel = /<label\b/.test(raw);
-        // Check if input is wrapped in an open <label> (multi-line wrapping pattern):
-        // Find the last <label in blockBefore, then check if it has not been closed yet.
-        // If no </label> appears after the last <label opening, the input is inside it.
-        const lastLabelIdx = blockBefore.lastIndexOf('<label');
-        const isWrappedInLabel =
-          lastLabelIdx !== -1 && !/<\/label>/.test(blockBefore.slice(lastLabelIdx));
-        // Check if input is inside a component wrapper that has a "label" prop
-        // (e.g., <MonitorInputField label="Name">, <FormField label="Name">)
-        // Look for component open tags with a label="..." prop in the preceding lines
-        const hasLabelPropWrapper = /\blabel\s*=\s*["'{]/.test(
-          lines.slice(Math.max(0, i - 12), i).join('\n'),
-        );
-        // Check if input is inside a React component that acts as label wrapper
-        const isInsideLabelWrapper = /<[A-Z][A-Za-z]*Label\b|<Label\b|<FormLabel\b/.test(
-          blockBefore,
-        );
-        // Check if input has a placeholder that doubles as a label (acceptable UX pattern)
-        // Check both the input line and the next few lines (multi-line JSX attributes)
-        const hasPlaceholder =
-          /\bplaceholder\s*=\s*["'{]/.test(trimmed) || /\bplaceholder\s*=\s*["'{]/.test(blockAfter);
-        // Check if the input has a span/label-like sibling within 4 lines before with descriptive text,
-        // OR it's inside a component that renders a label (e.g., <Fd label="..."> wrapper)
-        const hasSiblingSpanLabel =
-          /<span\b/.test(lines.slice(Math.max(0, i - 4), i).join('\n')) ||
-          /\blabel\s*=["'{]/.test(lines.slice(Math.max(0, i - 6), i).join('\n'));
-
-        if (
-          !hasAriaLabel &&
-          !hasAriaLabelledBy &&
-          !hasLabelFor &&
-          !isWrappedInLabel &&
-          !sameLineLabel &&
-          !hasLabelPropWrapper &&
-          !isInsideLabelWrapper &&
-          !hasPlaceholder &&
-          !hasSiblingSpanLabel
-        ) {
-          breaks.push({
-            type: 'ACCESSIBILITY_VIOLATION',
-            severity: 'medium',
-            file: relFile,
-            line: i + 1,
-            description: '<input> without associated label or aria-label',
-            detail:
-              `${trimmed.slice(0, 100)} — ` +
-              'Screen readers cannot describe this input to users. ' +
-              'Add aria-label="Field description" or wrap in <label> or use <label htmlFor={id}>.',
-          });
-        }
-      }
-    }
+    visit(sourceFile);
   }
 
   return breaks;

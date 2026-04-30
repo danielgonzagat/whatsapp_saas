@@ -3,6 +3,8 @@ import type { PulseGeneratedDiagnostic } from './diagnostic-synthesizer';
 export interface PulseProofRequirement {
   kind: string;
   reason: string;
+  predicateKind: string;
+  signalIds: string[];
 }
 
 export interface PulseSynthesizedProofPlan {
@@ -31,14 +33,44 @@ function proofKindFor(predicateKind: string): string {
 export function synthesizeProofPlan(
   diagnostic: PulseGeneratedDiagnostic,
 ): PulseSynthesizedProofPlan {
-  const requirements = [...new Set(diagnostic.predicateKinds.map(proofKindFor))].map((kind) => ({
-    kind,
-    reason: `Required by generated diagnostic predicate for ${diagnostic.title}.`,
-  }));
+  const predicateContracts =
+    diagnostic.proofContract.predicates.length > 0
+      ? diagnostic.proofContract.predicates
+      : diagnostic.predicateKinds.map((kind) => ({
+          kind,
+          signalIds: diagnostic.evidenceIds,
+        }));
+  const requirementByKind = new Map<string, PulseProofRequirement>();
+
+  for (const predicate of predicateContracts) {
+    const kind = proofKindFor(predicate.kind);
+    const existing = requirementByKind.get(kind);
+
+    requirementByKind.set(kind, {
+      kind,
+      predicateKind: predicate.kind,
+      signalIds: [...new Set([...(existing?.signalIds ?? []), ...predicate.signalIds])],
+      reason: `Required by generated diagnostic predicate ${predicate.kind}.`,
+    });
+  }
+
+  const requirements = [...requirementByKind.values()];
+
+  if (!diagnostic.blockingEligible) {
+    requirements.unshift({
+      kind: 'prove_blocking_grade_evidence',
+      predicateKind: 'truth_observed_or_confirmed_static',
+      signalIds: diagnostic.evidenceIds,
+      reason:
+        'Weak or inferred-only signals cannot block by themselves; PULSE must confirm with observed or static evidence before treating this as final truth.',
+    });
+  }
 
   if (requirements.length === 0) {
     requirements.push({
       kind: 'prove_evidence',
+      predicateKind: 'evidence',
+      signalIds: [],
       reason: 'No predicate carried enough confidence to produce a specialized proof.',
     });
   }

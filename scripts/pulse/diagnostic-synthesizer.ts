@@ -10,6 +10,34 @@ export interface PulseGeneratedDiagnostic {
   confidence: number;
   evidenceIds: string[];
   predicateKinds: string[];
+  blockingEligible: boolean;
+  proofMode: 'observed_or_confirmed' | 'requires_confirmation';
+  proofContract: PulseDiagnosticProofContract;
+}
+
+export interface PulseDiagnosticSignalContract {
+  id: string;
+  source: string;
+  detector: string;
+  truthMode: PulseSignalTruthMode;
+  summary: string;
+  location: PulseSignalNode['location'];
+  confidence: number;
+}
+
+export interface PulseDiagnosticPredicateContract {
+  id: string;
+  kind: string;
+  signalIds: string[];
+  confidence: number;
+  summary: string;
+}
+
+export interface PulseDiagnosticProofContract {
+  diagnosticId: string;
+  generatedAt: string;
+  rawSignals: PulseDiagnosticSignalContract[];
+  predicates: PulseDiagnosticPredicateContract[];
 }
 
 function sentenceCase(value: string): string {
@@ -35,6 +63,12 @@ function compareSignals(left: PulseSignalNode, right: PulseSignalNode): number {
 function strongestSignal(signalGraph: PulseSignalGraph): PulseSignalNode | undefined {
   const [first] = [...signalGraph.nodes].sort(compareSignals);
   return first;
+}
+
+function hasBlockingGradeEvidence(signalGraph: PulseSignalGraph): boolean {
+  return signalGraph.nodes.some(
+    (signal) => signal.truthMode === 'observed' || signal.truthMode === 'confirmed_static',
+  );
 }
 
 function predicateTruthPriority(
@@ -87,6 +121,27 @@ export function synthesizeDiagnostic(
   const evidenceIds = signalGraph.nodes.map((signal) => signal.id);
   const id = `diagnostic:${signalGraph.generatedAt}:${evidenceIds.join('-')}`;
   const strongest = strongestSignal(signalGraph);
+  const blockingEligible = hasBlockingGradeEvidence(signalGraph);
+  const proofContract: PulseDiagnosticProofContract = {
+    diagnosticId: id,
+    generatedAt: signalGraph.generatedAt,
+    rawSignals: signalGraph.nodes.map((signal) => ({
+      id: signal.id,
+      source: signal.source,
+      detector: signal.detector,
+      truthMode: signal.truthMode,
+      summary: signal.summary,
+      location: signal.location,
+      confidence: signal.confidence,
+    })),
+    predicates: predicateGraph.predicates.map((predicate) => ({
+      id: predicate.id,
+      kind: predicate.kind,
+      signalIds: predicate.signalIds,
+      confidence: predicate.confidence,
+      summary: predicate.summary,
+    })),
+  };
 
   return {
     id,
@@ -96,5 +151,8 @@ export function synthesizeDiagnostic(
     confidence: Math.min(risk.confidence, strongest?.confidence ?? risk.confidence),
     evidenceIds,
     predicateKinds,
+    blockingEligible,
+    proofMode: blockingEligible ? 'observed_or_confirmed' : 'requires_confirmation',
+    proofContract,
   };
 }

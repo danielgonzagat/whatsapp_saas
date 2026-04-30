@@ -29,6 +29,7 @@ function makeFinding(overrides: Partial<AdjudicatedFinding> = {}): AdjudicatedFi
     proof: overrides.proof ?? null,
     expiresOnFileChange: overrides.expiresOnFileChange ?? false,
     fileHashAtSuppression: overrides.fileHashAtSuppression ?? null,
+    evidenceFingerprintAtSuppression: overrides.evidenceFingerprintAtSuppression ?? null,
     suppressedAt: overrides.suppressedAt ?? null,
     lastChecked: overrides.lastChecked ?? '2026-04-29T00:00:00.000Z',
   };
@@ -50,18 +51,46 @@ describe('false positive adjudicator suppression expiry', () => {
     expect(suppressed.expiresOnFileChange).toBe(true);
     expect(typeof suppressed.fileHashAtSuppression).toBe('string');
     expect(suppressed.fileHashAtSuppression).toMatch(/^[a-f0-9]{64}$/);
+    expect(typeof suppressed.evidenceFingerprintAtSuppression).toBe('string');
+    expect(suppressed.evidenceFingerprintAtSuppression).toMatch(/^[a-f0-9]{64}$/);
 
     const unchanged = checkExpiredSuppressions([suppressed], rootDir)[0];
     expect(unchanged.status).toBe('false_positive');
     expect(unchanged.fileHashAtSuppression).toBe(suppressed.fileHashAtSuppression);
+    expect(unchanged.evidenceFingerprintAtSuppression).toBe(
+      suppressed.evidenceFingerprintAtSuppression,
+    );
 
     writeFile(rootDir, 'backend/src/opaque.ts', 'export const value = 2;\n');
     const expired = checkExpiredSuppressions([suppressed], rootDir)[0];
 
-    expect(expired.status).toBe('open');
+    expect(expired.status).toBe('stale');
     expect(expired.expiresOnFileChange).toBe(false);
     expect(expired.fileHashAtSuppression).toBeNull();
+    expect(expired.evidenceFingerprintAtSuppression).toBeNull();
     expect(expired.suppressedAt).toBeNull();
+  });
+
+  it('expires suppression when adjudication proof changes even if the file is unchanged', () => {
+    const rootDir = makeTempRoot();
+    writeFile(rootDir, 'backend/src/opaque.ts', 'export const value = 1;\n');
+
+    const suppressed = adjudicateFinding(
+      makeFinding(),
+      'false_positive',
+      'Scanner matched generated structure, not a runtime issue.',
+      rootDir,
+    );
+    const proofChanged = {
+      ...suppressed,
+      proof: 'Different proof from a newer evidence pass.',
+    };
+
+    const expired = checkExpiredSuppressions([proofChanged], rootDir)[0];
+
+    expect(expired.status).toBe('stale');
+    expect(expired.expiresOnFileChange).toBe(false);
+    expect(expired.evidenceFingerprintAtSuppression).toBeNull();
   });
 
   it('expires accepted risk when the suppressed file disappears', () => {

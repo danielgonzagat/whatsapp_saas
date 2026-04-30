@@ -22,19 +22,10 @@ import {
   parsePrismaModels,
   readFile,
   resolveSchemaPath,
+  type PrismaField,
   type PrismaModel,
   type RelationConfigModel,
 } from './structural-evidence';
-
-const PROMPT_ASSEMBLY_RE =
-  /\b(?:build\w*Prompt|systemPrompt|messages\s*:|role:\s*['"`](?:system|user|assistant)['"`])\b/i;
-const CONFIG_CONTEXT_RE =
-  /\b(?:config|settings|profile|prompt|instruction|behavior|preference|policy|rule|context|memory|knowledge)\w*\b/i;
-const ACTIVE_STATE_RE =
-  /\b(?:active|enabled|status|state|isOnline|isActive|disabledAt|deletedAt)\b/i;
-const AUTONOMOUS_EXECUTOR_RE = /(?:autopilot|autonom\w*|agent|assistant|bot|responder|operator)/i;
-const PERSISTED_CONTEXT_RE =
-  /(?:config|settings|profile|prompt|instruction|behavior|preference|policy|rule|context|memory|knowledge|history)/i;
 
 type PersistedContextRelation = RelationConfigModel;
 
@@ -64,23 +55,32 @@ function prismaDelegateName(modelName: string): string {
   return `${modelName.charAt(0).toLowerCase()}${modelName.slice(1)}`;
 }
 
-function sourceUsesDiscoveredConfig(content: string, configModels: RelationConfigModel[]): boolean {
-  if (!PROMPT_ASSEMBLY_RE.test(content) || !CONFIG_CONTEXT_RE.test(content)) {
-    return false;
-  }
+function sourceMentionsPrismaDelegate(content: string, delegate: string): boolean {
+  return content.includes(`.${delegate}.`) || content.includes(`['${delegate}']`);
+}
 
+function sourceQueriesPersistence(content: string): boolean {
+  return (
+    content.includes('.findMany(') ||
+    content.includes('.findUnique(') ||
+    content.includes('.findFirst(')
+  );
+}
+
+function sourceUsesDiscoveredConfig(content: string, configModels: RelationConfigModel[]): boolean {
   return configModels.some(({ configModel }) => {
     const delegate = prismaDelegateName(configModel.name);
     return (
-      content.includes(configModel.name) ||
-      content.includes(delegate) ||
-      (/\bfind(?:Many|Unique|First)\s*\(/.test(content) && CONFIG_CONTEXT_RE.test(content))
+      sourceMentionsPrismaDelegate(content, delegate) ||
+      (content.includes(configModel.name) && sourceQueriesPersistence(content))
     );
   });
 }
 
 function modelHasActiveState(model: PrismaModel): boolean {
-  return model.fields.some((field) => ACTIVE_STATE_RE.test(field.name));
+  return model.fields.some(
+    (field) => isPositiveBooleanStateField(field) || isNullableTemporalStateField(field),
+  );
 }
 
 function relationForeignKey(field: { line: string }): string | null {
@@ -93,9 +93,7 @@ function discoverPersistedContextRelations(models: PrismaModel[]): PersistedCont
 
   return models.flatMap((model) => {
     const relationFields = model.fields.filter((field) => field.line.includes('@relation'));
-    const modelShape = `${model.name} ${model.fields.map((field) => field.name).join(' ')}`;
-    const hasContextShape =
-      PERSISTED_CONTEXT_RE.test(modelShape) || model.fields.some((field) => field.type === 'Json');
+    const hasContextShape = model.fields.some((field) => field.type === 'Json');
 
     if (!hasContextShape) {
       return [];
@@ -113,10 +111,7 @@ function discoverPersistedContextRelations(models: PrismaModel[]): PersistedCont
 }
 
 function discoverActiveAutonomousModels(models: PrismaModel[]): PrismaModel[] {
-  return models.filter((model) => {
-    const modelShape = `${model.name} ${model.fields.map((field) => field.name).join(' ')}`;
-    return AUTONOMOUS_EXECUTOR_RE.test(modelShape) && modelHasActiveState(model);
-  });
+  return models.filter((model) => modelHasActiveState(model) && isWorkspaceScoped(model));
 }
 
 function modelRelatesTo(model: PrismaModel, targetModelName: string): boolean {
@@ -144,31 +139,25 @@ function hasCompatibleContextRelation(
 
 function buildActiveWhere(model: PrismaModel, alias: string): string {
   const clauses: string[] = [];
-  if (model.fields.some((field) => field.name === 'active')) {
-    clauses.push(`${alias}.${quoteIdent('active')} = true`);
+
+  for (const field of model.fields) {
+    if (isPositiveBooleanStateField(field)) {
+      clauses.push(`${alias}.${quoteIdent(field.name)} = true`);
+    }
+    if (isNullableTemporalStateField(field)) {
+      clauses.push(`${alias}.${quoteIdent(field.name)} IS NULL`);
+    }
   }
-  if (model.fields.some((field) => field.name === 'isActive')) {
-    clauses.push(`${alias}.${quoteIdent('isActive')} = true`);
-  }
-  if (model.fields.some((field) => field.name === 'isOnline')) {
-    clauses.push(`${alias}.${quoteIdent('isOnline')} = true`);
-  }
-  if (model.fields.some((field) => field.name === 'enabled')) {
-    clauses.push(`${alias}.${quoteIdent('enabled')} = true`);
-  }
-  if (model.fields.some((field) => field.name === 'status')) {
-    clauses.push(`${alias}.${quoteIdent('status')} NOT IN ('DRAFT', 'ARCHIVED', 'DISABLED')`);
-  }
-  if (model.fields.some((field) => field.name === 'state')) {
-    clauses.push(`${alias}.${quoteIdent('state')} NOT IN ('DRAFT', 'ARCHIVED', 'DISABLED')`);
-  }
-  if (model.fields.some((field) => field.name === 'disabledAt')) {
-    clauses.push(`${alias}.${quoteIdent('disabledAt')} IS NULL`);
-  }
-  if (model.fields.some((field) => field.name === 'deletedAt')) {
-    clauses.push(`${alias}.${quoteIdent('deletedAt')} IS NULL`);
-  }
+
   return clauses.length > 0 ? ` AND (${clauses.join(' OR ')})` : '';
+}
+
+function isPositiveBooleanStateField(field: PrismaField): boolean {
+  return field.type === 'Boolean' && field.line.includes('@default(true)');
+}
+
+function isNullableTemporalStateField(field: PrismaField): boolean {
+  return field.type === 'DateTime' && field.line.includes('?') && field.name.endsWith('At');
 }
 
 /** Check e2e whatsapp. */

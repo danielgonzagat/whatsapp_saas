@@ -39,6 +39,7 @@ export async function handleRefundCreated(
       const checkoutContext = await deps.ledger.loadCheckoutPaymentContext(paymentIntentId);
       const workspaceId = checkoutContext?.order?.workspaceId ?? null;
       const orderId = checkoutContext?.orderId ?? null;
+      // PULSE_OK: already in $transaction
       await deps.prisma.$transaction(
         [
           deps.prisma.checkoutPayment.updateMany({
@@ -118,6 +119,7 @@ export async function handleDisputeCreated(
       const checkoutContext = await deps.ledger.loadCheckoutPaymentContext(paymentIntentId);
       const workspaceId = checkoutContext?.order?.workspaceId ?? null;
       const orderId = checkoutContext?.orderId ?? null;
+      // PULSE_OK: already in $transaction
       await deps.prisma.$transaction(
         [
           deps.prisma.checkoutPayment.updateMany({
@@ -205,6 +207,7 @@ export async function handleDisputeClosed(
     });
 
     if (isWon && workspaceId && orderId) {
+      // PULSE_OK: already in $transaction
       await deps.prisma.$transaction(
         [
           deps.prisma.checkoutPayment.updateMany({

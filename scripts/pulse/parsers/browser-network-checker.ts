@@ -28,21 +28,106 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
 
-// CSS features with limited browser support (especially Safari)
-const COMPAT_RISK_RE = /grid-template-subgrid|:has\s*\(|@container|layer\s*\(/i;
+function splitIdentifierTokens(value: string): Set<string> {
+  const tokens = new Set<string>();
+  let current = '';
+  for (const char of value) {
+    const isAlphaNumeric =
+      (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9');
+    if (!isAlphaNumeric) {
+      if (current) {
+        tokens.add(current.toLowerCase());
+        current = '';
+      }
+      continue;
+    }
+    if (current && current[current.length - 1] >= 'a' && current[current.length - 1] <= 'z') {
+      if (char >= 'A' && char <= 'Z') {
+        tokens.add(current.toLowerCase());
+        current = char;
+        continue;
+      }
+    }
+    current += char;
+  }
+  if (current) {
+    tokens.add(current.toLowerCase());
+  }
+  return tokens;
+}
 
-// Patterns indicating loading states exist
-const LOADING_STATE_RE = /skeleton|Skeleton|isLoading|loading.*true|Spinner|Loading|shimmer/i;
+function hasTokenPrefix(tokens: Set<string>, prefix: string): boolean {
+  return [...tokens].some((token) => token.startsWith(prefix));
+}
 
-// Patterns for offline protection
-const OFFLINE_PROTECTION_RE =
-  /localStorage\s*\.\s*setItem.*form|draft|autosave|formPersist|offlineQueue/i;
-const FORM_BACKUP_RE = /saveFormState|persistForm|formDraft|savedDraft/i;
-const MONEY_FORM_RE =
-  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|billingAddress|taxId)\b/i;
+function hasCompatibilityRiskEvidence(line: string): boolean {
+  const tokens = splitIdentifierTokens(line);
+  const normalized = line.toLowerCase();
+  const trimmed = line.trim();
+  return (
+    tokens.has('subgrid') ||
+    normalized.includes(':has(') ||
+    (trimmed.startsWith('@') && tokens.has('container')) ||
+    (trimmed.startsWith('@') && tokens.has('layer'))
+  );
+}
 
-function hasMoneyLikeFormState(content: string): boolean {
-  return MONEY_FORM_RE.test(content);
+function hasCompatibilityFallbackEvidence(context: string): boolean {
+  const tokens = splitIdentifierTokens(context);
+  return (
+    tokens.has('supports') ||
+    tokens.has('webkit') ||
+    tokens.has('moz') ||
+    hasTokenPrefix(tokens, 'fallback')
+  );
+}
+
+function hasAsyncDataFetchEvidence(content: string): boolean {
+  const tokens = splitIdentifierTokens(content);
+  return (
+    (tokens.has('use') && tokens.has('swr')) ||
+    (tokens.has('use') && tokens.has('effect') && tokens.has('fetch')) ||
+    (tokens.has('api') && tokens.has('fetch')) ||
+    (tokens.has('use') && tokens.has('query'))
+  );
+}
+
+function hasLoadingStateEvidence(content: string): boolean {
+  const tokens = splitIdentifierTokens(content);
+  return (
+    hasTokenPrefix(tokens, 'skeleton') ||
+    hasTokenPrefix(tokens, 'loading') ||
+    tokens.has('spinner') ||
+    tokens.has('shimmer') ||
+    (tokens.has('is') && tokens.has('loading'))
+  );
+}
+
+function hasOfflineProtectionEvidence(content: string): boolean {
+  const tokens = splitIdentifierTokens(content);
+  return (
+    (tokens.has('local') && tokens.has('storage') && tokens.has('set') && tokens.has('form')) ||
+    tokens.has('draft') ||
+    tokens.has('autosave') ||
+    (tokens.has('form') && tokens.has('persist')) ||
+    (tokens.has('offline') && tokens.has('queue')) ||
+    (tokens.has('save') && tokens.has('form') && tokens.has('state')) ||
+    (tokens.has('saved') && tokens.has('draft'))
+  );
+}
+
+function hasValueBearingFormState(content: string): boolean {
+  const tokens = splitIdentifierTokens(content);
+  return (
+    hasTokenPrefix(tokens, 'amount') ||
+    tokens.has('total') ||
+    tokens.has('subtotal') ||
+    hasTokenPrefix(tokens, 'price') ||
+    tokens.has('currency') ||
+    tokens.has('balance') ||
+    (tokens.has('billing') && tokens.has('address')) ||
+    (tokens.has('tax') && tokens.has('id'))
+  );
 }
 
 function browserNetworkFinding(input: {
@@ -98,10 +183,10 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
         continue;
       }
 
-      if (COMPAT_RISK_RE.test(line)) {
+      if (hasCompatibilityRiskEvidence(line)) {
         // Check for fallback (@supports or vendor prefix) in context
         const context = lines.slice(Math.max(0, i - 5), i + 5).join('\n');
-        const hasFallback = /@supports|@-webkit|webkit-|moz-|fallback/i.test(context);
+        const hasFallback = hasCompatibilityFallbackEvidence(context);
         if (!hasFallback) {
           breaks.push(
             browserNetworkFinding({
@@ -134,8 +219,8 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
     const relFile = path.relative(config.rootDir, file);
 
     // Pages that fetch data but have no loading indicators
-    const fetchesData = /useSWR|useEffect.*fetch|apiFetch|useQuery/i.test(content);
-    const hasLoadingState = LOADING_STATE_RE.test(content);
+    const fetchesData = hasAsyncDataFetchEvidence(content);
+    const hasLoadingState = hasLoadingStateEvidence(content);
 
     if (fetchesData && !hasLoadingState) {
       breaks.push(
@@ -160,7 +245,7 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
     }
     try {
       const content = readTextFile(f, 'utf8');
-      return OFFLINE_PROTECTION_RE.test(content) || FORM_BACKUP_RE.test(content);
+      return hasOfflineProtectionEvidence(content);
     } catch {
       return false;
     }
@@ -178,8 +263,7 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
 
     // Long multi-field forms without persistence
     const hasForm = /<form|useForm|handleSubmit/i.test(content);
-    const hasOfflineProtection =
-      OFFLINE_PROTECTION_RE.test(content) || FORM_BACKUP_RE.test(content);
+    const hasOfflineProtection = hasOfflineProtectionEvidence(content);
     const isControlledFormChild =
       /updateField|form:\s*[A-Za-z_$]\w+|form=\{[A-Za-z_$][\w$.]*\.form\}/i.test(content) &&
       hasDraftPersistence;
@@ -189,7 +273,7 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
       hasForm &&
       !hasOfflineProtection &&
       !isControlledFormChild &&
-      hasMoneyLikeFormState(content)
+      hasValueBearingFormState(content)
     ) {
       breaks.push(
         browserNetworkFinding({

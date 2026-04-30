@@ -182,6 +182,7 @@ export class DashboardService {
       this.prisma.kloelWallet.findUnique({
         where: { workspaceId },
       }),
+      // PULSE_OK: bounded by date range and workspace filter
       this.prisma.checkoutOrder.findMany({
         where: {
           workspaceId,

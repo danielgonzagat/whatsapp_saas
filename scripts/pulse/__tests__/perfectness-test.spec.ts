@@ -11,6 +11,17 @@ function isoAfter(hours: number): string {
 }
 
 describe('perfectness 72h long-run evidence', () => {
+  const proofCycle = (startHour: number, finishHour: number) => ({
+    startedAt: isoAfter(startHour),
+    finishedAt: isoAfter(finishHour),
+    phase: 'validating',
+    result: 'improvement',
+    unitId: `unit-${startHour}`,
+    filesChanged: ['scripts/pulse/perfectness-test.ts'],
+    scoreBefore: 70,
+    scoreAfter: 71,
+  });
+
   it('rejects elapsed wall-clock time when no autonomy cycles prove continuous work', () => {
     const result = evaluateLongRunEvidence(
       START,
@@ -25,7 +36,31 @@ describe('perfectness 72h long-run evidence', () => {
 
     expect(result.observedHours).toBe(73);
     expect(result.passed).toBe(false);
-    expect(result.reason).toContain('no autonomy cycles recorded');
+    expect(result.reason).toContain('no non-regressing autonomy proof cycles recorded');
+  });
+
+  it('rejects timestamp-only cycles because they do not prove autonomous execution', () => {
+    const result = evaluateLongRunEvidence(
+      START,
+      {
+        startedAt: START,
+        generatedAt: isoAfter(73),
+        status: 'running',
+        cycles: [
+          { startedAt: isoAfter(0), finishedAt: isoAfter(12) },
+          { startedAt: isoAfter(16), finishedAt: isoAfter(32) },
+          { startedAt: isoAfter(36), finishedAt: isoAfter(52) },
+          { startedAt: isoAfter(56), finishedAt: isoAfter(73) },
+        ],
+      },
+      NOW_MS,
+    );
+
+    expect(result.passed).toBe(false);
+    expect(result.cycleCount).toBe(0);
+    expect(result.reason).toContain(
+      '4 cycle(s) lacked non-regressing execution evidence and were excluded',
+    );
   });
 
   it('rejects a 72h run with an uncovered cycle gap above the allowed threshold', () => {
@@ -35,10 +70,7 @@ describe('perfectness 72h long-run evidence', () => {
         startedAt: START,
         generatedAt: isoAfter(73),
         status: 'running',
-        cycles: [
-          { startedAt: isoAfter(0), finishedAt: isoAfter(1) },
-          { startedAt: isoAfter(70), finishedAt: isoAfter(73) },
-        ],
+        cycles: [proofCycle(0, 1), proofCycle(70, 73)],
       },
       NOW_MS,
     );
@@ -55,12 +87,7 @@ describe('perfectness 72h long-run evidence', () => {
         startedAt: START,
         generatedAt: isoAfter(73),
         status: 'running',
-        cycles: [
-          { startedAt: isoAfter(0), finishedAt: isoAfter(12) },
-          { startedAt: isoAfter(16), finishedAt: isoAfter(32) },
-          { startedAt: isoAfter(36), finishedAt: isoAfter(52) },
-          { startedAt: isoAfter(56), finishedAt: isoAfter(73) },
-        ],
+        cycles: [proofCycle(0, 12), proofCycle(16, 32), proofCycle(36, 52), proofCycle(56, 73)],
       },
       NOW_MS,
     );

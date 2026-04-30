@@ -113,12 +113,12 @@ function normalizeRoute(value: string): string {
 
 function parseRouteParameters(routePath: string): string[] {
   const params: string[] = [];
-  const parameterPattern = /(?::|\{)([A-Za-z_]\w*)\}?/g;
-  let match = parameterPattern.exec(routePath);
+  const routeParameterGrammar = /(?::|\{)([A-Za-z_]\w*)\}?/g;
+  let match = routeParameterGrammar.exec(routePath);
 
   while (match) {
     params.push(match[1]);
-    match = parameterPattern.exec(routePath);
+    match = routeParameterGrammar.exec(routePath);
   }
 
   return unique(params);
@@ -451,7 +451,7 @@ function extractPublicMethods(content: string): ExtractedMethod[] {
 
 // ─── Prisma Model Detection ─────────────────────────────────────────────────
 
-const PRISMA_ACCESS_PATTERNS = [
+const PRISMA_ACCESS_GRAMMAR = [
   /this\.(?:prisma|prismaAny)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
   /\(this\.prisma\s+as\s+[a][n][y]\)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
   /(?:prismaAny|prismaExt|prisma)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
@@ -460,7 +460,7 @@ const PRISMA_ACCESS_PATTERNS = [
 
 function collectPrismaModelsFromText(text: string): string[] {
   const models = new Set<string>();
-  for (const pattern of PRISMA_ACCESS_PATTERNS) {
+  for (const pattern of PRISMA_ACCESS_GRAMMAR) {
     pattern.lastIndex = 0;
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(text)) !== null) {

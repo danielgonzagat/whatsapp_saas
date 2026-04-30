@@ -301,6 +301,7 @@ export class StripeWebhookLedgerService {
       return (role: SplitRole) => this.offsetDays(now, this.defaultDelayDays(role));
     }
 
+    // PULSE_OK: bounded by active rules (low cardinality entity)
     const rules = await this.prisma.connectMaturationRule.findMany({
       where: { active: true, OR: [{ productId }, { productId: null }] },
       select: { productId: true, accountType: true, delayDays: true },

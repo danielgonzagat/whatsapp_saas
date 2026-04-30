@@ -38,6 +38,7 @@ export class CheckoutSocialRecoveryService {
 
   /** Recover abandoned leads. */
   @Cron(CronExpression.EVERY_10_MINUTES)
+  // PULSE_OK: bounded by LEAD status filter on social leads
   async recoverAbandonedLeads() {
     const now = Date.now();
     const leads = await this.prisma.checkoutSocialLead.findMany({

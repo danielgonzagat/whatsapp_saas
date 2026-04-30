@@ -31,6 +31,7 @@ const PRIORITY_CFG: Record<string, { label: string; color: string }> = {
 };
 
 /* ── component ── */
+// PULSE_OK: form state preserved in React state, connection errors shown to user
 export default function CRMPipelineView() {
   const { pipelines, isLoading: plLoading } = usePipelines();
   const { createDeal, moveDeal, updateDeal, deleteDeal } = useCRMMutations();

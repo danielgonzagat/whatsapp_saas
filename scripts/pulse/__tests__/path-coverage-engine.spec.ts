@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { describe, expect, it } from 'vitest';
+import { auditPulseNoHardcodedReality } from '../no-hardcoded-reality-audit';
 import { buildPathCoverageState } from '../path-coverage-engine';
 import type { PulseExecutionMatrix, PulseExecutionMatrixPath } from '../types';
 
@@ -110,6 +111,15 @@ function makeMatrix(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix {
 }
 
 describe('buildPathCoverageState terminal proof routing', () => {
+  it('has no hardcoded reality audit findings in the path coverage engine', () => {
+    const result = auditPulseNoHardcodedReality(process.cwd());
+    const pathCoverageEngineFindings = result.findings.filter(
+      (finding) => finding.filePath === 'scripts/pulse/path-coverage-engine.ts',
+    );
+
+    expect(pathCoverageEngineFindings).toEqual([]);
+  });
+
   it('exposes generated probe blueprint commands as terminal proof for critical paths', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-path-proof-'));
     const coverage = buildPathCoverageState(rootDir, makeMatrix([makeMatrixPath()]));
@@ -249,6 +259,14 @@ describe('buildPathCoverageState terminal proof routing', () => {
 
   it('keeps protected inferred paths terminally reasoned instead of hiding the breakpoint', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-path-proof-'));
+    fs.mkdirSync(path.join(rootDir, 'ops'), { recursive: true });
+    fs.writeFileSync(
+      path.join(rootDir, 'ops/protected-governance-files.json'),
+      JSON.stringify({
+        protectedExact: [],
+        protectedPrefixes: ['scripts/ops/'],
+      }),
+    );
     const protectedPath = makeMatrixPath({
       pathId: 'matrix:path:protected-governance',
       entrypoint: {
@@ -286,5 +304,64 @@ describe('buildPathCoverageState terminal proof routing', () => {
     );
     expect(coverage.summary.criticalTerminalReasoned).toBe(1);
     expect(coverage.summary.criticalInferredGap).toBe(0);
+  });
+
+  it('derives protected coverage decisions from the governance manifest', () => {
+    const unprotectedRootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-path-proof-'));
+    const protectedRootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-path-proof-'));
+    fs.mkdirSync(path.join(protectedRootDir, 'ops'), { recursive: true });
+    fs.writeFileSync(
+      path.join(protectedRootDir, 'ops/protected-governance-files.json'),
+      JSON.stringify({
+        protectedExact: [],
+        protectedPrefixes: ['custom-governance/'],
+      }),
+    );
+
+    const customGovernancePath = makeMatrixPath({
+      pathId: 'matrix:path:custom-governance',
+      entrypoint: {
+        nodeId: 'custom:governance',
+        filePath: 'custom-governance/rule.ts',
+        routePattern: null,
+        description: 'custom governance rule',
+      },
+      breakpoint: {
+        stage: 'entrypoint',
+        stepIndex: 0,
+        filePath: 'custom-governance/rule.ts',
+        nodeId: 'custom:governance',
+        routePattern: null,
+        reason: 'Path is structurally inferred but lacks observed runtime evidence.',
+        recovery: 'Run governed validation from the discovered boundary.',
+      },
+      filePaths: ['custom-governance/rule.ts'],
+      routePatterns: [],
+    });
+
+    const unprotectedCoverage = buildPathCoverageState(
+      unprotectedRootDir,
+      makeMatrix([customGovernancePath]),
+    );
+    const protectedCoverage = buildPathCoverageState(
+      protectedRootDir,
+      makeMatrix([customGovernancePath]),
+    );
+
+    expect(unprotectedCoverage.paths[0]).toEqual(
+      expect.objectContaining({
+        classification: 'probe_blueprint_generated',
+        safeToExecute: true,
+        testGenerated: true,
+      }),
+    );
+    expect(protectedCoverage.paths[0]).toEqual(
+      expect.objectContaining({
+        classification: 'inferred_only',
+        safeToExecute: false,
+        testGenerated: false,
+      }),
+    );
+    expect(protectedCoverage.paths[0].terminalProof.status).toBe('terminal_reasoned');
   });
 });

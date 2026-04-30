@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { buildAPIFuzzCatalog } from '../api-fuzzer';
+import { auditPulseNoHardcodedReality } from '../no-hardcoded-reality-audit';
 import {
   buildFixtureDataStructures,
   discoverEndpoints,
@@ -79,6 +80,15 @@ afterEach(() => {
 });
 
 describe('PULSE execution blueprints', () => {
+  it('keeps execution harness free of hardcoded reality audit findings', () => {
+    const result = auditPulseNoHardcodedReality(process.cwd());
+    const harnessFindings = result.findings.filter(
+      (finding) => finding.filePath === 'scripts/pulse/execution-harness.ts',
+    );
+
+    expect(harnessFindings).toEqual([]);
+  });
+
   it('does not count generated API fuzz plans as probed or tested endpoints', () => {
     const root = makeTempRoot('pulse-api-fuzz-');
     writeFile(

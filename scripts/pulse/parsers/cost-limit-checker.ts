@@ -24,6 +24,10 @@
  * The parser emits cost-control evidence gaps, not fixed problem names.
  */
 import * as path from 'path';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
@@ -44,15 +48,40 @@ function costControlFinding(input: {
   line: number;
   description: string;
   detail: string;
+  predicates: readonly string[];
 }): Break {
+  const signal: PulseSignalEvidence = {
+    source: `grammar-kernel:cost-limit-checker;predicates=${input.predicates.join(',')}`,
+    detector: 'cost-limit-checker',
+    truthMode: 'weak_signal',
+    summary: input.description,
+    detail: input.detail,
+    location: {
+      file: input.file,
+      line: input.line,
+    },
+  };
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const diagnostic = synthesizeDiagnostic(
+    signalGraph,
+    predicateGraph,
+    calculateDynamicRisk({ predicateGraph }),
+  );
+  const predicateToken = input.predicates
+    .map((predicate) => predicate.replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, ''))
+    .filter(Boolean)
+    .join('+')
+    .toLowerCase();
+
   return {
-    type: 'cost-control-evidence-gap',
+    type: `diagnostic:cost-limit-checker:${predicateToken || diagnostic.id}`,
     severity: input.severity,
     file: input.file,
     line: input.line,
-    description: input.description,
-    detail: input.detail,
-    source: 'parser:weak_signal:cost-control',
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; ${input.detail}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
     surface: 'resource-control',
   };
 }
@@ -120,6 +149,7 @@ export function checkCostLimits(config: PulseConfig): Break[] {
                 description:
                   'LLM API call without per-workspace token budget check — runaway costs possible',
                 detail: `${line.trim().slice(0, 120)} — check workspace.llmTokensUsed < workspace.llmTokenLimit before calling`,
+                predicates: ['llm_call_observed', 'workspace_token_budget_check_absent'],
               }),
             );
           }
@@ -158,6 +188,7 @@ export function checkCostLimits(config: PulseConfig): Break[] {
           'LLM API calls made without recording token usage per workspace — cannot bill or limit costs',
         detail:
           'After each LLM call, record: workspaceId, model, promptTokens, completionTokens, totalTokens, cost, timestamp',
+        predicates: ['llm_call_observed', 'workspace_usage_tracking_absent'],
       }),
     );
   }
@@ -173,6 +204,7 @@ export function checkCostLimits(config: PulseConfig): Break[] {
           'No per-workspace LLM token budget enforcement found — one workspace can exhaust entire monthly budget',
         detail:
           'Add workspace.llmTokensRemaining check before LLM calls; set plan-based limits in workspace settings',
+        predicates: ['llm_call_observed', 'workspace_llm_limit_absent'],
       }),
     );
   }
@@ -187,6 +219,7 @@ export function checkCostLimits(config: PulseConfig): Break[] {
         description: 'File uploads accepted without per-workspace storage quota check',
         detail:
           'Track bytes stored per workspace; reject uploads when quota exceeded; set plan-based limits (e.g., 1GB free)',
+        predicates: ['file_upload_surface_observed', 'workspace_storage_quota_absent'],
       }),
     );
   }
@@ -202,6 +235,7 @@ export function checkCostLimits(config: PulseConfig): Break[] {
           'No per-workspace API rate limiting — one workspace can monopolize resources and affect all others',
         detail:
           'Add workspace-scoped throttling alongside IP throttling; check NestJS Throttler workspace guard',
+        predicates: ['backend_source_scanned', 'workspace_api_throttle_absent'],
       }),
     );
   }
@@ -217,6 +251,7 @@ export function checkCostLimits(config: PulseConfig): Break[] {
           'No cost alerting for LLM usage — workspace owner not notified when approaching monthly limit',
         detail:
           'Trigger notification at 80% and 95% of monthly LLM budget; send email/WhatsApp alert to workspace owner',
+        predicates: ['llm_call_observed', 'workspace_cost_alerting_absent'],
       }),
     );
   }
@@ -246,6 +281,7 @@ export function checkCostLimits(config: PulseConfig): Break[] {
             'LLM limit check may not enforce a hard stop — warning without rejection still allows overspend',
           detail:
             'Ensure limit check throws ForbiddenException or 429 when limit exceeded, not just logs a warning',
+          predicates: ['workspace_llm_limit_observed', 'hard_stop_enforcement_absent'],
         }),
       );
     }
@@ -289,6 +325,7 @@ export function checkCostLimits(config: PulseConfig): Break[] {
             'WhatsApp messages sent without per-workspace daily rate limit — Autopilot can send unlimited messages',
           detail:
             'Add a daily message counter per workspace; enforce plan-based limit (e.g., 1000 messages/day on free plan)',
+          predicates: ['whatsapp_send_observed', 'workspace_message_rate_limit_absent'],
         }),
       );
     }

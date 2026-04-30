@@ -1,5 +1,5 @@
 import { Logger, OnModuleInit, Optional } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,

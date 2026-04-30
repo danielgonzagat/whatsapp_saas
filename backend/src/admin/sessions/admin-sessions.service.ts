@@ -13,6 +13,7 @@ export class AdminSessionsService {
   ) {}
 
   /** List own. */
+  // PULSE_OK: bounded by single admin user's sessions
   async listOwn(adminUserId: string) {
     return this.prisma.adminSession.findMany({
       where: { adminUserId },
@@ -29,6 +30,7 @@ export class AdminSessionsService {
   }
 
   /** List for user. */
+  // PULSE_OK: bounded by single target user's sessions
   async listForUser(targetId: string) {
     return this.prisma.adminSession.findMany({
       where: { adminUserId: targetId },

@@ -443,6 +443,12 @@ interface PulseAutonomyState {
   cycles?: Array<{
     startedAt?: string;
     finishedAt?: string;
+    phase?: string;
+    result?: string;
+    unitId?: string | null;
+    filesChanged?: string[];
+    scoreBefore?: number;
+    scoreAfter?: number;
   }>;
 }
 
@@ -782,30 +788,53 @@ export function evaluateLongRunEvidence(
   const autonomyStartedAt = parseTimestamp(autonomyState.startedAt);
   const coverageStart = Math.max(evaluationStart, autonomyStartedAt ?? evaluationStart);
   const status = autonomyState.status ?? 'missing';
-  const cycles = (autonomyState.cycles ?? [])
+  const allCycles = (autonomyState.cycles ?? [])
     .map((cycle) => {
       const startedAt = parseTimestamp(cycle.startedAt);
       const finishedAt = parseTimestamp(cycle.finishedAt);
       if (startedAt === null || finishedAt === null || finishedAt < startedAt) {
         return null;
       }
-      return { startedAt, finishedAt };
+      return { ...cycle, startedAt, finishedAt };
     })
-    .filter((cycle): cycle is { startedAt: number; finishedAt: number } => cycle !== null)
+    .filter(
+      (
+        cycle,
+      ): cycle is {
+        startedAt: number;
+        finishedAt: number;
+        phase?: string;
+        result?: string;
+        unitId?: string | null;
+        filesChanged?: string[];
+        scoreBefore?: number;
+        scoreAfter?: number;
+      } => cycle !== null,
+    )
     .sort((a, b) => a.startedAt - b.startedAt);
+  const proofCycles = allCycles.filter(isLongRunProofCycle);
+  const nonProofCycles = allCycles.length - proofCycles.length;
 
   const generatedAt = parseTimestamp(autonomyState.generatedAt);
-  const latestCycleEnd = cycles.reduce((latest, cycle) => Math.max(latest, cycle.finishedAt), 0);
+  const latestCycleEnd = proofCycles.reduce(
+    (latest, cycle) => Math.max(latest, cycle.finishedAt),
+    0,
+  );
   const coverageEnd = Math.min(nowMs, Math.max(generatedAt ?? 0, latestCycleEnd, coverageStart));
   const observedHours = Math.max(0, (coverageEnd - coverageStart) / (1000 * 60 * 60));
-  const maxGapHours = computeMaxUncoveredGapHours(coverageStart, coverageEnd, cycles);
+  const maxGapHours = computeMaxUncoveredGapHours(coverageStart, coverageEnd, proofCycles);
 
   const reasons: string[] = [];
   if (observedHours < REQUIRED_LONG_RUN_HOURS) {
     reasons.push(`observed ${observedHours.toFixed(1)}h of ${REQUIRED_LONG_RUN_HOURS}h required`);
   }
-  if (cycles.length === 0) {
-    reasons.push('no autonomy cycles recorded');
+  if (proofCycles.length === 0) {
+    reasons.push('no non-regressing autonomy proof cycles recorded');
+  }
+  if (nonProofCycles > 0) {
+    reasons.push(
+      `${nonProofCycles} cycle(s) lacked non-regressing execution evidence and were excluded`,
+    );
   }
   if (maxGapHours > MAX_LONG_RUN_GAP_HOURS) {
     reasons.push(
@@ -820,13 +849,13 @@ export function evaluateLongRunEvidence(
   return {
     requiredHours: REQUIRED_LONG_RUN_HOURS,
     observedHours,
-    cycleCount: cycles.length,
+    cycleCount: proofCycles.length,
     maxGapHours,
     allowedGapHours: MAX_LONG_RUN_GAP_HOURS,
     status,
     passed,
     reason: passed
-      ? `observed ${observedHours.toFixed(1)}h with ${cycles.length} cycle(s), max uncovered gap ${maxGapHours.toFixed(1)}h, status=${status}`
+      ? `observed ${observedHours.toFixed(1)}h with ${proofCycles.length} non-regressing proof cycle(s), max uncovered gap ${maxGapHours.toFixed(1)}h, status=${status}`
       : reasons.join('; '),
   };
 }
@@ -861,6 +890,34 @@ function parseTimestamp(value: string | undefined): number | null {
   }
   const parsed = new Date(value).getTime();
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function isLongRunProofCycle(cycle: {
+  phase?: string;
+  result?: string;
+  unitId?: string | null;
+  filesChanged?: string[];
+  scoreBefore?: number;
+  scoreAfter?: number;
+}): boolean {
+  const result = cycle.result ?? '';
+  if (result !== 'improvement' && result !== 'no_change') {
+    return false;
+  }
+
+  if (typeof cycle.scoreBefore === 'number' && typeof cycle.scoreAfter === 'number') {
+    if (cycle.scoreAfter < cycle.scoreBefore) {
+      return false;
+    }
+  }
+
+  const phase = cycle.phase ?? '';
+  const executionPhase = phase === 'executing' || phase === 'validating' || phase === 'committing';
+  const touchedRuntimeSurface =
+    typeof cycle.unitId === 'string' ||
+    (Array.isArray(cycle.filesChanged) && cycle.filesChanged.length > 0);
+
+  return executionPhase && touchedRuntimeSurface;
 }
 
 function computeMaxUncoveredGapHours(

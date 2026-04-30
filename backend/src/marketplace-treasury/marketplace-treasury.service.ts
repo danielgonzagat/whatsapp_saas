@@ -156,6 +156,7 @@ export class MarketplaceTreasuryService {
     const skip = Math.max(0, filters.skip ?? 0);
     const take = Math.min(200, Math.max(1, filters.take ?? 50));
 
+    // PULSE_OK: paginated via skip/take from filters
     const [rows, total] = await this.prisma.$transaction(
       [
         this.prisma.marketplaceTreasuryLedger.findMany({

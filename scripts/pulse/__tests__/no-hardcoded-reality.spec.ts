@@ -250,6 +250,8 @@ describe('PULSE no-hardcoded-reality contracts', () => {
           findings: 8,
         },
       ],
+      totalPredicates: 0,
+      byPredicateKind: {},
     });
   });
 
@@ -302,10 +304,13 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     expect(auditPulseNoHardcodedReality(rootDir)).toEqual({
       scannedFiles: 0,
       findings: [],
+      predicates: [],
       summary: {
         totalFindings: 0,
         byKind: {},
         topFiles: [],
+        totalPredicates: 0,
+        byPredicateKind: {},
       },
     });
   });
@@ -582,6 +587,71 @@ describe('PULSE no-hardcoded-reality contracts', () => {
         }),
       ]),
     );
+  });
+
+  it('classifies literal branch predicates in decision functions as hardcode evidence', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-branch-hardcodes-'));
+    const pulseDir = path.join(rootDir, 'scripts/pulse');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pulseDir, 'branch-decisions.ts'),
+      [
+        'export function decideGateProfile(input: { profile: string; score: number }) {',
+        '  switch (input.profile) {',
+        "    case 'production-final':",
+        "      return 'final';",
+        "    case 'audit-only':",
+        "      return 'audit';",
+        '    default:',
+        "      return 'unknown';",
+        '  }',
+        '}',
+        'export const selectRiskDecision = (input: { score: number }) => {',
+        '  if (input.score >= 90) {',
+        "    return 'high';",
+        '  }',
+        "  return 'low';",
+        '};',
+      ].join('\n'),
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir).predicates).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'hardcoded_branch_decision_predicate',
+          context: 'decideGateProfile',
+          samples: ["case 'production-final'", "case 'audit-only'"],
+        }),
+        expect.objectContaining({
+          kind: 'hardcoded_branch_decision_predicate',
+          context: 'selectRiskDecision',
+          samples: ['input.score >= 90'],
+        }),
+      ]),
+    );
+  });
+
+  it('does not classify structural grammar branches as decision authority', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-branch-grammar-'));
+    const pulseDir = path.join(rootDir, 'scripts/pulse');
+    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(pulseDir, 'grammar-branches.ts'),
+      [
+        'export function parseSyntaxToken(input: { token: string }) {',
+        '  switch (input.token) {',
+        "    case 'identifier':",
+        "      return 'name';",
+        "    case 'literal':",
+        "      return 'value';",
+        '    default:',
+        "      return 'unknown';",
+        '  }',
+        '}',
+      ].join('\n'),
+    );
+
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([]);
   });
 
   it('keeps core PULSE free of hardcoded product reality decision collections', () => {

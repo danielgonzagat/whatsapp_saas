@@ -24,33 +24,17 @@ import { buildPathProofPlan } from './path-proof-runner';
 import { buildPathProofEvidenceArtifact } from './path-proof-evidence';
 import { readJsonFile, writeTextFile, ensureDir, pathExists } from './safe-fs';
 import { safeJoin } from './safe-path';
-
-// ── Constants ──────────────────────────────────────────────────────────────────
-
-const GOVERNANCE_PATTERNS = [
-  /\.github/i,
-  /ops\//i,
-  /scripts\/ops\//i,
-  /governance/i,
-  /protected/i,
-  /env\./i,
-];
-
-const INACCESSIBLE_DIRS = new Set(['node_modules', '.next', 'dist', '.git', 'coverage', '.pulse']);
+import {
+  isProtectedFile as isGovernanceProtectedFile,
+  loadGovernanceBoundary,
+  normalizePath as normalizeGovernancePath,
+  type GovernanceBoundary,
+} from './scope-state-classify';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function unique(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
-}
-
-function includesAny(value: string, patterns: RegExp[]): boolean {
-  return patterns.some((p) => p.test(value));
-}
-
-function isInaccessible(filePath: string): boolean {
-  const segments = filePath.split(path.sep);
-  return segments.some((seg) => INACCESSIBLE_DIRS.has(seg));
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────────
@@ -68,10 +52,11 @@ export function buildPathCoverageState(
     matrix = readJsonFile<PulseExecutionMatrix>(matrixPath);
     matrixPaths = matrix.paths ?? [];
   }
+  const governanceBoundary = loadGovernanceBoundary(rootDir);
 
   const entries: PathCoverageEntry[] = matrixPaths.map((mp) => {
-    const safe = isSafeToExecute(mp);
-    const protectedSurface = isProtectedGovernanceSurface(mp);
+    const safe = isSafeToExecute(mp, governanceBoundary);
+    const protectedSurface = isProtectedGovernanceSurface(mp, governanceBoundary);
     const inferredClassification = classifyPath(mp, rootDir);
     const classification =
       safe || inferredClassification !== 'probe_blueprint_generated'
@@ -252,28 +237,27 @@ export function generateTestForPath(
 }
 
 /** Determine whether an AI agent can safely execute the path autonomously. */
-export function isSafeToExecute(mp: PulseExecutionMatrixPath): boolean {
-  return !isProtectedGovernanceSurface(mp);
+export function isSafeToExecute(
+  mp: PulseExecutionMatrixPath,
+  governanceBoundary: GovernanceBoundary = loadGovernanceBoundary(process.cwd()),
+): boolean {
+  return !isProtectedGovernanceSurface(mp, governanceBoundary);
 }
 
 /** Determine whether a path maps to protected governance or inaccessible surfaces. */
-function isProtectedGovernanceSurface(mp: PulseExecutionMatrixPath): boolean {
+function isProtectedGovernanceSurface(
+  mp: PulseExecutionMatrixPath,
+  governanceBoundary: GovernanceBoundary,
+): boolean {
   const allFilePaths = unique([
     ...mp.filePaths,
     ...(mp.entrypoint.filePath ? [mp.entrypoint.filePath] : []),
+    ...(mp.breakpoint?.filePath ? [mp.breakpoint.filePath] : []),
   ]);
 
-  for (const filePath of allFilePaths) {
-    if (isInaccessible(filePath)) {
-      continue;
-    }
-
-    if (includesAny(filePath, GOVERNANCE_PATTERNS)) {
-      return true;
-    }
-  }
-
-  return false;
+  return allFilePaths.some((filePath) =>
+    isGovernanceProtectedFile(normalizeGovernancePath(filePath), governanceBoundary),
+  );
 }
 
 /** Compute coverage percentage from classified entries. */

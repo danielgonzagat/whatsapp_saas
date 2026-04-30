@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { auditPulseNoHardcodedReality } from '../no-hardcoded-reality-audit';
 import { checkErrorHandlers } from '../parsers/error-handler-auditor';
 import type { PulseConfig } from '../types';
 
@@ -36,6 +37,15 @@ afterEach(() => {
 });
 
 describe('error handler auditor dynamic diagnostics', () => {
+  it('keeps the error handler auditor free of hardcoded reality authority findings', () => {
+    const result = auditPulseNoHardcodedReality(process.cwd());
+    const findings = result.findings.filter(
+      (finding) => finding.filePath === 'scripts/pulse/parsers/error-handler-auditor.ts',
+    );
+
+    expect(findings).toEqual([]);
+  });
+
   it('synthesizes catch diagnostics from evidence instead of fixed break labels', () => {
     const config = makeConfig();
     write(
@@ -63,6 +73,36 @@ describe('error handler auditor dynamic diagnostics', () => {
     expect(findings).not.toContainEqual(expect.objectContaining({ type: 'EMPTY_CATCH' }));
     expect(findings).not.toContainEqual(
       expect.objectContaining({ type: 'FINANCIAL_ERROR_SWALLOWED' }),
+    );
+  });
+
+  it('escalates swallowed catches when AST evidence shows provider side effects', () => {
+    const config = makeConfig();
+    write(
+      config.rootDir,
+      'backend/src/effectful.service.ts',
+      `
+      export class EffectfulService {
+        constructor(private readonly prisma: { order: { create(input: unknown): Promise<unknown> } }) {}
+
+        async run() {
+          try {
+            await this.prisma.order.create({ data: { id: 'opaque' } });
+          } catch (error) {
+          }
+        }
+      }
+      `,
+    );
+
+    const findings = checkErrorHandlers(config);
+
+    expect(findings).toContainEqual(
+      expect.objectContaining({
+        severity: 'critical',
+        surface: 'error-handling-effect',
+        source: expect.stringContaining('detector=empty-catch-high-risk-effect-evidence'),
+      }),
     );
   });
 });

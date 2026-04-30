@@ -4,29 +4,141 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
 
-// Matches: process.env.SOME_VAR_NAME
-const PROCESS_ENV_RE = /process\.env\.([A-Z][A-Z0-9_]+)/g;
+function envFinding(input: {
+  predicateKinds: string[];
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+}): Break {
+  const predicateToken =
+    input.predicateKinds
+      .map((predicate) => predicate.replace(/[^a-z0-9]+/gi, '-').toLowerCase())
+      .filter(Boolean)
+      .join('+') || 'environment-observation';
 
-// Matches: configService.get('SOME_VAR') or configService.get<T>('SOME_VAR')
-const CONFIG_SERVICE_RE = /configService\.get(?:<[^>]+>)?\(\s*['"`]([A-Z][A-Z0-9_]+)['"`]/g;
+  return {
+    type: `diagnostic:env-checker:${predicateToken}`,
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: `syntax-evidence:env-checker;predicates=${input.predicateKinds.join(',')}`,
+  };
+}
 
-// Hardcoded secret patterns (in string literals)
-const HARDCODED_SECRET_PATTERNS: { re: RegExp; label: string }[] = [
-  // Live Stripe/payment keys
-  { re: /['"`]sk_live_[A-Za-z0-9]{20,}['"`]/, label: 'Stripe live secret key' },
-  { re: /['"`]pk_live_[A-Za-z0-9]{20,}['"`]/, label: 'Stripe live publishable key' },
-  { re: /['"`]sk_test_[A-Za-z0-9]{20,}['"`]/, label: 'Stripe test secret key' },
-  { re: /['"`]pk_test_[A-Za-z0-9]{20,}['"`]/, label: 'Stripe test publishable key' },
-  // Generic long hex/alphanum API key (32+ chars) assigned to a key-sounding variable
-  {
-    re: /(?:apiKey|api_key|secret|token|password|credential|auth_key)\s*(?:=|:)\s*['"`][A-Za-z0-9+/=_\-]{32,}['"`]/i,
-    label: 'Hardcoded API key / secret',
-  },
-];
+function isEnvChar(char: string | undefined): boolean {
+  if (!char) {
+    return false;
+  }
+  return /[A-Z0-9_]/.test(char);
+}
+
+function isEnvName(value: string): boolean {
+  return value.length > 1 && /^[A-Z_][A-Z0-9_]*$/.test(value);
+}
+
+function readEnvNameAt(text: string, start: number): string {
+  let cursor = start;
+  let name = '';
+  while (cursor < text.length && isEnvChar(text[cursor])) {
+    name += text[cursor];
+    cursor += 1;
+  }
+  return isEnvName(name) ? name : '';
+}
+
+function collectEnvReferences(line: string): string[] {
+  const names: string[] = [];
+  let cursor = line.indexOf('process.env.');
+  while (cursor !== -1) {
+    const name = readEnvNameAt(line, cursor + 'process.env.'.length);
+    if (name) {
+      names.push(name);
+    }
+    cursor = line.indexOf('process.env.', cursor + 1);
+  }
+
+  cursor = line.indexOf('configService.get');
+  while (cursor !== -1) {
+    const tail = line.slice(cursor);
+    const quoteIndex = [...tail].findIndex((char) => char === "'" || char === '"' || char === '`');
+    if (quoteIndex >= 0) {
+      const quote = tail[quoteIndex];
+      const valueStart = cursor + quoteIndex + 1;
+      const valueEnd = line.indexOf(quote, valueStart);
+      if (valueEnd > valueStart) {
+        const candidate = line.slice(valueStart, valueEnd);
+        if (isEnvName(candidate)) {
+          names.push(candidate);
+        }
+      }
+    }
+    cursor = line.indexOf('configService.get', cursor + 1);
+  }
+  return names;
+}
+
+function splitIdentifier(value: string): Set<string> {
+  const spaced = value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .toLowerCase();
+  return new Set(spaced.split(/\s+/).filter(Boolean));
+}
+
+function hasSecretNameEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    tokens.has('secret') ||
+    tokens.has('token') ||
+    tokens.has('password') ||
+    tokens.has('credential') ||
+    tokens.has('private') ||
+    (tokens.has('api') && tokens.has('key')) ||
+    tokens.has('auth')
+  );
+}
+
+function hasLongOpaqueLiteral(line: string): boolean {
+  let current = '';
+  for (const char of line) {
+    const isOpaque =
+      (char >= 'A' && char <= 'Z') ||
+      (char >= 'a' && char <= 'z') ||
+      (char >= '0' && char <= '9') ||
+      char === '+' ||
+      char === '/' ||
+      char === '=' ||
+      char === '_' ||
+      char === '-';
+    if (!isOpaque) {
+      if (current.length >= 32) {
+        return true;
+      }
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+  return current.length >= 32;
+}
 
 function shouldSkipFile(file: string): boolean {
-  return /node_modules|\.next|\/dist\/|\.next\/|\.spec\.ts$|\.test\.ts$|__tests__|__mocks__|\/seed\.|\/migration\.|fixture/i.test(
-    file,
+  const normalized = file.replace(/\\/g, '/').toLowerCase();
+  return (
+    normalized.includes('node_modules') ||
+    normalized.includes('.next') ||
+    normalized.includes('/dist/') ||
+    normalized.endsWith('.spec.ts') ||
+    normalized.endsWith('.test.ts') ||
+    normalized.includes('__tests__') ||
+    normalized.includes('__mocks__') ||
+    normalized.includes('/seed.') ||
+    normalized.includes('/migration.') ||
+    normalized.includes('fixture')
   );
 }
 
@@ -98,58 +210,40 @@ export function checkEnvVars(config: PulseConfig): Break[] {
           continue;
         }
 
-        // Collect process.env.VAR references
-        PROCESS_ENV_RE.lastIndex = 0;
-        let m: RegExpExecArray | null;
-        while ((m = PROCESS_ENV_RE.exec(line)) !== null) {
-          const varName = m[1];
+        for (const varName of collectEnvReferences(line)) {
           if (!referencedVars.has(varName)) {
             referencedVars.set(varName, { file: relFile, line: i + 1 });
           }
         }
 
-        // Collect configService.get('VAR') references
-        CONFIG_SERVICE_RE.lastIndex = 0;
-        while ((m = CONFIG_SERVICE_RE.exec(line)) !== null) {
-          const varName = m[1];
-          if (!referencedVars.has(varName)) {
-            referencedVars.set(varName, { file: relFile, line: i + 1 });
-          }
-        }
-
-        // Scan for hardcoded secrets
-        for (const { re, label } of HARDCODED_SECRET_PATTERNS) {
-          if (re.test(line)) {
-            breaks.push({
-              type: 'HARDCODED_SECRET',
+        if (hasSecretNameEvidence(line) && hasLongOpaqueLiteral(line)) {
+          breaks.push(
+            envFinding({
+              predicateKinds: ['opaque_literal', 'secret_name_evidence'],
               severity: 'critical',
               file: relFile,
               line: i + 1,
-              description: `Hardcoded secret detected: ${label}`,
+              description: 'Opaque secret-like literal observed in source',
               detail: trimmed.slice(0, 120),
-            });
-          }
+            }),
+          );
         }
       }
     }
   }
 
-  // Check referenced vars against documented vars
   for (const [varName, location] of referencedVars.entries()) {
-    // Skip Node.js built-ins and common non-secret vars that are always set
-    if (['NODE_ENV', 'PORT', 'HOST', 'TZ', 'PWD', 'HOME', 'PATH', 'HOSTNAME'].includes(varName)) {
-      continue;
-    }
-
     if (!documentedVars.has(varName)) {
-      breaks.push({
-        type: 'ENV_NOT_DOCUMENTED',
-        severity: 'medium',
-        file: location.file,
-        line: location.line,
-        description: `Environment variable ${varName} is referenced but not documented in .env.example`,
-        detail: `Add ${varName}= to .env.example with a description comment`,
-      });
+      breaks.push(
+        envFinding({
+          predicateKinds: ['environment_reference', 'documentation_not_observed'],
+          severity: hasSecretNameEvidence(varName) ? 'high' : 'medium',
+          file: location.file,
+          line: location.line,
+          description: `Environment variable ${varName} is referenced but not documented in discovered env template evidence`,
+          detail: `Add discovered documentation evidence for ${varName} or prove it is provided by runtime baseline.`,
+        }),
+      );
     }
   }
 

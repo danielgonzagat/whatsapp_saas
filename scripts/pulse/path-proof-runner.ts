@@ -7,6 +7,12 @@ import type {
 } from './types.path-coverage-engine';
 import { ensureDir, pathExists, readJsonFile, writeTextFile } from './safe-fs';
 import { safeJoin } from './safe-path';
+import {
+  isProtectedFile as isGovernanceProtectedFile,
+  loadGovernanceBoundary,
+  normalizePath,
+  type GovernanceBoundary,
+} from './scope-state-classify';
 
 export type PathProofTaskMode =
   | 'endpoint'
@@ -69,15 +75,26 @@ export interface BuildPathProofPlanInput {
 const OUTPUT_ARTIFACT = '.pulse/current/PULSE_PATH_PROOF_TASKS.json';
 const MATRIX_ARTIFACT = '.pulse/current/PULSE_EXECUTION_MATRIX.json';
 const COVERAGE_ARTIFACT = '.pulse/current/PULSE_PATH_COVERAGE.json';
+const PATH_PROOF_EVIDENCE_ARTIFACT = '.pulse/current/PULSE_PATH_PROOF_EVIDENCE.json';
 
-const PROTECTED_GOVERNANCE_PATTERNS = [
-  /\.github/i,
-  /(^|\/)ops\//i,
-  /(^|\/)scripts\/ops\//i,
-  /(^|\/)AGENTS\.md$/i,
-  /(^|\/)CLAUDE\.md$/i,
-  /(^|\/)CODEX\.md$/i,
-];
+interface ObservedPathProofEvidenceEntry {
+  pathId: string;
+  observed: boolean;
+  coverageCountsAsObserved: boolean;
+  disposition: 'observed_pass' | 'observed_fail' | string;
+  evidenceState: 'observed' | 'not_run' | string;
+  freshness?: {
+    status: 'fresh' | 'stale' | 'not_run' | string;
+    observedAt: string | null;
+  };
+  observedEvidenceLink?: {
+    observedAt: string;
+  } | null;
+}
+
+interface ObservedPathProofEvidenceArtifact {
+  tasks?: ObservedPathProofEvidenceEntry[];
+}
 
 function hasPreciseTerminalReason(path: PulseExecutionMatrixPath): boolean {
   if (path.status === 'observed_pass' || path.status === 'observed_fail') {
@@ -104,7 +121,10 @@ function isObserved(path: PulseExecutionMatrixPath): boolean {
   return path.status === 'observed_pass' || path.status === 'observed_fail';
 }
 
-function isTerminallyClassifiedWithoutAutonomousProof(path: PulseExecutionMatrixPath): boolean {
+function isTerminallyClassifiedWithoutAutonomousProof(
+  path: PulseExecutionMatrixPath,
+  governanceBoundary: GovernanceBoundary,
+): boolean {
   return (
     path.status === 'not_executable' ||
     path.status === 'unreachable' ||
@@ -112,7 +132,7 @@ function isTerminallyClassifiedWithoutAutonomousProof(path: PulseExecutionMatrix
     path.status === 'blocked_human_required' ||
     path.executionMode === 'human_required' ||
     path.executionMode === 'observation_only' ||
-    touchesProtectedGovernance(path)
+    touchesProtectedGovernance(path, governanceBoundary)
   );
 }
 
@@ -128,11 +148,16 @@ function hasAutonomousProofEntrypoint(path: PulseExecutionMatrixPath): boolean {
   );
 }
 
-function isTerminalProofCandidate(path: PulseExecutionMatrixPath): boolean {
+function isTerminalProofCandidate(
+  path: PulseExecutionMatrixPath,
+  governanceBoundary: GovernanceBoundary,
+  observedProofPathIds: Set<string>,
+): boolean {
   return (
     isCriticalMatrixPath(path) &&
     !isObserved(path) &&
-    !isTerminallyClassifiedWithoutAutonomousProof(path) &&
+    !observedProofPathIds.has(path.pathId) &&
+    !isTerminallyClassifiedWithoutAutonomousProof(path, governanceBoundary) &&
     hasAutonomousProofEntrypoint(path) &&
     hasPreciseTerminalReason(path)
   );
@@ -142,15 +167,21 @@ function unique(values: string[]): string[] {
   return [...new Set(values.filter(Boolean))];
 }
 
-function touchesProtectedGovernance(path: PulseExecutionMatrixPath): boolean {
+function touchesProtectedGovernance(
+  path: PulseExecutionMatrixPath,
+  governanceBoundary: GovernanceBoundary,
+): boolean {
   return unique([
     path.entrypoint.filePath ?? '',
     path.breakpoint?.filePath ?? '',
     ...path.filePaths,
-  ]).some((filePath) => PROTECTED_GOVERNANCE_PATTERNS.some((pattern) => pattern.test(filePath)));
+  ]).some((filePath) => isGovernanceProtectedFile(normalizePath(filePath), governanceBoundary));
 }
 
-function classifyTaskMode(path: PulseExecutionMatrixPath): PathProofTaskMode {
+function classifyTaskMode(
+  path: PulseExecutionMatrixPath,
+  governanceBoundary: GovernanceBoundary,
+): PathProofTaskMode {
   if (path.status === 'not_executable') {
     return 'not_executable';
   }
@@ -158,7 +189,7 @@ function classifyTaskMode(path: PulseExecutionMatrixPath): PathProofTaskMode {
     path.status === 'blocked_human_required' ||
     path.executionMode === 'human_required' ||
     path.executionMode === 'observation_only' ||
-    touchesProtectedGovernance(path)
+    touchesProtectedGovernance(path, governanceBoundary)
   ) {
     return 'human_required';
   }
@@ -188,8 +219,46 @@ function classifyTaskMode(path: PulseExecutionMatrixPath): PathProofTaskMode {
 }
 
 function taskIdFor(path: PulseExecutionMatrixPath, mode: PathProofTaskMode): string {
-  const normalizedPathId = path.pathId.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
+  const normalizedPathId = normalizeTaskIdSegment(path.pathId);
   return `path-proof:${mode}:${normalizedPathId}`;
+}
+
+function normalizeTaskIdSegment(value: string): string {
+  const output: string[] = [];
+  let previousWasSeparator = false;
+
+  for (const char of value) {
+    const isAllowed =
+      (char >= 'a' && char <= 'z') ||
+      (char >= 'A' && char <= 'Z') ||
+      (char >= '0' && char <= '9') ||
+      char === '_';
+
+    if (isAllowed) {
+      output.push(char);
+      previousWasSeparator = false;
+      continue;
+    }
+
+    if (char === '-') {
+      if (output.length > 0 && !previousWasSeparator) {
+        output.push(char);
+        previousWasSeparator = true;
+      }
+      continue;
+    }
+
+    if (output.length > 0 && !previousWasSeparator) {
+      output.push('-');
+      previousWasSeparator = true;
+    }
+  }
+
+  while (output[output.length - 1] === '-') {
+    output.pop();
+  }
+
+  return output.join('');
 }
 
 function defaultExpectedEvidence(path: PulseExecutionMatrixPath): PathCoverageExpectedEvidence[] {
@@ -251,8 +320,9 @@ function buildTaskReason(
 function buildPathProofTask(
   path: PulseExecutionMatrixPath,
   coverageEntry: PathCoverageEntry | undefined,
+  governanceBoundary: GovernanceBoundary,
 ): PathProofTask {
-  const mode = classifyTaskMode(path);
+  const mode = classifyTaskMode(path, governanceBoundary);
   const autonomousExecutionAllowed = mode !== 'human_required' && mode !== 'not_executable';
   const command = coverageEntry?.terminalProof.validationCommand ?? path.validationCommand;
 
@@ -289,12 +359,67 @@ function readPathCoverage(rootDir: string): PathCoverageState | undefined {
   return readJsonFile<PathCoverageState>(coveragePath);
 }
 
+function parseTimestamp(value: string | null | undefined): number | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function readPathProofEvidence(rootDir: string): ObservedPathProofEvidenceArtifact | undefined {
+  const evidencePath = safeJoin(rootDir, PATH_PROOF_EVIDENCE_ARTIFACT);
+  if (!pathExists(evidencePath)) {
+    return undefined;
+  }
+  return readJsonFile<ObservedPathProofEvidenceArtifact>(evidencePath);
+}
+
+function entryCountsAsFreshObservedProof(
+  entry: ObservedPathProofEvidenceEntry,
+  matrixGeneratedAt: string | undefined,
+): boolean {
+  const dispositionObserved =
+    entry.disposition === 'observed_pass' || entry.disposition === 'observed_fail';
+  const observedAt = entry.observedEvidenceLink?.observedAt ?? entry.freshness?.observedAt ?? null;
+  const observedAtMs = parseTimestamp(observedAt);
+  const matrixGeneratedAtMs = parseTimestamp(matrixGeneratedAt);
+
+  return (
+    entry.observed === true &&
+    entry.coverageCountsAsObserved === true &&
+    entry.evidenceState === 'observed' &&
+    dispositionObserved &&
+    entry.freshness?.status === 'fresh' &&
+    observedAtMs !== null &&
+    (matrixGeneratedAtMs === null || observedAtMs >= matrixGeneratedAtMs)
+  );
+}
+
+function observedProofPathIdsFor(
+  evidence: ObservedPathProofEvidenceArtifact | undefined,
+  matrixGeneratedAt: string | undefined,
+): Set<string> {
+  const pathIds = new Set<string>();
+  for (const entry of evidence?.tasks ?? []) {
+    if (entryCountsAsFreshObservedProof(entry, matrixGeneratedAt)) {
+      pathIds.add(entry.pathId);
+    }
+  }
+  return pathIds;
+}
+
 export function buildPathProofPlan(
   rootDir: string,
   input: BuildPathProofPlanInput = {},
 ): PathProofPlan {
   const matrix = input.matrix ?? readMatrix(rootDir);
   const pathCoverage = input.pathCoverage ?? readPathCoverage(rootDir);
+  const observedProofPathIds = observedProofPathIdsFor(
+    readPathProofEvidence(rootDir),
+    matrix.generatedAt,
+  );
+  const governanceBoundary = loadGovernanceBoundary(rootDir);
   const coverageByPathId = new Map<string, PathCoverageEntry>();
 
   for (const entry of pathCoverage?.paths ?? []) {
@@ -302,9 +427,9 @@ export function buildPathProofPlan(
   }
 
   const tasks = matrix.paths
-    .filter(isTerminalProofCandidate)
+    .filter((path) => isTerminalProofCandidate(path, governanceBoundary, observedProofPathIds))
     .sort((left, right) => left.pathId.localeCompare(right.pathId))
-    .map((path) => buildPathProofTask(path, coverageByPathId.get(path.pathId)));
+    .map((path) => buildPathProofTask(path, coverageByPathId.get(path.pathId), governanceBoundary));
 
   const plan: PathProofPlan = {
     generatedAt: input.generatedAt ?? new Date().toISOString(),

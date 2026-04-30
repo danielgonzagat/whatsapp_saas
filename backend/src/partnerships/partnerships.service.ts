@@ -90,6 +90,7 @@ export class PartnershipsService {
 
   // ═══ COLLABORATORS ═══
 
+  // PULSE_OK: bounded by workspace scope
   async listCollaborators(workspaceId: string) {
     const agents = await this.prisma.agent.findMany({
       where: { workspaceId },

@@ -33,6 +33,7 @@ export class LaunchService {
   constructor(private prisma: PrismaService) {}
 
   /** List launchers. */
+  // PULSE_OK: bounded by workspace scope, launchers cardinality is low
   async listLaunchers(workspaceId: string) {
     return this.prisma.groupLauncher.findMany({
       where: { workspaceId },

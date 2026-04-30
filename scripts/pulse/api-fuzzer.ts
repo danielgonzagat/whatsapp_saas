@@ -119,12 +119,21 @@ function uniqueStrings(values: string[]): string[] {
 
 function parseRouteParameters(routePath: string): string[] {
   const params: string[] = [];
-  const parameterPattern = /(?::|\{)([A-Za-z_]\w*)\}?/g;
-  let match = parameterPattern.exec(routePath);
-
-  while (match) {
-    params.push(match[1]);
-    match = parameterPattern.exec(routePath);
+  const routeChars = Array.from(routePath);
+  for (let index = 0; index < routeChars.length; index += 1) {
+    const marker = routeChars[index];
+    if (marker !== ':' && marker !== '{') {
+      continue;
+    }
+    let cursor = index + 1;
+    let name = '';
+    while (cursor < routeChars.length && isIdentifierChar(routeChars[cursor])) {
+      name += routeChars[cursor];
+      cursor += 1;
+    }
+    if (name.length > 0) {
+      params.push(name);
+    }
   }
 
   return uniqueStrings(params);
@@ -132,15 +141,44 @@ function parseRouteParameters(routePath: string): string[] {
 
 function extractGuardNames(decoratorArgs: string): string[] {
   const guardNames: string[] = [];
-  const guardPattern = /(?:new\s+)?([A-Za-z_]\w*)\s*(?:[,(]|$)/g;
-  let match = guardPattern.exec(decoratorArgs);
-
-  while (match) {
-    guardNames.push(match[1]);
-    match = guardPattern.exec(decoratorArgs);
+  const segments = decoratorArgs.split(',').flatMap((segment) => segment.split('('));
+  for (const segment of segments) {
+    const name = extractLeadingIdentifier(
+      segment.trim().startsWith('new ') ? segment.trim().slice(4) : segment,
+    );
+    if (name) {
+      guardNames.push(name);
+    }
   }
 
   return uniqueStrings(guardNames);
+}
+
+function isIdentifierChar(value: string | undefined): boolean {
+  if (!value) {
+    return false;
+  }
+  return (
+    (value >= 'a' && value <= 'z') ||
+    (value >= 'A' && value <= 'Z') ||
+    (value >= '0' && value <= '9') ||
+    value === '_'
+  );
+}
+
+function extractLeadingIdentifier(value: string): string | null {
+  let cursor = 0;
+  while (cursor < value.length && value[cursor] === ' ') {
+    cursor += 1;
+  }
+  if (!isIdentifierChar(value[cursor]) || (value[cursor] >= '0' && value[cursor] <= '9')) {
+    return null;
+  }
+  let end = cursor + 1;
+  while (isIdentifierChar(value[end])) {
+    end += 1;
+  }
+  return value.slice(cursor, end);
 }
 
 function collectNonRouteMetadataDecorators(

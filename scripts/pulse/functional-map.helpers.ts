@@ -8,7 +8,27 @@ import { pathExists } from './safe-fs';
 import { normalizeEndpoint } from './parsers/api-parser';
 
 function isIdentifierChar(value: string | undefined): boolean {
-  return Boolean(value && /[\w$]/.test(value));
+  if (!value) {
+    return false;
+  }
+  return (
+    (value >= 'a' && value <= 'z') ||
+    (value >= 'A' && value <= 'Z') ||
+    (value >= '0' && value <= '9') ||
+    value === '_' ||
+    value === '$'
+  );
+}
+
+function isWhitespaceChar(value: string | undefined): boolean {
+  return (
+    value === ' ' ||
+    value === '\t' ||
+    value === '\n' ||
+    value === '\r' ||
+    value === '\f' ||
+    value === '\v'
+  );
 }
 
 function hasIdentifierAt(text: string, offset: number, identifier: string): boolean {
@@ -23,7 +43,7 @@ function hasFunctionCall(text: string, funcName: string): boolean {
   while (offset !== -1) {
     if (hasIdentifierAt(text, offset, funcName)) {
       let cursor = offset + funcName.length;
-      while (/\s/.test(text[cursor] || '')) {
+      while (isWhitespaceChar(text[cursor])) {
         cursor += 1;
       }
       if (text[cursor] === '(') {
@@ -40,12 +60,12 @@ function hasMemberCall(text: string, objectName: string, methodName: string): bo
   while (offset !== -1) {
     if (hasIdentifierAt(text, offset, objectName)) {
       let cursor = offset + objectName.length;
-      while (/\s/.test(text[cursor] || '')) {
+      while (isWhitespaceChar(text[cursor])) {
         cursor += 1;
       }
       if (text[cursor] === '.') {
         cursor += 1;
-        while (/\s/.test(text[cursor] || '')) {
+        while (isWhitespaceChar(text[cursor])) {
           cursor += 1;
         }
         if (!hasIdentifierAt(text, cursor, methodName)) {
@@ -53,7 +73,7 @@ function hasMemberCall(text: string, objectName: string, methodName: string): bo
           continue;
         }
         cursor += methodName.length;
-        while (/\s/.test(text[cursor] || '')) {
+        while (isWhitespaceChar(text[cursor])) {
           cursor += 1;
         }
         if (text[cursor] === '(') {
@@ -95,9 +115,7 @@ function handlerCallsApiModule(handler: string, callName: string): boolean {
 function extractFunctionBody(fileContent: string, funcName: string, maxLines = 90): string {
   const funcDefRe =
     /(?:const|let|function|async function)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*(?:=|\()/g;
-  const defMatch = [...fileContent.matchAll(funcDefRe)].find(
-    (match) => match[1] === funcName,
-  );
+  const defMatch = [...fileContent.matchAll(funcDefRe)].find((match) => match[1] === funcName);
   if (!defMatch) {
     return '';
   }
@@ -143,27 +161,164 @@ function extractFunctionBody(fileContent: string, funcName: string, maxLines = 9
 function extractDirectApiFromBody(
   bodyText: string,
 ): { endpoint: string; method: string; file: string; line: number } | null {
-  const patterns = [
-    /apiFetch\s*(?:<[^>]*>)?\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
-    /fetch\s*\(\s*apiUrl\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
-    /fetch\s*\(\s*(?:['"`](\/api\/[^'"`]+)['"`]|`([^`]*\/api\/[^`]*)`)/,
-  ];
-
-  for (const pattern of patterns) {
-    const match = bodyText.match(pattern);
-    const raw = match?.[1] || match?.[2];
-    if (!raw || !raw.startsWith('/')) {
-      continue;
+  for (const functionName of ['apiFetch', 'apiUrl', 'fetch']) {
+    let cursor = 0;
+    while (cursor < bodyText.length) {
+      const openParenIndex = findFunctionCallOpenParen(bodyText, functionName, cursor);
+      if (openParenIndex === -1) {
+        break;
+      }
+      const raw = extractFirstStringLikeArgument(bodyText, openParenIndex);
+      const endpoint = raw ? normalizeStringLikeEndpoint(raw) : null;
+      if (!endpoint) {
+        cursor = openParenIndex + 1;
+        continue;
+      }
+      return {
+        endpoint,
+        method: detectMethodFromBody(bodyText),
+        file: '',
+        line: 0,
+      };
     }
-    return {
-      endpoint: normalizeEndpoint(raw),
-      method: detectMethodFromBody(bodyText),
-      file: '',
-      line: 0,
-    };
   }
 
   return null;
+}
+
+function findFunctionCallOpenParen(text: string, functionName: string, fromOffset: number): number {
+  let offset = text.indexOf(functionName, fromOffset);
+  while (offset !== -1) {
+    if (hasIdentifierAt(text, offset, functionName)) {
+      let cursor = offset + functionName.length;
+      while (isWhitespaceChar(text[cursor])) {
+        cursor += 1;
+      }
+      if (text[cursor] === '<') {
+        let depth = 0;
+        while (cursor < text.length) {
+          if (text[cursor] === '<') {
+            depth += 1;
+          } else if (text[cursor] === '>') {
+            depth -= 1;
+            if (depth === 0) {
+              cursor += 1;
+              break;
+            }
+          } else if (text[cursor] === '\n') {
+            break;
+          }
+          cursor += 1;
+        }
+        while (isWhitespaceChar(text[cursor])) {
+          cursor += 1;
+        }
+      }
+      if (text[cursor] === '(') {
+        return cursor;
+      }
+    }
+    offset = text.indexOf(functionName, offset + functionName.length);
+  }
+  return -1;
+}
+
+function extractFirstStringLikeArgument(text: string, openParenIndex: number): string | null {
+  let cursor = openParenIndex + 1;
+  const scanLimit = Math.min(text.length, openParenIndex + 260);
+  while (cursor < scanLimit) {
+    const ch = text[cursor];
+    if (ch === ')' || ch === '\n') {
+      return null;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      const end = text.indexOf(ch, cursor + 1);
+      if (end > cursor + 1) {
+        return text.slice(cursor + 1, end);
+      }
+      return null;
+    }
+    cursor += 1;
+  }
+  return null;
+}
+
+function normalizeStringLikeEndpoint(raw: string): string | null {
+  if (raw.startsWith('/')) {
+    return normalizeEndpoint(raw);
+  }
+  if (!raw.includes('/api/')) {
+    return null;
+  }
+  const apiIndex = raw.indexOf('/api/');
+  if (apiIndex === -1) {
+    return null;
+  }
+  return normalizeEndpoint(raw.slice(apiIndex));
+}
+
+function isIgnorableLocalCall(calledFunc: string): boolean {
+  const ignoredCalls = [
+    'if',
+    'for',
+    'while',
+    'return',
+    'await',
+    'catch',
+    'try',
+    'console',
+    'Math',
+    'JSON',
+    'Array',
+    'Object',
+    'String',
+    'Number',
+    'Date',
+    'Promise',
+    'Error',
+    'URLSearchParams',
+    'AbortController',
+    'setTimeout',
+    'clearTimeout',
+  ];
+  if (ignoredCalls.includes(calledFunc)) {
+    return true;
+  }
+  return (
+    calledFunc.startsWith('set') &&
+    calledFunc[3] !== undefined &&
+    calledFunc[3] >= 'A' &&
+    calledFunc[3] <= 'Z'
+  );
+}
+
+function extractCalledFunctionNames(bodyText: string): string[] {
+  const calls: string[] = [];
+  let cursor = 0;
+  while (cursor < bodyText.length) {
+    if (!isIdentifierChar(bodyText[cursor]) || !isLowercaseLetter(bodyText[cursor])) {
+      cursor += 1;
+      continue;
+    }
+    const start = cursor;
+    cursor += 1;
+    while (isIdentifierChar(bodyText[cursor])) {
+      cursor += 1;
+    }
+    const calledFunc = bodyText.slice(start, cursor);
+    let afterName = cursor;
+    while (isWhitespaceChar(bodyText[afterName])) {
+      afterName += 1;
+    }
+    if (bodyText[afterName] === '(') {
+      calls.push(calledFunc);
+    }
+  }
+  return calls;
+}
+
+function isLowercaseLetter(value: string | undefined): boolean {
+  return value !== undefined && value >= 'a' && value <= 'z';
 }
 
 function findApiCallInLocalFunction(
@@ -206,16 +361,8 @@ function findApiCallInLocalFunction(
     }
   }
 
-  const localCallRe = /\b([a-z]\w+)\s*\(/gi;
-  let match: RegExpExecArray | null;
-  while ((match = localCallRe.exec(bodyText)) !== null) {
-    const calledFunc = match[1];
-    if (
-      /^(?:if|for|while|return|await|catch|try|console|Math|JSON|Array|Object|String|Number|Date|Promise|Error|URLSearchParams|AbortController|setTimeout|clearTimeout)$/.test(
-        calledFunc,
-      ) ||
-      /^set[A-Z]/.test(calledFunc)
-    ) {
+  for (const calledFunc of extractCalledFunctionNames(bodyText)) {
+    if (isIgnorableLocalCall(calledFunc)) {
       continue;
     }
 

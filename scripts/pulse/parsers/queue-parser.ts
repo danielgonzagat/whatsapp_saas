@@ -18,6 +18,10 @@ const QUEUE_BREAK_TYPES: Record<QueueBreakKind, Break['type']> = {
   missingProducer: 'PROCESSOR_NO_PRODUCER',
 };
 
+function queueBreakType(kind: QueueBreakKind): Break['type'] {
+  return QUEUE_BREAK_TYPES[kind];
+}
+
 function stringLiteralValue(node: ts.Node | undefined): string | null {
   if (!node) {
     return null;
@@ -403,7 +407,7 @@ export function checkQueues(config: PulseConfig): Break[] {
     reportedProducerMissing.add(prod.jobName);
 
     const relFile = path.relative(config.rootDir, prod.file);
-    const breakType = QUEUE_BREAK_TYPES.missingProcessor;
+    const breakType = queueBreakType('missingProcessor');
     breaks.push({
       type: breakType,
       severity: 'high',
@@ -425,7 +429,7 @@ export function checkQueues(config: PulseConfig): Break[] {
     reportedConsumerMissing.add(cons.jobName);
 
     const relFile = path.relative(config.rootDir, cons.file);
-    const breakType = QUEUE_BREAK_TYPES.missingProducer;
+    const breakType = queueBreakType('missingProducer');
     breaks.push({
       type: breakType,
       severity: 'low',

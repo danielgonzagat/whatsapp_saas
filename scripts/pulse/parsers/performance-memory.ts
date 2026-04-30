@@ -12,9 +12,68 @@
  */
 
 import * as path from 'path';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+
+interface PerformanceMemoryDiagnosticInput {
+  file: string;
+  line: number;
+  summary: string;
+  detail: string;
+  predicates: string[];
+}
+
+function diagnosticToken(value: string): string {
+  let token = '';
+  for (const char of value) {
+    const lower = char.toLowerCase();
+    const isAlphaNumeric = (lower >= 'a' && lower <= 'z') || (lower >= '0' && lower <= '9');
+    token += isAlphaNumeric ? lower : '-';
+  }
+  return token.split('-').filter(Boolean).join('-');
+}
+
+function buildPerformanceMemoryBreak(input: PerformanceMemoryDiagnosticInput): Break {
+  const signal: PulseSignalEvidence = {
+    source: `syntax-evidence:performance-memory;predicates=${input.predicates.join(',')}`,
+    detector: 'performance-memory',
+    truthMode: 'confirmed_static',
+    summary: input.summary,
+    detail: input.detail,
+    location: {
+      file: input.file,
+      line: input.line,
+    },
+  };
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const diagnostic = synthesizeDiagnostic(
+    signalGraph,
+    predicateGraph,
+    calculateDynamicRisk({ predicateGraph }),
+  );
+  const predicateToken = input.predicates.map(diagnosticToken).filter(Boolean).join('+');
+
+  return {
+    type: `diagnostic:performance-memory:${predicateToken || diagnostic.id}`,
+    severity: 'high',
+    file: input.file,
+    line: input.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; ${input.detail}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
+    surface: 'performance-memory',
+  };
+}
+
+function appendDiagnostic(breaks: Break[], input: PerformanceMemoryDiagnosticInput): void {
+  breaks.push(buildPerformanceMemoryBreak(input));
+}
 
 function readSafe(file: string): string {
   try {
@@ -148,15 +207,18 @@ export function checkPerformanceMemory(config: PulseConfig): Break[] {
         compactContent.includes(`${name}.set(`) || compactContent.includes(`${name}.add(`);
 
       if (hasSet && !hasDelete) {
-        breaks.push({
-          type: 'MEMORY_LEAK_DETECTED',
-          severity: 'high',
+        appendDiagnostic(breaks, {
           file: relFile,
           line,
-          description: `Module-level ${name} (Map/Set) grows without bound — no .delete() or .clear() found`,
+          summary: `Module-level collection has growth evidence without cleanup evidence`,
           detail:
             `${name} is declared at module level, has .set()/.add() calls, but never .delete() or .clear(). ` +
             "Unbounded module-level collections grow for the lifetime of the process and are never GC'd.",
+          predicates: [
+            'module_level_collection_declaration',
+            'collection_growth_call_observed',
+            'collection_cleanup_call_absent',
+          ],
         });
       }
     }
@@ -171,15 +233,18 @@ export function checkPerformanceMemory(config: PulseConfig): Break[] {
         compactContent.includes(`${name}=[]`);
 
       if (hasPush && !hasDrain) {
-        breaks.push({
-          type: 'MEMORY_LEAK_DETECTED',
-          severity: 'high',
+        appendDiagnostic(breaks, {
           file: relFile,
           line,
-          description: `Module-level array ${name} grows without bound — push() with no drain/reset`,
+          summary: `Module-level array has append evidence without drain evidence`,
           detail:
             `${name} is declared at module level, has .push() calls, but never .splice()/.shift() or length reset. ` +
             'Consider using a circular buffer or capping the array size to prevent heap growth.',
+          predicates: [
+            'module_level_array_declaration',
+            'array_append_call_observed',
+            'array_drain_call_absent',
+          ],
         });
       }
     }
@@ -197,16 +262,19 @@ export function checkPerformanceMemory(config: PulseConfig): Break[] {
         // Look backwards up to 5 lines for a for/while/forEach
         const context = lines.slice(Math.max(0, i - 5), i).join('\n');
         if (/for\s*\(|while\s*\(|forEach\s*\(|\.map\s*\(/.test(context)) {
-          breaks.push({
-            type: 'MEMORY_LEAK_DETECTED',
-            severity: 'high',
+          appendDiagnostic(breaks, {
             file: relFile,
             line: i + 1,
-            description: `Event listener added inside a loop without corresponding removeListener`,
+            summary: `Event listener registration appears inside loop context without cleanup evidence`,
             detail:
               `${trimmed.slice(0, 100)} — ` +
               'Each iteration registers a new listener. Without removeListener/off, ' +
               'the emitter retains all callbacks and they accumulate.',
+            predicates: [
+              'listener_registration_observed',
+              'loop_context_observed',
+              'listener_cleanup_not_observed',
+            ],
           });
         }
       }

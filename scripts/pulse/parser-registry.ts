@@ -392,17 +392,22 @@ function loadParserPluginDefinitions(
   const loadedChecks: ParserDefinitionWithOperationalMetadata[] = [];
   const unavailableChecks: PulseParserInventory['unavailableChecks'] = [];
 
-  for (const pluginDescriptor of discoverPlugins(config.rootDir).filter(
-    (plugin) => plugin.kind === 'parser',
-  )) {
+  for (const pluginDescriptor of discoverPlugins(config.rootDir)) {
     const plugin = loadPlugin(pluginDescriptor.path);
     const file = path.relative(config.rootDir, pluginDescriptor.path);
     if (!plugin) {
-      unavailableChecks.push({
-        name: pluginDescriptor.id,
-        file,
-        reason: 'Parser plugin entrypoint did not load or failed PulsePlugin contract validation.',
-      });
+      if (pluginDescriptor.kind === 'parser') {
+        unavailableChecks.push({
+          name: pluginDescriptor.id,
+          file,
+          reason:
+            'Parser plugin entrypoint did not load or failed PulsePlugin contract validation.',
+        });
+      }
+      continue;
+    }
+
+    if (plugin.kind !== 'parser') {
       continue;
     }
 

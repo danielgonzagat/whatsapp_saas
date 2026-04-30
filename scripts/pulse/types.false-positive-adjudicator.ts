@@ -23,6 +23,7 @@ export interface AdjudicatedFinding {
   proof: string | null;
   expiresOnFileChange: boolean;
   fileHashAtSuppression: string | null;
+  evidenceFingerprintAtSuppression: string | null;
   suppressedAt: string | null;
   lastChecked: string;
 }

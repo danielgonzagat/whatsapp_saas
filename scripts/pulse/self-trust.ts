@@ -316,19 +316,11 @@ export function checkIdempotence(lastOutput: unknown, currentOutput: unknown): S
 export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
   const id = 'break-consistency';
 
-  // Heuristics to detect obvious false positives
-  const suspiciousPatterns = [
-    { pattern: /impossible.*pattern/i, reason: 'Suspiciously impossible-to-match regex' },
-    { pattern: /comment.*line.*\d{10}/, reason: 'Wildly high line numbers' },
-  ];
-
   let suspicionCount = 0;
 
   for (const brk of breaks) {
-    for (const susp of suspiciousPatterns) {
-      if (susp.pattern.test(JSON.stringify(brk))) {
-        suspicionCount++;
-      }
+    if (hasSuspiciousBreakEvidence(brk)) {
+      suspicionCount++;
     }
   }
 
@@ -356,6 +348,32 @@ export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
   };
 }
 
+function hasSuspiciousBreakEvidence(brk: Break): boolean {
+  const serialized = JSON.stringify(brk).toLowerCase();
+  const impossibleIndex = serialized.indexOf('impossible');
+  if (impossibleIndex !== -1 && serialized.indexOf('pattern', impossibleIndex) !== -1) {
+    return true;
+  }
+  const commentIndex = serialized.indexOf('comment');
+  const lineIndex = commentIndex === -1 ? -1 : serialized.indexOf('line', commentIndex);
+  return lineIndex !== -1 && hasLongDigitRun(serialized.slice(lineIndex));
+}
+
+function hasLongDigitRun(value: string): boolean {
+  let runLength = 0;
+  for (const ch of value) {
+    if (ch >= '0' && ch <= '9') {
+      runLength += 1;
+      if (runLength >= 10) {
+        return true;
+      }
+      continue;
+    }
+    runLength = 0;
+  }
+  return false;
+}
+
 function collectParserAuditSources(
   parsersDir: string,
 ): Array<{ filePath: string; source: string }> {
@@ -368,19 +386,25 @@ function collectParserAuditSources(
     .sort()
     .map((entry) => {
       const absolutePath = path.join(parsersDir, entry);
+      const repoRelative = path
+        .relative(repoParserRoot(parsersDir), absolutePath)
+        .split(path.sep)
+        .join('/');
       return {
-        filePath: path.join('scripts/pulse/parsers', entry).replace(/\\/g, '/'),
+        filePath: repoRelative,
         source: readTextFile(absolutePath, 'utf-8'),
       };
     });
 }
 
+function repoParserRoot(parsersDir: string): string {
+  return path.resolve(parsersDir, '..', '..');
+}
+
 function collectParserHardcodedRealityDetails(parsersDir: string): string[] {
   const repoRoot = path.resolve(parsersDir, '..', '..', '..');
   return auditPulseNoHardcodedReality(repoRoot)
-    .findings.filter((finding) =>
-      finding.filePath.replace(/\\/g, '/').includes('scripts/pulse/parsers/'),
-    )
+    .findings.filter((finding) => isParserSourcePath(finding.filePath))
     .filter(
       (finding) =>
         finding.kind === 'hardcoded_break_push_type_risk' ||
@@ -390,6 +414,10 @@ function collectParserHardcodedRealityDetails(parsersDir: string): string[] {
       const samples = finding.samples.length > 0 ? ` ${finding.samples.join(',')}` : '';
       return `${finding.filePath}:${finding.line}:${finding.column} ${finding.kind}${samples}`;
     });
+}
+
+function isParserSourcePath(filePath: string): boolean {
+  return filePath.split('\\').join('/').split('/').includes('parsers');
 }
 
 /**

@@ -5,22 +5,22 @@
  *
  * SAFE CHECKS (no real webhook POSTs to production):
  * 1. HTTP: GET /health/system — verify backend is reachable
- * 2. DB: COUNT WebhookEvent WHERE provider = 'stripe' — verify webhooks are recorded
- * 3. DB: Check for duplicate externalId in WebhookEvent (idempotency violation)
- * 4. DB: Check for WebhookEvent records with status = 'failed' > 10% of total
- * 5. DB: Verify @unique constraint on (provider, externalId) is present in schema
- * 6. Static: Verify webhook controller checks Authorization/access-token header
+ * 2. Schema: discover webhook storage from provider/externalId predicates
+ * 3. DB: verify discovered webhook storage is populated when successful orders exist
+ * 4. DB: check duplicate externalId rows in discovered webhook storage
+ * 5. DB: check status distribution for elevated processing failures
+ * 6. Static/runtime: discover webhook controllers and verify signature rejection
  *
  * DIAGNOSTICS:
- *   Emits predicate-based evidence with source/truth-mode metadata. Regex/list
+ *   Emits predicate-based evidence with source/truth-mode metadata. Static
  *   matches are weak sensors; DB/HTTP probes are runtime-observed evidence.
  */
 
-import { safeJoin } from '../safe-path';
 import * as path from 'path';
+import { readTextFile } from '../safe-fs';
 import type { Break, PulseConfig } from '../types';
-import { pathExists, readTextFile } from '../safe-fs';
-import { httpGet, httpPost, dbQuery, getBackendUrl } from './runtime-utils';
+import { dbQuery, getBackendUrl, httpGet, httpPost } from './runtime-utils';
+import { readFileSafe, walkFiles } from './utils';
 
 type WebhookSimulatorTruthMode = 'weak_signal' | 'confirmed_static' | 'observed';
 
@@ -39,6 +39,31 @@ interface WebhookSimulatorDiagnosticInput {
   detail: string;
   sourceKind: WebhookSimulatorSourceKind;
   truthMode: WebhookSimulatorTruthMode;
+}
+
+interface PrismaModelEvidence {
+  modelName: string;
+  fields: Set<string>;
+  uniqueFieldGroups: string[][];
+}
+
+interface WebhookStorageEvidence {
+  model: PrismaModelEvidence;
+  hasProvider: boolean;
+  hasExternalId: boolean;
+  hasStatus: boolean;
+  hasProviderExternalIdUnique: boolean;
+}
+
+interface OrderStorageEvidence {
+  model: PrismaModelEvidence;
+  hasStatus: boolean;
+}
+
+interface WebhookControllerEvidence {
+  filePath: string;
+  route: string | null;
+  hasSignatureVerification: boolean;
 }
 
 function buildWebhookSimulatorDiagnostic(
@@ -76,6 +101,123 @@ function parseCount(value: unknown): number {
   return 0;
 }
 
+function schemaModels(schemaPath: string): PrismaModelEvidence[] {
+  const schema = readFileSafe(schemaPath);
+  const models: PrismaModelEvidence[] = [];
+  const modelRe = /model\s+([A-Za-z][A-Za-z0-9_]*)\s+\{([\s\S]*?)\n\s*\}/g;
+  let match = modelRe.exec(schema);
+  while (match) {
+    const [, modelName, body] = match;
+    const fields = new Set<string>();
+    const uniqueFieldGroups: string[][] = [];
+
+    for (const rawLine of body.split('\n')) {
+      const line = rawLine.trim();
+      const fieldMatch = /^([A-Za-z][A-Za-z0-9_]*)\s+/.exec(line);
+      if (fieldMatch) {
+        fields.add(fieldMatch[1]);
+      }
+      const uniqueMatch = /@@unique\s*\(\s*\[([^\]]+)\]/.exec(line);
+      if (uniqueMatch) {
+        uniqueFieldGroups.push(
+          uniqueMatch[1]
+            .split(',')
+            .map((part) => part.trim().replace(/^"|"$/g, ''))
+            .filter(Boolean),
+        );
+      }
+    }
+
+    models.push({ modelName, fields, uniqueFieldGroups });
+    match = modelRe.exec(schema);
+  }
+  return models;
+}
+
+function discoverWebhookStorage(config: PulseConfig): WebhookStorageEvidence | null {
+  const candidates = schemaModels(config.schemaPath)
+    .map((model) => ({
+      model,
+      hasProvider: model.fields.has('provider'),
+      hasExternalId: model.fields.has('externalId'),
+      hasStatus: model.fields.has('status'),
+      hasProviderExternalIdUnique: model.uniqueFieldGroups.some(
+        (group) => group.includes('provider') && group.includes('externalId'),
+      ),
+    }))
+    .filter((candidate) => candidate.hasProvider && candidate.hasExternalId);
+  return candidates[0] ?? null;
+}
+
+function discoverOrderStorage(config: PulseConfig): OrderStorageEvidence | null {
+  const candidate = schemaModels(config.schemaPath).find(
+    (model) =>
+      model.fields.has('status') &&
+      [...model.fields].some((field) => /paid|payment|checkout|total|amount/i.test(field)),
+  );
+  return candidate ? { model: candidate, hasStatus: true } : null;
+}
+
+function quoteSqlIdentifier(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`;
+}
+
+function quoteSqlString(value: string): string {
+  return `'${value.replace(/'/g, "''")}'`;
+}
+
+function statusLooksSuccessful(value: unknown): boolean {
+  return /paid|success|complete|captur/i.test(String(value ?? ''));
+}
+
+function statusLooksFailed(value: unknown): boolean {
+  return /fail|error|reject|dead|invalid/i.test(String(value ?? ''));
+}
+
+function joinRouteParts(...parts: string[]): string {
+  return `/${parts
+    .flatMap((part) => part.split('/'))
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join('/')}`;
+}
+
+async function countSuccessfulRows(evidence: OrderStorageEvidence | null): Promise<number> {
+  if (!evidence?.hasStatus) {
+    return 0;
+  }
+  const rows: Array<{ status?: unknown; count?: unknown }> = await dbQuery(
+    `SELECT status, COUNT(*) as count FROM ${quoteSqlIdentifier(evidence.model.modelName)} GROUP BY status`,
+  );
+  return rows.reduce(
+    (total, row) => total + (statusLooksSuccessful(row.status) ? parseCount(row.count) : 0),
+    0,
+  );
+}
+
+function discoverWebhookControllers(config: PulseConfig): WebhookControllerEvidence[] {
+  return walkFiles(config.backendDir, ['.ts'])
+    .map((filePath) => {
+      const content = readTextFile(filePath, 'utf8');
+      const controllerRoute = /@Controller\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/.exec(content)?.[1];
+      const postRoute = /@Post\s*\(\s*['"`]([^'"`]+)['"`]\s*\)/.exec(content)?.[1];
+      const hasWebhookSemantics =
+        /webhook/i.test(path.basename(filePath)) || /webhook/i.test(content);
+      if (!controllerRoute || !hasWebhookSemantics) {
+        return null;
+      }
+      return {
+        filePath,
+        route: postRoute ? joinRouteParts(controllerRoute, postRoute) : null,
+        hasSignatureVerification:
+          /signature/i.test(content) ||
+          /WEBHOOK_SECRET/.test(content) ||
+          /constructEvent/.test(content),
+      };
+    })
+    .filter((item): item is WebhookControllerEvidence => item !== null);
+}
+
 /** Check webhook simulator. */
 export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
@@ -101,205 +243,232 @@ export async function checkWebhookSimulator(config: PulseConfig): Promise<Break[
           truthMode: 'observed',
         }),
       );
-      // If backend is down, HTTP checks won't work — continue with DB checks only
+      // If backend is down, HTTP checks won't work — continue with DB checks only.
     }
   } catch {
-    // Swallow — proceed to DB checks
+    // Swallow — proceed to DB checks.
   }
 
-  // ── Check 2: WebhookEvent count by provider ───────────────────────────────
+  const webhookStorage = discoverWebhookStorage(config);
+  const orderStorage = discoverOrderStorage(config);
+
+  // ── Check 2: Webhook storage and successful-order replay evidence ─────────
   try {
-    const countRows: Array<{ provider?: unknown; count?: unknown }> = await dbQuery(
-      `SELECT provider, COUNT(*) as count FROM "WebhookEvent" GROUP BY provider ORDER BY count DESC`,
-    );
-
-    const stripeRow = countRows.find((row) => row.provider === 'stripe');
-    const stripeCount = parseCount(stripeRow?.count);
-
-    // If there are PAID orders but zero Stripe webhook events, that's broken
-    const paidRows: Array<{ count?: unknown }> = await dbQuery(
-      `SELECT COUNT(*) as count FROM "CheckoutOrder" WHERE status = 'PAID'`,
-    );
-    const paidOrders = parseCount(paidRows[0]?.count);
-
-    if (paidOrders > 0 && stripeCount === 0) {
+    if (!webhookStorage) {
       breaks.push(
         buildWebhookSimulatorDiagnostic({
-          predicateKinds: ['paid_orders_present', 'provider_webhook_events_absent'],
+          predicateKinds: ['webhook_event_storage_not_discovered', 'idempotency_storage_missing'],
           severity: 'critical',
-          file: 'backend/src/webhooks/payment-webhook.controller.ts',
+          file: path.relative(config.rootDir, config.schemaPath),
           line: 1,
-          description: `${paidOrders} PAID orders exist but zero Stripe WebhookEvents recorded — webhook recording not working`,
-          detail: `PAID orders: ${paidOrders}, Stripe WebhookEvents: ${stripeCount}`,
-          sourceKind: 'db-query',
-          truthMode: 'observed',
+          description:
+            'No Prisma model exposes webhook event storage predicates for provider and externalId',
+          detail:
+            'Schema evidence lacks provider/externalId webhook storage required for replay-safe processing',
+          sourceKind: 'static-heuristic',
+          truthMode: 'confirmed_static',
         }),
       );
-    }
-  } catch {
-    // WebhookEvent table may not exist — check if it should
-    try {
-      // Verify if WebhookEvent is in schema (it should be per CLAUDE.md)
-      const tableExists: Array<{ exists?: unknown }> = await dbQuery(
-        `SELECT EXISTS (
-           SELECT FROM information_schema.tables
-           WHERE table_schema = 'public' AND table_name = 'WebhookEvent'
-         ) as exists`,
+    } else if (!webhookStorage.hasProviderExternalIdUnique) {
+      breaks.push(
+        buildWebhookSimulatorDiagnostic({
+          predicateKinds: [
+            'webhook_event_storage_discovered',
+            'idempotency_unique_constraint_absent',
+          ],
+          severity: 'critical',
+          file: path.relative(config.rootDir, config.schemaPath),
+          line: 1,
+          description: 'Webhook event storage lacks a provider/externalId uniqueness constraint',
+          detail: `Model evidence: ${webhookStorage.model.modelName} has provider/externalId but no matching @@unique group`,
+          sourceKind: 'static-heuristic',
+          truthMode: 'confirmed_static',
+        }),
       );
-      if (!tableExists[0]?.exists) {
+    } else {
+      const countRows: Array<{ provider?: unknown; count?: unknown }> = await dbQuery(
+        `SELECT provider, COUNT(*) as count FROM ${quoteSqlIdentifier(
+          webhookStorage.model.modelName,
+        )} GROUP BY provider ORDER BY count DESC`,
+      );
+      const webhookEvents = countRows.reduce((total, row) => total + parseCount(row.count), 0);
+      const successfulOrders = await countSuccessfulRows(orderStorage);
+
+      if (successfulOrders > 0 && webhookEvents === 0) {
         breaks.push(
           buildWebhookSimulatorDiagnostic({
-            predicateKinds: ['webhook_event_table_absent', 'idempotency_storage_missing'],
+            predicateKinds: ['successful_orders_present', 'provider_webhook_events_absent'],
             severity: 'critical',
-            file: 'backend/src/webhooks/payment-webhook.controller.ts',
+            file: path.relative(config.rootDir, config.schemaPath),
             line: 1,
-            description:
-              'WebhookEvent table does not exist in DB — webhook idempotency guard missing',
-            detail: 'Schema migration may not have been applied. Run: npx prisma migrate deploy',
+            description: `${successfulOrders} successful orders exist but zero provider WebhookEvents recorded — webhook recording not working`,
+            detail: `Successful orders: ${successfulOrders}, observed provider WebhookEvents: ${webhookEvents}`,
             sourceKind: 'db-query',
             truthMode: 'observed',
           }),
         );
       }
-    } catch {
-      // DB unavailable — skip
-    }
-  }
-
-  // ── Check 3: Duplicate externalId in WebhookEvent ────────────────────────
-  try {
-    const dupeRows: Array<{ externalId?: unknown; cnt?: unknown }> = await dbQuery(
-      `SELECT "externalId", COUNT(*) as cnt
-       FROM "WebhookEvent"
-       GROUP BY "externalId"
-       HAVING COUNT(*) > 1
-       LIMIT 10`,
-    );
-
-    if (dupeRows.length > 0) {
-      breaks.push(
-        buildWebhookSimulatorDiagnostic({
-          predicateKinds: ['duplicate_external_id_observed', 'idempotency_constraint_not_enforced'],
-          severity: 'critical',
-          file: 'backend/src/webhooks/payment-webhook.controller.ts',
-          line: 1,
-          description: `${dupeRows.length} duplicate externalId entries in WebhookEvent — idempotency @@unique constraint not enforced`,
-          detail: `Sample duplicate externalIds: ${dupeRows
-            .slice(0, 3)
-            .map((row) => String(row.externalId ?? 'unknown'))
-            .join(', ')} (each appears ${dupeRows[0]?.cnt} times)`,
-          sourceKind: 'db-query',
-          truthMode: 'observed',
-        }),
-      );
     }
   } catch {
-    // Table doesn't exist — already caught above
-  }
-
-  // ── Check 4: High failure rate in WebhookEvent ────────────────────────────
-  try {
-    const failRows: Array<{ failed?: unknown; total?: unknown }> = await dbQuery(
-      `SELECT
-         COUNT(*) FILTER (WHERE status = 'failed') as failed,
-         COUNT(*) as total
-       FROM "WebhookEvent"
-       WHERE provider = 'stripe'`,
-    );
-
-    const failed = parseCount(failRows[0]?.failed);
-    const total = parseCount(failRows[0]?.total);
-
-    if (total > 10 && failed / total > 0.1) {
-      breaks.push(
-        buildWebhookSimulatorDiagnostic({
-          predicateKinds: ['provider_failure_rate_high', 'webhook_processing_failures_observed'],
-          severity: 'critical',
-          file: 'backend/src/webhooks/payment-webhook.controller.ts',
-          line: 1,
-          description: `${failed}/${total} Stripe webhooks failed (${((failed / total) * 100).toFixed(1)}%) — webhook processing error rate too high`,
-          detail: `Failed: ${failed}, Total: ${total}`,
-          sourceKind: 'db-query',
-          truthMode: 'observed',
-        }),
-      );
-    }
-  } catch {
-    // status column may not exist — skip
-  }
-
-  // ── Check 5: Static — webhook controller checks Authorization header ───────
-  try {
-    // Check the consolidated Stripe payment webhook controller
-    const webhookControllerPaths = [
-      safeJoin(config.backendDir, 'src/webhooks/payment-webhook.controller.ts'),
-    ];
-
-    for (const wPath of webhookControllerPaths) {
-      if (!pathExists(wPath)) {
-        continue;
+    if (webhookStorage) {
+      try {
+        const tableExists: Array<{ exists?: unknown }> = await dbQuery(
+          `SELECT EXISTS (
+             SELECT FROM information_schema.tables
+             WHERE table_schema = 'public' AND table_name = ${quoteSqlString(
+               webhookStorage.model.modelName,
+             )}
+           ) as exists`,
+        );
+        if (!tableExists[0]?.exists) {
+          breaks.push(
+            buildWebhookSimulatorDiagnostic({
+              predicateKinds: ['webhook_event_table_absent', 'idempotency_storage_missing'],
+              severity: 'critical',
+              file: path.relative(config.rootDir, config.schemaPath),
+              line: 1,
+              description:
+                'Discovered webhook event model is absent in DB — webhook idempotency guard missing',
+              detail: `Schema model not present as a deployed table: ${webhookStorage.model.modelName}`,
+              sourceKind: 'db-query',
+              truthMode: 'observed',
+            }),
+          );
+        }
+      } catch {
+        // DB unavailable — skip.
       }
-      const content = readTextFile(wPath, 'utf8');
+    }
+  }
 
-      const hasTokenCheck =
-        content.includes('stripe-signature') ||
-        content.includes('STRIPE_WEBHOOK_SECRET') ||
-        content.includes('constructEvent');
+  // ── Check 3: Duplicate externalId in discovered webhook storage ───────────
+  try {
+    if (webhookStorage) {
+      const dupeRows: Array<{ externalId?: unknown; cnt?: unknown }> = await dbQuery(
+        `SELECT "externalId", COUNT(*) as cnt
+         FROM ${quoteSqlIdentifier(webhookStorage.model.modelName)}
+         GROUP BY "externalId"
+         HAVING COUNT(*) > 1
+         LIMIT 10`,
+      );
 
-      if (!hasTokenCheck) {
+      if (dupeRows.length > 0) {
         breaks.push(
           buildWebhookSimulatorDiagnostic({
-            predicateKinds: ['signature_verification_not_detected', 'static_controller_scan'],
+            predicateKinds: [
+              'duplicate_external_id_observed',
+              'idempotency_constraint_not_enforced',
+            ],
             severity: 'critical',
-            file: path.relative(process.cwd(), wPath),
+            file: path.relative(config.rootDir, config.schemaPath),
             line: 1,
-            description:
-              'Webhook controller does not verify Stripe signature — unauthenticated webhooks accepted',
-            detail: `File: ${wPath} has no token verification code`,
-            sourceKind: 'static-heuristic',
-            truthMode: 'weak_signal',
+            description: `${dupeRows.length} duplicate externalId entries in discovered webhook storage — idempotency @@unique constraint not enforced`,
+            detail: `Sample duplicate externalIds: ${dupeRows
+              .slice(0, 3)
+              .map((row) => String(row.externalId ?? 'unknown'))
+              .join(', ')} (each appears ${dupeRows[0]?.cnt} times)`,
+            sourceKind: 'db-query',
+            truthMode: 'observed',
           }),
         );
       }
     }
   } catch {
-    // Static check failed — non-critical
+    // Table doesn't exist — already caught above.
   }
 
-  // ── Check 6: Verify webhook endpoint rejects unauthenticated requests ─────
-  // POST with no token should return 403, not 200 or 500
-  // We only try this if backend is reachable (non-destructive: no real payload)
+  // ── Check 4: High failure rate in discovered webhook storage ──────────────
   try {
+    if (webhookStorage?.hasStatus) {
+      const statusRows: Array<{ status?: unknown; count?: unknown }> = await dbQuery(
+        `SELECT status, COUNT(*) as count FROM ${quoteSqlIdentifier(
+          webhookStorage.model.modelName,
+        )} GROUP BY status`,
+      );
+      const total = statusRows.reduce((sum, row) => sum + parseCount(row.count), 0);
+      const failed = statusRows.reduce(
+        (sum, row) => sum + (statusLooksFailed(row.status) ? parseCount(row.count) : 0),
+        0,
+      );
+
+      if (total > 10 && failed / total > 0.1) {
+        breaks.push(
+          buildWebhookSimulatorDiagnostic({
+            predicateKinds: ['provider_failure_rate_high', 'webhook_processing_failures_observed'],
+            severity: 'critical',
+            file: path.relative(config.rootDir, config.schemaPath),
+            line: 1,
+            description: `${failed}/${total} discovered provider webhooks failed (${(
+              (failed / total) *
+              100
+            ).toFixed(1)}%) — webhook processing error rate too high`,
+            detail: `Failed: ${failed}, Total: ${total}`,
+            sourceKind: 'db-query',
+            truthMode: 'observed',
+          }),
+        );
+      }
+    }
+  } catch {
+    // status column may not exist — skip.
+  }
+
+  // ── Check 5: Static — discovered webhook controller checks request signature
+  const controllers = discoverWebhookControllers(config);
+  for (const controller of controllers) {
+    if (!controller.hasSignatureVerification) {
+      breaks.push(
+        buildWebhookSimulatorDiagnostic({
+          predicateKinds: ['signature_verification_not_detected', 'static_controller_scan'],
+          severity: 'critical',
+          file: path.relative(config.rootDir, controller.filePath),
+          line: 1,
+          description:
+            'Discovered webhook controller does not verify request signature — unauthenticated webhooks may be accepted',
+          detail: `File: ${controller.filePath} has no signature verification code`,
+          sourceKind: 'static-heuristic',
+          truthMode: 'weak_signal',
+        }),
+      );
+    }
+  }
+
+  // ── Check 6: Verify discovered webhook endpoint rejects unauthenticated requests
+  try {
+    const replayTarget = controllers.find((controller) => controller.route !== null);
+    if (!replayTarget?.route) {
+      return breaks;
+    }
     const noAuthRes = await httpPost(
-      '/webhook/payment/stripe',
+      replayTarget.route,
       {
-        id: 'evt_pulse_probe',
-        type: 'payment_intent.succeeded',
-        data: { object: { id: 'pi_pulse_probe' } },
+        id: 'pulse_probe',
+        type: 'pulse.probe',
+        data: { object: { id: 'pulse_probe_object' } },
       },
       { timeout: 5000 },
-      // No JWT, no stripe-signature header
+      // No JWT and no provider signature header.
     );
 
-    // If 200 or 201 — webhook accepted without auth (critical)
+    // If 200 or 201 — webhook accepted without auth (critical).
     if (noAuthRes.status === 200 || noAuthRes.status === 201) {
       breaks.push(
         buildWebhookSimulatorDiagnostic({
           predicateKinds: ['unauthenticated_webhook_accepted', 'signature_probe_failed_closed'],
           severity: 'critical',
-          file: 'backend/src/webhooks/payment-webhook.controller.ts',
+          file: path.relative(config.rootDir, replayTarget.filePath),
           line: 1,
           description:
-            'POST /webhook/payment/stripe accepted without stripe-signature header — authentication bypass',
+            'Discovered webhook endpoint accepted a request without signature evidence — authentication bypass',
           detail: `Unauthenticated probe returned ${noAuthRes.status}. Expected 403.`,
           sourceKind: 'runtime-replay',
           truthMode: 'observed',
         }),
       );
     }
-    // 403, 401, 400, 404, 500 are all acceptable (endpoint rejects or doesn't exist)
+    // 403, 401, 400, 404, 500 are all acceptable (endpoint rejects or doesn't exist).
   } catch {
-    // Network failure — skip this check
+    // Network failure — skip this check.
   }
 
   return breaks;

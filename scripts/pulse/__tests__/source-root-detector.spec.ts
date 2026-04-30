@@ -80,6 +80,10 @@ describe('PULSE source root detector', () => {
       ]),
     );
     expect(rootsByPath.get('apps/panel/src')?.kind).toBe('frontend');
+    expect(rootsByPath.get('apps/panel/src')?.languages).toEqual(['typescript']);
+    expect(rootsByPath.get('apps/panel/src')?.frameworks).toEqual(
+      expect.arrayContaining(['nextjs', 'react']),
+    );
     expect(rootsByPath.get('services/api/server')?.evidenceBasis).toEqual(
       expect.arrayContaining(['jsconfig', 'build-config']),
     );
@@ -103,6 +107,37 @@ describe('PULSE source root detector', () => {
     expect(config.workerDir).toBe(path.join(rootDir, 'jobs/job-runner'));
     expect(config.schemaPath).toBe(path.join(rootDir, 'db/schema.prisma'));
     expect(config.globalPrefix).toBe('v1');
+  });
+
+  it('discovers non-conventional package source roots from real entrypoints', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-source-entrypoints-'));
+    const serviceDir = path.join(rootDir, 'service');
+    fs.mkdirSync(serviceDir, { recursive: true });
+
+    writeJson(path.join(rootDir, 'package.json'), {
+      dependencies: { '@nestjs/common': '1.0.0' },
+      scripts: {
+        start: 'tsx service/main.ts',
+      },
+    });
+    fs.writeFileSync(
+      path.join(serviceDir, 'main.ts'),
+      'import { Module } from "@nestjs/common"; @Module({}) export class AppModule {}',
+    );
+
+    const roots = detectSourceRoots(rootDir);
+    const entrypointRoot = roots.find((root) => root.relativePath === 'service');
+
+    expect(entrypointRoot).toEqual(
+      expect.objectContaining({
+        kind: 'backend',
+        evidenceBasis: expect.arrayContaining(['package-manifest', 'import-graph']),
+        languages: ['typescript'],
+        frameworks: expect.arrayContaining(['nestjs']),
+        entrypoints: ['service/main.ts'],
+        weakCandidate: false,
+      }),
+    );
   });
 
   it('keeps conventional fallback as weak evidence when no manifest or file signal exists', () => {

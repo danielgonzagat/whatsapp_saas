@@ -1,21 +1,8 @@
 import * as path from 'path';
+import ts from 'typescript';
 import type { ServiceTrace, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
-
-// Matches ALL Prisma access patterns:
-// 1. this.prisma.modelName.operation()
-// 2. this.prismaAny.modelName.operation()
-// 3. (this.prisma as any).modelName.operation()
-// 4. prismaAny.modelName.operation() (local alias)
-// 5. tx.modelName.operation() (inside $transaction callbacks)
-// 6. prisma.modelName.operation() (parameter in functions)
-const PRISMA_ACCESS_PATTERNS = [
-  /this\.(?:prisma|prismaAny)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
-  /\(this\.prisma\s+as\s+[a][n][y]\)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
-  /(?:prismaAny|prismaExt|prisma)\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
-  /\btx\.([a-z]\w+)\.\s*(?:create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany)\s*\(/g,
-];
 
 const NON_METHOD_NAMES = new Set([
   'constructor',
@@ -103,14 +90,164 @@ function countParenDelta(value: string): number {
   return delta;
 }
 
+function identifierTokens(value: string): Set<string> {
+  return new Set(
+    value
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/[^A-Za-z0-9]+/g, ' ')
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean),
+  );
+}
+
+function hasIdentifierToken(value: string, token: string): boolean {
+  return identifierTokens(value).has(token);
+}
+
+function unwrapExpression(expression: ts.Expression): ts.Expression {
+  let current = expression;
+  while (
+    ts.isParenthesizedExpression(current) ||
+    ts.isAsExpression(current) ||
+    ts.isTypeAssertionExpression(current) ||
+    ts.isNonNullExpression(current)
+  ) {
+    current = current.expression;
+  }
+  return current;
+}
+
+function expressionParts(expression: ts.Expression): string[] {
+  const current = unwrapExpression(expression);
+  if (ts.isIdentifier(current)) {
+    return [current.text];
+  }
+  if (current.kind === ts.SyntaxKind.ThisKeyword) {
+    return ['this'];
+  }
+  if (ts.isPropertyAccessExpression(current)) {
+    return [...expressionParts(current.expression), current.name.text];
+  }
+  if (ts.isElementAccessExpression(current) && ts.isStringLiteralLike(current.argumentExpression)) {
+    return [...expressionParts(current.expression), current.argumentExpression.text];
+  }
+  return [];
+}
+
+function collectPrismaReceiverNames(sourceFile: ts.SourceFile): Set<string> {
+  const receivers = new Set<string>();
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isIdentifier(node) && hasIdentifierToken(node.text, 'prisma')) {
+      receivers.add(node.text);
+    }
+
+    if (ts.isCallExpression(node)) {
+      const expression = unwrapExpression(node.expression);
+      if (ts.isPropertyAccessExpression(expression)) {
+        const callParts = expressionParts(expression);
+        const callsTransaction = callParts.some((part) => hasIdentifierToken(part, 'transaction'));
+        const usesPrismaReceiver = callParts.some((part) => hasIdentifierToken(part, 'prisma'));
+        if (callsTransaction && usesPrismaReceiver) {
+          for (const argument of node.arguments) {
+            if (ts.isArrowFunction(argument) || ts.isFunctionExpression(argument)) {
+              for (const parameter of argument.parameters) {
+                if (ts.isIdentifier(parameter.name)) {
+                  receivers.add(parameter.name.text);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return receivers;
+}
+
+function modelFromCallParts(parts: string[], prismaReceivers: Set<string>): string | null {
+  for (let index = 0; index < parts.length; index++) {
+    const part = parts[index];
+    const isPrismaToken = hasIdentifierToken(part, 'prisma');
+    const isKnownReceiver = prismaReceivers.has(part);
+    const modelIndex = index + 1;
+    const operationIndex = index + 2;
+    if ((isPrismaToken || isKnownReceiver) && operationIndex < parts.length) {
+      const modelName = parts[modelIndex];
+      if (modelName && !modelName.startsWith('$')) {
+        return modelName;
+      }
+    }
+  }
+  return null;
+}
+
+function sourceFilesForTraceText(fileName: string, text: string): ts.SourceFile[] {
+  return [
+    ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true),
+    ts.createSourceFile(
+      fileName,
+      `class ServiceTraceSlice {\n${text}\n}`,
+      ts.ScriptTarget.Latest,
+      true,
+    ),
+  ];
+}
+
 function collectPrismaModelsFromText(text: string): Set<string> {
   const models = new Set<string>();
-  for (const pattern of PRISMA_ACCESS_PATTERNS) {
-    pattern.lastIndex = 0;
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(text)) !== null) {
-      models.add(match[1]);
-    }
+
+  for (const sourceFile of sourceFilesForTraceText('service-trace-slice.ts', text)) {
+    const prismaReceivers = collectPrismaReceiverNames(sourceFile);
+
+    const visit = (node: ts.Node): void => {
+      if (ts.isCallExpression(node)) {
+        const parts = expressionParts(node.expression);
+        const modelName = modelFromCallParts(parts, prismaReceivers);
+        if (modelName) {
+          models.add(modelName);
+        }
+      }
+
+      ts.forEachChild(node, visit);
+    };
+
+    visit(sourceFile);
+  }
+  return models;
+}
+
+function collectHelperModelsFromText(
+  text: string,
+  helperModelMap: Map<string, string[]>,
+): Set<string> {
+  const models = new Set<string>();
+
+  for (const sourceFile of sourceFilesForTraceText('service-helper-slice.ts', text)) {
+    const visit = (node: ts.Node): void => {
+      if (ts.isCallExpression(node)) {
+        const expression = unwrapExpression(node.expression);
+        if (ts.isIdentifier(expression)) {
+          const hasPrismaArgument = node.arguments.some((argument) =>
+            expressionParts(argument).some((part) => hasIdentifierToken(part, 'prisma')),
+          );
+          if (hasPrismaArgument) {
+            for (const modelName of helperModelMap.get(expression.text) || []) {
+              models.add(modelName);
+            }
+          }
+        }
+      }
+
+      ts.forEachChild(node, visit);
+    };
+
+    visit(sourceFile);
   }
   return models;
 }
@@ -293,6 +430,7 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
       let pendingMethod: { name: string; line: number; parenDepth: number } | null = null;
       const currentModels = new Set<string>();
       const currentServiceCalls = new Set<string>();
+      const currentMethodLines: string[] = [];
       let pendingDecorators: string[] = [];
       let currentTriggers: string[] = [];
 
@@ -330,11 +468,14 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
           pendingMethod = null;
           currentModels.clear();
           currentServiceCalls.clear();
+          currentMethodLines.length = 0;
           currentTriggers = collectTriggersFromDecorators(pendingDecorators, currentMethod);
           pendingDecorators = [];
         }
 
         if (inMethod) {
+          currentMethodLines.push(line);
+
           // Track braces
           const braceScanText =
             i === methodBodyStartLine ? line.slice(methodBodyStartColumn) : line;
@@ -347,27 +488,20 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
             }
           }
 
-          // Find prisma model accesses using ALL patterns
-          for (const modelName of collectPrismaModelsFromText(line)) {
-            currentModels.add(modelName);
-          }
-
           for (const serviceCall of collectServiceCallsFromText(line, serviceAliases, className)) {
             currentServiceCalls.add(serviceCall);
           }
 
-          const helperCallRe =
-            /\b([A-Za-z_]\w*)\s*\(\s*(?:this\.)?(?:prisma|prismaAny|prismaExt)\b/g;
-          let helperCallMatch: RegExpExecArray | null;
-          while ((helperCallMatch = helperCallRe.exec(line)) !== null) {
-            const helperModels = helperModelMap.get(helperCallMatch[1]) || [];
-            for (const modelName of helperModels) {
-              currentModels.add(modelName);
-            }
-          }
-
           // Method ended
           if (braceDepth === 0 && currentMethod) {
+            const methodText = currentMethodLines.join('\n');
+            for (const modelName of collectPrismaModelsFromText(methodText)) {
+              currentModels.add(modelName);
+            }
+            for (const modelName of collectHelperModelsFromText(methodText, helperModelMap)) {
+              currentModels.add(modelName);
+            }
+
             if (currentModels.size > 0 || currentServiceCalls.size > 0) {
               traces.push({
                 file: relFile,

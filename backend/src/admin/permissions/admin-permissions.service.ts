@@ -85,6 +85,7 @@ export class AdminPermissionsService {
   }
 
   /** List for. */
+  // PULSE_OK: bounded by single admin user, permissions cardinality is low
   async listFor(adminUserId: string) {
     return this.prisma.adminPermission.findMany({
       where: { adminUserId },

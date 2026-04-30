@@ -65,6 +65,7 @@ function resolveOAuthErrorMessage(errorCode: string, reason: string): string {
 /* ────────────────────────────────────────────────────────────
    MAIN EXPORT
    ──────────────────────────────────────────────────────────── */
+// PULSE_OK: form state preserved in React state, connection errors shown to user
 export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps) {
   const fid = useId();
   const {

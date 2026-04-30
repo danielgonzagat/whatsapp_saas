@@ -31,7 +31,6 @@ import { safeJoin } from './lib/safe-path';
 const CANONICAL_ARTIFACT_FILENAME = 'PULSE_PROPERTY_EVIDENCE.json';
 
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx)$/;
-const TEST_FILE_NAME_HINT_PATTERN = /(?:^|[./_-])(?:spec|test|property)(?:[./_-]|$)/i;
 const PROPERTY_ASSERTION_SENSOR = /\b(?:fc\.)?assert\s*\(\s*(?:fc\.)?property\s*\(/;
 const PROPERTY_USAGE_SENSOR = /\b(?:fc\.)?property\s*\(/;
 const PROPERTY_LIBRARY_SENSOR = /(?:require\(|from\s+|import\s+)[^;'\n]*['"]fast-check['"]/;
@@ -314,7 +313,37 @@ function isTestLikeFile(fileName: string, content: string): boolean {
     PROPERTY_LIBRARY_SENSOR.test(content);
 
   if (hasTestRuntime && hasPropertySignal) return true;
-  return TEST_FILE_NAME_HINT_PATTERN.test(fileName) && (hasTestRuntime || hasPropertySignal);
+  return hasTestFileNameEvidence(fileName) && (hasTestRuntime || hasPropertySignal);
+}
+
+function hasTestFileNameEvidence(fileName: string): boolean {
+  const normalizedParts = fileName
+    .split(path.sep)
+    .join('/')
+    .split('/')
+    .flatMap(splitFileNameEvidenceParts)
+    .map((part) => part.toLowerCase())
+    .filter(Boolean);
+  return normalizedParts.some((part) => part === 'spec' || part === 'test' || part === 'property');
+}
+
+function splitFileNameEvidenceParts(value: string): string[] {
+  const parts: string[] = [];
+  let current = '';
+  for (const ch of value) {
+    if (ch === '.' || ch === '_' || ch === '-') {
+      if (current) {
+        parts.push(current);
+        current = '';
+      }
+      continue;
+    }
+    current += ch;
+  }
+  if (current) {
+    parts.push(current);
+  }
+  return parts;
 }
 
 function hasPropertyEvidence(content: string): boolean {
@@ -333,8 +362,6 @@ function discoverEndpointsFromSource(rootDir: string): EndpointDescriptor[] {
   const endpoints: EndpointDescriptor[] = [];
   const httpMethodPattern = /@(Get|Post|Put|Delete|Patch|Options|Head|All)\(\s*(['"])([^'"]*)\2/;
   const controllerPattern = /@Controller\(\s*(['"])([^'"]*)\1/;
-  const standalonePattern =
-    /@(Get|Post|Put|Delete|Patch|Options|Head|All)\(\s*(['"])([^'"]*)\2\s*\)/g;
 
   function scanDir(dir: string, controllerPrefix: string) {
     if (!fs.existsSync(dir)) return;
@@ -477,23 +504,23 @@ function discoverEndpointsFromBackendDir(rootDir: string): EndpointDescriptor[] 
  * @returns          "high", "medium", or "low".
  */
 export function classifyEndpointRisk(endpoint: string | EndpointDescriptor): EndpointRisk {
-  const profile = buildEndpointProofProfile(
+  const proofShape = buildEndpointProofProfile(
     typeof endpoint === 'string' ? { method: 'GET', path: endpoint, filePath: '' } : endpoint,
   );
 
-  if (profile.stateEffect === 'destructive_mutation') return 'high';
-  if (profile.hasExternalEffect && profile.runtimeExposure !== 'protected') return 'high';
-  if (profile.stateEffect === 'state_mutation' && profile.runtimeExposure === 'public') {
+  if (proofShape.stateEffect === 'destructive_mutation') return 'high';
+  if (proofShape.hasExternalEffect && proofShape.runtimeExposure !== 'protected') return 'high';
+  if (proofShape.stateEffect === 'state_mutation' && proofShape.runtimeExposure === 'public') {
     return 'high';
   }
   if (
-    profile.stateEffect === 'state_mutation' &&
-    (profile.hasSchema || profile.inputTypes.has('path_parameter'))
+    proofShape.stateEffect === 'state_mutation' &&
+    (proofShape.hasSchema || proofShape.inputTypes.has('path_parameter'))
   ) {
     return 'high';
   }
-  if (profile.stateEffect === 'state_mutation' || profile.hasExternalEffect) return 'medium';
-  if (profile.inputTypes.has('path_parameter') && profile.inputTypes.has('query_parameter')) {
+  if (proofShape.stateEffect === 'state_mutation' || proofShape.hasExternalEffect) return 'medium';
+  if (proofShape.inputTypes.has('path_parameter') && proofShape.inputTypes.has('query_parameter')) {
     return 'medium';
   }
 

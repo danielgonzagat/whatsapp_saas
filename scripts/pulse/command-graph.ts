@@ -75,12 +75,6 @@ const PACKAGE_DIR_ALLOWLIST = new Set([
   'e2e',
 ]);
 
-const ENV_TOKEN_PATTERN = /\b[A-Z][A-Z0-9_]{2,}\b/g;
-const PROCESS_ENV_PATTERN = /process[.]env[.]([A-Z][A-Z0-9_]{2,})/g;
-const TEMPLATE_ENV_PATTERN = /[$][{][{]\s*(?:secrets|vars|env)[.]([A-Z][A-Z0-9_]{2,})\s*[}][}]/g;
-const SHELL_ENV_PATTERN = /[$][{]([A-Z][A-Z0-9_]{2,})(?::[-?][^}]*)?[}]|[$]([A-Z][A-Z0-9_]{2,})\b/g;
-const SECRET_NAME_PATTERN = /(SECRET|TOKEN|PASSWORD|PRIVATE|API_KEY|ACCESS_KEY|WEBHOOK)/;
-
 function normalizeRepoPath(filePath: string): string {
   return filePath.replace(/\\/g, '/').replace(/^\.\//, '');
 }
@@ -396,6 +390,105 @@ function workflowCommands(sourcePath: string, text: string): PulseDiscoveredComm
   });
 }
 
+function isEnvNameChar(char: string | undefined): boolean {
+  if (!char) {
+    return false;
+  }
+  return (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') || char === '_';
+}
+
+function isLikelyEnvName(value: string): boolean {
+  if (value.length < 3) {
+    return false;
+  }
+  if (value[0] < 'A' || value[0] > 'Z') {
+    return false;
+  }
+  return [...value].every(isEnvNameChar);
+}
+
+function readEnvNameAt(text: string, start: number): string {
+  let cursor = start;
+  let name = '';
+  while (cursor < text.length && isEnvNameChar(text[cursor])) {
+    name += text[cursor];
+    cursor += 1;
+  }
+  return isLikelyEnvName(name) ? name : '';
+}
+
+function collectNamesAfterMarkers(text: string, markers: string[]): string[] {
+  const names: string[] = [];
+  for (const marker of markers) {
+    let cursor = text.indexOf(marker);
+    while (cursor !== -1) {
+      const name = readEnvNameAt(text, cursor + marker.length);
+      if (name) {
+        names.push(name);
+      }
+      cursor = text.indexOf(marker, cursor + marker.length);
+    }
+  }
+  return names;
+}
+
+function collectShellNames(text: string): string[] {
+  const names: string[] = [];
+  for (let index = 0; index < text.length; index += 1) {
+    if (text[index] !== '$') {
+      continue;
+    }
+    if (text[index + 1] === '{') {
+      const name = readEnvNameAt(text, index + 2);
+      if (name) {
+        names.push(name);
+      }
+      continue;
+    }
+    const name = readEnvNameAt(text, index + 1);
+    if (name) {
+      names.push(name);
+    }
+  }
+  return names;
+}
+
+function collectUppercaseNames(text: string): string[] {
+  const names: string[] = [];
+  let cursor = 0;
+  while (cursor < text.length) {
+    if (!isEnvNameChar(text[cursor])) {
+      cursor += 1;
+      continue;
+    }
+    const start = cursor;
+    let name = '';
+    while (cursor < text.length && isEnvNameChar(text[cursor])) {
+      name += text[cursor];
+      cursor += 1;
+    }
+    const before = text[start - 1];
+    const after = text[cursor];
+    if (!isEnvNameChar(before) && !isEnvNameChar(after) && isLikelyEnvName(name)) {
+      names.push(name);
+    }
+  }
+  return names;
+}
+
+function isSecretLikeName(name: string): boolean {
+  const tokens = new Set(name.toLowerCase().split('_').filter(Boolean));
+  return (
+    tokens.has('secret') ||
+    tokens.has('token') ||
+    tokens.has('password') ||
+    tokens.has('private') ||
+    (tokens.has('api') && tokens.has('key')) ||
+    (tokens.has('access') && tokens.has('key')) ||
+    tokens.has('webhook')
+  );
+}
+
 function collectEnvNames(text: string): Map<string, string[]> {
   const names = new Map<string, string[]>();
   const add = (name: string, context: string): void => {
@@ -404,33 +497,35 @@ function collectEnvNames(text: string): Map<string, string[]> {
     names.set(name, current);
   };
 
-  for (const match of text.matchAll(PROCESS_ENV_PATTERN)) {
-    add(match[1], 'process.env');
+  for (const name of collectNamesAfterMarkers(text, ['process.env.'])) {
+    add(name, 'process.env');
   }
-  for (const match of text.matchAll(TEMPLATE_ENV_PATTERN)) {
-    add(match[1], 'github-template');
+  for (const name of collectNamesAfterMarkers(text, ['secrets.', 'vars.', 'env.'])) {
+    add(name, 'github-template');
   }
-  for (const match of text.matchAll(SHELL_ENV_PATTERN)) {
-    const name = match[1] ?? match[2];
-    if (name) {
-      add(name, 'shell');
-    }
+  for (const name of collectShellNames(text)) {
+    add(name, 'shell');
   }
   for (const line of text.split(/\r?\n/)) {
     const trimmed = line.trim();
-    const dockerArg = /^ARG\s+([A-Z][A-Z0-9_]{2,})(?:=(.*))?$/i.exec(trimmed);
-    if (dockerArg) {
-      add(dockerArg[1], dockerArg[2] === undefined ? 'docker-arg-required' : 'docker-arg-default');
-    }
-    const dockerEnv = /^ENV\s+(.+)$/i.exec(trimmed);
-    if (dockerEnv) {
-      for (const token of dockerEnv[1].matchAll(ENV_TOKEN_PATTERN)) {
-        add(token[0], 'docker-env');
+    const upperTrimmed = trimmed.toUpperCase();
+    if (upperTrimmed.startsWith('ARG ')) {
+      const declaration = trimmed.slice(4).trim();
+      const [name, defaultValue] = declaration.split('=', 2);
+      if (isLikelyEnvName(name)) {
+        add(name, defaultValue === undefined ? 'docker-arg-required' : 'docker-arg-default');
       }
     }
-    const workflowEnv = /^\s*([A-Z][A-Z0-9_]{2,}):\s*(.*)$/.exec(line);
-    if (workflowEnv && !trimmed.startsWith('- ')) {
-      add(workflowEnv[1], 'workflow-env');
+    if (upperTrimmed.startsWith('ENV ')) {
+      for (const name of collectUppercaseNames(trimmed.slice(4))) {
+        add(name, 'docker-env');
+      }
+    }
+    if (!trimmed.startsWith('- ') && trimmed.includes(':')) {
+      const [candidate] = trimmed.split(':', 1);
+      if (isLikelyEnvName(candidate.trim())) {
+        add(candidate.trim(), 'workflow-env');
+      }
     }
   }
   return names;
@@ -447,7 +542,7 @@ function environmentVariablesForSource(
       sourceKind: source.sourceKind,
       contexts: [...new Set(contexts)].sort(),
       required: contexts.includes('docker-arg-required') || contexts.includes('github-template'),
-      secretLike: SECRET_NAME_PATTERN.test(name),
+      secretLike: isSecretLikeName(name),
     }))
     .sort((left, right) => left.name.localeCompare(right.name));
 }

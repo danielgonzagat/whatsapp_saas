@@ -21,6 +21,7 @@
  *   matches are weak sensors, not authority by themselves.
  */
 import * as path from 'path';
+import ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
@@ -62,16 +63,256 @@ function buildCacheInvalidationDiagnostic(
   };
 }
 
-const WRITE_METHOD_RE = /\bpost\b|\bput\b|\bpatch\b|\bdelete\b/i;
-const SWR_MUTATE_RE = /\bmutate\s*\(|\brevalidate\s*\(|\buseSWRConfig|mutate\s*\(/;
-const REDIS_WRITE_RE =
-  /\b(?:this\.)?redis\.(?:set|hset|zadd)\b|\b(?:this\.)?cache\.(?:set|setEx)\b|\.setEx\s*\(/i;
-const REDIS_DEL_RE = /redis\.del|redis\.hdel|redis\.expire|cache\.invalidate/i;
-const MONEY_STATE_RE =
-  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
+function sourceFileFor(file: string, content: string): ts.SourceFile {
+  return ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+}
 
-function hasMoneyLikeState(content: string): boolean {
-  return MONEY_STATE_RE.test(content);
+function propertyAccessText(node: ts.Expression): string | null {
+  if (ts.isIdentifier(node)) {
+    return node.text;
+  }
+  if (ts.isPropertyAccessExpression(node)) {
+    const parent = propertyAccessText(node.expression);
+    return parent ? `${parent}.${node.name.text}` : node.name.text;
+  }
+  if (node.kind === ts.SyntaxKind.ThisKeyword) {
+    return 'this';
+  }
+  return null;
+}
+
+function identifierTokens(value: string): string[] {
+  const spaced = value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .toLowerCase();
+  return spaced.split(/\s+/).filter(Boolean);
+}
+
+function hasIdentifierToken(value: string, token: string): boolean {
+  return identifierTokens(value).includes(token);
+}
+
+function nodeContainsText(node: ts.Node, expected: string): boolean {
+  let found = false;
+  const visit = (child: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (
+      ts.isIdentifier(child) ||
+      ts.isStringLiteral(child) ||
+      ts.isNoSubstitutionTemplateLiteral(child)
+    ) {
+      found = child.text.toLowerCase().includes(expected);
+      return;
+    }
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return found;
+}
+
+function isWriteHttpMethod(value: string): boolean {
+  const normalized = value.toLowerCase();
+  return (
+    normalized === 'post' ||
+    normalized === 'put' ||
+    normalized === 'patch' ||
+    normalized === 'delete'
+  );
+}
+
+function hasWriteMethodEvidence(sourceFile: ts.SourceFile): boolean {
+  let found = false;
+  const visit = (node: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (ts.isPropertyAssignment(node)) {
+      const name = node.name.getText(sourceFile).replace(/['"]/g, '');
+      if (name === 'method') {
+        const initializer = node.initializer;
+        if (
+          (ts.isStringLiteral(initializer) || ts.isNoSubstitutionTemplateLiteral(initializer)) &&
+          isWriteHttpMethod(initializer.text)
+        ) {
+          found = true;
+          return;
+        }
+      }
+    }
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      isWriteHttpMethod(node.expression.name.text)
+    ) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return found;
+}
+
+function hasSWRSurfaceEvidence(sourceFile: ts.SourceFile): boolean {
+  return (
+    nodeContainsText(sourceFile, 'useSWR') ||
+    nodeContainsText(sourceFile, 'useSWRConfig') ||
+    nodeContainsText(sourceFile, 'mutate')
+  );
+}
+
+function hasCacheRefreshEvidence(sourceFile: ts.SourceFile): boolean {
+  return (
+    nodeContainsText(sourceFile, 'mutate') ||
+    nodeContainsText(sourceFile, 'revalidate') ||
+    nodeContainsText(sourceFile, 'useSWRConfig')
+  );
+}
+
+function hasNavigationRefreshEvidence(sourceFile: ts.SourceFile): boolean {
+  return (
+    nodeContainsText(sourceFile, 'refresh') ||
+    nodeContainsText(sourceFile, 'reload') ||
+    nodeContainsText(sourceFile, 'push')
+  );
+}
+
+function hasStatefulMutationPayload(sourceFile: ts.SourceFile): boolean {
+  let found = false;
+  const visit = (node: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (ts.isPropertyAssignment(node)) {
+      const name = node.name.getText(sourceFile).replace(/['"]/g, '');
+      if (name === 'body' || name === 'data' || name === 'payload') {
+        found = true;
+        return;
+      }
+    }
+    if (ts.isCallExpression(node) && nodeContainsText(node.expression, 'json')) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return found;
+}
+
+function isRedisWriteCall(node: ts.CallExpression): boolean {
+  if (!ts.isPropertyAccessExpression(node.expression)) {
+    return false;
+  }
+  const targetText = propertyAccessText(node.expression.expression);
+  const methodName = node.expression.name.text;
+  if (!targetText) {
+    return false;
+  }
+  const targetIsCache =
+    hasIdentifierToken(targetText, 'redis') || hasIdentifierToken(targetText, 'cache');
+  const methodWritesCache =
+    methodName === 'set' ||
+    methodName === 'hset' ||
+    methodName === 'zadd' ||
+    methodName === 'setEx';
+  return targetIsCache && methodWritesCache;
+}
+
+function isRedisInvalidationCall(node: ts.CallExpression): boolean {
+  if (!ts.isPropertyAccessExpression(node.expression)) {
+    return false;
+  }
+  const targetText = propertyAccessText(node.expression.expression);
+  const methodName = node.expression.name.text;
+  if (!targetText) {
+    return false;
+  }
+  const targetIsCache =
+    hasIdentifierToken(targetText, 'redis') || hasIdentifierToken(targetText, 'cache');
+  const methodInvalidatesCache =
+    methodName === 'del' ||
+    methodName === 'hdel' ||
+    methodName === 'expire' ||
+    methodName === 'invalidate';
+  return targetIsCache && methodInvalidatesCache;
+}
+
+function hasDatabaseWriteEvidence(sourceFile: ts.SourceFile): boolean {
+  let found = false;
+  const visit = (node: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
+      const methodName = node.expression.name.text;
+      if (
+        methodName === 'create' ||
+        methodName === 'update' ||
+        methodName === 'delete' ||
+        methodName === 'upsert'
+      ) {
+        found = true;
+        return;
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return found;
+}
+
+function hasRedisWriteEvidence(sourceFile: ts.SourceFile): boolean {
+  let found = false;
+  const visit = (node: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (ts.isCallExpression(node) && isRedisWriteCall(node)) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return found;
+}
+
+function hasRedisInvalidationEvidence(sourceFile: ts.SourceFile): boolean {
+  let found = false;
+  const visit = (node: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (ts.isCallExpression(node) && isRedisInvalidationCall(node)) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return found;
+}
+
+function lineHasRedisWriteEvidence(file: string, line: string): boolean {
+  const sourceFile = sourceFileFor(file, line);
+  return hasRedisWriteEvidence(sourceFile);
+}
+
+function ttlSecondsNearLine(content: string, line: string): number | null {
+  const lineIndex = content.indexOf(line);
+  if (lineIndex < 0) {
+    return null;
+  }
+  const context = content.slice(Math.max(0, lineIndex - 50), lineIndex + 200);
+  const ttlMatch = context.match(/\bEX\s+(\d+)|ttl[:\s]+(\d+)|expire\s*\(\s*\w+\s*,\s*(\d+)/i);
+  if (!ttlMatch) {
+    return null;
+  }
+  return parseInt(ttlMatch[1] || ttlMatch[2] || ttlMatch[3] || '0', 10);
 }
 
 /** Check cache invalidation. */
@@ -103,23 +344,19 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
     const lines = content.split('\n');
 
     // Detect files that make write API calls
-    const hasWriteCall =
-      /apiFetch\s*\(.*(?:POST|PUT|PATCH|DELETE)|method:\s*['"](?:POST|PUT|PATCH|DELETE)/i.test(
-        content,
-      );
+    const sourceFile = sourceFileFor(file, content);
+    const hasWriteCall = hasWriteMethodEvidence(sourceFile);
     if (!hasWriteCall) {
       continue;
     }
-    const isSWRSurface = /\buseSWR\b|from\s+['"]swr['"]|\buseSWRConfig\b|\bmutate\s*\(/.test(
-      content,
-    );
-    const hasMoneyState = hasMoneyLikeState(content);
+    const isSWRSurface = hasSWRSurfaceEvidence(sourceFile);
+    const hasMoneyState = hasStatefulMutationPayload(sourceFile);
     if (!isSWRSurface && !hasMoneyState) {
       continue;
     }
 
     // Check if there's a corresponding mutate() call
-    const hasMutate = SWR_MUTATE_RE.test(content);
+    const hasMutate = hasCacheRefreshEvidence(sourceFile);
 
     if (!hasMutate) {
       breaks.push(
@@ -139,10 +376,7 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
 
     // CHECK 4: Money-like state specifically — must always invalidate
     if (hasMoneyState && hasWriteCall) {
-      if (
-        !hasMutate &&
-        !/router\.refresh\(\)|router\.push\(|window\.location\.reload/i.test(content)
-      ) {
+      if (!hasMutate && !hasNavigationRefreshEvidence(sourceFile)) {
         breaks.push(
           buildCacheInvalidationDiagnostic({
             predicateKinds: ['money_like_write', 'cache_refresh_not_observed'],
@@ -208,12 +442,13 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
       continue;
     }
 
+    const sourceFile = sourceFileFor(file, content);
     const relFile = path.relative(config.rootDir, file);
 
     // Files that both write to Redis AND write to DB
-    const hasRedisWrite = REDIS_WRITE_RE.test(content);
-    const hasDbWrite = /\.create\s*\(|\.update\s*\(|\.delete\s*\(|\.upsert\s*\(/.test(content);
-    const hasRedisInvalidation = REDIS_DEL_RE.test(content);
+    const hasRedisWrite = hasRedisWriteEvidence(sourceFile);
+    const hasDbWrite = hasDatabaseWriteEvidence(sourceFile);
+    const hasRedisInvalidation = hasRedisInvalidationEvidence(sourceFile);
 
     if (hasRedisWrite && hasDbWrite && !hasRedisInvalidation) {
       breaks.push(
@@ -232,18 +467,15 @@ export function checkCacheInvalidation(config: PulseConfig): Break[] {
     }
 
     // CHECK 6: Money-like Redis cache TTL check
-    if (hasMoneyLikeState(content) && hasRedisWrite) {
+    if (hasStatefulMutationPayload(sourceFile) && hasRedisWrite) {
       const lines = content.split('\n');
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        if (REDIS_WRITE_RE.test(line)) {
+        if (lineHasRedisWriteEvidence(file, line)) {
           // Check if TTL is set and is not too long
-          const ttlMatch = content
-            .slice(Math.max(0, content.indexOf(line) - 50), content.indexOf(line) + 200)
-            .match(/\bEX\s+(\d+)|ttl[:\s]+(\d+)|expire\s*\(\s*\w+\s*,\s*(\d+)/i);
+          const ttl = ttlSecondsNearLine(content, line);
 
-          if (ttlMatch) {
-            const ttl = parseInt(ttlMatch[1] || ttlMatch[2] || ttlMatch[3] || '0', 10);
+          if (ttl !== null) {
             if (ttl > 300) {
               // 5 minutes
               breaks.push(

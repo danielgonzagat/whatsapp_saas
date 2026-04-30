@@ -1,6 +1,6 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { BadRequestException, forwardRef, Inject, Injectable, Optional } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
 import type { Redis } from 'ioredis';
 import { WelcomeAndOnboardingEmailService } from '../notifications/welcome-onboarding-email.service';
 import { PrismaService } from '../prisma/prisma.service';

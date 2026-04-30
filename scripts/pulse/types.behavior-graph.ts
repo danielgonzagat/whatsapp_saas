@@ -1,3 +1,5 @@
+import type { SourceRootKind, SourceRootLanguage } from './source-root-detector';
+
 // PULSE — Live Codebase Nervous System
 // Universal Code Behavior Graph types — per-function analysis
 
@@ -78,11 +80,20 @@ export interface BehaviorExternalCall {
   hasFallback: boolean;
 }
 
+export interface BehaviorSourceRootMetadata {
+  relativePath: string;
+  kind: SourceRootKind;
+  languages: SourceRootLanguage[];
+  frameworks: string[];
+  entrypoints: string[];
+}
+
 export interface BehaviorNode {
   id: string;
   kind: BehaviorNodeKind;
   name: string;
   filePath: string;
+  sourceRoot?: BehaviorSourceRootMetadata;
   line: number;
   parentFunctionId: string | null;
   inputs: BehaviorInput[];

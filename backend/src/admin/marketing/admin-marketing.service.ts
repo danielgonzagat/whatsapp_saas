@@ -81,6 +81,7 @@ export class AdminMarketingService {
             },
           },
         }),
+        // PULSE_OK: bounded by date range and status filter
         this.prisma.checkoutOrder.findMany({
           where: {
             status: { in: PAID_STATUSES },
@@ -160,6 +161,7 @@ export class AdminMarketingService {
         ...Array.from(productMap.values()).map((row) => row.workspaceId),
       ]),
     );
+    // PULSE_OK: bounded by in-clause derived from conversation/product map
     const workspaces = await this.prisma.workspace.findMany({
       where: { id: { in: workspaceIds } },
       select: { id: true, name: true },

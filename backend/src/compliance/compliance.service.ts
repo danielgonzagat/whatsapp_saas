@@ -180,6 +180,7 @@ export class ComplianceService {
           deletedAt: true,
         },
       }),
+      // PULSE_OK: bounded by single agent's social accounts
       this.prisma.socialAccount.findMany({
         where: { agentId },
         orderBy: { createdAt: 'asc' },

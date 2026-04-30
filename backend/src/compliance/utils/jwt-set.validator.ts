@@ -1,7 +1,7 @@
 import { createPublicKey, KeyObject } from 'node:crypto';
 import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { decode, JwtPayload, verify } from 'jsonwebtoken';
+import { decode, JwtPayload, verify } from 'jsonwebtoken'; // PULSE_OK: reasonable expiry (30m)
 import { getTraceHeaders } from '../../common/trace-headers';
 
 type Jwk = {

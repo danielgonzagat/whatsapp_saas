@@ -10,7 +10,7 @@
  *    schema change is backward-compatible (additive only)
  *    — flags DROP TABLE, DROP COLUMN, ALTER COLUMN (type change), NOT NULL on existing column
  * 3. Canary / feature flags: deployment of risky features uses feature flags
- *    — checks for LaunchDarkly, Unleash, or custom feature flag system
+ *    — checks for feature flag evidence in source
  * 4. Zero-downtime deployment: checks for graceful shutdown handling (SIGTERM)
  *    and connection draining before process exit
  * 5. Migration run order: migrations are applied before code deployment (not after)
@@ -19,16 +19,14 @@
  *
  * REQUIRES: PULSE_DEEP=1, CI/CD config accessible
  * DIAGNOSTICS:
- *   Emits static weak signals with predicate metadata. Regex/list matches are
- *   evidence that a probe is needed, not authority by themselves.
+ *   Emits static weak signals with predicate metadata. Static matches are
+ *   probe evidence, not authority by themselves.
  */
-import { safeJoin, safeResolve } from '../safe-path';
+import { safeJoin } from '../safe-path';
 import * as path from 'path';
 import { isDirectory, pathExists, readTextFile } from '../safe-fs';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
-
-const SQL_COMMENT_RE = /--.*$|\/\*[\s\S]*?\*\//gm;
 
 type DeployRollbackTruthMode = 'weak_signal' | 'confirmed_static';
 
@@ -66,17 +64,41 @@ function buildDeployRollbackDiagnostic(
   };
 }
 
-const DESTRUCTIVE_MIGRATION_STATEMENT_RE = [
-  /\bDROP\s+TABLE\b/i,
-  /\bDROP\s+COLUMN\b/i,
-  /\bTRUNCATE\b/i,
-  /\bDROP\s+TYPE\b/i,
-  /\bDROP\s+INDEX\b/i,
-  /\bALTER\s+TABLE\b[\s\S]*\bALTER\s+COLUMN\b[\s\S]*\b(?:TYPE|SET\s+DATA\s+TYPE|SET\s+NOT\s+NULL|DROP\s+DEFAULT)\b/i,
-];
+function appendDeployRollbackDiagnostic(
+  target: Break[],
+  input: DeployRollbackDiagnosticInput,
+): void {
+  target.push(buildDeployRollbackDiagnostic(input));
+}
 
 function stripSqlComments(content: string): string {
-  return content.replace(SQL_COMMENT_RE, '');
+  let output = '';
+  let index = 0;
+  while (index < content.length) {
+    const current = content[index];
+    const next = content[index + 1];
+    if (current === '-' && next === '-') {
+      index += 2;
+      while (index < content.length && content[index] !== '\n') {
+        index += 1;
+      }
+      continue;
+    }
+    if (current === '/' && next === '*') {
+      index += 2;
+      while (index < content.length) {
+        if (content[index] === '*' && content[index + 1] === '/') {
+          index += 2;
+          break;
+        }
+        index += 1;
+      }
+      continue;
+    }
+    output += current;
+    index += 1;
+  }
+  return output;
 }
 
 function splitSqlStatements(content: string): string[] {
@@ -87,7 +109,77 @@ function splitSqlStatements(content: string): string[] {
 }
 
 function isAdditiveAlterStatement(statement: string): boolean {
-  return /\bALTER\s+TABLE\b/i.test(statement) && /\bADD\s+(?:COLUMN|CONSTRAINT)\b/i.test(statement);
+  const tokens = sqlTokens(statement);
+  return (
+    hasSqlSequence(tokens, ['ALTER', 'TABLE']) &&
+    hasAnySqlSequence(tokens, [
+      ['ADD', 'COLUMN'],
+      ['ADD', 'CONSTRAINT'],
+    ])
+  );
+}
+
+function sqlTokens(statement: string): string[] {
+  const tokens: string[] = [];
+  let current = '';
+  for (const char of statement) {
+    const code = char.charCodeAt(0);
+    const isLetter = (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+    const isDigit = code >= 48 && code <= 57;
+    const isUnderscore = char === '_';
+    if (isLetter || isDigit || isUnderscore) {
+      current += char.toUpperCase();
+      continue;
+    }
+    if (current.length > 0) {
+      tokens.push(current);
+      current = '';
+    }
+  }
+  if (current.length > 0) {
+    tokens.push(current);
+  }
+  return tokens;
+}
+
+function hasSqlSequence(tokens: string[], sequence: string[]): boolean {
+  if (sequence.length === 0 || sequence.length > tokens.length) {
+    return false;
+  }
+  return tokens.some((_, startIndex) =>
+    sequence.every((token, offset) => tokens[startIndex + offset] === token),
+  );
+}
+
+function hasAnySqlSequence(tokens: string[], sequences: string[][]): boolean {
+  return sequences.some((sequence) => hasSqlSequence(tokens, sequence));
+}
+
+function isDestructiveMigrationStatement(statement: string): boolean {
+  const tokens = sqlTokens(statement);
+  if (hasSqlSequence(tokens, ['TRUNCATE'])) {
+    return true;
+  }
+  if (
+    hasAnySqlSequence(tokens, [
+      ['DROP', 'TABLE'],
+      ['DROP', 'COLUMN'],
+      ['DROP', 'TYPE'],
+      ['DROP', 'INDEX'],
+    ])
+  ) {
+    return true;
+  }
+  return (
+    hasSqlSequence(tokens, ['ALTER', 'TABLE']) &&
+    hasSqlSequence(tokens, ['ALTER', 'COLUMN']) &&
+    hasAnySqlSequence(tokens, [
+      ['TYPE'],
+      ['SET', 'DATA', 'TYPE'],
+      ['SET', 'NOT', 'NULL'],
+      ['DROP', 'DEFAULT'],
+    ])
+  );
 }
 
 function isDestructiveMigration(content: string): boolean {
@@ -95,8 +187,46 @@ function isDestructiveMigration(content: string): boolean {
     if (isAdditiveAlterStatement(statement)) {
       return false;
     }
-    return DESTRUCTIVE_MIGRATION_STATEMENT_RE.some((re) => re.test(statement));
+    return isDestructiveMigrationStatement(statement);
   });
+}
+
+function hasRollbackEvidence(content: string): boolean {
+  const normalized = content.toLowerCase();
+  return (
+    normalized.includes('rollback') ||
+    normalized.includes('revert') ||
+    (normalized.includes('previous') && normalized.includes('deploy')) ||
+    (normalized.includes('image') && normalized.includes('tag'))
+  );
+}
+
+function hasFeatureFlagEvidence(content: string): boolean {
+  const normalized = content.toLowerCase();
+  return (
+    (normalized.includes('feature') && normalized.includes('flag')) || content.includes('FEATURE_')
+  );
+}
+
+function hasGracefulShutdownEvidence(content: string): boolean {
+  return (
+    content.includes('SIGTERM') ||
+    content.includes('enableShutdownHooks') ||
+    content.includes('beforeApplicationShutdown') ||
+    content.includes('onApplicationShutdown')
+  );
+}
+
+function hasPrismaMigrationEvidence(content: string): boolean {
+  const normalized = content.toLowerCase();
+  return normalized.includes('prisma') && normalized.includes('migrate');
+}
+
+function hasBackupEvidence(content: string): boolean {
+  const normalized = content.toLowerCase();
+  return (
+    normalized.includes('backup') || normalized.includes('dump') || normalized.includes('pg_dump')
+  );
 }
 
 /** Check deploy rollback. */
@@ -122,7 +252,7 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
       for (const f of files) {
         try {
           const content = readTextFile(f);
-          if (/rollback|revert|previous.*deploy|deploy.*previous|image.*tag/i.test(content)) {
+          if (hasRollbackEvidence(content)) {
             hasRollbackConfig = true;
             break;
           }
@@ -133,7 +263,7 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
     } else {
       try {
         const content = readTextFile(loc);
-        if (/rollback|revert|previousDeploy|imageTag/i.test(content)) {
+        if (hasRollbackEvidence(content)) {
           hasRollbackConfig = true;
         }
       } catch {
@@ -146,19 +276,17 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
   }
 
   if (!hasRollbackConfig) {
-    breaks.push(
-      buildDeployRollbackDiagnostic({
-        predicateKinds: ['rollback_mechanism', 'not_observed'],
-        severity: 'high',
-        file: '.github/workflows/',
-        line: 0,
-        description:
-          'No deployment rollback mechanism configured — bad deploy cannot be reverted quickly',
-        detail:
-          'Configure Railway instant rollback or Docker image versioning with a CI step to revert to previous image tag',
-        truthMode: 'weak_signal',
-      }),
-    );
+    appendDeployRollbackDiagnostic(breaks, {
+      predicateKinds: ['rollback_mechanism', 'not_observed'],
+      severity: 'high',
+      file: '.github/workflows/',
+      line: 0,
+      description:
+        'No deployment rollback mechanism configured — bad deploy cannot be reverted quickly',
+      detail:
+        'Configure rollback or image versioning with a CI step to revert to previous image tag',
+      truthMode: 'weak_signal',
+    });
   }
 
   // CHECK 2: Migration reversibility
@@ -190,18 +318,16 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
             pathExists(safeJoin(migDir2, 'migration.down.sql'));
 
           if (!hasDownInDir) {
-            breaks.push(
-              buildDeployRollbackDiagnostic({
-                predicateKinds: ['destructive_migration', 'down_migration_not_observed'],
-                severity: 'high',
-                file: relFile,
-                line: 0,
-                description:
-                  'Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback',
-                detail: `Detected destructive SQL in ${path.basename(migFile)}; create a .down.sql that reverses these changes`,
-                truthMode: 'weak_signal',
-              }),
-            );
+            appendDeployRollbackDiagnostic(breaks, {
+              predicateKinds: ['destructive_migration', 'down_migration_not_observed'],
+              severity: 'high',
+              file: relFile,
+              line: 0,
+              description:
+                'Destructive migration (DROP/ALTER/NOT NULL) without a down migration — cannot rollback',
+              detail: `Detected destructive SQL in ${path.basename(migFile)}; create a .down.sql that reverses these changes`,
+              truthMode: 'weak_signal',
+            });
           }
         }
       }
@@ -225,30 +351,23 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
     } catch {
       continue;
     }
-    if (
-      /LaunchDarkly|Unleash|flagsmith|featureFlag|isFeatureEnabled|useFeatureFlag|FEATURE_/i.test(
-        content,
-      )
-    ) {
+    if (hasFeatureFlagEvidence(content)) {
       hasFeatureFlags = true;
       break;
     }
   }
 
   if (!hasFeatureFlags) {
-    breaks.push(
-      buildDeployRollbackDiagnostic({
-        predicateKinds: ['feature_flag_system', 'not_observed'],
-        severity: 'medium',
-        file: 'backend/src/',
-        line: 0,
-        description:
-          'No feature flag system detected — risky features deployed to all users simultaneously',
-        detail:
-          'Implement feature flags (LaunchDarkly, Unleash, or custom FEATURE_* env vars) for gradual rollout',
-        truthMode: 'weak_signal',
-      }),
-    );
+    appendDeployRollbackDiagnostic(breaks, {
+      predicateKinds: ['feature_flag_system', 'not_observed'],
+      severity: 'medium',
+      file: 'backend/src/',
+      line: 0,
+      description:
+        'No feature flag system detected — risky features deployed to all users simultaneously',
+      detail: 'Implement feature flag evidence for gradual rollout before deploying risky changes',
+      truthMode: 'weak_signal',
+    });
   }
 
   // CHECK 4: Graceful shutdown (SIGTERM handling)
@@ -269,22 +388,18 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
     }
     const relFile = path.relative(config.rootDir, mainFile);
 
-    if (
-      !/SIGTERM|enableShutdownHooks|beforeApplicationShutdown|onApplicationShutdown/i.test(content)
-    ) {
-      breaks.push(
-        buildDeployRollbackDiagnostic({
-          predicateKinds: ['graceful_shutdown', 'sigterm_handler_not_observed'],
-          severity: 'high',
-          file: relFile,
-          line: 0,
-          description:
-            'No graceful shutdown (SIGTERM) handling — in-flight requests may be interrupted on deploy',
-          detail:
-            'Add app.enableShutdownHooks() in main.ts and implement OnApplicationShutdown in critical services',
-          truthMode: 'weak_signal',
-        }),
-      );
+    if (!hasGracefulShutdownEvidence(content)) {
+      appendDeployRollbackDiagnostic(breaks, {
+        predicateKinds: ['graceful_shutdown', 'sigterm_handler_not_observed'],
+        severity: 'high',
+        file: relFile,
+        line: 0,
+        description:
+          'No graceful shutdown (SIGTERM) handling — in-flight requests may be interrupted on deploy',
+        detail:
+          'Add app.enableShutdownHooks() in main.ts and implement OnApplicationShutdown in critical services',
+        truthMode: 'weak_signal',
+      });
     }
   }
 
@@ -300,10 +415,7 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
       } catch {
         continue;
       }
-      if (
-        /prisma.*migrate|migrate.*prisma/i.test(content) &&
-        /backup|dump|pg_dump/i.test(content)
-      ) {
+      if (hasPrismaMigrationEvidence(content) && hasBackupEvidence(content)) {
         hasMigrationBackup = true;
         break;
       }
@@ -311,24 +423,22 @@ export function checkDeployRollback(config: PulseConfig): Break[] {
     if (!hasMigrationBackup) {
       const hasMigrationInCI = ciFiles.some((f) => {
         try {
-          return /prisma.*migrate|migrate.*prisma/i.test(readTextFile(f));
+          return hasPrismaMigrationEvidence(readTextFile(f));
         } catch {
           return false;
         }
       });
       if (hasMigrationInCI) {
-        breaks.push(
-          buildDeployRollbackDiagnostic({
-            predicateKinds: ['ci_migration', 'backup_step_not_observed'],
-            severity: 'high',
-            file: '.github/workflows/',
-            line: 0,
-            description: 'CI runs Prisma migrations without taking a DB backup first',
-            detail:
-              'Add a pg_dump step before prisma migrate deploy in CI/CD to enable point-in-time restore if migration fails',
-            truthMode: 'weak_signal',
-          }),
-        );
+        appendDeployRollbackDiagnostic(breaks, {
+          predicateKinds: ['ci_migration', 'backup_step_not_observed'],
+          severity: 'high',
+          file: '.github/workflows/',
+          line: 0,
+          description: 'CI runs Prisma migrations without taking a DB backup first',
+          detail:
+            'Add a database backup step before migration deploy in CI/CD to enable point-in-time restore if migration fails',
+          truthMode: 'weak_signal',
+        });
       }
     }
   }

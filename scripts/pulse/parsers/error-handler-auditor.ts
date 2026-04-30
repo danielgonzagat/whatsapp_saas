@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
@@ -7,18 +8,65 @@ import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
 import { buildPredicateGraph } from '../predicate-graph';
 import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 
-// Webhook controllers handle errors by design — catch + log + continue is correct
-const WEBHOOK_CONTROLLER = /webhook/i;
-const MONEY_STATE_RE =
-  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
-const DB_MUTATION_RE =
-  /prisma\.[A-Za-z_$][\w$]*\.(?:create|createMany|update|updateMany|upsert|delete|deleteMany)\s*\(/;
-const EXTERNAL_CALL_RE = /\b(?:fetch|axios|apiFetch)\s*\(|\bhttps?:\/\//i;
+interface EffectSurfaceEvidence {
+  dataProviderCalls: number;
+  outboundBoundaryCalls: number;
+}
 
-function isHighRiskErrorSurface(content: string): boolean {
-  return (
-    MONEY_STATE_RE.test(content) && (DB_MUTATION_RE.test(content) || EXTERNAL_CALL_RE.test(content))
-  );
+function calleeText(node: ts.Expression): string {
+  if (ts.isIdentifier(node)) {
+    return node.text;
+  }
+  if (ts.isPropertyAccessExpression(node)) {
+    return `${calleeText(node.expression)}.${node.name.text}`;
+  }
+  if (ts.isElementAccessExpression(node)) {
+    return calleeText(node.expression);
+  }
+  return '';
+}
+
+function hasRuntimeUrlArgument(node: ts.CallExpression): boolean {
+  return node.arguments.some((argument) => {
+    if (!ts.isStringLiteralLike(argument)) {
+      return false;
+    }
+    try {
+      const url = new URL(argument.text);
+      return Boolean(url.protocol && url.host);
+    } catch {
+      return false;
+    }
+  });
+}
+
+function collectEffectSurfaceEvidence(content: string): EffectSurfaceEvidence {
+  const sourceFile = ts.createSourceFile('error-surface.ts', content, ts.ScriptTarget.Latest, true);
+  const evidence: EffectSurfaceEvidence = {
+    dataProviderCalls: 0,
+    outboundBoundaryCalls: 0,
+  };
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node)) {
+      const callee = calleeText(node.expression);
+      const segments = callee.split('.').filter(Boolean);
+      if (segments.length >= 3 && segments.includes('prisma')) {
+        evidence.dataProviderCalls++;
+      }
+      if (hasRuntimeUrlArgument(node)) {
+        evidence.outboundBoundaryCalls++;
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return evidence;
+}
+
+function isHighRiskErrorSurface(evidence: EffectSurfaceEvidence): boolean {
+  return evidence.dataProviderCalls > 0 || evidence.outboundBoundaryCalls > 0;
 }
 
 /**
@@ -205,8 +253,8 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
 
       const lines = content.split('\n');
       const relFile = path.relative(config.rootDir, file);
-      const isFinancial = isHighRiskErrorSurface(content);
-      const isWebhookController = WEBHOOK_CONTROLLER.test(file) && file.endsWith('.controller.ts');
+      const effectSurfaceEvidence = collectEffectSurfaceEvidence(content);
+      const isEffectfulSurface = isHighRiskErrorSurface(effectSurfaceEvidence);
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -232,12 +280,12 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
           if (bodyLines.some((l) => /PULSE:OK/.test(l))) {
             continue;
           }
-          const hasReportedOrCompensatedFinancialError =
-            isFinancial && !isWebhookController && catchBodyReportsOrCompensates(bodyLines);
+          const hasReportedOrCompensatedEffectError =
+            isEffectfulSurface && catchBodyReportsOrCompensates(bodyLines);
 
           if (isCatchBodyEmpty(bodyLines)) {
             // Empty catch — swallows error completely
-            if (isFinancial && !isWebhookController) {
+            if (isEffectfulSurface) {
               breaks.push(
                 buildErrorHandlerBreak({
                   detector: 'empty-catch-high-risk-effect-evidence',
@@ -262,9 +310,9 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
                 }),
               );
             }
-          } else if (isCatchBodyLogOnly(bodyLines) && !hasReportedOrCompensatedFinancialError) {
+          } else if (isCatchBodyLogOnly(bodyLines) && !hasReportedOrCompensatedEffectError) {
             // Logs but doesn't rethrow/return
-            if (isFinancial && !isWebhookController) {
+            if (isEffectfulSurface) {
               breaks.push(
                 buildErrorHandlerBreak({
                   detector: 'log-only-catch-high-risk-effect-evidence',
@@ -291,12 +339,11 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
               );
             }
           } else if (
-            isFinancial &&
-            !isWebhookController &&
+            isEffectfulSurface &&
             !catchBodyRethrows(bodyLines) &&
-            !hasReportedOrCompensatedFinancialError
+            !hasReportedOrCompensatedEffectError
           ) {
-            // Financial catch that does something but doesn't rethrow
+            // Effectful catch that does something but doesn't rethrow
             // Downgrade to high if catch has a return (intentional error handling)
             // or calls an error reporting function
             const meaningful = bodyLines.filter((l) => l.trim() && !l.trim().startsWith('//'));

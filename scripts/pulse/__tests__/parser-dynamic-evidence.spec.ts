@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
+import { auditPulseNoHardcodedReality } from '../no-hardcoded-reality-audit';
 import { checkCostLimits } from '../parsers/cost-limit-checker';
 import { checkE2eWhatsapp } from '../parsers/e2e-whatsapp';
 import { checkMonitoringCoverage } from '../parsers/monitoring-coverage';
@@ -47,6 +48,14 @@ async function withDeepEnv<T>(run: () => Promise<T>): Promise<T> {
 }
 
 describe('parser dynamic evidence contracts', () => {
+  it('keeps the E2E WhatsApp parser free of hardcoded reality audit findings', () => {
+    const findings = auditPulseNoHardcodedReality(process.cwd()).findings.filter(
+      (finding) => finding.filePath === 'scripts/pulse/parsers/e2e-whatsapp.ts',
+    );
+
+    expect(findings).toEqual([]);
+  });
+
   it('uses structural business side effects for monitoring instead of product/provider names', () => {
     const config = makeConfig();
 

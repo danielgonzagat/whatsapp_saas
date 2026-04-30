@@ -41,4 +41,79 @@ describe('PULSE behavior graph', () => {
     );
     expect(localNode?.externalCalls).toEqual([]);
   });
+
+  it('carries source-root metadata into nodes and uses framework evidence for decorator authority', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-behavior-source-root-'));
+    const serviceDir = path.join(rootDir, 'service');
+    fs.mkdirSync(serviceDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(rootDir, 'package.json'),
+      JSON.stringify({
+        dependencies: { '@nestjs/common': '1.0.0' },
+        scripts: { start: 'tsx service/main.ts' },
+      }),
+    );
+    fs.writeFileSync(
+      path.join(serviceDir, 'main.ts'),
+      [
+        "import { Controller, Get } from '@nestjs/common';",
+        '@Controller()',
+        'export class HealthController {',
+        '  @Get()',
+        '  health(): string {',
+        "    return 'ok';",
+        '  }',
+        '}',
+      ].join('\n'),
+    );
+
+    const graph = buildBehaviorGraph(rootDir);
+    const node = graph.nodes.find((entry) => entry.name === 'health');
+
+    expect(node).toEqual(
+      expect.objectContaining({
+        kind: 'api_endpoint',
+        sourceRoot: expect.objectContaining({
+          relativePath: 'service',
+          kind: 'backend',
+          languages: ['typescript'],
+          frameworks: expect.arrayContaining(['nestjs']),
+          entrypoints: ['service/main.ts'],
+        }),
+      }),
+    );
+  });
+
+  it('does not promote route-like decorators without source-root framework evidence', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-behavior-no-framework-'));
+    const srcDir = path.join(rootDir, 'src');
+    fs.mkdirSync(srcDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(srcDir, 'workflow.ts'),
+      [
+        'function Get(): MethodDecorator { return () => undefined; }',
+        'export class LocalWorkflow {',
+        '  @Get()',
+        '  run(): string {',
+        "    return 'ok';",
+        '  }',
+        '}',
+      ].join('\n'),
+    );
+
+    const graph = buildBehaviorGraph(rootDir);
+    const node = graph.nodes.find((entry) => entry.name === 'run');
+
+    expect(node).toEqual(
+      expect.objectContaining({
+        kind: 'function_definition',
+        sourceRoot: expect.objectContaining({
+          relativePath: 'src',
+          frameworks: [],
+          languages: ['typescript'],
+        }),
+      }),
+    );
+    expect(graph.summary.apiEndpointNodes).toBe(0);
+  });
 });

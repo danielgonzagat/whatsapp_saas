@@ -23,6 +23,8 @@ type FindingKind =
   | 'hardcoded_path_decision_risk'
   | 'hardcoded_auditor_bootstrap_reality_risk';
 
+type PredicateKind = 'hardcoded_branch_decision_predicate';
+
 export interface NoHardcodedRealityFinding {
   filePath: string;
   line: number;
@@ -32,9 +34,19 @@ export interface NoHardcodedRealityFinding {
   samples: string[];
 }
 
+export interface NoHardcodedRealityPredicate {
+  filePath: string;
+  line: number;
+  column: number;
+  kind: PredicateKind;
+  context: string;
+  samples: string[];
+}
+
 export interface NoHardcodedRealityAuditResult {
   scannedFiles: number;
   findings: NoHardcodedRealityFinding[];
+  predicates: NoHardcodedRealityPredicate[];
   summary: {
     totalFindings: number;
     byKind: Partial<Record<FindingKind, number>>;
@@ -42,6 +54,8 @@ export interface NoHardcodedRealityAuditResult {
       filePath: string;
       findings: number;
     }>;
+    totalPredicates: number;
+    byPredicateKind: Partial<Record<PredicateKind, number>>;
   };
 }
 
@@ -298,6 +312,29 @@ function nearestCollectionContext(node: ts.Node): string {
     current = current.parent;
   }
   return 'anonymous';
+}
+
+function nearestExecutableContext(node: ts.Node): string {
+  let current: ts.Node | undefined = node;
+  while (current) {
+    if (ts.isFunctionDeclaration(current) || ts.isFunctionExpression(current)) {
+      return propertyNameText(current.name);
+    }
+    if (ts.isMethodDeclaration(current)) {
+      return propertyNameText(current.name);
+    }
+    if (ts.isArrowFunction(current) && ts.isVariableDeclaration(current.parent)) {
+      return propertyNameText(current.parent.name);
+    }
+    if (ts.isVariableDeclaration(current)) {
+      return propertyNameText(current.name);
+    }
+    if (ts.isPropertyAssignment(current)) {
+      return propertyNameText(current.name);
+    }
+    current = current.parent;
+  }
+  return nearestCollectionContext(node);
 }
 
 function contextHasAllowedGrammar(context: string): boolean {
@@ -643,6 +680,76 @@ function regexDecisionFindings(node: ts.Node): string[] {
   return hasAlternation || hasPathShape || hasNumericComparatorShape ? [text] : [];
 }
 
+function literalPredicateValue(node: ts.Node): string | null {
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return node.text;
+  }
+  if (ts.isNumericLiteral(node)) {
+    return node.text;
+  }
+  if (node.kind === ts.SyntaxKind.TrueKeyword || node.kind === ts.SyntaxKind.FalseKeyword) {
+    return node.getText();
+  }
+  return null;
+}
+
+function binaryPredicateSamples(node: ts.Node): string[] {
+  if (!ts.isBinaryExpression(node)) {
+    return [];
+  }
+  const operator = node.operatorToken.kind;
+  const isDecisionOperator =
+    operator === ts.SyntaxKind.EqualsEqualsEqualsToken ||
+    operator === ts.SyntaxKind.EqualsEqualsToken ||
+    operator === ts.SyntaxKind.ExclamationEqualsEqualsToken ||
+    operator === ts.SyntaxKind.ExclamationEqualsToken ||
+    operator === ts.SyntaxKind.GreaterThanToken ||
+    operator === ts.SyntaxKind.GreaterThanEqualsToken ||
+    operator === ts.SyntaxKind.LessThanToken ||
+    operator === ts.SyntaxKind.LessThanEqualsToken;
+  if (!isDecisionOperator) {
+    return [];
+  }
+
+  const leftLiteral = literalPredicateValue(node.left);
+  const rightLiteral = literalPredicateValue(node.right);
+  const literal = leftLiteral ?? rightLiteral;
+  return literal === null ? [] : [node.getText()];
+}
+
+function collectConditionPredicateSamples(node: ts.Node): string[] {
+  const samples: string[] = [];
+  const visit = (child: ts.Node): void => {
+    samples.push(...binaryPredicateSamples(child));
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return samples;
+}
+
+function branchDecisionPredicateFindings(node: ts.Node): string[] {
+  const context = nearestExecutableContext(node);
+  if (!contextLooksLikeDecisionAuthority(context)) {
+    return [];
+  }
+
+  if (ts.isSwitchStatement(node)) {
+    return node.caseBlock.clauses.flatMap((clause) => {
+      if (!ts.isCaseClause(clause)) {
+        return [];
+      }
+      const value = literalPredicateValue(clause.expression);
+      return value === null ? [] : [`case ${clause.expression.getText()}`];
+    });
+  }
+
+  if (ts.isIfStatement(node)) {
+    return collectConditionPredicateSamples(node.expression);
+  }
+
+  return [];
+}
+
 function stringLiteralValue(node: ts.Node): string | null {
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
     return node.text;
@@ -746,10 +853,37 @@ function pushFinding(
   });
 }
 
-function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityFinding[] {
+function pushPredicate(
+  predicates: NoHardcodedRealityPredicate[],
+  sourceFile: ts.SourceFile,
+  relPath: string,
+  node: ts.Node,
+  kind: PredicateKind,
+  context: string,
+  samples: string[],
+): void {
+  const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
+  predicates.push({
+    filePath: relPath,
+    line: position.line + 1,
+    column: position.character + 1,
+    kind,
+    context,
+    samples: [...new Set(samples)].slice(0, 5),
+  });
+}
+
+function auditSourceFile(
+  filePath: string,
+  relPath: string,
+): {
+  findings: NoHardcodedRealityFinding[];
+  predicates: NoHardcodedRealityPredicate[];
+} {
   const source = fs.readFileSync(filePath, 'utf8');
   const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true);
   const findings: NoHardcodedRealityFinding[] = [];
+  const predicates: NoHardcodedRealityPredicate[] = [];
   const sourceHasBreakPush = source.includes('breaks.push');
 
   const visit = (node: ts.Node): void => {
@@ -829,6 +963,19 @@ function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityF
         'hardcoded_decision_regex_risk',
         nearestCollectionContext(node),
         regexDecisions,
+      );
+    }
+
+    const branchDecisionPredicates = branchDecisionPredicateFindings(node);
+    if (branchDecisionPredicates.length > 0) {
+      pushPredicate(
+        predicates,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_branch_decision_predicate',
+        nearestExecutableContext(node),
+        branchDecisionPredicates,
       );
     }
 
@@ -995,18 +1142,24 @@ function auditSourceFile(filePath: string, relPath: string): NoHardcodedRealityF
   };
 
   visit(sourceFile);
-  return findings;
+  return { findings, predicates };
 }
 
 function summarizeNoHardcodedRealityFindings(
   findings: NoHardcodedRealityFinding[],
+  predicates: NoHardcodedRealityPredicate[],
 ): NoHardcodedRealityAuditResult['summary'] {
   const byKind: Partial<Record<FindingKind, number>> = {};
+  const byPredicateKind: Partial<Record<PredicateKind, number>> = {};
   const byFile = new Map<string, number>();
 
   for (const finding of findings) {
     byKind[finding.kind] = (byKind[finding.kind] ?? 0) + 1;
     byFile.set(finding.filePath, (byFile.get(finding.filePath) ?? 0) + 1);
+  }
+
+  for (const predicate of predicates) {
+    byPredicateKind[predicate.kind] = (byPredicateKind[predicate.kind] ?? 0) + 1;
   }
 
   const topFiles = [...byFile.entries()]
@@ -1023,6 +1176,8 @@ function summarizeNoHardcodedRealityFindings(
     totalFindings: findings.length,
     byKind,
     topFiles,
+    totalPredicates: predicates.length,
+    byPredicateKind,
   };
 }
 
@@ -1032,18 +1187,22 @@ export function auditPulseNoHardcodedReality(rootDir: string): NoHardcodedRealit
     return {
       scannedFiles: 0,
       findings: [],
-      summary: summarizeNoHardcodedRealityFindings([]),
+      predicates: [],
+      summary: summarizeNoHardcodedRealityFindings([], []),
     };
   }
   const files = walkSourceFiles(pulseDir).filter((file) => {
     const relPath = path.relative(rootDir, file);
     return !isSkippedPath(relPath);
   });
-  const findings = files.flatMap((file) => auditSourceFile(file, path.relative(rootDir, file)));
+  const results = files.map((file) => auditSourceFile(file, path.relative(rootDir, file)));
+  const findings = results.flatMap((result) => result.findings);
+  const predicates = results.flatMap((result) => result.predicates);
 
   return {
     scannedFiles: files.length,
     findings,
-    summary: summarizeNoHardcodedRealityFindings(findings),
+    predicates,
+    summary: summarizeNoHardcodedRealityFindings(findings, predicates),
   };
 }

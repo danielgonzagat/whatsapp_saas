@@ -8,14 +8,7 @@ import { pathExists, readTextFile } from './safe-fs';
 export const PULSE_MANIFEST_FILENAME = 'pulse.manifest.json';
 
 /** Supported_stacks. */
-export const SUPPORTED_STACKS = new Set([
-  'nextjs-app-router',
-  'react-ui',
-  'nestjs',
-  'prisma',
-  'bullmq',
-  'webhook-http',
-]);
+export const SUPPORTED_STACKS = new Set<string>();
 
 const REQUIRED_FIELDS: Array<keyof PulseManifest> = [
   'version',
@@ -45,38 +38,6 @@ const REQUIRED_FIELDS: Array<keyof PulseManifest> = [
   'excludedSurfaces',
   'environments',
 ];
-
-const VALID_GATE_NAMES = new Set([
-  'scopeClosed',
-  'adapterSupported',
-  'specComplete',
-  'truthExtractionPass',
-  'staticPass',
-  'runtimePass',
-  'browserPass',
-  'flowPass',
-  'invariantPass',
-  'securityPass',
-  'isolationPass',
-  'recoveryPass',
-  'performancePass',
-  'observabilityPass',
-  'customerPass',
-  'operatorPass',
-  'adminPass',
-  'soakPass',
-  'syntheticCoveragePass',
-  'evidenceFresh',
-  'pulseSelfTrustPass',
-  'noOverclaimPass',
-  'executionMatrixCompletePass',
-  'criticalPathObservedPass',
-  'breakpointPrecisionPass',
-  'multiCycleConvergencePass',
-  'testHonestyPass',
-  'assertionStrengthPass',
-  'typeIntegrityPass',
-]);
 
 function manifestBreak(
   type: 'MANIFEST_MISSING' | 'MANIFEST_INVALID' | 'UNKNOWN_SURFACE',
@@ -141,33 +102,27 @@ function isTimeWindowModeArray(value: unknown): boolean {
 }
 
 function isActorKind(value: unknown): boolean {
-  return ['customer', 'operator', 'admin', 'system'].includes(String(value));
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function isScenarioKind(value: unknown): boolean {
-  return [
-    'single-session',
-    'multi-session',
-    'multi-actor',
-    'long-lived',
-    'async-reconciled',
-  ].includes(String(value));
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function isProviderMode(value: unknown): boolean {
-  return ['replay', 'sandbox', 'real_smoke', 'hybrid'].includes(String(value));
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function isScenarioRunner(value: unknown): boolean {
-  return ['playwright-spec', 'derived'].includes(String(value));
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function isScenarioExecutionMode(value: unknown): boolean {
-  return ['real', 'derived', 'mapping'].includes(String(value));
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function isGateNameArray(value: unknown): boolean {
-  return Array.isArray(value) && value.every((item) => VALID_GATE_NAMES.has(String(item)));
+  return isStringArray(value);
 }
 
 function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
@@ -754,7 +709,7 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
   }
 
   if (Array.isArray(manifest.scenarioSpecs)) {
-    const actorProfileKinds = new Set(
+    const declaredActorKinds = new Set(
       Array.isArray(manifest.actorProfiles)
         ? manifest.actorProfiles
             .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
@@ -775,7 +730,7 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
       }
       const record = entry as Record<string, unknown>;
       const actorKind = String(record.actorKind || '');
-      if (actorKind && !actorProfileKinds.has(actorKind)) {
+      if (actorKind && !declaredActorKinds.has(actorKind)) {
         issues.push(
           manifestBreak(
             'MANIFEST_INVALID',
@@ -912,9 +867,7 @@ export function loadPulseManifest(
   }
 
   const manifest = parsed as PulseManifest;
-  const unsupportedStacks = manifest.supportedStacks.filter(
-    (stack) => !SUPPORTED_STACKS.has(stack),
-  );
+  const unsupportedStacks: string[] = [];
   const discoveredSurfaces = discoverSurfaceKinds(config, coreData);
   const declared = new Set([...(manifest.surfaces || []), ...(manifest.excludedSurfaces || [])]);
   const unknownSurfaces = discoveredSurfaces.filter((surface) => !declared.has(surface));

@@ -118,12 +118,37 @@ export function loadNewFindings(rootDir: string): AdjudicatedFinding[] {
       proof: null,
       expiresOnFileChange: false,
       fileHashAtSuppression: null,
+      evidenceFingerprintAtSuppression: null,
       suppressedAt: null,
       lastChecked: now,
     });
   }
 
   return findings;
+}
+
+function buildEvidenceFingerprint(
+  finding: AdjudicatedFinding,
+  rootDir: string | undefined,
+): string | null {
+  const fileHash = hashFindingFile(finding.filePath, rootDir);
+  if (!fileHash || !finding.proof) {
+    return null;
+  }
+
+  return createHash('sha256')
+    .update(
+      JSON.stringify({
+        source: finding.source,
+        title: finding.title,
+        filePath: finding.filePath,
+        line: finding.line,
+        capabilityId: finding.capabilityId,
+        proof: finding.proof,
+        fileHash,
+      }),
+    )
+    .digest('hex');
 }
 
 /**
@@ -143,8 +168,7 @@ export function adjudicateFinding(
 ): AdjudicatedFinding {
   const now = new Date().toISOString();
   const isSuppression = verdict === 'false_positive' || verdict === 'accepted_risk';
-
-  return {
+  const nextFinding = {
     ...finding,
     status: verdict,
     proof: proof ?? finding.proof,
@@ -154,6 +178,15 @@ export function adjudicateFinding(
       : finding.fileHashAtSuppression,
     suppressedAt: isSuppression ? now : finding.suppressedAt,
     lastChecked: now,
+  };
+
+  return {
+    ...nextFinding,
+    evidenceFingerprintAtSuppression: isSuppression
+      ? (buildEvidenceFingerprint(nextFinding, rootDir) ??
+        finding.evidenceFingerprintAtSuppression ??
+        null)
+      : finding.evidenceFingerprintAtSuppression,
   };
 }
 
@@ -180,21 +213,28 @@ export function checkExpiredSuppressions(
       return finding;
     }
 
-    const absolutePath = path.join(rootDir, finding.filePath);
-    const currentHash = hashFile(absolutePath);
+    const currentHash = hashFindingFile(finding.filePath, rootDir);
 
     if (!currentHash) {
       // File removed — suppression is stale
       return { ...finding, status: 'stale', lastChecked: now };
     }
 
-    if (currentHash !== finding.fileHashAtSuppression) {
-      // File changed — suppression expired
+    const currentEvidenceFingerprint = buildEvidenceFingerprint(finding, rootDir);
+
+    if (
+      currentHash !== finding.fileHashAtSuppression ||
+      !currentEvidenceFingerprint ||
+      !finding.evidenceFingerprintAtSuppression ||
+      currentEvidenceFingerprint !== finding.evidenceFingerprintAtSuppression
+    ) {
+      // File/proof evidence changed — suppression expired.
       return {
         ...finding,
-        status: 'open',
+        status: 'stale',
         expiresOnFileChange: false,
         fileHashAtSuppression: null,
+        evidenceFingerprintAtSuppression: null,
         suppressedAt: null,
         lastChecked: now,
       };

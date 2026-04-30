@@ -495,6 +495,7 @@ export class ConnectPayoutApprovalService {
     const skip = Math.max(0, input.skip ?? 0);
     const take = Math.min(200, Math.max(1, input.take ?? 50));
 
+    // PULSE_OK: paginated via skip/take from input
     const [items, total] = await this.prisma.$transaction(
       [
         this.prisma.approvalRequest.findMany({

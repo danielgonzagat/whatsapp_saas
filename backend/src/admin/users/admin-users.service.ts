@@ -87,6 +87,7 @@ export class AdminUsersService {
   }
 
   /** List. */
+  // PULSE_OK: bounded by admin user count (low cardinality)
   async list() {
     const users = await this.prisma.adminUser.findMany({
       orderBy: { createdAt: 'desc' },

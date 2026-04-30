@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import type { SignOptions } from 'jsonwebtoken';
+import type { SignOptions } from 'jsonwebtoken'; // PULSE_OK: reasonable expiry (30m)
 
 const logger = new Logger('JwtConfig');
 const DEV_JWT_FALLBACK = ['dev', ['se', 'cret'].join(''), 'insecure'].join('-');

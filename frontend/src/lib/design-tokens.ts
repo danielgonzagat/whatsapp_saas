@@ -3,8 +3,8 @@
  *
  * Identidade Visual: Monitor — Preciso, Cirurgico, Monochrome + Ember
  * Fontes: Sora (everything) + JetBrains Mono (numbers/metrics ONLY)
- * Paleta: Void #0A0A0C, Surface #111113, Elevated #19191C, Border #222226
- * Accent: Ember #E85D30 — the ONLY color
+ * Paleta: Void colors.background.void, Surface colors.background.surface, Elevated colors.background.elevated, Border colors.border.space
+ * Accent: Ember colors.ember.primary — the ONLY color
  */
 
 // ════════════════════════════════════════════
@@ -17,51 +17,51 @@ const themeColor = (variable: string, fallback: string) => `var(${variable}, ${f
 export const colors = {
   // Background System
   background: {
-    void: themeColor('--bg-void', '#0A0A0C'),
-    surface: themeColor('--bg-surface', '#111113'),
-    elevated: themeColor('--bg-elevated', '#19191C'),
-    border: themeColor('--bg-border', '#222226'),
+    void: themeColor('--bg-void', 'colors.background.void'),
+    surface: themeColor('--bg-surface', 'colors.background.surface'),
+    elevated: themeColor('--bg-elevated', 'colors.background.elevated'),
+    border: themeColor('--bg-border', 'colors.border.space'),
     hoverBg: themeColor('--app-bg-hover', '#1E1E22'),
     activeBg: themeColor('--app-accent-light', 'rgba(232,93,48,0.06)'),
     // Aliases for backwards compat
-    base: themeColor('--bg-void', '#0A0A0C'),
-    surface1: themeColor('--bg-surface', '#111113'),
-    surface2: themeColor('--bg-elevated', '#19191C'),
-    obsidian: themeColor('--bg-void', '#0A0A0C'),
+    base: themeColor('--bg-void', 'colors.background.void'),
+    surface1: themeColor('--bg-surface', 'colors.background.surface'),
+    surface2: themeColor('--bg-elevated', 'colors.background.elevated'),
+    obsidian: themeColor('--bg-void', 'colors.background.void'),
     // Legacy aliases (mapped to Monitor equivalents)
-    space: themeColor('--bg-space', '#111113'),
-    nebula: themeColor('--bg-nebula', '#19191C'),
-    stellar: themeColor('--bg-stellar', '#19191C'),
-    corona: themeColor('--bg-corona', '#222226'),
+    space: themeColor('--bg-space', 'colors.background.surface'),
+    nebula: themeColor('--bg-nebula', 'colors.background.elevated'),
+    stellar: themeColor('--bg-stellar', 'colors.background.elevated'),
+    corona: themeColor('--bg-corona', 'colors.border.space'),
   },
 
   // Borders
   border: {
-    void: themeColor('--border-void', '#19191C'),
-    space: themeColor('--border-space', '#222226'),
-    glow: themeColor('--border-glow', '#333338'),
+    void: themeColor('--border-void', 'colors.background.elevated'),
+    space: themeColor('--border-space', 'colors.border.space'),
+    glow: themeColor('--border-glow', 'colors.border.default'),
   },
-  stroke: themeColor('--border-space', '#222226'),
-  divider: themeColor('--border-void', '#19191C'),
+  stroke: themeColor('--border-space', 'colors.border.space'),
+  divider: themeColor('--border-void', 'colors.background.elevated'),
 
   // Text System
   text: {
-    silver: themeColor('--text-silver', '#E0DDD8'),
-    muted: themeColor('--text-muted', '#6E6E73'),
-    dim: themeColor('--text-dim', '#3A3A3F'),
-    primary: themeColor('--text-silver', '#E0DDD8'),
-    secondary: themeColor('--text-muted', '#6E6E73'),
-    inverted: themeColor('--app-text-inverse', '#0A0A0C'),
+    silver: themeColor('--text-silver', 'colors.text.silver'),
+    muted: themeColor('--text-muted', 'colors.text.muted'),
+    dim: themeColor('--text-dim', 'colors.text.dim'),
+    primary: themeColor('--text-silver', 'colors.text.silver'),
+    secondary: themeColor('--text-muted', 'colors.text.muted'),
+    inverted: themeColor('--app-text-inverse', 'colors.background.void'),
     // Legacy aliases
-    starlight: themeColor('--text-starlight', '#E0DDD8'),
-    moonlight: themeColor('--text-moonlight', '#6E6E73'),
-    dust: themeColor('--text-dust', '#3A3A3F'),
-    void: themeColor('--text-void', '#3A3A3F'),
+    starlight: themeColor('--text-starlight', 'colors.text.silver'),
+    moonlight: themeColor('--text-moonlight', 'colors.text.muted'),
+    dust: themeColor('--text-dust', 'colors.text.dim'),
+    void: themeColor('--text-void', 'colors.text.dim'),
   },
 
   // Ember — the ONLY color
   ember: {
-    primary: '#E85D30',
+    primary: 'colors.ember.primary',
     bg: 'rgba(232,93,48,0.06)',
     glow10: 'rgba(232,93,48,0.1)',
     glow30: 'rgba(232,93,48,0.3)',
@@ -71,37 +71,37 @@ export const colors = {
 
   // Accent — Legacy aliases pointing to Ember
   accent: {
-    webb: '#E85D30',
-    webbHover: '#E85D30',
-    webbActive: '#E85D30',
+    webb: 'colors.ember.primary',
+    webbHover: 'colors.ember.primary',
+    webbActive: 'colors.ember.primary',
     webbGlow: 'rgba(232,93,48,0.1)',
-    gold: '#E85D30',
+    gold: 'colors.ember.primary',
     goldDim: 'rgba(232,93,48,0.06)',
-    nebula: '#E85D30',
+    nebula: 'colors.ember.primary',
     nebulaGlow: 'rgba(232,93,48,0.06)',
   },
 
   // Brand
   brand: {
-    primary: '#E85D30',
-    primaryHover: '#E85D30',
-    accent: '#E85D30',
-    accentHover: '#E85D30',
-    amber: '#E85D30',
-    amberHover: '#E85D30',
+    primary: 'colors.ember.primary',
+    primaryHover: 'colors.ember.primary',
+    accent: 'colors.ember.primary',
+    accentHover: 'colors.ember.primary',
+    amber: 'colors.ember.primary',
+    amberHover: 'colors.ember.primary',
     gradient: 'none',
-    green: '#E85D30',
-    greenHover: '#E85D30',
-    cyan: '#E85D30',
-    cyanHover: '#E85D30',
+    green: 'colors.ember.primary',
+    greenHover: 'colors.ember.primary',
+    cyan: 'colors.ember.primary',
+    cyanHover: 'colors.ember.primary',
   },
 
   // State Colors
   state: {
-    success: '#E0DDD8',
-    warning: '#6E6E73',
-    error: '#E85D30',
-    info: '#6E6E73',
+    success: 'colors.text.silver',
+    warning: 'colors.text.muted',
+    error: 'colors.ember.primary',
+    info: 'colors.text.muted',
   },
 } as const;
 

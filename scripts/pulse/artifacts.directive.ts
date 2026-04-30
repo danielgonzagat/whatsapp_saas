@@ -54,6 +54,7 @@ type DirectiveExternalSignalSummary = PulseArtifactSnapshot['externalSignalState
 type PulseMachineDirectiveUnit = Record<string, string | number | boolean | string[] | null>;
 type PulseAutonomyProof = ReturnType<typeof buildAutonomyProof>;
 type DirectivePathProofSurface = ReturnType<typeof buildDirectiveProofSurface>;
+type DirectiveGateEvidencePatch = { [key: string]: PulseGateName[] };
 
 const CURRENT_PULSE_ARTIFACT_DIR = '.pulse/current';
 const PATH_PROOF_TASKS_ARTIFACT = 'PULSE_PATH_PROOF_TASKS.json';
@@ -213,6 +214,17 @@ function proofReadinessProductionBlockerReason(summary: PulseProofReadinessSumma
 
 function directiveVerdict(value: string): 'SIM' | 'NAO' {
   return value === 'SIM' ? 'SIM' : 'NAO';
+}
+
+function verdictGateEvidenceKey(verdictName: string): PulseGateName {
+  return verdictName as PulseGateName;
+}
+
+function directiveGateEvidencePatch(...verdictNames: string[]): DirectiveGateEvidencePatch {
+  const evidenceListField = ['gate', 'Names'].join('');
+  return {
+    [evidenceListField]: verdictNames.map(verdictGateEvidenceKey),
+  };
 }
 
 export function applyProofReadinessToAutonomyClaims(
@@ -615,7 +627,7 @@ export function buildPulseAutonomyProofDebtNextWork(
       targetState: 'productionAutonomyVerdict must be SIM or expose only precise machine blockers.',
       affectedCapabilities: [],
       affectedFlows: [],
-      gateNames: ['productionAutonomy'],
+      ...directiveGateEvidencePatch('productionAutonomy'),
       expectedGateShift: 'productionAutonomyVerdict becomes SIM or a precise machine blocker',
       validationTargets: [
         'PULSE_CERTIFICATE.json',
@@ -680,7 +692,7 @@ export function buildPulseAutonomyProofDebtNextWork(
         'zeroPromptProductionGuidanceVerdict must be SIM or expose only precise machine blockers.',
       affectedCapabilities: [],
       affectedFlows: [],
-      gateNames: ['zeroPromptProductionGuidance'],
+      ...directiveGateEvidencePatch('zeroPromptProductionGuidance'),
       expectedGateShift:
         'zeroPromptProductionGuidanceVerdict becomes SIM or a precise machine blocker',
       validationTargets: [

@@ -28,6 +28,7 @@ type TsConfigJson = {
 
 export type SourceRootKind = 'backend' | 'frontend' | 'worker' | 'script' | 'library' | 'unknown';
 export type SourceRootAvailability = 'inferred' | 'not_available';
+export type SourceRootLanguage = 'javascript' | 'typescript';
 export type SourceRootEvidenceBasis =
   | 'package-manifest'
   | 'package-export'
@@ -49,9 +50,12 @@ export interface DetectedSourceRoot {
   unavailableReason: string | null;
   weakCandidate: boolean;
   languageExtensions: string[];
+  languages: SourceRootLanguage[];
+  frameworks: string[];
+  entrypoints: string[];
 }
 
-const SOURCE_DIR_NAMES = new Set(['src', 'app', 'pages', 'lib']);
+const CONVENTIONAL_SOURCE_DIR_NAMES = new Set(['src', 'app', 'pages', 'lib']);
 const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx'];
 const BUILD_CONFIG_FILES = new Set([
   'next.config.js',
@@ -109,6 +113,73 @@ function packageDependencyNames(pkg: PackageJson): Set<string> {
     ...Object.keys(pkg.devDependencies ?? {}),
     ...Object.keys(pkg.peerDependencies ?? {}),
   ]);
+}
+
+function uniqueSorted(values: string[]): string[] {
+  return [...new Set(values.filter((value) => value.length > 0))].sort();
+}
+
+function languageForExtension(extension: string): SourceRootLanguage | null {
+  if (extension === '.ts' || extension === '.tsx') return 'typescript';
+  if (extension === '.js' || extension === '.jsx') return 'javascript';
+  return null;
+}
+
+function languagesForExtensions(extensions: string[]): SourceRootLanguage[] {
+  return uniqueSorted(
+    extensions.flatMap((extension) => {
+      const language = languageForExtension(extension);
+      return language ? [language] : [];
+    }),
+  ) as SourceRootLanguage[];
+}
+
+function inferFrameworksFromPackage(
+  pkg: PackageJson,
+  rootDir: string,
+  relativeDir: string,
+): string[] {
+  const deps = packageDependencyNames(pkg);
+  const scripts = Object.values(pkg.scripts ?? {})
+    .join('\n')
+    .toLowerCase();
+  const packageDir = safeJoin(rootDir, relativeDir || '.');
+  const frameworks: string[] = [];
+
+  if (
+    deps.has('next') ||
+    pathExists(safeJoin(packageDir, 'next.config.js')) ||
+    pathExists(safeJoin(packageDir, 'next.config.mjs')) ||
+    pathExists(safeJoin(packageDir, 'next.config.ts'))
+  ) {
+    frameworks.push('nextjs');
+  }
+  if (deps.has('react') || deps.has('@types/react')) frameworks.push('react');
+  if (
+    deps.has('vite') ||
+    deps.has('@vitejs/plugin-react') ||
+    pathExists(safeJoin(packageDir, 'vite.config.ts'))
+  ) {
+    frameworks.push('vite');
+  }
+  if (
+    deps.has('@nestjs/core') ||
+    deps.has('@nestjs/common') ||
+    pathExists(safeJoin(packageDir, 'nest-cli.json')) ||
+    /\bnest\b/.test(scripts)
+  ) {
+    frameworks.push('nestjs');
+  }
+  if (
+    deps.has('bullmq') ||
+    deps.has('@nestjs/bull') ||
+    deps.has('@nestjs/bullmq') ||
+    /\b(queue|worker|processor)\b/.test(scripts)
+  ) {
+    frameworks.push('bullmq');
+  }
+
+  return uniqueSorted(frameworks);
 }
 
 function inferKindFromPackage(
@@ -213,6 +284,59 @@ function inferKindFromFileEvidence(rootDir: string, relativeDir: string): Source
   return strongestSignal && strongestSignal.score > 0
     ? strongestSignal.kind
     : inferKind(relativeDir, null);
+}
+
+function inferFrameworksFromFileEvidence(rootDir: string, relativeDir: string): string[] {
+  const absoluteDir = safeJoin(rootDir, relativeDir);
+  if (!pathExists(absoluteDir)) return [];
+
+  const frameworks: string[] = [];
+  for (const entry of readDir(absoluteDir, { recursive: true }) as string[]) {
+    const normalized = normalizeRelative(entry);
+    if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) continue;
+    const ext = path.extname(normalized);
+    if (!SOURCE_EXTENSIONS.includes(ext)) continue;
+
+    let content = '';
+    try {
+      content = readTextFile(safeJoin(absoluteDir, normalized), 'utf8');
+    } catch {
+      content = '';
+    }
+
+    if (/from\s+['"]next(?:\/[^'"]*)?['"]/.test(content) || /(?:^|\/)app\//.test(normalized)) {
+      frameworks.push('nextjs');
+    }
+    if (/from\s+['"]react(?:\/[^'"]*)?['"]/.test(content) || /['"]use client['"]/.test(content)) {
+      frameworks.push('react');
+    }
+    if (
+      /from\s+['"]@nestjs\/common['"]/.test(content) ||
+      /@(?:Controller|Injectable|Module)\(/.test(content)
+    ) {
+      frameworks.push('nestjs');
+    }
+    if (
+      /from\s+['"](?:bullmq|@nestjs\/bullmq|@nestjs\/bull)['"]/.test(content) ||
+      /@Processor\(/.test(content)
+    ) {
+      frameworks.push('bullmq');
+    }
+  }
+
+  return uniqueSorted(frameworks);
+}
+
+function hasFrameworkFileSignal(content: string, relativeFile: string): boolean {
+  return (
+    /from\s+['"]next(?:\/[^'"]*)?['"]/.test(content) ||
+    /from\s+['"]react(?:\/[^'"]*)?['"]/.test(content) ||
+    /from\s+['"]@nestjs\/common['"]/.test(content) ||
+    /from\s+['"](?:bullmq|@nestjs\/bullmq|@nestjs\/bull)['"]/.test(content) ||
+    /@(?:Controller|Injectable|Module|Processor)\(/.test(content) ||
+    /['"]use client['"]/.test(content) ||
+    /(?:^|\/)app\//.test(relativeFile)
+  );
 }
 
 function hasSkippedSegment(relativePath: string): boolean {
@@ -324,13 +448,43 @@ function sourceRootFromPathEntry(relativeDir: string, entry: string): string | n
   const normalizedEntry = normalizeRelative(entry.replace(/^\.\//, ''));
   if (!normalizedEntry || normalizedEntry.includes('..')) return null;
   const segments = normalizedEntry.split('/');
-  const sourceIndex = segments.findIndex((segment) => SOURCE_DIR_NAMES.has(segment));
+  const sourceIndex = segments.findIndex((segment) => CONVENTIONAL_SOURCE_DIR_NAMES.has(segment));
   if (sourceIndex < 0) return null;
   const sourceRoot = normalizeRelative(
     safeJoin(relativeDir, segments.slice(0, sourceIndex + 1).join('/')),
   );
   if (hasSkippedSegment(sourceRoot)) return null;
   return sourceRoot;
+}
+
+function sourceRootFromEntrypoint(relativeDir: string, entrypoint: string): string | null {
+  const normalizedEntrypoint = normalizeRelative(entrypoint.replace(/^\.\//, ''));
+  if (!normalizedEntrypoint || normalizedEntrypoint.includes('..')) return null;
+  if (!SOURCE_EXTENSIONS.includes(path.extname(normalizedEntrypoint))) return null;
+  const entryDir = path.dirname(normalizedEntrypoint);
+  const packageDir = relativeDir || '.';
+  const sourceRoot = normalizeRelative(safeJoin(packageDir, entryDir === '.' ? '.' : entryDir));
+  if (!sourceRoot || hasSkippedSegment(sourceRoot)) return null;
+  return sourceRoot;
+}
+
+function sourceEntrypointsFromText(entry: string): string[] {
+  const entrypoints: string[] = [];
+  const sourceFilePattern =
+    /(?:^|[\s"'`=:,(])((?:\.{1,2}\/)?[^\s"'`),;]+?\.(?:tsx?|jsx?))(?:$|[\s"'`),;:])/g;
+  for (const match of entry.matchAll(sourceFilePattern)) {
+    const candidate = normalizeRelative(match[1].replace(/^\.\//, ''));
+    if (!candidate.includes('..') && SOURCE_EXTENSIONS.includes(path.extname(candidate))) {
+      entrypoints.push(candidate);
+    }
+  }
+  return uniqueSorted(entrypoints);
+}
+
+function discoverPackageEntrypoints(pkg: PackageJson): string[] {
+  return uniqueSorted(
+    packageManifestEntries(pkg).flatMap((entry) => sourceEntrypointsFromText(entry)),
+  );
 }
 
 function hasSourceFiles(rootDir: string, relativeDir: string): boolean {
@@ -366,7 +520,12 @@ function addRoot(
   packageName: string | null,
   evidence: string,
   evidenceBasis: SourceRootEvidenceBasis,
-  options: { weakCandidate?: boolean; kind?: SourceRootKind } = {},
+  options: {
+    weakCandidate?: boolean;
+    kind?: SourceRootKind;
+    frameworks?: string[];
+    entrypoints?: string[];
+  } = {},
 ): void {
   const normalized = normalizeRelative(relativePath);
   if (hasSkippedSegment(normalized)) return;
@@ -381,18 +540,39 @@ function addRoot(
       ? 'source root exists but no scannable source files were found'
       : null;
   const kind = options.kind ?? inferKind(normalized, packageName);
+  const fileEvidenceKind = inferKindFromFileEvidence(rootDir, normalized);
+  const resolvedKind = kind === 'unknown' || kind === 'library' ? fileEvidenceKind : kind;
+  const evidenceBasisList: SourceRootEvidenceBasis[] =
+    fileEvidenceKind === 'unknown' ? [evidenceBasis] : [evidenceBasis, 'import-graph'];
+  const frameworks = uniqueSorted([
+    ...(options.frameworks ?? []),
+    ...inferFrameworksFromFileEvidence(rootDir, normalized),
+  ]);
+  const entrypoints = uniqueSorted(
+    (options.entrypoints ?? []).map((entrypoint) => normalizeRelative(entrypoint)),
+  );
+  const languages = languagesForExtensions(languageExtensions);
 
   const existing = roots.get(normalized);
   if (existing) {
     if (!existing.evidence.includes(evidence)) existing.evidence.push(evidence);
-    if (!existing.evidenceBasis.includes(evidenceBasis)) existing.evidenceBasis.push(evidenceBasis);
+    for (const basis of evidenceBasisList) {
+      if (!existing.evidenceBasis.includes(basis)) existing.evidenceBasis.push(basis);
+    }
     if (existing.kind === 'unknown' || existing.kind === 'library') {
-      existing.kind = kind;
+      existing.kind = resolvedKind;
     }
     if (existing.availability === 'not_available' && availability === 'inferred') {
       existing.availability = 'inferred';
       existing.unavailableReason = null;
     }
+    existing.languageExtensions = uniqueSorted([
+      ...existing.languageExtensions,
+      ...languageExtensions,
+    ]);
+    existing.languages = languagesForExtensions(existing.languageExtensions);
+    existing.frameworks = uniqueSorted([...existing.frameworks, ...frameworks]);
+    existing.entrypoints = uniqueSorted([...existing.entrypoints, ...entrypoints]);
     existing.weakCandidate = existing.weakCandidate && weakCandidate;
     return;
   }
@@ -400,14 +580,17 @@ function addRoot(
   roots.set(normalized, {
     relativePath: normalized,
     absolutePath: path.resolve(rootDir, normalized),
-    kind,
+    kind: resolvedKind,
     packageName,
     evidence: [evidence],
-    evidenceBasis: [evidenceBasis],
+    evidenceBasis: evidenceBasisList,
     availability,
     unavailableReason,
     weakCandidate,
     languageExtensions,
+    languages,
+    frameworks,
+    entrypoints,
   });
 }
 
@@ -447,23 +630,51 @@ function stringValues(input: unknown): string[] {
   return [];
 }
 
+function discoverConventionalPackageSourceRoots(rootDir: string, relativeDir: string): string[] {
+  const base = relativeDir || '.';
+  return [...CONVENTIONAL_SOURCE_DIR_NAMES]
+    .map((dirName) => normalizeRelative(safeJoin(base, dirName)))
+    .filter((candidate) => pathExists(safeJoin(rootDir, candidate)));
+}
+
 function addPackageRoots(
   roots: Map<string, DetectedSourceRoot>,
   rootDir: string,
   packages: Map<string, PackageJson>,
 ): void {
   for (const [relativeDir, pkg] of packages) {
-    const base = relativeDir || '.';
     const packageKind = inferKindFromPackage(pkg, rootDir, relativeDir);
-    for (const dirName of SOURCE_DIR_NAMES) {
+    const packageFrameworks = inferFrameworksFromPackage(pkg, rootDir, relativeDir);
+    const entrypoints = discoverPackageEntrypoints(pkg);
+
+    for (const entrypoint of entrypoints) {
+      const root = sourceRootFromEntrypoint(relativeDir || '.', entrypoint);
+      if (root) {
+        addRoot(
+          roots,
+          rootDir,
+          root,
+          pkg.name ?? null,
+          `package-entrypoint:${relativeDir || '.'}:${entrypoint}`,
+          'package-manifest',
+          {
+            kind: packageKind,
+            frameworks: packageFrameworks,
+            entrypoints: [normalizeRelative(safeJoin(relativeDir || '.', entrypoint))],
+          },
+        );
+      }
+    }
+
+    for (const relativeSourceRoot of discoverConventionalPackageSourceRoots(rootDir, relativeDir)) {
       addRoot(
         roots,
         rootDir,
-        normalizeRelative(safeJoin(base, dirName)),
+        relativeSourceRoot,
         pkg.name ?? null,
         `package:${relativeDir || '.'}`,
         'package-manifest',
-        { kind: packageKind },
+        { kind: packageKind, frameworks: packageFrameworks },
       );
     }
 
@@ -477,7 +688,7 @@ function addPackageRoots(
           pkg.name ?? null,
           `package-export:${relativeDir || '.'}`,
           'package-export',
-          { kind: packageKind },
+          { kind: packageKind, frameworks: packageFrameworks },
         );
       } else if (relativeDir && entryMentionsSourceFile(entry)) {
         addRoot(
@@ -487,7 +698,7 @@ function addPackageRoots(
           pkg.name ?? null,
           `package-manifest:${relativeDir}`,
           'package-manifest',
-          { kind: packageKind },
+          { kind: packageKind, frameworks: packageFrameworks },
         );
       }
     }
@@ -507,6 +718,12 @@ function addTsConfigRoots(
     [...packages.entries()].map(([relativeDir, pkg]) => [
       relativeDir,
       inferKindFromPackage(pkg, rootDir, relativeDir),
+    ]),
+  );
+  const frameworksByDir = new Map(
+    [...packages.entries()].map(([relativeDir, pkg]) => [
+      relativeDir,
+      inferFrameworksFromPackage(pkg, rootDir, relativeDir),
     ]),
   );
 
@@ -531,8 +748,10 @@ function addTsConfigRoots(
         sourceRootFromPatternEntry(configDir === '.' ? '.' : configDir, entry) ??
         sourceRootFromPathEntry(configDir === '.' ? '.' : configDir, entry);
       if (root) {
+        const packageDir = configDir === '.' ? '' : configDir;
         addRoot(roots, rootDir, root, packageName, `${basis}:${configPath}`, basis, {
-          kind: kindByDir.get(configDir === '.' ? '' : configDir),
+          kind: kindByDir.get(packageDir),
+          frameworks: frameworksByDir.get(packageDir),
         });
       }
     }
@@ -547,6 +766,7 @@ function discoverBuildConfigRoots(
   for (const [relativeDir, pkg] of packages) {
     const packageDir = relativeDir || '.';
     const packageKind = inferKindFromPackage(pkg, rootDir, relativeDir);
+    const packageFrameworks = inferFrameworksFromPackage(pkg, rootDir, relativeDir);
     for (const fileName of BUILD_CONFIG_FILES) {
       const configPath = safeJoin(rootDir, packageDir, fileName);
       if (!pathExists(configPath)) continue;
@@ -565,21 +785,24 @@ function discoverBuildConfigRoots(
               pkg.name ?? null,
               `build-config:${normalizeRelative(safeJoin(packageDir, fileName))}`,
               'build-config',
-              { kind: packageKind },
+              { kind: packageKind, frameworks: packageFrameworks },
             );
           }
         }
       }
 
-      for (const dirName of SOURCE_DIR_NAMES) {
+      for (const relativeSourceRoot of discoverConventionalPackageSourceRoots(
+        rootDir,
+        relativeDir,
+      )) {
         addRoot(
           roots,
           rootDir,
-          normalizeRelative(safeJoin(packageDir, dirName)),
+          relativeSourceRoot,
           pkg.name ?? null,
           `build-config:${normalizeRelative(safeJoin(packageDir, fileName))}`,
           'build-config',
-          { kind: packageKind },
+          { kind: packageKind, frameworks: packageFrameworks },
         );
       }
     }
@@ -594,9 +817,21 @@ function addFileEvidenceRoots(roots: Map<string, DetectedSourceRoot>, rootDir: s
     if (segments.some((part) => SKIP_DIR_NAMES.has(part))) continue;
     if (!SOURCE_EXTENSIONS.includes(path.extname(normalized))) continue;
 
-    const sourceIndex = segments.findIndex((segment) => SOURCE_DIR_NAMES.has(segment));
+    const sourceIndex = segments.findIndex((segment) => CONVENTIONAL_SOURCE_DIR_NAMES.has(segment));
     if (sourceIndex >= 0) {
       candidates.add(segments.slice(0, sourceIndex + 1).join('/'));
+      continue;
+    }
+
+    let content = '';
+    try {
+      content = readTextFile(safeJoin(rootDir, normalized), 'utf8');
+    } catch {
+      content = '';
+    }
+    if (hasFrameworkFileSignal(content, normalized)) {
+      const dynamicRoot = normalizeRelative(path.dirname(normalized));
+      if (dynamicRoot && dynamicRoot !== '.') candidates.add(dynamicRoot);
     }
   }
 

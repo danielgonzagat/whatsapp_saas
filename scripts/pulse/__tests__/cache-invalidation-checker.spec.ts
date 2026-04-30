@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
+import { auditPulseNoHardcodedReality } from '../no-hardcoded-reality-audit';
 import { checkCacheInvalidation } from '../parsers/cache-invalidation-checker';
 import type { PulseConfig } from '../types';
 
@@ -33,6 +34,15 @@ function writeFile(rootDir: string, relativePath: string, content: string): void
 }
 
 describe('cache invalidation checker diagnostics', () => {
+  it('keeps cache invalidation checker free of hardcoded reality authority findings', () => {
+    const result = auditPulseNoHardcodedReality(process.cwd());
+    const checkerFindings = result.findings.filter(
+      (finding) => finding.filePath === 'scripts/pulse/parsers/cache-invalidation-checker.ts',
+    );
+
+    expect(checkerFindings).toEqual([]);
+  });
+
   it('emits weak-signal evidence gaps instead of fixed CACHE_* authority types', () => {
     const config = makeConfig();
 

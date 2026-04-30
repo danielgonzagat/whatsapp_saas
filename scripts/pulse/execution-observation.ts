@@ -59,7 +59,10 @@ function executedScenarioResults(
   evidence?: Partial<PulseExecutionEvidence>,
 ): Array<PulseActorEvidence['results'][number]> {
   return scenarioResults(evidence).filter(
-    (result) => result.executed || result.status === 'failed',
+    (result) =>
+      result.executed &&
+      (result.status === 'passed' || result.status === 'failed') &&
+      result.truthMode !== 'inferred',
   );
 }
 

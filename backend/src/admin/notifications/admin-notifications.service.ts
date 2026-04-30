@@ -100,6 +100,7 @@ export class AdminNotificationsService {
       ]);
 
     const chargebackWorkspaceIds = Array.from(new Set(chargebacks.map((row) => row.workspaceId)));
+    // PULSE_OK: bounded by in-clause derived from chargeback workspace set
     const chargebackWorkspaces = await this.prisma.workspace.findMany({
       where: { id: { in: chargebackWorkspaceIds } },
       select: { id: true, name: true },

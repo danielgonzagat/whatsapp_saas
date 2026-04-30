@@ -38,7 +38,9 @@ describe('AI guardrails parser', () => {
     const breaks = checkAiGuardrails(pulseConfig(rootDir));
 
     expect(breaks.length).toBeGreaterThan(0);
-    expect(breaks.every((item) => item.type === 'AI_GUARDRAIL_BROKEN')).toBe(true);
+    expect(breaks.every((item) => item.type.startsWith('diagnostic:ai-guardrails:'))).toBe(true);
     expect(breaks.every((item) => item.source?.includes('predicates='))).toBe(true);
+    expect(breaks.every((item) => item.source?.includes('truthMode=confirmed_static'))).toBe(true);
+    expect(breaks.every((item) => item.detail.includes('evidence='))).toBe(true);
   });
 });

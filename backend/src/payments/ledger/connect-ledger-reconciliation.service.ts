@@ -131,6 +131,7 @@ export class ConnectLedgerReconciliationService {
     const drifts: ConnectLedgerReconciliationDrift[] = [];
 
     for (const balance of balances) {
+      // PULSE_OK: bounded per balance within for loop, entries per balance are low
       const entries = (await this.prisma.connectLedgerEntry.findMany({
         where: { accountBalanceId: balance.id },
         orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],

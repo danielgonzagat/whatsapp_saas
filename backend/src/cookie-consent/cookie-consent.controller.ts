@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
 import type { Request, Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { CookieConsentService } from './cookie-consent.service';

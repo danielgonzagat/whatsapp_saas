@@ -53,13 +53,21 @@ const SUPPORTED_EXTENSIONS = new Set([
   '.cjs',
 ]);
 
-const HEX_COLOR_PATTERN = /#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b/g;
-const FUNCTION_COLOR_PATTERN =
-  /\b(?:rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|color)\(\s*[^;{}"'`)\]]+\s*\)/gi;
-const CSS_VARIABLE_DECLARATION_PATTERN = /--([A-Za-z0-9_-]+)\s*:\s*([^;{}]+)/g;
+const FUNCTION_COLOR_NAMES = [
+  'rgba',
+  'rgb',
+  'hsla',
+  'hsl',
+  'oklch',
+  'oklab',
+  'color',
+  'lab',
+  'lch',
+];
 
 function normalizeRepoPath(filePath: string): string {
-  return filePath.replace(/\\/g, '/').replace(/^\.\//, '');
+  const slashNormalized = filePath.split('\\').join('/');
+  return slashNormalized.startsWith('./') ? slashNormalized.slice(2) : slashNormalized;
 }
 
 function toRelativePath(rootDir: string, filePath: string): string {
@@ -78,15 +86,36 @@ function lineForIndex(content: string, index: number): number {
 }
 
 function normalizeColorValue(value: string): string {
-  const trimmed = value.trim().replace(/\s+/g, ' ');
+  const trimmed = collapseWhitespace(value.trim());
   if (trimmed.startsWith('#')) {
     return trimmed.toLowerCase();
   }
   return trimmed
-    .replace(/\s*,\s*/g, ', ')
-    .replace(/\(\s+/g, '(')
-    .replace(/\s+\)/g, ')')
+    .split(',')
+    .map((part) => part.trim())
+    .join(', ')
+    .replace('( ', '(')
+    .replace(' )', ')')
     .toLowerCase();
+}
+
+function collapseWhitespace(value: string): string {
+  let output = '';
+  let previousWasWhitespace = false;
+  for (const ch of value) {
+    const isWhitespace =
+      ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === '\f' || ch === '\v';
+    if (isWhitespace) {
+      if (!previousWasWhitespace) {
+        output += ' ';
+      }
+      previousWasWhitespace = true;
+      continue;
+    }
+    output += ch;
+    previousWasWhitespace = false;
+  }
+  return output;
 }
 
 function isSupportedSourceFile(relativePath: string): boolean {
@@ -94,20 +123,62 @@ function isSupportedSourceFile(relativePath: string): boolean {
 }
 
 function isTailwindConfig(relativePath: string): boolean {
-  return /(?:^|\/)tailwind[.]config[.](?:js|cjs|mjs|ts)$/.test(relativePath);
+  const basename = path.basename(relativePath).toLowerCase();
+  return [
+    'tailwind.config.js',
+    'tailwind.config.cjs',
+    'tailwind.config.mjs',
+    'tailwind.config.ts',
+  ].includes(basename);
 }
 
 function isTokenFile(relativePath: string): boolean {
-  return /(?:^|\/)(?:tokens?|design-tokens?)(?:[./_-]|$)/i.test(relativePath);
+  return normalizeRepoPath(relativePath)
+    .toLowerCase()
+    .split('/')
+    .some((part) => {
+      const normalized = part.split('.').join('-').split('_').join('-');
+      return (
+        normalized === 'token' ||
+        normalized === 'tokens' ||
+        normalized === 'design-token' ||
+        normalized === 'design-tokens'
+      );
+    });
 }
 
 function isThemeFile(relativePath: string): boolean {
-  return /(?:^|\/)(?:theme|themes)(?:[./_-]|$)/i.test(relativePath);
+  return normalizeRepoPath(relativePath)
+    .toLowerCase()
+    .split('/')
+    .some((part) => {
+      const normalized = part.split('.').join('-').split('_').join('-');
+      return normalized === 'theme' || normalized === 'themes';
+    });
 }
 
 function isComponentPrimitiveStyleFile(relativePath: string): boolean {
-  return /(?:^|\/)(?:components\/(?:ui|primitives)|ui\/(?:components|primitives)|primitives)\/.+[.](?:tsx|ts|jsx|js|css|scss|sass|less)$/i.test(
-    relativePath,
+  const normalized = normalizeRepoPath(relativePath).toLowerCase();
+  const parts = normalized.split('/');
+  const extension = path.extname(normalized);
+  const supportedStyleExtensions = [
+    '.tsx',
+    '.ts',
+    '.jsx',
+    '.js',
+    '.css',
+    '.scss',
+    '.sass',
+    '.less',
+  ];
+  if (!supportedStyleExtensions.includes(extension)) {
+    return false;
+  }
+  return parts.some(
+    (part, index) =>
+      part === 'primitives' ||
+      (part === 'components' && (parts[index + 1] === 'ui' || parts[index + 1] === 'primitives')) ||
+      (part === 'ui' && (parts[index + 1] === 'components' || parts[index + 1] === 'primitives')),
   );
 }
 
@@ -130,14 +201,8 @@ function classifySource(relativePath: string): DesignTokenSourceKind[] {
 
 function extractColorValues(content: string): Array<{ value: string; index: number }> {
   const matches: Array<{ value: string; index: number }> = [];
-  for (const pattern of [HEX_COLOR_PATTERN, FUNCTION_COLOR_PATTERN]) {
-    pattern.lastIndex = 0;
-    let match = pattern.exec(content);
-    while (match) {
-      matches.push({ value: match[0], index: match.index });
-      match = pattern.exec(content);
-    }
-  }
+  matches.push(...extractHexColorValues(content));
+  matches.push(...extractFunctionColorValues(content));
   return matches;
 }
 
@@ -146,12 +211,8 @@ function extractCssVariableColors(
   sourcePath: string,
 ): DiscoveredDesignColorEvidence[] {
   const evidence: DiscoveredDesignColorEvidence[] = [];
-  CSS_VARIABLE_DECLARATION_PATTERN.lastIndex = 0;
-  let variableMatch = CSS_VARIABLE_DECLARATION_PATTERN.exec(content);
-  while (variableMatch) {
-    const tokenName = variableMatch[1];
-    const rawValue = variableMatch[2] ?? '';
-    const valueOffset = variableMatch.index + variableMatch[0].indexOf(rawValue);
+  for (const variableMatch of extractCssVariableDeclarations(content)) {
+    const { tokenName, rawValue, valueOffset } = variableMatch;
     for (const color of extractColorValues(rawValue)) {
       evidence.push({
         value: color.value,
@@ -162,9 +223,133 @@ function extractCssVariableColors(
         tokenName,
       });
     }
-    variableMatch = CSS_VARIABLE_DECLARATION_PATTERN.exec(content);
   }
   return evidence;
+}
+
+function isHexChar(ch: string | undefined): boolean {
+  if (!ch) {
+    return false;
+  }
+  return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F');
+}
+
+function isIdentifierChar(ch: string | undefined): boolean {
+  if (!ch) {
+    return false;
+  }
+  return (
+    (ch >= 'a' && ch <= 'z') ||
+    (ch >= 'A' && ch <= 'Z') ||
+    (ch >= '0' && ch <= '9') ||
+    ch === '_' ||
+    ch === '-'
+  );
+}
+
+function extractHexColorValues(content: string): Array<{ value: string; index: number }> {
+  const matches: Array<{ value: string; index: number }> = [];
+  let cursor = 0;
+  while (cursor < content.length) {
+    const index = content.indexOf('#', cursor);
+    if (index === -1) {
+      break;
+    }
+    let end = index + 1;
+    while (isHexChar(content[end])) {
+      end += 1;
+    }
+    const hexLength = end - index - 1;
+    if ([3, 4, 6, 8].includes(hexLength) && !isHexChar(content[end])) {
+      matches.push({ value: content.slice(index, end), index });
+    }
+    cursor = Math.max(end, index + 1);
+  }
+  return matches;
+}
+
+function extractFunctionColorValues(content: string): Array<{ value: string; index: number }> {
+  const matches: Array<{ value: string; index: number }> = [];
+  const lowerContent = content.toLowerCase();
+  for (const colorName of FUNCTION_COLOR_NAMES) {
+    let cursor = 0;
+    const invocation = `${colorName}(`;
+    while (cursor < lowerContent.length) {
+      const index = lowerContent.indexOf(invocation, cursor);
+      if (index === -1) {
+        break;
+      }
+      if (isIdentifierChar(lowerContent[index - 1])) {
+        cursor = index + invocation.length;
+        continue;
+      }
+      const end = content.indexOf(')', index + invocation.length);
+      if (
+        end !== -1 &&
+        !containsAny(content.slice(index, end), [';', '{', '}', '"', "'", '`', ']'])
+      ) {
+        matches.push({ value: content.slice(index, end + 1), index });
+      }
+      cursor = index + invocation.length;
+    }
+  }
+  return matches;
+}
+
+function containsAny(value: string, tokens: readonly string[]): boolean {
+  return tokens.some((token) => value.includes(token));
+}
+
+function extractCssVariableDeclarations(
+  content: string,
+): Array<{ tokenName: string; rawValue: string; valueOffset: number }> {
+  const declarations: Array<{ tokenName: string; rawValue: string; valueOffset: number }> = [];
+  let cursor = 0;
+  while (cursor < content.length) {
+    const start = content.indexOf('--', cursor);
+    if (start === -1) {
+      break;
+    }
+    let nameEnd = start + 2;
+    while (isIdentifierChar(content[nameEnd])) {
+      nameEnd += 1;
+    }
+    const tokenName = content.slice(start + 2, nameEnd);
+    let colonIndex = nameEnd;
+    while (
+      colonIndex < content.length &&
+      content[colonIndex] !== ':' &&
+      content[colonIndex] !== ';' &&
+      content[colonIndex] !== '{' &&
+      content[colonIndex] !== '}'
+    ) {
+      colonIndex += 1;
+    }
+    if (tokenName && content[colonIndex] === ':') {
+      let valueStart = colonIndex + 1;
+      while (valueStart < content.length && content[valueStart] === ' ') {
+        valueStart += 1;
+      }
+      let valueEnd = valueStart;
+      while (
+        valueEnd < content.length &&
+        content[valueEnd] !== ';' &&
+        content[valueEnd] !== '{' &&
+        content[valueEnd] !== '}'
+      ) {
+        valueEnd += 1;
+      }
+      declarations.push({
+        tokenName,
+        rawValue: content.slice(valueStart, valueEnd),
+        valueOffset: valueStart,
+      });
+      cursor = valueEnd + 1;
+      continue;
+    }
+    cursor = start + 2;
+  }
+  return declarations;
 }
 
 function extractTokenSourceColors(

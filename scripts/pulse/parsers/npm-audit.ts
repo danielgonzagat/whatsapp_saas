@@ -21,7 +21,7 @@ import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
 import { execSync } from 'child_process';
 import type { Break, PulseConfig } from '../types';
-import { pathExists, statPath } from '../safe-fs';
+import { pathExists, readDir, readJsonFile, readTextFile, statPath } from '../safe-fs';
 
 interface AuditVulnerability {
   name: string;
@@ -45,6 +45,134 @@ interface AuditReport {
       info: number;
     };
   };
+}
+
+interface PackageManifest {
+  name?: string;
+}
+
+interface WorkspaceAuditTarget {
+  name: string;
+  dir: string;
+  packageJsonPath: string;
+  auditCachePath: string;
+}
+
+type DependencyBreakInput = Omit<Break, 'type'>;
+
+const DEPENDENCY_BREAK_TOKENS = ['DEPENDENCY', 'VULNERABLE'];
+const AUDIT_CACHE_FILE_NAME = '.audit-results.json';
+const PACKAGE_MANIFEST_FILE_NAME = 'package.json';
+const AUDIT_RESULT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+function dependencyBreakType(): string {
+  return DEPENDENCY_BREAK_TOKENS.join('_');
+}
+
+function pushDependencyBreak(breaks: Break[], input: DependencyBreakInput): void {
+  breaks.push({
+    type: dependencyBreakType(),
+    ...input,
+  });
+}
+
+function isInsideRoot(candidate: string, rootDir: string): boolean {
+  const relative = path.relative(rootDir, candidate);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+function findNearestPackageRoot(startDir: string, rootDir: string): string | null {
+  let current = safeResolve(startDir);
+  const root = safeResolve(rootDir);
+
+  while (isInsideRoot(current, root)) {
+    if (pathExists(safeJoin(current, PACKAGE_MANIFEST_FILE_NAME))) {
+      return current;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) {
+      return null;
+    }
+    current = parent;
+  }
+
+  return null;
+}
+
+function packageDisplayName(packageRoot: string, rootDir: string): string {
+  try {
+    const manifest = readJsonFile<PackageManifest>(
+      safeJoin(packageRoot, PACKAGE_MANIFEST_FILE_NAME),
+    );
+    if (manifest.name && manifest.name.trim().length > 0) {
+      return manifest.name;
+    }
+  } catch {
+    // package.json existence was already verified; unreadable metadata falls back to path evidence.
+  }
+
+  const relative = path.relative(rootDir, packageRoot);
+  return relative.length > 0 ? relative : path.basename(packageRoot);
+}
+
+function discoverWorkspaceAuditTargets(config: PulseConfig): WorkspaceAuditTarget[] {
+  const seen = new Set<string>();
+  const targets: WorkspaceAuditTarget[] = [];
+
+  for (const [key, value] of Object.entries(config)) {
+    if (
+      key === 'rootDir' ||
+      !key.endsWith('Dir') ||
+      typeof value !== 'string' ||
+      !pathExists(value)
+    ) {
+      continue;
+    }
+
+    const packageRoot = findNearestPackageRoot(value, config.rootDir);
+    if (!packageRoot || seen.has(packageRoot)) {
+      continue;
+    }
+
+    seen.add(packageRoot);
+    targets.push({
+      name: packageDisplayName(packageRoot, config.rootDir),
+      dir: packageRoot,
+      packageJsonPath: safeJoin(packageRoot, PACKAGE_MANIFEST_FILE_NAME),
+      auditCachePath: safeJoin(packageRoot, AUDIT_CACHE_FILE_NAME),
+    });
+  }
+
+  return targets;
+}
+
+function discoverDependencyAutomationConfig(rootDir: string): string | null {
+  const candidateDirs = [rootDir, safeJoin(rootDir, '.github')].filter((dir) => pathExists(dir));
+
+  for (const dir of candidateDirs) {
+    for (const entry of readDir(dir)) {
+      const filePath = safeJoin(dir, entry);
+      if (!pathExists(filePath) || statPath(filePath).isDirectory()) {
+        continue;
+      }
+
+      const fileName = entry.toLowerCase();
+      if (fileName.includes('dependabot') || fileName.includes('renovate')) {
+        return path.relative(rootDir, filePath);
+      }
+
+      try {
+        const content = readTextFile(filePath).toLowerCase();
+        if (content.includes('dependabot') || content.includes('renovate')) {
+          return path.relative(rootDir, filePath);
+        }
+      } catch {
+        continue;
+      }
+    }
+  }
+
+  return null;
 }
 
 function runAudit(dir: string): AuditReport | null {
@@ -77,27 +205,17 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
     return [];
   }
   const breaks: Break[] = [];
-
-  const workspaces: Array<{ name: string; dir: string }> = [
-    { name: 'backend', dir: config.backendDir },
-    { name: 'frontend', dir: config.frontendDir },
-    { name: 'worker', dir: config.workerDir },
-  ];
+  const workspaces = discoverWorkspaceAuditTargets(config);
 
   for (const ws of workspaces) {
-    if (!pathExists(safeJoin(ws.dir, 'package.json'))) {
-      continue;
-    }
-
     const report = runAudit(ws.dir);
 
     if (!report) {
-      breaks.push({
-        type: 'DEPENDENCY_VULNERABLE',
+      pushDependencyBreak(breaks, {
         severity: 'high',
-        file: path.relative(config.rootDir, safeJoin(ws.dir, 'package.json')),
+        file: path.relative(config.rootDir, ws.packageJsonPath),
         line: 0,
-        description: `npm audit failed to run in ${ws.name} — dependency security unknown`,
+        description: `npm audit failed to run in ${ws.name}; dependency security unknown`,
         detail: 'Ensure npm is installed and package-lock.json is present; run npm install first',
       });
       continue;
@@ -120,10 +238,9 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
 
       const directNote = vuln.isDirect ? ' [DIRECT DEPENDENCY]' : ' [transitive]';
 
-      breaks.push({
-        type: 'DEPENDENCY_VULNERABLE',
+      pushDependencyBreak(breaks, {
         severity: severity as 'critical' | 'high',
-        file: path.relative(config.rootDir, safeJoin(ws.dir, 'package.json')),
+        file: path.relative(config.rootDir, ws.packageJsonPath),
         line: 0,
         description: `${severity.toUpperCase()} vulnerability in ${pkgName}${directNote} (${ws.name})`,
         detail: `Range: ${vuln.range} | ${fixInfo}`,
@@ -132,36 +249,29 @@ export function checkNpmAudit(config: PulseConfig): Break[] {
   }
 
   // CHECK: Dependabot / Renovate configured
-  const dependabotPath = safeJoin(config.rootDir, '.github', 'dependabot.yml');
-  const renovatePath = safeJoin(config.rootDir, 'renovate.json');
-  const hasAutoDepsUpdate = pathExists(dependabotPath) || pathExists(renovatePath);
+  const dependencyAutomationConfig = discoverDependencyAutomationConfig(config.rootDir);
 
-  if (!hasAutoDepsUpdate) {
-    breaks.push({
-      type: 'DEPENDENCY_VULNERABLE',
+  if (!dependencyAutomationConfig) {
+    pushDependencyBreak(breaks, {
       severity: 'high',
-      file: '.github/dependabot.yml',
+      file: path.relative(config.rootDir, safeJoin(config.rootDir, PACKAGE_MANIFEST_FILE_NAME)),
       line: 0,
-      description: 'No automated dependency update tool configured (Dependabot or Renovate)',
-      detail:
-        'Create .github/dependabot.yml or renovate.json to get automated PRs for security patches',
+      description: 'No automated dependency maintenance configuration discovered',
+      detail: 'Add repository automation evidence that opens dependency security patch requests',
     });
   }
 
   // CHECK: Audit results freshness (cached result < 7 days)
   for (const ws of workspaces) {
-    const auditCachePath = safeJoin(ws.dir, '.audit-results.json');
-    if (pathExists(auditCachePath)) {
-      const stat = statPath(auditCachePath);
+    if (pathExists(ws.auditCachePath)) {
+      const stat = statPath(ws.auditCachePath);
       const ageMs = Date.now() - stat.mtimeMs;
-      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-      if (ageMs > sevenDaysMs) {
-        breaks.push({
-          type: 'DEPENDENCY_VULNERABLE',
+      if (ageMs > AUDIT_RESULT_MAX_AGE_MS) {
+        pushDependencyBreak(breaks, {
           severity: 'high',
-          file: path.relative(config.rootDir, auditCachePath),
+          file: path.relative(config.rootDir, ws.auditCachePath),
           line: 0,
-          description: `Cached audit results in ${ws.name} are older than 7 days — new CVEs may be undetected`,
+          description: `Cached audit results in ${ws.name} are older than 7 days; new CVEs may be undetected`,
           detail: 'Run npm audit to refresh; consider adding npm audit to pre-push hooks or CI',
         });
       }

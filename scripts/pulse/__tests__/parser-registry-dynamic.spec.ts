@@ -243,6 +243,46 @@ describe('dynamic parser registry contracts', () => {
     );
   });
 
+  it('lets a loaded plugin contract override directory naming inference for parser discovery', () => {
+    const rootDir = makeRoot();
+    write(
+      rootDir,
+      'scripts/pulse/plugins/adapter-shaped-runtime/index.ts',
+      [
+        "const runtimeKind = 'parser';",
+        'function runRuntimeEvidence(config: unknown) { return []; }',
+        'export default {',
+        "  id: 'adapter-shaped-runtime',",
+        '  kind: runtimeKind,',
+        "  version: '1.0.0',",
+        '  discover() { return []; },',
+        '  link() { return []; },',
+        '  evidence() { return []; },',
+        '  gates() { return []; },',
+        '  parsers() {',
+        '    return [{',
+        "      name: 'contract-parser',",
+        "      file: 'scripts/pulse/plugins/adapter-shaped-runtime/index.ts',",
+        '      fn: runRuntimeEvidence,',
+        '    }];',
+        '  },',
+        '};',
+      ].join('\n'),
+    );
+
+    const inventory = loadParserInventory(makeConfig(rootDir));
+
+    expect(inventory.discoveredChecks).toEqual(['contract-parser']);
+    expect(inventory.loadedChecks).toContainEqual(
+      expect.objectContaining({
+        name: 'contract-parser',
+        discoveryAuthority: 'plugin_registry',
+        pluginId: 'adapter-shaped-runtime',
+      }),
+    );
+    expect(inventory.unavailableChecks).toEqual([]);
+  });
+
   it('reports parser plugins honestly when they load but expose no executable parser list', () => {
     const rootDir = makeRoot();
     write(

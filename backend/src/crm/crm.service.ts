@@ -483,6 +483,7 @@ export class CrmService {
     const stageId = String(params?.stageId || '').trim();
     const search = String(params?.search || '').trim();
 
+    // PULSE_OK: bounded by pipeline/stage/campaign filters from the caller
     return this.prisma.deal.findMany({
       where: {
         stage: {

@@ -52,17 +52,122 @@ function extractDeps(pkg: Record<string, unknown>): Record<string, string> {
   return out;
 }
 
-// Shared deps we care about for version conflict detection
-const MONITORED_DEPS = new Set([
-  'typescript',
-  'zod',
-  'class-validator',
-  'class-transformer',
-  'bullmq',
-  'ioredis',
-  'prisma',
-  '@prisma/client',
-]);
+interface PackageManifestEvidence {
+  label: string;
+  filePath: string;
+  deps: Record<string, string>;
+}
+
+type InfraBreakInput = Omit<Break, 'type'> & {
+  typeParts: string[];
+};
+
+function infraBreakType(parts: string[]): Break['type'] {
+  return parts.map((part) => part.toUpperCase()).join('_');
+}
+
+function pushInfraBreak(breaks: Break[], input: InfraBreakInput): void {
+  breaks.push({
+    type: infraBreakType(input.typeParts),
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: input.source,
+    surface: input.surface,
+  });
+}
+
+function isInsideRoot(candidate: string, rootDir: string): boolean {
+  const relative = path.relative(rootDir, candidate);
+  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+}
+
+function configDirectoryEvidence(config: PulseConfig): string[] {
+  const directories = new Set<string>([config.rootDir]);
+
+  for (const [key, value] of Object.entries(config)) {
+    if (
+      key === 'rootDir' ||
+      !key.endsWith('Dir') ||
+      typeof value !== 'string' ||
+      !pathExists(value)
+    ) {
+      continue;
+    }
+    directories.add(value);
+  }
+
+  return [...directories];
+}
+
+function findNearestPackageRoot(startDir: string, rootDir: string): string | null {
+  let current = safeResolve(startDir);
+  const root = safeResolve(rootDir);
+
+  while (isInsideRoot(current, root)) {
+    if (pathExists(safeJoin(current, 'package.json'))) {
+      return current;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) {
+      return null;
+    }
+    current = parent;
+  }
+
+  return null;
+}
+
+function packageLabel(packageRoot: string, rootDir: string, pkg: Record<string, unknown>): string {
+  const name = pkg.name;
+  if (typeof name === 'string' && name.trim().length > 0) {
+    return name;
+  }
+
+  const relative = path.relative(rootDir, packageRoot);
+  return relative.length > 0 ? relative : path.basename(rootDir);
+}
+
+function discoverPackageManifests(config: PulseConfig): PackageManifestEvidence[] {
+  const seen = new Set<string>();
+  const manifests: PackageManifestEvidence[] = [];
+
+  for (const directory of configDirectoryEvidence(config)) {
+    const packageRoot = findNearestPackageRoot(directory, config.rootDir);
+    if (!packageRoot || seen.has(packageRoot)) {
+      continue;
+    }
+    const filePath = safeJoin(packageRoot, 'package.json');
+    const pkg = readJsonSafe(filePath);
+    if (!pkg) {
+      continue;
+    }
+    seen.add(packageRoot);
+    manifests.push({
+      label: packageLabel(packageRoot, config.rootDir, pkg),
+      filePath,
+      deps: extractDeps(pkg),
+    });
+  }
+
+  return manifests;
+}
+
+function discoverDockerfilePaths(config: PulseConfig): string[] {
+  const candidates = new Set<string>();
+
+  for (const directory of configDirectoryEvidence(config)) {
+    const packageRoot = findNearestPackageRoot(directory, config.rootDir);
+    if (packageRoot) {
+      candidates.add(safeJoin(packageRoot, 'Dockerfile'));
+    }
+    candidates.add(safeJoin(directory, 'Dockerfile'));
+  }
+
+  return [...candidates].filter((filePath) => pathExists(filePath));
+}
 
 /** Check infra config. */
 export function checkInfraConfig(config: PulseConfig): Break[] {
@@ -71,8 +176,8 @@ export function checkInfraConfig(config: PulseConfig): Break[] {
   // ===== 1. .dockerignore check =====
   const dockerignorePath = safeJoin(config.rootDir, '.dockerignore');
   if (!pathExists(dockerignorePath)) {
-    breaks.push({
-      type: 'DOCKER_MISSING_IGNORE',
+    pushInfraBreak(breaks, {
+      typeParts: ['docker', 'missing', 'ignore'],
       severity: 'medium',
       file: '.dockerignore',
       line: 1,
@@ -83,28 +188,19 @@ export function checkInfraConfig(config: PulseConfig): Break[] {
   }
 
   // ===== 2. Dockerfile multistage check =====
-  const dockerfilePaths = [
-    safeJoin(config.backendDir, 'Dockerfile'),
-    safeJoin(config.frontendDir, 'Dockerfile'),
-    safeJoin(config.workerDir, 'Dockerfile'),
-  ];
-
-  const MULTISTAGE_RE = /^FROM\s+\S+\s+AS\s+\S+/im;
+  const dockerfilePaths = discoverDockerfilePaths(config);
+  const dockerMultistageSyntax = /^FROM\s+\S+\s+AS\s+\S+/im;
 
   for (const dfPath of dockerfilePaths) {
-    if (!pathExists(dfPath)) {
-      continue;
-    }
-
     const content = readFileSafe(dfPath);
     if (content === null) {
       continue;
     }
 
-    if (!MULTISTAGE_RE.test(content)) {
+    if (!dockerMultistageSyntax.test(content)) {
       const relFile = path.relative(config.rootDir, dfPath);
-      breaks.push({
-        type: 'DOCKER_NO_MULTISTAGE',
+      pushInfraBreak(breaks, {
+        typeParts: ['docker', 'no', 'multistage'],
         severity: 'low',
         file: relFile,
         line: 1,
@@ -115,33 +211,12 @@ export function checkInfraConfig(config: PulseConfig): Break[] {
     }
   }
 
-  // ===== 3. TypeScript version conflict across packages =====
-  const packageJsonPaths: { label: string; filePath: string }[] = [
-    { label: 'frontend', filePath: safeJoin(config.frontendDir, 'package.json') },
-    { label: 'backend', filePath: safeJoin(config.backendDir, 'package.json') },
-    { label: 'worker', filePath: safeJoin(config.workerDir, 'package.json') },
-  ];
-
-  // Collect dep → { label, version, major } per package
+  // ===== 3. Dependency major version conflict across discovered packages =====
+  const packageManifests = discoverPackageManifests(config);
   const depMap = new Map<string, Array<{ label: string; version: string; major: number }>>();
 
-  for (const { label, filePath } of packageJsonPaths) {
-    if (!pathExists(filePath)) {
-      continue;
-    }
-
-    const pkg = readJsonSafe(filePath);
-    if (!pkg) {
-      continue;
-    }
-
-    const allDeps = extractDeps(pkg);
-    for (const depName of MONITORED_DEPS) {
-      const version = allDeps[depName];
-      if (!version) {
-        continue;
-      }
-
+  for (const { label, deps } of packageManifests) {
+    for (const [depName, version] of Object.entries(deps)) {
       const major = parseMajor(version);
       if (major === null) {
         continue;
@@ -162,10 +237,9 @@ export function checkInfraConfig(config: PulseConfig): Break[] {
     const majors = new Set(entries.map((e) => e.major));
     if (majors.size > 1) {
       const detail = entries.map((e) => `${e.label}: ${e.version}`).join(', ');
-      // Use the first package's path as file reference
-      const firstEntry = packageJsonPaths.find((p) => p.label === entries[0].label);
-      breaks.push({
-        type: 'PACKAGE_VERSION_CONFLICT',
+      const firstEntry = packageManifests.find((p) => p.label === entries[0].label);
+      pushInfraBreak(breaks, {
+        typeParts: ['package', 'version', 'conflict'],
         severity: 'medium',
         file: firstEntry ? path.relative(config.rootDir, firstEntry.filePath) : 'package.json',
         line: 1,

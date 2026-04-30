@@ -8,6 +8,7 @@ import { readTextFile, readDir, ensureDir, writeTextFile } from './safe-fs';
 import { safeJoin } from './safe-path';
 import { pathExists } from './safe-fs';
 import { detectSourceRoots } from './source-root-detector';
+import type { DetectedSourceRoot } from './source-root-detector';
 import type {
   BehaviorGraph,
   BehaviorNode,
@@ -231,16 +232,43 @@ type SourceExternalContext = {
   importedBindings: Set<string>;
 };
 
-function decoratorRoles(decorator: string): BehaviorDecoratorRole[] {
-  return TYPESCRIPT_BEHAVIOR_HINTS.flatMap((hint) => hint.decorators?.[decorator] ?? []);
+type SourceFileTarget = {
+  filePath: string;
+  sourceRoot: DetectedSourceRoot;
+};
+
+function sourceRootSupportsHint(
+  sourceRoot: DetectedSourceRoot | null,
+  hint: BehaviorFrameworkHint,
+): boolean {
+  if (!sourceRoot) return true;
+  return (
+    sourceRoot.languages.includes(hint.language) && sourceRoot.frameworks.includes(hint.framework)
+  );
 }
 
-function hasDecoratorRole(decorators: string[], role: BehaviorDecoratorRole): boolean {
-  return decorators.some((decorator) => decoratorRoles(decorator).includes(role));
+function decoratorRoles(
+  decorator: string,
+  sourceRoot: DetectedSourceRoot | null,
+): BehaviorDecoratorRole[] {
+  return TYPESCRIPT_BEHAVIOR_HINTS.flatMap((hint) =>
+    sourceRootSupportsHint(sourceRoot, hint) ? (hint.decorators?.[decorator] ?? []) : [],
+  );
 }
 
-function inputKindFromDecorator(decorator: string): BehaviorInputKind | null {
-  const roles = decoratorRoles(decorator);
+function hasDecoratorRole(
+  decorators: string[],
+  role: BehaviorDecoratorRole,
+  sourceRoot: DetectedSourceRoot | null,
+): boolean {
+  return decorators.some((decorator) => decoratorRoles(decorator, sourceRoot).includes(role));
+}
+
+function inputKindFromDecorator(
+  decorator: string,
+  sourceRoot: DetectedSourceRoot | null,
+): BehaviorInputKind | null {
+  const roles = decoratorRoles(decorator, sourceRoot);
   if (roles.includes('request_body')) return 'body';
   if (roles.includes('request_query')) return 'query';
   if (roles.includes('request_params')) return 'params';
@@ -249,9 +277,13 @@ function inputKindFromDecorator(decorator: string): BehaviorInputKind | null {
   return null;
 }
 
-function classNameRole(className: string): BehaviorClassNameRole | null {
+function classNameRole(
+  className: string,
+  sourceRoot: DetectedSourceRoot | null,
+): BehaviorClassNameRole | null {
   const lowerClass = className.toLowerCase();
   for (const hint of TYPESCRIPT_BEHAVIOR_HINTS) {
+    if (!sourceRootSupportsHint(sourceRoot, hint)) continue;
     for (const [suffix, role] of Object.entries(hint.classNameSuffixes ?? {})) {
       if (lowerClass.includes(suffix)) return role;
     }
@@ -530,18 +562,18 @@ function extractLargeFileFunctionStubs(source: string): ParsedFunc[] {
 }
 
 // ===== Kind determination =====
-function determineKind(func: ParsedFunc): BehaviorNodeKind {
+function determineKind(func: ParsedFunc, sourceRoot: DetectedSourceRoot | null): BehaviorNodeKind {
   const { decorators, className, name } = func;
 
-  if (hasDecoratorRole(decorators, 'http_route')) return 'api_endpoint';
-  if (hasDecoratorRole(decorators, 'cron_job')) return 'cron_job';
-  if (hasDecoratorRole(decorators, 'queue_consumer')) return 'queue_consumer';
-  if (hasDecoratorRole(decorators, 'event_listener')) return 'event_listener';
+  if (hasDecoratorRole(decorators, 'http_route', sourceRoot)) return 'api_endpoint';
+  if (hasDecoratorRole(decorators, 'cron_job', sourceRoot)) return 'cron_job';
+  if (hasDecoratorRole(decorators, 'queue_consumer', sourceRoot)) return 'queue_consumer';
+  if (hasDecoratorRole(decorators, 'event_listener', sourceRoot)) return 'event_listener';
 
   if (className) {
-    const role = classNameRole(className);
+    const role = classNameRole(className, sourceRoot);
     if (role === 'controller_like') {
-      if (hasDecoratorRole(decorators, 'http_route')) return 'api_endpoint';
+      if (hasDecoratorRole(decorators, 'http_route', sourceRoot)) return 'api_endpoint';
       return 'handler';
     }
     if (role === 'gateway_like') return 'event_listener';
@@ -562,7 +594,7 @@ function determineKind(func: ParsedFunc): BehaviorNodeKind {
 }
 
 // ===== Input extraction =====
-function extractInputs(func: ParsedFunc): BehaviorInput[] {
+function extractInputs(func: ParsedFunc, sourceRoot: DetectedSourceRoot | null): BehaviorInput[] {
   const inputs: BehaviorInput[] = [];
   const { parameters, decorators } = func;
 
@@ -576,7 +608,10 @@ function extractInputs(func: ParsedFunc): BehaviorInput[] {
       source: param.name,
     };
 
-    const nestedInputKind = decorators.map(inputKindFromDecorator).filter(Boolean).pop();
+    const nestedInputKind = decorators
+      .map((decorator) => inputKindFromDecorator(decorator, sourceRoot))
+      .filter(Boolean)
+      .pop();
     if (nestedInputKind) {
       input.kind = nestedInputKind;
     }
@@ -946,10 +981,11 @@ function determineExecutionMode(
   bodyText: string,
   stateAccess: BehaviorStateAccess[],
   externalCalls: BehaviorExternalCall[],
+  sourceRoot: DetectedSourceRoot | null,
 ): BehaviorNode['executionMode'] {
   if (risk === 'critical' || risk === 'high') return 'ai_safe';
 
-  if (hasDecoratorRole(decorators, 'auth_guard')) return 'ai_safe';
+  if (hasDecoratorRole(decorators, 'auth_guard', sourceRoot)) return 'ai_safe';
 
   const sendsMessagesOrPayments = hasMessageOrPaymentSending(bodyText, externalCalls);
   if (sendsMessagesOrPayments) return 'ai_safe';
@@ -1074,8 +1110,8 @@ function buildFuncNameMap(functions: ParsedFunc[]): Map<string, string[]> {
 }
 
 // ===== Main graph builder =====
-function collectTsFiles(rootDir: string): string[] {
-  const files: string[] = [];
+function collectSourceFiles(rootDir: string): SourceFileTarget[] {
+  const files: SourceFileTarget[] = [];
 
   for (const sourceRoot of detectSourceRoots(rootDir)) {
     const dir = sourceRoot.absolutePath;
@@ -1089,7 +1125,7 @@ function collectTsFiles(rootDir: string): string[] {
       const normalized = entry.split(path.sep).join('/');
       if (SKIP_DIRS.some((skip) => normalized.includes(skip))) continue;
 
-      files.push(safeJoin(dir, entry));
+      files.push({ filePath: safeJoin(dir, entry), sourceRoot });
     }
   }
 
@@ -1112,6 +1148,7 @@ function parseFileWithTsMorph(
   filePath: string,
   relPath: string,
   tsMorphAvailable: boolean,
+  sourceRoot: DetectedSourceRoot | null,
 ): BehaviorNode[] {
   try {
     let funcs: ParsedFunc[];
@@ -1123,7 +1160,7 @@ function parseFileWithTsMorph(
       funcs = extractFunctionsFromSource(filePath, sourceText);
     }
 
-    return buildNodesFromParsedFunctions(relPath, funcs, sourceText);
+    return buildNodesFromParsedFunctions(relPath, funcs, sourceText, sourceRoot);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[behavior-graph] Failed to parse ${relPath}: ${message}`);
@@ -1136,12 +1173,13 @@ function buildNodesFromParsedFunctions(
   relPath: string,
   funcs: ParsedFunc[],
   sourceText: string,
+  sourceRoot: DetectedSourceRoot | null,
 ): BehaviorNodeArtifact[] {
   const sourceContext = collectSourceExternalContext(sourceText);
 
   return funcs.map((func) => {
-    const kind = determineKind(func);
-    const inputs = extractInputs(func);
+    const kind = determineKind(func, sourceRoot);
+    const inputs = extractInputs(func, sourceRoot);
     const stateAccess = detectStateAccess(func.bodyText);
     const externalCalls = detectExternalCalls(func.bodyText, sourceContext);
     const outputs = detectOutputs(func.bodyText, kind);
@@ -1161,6 +1199,7 @@ function buildNodesFromParsedFunctions(
       func.bodyText,
       stateAccess,
       externalCalls,
+      sourceRoot,
     );
 
     const hasErrorHandler = func.bodyText.includes('try') && func.bodyText.includes('catch');
@@ -1191,6 +1230,15 @@ function buildNodesFromParsedFunctions(
       kind,
       name: func.className ? `${func.className}.${func.name}` : func.name,
       filePath: relPath,
+      sourceRoot: sourceRoot
+        ? {
+            relativePath: sourceRoot.relativePath,
+            kind: sourceRoot.kind,
+            languages: sourceRoot.languages,
+            frameworks: sourceRoot.frameworks,
+            entrypoints: sourceRoot.entrypoints,
+          }
+        : undefined,
       line: func.line,
       parentFunctionId: null,
       inputs,
@@ -1238,15 +1286,16 @@ export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
   }
 
   console.warn(`[behavior-graph] Scanning source files in ${rootDir}...`);
-  const tsFiles = collectTsFiles(rootDir);
-  console.warn(`[behavior-graph] Found ${tsFiles.length} TypeScript files`);
+  const sourceFiles = collectSourceFiles(rootDir);
+  console.warn(`[behavior-graph] Found ${sourceFiles.length} TypeScript files`);
 
   // First pass: discover all function names for call-graph linking
   const allFuncNames = new Set<string>();
   const funcsByFile = new Map<string, ParsedFunc[]>();
 
-  for (const filePath of tsFiles) {
+  for (const sourceFile of sourceFiles) {
     try {
+      const filePath = sourceFile.filePath;
       const sourceText = readTextFile(filePath);
       const funcs = extractFunctionsFromSource(filePath, sourceText);
       funcsByFile.set(filePath, funcs);
@@ -1261,19 +1310,20 @@ export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
 
   // Second pass: build full behavior nodes
   const bodyByNodeId = new Map<string, string>();
-  for (let fileIndex = 0; fileIndex < tsFiles.length; fileIndex++) {
-    const filePath = tsFiles[fileIndex];
+  for (let fileIndex = 0; fileIndex < sourceFiles.length; fileIndex++) {
+    const sourceFile = sourceFiles[fileIndex];
+    const filePath = sourceFile.filePath;
     if (process.env.PULSE_BEHAVIOR_DEBUG === '1') {
       console.warn(
-        `[behavior-graph] Building nodes ${fileIndex}/${tsFiles.length}: ${path.relative(rootDir, filePath)}`,
+        `[behavior-graph] Building nodes ${fileIndex}/${sourceFiles.length}: ${path.relative(rootDir, filePath)}`,
       );
     }
     const relPath = path.relative(rootDir, filePath);
     const sourceText = readTextFile(filePath);
     const funcs = funcsByFile.get(filePath);
     const fileNodes = funcs
-      ? buildNodesFromParsedFunctions(relPath, funcs, sourceText)
-      : parseFileWithTsMorph(filePath, relPath, tsMorphAvailable);
+      ? buildNodesFromParsedFunctions(relPath, funcs, sourceText, sourceFile.sourceRoot)
+      : parseFileWithTsMorph(filePath, relPath, tsMorphAvailable, sourceFile.sourceRoot);
     for (let index = 0; index < fileNodes.length; index++) {
       const func = funcs?.[index];
       if (func) {

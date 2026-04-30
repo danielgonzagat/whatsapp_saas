@@ -127,30 +127,85 @@ function weakHintScore(kind: OperationalEvidenceKind, tokens: Set<string>): numb
   return Math.min(0.18, matches * 0.04);
 }
 
-function sourceCapabilityScore(source: SignalSource, kind: OperationalEvidenceKind): number {
-  if (kind === 'runtime' && ['sentry', 'datadog', 'prometheus', 'otel_runtime'].includes(source)) {
-    return 0.35;
+function tokenizeEvidenceTerm(value: string): string[] {
+  const expanded = value.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_./:-]+/g, ' ');
+  return unique([...tokenize(value), ...tokenize(expanded)]);
+}
+
+function evidenceShapeScore(
+  kind: OperationalEvidenceKind,
+  signal: CanonicalExternalSignal,
+): number {
+  const tokens = new Set([
+    ...tokenize(signal.type),
+    ...tokenize(signal.summary),
+    ...signal.relatedFiles.flatMap(tokenize),
+    ...flattenPayloadTokens(signal.observedPayload),
+  ]);
+  const hasAny = (...keys: string[]): boolean => keys.some((key) => tokens.has(key));
+
+  if (kind === 'runtime') {
+    let score = 0;
+    if (
+      hasAny(
+        'trace',
+        'span',
+        'status',
+        'statuscode',
+        'exception',
+        'error',
+        'crash',
+        'timeout',
+        'duration',
+        'latency',
+        'runtime',
+      )
+    ) {
+      score += 0.28;
+    }
+    if (signal.observedAt) score += 0.08;
+    if (signal.runtimeBaselineScore > 0) score += 0.16;
+    if (signal.trend === 'worsening') score += 0.08;
+    return Math.min(0.6, score);
   }
-  if (kind === 'change' && ['github', 'github_actions', 'codecov'].includes(source)) {
-    return 0.3;
+
+  if (kind === 'change') {
+    let score = 0;
+    if (hasAny('commit', 'sha', 'pull', 'request', 'branch', 'workflow', 'deployment', 'build')) {
+      score += 0.3;
+    }
+    if (hasAny('diff', 'changed', 'files', 'coverage', 'test', 'regression')) score += 0.18;
+    return Math.min(0.52, score);
   }
-  if (kind === 'static' && ['codacy', 'codecov', 'gitnexus'].includes(source)) {
-    return 0.3;
+
+  if (kind === 'static') {
+    let score = 0;
+    if (
+      hasAny('rule', 'finding', 'complexity', 'duplication', 'lint', 'graph', 'file', 'hotspot')
+    ) {
+      score += 0.3;
+    }
+    if (signal.relatedFiles.length > 0) score += 0.12;
+    return Math.min(0.52, score);
   }
-  if (kind === 'dependency' && source === 'dependabot') {
-    return 0.35;
+
+  if (kind === 'dependency') {
+    let score = 0;
+    if (hasAny('package', 'dependency', 'version', 'lockfile', 'manifest')) score += 0.3;
+    if (hasAny('cve', 'vulnerability', 'advisory', 'supply')) score += 0.2;
+    return Math.min(0.52, score);
   }
-  if (kind === 'external') return 0.05;
+
   return 0;
 }
 
 function flattenPayloadTokens(value: unknown): string[] {
-  if (typeof value === 'string') return tokenize(value);
+  if (typeof value === 'string') return tokenizeEvidenceTerm(value);
   if (typeof value === 'number' || typeof value === 'boolean') return [String(value)];
   if (Array.isArray(value)) return value.flatMap(flattenPayloadTokens);
   if (!isRecord(value)) return [];
   return Object.entries(value).flatMap(([key, entry]) => [
-    ...tokenize(key),
+    ...tokenizeEvidenceTerm(key),
     ...flattenPayloadTokens(entry),
   ]);
 }
@@ -214,8 +269,8 @@ function deriveOperationalEvidenceKind(signal: CanonicalExternalSignal): Operati
     .map((kind) => ({
       kind,
       score:
+        evidenceShapeScore(kind, signal) +
         payloadSignalScore(kind, signal) +
-        sourceCapabilityScore(signal.source, kind) +
         weakHintScore(kind, tokens),
     }))
     .sort((a, b) => b.score - a.score);
@@ -266,6 +321,10 @@ function deriveSignalType(
 function clampScore(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(1, value));
+}
+
+function normalizePathSeparators(value: string): string {
+  return [...value].map((char) => (char === '\\' ? '/' : char)).join('');
 }
 
 /**
@@ -1055,13 +1114,16 @@ export function mapSignalToCapabilities(
 
       const hasNameMatch = nameTokens.some((nt) => nt.length >= 3 && messageTokens.has(nt));
 
-      const hasFilePathMatch = signal.affectedFilePaths.some((signalFile) =>
-        (capability.filePaths ?? []).some(
-          (capFile) =>
-            capFile.replace(/\\/g, '/').includes(signalFile.replace(/\\/g, '/')) ||
-            signalFile.replace(/\\/g, '/').includes(capFile.replace(/\\/g, '/')),
-        ),
-      );
+      const hasFilePathMatch = signal.affectedFilePaths.some((signalFile) => {
+        const normalizedSignalFile = normalizePathSeparators(signalFile);
+        return (capability.filePaths ?? []).some((capFile) => {
+          const normalizedCapabilityFile = normalizePathSeparators(capFile);
+          return (
+            normalizedCapabilityFile.includes(normalizedSignalFile) ||
+            normalizedSignalFile.includes(normalizedCapabilityFile)
+          );
+        });
+      });
 
       if (hasFilePathMatch || (!hasObservedFileHints && hasNameMatch)) {
         ids.add(capability.id);

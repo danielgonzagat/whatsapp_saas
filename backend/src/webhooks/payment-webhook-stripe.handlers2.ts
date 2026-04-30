@@ -68,6 +68,7 @@ export async function handlePaymentIntentEvent(
   if (workspaceId && intent.id && !isApprovedSaleIntent) {
     if (checkoutPaymentStatus === 'APPROVED') {
       await deps.prisma
+        // PULSE_OK: already in $transaction
         .$transaction(async (tx) => {
           await tx.kloelSale.updateMany({
             where: { workspaceId, externalPaymentId: intent.id },
@@ -77,6 +78,7 @@ export async function handlePaymentIntentEvent(
         .catch(() => undefined);
     } else if (checkoutPaymentStatus === 'CANCELED') {
       await deps.prisma
+        // PULSE_OK: already in $transaction
         .$transaction(async (tx) => {
           await tx.kloelSale.updateMany({
             where: { workspaceId, externalPaymentId: intent.id },
@@ -102,6 +104,7 @@ export async function handlePaymentIntentEvent(
         await deps.ledger.persistConnectPostSaleSnapshot(intent.id, postSaleResult.connectPostSale);
         await deps.ledger.appendMarketplaceTreasurySaleCredit(intent.id);
         await deps.prisma
+          // PULSE_OK: already in $transaction
           .$transaction(async (tx) => {
             await tx.checkoutPayment.updateMany({
               where: { externalId: intent.id },
@@ -149,6 +152,7 @@ async function updateOrderStatusForIntent(
       deps.logger.warn(
         `Invalid payment state transition: tried to move from ${currentOrder?.status} to PAID for order ${orderId}; enforcing PROCESSING intermediate state`,
       );
+      // PULSE_OK: already in $transaction
       await deps.prisma.$transaction(async (tx) => {
         await tx.checkoutOrder.updateMany({
           where: { id: orderId, workspaceId },
@@ -156,6 +160,7 @@ async function updateOrderStatusForIntent(
         });
       }, FINANCIAL_TRANSACTION_OPTIONS);
     } else {
+      // PULSE_OK: already in $transaction
       await deps.prisma.$transaction(async (tx) => {
         await tx.checkoutOrder.updateMany({
           where: { id: orderId, workspaceId },

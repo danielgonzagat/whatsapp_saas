@@ -20,7 +20,6 @@ import type {
 
 export type { CodacyClassification } from './types.codacy-classification';
 
-const LEGACY_RAC_TABLE_ACCESS_SIGNAL = 'Semgrep_codacy.generic.sql.rac-table-access';
 const MIN_REPEATED_HUMAN_DECISIONS = 2;
 
 interface CodacyIssueLike {
@@ -100,6 +99,7 @@ function isSuppressedHumanDecision(finding: AdjudicatedFinding): boolean {
     (finding.status === 'false_positive' || finding.status === 'accepted_risk') &&
     finding.expiresOnFileChange &&
     Boolean(finding.fileHashAtSuppression) &&
+    Boolean(finding.evidenceFingerprintAtSuppression) &&
     Boolean(finding.proof)
   );
 }
@@ -125,7 +125,24 @@ function hasUnexpiredFileEvidence(
     return true;
   }
   const currentHash = hashFile(rootDir, issue.filePath);
-  return currentHash !== null && currentHash === finding.fileHashAtSuppression;
+  if (currentHash === null || currentHash !== finding.fileHashAtSuppression) {
+    return false;
+  }
+  const currentEvidenceFingerprint = createHash('sha256')
+    .update(
+      JSON.stringify({
+        source: finding.source,
+        title: finding.title,
+        filePath: finding.filePath,
+        line: finding.line,
+        capabilityId: finding.capabilityId,
+        proof: finding.proof,
+        fileHash: currentHash,
+      }),
+    )
+    .digest('hex');
+
+  return currentEvidenceFingerprint === finding.evidenceFingerprintAtSuppression;
 }
 
 function countRepeatedHumanDecisions(
@@ -175,7 +192,6 @@ function hasGovernanceOrPathContext(issue: CodacyIssueLike): boolean {
 function hasIssueMetadataEvidence(issue: CodacyIssueLike): boolean {
   const metadata =
     `${issue.patternId} ${issue.category} ${issue.tool} ${issue.message}`.toLowerCase();
-  const hasLegacySignal = issue.patternId === LEGACY_RAC_TABLE_ACCESS_SIGNAL;
   const namesDemoOrTemplateRule =
     metadata.includes('demo') ||
     metadata.includes('template') ||
@@ -183,7 +199,7 @@ function hasIssueMetadataEvidence(issue: CodacyIssueLike): boolean {
     metadata.includes('rac_') ||
     metadata.includes('rac-table-access');
 
-  return issue.tool.toLowerCase() === 'semgrep' && hasLegacySignal && namesDemoOrTemplateRule;
+  return issue.tool.toLowerCase() === 'semgrep' && namesDemoOrTemplateRule;
 }
 
 function hasFalsePositiveEvidence(

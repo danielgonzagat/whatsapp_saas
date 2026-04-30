@@ -1,191 +1,577 @@
 /**
  * PULSE Parser 57: Security — Rate Limiting
  * Layer 5: Security Testing
- * Mode: DEEP (requires running infrastructure)
+ * Mode: static evidence + optional DEEP runtime probes.
  *
- * CHECKS:
- * Verify rate limiting is active and effective on sensitive endpoints.
- *
- * Auth endpoints (login brute force protection):
- * 1. POST /auth/login — fire 10 requests in 60s → 6th+ should return 429 Too Many Requests
- * 2. Verify 429 response includes Retry-After header
- * 3. Verify rate limit is per-IP (not per-user — attacker can't know user exists)
- * 4. After rate limit window expires, verify login works again
- *
- * Financial endpoints:
- * 5. POST /wallet/withdraw — fire 20 requests in 10s → expect 429 after limit
- * 6. POST /checkout/init — fire 20 requests in 10s → expect 429 after limit
- * 7. POST /webhook/payment/stripe — fire 250 requests in 60s (provider burst) → must still accept (limit ≥ 200/min)
- *
- * Public endpoints:
- * 8. Global rate limit: fire 110 requests in 60s to any public endpoint → expect 429 after 100
- *
- * Rate limit bypass attempts:
- * 9. Rotate X-Forwarded-For header to different IPs → verify rate limit not bypassed
- *    (depends on trustProxy config — document actual behavior)
- * 10. Use different User-Agent strings → verify rate limit still applies per IP
- *
- * Rate limit headers:
- * 11. Verify X-RateLimit-Limit header present on responses
- * 12. Verify X-RateLimit-Remaining header present
- * 13. Verify X-RateLimit-Reset header present (when to retry)
- *
- * REQUIRES:
- * - Running backend (PULSE_BACKEND_URL)
- * - Ability to fire concurrent requests (Promise.all)
- * - Valid test credentials for auth endpoint tests
- *
- * BREAK TYPES:
- * - RATE_LIMIT_MISSING (critical) — endpoint accepts > configured limit without returning 429
- * - BRUTE_FORCE_VULNERABLE (critical) — /auth/login accepts unlimited attempts without rate limit
+ * The parser derives route candidates, throttle limits, and diagnostics from
+ * observed NestJS source evidence. Static syntax is only a sensor; final break
+ * identity is synthesized from evidence predicates.
  */
 
+import * as path from 'path';
+import * as ts from 'typescript';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 import type { Break, PulseConfig } from '../types';
-import { httpPost, httpGet, makeTestJwt, getBackendUrl, isDeepMode } from './runtime-utils';
+import { getBackendUrl, isDeepMode, makeTestJwt } from './runtime-utils';
+import { readFileSafe, walkFiles } from './utils';
 
-/** Fire N concurrent requests and return all response status codes */
-async function fireRequests(
-  method: 'GET' | 'POST',
-  path: string,
-  body: unknown,
-  count: number,
-  extraHeaders: Record<string, string> = {},
+interface RouteThrottleEvidence {
+  method: string;
+  path: string;
+  sourceFile: string;
+  line: number;
+  className: string;
+  handlerName: string;
+  hasThrottleEvidence: boolean;
+  hasGuardEvidence: boolean;
+  hasBodyEvidence: boolean;
+  hasPublicEvidence: boolean;
+  observedLimit: number | null;
+  riskWeight: number;
+}
+
+interface RateLimitProbePlan {
+  routes: RouteThrottleEvidence[];
+  globalLimit: number | null;
+  hasGlobalThrottleEvidence: boolean;
+}
+
+interface DecoratorEvidence {
+  name: string;
+  argumentText: string;
+}
+
+function synthesizedSecurityRateLimitBreak(
+  signal: PulseSignalEvidence,
+  severity: Break['severity'],
+  surface: string,
+  runtimeImpact?: number,
+): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const diagnostic = synthesizeDiagnostic(
+    signalGraph,
+    predicateGraph,
+    calculateDynamicRisk({ predicateGraph, runtimeImpact }),
+  );
+
+  return {
+    type: diagnostic.id,
+    severity,
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}; ${signal.detail ?? ''}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
+    surface,
+  };
+}
+
+function appendBreak(breaks: Break[], entry: Break): void {
+  breaks.push(entry);
+}
+
+function decoratorName(decorator: ts.Decorator): string | null {
+  const expression = decorator.expression;
+  if (ts.isIdentifier(expression)) {
+    return expression.text;
+  }
+  if (ts.isCallExpression(expression)) {
+    if (ts.isIdentifier(expression.expression)) {
+      return expression.expression.text;
+    }
+    if (ts.isPropertyAccessExpression(expression.expression)) {
+      return expression.expression.name.text;
+    }
+  }
+  return null;
+}
+
+function decoratorArgumentText(decorator: ts.Decorator): string {
+  const expression = decorator.expression;
+  if (!ts.isCallExpression(expression)) {
+    return '';
+  }
+  const [first] = expression.arguments;
+  return first ? first.getText() : '';
+}
+
+function decoratorsFor(node: ts.Node): DecoratorEvidence[] {
+  return (ts.canHaveDecorators(node) ? (ts.getDecorators(node) ?? []) : []).flatMap((decorator) => {
+    const name = decoratorName(decorator);
+    return name ? [{ name, argumentText: decoratorArgumentText(decorator) }] : [];
+  });
+}
+
+function literalText(expression: ts.Expression | undefined): string | null {
+  if (!expression) {
+    return '';
+  }
+  if (ts.isStringLiteralLike(expression)) {
+    return expression.text;
+  }
+  return null;
+}
+
+function firstCallArgumentText(decorator: DecoratorEvidence): string | null {
+  const source = ts.createSourceFile(
+    'decorator-argument.ts',
+    `const value = ${decorator.argumentText || 'undefined'};`,
+    ts.ScriptTarget.Latest,
+    true,
+  );
+  let result: string | null = null;
+
+  const visit = (node: ts.Node): void => {
+    if (result !== null) {
+      return;
+    }
+    if (ts.isVariableDeclaration(node)) {
+      const initializer = node.initializer;
+      result = literalText(initializer);
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(source);
+  return result;
+}
+
+function joinRouteSegments(first: string, second: string): string {
+  const segments = [...first.split('/'), ...second.split('/')]
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+  return `/${segments.join('/')}`;
+}
+
+function methodFromDecorator(name: string): string | null {
+  const normalized = name.toUpperCase();
+  if (normalized === 'GET') return normalized;
+  if (normalized === 'POST') return normalized;
+  if (normalized === 'PUT') return normalized;
+  if (normalized === 'PATCH') return normalized;
+  if (normalized === 'DELETE') return normalized;
+  if (normalized === 'HEAD') return normalized;
+  if (normalized === 'OPTIONS') return normalized;
+  if (normalized === 'ALL') return normalized;
+  return null;
+}
+
+function numericInitializerValue(node: ts.Expression): number | null {
+  if (ts.isNumericLiteral(node)) {
+    return Number(node.text);
+  }
+  if (ts.isPrefixUnaryExpression(node) && ts.isNumericLiteral(node.operand)) {
+    const value = Number(node.operand.text);
+    return node.operator === ts.SyntaxKind.MinusToken ? -value : value;
+  }
+  return null;
+}
+
+function throttleLimitFromObject(node: ts.Node): number | null {
+  if (ts.isArrayLiteralExpression(node)) {
+    for (const element of node.elements) {
+      const nested = throttleLimitFromObject(element);
+      if (nested !== null) {
+        return nested;
+      }
+    }
+    return null;
+  }
+
+  if (!ts.isObjectLiteralExpression(node)) {
+    return null;
+  }
+
+  for (const property of node.properties) {
+    if (!ts.isPropertyAssignment(property)) {
+      continue;
+    }
+    const key = property.name.getText();
+    if (key === 'limit') {
+      return numericInitializerValue(property.initializer);
+    }
+    const nested = throttleLimitFromObject(property.initializer);
+    if (nested !== null) {
+      return nested;
+    }
+  }
+
+  return null;
+}
+
+function throttleLimitFromDecorator(decorator: DecoratorEvidence): number | null {
+  const source = ts.createSourceFile(
+    'throttle-argument.ts',
+    `const value = ${decorator.argumentText || 'undefined'};`,
+    ts.ScriptTarget.Latest,
+    true,
+  );
+  let result: number | null = null;
+
+  const visit = (node: ts.Node): void => {
+    if (result !== null) {
+      return;
+    }
+    const limit = throttleLimitFromObject(node);
+    if (limit !== null) {
+      result = limit;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(source);
+  return result;
+}
+
+function throttleLimitFromDecorators(decorators: DecoratorEvidence[]): number | null {
+  for (const decorator of decorators) {
+    if (decorator.name !== 'Throttle') {
+      continue;
+    }
+    const limit = throttleLimitFromDecorator(decorator);
+    if (limit !== null) {
+      return limit;
+    }
+  }
+  return null;
+}
+
+function hasDecorator(decorators: readonly DecoratorEvidence[], name: string): boolean {
+  return decorators.some((decorator) => decorator.name === name);
+}
+
+function hasGuardEvidence(decorators: readonly DecoratorEvidence[]): boolean {
+  return decorators.some((decorator) => decorator.name === 'UseGuards');
+}
+
+function hasBodyParameterEvidence(method: ts.MethodDeclaration): boolean {
+  return method.parameters.some((parameter) => hasDecorator(decoratorsFor(parameter), 'Body'));
+}
+
+function riskWeightFor(
+  method: string,
+  routeText: string,
+  methodNode: ts.MethodDeclaration,
+): number {
+  let weight = method === 'GET' || method === 'HEAD' ? 1 : 2;
+  if (hasBodyParameterEvidence(methodNode)) {
+    weight += 1;
+  }
+  if (routeText.includes(':')) {
+    weight += 1;
+  }
+  return weight;
+}
+
+function routeLine(sourceFile: ts.SourceFile, node: ts.Node): number {
+  return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+}
+
+function collectRoutesFromSource(
+  config: PulseConfig,
+  filePath: string,
+  content: string,
+): RouteThrottleEvidence[] {
+  const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true);
+  const routes: RouteThrottleEvidence[] = [];
+
+  const visit = (node: ts.Node): void => {
+    if (!ts.isClassDeclaration(node) || !node.name) {
+      ts.forEachChild(node, visit);
+      return;
+    }
+
+    const classDecorators = decoratorsFor(node);
+    const controller = classDecorators.find((decorator) => decorator.name === 'Controller');
+    if (!controller) {
+      ts.forEachChild(node, visit);
+      return;
+    }
+
+    const controllerPath = firstCallArgumentText(controller) ?? '';
+    const classThrottleLimit = throttleLimitFromDecorators(classDecorators);
+    const classHasThrottle = classThrottleLimit !== null;
+    const classHasGuard = hasGuardEvidence(classDecorators);
+    const classHasPublic = hasDecorator(classDecorators, 'Public');
+
+    for (const member of node.members) {
+      if (!ts.isMethodDeclaration(member) || !member.name) {
+        continue;
+      }
+      const methodDecorators = decoratorsFor(member);
+      const routeDecorator = methodDecorators
+        .map((decorator) => ({ decorator, method: methodFromDecorator(decorator.name) }))
+        .find((entry) => entry.method !== null);
+      if (!routeDecorator || !routeDecorator.method) {
+        continue;
+      }
+
+      const methodPath = firstCallArgumentText(routeDecorator.decorator) ?? '';
+      const methodThrottleLimit = throttleLimitFromDecorators(methodDecorators);
+      const observedLimit = methodThrottleLimit ?? classThrottleLimit;
+      const routePath = joinRouteSegments(controllerPath, methodPath);
+      const hasPublicEvidence = classHasPublic || hasDecorator(methodDecorators, 'Public');
+
+      routes.push({
+        method: routeDecorator.method,
+        path: routePath,
+        sourceFile: path.relative(config.rootDir, filePath),
+        line: routeLine(sourceFile, member),
+        className: node.name.text,
+        handlerName: member.name.getText(sourceFile),
+        hasThrottleEvidence: classHasThrottle || methodThrottleLimit !== null,
+        hasGuardEvidence: classHasGuard || hasGuardEvidence(methodDecorators),
+        hasBodyEvidence: hasBodyParameterEvidence(member),
+        hasPublicEvidence,
+        observedLimit,
+        riskWeight: riskWeightFor(routeDecorator.method, routePath, member),
+      });
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return routes;
+}
+
+function collectGlobalThrottleEvidence(config: PulseConfig): {
+  hasGlobalThrottleEvidence: boolean;
+  globalLimit: number | null;
+} {
+  const backendFiles = walkFiles(config.backendDir, ['.ts']);
+  for (const file of backendFiles) {
+    const content = readFileSafe(file);
+    if (!content.includes('ThrottlerModule.forRoot')) {
+      continue;
+    }
+    const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+    let globalLimit: number | null = null;
+
+    const visit = (node: ts.Node): void => {
+      if (globalLimit !== null) {
+        return;
+      }
+      if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.name.text === 'forRoot' &&
+        node.expression.expression.getText(sourceFile) === 'ThrottlerModule'
+      ) {
+        for (const argument of node.arguments) {
+          const limit = throttleLimitFromObject(argument);
+          if (limit !== null) {
+            globalLimit = limit;
+            return;
+          }
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+
+    visit(sourceFile);
+    return { hasGlobalThrottleEvidence: true, globalLimit };
+  }
+
+  return { hasGlobalThrottleEvidence: false, globalLimit: null };
+}
+
+function compareRoutesByRisk(left: RouteThrottleEvidence, right: RouteThrottleEvidence): number {
+  const riskDelta = right.riskWeight - left.riskWeight;
+  if (riskDelta !== 0) {
+    return riskDelta;
+  }
+  const pathDelta = left.path.localeCompare(right.path);
+  if (pathDelta !== 0) {
+    return pathDelta;
+  }
+  return left.method.localeCompare(right.method);
+}
+
+export function buildSecurityRateLimitProbePlan(config: PulseConfig): RateLimitProbePlan {
+  const routes = walkFiles(config.backendDir, ['.ts'])
+    .flatMap((file) => collectRoutesFromSource(config, file, readFileSafe(file)))
+    .sort(compareRoutesByRisk);
+  const globalThrottle = collectGlobalThrottleEvidence(config);
+
+  return {
+    routes,
+    ...globalThrottle,
+  };
+}
+
+function runtimePathFor(routePath: string): string {
+  return joinRouteSegments(
+    '',
+    routePath
+      .split('/')
+      .map((segment) => (segment.startsWith(':') ? `pulse-${segment.slice(1)}` : segment))
+      .join('/'),
+  );
+}
+
+async function fireRouteRequests(
+  route: RouteThrottleEvidence,
+  requestCount: number,
+  jwt: string,
 ): Promise<number[]> {
   const backendUrl = getBackendUrl();
-  const requests = Array.from({ length: count }, () =>
-    fetch(`${backendUrl}${path}`, {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...extraHeaders,
-      },
-      body: body ? JSON.stringify(body) : undefined,
+  const runtimePath = runtimePathFor(route.path);
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (!route.hasPublicEvidence) {
+    headers.Authorization = `Bearer ${jwt}`;
+  }
+
+  const body = route.hasBodyEvidence ? JSON.stringify({}) : undefined;
+  const requests = Array.from({ length: requestCount }, () =>
+    fetch(`${backendUrl}${runtimePath}`, {
+      method: route.method === 'ALL' ? 'GET' : route.method,
+      headers,
+      body: route.method === 'GET' || route.method === 'HEAD' ? undefined : body,
       signal: AbortSignal.timeout(10000),
     })
-      .then((r) => r.status)
+      .then((response) => response.status)
       .catch(() => 0),
   );
   return Promise.all(requests);
 }
 
+function routeSurface(route: RouteThrottleEvidence): string {
+  return `security-rate-limit:${route.method.toLowerCase()}:${route.path}`;
+}
+
+function routeEvidenceDetail(route: RouteThrottleEvidence): string {
+  return [
+    `${route.method} ${route.path}`,
+    `source=${route.sourceFile}:${route.line}`,
+    `class=${route.className}`,
+    `handler=${route.handlerName}`,
+    `throttle=${route.hasThrottleEvidence ? 'observed' : 'not_observed'}`,
+    `guard=${route.hasGuardEvidence ? 'observed' : 'not_observed'}`,
+    `public=${route.hasPublicEvidence ? 'observed' : 'not_observed'}`,
+    `limit=${route.observedLimit ?? 'not_observed'}`,
+  ].join('; ');
+}
+
+function buildMissingStaticThrottleBreak(route: RouteThrottleEvidence): Break {
+  return synthesizedSecurityRateLimitBreak(
+    {
+      source: 'static:nest-controller-evidence',
+      detector: 'route-throttle-evidence',
+      truthMode: 'confirmed_static',
+      summary: 'Route handling external input has no route-level throttle evidence',
+      detail: routeEvidenceDetail(route),
+      location: {
+        file: route.sourceFile,
+        line: route.line,
+      },
+    },
+    route.riskWeight > 2 ? 'high' : 'medium',
+    routeSurface(route),
+    Math.min(1, route.riskWeight / Math.max(1, route.riskWeight + 1)),
+  );
+}
+
+function buildRuntimeThrottleBreak(
+  route: RouteThrottleEvidence,
+  statuses: readonly number[],
+  requestCount: number,
+): Break {
+  return synthesizedSecurityRateLimitBreak(
+    {
+      source: 'runtime:http-probe',
+      detector: 'route-rate-limit-response-evidence',
+      truthMode: 'observed',
+      summary: 'Observed repeated route hits without throttled response evidence',
+      detail: `${routeEvidenceDetail(route)}; requests=${requestCount}; statuses=${statuses.join(',')}`,
+      location: {
+        file: route.sourceFile,
+        line: route.line,
+      },
+    },
+    route.riskWeight > 2 ? 'critical' : 'high',
+    routeSurface(route),
+    1,
+  );
+}
+
+function buildGlobalThrottleBreak(): Break {
+  return synthesizedSecurityRateLimitBreak(
+    {
+      source: 'static:nest-module-evidence',
+      detector: 'global-throttle-evidence',
+      truthMode: 'confirmed_static',
+      summary: 'Global NestJS throttler evidence was not observed',
+      detail:
+        'Controller route evidence exists, but PULSE did not observe ThrottlerModule.forRoot evidence in backend sources.',
+      location: {
+        file: 'backend/src',
+        line: 0,
+      },
+    },
+    'high',
+    'security-rate-limit:global',
+    1,
+  );
+}
+
+function shouldRequireRouteThrottle(
+  route: RouteThrottleEvidence,
+  hasGlobalThrottleEvidence: boolean,
+): boolean {
+  return !hasGlobalThrottleEvidence && !route.hasThrottleEvidence && route.riskWeight > 1;
+}
+
+function requestCountFor(route: RouteThrottleEvidence, globalLimit: number | null): number | null {
+  const observedLimit = route.observedLimit ?? globalLimit;
+  if (observedLimit === null || observedLimit < 0) {
+    return null;
+  }
+  return observedLimit + 1;
+}
+
 /** Check security rate limit. */
 export async function checkSecurityRateLimit(config: PulseConfig): Promise<Break[]> {
-  // DEEP mode only — requires running backend
-  if (!isDeepMode()) {
-    return [];
-  }
-
+  const plan = buildSecurityRateLimitProbePlan(config);
   const breaks: Break[] = [];
+
+  if (!plan.hasGlobalThrottleEvidence && plan.routes.length > 0) {
+    appendBreak(breaks, buildGlobalThrottleBreak());
+  }
+
+  for (const route of plan.routes) {
+    if (shouldRequireRouteThrottle(route, plan.hasGlobalThrottleEvidence)) {
+      appendBreak(breaks, buildMissingStaticThrottleBreak(route));
+    }
+  }
+
+  if (!isDeepMode()) {
+    return breaks;
+  }
+
   const jwt = makeTestJwt();
-
-  // ── 1. Auth brute-force protection: POST /auth/login ─────────────────────
-  // Fire 20 rapid requests with wrong credentials.
-  // The throttler is configured as 5 req/min per IP for auth/login.
-  // So we expect at least some 429 responses out of 20 rapid requests.
-  try {
-    const loginBody = {
-      email: 'brute-force-test@pulse.kloel.com',
-      password: 'wrong-password-pulse',
-    };
-    const statuses = await fireRequests('POST', '/auth/login', loginBody, 20);
-
-    const count429 = statuses.filter((s) => s === 429).length;
-    const countNonAuth = statuses.filter(
-      (s) => s !== 401 && s !== 400 && s !== 429 && s !== 0,
-    ).length;
-
-    if (count429 === 0) {
-      breaks.push({
-        type: 'BRUTE_FORCE_VULNERABLE',
-        severity: 'critical',
-        file: `backend/src (POST /auth/login)`,
-        line: 0,
-        description: `No rate limiting on POST /auth/login — brute-force attack is possible`,
-        detail: `Fired 20 rapid login requests. Received 0 HTTP 429 responses. All statuses: [${statuses.join(', ')}]. The auth throttle (5 req/min) does not appear to be active. Configure @nestjs/throttler on the auth controller.`,
-      });
+  for (const route of plan.routes) {
+    const requestCount = requestCountFor(route, plan.globalLimit);
+    if (requestCount === null) {
+      continue;
     }
 
-    // If any request returned something other than 400/401/429 — suspicious
-    if (countNonAuth > 0) {
-      breaks.push({
-        type: 'BRUTE_FORCE_VULNERABLE',
-        severity: 'critical',
-        file: `backend/src (POST /auth/login)`,
-        line: 0,
-        description: `Unexpected success responses during brute-force simulation on POST /auth/login`,
-        detail: `${countNonAuth} out of 20 rapid login requests returned non-401/non-400/non-429 status. Statuses: [${statuses.join(', ')}]. Investigate whether auth bypass is possible.`,
-      });
+    try {
+      const statuses = await fireRouteRequests(route, requestCount, jwt);
+      const throttledResponses = statuses.filter((status) => status === 429).length;
+      const observedResponses = statuses.filter((status) => status !== 0).length;
+      if (observedResponses === requestCount && throttledResponses === 0) {
+        appendBreak(breaks, buildRuntimeThrottleBreak(route, statuses, requestCount));
+      }
+    } catch {
+      // Backend not reachable or probe rejected before HTTP evidence was observed.
     }
-  } catch {
-    // Backend not reachable — skip
-  }
-
-  // ── 2. Wallet balance endpoint rate limiting ──────────────────────────────
-  // GET /kloel/wallet/:workspaceId/balance — financial endpoint
-  // Fire 20 rapid authenticated requests; expect some 429 responses.
-  try {
-    const workspaceId = 'pulse-test-workspace';
-    const walletPath = `/kloel/wallet/${workspaceId}/balance`;
-    const backendUrl = getBackendUrl();
-
-    const walletRequests = Array.from({ length: 20 }, () =>
-      fetch(`${backendUrl}${walletPath}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${jwt}`,
-          'Content-Type': 'application/json',
-        },
-        signal: AbortSignal.timeout(10000),
-      })
-        .then((r) => r.status)
-        .catch(() => 0),
-    );
-
-    const walletStatuses = await Promise.all(walletRequests);
-    const walletCount429 = walletStatuses.filter((s) => s === 429).length;
-
-    // If the endpoint returns 404 (workspace not found) that is fine — not a rate limit issue
-    // But if it returns 200 every time with no 429 → rate limiting is missing
-    const walletCount200 = walletStatuses.filter((s) => s === 200).length;
-    if (walletCount200 > 0 && walletCount429 === 0) {
-      breaks.push({
-        type: 'RATE_LIMIT_MISSING',
-        severity: 'high',
-        file: `backend/src (GET ${walletPath})`,
-        line: 0,
-        description: `No rate limiting on financial endpoint GET /kloel/wallet/:id/balance`,
-        detail: `Fired 20 rapid authenticated requests to ${walletPath}. Received ${walletCount200} HTTP 200 responses and 0 HTTP 429 responses. Financial endpoints should be rate-limited to prevent data scraping.`,
-      });
-    }
-  } catch {
-    // Backend not reachable — skip
-  }
-
-  // ── 3. Global rate limit check ────────────────────────────────────────────
-  // The global throttler is 100 req/min. Fire 110 requests to a lightweight endpoint.
-  // NOTE: We test against /auth/me (an authenticated endpoint) rather than /health,
-  // because /health endpoints are commonly excluded from rate limiting (infra probes,
-  // load balancer health checks, etc.) and Railway's proxy may also cache them.
-  try {
-    const testStatuses = await fireRequests('GET', '/auth/me', undefined, 110, {
-      Authorization: `Bearer ${jwt}`,
-    });
-    const test429 = testStatuses.filter((s) => s === 429).length;
-    // Count successful auth responses (200 or 401 both prove the endpoint was hit)
-    const testHit = testStatuses.filter((s) => s === 200 || s === 401).length;
-
-    if (testHit > 100 && test429 === 0) {
-      breaks.push({
-        type: 'RATE_LIMIT_MISSING',
-        severity: 'high',
-        file: `backend/src (global throttler)`,
-        line: 0,
-        description: `Global rate limiter not triggering — 110+ requests returned success with no 429`,
-        detail: `Fired 110 rapid GET /auth/me requests. ${testHit} returned 200/401, ${test429} returned 429. The global throttler (100 req/min) appears inactive. Verify @nestjs/throttler is applied globally in AppModule.`,
-      });
-    }
-  } catch {
-    // Backend not reachable or endpoint not defined — skip
   }
 
   return breaks;

@@ -24,11 +24,6 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
-const MONEY_STATE_RE =
-  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
-const TEMPORAL_AGGREGATION_RE =
-  /\b(?:createdAt|updatedAt|startDate|endDate|dateRange|period|aggregate|groupBy)\b/i;
-
 function temporalFinding(input: {
   severity: Break['severity'];
   file: string;
@@ -49,11 +44,24 @@ function temporalFinding(input: {
 }
 
 function hasMoneyLikeState(content: string): boolean {
-  return MONEY_STATE_RE.test(content);
+  return /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i.test(
+    content,
+  );
 }
 
 function hasTemporalAggregation(content: string): boolean {
-  return TEMPORAL_AGGREGATION_RE.test(content);
+  return /\b(?:createdAt|updatedAt|startDate|endDate|dateRange|period|aggregate|groupBy)\b/i.test(
+    content,
+  );
+}
+
+function usesLocalTimezonePresentation(line: string): boolean {
+  return (
+    /new Date\(\)\.toLocaleDateString|new Date\(\)\.toLocaleString/.test(line) ||
+    /new Date\(\)\.getHours\(\)|new Date\(\)\.getDate\(\)/.test(line) ||
+    /moment\(\)\.local\(\)|dayjs\(\)\.local\(\)/.test(line) ||
+    /Intl\.DateTimeFormat(?!.*timeZone)/.test(line)
+  );
 }
 
 /** Check ordering timing. */
@@ -140,13 +148,6 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
     }
 
     // CHECK 3: Local timezone in money-like or reporting date operations
-    const localTzPatterns = [
-      /new Date\(\)\.toLocaleDateString|new Date\(\)\.toLocaleString/,
-      /new Date\(\)\.getHours\(\)|new Date\(\)\.getDate\(\)/,
-      /moment\(\)\.local\(\)|dayjs\(\)\.local\(\)/,
-      /Intl\.DateTimeFormat(?!.*timeZone)/,
-    ];
-
     if (hasMoneyLikeState(content) || hasTemporalAggregation(content)) {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
@@ -154,7 +155,7 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
           continue;
         }
 
-        if (localTzPatterns.some((re) => re.test(line))) {
+        if (usesLocalTimezonePresentation(line)) {
           breaks.push(
             temporalFinding({
               severity: 'high',

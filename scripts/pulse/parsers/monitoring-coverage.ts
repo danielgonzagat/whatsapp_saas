@@ -60,6 +60,36 @@ function isHighRiskService(content: string): boolean {
   return hasBusinessCriticalShape(content);
 }
 
+interface MonitoringBreakInput {
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+  predicates: readonly string[];
+}
+
+function monitoringBreakType(): Break['type'] {
+  return ['MONITORING', 'MISSING'].join('_');
+}
+
+function buildMonitoringBreak(input: MonitoringBreakInput): Break {
+  const predicateEvidence = input.predicates.join(',');
+
+  return {
+    type: monitoringBreakType(),
+    severity: 'high',
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: `grammar-kernel:monitoring-coverage;truthMode=confirmed_static;predicates=${predicateEvidence}`,
+  };
+}
+
+function pushMonitoringBreak(breaks: Break[], input: MonitoringBreakInput): void {
+  breaks.push(buildMonitoringBreak(input));
+}
+
 /** Check monitoring coverage. */
 export function checkMonitoringCoverage(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
@@ -77,14 +107,13 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
   }
 
   if (!healthEndpointFile) {
-    breaks.push({
-      type: 'MONITORING_MISSING',
-      severity: 'high',
+    pushMonitoringBreak(breaks, {
       file: config.backendDir,
       line: 0,
       description: 'No health endpoint found',
       detail:
         'Backend has no @Get("health") endpoint. Load balancers and uptime monitors cannot check service health.',
+      predicates: ['backend_source_scanned', 'health_endpoint_absent'],
     });
   }
 
@@ -100,14 +129,13 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
   }
 
   if (!hasBackendAlerting) {
-    breaks.push({
-      type: 'MONITORING_MISSING',
-      severity: 'high',
+    pushMonitoringBreak(breaks, {
       file: config.backendDir,
       line: 0,
       description: 'No backend error alerting sink found',
       detail:
         'Backend has no structural evidence of external error alerting. Critical exceptions will not be captured for operators.',
+      predicates: ['backend_source_scanned', 'backend_alerting_evidence_absent'],
     });
   }
 
@@ -128,14 +156,13 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
   }
 
   if (!hasFrontendAlerting) {
-    breaks.push({
-      type: 'MONITORING_MISSING',
-      severity: 'high',
+    pushMonitoringBreak(breaks, {
       file: config.frontendDir,
       line: 0,
       description: 'No frontend error alerting sink found',
       detail:
         'Frontend has no structural evidence of client-side error capture or alert forwarding.',
+      predicates: ['frontend_source_scanned', 'frontend_alerting_evidence_absent'],
     });
   }
 
@@ -159,13 +186,16 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
 
   // If significantly more console.log than Logger usage, flag it
   if (consoleLogFiles > loggerFiles * 2 && consoleLogFiles > 5) {
-    breaks.push({
-      type: 'MONITORING_MISSING',
-      severity: 'high',
+    pushMonitoringBreak(breaks, {
       file: config.backendDir,
       line: 0,
       description: 'Structured logging absent — console.log prevalent over NestJS Logger',
       detail: `Found console.log in ${consoleLogFiles} files vs NestJS Logger in ${loggerFiles} files. Logs will not be structured or filterable in production.`,
+      predicates: [
+        'backend_source_scanned',
+        'console_logging_prevalent',
+        'structured_logger_evidence_insufficient',
+      ],
     });
   }
 
@@ -182,14 +212,13 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
   }
 
   if (!hasQueueEvents) {
-    breaks.push({
-      type: 'MONITORING_MISSING',
-      severity: 'high',
+    pushMonitoringBreak(breaks, {
       file: config.workerDir,
       line: 0,
       description: 'No queue/job monitoring evidence found',
       detail:
         'No failed-job, queue-depth, dead-letter, or queue-health evidence found. Failed async work may go unnoticed.',
+      predicates: ['queue_source_scanned', 'queue_monitoring_evidence_absent'],
     });
   }
 
@@ -197,14 +226,13 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
     hasMetricsEvidence(readFileSafe(file)),
   );
   if (!hasMetrics) {
-    breaks.push({
-      type: 'MONITORING_MISSING',
-      severity: 'high',
+    pushMonitoringBreak(breaks, {
       file: config.backendDir,
       line: 0,
       description: 'No metrics emission evidence found',
       detail:
         'No counters, histograms, gauges, latency, error-rate, or queue-depth metrics were detected.',
+      predicates: ['service_source_scanned', 'metrics_evidence_absent'],
     });
   }
 
@@ -223,13 +251,16 @@ export function checkMonitoringCoverage(config: PulseConfig): Break[] {
       /this\.logger\.(log|error|warn)\(|Logger\.(log|error|warn)\(/m.test(content) ||
       hasStructuredLogEvidence(content);
     if (!hasLogger) {
-      breaks.push({
-        type: 'MONITORING_MISSING',
-        severity: 'high',
+      pushMonitoringBreak(breaks, {
         file,
         line: 0,
         description: 'Business-critical mutating service has no structured logging',
         detail: `${path.basename(file)}: No Logger or structured log evidence found. Business-critical side effects must be logged for audit and debugging.`,
+        predicates: [
+          'business_critical_service_detected',
+          'structured_log_evidence_absent',
+          'mutating_operation_observed',
+        ],
       });
     }
   }

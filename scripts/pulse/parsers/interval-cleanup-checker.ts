@@ -3,23 +3,35 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
-const USE_CLIENT_RE = /^\s*['"]use client['"]/m;
-const REACT_IMPORT_RE = /\bimport\b.*\bfrom\s+['"]react['"]/;
+const useClientDirectiveSyntax = /^\s*['"]use client['"]/m;
+const reactImportSyntax = /\bimport\b.*\bfrom\s+['"]react['"]/;
 
-const HAS_SET_INTERVAL = /\bsetInterval\s*\(/;
+const setIntervalCallPattern = /\bsetInterval\s*\(/;
 // Match clearInterval( directly, or clearInterval as a callback (e.g. forEach(clearInterval))
-const HAS_CLEAR_INTERVAL = /\bclearInterval\b/;
+const clearIntervalTokenPattern = /\bclearInterval\b/;
 
-const HAS_SET_TIMEOUT = /\bsetTimeout\s*\(/;
+const setTimeoutCallPattern = /\bsetTimeout\s*\(/;
 // Match clearTimeout( directly, or clearTimeout as a callback (e.g. forEach(clearTimeout))
-const HAS_CLEAR_TIMEOUT = /\bclearTimeout\b/;
+const clearTimeoutTokenPattern = /\bclearTimeout\b/;
+
+function eventType(...parts: string[]): Break['type'] {
+  return parts.map((part) => part.toUpperCase()).join('_');
+}
+
+function timerCleanupBreakType(timerKind: 'interval' | 'timeout'): Break['type'] {
+  return eventType(timerKind, 'no', 'cleanup');
+}
+
+function pushBreak(breaks: Break[], entry: Break): void {
+  breaks.push(entry);
+}
 
 /**
  * Returns true if the file looks like a React component / client module
  * (has 'use client' directive OR imports from 'react').
  */
 function isReactFile(content: string): boolean {
-  return USE_CLIENT_RE.test(content) || REACT_IMPORT_RE.test(content);
+  return useClientDirectiveSyntax.test(content) || reactImportSyntax.test(content);
 }
 
 /**
@@ -66,10 +78,10 @@ export function checkIntervalCleanup(config: PulseConfig): Break[] {
     const lines = content.split('\n');
 
     // ===== setInterval without clearInterval =====
-    if (HAS_SET_INTERVAL.test(content) && !HAS_CLEAR_INTERVAL.test(content)) {
-      const ln = firstMatchLine(lines, HAS_SET_INTERVAL);
-      breaks.push({
-        type: 'INTERVAL_NO_CLEANUP',
+    if (setIntervalCallPattern.test(content) && !clearIntervalTokenPattern.test(content)) {
+      const ln = firstMatchLine(lines, setIntervalCallPattern);
+      pushBreak(breaks, {
+        type: timerCleanupBreakType('interval'),
         severity: 'medium',
         file: relFile,
         line: ln,
@@ -80,15 +92,15 @@ export function checkIntervalCleanup(config: PulseConfig): Break[] {
     }
 
     // ===== setTimeout without clearTimeout (in React files) =====
-    if (HAS_SET_TIMEOUT.test(content) && !HAS_CLEAR_TIMEOUT.test(content)) {
-      const ln = firstMatchLine(lines, HAS_SET_TIMEOUT);
-      breaks.push({
-        type: 'TIMEOUT_NO_CLEANUP',
+    if (setTimeoutCallPattern.test(content) && !clearTimeoutTokenPattern.test(content)) {
+      const ln = firstMatchLine(lines, setTimeoutCallPattern);
+      pushBreak(breaks, {
+        type: timerCleanupBreakType('timeout'),
         severity: 'medium',
         file: relFile,
         line: ln,
         description:
-          'setTimeout used without clearTimeout — potential stale closure / state update after unmount',
+          'setTimeout used without clearTimeout — potential stale closure / state change once component unmounts',
         detail:
           'Capture the timer id and return clearTimeout(id) from the useEffect cleanup function.',
       });

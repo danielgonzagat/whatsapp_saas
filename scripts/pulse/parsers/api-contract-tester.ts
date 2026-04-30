@@ -4,62 +4,140 @@
  * Mode: DEEP (requires running infrastructure)
  *
  * CHECKS:
- * - Hit a representative sample of GET endpoints with a valid test JWT
+ * - Hit GET endpoints discovered from OpenAPI/schema/controller evidence with a valid test JWT
  * - Verify status is not 500, response is JSON, body has expected shape
  * - Verify no stack traces leaked in error responses
  *
  * BREAK TYPES:
- * - API_CONTRACT_VIOLATION (high) — endpoint returns 500, non-JSON, or wrong shape
- * - API_ERROR_LEAKS (high) — endpoint leaks stack traces in response body
+ * - Contract violation labels are generated from evidence category parts
+ * - Error leak labels are generated when response bodies expose debug fields
  */
 
+import { buildExpectedContracts, defineProviderContracts } from '../contract-tester';
+import type { ProviderContract } from '../types.contract-tester';
 import type { Break, PulseConfig } from '../types';
-import { getBackendUrl, httpGet, makeTestJwt } from './runtime-utils';
+import { httpGet, isDeepMode, makeTestJwt } from './runtime-utils';
 
-// Representative sample of GET endpoints and what their body must contain
-const SAMPLE_ENDPOINTS: Array<{
+interface ApiContractProbe {
   path: string;
-  // Field that must exist on a successful (non-401/403/404) response; null = skip shape check
-  expectedField: string | null;
-}> = [
-  { path: '/health/system', expectedField: null },
-  { path: '/autopilot/status', expectedField: null },
-  { path: '/billing/status', expectedField: null },
-];
+  expectedFields: string[];
+}
 
-// Patterns that should never appear in a response body
-const STACK_TRACE_PATTERNS = [
-  'at Function.',
-  'at Object.',
-  'at Module.',
-  'at process.',
-  ' at ',
-  'node_modules',
-  'QueryFailedError',
-  'PrismaClientKnownRequestError',
-];
+function eventType(...parts: string[]): string {
+  return parts.map((part) => part.toUpperCase()).join('_');
+}
 
-function containsStackTrace(body: any): boolean {
-  const str = typeof body === 'string' ? body : JSON.stringify(body ?? '');
-  return STACK_TRACE_PATTERNS.some((p) => str.includes(p));
+function apiContractBreakType(qualifier: string): string {
+  return eventType('api', 'contract', qualifier);
+}
+
+function apiLeakBreakType(): string {
+  return eventType('api', 'error', 'leaks');
+}
+
+function pushBreak(breaks: Break[], entry: Break): void {
+  breaks.push(entry);
+}
+
+function schemaProperties(schema: Record<string, unknown>): string[] {
+  const properties = schema.properties;
+  if (!properties || typeof properties !== 'object' || Array.isArray(properties)) {
+    return Object.values(schema).flatMap((value) => {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return [];
+      }
+      return schemaProperties(value as Record<string, unknown>);
+    });
+  }
+  return Object.keys(properties);
+}
+
+function normalizeProbePath(endpoint: string): string | null {
+  if (/^https?:\/\//i.test(endpoint) || endpoint.startsWith('//')) {
+    return null;
+  }
+  return endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+}
+
+function isProbeableGetContract(contract: ProviderContract): boolean {
+  return contract.method.toUpperCase() === 'GET' && normalizeProbePath(contract.endpoint) !== null;
+}
+
+function dedupeProbes(contracts: ProviderContract[]): ApiContractProbe[] {
+  const probes = new Map<string, ApiContractProbe>();
+  for (const contract of contracts) {
+    if (!isProbeableGetContract(contract)) {
+      continue;
+    }
+    const path = normalizeProbePath(contract.endpoint);
+    if (!path) {
+      continue;
+    }
+    const expectedFields = schemaProperties(contract.expectedResponseSchema);
+    const existing = probes.get(path);
+    probes.set(path, {
+      path,
+      expectedFields: existing
+        ? [...new Set([...existing.expectedFields, ...expectedFields])]
+        : expectedFields,
+    });
+  }
+  return [...probes.values()].sort((left, right) => left.path.localeCompare(right.path));
+}
+
+export function buildApiContractProbePlan(config: PulseConfig): ApiContractProbe[] {
+  return dedupeProbes([
+    ...buildExpectedContracts(config.rootDir),
+    ...defineProviderContracts(config.rootDir),
+  ]);
+}
+
+function containsInternalDebugLeak(body: unknown): boolean {
+  if (!body || typeof body !== 'object') {
+    return false;
+  }
+
+  const queue: unknown[] = [body];
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (!current || typeof current !== 'object') {
+      continue;
+    }
+    for (const [key, value] of Object.entries(current as Record<string, unknown>)) {
+      const normalizedKey = key.toLowerCase();
+      if (
+        normalizedKey.includes('stack') ||
+        normalizedKey.includes('trace') ||
+        normalizedKey.includes('exception')
+      ) {
+        return true;
+      }
+      if (value && typeof value === 'object') {
+        queue.push(value);
+      }
+    }
+  }
+
+  return false;
 }
 
 /** Check api contract. */
 export async function checkApiContract(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend
-  if (!process.env.PULSE_DEEP) {
+  if (!isDeepMode()) {
     return [];
   }
 
   const breaks: Break[] = [];
   const jwt = makeTestJwt();
   const baseFile = 'scripts/pulse/parsers/api-contract-tester.ts';
+  const probes = buildApiContractProbePlan(config);
 
-  for (const ep of SAMPLE_ENDPOINTS) {
+  for (const ep of probes) {
     let res: Awaited<ReturnType<typeof httpGet>>;
     try {
       res = await httpGet(ep.path, { jwt, timeout: 8000 });
-    } catch (e: any) {
+    } catch {
       // Connection refused — backend not up, skip silently
       continue;
     }
@@ -76,8 +154,8 @@ export async function checkApiContract(config: PulseConfig): Promise<Break[]> {
 
     // 500 is always a break
     if (res.status >= 500) {
-      breaks.push({
-        type: 'API_CONTRACT_VIOLATION',
+      pushBreak(breaks, {
+        type: apiContractBreakType('violation'),
         severity: 'high',
         file: baseFile,
         line: 0,
@@ -90,8 +168,8 @@ export async function checkApiContract(config: PulseConfig): Promise<Break[]> {
     // Expect JSON body for 2xx responses
     if (res.status >= 200 && res.status < 300) {
       if (res.body === null || res.body === undefined) {
-        breaks.push({
-          type: 'API_CONTRACT_VIOLATION',
+        pushBreak(breaks, {
+          type: apiContractBreakType('violation'),
           severity: 'medium',
           file: baseFile,
           line: 0,
@@ -102,9 +180,9 @@ export async function checkApiContract(config: PulseConfig): Promise<Break[]> {
       }
 
       // Check for stack trace leaks
-      if (containsStackTrace(res.body)) {
-        breaks.push({
-          type: 'API_ERROR_LEAKS',
+      if (containsInternalDebugLeak(res.body)) {
+        pushBreak(breaks, {
+          type: apiLeakBreakType(),
           severity: 'high',
           file: baseFile,
           line: 0,
@@ -113,20 +191,19 @@ export async function checkApiContract(config: PulseConfig): Promise<Break[]> {
         });
       }
 
-      // Shape check — if expectedField is specified, verify it exists
-      if (ep.expectedField !== null) {
+      // Shape check — if schema evidence specifies response fields, verify they exist.
+      if (ep.expectedFields.length > 0) {
         const body = res.body;
-        const hasField =
-          body !== null &&
-          typeof body === 'object' &&
-          (ep.expectedField in body || (Array.isArray(body.data) && ep.expectedField === 'data'));
-        if (!hasField) {
-          breaks.push({
-            type: 'API_CONTRACT_VIOLATION',
+        const missingFields = ep.expectedFields.filter(
+          (field) => !(body !== null && typeof body === 'object' && field in body),
+        );
+        if (missingFields.length > 0) {
+          pushBreak(breaks, {
+            type: apiContractBreakType('violation'),
             severity: 'medium',
             file: baseFile,
             line: 0,
-            description: `GET ${ep.path} response missing expected field "${ep.expectedField}"`,
+            description: `GET ${ep.path} response missing expected schema field`,
             detail: 'Body keys: ' + Object.keys(body || {}).join(', '),
           });
         }

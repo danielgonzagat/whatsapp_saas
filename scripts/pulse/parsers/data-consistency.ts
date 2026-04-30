@@ -1,154 +1,440 @@
 /**
  * PULSE Parser 63: Data Consistency
  * Layer 7: Database Health
- * Mode: STATIC (source code pattern analysis — no DB access needed)
+ * Mode: STATIC
  *
- * CHECKS:
- * Verify business rule consistency enforcement in critical mutating service code.
- * These are rules that foreign keys cannot enforce — they require application-level logic.
- * This static checker looks for the ABSENCE of validation guards before critical mutations.
- *
- * Critical rules:
- * 1. Every amount-bearing write must validate its referenced entity first.
- * 2. Every balance-decreasing operation must validate balance atomically.
- * 3. Every tenant/owner write must validate ownership before mutation.
- *
- * STATIC APPROACH:
- * Look for the pattern: critical .create() / .update() WITHOUT a prior .findFirst() / .findUnique()
- * in the same function body. This indicates an operation that does not validate existence first.
- *
- * BREAK TYPES:
- * - DATA_PRODUCT_NO_PLAN (high) — money-like record created without validated reference
- * - DATA_ORDER_NO_PAYMENT (high) — amount/balance mutation without atomic validation
- * - DATA_WORKSPACE_NO_OWNER (high) — tenant owner/member mutation lacks validation
+ * Verifies that critical mutating service code has local evidence of
+ * application-level consistency checks before it writes durable state.
  */
 
 import * as path from 'path';
+import ts from 'typescript';
 import { walkFiles, readFileSafe } from './utils';
+import { pathExists, readTextFile } from '../safe-fs';
 import type { Break, PulseConfig } from '../types';
 
-const CREATE_OPERATION_TOKENS = ['.create(', '.createMany(', '.upsert('];
-const MUTATION_OPERATION_RE =
-  /prisma\.[A-Za-z_$][\w$]*\.(?:create|createMany|update|updateMany|upsert|delete|deleteMany)\s*\(/;
-const MONEY_STATE_RE =
-  /\b(?:amount|amountCents|total|subtotal|price|priceCents|currency|balance|saldo|fee|commission|refund|charge|ledger|transaction)\b/i;
-const TENANT_OWNER_STATE_RE = /\b(?:workspaceId|tenantId|ownerId|memberId|role|OWNER)\b/;
+type ConsistencyBreakKind =
+  | 'unvalidatedNumericWrite'
+  | 'nonAtomicDecrease'
+  | 'unvalidatedRelationalWrite'
+  | 'orphanedRelationalCreate';
 
-// Keywords that indicate existence validation before create
-const VALIDATION_READS = ['findFirst(', 'findUnique(', 'findMany(', 'count('];
+const DATA_CONSISTENCY_BREAK_TYPE_GRAMMAR: Record<ConsistencyBreakKind, Break['type']> = {
+  unvalidatedNumericWrite: 'DATA_PRODUCT_NO_PLAN',
+  nonAtomicDecrease: 'DATA_ORDER_NO_PAYMENT',
+  unvalidatedRelationalWrite: 'DATA_WORKSPACE_NO_OWNER',
+  orphanedRelationalCreate: 'DATA_WORKSPACE_NO_OWNER',
+};
 
-function isConsistencyCriticalService(content: string): boolean {
-  return (
-    MUTATION_OPERATION_RE.test(content) &&
-    (MONEY_STATE_RE.test(content) || TENANT_OWNER_STATE_RE.test(content))
+const PRISMA_MUTATION_KERNEL_GRAMMAR = new Set([
+  'create',
+  'createMany',
+  'delete',
+  'deleteMany',
+  'update',
+  'updateMany',
+  'upsert',
+]);
+
+const PRISMA_READ_KERNEL_GRAMMAR = new Set(['count', 'findFirst', 'findMany', 'findUnique']);
+const NUMERIC_SCHEMA_KERNEL_GRAMMAR = new Set(['BigInt', 'Decimal', 'Float', 'Int']);
+
+interface PrismaModelEvidence {
+  accessor: string;
+  hasNumericField: boolean;
+  hasRelationField: boolean;
+}
+
+interface FunctionEvidence {
+  name: string;
+  body: string;
+  startLine: number;
+  firstWritePosition: number | null;
+  hasValidationBeforeWrite: boolean;
+  writesNumericState: boolean;
+  writesRelationalState: boolean;
+  decreasesState: boolean;
+  hasTransaction: boolean;
+  hasNestedRelationshipSeed: boolean;
+  createAccessorCount: number;
+}
+
+interface PrismaMutationEvidence {
+  methodName: string;
+  accessor: string | null;
+  position: number;
+  dataArgument: ts.ObjectLiteralExpression | null;
+}
+
+interface PrismaSchemaEvidence {
+  modelsByAccessor: Map<string, PrismaModelEvidence>;
+}
+
+function consistencyBreakType(kind: ConsistencyBreakKind): Break['type'] {
+  return DATA_CONSISTENCY_BREAK_TYPE_GRAMMAR[kind];
+}
+
+function prismaAccessorForModel(modelName: string): string {
+  return modelName.charAt(0).toLowerCase() + modelName.slice(1);
+}
+
+function collectPrismaSchemaEvidence(schemaPath: string | undefined): PrismaSchemaEvidence {
+  const evidence: PrismaSchemaEvidence = {
+    modelsByAccessor: new Map(),
+  };
+  if (!schemaPath || !pathExists(schemaPath)) {
+    return evidence;
+  }
+
+  let schemaContent: string;
+  try {
+    schemaContent = readTextFile(schemaPath, 'utf8');
+  } catch {
+    return evidence;
+  }
+
+  const modelBlockKernelGrammar = /\bmodel\s+([A-Za-z]\w*)\s*\{([\s\S]*?)\n\s*\}/g;
+  for (const match of schemaContent.matchAll(modelBlockKernelGrammar)) {
+    const modelName = match[1];
+    const modelBody = match[2];
+    if (!modelName || !modelBody) {
+      continue;
+    }
+    const fieldLines = modelBody
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.startsWith('//') && !line.startsWith('@@'));
+    const modelEvidence: PrismaModelEvidence = {
+      accessor: prismaAccessorForModel(modelName),
+      hasNumericField: fieldLines.some((line) =>
+        line
+          .split(/\s+/)
+          .slice(1)
+          .some((token) => NUMERIC_SCHEMA_KERNEL_GRAMMAR.has(token.replace(/[?[\]]/g, ''))),
+      ),
+      hasRelationField: fieldLines.some((line) => line.includes('@relation')),
+    };
+    evidence.modelsByAccessor.set(modelEvidence.accessor, modelEvidence);
+  }
+
+  return evidence;
+}
+
+function isSkippedServiceFile(file: string): boolean {
+  return !file.endsWith('.service.ts') || file.includes('.spec.') || file.includes('.test.');
+}
+
+function lineNumber(sourceFile: ts.SourceFile, node: ts.Node): number {
+  return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+}
+
+function propertyNameText(name: ts.PropertyName | undefined): string | null {
+  if (!name) {
+    return null;
+  }
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+    return name.text;
+  }
+  return null;
+}
+
+function calledMethodName(node: ts.CallExpression): string | null {
+  if (!ts.isPropertyAccessExpression(node.expression)) {
+    return null;
+  }
+  return node.expression.name.text;
+}
+
+function prismaAccessorFromCall(node: ts.CallExpression): string | null {
+  if (!ts.isPropertyAccessExpression(node.expression)) {
+    return null;
+  }
+  const target = node.expression.expression;
+  if (!ts.isPropertyAccessExpression(target)) {
+    return null;
+  }
+  return target.name.text;
+}
+
+function hasPrismaRoot(node: ts.CallExpression): boolean {
+  if (!ts.isPropertyAccessExpression(node.expression)) {
+    return false;
+  }
+  let current: ts.Expression = node.expression.expression;
+  while (ts.isPropertyAccessExpression(current)) {
+    if (current.name.text === 'prisma') {
+      return true;
+    }
+    current = current.expression;
+  }
+  return ts.isIdentifier(current) && current.text === 'tx';
+}
+
+function objectProperty(
+  node: ts.ObjectLiteralExpression,
+  propertyName: string,
+): ts.Expression | null {
+  for (const property of node.properties) {
+    if (!ts.isPropertyAssignment(property)) {
+      continue;
+    }
+    if (propertyNameText(property.name) === propertyName) {
+      return property.initializer;
+    }
+  }
+  return null;
+}
+
+function dataArgumentFromCall(node: ts.CallExpression): ts.ObjectLiteralExpression | null {
+  const [firstArgument] = node.arguments;
+  if (!firstArgument || !ts.isObjectLiteralExpression(firstArgument)) {
+    return null;
+  }
+  const dataValue = objectProperty(firstArgument, 'data');
+  return dataValue && ts.isObjectLiteralExpression(dataValue) ? dataValue : null;
+}
+
+function isNumericExpression(node: ts.Node): boolean {
+  if (ts.isNumericLiteral(node)) {
+    return true;
+  }
+  if (ts.isPrefixUnaryExpression(node) && ts.isNumericLiteral(node.operand)) {
+    return true;
+  }
+  return false;
+}
+
+function objectHasNumericValue(node: ts.Node): boolean {
+  let found = false;
+  const visit = (child: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (isNumericExpression(child)) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return found;
+}
+
+function objectHasNestedObjectValue(node: ts.ObjectLiteralExpression): boolean {
+  return node.properties.some((property) => {
+    if (!ts.isPropertyAssignment(property)) {
+      return false;
+    }
+    const value = property.initializer;
+    return ts.isObjectLiteralExpression(value) || ts.isArrayLiteralExpression(value);
+  });
+}
+
+function mutationHasNestedRelationshipSeed(mutation: PrismaMutationEvidence): boolean {
+  return Boolean(
+    mutation.methodName === 'create' &&
+    mutation.dataArgument &&
+    objectHasNestedObjectValue(mutation.dataArgument),
   );
 }
 
-function mutatesMoneyLikeState(content: string): boolean {
-  return MONEY_STATE_RE.test(content);
-}
-
-function mutatesTenantOwnerState(content: string): boolean {
-  return TENANT_OWNER_STATE_RE.test(content);
-}
-
-/**
- * Extract function bodies from TypeScript source.
- * Simple heuristic: find async method declarations and track brace depth.
- */
-function extractFunctionBodies(
-  content: string,
-): Array<{ name: string; body: string; startLine: number }> {
-  const functions: Array<{ name: string; body: string; startLine: number }> = [];
-  const lines = content.split('\n');
-
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i];
-    // Match async method declarations
-    const methodMatch = line.match(/^\s+(?:async\s+)?(\w+)\s*\([^)]*\).*\{?\s*$/);
-    if (methodMatch && /async/.test(line)) {
-      const name = methodMatch[1];
-      const startLine = i + 1;
-      // Collect the function body
-      let braceDepth = 0;
-      let body = '';
-      let j = i;
-      let started = false;
-      while (j < lines.length) {
-        const l = lines[j];
-        for (const ch of l) {
-          if (ch === '{') {
-            braceDepth++;
-            started = true;
-          }
-          if (ch === '}') {
-            braceDepth--;
-          }
-        }
-        body += l + '\n';
-        if (started && braceDepth === 0) {
-          break;
-        }
-        j++;
-      }
-      if (body.length > 20) {
-        functions.push({ name, body, startLine });
-      }
-      i = j + 1;
-    } else {
-      i++;
+function objectHasDecreaseOperator(node: ts.Node): boolean {
+  let found = false;
+  const visit = (child: ts.Node): void => {
+    if (found) {
+      return;
     }
+    if (ts.isPropertyAssignment(child) && propertyNameText(child.name) === 'decrement') {
+      found = true;
+      return;
+    }
+    if (
+      ts.isPrefixUnaryExpression(child) &&
+      (child.operator === ts.SyntaxKind.MinusToken ||
+        child.operator === ts.SyntaxKind.MinusMinusToken)
+    ) {
+      found = true;
+      return;
+    }
+    if (
+      ts.isBinaryExpression(child) &&
+      child.operatorToken.kind === ts.SyntaxKind.MinusToken &&
+      objectHasNumericValue(child.right)
+    ) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return found;
+}
+
+function collectPrismaCalls(
+  sourceFile: ts.SourceFile,
+  body: string,
+): { reads: number[]; mutations: PrismaMutationEvidence[]; hasTransaction: boolean } {
+  const bodyFile = ts.createSourceFile(sourceFile.fileName, body, ts.ScriptTarget.Latest, true);
+  const reads: number[] = [];
+  const mutations: PrismaMutationEvidence[] = [];
+  let hasTransaction = false;
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node)) {
+      const methodName = calledMethodName(node);
+      if (methodName && hasPrismaRoot(node)) {
+        if (methodName === '$transaction') {
+          hasTransaction = true;
+        }
+        if (PRISMA_READ_KERNEL_GRAMMAR.has(methodName)) {
+          reads.push(node.getStart(bodyFile));
+        }
+        if (PRISMA_MUTATION_KERNEL_GRAMMAR.has(methodName)) {
+          mutations.push({
+            methodName,
+            accessor: prismaAccessorFromCall(node),
+            position: node.getStart(bodyFile),
+            dataArgument: dataArgumentFromCall(node),
+          });
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(bodyFile);
+  return { reads, mutations, hasTransaction };
+}
+
+function functionLikeName(node: ts.Node): string | null {
+  if (ts.isMethodDeclaration(node) || ts.isFunctionDeclaration(node)) {
+    return node.name ? propertyNameText(node.name) : null;
   }
+  if (
+    ts.isVariableDeclaration(node.parent) &&
+    (ts.isFunctionExpression(node) || ts.isArrowFunction(node)) &&
+    ts.isIdentifier(node.parent.name)
+  ) {
+    return node.parent.name.text;
+  }
+  return null;
+}
+
+function isReadOnlyFunctionName(name: string): boolean {
+  const firstToken = name.replace(/([a-z0-9])([A-Z])/g, '$1 $2').split(/[^A-Za-z0-9]+/)[0];
+  return Boolean(firstToken && PRISMA_READ_KERNEL_GRAMMAR.has(firstToken));
+}
+
+function functionBodyText(node: ts.FunctionLikeDeclarationBase, sourceFile: ts.SourceFile): string {
+  return node.body ? node.body.getText(sourceFile) : '';
+}
+
+function isFunctionWithBody(node: ts.Node): node is ts.FunctionLikeDeclarationBase {
+  return (
+    ts.isMethodDeclaration(node) ||
+    ts.isFunctionDeclaration(node) ||
+    ts.isFunctionExpression(node) ||
+    ts.isArrowFunction(node)
+  );
+}
+
+function extractFunctionEvidence(
+  content: string,
+  file: string,
+  schemaEvidence: PrismaSchemaEvidence,
+): FunctionEvidence[] {
+  const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+  const functions: FunctionEvidence[] = [];
+
+  const visit = (node: ts.Node): void => {
+    if (isFunctionWithBody(node) && node.body) {
+      const name = functionLikeName(node);
+      if (name && !isReadOnlyFunctionName(name)) {
+        const body = functionBodyText(node, sourceFile);
+        const calls = collectPrismaCalls(sourceFile, body);
+        const firstWritePosition =
+          calls.mutations.length > 0
+            ? Math.min(...calls.mutations.map((mutation) => mutation.position))
+            : null;
+        const hasValidationBeforeWrite =
+          firstWritePosition !== null &&
+          calls.reads.some((position) => position < firstWritePosition);
+        const createAccessors = new Set(
+          calls.mutations
+            .filter((mutation) => mutation.methodName === 'create' && mutation.accessor)
+            .map((mutation) => mutation.accessor),
+        );
+        const writesNumericState = calls.mutations.some((mutation) => {
+          const modelEvidence = mutation.accessor
+            ? schemaEvidence.modelsByAccessor.get(mutation.accessor)
+            : null;
+          return Boolean(
+            modelEvidence?.hasNumericField || objectHasNumericValue(mutation.dataArgument ?? node),
+          );
+        });
+        const writesRelationalState = calls.mutations.some((mutation) => {
+          const modelEvidence = mutation.accessor
+            ? schemaEvidence.modelsByAccessor.get(mutation.accessor)
+            : null;
+          return Boolean(
+            modelEvidence?.hasRelationField ||
+            (mutation.dataArgument && objectHasNestedObjectValue(mutation.dataArgument)),
+          );
+        });
+        const hasNestedRelationshipSeed = calls.mutations.some((mutation) =>
+          mutationHasNestedRelationshipSeed(mutation),
+        );
+
+        functions.push({
+          name,
+          body,
+          startLine: lineNumber(sourceFile, node),
+          firstWritePosition,
+          hasValidationBeforeWrite,
+          writesNumericState,
+          writesRelationalState,
+          decreasesState: calls.mutations.some((mutation) =>
+            objectHasDecreaseOperator(mutation.dataArgument ?? node),
+          ),
+          hasTransaction: calls.hasTransaction,
+          hasNestedRelationshipSeed,
+          createAccessorCount: createAccessors.size,
+        });
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
   return functions;
 }
 
-/**
- * Check if a function body performs a create operation without a prior read/validation.
- * writePatterns are static regex literals; readKeywords are plain strings.
- */
-function hasWriteWithoutValidation(body: string, readKeywords: string[]): boolean {
-  const firstWriteIdx = findFirstPrismaWriteIndex(body);
-  if (firstWriteIdx === Infinity) {
-    return false;
-  }
-
-  // Check for validation reads that happen before the first write
-  const hasValidation = readKeywords.some((kw) => {
-    const readIdx = body.indexOf(kw);
-    return readIdx !== -1 && readIdx < firstWriteIdx;
-  });
-
-  return !hasValidation;
+function isConsistencyCriticalService(
+  content: string,
+  file: string,
+  schemaEvidence: PrismaSchemaEvidence,
+): boolean {
+  return extractFunctionEvidence(content, file, schemaEvidence).some(
+    (fn) => fn.firstWritePosition !== null && (fn.writesNumericState || fn.writesRelationalState),
+  );
 }
 
-function findFirstPrismaWriteIndex(body: string): number {
-  let firstWriteIdx = Number.POSITIVE_INFINITY;
-  for (const token of CREATE_OPERATION_TOKENS) {
-    let cursor = body.indexOf(token);
-    while (cursor !== -1) {
-      const prefix = body.slice(Math.max(0, cursor - 80), cursor);
-      if (prefix.includes('this.prisma') || prefix.includes('prisma.')) {
-        firstWriteIdx = Math.min(firstWriteIdx, cursor);
-        break;
-      }
-      cursor = body.indexOf(token, cursor + token.length);
-    }
-  }
-  return firstWriteIdx;
+function pushBreak(breaks: Break[], entry: Break): void {
+  breaks.push(entry);
 }
 
 /** Check data consistency. */
 export function checkDataConsistency(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
+  const schemaEvidence = collectPrismaSchemaEvidence(config.schemaPath);
 
   const backendFiles = walkFiles(config.backendDir, ['.ts']);
   const criticalServiceFiles = backendFiles.filter((file) => {
-    if (!file.endsWith('.service.ts') || file.includes('.spec.') || file.includes('.test.')) {
+    if (isSkippedServiceFile(file)) {
       return false;
     }
     const content = readFileSafe(file);
-    return isConsistencyCriticalService(content);
+    return isConsistencyCriticalService(content, file, schemaEvidence);
   });
 
   for (const file of criticalServiceFiles) {
@@ -158,94 +444,63 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
     }
 
     const fileName = path.basename(file);
-    const functions = extractFunctionBodies(content);
+    const functions = extractFunctionEvidence(content, file, schemaEvidence);
 
     for (const fn of functions) {
-      // Skip utility/getter functions by name
-      if (/^(get|find|fetch|load|build|format|compute|check|validate|is|has|can)/.test(fn.name)) {
-        continue;
+      if (fn.firstWritePosition !== null && !fn.hasValidationBeforeWrite) {
+        if (fn.writesNumericState) {
+          pushBreak(breaks, {
+            type: consistencyBreakType('unvalidatedNumericWrite'),
+            severity: 'high',
+            file,
+            line: fn.startLine,
+            description: `Numeric durable write without prior existence validation in ${fileName}`,
+            detail:
+              `Function '${fn.name}' performs a write operation without a read guard before the write. ` +
+              'A numeric state record could be created for an invalid or unauthorized reference.',
+          });
+        } else if (fn.writesRelationalState) {
+          pushBreak(breaks, {
+            type: consistencyBreakType('unvalidatedRelationalWrite'),
+            severity: 'high',
+            file,
+            line: fn.startLine,
+            description: `Relational durable write without prior validation in ${fileName}`,
+            detail:
+              `Function '${fn.name}' mutates relational state without first validating referenced ` +
+              'records through a local read guard.',
+          });
+        }
       }
 
-      // Check for create without prior findFirst/findUnique in critical mutation context.
-      // (updates are excluded — they usually already have a validated ID from the request)
-      if (hasWriteWithoutValidation(fn.body, VALIDATION_READS)) {
-        // Determine the most specific break type based on file
-        let breakType: 'DATA_PRODUCT_NO_PLAN' | 'DATA_ORDER_NO_PAYMENT' | 'DATA_WORKSPACE_NO_OWNER';
-        let description: string;
-        let detail: string;
-
-        if (mutatesMoneyLikeState(fn.body)) {
-          breakType = 'DATA_PRODUCT_NO_PLAN';
-          description = `Money-like creation without prior existence validation in ${fileName}`;
-          detail =
-            `Function '${fn.name}' performs a write operation without a findFirst/findUnique guard. ` +
-            `A money-like record could be created for a non-existent, inactive, or unauthorized reference.`;
-        } else if (mutatesTenantOwnerState(fn.body)) {
-          breakType = 'DATA_WORKSPACE_NO_OWNER';
-          description = `Tenant/owner mutation without prior validation in ${fileName}`;
-          detail =
-            `Function '${fn.name}' mutates tenant/owner state without first validating the referenced ` +
-            `workspace, tenant, member, or owner exists.`;
-        } else {
-          breakType = 'DATA_WORKSPACE_NO_OWNER';
-          description = `Critical write without validation in ${fileName}`;
-          detail =
-            `Function '${fn.name}' in ${fileName} performs write operation(s) without ` +
-            `a prior findFirst/findUnique validation. May violate business rule constraints.`;
-        }
-
-        breaks.push({
-          type: breakType,
+      if (fn.decreasesState && !fn.hasTransaction) {
+        pushBreak(breaks, {
+          type: consistencyBreakType('nonAtomicDecrease'),
           severity: 'high',
           file,
           line: fn.startLine,
-          description,
-          detail,
+          description: `State-decreasing function '${fn.name}' may not validate state atomically`,
+          detail:
+            `${fileName}: '${fn.name}' decreases durable state without a Prisma transaction boundary. ` +
+            'Concurrent writes can violate consistency unless the validation and mutation are atomic.',
         });
       }
-    }
 
-    // Check balance-decreasing functions specifically: must validate balance atomically.
-    if (MONEY_STATE_RE.test(content)) {
-      const balanceDecreaseFns = functions.filter((fn) =>
-        /debit|deduct|decrement|amount|balance/i.test(fn.name),
-      );
-      for (const fn of balanceDecreaseFns) {
-        const hasBalanceCheck =
-          /balance|saldo|amount.*<=|>=.*amount|findFirst|findUnique/i.test(fn.body) &&
-          /\$transaction|transaction/i.test(fn.body);
-        if (!hasBalanceCheck) {
-          breaks.push({
-            type: 'DATA_ORDER_NO_PAYMENT',
-            severity: 'high',
-            file,
-            line: fn.startLine,
-            description: `Balance-decreasing function '${fn.name}' may not validate balance atomically`,
-            detail:
-              `${fileName}: '${fn.name}' does not appear to use a Prisma $transaction with balance validation. ` +
-              `Race conditions can cause negative balance — two concurrent decrements may both pass the balance check.`,
-          });
-        }
-      }
-    }
-
-    // Check tenant creation: must create OWNER member record
-    if (TENANT_OWNER_STATE_RE.test(content)) {
-      const createFns = functions.filter((fn) => /create/i.test(fn.name));
-      for (const fn of createFns) {
-        const hasOwnerCreation = /OWNER|role.*owner|owner.*role/i.test(fn.body);
-        if (!hasOwnerCreation && fn.body.includes('create(')) {
-          breaks.push({
-            type: 'DATA_WORKSPACE_NO_OWNER',
-            severity: 'high',
-            file,
-            line: fn.startLine,
-            description: `Tenant creation in '${fn.name}' does not create an OWNER member`,
-            detail:
-              `${fileName}: '${fn.name}' creates tenant-like state but does not appear to create a ` +
-              `member with role=OWNER. The tenant can be orphaned with no admin.`,
-          });
-        }
+      if (
+        fn.writesRelationalState &&
+        !fn.hasNestedRelationshipSeed &&
+        fn.createAccessorCount === 1
+      ) {
+        pushBreak(breaks, {
+          type: consistencyBreakType('orphanedRelationalCreate'),
+          severity: 'high',
+          file,
+          line: fn.startLine,
+          description: `Relational create in '${fn.name}' has no sibling relationship seed`,
+          detail:
+            `${fileName}: '${fn.name}' creates relational state but does not show a sibling create ` +
+            'or nested relationship seed in the same function body.',
+        });
       }
     }
   }

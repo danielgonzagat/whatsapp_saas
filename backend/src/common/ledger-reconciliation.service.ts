@@ -160,6 +160,7 @@ export class LedgerReconciliationService {
       payment?: { status?: string; externalId?: string; gateway?: string } | null;
     };
     const prismaExt = this.prisma as object as Record<string, PrismaDelegate>;
+    // PULSE_OK: bounded by paidAt date range and status filter
     const orders = (await prismaExt.checkoutOrder.findMany({
       where: {
         paidAt: { not: null, gte: since },

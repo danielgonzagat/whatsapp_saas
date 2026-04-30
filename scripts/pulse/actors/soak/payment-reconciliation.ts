@@ -9,7 +9,6 @@ import { pathExists, readTextFile } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
 import {
   allPresent,
-  checkFileMatches,
   checkPaths,
   summarizeMissing,
   type StructuralCheck,
@@ -48,22 +47,22 @@ export function observePaymentReconciliation(rootDir: string): SoakScenarioObser
     checkFileMatches(rootDir, {
       label: 'connect reconciliation @Cron',
       relPath: 'backend/src/payments/ledger/connect-ledger-reconciliation.service.ts',
-      patterns: [/@Cron\(/],
+      tokens: ['@Cron('],
     }),
     checkFileMatches(rootDir, {
       label: 'common reconciliation @Cron',
       relPath: 'backend/src/common/ledger-reconciliation.service.ts',
-      patterns: [/@Cron\(/],
+      tokens: ['@Cron('],
     }),
     checkFileMatches(rootDir, {
       label: 'queue retries+backoff configured',
       relPath: 'backend/src/queue/queue.ts',
-      patterns: [/attempts:/, /backoff:/],
+      tokens: ['attempts:', 'backoff:'],
     }),
     checkFileMatches(rootDir, {
       label: 'queue DLQ webhook hook',
       relPath: 'backend/src/queue/queue.ts',
-      patterns: [/DLQ_WEBHOOK_URL|OPS_WEBHOOK_URL/, /\[DLQ\]/],
+      anyTokenGroups: [['DLQ_WEBHOOK_URL', 'OPS_WEBHOOK_URL'], ['[DLQ]']],
     }),
   ];
   const appendOnlyCheck = checkAppendOnlyLedger(rootDir);
@@ -73,6 +72,36 @@ export function observePaymentReconciliation(rootDir: string): SoakScenarioObser
     ? `Soak observed system-payment-reconciliation: ${checks.length} signals (cron, queue, DLQ, idempotency, append-only ledger).`
     : `Soak observation incomplete for system-payment-reconciliation: ${summarizeMissing(checks)}.`;
   return { passed, summary, checks, truthMode: 'observed' };
+}
+
+function checkFileMatches(
+  rootDir: string,
+  spec: {
+    label: string;
+    relPath: string;
+    tokens?: readonly string[];
+    anyTokenGroups?: ReadonlyArray<readonly string[]>;
+  },
+): StructuralCheck {
+  const absolute = safeJoin(rootDir, spec.relPath);
+  if (!pathExists(absolute)) {
+    return { label: spec.label, path: spec.relPath, present: false };
+  }
+  let content = '';
+  try {
+    content = readTextFile(absolute);
+  } catch {
+    return { label: spec.label, path: spec.relPath, present: false };
+  }
+  const requiredTokensPresent = (spec.tokens ?? []).every((token) => content.includes(token));
+  const groupedTokensPresent = (spec.anyTokenGroups ?? []).every((group) =>
+    group.some((token) => content.includes(token)),
+  );
+  return {
+    label: spec.label,
+    path: spec.relPath,
+    present: requiredTokensPresent && groupedTokensPresent,
+  };
 }
 
 function checkAppendOnlyLedger(rootDir: string): StructuralCheck {
@@ -94,10 +123,13 @@ function checkAppendOnlyLedger(rootDir: string): StructuralCheck {
       present: false,
     };
   }
-  // The schema must (1) define a Ledger model and (2) document append-only
-  // semantics either in a comment near the model or generally in the file.
-  const hasLedgerModel = /model\s+\w*Ledger\w*\s*\{/.test(content);
-  const hasAppendOnlyDoc = /append-only/i.test(content);
+  const hasLedgerModel = content
+    .split('\n')
+    .some(
+      (line) =>
+        line.trimStart().startsWith('model ') && line.includes('Ledger') && line.includes('{'),
+    );
+  const hasAppendOnlyDoc = content.toLowerCase().includes('append-only');
   return {
     label: 'schema declares append-only ledger',
     path: 'backend/prisma/schema.prisma',

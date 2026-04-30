@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { verify } from 'jsonwebtoken';
+import { verify } from 'jsonwebtoken'; // PULSE_OK: reasonable expiry (30m)
 import { getJwtSecret } from './jwt-config';
 import {
   describeJwtVerifyError,

@@ -39,6 +39,25 @@ function writeFile(rootDir: string, relativePath: string, content: string): stri
   return createHash('sha256').update(content).digest('hex');
 }
 
+function makeEvidenceFingerprint(
+  finding: Omit<AdjudicatedFinding, 'evidenceFingerprintAtSuppression'>,
+  fileHash: string,
+): string {
+  return createHash('sha256')
+    .update(
+      JSON.stringify({
+        source: finding.source,
+        title: finding.title,
+        filePath: finding.filePath,
+        line: finding.line,
+        capabilityId: finding.capabilityId,
+        proof: finding.proof,
+        fileHash,
+      }),
+    )
+    .digest('hex');
+}
+
 function makeFindingId(issue: PulseCodacyIssue): string {
   const raw = `codacy:${issue.filePath}:${issue.patternId || issue.category}:${
     issue.lineNumber ?? 'no-line'
@@ -50,7 +69,7 @@ function makeAdjudicatedFinding(
   issue: PulseCodacyIssue,
   overrides: Partial<AdjudicatedFinding> = {},
 ): AdjudicatedFinding {
-  return {
+  const finding = {
     findingId: overrides.findingId ?? makeFindingId(issue),
     title: overrides.title ?? issue.patternId,
     source: overrides.source ?? 'codacy',
@@ -64,8 +83,15 @@ function makeAdjudicatedFinding(
       'Human adjudication: Codacy generic SQL RAC demo rule does not apply to migration SQL.',
     expiresOnFileChange: overrides.expiresOnFileChange ?? true,
     fileHashAtSuppression: overrides.fileHashAtSuppression ?? 'a'.repeat(64),
+    evidenceFingerprintAtSuppression: overrides.evidenceFingerprintAtSuppression ?? 'b'.repeat(64),
     suppressedAt: overrides.suppressedAt ?? '2026-04-29T00:00:00.000Z',
     lastChecked: overrides.lastChecked ?? '2026-04-29T00:00:00.000Z',
+  };
+  return {
+    ...finding,
+    evidenceFingerprintAtSuppression:
+      overrides.evidenceFingerprintAtSuppression ??
+      makeEvidenceFingerprint(finding, finding.fileHashAtSuppression),
   };
 }
 
@@ -209,6 +235,41 @@ describe('classifyCodacyIssues', () => {
     expect(governedValidationAction(result)).toContain(
       'repeated human false-positive adjudication',
     );
+  });
+
+  it('does not depend on a fixed pattern allowlist when evidence fingerprints match', () => {
+    const rootDir = makeTempRoot();
+    const genericIssue = makeIssue({
+      issueId: 'generic-1',
+      filePath: 'backend/prisma/migrations/init/migration.sql',
+      patternId: 'Semgrep_codacy.generic.sql.generated-template-name',
+      category: 'Security',
+      message: 'generic.sql template rule matched generated migration structure',
+    });
+    const fileHash = writeFile(rootDir, genericIssue.filePath, 'create table orders (id text);\n');
+    const summary = makeSummary({
+      totalIssues: 1,
+      severityCounts: { HIGH: 1, MEDIUM: 0, LOW: 0, UNKNOWN: 0 },
+      highPriorityBatch: [genericIssue],
+    });
+
+    const result = classifyCodacyIssues(summary, {
+      rootDir,
+      adjudicationState: makeAdjudicationState([
+        makeAdjudicatedFinding(genericIssue, { fileHashAtSuppression: fileHash }),
+        makeAdjudicatedFinding(
+          makeIssue({
+            issueId: 'generic-2',
+            patternId: genericIssue.patternId,
+            message: genericIssue.message,
+          }),
+          { findingId: 'repeat-generic', fileHashAtSuppression: fileHash },
+        ),
+      ]),
+    });
+
+    expect(result.nonActionableHigh).toBe(1);
+    expect(result.nonActionableByPattern[genericIssue.patternId]).toBe(1);
   });
 
   it('splits mixed actionable and non-actionable HIGH issues', () => {

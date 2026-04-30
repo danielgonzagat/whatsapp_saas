@@ -9,6 +9,62 @@ import { getFrontendSourceDirs } from './frontend-roots';
 
 // ===== Step 1: Discover all pages =====
 
+function isNextRouteGroupSegment(segment: string): boolean {
+  return segment.length > 2 && segment.startsWith('(') && segment.endsWith(')');
+}
+
+function routeGroupNameFromSegment(segment: string): string | null {
+  if (!isNextRouteGroupSegment(segment)) {
+    return null;
+  }
+  return segment.slice(1, -1);
+}
+
+function routeSegmentFromAppSegment(segment: string): string | null {
+  if (isNextRouteGroupSegment(segment)) {
+    return null;
+  }
+
+  if (segment.startsWith('[') && segment.endsWith(']')) {
+    const inner = segment.slice(1, -1);
+    const parameterName = inner.startsWith('...') ? inner.slice(3) : inner;
+    return parameterName.length > 0 ? `:${parameterName}` : segment;
+  }
+
+  return segment;
+}
+
+function routeFromAppRelativePath(relFromApp: string): string {
+  const dir = path.dirname(relFromApp).replace(/\\/g, '/');
+  const routeSegments = dir
+    .split('/')
+    .filter((segment) => segment.length > 0 && segment !== '.')
+    .map(routeSegmentFromAppSegment)
+    .filter((segment): segment is string => Boolean(segment));
+
+  return routeSegments.length === 0 ? '/' : `/${routeSegments.join('/')}`;
+}
+
+function groupFromAppRelativePath(relFromApp: string): string {
+  const segments = relFromApp.replace(/\\/g, '/').split('/').filter(Boolean);
+  const routeGroup = routeGroupNameFromSegment(segments[0] || '');
+  if (routeGroup) {
+    return routeGroup;
+  }
+
+  const firstRouteSegment = routeSegmentFromAppSegment(segments[0] || '');
+  if (!firstRouteSegment) {
+    return 'other';
+  }
+  if (firstRouteSegment === 'e2e') {
+    return 'e2e';
+  }
+  if (firstRouteSegment === 'api' || firstRouteSegment === 'auth') {
+    return 'api';
+  }
+  return 'other';
+}
+
 export function findAllPages(config: PulseConfig): PageEntry[] {
   const pages: PageEntry[] = [];
 
@@ -23,40 +79,8 @@ export function findAllPages(config: PulseConfig): PageEntry[] {
       const relFile = path.relative(config.rootDir, absFile);
       const relFromApp = path.relative(appDir, absFile);
 
-      // Derive route from directory structure
-      const dir = path.dirname(relFromApp);
-      let route =
-        '/' +
-        dir
-          .replace(/\(admin\)\/?/g, '')
-          .replace(/\(main\)\/?/g, '')
-          .replace(/\(public\)\/?/g, '')
-          .replace(/\(checkout\)\/?/g, '')
-          .replace(/\(auth\)\/?/g, '')
-          .replace(/\[\.\.\.(\w+)\]/g, ':$1')
-          .replace(/\[(\w+)\]/g, ':$1')
-          .replace(/\/+/g, '/')
-          .replace(/\/$/, '');
-
-      if (route === '/.' || route === '/') {
-        route = '/';
-      }
-
-      // Detect route group
-      let group = 'other';
-      if (relFromApp.startsWith('(admin)')) {
-        group = 'admin';
-      } else if (relFromApp.startsWith('(main)')) {
-        group = 'main';
-      } else if (relFromApp.startsWith('(public)')) {
-        group = 'public';
-      } else if (relFromApp.startsWith('(checkout)')) {
-        group = 'checkout';
-      } else if (relFromApp.startsWith('e2e')) {
-        group = 'e2e';
-      } else if (relFromApp.startsWith('api/') || relFromApp.startsWith('auth/')) {
-        group = 'api';
-      }
+      const route = routeFromAppRelativePath(relFromApp);
+      const group = groupFromAppRelativePath(relFromApp);
 
       // Detect redirect pages
       let isRedirect = false;

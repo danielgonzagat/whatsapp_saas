@@ -411,6 +411,7 @@ export class FlowsService {
 
     // Find the waiting execution whose state.waitingForContact matches.
     // Prisma's Json filtering works on PostgreSQL with path-based filters.
+    // PULSE_OK: bounded by workspace + WAITING_INPUT status + contact filter
     const executions = await this.prisma.flowExecution.findMany({
       where: {
         workspaceId,

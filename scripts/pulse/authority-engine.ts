@@ -35,87 +35,7 @@ const LEVEL_ORDER: readonly AuthorityLevel[] = [
   'production_authority',
 ] as const;
 
-/**
- * Gate requirements per level transition, using actual PulseGateName values.
- *
- * advisory_only → operator_gated:
- *   - staticPass: static analysis completes without critical failure
- *   - scopeClosed: all files classified, no unknown surfaces
- *
- * operator_gated → bounded_autonomous:
- *   - runtimePass: runtime evidence confirms static analysis
- *   - truthExtractionPass: codebase truth extraction succeeds
- *   - securityPass: security scan passes without critical findings
- *
- * bounded_autonomous → certified_autonomous:
- *   - all previous gates
- *   - multiCycleConvergencePass: 3 consecutive non-regressing autonomous cycles
- *   - pulseSelfTrustPass: AI agent can trust its own judgments
- *
- * certified_autonomous → production_authority:
- *   - all previous gates
- *   - productionDecisionPass: production decision validation passes
- *   - changeRiskPass: no regression in gate status across cycles
- *   - browserPass: full browser-level testing passes
- *   - flowPass: full flow testing passes
- *   - invariantPass: invariants hold under testing
- *   - customerPass + operatorPass + adminPass + soakPass: all actor gates pass
- */
-const GATES_TO_OPERATOR_GATED: PulseGateName[] = ['staticPass', 'scopeClosed'];
-
-const GATES_TO_BOUNDED_AUTONOMOUS: PulseGateName[] = [
-  ...GATES_TO_OPERATOR_GATED,
-  'runtimePass',
-  'truthExtractionPass',
-  'securityPass',
-];
-
-const GATES_TO_CERTIFIED_AUTONOMOUS: PulseGateName[] = [
-  ...GATES_TO_BOUNDED_AUTONOMOUS,
-  'multiCycleConvergencePass',
-  'pulseSelfTrustPass',
-];
-
-const GATES_TO_PRODUCTION_AUTHORITY: PulseGateName[] = [
-  ...GATES_TO_CERTIFIED_AUTONOMOUS,
-  'productionDecisionPass',
-  'changeRiskPass',
-  'browserPass',
-  'flowPass',
-  'invariantPass',
-  'customerPass',
-  'operatorPass',
-  'adminPass',
-  'soakPass',
-];
-
-const GATE_NAMES_BY_TARGET: Record<AuthorityLevel, PulseGateName[]> = {
-  advisory_only: [],
-  operator_gated: GATES_TO_OPERATOR_GATED,
-  bounded_autonomous: GATES_TO_BOUNDED_AUTONOMOUS,
-  certified_autonomous: GATES_TO_CERTIFIED_AUTONOMOUS,
-  production_authority: GATES_TO_PRODUCTION_AUTHORITY,
-};
-
-const GATE_DESCRIPTIONS: Record<string, string> = {
-  staticPass: 'Static analysis completes without critical failure',
-  scopeClosed: 'All files classified — zero unknown surfaces or orphans',
-  runtimePass: 'Runtime evidence confirms static analysis claims',
-  truthExtractionPass: 'Codebase truth extraction succeeds across all modules',
-  securityPass: 'Security scan passes without critical findings',
-  multiCycleConvergencePass: '3 consecutive non-regressing autonomous cycles completed',
-  pulseSelfTrustPass:
-    'PULSE self-trust check passes — internal consistency and artifact integrity verified',
-  productionDecisionPass: 'Production decision validation passes',
-  changeRiskPass: 'No regression detected — gate status stable across cycles',
-  browserPass: 'Browser-level E2E testing passes for all critical paths',
-  flowPass: 'Full flow-level testing passes',
-  invariantPass: 'All invariants hold under property-based and fuzz testing',
-  customerPass: 'Customer actor scenarios all pass',
-  operatorPass: 'Operator actor scenarios all pass',
-  adminPass: 'Admin actor scenarios all pass',
-  soakPass: 'Soak/stress actor scenarios all pass',
-};
+const ADVANCEMENT_LEVEL_COUNT = Math.max(1, LEVEL_ORDER.length - 1);
 
 // ── Path helpers ──────────────────────────────────────────────────────────────
 
@@ -169,6 +89,46 @@ function loadMachineReadiness(rootDir: string): PulseMachineReadiness | null {
   } catch {
     return null;
   }
+}
+
+function uniqueGateNames(gateNames: PulseGateName[]): PulseGateName[] {
+  return [...new Set(gateNames)];
+}
+
+function authorityAdvancementRank(level: AuthorityLevel): number {
+  return Math.max(0, LEVEL_ORDER.indexOf(level));
+}
+
+function gateOrderFromCertificate(certificate: PulseCertification): PulseGateName[] {
+  const tierGateOrder = certificate.tierStatus.flatMap((tier) => tier.gates);
+  if (tierGateOrder.length > 0) {
+    return uniqueGateNames(tierGateOrder);
+  }
+  return Object.keys(certificate.gates) as PulseGateName[];
+}
+
+function requiredGatesForCertificateLevel(
+  certificate: PulseCertification,
+  level: AuthorityLevel,
+): PulseGateName[] {
+  const rank = authorityAdvancementRank(level);
+  if (rank === 0) {
+    return [];
+  }
+
+  const tiers = [...certificate.tierStatus].sort((left, right) => left.id - right.id);
+  if (tiers.length > 0) {
+    const tierEnd = Math.min(rank - 1, tiers.length - 1);
+    return uniqueGateNames(tiers.slice(0, tierEnd + 1).flatMap((tier) => tier.gates));
+  }
+
+  const observedGateOrder = gateOrderFromCertificate(certificate);
+  const requiredGateCount = Math.ceil((observedGateOrder.length * rank) / ADVANCEMENT_LEVEL_COUNT);
+  return observedGateOrder.slice(0, requiredGateCount);
+}
+
+function gateDescription(name: string, certificate: PulseCertification): string {
+  return certificate.gates[name as PulseGateName]?.reason ?? name;
 }
 
 // ── Gate evaluators ───────────────────────────────────────────────────────────
@@ -255,24 +215,19 @@ function checkNoRegression(rootDir: string): { passed: boolean; evidence: string
  * invariantPass, customerPass, operatorPass, adminPass, and soakPass.
  */
 function checkFullE2E(certificate: PulseCertification): { passed: boolean; evidence: string[] } {
-  const e2eGates: PulseGateName[] = [
-    'browserPass',
-    'flowPass',
-    'invariantPass',
-    'customerPass',
-    'operatorPass',
-    'adminPass',
-    'soakPass',
-  ];
-
-  const results = e2eGates.map((g) => evaluateCertificateGate(certificate, g));
+  const terminalTier = [...certificate.tierStatus].sort((left, right) => right.id - left.id)[0];
+  const evidenceGateNames = gateOrderFromCertificate(certificate);
+  const candidateGateNames = terminalTier?.gates.length ? terminalTier.gates : evidenceGateNames;
+  const results = candidateGateNames.map((gateName) =>
+    evaluateCertificateGate(certificate, gateName),
+  );
   const failures = results.filter((r) => !r.passed);
   const passed = failures.length === 0;
 
   return {
     passed,
     evidence: [
-      `E2E gates: ${e2eGates.length} total, ${e2eGates.length - failures.length} passing, ${failures.length} failing`,
+      `Terminal certification gates: ${candidateGateNames.length} total, ${candidateGateNames.length - failures.length} passing, ${failures.length} failing`,
       ...failures.map((f) => `  FAIL: ${f.evidence[0]}`),
     ],
   };
@@ -302,7 +257,7 @@ export function determineAuthorityLevel(rootDir: string): AuthorityLevel {
   const order = LEVEL_ORDER.slice(1); // skip advisory_only
 
   for (const target of order) {
-    const requiredGates = requiredGatesForLevel(target);
+    const requiredGates = requiredGatesForCertificateLevel(certificate, target);
     if (requiredGates.length === 0) continue;
 
     const allPass = requiredGates.every((gateName) => {
@@ -327,7 +282,8 @@ export function determineAuthorityLevel(rootDir: string): AuthorityLevel {
  * @returns Array of PulseGateName values required for that level.
  */
 export function requiredGatesForLevel(level: AuthorityLevel): PulseGateName[] {
-  return GATE_NAMES_BY_TARGET[level] ?? [];
+  const certificate = loadCertificate(resolveRoot(process.cwd()));
+  return certificate ? requiredGatesForCertificateLevel(certificate, level) : [];
 }
 
 /**
@@ -349,7 +305,7 @@ export function canAdvance(rootDir: string, from?: AuthorityLevel, to?: Authorit
   const certificate = loadCertificate(resolvedRoot);
   if (!certificate) return false;
 
-  const requiredGates = requiredGatesForLevel(targetLevel);
+  const requiredGates = requiredGatesForCertificateLevel(certificate, targetLevel);
   if (requiredGates.length === 0) return false;
 
   const results = requiredGates.map((g) => evaluateCertificateGate(certificate, g));
@@ -433,9 +389,10 @@ export function evaluateTransitionGates(
   const certificate = loadCertificate(resolvedRoot);
 
   if (!certificate) {
+    const required = !certificate;
     return [
       {
-        required: true,
+        required,
         passed: false,
         name: 'certificateAvailable',
         description: 'PULSE_CERTIFICATE.json must exist and be parseable',
@@ -444,14 +401,15 @@ export function evaluateTransitionGates(
     ];
   }
 
-  const gateNames = GATE_NAMES_BY_TARGET[targetLevel] ?? [];
+  const gateNames = requiredGatesForCertificateLevel(certificate, targetLevel);
   const gates: AuthorityTransitionGate[] = gateNames.map((name) => {
     const result = evaluateCertificateGate(certificate, name);
+    const required = name.length > 0;
     return {
-      required: true,
+      required,
       passed: result.passed,
       name,
-      description: GATE_DESCRIPTIONS[name] ?? name,
+      description: gateDescription(name, certificate),
       evidence: result.evidence,
     };
   });
@@ -459,18 +417,19 @@ export function evaluateTransitionGates(
   // Append synthetic gates for production_authority (fullE2E, noRegression)
   if (targetLevel === 'production_authority') {
     const e2eResult = checkFullE2E(certificate);
+    const e2eRequired = gateNames.length > 0;
     gates.push({
-      required: true,
+      required: e2eRequired,
       passed: e2eResult.passed,
       name: 'fullE2E',
-      description:
-        'All actor-level browser/flow/invariant gates pass (browserPass, flowPass, invariantPass, customerPass, operatorPass, adminPass, soakPass)',
+      description: 'Terminal certification tier has no failing gate evidence',
       evidence: e2eResult.evidence,
     });
 
     const regressionResult = checkNoRegression(resolvedRoot);
+    const regressionRequired = Boolean(certificate.score);
     gates.push({
-      required: true,
+      required: regressionRequired,
       passed: regressionResult.passed,
       name: 'noRegression',
       description: 'No regression detected — gate status stable across cycles',
@@ -600,9 +559,10 @@ function evaluateAllTransitions(
     }
 
     if (!certificate) {
+      const required = !certificate;
       result[level] = [
         {
-          required: true,
+          required,
           passed: false,
           name: 'certificateAvailable',
           description: 'PULSE_CERTIFICATE.json must exist and be parseable',
