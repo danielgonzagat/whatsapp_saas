@@ -733,9 +733,8 @@ function structuralRoleGrammar(
     persistence_model: 'persistence',
     side_effect_signal: 'side_effect',
   };
-  return (
-    roleByKind[node.kind] ?? (sameGrammar(node.role, 'interface') ? 'interface' : 'orchestration')
-  );
+  const fallbackRole = sameGrammar(node.role, 'interface') ? 'interface' : 'orchestration';
+  return roleByKind[node.kind] ?? fallbackRole;
 }
 function routePatternsFromNode(node: PulseStructuralNode): string[] {
   const values = [

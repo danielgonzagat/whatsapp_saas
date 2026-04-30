@@ -1439,7 +1439,7 @@ function buildHarnessBlueprintCode(
     },
     artifactLinks: [
       {
-        artifactPath: HARNESS_ARTIFACT_PATH,
+        artifactPath: harnessArtifactPath(),
         relationship: 'harness_evidence',
       },
       {
@@ -1755,7 +1755,7 @@ function buildFeasibilitySummary(targets: HarnessTarget[]): {
  * @returns Array of previously stored harness execution results
  */
 export function loadHarnessResults(rootDir: string): HarnessExecutionResult[] {
-  const artifactPath = safeJoin(rootDir, HARNESS_ARTIFACT_PATH);
+  const artifactPath = safeJoin(rootDir, harnessArtifactPath());
 
   if (!pathExists(artifactPath)) {
     return [];

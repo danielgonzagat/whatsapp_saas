@@ -939,5 +939,6 @@ async function main() {
 
 main().catch((e) => {
   console.error('PULSE error:', e.message || e);
+  console.error(e.stack?.split('\n').slice(0, 8).join('\n'));
   process.exit(2);
 });
