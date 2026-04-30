@@ -13,6 +13,7 @@ import { STATUS_CODES } from 'node:http';
 import * as path from 'path';
 import * as fs from 'node:fs';
 import ts from 'typescript';
+import type { PulseConvergenceSource } from './types.convergence';
 
 export { STATUS_CODES } from 'node:http';
 
@@ -770,7 +771,7 @@ export function discoverAllObservedArtifactFilenames(): Record<string, string> {
 
 export function discoverSourceLabelFromObservedContext(
   context: 'certification' | 'scope' | 'external' | 'pulse',
-): string {
+): PulseConvergenceSource {
   switch (context) {
     case 'scope':
       return 'scope';
