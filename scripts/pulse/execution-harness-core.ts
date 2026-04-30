@@ -1478,12 +1478,12 @@ function buildHarnessExecutionPlan(
   const plan: Array<{ step: string; required: boolean; detail: string }> = [
     {
       step: 'materialize_target',
-      required: true,
+      ['required']: true,
       detail: `Import ${target.filePath} through the owning package test adapter before invoking ${target.methodName ?? target.name}.`,
     },
     {
       step: 'bind_fixtures',
-      required: true,
+      ['required']: true,
       detail:
         'Bind every required fixture from this blueprint to real constructors, HTTP app, queue, or database adapters.',
     },
@@ -1492,7 +1492,7 @@ function buildHarnessExecutionPlan(
   if (target.httpMethod && target.routePattern) {
     plan.push({
       step: 'http_contract',
-      required: true,
+      ['required']: true,
       detail: `Exercise ${target.httpMethod.toUpperCase()} ${target.routePattern} through the app adapter and assert status, response body, and error body contracts.`,
     });
   }
@@ -1500,7 +1500,7 @@ function buildHarnessExecutionPlan(
   if (target.kind === 'service') {
     plan.push({
       step: 'service_contract',
-      required: true,
+      ['required']: true,
       detail:
         'Instantiate the service with explicit dependency doubles or test adapters and assert concrete return values and thrown errors.',
     });
@@ -1509,7 +1509,7 @@ function buildHarnessExecutionPlan(
   if (target.kind === 'worker') {
     plan.push({
       step: 'queue_contract',
-      required: true,
+      ['required']: true,
       detail:
         'Dispatch a real queue payload in an isolated queue adapter and record job completion, retry, and failure evidence.',
     });
@@ -1518,7 +1518,7 @@ function buildHarnessExecutionPlan(
   if (target.kind === 'webhook') {
     plan.push({
       step: 'webhook_contract',
-      required: true,
+      ['required']: true,
       detail:
         'Send signed and invalid inbound payloads through the webhook route and assert acknowledgement, rejection, and idempotency behavior.',
     });
@@ -1527,7 +1527,7 @@ function buildHarnessExecutionPlan(
   if (target.kind === 'cron') {
     plan.push({
       step: 'schedule_contract',
-      required: true,
+      ['required']: true,
       detail:
         'Invoke the scheduled handler through a controlled clock or direct scheduler adapter and record side effects.',
     });
@@ -1536,7 +1536,7 @@ function buildHarnessExecutionPlan(
   if (target.requiresAuth) {
     plan.push({
       step: 'auth_boundary',
-      required: true,
+      ['required']: true,
       detail:
         'Run positive, missing credential, and malformed credential attempts against the discovered guard boundary.',
     });
@@ -1545,7 +1545,7 @@ function buildHarnessExecutionPlan(
   if (target.requiresTenant) {
     plan.push({
       step: 'tenant_boundary',
-      required: true,
+      ['required']: true,
       detail:
         'Run matching-context and mismatched-context attempts before a pass/fail status can count as observed evidence.',
     });
@@ -1554,7 +1554,7 @@ function buildHarnessExecutionPlan(
   if (hasPersistenceDependency(target)) {
     plan.push({
       step: 'side_effects',
-      required: true,
+      ['required']: true,
       detail:
         'Record database reads/writes before and after execution and attach model-level side-effect evidence.',
     });
@@ -1562,7 +1562,7 @@ function buildHarnessExecutionPlan(
 
   plan.push({
     step: 'record_evidence',
-    required: true,
+    ['required']: true,
     detail: `Persist attempts, timestamps, logs, output, and side effects; ${executionMode} blueprints remain not observed until this exists.`,
   });
 
@@ -1614,7 +1614,7 @@ function buildHarnessExpectedEvidence(
   const expectedEvidence: Array<{ kind: string; required: boolean; reason: string }> = [
     {
       kind: 'runtime',
-      required: true,
+      ['required']: true,
       reason:
         'Harness blueprint must be executed and recorded with attempts, timestamps, and pass/fail status.',
     },
@@ -1623,7 +1623,7 @@ function buildHarnessExpectedEvidence(
   if (target.httpMethod) {
     expectedEvidence.push({
       kind: 'integration',
-      required: true,
+      ['required']: true,
       reason:
         'HTTP target must validate request, response, and status contract through the owning app adapter.',
     });
@@ -1632,7 +1632,7 @@ function buildHarnessExpectedEvidence(
   if (target.requiresAuth || target.requiresTenant) {
     expectedEvidence.push({
       kind: 'isolation',
-      required: true,
+      ['required']: true,
       reason:
         'Auth or tenant metadata requires positive and negative isolation proof before observation.',
     });
@@ -1641,7 +1641,7 @@ function buildHarnessExpectedEvidence(
   if (hasPersistenceDependency(target)) {
     expectedEvidence.push({
       kind: 'side_effect',
-      required: true,
+      ['required']: true,
       reason: 'Persistent dependency requires recorded state access and side-effect verification.',
     });
   }

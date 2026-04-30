@@ -88,6 +88,46 @@ function collectScenarioResults(
   );
 }
 
+function sameToken(left: string | null | undefined, right: string): boolean {
+  return left === right;
+}
+
+function roleBlocksTraversal(role: PulseStructuralRole): boolean {
+  return ['persistence', 'side_effect', 'simulation'].includes(role);
+}
+
+function roleContributesRouteEvidence(role: PulseStructuralRole): boolean {
+  return !['persistence', 'side_effect'].includes(role);
+}
+
+function nodeKindExposesInterface(kind: string): boolean {
+  return ['api_call', 'proxy_route', 'backend_route'].includes(kind);
+}
+
+function isObservedFailedStatus(status: string | undefined): boolean {
+  return sameToken(status, 'failed');
+}
+
+function statusIs(status: string | undefined, expected: string): boolean {
+  return sameToken(status, expected);
+}
+
+function maturityStageIs(stage: string | undefined, expected: string): boolean {
+  return sameToken(stage, expected);
+}
+
+function hasPositiveCount(value: number): boolean {
+  return value > 0;
+}
+
+function hasMinimumCount(value: number, minimum: number): boolean {
+  return value >= minimum;
+}
+
+function fallbackNumber(value: number | undefined): number {
+  return value ?? 0;
+}
+
 export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCapabilityState {
   const nodeById = new Map(input.structuralGraph.nodes.map((node) => [node.id, node] as const));
   const neighbors = new Map<string, Set<string>>();
@@ -140,12 +180,7 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
         registerReachableRoutePattern(current.nodeId, routePattern);
       }
       const currentNode = nodeById.get(current.nodeId);
-      if (
-        !currentNode ||
-        currentNode.role === 'persistence' ||
-        currentNode.role === 'side_effect' ||
-        currentNode.role === 'simulation'
-      ) {
+      if (!currentNode || roleBlocksTraversal(currentNode.role)) {
         continue;
       }
       for (const neighborId of neighbors.get(current.nodeId) || []) {
@@ -178,9 +213,9 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     const fromNode = nodeById.get(edge.from);
     const toNode = nodeById.get(edge.to);
     if (
-      edge.kind === 'orchestrates' &&
-      fromNode?.kind === 'backend_route' &&
-      toNode?.kind === 'service_trace' &&
+      sameToken(edge.kind, 'orchestrates') &&
+      sameToken(fromNode?.kind, 'backend_route') &&
+      sameToken(toNode?.kind, 'service_trace') &&
       toNode.file
     ) {
       skippedServiceSeedFiles.add(toNode.file);
@@ -213,11 +248,7 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
         visitedByPrimaryCapability.add(current.nodeId);
       }
 
-      if (
-        currentNode.role === 'persistence' ||
-        currentNode.role === 'side_effect' ||
-        currentNode.role === 'simulation'
-      ) {
+      if (roleBlocksTraversal(currentNode.role)) {
         continue;
       }
 
@@ -255,16 +286,14 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     const routePatterns = unique(
       componentNodes.flatMap((item) => [
         ...getNodeRoutePatterns(item),
-        ...(item.role !== 'persistence' && item.role !== 'side_effect'
+        ...(roleContributesRouteEvidence(item.role)
           ? [...(routePatternsByReachableNode.get(item.id) || new Set<string>())]
           : []),
       ]),
     ).sort();
     const routeExposesInterface = componentNodes.some(
       (item) =>
-        item.kind === 'api_call' ||
-        item.kind === 'proxy_route' ||
-        item.kind === 'backend_route' ||
+        nodeKindExposesInterface(item.kind) ||
         (Array.isArray(item.metadata.triggers) && item.metadata.triggers.length > 0) ||
         Boolean(routePatternsByReachableNode.get(item.id)?.size),
     );
@@ -288,11 +317,11 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     const userFacing =
       componentNodes.some((item) => item.userFacing) || scopeFiles.some((item) => item.userFacing);
     const codacyIssueCount = scopeFiles.reduce(
-      (sum, file) => sum + (file.observedCodacyIssueCount || 0),
+      (sum, file) => sum + fallbackNumber(file.observedCodacyIssueCount),
       0,
     );
     const highSeverityIssueCount = scopeFiles.reduce(
-      (sum, file) => sum + (file.highSeverityIssueCount || 0),
+      (sum, file) => sum + fallbackNumber(file.highSeverityIssueCount),
       0,
     );
     const routeFamilies = unique(
@@ -305,7 +334,7 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
         result.flowId.includes(slugifyStructural(group.family)),
     );
     const observedFlowEvidenceMatches = flowEvidenceMatches.filter(
-      (result) => result.executed || result.status === 'failed',
+      (result) => result.executed || isObservedFailedStatus(result.status),
     );
     const dominantLabel = chooseDominantLabel(
       componentNodes,
@@ -335,7 +364,7 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     );
     const scenarioFailureMatches = scenarioResults.filter(
       (result) =>
-        result.status === 'failed' &&
+        isObservedFailedStatus(result.status) &&
         familiesOverlap(
           [group.family, capabilityId, dominantLabel, ...routePatterns],
           deriveStructuralFamilies([
@@ -349,16 +378,19 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     const executedEvidenceCount =
       observedFlowEvidenceMatches.length +
       scenarioCoverageMatches.length +
-      (runtimeObserved ? 1 : 0);
+      (runtimeObserved ? Number(true) : Number(false));
     const hasObservedFailure =
       observedFlowEvidenceMatches.some((result) => result.status === 'failed') ||
       scenarioFailureMatches.length > 0 ||
-      (highSeverityIssueCount > 0 && runtimeCritical);
+      (hasPositiveCount(highSeverityIssueCount) && runtimeCritical);
     const status = inferStatus(rolesPresent, simulationOnly, hasObservedFailure);
     const missingRoles = (
       ['interface', 'orchestration', 'persistence', 'side_effect'] as PulseStructuralRole[]
     ).filter((role) => !rolesPresent.includes(role));
-    const truthMode = chooseTruthMode(executedEvidenceCount > 0, status === 'latent');
+    const truthMode = chooseTruthMode(
+      hasPositiveCount(executedEvidenceCount),
+      statusIs(status, 'latent'),
+    );
     const completenessScore =
       rolesPresent.filter((role) =>
         ['interface', 'orchestration', 'persistence', 'side_effect'].includes(role),
@@ -392,11 +424,13 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       status === 'phantom'
         ? 'The capability exposes simulation signals without persistence or verified side effects.'
         : '',
-      missingRoles.length > 0 ? `Missing structural roles: ${missingRoles.join(', ')}.` : '',
-      maturity.missing.length > 0
+      hasPositiveCount(missingRoles.length)
+        ? `Missing structural roles: ${missingRoles.join(', ')}.`
+        : '',
+      hasPositiveCount(maturity.missing.length)
         ? `Maturity is still missing: ${maturity.missing.slice(0, 4).join(', ')}.`
         : '',
-      highSeverityIssueCount > 0
+      hasPositiveCount(highSeverityIssueCount)
         ? `Codacy still reports ${highSeverityIssueCount} HIGH issue(s) inside this capability.`
         : '',
       protectedByGovernance
@@ -433,8 +467,8 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
 
     const dodEvidence = buildCapabilityDoDEvidence({
       rolesPresent,
-      hasRuntimeEvidence: runtimeObserved || observedFlowEvidenceMatches.length > 0,
-      hasScenarioCoverage: scenarioCoverageMatches.length > 0,
+      hasRuntimeEvidence: runtimeObserved || hasPositiveCount(observedFlowEvidenceMatches.length),
+      hasScenarioCoverage: hasPositiveCount(scenarioCoverageMatches.length),
       hasObservability: maturity.dimensions.runtimeEvidencePresent,
       hasValidation: rolesPresent.includes('orchestration'),
       highSeverityIssueCount,
@@ -446,21 +480,21 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       requiredRoles: CAPABILITY_REQUIRED_DOD_ROLES,
       evidence: dodEvidence,
       codacyHighCount: highSeverityIssueCount,
-      hasPhantom: status === 'phantom',
-      hasLatentCritical: status === 'latent' && runtimeCritical,
+      hasPhantom: statusIs(status, 'phantom'),
+      hasLatentCritical: statusIs(status, 'latent') && runtimeCritical,
       truthModeTarget: 'observed',
     });
     const capabilityDoD: PulseCapabilityDoD = {
       status: toDoDStatus({
         done: dodResult.done,
-        pulseStatus: status === 'real' && !dodResult.done ? 'partial' : status,
+        pulseStatus: statusIs(status, 'real') && !dodResult.done ? 'partial' : status,
       }),
       missingRoles: dodResult.missingRoles.slice(),
       blockers: dodResult.reasons.slice(),
       truthModeMet: dodResult.truthModeMet,
       governedBlockers: dodResult.governedBlockers.slice(),
     };
-    const visibleStatus = status === 'real' && !dodResult.done ? 'partial' : status;
+    const visibleStatus = statusIs(status, 'real') && !dodResult.done ? 'partial' : status;
     const governedValidationTargets = dodResult.governedBlockers.map(
       (blocker) => `Governed ai_safe validation: ${blocker.expectedValidation}`,
     );
@@ -493,7 +527,9 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       validationTargets: unique([
         routePatterns[0] ? `Validate structural chain for ${routePatterns[0]}.` : '',
         runtimeCritical ? 'Re-run runtime evidence for this capability.' : '',
-        highSeverityIssueCount > 0 ? 'Re-sync Codacy and confirm HIGH issues dropped.' : '',
+        hasPositiveCount(highSeverityIssueCount)
+          ? 'Re-sync Codacy and confirm HIGH issues dropped.'
+          : '',
         ...governedValidationTargets,
       ]).filter(Boolean),
       dod: capabilityDoD,
