@@ -1725,7 +1725,7 @@ function buildFeasibilitySummary(targets: HarnessTarget[]): {
   let executableTargets = 0;
   let needsStagingTargets = 0;
   let cannotExecuteTargets = 0;
-  let generatedTestCount = 0;
+  let generatedTestsTotal = 0;
 
   for (const t of targets) {
     switch (t.feasibility) {
@@ -1739,10 +1739,15 @@ function buildFeasibilitySummary(targets: HarnessTarget[]): {
         cannotExecuteTargets++;
         break;
     }
-    generatedTestCount += t.generatedTests.length;
+    generatedTestsTotal += t.generatedTests.length;
   }
 
-  return { executableTargets, needsStagingTargets, cannotExecuteTargets, generatedTestCount };
+  return {
+    executableTargets,
+    needsStagingTargets,
+    cannotExecuteTargets,
+    generatedTestCount: generatedTestsTotal,
+  };
 }
 
 /**
