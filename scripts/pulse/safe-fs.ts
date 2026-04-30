@@ -99,7 +99,12 @@ export function readDir(filePath: string, options: { withFileTypes: true }): Dir
 export function readDir(filePath: string, options: { recursive: true }): string[];
 /** Read dir. */
 export function readDir(filePath: string, options?: unknown): unknown[] {
-  return nodeReaddirSync(safeResolve(filePath), options as never) as unknown[];
+  try {
+    return nodeReaddirSync(safeResolve(filePath), options as never) as unknown[];
+  } catch (err: any) {
+    if (err?.code === 'ENOENT') return [];
+    throw err;
+  }
 }
 
 /** Ensure dir. */

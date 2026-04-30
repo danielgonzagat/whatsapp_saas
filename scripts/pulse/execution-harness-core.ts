@@ -666,7 +666,7 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
   // ── 8. Compute critical target stats ──
   const governedSet = allTargets.filter(isCriticalHarnessTarget);
 
-  const passedResults = combinedResults.filter((r) => r.status === 'passed');
+  const passedResults = combinedResults.filter((r) => isPassedHarnessStatus(r.status));
   const failedResults = combinedResults.filter((r) => r.status === 'failed');
   const blockedResults = combinedResults.filter((r) => r.status === 'blocked');
 
@@ -1659,7 +1659,7 @@ function buildHarnessExpectedEvidence(
 export function buildFixtureDataStructures(targets: HarnessTarget[]): Record<string, unknown> {
   const dbModels = new Set<string>();
   const queueNames = new Set<string>();
-  const webhookEndpoints: Array<{ path: string; targetId: string }> = [];
+  const webhookEndpoints: Array<{ locator: string; targetId: string }> = [];
 
   for (const t of targets) {
     for (const f of t.fixtures) {
@@ -1679,7 +1679,7 @@ export function buildFixtureDataStructures(targets: HarnessTarget[]): Record<str
       }
     }
     if (t.kind === 'webhook' && t.routePattern) {
-      webhookEndpoints.push({ path: t.routePattern, targetId: t.targetId });
+      webhookEndpoints.push({ locator: t.routePattern, targetId: t.targetId });
     }
   }
 
@@ -1699,7 +1699,7 @@ export function buildFixtureDataStructures(targets: HarnessTarget[]): Record<str
       },
     })),
     webhookFixtures: webhookEndpoints.map((w) => ({
-      path: w.path,
+      path: w.locator,
       targetId: w.targetId,
       samplePayload: {
         event: 'pulse.test.event',
@@ -1766,14 +1766,14 @@ function buildFeasibilitySummary(targets: HarnessTarget[]): {
  * @returns Array of previously stored harness execution results
  */
 export function loadHarnessResults(rootDir: string): HarnessExecutionResult[] {
-  const artifactPath = safeJoin(rootDir, harnessArtifactPath());
+  const harnessEvidenceFile = safeJoin(rootDir, harnessArtifactPath());
 
-  if (!pathExists(artifactPath)) {
+  if (!pathExists(harnessEvidenceFile)) {
     return [];
   }
 
   try {
-    const evidence = readJsonFile<HarnessEvidence>(artifactPath);
+    const evidence = readJsonFile<HarnessEvidence>(harnessEvidenceFile);
     return Array.isArray(evidence.results)
       ? evidence.results.map(normalizeHarnessExecutionResult)
       : [];
