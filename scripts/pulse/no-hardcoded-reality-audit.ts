@@ -237,7 +237,7 @@ function looksLikeFixedId(value: string): boolean {
 function looksLikeRealityLabel(value: string): boolean {
   return (
     looksLikeFixedId(value) ||
-    /^[a-z][a-z0-9]+(?:[A-Z][A-Za-z0-9]+)+$/.test(value) ||
+    /^[a-z][a-z0-9]*[A-Z](?:[A-Za-z0-9]*[A-Z])*[A-Za-z0-9]*$/.test(value) ||
     /^[A-Z][A-Za-z0-9 ]{2,}$/.test(value) ||
     /^[a-z][a-z0-9]{2,}$/.test(value)
   );
