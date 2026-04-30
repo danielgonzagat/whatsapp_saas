@@ -177,6 +177,17 @@ function tokenOverlap(left: Set<string>, right: Set<string>): number {
   return overlap;
 }
 
+function findPillarByTerm(
+  pillars: ObservabilityPillar[],
+  term: string,
+): ObservabilityPillar | null {
+  const termTokens = tokenizeObservabilityTerm(term);
+  return (
+    pillars.find((pillar) => tokenOverlap(tokenizeObservabilityTerm(pillar), termTokens) > 0) ??
+    null
+  );
+}
+
 function signalMatchesPillar(signalName: string, pillar: ObservabilityPillar): boolean {
   const signalTokens = tokenizeObservabilityTerm(signalName);
   const pillarTokens = tokenizeObservabilityTerm(pillar);
@@ -277,7 +288,7 @@ export function buildObservabilityCoverage(rootDir: string): ObservabilityCovera
   );
 
   const flows = loadFlows(pulseCurrentDir);
-  const flowItems = buildFlowObservability(flows, capabilityItems);
+  const flowItems = buildFlowObservability(flows, capabilityItems, runtimeContext);
 
   const topGaps = buildTopGaps(capabilityItems);
 
@@ -908,7 +919,7 @@ function findBehaviorGraphEvidence(
     const nodes = runtimeContext.behaviorNodesByFile.get(filePath) ?? [];
     if (
       nodes.some((node) => {
-        const nodeRecord: Record<string, unknown> = node;
+        const nodeRecord = node as unknown as Record<string, unknown>;
         return nodeRecord[graphFlag] === true;
       })
     ) {
@@ -1337,15 +1348,14 @@ function buildTopGaps(
         .filter(([, status]) => status === 'missing')
         .map(([pillar]) => pillar);
 
-      const criticalMissing = missingPillars.filter((p) =>
-        ['logs', 'metrics', 'alerts', 'sentry'].includes(p),
-      );
-      const highMissing = missingPillars.filter((p) => ['tracing', 'health_probes'].includes(p));
-
       let severity: 'critical' | 'high' | 'medium';
-      if (criticalMissing.length > 0) {
+      const relevantPillars = Object.values(cap.pillars).filter(
+        (status) => status !== 'not_applicable',
+      ).length;
+      const missingRatio = missingPillars.length / Math.max(1, relevantPillars);
+      if (cap.runtimeCritical && missingPillars.length > 0) {
         severity = 'critical';
-      } else if (highMissing.length > 0) {
+      } else if (missingRatio >= 0.5) {
         severity = 'high';
       } else {
         severity = 'medium';
@@ -1365,12 +1375,15 @@ function buildSummary(
   capabilityItems: CapabilityObservability[],
   flowItems: FlowObservability[],
   _topGaps: ObservabilityCoverageState['topGaps'],
+  runtimeContext: ObservabilityRuntimeContext,
 ): ObservabilityCoverageState['summary'] {
   const allPerFileEntries = capabilityItems.flatMap((c) => c.details.perFileLogging);
   const uniqueFiles = new Set(allPerFileEntries.map((e) => e.filePath));
   const dedupedEntries = Array.from(uniqueFiles).map(
     (fp) => allPerFileEntries.find((e) => e.filePath === fp)!,
   );
+  const alertPillar = findPillarByTerm(runtimeContext.pillars, 'alert');
+  const tracingPillar = findPillarByTerm(runtimeContext.pillars, 'tracing');
 
   return {
     totalCapabilities: capabilityItems.length,
@@ -1381,13 +1394,20 @@ function buildSummary(
     totalFlows: flowItems.length,
     fullyCoveredFlows: flowItems.filter((f) => f.overallStatus === 'covered').length,
     criticalCapabilitiesWithoutAlerts: capabilityItems.filter(
-      (c) => c.runtimeCritical && c.pillars.alerts === 'missing' && c.overallStatus !== 'covered',
+      (c) =>
+        alertPillar &&
+        c.runtimeCritical &&
+        c.pillars[alertPillar] === 'missing' &&
+        c.overallStatus !== 'covered',
     ).length,
     criticalFlowsWithoutTracing: flowItems.filter(
-      (f) => f.pillars.tracing === 'missing' && f.overallStatus !== 'covered',
+      (f) =>
+        tracingPillar && f.pillars[tracingPillar] === 'missing' && f.overallStatus !== 'covered',
     ).length,
-    integrationsWithoutObservability:
-      detectIntegrationsWithoutObservability(capabilityItems).length,
+    integrationsWithoutObservability: detectRuntimeIntegrationsWithoutObservability(
+      capabilityItems,
+      runtimeContext,
+    ).length,
     capabilitiesWithComprehensiveLogging: capabilityItems.filter(
       (c) => c.logQuality === 'comprehensive',
     ).length,

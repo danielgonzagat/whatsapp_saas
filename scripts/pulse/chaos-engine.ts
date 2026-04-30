@@ -1066,40 +1066,30 @@ export function generateChaosScenarios(
 ): ChaosScenario[] {
   const detectedTargets = targets ?? detectCodebaseTargets(rootDir);
   const loadedCapabilities = capabilities ?? loadCapabilities(rootDir);
+  const runtimeEvidence = loadRuntimeEvidence(rootDir);
+  const executionTrace = loadExecutionTrace(rootDir);
+  const effectRecords = loadEffectGraphRecords(rootDir);
   const scenarios: ChaosScenario[] = [];
   let index = 0;
 
   for (const target of detectedTargets) {
     const blastRadius = compactBlastRadius(computeBlastRadius(target, loadedCapabilities));
+    const targetCapabilities = loadedCapabilities.filter((capability) =>
+      blastRadius.includes(capability.id),
+    );
+    const targetFiles = unique(targetCapabilities.flatMap((capability) => capability.filePaths));
+    const context = buildChaosEvidenceContext(
+      `target:${target}`,
+      target,
+      targetFiles,
+      loadedCapabilities,
+      runtimeEvidence,
+      executionTrace,
+      effectRecords,
+    );
 
-    // Multi-tier latency injection.
-    for (const latencyMs of latencyTierMsValues()) {
-      scenarios.push(buildScenario(target, 'latency', index++, blastRadius, { latencyMs }));
-    }
-
-    // Connection drop for databases and networks.
-    if (target === 'postgres' || target === 'redis') {
-      scenarios.push(buildScenario(target, 'connection_drop', index++, blastRadius));
-    }
-
-    // Connection drop for HTTP-based targets.
-    if (target === 'external_http' || target === 'webhook_receiver') {
-      scenarios.push(buildScenario(target, 'connection_drop', index++, blastRadius));
-    }
-
-    // Slow close for persistent connections.
-    if (target === 'postgres' || target === 'redis') {
-      scenarios.push(buildScenario(target, 'slow_close', index++, blastRadius));
-    }
-
-    // Packet loss for network-dependent targets.
-    if (target === 'external_http' || target === 'webhook_receiver') {
-      scenarios.push(buildScenario(target, 'packet_loss', index++, blastRadius));
-    }
-
-    // Partition for clustered dependencies.
-    if (target === 'redis') {
-      scenarios.push(buildScenario(target, 'partition', index++, blastRadius));
+    for (const seed of deriveChaosScenarioSeeds(context)) {
+      scenarios.push(buildScenario(target, seed.kind, index++, blastRadius, seed.params));
     }
   }
 
@@ -1117,6 +1107,9 @@ export function generateProviderScenarios(
 ): ChaosScenario[] {
   const detectedProviders = providers ?? detectProviders(rootDir);
   const loadedCapabilities = capabilities ?? loadCapabilities(rootDir);
+  const runtimeEvidence = loadRuntimeEvidence(rootDir);
+  const executionTrace = loadExecutionTrace(rootDir);
+  const effectRecords = loadEffectGraphRecords(rootDir);
   const scenarios: ChaosScenario[] = [];
   let index = 0;
 
@@ -1131,71 +1124,29 @@ export function generateProviderScenarios(
       providerFiles,
       loadedCapabilities,
     );
+    const context = buildChaosEvidenceContext(
+      provider,
+      target,
+      providerFiles,
+      loadedCapabilities,
+      runtimeEvidence,
+      executionTrace,
+      effectRecords,
+    );
 
-    // Multi-tier latency per provider.
-    for (const latencyMs of latencyTierMsValues()) {
+    for (const seed of deriveChaosScenarioSeeds(context)) {
       scenarios.push(
         buildProviderScenario(
           provider,
           target,
-          'latency',
+          seed.kind,
           index++,
           blastRadius,
           operationalConcerns,
-          {
-            latencyMs,
-          },
+          seed.params,
         ),
       );
     }
-
-    // Connection drop.
-    scenarios.push(
-      buildProviderScenario(
-        provider,
-        target,
-        'connection_drop',
-        index++,
-        blastRadius,
-        operationalConcerns,
-      ),
-    );
-
-    // Slow close / partial response.
-    scenarios.push(
-      buildProviderScenario(
-        provider,
-        target,
-        'slow_close',
-        index++,
-        blastRadius,
-        operationalConcerns,
-      ),
-    );
-
-    // Packet loss.
-    scenarios.push(
-      buildProviderScenario(
-        provider,
-        target,
-        'packet_loss',
-        index++,
-        blastRadius,
-        operationalConcerns,
-      ),
-    );
-
-    // DNS failure (simulates provider endpoint unreachable).
-    scenarios.push(
-      buildProviderScenario(
-        provider,
-        target,
-        'dns_failure',
-        index++,
-        blastRadius,
-        operationalConcerns,
-      ),
-    );
   }
 
   return scenarios;
@@ -1208,10 +1159,10 @@ function buildScenario(
   kind: ChaosScenarioKind,
   index: number,
   blastRadius: string[],
-  overrides?: { latencyMs?: number },
+  params?: Record<string, number>,
 ): ChaosScenario {
   const config = generateInjectionConfig(kind, target, {
-    params: overrides?.latencyMs ? { latencyMs: overrides.latencyMs } : undefined,
+    params,
   });
   const description = buildDescription(kind, target, config, undefined);
   const expectedBehavior = buildExpectedBehavior(kind, target, config, undefined);
@@ -1238,10 +1189,10 @@ function buildProviderScenario(
   index: number,
   blastRadius: string[],
   operationalConcerns: Set<ChaosOperationalConcern>,
-  overrides?: { latencyMs?: number },
+  params?: Record<string, number>,
 ): ChaosScenario {
   const config = generateInjectionConfig(kind, target, {
-    params: overrides?.latencyMs ? { latencyMs: overrides.latencyMs } : undefined,
+    params,
   });
   const description = buildDescription(kind, target, config, provider);
   const expectedBehavior = buildExpectedBehavior(
