@@ -281,7 +281,7 @@ export function buildObservabilityCoverage(rootDir: string): ObservabilityCovera
 
   const state: ObservabilityCoverageState = {
     generatedAt: new Date().toISOString(),
-    summary: buildSummary(capabilityItems, flowItems, topGaps),
+    summary: buildSummary(capabilityItems, flowItems, topGaps, runtimeContext),
     capabilities: capabilityItems,
     flows: flowItems,
     topGaps,
@@ -674,9 +674,26 @@ export function detectIntegrationsWithoutObservability(
 ): string[] {
   return capabilities
     .filter((cap) => {
-      const hasExternalCall = /http|fetch|axios|got|node-fetch|api/.test(
-        cap.capabilityName.toLowerCase(),
-      );
+      const hasExternalCall =
+        cap.details.matchedFilePaths.length > 0 &&
+        cap.details.perFileLogging.some((entry) => entry.filePath.includes('/integrations/'));
+      const hasObservability = cap.overallStatus === 'covered' || cap.overallStatus === 'partial';
+      return hasExternalCall && !hasObservability;
+    })
+    .map((cap) => cap.capabilityId);
+}
+
+function detectRuntimeIntegrationsWithoutObservability(
+  capabilities: CapabilityObservability[],
+  runtimeContext: ObservabilityRuntimeContext,
+): string[] {
+  return capabilities
+    .filter((cap) => {
+      const hasExternalCall = cap.details.matchedFilePaths.some((filePath) => {
+        const absolutePath = safeResolve(filePath);
+        const nodes = runtimeContext.behaviorNodesByFile.get(absolutePath) ?? [];
+        return nodes.some((node) => node.externalCalls.length > 0);
+      });
       const hasObservability = cap.overallStatus === 'covered' || cap.overallStatus === 'partial';
       return hasExternalCall && !hasObservability;
     })
@@ -978,9 +995,12 @@ function normalizePillarEvidence(
 function targetEngineForPillar(
   pillar: ObservabilityPillar,
 ): ObservabilityMachineImprovementSignal['targetEngine'] {
-  if (pillar === 'tracing') return 'otel-runtime';
-  if (pillar === 'health_probes') return 'runtime-probes';
-  if (pillar === 'sentry' || pillar === 'alerts') return 'external-sources-orchestrator';
+  const tokens = tokenizeObservabilityTerm(pillar);
+  if (tokens.has('tracing') || tokens.has('trace')) return 'otel-runtime';
+  if (tokens.has('health') || tokens.has('probes') || tokens.has('probe')) return 'runtime-probes';
+  if (tokens.has('sentry') || tokens.has('alerts') || tokens.has('alert')) {
+    return 'external-sources-orchestrator';
+  }
   return 'observability-coverage';
 }
 

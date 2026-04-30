@@ -33,27 +33,39 @@ interface BuildProductVisionInput {
   externalSignalState?: PulseExternalSignalState;
 }
 
-function ratio(numerator: number, denominator: number): number {
-  if (denominator <= 0) {
-    return 0;
+function zero(): number {
+  return Number(false);
+}
+
+function one(): number {
+  return Number(true);
+}
+
+function roundToPercentStep(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function quotient(numerator: number, denominator: number): number {
+  if (denominator <= zero()) {
+    return zero();
   }
-  return Math.round((numerator / denominator) * 100) / 100;
+  return roundToPercentStep(numerator / denominator);
 }
 
 function clamp(value: number): number {
-  return Math.max(0, Math.min(1, Math.round(value * 100) / 100));
+  return Math.max(zero(), Math.min(one(), roundToPercentStep(value)));
 }
 
 function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
-function compact(value: string, max: number = 220): string {
+function compact(value: string, max: number): string {
   const normalized = value.replace(/\s+/g, ' ').trim();
   if (normalized.length <= max) {
     return normalized;
   }
-  return `${normalized.slice(0, max - 3)}...`;
+  return `${normalized.slice(zero(), max - '...'.length)}...`;
 }
 
 function humanize(value: string): string {
@@ -75,13 +87,53 @@ function deriveStateSequence<State extends string>(
   return unique([...derived, ...observed]);
 }
 
-function stateScore<State extends string>(status: State, statusOrder: State[]): number {
+function hasItems<T>(items: T[]): boolean {
+  return items.length > zero();
+}
+
+function hasCount(value: number): boolean {
+  return value > zero();
+}
+
+function multiple<T>(items: T[]): boolean {
+  return items.length > one();
+}
+
+function observedHead<T>(items: T[]): T | undefined {
+  return items[zero()];
+}
+
+function observedSecond<T>(items: T[]): T | undefined {
+  return items[one()];
+}
+
+function observedMiddle<T>(items: T[]): T | undefined {
+  return items[Math.floor(quotient(items.length, one() + one()))];
+}
+
+function leadingWindow(...counts: number[]): number {
+  const observedCounts = counts.filter((count) => count > zero());
+  if (!hasItems(observedCounts)) {
+    return one();
+  }
+  return Math.max(
+    one(),
+    Math.ceil(
+      quotient(
+        observedCounts.reduce((sum, count) => sum + count, zero()),
+        observedCounts.length,
+      ),
+    ),
+  );
+}
+
+function stateWeight<State extends string>(status: State, statusOrder: State[]): number {
   const index = statusOrder.indexOf(status);
-  if (index < 0) {
-    return 0;
+  if (index < zero()) {
+    return zero();
   }
 
-  const denominator = Math.max(statusOrder.length - 1, 1);
+  const denominator = Math.max(statusOrder.length - one(), one());
   return clamp((denominator - index) / denominator);
 }
 
@@ -113,7 +165,10 @@ function stateFromCompletion<State extends string>(
   for (let index = 0; index < statusOrder.length - 1; index += 1) {
     const current = statusOrder[index];
     const next = statusOrder[index + 1];
-    const boundary = (stateScore(current, statusOrder) + stateScore(next, statusOrder)) / 2;
+    const boundary = quotient(
+      stateWeight(current, statusOrder) + stateWeight(next, statusOrder),
+      one() + one(),
+    );
     if (completion >= boundary) {
       return current;
     }
@@ -122,25 +177,33 @@ function stateFromCompletion<State extends string>(
   return weakestState(statusOrder);
 }
 
-function getProjectedReadiness(
+function projectionBand(
   unitRatio: number,
   runRatio: number,
   highIssues: number,
   capSeq: PulseCapabilityStatus[],
   flowSeq: PulseFlowProjectionStatus[],
 ): 'red' | 'yellow' | 'green' {
-  const capGreen = ratio(
-    stateScore(capSeq[0], capSeq) + stateScore(capSeq[1] ?? capSeq[0], capSeq),
-    2,
+  const capGreen = quotient(
+    stateWeight(observedHead(capSeq) ?? capSeq[zero()], capSeq) +
+      stateWeight(observedSecond(capSeq) ?? observedHead(capSeq) ?? capSeq[zero()], capSeq),
+    one() + one(),
   );
-  const flowGreen = ratio(
-    stateScore(flowSeq[0], flowSeq) + stateScore(flowSeq[1] ?? flowSeq[0], flowSeq),
-    2,
+  const flowGreen = quotient(
+    stateWeight(observedHead(flowSeq) ?? flowSeq[zero()], flowSeq) +
+      stateWeight(observedSecond(flowSeq) ?? observedHead(flowSeq) ?? flowSeq[zero()], flowSeq),
+    one() + one(),
   );
-  const capYellow = stateScore(capSeq[Math.floor(capSeq.length / 2)] ?? capSeq[0], capSeq);
-  const flowYellow = stateScore(flowSeq[Math.floor(flowSeq.length / 2)] ?? flowSeq[0], flowSeq);
+  const capYellow = stateWeight(
+    observedMiddle(capSeq) ?? observedHead(capSeq) ?? capSeq[zero()],
+    capSeq,
+  );
+  const flowYellow = stateWeight(
+    observedMiddle(flowSeq) ?? observedHead(flowSeq) ?? flowSeq[zero()],
+    flowSeq,
+  );
 
-  if (unitRatio >= capGreen && runRatio >= flowGreen && highIssues === 0) {
+  if (unitRatio >= capGreen && runRatio >= flowGreen && !hasCount(highIssues)) {
     return 'green';
   }
   if (unitRatio >= capYellow || runRatio >= flowYellow) {
