@@ -266,10 +266,16 @@ export function buildObservabilityCoverage(rootDir: string): ObservabilityCovera
   ];
 
   const capabilities = loadCapabilities(pulseCurrentDir);
-  const capabilityItems = buildCapabilityObservability(rootDir, capabilities, allFiles);
+  const runtimeContext = loadObservabilityRuntimeContext(rootDir, pulseCurrentDir);
+  const capabilityItems = buildCapabilityObservability(
+    rootDir,
+    capabilities,
+    allFiles,
+    runtimeContext,
+  );
 
   const flows = loadFlows(pulseCurrentDir);
-  const flowItems = buildFlowObservability(flows, capabilityItems);
+  const flowItems = buildFlowObservability(flows, capabilityItems, runtimeContext);
 
   const topGaps = buildTopGaps(capabilityItems);
 

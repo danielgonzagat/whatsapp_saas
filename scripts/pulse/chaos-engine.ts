@@ -124,6 +124,13 @@ const DEFAULT_EVENT_HORIZON_MS: Record<string, number> = {
   internal_api: 20000,
 };
 
+function latencyTierMsValues(): number[] {
+  return unique(Object.values(DEFAULT_LATENCY_MS).map((value) => String(value)))
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value))
+    .sort((left, right) => left - right);
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function readSafe(filePath: string): string {
@@ -837,7 +844,7 @@ export function generateChaosScenarios(
     const blastRadius = compactBlastRadius(computeBlastRadius(target, loadedCapabilities));
 
     // Multi-tier latency injection.
-    for (const latencyMs of LATENCY_TIERS_MS) {
+    for (const latencyMs of latencyTierMsValues()) {
       scenarios.push(buildScenario(target, 'latency', index++, blastRadius, { latencyMs }));
     }
 
@@ -897,7 +904,7 @@ export function generateProviderScenarios(
     );
 
     // Multi-tier latency per provider.
-    for (const latencyMs of LATENCY_TIERS_MS) {
+    for (const latencyMs of latencyTierMsValues()) {
       scenarios.push(
         buildProviderScenario(
           provider,
