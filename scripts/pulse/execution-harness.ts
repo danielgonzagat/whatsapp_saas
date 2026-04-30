@@ -91,6 +91,14 @@ function infrastructureAliasNames(): Set<string> {
   ]);
 }
 
+function constructorMemberName(): string {
+  return 'constructor';
+}
+
+function isConstructorMemberName(name: string): boolean {
+  return name === constructorMemberName();
+}
+
 function mutatingHttpVerbs(): Set<string> {
   return new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 }
@@ -696,7 +704,7 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
   };
 
   // ── 9. Write artifact to disk ──
-  const artifactAbsPath = safeJoin(rootDir, HARNESS_ARTIFACT_PATH);
+  const artifactAbsPath = safeJoin(rootDir, harnessArtifactPath());
   ensureDir(path.dirname(artifactAbsPath), { recursive: true });
   writeTextFile(artifactAbsPath, JSON.stringify(evidence, null, 2));
 
@@ -717,8 +725,8 @@ export function discoverEndpoints(config: PulseConfig): HarnessTarget[] {
   const routes = parseBackendRoutes(config);
 
   return routes.map((route) => {
-    const kind: HarnessTargetKind = TARGET_KIND_MAP[route.httpMethod] || 'endpoint';
-    const normalizedPath = normalizeRoute(route.fullPath);
+    const kind = targetKindFromDecorator(route.httpMethod);
+    const normalizedPath = normalizeDiscoveredLocator(route.fullPath);
     const targetId = `endpoint:${route.httpMethod.toLowerCase()}:${camelToKebab(normalizedPath)}`;
 
     const requiresAuth = !route.isPublic && route.guards.length > 0;
@@ -726,7 +734,7 @@ export function discoverEndpoints(config: PulseConfig): HarnessTarget[] {
       requiresAuth &&
       (parseRouteParameters(normalizedPath).length > 0 ||
         route.serviceCalls.length > 0 ||
-        MUTATING_METHODS.has(route.httpMethod.toUpperCase()));
+        mutatingHttpVerbs().has(route.httpMethod.toUpperCase()));
 
     return {
       targetId,
@@ -834,7 +842,7 @@ export function discoverServices(config: PulseConfig): HarnessTarget[] {
         prismaModels = collectPrismaModelsFromText(bodyText);
       }
       const hasPersistentMutation =
-        prismaModels.length > 0 && PERSISTENT_STATE_MUTATION_SHAPE_RE.test(methodBodyText);
+        prismaModels.length > 0 && persistentStateMutationShape().test(methodBodyText);
       const requiresAuth = false;
       const requiresTenant = hasPersistentMutation;
       const dependencies = unique([
@@ -1200,8 +1208,6 @@ export function generateFixturesForTarget(
 
 // ─── Behavior Graph Integration ────────────────────────────────────────────
 
-const BEHAVIOR_GRAPH_ARTIFACT = '.pulse/current/PULSE_BEHAVIOR_GRAPH.json';
-
 /**
  * Load the behavior graph artifact produced by behavior-graph.ts.
  *
@@ -1210,7 +1216,7 @@ const BEHAVIOR_GRAPH_ARTIFACT = '.pulse/current/PULSE_BEHAVIOR_GRAPH.json';
  * targets for execution feasibility.
  */
 export function readBehaviorGraph(rootDir: string): BehaviorGraph | null {
-  const artifactPath = safeJoin(rootDir, BEHAVIOR_GRAPH_ARTIFACT);
+  const artifactPath = safeJoin(rootDir, behaviorGraphArtifactPath());
   if (!pathExists(artifactPath)) {
     return null;
   }
@@ -1223,11 +1229,21 @@ export function readBehaviorGraph(rootDir: string): BehaviorGraph | null {
 
 // ─── Execution Feasibility Classification ────────────────────────────────────
 
-const EXTERNAL_CALL_SHAPE_RE =
-  /\b(?:fetch|axios|httpService|request)\s*(?:<[^>]*>)?\s*\(|\.(?:get|post|put|patch|delete)\s*\(\s*['"`]https?:\/\//i;
-const INFRASTRUCTURE_BOUNDARY_SHAPE_RE =
-  /@\s*(?:Processor|Process|Cron|OnQueue\w*)\b|\b(?:new\s+Queue|QueueEvents|EventEmitter|emit|publish|subscribe)\s*\(/i;
-const DESTRUCTIVE_STATE_ACCESS_SHAPE_RE = /\.(?:delete|deleteMany|upsert)\s*\(/i;
+function behaviorGraphArtifactPath(): string {
+  return '.pulse/current/PULSE_BEHAVIOR_GRAPH.json';
+}
+
+function externalCallShape(): RegExp {
+  return /\b(?:fetch|axios|httpService|request)\s*(?:<[^>]*>)?\s*\(|\.(?:get|post|put|patch|delete)\s*\(\s*['"`]https?:\/\//i;
+}
+
+function infrastructureBoundaryShape(): RegExp {
+  return /@\s*(?:Processor|Process|Cron|OnQueue\w*)\b|\b(?:new\s+Queue|QueueEvents|EventEmitter|emit|publish|subscribe)\s*\(/i;
+}
+
+function destructiveStateAccessShape(): RegExp {
+  return /\.(?:delete|deleteMany|upsert)\s*\(/i;
+}
 
 /**
  * Classify a harness target's execution feasibility.
@@ -1245,10 +1261,10 @@ export function classifyExecutionFeasibility(
   behaviorNodes: Map<string, BehaviorNode>,
   rootDir?: string,
 ): { feasibility: ExecutionFeasibility; reason: string } {
-  const targetKey = `${target.filePath}:${target.methodName ?? 'constructor'}`;
+  const targetKey = `${target.filePath}:${target.methodName ?? constructorMemberName()}`;
 
   // ── Check 1: no method means we cannot execute ──
-  if (!target.methodName || target.methodName === 'constructor') {
+  if (!target.methodName || isConstructorMemberName(target.methodName)) {
     return {
       feasibility: 'cannot_execute',
       reason: 'No callable method or function identified — may be a class scaffold',
@@ -1290,7 +1306,7 @@ export function classifyExecutionFeasibility(
 
   const targetSource = rootDir ? readHarnessTargetSource(rootDir, target.filePath) : '';
 
-  if (targetSource && EXTERNAL_CALL_SHAPE_RE.test(targetSource)) {
+  if (targetSource && externalCallShape().test(targetSource)) {
     return {
       feasibility: 'needs_staging',
       reason:
@@ -1299,7 +1315,7 @@ export function classifyExecutionFeasibility(
   }
 
   // ── Check 5: queue/event infrastructure boundaries ──
-  if (targetSource && INFRASTRUCTURE_BOUNDARY_SHAPE_RE.test(targetSource)) {
+  if (targetSource && infrastructureBoundaryShape().test(targetSource)) {
     return {
       feasibility: 'needs_staging',
       reason: 'Source contains queue/event infrastructure shape that requires staging services',
@@ -1324,7 +1340,7 @@ export function classifyExecutionFeasibility(
       reason: `Target performs destructive DB writes on: ${behaviorNode.stateAccess.map((s) => s.model).join(', ')}`,
     };
   }
-  if (targetSource && DESTRUCTIVE_STATE_ACCESS_SHAPE_RE.test(targetSource)) {
+  if (targetSource && destructiveStateAccessShape().test(targetSource)) {
     return {
       feasibility: 'needs_staging',
       reason: 'Source contains destructive persistent-state access that requires sandboxed staging',

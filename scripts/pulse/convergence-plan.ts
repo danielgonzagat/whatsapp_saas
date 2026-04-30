@@ -2055,14 +2055,14 @@ export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): Pul
     blockingTier: input.certification.blockingTier,
     summary: {
       totalUnits: orderedQueue.length,
-      scenarioUnits: orderedQueue.filter((unit) => unit.kind === 'scenario').length,
-      securityUnits: orderedQueue.filter((unit) => unit.kind === 'security').length,
-      staticUnits: orderedQueue.filter((unit) => unit.kind === 'static').length,
-      runtimeUnits: orderedQueue.filter((unit) => unit.kind === 'runtime').length,
-      changeUnits: orderedQueue.filter((unit) => unit.kind === 'change').length,
-      dependencyUnits: orderedQueue.filter((unit) => unit.kind === 'dependency').length,
-      scopeUnits: orderedQueue.filter((unit) => unit.kind === 'scope').length,
-      gateUnits: orderedQueue.filter((unit) => unit.kind === 'gate').length,
+      scenarioUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'scenario'),
+      securityUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'security'),
+      staticUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'static'),
+      runtimeUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'runtime'),
+      changeUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'change'),
+      dependencyUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'dependency'),
+      scopeUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'scope'),
+      gateUnits: countUnitState(orderedQueue, (unit) => unit.kind, 'gate'),
       humanRequiredUnits: 0,
       observationOnlyUnits: orderedQueue.filter((unit) => unit.executionMode === 'observation_only')
         .length,
@@ -2072,8 +2072,8 @@ export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): Pul
         P2: orderedQueue.filter((unit) => unit.priority === 'P2').length,
         P3: orderedQueue.filter((unit) => unit.priority === 'P3').length,
       },
-      failingGates: (Object.keys(input.certification.gates) as PulseGateName[]).filter(
-        (gateName) => input.certification.gates[gateName].status === 'fail',
+      failingGates: (Object.keys(input.certification.gates) as PulseGateName[]).filter((gateName) =>
+        isSameState(input.certification.gates[gateName].status, 'fail'),
       ),
       pendingAsyncExpectations:
         input.certification.evidenceSummary.worldState.asyncExpectationsStatus

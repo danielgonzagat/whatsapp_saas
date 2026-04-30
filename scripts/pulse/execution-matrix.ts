@@ -95,34 +95,32 @@ function riskOrderGrammar(risk: MatrixPathRisk): number {
 }
 
 function unitConfidenceGrammar(value: number): number {
-  return Math.min(Number(Boolean(value || sameGrammar(value, 0))), Math.max(Number(false), value));
+  return Math.min(1, Math.max(0, value));
 }
 
 function fallbackConfidenceGrammar(
   capability: PulseCapability | null,
   flow: PulseFlowProjectionItem | null,
 ): number {
-  return capability?.confidence ?? flow?.confidence ?? Number(Boolean(capability || flow));
+  return capability?.confidence ?? flow?.confidence ?? 0.5;
 }
 
 function nodeConfidenceGrammar(truthMode: PulseTruthMode): number {
   if (sameGrammar(truthMode, 'observed')) {
-    return Number(Boolean(truthMode)) - Number(false) / Number(Boolean(truthMode));
+    return 0.9;
   }
   if (sameGrammar(truthMode, 'inferred')) {
-    return 'inferred'.length / ('inferred'.length + 'role'.length);
+    return 0.65;
   }
-  return 'ast'.length / ('ast'.length + 'kernel'.length + 'type'.length);
+  return 0.35;
 }
 
 function fileConfidenceGrammar(file: PulseScopeFile): number {
-  return hasItemsGrammar(file.structuralHints ?? [])
-    ? 'inferred'.length / ('inferred'.length + 'role'.length)
-    : 'route'.length / ('route'.length + 'route'.length + 'ast'.length);
+  return hasItemsGrammar(file.structuralHints ?? []) ? 0.65 : 0.45;
 }
 
 function zeroGrammar(): number {
-  return Number(Boolean(''.length));
+  return 0;
 }
 
 function failedEvidenceRecoveryGrammar(

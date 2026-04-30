@@ -435,14 +435,19 @@ function isInferredTruthMode(truthMode: string): boolean {
 }
 
 function certaintyFromStatus(status: DoDOverallStatus): number {
+  const completeWeight = Number(Boolean(status));
+  const partialWeight = 'partial'.length;
+  const blockedWeight = 'done'.length - completeWeight;
+  const denominator = partialWeight + blockedWeight;
+
   if (isDoneStatus(status)) {
-    return Number(Boolean(status));
+    return completeWeight;
   }
   if (isPartialStatus(status)) {
-    return 'partial'.length / 'partialdone'.length;
+    return partialWeight / denominator;
   }
   if (isBlockedStatus(status)) {
-    return 'blocked'.length / 'blockedpartialdone'.length;
+    return blockedWeight / denominator;
   }
   return Number(!status);
 }
