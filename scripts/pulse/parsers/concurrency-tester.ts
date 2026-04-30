@@ -18,36 +18,19 @@
  *
  * REQUIRES: PULSE_DEEP=1, PULSE_CHAOS=1, running backend + DB
  * DIAGNOSTICS:
- *   Emits regex-heuristic weak signals with predicate metadata. Static regex/list
- *   matches are evidence that a probe is needed, not authority by themselves.
+ *   Emits AST-derived weak signals with predicate metadata. Static code evidence
+ *   is used to request a probe, not as runtime authority by itself.
  */
 import * as path from 'path';
+import ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
-import { safeForRegex } from '../lib/safe-regex';
-
-const FINANCIAL_PATH_RE = /checkout|wallet|billing|payment|kloel|commission/i;
-
-// Read-modify-write anti-pattern: findFirst/findUnique followed by update in same function
-// without a transaction or lock
-const PRISMA_FIND_RE = /\b(?:this\.prisma|prisma|tx)\.[A-Za-z_$]\w*\.(?:findFirst|findUnique)\s*\(/;
-const PRISMA_UPDATE_RE = /\b(?:this\.prisma|prisma|tx)\.[A-Za-z_$]\w*\.(?:update|updateMany)\s*\(/;
-
-// Optimistic locking patterns (good)
-const OPTIMISTIC_LOCK_RE =
-  /version|updatedAt.*where|where.*version|prisma\.\$executeRaw|SELECT\s+FOR\s+UPDATE/i;
-const TRANSACTION_RE = /prisma\.\$transaction|\$transaction\s*\(\s*\[/;
 
 type ParserTruthMode = 'weak_signal' | 'confirmed_static';
 
 type ConcurrencyDiagnosticBreak = Break & {
   truthMode: ParserTruthMode;
-};
-
-type FunctionBlock = {
-  start: number;
-  lines: string[];
 };
 
 interface ConcurrencyDiagnosticInput {
@@ -73,123 +56,281 @@ function buildConcurrencyDiagnostic(input: ConcurrencyDiagnosticInput): Concurre
     line: input.line,
     description: input.description,
     detail: input.detail,
-    source: `regex-heuristic:concurrency-tester;truthMode=${input.truthMode};predicates=${input.predicateKinds.join(',')}`,
+    source: `ast-evidence:concurrency-tester;truthMode=${input.truthMode};predicates=${input.predicateKinds.join(',')}`,
     truthMode: input.truthMode,
   };
 }
 
-function countBraces(line: string): number {
-  let depth = 0;
-  for (const ch of line) {
-    if (ch === '{') {
-      depth += 1;
-    } else if (ch === '}') {
-      depth -= 1;
-    }
+type PrismaOperationKind = 'read' | 'write' | 'transaction' | 'raw_lock_evidence' | 'other';
+
+interface PrismaCallEvidence {
+  readonly kind: PrismaOperationKind;
+  readonly operationName: string;
+  readonly line: number;
+  readonly txScoped: boolean;
+  readonly conditionalWriteEvidence: boolean;
+  readonly counterMutationEvidence: boolean;
+}
+
+interface FunctionEvidence {
+  readonly startLine: number;
+  readonly calls: PrismaCallEvidence[];
+}
+
+type BodyBearingFunction =
+  | ts.FunctionDeclaration
+  | ts.MethodDeclaration
+  | ts.FunctionExpression
+  | ts.ArrowFunction
+  | ts.ConstructorDeclaration
+  | ts.GetAccessorDeclaration
+  | ts.SetAccessorDeclaration;
+
+function propertyNameText(name: ts.PropertyName): string {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+    return name.text;
   }
-  return depth;
+  return name.getText();
 }
 
-const FN_MODIFIERS = new Set(['public', 'private', 'protected', 'static', 'override', 'async']);
-const FN_NAME_OPEN_RE = /^([A-Za-z_$]\w*)\s*\(([^)]*)\)\s*(?::[^{]+)?\{/;
+function isFunctionLikeWithBody(node: ts.Node): node is BodyBearingFunction {
+  return (
+    (ts.isFunctionDeclaration(node) ||
+      ts.isMethodDeclaration(node) ||
+      ts.isFunctionExpression(node) ||
+      ts.isArrowFunction(node) ||
+      ts.isConstructorDeclaration(node) ||
+      ts.isGetAccessorDeclaration(node) ||
+      ts.isSetAccessorDeclaration(node)) &&
+    Boolean(node.body)
+  );
+}
 
-function stripLeadingModifiers(line: string): string {
-  let cursor = line.replace(/^\s+/, '');
-  while (cursor.length > 0) {
-    const match = cursor.match(/^([A-Za-z_$]\w*)\s+/);
-    if (!match || !FN_MODIFIERS.has(match[1])) {
-      break;
-    }
-    cursor = cursor.slice(match[0].length);
+function lineOf(sourceFile: ts.SourceFile, node: ts.Node): number {
+  return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+}
+
+function isPrismaRootExpression(expression: ts.Expression): boolean {
+  if (ts.isIdentifier(expression)) {
+    return expression.text === 'prisma' || expression.text === 'tx';
   }
-  return cursor;
+  if (ts.isPropertyAccessExpression(expression)) {
+    return (
+      expression.name.text === 'prisma' ||
+      expression.name.text === 'tx' ||
+      isPrismaRootExpression(expression.expression)
+    );
+  }
+  return false;
 }
 
-function isFunctionStart(line: string): boolean {
-  const stripped = stripLeadingModifiers(safeForRegex(line));
-  return FN_NAME_OPEN_RE.test(stripped);
+function isTxScopedExpression(expression: ts.Expression): boolean {
+  if (ts.isIdentifier(expression)) {
+    return expression.text === 'tx';
+  }
+  if (ts.isPropertyAccessExpression(expression)) {
+    return expression.name.text === 'tx' || isTxScopedExpression(expression.expression);
+  }
+  return false;
 }
 
-function extractFunctionBlocks(lines: string[]): FunctionBlock[] {
-  const blocks: FunctionBlock[] = [];
+function prismaOperationKind(operationName: string): PrismaOperationKind {
+  if (operationName === 'findFirst' || operationName === 'findUnique') {
+    return 'read';
+  }
+  if (operationName === 'update' || operationName === 'updateMany') {
+    return 'write';
+  }
+  if (operationName === '$transaction') {
+    return 'transaction';
+  }
+  if (operationName.startsWith('$executeRaw')) {
+    return 'raw_lock_evidence';
+  }
+  return 'other';
+}
 
-  for (let i = 0; i < lines.length; i++) {
-    if (!isFunctionStart(lines[i])) {
+function findObjectProperty(
+  objectLiteral: ts.ObjectLiteralExpression,
+  propertyName: string,
+): ts.PropertyAssignment | null {
+  for (const property of objectLiteral.properties) {
+    if (!ts.isPropertyAssignment(property)) {
       continue;
     }
-
-    let depth = 0;
-    const blockLines: string[] = [];
-    for (let j = i; j < lines.length; j++) {
-      blockLines.push(lines[j]);
-      depth += countBraces(lines[j]);
-      if (depth === 0) {
-        blocks.push({ start: i, lines: blockLines });
-        i = j;
-        break;
-      }
+    if (propertyNameText(property.name) === propertyName) {
+      return property;
     }
   }
+  return null;
+}
 
-  return blocks;
+function collectObjectPropertyNames(node: ts.Node): Set<string> {
+  const names = new Set<string>();
+  const visit = (child: ts.Node): void => {
+    if (ts.isPropertyAssignment(child)) {
+      names.add(propertyNameText(child.name));
+    }
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return names;
+}
+
+function hasCounterMutationEvidence(node: ts.Node): boolean {
+  let observed = false;
+  const visit = (child: ts.Node): void => {
+    if (observed) {
+      return;
+    }
+    if (
+      ts.isPropertyAssignment(child) &&
+      (propertyNameText(child.name) === 'increment' || propertyNameText(child.name) === 'decrement')
+    ) {
+      observed = true;
+      return;
+    }
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return observed;
+}
+
+function hasConditionalWriteEvidence(call: ts.CallExpression): boolean {
+  const [firstArg] = call.arguments;
+  if (!firstArg || !ts.isObjectLiteralExpression(firstArg)) {
+    return false;
+  }
+  const whereProperty = findObjectProperty(firstArg, 'where');
+  if (!whereProperty || !ts.isObjectLiteralExpression(whereProperty.initializer)) {
+    return false;
+  }
+  const whereNames = collectObjectPropertyNames(whereProperty.initializer);
+  return (
+    whereNames.has('version') ||
+    whereNames.has('updatedAt') ||
+    whereProperty.initializer.properties.length > 1
+  );
+}
+
+function extractPrismaCallEvidence(
+  sourceFile: ts.SourceFile,
+  call: ts.CallExpression,
+): PrismaCallEvidence | null {
+  if (!ts.isPropertyAccessExpression(call.expression)) {
+    return null;
+  }
+
+  const operationName = call.expression.name.text;
+  const kind = prismaOperationKind(operationName);
+  if (kind === 'other' || !isPrismaRootExpression(call.expression.expression)) {
+    return null;
+  }
+
+  return {
+    kind,
+    operationName,
+    line: lineOf(sourceFile, call),
+    txScoped: isTxScopedExpression(call.expression.expression),
+    conditionalWriteEvidence: kind === 'write' && hasConditionalWriteEvidence(call),
+    counterMutationEvidence: kind === 'write' && hasCounterMutationEvidence(call),
+  };
+}
+
+function collectFunctionEvidence(sourceFile: ts.SourceFile): FunctionEvidence[] {
+  const functions: FunctionEvidence[] = [];
+
+  const visit = (node: ts.Node): void => {
+    if (!isFunctionLikeWithBody(node)) {
+      ts.forEachChild(node, visit);
+      return;
+    }
+
+    const calls: PrismaCallEvidence[] = [];
+    const collectCalls = (child: ts.Node): void => {
+      if (ts.isCallExpression(child)) {
+        const callEvidence = extractPrismaCallEvidence(sourceFile, child);
+        if (callEvidence) {
+          calls.push(callEvidence);
+        }
+      }
+      ts.forEachChild(child, collectCalls);
+    };
+    collectCalls(node.body);
+
+    if (calls.length > 0) {
+      functions.push({ startLine: lineOf(sourceFile, node), calls });
+    }
+  };
+
+  visit(sourceFile);
+  return functions;
+}
+
+function hasLockEvidence(func: FunctionEvidence): boolean {
+  return func.calls.some(
+    (call) =>
+      call.kind === 'transaction' ||
+      call.kind === 'raw_lock_evidence' ||
+      call.txScoped ||
+      call.conditionalWriteEvidence,
+  );
 }
 
 function hasUnprotectedReadModifyWrite(
-  block: FunctionBlock,
+  func: FunctionEvidence,
 ): { findLine: number; updateLine: number } | null {
-  const body = block.lines.join('\n');
-  if (TRANSACTION_RE.test(body) || OPTIMISTIC_LOCK_RE.test(body)) {
+  if (hasLockEvidence(func)) {
     return null;
   }
 
   let findLine = -1;
-  for (let i = 0; i < block.lines.length; i++) {
-    const line = block.lines[i];
-    if (PRISMA_FIND_RE.test(line)) {
-      findLine = i;
+  for (const call of func.calls) {
+    if (call.kind === 'read') {
+      findLine = call.line;
     }
-    if (findLine >= 0 && PRISMA_UPDATE_RE.test(line)) {
-      return { findLine: block.start + findLine + 1, updateLine: block.start + i + 1 };
+    if (findLine >= 0 && call.kind === 'write') {
+      return { findLine, updateLine: call.line };
     }
   }
 
   return null;
 }
 
-function hasDirectBalanceMutationWithoutTransaction(block: FunctionBlock): boolean {
-  const body = block.lines.join('\n');
-  if (TRANSACTION_RE.test(body)) {
+function hasDirectCounterMutationWithoutTransaction(func: FunctionEvidence): boolean {
+  if (hasLockEvidence(func)) {
     return false;
   }
-
-  return /\b(?:this\.prisma|prisma)\.[A-Za-z_$]\w*(?:Wallet|wallet|Balance|balance)[A-Za-z_$]\w*\.(?:update|updateMany)\s*\(/.test(
-    body,
-  );
+  return func.calls.some((call) => call.kind === 'write' && call.counterMutationEvidence);
 }
 
-function hasUnprotectedSharedUpdate(block: FunctionBlock): boolean {
-  const body = block.lines.join('\n');
-  if (TRANSACTION_RE.test(body) || OPTIMISTIC_LOCK_RE.test(body) || /\btx\./.test(body)) {
-    return false;
-  }
-  return hasUnprotectedReadModifyWrite(block) !== null;
+function hasUnprotectedSharedUpdate(func: FunctionEvidence): boolean {
+  return !hasLockEvidence(func) && hasUnprotectedReadModifyWrite(func) !== null;
+}
+
+function isSkippableSourceFile(file: string): boolean {
+  const normalized = file.split(path.sep).join('/');
+  const basename = path.basename(normalized);
+  const segments = normalized.split('/');
+  return (
+    basename.endsWith('.spec.ts') ||
+    basename.endsWith('.test.ts') ||
+    segments.includes('migration') ||
+    segments.includes('migrations') ||
+    segments.includes('seed') ||
+    segments.includes('seeds')
+  );
 }
 
 /** Check concurrency. */
 export function checkConcurrency(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
-  // STATIC ANALYSIS: Check for read-modify-write without locking in financial files
+  // STATIC ANALYSIS: Check service code for read-modify-write without locking.
   const backendFiles = walkFiles(config.backendDir, ['.ts']);
 
   for (const file of backendFiles) {
-    if (!FINANCIAL_PATH_RE.test(file)) {
-      continue;
-    }
-    if (/\.spec\.ts$|migration|seed/i.test(file)) {
-      continue;
-    }
-    if (!/service/i.test(file)) {
+    if (isSkippableSourceFile(file)) {
       continue;
     }
 
@@ -201,11 +342,11 @@ export function checkConcurrency(config: PulseConfig): Break[] {
     }
 
     const relFile = path.relative(config.rootDir, file);
-    const lines = content.split('\n');
+    const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
 
-    const functionBlocks = extractFunctionBlocks(lines);
-    for (const block of functionBlocks) {
-      const unprotected = hasUnprotectedReadModifyWrite(block);
+    const functionEvidence = collectFunctionEvidence(sourceFile);
+    for (const func of functionEvidence) {
+      const unprotected = hasUnprotectedReadModifyWrite(func);
       if (!unprotected) {
         continue;
       }
@@ -223,37 +364,34 @@ export function checkConcurrency(config: PulseConfig): Break[] {
       );
     }
 
-    // CHECK: Wallet/balance operations without transaction
-    if (FINANCIAL_PATH_RE.test(file) && /wallet|balance|saldo/i.test(content)) {
-      if (functionBlocks.some(hasDirectBalanceMutationWithoutTransaction)) {
-        breaks.push(
-          buildConcurrencyDiagnostic({
-            predicateKinds: ['balance_mutation', 'no_transaction_observed'],
-            severity: 'critical',
-            file: relFile,
-            line: 0,
-            description: 'Wallet/balance mutation observed without $transaction evidence',
-            detail:
-              'All balance modifications must use prisma.$transaction with SELECT FOR UPDATE or atomic increment',
-            truthMode: 'weak_signal',
-          }),
-        );
-      }
+    if (functionEvidence.some(hasDirectCounterMutationWithoutTransaction)) {
+      breaks.push(
+        buildConcurrencyDiagnostic({
+          predicateKinds: ['counter_mutation', 'no_transaction_observed'],
+          severity: 'critical',
+          file: relFile,
+          line: 0,
+          description: 'Shared counter mutation observed without transaction evidence',
+          detail:
+            'Concurrent numeric mutations need transaction, conditional write, or runtime evidence that conflicting writes cannot overlap',
+          truthMode: 'weak_signal',
+        }),
+      );
     }
 
     // CHECK: Missing optimistic locking on shared resources. Evaluate at function
     // level so transaction-protected financial mutations do not become false positives.
-    const unprotectedSharedUpdate = functionBlocks.find(hasUnprotectedSharedUpdate);
+    const unprotectedSharedUpdate = functionEvidence.find(hasUnprotectedSharedUpdate);
     if (unprotectedSharedUpdate) {
       breaks.push(
         buildConcurrencyDiagnostic({
           predicateKinds: ['shared_update', 'no_optimistic_lock_observed'],
           severity: 'high',
           file: relFile,
-          line: unprotectedSharedUpdate.start + 1,
-          description: 'Shared-resource update observed without optimistic lock evidence',
+          line: unprotectedSharedUpdate.startLine,
+          description: 'Shared-resource mutation lacks optimistic lock evidence',
           detail:
-            'Add a `version` field or protect the mutation with a transaction/conditional WHERE to detect conflicts',
+            'Add a `version` field or protect the mutation with a transaction/conditional guard to detect conflicts',
           truthMode: 'weak_signal',
         }),
       );

@@ -1,4 +1,5 @@
 import * as path from 'path';
+import ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
@@ -10,9 +11,229 @@ interface JobRef {
   queueVar?: string;
 }
 
-function extractQuotedString(s: string): string | null {
-  const m = s.match(/['"`]([^'"`]+)['"`]/);
-  return m ? m[1] : null;
+type QueueBreakKind = 'missingProcessor' | 'missingProducer';
+
+const QUEUE_BREAK_TYPES: Record<QueueBreakKind, Break['type']> = {
+  missingProcessor: 'QUEUE_NO_PROCESSOR',
+  missingProducer: 'PROCESSOR_NO_PRODUCER',
+};
+
+function stringLiteralValue(node: ts.Node | undefined): string | null {
+  if (!node) {
+    return null;
+  }
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return node.text;
+  }
+  return null;
+}
+
+function lineNumber(sourceFile: ts.SourceFile, node: ts.Node): number {
+  return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+}
+
+function identifierTokens(value: string): string[] {
+  const tokens: string[] = [];
+  let current = '';
+  for (const char of value) {
+    const isWordChar =
+      (char >= 'A' && char <= 'Z') || (char >= 'a' && char <= 'z') || (char >= '0' && char <= '9');
+    if (!isWordChar) {
+      if (current) {
+        tokens.push(current.toLowerCase());
+        current = '';
+      }
+      continue;
+    }
+    const previous = current[current.length - 1];
+    if (previous && previous >= 'a' && previous <= 'z' && char >= 'A' && char <= 'Z') {
+      tokens.push(current.toLowerCase());
+      current = char;
+      continue;
+    }
+    current += char;
+  }
+  if (current) {
+    tokens.push(current.toLowerCase());
+  }
+  return tokens;
+}
+
+function hasToken(value: string, token: string): boolean {
+  return identifierTokens(value).includes(token);
+}
+
+function isIdentifierLikeJobName(value: string): boolean {
+  if (value.length === 0 || value.length > 80) {
+    return false;
+  }
+  const [firstChar] = value;
+  if (
+    !firstChar ||
+    !((firstChar >= 'A' && firstChar <= 'Z') || (firstChar >= 'a' && firstChar <= 'z'))
+  ) {
+    return false;
+  }
+  return [...value].every(
+    (char) =>
+      (char >= 'A' && char <= 'Z') ||
+      (char >= 'a' && char <= 'z') ||
+      (char >= '0' && char <= '9') ||
+      char === '_' ||
+      char === '-',
+  );
+}
+
+function isUppercaseStateValue(value: string): boolean {
+  if (value.length < 2 || value.length > 20 || value.includes('-')) {
+    return false;
+  }
+  return [...value].every(
+    (char) => (char >= 'A' && char <= 'Z') || char === '_' || (char >= '0' && char <= '9'),
+  );
+}
+
+function isSkippedQueueSourceFile(file: string): boolean {
+  return (
+    file.endsWith('.d.ts') ||
+    file.endsWith('.spec.ts') ||
+    file.endsWith('.test.ts') ||
+    file.includes('node_modules')
+  );
+}
+
+function propertyAccessText(node: ts.Expression): string | null {
+  if (ts.isIdentifier(node)) {
+    return node.text;
+  }
+  if (ts.isPropertyAccessExpression(node)) {
+    const parent = propertyAccessText(node.expression);
+    return parent ? `${parent}.${node.name.text}` : node.name.text;
+  }
+  if (node.kind === ts.SyntaxKind.ThisKeyword) {
+    return 'this';
+  }
+  return null;
+}
+
+function queueVarFromAddTarget(target: ts.Expression): string | undefined {
+  if (ts.isIdentifier(target)) {
+    return target.text;
+  }
+  if (ts.isPropertyAccessExpression(target) && ts.isIdentifier(target.name)) {
+    return target.name.text;
+  }
+  return undefined;
+}
+
+function isQueueAddTarget(target: ts.Expression): boolean {
+  if (target.kind === ts.SyntaxKind.ThisKeyword) {
+    return true;
+  }
+  const text = propertyAccessText(target);
+  return Boolean(text && (text.startsWith('this.') || hasToken(text, 'queue')));
+}
+
+function isCollectionAddTarget(target: ts.Expression): boolean {
+  const text = propertyAccessText(target);
+  if (!text) {
+    return false;
+  }
+  return [
+    'classList',
+    'eventListeners',
+    'listeners',
+    'subscribers',
+    'middlewares',
+    'routes',
+    'providers',
+    'imports',
+    'exports',
+    'controllers',
+    'interceptors',
+    'pipes',
+    'guards',
+    'filters',
+    'modules',
+  ].some((token) => identifierTokens(text).includes(token.toLowerCase()));
+}
+
+function isQueueConstructorName(value: string): boolean {
+  return value === 'Bull' || value === 'Queue' || value === 'BullQueue';
+}
+
+function callExpressionName(node: ts.Expression): string | null {
+  if (ts.isIdentifier(node)) {
+    return node.text;
+  }
+  if (ts.isPropertyAccessExpression(node)) {
+    return node.name.text;
+  }
+  return null;
+}
+
+function hasJobProcessorEvidence(sourceFile: ts.SourceFile): boolean {
+  let found = false;
+  const visit = (node: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (
+      ts.isNewExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'Worker'
+    ) {
+      found = true;
+      return;
+    }
+    if (
+      ts.isCallExpression(node) &&
+      ((ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.name.text === 'process') ||
+        callExpressionName(node.expression) === 'Process')
+    ) {
+      found = true;
+      return;
+    }
+    if (
+      ts.isPropertyAccessExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'job' &&
+      (node.name.text === 'name' || node.name.text === 'data')
+    ) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return found;
+}
+
+function isJobNameComparison(node: ts.BinaryExpression): string | null {
+  if (node.operatorToken.kind !== ts.SyntaxKind.EqualsEqualsEqualsToken) {
+    return null;
+  }
+  const leftIsJobName =
+    ts.isPropertyAccessExpression(node.left) &&
+    ts.isIdentifier(node.left.expression) &&
+    node.left.expression.text === 'job' &&
+    node.left.name.text === 'name';
+  return leftIsJobName ? stringLiteralValue(node.right) : null;
+}
+
+function processDecoratorJobName(node: ts.Node): string | null {
+  const decorators = ts.canHaveDecorators(node) ? ts.getDecorators(node) : undefined;
+  for (const decorator of decorators ?? []) {
+    const expression = decorator.expression;
+    if (
+      ts.isCallExpression(expression) &&
+      callExpressionName(expression.expression) === 'Process'
+    ) {
+      return stringLiteralValue(expression.arguments[0]);
+    }
+  }
+  return null;
 }
 
 /** Check queues. */
@@ -22,36 +243,16 @@ export function checkQueues(config: PulseConfig): Break[] {
   // ---- Collect producers (.add('jobName') in backend) ----
   const producers: JobRef[] = [];
 
-  const backendFiles = walkFiles(config.backendDir, ['.ts']).filter((f) => {
-    if (/\.(spec|test|d)\.ts$/.test(f)) {
-      return false;
-    }
-    if (/node_modules/.test(f)) {
-      return false;
-    }
-    return true;
-  });
-
-  // Pattern: queue.add('jobName', ...) — must be a simple identifier, not a URL path or template
-  // Matches: queue.add, Queue.add, this.queue.add, this.someQueue.add, someQueue.add, myQueueRef.add
-  const addPatternSameLine =
-    /(?:\w*[Qq]ueue\w*|this\.\w+)\.add\s*\(\s*['"]([a-zA-Z][a-zA-Z0-9_-]*)['"`]/;
-  // Pattern for when .add( is on one line and the job name string is on the next line
-  const addPatternOpenParen = /(?:\w*[Qq]ueue\w*|this\.\w+)\.add\s*\(\s*$/;
-  const jobNameOnlyPattern = /^\s*['"]([a-zA-Z][a-zA-Z0-9_-]*)['"`]\s*,?\s*$/;
+  const backendFiles = walkFiles(config.backendDir, ['.ts']).filter(
+    (file) => !isSkippedQueueSourceFile(file),
+  );
 
   // Also look in worker dir (worker can self-enqueue)
   const allSourceFiles = [...backendFiles];
   if (config.workerDir) {
     allSourceFiles.push(
       ...walkFiles(config.workerDir, ['.ts']).filter((f) => {
-        if (/\.(spec|test|d)\.ts$/.test(f)) {
-          return false;
-        }
-        if (/node_modules/.test(f)) {
-          return false;
-        }
-        return true;
+        return !isSkippedQueueSourceFile(f);
       }),
     );
   }
@@ -64,95 +265,34 @@ export function checkQueues(config: PulseConfig): Break[] {
       continue;
     }
 
-    const lines = content.split('\n');
-
-    for (let i = 0; i < lines.length; i++) {
-      const trimmed = lines[i].trim();
-
-      // Skip comments
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
-        continue;
-      }
-      // Skip imports
-      if (/^import\s/.test(trimmed)) {
-        continue;
-      }
-
-      // Skip if there's a PULSE:OK annotation on the same line or the preceding line
-      const prevLine = i > 0 ? lines[i - 1].trim() : '';
-      if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine)) {
-        continue;
-      }
-
-      let jobName: string | null = null;
-      let queueVar: string | undefined;
-
-      // Try same-line pattern first
-      const m = trimmed.match(addPatternSameLine);
-      if (m) {
-        jobName = m[1];
-        queueVar = trimmed.match(/(\w+)\.add\s*\(/)?.[1];
-      } else if (addPatternOpenParen.test(trimmed)) {
-        // Multi-line: .add( on this line, job name on next line
-        const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
-        const mNext = nextLine.match(jobNameOnlyPattern);
-        if (mNext) {
-          jobName = mNext[1];
-          queueVar = trimmed.match(/(\w+)\.add\s*\(/)?.[1];
+    const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+    const visit = (node: ts.Node): void => {
+      if (
+        ts.isCallExpression(node) &&
+        ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.name.text === 'add' &&
+        isQueueAddTarget(node.expression.expression) &&
+        !isCollectionAddTarget(node.expression.expression)
+      ) {
+        const jobName = stringLiteralValue(node.arguments[0]);
+        if (jobName && isIdentifierLikeJobName(jobName)) {
+          producers.push({
+            file,
+            line: lineNumber(sourceFile, node),
+            jobName,
+            queueVar: queueVarFromAddTarget(node.expression.expression),
+          });
         }
       }
-
-      if (!jobName) {
-        continue;
-      }
-
-      // Verify this looks like a queue.add() call, not Array.add or Set.add or similar
-      const addIdx = trimmed.indexOf('.add(');
-      if (addIdx >= 0) {
-        const beforeAdd = trimmed.slice(0, addIdx);
-        // Heuristic: skip if it looks like a DOM or collection method
-        if (
-          /\b(?:classList|eventListeners|listeners|subscribers|middlewares|routes|providers|imports|exports|controllers|interceptors|pipes|guards|filters|modules)\b/.test(
-            beforeAdd,
-          )
-        ) {
-          continue;
-        }
-      }
-
-      // Skip if job name is too long or empty
-      if (jobName.length === 0 || jobName.length > 80) {
-        continue;
-      }
-
-      producers.push({ file, line: i + 1, jobName, queueVar });
-    }
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
   }
 
   // ---- Collect consumers (case 'jobName': or job.name === 'jobName' in worker) ----
   const consumers: JobRef[] = [];
 
   const workerFiles = allSourceFiles;
-
-  // Patterns for worker processors:
-  // case 'jobName':
-  // job.name === 'jobName'
-  // job.name === "jobName"
-  // Also: @Process('jobName') in NestJS BullMQ decorators
-  const casePattern = /^\s*case\s+['"`]([^'"`]+)['"`]\s*:/;
-  const jobNameEqPattern = /\bjob\.name\s*===\s*['"`]([^'"`]+)['"`]/;
-  const processDecoratorPattern = /@Process\s*\(\s*['"`]([^'"`]+)['"`]/;
-
-  // To avoid false positives, we only flag case statements that appear in a BullMQ job processor context.
-  // A BullMQ processor context is identified by surrounding patterns like:
-  //   - A Worker constructor call in the file
-  //   - A function that takes (job: Job) as parameter
-  //   - The function is passed as the second arg to new Worker(...)
-  // Heuristic: only count case statements as job consumers if the file contains Worker constructor usage
-  // OR if a job.name comparison is present (which is unambiguously job processing).
-  const jobProcessorPattern =
-    /new\s+Worker\s*\(|\.process\s*\(|@Process\s*\(|job\.name\s*===|job\.data\b/;
-  const isJobProcessorFile = (content: string) => jobProcessorPattern.test(content);
 
   for (const file of workerFiles) {
     let content: string;
@@ -162,62 +302,32 @@ export function checkQueues(config: PulseConfig): Break[] {
       continue;
     }
 
-    // Only scan switch-case consumers in files that look like BullMQ processors
-    const fileIsProcessor = isJobProcessorFile(content);
-
-    const lines = content.split('\n');
-
-    for (let i = 0; i < lines.length; i++) {
-      const trimmed = lines[i].trim();
-
-      // Skip comments
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
-        continue;
-      }
-
-      let m: RegExpMatchArray | null;
-
-      // case 'jobName': — only count in files that look like job processors
-      if (fileIsProcessor) {
-        m = trimmed.match(casePattern);
-        if (m) {
-          // Additional guard: the case value should look like a BullMQ job name (hyphen-slug or camelCase)
-          // and not look like a browser session state (all-caps short status words)
-          const jobName = m[1];
-          // Skip if it looks like a browser/session state enum value (all-caps, short, no hyphens)
-          const isBrowserState = /^[A-Z_]{2,20}$/.test(jobName) && !jobName.includes('-');
-          if (!isBrowserState) {
-            consumers.push({ file, line: i + 1, jobName });
-          }
-          continue;
+    const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+    const fileIsProcessor = hasJobProcessorEvidence(sourceFile);
+    const visit = (node: ts.Node): void => {
+      if (fileIsProcessor && ts.isCaseClause(node)) {
+        const jobName = stringLiteralValue(node.expression);
+        if (jobName && !isUppercaseStateValue(jobName)) {
+          consumers.push({ file, line: lineNumber(sourceFile, node), jobName });
         }
       }
-
-      m = trimmed.match(jobNameEqPattern);
-      if (m) {
-        consumers.push({ file, line: i + 1, jobName: m[1] });
-        continue;
+      if (ts.isBinaryExpression(node)) {
+        const jobName = isJobNameComparison(node);
+        if (jobName) {
+          consumers.push({ file, line: lineNumber(sourceFile, node), jobName });
+        }
       }
-
-      m = trimmed.match(processDecoratorPattern);
-      if (m) {
-        consumers.push({ file, line: i + 1, jobName: m[1] });
-        continue;
+      const decoratedJobName = processDecoratorJobName(node);
+      if (decoratedJobName) {
+        consumers.push({ file, line: lineNumber(sourceFile, node), jobName: decoratedJobName });
       }
-    }
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
   }
 
   // ---- Collect queue names that have Worker processors (handle all jobs regardless of name) ----
-  // Pattern: new Worker("queue-name", async (job) => { ... }) without explicit job.name checks
   const workerQueueNames = new Set<string>();
-  const newWorkerSameLinePattern = /new\s+Worker\s*\(\s*['"]([^'"]+)['"]/;
-  const newWorkerOpenParenPattern = /new\s+Worker\s*\(\s*$/;
-  const quoteStringPattern = /^\s*['"]([^'"]+)['"]/;
-  // Also collect: new BullQueue("name", ...) or new Queue("name", ...) → variable name mapping
-  const queueDeclPattern =
-    /(?:const|let|var|export\s+(?:const|let))\s+(\w+)\s*=\s*new\s+(?:BullQueue|Queue|Bull)\s*\(\s*['"]([^'"]+)['"]/;
-  const lazyQueueDeclPattern =
-    /(?:const|let|var|export\s+(?:const|let))\s+(\w+)\s*=\s*lazyQueue(?:Proxy)?\s*\(\s*['"]([^'"]+)['"]/;
   const queueNameByVar = new Map<string, string>();
 
   const allWorkerAndQueueFiles = [...workerFiles, ...backendFiles];
@@ -228,30 +338,33 @@ export function checkQueues(config: PulseConfig): Break[] {
     } catch {
       continue;
     }
-    const lines = content.split('\n');
-    for (let j = 0; j < lines.length; j++) {
-      const line = lines[j];
-      // Same-line Worker constructor
-      const wm = line.match(newWorkerSameLinePattern);
-      if (wm) {
-        workerQueueNames.add(wm[1]);
-      } else if (newWorkerOpenParenPattern.test(line.trim())) {
-        // Multi-line: new Worker(\n  "queue-name",
-        const nextLine = j + 1 < lines.length ? lines[j + 1] : '';
-        const nm = nextLine.match(quoteStringPattern);
-        if (nm) {
-          workerQueueNames.add(nm[1]);
+    const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+    const visit = (node: ts.Node): void => {
+      if (ts.isNewExpression(node) && ts.isIdentifier(node.expression)) {
+        const queueName = stringLiteralValue(node.arguments?.[0]);
+        if (node.expression.text === 'Worker' && queueName) {
+          workerQueueNames.add(queueName);
+        }
+        if (isQueueConstructorName(node.expression.text) && queueName) {
+          const parent = node.parent;
+          if (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name)) {
+            queueNameByVar.set(parent.name.text, queueName);
+          }
         }
       }
-      const qm = line.match(queueDeclPattern);
-      if (qm) {
-        queueNameByVar.set(qm[1], qm[2]);
+      if (ts.isCallExpression(node)) {
+        const callee = callExpressionName(node.expression);
+        const queueName = stringLiteralValue(node.arguments[0]);
+        if ((callee === 'lazyQueue' || callee === 'lazyQueueProxy') && queueName) {
+          const parent = node.parent;
+          if (ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name)) {
+            queueNameByVar.set(parent.name.text, queueName);
+          }
+        }
       }
-      const lazyQueueMatch = line.match(lazyQueueDeclPattern);
-      if (lazyQueueMatch) {
-        queueNameByVar.set(lazyQueueMatch[1], lazyQueueMatch[2]);
-      }
-    }
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
   }
 
   // For each producer, check if the queue variable maps to a queue that has a Worker
@@ -290,8 +403,9 @@ export function checkQueues(config: PulseConfig): Break[] {
     reportedProducerMissing.add(prod.jobName);
 
     const relFile = path.relative(config.rootDir, prod.file);
+    const breakType = QUEUE_BREAK_TYPES.missingProcessor;
     breaks.push({
-      type: 'QUEUE_NO_PROCESSOR',
+      type: breakType,
       severity: 'high',
       file: relFile,
       line: prod.line,
@@ -311,8 +425,9 @@ export function checkQueues(config: PulseConfig): Break[] {
     reportedConsumerMissing.add(cons.jobName);
 
     const relFile = path.relative(config.rootDir, cons.file);
+    const breakType = QUEUE_BREAK_TYPES.missingProducer;
     breaks.push({
-      type: 'PROCESSOR_NO_PRODUCER',
+      type: breakType,
       severity: 'low',
       file: relFile,
       line: cons.line,

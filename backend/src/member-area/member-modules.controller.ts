@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -15,6 +16,17 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateLessonDto, CreateModuleDto, UpdateLessonDto } from './member-area.helpers';
+
+function parseReleaseDate(raw: string | undefined | null): Date | null {
+  if (!raw) {
+    return null;
+  }
+  const parsed = new Date(raw);
+  if (isNaN(parsed.getTime())) {
+    throw new BadRequestException('Invalid releaseDate');
+  }
+  return parsed;
+}
 
 /**
  * MEMBER MODULES CONTROLLER — Modules + Lessons CRUD
@@ -67,7 +79,7 @@ export class MemberModulesController {
         description: dto.description || null,
         position: dto.position ?? 0,
         releaseType: dto.releaseType || 'IMMEDIATE',
-        releaseDate: dto.releaseDate ? new Date(dto.releaseDate) : null,
+        releaseDate: parseReleaseDate(dto.releaseDate),
         releaseDays: dto.releaseDays ?? null,
       },
     });
@@ -120,7 +132,7 @@ export class MemberModulesController {
         ...(dto.position !== undefined && { position: dto.position }),
         ...(dto.releaseType !== undefined && { releaseType: dto.releaseType }),
         ...(dto.releaseDate !== undefined && {
-          releaseDate: dto.releaseDate ? new Date(dto.releaseDate) : null,
+          releaseDate: parseReleaseDate(dto.releaseDate),
         }),
         ...(dto.releaseDays !== undefined && { releaseDays: dto.releaseDays }),
         ...(dto.active !== undefined && { active: dto.active }),

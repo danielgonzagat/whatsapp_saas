@@ -1,33 +1,27 @@
 import * as path from 'path';
+import ts from 'typescript';
 import type { PulseScopeState, PulseStructuralNode, PulseTruthMode } from './types';
 import { readTextFile } from './safe-fs';
 
-const SIDE_EFFECT_PATTERNS: Array<{ label: string; pattern: RegExp }> = [
-  { label: 'network_call', pattern: /\b(fetch|axios|HttpService|httpService)\b/ },
-  { label: 'queue_dispatch', pattern: /\b(queue\.add|bull|bullmq)\b/i },
-  { label: 'event_emit', pattern: /\b(emit|publish|dispatchEvent)\b/ },
-  { label: 'message_send', pattern: /\b(send(Message|Email|Sms)?|reply|notify)\b/ },
-  {
-    label: 'state_mutation',
-    pattern:
-      /\b(clearSharedAuthCookies|cookies\(\)|cookies\.(?:set|delete)|response\.cookies|res\.cookie|tokenStorage\.(?:set|clear)|localStorage\.(?:setItem|removeItem|clear)|sessionStorage\.(?:setItem|removeItem|clear))\b/,
-  },
-  { label: 'file_write', pattern: /\b(writeFile|appendFile|createWriteStream)\b/ },
-  {
-    label: 'file_upload',
-    pattern:
-      /\b(FileInterceptor|FilesInterceptor|UploadedFile|UploadedFiles|storageService\.upload|\.upload\s*\()\b/,
-  },
-  {
-    label: 'generated_artifact',
-    pattern: /\b(toDataURL|arrayBuffer|Buffer\.from|toString\(\s*['"`]base64['"`])\b/,
-  },
-];
-const EXTERNAL_IMPORT_PATTERN =
-  /\bimport\s+(?:type\s+)?(?:(\w+)|\*\s+as\s+(\w+)|\{([^}]+)\})\s+from\s+['"]([^.'"][^'"]*)['"]|\brequire\(\s*['"]([^.'"][^'"]*)['"]\s*\)/g;
-const EXTERNAL_MEMBER_CALL_PATTERN =
-  /\b([A-Za-z_$][\w$]*)\.(?:get|post|put|patch|delete|request|send|create|update|confirm|refund|call|emit|upload)\s*\(/g;
-const CONSTRUCTOR_CALL_PATTERN = /\bnew\s+([A-Z][A-Za-z0-9_$]*)\s*\(/g;
+type SideEffectSignal =
+  | 'network_call'
+  | 'queue_dispatch'
+  | 'event_emit'
+  | 'message_send'
+  | 'state_mutation'
+  | 'file_write'
+  | 'file_upload'
+  | 'generated_artifact'
+  | 'external_sdk_call';
+
+const HTTP_METHOD_KERNEL_GRAMMAR = new Set(['get', 'post', 'put', 'patch', 'delete', 'request']);
+const MUTATION_METHOD_KERNEL_GRAMMAR = new Set([
+  'set',
+  'delete',
+  'clear',
+  'set-item',
+  'remove-item',
+]);
 
 function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
@@ -45,68 +39,148 @@ function normalizePath(value: string): string {
   return value.split(path.sep).join('/');
 }
 
-function parseNamedImportBindings(namedImports: string): string[] {
-  return namedImports
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter(Boolean)
-    .map(
-      (entry) =>
-        entry
-          .split(/\s+as\s+/i)
-          .pop()
-          ?.trim() || '',
-    )
-    .filter(Boolean);
+function tokenSet(value: string): Set<string> {
+  return new Set(compactWords(value).split('-').filter(Boolean));
 }
 
-function collectExternalImportBindings(content: string): Set<string> {
+function addBindingName(bindings: Set<string>, name: ts.BindingName): void {
+  if (ts.isIdentifier(name)) {
+    bindings.add(name.text);
+    return;
+  }
+
+  for (const element of name.elements) {
+    if (ts.isOmittedExpression(element)) {
+      continue;
+    }
+    addBindingName(bindings, element.name);
+  }
+}
+
+function packageBindingName(moduleName: string): string | null {
+  const packageBase = moduleName.split('/').filter(Boolean).pop();
+  return packageBase ? compactWords(packageBase).replace(/-/g, '') : null;
+}
+
+function isExternalModuleName(moduleName: string): boolean {
+  return !moduleName.startsWith('.') && !path.isAbsolute(moduleName);
+}
+
+function collectExternalImportBindings(sourceFile: ts.SourceFile): Set<string> {
   const bindings = new Set<string>();
-  EXTERNAL_IMPORT_PATTERN.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = EXTERNAL_IMPORT_PATTERN.exec(content)) !== null) {
-    const defaultBinding = match[1];
-    const namespaceBinding = match[2];
-    const namedBindings = match[3];
-    const requiredPackage = match[5];
-    if (defaultBinding) bindings.add(defaultBinding);
-    if (namespaceBinding) bindings.add(namespaceBinding);
-    if (namedBindings) {
-      for (const binding of parseNamedImportBindings(namedBindings)) {
-        bindings.add(binding);
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+      const moduleName = node.moduleSpecifier.text;
+      if (isExternalModuleName(moduleName)) {
+        const importClause = node.importClause;
+        if (importClause?.name) {
+          bindings.add(importClause.name.text);
+        }
+        const namedBindings = importClause?.namedBindings;
+        if (namedBindings && ts.isNamespaceImport(namedBindings)) {
+          bindings.add(namedBindings.name.text);
+        }
+        if (namedBindings && ts.isNamedImports(namedBindings)) {
+          for (const element of namedBindings.elements) {
+            bindings.add(element.name.text);
+          }
+        }
       }
     }
-    if (requiredPackage) {
-      const packageBase = requiredPackage.split('/').filter(Boolean).pop();
-      if (packageBase) bindings.add(compactWords(packageBase).replace(/-/g, ''));
+
+    if (
+      ts.isVariableDeclaration(node) &&
+      node.initializer &&
+      ts.isCallExpression(node.initializer) &&
+      ts.isIdentifier(node.initializer.expression) &&
+      node.initializer.expression.text === 'require'
+    ) {
+      const [moduleSpecifier] = node.initializer.arguments;
+      if (
+        moduleSpecifier &&
+        ts.isStringLiteral(moduleSpecifier) &&
+        isExternalModuleName(moduleSpecifier.text)
+      ) {
+        addBindingName(bindings, node.name);
+        const packageName = packageBindingName(moduleSpecifier.text);
+        if (packageName) {
+          bindings.add(packageName);
+        }
+      }
     }
-  }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
   return bindings;
 }
 
-function hasExternalSdkCall(content: string): boolean {
-  const bindings = collectExternalImportBindings(content);
+function receiverText(node: ts.Expression): string {
+  if (ts.isIdentifier(node)) {
+    return node.text;
+  }
+  if (ts.isPropertyAccessExpression(node)) {
+    return `${receiverText(node.expression)}.${node.name.text}`;
+  }
+  if (ts.isCallExpression(node)) {
+    return receiverText(node.expression);
+  }
+  return node.getText();
+}
+
+function calledName(call: ts.CallExpression): string | null {
+  if (ts.isIdentifier(call.expression)) {
+    return call.expression.text;
+  }
+  if (ts.isPropertyAccessExpression(call.expression)) {
+    return call.expression.name.text;
+  }
+  return null;
+}
+
+function callReceiver(call: ts.CallExpression): string {
+  if (ts.isPropertyAccessExpression(call.expression)) {
+    return receiverText(call.expression.expression);
+  }
+  return '';
+}
+
+function hasExternalSdkCall(sourceFile: ts.SourceFile): boolean {
+  const bindings = collectExternalImportBindings(sourceFile);
   if (bindings.size === 0) {
     return false;
   }
 
-  EXTERNAL_MEMBER_CALL_PATTERN.lastIndex = 0;
-  let memberMatch: RegExpExecArray | null;
-  while ((memberMatch = EXTERNAL_MEMBER_CALL_PATTERN.exec(content)) !== null) {
-    if (bindings.has(memberMatch[1])) {
-      return true;
+  let found = false;
+  const visit = (node: ts.Node): void => {
+    if (found) {
+      return;
     }
-  }
 
-  CONSTRUCTOR_CALL_PATTERN.lastIndex = 0;
-  let constructorMatch: RegExpExecArray | null;
-  while ((constructorMatch = CONSTRUCTOR_CALL_PATTERN.exec(content)) !== null) {
-    if (bindings.has(constructorMatch[1])) {
-      return true;
+    if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression)) {
+      const receiver = node.expression.expression;
+      if (ts.isIdentifier(receiver) && bindings.has(receiver.text)) {
+        found = true;
+        return;
+      }
     }
-  }
 
-  return false;
+    if (
+      ts.isNewExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      bindings.has(node.expression.text)
+    ) {
+      found = true;
+      return;
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return found;
 }
 
 function readFile(rootDir: string, filePath: string): string {
@@ -116,6 +190,121 @@ function readFile(rootDir: string, filePath: string): string {
   } catch {
     return '';
   }
+}
+
+function hasToken(tokens: Set<string>, value: string): boolean {
+  return tokens.has(value);
+}
+
+function hasAnyToken(tokens: Set<string>, values: string[]): boolean {
+  return values.some((value) => tokens.has(value));
+}
+
+function literalText(node: ts.Expression): string | null {
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return node.text;
+  }
+  return null;
+}
+
+function classifyCall(call: ts.CallExpression): SideEffectSignal[] {
+  const name = calledName(call);
+  if (!name) {
+    return [];
+  }
+
+  const signals: SideEffectSignal[] = [];
+  const receiver = callReceiver(call);
+  const nameTokens = tokenSet(name);
+  const receiverTokens = tokenSet(receiver);
+  const combinedTokens = tokenSet(`${receiver} ${name}`);
+  const normalizedName = compactWords(name);
+  const normalizedReceiver = compactWords(receiver);
+
+  if (
+    name === 'fetch' ||
+    normalizedReceiver.includes('http') ||
+    HTTP_METHOD_KERNEL_GRAMMAR.has(normalizedName)
+  ) {
+    signals.push('network_call');
+  }
+  if (
+    (hasToken(receiverTokens, 'queue') && normalizedName === 'add') ||
+    hasAnyToken(combinedTokens, ['bull', 'bullmq'])
+  ) {
+    signals.push('queue_dispatch');
+  }
+  if (hasAnyToken(nameTokens, ['emit', 'publish']) || normalizedName === 'dispatch-event') {
+    signals.push('event_emit');
+  }
+  if (normalizedName.startsWith('send') || hasAnyToken(nameTokens, ['reply', 'notify'])) {
+    signals.push('message_send');
+  }
+  if (
+    name === 'cookies' ||
+    hasAnyToken(receiverTokens, ['cookie', 'cookies', 'storage']) ||
+    MUTATION_METHOD_KERNEL_GRAMMAR.has(normalizedName)
+  ) {
+    signals.push('state_mutation');
+  }
+  if (
+    normalizedName === 'write-file' ||
+    normalizedName === 'append-file' ||
+    normalizedName === 'create-write-stream'
+  ) {
+    signals.push('file_write');
+  }
+  if (hasAnyToken(combinedTokens, ['upload', 'uploaded'])) {
+    signals.push('file_upload');
+  }
+  if (
+    normalizedName === 'to-data-url' ||
+    normalizedName === 'array-buffer' ||
+    (normalizedReceiver === 'buffer' && normalizedName === 'from') ||
+    call.arguments.some((argument) => literalText(argument)?.toLowerCase() === 'base64')
+  ) {
+    signals.push('generated_artifact');
+  }
+
+  return signals;
+}
+
+function decoratorName(node: ts.Decorator): string {
+  const expression = node.expression;
+  if (ts.isCallExpression(expression)) {
+    const name = calledName(expression);
+    return name || expression.getText();
+  }
+  if (ts.isIdentifier(expression)) {
+    return expression.text;
+  }
+  return expression.getText();
+}
+
+function collectSideEffectSignals(sourceFile: ts.SourceFile): SideEffectSignal[] {
+  const signals: SideEffectSignal[] = [];
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node)) {
+      signals.push(...classifyCall(node));
+    }
+
+    if (
+      ts.isDecorator(node) &&
+      hasAnyToken(tokenSet(decoratorName(node)), ['file', 'files', 'uploaded'])
+    ) {
+      signals.push('file_upload');
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  if (hasExternalSdkCall(sourceFile)) {
+    signals.push('external_sdk_call');
+  }
+
+  return unique(signals);
 }
 
 /** Build side effect signals. */
@@ -134,12 +323,8 @@ export function buildSideEffectSignals(
       continue;
     }
 
-    const signals = SIDE_EFFECT_PATTERNS.filter((signal) => signal.pattern.test(content)).map(
-      (signal) => signal.label,
-    );
-    if (hasExternalSdkCall(content)) {
-      signals.push('external_sdk_call');
-    }
+    const sourceFile = ts.createSourceFile(relativePath, content, ts.ScriptTarget.Latest, true);
+    const signals = collectSideEffectSignals(sourceFile);
 
     for (const label of unique(signals)) {
       const file = scopeByPath.get(relativePath) || null;

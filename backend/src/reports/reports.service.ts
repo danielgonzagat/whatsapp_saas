@@ -189,6 +189,7 @@ export class ReportsService {
       description?: string;
     },
   ) {
+    // PULSE_OK: date validated via Number.isNaN(parseDate.getTime()) + BadRequestException on line below
     const parsedDate = new Date(data.date);
     if (Number.isNaN(parsedDate.getTime())) {
       throw new BadRequestException('Invalid date');

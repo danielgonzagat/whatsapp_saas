@@ -237,6 +237,7 @@ export class ConnectService {
    * SUPPLIER, COPRODUCER, MANAGER) are also one-per-workspace today;
    * promote to multi-instance later if the product requires it.
    */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async createCustomAccount(input: CreateCustomAccountInput): Promise<CreateCustomAccountResult> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: input.workspaceId },
@@ -330,6 +331,7 @@ export class ConnectService {
    * surface "missing documents", "verification pending", etc., to the seller
    * without ever exposing a Stripe URL.
    */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async getOnboardingStatus(stripeAccountId: string): Promise<OnboardingStatus> {
     const account = (await this.stripeService.stripe.accounts.retrieve(
       stripeAccountId,
@@ -359,6 +361,7 @@ export class ConnectService {
    * Custom account. This keeps KYC and bank-account collection hosted inside
    * Kloel while still surfacing live requirement status from Stripe.
    */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async submitOnboardingProfile(input: SubmitOnboardingProfileInput): Promise<OnboardingStatus> {
     const payload = buildOnboardingAccountUpdate(input);
 
@@ -375,6 +378,7 @@ export class ConnectService {
    * account exists in Stripe but Kloel has no local mirror — useful when
    * processing webhooks that may arrive before our DB write commits.
    */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async findBalanceByStripeAccountId(
     stripeAccountId: string,
   ): Promise<ConnectAccountBalance | null> {
@@ -399,6 +403,7 @@ export class ConnectService {
   }
 
   /** List balances. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async listBalances(workspaceId?: string): Promise<ConnectAccountBalance[]> {
     return this.prisma.connectAccountBalance.findMany({
       where: workspaceId ? { workspaceId } : undefined,

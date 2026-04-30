@@ -594,6 +594,15 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     expect(fixedRealityCollections).toEqual([]);
   });
 
+  it('treats cert constants regex groups as Break.type kernel grammar, not decision authority', () => {
+    const result = auditPulseNoHardcodedReality(process.cwd());
+    const certConstantFindings = result.findings.filter(
+      (finding) => finding.filePath === 'scripts/pulse/cert-constants.ts',
+    );
+
+    expect(certConstantFindings).toEqual([]);
+  });
+
   it('does not seed built-in product domain packs from the core', () => {
     const plugins = discoverPlugins(path.join(process.cwd(), '__pulse_no_plugins__'));
 
@@ -844,6 +853,15 @@ describe('PULSE no-hardcoded-reality contracts', () => {
 
   it('does not mark product-named source paths as protected governance', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-scope-'));
+    const governanceDir = path.join(rootDir, 'ops');
+    fs.mkdirSync(governanceDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(governanceDir, 'protected-governance-files.json'),
+      JSON.stringify({
+        protectedExact: [],
+        protectedPrefixes: ['scripts/ops/'],
+      }),
+    );
     const productNamedDir = path.join(rootDir, 'backend/src/auth');
     fs.mkdirSync(productNamedDir, { recursive: true });
     const productNamedFile = path.join(productNamedDir, 'opaque.ts');

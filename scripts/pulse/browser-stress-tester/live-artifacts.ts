@@ -99,16 +99,17 @@ function normalizeRoute(route: string): string | null {
 }
 
 function routeSlugToPath(slug: string): string | null {
-  const route = slug
-    .replace(/-workspace-id\b/g, '/:workspaceId')
-    .replace(/-product-id\b/g, '/:productId')
-    .replace(/-conversation-id\b/g, '/:conversationId')
-    .replace(/-flow-id\b/g, '/:flowId')
-    .replace(/-transaction-id\b/g, '/:transactionId')
-    .replace(/-key-id\b/g, '/:keyId')
-    .replace(/-id\b/g, '/:id')
-    .replace(/-/g, '/');
-  return normalizeRoute(route);
+  const pathSegments: string[] = [];
+  for (const token of slug.split('-').filter(Boolean)) {
+    if (token === 'id') {
+      const previous = pathSegments.pop();
+      const parameterBase = previous?.startsWith(':') ? previous.slice(1) : previous;
+      pathSegments.push(`:${parameterBase ? `${parameterBase}Id` : token}`);
+      continue;
+    }
+    pathSegments.push(token);
+  }
+  return normalizeRoute(pathSegments.join('/'));
 }
 
 export function routeCandidateFromArtifactId(artifactId: string): RouteCandidate | null {

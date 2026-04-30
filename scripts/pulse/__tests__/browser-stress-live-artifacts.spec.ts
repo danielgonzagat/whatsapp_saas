@@ -2,6 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { auditPulseNoHardcodedReality } from '../no-hardcoded-reality-audit';
 import {
   discoverBrowserLiveArtifacts,
   getPagePriorityFromArtifacts,
@@ -146,6 +147,9 @@ describe('PULSE browser stress live artifact discovery', () => {
     expect(routeCandidateFromArtifactId('route:x:1:GET:custom-health-check')?.path).toBe(
       '/custom/health/check',
     );
+    expect(routeCandidateFromArtifactId('route:x:1:GET:custom-tenant-id-settings')?.path).toBe(
+      '/custom/:tenantId/settings',
+    );
     expect(
       resolveRuntimeProbeTargetFromArtifacts(
         'backend-health',
@@ -164,5 +168,13 @@ describe('PULSE browser stress live artifact discovery', () => {
         rootDir,
       ),
     ).toBe('https://api.example.test/custom/auth/login');
+  });
+
+  it('keeps live artifact discovery free of hardcoded reality authority findings', () => {
+    const findings = auditPulseNoHardcodedReality(process.cwd()).findings.filter(
+      (finding) => finding.filePath === 'scripts/pulse/browser-stress-tester/live-artifacts.ts',
+    );
+
+    expect(findings).toEqual([]);
   });
 });

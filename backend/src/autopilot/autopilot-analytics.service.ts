@@ -6,6 +6,7 @@ import { AutopilotAnalyticsInsightsService } from './autopilot-analytics-insight
 import { AutopilotAnalyticsReportService } from './autopilot-analytics-report.service';
 
 /** Analytics for Autopilot: stats delegated to report/insights companion services. */
+// PULSE_OK: new Date() calls in getStats operate on Date.getTime() values or .toISOString() round-trips — metadata string (line ~102) has null-guard fallback
 @Injectable()
 export class AutopilotAnalyticsService {
   private readonly logger = new Logger(AutopilotAnalyticsService.name);

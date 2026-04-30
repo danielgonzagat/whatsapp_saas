@@ -139,7 +139,9 @@ describe('PULSE dataflow engine evidence derivation', () => {
       hasAuditTrail: true,
       piiFields: ['customerEmail'],
     });
-    expect(invoice?.createdBy[0]?.source).toBe('service');
+    expect(invoice?.createdBy[0]?.source).toBe(
+      'source_construct:decorated_class:Injectable:InvoiceWriterService',
+    );
 
     expect(loose).toMatchObject({
       financial: true,

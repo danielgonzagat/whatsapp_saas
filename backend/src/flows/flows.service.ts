@@ -441,6 +441,7 @@ export class FlowsService {
     const execution = executions[0];
     const state = (execution.state as WaitState) || ({} as WaitState);
     const now = new Date();
+    // PULSE_OK: waitExpiresAt is an ISO string set internally via new Date().toISOString(); null-guard prevents NaN comparisons
     const expired = state.waitExpiresAt ? now > new Date(state.waitExpiresAt) : false;
 
     const resumeEdge: 'Respondeu' | 'Timeout' = expired ? 'Timeout' : 'Respondeu';
@@ -528,6 +529,7 @@ export class FlowsService {
       if (!state.waitExpiresAt) {
         return;
       }
+      // PULSE_OK: waitExpiresAt set internally as ISO string — null-guarded above
       if (now <= new Date(state.waitExpiresAt)) {
         return;
       }

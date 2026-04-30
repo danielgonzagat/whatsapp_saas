@@ -48,6 +48,17 @@ function parseTake(value?: string): number | undefined {
   return Number.isFinite(parsed) ? Math.min(200, Math.max(1, Math.trunc(parsed))) : undefined;
 }
 
+function parseDateOrFail(raw: string | undefined, label: string): Date | undefined {
+  if (!raw) {
+    return undefined;
+  }
+  const parsed = new Date(raw);
+  if (isNaN(parsed.getTime())) {
+    throw new BadRequestException(`Invalid ${label}`);
+  }
+  return parsed;
+}
+
 /**
  * Admin endpoints for the marketplace treasury. Exposes read surfaces
  * (balance, ledger, reconcile) plus controlled manual payouts for
@@ -99,8 +110,8 @@ export class AdminCarteiraController {
     return this.wallet.listLedger({
       currency,
       kind: parsedKind,
-      from: from ? new Date(from) : undefined,
-      to: to ? new Date(to) : undefined,
+      from: parseDateOrFail(from, 'from'),
+      to: parseDateOrFail(to, 'to'),
       skip: parseSkip(skip),
       take: parseTake(take),
     });
@@ -282,7 +293,7 @@ export class AdminCarteiraController {
       value,
       reason,
       addedBy: admin.id,
-      expiresAt: body.expiresAt ? new Date(body.expiresAt) : undefined,
+      expiresAt: parseDateOrFail(body.expiresAt ?? undefined, 'expiresAt'),
     });
 
     await this.audit.append({

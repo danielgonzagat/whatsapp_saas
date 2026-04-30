@@ -11,58 +11,20 @@ function isWhitespaceChar(c: string | undefined): boolean {
   return c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\f' || c === '\v';
 }
 
-/** Api_call_patterns. */
-export const API_CALL_PATTERNS = [
-  /apiFetch\s*\(/,
-  /api\.\w+\s*\(/,
-  /productApi\.\w+/,
-  /crmApi\.\w+/,
-  /billingApi\.\w+/,
-  /workspaceApi\.\w+/,
-  /externalPaymentApi\.\w+/,
-  /knowledgeBaseApi\.\w+/,
-  /kycApi\.\w+/,
-  /segmentationApi\.\w+/,
-  /kloelApi\.\w+/,
-  /whatsappApi\.\w+/,
-  /await\s+fetch\s*\(/,
-  /\.mutate\s*\(/,
-  /\.trigger\s*\(/,
-];
-
-/** Nav_patterns. */
-export const NAV_PATTERNS = [
-  /router\.push\s*\(/,
-  /router\.replace\s*\(/,
-  /window\.location/,
-  /window\.open\s*\(/,
-  /navigator\.clipboard/,
-];
-
-const SAVE_HANDLER_NAMES = [
-  'handleSave',
-  'save',
-  'handleSubmit',
-  'onSubmit',
-  'onSave',
-  'handleUpdate',
-  'handleCreate',
-  'submitForm',
-  'doSave',
-];
+const IDENTIFIER_RE = '[A-Za-z_$][A-Za-z0-9_$]*';
+const FUNCTION_DECLARATION_RE = new RegExp(
+  `^\\s*(?:export\\s+)?(?:async\\s+)?function\\s+(${IDENTIFIER_RE})\\b`,
+);
+const VARIABLE_FUNCTION_RE = new RegExp(
+  `^\\s*(?:export\\s+)?(?:const|let)\\s+(${IDENTIFIER_RE})\\s*=\\s*(?:(?:async\\s+)?(?:\\([^)]*\\)|${IDENTIFIER_RE})\\s*=>|(?:async\\s+)?function\\b)`,
+);
 
 /** Component has save handler. */
 export function componentHasSaveHandler(fileContent: string): boolean {
   const lines = fileContent.split('\n');
-  for (const name of SAVE_HANDLER_NAMES) {
-    const startIdx = findFunctionDeclarationIndex(lines, name);
-    if (startIdx === -1) {
-      continue;
-    }
-
-    const bodyText = lines.slice(startIdx, Math.min(startIdx + 40, lines.length)).join('\n');
-
-    if (hasApiCall(bodyText)) {
+  for (const { startIdx } of discoverFunctionDeclarations(lines)) {
+    const bodyEnd = findFunctionBodyEnd(lines, startIdx, 60, 40);
+    if (hasApiCall(lines.slice(startIdx, bodyEnd).join('\n'))) {
       return true;
     }
   }
@@ -128,6 +90,16 @@ export function findFunctionDeclarationIndex(lines: string[], functionName: stri
   });
 }
 
+function discoverFunctionDeclarations(lines: string[]): Array<{ name: string; startIdx: number }> {
+  return lines.flatMap((line, startIdx) => {
+    const match = line.match(FUNCTION_DECLARATION_RE) || line.match(VARIABLE_FUNCTION_RE);
+    if (!match) {
+      return [];
+    }
+    return [{ name: match[1], startIdx }];
+  });
+}
+
 /** Body calls hook function. */
 export function bodyCallsHookFunction(
   bodyText: string,
@@ -149,7 +121,7 @@ export function bodyCallsHookFunction(
       }
     }
 
-    if (/Mutation|mutation|create|update|delete|remove|add|save|submit/i.test(funcName)) {
+    if (hookFuncs?.get(funcName)?.endpoint) {
       return true;
     }
   }
@@ -187,7 +159,58 @@ export function hookFunctionApiCalls(
 
 /** Has api call. */
 export function hasApiCall(text: string): boolean {
-  return API_CALL_PATTERNS.some((p) => p.test(text));
+  return hasEndpointCallEvidence(text) || hasApiNamedCallEvidence(text);
+}
+
+function hasEndpointCallEvidence(text: string): boolean {
+  const endpointCallRe = /\(\s*(?:['"`]\/api\/[^'"`]*['"`]|`\$\{[^}]+\}\/api\/[^`]*`)/g;
+  return endpointCallRe.test(text);
+}
+
+function hasApiNamedCallEvidence(text: string): boolean {
+  const callRe = new RegExp(`\\b(${IDENTIFIER_RE})(?:\\s*\\.\\s*(${IDENTIFIER_RE}))?\\s*\\(`, 'g');
+  let match: RegExpExecArray | null;
+  while ((match = callRe.exec(text)) !== null) {
+    const symbolText = [match[1], match[2]].filter(Boolean).join('.');
+    if (symbolText.toLowerCase().includes('api')) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Has browser navigation effect. */
+export function hasBrowserNavigationEffect(text: string): boolean {
+  return (
+    hasMemberAction(text, 'router', 'push') ||
+    hasMemberAction(text, 'router', 'replace') ||
+    hasMemberAction(text, 'window', 'open') ||
+    hasMemberAction(text, 'navigator', 'clipboard') ||
+    hasMemberAction(text, 'window', 'location')
+  );
+}
+
+function hasMemberAction(text: string, objectName: string, memberName: string): boolean {
+  let offset = text.indexOf(objectName);
+  while (offset !== -1) {
+    if (hasIdentifierAt(text, offset, objectName)) {
+      let cursor = offset + objectName.length;
+      while (cursor < text.length && isWhitespaceChar(text[cursor])) {
+        cursor += 1;
+      }
+      if (text[cursor] === '.') {
+        cursor += 1;
+        while (cursor < text.length && isWhitespaceChar(text[cursor])) {
+          cursor += 1;
+        }
+        if (hasIdentifierAt(text, cursor, memberName)) {
+          return true;
+        }
+      }
+    }
+    offset = text.indexOf(objectName, offset + objectName.length);
+  }
+  return false;
 }
 
 /** Escape reg exp. */

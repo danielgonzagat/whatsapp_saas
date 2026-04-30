@@ -1,206 +1,313 @@
 /**
  * PULSE Parser 64: AI Prompt Verifier
  * Layer 8: AI/LLM Quality
- * Mode: STATIC (source code analysis — no runtime needed)
+ * Mode: STATIC (source code analysis - no runtime needed)
  *
- * CHECKS:
- * Verify that the LLM prompt sent by the Unified Agent contains all required context sections.
- * An incomplete prompt means the AI cannot answer accurately about products, use the right persona,
- * respect guardrails, or have memory of the conversation.
- *
- * Required prompt sections (every prompt must include all of these):
- * 1. PRODUCT CONTEXT — product name, description, pricing from Product entity
- * 2. AI CONFIG — persona name, tone, objective, restrictions from ProductAIConfig
- * 3. COGNITIVE SCORES — urgency, sentiment, purchase intent scores from UnifiedAgent cognitive state
- * 4. CONVERSATION HISTORY — last N messages from this contact (not just current message)
- * 5. WORKSPACE CONTEXT — workspace name, any workspace-level AI settings
- * 6. CURRENT MESSAGE — the actual user message being responded to
- * 7. SYSTEM INSTRUCTIONS — base behavior instructions (format, language, length limits)
- *
- * Verification method (static):
- * - Read unified-agent.service.ts and autopilot-processor.ts
- * - Search for references to the required context fields in prompt assembly code
- * - Flag if any required section is entirely absent from the source
- *
- * Specific field checks:
- * 8. Prompt assembly uses aiConfig/productAiConfig/ai_config (AI persona settings)
- * 9. Prompt assembly uses cognitiveState/cognitive_state (lead analysis)
- * 10. Prompt assembly uses product + plan + price (product context)
- * 11. Prompt assembly includes conversation history (messages/history/conversationHistory)
- * 12. Prompt does NOT contain template placeholder patterns ({{...}} or similar)
- *
- * BREAK TYPES:
- * - AI_PROMPT_INCOMPLETE (critical) — required prompt section missing from source code,
- *   or template placeholder patterns found that may not be filled
+ * This parser does not keep a fixed catalog of agent files or required prompt
+ * sections. It discovers prompt-building source files, extracts context inputs
+ * that the code itself loads or receives, and requires proof that each discovered
+ * context signal reaches the prompt/message payload.
  */
 
-import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
-import { readFileSafe } from './utils';
+import { readTextFile } from '../safe-fs';
 import type { Break, PulseConfig } from '../types';
+import { walkFiles } from './utils';
 
-// Files that contain the AI prompt assembly logic
-const AGENT_FILES = [
-  'backend/src/kloel/unified-agent.service.ts',
-  'worker/processors/autopilot-processor.ts',
-];
-
-interface PromptSection {
-  name: string;
-  patterns: RegExp[];
-  severity: 'critical' | 'high' | 'medium' | 'low';
-  description: string;
-  detail: string;
+interface AgentContent {
+  file: string;
+  content: string;
 }
 
-const REQUIRED_SECTIONS: PromptSection[] = [
-  {
-    name: 'AI_CONFIG',
-    patterns: [
-      /aiConfig|ai_config|productAiConfig|productAIConfig|ProductAIConfig/,
-      /aiConfigContext|aiConfigBlock/,
-    ],
-    severity: 'critical',
-    description: 'AI prompt assembly does not use ProductAIConfig (persona/tone settings)',
-    detail:
-      'No reference to aiConfig/productAiConfig found in prompt building code. The AI will not know the product persona, tone, or restrictions.',
-  },
-  {
-    name: 'COGNITIVE_STATE',
-    patterns: [
-      /cognitiveState|cognitive_state|computePersistentCognitiveState/,
-      /urgencyScore|sentimentScore|purchaseIntent|nextBestAction/,
-      /cognition|cognitiv/i,
-    ],
-    severity: 'critical',
-    description: 'AI prompt assembly does not use cognitive state (lead intent/urgency scores)',
-    detail:
-      'No reference to cognitiveState or urgency/sentiment scores found. The AI cannot adapt to lead intent without this context.',
-  },
-  {
-    name: 'PRODUCT_CONTEXT',
-    patterns: [
-      /product\.name|products\.map|product\.description/,
-      /buildSystemPrompt.*product|products.*aiConfig/,
-      /fetchConversationHistory|findWorkspaceProductMatches/,
-    ],
-    severity: 'critical',
-    description: 'AI prompt assembly does not include product context (name/price/plan)',
-    detail:
-      'No product data found in prompt assembly. The AI cannot describe or sell products without knowing what they are.',
-  },
-  {
-    name: 'CONVERSATION_HISTORY',
-    patterns: [
-      /conversationHistory|conversation_history|history\s*=|fetchConversationHistory/,
-      /buildConversationLedger|historyTurns|history\.length/,
-      /\bhistory\b.*messages|\bmessages\b.*history/,
-    ],
-    severity: 'critical',
-    description: 'AI prompt assembly does not include conversation history',
-    detail:
-      'No conversation history reference found in prompt building. The AI will have no memory of prior exchanges, causing repetition and poor UX.',
-  },
+interface ContextGrammarRule {
+  token: string;
+  identifier: RegExp;
+}
+
+interface ContextInputProof {
+  symbol: string;
+  token: string;
+  file: string;
+  line: number;
+}
+
+const CONTEXT_GRAMMAR_RULES: ContextGrammarRule[] = [
+  { token: 'product', identifier: /\bproducts?\w*/i },
+  { token: 'configuration', identifier: /\b\w*(?:configs?|settings?)\w*/i },
+  { token: 'cognition', identifier: /\b\w*(?:cognit|sentiment|leadScore)\w*/i },
+  { token: 'history', identifier: /\b\w*(?:history|ledger|transcript)\w*/i },
+  { token: 'workspace', identifier: /\bworkspace\w*/i },
+  { token: 'message', identifier: /\bmessage(?:Content)?\b/i },
+  { token: 'knowledge', identifier: /\b\w*(?:knowledge|kbContext)\w*/i },
+  { token: 'memory', identifier: /\bcompressedContext\b|\bmemory\b/i },
+  { token: 'instruction', identifier: /\b\w*(?:instruction|policy|hint|directive)\w*/i },
 ];
 
-/** Check ai prompt verifier. */
-export function checkAiPromptVerifier(config: PulseConfig): Break[] {
-  const breaks: Break[] = [];
+function readSafe(file: string): string {
+  try {
+    return readTextFile(file, 'utf8');
+  } catch {
+    return '';
+  }
+}
 
-  // Collect content from all agent files
-  const agentContents: Array<{ file: string; content: string }> = [];
-  for (const relPath of AGENT_FILES) {
-    const file = safeJoin(config.rootDir, relPath);
-    const content = readFileSafe(file);
-    if (content) {
-      agentContents.push({ file, content });
+function shouldSkipSource(file: string): boolean {
+  return /(?:^|[/\\])(?:dist|node_modules|__tests__|__mocks__)(?:[/\\]|$)|\.(?:spec|test)\.ts$/.test(
+    file,
+  );
+}
+
+function hasPromptAssemblyEvidence(content: string): boolean {
+  return (
+    /\b(?:systemPrompt|userMessage|messages|promptText|build[A-Za-z0-9_]*Prompt)\b/.test(content) &&
+    /\b(?:OpenAI|generateResponse|chatCompletion|completion|model)\b/i.test(content)
+  );
+}
+
+function discoverAgentContents(config: PulseConfig): AgentContent[] {
+  const roots = [config.backendDir, config.workerDir].filter((dir) => dir.trim().length > 0);
+  const discovered: AgentContent[] = [];
+
+  for (const root of roots) {
+    for (const file of walkFiles(root, ['.ts'])) {
+      if (shouldSkipSource(file)) {
+        continue;
+      }
+      const content = readSafe(file);
+      if (content && hasPromptAssemblyEvidence(content)) {
+        discovered.push({ file, content });
+      }
     }
   }
 
-  if (agentContents.length === 0) {
-    breaks.push({
-      type: 'AI_PROMPT_INCOMPLETE',
-      severity: 'critical',
-      file: safeJoin(config.rootDir, AGENT_FILES[0]),
-      line: 0,
-      description: 'AI agent source files not found',
-      detail: `Could not read any of: ${AGENT_FILES.join(', ')}. Cannot verify prompt assembly.`,
-    });
-    return breaks;
+  return discovered.sort((left, right) => left.file.localeCompare(right.file));
+}
+
+function lineNumberFor(content: string, index: number): number {
+  return content.slice(0, Math.max(0, index)).split('\n').length;
+}
+
+function identifierTokens(source: string): string[] {
+  return source.match(/\b[A-Za-z_][A-Za-z0-9_]*\b/g) ?? [];
+}
+
+function isContextPayloadSymbol(symbol: string): boolean {
+  if (/(?:^|_)(?:id|ids)$/i.test(symbol) || /Id$|Ids$/.test(symbol)) {
+    return false;
   }
+  return CONTEXT_GRAMMAR_RULES.some((rule) => rule.identifier.test(symbol));
+}
 
-  // Combined content for cross-file analysis
-  const allContent = agentContents.map((a) => a.content).join('\n');
+function contextTokenFor(symbol: string): string {
+  return CONTEXT_GRAMMAR_RULES.find((rule) => rule.identifier.test(symbol))?.token ?? 'context';
+}
 
-  // Check each required section against the combined source
-  for (const section of REQUIRED_SECTIONS) {
-    const found = section.patterns.some((pattern) => pattern.test(allContent));
-    if (!found) {
-      // Report against the primary agent file
-      const primaryFile = agentContents[0].file;
-      breaks.push({
-        type: 'AI_PROMPT_INCOMPLETE',
-        severity: section.severity,
-        file: primaryFile,
-        line: 0,
-        description: section.description,
-        detail: section.detail,
+function collectContextInputProofs(agentContents: readonly AgentContent[]): ContextInputProof[] {
+  const proofs = new Map<string, ContextInputProof>();
+
+  for (const { file, content } of agentContents) {
+    const declarationSignals = content.matchAll(
+      /\b(?:const|let|var)\s+([^=;]+?)\s*=\s*(?:await\s+)?[\s\S]*?(?:;|\n\s*\])/g,
+    );
+
+    for (const match of declarationSignals) {
+      const declaration = match[1] ?? '';
+      for (const symbol of identifierTokens(declaration)) {
+        if (!isContextPayloadSymbol(symbol)) {
+          continue;
+        }
+        const line = lineNumberFor(content, match.index ?? 0);
+        proofs.set(`${file}:${symbol}:${line}`, {
+          symbol,
+          token: contextTokenFor(symbol),
+          file,
+          line,
+        });
+      }
+    }
+
+    const parameterSignals = content.matchAll(/\b(?:params|input|data)\.([A-Za-z_][A-Za-z0-9_]*)/g);
+    for (const match of parameterSignals) {
+      const symbol = match[1];
+      if (!symbol || !isContextPayloadSymbol(symbol)) {
+        continue;
+      }
+      const line = lineNumberFor(content, match.index ?? 0);
+      proofs.set(`${file}:${symbol}:${line}`, {
+        symbol,
+        token: contextTokenFor(symbol),
+        file,
+        line,
       });
     }
   }
 
-  // Check for unfilled template placeholders in prompt building functions
-  const templatePlaceholderPattern = /\{\{[^}]+\}\}|<%[^%]+%>/;
-  for (const { file, content } of agentContents) {
-    // Look at prompt-building functions specifically (lines with buildSystemPrompt, buildPrompt, systemPrompt)
-    const promptBuildLines = content
-      .split('\n')
-      .map((line, idx) => ({ line, idx: idx + 1 }))
-      .filter(({ line }) =>
-        /systemPrompt|buildPrompt|promptText|prompt\s*=|prompt\s*\+=/i.test(line),
-      );
+  return [...proofs.values()];
+}
 
-    for (const { line, idx } of promptBuildLines) {
-      if (templatePlaceholderPattern.test(line)) {
-        breaks.push({
-          type: 'AI_PROMPT_INCOMPLETE',
-          severity: 'critical',
-          file,
-          line: idx,
-          description: 'Unfilled template placeholder in AI prompt',
-          detail:
-            'Line ' +
-            idx +
-            ': Found unresolved template placeholder ({{...}} or <%...%>) in prompt assembly. Template not being filled before sending to LLM.',
-        });
-        break; // One break per file is enough
+function collectPromptCorpus(agentContents: readonly AgentContent[]): string {
+  const slices: string[] = [];
+
+  for (const { content } of agentContents) {
+    const lines = content.split('\n');
+    for (let index = 0; index < lines.length; index += 1) {
+      if (
+        /\b(?:systemPrompt|userMessage|messages|promptText|generateResponse|chatCompletion)\b/.test(
+          lines[index] ?? '',
+        )
+      ) {
+        const statementLines: string[] = [];
+        let balance = 0;
+        for (let cursor = index; cursor < lines.length; cursor += 1) {
+          const line = lines[cursor] ?? '';
+          statementLines.push(line);
+          for (const char of line) {
+            if (char === '(' || char === '[' || char === '{') {
+              balance += 1;
+            }
+            if (char === ')' || char === ']' || char === '}') {
+              balance -= 1;
+            }
+          }
+          if (balance <= 0 && /[;)]\s*$/.test(line.trim())) {
+            break;
+          }
+        }
+        slices.push(statementLines.join('\n'));
       }
     }
   }
 
-  // Check for [object Object] or 'undefined' as literal string in prompt concatenation
-  const serializationErrorPatterns = [
-    { re: /\[object Object\]/, label: '[object Object] serialization error' },
-    { re: /"undefined"|'undefined'|\+ undefined\b/, label: "'undefined' literal in prompt string" },
-  ];
+  return slices.join('\n');
+}
 
+function hasPromptUsage(promptCorpus: string, proof: ContextInputProof): boolean {
+  return new RegExp(`\\b${proof.symbol}\\b`).test(promptCorpus);
+}
+
+function createPromptBreak(params: {
+  file: string;
+  line: number;
+  severity: Break['severity'];
+  description: string;
+  detail: string;
+}): Break {
+  return {
+    type: 'AI_PROMPT_INCOMPLETE',
+    severity: params.severity,
+    file: params.file,
+    line: params.line,
+    description: params.description,
+    detail: params.detail,
+  };
+}
+
+function pushMissingContextBreaks(
+  breaks: Break[],
+  config: PulseConfig,
+  proofs: readonly ContextInputProof[],
+  promptCorpus: string,
+): void {
+  const proofsByToken = new Map<string, ContextInputProof[]>();
+  for (const proof of proofs) {
+    const tokenProofs = proofsByToken.get(proof.token) ?? [];
+    tokenProofs.push(proof);
+    proofsByToken.set(proof.token, tokenProofs);
+  }
+
+  for (const [token, tokenProofs] of proofsByToken.entries()) {
+    if (tokenProofs.some((proof) => hasPromptUsage(promptCorpus, proof))) {
+      continue;
+    }
+
+    const proof = tokenProofs[0];
+    if (!proof) {
+      continue;
+    }
+    const relFile = path.relative(config.rootDir, proof.file);
+    breaks.push(
+      createPromptBreak({
+        file: proof.file,
+        line: proof.line,
+        severity: 'critical',
+        description: `AI prompt assembly drops discovered ${token} context`,
+        detail:
+          `${relFile}:${proof.line}: discovered context input "${proof.symbol}" ` +
+          `but no prompt/message payload references any ${token} context symbol. ` +
+          'Prompt completeness is derived from source evidence, not from a fixed section list.',
+      }),
+    );
+  }
+}
+
+function pushTemplateAndSerializationBreaks(
+  breaks: Break[],
+  agentContents: readonly AgentContent[],
+): void {
   for (const { file, content } of agentContents) {
-    for (const { re, label } of serializationErrorPatterns) {
-      const match = content.match(re);
-      if (match) {
-        const lineNum = content.substring(0, content.indexOf(match[0])).split('\n').length;
-        breaks.push({
-          type: 'AI_PROMPT_INCOMPLETE',
-          severity: 'critical',
-          file,
-          line: lineNum,
-          description: `Prompt serialization error: ${label}`,
-          detail: `Found "${match[0]}" in AI agent source. This will corrupt the LLM prompt with garbage values.`,
-        });
+    const lines = content.split('\n');
+    for (let index = 0; index < lines.length; index += 1) {
+      const line = lines[index] ?? '';
+      if (!/\b(?:systemPrompt|buildPrompt|promptText|prompt)\b/i.test(line)) {
+        continue;
+      }
+      if (/\{\{[^}]+\}\}|<%[^%]+%>/.test(line)) {
+        breaks.push(
+          createPromptBreak({
+            file,
+            line: index + 1,
+            severity: 'critical',
+            description: 'Unfilled template placeholder in AI prompt',
+            detail:
+              `Line ${index + 1}: Found unresolved template placeholder in prompt assembly. ` +
+              'Template evidence must be filled before sending to the LLM.',
+          }),
+        );
         break;
       }
     }
+
+    const serializationMatch = content.match(
+      /\[object Object\]|"undefined"|'undefined'|\+ undefined\b/,
+    );
+    if (serializationMatch) {
+      breaks.push(
+        createPromptBreak({
+          file,
+          line: lineNumberFor(content, serializationMatch.index ?? 0),
+          severity: 'critical',
+          description: 'Prompt serialization error',
+          detail: `Found "${serializationMatch[0]}" in AI prompt source. This corrupts the LLM prompt with non-evidence values.`,
+        }),
+      );
+    }
   }
+}
+
+/** Check ai prompt verifier. */
+export function checkAiPromptVerifier(config: PulseConfig): Break[] {
+  const breaks: Break[] = [];
+  const agentContents = discoverAgentContents(config);
+
+  if (agentContents.length === 0) {
+    breaks.push(
+      createPromptBreak({
+        file: config.backendDir,
+        line: 0,
+        severity: 'critical',
+        description: 'AI prompt assembly source not discovered',
+        detail:
+          'PULSE scanned backend/worker sources and found no file with both prompt assembly and LLM invocation evidence.',
+      }),
+    );
+    return breaks;
+  }
+
+  const contextInputProofs = collectContextInputProofs(agentContents);
+  const promptCorpus = collectPromptCorpus(agentContents);
+
+  pushMissingContextBreaks(breaks, config, contextInputProofs, promptCorpus);
+  pushTemplateAndSerializationBreaks(breaks, agentContents);
 
   return breaks;
 }

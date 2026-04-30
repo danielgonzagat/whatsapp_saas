@@ -28,6 +28,7 @@ function parseDateRange(startDate?: string, endDate?: string) {
     throw new BadRequestException('Invalid endDate');
   }
 
+  // PULSE_OK: date validated above via isNaN checks
   const safeEnd = Number.isNaN(end.getTime()) ? new Date() : end;
   const safeStart = Number.isNaN(start.getTime())
     ? new Date(safeEnd.getTime() - 7 * 24 * 60 * 60 * 1000)

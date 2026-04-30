@@ -12,6 +12,7 @@ import {
   REQUIRED_NON_REGRESSING_CYCLES,
   evaluateMultiCycleConvergenceGate,
 } from '../cert-gate-multi-cycle';
+import { auditPulseNoHardcodedReality } from '../no-hardcoded-reality-audit';
 import type { PulseAutonomyIterationRecord, PulseAutonomyValidationCommandResult } from '../types';
 
 const REQUIRED_CYCLES = 3;
@@ -94,6 +95,17 @@ describe('REQUIRED_NON_REGRESSING_CYCLES', () => {
   });
 });
 
+describe('no-hardcoded-reality audit for multi-cycle gate', () => {
+  it('keeps cert-gate-multi-cycle free of hardcoded reality authority findings', () => {
+    const result = auditPulseNoHardcodedReality(process.cwd());
+    const certGateFindings = result.findings.filter(
+      (finding) => finding.filePath === 'scripts/pulse/cert-gate-multi-cycle.ts',
+    );
+
+    expect(certGateFindings).toEqual([]);
+  });
+});
+
 describe('typecheck-only cycle does NOT count toward convergence', () => {
   it('evaluateMultiCycleConvergenceGate returns fail when only typecheck validation ran', () => {
     const record = makeRecord({
@@ -122,6 +134,32 @@ describe('typecheck-only cycle does NOT count toward convergence', () => {
 });
 
 describe('cycle with runtime validation DOES count toward convergence', () => {
+  it('uses structured runtime evidence from validation commands when present', () => {
+    const runtimeEvidenceCommand = Object.assign(
+      {
+        command: 'node local-validator --json',
+        durationMs: DEEP_VALIDATION_DURATION_MS,
+        exitCode: 0,
+        summary: '',
+      },
+      {
+        runtimeEvidence: true,
+      },
+    );
+    const records = Array.from({ length: REQUIRED_NON_REGRESSING_CYCLES }, (_, index) =>
+      makeRecord({
+        iteration: index + 1,
+        validation: {
+          commands: [runtimeEvidenceCommand],
+          executed: true,
+        },
+      }),
+    );
+
+    const result = evaluateMultiCycleConvergenceGate({ history: records });
+    expect(result.status).toBe('pass');
+  });
+
   it('playwright test in validation commands counts', () => {
     const record = makeRecord({
       validation: {

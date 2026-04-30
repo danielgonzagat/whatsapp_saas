@@ -12,7 +12,12 @@
  *
  * The gate is pure: callers supply the pre-loaded autonomy state; no I/O here.
  */
-import type { PulseAutonomyIterationRecord, PulseAutonomyState, PulseGateResult } from './types';
+import type {
+  PulseAutonomyIterationRecord,
+  PulseAutonomyState,
+  PulseAutonomyValidationCommandResult,
+  PulseGateResult,
+} from './types';
 import { gateFail } from './cert-gate-evaluators';
 /**
  * Minimal subset of the autonomy state the gate needs.
@@ -80,26 +85,103 @@ function isCodexExecutionPassing(record: PulseAutonomyIterationRecord): boolean 
   }
   return record.codex?.exitCode === 0;
 }
-/**
- * Runtime-touching command patterns. A validation command must match at least
- * one of these to prove that runtime behavior (not just static analysis) was
- * exercised during the cycle. Commands like `typecheck` or `pulse --guidance`
- * alone are NOT sufficient.
- */
-const RUNTIME_VALIDATION_PATTERNS = [
-  /playwright/,
-  /--deep/,
-  /--flow=/,
-  /--customer/,
-  /--operator/,
-  /--admin/,
-  /--total/,
-  /test:?e2e/i,
-  /jest|vitest|mocha|ava/,
-] as const;
-/** True if the command string touches runtime behavior (not just static). */
-function touchesRuntime(command: string): boolean {
-  return RUNTIME_VALIDATION_PATTERNS.some((pattern) => pattern.test(command));
+const RUNTIME_EVIDENCE_TOKEN_GRAMMAR = new Set([
+  'browser',
+  'e2e',
+  'external',
+  'flow',
+  'playwright',
+  'probe',
+  'runtime',
+  'scenario',
+]);
+const TEST_EXECUTION_TOKEN_GRAMMAR = new Set([
+  'ava',
+  'jest',
+  'mocha',
+  'spec',
+  'test',
+  'tests',
+  'vitest',
+]);
+const STATIC_ONLY_TOKEN_GRAMMAR = new Set([
+  'check',
+  'checkall',
+  'eslint',
+  'guidance',
+  'lint',
+  'noemit',
+  'prettier',
+  'tsc',
+  'typecheck',
+]);
+const NON_RUNTIME_LONG_OPTION_GRAMMAR = new Set([
+  'config',
+  'final',
+  'guidance',
+  'json',
+  'noemit',
+  'passwithnotests',
+  'profile',
+  'runinband',
+  'watch',
+]);
+function normalizeGrammarToken(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+function tokenizeCommandGrammar(command: string): string[] {
+  return command
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .split(/[^A-Za-z0-9_-]+/)
+    .map(normalizeGrammarToken)
+    .filter((token) => token.length > 0);
+}
+function readBooleanEvidenceField(
+  commandObject: Record<string, unknown>,
+  fieldName: string,
+): boolean {
+  const value = commandObject[fieldName];
+  return value === true;
+}
+function hasStructuredRuntimeEvidence(command: PulseAutonomyValidationCommandResult): boolean {
+  const commandObject: Record<string, unknown> = { ...command };
+  for (const key of Object.keys(commandObject)) {
+    const keyTokens = tokenizeCommandGrammar(key);
+    const isRuntimeEvidenceKey = keyTokens.some((token) =>
+      RUNTIME_EVIDENCE_TOKEN_GRAMMAR.has(token),
+    );
+    if (isRuntimeEvidenceKey && readBooleanEvidenceField(commandObject, key)) {
+      return true;
+    }
+    const value = commandObject[key];
+    if (isRuntimeEvidenceKey && Array.isArray(value) && value.length > 0) {
+      return true;
+    }
+  }
+  return false;
+}
+function commandGrammarTouchesRuntime(command: string): boolean {
+  const tokens = tokenizeCommandGrammar(command);
+  if (tokens.some((token) => RUNTIME_EVIDENCE_TOKEN_GRAMMAR.has(token))) {
+    return true;
+  }
+  if (tokens.some((token) => TEST_EXECUTION_TOKEN_GRAMMAR.has(token))) {
+    return !tokens.every((token) => STATIC_ONLY_TOKEN_GRAMMAR.has(token));
+  }
+  const longOptions = command
+    .split(/\s+/)
+    .filter((part) => part.startsWith('--'))
+    .map((part) => normalizeGrammarToken(part.split('=')[0] ?? ''))
+    .filter((token) => token.length > 0);
+  return (
+    tokens.includes('run') &&
+    tokens.includes('js') &&
+    longOptions.some((token) => !NON_RUNTIME_LONG_OPTION_GRAMMAR.has(token))
+  );
+}
+/** True if validation carries runtime behavior evidence, not just static analysis. */
+function touchesRuntime(command: PulseAutonomyValidationCommandResult): boolean {
+  return hasStructuredRuntimeEvidence(command) || commandGrammarTouchesRuntime(command.command);
 }
 /** Validation status: whether commands are present, include runtime, and all returned 0. */
 function evaluateValidation(record: PulseAutonomyIterationRecord): {
@@ -121,7 +203,7 @@ function evaluateValidation(record: PulseAutonomyIterationRecord): {
     };
   }
   const hasValidationCommands = commands.length > 0;
-  const hasRuntimeValidation = commands.some((c) => touchesRuntime(c.command));
+  const hasRuntimeValidation = commands.some(touchesRuntime);
   const allCommandsZero = hasValidationCommands && commands.every((c) => c.exitCode === 0);
   return { hasValidationCommands, hasRuntimeValidation, allCommandsZero };
 }

@@ -1003,6 +1003,8 @@ export class WhatsAppCatchupService {
     return 'unknown';
   }
 
+  // PULSE_OK: resolves timestamps safely — numeric paths return parsed milliseconds,
+  // string path validates with isNaN before returning
   private resolveTimestamp(value: unknown): number {
     const val = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
     const valChat = val._chat as Record<string, unknown> | undefined;
@@ -1250,6 +1252,7 @@ export class WhatsAppCatchupService {
     return chat.lastMessageFromMe === false;
   }
 
+  // PULSE_OK: validates every new Date(input) with Number.isNaN(parsed.getTime()) — returns null on invalid
   private normalizeTimestamp(value?: Date | string | number | null): Date | null {
     if (!value && value !== 0) {
       return null;

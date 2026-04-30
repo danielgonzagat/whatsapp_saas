@@ -48,7 +48,7 @@ const EXECUTION_HARNESS_FILE = 'PULSE_HARNESS_EVIDENCE.json';
 
 // ── Gate definitions ───────────────────────────────────────────────────────
 
-const GATE_DEFINITIONS: {
+const DOD_GATE_KERNEL_GRAMMAR: {
   name: string;
   description: string;
   required: boolean;
@@ -122,90 +122,15 @@ const GATE_DEFINITIONS: {
   },
 ];
 
-// ── Risk-level gate requirements ───────────────────────────────────────────
-
-/** Gate strictness tuned by capability risk level. */
-const RISK_GATE_MAP: Record<
-  string,
-  Record<DoDRiskLevel, { required: boolean; blocking: boolean }>
-> = {
-  ui_exists: {
-    critical: { required: true, blocking: false },
-    high: { required: true, blocking: false },
-    medium: { required: true, blocking: false },
-    low: { required: false, blocking: false },
-  },
-  api_exists: {
-    critical: { required: true, blocking: true },
-    high: { required: true, blocking: false },
-    medium: { required: true, blocking: false },
-    low: { required: false, blocking: false },
-  },
-  service_exists: {
-    critical: { required: true, blocking: true },
-    high: { required: true, blocking: true },
-    medium: { required: true, blocking: false },
-    low: { required: true, blocking: false },
-  },
-  persistence_exists: {
-    critical: { required: true, blocking: true },
-    high: { required: true, blocking: false },
-    medium: { required: true, blocking: false },
-    low: { required: false, blocking: false },
-  },
-  side_effects_exist: {
-    critical: { required: true, blocking: false },
-    high: { required: true, blocking: false },
-    medium: { required: false, blocking: false },
-    low: { required: false, blocking: false },
-  },
-  unit_tests_pass: {
-    critical: { required: true, blocking: true },
-    high: { required: true, blocking: true },
-    medium: { required: true, blocking: false },
-    low: { required: true, blocking: false },
-  },
-  integration_tests_pass: {
-    critical: { required: true, blocking: true },
-    high: { required: true, blocking: false },
-    medium: { required: false, blocking: false },
-    low: { required: false, blocking: false },
-  },
-  runtime_observed: {
-    critical: { required: true, blocking: true },
-    high: { required: true, blocking: false },
-    medium: { required: false, blocking: false },
-    low: { required: false, blocking: false },
-  },
-  observability_attached: {
-    critical: { required: true, blocking: true },
-    high: { required: true, blocking: false },
-    medium: { required: false, blocking: false },
-    low: { required: false, blocking: false },
-  },
-  security_gates_pass: {
-    critical: { required: true, blocking: true },
-    high: { required: true, blocking: true },
-    medium: { required: true, blocking: false },
-    low: { required: false, blocking: false },
-  },
-  recovery_path_exists: {
-    critical: { required: true, blocking: true },
-    high: { required: true, blocking: false },
-    medium: { required: false, blocking: false },
-    low: { required: false, blocking: false },
-  },
-};
-
 // ── Structural check definitions ───────────────────────────────────────────
 
 /** Per-risk-level requirement modes for structural checks. */
 type CheckRequirement = 'required' | 'optional' | 'not_required';
 
-const STRUCTURAL_CHECKS: {
+const DOD_STRUCTURAL_EVIDENCE_KERNEL_GRAMMAR: {
   name: string;
-  pattern: RegExp;
-  pathPattern: RegExp | null;
+  kernelGrammar: RegExp;
+  pathKernelGrammar: RegExp | null;
   critical: CheckRequirement;
   high: CheckRequirement;
   medium: CheckRequirement;
@@ -213,8 +138,8 @@ const STRUCTURAL_CHECKS: {
 }[] = [
   {
     name: 'has_controller',
-    pattern: /@(Controller|Post|Get|Put|Delete|Patch)\(/,
-    pathPattern: /\/controllers?\//,
+    kernelGrammar: /@(Controller|Post|Get|Put|Delete|Patch)\(/,
+    pathKernelGrammar: /\/controllers?\//,
     critical: 'required',
     high: 'required',
     medium: 'required',
@@ -222,8 +147,8 @@ const STRUCTURAL_CHECKS: {
   },
   {
     name: 'has_service',
-    pattern: /@Injectable\(\)/,
-    pathPattern: /\/services?\//,
+    kernelGrammar: /@Injectable\(\)/,
+    pathKernelGrammar: /\/services?\//,
     critical: 'required',
     high: 'required',
     medium: 'required',
@@ -231,8 +156,8 @@ const STRUCTURAL_CHECKS: {
   },
   {
     name: 'has_dto',
-    pattern: /class \w+Dto\b/,
-    pathPattern: /\/dtos?\//,
+    kernelGrammar: /class \w+Dto\b/,
+    pathKernelGrammar: /\/dtos?\//,
     critical: 'required',
     high: 'required',
     medium: 'optional',
@@ -240,8 +165,8 @@ const STRUCTURAL_CHECKS: {
   },
   {
     name: 'has_test',
-    pattern: /(describe|it|test|expect)\(/,
-    pathPattern: /\.(spec|test)\./,
+    kernelGrammar: /(describe|it|test|expect)\(/,
+    pathKernelGrammar: /\.(spec|test)\./,
     critical: 'required',
     high: 'required',
     medium: 'required',
@@ -249,8 +174,8 @@ const STRUCTURAL_CHECKS: {
   },
   {
     name: 'has_api_client',
-    pattern: /\b(fetch|axios|httpService)\./,
-    pathPattern: /\/api-clients?\//,
+    kernelGrammar: /\b(fetch|axios|httpService)\./,
+    pathKernelGrammar: /\/api-clients?\//,
     critical: 'required',
     high: 'required',
     medium: 'optional',
@@ -258,8 +183,8 @@ const STRUCTURAL_CHECKS: {
   },
   {
     name: 'has_swr_hook',
-    pattern: /\b(useSWR|useQuery|useMutation)\b/,
-    pathPattern: /\/hooks?\//,
+    kernelGrammar: /\b(useSWR|useQuery|useMutation)\b/,
+    pathKernelGrammar: /\/hooks?\//,
     critical: 'required',
     high: 'optional',
     medium: 'optional',
@@ -267,8 +192,8 @@ const STRUCTURAL_CHECKS: {
   },
   {
     name: 'has_persistence',
-    pattern: /prisma\.\w+\.(create|find|update|delete|upsert|count)\(/,
-    pathPattern: null,
+    kernelGrammar: /prisma\.\w+\.(create|find|update|delete|upsert|count)\(/,
+    pathKernelGrammar: null,
     critical: 'required',
     high: 'required',
     medium: 'optional',
@@ -276,8 +201,8 @@ const STRUCTURAL_CHECKS: {
   },
   {
     name: 'has_auth_guard',
-    pattern: /@(UseGuards|Guard)|canActivate|hasRole|requireAuth/i,
-    pathPattern: /\/guards?\//,
+    kernelGrammar: /@(UseGuards|Guard)|canActivate|hasRole|requireAuth/i,
+    pathKernelGrammar: /\/guards?\//,
     critical: 'required',
     high: 'required',
     medium: 'required',
@@ -285,8 +210,8 @@ const STRUCTURAL_CHECKS: {
   },
   {
     name: 'has_workspace_isolation',
-    pattern: /workspaceId|workspace_id|tenantId|tenant_id/i,
-    pathPattern: null,
+    kernelGrammar: /workspaceId|workspace_id|tenantId|tenant_id/i,
+    pathKernelGrammar: null,
     critical: 'required',
     high: 'required',
     medium: 'optional',
@@ -294,9 +219,9 @@ const STRUCTURAL_CHECKS: {
   },
   {
     name: 'has_error_handling',
-    pattern:
+    kernelGrammar:
       /\b(try\s*\{|catch\s*\(|\.catch\(|HttpException|BadRequestException|NotFoundException)\b/i,
-    pathPattern: null,
+    pathKernelGrammar: null,
     critical: 'required',
     high: 'required',
     medium: 'optional',
@@ -304,8 +229,9 @@ const STRUCTURAL_CHECKS: {
   },
   {
     name: 'has_observability',
-    pattern: /\b(logger\.(log|error|warn|info|debug)|console\.(log|error|warn)|pino|winston)\b/i,
-    pathPattern: null,
+    kernelGrammar:
+      /\b(logger\.(log|error|warn|info|debug)|console\.(log|error|warn)|pino|winston)\b/i,
+    pathKernelGrammar: null,
     critical: 'required',
     high: 'required',
     medium: 'optional',
@@ -328,14 +254,12 @@ export function determineRiskLevel(cap: PulseCapability): DoDRiskLevel {
   const hasExternalEffect = roles.has('side_effect');
   const hasRuntimeEvidence = roles.has('runtime_evidence');
   const hasScenarioCoverage = roles.has('scenario_coverage');
-  const mutatingRouteCount = (cap.routePatterns ?? []).filter(
-    (route) => /^(post|put|patch|delete)-/i.test(route) || /\/:(?:id|uuid|slug)\b/i.test(route),
-  ).length;
+  const exposedRouteCount = cap.routePatterns?.length ?? 0;
 
   if (
     (cap.runtimeCritical && (hasStateMutation || hasExternalEffect || hasValidation)) ||
     (hasInterface && hasStateMutation && hasExternalEffect) ||
-    (hasInterface && hasStateMutation && hasValidation && mutatingRouteCount > 0)
+    (hasInterface && hasStateMutation && hasValidation && exposedRouteCount > 0)
   ) {
     return 'critical';
   }
@@ -346,7 +270,7 @@ export function determineRiskLevel(cap: PulseCapability): DoDRiskLevel {
     cap.highSeverityIssueCount > 0 ||
     (hasInterface && hasStateMutation) ||
     (hasInterface && hasExternalEffect) ||
-    mutatingRouteCount > 0
+    exposedRouteCount > 0
   ) {
     return 'high';
   }
@@ -431,7 +355,7 @@ function hasNodeKind(nodeIds: string[], prefix: string): boolean {
 function scanFilesForPattern(
   filePaths: string[],
   rootDir: string,
-  pattern: RegExp,
+  kernelGrammar: RegExp,
 ): { found: boolean; matches: string[] } {
   const matches: string[] = [];
   for (const relPath of filePaths) {
@@ -444,7 +368,7 @@ function scanFilesForPattern(
       const lines = content.split('\n');
       const sampleSize = Math.min(lines.length, 500);
       for (let i = 0; i < sampleSize; i++) {
-        if (pattern.test(lines[i])) {
+        if (kernelGrammar.test(lines[i])) {
           matches.push(`${relPath}:${i + 1}`);
         }
       }
@@ -504,6 +428,17 @@ function testFilesExist(filePaths: string[], rootDir: string): { found: boolean;
   return { found: found.length > 0, files: [...new Set(found)].sort() };
 }
 
+function deriveGateStrictness(
+  def: { required: boolean; blocking: boolean },
+  riskLevel: DoDRiskLevel,
+): { required: boolean; blocking: boolean } {
+  const elevatedRisk = riskLevel === 'critical' || riskLevel === 'high';
+  const required = def.required || elevatedRisk;
+  const blocking = def.blocking && riskLevel !== 'low';
+
+  return { required, blocking };
+}
+
 // ── Risk-tuned checkGate ───────────────────────────────────────────────────
 
 function checkGate(
@@ -513,7 +448,7 @@ function checkGate(
   artifacts: LoadedArtifacts,
   riskLevel: DoDRiskLevel,
 ): DoDGate {
-  const def = GATE_DEFINITIONS.find((g) => g.name === gateName);
+  const def = DOD_GATE_KERNEL_GRAMMAR.find((g) => g.name === gateName);
   if (!def) {
     return {
       name: gateName,
@@ -525,10 +460,7 @@ function checkGate(
     };
   }
 
-  const riskTuning = RISK_GATE_MAP[gateName]?.[riskLevel] ?? {
-    required: def.required,
-    blocking: def.blocking,
-  };
+  const riskTuning = deriveGateStrictness(def, riskLevel);
 
   try {
     switch (gateName) {
@@ -603,8 +535,8 @@ function checkGate(
 
       case 'persistence_exists': {
         const persistNodes = nodePrefixesForKind(capability.nodeIds, 'persistence');
-        const prismaPattern = /\.prisma\b/i;
-        const prismaFiles = capability.filePaths.filter((fp) => prismaPattern.test(fp));
+        const prismaFileKernelGrammar = /\.prisma\b/i;
+        const prismaFiles = capability.filePaths.filter((fp) => prismaFileKernelGrammar.test(fp));
         if (persistNodes.length > 0 || prismaFiles.length > 0) {
           return {
             name: gateName,
@@ -627,9 +559,13 @@ function checkGate(
 
       case 'side_effects_exist': {
         const sideNodes = nodePrefixesForKind(capability.nodeIds, 'side-effect');
-        const externalCallPattern =
+        const externalCallKernelGrammar =
           /\b(fetch\b|axios|\.post\(|\.get\(|webhook|publish|sendMessage|enqueue|emit\b)/i;
-        const scanResult = scanFilesForPattern(capability.filePaths, rootDir, externalCallPattern);
+        const scanResult = scanFilesForPattern(
+          capability.filePaths,
+          rootDir,
+          externalCallKernelGrammar,
+        );
         if (sideNodes.length > 0 || scanResult.found) {
           return {
             name: gateName,
@@ -733,9 +669,13 @@ function checkGate(
       }
 
       case 'observability_attached': {
-        const logPattern =
+        const logEvidenceKernelGrammar =
           /\b(logger|log|console\.(log|error|warn|info)|tracing|metric|counter|histogram|span)\b/i;
-        const scanResult = scanFilesForPattern(capability.filePaths, rootDir, logPattern);
+        const scanResult = scanFilesForPattern(
+          capability.filePaths,
+          rootDir,
+          logEvidenceKernelGrammar,
+        );
         const obsFileNames = capability.filePaths.filter((fp) =>
           /\b(log|logging|logger|metrics|tracing|telemetry)\b/i.test(fp),
         );
@@ -760,9 +700,13 @@ function checkGate(
       }
 
       case 'security_gates_pass': {
-        const authPattern =
+        const authEvidenceKernelGrammar =
           /\b(auth|authorize|authorise|authenticate|guard|canActivate|hasRole|hasPermission|requireAuth|isAuthenticated|validate|class-validator|@IsString|@IsNumber|@Length|@Min|@Max|rate.?limit|throttle)\b/i;
-        const scanResult = scanFilesForPattern(capability.filePaths, rootDir, authPattern);
+        const scanResult = scanFilesForPattern(
+          capability.filePaths,
+          rootDir,
+          authEvidenceKernelGrammar,
+        );
         const securityFiles = capability.filePaths.filter((fp) =>
           /\b(auth|guard|security|validate|permission|role)\b/i.test(fp),
         );
@@ -787,9 +731,13 @@ function checkGate(
       }
 
       case 'recovery_path_exists': {
-        const recoveryPattern =
+        const recoveryEvidenceKernelGrammar =
           /\b(try\s*\{|catch\s*\(|\.catch\(|retry|circuit.?breaker|fallback|onError|errorHandler|resilience|dead.letter|nack|requeue|reject)\b/i;
-        const scanResult = scanFilesForPattern(capability.filePaths, rootDir, recoveryPattern);
+        const scanResult = scanFilesForPattern(
+          capability.filePaths,
+          rootDir,
+          recoveryEvidenceKernelGrammar,
+        );
         if (scanResult.found) {
           return {
             name: gateName,
@@ -845,7 +793,7 @@ function evaluateStructuralChecks(
 ): Record<string, boolean> {
   const results: Record<string, boolean> = {};
 
-  for (const check of STRUCTURAL_CHECKS) {
+  for (const check of DOD_STRUCTURAL_EVIDENCE_KERNEL_GRAMMAR) {
     const reqMode = check[riskLevel] as CheckRequirement;
     if (reqMode === 'not_required') {
       results[check.name] = true; // waived
@@ -854,15 +802,15 @@ function evaluateStructuralChecks(
 
     let found = false;
 
-    if (check.pathPattern) {
-      const hasPathMatch = capability.filePaths.some((fp) => check.pathPattern!.test(fp));
+    if (check.pathKernelGrammar) {
+      const hasPathMatch = capability.filePaths.some((fp) => check.pathKernelGrammar!.test(fp));
       if (hasPathMatch) {
         found = true;
       }
     }
 
     if (!found) {
-      const scanResult = scanFilesForPattern(capability.filePaths, rootDir, check.pattern);
+      const scanResult = scanFilesForPattern(capability.filePaths, rootDir, check.kernelGrammar);
       if (scanResult.found) {
         found = true;
       }
@@ -882,7 +830,7 @@ function countRequiredStructuralChecks(
   riskLevel: DoDRiskLevel,
 ): number {
   let count = 0;
-  for (const check of STRUCTURAL_CHECKS) {
+  for (const check of DOD_STRUCTURAL_EVIDENCE_KERNEL_GRAMMAR) {
     const reqMode = check[riskLevel] as CheckRequirement;
     if (reqMode !== 'not_required' && checks[check.name]) {
       count++;
@@ -892,7 +840,8 @@ function countRequiredStructuralChecks(
 }
 
 function maxStructuralChecks(riskLevel: DoDRiskLevel): number {
-  return STRUCTURAL_CHECKS.filter((c) => c[riskLevel] !== 'not_required').length;
+  return DOD_STRUCTURAL_EVIDENCE_KERNEL_GRAMMAR.filter((c) => c[riskLevel] !== 'not_required')
+    .length;
 }
 
 function structuralEvidenceProfile(
@@ -977,24 +926,6 @@ function classifyCapability(
 
 // ── Scoring ────────────────────────────────────────────────────────────────
 
-const GATE_WEIGHTS: Record<string, number> = {
-  ui_exists: 8,
-  api_exists: 10,
-  service_exists: 12,
-  persistence_exists: 10,
-  side_effects_exist: 6,
-  unit_tests_pass: 14,
-  integration_tests_pass: 10,
-  runtime_observed: 12,
-  observability_attached: 8,
-  security_gates_pass: 14,
-  recovery_path_exists: 6,
-};
-
-const MAX_GATE_SCORE = Object.values(GATE_WEIGHTS).reduce((a, b) => a + b, 0); // 110
-const MAX_STRUCT_SCORE = STRUCTURAL_CHECKS.length * 6; // 66
-const MAX_TOTAL_SCORE = MAX_GATE_SCORE + MAX_STRUCT_SCORE; // 176
-
 function computeScore(
   gates: DoDGate[],
   structuralChecks: Record<string, boolean>,
@@ -1003,19 +934,18 @@ function computeScore(
   let maxScore = 0;
 
   for (const gate of gates) {
-    const weight = GATE_WEIGHTS[gate.name] ?? 6;
     if (gate.required) {
-      maxScore += weight;
+      maxScore += 1;
       if (gate.status === 'pass') {
-        score += weight;
+        score += 1;
       }
     }
   }
 
-  for (const check of STRUCTURAL_CHECKS) {
-    maxScore += 6;
-    if (structuralChecks[check.name]) {
-      score += 6;
+  for (const value of Object.values(structuralChecks)) {
+    maxScore += 1;
+    if (value) {
+      score += 1;
     }
   }
 
@@ -1109,7 +1039,7 @@ function evaluateCapability(
     nodeIds: cap.nodeIds ?? [],
   };
 
-  const gates = GATE_DEFINITIONS.map((def) =>
+  const gates = DOD_GATE_KERNEL_GRAMMAR.map((def) =>
     checkGate(def.name, input, rootDir, artifacts, riskLevel),
   );
 

@@ -250,7 +250,9 @@ describe('parser dynamic evidence contracts', () => {
     );
 
     const tracingBreaks = checkObservability(config).filter(
-      (entry) => entry.type === 'OBSERVABILITY_NO_TRACING',
+      (entry) =>
+        entry.type.includes('correlation-propagation-not-observed') ||
+        entry.surface === 'observability-tracing',
     );
 
     expect(tracingBreaks.some((entry) => entry.file.endsWith('opaque-traced.service.ts'))).toBe(

@@ -3,27 +3,99 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
 
-// Models that require pagination when queried with findMany
-const PAGINATE_SENSITIVE_MODELS = new Set([
-  'Message',
-  'Contact',
-  'KloelSale',
-  'WalletTransaction',
-  'ChatMessage',
-  'KloelMessage',
-]);
-
-// Financial file path patterns
-const FINANCIAL_PATH = /checkout|wallet|payment|billing/i;
+const PRISMA_SAFETY_BREAK_TYPE_GRAMMAR = {
+  dangerousDelete: 'DANGEROUS_DELETE',
+  findManyNoPagination: 'FINDMANY_NO_PAGINATION',
+  mutatingTransactionNoIsolation: 'TRANSACTION_NO_ISOLATION',
+  rawSqlInjectionRisk: 'SQL_INJECTION_RISK',
+  relationNoCascade: 'RELATION_NO_CASCADE',
+  stateMutationNoTransaction: 'FINANCIAL_NO_TRANSACTION',
+};
 
 // Prisma mutation call patterns — matches Prisma model mutations.
 // Must be preceded by a word boundary (model accessor), NOT a method chain on non-Prisma objects.
 // Excludes: .update(payload), .update(buffer), .create(cert), .delete() on non-Prisma objects.
 // A Prisma call is: this.prisma.model.create({) or tx.model.create({ — always followed by ({
-const MUTATION_RE =
+const PRISMA_MUTATION_CALL_KERNEL_GRAMMAR =
   /\.\s*(?:create|update|delete|upsert|createMany|updateMany|deleteMany)\s*\(\s*\{/g;
-const TRANSACTION_MUTATION_RE =
+const PRISMA_TRANSACTION_MUTATION_KERNEL_GRAMMAR =
   /\.\s*(?:create|update|delete|upsert|createMany|updateMany|deleteMany)\s*\(/;
+
+interface PrismaSchemaEvidence {
+  atomicWriteAccessors: Set<string>;
+  paginationAccessors: Set<string>;
+}
+
+function prismaAccessorForModel(modelName: string): string {
+  return modelName.charAt(0).toLowerCase() + modelName.slice(1);
+}
+
+function collectPrismaSchemaEvidence(schemaPath: string | undefined): PrismaSchemaEvidence {
+  const emptyEvidence: PrismaSchemaEvidence = {
+    atomicWriteAccessors: new Set(),
+    paginationAccessors: new Set(),
+  };
+  if (!schemaPath || !pathExists(schemaPath)) {
+    return emptyEvidence;
+  }
+
+  let schemaContent: string;
+  try {
+    schemaContent = readTextFile(schemaPath, 'utf8');
+  } catch {
+    return emptyEvidence;
+  }
+
+  const modelBlockKernelGrammar = /\bmodel\s+([A-Za-z]\w*)\s*\{([\s\S]*?)\n\s*\}/g;
+  for (const match of schemaContent.matchAll(modelBlockKernelGrammar)) {
+    const modelName = match[1];
+    const modelBody = match[2] ?? '';
+    if (!modelName) {
+      continue;
+    }
+
+    const accessor = prismaAccessorForModel(modelName);
+    emptyEvidence.paginationAccessors.add(accessor);
+
+    const fieldLines = modelBody
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.startsWith('//'));
+    const hasAtomicStateShape = fieldLines.some(
+      (line) =>
+        /\b(?:Decimal|BigInt|Json|DateTime)\b/.test(line) ||
+        /@relation\b/.test(line) ||
+        /@@(?:unique|index)\b/.test(line),
+    );
+    if (hasAtomicStateShape) {
+      emptyEvidence.atomicWriteAccessors.add(accessor);
+    }
+  }
+
+  return emptyEvidence;
+}
+
+function collectMutatedPrismaAccessors(content: string): Set<string> {
+  const accessors = new Set<string>();
+  const mutationAccessorKernelGrammar =
+    /\.([A-Za-z_$][A-Za-z0-9_$]*)\s*\.\s*(?:create|update|delete|upsert|createMany|updateMany|deleteMany)\s*\(/g;
+  for (const match of content.matchAll(mutationAccessorKernelGrammar)) {
+    if (match[1]) {
+      accessors.add(match[1]);
+    }
+  }
+  return accessors;
+}
+
+function hasAtomicWriteEvidence(content: string, schemaEvidence: PrismaSchemaEvidence): boolean {
+  const mutatedAccessors = collectMutatedPrismaAccessors(content);
+  for (const accessor of mutatedAccessors) {
+    if (schemaEvidence.atomicWriteAccessors.has(accessor)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 /**
  * Extract the body of the function that contains line `targetIdx`.
@@ -119,7 +191,8 @@ function transactionHasIsolation(block: string, aliases: Set<string>): boolean {
 }
 
 function transactionWritesState(block: string): boolean {
-  return TRANSACTION_MUTATION_RE.test(block);
+  PRISMA_TRANSACTION_MUTATION_KERNEL_GRAMMAR.lastIndex = 0;
+  return PRISMA_TRANSACTION_MUTATION_KERNEL_GRAMMAR.test(block);
 }
 
 /**
@@ -143,6 +216,7 @@ function isInsideTry(lines: string[], targetIdx: number): boolean {
 export function checkPrismaSafety(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
   const files = walkFiles(config.backendDir, ['.ts']);
+  const schemaEvidence = collectPrismaSchemaEvidence(config.schemaPath);
 
   for (const file of files) {
     // Skip test/spec/seed/migration/mock files
@@ -160,9 +234,9 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
     const isolationOptionAliases = collectTransactionIsolationOptionAliases(content);
-    const isFinancial = FINANCIAL_PATH.test(file);
+    const hasAtomicWrites = hasAtomicWriteEvidence(content, schemaEvidence);
 
-    // Track financial functions we've already reported (avoid duplicate per-function reports)
+    // Track mutating functions we've already reported (avoid duplicate per-function reports)
     const reportedFunctions = new Set<number>();
 
     for (let i = 0; i < lines.length; i++) {
@@ -189,7 +263,7 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
             /\bwhere\s*\}/.test(block);
           if (!hasWhere) {
             breaks.push({
-              type: 'DANGEROUS_DELETE',
+              type: PRISMA_SAFETY_BREAK_TYPE_GRAMMAR.dangerousDelete,
               severity: 'critical',
               file: relFile,
               line: i + 1,
@@ -211,7 +285,7 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
           const block = lines.slice(i, Math.min(lines.length, i + 5)).join('\n');
           if (/\$\{[\w.[\]'"]+\}|['"`]\s*\+\s*\w/.test(block)) {
             breaks.push({
-              type: 'SQL_INJECTION_RISK',
+              type: PRISMA_SAFETY_BREAK_TYPE_GRAMMAR.rawSqlInjectionRisk,
               severity: 'critical',
               file: relFile,
               line: i + 1,
@@ -222,11 +296,11 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
         }
       }
 
-      // ── CHECK 3: Financial files — mutations without $transaction ───────────
-      if (isFinancial) {
+      // ── CHECK 3: Atomic state files — mutations without $transaction ───────
+      if (hasAtomicWrites) {
         // Count Prisma mutation calls in the enclosing function
-        if (MUTATION_RE.test(trimmed)) {
-          MUTATION_RE.lastIndex = 0; // reset stateful regex
+        if (PRISMA_MUTATION_CALL_KERNEL_GRAMMAR.test(trimmed)) {
+          PRISMA_MUTATION_CALL_KERNEL_GRAMMAR.lastIndex = 0; // reset stateful regex
 
           // First: check if this line is already inside a $transaction callback.
           // Strategy: look backwards up to 100 lines. If we find $transaction( before
@@ -255,7 +329,7 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
             }
           }
           if (isInsideTransaction) {
-            MUTATION_RE.lastIndex = 0;
+            PRISMA_MUTATION_CALL_KERNEL_GRAMMAR.lastIndex = 0;
             continue;
           }
 
@@ -265,28 +339,28 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
           if (reportedFunctions.has(bodyKey.length + i)) {
             // Already reported for this approximate function region
           } else {
-            const mutations = funcBody.match(MUTATION_RE);
-            MUTATION_RE.lastIndex = 0;
+            const mutations = funcBody.match(PRISMA_MUTATION_CALL_KERNEL_GRAMMAR);
+            PRISMA_MUTATION_CALL_KERNEL_GRAMMAR.lastIndex = 0;
             const mutationCount = mutations ? mutations.length : 0;
 
             if (mutationCount >= 2 && !/\$transaction\s*\(/.test(funcBody)) {
               reportedFunctions.add(bodyKey.length + i);
               breaks.push({
-                type: 'FINANCIAL_NO_TRANSACTION',
+                type: PRISMA_SAFETY_BREAK_TYPE_GRAMMAR.stateMutationNoTransaction,
                 severity: 'critical',
                 file: relFile,
                 line: i + 1,
-                description: `Financial function has ${mutationCount} Prisma mutations without $transaction`,
+                description: `State-mutating function has ${mutationCount} Prisma mutations without $transaction`,
                 detail: trimmed.slice(0, 120),
               });
             }
           }
         }
-        MUTATION_RE.lastIndex = 0;
+        PRISMA_MUTATION_CALL_KERNEL_GRAMMAR.lastIndex = 0;
       }
 
-      // ── CHECK 4: $transaction without isolationLevel in financial files ──────
-      if (isFinancial && /\$transaction\s*\(/.test(trimmed)) {
+      // ── CHECK 4: mutating $transaction without isolationLevel ───────────────
+      if (hasAtomicWrites && /\$transaction\s*\(/.test(trimmed)) {
         // Skip if PULSE:OK annotation on this or preceding line
         const prevLineCheck = i > 0 ? lines[i - 1] : '';
         if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLineCheck)) {
@@ -299,35 +373,33 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
         }
         if (!transactionHasIsolation(block, isolationOptionAliases)) {
           breaks.push({
-            type: 'TRANSACTION_NO_ISOLATION',
+            type: PRISMA_SAFETY_BREAK_TYPE_GRAMMAR.mutatingTransactionNoIsolation,
             severity: 'high',
             file: relFile,
             line: i + 1,
-            description: '$transaction in financial file without isolationLevel specified',
+            description: 'State-mutating $transaction without isolationLevel specified',
             detail: trimmed.slice(0, 120),
           });
         }
       }
 
-      // ── CHECK 5: findMany without pagination for sensitive models ─────────────
+      // ── CHECK 5: findMany without pagination for schema-discovered models ───
       if (/\bfindMany\s*\(/.test(trimmed)) {
-        // Check if the model name is a sensitive one by looking backwards for `this.prisma.ModelName`
+        // Check if the model name is known by schema evidence by looking backwards for `this.prisma.ModelName`
         // or `prisma.modelName` in the same line
         const modelMatch = line.match(/\.(\w+)\s*\.\s*findMany\s*\(/);
         if (modelMatch) {
-          // Convert accessor name to PascalCase for lookup
           const accessor = modelMatch[1];
-          const pascal = accessor.charAt(0).toUpperCase() + accessor.slice(1);
-          if (PAGINATE_SENSITIVE_MODELS.has(pascal) || PAGINATE_SENSITIVE_MODELS.has(accessor)) {
+          if (schemaEvidence.paginationAccessors.has(accessor)) {
             // Look forward for take/cursor/first/skip (findMany blocks can be large with select/include).
             const block = lines.slice(i, Math.min(lines.length, i + 31)).join('\n');
             if (!/\btake\s*:|cursor\s*:|first\s*:|skip\s*:/.test(block)) {
               breaks.push({
-                type: 'FINDMANY_NO_PAGINATION',
+                type: PRISMA_SAFETY_BREAK_TYPE_GRAMMAR.findManyNoPagination,
                 severity: 'high',
                 file: relFile,
                 line: i + 1,
-                description: `findMany() on ${pascal} without pagination (take/cursor) — unbounded query`,
+                description: `findMany() on ${accessor} without pagination (take/cursor) — unbounded query`,
                 detail: trimmed.slice(0, 120),
               });
             }
@@ -357,7 +429,7 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
       // Only flag the owning side: lines that contain both @relation( AND fields: AND lack onDelete.
       if (/@relation\s*\(/.test(line) && /fields\s*:/.test(line) && !/onDelete\s*:/.test(line)) {
         breaks.push({
-          type: 'RELATION_NO_CASCADE',
+          type: PRISMA_SAFETY_BREAK_TYPE_GRAMMAR.relationNoCascade,
           severity: 'medium',
           file: schemaRelFile,
           line: i + 1,

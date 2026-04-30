@@ -6,11 +6,11 @@ import {
   callsCallbackProp,
   findFunctionDeclarationIndex,
   findFunctionBodyEnd,
+  hasBrowserNavigationEffect,
   hasFunctionCall,
   hasFunctionOrMemberUse,
   hasApiCall,
   hookFunctionApiCalls,
-  NAV_PATTERNS,
 } from './ui-handler-resolver-utils';
 
 export { componentHasSaveHandler } from './ui-handler-resolver-utils';
@@ -54,10 +54,8 @@ export function resolveHandler(input: ResolveHandlerInput): {
     return { type: 'noop', apiCalls: [] };
   }
 
-  for (const p of NAV_PATTERNS) {
-    if (p.test(trimmed)) {
-      return { type: 'navigation', apiCalls: [] };
-    }
+  if (hasBrowserNavigationEffect(trimmed)) {
+    return { type: 'navigation', apiCalls: [] };
   }
 
   const apiCalls = extractApiCallEndpoints(trimmed, apiModuleMap, apiImportsInFile);
@@ -187,10 +185,8 @@ function resolveNamedFunction(input: ResolveHandlerInput & { funcName: string })
     return { type: 'real', apiCalls: [] };
   }
 
-  for (const p of NAV_PATTERNS) {
-    if (p.test(bodyText)) {
-      return { type: 'navigation', apiCalls: [] };
-    }
+  if (hasBrowserNavigationEffect(bodyText)) {
+    return { type: 'navigation', apiCalls: [] };
   }
 
   const nestedResult = resolveNestedLocalCall(input, bodyText);

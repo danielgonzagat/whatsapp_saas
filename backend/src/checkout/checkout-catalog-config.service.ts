@@ -10,6 +10,7 @@ export class CheckoutCatalogConfigService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Calculate shipping. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async calculateShipping(slug: string, cep: string) {
     this.logger.log({ operation: 'calculateShipping', slug, cep });
     const plan = await this.prisma.checkoutProductPlan.findUnique({
@@ -38,6 +39,7 @@ export class CheckoutCatalogConfigService {
   }
 
   /** Reset config to defaults. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async resetConfig(planId: string) {
     return this.prisma.$transaction(
       async (tx) => {

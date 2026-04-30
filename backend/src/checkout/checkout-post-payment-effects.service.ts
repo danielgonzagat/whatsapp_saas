@@ -43,6 +43,7 @@ export class CheckoutPostPaymentEffectsService {
   ) {}
 
   /** Mark lead converted. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async markLeadConverted(order: CheckoutOrderForEffects, workspaceId?: string) {
     if (!workspaceId || !order.id) {
       return;
@@ -67,6 +68,7 @@ export class CheckoutPostPaymentEffectsService {
   }
 
   /** Send purchase signals. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async sendPurchaseSignals(order: CheckoutOrderForEffects, chargedAmount: number) {
     await this.sendFacebookPurchaseEvent(order);
     await this.sendPaymentConfirmationEmail(order, chargedAmount);

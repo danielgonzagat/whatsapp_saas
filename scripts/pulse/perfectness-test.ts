@@ -44,7 +44,7 @@ const MAX_LONG_RUN_GAP_HOURS = 6;
  * Each gate defines what is being checked, the target condition,
  * and a plain-language description.
  */
-const GATE_DEFINITIONS = [
+const PERFECTNESS_EVALUATION_KERNEL_GRAMMAR = [
   {
     name: 'pulse-core-green',
     description: 'All PULSE certification gates pass',
@@ -107,33 +107,35 @@ const GATE_DEFINITIONS = [
  * that the autonomy loop follows during the 72h evaluation.
  */
 export function buildTestSuite(): PerfectnessTestSuite {
-  const phases: PerfectnessTestSuite['phases'] = [
+  const phaseGrammar: Array<{
+    phase: PerfectnessPhase;
+    dependsOnPrevious: boolean;
+  }> = [
     {
       phase: 'fresh_branch',
-      gates: [],
       dependsOnPrevious: false,
     },
     {
       phase: 'pulse_run',
-      gates: [],
       dependsOnPrevious: true,
     },
     {
       phase: 'autonomous_work',
-      gates: ['runtime-stable', 'no-rollback-unrecovered', 'no-protected-violation'],
       dependsOnPrevious: true,
     },
     {
       phase: 'validation',
-      gates: ['pulse-core-green', 'product-core-green', 'e2e-core-pass'],
       dependsOnPrevious: true,
     },
     {
       phase: 'verdict',
-      gates: ['no-regression', '72h-elapsed'],
       dependsOnPrevious: true,
     },
   ];
+  const phases: PerfectnessTestSuite['phases'] = phaseGrammar.map((entry) => ({
+    ...entry,
+    gates: getNamesForPhase(entry.phase),
+  }));
 
   return {
     phases,
@@ -147,18 +149,24 @@ export function buildTestSuite(): PerfectnessTestSuite {
  * Get the canonical list of gate names in evaluation order.
  */
 export function getGateNames(): string[] {
-  return GATE_DEFINITIONS.map((g) => g.name);
+  return PERFECTNESS_EVALUATION_KERNEL_GRAMMAR.map((g) => g.name);
 }
 
 /**
  * Return gate definitions (without evaluation results) for documentation.
  */
 export function getAcceptanceCriteria(): Omit<PerfectnessGate, 'actual' | 'passed' | 'evidence'>[] {
-  return GATE_DEFINITIONS.map((g) => ({
+  return PERFECTNESS_EVALUATION_KERNEL_GRAMMAR.map((g) => ({
     name: g.name,
     description: g.description,
     target: g.target,
   }));
+}
+
+function getNamesForPhase(phase: PerfectnessPhase): string[] {
+  return PERFECTNESS_EVALUATION_KERNEL_GRAMMAR.filter((entry) => entry.phase === phase).map(
+    (entry) => entry.name,
+  );
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -518,7 +526,7 @@ export function evaluateGate(
   startTime: string,
 ): PerfectnessGate {
   const pulseDir = path.join(rootDir, '.pulse', 'current');
-  const def = GATE_DEFINITIONS.find((g) => g.name === name);
+  const def = PERFECTNESS_EVALUATION_KERNEL_GRAMMAR.find((g) => g.name === name);
   const description = def?.description ?? name;
   const target = def?.target ?? '';
 
@@ -726,7 +734,7 @@ export function evaluateGate(
 export function computeVerdict(gates: PerfectnessGate[]): PerfectnessVerdict {
   const passed = gates.filter((g) => g.passed).length;
 
-  if (passed === GATE_DEFINITIONS.length) {
+  if (passed === PERFECTNESS_EVALUATION_KERNEL_GRAMMAR.length) {
     return 'PERFECT';
   }
   if (passed >= 6) {
@@ -1034,7 +1042,7 @@ export function evaluatePerfectness(rootDir: string, startTime: string): Perfect
   const longRunEvidence = evaluateLongRunEvidence(startTime, auto);
 
   // Evaluate all eight gates
-  const gates: PerfectnessGate[] = GATE_DEFINITIONS.map((def) =>
+  const gates: PerfectnessGate[] = PERFECTNESS_EVALUATION_KERNEL_GRAMMAR.map((def) =>
     evaluateGate(def.name, rootDir, startScore, startTime),
   );
 
@@ -1057,7 +1065,12 @@ export function evaluatePerfectness(rootDir: string, startTime: string): Perfect
     verdict,
     gates,
     longRunEvidence,
-    summary: buildSummary(verdict, passed, GATE_DEFINITIONS.length, scoreDelta),
+    summary: buildSummary(
+      verdict,
+      passed,
+      PERFECTNESS_EVALUATION_KERNEL_GRAMMAR.length,
+      scoreDelta,
+    ),
     recommendedActions: buildRecommendedActions(verdict, gates),
     autonomousApproved,
   };

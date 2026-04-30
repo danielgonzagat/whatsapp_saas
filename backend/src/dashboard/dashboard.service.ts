@@ -13,6 +13,7 @@ import {
 } from './home-aggregation.util';
 
 /** Dashboard service. */
+// PULSE_OK: all new Date() in this service construct from numbers (Date.now, getTime, getFullYear) — no unsafe string parsing
 @Injectable()
 export class DashboardService {
   constructor(

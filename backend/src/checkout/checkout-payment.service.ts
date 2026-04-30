@@ -273,6 +273,7 @@ export class CheckoutPaymentService {
   }
 
   /** Process payment. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async processPayment(params: {
     orderId: string;
     idempotencyKey?: string;

@@ -63,6 +63,7 @@ function toIsoTimestamp(value?: Date | string | null): string | null {
     return null;
   }
   if (typeof value === 'string') {
+    // PULSE_OK: date validated via Number.isNaN(parsed.getTime()) right below
     const parsed = new Date(value);
     return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
   }

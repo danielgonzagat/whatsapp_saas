@@ -4,6 +4,7 @@ import {
   deriveScenarioGateNamesFromEvidence,
   deriveValidationArtifactsFromGateEvidence,
 } from '../convergence-plan';
+import { auditPulseNoHardcodedReality } from '../no-hardcoded-reality-audit';
 import type { PulseEvidenceRecord, PulseGateName, PulseScenarioResult } from '../types';
 
 function makeScenarioResult(overrides: Partial<PulseScenarioResult> = {}): PulseScenarioResult {
@@ -53,6 +54,10 @@ describe('convergence plan gate metadata derivation', () => {
     ]);
   });
 
+  it('does not infer gate names from actor kind without gate evidence metadata', () => {
+    expect(deriveScenarioGateNamesFromEvidence({}, makeScenarioResult())).toEqual([]);
+  });
+
   it('derives validation artifacts from attached gate evidence records', () => {
     const gateEvidence: Partial<Record<PulseGateName, PulseEvidenceRecord[]>> = {
       customerPass: [
@@ -65,5 +70,14 @@ describe('convergence plan gate metadata derivation', () => {
     expect(deriveValidationArtifactsFromGateEvidence(gateEvidence, ['customerPass'])).toEqual([
       'PULSE_DYNAMIC_ACTOR_EVIDENCE.json',
     ]);
+  });
+
+  it('keeps convergence plan constants free of hardcoded reality authority findings', () => {
+    const result = auditPulseNoHardcodedReality(process.cwd());
+    const convergenceConstantFindings = result.findings.filter(
+      (finding) => finding.filePath === 'scripts/pulse/convergence-plan.constants.ts',
+    );
+
+    expect(convergenceConstantFindings).toEqual([]);
   });
 });

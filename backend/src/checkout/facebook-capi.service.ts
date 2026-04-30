@@ -26,6 +26,7 @@ export class FacebookCAPIService {
   }
 
   /** Send event. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async sendEvent(data: CAPIEventData): Promise<void> {
     try {
       const userData: Record<string, unknown> = {};

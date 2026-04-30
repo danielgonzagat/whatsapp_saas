@@ -13,13 +13,90 @@
  * 5. Warns if Point-In-Time Recovery (PITR) is not enabled on the DB provider config
  *
  * REQUIRES: PULSE_DEEP=1, BACKUP_MANIFEST_PATH or S3 credentials, access to Railway DB
- * BREAK TYPES:
- *   BACKUP_MISSING(critical) — no backup found younger than 60 min (RPO target)
  */
 import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { pathExists, readTextFile } from '../safe-fs';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
+
+function synthesizeBackupBreak(
+  signal: PulseSignalEvidence,
+  severity: Break['severity'],
+  surface: string,
+): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const diagnostic = synthesizeDiagnostic(
+    signalGraph,
+    predicateGraph,
+    calculateDynamicRisk({ predicateGraph }),
+  );
+
+  return {
+    type: diagnostic.id,
+    severity,
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
+    surface,
+  };
+}
+
+function buildRestoreRunbookEvidenceBreak(
+  config: PulseConfig,
+  runbookCandidates: readonly string[],
+): Break {
+  const relativeCandidates = runbookCandidates.map((p) => path.relative(config.rootDir, p));
+
+  return synthesizeBackupBreak(
+    {
+      source: 'filesystem:backup-checker',
+      detector: 'restore-runbook-evidence',
+      truthMode: 'confirmed_static',
+      summary: 'Restore runbook or restore script not observed in repository evidence',
+      detail: `Observed filesystem candidate set without a present restore artifact: ${relativeCandidates.join(', ')}`,
+      location: {
+        file: 'docs/RESTORE.md',
+        line: 0,
+      },
+    },
+    'critical',
+    'backup-restore',
+  );
+}
+
+function buildBackupEvidenceBreak(
+  config: PulseConfig,
+  input: {
+    detector: string;
+    summary: string;
+    detail: string;
+    file: string;
+    surface: string;
+  },
+): Break {
+  return synthesizeBackupBreak(
+    {
+      source: 'filesystem:backup-checker',
+      detector: input.detector,
+      truthMode: 'confirmed_static',
+      summary: input.summary,
+      detail: input.detail,
+      location: {
+        file: path.relative(config.rootDir, safeResolve(config.rootDir, input.file)),
+        line: 0,
+      },
+    },
+    'critical',
+    input.surface,
+  );
+}
 
 /** Check backup. */
 export function checkBackup(config: PulseConfig): Break[] {
@@ -49,17 +126,17 @@ export function checkBackup(config: PulseConfig): Break[] {
   }
 
   if (!manifestFound || !manifestRecent) {
-    breaks.push({
-      type: 'BACKUP_MISSING',
-      severity: 'critical',
-      file: path.relative(config.rootDir, manifestPath),
-      line: 0,
-      description:
-        'No recent DB backup found — backup manifest missing or older than 60 min (RPO breach)',
-      detail: manifestFound
-        ? 'Backup manifest exists but lastBackup timestamp is stale (>60 min) or missing'
-        : `No backup manifest at ${manifestPath}; set BACKUP_MANIFEST_PATH or create one`,
-    });
+    breaks.push(
+      buildBackupEvidenceBreak(config, {
+        detector: 'backup-manifest-freshness-evidence',
+        summary: 'Recent backup manifest evidence was not observed',
+        detail: manifestFound
+          ? 'Observed backup manifest without fresh lastBackup timestamp evidence'
+          : `No backup manifest observed at ${path.relative(config.rootDir, manifestPath)}`,
+        file: path.relative(config.rootDir, manifestPath),
+        surface: 'backup-manifest',
+      }),
+    );
   }
 
   // CHECK 2: Restore runbook exists
@@ -71,14 +148,7 @@ export function checkBackup(config: PulseConfig): Break[] {
   ];
   const runbookExists = runbookCandidates.some((p) => pathExists(p));
   if (!runbookExists) {
-    breaks.push({
-      type: 'BACKUP_MISSING',
-      severity: 'critical',
-      file: 'docs/RESTORE.md',
-      line: 0,
-      description: 'No DB restore runbook or restore script found in repo',
-      detail: `Expected one of: ${runbookCandidates.map((p) => path.relative(config.rootDir, p)).join(', ')}`,
-    });
+    breaks.push(buildRestoreRunbookEvidenceBreak(config, runbookCandidates));
   }
 
   // CHECK 3: Backup validation log exists
@@ -88,15 +158,17 @@ export function checkBackup(config: PulseConfig): Break[] {
   ];
   const validationExists = validationLogCandidates.some((p) => pathExists(p));
   if (!validationExists) {
-    breaks.push({
-      type: 'BACKUP_MISSING',
-      severity: 'critical',
-      file: '.backup-validation.log',
-      line: 0,
-      description: 'No backup restore-test validation log found — backup has never been verified',
-      detail:
-        'A restore test must be performed and logged; create .backup-validation.log with timestamp + result',
-    });
+    breaks.push(
+      buildBackupEvidenceBreak(config, {
+        detector: 'backup-restore-validation-evidence',
+        summary: 'Backup restore-test validation evidence was not observed',
+        detail: `Observed filesystem candidate set without a present restore validation artifact: ${validationLogCandidates
+          .map((p) => path.relative(config.rootDir, p))
+          .join(', ')}`,
+        file: '.backup-validation.log',
+        surface: 'backup-validation',
+      }),
+    );
   }
 
   // CHECK 4: Backup retention policy defined
@@ -104,16 +176,16 @@ export function checkBackup(config: PulseConfig): Break[] {
     !!process.env.BACKUP_RETENTION_DAYS ||
     pathExists(safeJoin(config.rootDir, '.backup-policy.json'));
   if (!retentionDefined) {
-    breaks.push({
-      type: 'BACKUP_MISSING',
-      severity: 'critical',
-      file: '.backup-policy.json',
-      line: 0,
-      description:
-        'Backup retention policy undefined — set BACKUP_RETENTION_DAYS env var or .backup-policy.json',
-      detail:
-        'Without a retention policy, old backups may be deleted before they are needed or fill storage indefinitely',
-    });
+    breaks.push(
+      buildBackupEvidenceBreak(config, {
+        detector: 'backup-retention-policy-evidence',
+        summary: 'Backup retention policy evidence was not observed',
+        detail:
+          'Observed runtime environment and repository policy location without retention policy evidence',
+        file: '.backup-policy.json',
+        surface: 'backup-retention',
+      }),
+    );
   }
 
   // TODO: Implement when infrastructure available

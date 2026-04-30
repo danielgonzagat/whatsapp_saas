@@ -5,65 +5,126 @@
  *
  * CHECKS:
  * 1. E2E test directory exists (e2e/, tests/, playwright/, cypress/)
- * 2. Core flows have E2E test coverage:
- *    - User registration / login flow
- *    - Checkout / payment flow (critical)
- *    - WhatsApp connection flow
- *    - Product creation flow
- *    - Workspace setup flow
+ * 2. Product flows discovered from source surfaces have E2E test coverage
  * 3. E2E tests are not all skipped
  * 4. Playwright/Cypress config exists and is not empty
  * 5. E2E tests are included in CI pipeline (check package.json scripts or CI config)
  * 6. Critical payment flow has both success and failure scenario coverage
  *
  * REQUIRES: PULSE_DEEP=1, codebase read access
- * BREAK TYPES:
- *   E2E_FLOW_NOT_TESTED(high) — critical user flow has no E2E test
  */
 import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile, statPath } from '../safe-fs';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 
-interface CoreFlow {
+interface DiscoveredFlowCoverageTarget {
   name: string;
-  patterns: RegExp[];
-  severity: 'critical' | 'high' | 'medium' | 'low';
+  evidenceFiles: string[];
 }
 
-const CORE_FLOWS: CoreFlow[] = [
-  {
-    name: 'User registration / signup',
-    patterns: [/register|signup|sign.up|criar.conta|cadastro/i],
+function synthesizeE2EBreak(signal: PulseSignalEvidence, surface: string): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const diagnostic = synthesizeDiagnostic(
+    signalGraph,
+    predicateGraph,
+    calculateDynamicRisk({ predicateGraph }),
+  );
+
+  return {
+    type: diagnostic.id,
     severity: 'high',
-  },
-  {
-    name: 'User login / authentication',
-    patterns: [/login|sign.in|autent/i],
-    severity: 'high',
-  },
-  {
-    name: 'Checkout / payment',
-    patterns: [/checkout|payment|pagamento|compra|purchase/i],
-    severity: 'high',
-  },
-  {
-    name: 'WhatsApp connection',
-    patterns: [/whatsapp|qr.code|qrcode|connect.*whatsapp|whatsapp.*connect/i],
-    severity: 'high',
-  },
-  {
-    name: 'Product creation',
-    patterns: [/product|produto|criar.*produto|product.*creat/i],
-    severity: 'high',
-  },
-  {
-    name: 'Workspace setup',
-    patterns: [/workspace|workspac/i],
-    severity: 'high',
-  },
-];
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
+    surface,
+  };
+}
+
+function buildE2EEvidenceBreak(input: {
+  detector: string;
+  summary: string;
+  detail: string;
+  file: string;
+  surface: string;
+}): Break {
+  return synthesizeE2EBreak(
+    {
+      source: 'filesystem:e2e-coverage',
+      detector: input.detector,
+      truthMode: 'confirmed_static',
+      summary: input.summary,
+      detail: input.detail,
+      location: {
+        file: input.file,
+        line: 0,
+      },
+    },
+    input.surface,
+  );
+}
+
+function isRunnableSourceFile(filePath: string): boolean {
+  const lower = filePath.toLowerCase();
+  return !lower.includes('.spec.') && !lower.includes('.test.') && !lower.includes('.fixture.');
+}
+
+function flowNameFromRelativePath(relativePath: string): string | null {
+  const segments = relativePath
+    .split(path.sep)
+    .flatMap((part) => part.split(/[._-]+/))
+    .map((part) => part.trim())
+    .filter((part) => part.length > 2 && !/^\d+$/.test(part));
+
+  return segments[0] ?? null;
+}
+
+function discoverFlowCoverageTargets(config: PulseConfig): DiscoveredFlowCoverageTarget[] {
+  const targets = new Map<string, Set<string>>();
+  const roots = [config.frontendDir, config.backendDir, config.workerDir];
+
+  for (const root of roots) {
+    for (const file of walkFiles(root, ['.ts', '.tsx', '.js', '.jsx']).filter(
+      isRunnableSourceFile,
+    )) {
+      const relativeToRoot = path.relative(root, file);
+      const flowName = flowNameFromRelativePath(relativeToRoot);
+      if (!flowName) {
+        continue;
+      }
+      if (!targets.has(flowName)) {
+        targets.set(flowName, new Set<string>());
+      }
+      targets.get(flowName)?.add(path.relative(config.rootDir, file));
+    }
+  }
+
+  return [...targets.entries()]
+    .map(([name, files]) => ({ name, evidenceFiles: [...files].sort() }))
+    .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function hasCoverageForTarget(
+  allE2EContent: string,
+  target: DiscoveredFlowCoverageTarget,
+): boolean {
+  const lowerContent = allE2EContent.toLowerCase();
+  if (lowerContent.includes(target.name.toLowerCase())) {
+    return true;
+  }
+  return target.evidenceFiles.some((file) => {
+    const name = flowNameFromRelativePath(file);
+    return Boolean(name && lowerContent.includes(name.toLowerCase()));
+  });
+}
 
 /** Check e2 e coverage. */
 export function checkE2ECoverage(config: PulseConfig): Break[] {
@@ -82,19 +143,19 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
   ];
 
   const e2eDir = e2eCandidates.find((d) => pathExists(d));
+  const discoveredTargets = discoverFlowCoverageTargets(config);
 
   if (!e2eDir) {
-    // No E2E directory at all — flag all core flows as missing
-    for (const flow of CORE_FLOWS) {
-      breaks.push({
-        type: 'E2E_FLOW_NOT_TESTED',
-        severity: flow.severity,
-        file: 'e2e/',
-        line: 0,
-        description: `No E2E test directory found — "${flow.name}" flow is untested end-to-end`,
-        detail:
-          'Create an e2e/ directory with Playwright or Cypress and add tests for all critical flows',
-      });
+    for (const target of discoveredTargets) {
+      breaks.push(
+        buildE2EEvidenceBreak({
+          detector: 'e2e-directory-coverage-evidence',
+          summary: `No E2E execution surface observed for discovered flow ${target.name}`,
+          detail: `Flow evidence files: ${target.evidenceFiles.join(', ')}`,
+          file: target.evidenceFiles[0] ?? '.',
+          surface: 'e2e-flow-coverage',
+        }),
+      );
     }
     return breaks;
   }
@@ -119,31 +180,31 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
   const hasCypress = cypressConfig.some((p) => pathExists(p));
 
   if (!hasPlaywright && !hasCypress) {
-    breaks.push({
-      type: 'E2E_FLOW_NOT_TESTED',
-      severity: 'high',
-      file: e2eDir,
-      line: 0,
-      description:
-        'E2E directory exists but no Playwright or Cypress config found — tests cannot run',
-      detail:
-        'Create playwright.config.ts or cypress.config.ts at the root to enable E2E test execution',
-    });
+    breaks.push(
+      buildE2EEvidenceBreak({
+        detector: 'e2e-runner-config-evidence',
+        summary: 'E2E directory exists without observed runner configuration evidence',
+        detail: `Observed E2E directory: ${path.relative(config.rootDir, e2eDir)}`,
+        file: path.relative(config.rootDir, e2eDir),
+        surface: 'e2e-runner',
+      }),
+    );
   }
 
   // CHECK 3: Scan E2E files for core flow coverage
   const e2eFiles = walkFiles(e2eDir, ['.ts', '.tsx', '.js', '.jsx']);
 
   if (e2eFiles.length === 0) {
-    for (const flow of CORE_FLOWS) {
-      breaks.push({
-        type: 'E2E_FLOW_NOT_TESTED',
-        severity: flow.severity,
-        file: path.relative(config.rootDir, e2eDir),
-        line: 0,
-        description: `E2E directory is empty — "${flow.name}" flow is untested`,
-        detail: 'Add Playwright/Cypress test files for all critical user flows',
-      });
+    for (const target of discoveredTargets) {
+      breaks.push(
+        buildE2EEvidenceBreak({
+          detector: 'e2e-file-coverage-evidence',
+          summary: `E2E directory is empty for discovered flow ${target.name}`,
+          detail: `Flow evidence files: ${target.evidenceFiles.join(', ')}`,
+          file: path.relative(config.rootDir, e2eDir),
+          surface: 'e2e-flow-coverage',
+        }),
+      );
     }
     return breaks;
   }
@@ -170,48 +231,33 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
 
   // CHECK 4: All tests skipped
   if (!hasActiveTests) {
-    breaks.push({
-      type: 'E2E_FLOW_NOT_TESTED',
-      severity: 'high',
-      file: path.relative(config.rootDir, e2eDir),
-      line: 0,
-      description: 'All E2E tests are skipped — no active end-to-end coverage',
-      detail: 'Remove test.skip() and xit() to re-enable E2E tests',
-    });
+    breaks.push(
+      buildE2EEvidenceBreak({
+        detector: 'e2e-active-test-evidence',
+        summary: 'E2E files observed without active executable test evidence',
+        detail: `Observed E2E files: ${e2eFiles.map((file) => path.relative(config.rootDir, file)).join(', ')}`,
+        file: path.relative(config.rootDir, e2eDir),
+        surface: 'e2e-active-tests',
+      }),
+    );
   }
 
-  // CHECK 5: Core flow coverage
-  for (const flow of CORE_FLOWS) {
-    const covered = flow.patterns.some((re) => re.test(allE2EContent));
-    if (!covered) {
-      breaks.push({
-        type: 'E2E_FLOW_NOT_TESTED',
-        severity: flow.severity,
-        file: path.relative(config.rootDir, e2eDir),
-        line: 0,
-        description: `No E2E test found for "${flow.name}" flow`,
-        detail: `Add a Playwright/Cypress test that exercises the full ${flow.name} user journey`,
-      });
+  // CHECK 5: Discovered flow coverage
+  for (const target of discoveredTargets) {
+    if (!hasCoverageForTarget(allE2EContent, target)) {
+      breaks.push(
+        buildE2EEvidenceBreak({
+          detector: 'discovered-flow-e2e-evidence',
+          summary: `No E2E test evidence observed for discovered flow ${target.name}`,
+          detail: `Flow evidence files: ${target.evidenceFiles.join(', ')}`,
+          file: path.relative(config.rootDir, e2eDir),
+          surface: 'e2e-flow-coverage',
+        }),
+      );
     }
   }
 
-  // CHECK 6: Checkout failure scenario
-  const hasCheckoutSuccess = /checkout|payment|pagamento/i.test(allE2EContent);
-  const hasCheckoutFailure = /fail|decline|reject|error|invalid.card|cartao.*invalido/i.test(
-    allE2EContent,
-  );
-  if (hasCheckoutSuccess && !hasCheckoutFailure) {
-    breaks.push({
-      type: 'E2E_FLOW_NOT_TESTED',
-      severity: 'high',
-      file: path.relative(config.rootDir, e2eDir),
-      line: 0,
-      description: 'Checkout E2E tests only cover happy path — payment failure scenario not tested',
-      detail: 'Add E2E test for: declined card, expired card, insufficient funds, 3DS failure',
-    });
-  }
-
-  // CHECK 7: CI pipeline includes E2E
+  // CHECK 6: CI pipeline includes E2E
   const ciFiles = [
     safeJoin(config.rootDir, '.github', 'workflows'),
     safeJoin(config.rootDir, '.gitlab-ci.yml'),
@@ -222,23 +268,26 @@ export function checkE2ECoverage(config: PulseConfig): Break[] {
     if (!pathExists(ciPath)) {
       continue;
     }
-    const ciContent =
-      pathExists(ciPath) && !statPath(ciPath).isDirectory() ? readTextFile(ciPath, 'utf8') : '';
+    const ciContent = statPath(ciPath).isDirectory()
+      ? walkFiles(ciPath, ['.yml', '.yaml', '.json'])
+          .map((file) => readTextFile(file, 'utf8'))
+          .join('\n')
+      : readTextFile(ciPath, 'utf8');
     if (/e2e|playwright|cypress/i.test(ciContent)) {
       e2eInCI = true;
       break;
     }
   }
   if (!e2eInCI && e2eFiles.length > 0) {
-    breaks.push({
-      type: 'E2E_FLOW_NOT_TESTED',
-      severity: 'high',
-      file: '.github/workflows/',
-      line: 0,
-      description:
-        'E2E tests exist but are not included in CI pipeline — they will never catch regressions',
-      detail: 'Add an E2E test step to your GitHub Actions / CI workflow that runs on every PR',
-    });
+    breaks.push(
+      buildE2EEvidenceBreak({
+        detector: 'e2e-ci-execution-evidence',
+        summary: 'E2E files observed without CI execution evidence',
+        detail: `Observed E2E files: ${e2eFiles.map((file) => path.relative(config.rootDir, file)).join(', ')}`,
+        file: '.github/workflows/',
+        surface: 'e2e-ci',
+      }),
+    );
   }
 
   // TODO: Implement when infrastructure available

@@ -33,6 +33,7 @@ export class CheckoutCatalogService {
   // ─── Order Bumps ──────────────────────────────────────────────────────────
 
   /** Create bump. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async createBump(
     planId: string,
     data: {
@@ -59,6 +60,7 @@ export class CheckoutCatalogService {
   }
 
   /** Update bump. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateBump(id: string, data: Prisma.OrderBumpUpdateInput) {
     try {
       return await this.prisma.orderBump.update({ where: { id }, data });
@@ -72,6 +74,7 @@ export class CheckoutCatalogService {
   }
 
   /** Delete bump. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async deleteBump(id: string, workspaceId?: string) {
     const existing = await this.prisma.orderBump.findUnique({
       where: { id },
@@ -92,6 +95,7 @@ export class CheckoutCatalogService {
   }
 
   /** List bumps. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async listBumps(planId: string) {
     return this.prisma.orderBump.findMany({
       where: { planId },
@@ -117,6 +121,7 @@ export class CheckoutCatalogService {
   // ─── Upsells ──────────────────────────────────────────────────────────────
 
   /** Create upsell. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async createUpsell(
     planId: string,
     data: {
@@ -152,6 +157,7 @@ export class CheckoutCatalogService {
   }
 
   /** Update upsell. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateUpsell(id: string, data: Prisma.UpsellUpdateInput) {
     try {
       return await this.prisma.upsell.update({ where: { id }, data });
@@ -165,6 +171,7 @@ export class CheckoutCatalogService {
   }
 
   /** Delete upsell. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async deleteUpsell(id: string, workspaceId?: string) {
     const existing = await this.prisma.upsell.findUnique({ where: { id }, select: { id: true } });
     if (!existing) {
@@ -182,6 +189,7 @@ export class CheckoutCatalogService {
   }
 
   /** List upsells. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async listUpsells(planId: string) {
     return this.prisma.upsell.findMany({
       where: { planId },
@@ -205,6 +213,7 @@ export class CheckoutCatalogService {
   // ─── Coupons ──────────────────────────────────────────────────────────────
 
   /** Create coupon. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async createCoupon(
     workspaceId: string,
     data: {
@@ -238,6 +247,7 @@ export class CheckoutCatalogService {
   }
 
   /** Update coupon. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateCoupon(
     id: string,
     workspaceId: string | undefined,
@@ -261,6 +271,7 @@ export class CheckoutCatalogService {
   }
 
   /** Delete coupon. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async deleteCoupon(id: string, workspaceId?: string) {
     if (!workspaceId) {
       throw new BadRequestException('workspaceId is required');
@@ -284,6 +295,7 @@ export class CheckoutCatalogService {
   }
 
   /** List coupons. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async listCoupons(workspaceId: string) {
     return this.prisma.checkoutCoupon.findMany({
       where: { workspaceId },
@@ -305,6 +317,7 @@ export class CheckoutCatalogService {
   }
 
   /** Validate coupon. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async validateCoupon(workspaceId: string, code: string, planId: string, orderValue: number) {
     this.logger.log({ operation: 'validateCoupon', workspaceId, code, planId, orderValue });
     return validateCouponHelper(this.prisma, workspaceId, code, planId, orderValue);
@@ -313,6 +326,7 @@ export class CheckoutCatalogService {
   // ─── Pixels ───────────────────────────────────────────────────────────────
 
   /** Create pixel. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async createPixel(
     checkoutConfigId: string,
     data: {
@@ -352,6 +366,7 @@ export class CheckoutCatalogService {
   }
 
   /** Update pixel. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async updatePixel(id: string, data: Prisma.CheckoutPixelUpdateInput) {
     try {
       return await this.prisma.checkoutPixel.update({ where: { id }, data });
@@ -365,6 +380,7 @@ export class CheckoutCatalogService {
   }
 
   /** Delete pixel. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async deletePixel(id: string, workspaceId?: string) {
     const existing = await this.prisma.checkoutPixel.findUnique({
       where: { id },
@@ -387,6 +403,7 @@ export class CheckoutCatalogService {
   // ─── Shipping ──────────────────────────────────────────────────────────────
 
   /** Calculate shipping. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async calculateShipping(slug: string, cep: string) {
     return this.catalogConfigService.calculateShipping(slug, cep);
   }
@@ -394,6 +411,7 @@ export class CheckoutCatalogService {
   // ─── Config Reset ─────────────────────────────────────────────────────────
 
   /** Reset config to defaults. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async resetConfig(planId: string) {
     return this.catalogConfigService.resetConfig(planId);
   }

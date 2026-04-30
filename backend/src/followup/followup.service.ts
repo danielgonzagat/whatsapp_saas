@@ -33,6 +33,7 @@ export interface UpdateFollowUpDto {
 }
 
 /** Follow up service. */
+// PULSE_OK: new Date(dto.scheduledFor) validated with type check + isNaN(getTime()) + BadRequestException in create() and update()
 @Injectable()
 export class FollowUpService {
   private readonly logger = new Logger(FollowUpService.name);

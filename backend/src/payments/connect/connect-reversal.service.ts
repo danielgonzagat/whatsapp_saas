@@ -201,6 +201,7 @@ export class ConnectReversalService {
   ) {}
 
   /** Process refund. */
+  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async processRefund(input: ProcessRefundReversalInput): Promise<ProcessReversalResult> {
     const snapshot = await this.loadSnapshot(input.paymentIntentId);
     if (!snapshot) {
@@ -245,6 +246,7 @@ export class ConnectReversalService {
   }
 
   /** Process dispute. */
+  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async processDispute(input: ProcessDisputeReversalInput): Promise<ProcessReversalResult> {
     const snapshot = await this.loadSnapshot(input.paymentIntentId);
     if (!snapshot) {

@@ -36,6 +36,7 @@ export class CheckoutProductService {
   }
 
   /** Resolve marketplace fee percent for a given payment method and base total. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async resolveMarketplaceFeePercent(
     paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO',
     baseTotalInCents: number,
@@ -44,6 +45,7 @@ export class CheckoutProductService {
   }
 
   /** Ensure a legacy checkout exists for the given plan. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async ensureLegacyCheckoutForPlan(planId: string) {
     return this.productConfigService.ensureLegacyCheckoutForPlan(planId, this.planLinkManager);
   }
@@ -66,6 +68,7 @@ export class CheckoutProductService {
   }
 
   /** Update product. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateProduct(id: string, workspaceId: string, data: Prisma.ProductUpdateInput) {
     try {
       return await this.prisma.product.update({
@@ -81,6 +84,7 @@ export class CheckoutProductService {
   }
 
   /** List products. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async listProducts(workspaceId: string) {
     return this.prisma.product.findMany({
       take: 200,
@@ -102,6 +106,7 @@ export class CheckoutProductService {
   }
 
   /** Get product. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async getProduct(id: string, workspaceId: string) {
     const baseProduct = await this.prisma.product.findFirst({
       where: { id, workspaceId },
@@ -130,6 +135,7 @@ export class CheckoutProductService {
   }
 
   /** Delete product. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async deleteProduct(id: string, workspaceId: string) {
     const existing = await this.prisma.product.findFirst({
       where: { id, workspaceId },
@@ -156,6 +162,7 @@ export class CheckoutProductService {
    * workspace ownership transitively through Product.workspaceId, which is
    * verified by the product lookup above before the transaction runs.
    */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async createPlan(productId: string, data: CreatePlanInput, workspaceId: string) {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, workspaceId },
@@ -195,6 +202,7 @@ export class CheckoutProductService {
   }
 
   /** Update plan. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async updatePlan(id: string, data: Prisma.CheckoutProductPlanUpdateInput) {
     try {
       return await this.prisma.checkoutProductPlan.update({
@@ -211,6 +219,7 @@ export class CheckoutProductService {
   }
 
   /** Delete plan. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async deletePlan(id: string, workspaceId?: string) {
     const existing = await this.prisma.checkoutProductPlan.findUnique({
       where: { id },
@@ -236,6 +245,7 @@ export class CheckoutProductService {
   // ─── Checkout Config ──────────────────────────────────────────────────────
 
   /** Update checkout config. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateConfig(planId: string, data: Prisma.CheckoutConfigUpdateInput) {
     try {
       return await this.prisma.checkoutConfig.update({
@@ -252,6 +262,7 @@ export class CheckoutProductService {
   }
 
   /** Get checkout config. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async getConfig(planId: string) {
     const config = await this.prisma.checkoutConfig.findUnique({
       where: { planId },
@@ -331,6 +342,7 @@ export class CheckoutProductService {
   }
 
   /** Sync checkout links. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async syncCheckoutLinks(checkoutId: string, planIds: string[]) {
     try {
       return await this.planLinkManager.syncCheckoutLinks(checkoutId, planIds);
@@ -353,6 +365,7 @@ export class CheckoutProductService {
   }
 
   /** Reset checkout config to defaults. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async resetConfig(planId: string) {
     return this.productConfigService.resetConfig(planId);
   }

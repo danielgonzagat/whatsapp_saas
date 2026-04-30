@@ -21,15 +21,8 @@ import type {
   PulseFlowProjection,
   PulseWorldState,
 } from './types';
-import {
-  CHECKER_GAP_TYPES,
-  EXCLUDED_GATE_UNITS,
-  GATE_PRIORITY,
-  KIND_RANK,
-  PRODUCT_IMPACT_RANK,
-  PRIORITY_RANK,
-  SECURITY_PATTERNS,
-} from './convergence-plan.constants';
+import { KIND_RANK, PRODUCT_IMPACT_RANK, PRIORITY_RANK } from './convergence-plan.constants';
+import { CHECKER_GAP_TYPES, SECURITY_BREAK_TYPE_KERNEL_GRAMMAR } from './cert-constants';
 import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from './finding-identity';
 import {
   formatNoHardcodedRealityBlocker,
@@ -114,7 +107,7 @@ function isBlockingBreak(item: Break): boolean {
 }
 
 function isSecurityBreak(item: Break): boolean {
-  return SECURITY_PATTERNS.some((pattern) => pattern.test(item.type));
+  return SECURITY_BREAK_TYPE_KERNEL_GRAMMAR.some((pattern) => pattern.test(item.type));
 }
 
 function rankBreakTypes(breaks: Break[], limit: number = 8): string[] {
@@ -143,8 +136,8 @@ function buildSearchTerms(
   flowIds: string[],
 ): string[] {
   const routeTerms = routePatterns.flatMap((route) => route.split('/').filter(Boolean));
-  const flowTerms = flowIds.flatMap((flowId) => flowId.split(/[-_]+/g));
-  const scenarioTerms = scenarioId.split(/[-_]+/g);
+  const flowTerms = flowIds.flatMap((flowId) => splitWords(flowId));
+  const scenarioTerms = splitWords(scenarioId);
 
   return uniqueStrings([...moduleKeys, ...routeTerms, ...flowTerms, ...scenarioTerms]).filter(
     (term) => normalizeSearchToken(term).length >= 3,
@@ -521,6 +514,73 @@ function gateEvidenceEntries(
   ]);
 }
 
+function gateEntries(
+  certification: PulseCertification,
+): Array<[PulseGateName, PulseCertification['gates'][PulseGateName]]> {
+  return Object.entries(certification.gates) as Array<
+    [PulseGateName, PulseCertification['gates'][PulseGateName]]
+  >;
+}
+
+function gateNamesForResult(
+  certification: PulseCertification,
+  target: PulseCertification['gates'][PulseGateName],
+): PulseGateName[] {
+  return gateEntries(certification)
+    .filter(([, result]) => result === target)
+    .map(([gateName]) => gateName);
+}
+
+function relatedFailedGateNames(
+  certification: PulseCertification,
+  evidenceTexts: string[],
+): PulseGateName[] {
+  const terms = new Set(
+    evidenceTexts
+      .flatMap((text) => splitWords(text))
+      .map((token) => normalizeSearchToken(token))
+      .filter((token) => token.length >= 4),
+  );
+
+  if (terms.size === 0) {
+    return [];
+  }
+
+  return gateEntries(certification)
+    .filter(([, result]) => {
+      if (result.status !== 'fail') return false;
+      const reasonTokens = splitWords(result.reason)
+        .map((token) => normalizeSearchToken(token))
+        .filter(Boolean);
+
+      return reasonTokens.some((token) => terms.has(token));
+    })
+    .map(([gateName]) => gateName);
+}
+
+function failedGateNamesForCapability(
+  certification: PulseCertification,
+  capabilityId: string,
+): PulseGateName[] {
+  return gateEntries(certification)
+    .filter(
+      ([, result]) =>
+        result.status === 'fail' && (result.affectedCapabilityIds ?? []).includes(capabilityId),
+    )
+    .map(([gateName]) => gateName);
+}
+
+function failedGateNamesForFlow(
+  certification: PulseCertification,
+  flowId: string,
+): PulseGateName[] {
+  return gateEntries(certification)
+    .filter(
+      ([, result]) => result.status === 'fail' && (result.affectedFlowIds ?? []).includes(flowId),
+    )
+    .map(([gateName]) => gateName);
+}
+
 function evidenceMetricMatches(
   record: PulseEvidenceRecord,
   key: string,
@@ -582,12 +642,6 @@ function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConverg
       (result) => [result.flowId, result] as const,
     ),
   );
-  const fallbackActorGateGrammar: Record<string, PulseGateName> = {
-    customer: 'customerPass',
-    operator: 'operatorPass',
-    admin: 'adminPass',
-    soak: 'soakPass',
-  };
   const accumulators = new Map<string, ScenarioAccumulator>();
   const actorResults = [
     ...input.certification.evidenceSummary.customer.results,
@@ -620,9 +674,6 @@ function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConverg
     );
     for (const gateName of evidenceGateNames) {
       accumulator.gateNames.add(gateName);
-    }
-    if (evidenceGateNames.length === 0) {
-      accumulator.gateNames.add(fallbackActorGateGrammar[result.actorKind]);
     }
     const requiresBrowser =
       Boolean(result.metrics?.requiresBrowser) || Boolean(accumulator.spec?.requiresBrowser);
@@ -811,6 +862,7 @@ function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseConverge
   );
   const gate = input.certification.gates.securityPass;
   const failureClass = gate.failureClass || 'product_failure';
+  const gateNames = gateNamesForResult(input.certification, gate);
 
   return [
     {
@@ -844,7 +896,7 @@ function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseConverge
         'Security gate must pass with no blocking compliance, auth, cookie, secret, or sensitive-data findings.',
       failureClass,
       actorKinds: [],
-      gateNames: ['securityPass'],
+      gateNames,
       scenarioIds: [],
       moduleKeys: [],
       routePatterns: [],
@@ -881,6 +933,7 @@ function buildStaticUnit(input: BuildPulseConvergencePlanInput): PulseConvergenc
 
   const gate = input.certification.gates.staticPass;
   const failureClass = gate.failureClass || 'product_failure';
+  const gateNames = gateNamesForResult(input.certification, gate);
 
   return [
     {
@@ -909,7 +962,7 @@ function buildStaticUnit(input: BuildPulseConvergencePlanInput): PulseConvergenc
         'Static certification should have no remaining critical/high blockers outside the scenario and security queues.',
       failureClass,
       actorKinds: [],
-      gateNames: ['staticPass'],
+      gateNames,
       scenarioIds: [],
       moduleKeys: [],
       routePatterns: [],
@@ -937,6 +990,8 @@ function buildNoHardcodedRealityUnits(
   if (!hasNoHardcodedRealityBlocker(summary)) {
     return [];
   }
+  const blockerSummary = formatNoHardcodedRealityBlocker(summary);
+  const gateNames = relatedFailedGateNames(input.certification, [blockerSummary]);
 
   return [
     {
@@ -953,13 +1008,13 @@ function buildNoHardcodedRealityUnits(
       confidence: 'high',
       productImpact: 'diagnostic',
       title: 'Remove PULSE Hardcoded Reality Authority',
-      summary: compactText(formatNoHardcodedRealityBlocker(summary), 320),
+      summary: compactText(blockerSummary, 320),
       visionDelta:
         'Keeps PULSE decisions grounded in discovered evidence instead of fixed product reality lists.',
       targetState: 'PULSE_NO_HARDCODED_REALITY.json reports zero dynamic hardcode evidence events.',
       failureClass: 'checker_gap',
       actorKinds: [],
-      gateNames: ['noOverclaimPass'],
+      gateNames,
       scenarioIds: [],
       moduleKeys: [],
       routePatterns: [],
@@ -1006,6 +1061,7 @@ function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenc
   };
 
   if (input.scopeState.parity.missingCodacyFiles.length > 0) {
+    const gateNames = relatedFailedGateNames(input.certification, [input.scopeState.parity.reason]);
     units.push({
       id: 'scope-codacy-parity',
       order: 0,
@@ -1026,7 +1082,7 @@ function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenc
         'Every observed Codacy hotspot file must exist in the dynamic repo inventory and be classifiable by PULSE.',
       failureClass: 'checker_gap',
       actorKinds: [],
-      gateNames: ['scopeClosed'],
+      gateNames,
       scenarioIds: [],
       moduleKeys: [],
       routePatterns: [],
@@ -1051,6 +1107,8 @@ function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenc
   }
 
   if (input.resolvedManifest.diagnostics.scopeOnlyModuleCandidates.length > 0) {
+    const scopeOnlyModuleCandidates = input.resolvedManifest.diagnostics.scopeOnlyModuleCandidates;
+    const gateNames = relatedFailedGateNames(input.certification, scopeOnlyModuleCandidates);
     units.push({
       id: 'scope-unmapped-module-candidates',
       order: 0,
@@ -1069,7 +1127,7 @@ function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenc
       }),
       title: 'Resolve Scope-Only Module Candidates',
       summary: compactText(
-        `Scope-derived user-facing module candidates remain outside the resolved manifest: ${input.resolvedManifest.diagnostics.scopeOnlyModuleCandidates.join(', ')}.`,
+        `Scope-derived user-facing module candidates remain outside the resolved manifest: ${scopeOnlyModuleCandidates.join(', ')}.`,
         320,
       ),
       visionDelta: buildScopeVisionDelta({
@@ -1080,9 +1138,9 @@ function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenc
         'All user-facing scope-derived module candidates map into the resolved manifest or are deliberately reclassified.',
       failureClass: 'checker_gap',
       actorKinds: [],
-      gateNames: ['truthExtractionPass'],
+      gateNames,
       scenarioIds: [],
-      moduleKeys: input.resolvedManifest.diagnostics.scopeOnlyModuleCandidates,
+      moduleKeys: scopeOnlyModuleCandidates,
       routePatterns: [],
       flowIds: [],
       affectedCapabilityIds: [],
@@ -1225,6 +1283,12 @@ function buildCodacyStaticUnits(input: BuildPulseConvergencePlanInput): PulseCon
         categories.length > 0 ? `Categories: ${categories.join(', ')}.` : '',
         patterns.length > 0 ? `Patterns: ${patterns.slice(0, 4).join(', ')}.` : '',
       ].filter(Boolean);
+      const certificationMatches = relatedFailedGateNames(input.certification, [
+        ...summaryParts,
+        categories.join(' '),
+        patterns.join(' '),
+        group.filePath,
+      ]);
 
       return {
         id: `codacy-${slugify(group.filePath)}`,
@@ -1255,9 +1319,7 @@ function buildCodacyStaticUnits(input: BuildPulseConvergencePlanInput): PulseCon
           'The hotspot file should leave the Codacy high-priority batch or reduce its HIGH-severity footprint.',
         failureClass: 'product_failure' as const,
         actorKinds: [],
-        gateNames: (categories.some((category) => category.toLowerCase().includes('security'))
-          ? ['securityPass', 'staticPass']
-          : ['staticPass']) as PulseGateName[],
+        gateNames: certificationMatches,
         scenarioIds: [],
         moduleKeys: file?.moduleCandidate ? [file.moduleCandidate] : [],
         routePatterns: [],
@@ -1273,11 +1335,10 @@ function buildCodacyStaticUnits(input: BuildPulseConvergencePlanInput): PulseCon
           'PULSE_SCOPE_STATE.json',
           'PULSE_CERTIFICATE.json',
         ],
-        expectedGateShift: categories.some((category) =>
-          category.toLowerCase().includes('security'),
-        )
-          ? 'Reduce securityPass/staticPass pressure'
-          : 'Reduce staticPass pressure',
+        expectedGateShift:
+          certificationMatches.length > 0
+            ? `Reduce ${certificationMatches.map(humanize).join('/')} pressure`
+            : 'Reduce static evidence pressure',
         exitCriteria: uniqueStrings([
           `Codacy no longer reports ${group.filePath} in the current high-priority batch.`,
           file?.executionMode === 'observation_only'
@@ -1361,6 +1422,53 @@ function determineGateLane(
   return 'platform';
 }
 
+function hasActorGateEvidence(
+  gateEvidence: Partial<Record<PulseGateName, PulseEvidenceRecord[]>>,
+  gateName: PulseGateName,
+): boolean {
+  return (gateEvidence[gateName] || []).some((record) => record.kind === 'actor');
+}
+
+function collectCoveredGateNames(units: PulseConvergenceUnit[]): Set<PulseGateName> {
+  return new Set(units.flatMap((unit) => unit.gateNames));
+}
+
+function shouldBuildGenericGateUnit(
+  input: BuildPulseConvergencePlanInput,
+  gateName: PulseGateName,
+  coveredGateNames: Set<PulseGateName>,
+): boolean {
+  const gate = input.certification.gates[gateName];
+  if (gate.status !== 'fail') {
+    return false;
+  }
+  if (coveredGateNames.has(gateName)) {
+    return false;
+  }
+  return !hasActorGateEvidence(input.certification.gateEvidence, gateName);
+}
+
+function determineGenericGatePriority(
+  gate: PulseCertification['gates'][PulseGateName],
+  focusList: string[],
+  artifactPaths: string[],
+): PulseConvergenceUnitPriority {
+  const hasMappedProductEvidence =
+    (gate.affectedCapabilityIds || []).length > 0 ||
+    (gate.affectedFlowIds || []).length > 0 ||
+    focusList.length > 0;
+  if (gate.failureClass === 'product_failure' && hasMappedProductEvidence) {
+    return 'P0';
+  }
+  if (gate.failureClass === 'product_failure') {
+    return 'P1';
+  }
+  if (gate.evidenceMode === 'observed' || artifactPaths.length > 1) {
+    return 'P2';
+  }
+  return 'P3';
+}
+
 function buildExternalUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
   if (!input.externalSignalState) {
     return [];
@@ -1372,6 +1480,13 @@ function buildExternalUnits(input: BuildPulseConvergencePlanInput): PulseConverg
     .slice(0, 15)
     .map((signal) => {
       const kind = determineExternalKind(signal);
+      const certificationMatches = relatedFailedGateNames(input.certification, [
+        signal.source,
+        signal.type,
+        signal.summary,
+        ...signal.capabilityIds,
+        ...signal.flowIds,
+      ]);
       return {
         id: `external-${slugify(`${signal.source}-${signal.id}`)}`,
         order: 0,
@@ -1393,13 +1508,7 @@ function buildExternalUnits(input: BuildPulseConvergencePlanInput): PulseConverg
         failureClass:
           signal.executionMode === 'observation_only' ? 'missing_evidence' : 'product_failure',
         actorKinds: [],
-        gateNames: uniqueStrings(
-          [
-            kind === 'runtime' ? 'runtimePass' : null,
-            signal.recentChangeRefs.length > 0 ? 'changeRiskPass' : null,
-            'productionDecisionPass',
-          ].filter(Boolean),
-        ) as PulseGateName[],
+        gateNames: certificationMatches,
         scenarioIds: [],
         moduleKeys: [],
         routePatterns: signal.routePatterns,
@@ -1412,11 +1521,9 @@ function buildExternalUnits(input: BuildPulseConvergencePlanInput): PulseConverg
         relatedFiles: signal.relatedFiles,
         validationArtifacts: signal.validationTargets,
         expectedGateShift:
-          kind === 'runtime'
-            ? 'Pass runtimePass/changeRiskPass'
-            : signal.recentChangeRefs.length > 0
-              ? 'Pass changeRiskPass'
-              : 'Pass productionDecisionPass',
+          certificationMatches.length > 0
+            ? `Pass ${certificationMatches.map(humanize).join('/')}`
+            : 'External signal is downgraded with fresh evidence',
         exitCriteria: uniqueStrings([
           `Signal ${signal.source}/${signal.type} is absent or downgraded below the high-impact threshold in the next snapshot.`,
           signal.capabilityIds.length > 0
@@ -1430,12 +1537,15 @@ function buildExternalUnits(input: BuildPulseConvergencePlanInput): PulseConverg
     });
 }
 
-function buildGenericGateUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
+function buildGenericGateUnits(
+  input: BuildPulseConvergencePlanInput,
+  coveredGateNames: Set<PulseGateName>,
+): PulseConvergenceUnit[] {
   const units: PulseConvergenceUnit[] = [];
 
   for (const gateName of Object.keys(input.certification.gates) as PulseGateName[]) {
     const gate = input.certification.gates[gateName];
-    if (gate.status !== 'fail' || EXCLUDED_GATE_UNITS.has(gateName)) {
+    if (!shouldBuildGenericGateUnit(input, gateName, coveredGateNames)) {
       continue;
     }
 
@@ -1451,7 +1561,7 @@ function buildGenericGateUnits(input: BuildPulseConvergencePlanInput): PulseConv
     units.push({
       id: `gate-${slugify(gateName)}`,
       order: 0,
-      priority: GATE_PRIORITY[gateName] || 'P3',
+      priority: determineGenericGatePriority(gate, focusList, artifactPaths),
       kind: 'gate',
       status: determineUnitStatus(failureClass),
       source: 'pulse',
@@ -1545,66 +1655,73 @@ function buildCapabilityUnits(input: BuildPulseConvergencePlanInput): PulseConve
   return input.capabilityState.capabilities
     .filter((capability) => capability.status !== 'real')
     .slice(0, 12)
-    .map((capability) => ({
-      id: `capability-${slugify(capability.id)}`,
-      order: 0,
-      priority: getCapabilityPriority(capability.status),
-      kind: 'capability' as const,
-      status: capability.executionMode === 'observation_only' ? 'watch' : 'open',
-      source: 'pulse' as const,
-      executionMode: capability.executionMode,
-      ownerLane: capability.ownerLane,
-      riskLevel:
-        capability.runtimeCritical && capability.status === 'phantom'
-          ? 'critical'
-          : capability.highSeverityIssueCount > 0
-            ? 'high'
-            : 'medium',
-      evidenceMode: capability.truthMode,
-      confidence: confidenceFromNumeric(capability.confidence),
-      productImpact:
-        capability.status === 'phantom'
-          ? 'transformational'
-          : capability.status === 'partial'
-            ? 'material'
-            : 'enabling',
-      title: `Materialize capability ${capability.name}`,
-      summary: compactText(
-        [
-          `Capability ${capability.name} is ${capability.status}.`,
-          `Maturity is ${capability.maturity.stage} (${Math.round(capability.maturity.score * 100)}%).`,
-          capability.blockingReasons.join(' '),
-        ]
-          .filter(Boolean)
-          .join(' '),
-        320,
-      ),
-      visionDelta: buildCapabilityVisionDelta(capability),
-      targetState: `Capability ${capability.name} must become materially real or at least structurally partial with no illusion-only path.`,
-      failureClass:
-        capability.executionMode === 'observation_only' ? 'missing_evidence' : 'product_failure',
-      actorKinds: [],
-      gateNames: capability.runtimeCritical ? ['truthExtractionPass'] : [],
-      scenarioIds: [],
-      moduleKeys: [],
-      routePatterns: capability.routePatterns,
-      flowIds: [],
-      affectedCapabilityIds: [capability.id],
-      affectedFlowIds: [],
-      asyncExpectations: [],
-      breakTypes: [],
-      artifactPaths: ['PULSE_CAPABILITY_STATE.json', 'PULSE_PRODUCT_VISION.json'],
-      relatedFiles: capability.filePaths.slice(0, 20),
-      validationArtifacts: [
-        'PULSE_CAPABILITY_STATE.json',
-        'PULSE_PRODUCT_VISION.json',
-        'PULSE_CERTIFICATE.json',
-      ],
-      expectedGateShift: capability.runtimeCritical
-        ? 'Pass truthExtractionPass or reduce phantom capability count'
-        : undefined,
-      exitCriteria: capability.validationTargets,
-    }));
+    .map((capability) => {
+      const certificationMatches = failedGateNamesForCapability(input.certification, capability.id);
+
+      return {
+        id: `capability-${slugify(capability.id)}`,
+        order: 0,
+        priority: getCapabilityPriority(capability.status),
+        kind: 'capability' as const,
+        status: capability.executionMode === 'observation_only' ? 'watch' : 'open',
+        source: 'pulse' as const,
+        executionMode: capability.executionMode,
+        ownerLane: capability.ownerLane,
+        riskLevel:
+          capability.runtimeCritical && capability.status === 'phantom'
+            ? 'critical'
+            : capability.highSeverityIssueCount > 0
+              ? 'high'
+              : 'medium',
+        evidenceMode: capability.truthMode,
+        confidence: confidenceFromNumeric(capability.confidence),
+        productImpact:
+          capability.status === 'phantom'
+            ? 'transformational'
+            : capability.status === 'partial'
+              ? 'material'
+              : 'enabling',
+        title: `Materialize capability ${capability.name}`,
+        summary: compactText(
+          [
+            `Capability ${capability.name} is ${capability.status}.`,
+            `Maturity is ${capability.maturity.stage} (${Math.round(capability.maturity.score * 100)}%).`,
+            capability.blockingReasons.join(' '),
+          ]
+            .filter(Boolean)
+            .join(' '),
+          320,
+        ),
+        visionDelta: buildCapabilityVisionDelta(capability),
+        targetState: `Capability ${capability.name} must become materially real or at least structurally partial with no illusion-only path.`,
+        failureClass:
+          capability.executionMode === 'observation_only' ? 'missing_evidence' : 'product_failure',
+        actorKinds: [],
+        gateNames: certificationMatches,
+        scenarioIds: [],
+        moduleKeys: [],
+        routePatterns: capability.routePatterns,
+        flowIds: [],
+        affectedCapabilityIds: [capability.id],
+        affectedFlowIds: [],
+        asyncExpectations: [],
+        breakTypes: [],
+        artifactPaths: ['PULSE_CAPABILITY_STATE.json', 'PULSE_PRODUCT_VISION.json'],
+        relatedFiles: capability.filePaths.slice(0, 20),
+        validationArtifacts: [
+          'PULSE_CAPABILITY_STATE.json',
+          'PULSE_PRODUCT_VISION.json',
+          'PULSE_CERTIFICATE.json',
+        ],
+        expectedGateShift:
+          certificationMatches.length > 0
+            ? `Pass ${certificationMatches.map(humanize).join('/')}`
+            : capability.runtimeCritical
+              ? 'Reduce phantom capability count'
+              : undefined,
+        exitCriteria: capability.validationTargets,
+      };
+    });
 }
 
 function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
@@ -1615,6 +1732,7 @@ function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConvergence
       const relatedCapabilities = input.capabilityState.capabilities.filter((capability) =>
         flow.capabilityIds.includes(capability.id),
       );
+      const certificationMatches = failedGateNamesForFlow(input.certification, flow.id);
 
       return {
         id: `flow-${slugify(flow.id)}`,
@@ -1648,7 +1766,7 @@ function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConvergence
         targetState: `Flow ${flow.id} must reach a real interface->effect chain.`,
         failureClass: flow.truthMode === 'aspirational' ? 'missing_evidence' : 'product_failure',
         actorKinds: [],
-        gateNames: ['flowPass'],
+        gateNames: certificationMatches,
         scenarioIds: [],
         moduleKeys: [],
         routePatterns: flow.routePatterns,
@@ -1666,7 +1784,10 @@ function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConvergence
           'PULSE_PRODUCT_VISION.json',
           'PULSE_CERTIFICATE.json',
         ],
-        expectedGateShift: 'Pass flowPass or reduce phantom flow count',
+        expectedGateShift:
+          certificationMatches.length > 0
+            ? `Pass ${certificationMatches.map(humanize).join('/')}`
+            : 'Reduce phantom flow count',
         exitCriteria: flow.validationTargets,
       };
     });
@@ -1685,71 +1806,82 @@ function buildExecutionMatrixUnits(input: BuildPulseConvergencePlanInput): Pulse
     )
     .slice(0, 12);
 
-  return actionable.map((path) => ({
-    id: `matrix-${slugify(path.pathId)}`,
-    order: 0,
-    priority: path.status === 'observed_fail' ? 'P0' : 'P1',
-    kind: path.flowId ? ('flow' as const) : ('capability' as const),
-    status: path.executionMode === 'observation_only' ? 'watch' : 'open',
-    source: 'pulse' as const,
-    executionMode: path.executionMode,
-    ownerLane: 'platform' as const,
-    riskLevel: path.status === 'observed_fail' ? 'critical' : path.risk,
-    evidenceMode: path.truthMode,
-    confidence: confidenceFromNumeric(path.confidence),
-    productImpact: path.status === 'observed_fail' ? 'transformational' : 'material',
-    title:
-      path.status === 'observed_fail'
-        ? `Repair execution path ${path.pathId}`
-        : `Observe execution path ${path.pathId}`,
-    summary: compactText(
-      [
-        `Execution matrix status is ${path.status}.`,
-        path.breakpoint ? `Breakpoint: ${path.breakpoint.reason}.` : null,
-        `Validation: ${path.validationCommand}.`,
-      ]
-        .filter(Boolean)
-        .join(' '),
-      320,
-    ),
-    visionDelta:
-      path.status === 'observed_fail'
-        ? 'Turns an observed broken path into a precise repair target.'
-        : 'Turns a critical inferred path into observed pass/fail truth.',
-    targetState: 'Path is classified as observed_pass or observed_fail with a precise breakpoint.',
-    failureClass: path.status === 'observed_fail' ? 'product_failure' : 'missing_evidence',
-    actorKinds: [],
-    gateNames:
-      path.status === 'observed_fail' ? ['breakpointPrecisionPass'] : ['criticalPathObservedPass'],
-    scenarioIds: [],
-    moduleKeys: [],
-    routePatterns: path.routePatterns,
-    flowIds: path.flowId ? [path.flowId] : [],
-    affectedCapabilityIds: path.capabilityId ? [path.capabilityId] : [],
-    affectedFlowIds: path.flowId ? [path.flowId] : [],
-    asyncExpectations: [],
-    breakTypes: [],
-    artifactPaths: ['PULSE_EXECUTION_MATRIX.json'],
-    relatedFiles: path.filePaths.slice(0, 20),
-    validationArtifacts: [
-      'PULSE_EXECUTION_MATRIX.json',
-      'PULSE_CLI_DIRECTIVE.json',
-      'PULSE_CERTIFICATE.json',
-    ],
-    expectedGateShift:
-      path.status === 'observed_fail'
-        ? 'Pass breakpointPrecisionPass and reduce observed failing matrix paths'
-        : 'Pass criticalPathObservedPass by adding observed pass/fail evidence',
-    exitCriteria: [
-      `Path ${path.pathId} is no longer ${path.status}.`,
-      'PULSE_EXECUTION_MATRIX.json is regenerated with a concrete observed classification.',
-    ],
-  }));
+  return actionable.map((path) => {
+    const certificationMatches = relatedFailedGateNames(input.certification, [
+      path.status,
+      path.pathId,
+      path.breakpoint?.reason ?? '',
+      path.validationCommand,
+      path.flowId ?? '',
+      path.capabilityId ?? '',
+    ]);
+
+    return {
+      id: `matrix-${slugify(path.pathId)}`,
+      order: 0,
+      priority: path.status === 'observed_fail' ? 'P0' : 'P1',
+      kind: path.flowId ? ('flow' as const) : ('capability' as const),
+      status: path.executionMode === 'observation_only' ? 'watch' : 'open',
+      source: 'pulse' as const,
+      executionMode: path.executionMode,
+      ownerLane: 'platform' as const,
+      riskLevel: path.status === 'observed_fail' ? 'critical' : path.risk,
+      evidenceMode: path.truthMode,
+      confidence: confidenceFromNumeric(path.confidence),
+      productImpact: path.status === 'observed_fail' ? 'transformational' : 'material',
+      title:
+        path.status === 'observed_fail'
+          ? `Repair execution path ${path.pathId}`
+          : `Observe execution path ${path.pathId}`,
+      summary: compactText(
+        [
+          `Execution matrix status is ${path.status}.`,
+          path.breakpoint ? `Breakpoint: ${path.breakpoint.reason}.` : null,
+          `Validation: ${path.validationCommand}.`,
+        ]
+          .filter(Boolean)
+          .join(' '),
+        320,
+      ),
+      visionDelta:
+        path.status === 'observed_fail'
+          ? 'Turns an observed broken path into a precise repair target.'
+          : 'Turns a critical inferred path into observed pass/fail truth.',
+      targetState:
+        'Path is classified as observed_pass or observed_fail with a precise breakpoint.',
+      failureClass: path.status === 'observed_fail' ? 'product_failure' : 'missing_evidence',
+      actorKinds: [],
+      gateNames: certificationMatches,
+      scenarioIds: [],
+      moduleKeys: [],
+      routePatterns: path.routePatterns,
+      flowIds: path.flowId ? [path.flowId] : [],
+      affectedCapabilityIds: path.capabilityId ? [path.capabilityId] : [],
+      affectedFlowIds: path.flowId ? [path.flowId] : [],
+      asyncExpectations: [],
+      breakTypes: [],
+      artifactPaths: ['PULSE_EXECUTION_MATRIX.json'],
+      relatedFiles: path.filePaths.slice(0, 20),
+      validationArtifacts: [
+        'PULSE_EXECUTION_MATRIX.json',
+        'PULSE_CLI_DIRECTIVE.json',
+        'PULSE_CERTIFICATE.json',
+      ],
+      expectedGateShift:
+        certificationMatches.length > 0
+          ? `Pass ${certificationMatches.map(humanize).join('/')}`
+          : 'Execution matrix path gains observed proof',
+      exitCriteria: [
+        `Path ${path.pathId} is no longer ${path.status}.`,
+        'PULSE_EXECUTION_MATRIX.json is regenerated with a concrete observed classification.',
+      ],
+    };
+  });
 }
 
 /** Build convergence plan. */
 export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): PulseConvergencePlan {
-  const queue = [
+  const evidenceDerivedUnits = [
     ...buildExternalUnits(input),
     ...buildExecutionMatrixUnits(input),
     ...buildScopeUnits(input),
@@ -1758,10 +1890,13 @@ export function buildConvergencePlan(input: BuildPulseConvergencePlanInput): Pul
     ...buildFlowUnits(input),
     ...buildScenarioUnits(input),
     ...buildSecurityUnit(input),
-    ...buildGenericGateUnits(input),
     ...buildNoHardcodedRealityUnits(input),
     ...buildCodacyStaticUnits(input),
     ...buildStaticUnit(input),
+  ];
+  const queue = [
+    ...evidenceDerivedUnits,
+    ...buildGenericGateUnits(input, collectCoveredGateNames(evidenceDerivedUnits)),
   ]
     .sort((left, right) => {
       const priorityDelta = PRIORITY_RANK[left.priority] - PRIORITY_RANK[right.priority];

@@ -36,51 +36,28 @@ const MODEL_CREATE_REGEX = new RegExp(
 );
 const TRANSACTION_REGEX = /(?:\b|\.)prisma\.\$transaction\(|\btx\.\w+\./;
 
-const AUDIT_FIELD_PATTERNS = [/^createdAt$/i, /^updatedAt$/i, /^deletedAt$/i];
+function classifySourceRole(_filePath: string, content: string): string {
+  const decoratorNames = Array.from(content.matchAll(/@([A-Z]\w*)\s*\(/g), (match) => match[1]);
+  const className = content.match(/\bclass\s+([A-Z]\w*)\b/)?.[1];
+  const implementedContract = content.match(/\bimplements\s+([A-Z]\w*)\b/)?.[1];
+  const importedConstruct = content.match(/\bimport\s+\{([^}]+)\}\s+from\b/)?.[1];
 
-const WEAK_ROLE_BY_PATH_SENSORS: [RegExp, string][] = [
-  [/\/controllers?\//, 'controller'],
-  [/\/services?\//, 'service'],
-  [/\/workers?\//, 'worker'],
-  [/\/queues?\//, 'queue_processor'],
-  [/\/cron[s]?\//, 'cron_job'],
-  [/\/webhooks?\//, 'webhook_handler'],
-  [/\/hooks?\//, 'hook'],
-  [/\/middlewares?\//, 'middleware'],
-  [/\/guards?\//, 'guard'],
-  [/\/resolvers?\//, 'resolver'],
-  [/\/seeds?\//, 'seed'],
-  [/\/scripts?\//, 'script'],
-];
-
-const ROLE_BY_CONTENT_EVIDENCE: [RegExp, string][] = [
-  [/@Controller\s*\(/, 'controller'],
-  [/@Resolver\s*\(/, 'resolver'],
-  [/@Processor\s*\(|process\s*\(/, 'queue_processor'],
-  [/@Cron\s*\(|@Interval\s*\(|@Timeout\s*\(/, 'cron_job'],
-  [
-    /\bimplements\s+NestMiddleware\b|\buse\s*\([^)]*(?:Request|Response|NextFunction)/,
-    'middleware',
-  ],
-  [/\bimplements\s+CanActivate\b|\bcanActivate\s*\(/, 'guard'],
-  [/@Injectable\s*\(\)[\s\S]{0,240}\bclass\s+\w*Service\b/, 'service'],
-  [
-    /\bhandleWebhook\b|\bwebhook\b[\s\S]{0,120}@(?:Post|Get|Put|Patch|Delete)\s*\(/i,
-    'webhook_handler',
-  ],
-  [/\bWorker\b|\bQueue\b|\bQueueScheduler\b/, 'worker'],
-];
-
-function classifySourceRole(filePath: string, content: string): string {
-  for (const [pattern, role] of ROLE_BY_CONTENT_EVIDENCE) {
-    if (pattern.test(content)) return role;
+  if (decoratorNames.length > 0 && className) {
+    return `source_construct:decorated_class:${decoratorNames.join('+')}:${className}`;
   }
-
-  const normalized = filePath.replace(/\\/g, '/');
-  for (const [pattern, role] of WEAK_ROLE_BY_PATH_SENSORS) {
-    if (pattern.test(normalized)) return `weak_path_signal:${role}`;
+  if (implementedContract && className) {
+    return `source_construct:interface:${implementedContract}:${className}`;
   }
-  return 'unknown';
+  if (importedConstruct) {
+    const firstConstruct = importedConstruct
+      .split(',')
+      .map((entry) => entry.trim())
+      .find(Boolean);
+    if (firstConstruct) {
+      return `source_construct:import:${firstConstruct}`;
+    }
+  }
+  return 'source_construct:unknown';
 }
 
 export function parsePrismaSchema(schemaPath: string): string[] {
@@ -295,11 +272,18 @@ export function detectPIIFields(_modelName: string, fields: string[]): string[] 
   return fields.filter((field) => /@sensitive\b|@pii\b/i.test(field));
 }
 
-function hasBuiltInAuditTrail(fields: string[]): boolean {
-  const hasCreatedAt = fields.some((field) => /^createdAt$/i.test(field));
-  const hasUpdatedAt = fields.some((field) => /^updatedAt$/i.test(field));
-  const hasDeletedAt = fields.some((field) => /^deletedAt$/i.test(field));
-  return (hasCreatedAt && hasUpdatedAt) || hasDeletedAt;
+function hasTemporalAuditEvidence(field: PrismaFieldEvidence): boolean {
+  return (
+    field.type === 'DateTime' &&
+    (/@default\s*\(\s*now\s*\(\s*\)\s*\)/.test(field.attributes) ||
+      /@updatedAt\b/.test(field.attributes) ||
+      /\?/.test(field.attributes))
+  );
+}
+
+function hasBuiltInAuditTrail(fields: PrismaFieldEvidence[]): boolean {
+  const temporalEvidenceCount = fields.filter((field) => hasTemporalAuditEvidence(field)).length;
+  return temporalEvidenceCount >= 2;
 }
 
 function buildRelationInboundCounts(
@@ -351,22 +335,25 @@ function discoverAuditModels(
 ): Set<string> {
   const auditModels = new Set<string>();
   for (const [modelName, fields] of fieldEvidenceByModel) {
-    const fieldNames = fields.map((field) => field.name);
-    const hasTimestamp = hasBuiltInAuditTrail(fieldNames);
-    const hasActorOrAction = fieldNames.some((field) =>
-      /^(action|event|kind|actorId|userId)$/i.test(field),
+    const hasTimestamp = fields.some((field) => hasTemporalAuditEvidence(field));
+    const descriptiveScalarFields = fields.filter(
+      (field) =>
+        field.name !== 'id' &&
+        !hasTemporalAuditEvidence(field) &&
+        field.relationFields.length === 0 &&
+        field.relationReferences.length === 0,
     );
-    const hasEntityPointer = fieldNames.some((field) =>
-      /^(entity|entityId|model|recordId|targetId)$/i.test(field),
-    );
-    if (hasTimestamp && hasActorOrAction && hasEntityPointer) {
+    if (hasTimestamp && descriptiveScalarFields.length >= 2) {
       auditModels.add(modelName);
     }
   }
   return auditModels;
 }
 
-function modelHasAuditWriteEvidence(explicitAuditFiles: string[], fields: string[]): boolean {
+function modelHasAuditWriteEvidence(
+  explicitAuditFiles: string[],
+  fields: PrismaFieldEvidence[],
+): boolean {
   return hasBuiltInAuditTrail(fields) || explicitAuditFiles.length > 0;
 }
 
@@ -382,29 +369,54 @@ function discoverMutableStateFields(
     .map((field) => field.name);
 }
 
-/**
- * Detects whether a model likely has a version/history tracking table by
- * checking if a FlowVersion-like model exists. E.g., FlowVersion for Flow.
- */
-function hasVersionTable(modelName: string, allModelNames: string[]): boolean {
-  return allModelNames.some(
-    (m) =>
-      m !== modelName &&
-      (m === `${modelName}Version` ||
-        m === `${modelName}History` ||
-        m === `${modelName}Audit` ||
-        m === `${modelName}Log` ||
-        m.startsWith(modelName)),
+function hasVersionTable(
+  modelName: string,
+  fieldEvidenceByModel: Map<string, PrismaFieldEvidence[]>,
+): boolean {
+  for (const [candidateName, fields] of fieldEvidenceByModel) {
+    if (candidateName === modelName) continue;
+    const referencesModel = fields.some((field) => field.type === modelName);
+    const capturesMutationState = fields.some(
+      (field) => field.relationFields.length === 0 && !hasTemporalAuditEvidence(field),
+    );
+    if (referencesModel && capturesMutationState) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function collectCreatedModelBindings(
+  content: string,
+  modelByPrismaProperty: Map<string, string>,
+): Map<string, Set<string>> {
+  const bindingsByModel = new Map<string, Set<string>>();
+  const bindingRegex = new RegExp(
+    String.raw`\b(?:const|let|var)\s+(\w+)\s*=\s*(?:await\s+)?(?:\w+\.)?(\w+)\.create\s*\(`,
+    'g',
   );
+  let match: RegExpExecArray | null;
+  while ((match = bindingRegex.exec(content)) !== null) {
+    const modelName = modelByPrismaProperty.get(match[2]);
+    if (!modelName) continue;
+    const bindings = bindingsByModel.get(modelName) ?? new Set<string>();
+    bindings.add(match[1]);
+    bindingsByModel.set(modelName, bindings);
+  }
+  return bindingsByModel;
 }
 
-function modelPropertyName(modelName: string): string {
-  return modelName.charAt(0).toLowerCase() + modelName.slice(1);
-}
-
-function contextMentionsModel(context: string, modelName: string): boolean {
-  const property = modelPropertyName(modelName);
-  return new RegExp(`\\b(?:${modelName}|${property})\\b`, 'i').test(context);
+function contextMentionsCreatedBinding(
+  context: string,
+  bindings: Set<string> | undefined,
+): boolean {
+  if (!bindings || bindings.size === 0) return false;
+  for (const binding of bindings) {
+    if (new RegExp(`\\b${binding}\\b`).test(context)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 // ── State machine extraction ──
@@ -613,6 +625,10 @@ function scanBackendOperations(
           const relativePath = path.relative(rootDir, fullPath);
           const role = classifySourceRole(fullPath, content);
           const source = role;
+          const createdBindingsByModel = collectCreatedModelBindings(
+            content,
+            modelByPrismaProperty,
+          );
 
           const collect = (
             regex: RegExp,
@@ -644,7 +660,10 @@ function scanBackendOperations(
             if (!hasDurableAuditEvidence) continue;
 
             for (const modelName of modelNames) {
-              if (modelName !== auditModelName && contextMentionsModel(context, modelName)) {
+              if (
+                modelName !== auditModelName &&
+                contextMentionsCreatedBinding(context, createdBindingsByModel.get(modelName))
+              ) {
                 const files = auditLogFilesByModel.get(modelName) ?? new Set();
                 files.add(relativePath);
                 auditLogFilesByModel.set(modelName, files);
@@ -683,6 +702,33 @@ function findModelInUI(rootDir: string, modelName: string): string[] {
   const routes: string[] = [];
   const lowerModel = modelName.toLowerCase();
 
+  function routeFromUiFile(relativePath: string): string {
+    const extension = path.extname(relativePath);
+    const withoutExtension = extension ? relativePath.slice(0, -extension.length) : relativePath;
+    const pageRelative = withoutExtension.startsWith('pages/')
+      ? `/${withoutExtension.slice('pages/'.length)}`
+      : withoutExtension;
+    const withoutIndex = pageRelative.endsWith('/index')
+      ? pageRelative.slice(0, -'/index'.length) || '/'
+      : pageRelative;
+
+    return withoutIndex
+      .split('/')
+      .map((segment) => {
+        if (segment.startsWith('[[...') && segment.endsWith(']]')) {
+          return `:${segment.slice('[[...'.length, -']]'.length)}*`;
+        }
+        if (segment.startsWith('[...') && segment.endsWith(']')) {
+          return `:${segment.slice('[...'.length, -']'.length)}*`;
+        }
+        if (segment.startsWith('[') && segment.endsWith(']')) {
+          return `:${segment.slice('['.length, -']'.length)}`;
+        }
+        return segment;
+      })
+      .join('/');
+  }
+
   function scanDir(dir: string): void {
     if (!pathExists(dir)) return;
     const entries = readDir(dir, { withFileTypes: true });
@@ -696,12 +742,7 @@ function findModelInUI(rootDir: string, modelName: string): string[] {
           const relativePath = path.relative(frontendDir, fullPath);
 
           if (content.includes(modelName) || content.toLowerCase().includes(lowerModel)) {
-            const route = relativePath
-              .replace(/^pages\//, '/')
-              .replace(/\.[jt]sx?$/, '')
-              .replace(/\/index$/, '')
-              .replace(/\[\.\.\.([^\]]+)\]/g, ':$1*')
-              .replace(/\[([^\]]+)\]/g, ':$1');
+            const route = routeFromUiFile(relativePath);
             if (!routes.includes(route)) {
               routes.push(route);
             }
@@ -781,7 +822,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
     const hasWorkspace = hasWorkspaceIsolation(fieldEvidence, relationInboundCounts);
     const mutableStateFields = discoverMutableStateFields(fieldEvidence, enums);
     const hasMutableState = mutableStateFields.length > 0;
-    const hasVersion = hasVersionTable(modelName, modelNames);
+    const hasVersion = hasVersionTable(modelName, modelFieldEvidence);
 
     const hasAnyOps =
       operations.createdBy.length > 0 ||
@@ -843,7 +884,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
     if (
       financial &&
       piiFields.length > 0 &&
-      !modelHasAuditWriteEvidence(explicitAuditLogFiles, fields)
+      !modelHasAuditWriteEvidence(explicitAuditLogFiles, fieldEvidence)
     ) {
       gaps.push({
         model: modelName,
@@ -891,7 +932,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
       shownInUI,
       critical: financial,
       financial,
-      hasAuditTrail: modelHasAuditWriteEvidence(explicitAuditLogFiles, fields),
+      hasAuditTrail: modelHasAuditWriteEvidence(explicitAuditLogFiles, fieldEvidence),
       piiFields,
       hasWorkspaceIsolation: hasWorkspace,
       hasMutableState,

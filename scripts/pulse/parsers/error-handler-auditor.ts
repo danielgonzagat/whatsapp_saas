@@ -2,6 +2,10 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 
 // Webhook controllers handle errors by design — catch + log + continue is correct
 const WEBHOOK_CONTROLLER = /webhook/i;
@@ -122,6 +126,57 @@ function catchBodyReportsOrCompensates(bodyLines: string[]): boolean {
   );
 }
 
+function synthesizeErrorHandlerBreak(
+  signal: PulseSignalEvidence,
+  severity: Break['severity'],
+  surface: string,
+): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const diagnostic = synthesizeDiagnostic(
+    signalGraph,
+    predicateGraph,
+    calculateDynamicRisk({ predicateGraph }),
+  );
+
+  return {
+    type: diagnostic.id,
+    severity,
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
+    surface,
+  };
+}
+
+function buildErrorHandlerBreak(input: {
+  detector: string;
+  summary: string;
+  detail: string;
+  file: string;
+  line: number;
+  severity: Break['severity'];
+  surface: string;
+}): Break {
+  return synthesizeErrorHandlerBreak(
+    {
+      source: 'static:error-handler-auditor',
+      detector: input.detector,
+      truthMode: 'confirmed_static',
+      summary: input.summary,
+      detail: input.detail,
+      location: {
+        file: input.file,
+        line: input.line,
+      },
+    },
+    input.severity,
+    input.surface,
+  );
+}
+
 /** Check error handlers. */
 export function checkErrorHandlers(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
@@ -183,47 +238,57 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
           if (isCatchBodyEmpty(bodyLines)) {
             // Empty catch — swallows error completely
             if (isFinancial && !isWebhookController) {
-              breaks.push({
-                type: 'FINANCIAL_ERROR_SWALLOWED',
-                severity: 'critical',
-                file: relFile,
-                line: i + 1,
-                description:
-                  'Empty catch block in money-like mutating code — error silently swallowed',
-                detail: trimmed.slice(0, 120),
-              });
+              breaks.push(
+                buildErrorHandlerBreak({
+                  detector: 'empty-catch-high-risk-effect-evidence',
+                  severity: 'critical',
+                  file: relFile,
+                  line: i + 1,
+                  summary: 'Empty catch block observed on high-risk mutating effect path',
+                  detail: trimmed.slice(0, 120),
+                  surface: 'error-handling-effect',
+                }),
+              );
             } else {
-              breaks.push({
-                type: 'EMPTY_CATCH',
-                severity: 'medium',
-                file: relFile,
-                line: i + 1,
-                description: 'Empty catch block — error silently swallowed',
-                detail: trimmed.slice(0, 120),
-              });
+              breaks.push(
+                buildErrorHandlerBreak({
+                  detector: 'empty-catch-evidence',
+                  severity: 'medium',
+                  file: relFile,
+                  line: i + 1,
+                  summary: 'Empty catch block observed without recovery evidence',
+                  detail: trimmed.slice(0, 120),
+                  surface: 'error-handling',
+                }),
+              );
             }
           } else if (isCatchBodyLogOnly(bodyLines) && !hasReportedOrCompensatedFinancialError) {
             // Logs but doesn't rethrow/return
             if (isFinancial && !isWebhookController) {
-              breaks.push({
-                type: 'FINANCIAL_ERROR_SWALLOWED',
-                severity: 'critical',
-                file: relFile,
-                line: i + 1,
-                description:
-                  'catch block in money-like mutating code only logs — error swallowed without throw',
-                detail: trimmed.slice(0, 120),
-              });
+              breaks.push(
+                buildErrorHandlerBreak({
+                  detector: 'log-only-catch-high-risk-effect-evidence',
+                  severity: 'critical',
+                  file: relFile,
+                  line: i + 1,
+                  summary:
+                    'Catch block on high-risk mutating effect path only logs without propagation evidence',
+                  detail: trimmed.slice(0, 120),
+                  surface: 'error-handling-effect',
+                }),
+              );
             } else {
-              breaks.push({
-                type: 'EMPTY_CATCH',
-                severity: 'medium',
-                file: relFile,
-                line: i + 1,
-                description:
-                  'catch block only logs without throw/return — error effectively swallowed',
-                detail: trimmed.slice(0, 120),
-              });
+              breaks.push(
+                buildErrorHandlerBreak({
+                  detector: 'log-only-catch-evidence',
+                  severity: 'medium',
+                  file: relFile,
+                  line: i + 1,
+                  summary: 'Catch block only logs without propagation evidence',
+                  detail: trimmed.slice(0, 120),
+                  surface: 'error-handling',
+                }),
+              );
             }
           } else if (
             isFinancial &&
@@ -244,26 +309,32 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
             );
             if (hasReturn || hasErrorReport) {
               // Intentional error handling — not swallowed, downgrade
-              breaks.push({
-                type: 'FINANCIAL_ERROR_SWALLOWED',
-                severity: 'high',
-                file: relFile,
-                line: i + 1,
-                description: hasNullReturn
-                  ? 'catch in money-like mutating code returns null/default — caller may not detect failure'
-                  : 'catch in money-like mutating code handles error without rethrow',
-                detail: trimmed.slice(0, 120),
-              });
+              breaks.push(
+                buildErrorHandlerBreak({
+                  detector: 'handled-catch-high-risk-effect-evidence',
+                  severity: 'high',
+                  file: relFile,
+                  line: i + 1,
+                  summary: hasNullReturn
+                    ? 'Catch block on high-risk mutating effect path returns default without failure propagation evidence'
+                    : 'Catch block on high-risk mutating effect path handles error without rethrow evidence',
+                  detail: trimmed.slice(0, 120),
+                  surface: 'error-handling-effect',
+                }),
+              );
             } else {
-              breaks.push({
-                type: 'FINANCIAL_ERROR_SWALLOWED',
-                severity: 'critical',
-                file: relFile,
-                line: i + 1,
-                description:
-                  'catch block in money-like mutating code does not rethrow — caller unaware of failure',
-                detail: trimmed.slice(0, 120),
-              });
+              breaks.push(
+                buildErrorHandlerBreak({
+                  detector: 'non-propagating-catch-high-risk-effect-evidence',
+                  severity: 'critical',
+                  file: relFile,
+                  line: i + 1,
+                  summary:
+                    'Catch block on high-risk mutating effect path lacks propagation or compensation evidence',
+                  detail: trimmed.slice(0, 120),
+                  surface: 'error-handling-effect',
+                }),
+              );
             }
           }
         }
@@ -290,14 +361,17 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
               continue;
             }
 
-            breaks.push({
-              type: 'UNHANDLED_PROMISE',
-              severity: 'medium',
-              file: relFile,
-              line: i + 1,
-              description: '.then() without .catch() — unhandled promise rejection',
-              detail: trimmed.slice(0, 120),
-            });
+            breaks.push(
+              buildErrorHandlerBreak({
+                detector: 'promise-chain-rejection-handler-evidence',
+                severity: 'medium',
+                file: relFile,
+                line: i + 1,
+                summary: 'Promise chain observed without rejection handler evidence',
+                detail: trimmed.slice(0, 120),
+                surface: 'error-handling-promise',
+              }),
+            );
           }
         }
       }

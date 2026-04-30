@@ -1,6 +1,11 @@
 import { spawnSync } from 'node:child_process';
 
 import type { PathProofPlan, PathProofTask } from './path-proof-runner';
+import {
+  isProtectedFile as isGovernanceProtectedFile,
+  loadGovernanceBoundary,
+  normalizePath,
+} from './scope-state-classify';
 
 export type PathProofExecutionStatus =
   | 'observed_pass'
@@ -83,21 +88,9 @@ const DEFAULT_ALLOWED_COMMAND_PREFIXES: readonly (readonly string[])[] = Object.
   Object.freeze(['node', 'scripts/pulse/run.js']),
 ]);
 
-const GOVERNANCE_PATH_PATTERNS: readonly RegExp[] = Object.freeze([
-  /(^|\/)\.github(\/|$)/i,
-  /(^|\/)ops(\/|$)/i,
-  /(^|\/)scripts\/ops(\/|$)/i,
-  /(^|\/)AGENTS\.md$/i,
-  /(^|\/)CLAUDE\.md$/i,
-  /(^|\/)CODEX\.md$/i,
-  /(^|\/)package\.json$/i,
-  /(^|\/)\.codacy\.yml$/i,
-  /(^|\/)\.husky\/pre-push$/i,
-]);
+const SHELL_TOKENIZER_CONTROL_KERNEL_GRAMMAR_CHARS = ';&|<>`$';
 
-const SHELL_CONTROL_PATTERN = /[;&|<>`$]/;
-
-const DESTRUCTIVE_EXECUTABLES = new Set([
+const COMMAND_SAFETY_KERNEL_GRAMMAR_BLOCKED_EXECUTABLES = new Set([
   'rm',
   'rmdir',
   'mv',
@@ -111,21 +104,21 @@ const DESTRUCTIVE_EXECUTABLES = new Set([
   'mongosh',
 ]);
 
-const DESTRUCTIVE_TOKEN_PATTERNS: readonly RegExp[] = Object.freeze([
-  /^--force$/,
-  /^-f$/,
-  /^reset$/i,
-  /^restore$/i,
-  /^checkout$/i,
-  /^clean$/i,
-  /^rebase$/i,
-  /^push$/i,
-  /^drop$/i,
-  /^truncate$/i,
-  /^delete$/i,
-  /^destroy$/i,
-  /^prisma:migrate:reset$/i,
-  /^migrate:reset$/i,
+const COMMAND_SAFETY_KERNEL_GRAMMAR_BLOCKED_TOKENS = new Set([
+  '--force',
+  '-f',
+  'reset',
+  'restore',
+  'checkout',
+  'clean',
+  'rebase',
+  'push',
+  'drop',
+  'truncate',
+  'delete',
+  'destroy',
+  'prisma:migrate:reset',
+  'migrate:reset',
 ]);
 
 function stripShellComment(command: string): string {
@@ -162,7 +155,7 @@ function tokenizeCommand(command: string): string[] | null {
       quote = null;
       continue;
     }
-    if (/\s/.test(char) && quote === null) {
+    if (char.trim().length === 0 && quote === null) {
       if (current.length > 0) {
         tokens.push(current);
         current = '';
@@ -181,26 +174,53 @@ function tokenizeCommand(command: string): string[] | null {
   return tokens;
 }
 
-function touchesGovernancePath(value: string | null | undefined): boolean {
+function shellTokenizerGrammarHasControlSyntax(command: string): boolean {
+  for (const char of command) {
+    if (SHELL_TOKENIZER_CONTROL_KERNEL_GRAMMAR_CHARS.includes(char)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function commandTokenPathCandidates(value: string): string[] {
+  return value
+    .split('=')
+    .flatMap((part) => part.split(','))
+    .map((candidate) => candidate.trim())
+    .filter((candidate) => candidate.length > 0);
+}
+
+function loadGovernanceBoundaryForPolicy(
+  rootDir: string,
+): ReturnType<typeof loadGovernanceBoundary> {
+  try {
+    return loadGovernanceBoundary(rootDir);
+  } catch {
+    return loadGovernanceBoundary(process.cwd());
+  }
+}
+
+function touchesGovernancePath(value: string | null | undefined, rootDir: string): boolean {
   if (!value) {
     return false;
   }
-  const candidates = value.split(/[=,]/).map((candidate) => candidate.trim());
-  return candidates.some((candidate) =>
-    GOVERNANCE_PATH_PATTERNS.some((pattern) => pattern.test(candidate)),
+  const boundary = loadGovernanceBoundaryForPolicy(rootDir);
+  return commandTokenPathCandidates(value).some((candidate) =>
+    isGovernanceProtectedFile(normalizePath(candidate), boundary),
   );
 }
 
-function taskTouchesGovernance(task: PathProofTask): boolean {
+function taskTouchesGovernance(task: PathProofTask, rootDir: string): boolean {
   return [
     task.entrypoint.filePath,
     task.breakpoint?.filePath,
     ...task.artifactLinks.map((link) => link.artifactPath),
-  ].some(touchesGovernancePath);
+  ].some((value) => touchesGovernancePath(value, rootDir));
 }
 
-function tokenTouchesGovernance(tokens: readonly string[]): boolean {
-  return tokens.some(touchesGovernancePath);
+function tokenTouchesGovernance(tokens: readonly string[], rootDir: string): boolean {
+  return tokens.some((token) => touchesGovernancePath(token, rootDir));
 }
 
 function hasAllowedPrefix(
@@ -220,15 +240,18 @@ function isDestructiveCommand(tokens: readonly string[]): boolean {
   if (!executable) {
     return false;
   }
-  if (DESTRUCTIVE_EXECUTABLES.has(executable)) {
+  if (COMMAND_SAFETY_KERNEL_GRAMMAR_BLOCKED_EXECUTABLES.has(executable.toLowerCase())) {
     return true;
   }
-  return tokens.some((token) => DESTRUCTIVE_TOKEN_PATTERNS.some((pattern) => pattern.test(token)));
+  return tokens.some((token) =>
+    COMMAND_SAFETY_KERNEL_GRAMMAR_BLOCKED_TOKENS.has(token.toLowerCase()),
+  );
 }
 
 export function evaluatePathProofCommandPolicy(
   task: PathProofTask,
   allowedCommandPrefixes: readonly (readonly string[])[] = DEFAULT_ALLOWED_COMMAND_PREFIXES,
+  rootDir = process.cwd(),
 ): PathProofCommandPolicyDecision {
   if (!task.autonomousExecutionAllowed) {
     return {
@@ -244,7 +267,7 @@ export function evaluatePathProofCommandPolicy(
       parsed: null,
     };
   }
-  if (taskTouchesGovernance(task)) {
+  if (taskTouchesGovernance(task, rootDir)) {
     return {
       allowed: false,
       reason: 'Task references protected governance or infrastructure paths.',
@@ -256,7 +279,11 @@ export function evaluatePathProofCommandPolicy(
   if (displayCommand.length === 0) {
     return { allowed: false, reason: 'Task has no command to execute.', parsed: null };
   }
-  if (SHELL_CONTROL_PATTERN.test(displayCommand) || /[\r\n]/.test(displayCommand)) {
+  if (
+    shellTokenizerGrammarHasControlSyntax(displayCommand) ||
+    displayCommand.includes('\r') ||
+    displayCommand.includes('\n')
+  ) {
     return {
       allowed: false,
       reason: 'Command contains shell control syntax and must not be executed.',
@@ -271,7 +298,7 @@ export function evaluatePathProofCommandPolicy(
   if (!hasAllowedPrefix(tokens, allowedCommandPrefixes)) {
     return { allowed: false, reason: 'Command is not in the autonomous allowlist.', parsed: null };
   }
-  if (tokenTouchesGovernance(tokens)) {
+  if (tokenTouchesGovernance(tokens, rootDir)) {
     return {
       allowed: false,
       reason: 'Command references protected governance or infrastructure paths.',
@@ -350,7 +377,7 @@ export async function executePathProofPlan(
       continue;
     }
 
-    const policy = evaluatePathProofCommandPolicy(task, allowedCommandPrefixes);
+    const policy = evaluatePathProofCommandPolicy(task, allowedCommandPrefixes, cwd);
     if (!policy.allowed || !policy.parsed) {
       results.push(buildSkippedResult(task, 'execution_skipped', policy.reason));
       continue;

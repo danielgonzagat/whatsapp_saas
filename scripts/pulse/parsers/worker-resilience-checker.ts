@@ -1,8 +1,12 @@
-import { safeJoin, safeResolve } from '../safe-path';
+import { safeJoin } from '../safe-path';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 
 // ===== Puppeteer timeout patterns =====
 // Only methods that actually accept { timeout } in their options object.
@@ -38,6 +42,55 @@ function shouldSkipFile(file: string): boolean {
 
 function isCommentLine(trimmed: string): boolean {
   return trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*');
+}
+
+function severityFromRisk(riskScore: number, fallback: Break['severity']): Break['severity'] {
+  if (riskScore >= 0.9) return 'critical';
+  if (riskScore >= 0.7) return 'high';
+  if (riskScore >= 0.4) return 'medium';
+  return fallback;
+}
+
+function synthesizeWorkerResilienceBreak(signal: PulseSignalEvidence, surface: string): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const risk = calculateDynamicRisk({ predicateGraph });
+  const diagnostic = synthesizeDiagnostic(signalGraph, predicateGraph, risk);
+
+  return {
+    type: diagnostic.id,
+    severity: severityFromRisk(risk.score, 'medium'),
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}; signal=${signal.detail ?? signal.summary}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
+    surface,
+  };
+}
+
+function buildWorkerResilienceBreak(input: {
+  detector: string;
+  summary: string;
+  detail: string;
+  file: string;
+  line: number;
+  surface: string;
+}): Break {
+  return synthesizeWorkerResilienceBreak(
+    {
+      source: 'static-worker-resilience-checker',
+      detector: input.detector,
+      truthMode: 'confirmed_static',
+      summary: input.summary,
+      detail: input.detail,
+      location: {
+        file: input.file,
+        line: input.line,
+      },
+    },
+    input.surface,
+  );
 }
 
 /** Check worker resilience. */
@@ -81,14 +134,17 @@ export function checkWorkerResilience(config: PulseConfig): Break[] {
       content.includes('.close()');
 
     if ((hasNewPage || hasPageGoto) && !hasPageClose) {
-      breaks.push({
-        type: 'PUPPETEER_PAGE_LEAK',
-        severity: 'high',
-        file: relFile,
-        line: 1,
-        description: 'Puppeteer page opened but never closed — potential memory leak',
-        detail: 'Add page.close() in a finally block after page operations.',
-      });
+      breaks.push(
+        buildWorkerResilienceBreak({
+          detector: 'puppeteer-page-lifecycle-evidence',
+          summary: 'Puppeteer page lifecycle evidence lacks a close operation',
+          detail:
+            'Static worker source contains browser.newPage() or page.goto() evidence without page.close() evidence.',
+          file: relFile,
+          line: 1,
+          surface: 'worker-puppeteer-page-lifecycle',
+        }),
+      );
     }
 
     // ===== Line-level checks =====
@@ -109,15 +165,16 @@ export function checkWorkerResilience(config: PulseConfig): Break[] {
         // Check same line and next 4 lines for `timeout:` (larger window for multi-line option objects)
         const window = lines.slice(i, Math.min(i + 5, lines.length)).join(' ');
         if (!HAS_TIMEOUT_IN_CALL.test(window)) {
-          breaks.push({
-            type: 'PUPPETEER_NO_TIMEOUT',
-            severity: 'high',
-            file: relFile,
-            line: i + 1,
-            description: `Puppeteer call without explicit timeout: ${trimmed.slice(0, 80)}`,
-            detail:
-              'Add { timeout: <ms> } option to prevent infinite hangs on network/selector issues.',
-          });
+          breaks.push(
+            buildWorkerResilienceBreak({
+              detector: 'puppeteer-timeout-evidence',
+              summary: 'Puppeteer call evidence lacks an explicit timeout predicate',
+              detail: `Observed call without timeout evidence: ${trimmed.slice(0, 80)}`,
+              file: relFile,
+              line: i + 1,
+              surface: 'worker-puppeteer-timeout',
+            }),
+          );
         }
         // Only flag once per line even if multiple patterns match
         break;
@@ -142,15 +199,16 @@ export function checkWorkerResilience(config: PulseConfig): Break[] {
 
         const hasRetry = HAS_ATTEMPTS.test(callWindow) || HAS_BACKOFF.test(callWindow);
         if (!hasRetry) {
-          breaks.push({
-            type: 'JOB_NO_RETRY',
-            severity: 'high',
-            file: relFile,
-            line: i + 1,
-            description: `BullMQ job added without retry config: ${trimmed.slice(0, 80)}`,
-            detail:
-              'Pass { attempts: N, backoff: { type: "exponential", delay: ms } } as the third argument to .add().',
-          });
+          breaks.push(
+            buildWorkerResilienceBreak({
+              detector: 'bullmq-retry-policy-evidence',
+              summary: 'BullMQ enqueue evidence lacks retry or backoff predicates',
+              detail: `Observed queue add window without attempts/backoff evidence: ${trimmed.slice(0, 80)}`,
+              file: relFile,
+              line: i + 1,
+              surface: 'worker-bullmq-retry-policy',
+            }),
+          );
         }
       }
     }

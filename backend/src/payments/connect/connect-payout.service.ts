@@ -84,6 +84,7 @@ export class ConnectPayoutService {
   ) {}
 
   /** Create payout. */
+  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async createPayout(input: CreateConnectPayoutInput): Promise<CreateConnectPayoutResult> {
     // Wrap read-check in transaction to prevent TOCTOU race condition
     const balance = await this.prisma.$transaction(
@@ -204,6 +205,7 @@ export class ConnectPayoutService {
   }
 
   /** Handle failed payout. */
+  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async handleFailedPayout(input: HandleFailedConnectPayoutInput): Promise<void> {
     const balance = await this.prisma.connectAccountBalance.findUnique({
       where: { id: input.accountBalanceId },

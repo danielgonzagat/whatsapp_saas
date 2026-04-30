@@ -58,18 +58,18 @@ describe('concurrency tester diagnostics', () => {
     expect(breaks).toEqual([
       expect.objectContaining({
         source:
-          'regex-heuristic:concurrency-tester;truthMode=weak_signal;predicates=read_modify_write,no_transaction_or_optimistic_lock',
+          'ast-evidence:concurrency-tester;truthMode=weak_signal;predicates=read_modify_write,no_transaction_or_optimistic_lock',
         truthMode: 'weak_signal',
       }),
       expect.objectContaining({
         source:
-          'regex-heuristic:concurrency-tester;truthMode=weak_signal;predicates=shared_update,no_optimistic_lock_observed',
+          'ast-evidence:concurrency-tester;truthMode=weak_signal;predicates=shared_update,no_optimistic_lock_observed',
         truthMode: 'weak_signal',
       }),
     ]);
   });
 
-  it('keeps balance mutation observations as probe-worthy evidence instead of fixed authority', () => {
+  it('keeps shared counter mutation observations as probe-worthy evidence instead of fixed authority', () => {
     const config = makeConfig();
     writeFile(
       config.rootDir,
@@ -90,9 +90,9 @@ describe('concurrency tester diagnostics', () => {
 
     expect(breaks).toEqual([
       expect.objectContaining({
-        type: 'diagnostic:concurrency-tester:balance-mutation+no-transaction-observed',
+        type: 'diagnostic:concurrency-tester:counter-mutation+no-transaction-observed',
         source:
-          'regex-heuristic:concurrency-tester;truthMode=weak_signal;predicates=balance_mutation,no_transaction_observed',
+          'ast-evidence:concurrency-tester;truthMode=weak_signal;predicates=counter_mutation,no_transaction_observed',
         truthMode: 'weak_signal',
       }),
     ]);

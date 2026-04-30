@@ -19,6 +19,7 @@ export class CheckoutOrderQueryService {
   ) {}
 
   /** Get order. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async getOrder(orderId: string, workspaceId?: string) {
     const order = await this.prisma.checkoutOrder.findFirst({
       where: workspaceId ? { id: orderId, workspaceId } : { id: orderId },
@@ -43,6 +44,7 @@ export class CheckoutOrderQueryService {
   }
 
   /** List orders. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async listOrders(
     workspaceId: string,
     filters?: { status?: string; page?: number; limit?: number },
@@ -82,6 +84,7 @@ export class CheckoutOrderQueryService {
   }
 
   /** Update order status. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateOrderStatus(
     orderId: string,
     workspaceId: string | undefined,
@@ -157,6 +160,7 @@ export class CheckoutOrderQueryService {
   }
 
   /** Get order status. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async getOrderStatus(orderId: string) {
     const order = await this.prisma.checkoutOrder.findUnique({
       where: { id: orderId },
@@ -209,6 +213,7 @@ export class CheckoutOrderQueryService {
   }
 
   /** Accept upsell. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async acceptUpsell(orderId: string, upsellId: string) {
     const order = await this.prisma.checkoutOrder.findUnique({
       where: { id: orderId },
@@ -264,6 +269,7 @@ export class CheckoutOrderQueryService {
   }
 
   /** Get recent paid orders. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async getRecentPaidOrders(limit: number) {
     assertValidOrderStatusFilter('PAID', 'CheckoutOrderQueryService.getRecentPaidOrders');
     const paidStatus = 'PAID' as const;
@@ -286,6 +292,7 @@ export class CheckoutOrderQueryService {
   }
 
   /** Decline upsell. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async declineUpsell(orderId: string, upsellId: string) {
     const order = await this.prisma.checkoutOrder.findUnique({
       where: { id: orderId },

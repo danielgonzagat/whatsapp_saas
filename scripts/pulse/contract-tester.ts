@@ -12,6 +12,7 @@
 import * as path from 'path';
 import * as fs from 'node:fs';
 import type { Dirent } from 'fs';
+import ts from 'typescript';
 import type {
   ContractProvider,
   ContractStatus,
@@ -56,13 +57,6 @@ const DROP_TABLE_RE = /DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?[`"]?(\w+)[`"]?/gi;
 const DROP_COLUMN_RE = /DROP\s+COLUMN\s+(?:IF\s+EXISTS\s+)?[`"]?(\w+)[`"]?/gi;
 const ALTER_COLUMN_TYPE_RE =
   /ALTER\s+COLUMN\s+[`"]?(\w+)[`"]?\s+(?:SET\s+DATA\s+)?TYPE\s+(\w+(?:\s*\(\s*\d+\s*(?:,\s*\d+\s*)?\))?)/gi;
-
-const OPENAPI_SPEC_FILE_PATTERN = /(?:^|[/\\])(?:openapi|swagger)(?:\.[\w-]+)?\.json$/i;
-const PULSE_RUNTIME_ARTIFACT_PATTERN =
-  /^PULSE_(?:STRUCTURAL_GRAPH|BEHAVIOR_GRAPH|EXTERNAL_SIGNAL_STATE|RUNTIME_EVIDENCE|RUNTIME_FUSION|RUNTIME_TRACES|REPLAY_STATE|REPLAY_SCENARIOS|BROWSER_EVIDENCE)\.json$/;
-const EXTERNAL_URL_PATTERN = /https?:\/\/[^\s'"`<>)\\]+/gi;
-const PACKAGE_IMPORT_PATTERN =
-  /(?:import\s+(?:type\s+)?(?:[^'"]+\s+from\s+)?|require\s*\()\s*['"]([^.'"/][^'"]*)['"]/g;
 
 // ---------------------------------------------------------------------------
 // Main entry point
@@ -255,10 +249,8 @@ export function scanProviderSdkUsage(rootDir: string): string[] {
       continue;
     }
 
-    let match: RegExpExecArray | null;
-    PACKAGE_IMPORT_PATTERN.lastIndex = 0;
-    while ((match = PACKAGE_IMPORT_PATTERN.exec(content)) !== null) {
-      const packageName = normalizePackageName(match[1]);
+    for (const rawImport of collectPackageImports(content, filePath)) {
+      const packageName = normalizePackageName(rawImport);
       if (packageName && looksLikeExternalSdkImport(packageName)) {
         detected.add(packageName);
       }
@@ -266,6 +258,33 @@ export function scanProviderSdkUsage(rootDir: string): string[] {
   }
 
   return [...detected];
+}
+
+function collectPackageImports(content: string, filePath: string): string[] {
+  const source = parseSourceFile(filePath, content);
+  const imports: string[] = [];
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+      imports.push(node.moduleSpecifier.text);
+    }
+
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'require'
+    ) {
+      const [specifier] = node.arguments;
+      if (specifier && ts.isStringLiteral(specifier)) {
+        imports.push(specifier.text);
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(source);
+  return imports;
 }
 
 function normalizePackageName(raw: string): string | null {
@@ -305,7 +324,7 @@ function looksLikeExternalSdkImport(packageName: string): boolean {
 function discoverContractsFromOpenApi(rootDir: string): ProviderContract[] {
   const contracts: ProviderContract[] = [];
   const files = walkFiles(rootDir, ['.json']).filter((filePath) =>
-    OPENAPI_SPEC_FILE_PATTERN.test(filePath.replace(rootDir + path.sep, '')),
+    isOpenApiSpecFile(rootDir, filePath),
   );
 
   for (const filePath of files) {
@@ -360,6 +379,21 @@ function discoverContractsFromOpenApi(rootDir: string): ProviderContract[] {
   }
 
   return contracts;
+}
+
+function isOpenApiSpecFile(rootDir: string, filePath: string): boolean {
+  const relative = path.relative(rootDir, filePath);
+  if (relative.startsWith('..')) {
+    return false;
+  }
+
+  const parsed = path.parse(filePath);
+  if (parsed.ext.toLowerCase() !== '.json') {
+    return false;
+  }
+
+  const firstNameSegment = parsed.name.toLowerCase().split('.')[0];
+  return firstNameSegment === 'openapi' || firstNameSegment === 'swagger';
 }
 
 function providerFromOpenApiSpec(spec: Record<string, unknown>): string | null {
@@ -429,11 +463,7 @@ function discoverContractsFromRuntimeArtifacts(rootDir: string): ProviderContrac
 
   const contracts: ProviderContract[] = [];
   for (const entry of entries) {
-    if (
-      typeof entry === 'string' ||
-      !entry.isFile() ||
-      !PULSE_RUNTIME_ARTIFACT_PATTERN.test(entry.name)
-    ) {
+    if (typeof entry === 'string' || !entry.isFile() || !isPulseRuntimeArtifactFile(entry.name)) {
       continue;
     }
 
@@ -468,6 +498,14 @@ function discoverContractsFromRuntimeArtifacts(rootDir: string): ProviderContrac
   }
 
   return dedupeContracts(contracts);
+}
+
+function isPulseRuntimeArtifactFile(fileName: string): boolean {
+  return (
+    fileName.startsWith('PULSE_') &&
+    fileName.endsWith('.json') &&
+    fileName !== CANONICAL_ARTIFACT_FILENAME
+  );
 }
 
 function discoverContractsFromGraphArtifacts(rootDir: string): ProviderContract[] {
@@ -526,7 +564,7 @@ function collectUrlObservations(value: unknown): UrlObservation[] {
 
   const visit = (current: unknown, context: Record<string, unknown>, keyPath: string): void => {
     if (typeof current === 'string') {
-      for (const url of current.match(EXTERNAL_URL_PATTERN) ?? []) {
+      for (const url of extractExternalUrls(current)) {
         const method = readMethodFromContext(context);
         const normalizedKey = `${method ?? 'GET'} ${url}`;
         if (seen.has(normalizedKey)) {
@@ -560,6 +598,44 @@ function collectUrlObservations(value: unknown): UrlObservation[] {
 
   visit(value, {}, '');
   return observations;
+}
+
+function extractExternalUrls(value: string): string[] {
+  const urls: string[] = [];
+  const schemes = ['http://', 'https://'];
+  let cursor = 0;
+
+  while (cursor < value.length) {
+    const nextStarts = schemes
+      .map((scheme) => ({ scheme, index: value.indexOf(scheme, cursor) }))
+      .filter((entry) => entry.index >= 0)
+      .sort((a, b) => a.index - b.index);
+
+    const next = nextStarts[0];
+    if (!next) {
+      break;
+    }
+
+    let end = next.index + next.scheme.length;
+    while (end < value.length && isUrlTokenCharacter(value[end])) {
+      end++;
+    }
+
+    const candidate = value.slice(next.index, end);
+    if (providerFromUrl(candidate)) {
+      urls.push(candidate);
+    }
+    cursor = end;
+  }
+
+  return urls;
+}
+
+function isUrlTokenCharacter(char: string): boolean {
+  if (!char) {
+    return false;
+  }
+  return !["'", '"', '`', '<', '>', ')', '\\'].includes(char) && !/\s/.test(char);
 }
 
 function readMethodFromContext(context: Record<string, unknown>): string | null {
@@ -732,54 +808,129 @@ interface RawEndpointCall {
 
 function extractEndpointCalls(content: string, filePath: string): ProviderContract[] {
   const results: ProviderContract[] = [];
-  const callPatterns = [
-    /fetch\s*\(\s*`([^`]+)`/g,
-    /fetch\s*\(\s*['"]([^'"]+)['"]/g,
-    /axios\.post\s*\(\s*`([^`]+)`/g,
-    /axios\.post\s*\(\s*['"]([^'"]+)['"]/g,
-    /axios\.(get|put|delete|patch)\s*\(\s*`([^`]+)`/g,
-    /axios\.(get|put|delete|patch)\s*\(\s*['"]([^'"]+)['"]/g,
-  ];
-
   const seen = new Set<string>();
+  const source = parseSourceFile(filePath, content);
 
-  for (const pattern of callPatterns) {
-    let match: RegExpExecArray | null;
-    pattern.lastIndex = 0;
-    while ((match = pattern.exec(content)) !== null) {
-      const url =
-        match[2] && match[1]
-          ? match[2] // axios.method(url)
-          : match[1]; // fetch(url) or axios.post(url)
-
-      if (!url) continue;
-
-      const provider = providerFromUrl(url);
-      if (!provider) continue;
-
-      const method = extractMethod(content, match);
-      const normalized = normalizeEndpoint(url, provider);
-
-      const key = `${method} ${normalized}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      results.push({
-        provider,
-        endpoint: normalized,
-        method,
-        expectedRequestSchema: {},
-        expectedResponseSchema: {},
-        expectedHeaders: inferExpectedHeaders(content, url),
-        authType: inferAuthType(content, url),
-        status: 'unknown',
-        lastValidated: null,
-        issues: ['No executed contract evidence found for discovered endpoint'],
-      });
+  const visit = (node: ts.Node): void => {
+    if (!ts.isCallExpression(node)) {
+      ts.forEachChild(node, visit);
+      return;
     }
-  }
+
+    const call = describeHttpClientCall(node, source);
+    if (!call) {
+      ts.forEachChild(node, visit);
+      return;
+    }
+
+    const provider = providerFromUrl(call.endpoint);
+    if (!provider) {
+      ts.forEachChild(node, visit);
+      return;
+    }
+
+    const normalized = normalizeEndpoint(call.endpoint, provider);
+    const key = `${call.method} ${normalized}`;
+    if (seen.has(key)) {
+      ts.forEachChild(node, visit);
+      return;
+    }
+    seen.add(key);
+
+    results.push({
+      provider,
+      endpoint: normalized,
+      method: call.method,
+      expectedRequestSchema: {},
+      expectedResponseSchema: {},
+      expectedHeaders: inferExpectedHeaders(content, call.endpoint),
+      authType: inferAuthType(content, call.endpoint),
+      status: 'unknown',
+      lastValidated: null,
+      issues: ['No executed contract evidence found for discovered endpoint'],
+    });
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(source);
 
   return results;
+}
+
+function describeHttpClientCall(
+  node: ts.CallExpression,
+  source: ts.SourceFile,
+): RawEndpointCall | null {
+  if (ts.isIdentifier(node.expression) && node.expression.text === 'fetch') {
+    const endpoint = readStaticStringExpression(node.arguments[0], source);
+    if (!endpoint) {
+      return null;
+    }
+
+    return {
+      endpoint,
+      method: readFetchMethod(node, source) ?? 'GET',
+      filePath: source.fileName,
+    };
+  }
+
+  if (!ts.isPropertyAccessExpression(node.expression)) {
+    return null;
+  }
+
+  const receiver = node.expression.expression;
+  if (!ts.isIdentifier(receiver) || receiver.text !== 'axios') {
+    return null;
+  }
+
+  const endpoint = readStaticStringExpression(node.arguments[0], source);
+  if (!endpoint) {
+    return null;
+  }
+
+  return {
+    endpoint,
+    method: node.expression.name.text.toUpperCase(),
+    filePath: source.fileName,
+  };
+}
+
+function readFetchMethod(node: ts.CallExpression, source: ts.SourceFile): string | null {
+  const options = node.arguments[1];
+  if (!options || !ts.isObjectLiteralExpression(options)) {
+    return null;
+  }
+
+  for (const property of options.properties) {
+    if (!ts.isPropertyAssignment(property)) {
+      continue;
+    }
+    const name = readPropertyName(property.name);
+    if (name !== 'method') {
+      continue;
+    }
+    const method = readStaticStringExpression(property.initializer, source);
+    return method ? method.toUpperCase() : null;
+  }
+
+  return null;
+}
+
+function readStaticStringExpression(
+  node: ts.Node | undefined,
+  source: ts.SourceFile,
+): string | null {
+  if (!node) {
+    return null;
+  }
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return node.text;
+  }
+  if (ts.isTemplateExpression(node)) {
+    return node.getText(source).slice(1, -1);
+  }
+  return null;
 }
 
 export function providerFromUrl(raw: string): ContractProvider | null {
@@ -858,10 +1009,6 @@ function surroundingText(content: string, needle: string, radius: number): strin
 function extractInternalAPIContracts(rootDir: string): ProviderContract[] {
   const contracts: ProviderContract[] = [];
   const files = walkFiles(rootDir, ['.ts']);
-
-  const routePattern =
-    /@(?:Get|Post|Put|Patch|Delete)\s*\(\s*(?:['"`]([^'"`]*)['"`])?\s*(?:\)\s*)?/g;
-
   const seen = new Set<string>();
 
   for (const filePath of files) {
@@ -872,27 +1019,22 @@ function extractInternalAPIContracts(rootDir: string): ProviderContract[] {
       continue;
     }
 
-    let match: RegExpExecArray | null;
-    routePattern.lastIndex = 0;
-    while ((match = routePattern.exec(content)) !== null) {
-      const route = normalizeRoute(String(match[1] || ''));
-      const method = match[0].match(/@(\w+)/)?.[1]?.toUpperCase() ?? 'GET';
+    const source = parseSourceFile(filePath, content);
+    const prefix = findControllerPrefix(source);
 
-      // Derive the controller prefix from the @Controller decorator in the same file
-      const controllerMatch = content.match(/@Controller\s*\(\s*['"`]([^'"`]*)['"`]\s*\)/);
-      const prefix = controllerMatch ? normalizeRoute(controllerMatch[1]) : '';
-
+    for (const routeDefinition of collectRouteDecorators(source)) {
+      const route = normalizeRoute(routeDefinition.route);
       const fullRoute = prefix + (route.startsWith('/') || prefix.endsWith('/') ? '' : '/') + route;
       const normalized = normalizeRoute(fullRoute);
 
-      const key = `${method} ${normalized}`;
+      const key = `${routeDefinition.method} ${normalized}`;
       if (seen.has(key)) continue;
       seen.add(key);
 
       contracts.push({
         provider: 'internal_api',
         endpoint: normalized,
-        method,
+        method: routeDefinition.method,
         expectedRequestSchema: {},
         expectedResponseSchema: {},
         expectedHeaders: [],
@@ -905,6 +1047,61 @@ function extractInternalAPIContracts(rootDir: string): ProviderContract[] {
   }
 
   return contracts;
+}
+
+function findControllerPrefix(source: ts.SourceFile): string {
+  const classes = source.statements.filter(ts.isClassDeclaration);
+  for (const classDeclaration of classes) {
+    for (const decorator of ts.getDecorators(classDeclaration) ?? []) {
+      const call = readDecoratorCall(decorator);
+      if (!call || !ts.isIdentifier(call.expression) || call.expression.text !== 'Controller') {
+        continue;
+      }
+
+      return normalizeRoute(readStaticStringExpression(call.arguments[0], source) ?? '');
+    }
+  }
+
+  return '';
+}
+
+function collectRouteDecorators(source: ts.SourceFile): Array<{ method: string; route: string }> {
+  const routes: Array<{ method: string; route: string }> = [];
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isMethodDeclaration(node)) {
+      for (const decorator of ts.getDecorators(node) ?? []) {
+        const call = readDecoratorCall(decorator);
+        if (!call || !ts.isIdentifier(call.expression)) {
+          continue;
+        }
+
+        const method = normalizeHttpMethod(call.expression.text);
+        if (!method) {
+          continue;
+        }
+
+        routes.push({
+          method,
+          route: readStaticStringExpression(call.arguments[0], source) ?? '',
+        });
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(source);
+  return routes;
+}
+
+function readDecoratorCall(decorator: ts.Decorator): ts.CallExpression | null {
+  return ts.isCallExpression(decorator.expression) ? decorator.expression : null;
+}
+
+function normalizeHttpMethod(value: string): string | null {
+  const upper = value.toUpperCase();
+  return HTTP_METHOD_PATTERN.test(upper) ? upper : null;
 }
 
 function normalizeRoute(route: string): string {
@@ -1067,8 +1264,6 @@ function scanEndpointsFromSource(rootDir: string): EndpointDescriptor[] {
   const files = walkFiles(backendDir, ['.ts']);
   const seen = new Set<string>();
 
-  const routePattern = /@(?:Get|Post|Put|Patch|Delete)\s*\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/g;
-
   for (const filePath of files) {
     let content: string;
     try {
@@ -1077,29 +1272,38 @@ function scanEndpointsFromSource(rootDir: string): EndpointDescriptor[] {
       continue;
     }
 
-    const controllerMatch = content.match(/@Controller\s*\(\s*['"`]([^'"`]*)['"`]\s*\)/);
-    const prefix = controllerMatch ? normalizeRoute(controllerMatch[1]) : '';
+    const source = parseSourceFile(filePath, content);
+    const prefix = findControllerPrefix(source);
 
-    let match: RegExpExecArray | null;
-    routePattern.lastIndex = 0;
-    while ((match = routePattern.exec(content)) !== null) {
-      const methodDec = match[0].match(/@(\w+)/);
-      const method = methodDec ? methodDec[1].toUpperCase() : 'GET';
-      const routePart = normalizeRoute(String(match[1] || ''));
+    for (const routeDefinition of collectRouteDecorators(source)) {
+      const routePart = normalizeRoute(routeDefinition.route);
 
       const fullRoute =
         prefix + (routePart.startsWith('/') || prefix.endsWith('/') ? '' : '/') + routePart;
       const normalized = normalizeRoute(fullRoute);
 
-      const key = `${method} ${normalized}`;
+      const key = `${routeDefinition.method} ${normalized}`;
       if (seen.has(key)) continue;
       seen.add(key);
 
-      endpoints.push({ method, endpoint: normalized });
+      endpoints.push({ method: routeDefinition.method, endpoint: normalized });
     }
   }
 
   return endpoints;
+}
+
+function parseSourceFile(filePath: string, content: string): ts.SourceFile {
+  const scriptKind =
+    filePath.endsWith('.tsx') || filePath.endsWith('.jsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+  return ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, scriptKind);
+}
+
+function readPropertyName(name: ts.PropertyName): string | null {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+    return name.text;
+  }
+  return null;
 }
 
 function loadPreviousContractEvidence(rootDir: string): ContractTestEvidence | null {

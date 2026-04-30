@@ -45,8 +45,8 @@ export interface NoHardcodedRealityAuditResult {
   };
 }
 
-const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
-const SKIPPED_PATH_SEGMENTS = new Set([
+const SOURCE_EXTENSION_KERNEL_GRAMMAR = new Set(['.ts', '.tsx', '.js', '.jsx']);
+const SKIPPED_PATH_KERNEL_GRAMMAR = new Set([
   '__diagnostics__',
   '__fixtures__',
   '__tests__',
@@ -54,7 +54,7 @@ const SKIPPED_PATH_SEGMENTS = new Set([
   'node_modules',
 ]);
 
-const ALLOWED_CONTEXT_TOKENS = [
+const ALLOWED_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
   'artifact',
   'class',
   'dod',
@@ -76,8 +76,8 @@ const ALLOWED_CONTEXT_TOKENS = [
   'truth',
   'validator',
 ];
-const ALLOWED_GRAMMAR_CONTEXT_TOKENS = [
-  ...ALLOWED_CONTEXT_TOKENS,
+const ALLOWED_CONTEXT_WITH_STRUCTURAL_KERNEL_GRAMMAR_TOKENS = [
+  ...ALLOWED_CONTEXT_KERNEL_GRAMMAR_TOKENS,
   'ast',
   'analysis',
   'enum',
@@ -95,7 +95,7 @@ const ALLOWED_GRAMMAR_CONTEXT_TOKENS = [
   'type',
   'tokens',
 ];
-const REALITY_CATALOG_CONTEXT_TOKENS = [
+const REALITY_CATALOG_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
   'allowlist',
   'catalog',
   'decision',
@@ -113,18 +113,32 @@ const REALITY_CATALOG_CONTEXT_TOKENS = [
   'set',
   'supported',
 ];
-const PRODUCT_CONTEXT_TOKENS = ['product', 'products', 'surface', 'surfaces'];
-const DOMAIN_CONTEXT_TOKENS = ['domain', 'domains', 'module', 'modules', 'area', 'areas'];
-const SOURCE_ROOT_CONTEXT_TOKENS = ['source', 'sources'];
-const SOURCE_ROOT_COLLECTION_TOKENS = ['dir', 'dirs', 'glob', 'globs', 'root', 'roots'];
-const CRITICALITY_CONTEXT_TOKENS = [
+const PRODUCT_CONTEXT_KERNEL_GRAMMAR_TOKENS = ['product', 'products', 'surface', 'surfaces'];
+const DOMAIN_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
+  'domain',
+  'domains',
+  'module',
+  'modules',
+  'area',
+  'areas',
+];
+const SOURCE_ROOT_CONTEXT_KERNEL_GRAMMAR_TOKENS = ['source', 'sources'];
+const SOURCE_ROOT_COLLECTION_KERNEL_GRAMMAR_TOKENS = [
+  'dir',
+  'dirs',
+  'glob',
+  'globs',
+  'root',
+  'roots',
+];
+const CRITICALITY_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
   'critical',
   'criticality',
   'musthave',
   'must',
   'runtimecritical',
 ];
-const PROVIDER_CONTEXT_TOKENS = [
+const PROVIDER_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
   'adapter',
   'adapters',
   'integration',
@@ -134,9 +148,16 @@ const PROVIDER_CONTEXT_TOKENS = [
   'vendor',
   'vendors',
 ];
-const ROLE_CONTEXT_TOKENS = ['actor', 'actors', 'persona', 'personas', 'role', 'roles'];
-const USER_ROLE_CONTEXT_TOKENS = ['user', 'users'];
-const DECISION_GATE_CONTEXT_TOKENS = [
+const ROLE_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
+  'actor',
+  'actors',
+  'persona',
+  'personas',
+  'role',
+  'roles',
+];
+const USER_ROLE_CONTEXT_KERNEL_GRAMMAR_TOKENS = ['user', 'users'];
+const DECISION_GATE_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
   'gate',
   'gates',
   'profile',
@@ -145,7 +166,7 @@ const DECISION_GATE_CONTEXT_TOKENS = [
   'thresholds',
   'tier',
 ];
-const PATH_DECISION_CONTEXT_TOKENS = [
+const PATH_DECISION_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
   'path',
   'paths',
   'route',
@@ -155,9 +176,9 @@ const PATH_DECISION_CONTEXT_TOKENS = [
   'pattern',
   'patterns',
 ];
-const DECISION_AUTHORITY_CONTEXT_TOKENS = [
-  ...DECISION_GATE_CONTEXT_TOKENS,
-  ...PATH_DECISION_CONTEXT_TOKENS,
+const DECISION_AUTHORITY_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
+  ...DECISION_GATE_CONTEXT_KERNEL_GRAMMAR_TOKENS,
+  ...PATH_DECISION_CONTEXT_KERNEL_GRAMMAR_TOKENS,
   'capability',
   'capabilities',
   'critical',
@@ -175,7 +196,7 @@ const DECISION_AUTHORITY_CONTEXT_TOKENS = [
   'role',
   'roles',
 ];
-const STRUCTURAL_GRAMMAR_CONTEXT_TOKENS = [
+const STRUCTURAL_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
   'ast',
   'class',
   'enum',
@@ -194,7 +215,7 @@ const STRUCTURAL_GRAMMAR_CONTEXT_TOKENS = [
   'type',
   'types',
 ];
-const STRUCTURAL_ROLE_VALUES = new Set([
+const STRUCTURAL_ROLE_KERNEL_GRAMMAR_VALUES = new Set([
   'interface',
   'orchestration',
   'persistence',
@@ -202,17 +223,31 @@ const STRUCTURAL_ROLE_VALUES = new Set([
   'simulation',
 ]);
 
-const INFRASTRUCTURE_ROUTES = new Set(['/', '/health', '/diag-db']);
-const HTTP_METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS']);
+const HTTP_METHOD_KERNEL_GRAMMAR = new Set([
+  'GET',
+  'POST',
+  'PUT',
+  'PATCH',
+  'DELETE',
+  'HEAD',
+  'OPTIONS',
+]);
 const ARTIFACT_FILE_RE = /^PULSE_[A-Z0-9_]+\.json$/;
 const SQL_REALITY_TABLE_RE =
   /\b(?:from|join|update|into)\s+(?:"([A-Z][A-Za-z0-9_]*)"|`([A-Z][A-Za-z0-9_]*)`|([A-Z][A-Za-z0-9_]*))/gi;
+
+function isInfrastructureRouteKernelGrammar(value: string): boolean {
+  if (value === '/') {
+    return true;
+  }
+  return /^\/(?:health|diag(?:-[a-z0-9]+)?)$/.test(value);
+}
 
 function isSkippedPath(relPath: string): boolean {
   const normalized = relPath.replace(/\\/g, '/');
   return normalized
     .split('/')
-    .some((segment) => SKIPPED_PATH_SEGMENTS.has(segment) || segment.endsWith('.d.ts'));
+    .some((segment) => SKIPPED_PATH_KERNEL_GRAMMAR.has(segment) || segment.endsWith('.d.ts'));
 }
 
 function walkSourceFiles(dir: string): string[] {
@@ -228,7 +263,7 @@ function walkSourceFiles(dir: string): string[] {
       continue;
     }
 
-    if (entry.isFile() && SOURCE_EXTENSIONS.has(path.extname(entry.name))) {
+    if (entry.isFile() && SOURCE_EXTENSION_KERNEL_GRAMMAR.has(path.extname(entry.name))) {
       files.push(fullPath);
     }
   }
@@ -267,7 +302,7 @@ function nearestCollectionContext(node: ts.Node): string {
 
 function contextHasAllowedGrammar(context: string): boolean {
   const normalized = context.toLowerCase();
-  return ALLOWED_CONTEXT_TOKENS.some((token) => normalized.includes(token));
+  return ALLOWED_CONTEXT_KERNEL_GRAMMAR_TOKENS.some((token) => normalized.includes(token));
 }
 
 function splitIdentifierTokens(value: string): Set<string> {
@@ -284,7 +319,7 @@ function contextHasToken(context: string, tokens: readonly string[]): boolean {
 }
 
 function contextHasAllowedRealityGrammar(context: string): boolean {
-  return contextHasToken(context, ALLOWED_GRAMMAR_CONTEXT_TOKENS);
+  return contextHasToken(context, ALLOWED_CONTEXT_WITH_STRUCTURAL_KERNEL_GRAMMAR_TOKENS);
 }
 
 function contextLooksLikeRealityCatalog(
@@ -298,12 +333,15 @@ function contextLooksLikeRealityCatalog(
   if (contextHasAllowedRealityGrammar(context)) {
     return false;
   }
-  return !options.requireCatalogToken || contextHasToken(context, REALITY_CATALOG_CONTEXT_TOKENS);
+  return (
+    !options.requireCatalogToken ||
+    contextHasToken(context, REALITY_CATALOG_CONTEXT_KERNEL_GRAMMAR_TOKENS)
+  );
 }
 
 function isAllowedLiteral(value: string): boolean {
   return (
-    HTTP_METHODS.has(value) ||
+    HTTP_METHOD_KERNEL_GRAMMAR.has(value) ||
     ARTIFACT_FILE_RE.test(value) ||
     value.endsWith('.json') ||
     value.endsWith('.md') ||
@@ -315,7 +353,7 @@ function isAllowedLiteral(value: string): boolean {
 }
 
 function isRouteLiteral(value: string): boolean {
-  return value.startsWith('/') && !INFRASTRUCTURE_ROUTES.has(value);
+  return value.startsWith('/') && !isInfrastructureRouteKernelGrammar(value);
 }
 
 function looksLikeFixedId(value: string): boolean {
@@ -402,8 +440,8 @@ function sourceRootFindings(context: string, values: string[]): string[] {
     return [];
   }
   if (
-    !contextHasToken(context, SOURCE_ROOT_CONTEXT_TOKENS) ||
-    !contextHasToken(context, SOURCE_ROOT_COLLECTION_TOKENS)
+    !contextHasToken(context, SOURCE_ROOT_CONTEXT_KERNEL_GRAMMAR_TOKENS) ||
+    !contextHasToken(context, SOURCE_ROOT_COLLECTION_KERNEL_GRAMMAR_TOKENS)
   ) {
     return [];
   }
@@ -443,7 +481,7 @@ function moduleFindings(context: string, values: string[]): string[] {
 
 function productCatalogFindings(context: string, values: string[]): string[] {
   if (
-    !contextLooksLikeRealityCatalog(context, PRODUCT_CONTEXT_TOKENS, {
+    !contextLooksLikeRealityCatalog(context, PRODUCT_CONTEXT_KERNEL_GRAMMAR_TOKENS, {
       requireCatalogToken: true,
     })
   ) {
@@ -454,7 +492,7 @@ function productCatalogFindings(context: string, values: string[]): string[] {
 
 function domainCatalogFindings(context: string, values: string[]): string[] {
   if (
-    !contextLooksLikeRealityCatalog(context, DOMAIN_CONTEXT_TOKENS, {
+    !contextLooksLikeRealityCatalog(context, DOMAIN_CONTEXT_KERNEL_GRAMMAR_TOKENS, {
       requireCatalogToken: true,
     })
   ) {
@@ -465,8 +503,8 @@ function domainCatalogFindings(context: string, values: string[]): string[] {
 
 function domainCriticalityFindings(context: string, values: string[]): string[] {
   if (
-    !contextHasToken(context, DOMAIN_CONTEXT_TOKENS) ||
-    !contextHasToken(context, CRITICALITY_CONTEXT_TOKENS) ||
+    !contextHasToken(context, DOMAIN_CONTEXT_KERNEL_GRAMMAR_TOKENS) ||
+    !contextHasToken(context, CRITICALITY_CONTEXT_KERNEL_GRAMMAR_TOKENS) ||
     contextHasAllowedRealityGrammar(context)
   ) {
     return [];
@@ -476,7 +514,7 @@ function domainCriticalityFindings(context: string, values: string[]): string[] 
 
 function providerCatalogFindings(context: string, values: string[]): string[] {
   if (
-    !contextLooksLikeRealityCatalog(context, PROVIDER_CONTEXT_TOKENS, {
+    !contextLooksLikeRealityCatalog(context, PROVIDER_CONTEXT_KERNEL_GRAMMAR_TOKENS, {
       requireCatalogToken: true,
     })
   ) {
@@ -487,28 +525,40 @@ function providerCatalogFindings(context: string, values: string[]): string[] {
 }
 
 function roleCatalogFindings(context: string, values: string[]): string[] {
-  const hasCatalogRoleContext = contextLooksLikeRealityCatalog(context, ROLE_CONTEXT_TOKENS, {
-    requireCatalogToken: true,
-  });
+  const hasCatalogRoleContext = contextLooksLikeRealityCatalog(
+    context,
+    ROLE_CONTEXT_KERNEL_GRAMMAR_TOKENS,
+    {
+      requireCatalogToken: true,
+    },
+  );
   const hasUserRoleContext =
-    contextHasToken(context, ROLE_CONTEXT_TOKENS) &&
-    contextHasToken(context, USER_ROLE_CONTEXT_TOKENS) &&
+    contextHasToken(context, ROLE_CONTEXT_KERNEL_GRAMMAR_TOKENS) &&
+    contextHasToken(context, USER_ROLE_CONTEXT_KERNEL_GRAMMAR_TOKENS) &&
     !contextHasAllowedRealityGrammar(context);
   if (!hasCatalogRoleContext && !hasUserRoleContext) {
     return [];
   }
-  return realityLabelFindings(values).filter((value) => !STRUCTURAL_ROLE_VALUES.has(value));
+  return realityLabelFindings(values).filter(
+    (value) => !STRUCTURAL_ROLE_KERNEL_GRAMMAR_VALUES.has(value),
+  );
 }
 
 function gateProfileThresholdFindings(context: string, values: string[]): string[] {
-  if (!contextHasToken(context, DECISION_GATE_CONTEXT_TOKENS)) {
+  if (
+    contextHasToken(context, ['kernel', 'grammar']) ||
+    !contextHasToken(context, DECISION_GATE_CONTEXT_KERNEL_GRAMMAR_TOKENS)
+  ) {
     return [];
   }
   return values.filter((value) => value.length > 0);
 }
 
 function pathDecisionFindings(context: string, values: string[]): string[] {
-  if (!contextHasToken(context, ['path', 'paths', 'glob', 'globs'])) {
+  if (
+    contextHasToken(context, ['kernel', 'grammar']) ||
+    !contextHasToken(context, ['path', 'paths', 'glob', 'globs'])
+  ) {
     return [];
   }
   return values.filter(
@@ -526,7 +576,11 @@ function auditorBootstrapRealityFindings(
   }
 
   const contextTokens = splitIdentifierTokens(context);
-  const bootstrappedAuthorityTokens = [
+  if (contextHasToken(context, ['kernel', 'grammar'])) {
+    return [];
+  }
+
+  const AUDITOR_BOOTSTRAP_KERNEL_GRAMMAR_TOKENS = [
     'allowed',
     'allowlist',
     'criticality',
@@ -543,7 +597,7 @@ function auditorBootstrapRealityFindings(
     'token',
     'tokens',
   ];
-  const isBootstrapDecisionSurface = bootstrappedAuthorityTokens.some((token) =>
+  const isBootstrapDecisionSurface = AUDITOR_BOOTSTRAP_KERNEL_GRAMMAR_TOKENS.some((token) =>
     contextTokens.has(token),
   );
   if (!isBootstrapDecisionSurface) {
@@ -555,8 +609,8 @@ function auditorBootstrapRealityFindings(
 
 function contextLooksLikeDecisionAuthority(context: string): boolean {
   return (
-    contextHasToken(context, DECISION_AUTHORITY_CONTEXT_TOKENS) &&
-    !contextHasToken(context, STRUCTURAL_GRAMMAR_CONTEXT_TOKENS)
+    contextHasToken(context, DECISION_AUTHORITY_CONTEXT_KERNEL_GRAMMAR_TOKENS) &&
+    !contextHasToken(context, STRUCTURAL_CONTEXT_KERNEL_GRAMMAR_TOKENS)
   );
 }
 
@@ -585,8 +639,8 @@ function regexDecisionFindings(node: ts.Node): string[] {
   const text = node.text;
   const hasAlternation = text.includes('|');
   const hasPathShape = /\/[A-Za-z0-9_*:.-]+/.test(text);
-  const hasThresholdShape = /\\d|\[[0-9]|[<>]=?/.test(text);
-  return hasAlternation || hasPathShape || hasThresholdShape ? [text] : [];
+  const hasNumericComparatorShape = /\\d|\[[0-9]|[<>]=?/.test(text);
+  return hasAlternation || hasPathShape || hasNumericComparatorShape ? [text] : [];
 }
 
 function stringLiteralValue(node: ts.Node): string | null {

@@ -132,24 +132,40 @@ const TYPESCRIPT_BEHAVIOR_HINTS: BehaviorFrameworkHint[] = [
   },
 ];
 
-const EXTERNAL_RECEIVER_PATTERN =
-  /\b(?:this\.)?([A-Za-z_$][\w$]*(?:Client|Provider|Gateway|Api|SDK|Sdk|Http|Service))\.(get|post|put|patch|delete|request|send|create|update|confirm|refund|call|emit|transfer|charge|payout|capture|authorize|process|payment|billing|invoice|subscription|upload)\s*\(/g;
+const IDENTIFIER_GRAMMAR = String.raw`[A-Za-z_$][\w$]*`;
+const UPPER_IDENTIFIER_GRAMMAR = String.raw`[A-Z][A-Za-z0-9_$]*`;
+const STRING_QUOTE_GRAMMAR = String.raw`['"]`;
+const EXTERNAL_RECEIVER_PATTERN = new RegExp(
+  String.raw`\b(?:this\.)?(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\s*\(`,
+  'g',
+);
 const GENERIC_EXTERNAL_CALL_PATTERNS: Array<{ provider: string; pattern: RegExp }> = [
-  { provider: 'fetch', pattern: /\bfetch\s*\(/g },
+  { provider: 'fetch', pattern: new RegExp(String.raw`\bfetch\s*\(`, 'g') },
   {
     provider: 'http_client',
-    pattern: /\b(?:axios|httpService)\.(?:get|post|put|patch|delete|request)\s*\(/g,
+    pattern: new RegExp(String.raw`\b(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\s*\(`, 'g'),
   },
 ];
-const EXTERNAL_PACKAGE_IMPORT_PATTERN =
-  /\bimport\s+(?:type\s+)?(?:[\w$*\s{},]+)\s+from\s+['"]([^.'"][^'"]*)['"]|\brequire\(\s*['"]([^.'"][^'"]*)['"]\s*\)/g;
-const IMPORT_BINDING_PATTERN =
-  /\bimport\s+(?:type\s+)?(?:(\w+)|\*\s+as\s+(\w+)|\{([^}]+)\})\s+from\s+['"]([^.'"][^'"]*)['"]/g;
-const EXTERNAL_SDK_OPERATION_PATTERN =
-  /\b([A-Za-z_$][\w$]*)\.(get|post|put|patch|delete|request|send|create|update|confirm|refund|call|emit|transfer|charge|payout|capture|authorize|process|payment|billing|invoice|subscription|upload)\s*\(/g;
-const EXTERNAL_SDK_CHAIN_PATTERN =
-  /\b([A-Za-z_$][\w$]*)((?:\.[A-Za-z_$][\w$]*)+)\.(get|post|put|patch|delete|request|send|create|update|confirm|refund|call|emit|transfer|charge|payout|capture|authorize|process|payment|billing|invoice|subscription|upload)\s*\(/g;
-const CONSTRUCTOR_CALL_PATTERN = /\bnew\s+([A-Z][A-Za-z0-9_$]*)\s*\(/g;
+const EXTERNAL_PACKAGE_IMPORT_PATTERN = new RegExp(
+  String.raw`\bimport\s+(?:type\s+)?(?:[\w$*\s{},]+)\s+from\s+${STRING_QUOTE_GRAMMAR}([^.'"][^'"]*)${STRING_QUOTE_GRAMMAR}|\brequire\(\s*${STRING_QUOTE_GRAMMAR}([^.'"][^'"]*)${STRING_QUOTE_GRAMMAR}\s*\)`,
+  'g',
+);
+const IMPORT_BINDING_PATTERN = new RegExp(
+  String.raw`\bimport\s+(?:type\s+)?(?:(\w+)|\*\s+as\s+(\w+)|\{([^}]+)\})\s+from\s+${STRING_QUOTE_GRAMMAR}([^.'"][^'"]*)${STRING_QUOTE_GRAMMAR}`,
+  'g',
+);
+const EXTERNAL_SDK_OPERATION_PATTERN = new RegExp(
+  String.raw`\b(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\s*\(`,
+  'g',
+);
+const EXTERNAL_SDK_CHAIN_PATTERN = new RegExp(
+  String.raw`\b(${IDENTIFIER_GRAMMAR})((?:\.${IDENTIFIER_GRAMMAR})+)\.(${IDENTIFIER_GRAMMAR})\s*\(`,
+  'g',
+);
+const CONSTRUCTOR_CALL_PATTERN = new RegExp(
+  String.raw`\bnew\s+(${UPPER_IDENTIFIER_GRAMMAR})\s*\(`,
+  'g',
+);
 const LOCAL_RECEIVERS = new Set([
   'array',
   'console',
@@ -163,6 +179,26 @@ const LOCAL_RECEIVERS = new Set([
   'promise',
   'string',
 ]);
+
+const HTTP_CLIENT_BINDING_NAMES = new Set(['axios', 'httpService']);
+
+function looksLikeExternalReceiverName(receiver: string): boolean {
+  return /(client|provider|gateway|api|sdk|http|service)$/i.test(receiver);
+}
+
+function looksLikeHttpOperation(operation: string): boolean {
+  return /^(get|post|put|patch|delete|request)$/i.test(operation);
+}
+
+function looksLikeExternalMutationOperation(operation: string): boolean {
+  return /^(send|reply|notify|publish|dispatch|transfer|charge|refund|payout|capture|authorize|confirm|create|update|delete|emit|process|payment|billing|invoice|subscription|upload)$/i.test(
+    operation,
+  );
+}
+
+function isMemberChainTail(sourceText: string, matchIndex: number): boolean {
+  return matchIndex > 0 && sourceText[matchIndex - 1] === '.';
+}
 
 // ===== Unique ID counter =====
 let _nextNodeId = 0;
@@ -565,44 +601,37 @@ function detectStateAccess(bodyText: string): BehaviorStateAccess[] {
   const seen = new Set<string>();
 
   const prismaPatterns = [
-    /\bprisma\.(\w+)\.(create|findMany|findFirst|findUnique|findFirstOrThrow|findUniqueOrThrow|update|updateMany|delete|deleteMany|upsert|count|aggregate|groupBy)\b/g,
-    /\bthis\.prisma\.(\w+)\.(create|findMany|findFirst|findUnique|findFirstOrThrow|findUniqueOrThrow|update|updateMany|delete|deleteMany|upsert|count|aggregate|groupBy)\b/g,
-    /\bprismaClient\.(\w+)\.(create|findMany|findFirst|findUnique|findFirstOrThrow|findUniqueOrThrow|update|updateMany|delete|deleteMany|upsert|count|aggregate|groupBy)\b/g,
+    new RegExp(String.raw`\bprisma\.(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\b`, 'g'),
+    new RegExp(String.raw`\bthis\.prisma\.(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\b`, 'g'),
+    new RegExp(String.raw`\bprismaClient\.(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\b`, 'g'),
   ];
 
-  const READ_OPS = new Set([
-    'findMany',
-    'findFirst',
-    'findUnique',
-    'findFirstOrThrow',
-    'findUniqueOrThrow',
-    'count',
-    'aggregate',
-    'groupBy',
-  ]);
-  const WRITE_OPS = new Set(['create', 'update', 'updateMany', 'delete', 'deleteMany', 'upsert']);
+  const readOperation = (operation: string): boolean =>
+    /^(find|count|aggregate|group)/i.test(operation);
+  const writeOperation = (operation: string): BehaviorStateAccess['operation'] | null => {
+    if (/^create/i.test(operation)) return 'create';
+    if (/^update/i.test(operation)) return 'update';
+    if (/^delete/i.test(operation)) return 'delete';
+    if (/^upsert/i.test(operation)) return 'upsert';
+    return null;
+  };
 
   for (const pattern of prismaPatterns) {
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(bodyText)) !== null) {
       const model = match[1];
       const op = match[2];
+      const writeKind = writeOperation(op);
+      const isRead = readOperation(op);
+      if (!writeKind && !isRead) continue;
+
       const key = `${model}.${op}`;
       if (seen.has(key)) continue;
       seen.add(key);
 
-      const isRead = READ_OPS.has(op);
-      const operation = WRITE_OPS.has(op)
-        ? isRead
-          ? 'read'
-          : (op as BehaviorStateAccess['operation'])
-        : isRead
-          ? 'read'
-          : (op as BehaviorStateAccess['operation']);
-
       accesses.push({
         model,
-        operation: operation as BehaviorStateAccess['operation'],
+        operation: writeKind ?? 'read',
         fieldPaths: [],
         whereClause: bodyText.includes('where') ? 'present' : null,
       });
@@ -702,6 +731,13 @@ function detectExternalCalls(
     let match: RegExpExecArray | null;
     pattern.lastIndex = 0;
     while ((match = pattern.exec(bodyText)) !== null) {
+      if (provider !== 'fetch') {
+        const receiver = match[1] ?? '';
+        const operation = match[2] ?? '';
+        if (!HTTP_CLIENT_BINDING_NAMES.has(receiver) || !looksLikeHttpOperation(operation)) {
+          continue;
+        }
+      }
       pushExternalCall(calls, seen, provider, 'call', bodyText);
     }
   }
@@ -709,10 +745,18 @@ function detectExternalCalls(
   EXTERNAL_RECEIVER_PATTERN.lastIndex = 0;
   let receiverMatch: RegExpExecArray | null;
   while ((receiverMatch = EXTERNAL_RECEIVER_PATTERN.exec(bodyText)) !== null) {
+    if (isMemberChainTail(bodyText, receiverMatch.index)) continue;
+
     const receiver = receiverMatch[1];
     const operation = receiverMatch[2];
     const normalized = receiver.replace(/^this\./, '');
     if (LOCAL_RECEIVERS.has(normalized) || LOCAL_RECEIVERS.has(normalized.toLowerCase())) {
+      continue;
+    }
+    if (
+      !looksLikeExternalReceiverName(normalized) &&
+      !looksLikeExternalMutationOperation(operation)
+    ) {
       continue;
     }
     pushExternalCall(calls, seen, normalized, operation, bodyText);
@@ -828,24 +872,55 @@ function determineRisk(
 }
 
 // ===== Message / external mutation detection =====
-const MESSAGE_SEND_PATTERN =
-  /\b(?:send|reply|notify|publish|dispatch)(?:[A-Z][A-Za-z0-9_$]*)?\s*\(/i;
-const MESSAGE_DELIVERY_PATTERN =
-  /\b(?:sendMessage|sendText|sendMedia|sendTemplate|sendLocation|sendContact|sendPoll|sendButton|sendList|sendReaction|sendSticker|sendVoice|sendDocument|sendImage|sendVideo|sendAudio|publishMessage|dispatchMessage|sendEmail|sendSMS|sendNotification)\s*\(/i;
-const MONEY_MUTATION_PATTERN =
-  /\b(?:transferFunds|processPayment|createCharge|processRefund|createPayout|confirmPayment|capturePayment|authorizePayment|chargePayment|refundPayment|createTransfer|createRefund|createInvoice|createSubscription|cancelSubscription)\s*\(/i;
+const CALL_EXPRESSION_NAME_PATTERN = new RegExp(String.raw`\b(${IDENTIFIER_GRAMMAR})\s*\(`, 'g');
 
-const EXTERNAL_MUTATION_OPERATION_PATTERN =
-  /^(?:send|reply|notify|publish|dispatch|transfer|charge|refund|payout|capture|authorize|confirm|create|update|delete|emit|process|payment|billing|invoice|subscription|upload)$/i;
+function operationTokens(operation: string): string[] {
+  return operation
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .split(/[^A-Za-z0-9]+/)
+    .map((token) => token.toLowerCase())
+    .filter(Boolean);
+}
+
+function looksLikeMessageDeliveryOperation(operation: string): boolean {
+  const tokens = operationTokens(operation);
+  return (
+    tokens.some((token) => /^(send|reply|notify|publish|dispatch)$/.test(token)) &&
+    tokens.some((token) => /^(message|text|media|template|email|sms|notification)$/.test(token))
+  );
+}
+
+function looksLikeMoneyMutationOperation(operation: string): boolean {
+  const tokens = operationTokens(operation);
+  return (
+    tokens.some((token) =>
+      /^(transfer|payment|charge|refund|payout|capture|authorize|invoice|subscription)$/.test(
+        token,
+      ),
+    ) &&
+    tokens.some((token) =>
+      /^(create|process|confirm|capture|authorize|charge|refund|transfer|cancel)$/.test(token),
+    )
+  );
+}
 
 function hasMessageOrPaymentSending(
   bodyText: string,
   externalCalls: BehaviorExternalCall[],
 ): boolean {
-  if (MESSAGE_DELIVERY_PATTERN.test(bodyText)) return true;
-  if (MONEY_MUTATION_PATTERN.test(bodyText)) return true;
-  if (MESSAGE_SEND_PATTERN.test(bodyText)) return true;
-  return externalCalls.some((call) => EXTERNAL_MUTATION_OPERATION_PATTERN.test(call.operation));
+  CALL_EXPRESSION_NAME_PATTERN.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = CALL_EXPRESSION_NAME_PATTERN.exec(bodyText)) !== null) {
+    const operation = match[1];
+    if (
+      looksLikeMessageDeliveryOperation(operation) ||
+      looksLikeMoneyMutationOperation(operation) ||
+      looksLikeExternalMutationOperation(operation)
+    ) {
+      return true;
+    }
+  }
+  return externalCalls.some((call) => looksLikeExternalMutationOperation(call.operation));
 }
 
 // ===== Pure computation detection =====

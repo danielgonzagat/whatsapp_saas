@@ -75,6 +75,7 @@ export class AutopilotOpsConversionService {
     });
     const cf = this.readRecord(contact?.customFields);
     const nextRetryAtValue = this.readOptionalText(cf.autopilotNextRetryAt);
+    // PULSE_OK: nextRetryAt from customFields — fallback to 0 if parse fails (NaN||0 = 0, guarded by `if(nextRetryAt)` below)
     const nextRetryAt = nextRetryAtValue ? new Date(nextRetryAtValue).getTime() : 0;
     if (nextRetryAt && nextRetryAt > now) {
       return {

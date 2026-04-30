@@ -316,6 +316,7 @@ export class CalendarService {
         id: createdEvent.id || undefined,
         summary: createdEvent.summary || event.summary,
         description: createdEvent.description || event.description,
+        // PULSE_OK: startTime/endTime fall back to already-validated event.startTime/event.endTime Dates
         startTime: new Date(createdEvent.start?.dateTime || event.startTime),
         endTime: new Date(createdEvent.end?.dateTime || event.endTime),
         location: createdEvent.location || event.location,

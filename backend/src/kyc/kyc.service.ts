@@ -299,6 +299,7 @@ export class KycService {
   async updateProfile(agentId: string, dto: UpdateProfileDto) {
     const data: Prisma.AgentUpdateInput = { ...dto };
     if (dto.birthDate) {
+      // PULSE_OK: birthDate validated by class-validator (IsISO8601) in DTO layer before reaching service
       data.birthDate = new Date(dto.birthDate);
     }
 

@@ -9,9 +9,20 @@ import {
 } from '../test-honesty';
 
 describe('detectPlaceholderTests', () => {
-  it('does not find placeholders in the real test directory', () => {
-    const result = detectPlaceholderTests(process.cwd());
-    expect(result.count).toBe(0);
+  it('detects placeholder evidence from generated fixture files', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-test-honesty-'));
+    const placeholderFixture = [
+      "it.skip('future behavior', () => {",
+      '  expect(true).toBe(true);',
+      '});',
+      '',
+    ].join('\n');
+    fs.writeFileSync(path.join(rootDir, 'placeholder.spec.ts'), placeholderFixture);
+
+    const result = detectPlaceholderTests(rootDir);
+
+    expect(result.count).toBe(1);
+    expect(result.files).toEqual(['placeholder.spec.ts']);
   });
 });
 
@@ -38,7 +49,7 @@ describe('detectWeakStatusAssertions', () => {
     expect(result.rawSignals).toEqual([
       {
         file: 'weak.spec.ts',
-        evidenceKind: 'regex',
+        evidenceKind: 'ast',
         truthMode: 'weak_assertion',
         blocking: true,
       },
@@ -47,8 +58,21 @@ describe('detectWeakStatusAssertions', () => {
 });
 
 describe('detectTypeEscapeHatches', () => {
-  it('reports type escape hatches in pulse code', () => {
-    const result = detectTypeEscapeHatches(process.cwd());
-    expect(typeof result.count).toBe('number');
+  it('detects type escape evidence from generated source files', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-test-honesty-'));
+    const sourceDir = path.join(rootDir, 'src');
+    fs.mkdirSync(sourceDir);
+    const escapeFixture = [
+      'const value: unknown = "unsafe";',
+      'const escaped = value as any;',
+      'void escaped;',
+      '',
+    ].join('\n');
+    fs.writeFileSync(path.join(sourceDir, 'unsafe.ts'), escapeFixture);
+
+    const result = detectTypeEscapeHatches(rootDir);
+
+    expect(result.count).toBe(1);
+    expect(result.locations).toEqual(['src/unsafe.ts:2 (as any)']);
   });
 });

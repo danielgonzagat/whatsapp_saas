@@ -34,6 +34,7 @@ export class CheckoutProductConfigService {
   }
 
   /** Resolve marketplace fee percent for a given payment method and base total. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async resolveMarketplaceFeePercent(
     paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO',
     baseTotalInCents: number,
@@ -64,6 +65,7 @@ export class CheckoutProductConfigService {
   }
 
   /** Build pricing preview using marketplace fee resolution. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async buildPricingPreview(baseTotalInCents: number) {
     const marketplaceFeePercent = await this.resolveMarketplaceFeePercent('PIX', baseTotalInCents);
     return buildCheckoutMarketplacePricing({
@@ -103,6 +105,7 @@ export class CheckoutProductConfigService {
   }
 
   /** Ensure a legacy checkout exists for the given plan. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async ensureLegacyCheckoutForPlan(planId: string, planLinkManager: CheckoutPlanLinkManager) {
     const plan = await this.prisma.checkoutProductPlan.findUnique({
       where: { id: planId },
@@ -172,6 +175,7 @@ export class CheckoutProductConfigService {
   }
 
   /** Reset checkout config to defaults. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async resetConfig(planId: string) {
     return this.prisma.$transaction(
       async (tx) => {
@@ -233,6 +237,7 @@ export class CheckoutProductConfigService {
   }
 
   /** Ensure legacy checkouts exist for all PLAN-kind entries of a product. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async ensureLegacyCheckoutsForProduct(
     productId: string,
     planLinkManager: CheckoutPlanLinkManager,

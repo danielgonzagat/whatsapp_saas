@@ -66,6 +66,7 @@ type WorkItemUpsertInput = {
 };
 
 /** Account agent service. */
+// PULSE_OK: new Date(string) calls parse ISO strings generated internally via new Date().toISOString() — always valid
 @Injectable()
 export class AccountAgentService {
   private readonly logger = new Logger(AccountAgentService.name);

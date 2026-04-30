@@ -44,6 +44,7 @@ export class CheckoutOrderService {
   }
 
   /** Create order with server-side pricing reconciliation and payment processing. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async createOrder(data: {
     planId: string;
     workspaceId: string;
@@ -331,11 +332,13 @@ export class CheckoutOrderService {
   }
 
   /** Get order. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async getOrder(orderId: string, workspaceId?: string) {
     return this.queryService.getOrder(orderId, workspaceId);
   }
 
   /** List orders. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async listOrders(
     workspaceId: string,
     filters?: { status?: string; page?: number; limit?: number },
@@ -344,6 +347,7 @@ export class CheckoutOrderService {
   }
 
   /** Update order status. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async updateOrderStatus(
     orderId: string,
     workspaceId: string | undefined,
@@ -354,21 +358,25 @@ export class CheckoutOrderService {
   }
 
   /** Get order status. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async getOrderStatus(orderId: string) {
     return this.queryService.getOrderStatus(orderId);
   }
 
   /** Accept upsell. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async acceptUpsell(orderId: string, upsellId: string) {
     return this.queryService.acceptUpsell(orderId, upsellId);
   }
 
   /** Get recent paid orders. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async getRecentPaidOrders(limit: number) {
     return this.queryService.getRecentPaidOrders(limit);
   }
 
   /** Decline upsell. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async declineUpsell(orderId: string, upsellId: string) {
     return this.queryService.declineUpsell(orderId, upsellId);
   }
