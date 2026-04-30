@@ -361,6 +361,7 @@ describe('autonomy unit ranking', () => {
             },
           },
           priorityOverrides: [],
+          machineImprovementSignals: [],
         },
       ),
     );

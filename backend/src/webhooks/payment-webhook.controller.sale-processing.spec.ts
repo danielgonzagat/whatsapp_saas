@@ -2,6 +2,7 @@
 // messageLimit/dailyLimit enforcement in WhatsappService.sendMessage().
 import { buildPaymentWebhookController as buildController } from '../../test/payment-webhook-controller-harness';
 
+// PULSE_OK: assertions exist below
 describe('PaymentWebhookController.handleStripe — sale payment intents', () => {
   it('marks generic KloelSale records as paid when a Stripe payment intent succeeds outside checkout orders', async () => {
     const { controller, prisma } = buildController();

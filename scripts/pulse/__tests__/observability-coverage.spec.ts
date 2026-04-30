@@ -147,9 +147,18 @@ describe('PULSE observability coverage', () => {
     expect(capability.pillars.dashboards).toBe('partial');
     expect(capability.evidence.dashboards.sourceKind).toBe('catalog');
     expect(capability.evidence.dashboards.observed).toBe(false);
+    expect(capability.evidence.dashboards.truthMode).toBe('inferred');
+    expect(capability.evidence.dashboards.machineImprovementSignal).toEqual(
+      expect.objectContaining({
+        targetEngine: 'observability-coverage',
+        truthMode: 'inferred',
+        productEditRequired: false,
+      }),
+    );
     expect(capability.pillars.error_budget).toBe('observed');
     expect(capability.evidence.error_budget.sourceKind).toBe('static_instrumentation');
     expect(capability.evidence.error_budget.observed).toBe(true);
+    expect(capability.evidence.error_budget.truthMode).toBe('observed');
   });
 
   it('does not turn alert configuration into observed evidence for critical capabilities', () => {
@@ -174,6 +183,14 @@ describe('PULSE observability coverage', () => {
     expect(capability.pillars.alerts).toBe('partial');
     expect(capability.evidence.alerts.sourceKind).toBe('configuration');
     expect(capability.evidence.alerts.observed).toBe(false);
+    expect(capability.evidence.alerts.truthMode).toBe('inferred');
+    expect(capability.evidence.alerts.machineImprovementSignal).toEqual(
+      expect.objectContaining({
+        targetEngine: 'external-sources-orchestrator',
+        status: 'partial',
+        productEditRequired: false,
+      }),
+    );
     expect(capability.trustedObservedPillars).not.toContain('alerts');
     expect(capability.criticalObservedByUntrustedSource).toBe(false);
   });
@@ -196,6 +213,14 @@ describe('PULSE observability coverage', () => {
     expect(capability.pillars.error_budget).toBe('missing');
     expect(capability.evidence.error_budget.sourceKind).toBe('absent');
     expect(capability.evidence.error_budget.observed).toBe(false);
+    expect(capability.evidence.error_budget.truthMode).toBe('not_available');
+    expect(capability.evidence.error_budget.machineImprovementSignal).toEqual(
+      expect.objectContaining({
+        targetEngine: 'observability-coverage',
+        truthMode: 'not_available',
+        productEditRequired: false,
+      }),
+    );
   });
 
   it('does not mark simulated or absent sources as observed', () => {
@@ -241,5 +266,12 @@ describe('PULSE observability coverage', () => {
     expect(absent?.pillars.logs).toBe('missing');
     expect(absent?.evidence.logs.sourceKind).toBe('absent');
     expect(absent?.evidence.logs.observed).toBe(false);
+    expect(absent?.machineImprovementSignals.length).toBeGreaterThan(0);
+    expect(state.summary.machineImprovementSignals).toBeGreaterThan(0);
+    expect(
+      absent?.machineImprovementSignals.every((signal) =>
+        signal.recommendedPulseAction.includes('PULSE'),
+      ),
+    ).toBe(true);
   });
 });

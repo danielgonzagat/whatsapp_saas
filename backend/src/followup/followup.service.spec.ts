@@ -1,29 +1,35 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { FollowUpService } from './followup.service';
 
-describe('FollowUpService', () => {
-  let prisma: {
-    contact: { findFirst: jest.Mock };
-    followUp: {
-      create: jest.Mock;
-      findFirst: jest.Mock;
-      updateMany: jest.Mock;
-    };
+type FollowUpPrismaMock = {
+  contact: { findFirst: jest.Mock };
+  followUp: {
+    create: jest.Mock;
+    findFirst: jest.Mock;
+    updateMany: jest.Mock;
   };
+};
+
+describe('FollowUpService', () => {
+  let prisma: PrismaService & FollowUpPrismaMock;
   let service: FollowUpService;
 
   beforeEach(() => {
-    prisma = {
-      contact: { findFirst: jest.fn() },
-      followUp: {
-        create: jest.fn(),
-        findFirst: jest.fn(),
-        updateMany: jest.fn(),
+    prisma = Object.create(PrismaService.prototype) as PrismaService & FollowUpPrismaMock;
+    Object.defineProperties(prisma, {
+      contact: {
+        value: { findFirst: jest.fn() },
       },
-    };
-    service = new FollowUpService(
-      prisma as unknown as ConstructorParameters<typeof FollowUpService>[0],
-    );
+      followUp: {
+        value: {
+          create: jest.fn(),
+          findFirst: jest.fn(),
+          updateMany: jest.fn(),
+        },
+      },
+    });
+    service = new FollowUpService(prisma);
   });
 
   it('rejects invalid scheduledFor values on create', async () => {

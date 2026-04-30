@@ -158,6 +158,8 @@ describe('runtime probes artifact', () => {
     expect(proof.healthCheck).toBe('proven');
     expect(proof.runtimeProbe).toBe('proven');
     expect(proof.dbSideEffects).toBe('proven');
+    expect(proof.dimensionEvidence.runtimeProbe.truthMode).toBe('observed');
+    expect(proof.dimensionEvidence.runtimeProbe.targetEngine).toBe('runtime-probes');
   });
 
   it('keeps simulated probes unproven in production-proof', () => {
@@ -202,5 +204,52 @@ describe('runtime probes artifact', () => {
     expect(proof.healthCheck).toBe('unproven');
     expect(proof.runtimeProbe).toBe('unproven');
     expect(proof.dbSideEffects).toBe('unproven');
+    expect(proof.missingProofSignals).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          dimension: 'runtimeProbe',
+          truthMode: 'not_available',
+          targetEngine: 'runtime-probes',
+          productEditRequired: false,
+        }),
+        expect.objectContaining({
+          dimension: 'performanceBudget',
+          truthMode: 'not_available',
+          targetEngine: 'performance-budget',
+          productEditRequired: false,
+        }),
+      ]),
+    );
+    expect(
+      proof.missingProofSignals.every((signal) =>
+        signal.recommendedPulseAction.toLowerCase().includes('pulse'),
+      ),
+    ).toBe(true);
+  });
+
+  it('turns absent production proof into PULSE-engine work signals', () => {
+    const root = makeRoot();
+
+    const proof = proveCapability('runtime-capability', root);
+
+    expect(proof.runtimeProbe).toBe('unproven');
+    expect(proof.performanceBudget).toBe('unproven');
+    expect(proof.dimensionEvidence.runtimeProbe).toEqual(
+      expect.objectContaining({
+        truthMode: 'not_available',
+        targetEngine: 'runtime-probes',
+        productEditRequired: false,
+      }),
+    );
+    expect(proof.dimensionEvidence.performanceBudget).toEqual(
+      expect.objectContaining({
+        truthMode: 'not_available',
+        targetEngine: 'performance-budget',
+        productEditRequired: false,
+      }),
+    );
+    expect(proof.missingProofSignals.every((signal) => signal.productEditRequired === false)).toBe(
+      true,
+    );
   });
 });

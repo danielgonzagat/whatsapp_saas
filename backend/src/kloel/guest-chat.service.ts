@@ -114,7 +114,7 @@ export class GuestChatService implements OnModuleDestroy {
     const emergencyModels = [
       resolveBackendOpenAIModel('brain', this.configService),
       resolveBackendOpenAIModel('brain_fallback', this.configService),
-      'gpt-4o-mini',
+      resolveBackendOpenAIModel('guest_emergency', this.configService),
     ].filter(Boolean);
 
     try {

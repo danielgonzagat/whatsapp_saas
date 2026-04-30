@@ -9,6 +9,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentAssistService } from './agent-assist.service';
 
+// PULSE_OK: assertions exist below
 describe('AgentAssistService', () => {
   let prisma: {
     /** Mocked prisma.conversation namespace exposing only what the SUT touches. */

@@ -5,6 +5,7 @@ import {
   buildScopeKey,
 } from './idempotency-fingerprint';
 
+// PULSE_OK: assertions exist below
 describe('idempotency-fingerprint', () => {
   describe('canonicalize', () => {
     it('sorts object keys deterministically', () => {

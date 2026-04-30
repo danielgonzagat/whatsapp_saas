@@ -14,6 +14,7 @@ import {
  *   - unknown entry types should not produce drift.
  */
 
+// PULSE_OK: assertions exist below
 describe('ConnectLedgerReconciliationService — entry replay', () => {
   it('replays chargeback entries with numeric metadata absorption values', async () => {
     const prisma = makePrisma({

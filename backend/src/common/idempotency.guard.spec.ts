@@ -1,5 +1,7 @@
 import { ConflictException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import type { ExecutionContext } from '@nestjs/common';
+import type Redis from 'ioredis';
 import {
   IdempotencyGuard,
   IDEMPOTENCY_METADATA,
@@ -27,6 +29,7 @@ type GuardResponse = {
   status: jest.Mock;
   json: jest.Mock;
 };
+type GuardRedis = Redis & ReturnType<typeof makeFakeRedis>;
 
 /**
  * Fake Redis that implements the subset of commands the guard uses:
@@ -114,7 +117,7 @@ function makeContext(options: {
   return {
     request,
     response,
-    context: context as unknown as Parameters<IdempotencyGuard['canActivate']>[0],
+    context: context as ExecutionContext,
   };
 }
 
@@ -131,13 +134,13 @@ function standardKeyParts(body: unknown) {
 
 describe('IdempotencyGuard — v2 (I13) scoped key + body fingerprint', () => {
   let reflector: Reflector;
-  let redis: ReturnType<typeof makeFakeRedis>;
+  let redis: GuardRedis;
   let guard: IdempotencyGuard;
   let featureFlags: FeatureFlagService;
 
   beforeEach(() => {
     reflector = new Reflector();
-    redis = makeFakeRedis();
+    redis = makeFakeRedis() as GuardRedis;
     featureFlags = new FeatureFlagService();
     // idempotency.v2 defaults to true; explicit here for readability.
     jest.spyOn(featureFlags, 'isEnabled').mockImplementation((flag: string) => {
@@ -146,12 +149,7 @@ describe('IdempotencyGuard — v2 (I13) scoped key + body fingerprint', () => {
       }
       return true;
     });
-    guard = new IdempotencyGuard(
-      reflector,
-      redis as unknown as ConstructorParameters<typeof IdempotencyGuard>[1],
-      undefined,
-      featureFlags,
-    );
+    guard = new IdempotencyGuard(reflector, redis, undefined, featureFlags);
     jest.spyOn(reflector, 'get').mockImplementation((metadataKey: unknown) => {
       if (metadataKey === IDEMPOTENCY_METADATA) {
         return true;
@@ -297,13 +295,13 @@ describe('IdempotencyGuard — v2 (I13) scoped key + body fingerprint', () => {
 
 describe('IdempotencyGuard — v1 (rollback lever, legacy header-only key)', () => {
   let reflector: Reflector;
-  let redis: ReturnType<typeof makeFakeRedis>;
+  let redis: GuardRedis;
   let guard: IdempotencyGuard;
   let featureFlags: FeatureFlagService;
 
   beforeEach(() => {
     reflector = new Reflector();
-    redis = makeFakeRedis();
+    redis = makeFakeRedis() as GuardRedis;
     featureFlags = new FeatureFlagService();
     jest.spyOn(featureFlags, 'isEnabled').mockImplementation((flag: string) => {
       if (flag === 'idempotency.v2') {
@@ -311,12 +309,7 @@ describe('IdempotencyGuard — v1 (rollback lever, legacy header-only key)', () 
       } // rollback path
       return true;
     });
-    guard = new IdempotencyGuard(
-      reflector,
-      redis as unknown as ConstructorParameters<typeof IdempotencyGuard>[1],
-      undefined,
-      featureFlags,
-    );
+    guard = new IdempotencyGuard(reflector, redis, undefined, featureFlags);
     jest.spyOn(reflector, 'get').mockImplementation((metadataKey: unknown) => {
       if (metadataKey === IDEMPOTENCY_METADATA) {
         return true;

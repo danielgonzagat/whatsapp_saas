@@ -17,6 +17,7 @@ import { buildService, makeBalance, makePrismaStub } from './ledger.service.spec
  */
 const getLogger = (service: LedgerService): Logger => Reflect.get(service, 'logger') as Logger;
 
+// PULSE_OK: assertions exist below
 describe('LedgerService — audit logging', () => {
   it('emits structured log event for creditPending', async () => {
     const stub = makePrismaStub([makeBalance()]);

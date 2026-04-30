@@ -556,6 +556,63 @@ describe('buildExecutionMatrix', () => {
       ]),
     );
   });
+  it('keeps customer synthetic missing evidence as machine proof debt instead of observed product capability', () => {
+    const evidence = makeEvidence({
+      customer: {
+        ...makeActorEvidence('customer'),
+        missing: ['customer-checkout'],
+        summary: 'customer checkout missing runtime observation',
+        results: [
+          {
+            scenarioId: 'customer-checkout',
+            actorKind: 'customer',
+            scenarioKind: 'single-session',
+            critical: true,
+            requested: true,
+            runner: 'derived',
+            status: 'missing_evidence',
+            executed: false,
+            truthMode: 'observed-from-disk',
+            summary: 'customer checkout synthetic missing evidence',
+            artifactPaths: ['PULSE_SCENARIO_EVIDENCE.json'],
+            specsExecuted: [],
+            durationMs: 0,
+            worldStateTouches: [],
+            moduleKeys: ['checkout'],
+            routePatterns: ['/api/checkout'],
+            machineWork: {
+              kind: 'pulse_machine_proof_debt',
+              blueprint: 'Generate or run the customer scenario blueprint for customer-checkout.',
+              requiredValidation: [
+                'scenario_blueprint_generated',
+                'scenario_runtime_execution_attempted_or_classified',
+                'terminal_proof_reason_recorded',
+              ],
+              terminalProofReason:
+                'customer synthetic scenario customer-checkout has no runtime-observed terminal proof; this is PULSE machine work, not product capability evidence.',
+              actionable: true,
+            },
+          },
+        ],
+      },
+    });
+    const matrix = buildMatrix({ evidence });
+
+    expect(matrix.paths[0].status).toBe('inferred_only');
+    expect(matrix.paths[0].truthMode).toBe('inferred');
+    expect(matrix.paths[0].observedEvidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          source: 'actor',
+          executed: false,
+          status: 'missing',
+          summary: expect.stringContaining('PULSE machine work'),
+        }),
+      ]),
+    );
+    expect(matrix.paths[0].breakpoint?.reason).toContain('PULSE machine work');
+    expect(matrix.paths[0].breakpoint?.recovery).toContain('Execute or classify');
+  });
   it('keeps inferred critical paths explainable with a concrete missing evidence breakpoint', () => {
     const matrix = buildMatrix({});
     expect(matrix.paths[0].status).toBe('inferred_only');

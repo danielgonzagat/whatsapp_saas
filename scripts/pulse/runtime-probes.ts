@@ -11,6 +11,8 @@ import type {
 const ARTIFACT_ID = 'PULSE_RUNTIME_PROBES';
 const RUNTIME_EVIDENCE_PATH = 'PULSE_RUNTIME_EVIDENCE.json';
 const RUNTIME_PROBES_PATH = 'PULSE_RUNTIME_PROBES.json';
+const PERFORMANCE_VALIDATION_COMMAND =
+  'node scripts/pulse/run.js --profile production-final --final';
 
 export const DEFAULT_RUNTIME_PROBES_MAX_AGE_MS = 30 * 60 * 1000;
 
@@ -282,6 +284,35 @@ function buildArtifactSummary(
   return `Runtime probes ${status}: ${totals.proofEligible}/${totals.total} proof-eligible, ${totals.executed} executed.`;
 }
 
+function buildScanModeProofFields(
+  source: PulseRuntimeProbeArtifactSource,
+  executed: boolean,
+): Record<string, unknown> {
+  if (executed || (source !== 'scan_skipped' && source !== 'not_run')) {
+    return {};
+  }
+
+  return {
+    truthMode: 'not_available',
+    machineImprovementSignals: [
+      {
+        id: 'runtime-probes:scan-mode-performance-proof',
+        gateName: 'performancePass',
+        targetEngine: 'performance-budget',
+        missingEvidence: 'performance_execution',
+        truthMode: 'not_available',
+        sourceStatus: source,
+        reason: 'Performance proof was not executed in scan mode.',
+        recommendedPulseAction:
+          'Run the PULSE production-final validation command to collect performance evidence before claiming performancePass.',
+        requiredValidationCommand: PERFORMANCE_VALIDATION_COMMAND,
+        productEditRequired: false,
+      },
+    ],
+    requiredValidationCommand: PERFORMANCE_VALIDATION_COMMAND,
+  };
+}
+
 function sourceTimestampFromRecord(record: Record<string, unknown>): string | null {
   const direct = stringValue(record.sourceTimestamp);
   if (direct) {
@@ -331,6 +362,7 @@ function artifactFromRecord(
     artifactPaths,
     probes,
     totals,
+    ...buildScanModeProofFields(effectiveSource, executed),
   };
 }
 

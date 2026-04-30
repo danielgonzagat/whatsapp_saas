@@ -30,8 +30,8 @@ export class FlowOptimizerService {
       return;
     }
 
-    const flow = await this.prisma.flow.findUnique({
-      where: { id: flowId },
+    const flow = await this.prisma.flow.findFirst({
+      where: { id: flowId, workspaceId },
       include: { executions: { take: 50, orderBy: { createdAt: 'desc' } } },
     });
 

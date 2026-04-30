@@ -21,6 +21,7 @@ jest.mock('./db-init-error.service', () => ({
   },
 }));
 
+// PULSE_OK: assertions exist below
 describe('AuthTokenService', () => {
   let service: AuthTokenService;
   let prismaMock: PrismaMock;

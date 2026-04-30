@@ -1,4 +1,5 @@
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import Image from 'next/image';
 import type { CSSProperties, ReactNode } from 'react';
 import { KLOEL_SPORES } from './kloel-brand-spores';
@@ -54,7 +55,7 @@ type LoadingStateProps = {
 };
 
 const soraFont = "var(--font-sora), 'Sora', sans-serif";
-const ember = '#E85D30';
+const ember = colors.ember.primary;
 
 const spores = KLOEL_SPORES;
 

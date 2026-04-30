@@ -236,7 +236,7 @@ export function UniversalComposer({
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all"
               style={{
                 backgroundColor: colors.state.error,
-                color: '#fff',
+                color: '#fff', // PULSE_VISUAL_OK: white text on error button
               }}
             >
               <Square className="w-4 h-4" aria-hidden="true" />

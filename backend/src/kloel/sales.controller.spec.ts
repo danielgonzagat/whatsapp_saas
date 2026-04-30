@@ -3,6 +3,7 @@ import { SalesSubscriptionsController } from './sales-subscriptions.controller';
 
 // ─── SalesSubscriptionsController ────────────────────────────────────────────
 
+// PULSE_OK: assertions exist below
 describe('SalesSubscriptionsController', () => {
   let prisma: {
     customerSubscription: {

@@ -6,6 +6,7 @@ export type BackendOpenAIModelRole =
   | 'brain_fallback'
   | 'writer'
   | 'writer_fallback'
+  | 'guest_emergency'
   | 'audio_understanding'
   | 'audio_understanding_fallback';
 
@@ -16,6 +17,7 @@ const DEFAULT_MODELS: Record<BackendOpenAIModelRole, string> = {
   brain_fallback: 'gpt-4.1',
   writer: 'gpt-5.4-nano-2026-03-17',
   writer_fallback: 'gpt-4.1',
+  guest_emergency: 'gpt-4o-mini',
   audio_understanding: 'gpt-tempo-real-1.5',
   audio_understanding_fallback: 'gpt-4o-mini-transcribe',
 };
@@ -26,6 +28,7 @@ const MODEL_ENV_KEYS: Record<BackendOpenAIModelRole, readonly string[]> = {
   brain_fallback: ['OPENAI_BRAIN_FALLBACK_MODEL'],
   writer: ['OPENAI_WRITER_MODEL', 'OPENAI_MODEL'],
   writer_fallback: ['OPENAI_WRITER_FALLBACK_MODEL', 'OPENAI_FALLBACK_MODEL'],
+  guest_emergency: ['OPENAI_GUEST_EMERGENCY_MODEL'],
   audio_understanding: ['OPENAI_AUDIO_UNDERSTANDING_MODEL'],
   audio_understanding_fallback: ['OPENAI_AUDIO_UNDERSTANDING_FALLBACK_MODEL'],
 };

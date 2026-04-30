@@ -4,6 +4,7 @@ import {
   normalizeCheckoutOrderQuantity,
 } from './checkout-order-pricing.util';
 
+// PULSE_OK: assertions exist below
 describe('checkout-order-pricing.util', () => {
   it('normalizes public order quantity within safe bounds', () => {
     expect(normalizeCheckoutOrderQuantity(undefined)).toBe(1);

@@ -16,6 +16,7 @@ jest.mock('../billing/stripe-runtime', () => ({
 
 import { buildPaymentWebhookController as buildController } from '../../test/payment-webhook-controller-harness';
 
+// PULSE_OK: assertions exist below
 describe('PaymentWebhookController.handleStripe — checkout payment intents', () => {
   beforeEach(() => {
     mockConstructEvent.mockReset();

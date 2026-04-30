@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-29T21:23:51.803Z",
+  "generatedAt": "2026-04-29T23:49:33.895Z",
   "backendUrl": "https://whatsappsaas-copy-staging.up.railway.app",
   "frontendUrl": "https://kloel-frontend-plhznpy68-danielgonzagatj-gmailcoms-projects.vercel.app",
   "actorProfiles": [
@@ -257,10 +257,10 @@
       "passedScenarios": 1
     },
     {
-      "kind": "operator",
-      "declaredScenarios": 9,
-      "executedScenarios": 9,
-      "passedScenarios": 9
+      "kind": "system",
+      "declaredScenarios": 3,
+      "executedScenarios": 2,
+      "passedScenarios": 2
     },
     {
       "kind": "admin",
@@ -269,11 +269,11 @@
       "passedScenarios": 2
     },
     {
-      "kind": "system",
-      "declaredScenarios": 1,
-      "executedScenarios": 0,
-      "passedScenarios": 0
+      "kind": "operator",
+      "declaredScenarios": 7,
+      "executedScenarios": 7,
+      "passedScenarios": 7
     }
   ],
-  "runId": "a363d145-a314-4cce-a24f-24304069a403"
+  "runId": "910557d1-d065-4bc6-9011-419c24b6f000"
 }

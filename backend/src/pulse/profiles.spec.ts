@@ -118,6 +118,7 @@ function createManifest(): PulseManifest {
   };
 }
 
+// PULSE_OK: assertions exist below
 describe('getProfileSelection', () => {
   it('derives core-critical selection from manifest critical structures', () => {
     const selection = getProfileSelection('core-critical', createManifest());

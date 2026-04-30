@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildPulseMachineNextWork } from '../artifacts.directive';
+import {
+  buildPulseAutonomyProofDebtNextWork,
+  buildPulseCertificationProofDebtNextWork,
+  buildPulseMachineNextWork,
+} from '../artifacts.directive';
 import type { PulseMachineReadiness } from '../artifacts.types';
+import type { PulseGateName, PulseGateResult } from '../types';
 
 function makeReadiness(
   criteria: PulseMachineReadiness['criteria'],
@@ -19,6 +24,13 @@ function makeReadiness(
       .filter((criterion) => criterion.status !== 'pass')
       .map((criterion) => `${criterion.id}: ${criterion.reason}`),
   };
+}
+
+function collectRelatedFiles(units: Array<{ relatedFiles?: unknown }>): string[] {
+  return units.flatMap((unit) => {
+    if (!Array.isArray(unit.relatedFiles)) return [];
+    return unit.relatedFiles.filter((filePath): filePath is string => typeof filePath === 'string');
+  });
 }
 
 describe('buildPulseMachineNextWork', () => {
@@ -107,5 +119,103 @@ describe('buildPulseMachineNextWork', () => {
     );
 
     expect(work).toHaveLength(0);
+  });
+});
+
+describe('buildPulseCertificationProofDebtNextWork', () => {
+  it('maps failed proof gates to executable PULSE-machine files, not product files', () => {
+    const failingGate: PulseGateResult = {
+      status: 'fail',
+      reason: 'Evidence is missing.',
+      failureClass: 'missing_evidence',
+      evidenceMode: 'inferred',
+      confidence: 'medium',
+    };
+    const gates: Partial<Record<PulseGateName, PulseGateResult>> = {
+      performancePass: failingGate,
+      observabilityPass: failingGate,
+      customerPass: failingGate,
+      soakPass: failingGate,
+      truthExtractionPass: failingGate,
+      staticPass: {
+        status: 'fail',
+        reason: 'Product Codacy blockers remain.',
+        failureClass: 'product_failure',
+      },
+    };
+
+    const work = buildPulseCertificationProofDebtNextWork({
+      gates,
+    });
+
+    expect(work.map((unit) => unit.gateNames)).toEqual([
+      ['performancePass'],
+      ['observabilityPass'],
+      ['customerPass'],
+      ['soakPass'],
+      ['truthExtractionPass'],
+    ]);
+    expect(work.every((unit) => unit.kind === 'pulse_machine')).toBe(true);
+    expect(work.every((unit) => unit.source === 'pulse_machine')).toBe(true);
+    expect(collectRelatedFiles(work)).toEqual(
+      expect.arrayContaining([
+        'scripts/pulse/parsers/performance-checker.ts',
+        'scripts/pulse/observability-coverage.ts',
+        'scripts/pulse/actors/playwright-runner.ts',
+        'scripts/pulse/actors/soak/observer.ts',
+        'scripts/pulse/codebase-truth.ts',
+      ]),
+    );
+    expect(
+      collectRelatedFiles(work).every((filePath) => filePath.startsWith('scripts/pulse/')),
+    ).toBe(true);
+    expect(work[0].forbiddenActions).toContain('Do not edit SaaS product code for this unit');
+  });
+
+  it('does not convert product-failure gates into machine proof work', () => {
+    const work = buildPulseCertificationProofDebtNextWork({
+      gates: {
+        securityPass: {
+          status: 'fail',
+          reason: 'Product security findings remain in backend files.',
+          failureClass: 'product_failure',
+        },
+        staticPass: {
+          status: 'fail',
+          reason: 'Codacy HIGH findings remain.',
+          failureClass: 'product_failure',
+        },
+      },
+    });
+
+    expect(work).toHaveLength(0);
+  });
+});
+
+describe('buildPulseAutonomyProofDebtNextWork', () => {
+  it('emits machine-owned proof work when production autonomy or zero-prompt guidance is NAO', () => {
+    const work = buildPulseAutonomyProofDebtNextWork({
+      productionAutonomyReason: 'NAO: certification status is PARTIAL.',
+      zeroPromptProductionGuidanceReason: 'NAO: cycle proof is incomplete.',
+      verdicts: {
+        nextStepAutonomy: 'SIM',
+        zeroPromptProductionGuidance: 'NAO',
+        productionAutonomy: 'NAO',
+        canWorkNow: true,
+        canContinueUntilReady: false,
+        canDeclareComplete: false,
+      },
+    });
+
+    expect(work.map((unit) => unit.id)).toEqual([
+      'pulse-proof-productionAutonomy',
+      'pulse-proof-zeroPromptProductionGuidance',
+    ]);
+    expect(work.every((unit) => unit.kind === 'pulse_machine')).toBe(true);
+    expect(work.every((unit) => unit.source === 'pulse_machine')).toBe(true);
+    expect(
+      collectRelatedFiles(work).every((filePath) => filePath.startsWith('scripts/pulse/')),
+    ).toBe(true);
+    expect(work[0].forbiddenActions).toContain('Do not edit SaaS product code for this unit');
   });
 });

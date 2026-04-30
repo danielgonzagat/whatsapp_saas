@@ -69,6 +69,14 @@ export interface PulseScenarioResult {
   executed: boolean;
   /** Truth mode property: 'observed' (fresh in-process), 'observed-from-disk' (loaded from evidence file), or 'inferred' (stale evidence). */
   truthMode?: 'observed' | 'observed-from-disk' | 'inferred';
+  /** Machine-owned work item when a synthetic scenario lacks runtime-observed proof. */
+  machineWork?: {
+    kind: 'pulse_machine_proof_debt';
+    blueprint: string;
+    requiredValidation: string[];
+    terminalProofReason: string;
+    actionable: boolean;
+  };
   /** Provider mode used property. */
   providerModeUsed?: PulseProviderMode;
   /** Smoke executed property. */

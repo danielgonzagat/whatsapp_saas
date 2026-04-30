@@ -3,6 +3,7 @@ import { WhatsAppApiController } from './whatsapp-api.controller';
 import { WhatsAppCatalogController } from './whatsapp-catalog.controller';
 import { WhatsAppMetaCompatController } from './whatsapp-meta-compat.controller';
 
+// PULSE_OK: assertions exist below
 describe('WhatsAppApiController', () => {
   let providerRegistry: {
     startSession: jest.Mock;

@@ -132,6 +132,69 @@ describe('buildPathCoverageState terminal proof routing', () => {
     expect(coverage.summary.criticalInferredGap).toBe(0);
   });
 
+  it('routes customer synthetic missing evidence as actionable PULSE machine proof debt', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-path-proof-'));
+    const coverage = buildPathCoverageState(
+      rootDir,
+      makeMatrix([
+        makeMatrixPath({
+          observedEvidence: [
+            {
+              source: 'actor',
+              artifactPath: 'PULSE_SCENARIO_EVIDENCE.json',
+              executed: false,
+              status: 'missing',
+              summary:
+                'customer synthetic scenario customer-checkout has no runtime-observed terminal proof; this is PULSE machine work, not product capability evidence.',
+            },
+            {
+              source: 'static',
+              artifactPath: 'PULSE_CERTIFICATE.json',
+              executed: true,
+              status: 'mapped',
+              summary: 'Path is statically reconstructed.',
+            },
+          ],
+          breakpoint: {
+            stage: 'trigger',
+            stepIndex: 0,
+            filePath: 'frontend/checkout.tsx',
+            nodeId: 'ui:checkout',
+            routePattern: '/api/checkout',
+            reason:
+              'customer synthetic scenario customer-checkout has no runtime-observed terminal proof; this is PULSE machine work, not product capability evidence.',
+            recovery:
+              'Execute or classify the matching customer/soak scenario blueprint and attach terminal runtime evidence before promoting this path to observed.',
+          },
+        }),
+      ]),
+    );
+    const entry = coverage.paths[0];
+    const probePath = entry.testFilePath ? path.join(rootDir, entry.testFilePath) : null;
+    const probe = probePath
+      ? (JSON.parse(fs.readFileSync(probePath, 'utf8')) as { validationRequired: string[] })
+      : null;
+
+    expect(entry.classification).toBe('probe_blueprint_generated');
+    expect(entry.terminalReason).toContain('PULSE machine work');
+    expect(entry.terminalProof.reason).toContain('actionable proof debt');
+    expect(entry.expectedEvidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'e2e',
+          reason: expect.stringContaining('Customer/soak synthetic missing evidence'),
+        }),
+      ]),
+    );
+    expect(probe?.validationRequired).toEqual(
+      expect.arrayContaining([
+        'scenario_blueprint_generated',
+        'scenario_runtime_execution_attempted_or_classified',
+        'terminal_proof_reason_recorded',
+      ]),
+    );
+  });
+
   it('keeps protected inferred paths terminally reasoned instead of hiding the breakpoint', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-path-proof-'));
     const protectedPath = makeMatrixPath({

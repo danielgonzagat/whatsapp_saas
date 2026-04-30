@@ -67,6 +67,7 @@ vi.mock('../providers/channel-dispatcher', () => ({
 }));
 
 const mockPrisma: any = db.prisma;
+// PULSE_OK: assertions exist below
 describe('cia-cycle', () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -345,11 +345,7 @@ function generateProbeFileContent(
       artifactLinks: buildArtifactLinks(mp, probeFilePath),
       breakpoint: mp.breakpoint,
       requiredEvidence: mp.requiredEvidence,
-      validationRequired: [
-        'runtime_harness_executes_blueprint',
-        'response_contract_verified',
-        'side_effects_verified_when_declared',
-      ],
+      validationRequired: buildRequiredValidation(mp),
     },
     null,
     2,
@@ -418,6 +414,10 @@ function buildTerminalReason(
   if (classification === 'probe_blueprint_generated') {
     const mode = normalizeCoverageExecutionMode(mp.executionMode, mp.risk);
     const routeOrEntry = mp.routePatterns[0] ?? mp.entrypoint.filePath ?? mp.entrypoint.nodeId;
+    const machineProofDebt = findSyntheticMachineProofDebt(mp);
+    if (machineProofDebt) {
+      return `${machineProofDebt.summary} Generated ${mode} probe blueprint must execute or terminally classify the scenario before product capability evidence can be claimed.`;
+    }
     return safeToExecute
       ? `Unobserved ${mp.risk} path has ${routeOrEntry ?? 'a discovered entrypoint'} and is terminalized as a ${mode} probe blueprint until runtime evidence executes.`
       : 'Unobserved path maps to a protected governance surface and remains inferred without executable coverage.';
@@ -436,10 +436,10 @@ function buildExpectedEvidence(mp: PulseExecutionMatrixPath): PathCoverageExpect
   }));
 
   if (expected.some((item) => item.kind === 'runtime')) {
-    return expected;
+    return appendScenarioMachineExpectedEvidence(mp, expected);
   }
 
-  return [
+  return appendScenarioMachineExpectedEvidence(mp, [
     ...expected,
     {
       kind: 'runtime',
@@ -447,7 +447,56 @@ function buildExpectedEvidence(mp: PulseExecutionMatrixPath): PathCoverageExpect
       reason:
         'Generated probe blueprint must execute and publish pass/fail evidence before this path can count as observed.',
     },
+  ]);
+}
+
+function appendScenarioMachineExpectedEvidence(
+  mp: PulseExecutionMatrixPath,
+  expected: PathCoverageExpectedEvidence[],
+): PathCoverageExpectedEvidence[] {
+  const machineProofDebt = findSyntheticMachineProofDebt(mp);
+  if (!machineProofDebt) {
+    return expected;
+  }
+  return [
+    ...expected,
+    {
+      kind: 'e2e',
+      required: true,
+      reason:
+        'Customer/soak synthetic missing evidence must be executed or classified by the PULSE machine before it can satisfy scenario proof.',
+    },
   ];
+}
+
+function buildRequiredValidation(mp: PulseExecutionMatrixPath): string[] {
+  const base = [
+    'runtime_harness_executes_blueprint',
+    'response_contract_verified',
+    'side_effects_verified_when_declared',
+  ];
+  if (!findSyntheticMachineProofDebt(mp)) {
+    return base;
+  }
+  return [
+    ...base,
+    'scenario_blueprint_generated',
+    'scenario_runtime_execution_attempted_or_classified',
+    'terminal_proof_reason_recorded',
+  ];
+}
+
+function findSyntheticMachineProofDebt(
+  mp: PulseExecutionMatrixPath,
+): PulseExecutionMatrixPath['observedEvidence'][number] | null {
+  return (
+    mp.observedEvidence.find(
+      (entry) =>
+        entry.source === 'actor' &&
+        entry.status === 'missing' &&
+        entry.summary.includes('PULSE machine work'),
+    ) ?? null
+  );
 }
 
 function buildStructuralSafetyClassification(
@@ -484,12 +533,14 @@ function buildTerminalProof(
   }
 
   if (classification === 'probe_blueprint_generated' && probeFilePath) {
+    const machineProofDebt = findSyntheticMachineProofDebt(mp);
     return {
       status: 'blueprint_ready',
       breakpoint: mp.breakpoint,
       validationCommand: `${mp.validationCommand} # execute generated probe blueprint ${probeFilePath}`,
-      reason:
-        'Path has a generated probe blueprint that can produce observed terminal evidence when executed.',
+      reason: machineProofDebt
+        ? `${machineProofDebt.summary} Generated probe blueprint is actionable proof debt until the scenario is executed or classified.`
+        : 'Path has a generated probe blueprint that can produce observed terminal evidence when executed.',
     };
   }
 

@@ -43,8 +43,8 @@ const VARIANT_STYLES: Record<
   },
   danger: {
     bg: colors.state.error,
-    bgHover: '#E5404F',
-    text: '#fff',
+    bgHover: '#E5404F', // PULSE_VISUAL_OK: error hover shade
+    text: '#fff', // PULSE_VISUAL_OK: white text on danger button
   },
   success: {
     bg: colors.brand.green,

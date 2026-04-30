@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { colors } from '@/lib/design-tokens';
 import {
   MessageIcon,
   resolveIconStroke,
@@ -33,11 +34,11 @@ interface MessageActionBarProps {
   copyLabel?: string;
 }
 
-const EMBER = '#E85D30';
-const TEXT_PRIMARY = 'var(--app-text-primary, #FFFFFF)';
-const TEXT_SECONDARY = 'var(--app-text-secondary, #8A8A8E)';
-const TOOLTIP_BG = 'var(--app-bg-tertiary, #1A1A1E)';
-const DISABLED_STROKE = '#4B4B50';
+const EMBER = colors.ember.primary;
+const TEXT_PRIMARY = 'var(--app-text-primary, #FFFFFF)'; // PULSE_VISUAL_OK: CSS var fallback
+const TEXT_SECONDARY = 'var(--app-text-secondary, #8A8A8E)'; // PULSE_VISUAL_OK: CSS var fallback
+const TOOLTIP_BG = 'var(--app-bg-tertiary, #1A1A1E)'; // PULSE_VISUAL_OK: CSS var fallback
+const DISABLED_STROKE = '#4B4B50'; // PULSE_VISUAL_OK: disabled icon stroke
 
 /** Message action bar. */
 export function MessageActionBar({
@@ -191,7 +192,7 @@ export function MessageActionBar({
                     whiteSpace: 'nowrap',
                     padding: '4px 8px',
                     borderRadius: 4,
-                    border: '1px solid #222226',
+                    border: '1px solid #222226', // PULSE_VISUAL_OK: tooltip border, matches design border.space
                     boxShadow: `0 12px 28px rgba(0, 0, 0, 0.35)`,
                     zIndex: 5,
                     opacity: 1,

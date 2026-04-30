@@ -3,6 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { useCRMMutations, useContact } from '@/hooks/useCRM';
 import { neuroCrmApi } from '@/lib/api/crm';
+import { colors } from '@/lib/design-tokens';
 import {
   Brain,
   Briefcase,
@@ -45,13 +46,13 @@ interface ContactDetailDrawerProps {
 
 /* ── Design tokens ── */
 const C = {
-  bg: '#0A0A0C',
-  surface: '#111113',
-  elevated: '#19191C',
-  border: '#222226',
-  accent: '#E85D30',
-  text: '#E0DDD8',
-  muted: '#6E6E73',
+  bg: colors.background.void,
+  surface: colors.background.surface,
+  elevated: colors.background.elevated,
+  border: colors.border.space,
+  accent: colors.ember.primary,
+  text: colors.text.silver,
+  muted: colors.text.muted,
   sora: "'Sora', sans-serif",
   mono: "'JetBrains Mono', monospace",
 } as const;

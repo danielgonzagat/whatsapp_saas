@@ -15,6 +15,7 @@ describe('PartnershipsService', () => {
       findFirst: jest.Mock;
       count: jest.Mock;
       delete: jest.Mock;
+      deleteMany: jest.Mock;
       updateMany: jest.Mock;
     };
     collaboratorInvite: {
@@ -30,6 +31,7 @@ describe('PartnershipsService', () => {
       create: jest.Mock;
       updateMany: jest.Mock;
       delete: jest.Mock;
+      deleteMany: jest.Mock;
     };
     workspace: {
       findUnique: jest.Mock;
@@ -63,6 +65,7 @@ describe('PartnershipsService', () => {
         findFirst: jest.fn(),
         count: jest.fn(),
         delete: jest.fn(),
+        deleteMany: jest.fn(),
         updateMany: jest.fn(),
       },
       collaboratorInvite: {
@@ -78,6 +81,7 @@ describe('PartnershipsService', () => {
         create: jest.fn(),
         updateMany: jest.fn(),
         delete: jest.fn(),
+        deleteMany: jest.fn(),
       },
       workspace: {
         findUnique: jest.fn().mockResolvedValue({ name: 'Workspace Teste' }),
@@ -215,11 +219,13 @@ describe('PartnershipsService', () => {
 
     it('deletes non-admin agent successfully', async () => {
       prisma.agent.findFirst.mockResolvedValue({ id: 'a1', role: 'SUPPORT' });
-      prisma.agent.delete.mockResolvedValue({ id: 'a1' });
+      prisma.agent.deleteMany.mockResolvedValue({ count: 1 });
 
       const result = await service.removeCollaborator('a1', 'ws-1');
 
-      expect(prisma.agent.delete).toHaveBeenCalledWith({ where: { id: 'a1' } });
+      expect(prisma.agent.deleteMany).toHaveBeenCalledWith({
+        where: { id: 'a1', workspaceId: 'ws-1' },
+      });
       expect(result.id).toBe('a1');
     });
   });
@@ -487,7 +493,9 @@ describe('PartnershipsService', () => {
         }),
       ).rejects.toThrow(ServiceUnavailableException);
 
-      expect(prisma.affiliatePartner.delete).toHaveBeenCalledWith({ where: { id: 'new-1' } });
+      expect(prisma.affiliatePartner.deleteMany).toHaveBeenCalledWith({
+        where: { id: 'new-1', workspaceId: 'ws-1' },
+      });
     });
   });
 

@@ -11,6 +11,7 @@ export type ObservabilityPillar =
   | 'error_budget'
   | 'sentry';
 export type ObservabilityStatus = 'observed' | 'missing' | 'partial' | 'not_applicable';
+export type ObservabilityTruthMode = 'observed' | 'inferred' | 'not_available';
 
 /** Evidence class used to keep configured/catalogued observability separate from observed proof. */
 export type ObservabilityEvidenceKind =
@@ -38,6 +39,27 @@ export interface ObservabilityPillarEvidence {
   reason: string;
   /** Relative file paths that support this classification. */
   filePaths: string[];
+  /** Explicit truth mode for the evidence claim. */
+  truthMode: ObservabilityTruthMode;
+  /** Machine-facing signal when PULSE needs stronger proof for this pillar. */
+  machineImprovementSignal: ObservabilityMachineImprovementSignal | null;
+}
+
+export interface ObservabilityMachineImprovementSignal {
+  id: string;
+  targetEngine:
+    | 'observability-coverage'
+    | 'otel-runtime'
+    | 'runtime-probes'
+    | 'external-sources-orchestrator';
+  capabilityId: string;
+  pillar: ObservabilityPillar;
+  truthMode: ObservabilityTruthMode;
+  sourceKind: ObservabilityEvidenceKind;
+  status: ObservabilityStatus;
+  reason: string;
+  recommendedPulseAction: string;
+  productEditRequired: false;
 }
 
 /** Code-level instrumentation quality score. */
@@ -99,6 +121,8 @@ export interface CapabilityObservability {
   untrustedEvidencePillars: ObservabilityPillar[];
   /** Whether a critical capability still claims observed coverage from an untrusted source. */
   criticalObservedByUntrustedSource: boolean;
+  /** Machine-facing signals for missing or scan-mode-only observability proof. */
+  machineImprovementSignals: ObservabilityMachineImprovementSignal[];
 }
 
 /** Per-flow observability rollup. */
@@ -138,6 +162,7 @@ export interface ObservabilityCoverageState {
     filesWithConsoleOnly: number;
     filesWithNoLogging: number;
     filesWithErrorLogging: number;
+    machineImprovementSignals: number;
   };
   /** Capabilities property. */
   capabilities: CapabilityObservability[];

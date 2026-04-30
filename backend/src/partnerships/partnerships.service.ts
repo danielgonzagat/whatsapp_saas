@@ -199,7 +199,8 @@ export class PartnershipsService {
       resourceId: agentId,
       details: { deletedBy: 'user', email: agent.email },
     });
-    return this.prisma.agent.delete({ where: { id: agentId } });
+    await this.prisma.agent.deleteMany({ where: { id: agentId, workspaceId } });
+    return agent;
   }
 
   // ═══ AFFILIATES & PRODUCERS ═══
@@ -370,7 +371,9 @@ export class PartnershipsService {
 
     if (!delivered) {
       try {
-        await this.prisma.affiliatePartner.delete({ where: { id: partner.id } });
+        await this.prisma.affiliatePartner.deleteMany({
+          where: { id: partner.id, workspaceId },
+        });
       } catch {
         // Best-effort rollback when invite delivery fails after persistence.
       }

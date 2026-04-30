@@ -5,6 +5,7 @@ jest.mock('../queue/queue', () => ({
   flowQueue: { add: jest.fn() },
 }));
 
+// PULSE_OK: assertions exist below
 describe('WhatsappService', () => {
   let service: WhatsappService;
   let mockAutopilotAdd: jest.Mock;

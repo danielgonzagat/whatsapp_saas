@@ -23,6 +23,7 @@ import type {
   ObservabilityPillar,
   ObservabilityStatus,
   PerFileLoggingEntry,
+  ObservabilityMachineImprovementSignal,
 } from './types.observability-coverage';
 import type {
   PulseCapability,
@@ -587,21 +588,39 @@ function buildCapabilityObservability(
     const relevantFiles = resolveCapabilityFiles(rootDir, cap.filePaths, allFileSet);
 
     const evidence: Record<ObservabilityPillar, ObservabilityPillarEvidence> = {
-      logs: normalizePillarEvidence('logs', scanForLoggingEvidence(relevantFiles), rootDir),
-      metrics: normalizePillarEvidence('metrics', scanForMetricsEvidence(relevantFiles), rootDir),
-      tracing: normalizePillarEvidence('tracing', scanForTracingEvidence(relevantFiles), rootDir),
-      alerts: normalizePillarEvidence('alerts', scanForAlertsEvidence(relevantFiles), rootDir),
+      logs: normalizePillarEvidence(cap.id, 'logs', scanForLoggingEvidence(relevantFiles), rootDir),
+      metrics: normalizePillarEvidence(
+        cap.id,
+        'metrics',
+        scanForMetricsEvidence(relevantFiles),
+        rootDir,
+      ),
+      tracing: normalizePillarEvidence(
+        cap.id,
+        'tracing',
+        scanForTracingEvidence(relevantFiles),
+        rootDir,
+      ),
+      alerts: normalizePillarEvidence(
+        cap.id,
+        'alerts',
+        scanForAlertsEvidence(relevantFiles),
+        rootDir,
+      ),
       dashboards: normalizePillarEvidence(
+        cap.id,
         'dashboards',
         findDashboardEvidence(relevantFiles),
         rootDir,
       ),
       health_probes: normalizePillarEvidence(
+        cap.id,
         'health_probes',
         findHealthEndpointEvidence(relevantFiles),
         rootDir,
       ),
       error_budget: normalizePillarEvidence(
+        cap.id,
         'error_budget',
         cap.runtimeCritical
           ? findErrorBudgetEvidence(relevantFiles)
@@ -616,6 +635,7 @@ function buildCapabilityObservability(
         rootDir,
       ),
       sentry: normalizePillarEvidence(
+        cap.id,
         'sentry',
         scanForErrorTrackingEvidence(relevantFiles),
         rootDir,
@@ -676,6 +696,9 @@ function buildCapabilityObservability(
     )
       .filter(([, item]) => UNTRUSTED_PRESENT_KINDS.has(item.sourceKind))
       .map(([pillar]) => pillar);
+    const machineImprovementSignals = (
+      Object.values(evidence) as ObservabilityPillarEvidence[]
+    ).flatMap((item) => (item.machineImprovementSignal ? [item.machineImprovementSignal] : []));
 
     return {
       capabilityId: cap.id,
@@ -689,17 +712,25 @@ function buildCapabilityObservability(
       trustedObservedPillars,
       untrustedEvidencePillars,
       criticalObservedByUntrustedSource: false,
+      machineImprovementSignals,
     };
   });
 }
 
 function normalizePillarEvidence(
+  capabilityId: string,
   pillar: ObservabilityPillar,
   result: PillarScanResult,
   rootDir: string,
 ): ObservabilityPillarEvidence {
   const status = normalizeStatusForEvidence(result.status, result.sourceKind);
-  return {
+  const truthMode =
+    status === 'observed' && TRUSTED_OBSERVED_KINDS.has(result.sourceKind)
+      ? 'observed'
+      : result.sourceKind === 'absent'
+        ? 'not_available'
+        : 'inferred';
+  const normalized: ObservabilityPillarEvidence = {
     pillar,
     status,
     sourceKind: result.sourceKind,
@@ -707,6 +738,40 @@ function normalizePillarEvidence(
     source: result.source,
     reason: result.reason,
     filePaths: result.filePaths.map((filePath) => toRepoRelativePath(rootDir, filePath)),
+    truthMode,
+    machineImprovementSignal: null,
+  };
+  normalized.machineImprovementSignal = buildObservabilityMachineSignal(capabilityId, normalized);
+  return normalized;
+}
+
+function targetEngineForPillar(
+  pillar: ObservabilityPillar,
+): ObservabilityMachineImprovementSignal['targetEngine'] {
+  if (pillar === 'tracing') return 'otel-runtime';
+  if (pillar === 'health_probes') return 'runtime-probes';
+  if (pillar === 'sentry' || pillar === 'alerts') return 'external-sources-orchestrator';
+  return 'observability-coverage';
+}
+
+function buildObservabilityMachineSignal(
+  capabilityId: string,
+  evidence: ObservabilityPillarEvidence,
+): ObservabilityMachineImprovementSignal | null {
+  if (evidence.status === 'observed' || evidence.status === 'not_applicable') return null;
+
+  return {
+    id: `observability:${capabilityId}:${evidence.pillar}`,
+    targetEngine: targetEngineForPillar(evidence.pillar),
+    capabilityId,
+    pillar: evidence.pillar,
+    truthMode: evidence.truthMode,
+    sourceKind: evidence.sourceKind,
+    status: evidence.status,
+    reason: evidence.reason,
+    recommendedPulseAction:
+      'Improve PULSE discovery or runtime evidence capture for this observability pillar; do not turn the gap into a product-code edit suggestion.',
+    productEditRequired: false,
   };
 }
 
@@ -1076,5 +1141,9 @@ function buildSummary(
     filesWithConsoleOnly: dedupedEntries.filter((e) => e.hasConsole && !e.hasStructured).length,
     filesWithNoLogging: dedupedEntries.filter((e) => e.noLogging).length,
     filesWithErrorLogging: dedupedEntries.filter((e) => e.hasErrorLogging).length,
+    machineImprovementSignals: capabilityItems.reduce(
+      (sum, item) => sum + item.machineImprovementSignals.length,
+      0,
+    ),
   };
 }

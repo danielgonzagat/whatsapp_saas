@@ -192,6 +192,72 @@ describe('scenario-evidence-loader', () => {
     expect(rewritten.results?.[0]).toMatchObject({ status: 'not_run', executed: false });
   });
 
+  it('should turn customer and soak synthetic missing evidence into PULSE machine proof debt', () => {
+    fs.writeFileSync(
+      path.join(evidenceDir, 'PULSE_CUSTOMER_EVIDENCE.json'),
+      JSON.stringify({
+        actorKind: 'customer',
+        declared: ['customer-checkout'],
+        executed: [],
+        missing: ['customer-checkout'],
+        passed: [],
+        failed: [],
+        summary: 'customer synthetic not executed',
+        results: [
+          {
+            scenarioId: 'customer-checkout',
+            status: 'missing_evidence',
+            executed: false,
+            critical: true,
+            routePatterns: ['/api/checkout'],
+          },
+        ],
+      }),
+    );
+    fs.writeFileSync(
+      path.join(evidenceDir, 'PULSE_SOAK_EVIDENCE.json'),
+      JSON.stringify({
+        actorKind: 'soak',
+        declared: ['queue-soak'],
+        executed: [],
+        missing: ['queue-soak'],
+        passed: [],
+        failed: [],
+        summary: 'soak synthetic not executed',
+        results: [
+          {
+            scenarioId: 'queue-soak',
+            status: 'missing_evidence',
+            executed: false,
+            critical: true,
+            moduleKeys: ['queue'],
+          },
+        ],
+      }),
+    );
+
+    const result = loadScenarioEvidenceFromDisk(testRootDir);
+
+    expect(result.customer?.results[0].machineWork).toEqual(
+      expect.objectContaining({
+        kind: 'pulse_machine_proof_debt',
+        actionable: true,
+        terminalProofReason: expect.stringContaining('PULSE machine work'),
+      }),
+    );
+    expect(result.customer?.results[0].machineWork?.requiredValidation).toEqual(
+      expect.arrayContaining([
+        'scenario_blueprint_generated',
+        'scenario_runtime_execution_attempted_or_classified',
+        'terminal_proof_reason_recorded',
+      ]),
+    );
+    expect(result.soak?.results[0].machineWork?.terminalProofReason).toContain(
+      'soak synthetic scenario queue-soak has no runtime-observed terminal proof',
+    );
+    expect(result.soak?.results[0].actorKind).toBe('system');
+  });
+
   it('should handle invalid JSON gracefully', () => {
     fs.writeFileSync(path.join(evidenceDir, 'PULSE_ADMIN_EVIDENCE.json'), 'not valid json');
 

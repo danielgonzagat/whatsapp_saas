@@ -88,6 +88,33 @@ function normalizeStringArray(value: unknown): string[] {
     : [];
 }
 
+function buildSyntheticMachineWork(
+  scenarioId: string,
+  actorEvidenceKey: ActorEvidenceKey,
+  status: PulseScenarioResult['status'],
+  executed: boolean,
+): PulseScenarioResult['machineWork'] | undefined {
+  if (actorEvidenceKey !== 'customer' && actorEvidenceKey !== 'soak') {
+    return undefined;
+  }
+  if (executed && (status === 'passed' || status === 'failed')) {
+    return undefined;
+  }
+
+  const scenarioLane = actorEvidenceKey === 'soak' ? 'soak' : 'customer';
+  return {
+    kind: 'pulse_machine_proof_debt',
+    blueprint: `Generate or run the ${scenarioLane} scenario blueprint for ${scenarioId}, then classify the scenario with terminal observed evidence or a precise non-executable reason.`,
+    requiredValidation: [
+      'scenario_blueprint_generated',
+      'scenario_runtime_execution_attempted_or_classified',
+      'terminal_proof_reason_recorded',
+    ],
+    terminalProofReason: `${scenarioLane} synthetic scenario ${scenarioId} has no runtime-observed terminal proof; this is PULSE machine work, not product capability evidence.`,
+    actionable: true,
+  };
+}
+
 function normalizeScenarioResult(
   raw: unknown,
   fallbackActorKind: ActorEvidenceKey,
@@ -118,6 +145,7 @@ function normalizeScenarioResult(
         ? (status as PulseScenarioResult['status'])
         : 'checker_gap';
   const actorKind = normalizeActorEvidenceKey(item.actorKind) ?? fallbackActorKind;
+  const executed = item.executed === true;
 
   return {
     scenarioId,
@@ -131,8 +159,14 @@ function normalizeScenarioResult(
     runner:
       typeof item.runner === 'string' ? (item.runner as PulseScenarioResult['runner']) : 'derived',
     status: normalizedStatus,
-    executed: item.executed === true,
+    executed,
     truthMode: fresh ? 'observed-from-disk' : 'inferred',
+    machineWork: buildSyntheticMachineWork(
+      scenarioId,
+      fallbackActorKind,
+      normalizedStatus,
+      executed,
+    ),
     providerModeUsed:
       typeof item.providerModeUsed === 'string'
         ? (item.providerModeUsed as PulseScenarioResult['providerModeUsed'])

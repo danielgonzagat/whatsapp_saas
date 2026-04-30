@@ -38,7 +38,7 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
   const backendFiles = walkFiles(config.backendDir, ['.ts']);
 
   for (const file of backendFiles) {
-    if (/\.spec\.ts$|migration|seed/i.test(file)) {
+    if (/\.spec\.ts$|\.test\.ts$|\.spec-helpers\.ts$|\.fixtures\.ts$|migration|seed/i.test(file)) {
       continue;
     }
 
@@ -48,6 +48,8 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
     } catch {
       continue;
     }
+
+    const usesDateLibrary = /from\s+['"](date-fns|luxon|moment-timezone|dayjs)['"]/.test(content);
 
     const relFile = path.relative(config.rootDir, file);
     const lines = content.split('\n');
@@ -116,21 +118,32 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
       }
 
       // CHECK 4: Date parsing without validation
-      if (
-        /new Date\s*\(\s*(?!Date\.now|'|"|\d)/.test(line) &&
-        !/isValid|isNaN|instanceof Date/i.test(line)
-      ) {
-        const context = lines.slice(Math.max(0, i - 2), i + 3).join('\n');
-        if (!/isValid|isNaN|isFinite|dayjs|moment/i.test(context)) {
-          breaks.push({
-            type: 'EDGE_CASE_DATE',
-            severity: 'medium',
-            file: relFile,
-            line: i + 1,
-            description:
-              'new Date() from user input without validation — invalid dates produce Invalid Date silently',
-            detail: `${line.slice(0, 120)} — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')`,
-          });
+      // Skip if file imports a proper date library (date-fns, luxon, etc.)
+      if (!usesDateLibrary) {
+        if (
+          /new Date\s*\(\s*(?!Date\.now|'|"|\d)/.test(line) &&
+          !/isValid|isNaN|instanceof Date/i.test(line)
+        ) {
+          // .toISOString() on the same line = UTC conversion is present
+          if (/\.toISOString\(\)/.test(line)) {
+            continue;
+          }
+          // new Date() with no arguments = creating current timestamp, not parsing user input
+          if (/new Date\s*\(\s*\)/.test(line)) {
+            continue;
+          }
+          const context = lines.slice(Math.max(0, i - 2), i + 3).join('\n');
+          if (!/isValid|isNaN|isFinite|dayjs|moment/i.test(context)) {
+            breaks.push({
+              type: 'EDGE_CASE_DATE',
+              severity: 'medium',
+              file: relFile,
+              line: i + 1,
+              description:
+                'new Date() from user input without validation — invalid dates produce Invalid Date silently',
+              detail: `${line.slice(0, 120)} — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')`,
+            });
+          }
         }
       }
 

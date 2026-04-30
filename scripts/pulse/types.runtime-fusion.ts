@@ -47,6 +47,20 @@ export type RuntimeFusionEvidenceStatus =
   | 'skipped'
   | 'invalid';
 
+export type RuntimeFusionTruthMode = 'observed' | 'inferred' | 'not_available';
+
+export interface RuntimeFusionMachineImprovementSignal {
+  id: string;
+  targetEngine: 'external-sources-orchestrator' | 'otel-runtime' | 'runtime-fusion';
+  missingEvidence: 'external_signal' | 'runtime_trace' | 'adapter_status';
+  truthMode: RuntimeFusionTruthMode;
+  sourceStatus: RuntimeFusionEvidenceStatus | string;
+  artifactPath: string;
+  reason: string;
+  recommendedPulseAction: string;
+  productEditRequired: false;
+}
+
 export interface RuntimeSignal {
   id: string;
   source: SignalSource;
@@ -120,4 +134,5 @@ export interface RuntimeFusionState {
     newPriority: string;
     reason: string;
   }>;
+  machineImprovementSignals: RuntimeFusionMachineImprovementSignal[];
 }

@@ -222,7 +222,7 @@ export class FlowsService {
 
   /** Retry execution. */
   async retryExecution(workspaceId: string, executionId: string) {
-    const execution = await this.prisma.flowExecution.findUnique({
+    const execution = await this.prisma.flowExecution.findFirst({
       where: { id: executionId, workspaceId },
       include: {
         contact: true,
@@ -243,14 +243,18 @@ export class FlowsService {
     });
 
     // Reset execution state
-    return this.prisma.flowExecution.update({
-      where: { id: executionId },
+    await this.prisma.flowExecution.updateMany({
+      where: { id: executionId, workspaceId },
       data: {
         status: 'PENDING',
         logs: {
           push: { timestamp: Date.now(), message: 'Retrying execution...' },
         },
       },
+    });
+
+    return this.prisma.flowExecution.findFirst({
+      where: { id: executionId, workspaceId },
       include: {
         contact: true,
         flow: true,
@@ -349,8 +353,8 @@ export class FlowsService {
     );
     const waitExpiresAt = new Date(Date.now() + timeoutMs).toISOString();
 
-    const execution = await this.prisma.flowExecution.findUnique({
-      where: { id: executionId },
+    const execution = await this.prisma.flowExecution.findFirst({
+      where: { id: executionId, workspaceId: { not: '' } },
     });
     if (!execution) {
       this.logger.warn(`[WaitForReply] Execution ${executionId} not found, cannot pause`);
@@ -367,8 +371,8 @@ export class FlowsService {
       fallbackMessage: nodeData.fallbackMessage || undefined,
     };
 
-    await this.prisma.flowExecution.update({
-      where: { id: executionId },
+    await this.prisma.flowExecution.updateMany({
+      where: { id: executionId, workspaceId: execution.workspaceId },
       data: {
         status: 'WAITING_INPUT',
         currentNodeId: waitNodeId,
@@ -449,8 +453,8 @@ export class FlowsService {
       resumeEdge,
     };
 
-    await this.prisma.flowExecution.update({
-      where: { id: execution.id },
+    await this.prisma.flowExecution.updateMany({
+      where: { id: execution.id, workspaceId },
       data: {
         status: 'RUNNING',
         state: updatedState as Prisma.InputJsonValue,
@@ -535,8 +539,8 @@ export class FlowsService {
         resumeEdge: 'Timeout',
       };
 
-      await this.prisma.flowExecution.update({
-        where: { id: execution.id },
+      await this.prisma.flowExecution.updateMany({
+        where: { id: execution.id, workspaceId: execution.workspaceId },
         data: {
           status: 'RUNNING',
           state: updatedState as Prisma.InputJsonValue,

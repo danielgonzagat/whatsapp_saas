@@ -247,7 +247,7 @@ function collectObservedEvidence(args: {
               : result.status === 'skipped'
                 ? 'skipped'
                 : 'missing',
-        summary: result.summary,
+        summary: result.machineWork?.terminalProofReason ?? result.summary,
       });
     }
   }
@@ -342,6 +342,12 @@ function buildBreakpoint(args: {
     };
   }
   if (args.status === 'inferred_only' || args.status === 'untested') {
+    const machineProofDebt = args.observedEvidence.find(
+      (entry) =>
+        entry.source === 'actor' &&
+        entry.status === 'missing' &&
+        entry.summary.includes('PULSE machine work'),
+    );
     const missingRuntimeEvidence = args.observedEvidence.every(
       (entry) => !entry.executed || entry.status === 'mapped' || entry.status === 'missing',
     );
@@ -351,11 +357,14 @@ function buildBreakpoint(args: {
       filePath: args.chain?.entrypoint.filesInvolved[0] ?? args.capability?.filePaths[0] ?? null,
       nodeId: args.chain?.entrypoint.nodeId ?? args.capability?.nodeIds[0] ?? null,
       routePattern: args.flow?.routePatterns[0] ?? args.capability?.routePatterns[0] ?? null,
-      reason: missingRuntimeEvidence
-        ? 'Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.'
-        : 'Path has partial evidence but still lacks the required observed terminal probe.',
-      recovery:
-        'Run or attach a matching runtime, flow, actor, browser, or external probe before promoting this path to observed evidence.',
+      reason: machineProofDebt
+        ? machineProofDebt.summary
+        : missingRuntimeEvidence
+          ? 'Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.'
+          : 'Path has partial evidence but still lacks the required observed terminal probe.',
+      recovery: machineProofDebt
+        ? 'Execute or classify the matching customer/soak scenario blueprint and attach terminal runtime evidence before promoting this path to observed.'
+        : 'Run or attach a matching runtime, flow, actor, browser, or external probe before promoting this path to observed evidence.',
     };
   }
   return null;

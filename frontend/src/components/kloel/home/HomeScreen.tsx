@@ -8,6 +8,7 @@ import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { tokenStorage } from '@/lib/api';
 import { apiUrl } from '@/lib/http';
 import { readStreamSequential } from '@/lib/async-sequence';
+import { colors } from '@/lib/design-tokens';
 import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { mutate } from 'swr';
@@ -102,7 +103,7 @@ function renderMessageText(text: string) {
     const key = cumulative;
     if (part.startsWith('**') && part.endsWith('**')) {
       return (
-        <strong key={key} style={{ color: '#E85D30', fontWeight: 600 }}>
+        <strong key={key} style={{ color: colors.ember.primary, fontWeight: 600 }}>
           {part.slice(2, -2)}
         </strong>
       );
@@ -633,7 +634,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                 style={{
                   fontFamily: "'JetBrains Mono', monospace",
                   fontSize: 11,
-                  color: '#E85D30',
+                  color: colors.ember.primary,
                   letterSpacing: '0.2em',
                   textTransform: 'uppercase',
                   marginBottom: 28,
@@ -697,13 +698,15 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                     width: 30,
                     height: 30,
                     borderRadius: 6,
-                    background: homeInput.trim() ? '#E85D30' : '#19191C',
+                    background: homeInput.trim()
+                      ? colors.ember.primary
+                      : colors.background.elevated,
                     border: 'none',
                     cursor: homeInput.trim() ? 'pointer' : 'default',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: homeInput.trim() ? '#0A0A0C' : '#3A3A3F',
+                    color: homeInput.trim() ? colors.background.void : colors.text.dim,
                     transition: 'all 150ms ease',
                   }}
                 >
@@ -822,10 +825,10 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                         transition: 'color 150ms ease',
                       }}
                       onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLElement).style.color = '#6E6E73';
+                        (e.currentTarget as HTMLElement).style.color = colors.text.muted;
                       }}
                       onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLElement).style.color = '#3A3A3F';
+                        (e.currentTarget as HTMLElement).style.color = colors.text.dim;
                       }}
                     >
                       {isUserCopied ? (
@@ -880,10 +883,10 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                         transition: 'color 150ms ease',
                       }}
                       onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLElement).style.color = '#6E6E73';
+                        (e.currentTarget as HTMLElement).style.color = colors.text.muted;
                       }}
                       onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLElement).style.color = '#3A3A3F';
+                        (e.currentTarget as HTMLElement).style.color = colors.text.dim;
                       }}
                     >
                       <svg
@@ -910,7 +913,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                   </div>
                   <div
                     style={{
-                      background: '#1A1A1E',
+                      background: '#1A1A1E', // PULSE_VISUAL_OK: user message bubble bg
                       color: 'var(--app-text-primary)',
                       borderRadius: 20,
                       padding: '12px 18px',
@@ -976,7 +979,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                       fontFamily: "'Sora', sans-serif",
                       fontSize: 14,
                       lineHeight: 1.8,
-                      color: msg.content === ERROR_MESSAGE ? '#3A3A3F' : '#E0DDD8',
+                      color: msg.content === ERROR_MESSAGE ? colors.text.dim : colors.text.silver,
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
                     }}
@@ -986,7 +989,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                     {msg.isTyping && (
                       <span
                         style={{
-                          color: '#E85D30',
+                          color: colors.ember.primary,
                           fontWeight: 400,
                           animation: 'blink 1s ease-in-out infinite',
                           textShadow: '0 0 8px rgba(232, 93, 48, 0.5)',
@@ -1107,12 +1110,12 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             }}
             onFocus={(e) => {
               const el = e.currentTarget;
-              el.style.borderColor = 'rgba(232, 93, 48, 0.4)';
-              el.style.boxShadow = '0 0 0 2px rgba(232, 93, 48, 0.08)';
+              el.style.borderColor = 'rgba(232, 93, 48, 0.4)'; // PULSE_VISUAL_OK: ember glow
+              el.style.boxShadow = '0 0 0 2px rgba(232, 93, 48, 0.08)'; // PULSE_VISUAL_OK: ember glow
             }}
             onBlur={(e) => {
               const el = e.currentTarget;
-              el.style.borderColor = '#222226';
+              el.style.borderColor = colors.border.space;
               el.style.boxShadow = 'none';
             }}
             onSubmit={(event) => {
@@ -1179,7 +1182,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#E85D30',
+                  color: colors.ember.primary,
                   transition: 'all 150ms ease',
                   flexShrink: 0,
                 }}

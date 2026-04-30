@@ -22,6 +22,7 @@ import type { PulseArtifactSnapshot, PulseMachineReadiness } from './artifacts.t
 import type { PulseArtifactRegistry } from './artifact-registry';
 import type { PulseArtifactCleanupReport } from './artifact-gc';
 import type { PulseAutonomyState, PulseConvergencePlan } from './types';
+import type { PulseCertification, PulseGateName, PulseGateResult } from './types';
 import type { PulseRunIdentity } from './run-identity';
 import type { QueueUnit } from './artifacts.queue';
 import {
@@ -35,6 +36,124 @@ type DirectiveExecutionMatrixPath = PulseArtifactSnapshot['executionMatrix']['pa
 type DirectiveExecutionMatrixSummary = PulseArtifactSnapshot['executionMatrix']['summary'];
 type DirectiveExternalSignalSummary = PulseArtifactSnapshot['externalSignalState']['summary'];
 type PulseMachineDirectiveUnit = Record<string, string | number | boolean | string[] | null>;
+type PulseAutonomyProof = ReturnType<typeof buildAutonomyProof>;
+
+const MACHINE_PROOF_GATE_ORDER: PulseGateName[] = [
+  'runtimePass',
+  'performancePass',
+  'observabilityPass',
+  'customerPass',
+  'operatorPass',
+  'adminPass',
+  'soakPass',
+  'syntheticCoveragePass',
+  'truthExtractionPass',
+  'criticalPathObservedPass',
+  'executionMatrixCompletePass',
+  'breakpointPrecisionPass',
+  'multiCycleConvergencePass',
+  'pulseSelfTrustPass',
+  'noOverclaimPass',
+];
+
+const MACHINE_GATE_PROOF_FILES: Partial<Record<PulseGateName, string[]>> = {
+  runtimePass: [
+    'scripts/pulse/runtime-evidence.ts',
+    'scripts/pulse/runtime-probes.ts',
+    'scripts/pulse/runtime-fusion.ts',
+  ],
+  performancePass: [
+    'scripts/pulse/parsers/performance-checker.ts',
+    'scripts/pulse/parsers/performance-response-time.ts',
+    'scripts/pulse/execution-matrix.ts',
+  ],
+  observabilityPass: [
+    'scripts/pulse/observability-coverage.ts',
+    'scripts/pulse/parsers/observability-checker.ts',
+    'scripts/pulse/runtime-fusion.ts',
+  ],
+  customerPass: [
+    'scripts/pulse/actors/playwright-runner.ts',
+    'scripts/pulse/actors/scenario-evaluator.ts',
+    'scripts/pulse/scenario-evidence-loader.ts',
+  ],
+  operatorPass: [
+    'scripts/pulse/actors/operator/index.ts',
+    'scripts/pulse/actors/scenario-evaluator.ts',
+    'scripts/pulse/scenario-evidence-loader.ts',
+  ],
+  adminPass: [
+    'scripts/pulse/actors/admin/index.ts',
+    'scripts/pulse/actors/scenario-evaluator.ts',
+    'scripts/pulse/scenario-evidence-loader.ts',
+  ],
+  soakPass: [
+    'scripts/pulse/actors/soak/observer.ts',
+    'scripts/pulse/actors/soak/structural-checks.ts',
+    'scripts/pulse/cert-gate-evaluators-actor.ts',
+  ],
+  truthExtractionPass: [
+    'scripts/pulse/codebase-truth.ts',
+    'scripts/pulse/resolved-manifest.ts',
+    'scripts/pulse/cert-gate-evaluators.ts',
+  ],
+  syntheticCoveragePass: [
+    'scripts/pulse/actors/coverage.ts',
+    'scripts/pulse/cert-gate-evaluators-actor.ts',
+    'scripts/pulse/scenario-engine.ts',
+  ],
+  executionMatrixCompletePass: [
+    'scripts/pulse/execution-matrix.ts',
+    'scripts/pulse/path-coverage-engine.ts',
+    'scripts/pulse/execution-observation.ts',
+  ],
+  criticalPathObservedPass: [
+    'scripts/pulse/execution-matrix.ts',
+    'scripts/pulse/path-coverage-engine.ts',
+    'scripts/pulse/runtime-fusion.ts',
+  ],
+  breakpointPrecisionPass: [
+    'scripts/pulse/execution-matrix.ts',
+    'scripts/pulse/path-coverage-engine.ts',
+    'scripts/pulse/types.execution-matrix.ts',
+  ],
+  multiCycleConvergencePass: [
+    'scripts/pulse/autonomy-loop.ts',
+    'scripts/pulse/cert-gate-multi-cycle.ts',
+    'scripts/pulse/artifacts.autonomy.ts',
+  ],
+  pulseSelfTrustPass: [
+    'scripts/pulse/self-trust.ts',
+    'scripts/pulse/cross-artifact-consistency-check.ts',
+    'scripts/pulse/artifacts.directive.ts',
+  ],
+  noOverclaimPass: [
+    'scripts/pulse/overclaim-guard.ts',
+    'scripts/pulse/artifacts.autonomy.ts',
+    'scripts/pulse/cert-gate-overclaim.ts',
+  ],
+};
+
+const MACHINE_PROOF_DEBT_FILES = [
+  'scripts/pulse/artifacts.autonomy.ts',
+  'scripts/pulse/artifacts.directive.ts',
+  'scripts/pulse/autonomy-loop.ts',
+  'scripts/pulse/cert-gate-multi-cycle.ts',
+];
+
+function summarizeMachineProofGates(
+  certification: PulseCertification,
+): Array<{ gate: PulseGateName; status: PulseGateResult['status']; reason: string }> {
+  return MACHINE_PROOF_GATE_ORDER.map((gate) => {
+    const result = certification.gates[gate];
+    return result ? { gate, status: result.status, reason: result.reason } : null;
+  }).filter(
+    (
+      result,
+    ): result is { gate: PulseGateName; status: PulseGateResult['status']; reason: string } =>
+      result !== null,
+  );
+}
 
 function normalizeMatrixStatusForDirective(status: string): string {
   return normalizeArtifactStatus(status);
@@ -177,6 +296,287 @@ function machineUnitFiles(criterionId: string): string[] {
     ];
   }
   return ['scripts/pulse/artifacts.report.ts', 'scripts/pulse/artifacts.directive.ts'];
+}
+
+function machineProofGateFiles(gateName: PulseGateName): string[] {
+  return (
+    MACHINE_GATE_PROOF_FILES[gateName] ?? [
+      'scripts/pulse/certification.ts',
+      'scripts/pulse/cert-gate-evaluators.ts',
+      'scripts/pulse/artifacts.directive.ts',
+    ]
+  );
+}
+
+function machineProofGateTitle(gateName: PulseGateName): string {
+  if (gateName === 'runtimePass') return 'Make PULSE runtime proof executable';
+  if (gateName === 'performancePass') return 'Make PULSE performance proof executable';
+  if (gateName === 'observabilityPass') return 'Make PULSE observability proof executable';
+  if (gateName === 'customerPass') return 'Make PULSE customer scenarios observed';
+  if (gateName === 'operatorPass') return 'Make PULSE operator scenarios observed';
+  if (gateName === 'adminPass') return 'Make PULSE admin scenarios observed';
+  if (gateName === 'soakPass') return 'Make PULSE soak scenarios observed';
+  if (gateName === 'syntheticCoveragePass') return 'Close PULSE synthetic coverage proof';
+  if (gateName === 'truthExtractionPass') return 'Close PULSE truth extraction proof debt';
+  if (gateName === 'criticalPathObservedPass') return 'Observe PULSE critical paths';
+  if (gateName === 'executionMatrixCompletePass') return 'Complete PULSE execution matrix proof';
+  if (gateName === 'breakpointPrecisionPass') return 'Sharpen PULSE breakpoint proof';
+  if (gateName === 'multiCycleConvergencePass') return 'Prove PULSE multi-cycle convergence';
+  if (gateName === 'pulseSelfTrustPass') return 'Repair PULSE self-trust proof';
+  if (gateName === 'noOverclaimPass') return 'Repair PULSE no-overclaim proof';
+  return `Repair PULSE proof gate ${gateName}`;
+}
+
+function isMachineProofGate(gateName: PulseGateName, gate: PulseGateResult): boolean {
+  if (gate.status !== 'fail') {
+    return false;
+  }
+  if (MACHINE_PROOF_GATE_ORDER.includes(gateName)) {
+    return true;
+  }
+  return gate.failureClass === 'missing_evidence' || gate.failureClass === 'checker_gap';
+}
+
+export function buildPulseCertificationProofDebtNextWork(certification: {
+  gates: Partial<Record<PulseGateName, PulseGateResult>>;
+}): PulseMachineDirectiveUnit[] {
+  const seen = new Set<PulseGateName>();
+  const orderedGateNames = [
+    ...MACHINE_PROOF_GATE_ORDER,
+    ...(Object.keys(certification.gates) as PulseGateName[]),
+  ].filter((gateName) => {
+    if (seen.has(gateName)) return false;
+    seen.add(gateName);
+    return true;
+  });
+
+  return orderedGateNames.flatMap((gateName, index) => {
+    const gate = certification.gates[gateName];
+    if (!gate || !isMachineProofGate(gateName, gate)) {
+      return [];
+    }
+    const validationArtifacts = [
+      'PULSE_CERTIFICATE.json',
+      'PULSE_CLI_DIRECTIVE.json',
+      'PULSE_MACHINE_READINESS.json',
+      ...(gateName === 'observabilityPass' ? ['PULSE_OBSERVABILITY_EVIDENCE.json'] : []),
+      ...(gateName === 'runtimePass' || gateName === 'performancePass'
+        ? ['PULSE_RUNTIME_EVIDENCE.json', 'PULSE_PRODUCTION_PROOF.json']
+        : []),
+      ...(gateName === 'customerPass' ||
+      gateName === 'operatorPass' ||
+      gateName === 'adminPass' ||
+      gateName === 'soakPass'
+        ? ['PULSE_SCENARIO_EVIDENCE.json', 'PULSE_PATH_COVERAGE.json']
+        : []),
+    ];
+    return [
+      {
+        order: index + 101,
+        id: `pulse-proof-${gateName}`,
+        kind: 'pulse_machine',
+        priority:
+          gate.failureClass === 'missing_evidence' ||
+          gateName === 'runtimePass' ||
+          gateName === 'soakPass'
+            ? 'P0'
+            : 'P1',
+        source: 'pulse_machine',
+        executionMode: 'ai_safe',
+        riskLevel: 'low',
+        evidenceMode: gate.evidenceMode ?? 'inferred',
+        confidence: gate.confidence ?? 'medium',
+        productImpact: 'machine',
+        ownerLane: 'pulse-proof',
+        title: machineProofGateTitle(gateName),
+        summary: gate.reason,
+        whyNow:
+          'PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.',
+        visionDelta:
+          'Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.',
+        targetState: `Certification gate ${gateName} must pass or expose a precise non-product proof blocker.`,
+        affectedCapabilities: [],
+        affectedFlows: [],
+        gateNames: [gateName],
+        expectedGateShift: `Pass or sharpen ${gateName} without editing SaaS product code`,
+        validationTargets: validationArtifacts,
+        validationArtifacts,
+        relatedFiles: machineProofGateFiles(gateName),
+        exitCriteria: [
+          JSON.stringify({
+            id: `pulse-proof-${gateName}-exit-0`,
+            type: 'artifact-gate',
+            target: 'PULSE_CERTIFICATE.json',
+            expected: { gate: gateName, status: 'pass' },
+            comparison: 'eq',
+          }),
+        ],
+        preconditions: [
+          'Operate only on PULSE machine/proof code and generated PULSE artifacts.',
+          'Do not materialize SaaS product capabilities for this proof-debt unit.',
+        ],
+        allowedActions: [
+          'PULSE scanner changes',
+          'PULSE evidence generation',
+          'PULSE scenario/probe harness changes',
+          'PULSE test writing',
+        ],
+        forbiddenActions: [
+          'Do not edit SaaS product code for this unit',
+          'Do not edit governance-protected files',
+          'Do not suppress Codacy, lint, or certification findings',
+          'Do not add secrets or credentials',
+        ],
+        successCriteria: [
+          `${gateName} is pass or has a more precise machine-owned blocker.`,
+          'PULSE_CLI_DIRECTIVE keeps next work focused on PULSE proof machinery while production autonomy is NAO.',
+          'Targeted PULSE tests pass.',
+        ],
+        requiredValidations: ['affected-tests'],
+      },
+    ];
+  });
+}
+
+export function buildPulseAutonomyProofDebtNextWork(
+  autonomyProof: Pick<
+    PulseAutonomyProof,
+    'verdicts' | 'productionAutonomyReason' | 'zeroPromptProductionGuidanceReason'
+  >,
+): PulseMachineDirectiveUnit[] {
+  const units: PulseMachineDirectiveUnit[] = [];
+
+  if (autonomyProof.verdicts.productionAutonomy === 'NAO') {
+    units.push({
+      order: 201,
+      id: 'pulse-proof-productionAutonomy',
+      kind: 'pulse_machine',
+      priority: 'P0',
+      source: 'pulse_machine',
+      executionMode: 'ai_safe',
+      riskLevel: 'low',
+      evidenceMode: 'observed',
+      confidence: 'high',
+      productImpact: 'machine',
+      ownerLane: 'pulse-proof',
+      title: 'Close PULSE production-autonomy proof debt',
+      summary: autonomyProof.productionAutonomyReason,
+      whyNow:
+        'PULSE cannot claim production autonomy while proof blockers remain; repair PULSE proof machinery before editing SaaS product code.',
+      visionDelta:
+        'Moves PULSE from next-step guidance toward certified zero-prompt technical replacement.',
+      targetState: 'productionAutonomyVerdict must be SIM or expose only precise machine blockers.',
+      affectedCapabilities: [],
+      affectedFlows: [],
+      gateNames: ['productionAutonomy'],
+      expectedGateShift: 'productionAutonomyVerdict becomes SIM or a precise machine blocker',
+      validationTargets: [
+        'PULSE_CERTIFICATE.json',
+        'PULSE_CLI_DIRECTIVE.json',
+        'PULSE_AUTONOMY_STATE.json',
+      ],
+      validationArtifacts: [
+        'PULSE_CERTIFICATE.json',
+        'PULSE_CLI_DIRECTIVE.json',
+        'PULSE_AUTONOMY_STATE.json',
+      ],
+      relatedFiles: MACHINE_PROOF_DEBT_FILES,
+      exitCriteria: [
+        JSON.stringify({
+          id: 'pulse-proof-productionAutonomy-exit-0',
+          type: 'artifact-assertion',
+          target: 'PULSE_CLI_DIRECTIVE.json',
+          expected: { productionAutonomyVerdict: 'SIM' },
+          comparison: 'eq',
+        }),
+      ],
+      preconditions: ['Operate only on PULSE machine/proof code and generated PULSE artifacts.'],
+      allowedActions: [
+        'PULSE proof engine changes',
+        'PULSE autonomy-loop evidence changes',
+        'PULSE test writing',
+      ],
+      forbiddenActions: [
+        'Do not edit SaaS product code for this unit',
+        'Do not edit governance-protected files',
+        'Do not map proof debt to product relatedFiles',
+        'Do not suppress Codacy, lint, or certification findings',
+      ],
+      successCriteria: [
+        'productionAutonomyVerdict is SIM or blocked by a precise PULSE-machine reason.',
+        'Targeted PULSE tests pass.',
+      ],
+      requiredValidations: ['affected-tests'],
+    });
+  }
+
+  if (autonomyProof.verdicts.zeroPromptProductionGuidance === 'NAO') {
+    units.push({
+      order: 202,
+      id: 'pulse-proof-zeroPromptProductionGuidance',
+      kind: 'pulse_machine',
+      priority: 'P0',
+      source: 'pulse_machine',
+      executionMode: 'ai_safe',
+      riskLevel: 'low',
+      evidenceMode: 'observed',
+      confidence: 'high',
+      productImpact: 'machine',
+      ownerLane: 'pulse-proof',
+      title: 'Close PULSE zero-prompt production guidance',
+      summary: autonomyProof.zeroPromptProductionGuidanceReason,
+      whyNow:
+        'A fresh PULSE worker must receive machine-owned executable guidance before product units are safe as the primary directive.',
+      visionDelta:
+        'Moves PULSE toward safe zero-prompt production convergence for fresh AI sessions.',
+      targetState:
+        'zeroPromptProductionGuidanceVerdict must be SIM or expose only precise machine blockers.',
+      affectedCapabilities: [],
+      affectedFlows: [],
+      gateNames: ['zeroPromptProductionGuidance'],
+      expectedGateShift:
+        'zeroPromptProductionGuidanceVerdict becomes SIM or a precise machine blocker',
+      validationTargets: [
+        'PULSE_CERTIFICATE.json',
+        'PULSE_CLI_DIRECTIVE.json',
+        'PULSE_AUTONOMY_STATE.json',
+      ],
+      validationArtifacts: [
+        'PULSE_CERTIFICATE.json',
+        'PULSE_CLI_DIRECTIVE.json',
+        'PULSE_AUTONOMY_STATE.json',
+      ],
+      relatedFiles: MACHINE_PROOF_DEBT_FILES,
+      exitCriteria: [
+        JSON.stringify({
+          id: 'pulse-proof-zeroPromptProductionGuidance-exit-0',
+          type: 'artifact-assertion',
+          target: 'PULSE_CLI_DIRECTIVE.json',
+          expected: { zeroPromptProductionGuidanceVerdict: 'SIM' },
+          comparison: 'eq',
+        }),
+      ],
+      preconditions: ['Operate only on PULSE machine/proof code and generated PULSE artifacts.'],
+      allowedActions: [
+        'PULSE proof engine changes',
+        'PULSE autonomy-loop guidance changes',
+        'PULSE test writing',
+      ],
+      forbiddenActions: [
+        'Do not edit SaaS product code for this unit',
+        'Do not edit governance-protected files',
+        'Do not map proof debt to product relatedFiles',
+        'Do not suppress Codacy, lint, or certification findings',
+      ],
+      successCriteria: [
+        'zeroPromptProductionGuidanceVerdict is SIM or blocked by a precise PULSE-machine reason.',
+        'Targeted PULSE tests pass.',
+      ],
+      requiredValidations: ['affected-tests'],
+    });
+  }
+
+  return units;
 }
 
 function shouldEmitMachineCriterionWork(
@@ -343,9 +743,16 @@ export function buildDirective(
     .map((unit) => buildDirectiveUnit(snapshot, unit));
   const nextProductExecutableUnits =
     nextAutonomousUnits.length > 0 ? nextAutonomousUnits.slice(0, 8) : nextDecisionUnits;
-  const pulseMachineNextWork = buildPulseMachineNextWork(pulseMachineReadiness);
+  const pulseMachineNextWork = [
+    ...buildPulseMachineNextWork(pulseMachineReadiness),
+    ...buildPulseCertificationProofDebtNextWork(snapshot.certification),
+    ...buildPulseAutonomyProofDebtNextWork(autonomyProof),
+  ];
   const machineFocusRequired =
-    pulseMachineReadiness.status !== 'READY' || pulseMachineNextWork.length > 0;
+    pulseMachineReadiness.status !== 'READY' ||
+    pulseMachineNextWork.length > 0 ||
+    autonomyProof.verdicts.productionAutonomy !== 'SIM' ||
+    autonomyProof.verdicts.zeroPromptProductionGuidance !== 'SIM';
   const nextExecutableUnits =
     machineFocusRequired && pulseMachineNextWork.length > 0
       ? pulseMachineNextWork.slice(0, 8)
@@ -423,6 +830,7 @@ export function buildDirective(
       profile: snapshot.certification.certificationTarget.profile ?? null,
       certificationScope: snapshot.certification.certificationScope,
       pulseMachineReadiness,
+      pulseMachineProofGates: summarizeMachineProofGates(snapshot.certification),
       autonomyVerdict: autonomyReadiness.verdict,
       autonomousNextStepVerdict: autonomyReadiness.verdict,
       zeroPromptProductionGuidanceVerdict: autonomyProof.verdicts.zeroPromptProductionGuidance,

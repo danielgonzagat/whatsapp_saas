@@ -43,8 +43,8 @@ export class ApiKeysService {
 
   /** Delete. */
   async delete(workspaceId: string, id: string) {
-    const key = await this.prisma.apiKey.findUnique({ where: { id } });
-    if (!key || key.workspaceId !== workspaceId) {
+    const key = await this.prisma.apiKey.findFirst({ where: { id, workspaceId } });
+    if (!key) {
       throw new NotFoundException('API Key not found');
     }
     await this.auditService.log({
@@ -54,13 +54,13 @@ export class ApiKeysService {
       resourceId: id,
       details: { deletedBy: 'user', name: key.name },
     });
-    return this.prisma.apiKey.delete({ where: { id } });
+    return this.prisma.apiKey.deleteMany({ where: { id, workspaceId } });
   }
 
   /** Validate key. */
   async validateKey(key: string) {
-    const apiKey = await this.prisma.apiKey.findUnique({
-      where: { key },
+    const apiKey = await this.prisma.apiKey.findFirst({
+      where: { key, workspaceId: { not: '' } },
       include: { workspace: true },
     });
 

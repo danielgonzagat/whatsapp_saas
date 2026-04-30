@@ -2,6 +2,33 @@
 
 /** Status of a single proof dimension. */
 export type ProofStatus = 'proven' | 'unproven' | 'failed' | 'stale' | 'not_required';
+export type ProductionProofTruthMode = 'observed' | 'inferred' | 'not_available';
+export type ProductionProofDimension =
+  | 'deployStatus'
+  | 'healthCheck'
+  | 'scenarioPass'
+  | 'runtimeProbe'
+  | 'observabilityCheck'
+  | 'noSentryRegression'
+  | 'dbSideEffects'
+  | 'rollbackPossible'
+  | 'performanceBudget';
+
+export interface ProductionProofDimensionEvidence {
+  dimension: ProductionProofDimension;
+  status: ProofStatus;
+  truthMode: ProductionProofTruthMode;
+  targetEngine:
+    | 'runtime-probes'
+    | 'scenario-engine'
+    | 'observability-coverage'
+    | 'external-sources-orchestrator'
+    | 'production-proof'
+    | 'performance-budget';
+  reason: string;
+  recommendedPulseAction: string;
+  productEditRequired: false;
+}
 
 /** Per-capability production readiness proof. */
 export interface ProductionProof {
@@ -31,6 +58,10 @@ export interface ProductionProof {
   lastProven: string | null;
   /** Paths to evidence artifacts collected during proof evaluation. */
   evidencePaths: string[];
+  /** Structured proof-mode metadata for every dimension. */
+  dimensionEvidence: Record<ProductionProofDimension, ProductionProofDimensionEvidence>;
+  /** Machine-facing signals for missing or scan-mode-only production proof. */
+  missingProofSignals: ProductionProofDimensionEvidence[];
 }
 
 /** Full production proof state for all capabilities. */
@@ -49,6 +80,8 @@ export interface ProductionProofState {
     unprovenCapabilities: number;
     /** Percentage of capabilities that are proven (0–100). */
     coveragePercent: number;
+    /** Missing/scan-mode proof signals emitted for PULSE engine work. */
+    missingProofSignals: number;
   };
   /** Per-capability proof evaluations. */
   proofs: ProductionProof[];

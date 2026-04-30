@@ -183,6 +183,66 @@ describe('runtime-fusion', () => {
     expect(state.signals[0]?.evidenceMode).toBe('observed');
   });
 
+  it('emits machine improvement signals when runtime proof sources are not available', () => {
+    const { rootDir } = createPulseRoot();
+
+    const state = buildRuntimeFusionState(rootDir);
+
+    expect(state.evidence.externalSignalState.status).toBe('not_available');
+    expect(state.evidence.runtimeTraces.status).toBe('not_available');
+    expect(state.machineImprovementSignals).toEqual([
+      expect.objectContaining({
+        targetEngine: 'external-sources-orchestrator',
+        missingEvidence: 'external_signal',
+        truthMode: 'not_available',
+        productEditRequired: false,
+      }),
+      expect.objectContaining({
+        targetEngine: 'otel-runtime',
+        missingEvidence: 'runtime_trace',
+        truthMode: 'not_available',
+        productEditRequired: false,
+      }),
+    ]);
+    expect(
+      state.machineImprovementSignals.every((signal) =>
+        signal.recommendedPulseAction.toLowerCase().includes('pulse'),
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps scan-mode runtime traces actionable without promoting them to observed proof', () => {
+    const { rootDir, currentDir } = createPulseRoot();
+
+    writeJson(path.join(currentDir, 'PULSE_RUNTIME_TRACES.json'), {
+      generatedAt: '2026-04-29T19:05:31.150Z',
+      source: 'scan',
+      summary: {
+        totalTraces: 0,
+        totalSpans: 0,
+        errorTraces: 0,
+      },
+      traces: [],
+      spanToPathMappings: [],
+    });
+
+    const state = buildRuntimeFusionState(rootDir);
+    const runtimeTraceSignal = state.machineImprovementSignals.find(
+      (signal) => signal.missingEvidence === 'runtime_trace',
+    );
+
+    expect(state.evidence.runtimeTraces.status).toBe('skipped');
+    expect(runtimeTraceSignal).toEqual(
+      expect.objectContaining({
+        targetEngine: 'otel-runtime',
+        truthMode: 'inferred',
+        sourceStatus: 'skipped',
+        productEditRequired: false,
+      }),
+    );
+    expect(state.signals.some((signal) => signal.source === 'otel_runtime')).toBe(false);
+  });
+
   it('maps manual OTel error spans to capabilities through span-to-path evidence', () => {
     const { rootDir, currentDir } = createPulseRoot();
 

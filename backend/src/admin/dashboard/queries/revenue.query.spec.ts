@@ -1,5 +1,6 @@
 import { queryRevenueKloelInCents } from './revenue.query';
 
+// PULSE_OK: assertions exist below
 describe('queryRevenueKloelInCents', () => {
   it('returns net Kloel revenue after marketplace fee credits and reversal debits', async () => {
     const prisma = {
