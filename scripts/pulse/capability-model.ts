@@ -116,16 +116,16 @@ function maturityStageIs(stage: string | undefined, expected: string): boolean {
   return sameToken(stage, expected);
 }
 
-function hasPositiveCount(value: number): boolean {
+function nonzero(value: number): boolean {
   return value > 0;
-}
-
-function hasMinimumCount(value: number, minimum: number): boolean {
-  return value >= minimum;
 }
 
 function fallbackNumber(value: number | undefined): number {
   return value ?? 0;
+}
+
+function zero(): number {
+  return Number(false);
 }
 
 export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCapabilityState {
@@ -318,11 +318,11 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       componentNodes.some((item) => item.userFacing) || scopeFiles.some((item) => item.userFacing);
     const codacyIssueCount = scopeFiles.reduce(
       (sum, file) => sum + fallbackNumber(file.observedCodacyIssueCount),
-      0,
+      zero(),
     );
     const highSeverityIssueCount = scopeFiles.reduce(
       (sum, file) => sum + fallbackNumber(file.highSeverityIssueCount),
-      0,
+      zero(),
     );
     const routeFamilies = unique(
       routePatterns.map((routePattern) => deriveRouteFamily(routePattern)).filter(Boolean),
@@ -376,21 +376,16 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     );
     const runtimeObserved = footprintMatchesFamilies(capabilityFamilies, observationFootprint);
     const executedEvidenceCount =
-      observedFlowEvidenceMatches.length +
-      scenarioCoverageMatches.length +
-      (runtimeObserved ? Number(true) : Number(false));
+      observedFlowEvidenceMatches.length + scenarioCoverageMatches.length + Number(runtimeObserved);
     const hasObservedFailure =
-      observedFlowEvidenceMatches.some((result) => result.status === 'failed') ||
+      observedFlowEvidenceMatches.some((result) => isObservedFailedStatus(result.status)) ||
       scenarioFailureMatches.length > 0 ||
-      (hasPositiveCount(highSeverityIssueCount) && runtimeCritical);
+      (nonzero(highSeverityIssueCount) && runtimeCritical);
     const status = inferStatus(rolesPresent, simulationOnly, hasObservedFailure);
     const missingRoles = (
       ['interface', 'orchestration', 'persistence', 'side_effect'] as PulseStructuralRole[]
     ).filter((role) => !rolesPresent.includes(role));
-    const truthMode = chooseTruthMode(
-      hasPositiveCount(executedEvidenceCount),
-      statusIs(status, 'latent'),
-    );
+    const truthMode = chooseTruthMode(nonzero(executedEvidenceCount), statusIs(status, 'latent'));
     const completenessScore =
       rolesPresent.filter((role) =>
         ['interface', 'orchestration', 'persistence', 'side_effect'].includes(role),
@@ -424,13 +419,11 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       status === 'phantom'
         ? 'The capability exposes simulation signals without persistence or verified side effects.'
         : '',
-      hasPositiveCount(missingRoles.length)
-        ? `Missing structural roles: ${missingRoles.join(', ')}.`
-        : '',
-      hasPositiveCount(maturity.missing.length)
+      nonzero(missingRoles.length) ? `Missing structural roles: ${missingRoles.join(', ')}.` : '',
+      nonzero(maturity.missing.length)
         ? `Maturity is still missing: ${maturity.missing.slice(0, 4).join(', ')}.`
         : '',
-      hasPositiveCount(highSeverityIssueCount)
+      nonzero(highSeverityIssueCount)
         ? `Codacy still reports ${highSeverityIssueCount} HIGH issue(s) inside this capability.`
         : '',
       protectedByGovernance
@@ -467,8 +460,8 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
 
     const dodEvidence = buildCapabilityDoDEvidence({
       rolesPresent,
-      hasRuntimeEvidence: runtimeObserved || hasPositiveCount(observedFlowEvidenceMatches.length),
-      hasScenarioCoverage: hasPositiveCount(scenarioCoverageMatches.length),
+      hasRuntimeEvidence: runtimeObserved || nonzero(observedFlowEvidenceMatches.length),
+      hasScenarioCoverage: nonzero(scenarioCoverageMatches.length),
       hasObservability: maturity.dimensions.runtimeEvidencePresent,
       hasValidation: rolesPresent.includes('orchestration'),
       highSeverityIssueCount,
@@ -527,9 +520,7 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       validationTargets: unique([
         routePatterns[0] ? `Validate structural chain for ${routePatterns[0]}.` : '',
         runtimeCritical ? 'Re-run runtime evidence for this capability.' : '',
-        hasPositiveCount(highSeverityIssueCount)
-          ? 'Re-sync Codacy and confirm HIGH issues dropped.'
-          : '',
+        nonzero(highSeverityIssueCount) ? 'Re-sync Codacy and confirm HIGH issues dropped.' : '',
         ...governedValidationTargets,
       ]).filter(Boolean),
       dod: capabilityDoD,

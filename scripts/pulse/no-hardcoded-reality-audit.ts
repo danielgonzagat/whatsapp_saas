@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { execFileSync } from 'child_process';
 import ts from 'typescript';
 
 type FindingKind =
@@ -28,7 +29,9 @@ type FindingKind =
   | 'hardcoded_fixed_literal_decision_risk'
   | 'hardcoded_fixed_boolean_decision_risk'
   | 'hardcoded_const_declaration_risk'
-  | 'hardcoded_predeclared_authority_context_risk';
+  | 'hardcoded_predeclared_authority_context_risk'
+  | 'hardcoded_auditor_mutation_risk'
+  | 'hardcoded_replacement_cheat_risk';
 
 type PredicateKind = 'hardcoded_branch_decision_predicate';
 
@@ -251,6 +254,10 @@ const UNIVERSAL_HARDCODE_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
   'weights',
   'window',
 ];
+const PREDECLARED_AUTHORITY_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
+  ...UNIVERSAL_HARDCODE_CONTEXT_KERNEL_GRAMMAR_TOKENS,
+  ...REALITY_CATALOG_CONTEXT_KERNEL_GRAMMAR_TOKENS,
+];
 const IDENTITY_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
   'break',
   'event',
@@ -343,7 +350,7 @@ function isInfrastructureRouteKernelGrammar(value: string): boolean {
   return /^\/(?:health|diag(?:-[a-z0-9]+)?)$/.test(value);
 }
 
-function walkSourceFiles(dir: string): string[] {
+function walkSourceFiles(dir: string, excludedDirectoryNames: ReadonlySet<string>): string[] {
   if (!fs.existsSync(dir)) {
     return [];
   }
@@ -352,7 +359,10 @@ function walkSourceFiles(dir: string): string[] {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      files.push(...walkSourceFiles(fullPath));
+      if (excludedDirectoryNames.has(entry.name) || isAuxiliaryConventionDirectory(entry.name)) {
+        continue;
+      }
+      files.push(...walkSourceFiles(fullPath, excludedDirectoryNames));
       continue;
     }
 
@@ -361,6 +371,41 @@ function walkSourceFiles(dir: string): string[] {
     }
   }
   return files;
+}
+
+function isAuxiliaryConventionDirectory(name: string): boolean {
+  return name.length > 4 && name.startsWith('__') && name.endsWith('__');
+}
+
+function pulseCompilerExcludedDirectoryNames(pulseDir: string): Set<string> {
+  const excluded = new Set<string>();
+  const configPath = path.join(pulseDir, 'tsconfig.json');
+  if (!fs.existsSync(configPath)) {
+    return excluded;
+  }
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8')) as {
+    compilerOptions?: { outDir?: unknown };
+    exclude?: unknown;
+  };
+  addCompilerDirectoryName(excluded, config.compilerOptions?.outDir);
+  if (Array.isArray(config.exclude)) {
+    for (const entry of config.exclude) {
+      addCompilerDirectoryName(excluded, entry);
+    }
+  }
+  return excluded;
+}
+
+function addCompilerDirectoryName(target: Set<string>, value: unknown): void {
+  if (typeof value !== 'string') {
+    return;
+  }
+  const normalized = value.split('\\').join('/');
+  const segments = normalized.split('/').filter((segment) => segment && segment !== '.');
+  const [firstSegment] = segments;
+  if (firstSegment) {
+    target.add(firstSegment);
+  }
 }
 
 function propertyNameText(name: ts.PropertyName | ts.BindingName | undefined): string {
@@ -1667,6 +1712,152 @@ function summarizeNoHardcodedRealityFindings(
   };
 }
 
+function gitHeadFile(rootDir: string, relPath: string): string | null {
+  try {
+    return execFileSync('git', ['show', `HEAD:${relPath}`], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+  } catch {
+    return null;
+  }
+}
+
+function gitPulseDiff(rootDir: string): string {
+  try {
+    return execFileSync('git', ['diff', '--unified=0', '--', path.join('scripts', 'pulse')], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+  } catch {
+    return '';
+  }
+}
+
+function auditMetaFinding(
+  filePath: string,
+  kind: FindingKind,
+  context: string,
+  samples: string[],
+): NoHardcodedRealityFinding {
+  return {
+    filePath,
+    line: 1,
+    column: 1,
+    kind,
+    context,
+    samples: [...new Set(samples)].slice(0, 5),
+  };
+}
+
+function sourceFingerprint(value: string): string {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function auditorImmutabilityFindings(rootDir: string): NoHardcodedRealityFinding[] {
+  const relPath = path.join('scripts', 'pulse', 'no-hardcoded-reality-audit.ts');
+  const currentPath = path.join(rootDir, relPath);
+  const baseline = gitHeadFile(rootDir, relPath);
+  if (!baseline || !fs.existsSync(currentPath)) {
+    return [];
+  }
+  const current = fs.readFileSync(currentPath, 'utf8');
+  if (current === baseline) {
+    return [];
+  }
+  return [
+    auditMetaFinding(relPath, 'hardcoded_auditor_mutation_risk', 'auditor.immutable', [
+      `head:${sourceFingerprint(baseline)}`,
+      `worktree:${sourceFingerprint(current)}`,
+    ]),
+  ];
+}
+
+function removedLineLooksHardcoded(line: string): boolean {
+  const text = line.slice(1);
+  return (
+    sourceMayContainHardcodedRealitySignal(text) ||
+    contextLooksLikeUniversalHardcode(text) ||
+    contextLooksLikeDecisionAuthority(text) ||
+    contextLooksLikePredeclaredAuthority(text)
+  );
+}
+
+function addedLineLooksDynamicReplacement(line: string): boolean {
+  const text = line.slice(1);
+  return (
+    contextHasToken(text, [
+      'derive',
+      'derived',
+      'discover',
+      'discovered',
+      'dynamic',
+      'evidence',
+      'graph',
+      'observed',
+      'predicate',
+      'probe',
+      'runtime',
+      'schema',
+      'source',
+      'truth',
+      'validate',
+      'verified',
+    ]) || sourceMayContainHardcodedRealitySignal(text)
+  );
+}
+
+function replacementCheatFindings(rootDir: string): NoHardcodedRealityFinding[] {
+  const diff = gitPulseDiff(rootDir);
+  if (!diff) {
+    return [];
+  }
+  const findings: NoHardcodedRealityFinding[] = [];
+  let currentFile = '';
+  let removedHardcode = 0;
+  let addedDynamic = 0;
+
+  const flush = (): void => {
+    if (currentFile && removedHardcode > addedDynamic) {
+      findings.push(
+        auditMetaFinding(currentFile, 'hardcoded_replacement_cheat_risk', 'replacement.integrity', [
+          `removedHardcode:${removedHardcode}`,
+          `dynamicReplacement:${addedDynamic}`,
+        ]),
+      );
+    }
+    removedHardcode = 0;
+    addedDynamic = 0;
+  };
+
+  for (const line of diff.split('\n')) {
+    if (line.startsWith('diff --git ')) {
+      flush();
+      const match = line.match(/ b\/(.+)$/);
+      currentFile = match?.[1] ?? '';
+      continue;
+    }
+    if (line.startsWith('---') || line.startsWith('+++')) {
+      continue;
+    }
+    if (line.startsWith('-') && removedLineLooksHardcoded(line)) {
+      removedHardcode += 1;
+    }
+    if (line.startsWith('+') && addedLineLooksDynamicReplacement(line)) {
+      addedDynamic += 1;
+    }
+  }
+  flush();
+  return findings;
+}
+
 export function auditPulseNoHardcodedReality(rootDir: string): NoHardcodedRealityAuditResult {
   const pulseDir = path.join(rootDir, 'scripts', 'pulse');
   if (!fs.existsSync(pulseDir)) {
@@ -1677,9 +1868,13 @@ export function auditPulseNoHardcodedReality(rootDir: string): NoHardcodedRealit
       summary: summarizeNoHardcodedRealityFindings([], []),
     };
   }
-  const files = walkSourceFiles(pulseDir);
+  const files = walkSourceFiles(pulseDir, pulseCompilerExcludedDirectoryNames(pulseDir));
   const results = files.map((file) => auditSourceFile(file, path.relative(rootDir, file)));
-  const findings = results.flatMap((result) => result.findings);
+  const findings = [
+    ...results.flatMap((result) => result.findings),
+    ...auditorImmutabilityFindings(rootDir),
+    ...replacementCheatFindings(rootDir),
+  ];
   const predicates = results.flatMap((result) => result.predicates);
 
   return {

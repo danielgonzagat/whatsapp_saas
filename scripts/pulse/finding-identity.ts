@@ -63,6 +63,8 @@ function isAsciiLetter(char: string): boolean {
 }
 
 function sentenceFrom(value: string): string {
+  if (!value) return '';
+  if (typeof value !== 'string') value = String(value);
   let normalized = stripStaticTypeTokens(normalizeWhitespace(value));
   let firstSentence = firstSentenceFrom(normalized);
   return trimSentenceEnding(firstSentence || normalized);

@@ -33,7 +33,13 @@ import type {
   ChaosScenarioKind,
   ChaosTarget,
 } from './types.chaos-engine';
-import type { PulseCapability, PulseExecutionMatrix } from './types';
+import type {
+  PulseCapability,
+  PulseExecutionMatrix,
+  PulseExecutionTrace,
+  PulseRuntimeEvidence,
+  PulseRuntimeProbe,
+} from './types';
 import { walkFiles } from './parsers/utils';
 import { readTextFile, readJsonFile, writeTextFile, ensureDir, pathExists } from './safe-fs';
 import { safeJoin } from './safe-path';
@@ -54,10 +60,22 @@ type ChaosOperationalConcern =
   | 'email_retry_fallback'
   | 'ai_model_fallback_cache';
 
-/** Multi-tier latency values injected for each detected dependency. */
-const LATENCY_TIERS_MS = [50, 200, 1000, 5000];
-const MAX_BLAST_RADIUS_ENTRIES = 32;
-const MAX_PROVIDER_DEPENDENCIES = 96;
+interface ChaosEvidenceContext {
+  dependency: ChaosProviderName;
+  target: ChaosTarget;
+  files: string[];
+  capabilities: PulseCapability[];
+  runtimeProbes: PulseRuntimeProbe[];
+  executionPhases: PulseExecutionTrace['phases'];
+  artifactRecords: Record<string, unknown>[];
+  evidenceText: string;
+}
+
+type ChaosScenarioSeed = {
+  kind: ChaosScenarioKind;
+  params: Record<string, number>;
+  evidenceWeight: number;
+};
 
 // ── Structural detection patterns ─────────────────────────────────────────
 
@@ -211,18 +229,27 @@ function addDetectedDependency(
 }
 
 function compactBlastRadius(capabilityIds: string[]): string[] {
+  const dynamicLimit = Math.max(1, Math.ceil(Math.sqrt(Math.max(capabilityIds.length, 1))));
   return unique(capabilityIds)
     .sort((left, right) => left.length - right.length || left.localeCompare(right))
-    .slice(0, MAX_BLAST_RADIUS_ENTRIES);
+    .slice(0, dynamicLimit);
 }
 
 function compactProviderDependencies(
   providers: Map<ChaosProviderName, string[]>,
 ): Map<ChaosProviderName, string[]> {
+  const totalEvidenceFiles = [...providers.values()].reduce(
+    (sum, files) => sum + Math.max(files.length, 1),
+    0,
+  );
+  const dynamicLimit = Math.max(
+    1,
+    Math.ceil(Math.sqrt(Math.max(providers.size, 1) * Math.max(totalEvidenceFiles, 1))),
+  );
   return new Map(
     [...providers.entries()]
       .sort((left, right) => right[1].length - left[1].length || left[0].localeCompare(right[0]))
-      .slice(0, MAX_PROVIDER_DEPENDENCIES),
+      .slice(0, dynamicLimit),
   );
 }
 
