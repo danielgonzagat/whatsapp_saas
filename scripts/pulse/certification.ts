@@ -87,6 +87,7 @@ import {
 } from './proof-readiness-artifact';
 import {
   evaluateMultiCycleConvergenceGate,
+  REQUIRED_NON_REGRESSING_CYCLES,
   type PulseAutonomyStateSnapshot,
 } from './cert-gate-multi-cycle';
 import {
@@ -200,10 +201,12 @@ function certificationTargetRequiresGate(
   certificationTarget: PulseCertificationTarget,
   certificationTiers: PulseManifest['certificationTiers'],
   gateName: PulseGateName,
+  gateEvidence?: Partial<Record<PulseGateName, unknown[]>>,
 ): boolean {
   const gateTier = findTierForGate(certificationTiers, gateName);
   if (gateTier === null) {
-    return Boolean(gateTier);
+    const hasEvidence = (gateEvidence?.[gateName] ?? []).length > 0;
+    return hasEvidence && (certificationTarget.final || certificationTarget.tier !== null);
   }
   const requestedTier = certificationTarget.tier;
   return (
@@ -217,11 +220,13 @@ function evaluateActorGateForCurrentObjective(
   evidence: PulseActorEvidence,
   certificationTarget: PulseCertificationTarget,
   certificationTiers: PulseManifest['certificationTiers'],
+  gateEvidence: Partial<Record<PulseGateName, unknown[]>>,
 ): PulseGateResult {
   const requiresCriticalExecution = certificationTargetRequiresGate(
     certificationTarget,
     certificationTiers,
     gateName,
+    gateEvidence,
   );
   if (!evidence.declared.some(Boolean) && requiresCriticalExecution) {
     return {
@@ -252,6 +257,29 @@ function deriveCertificationStatus(
   return allPass ? 'CERTIFIED' : 'PARTIAL';
 }
 
+function deriveFoundationalGates(
+  certificationTiers: PulseManifest['certificationTiers'],
+  gateOrder: PulseGateName[],
+): PulseGateName[] {
+  const firstDeclaredTier = certificationTiers.find((tier) =>
+    tier.gates.some((gateName) => gateOrder.includes(gateName)),
+  );
+  if (!firstDeclaredTier) {
+    return [];
+  }
+  return firstDeclaredTier.gates.filter((gateName) => gateOrder.includes(gateName));
+}
+
+function isGateBlockingFinalReadiness(_gateName: PulseGateName, result: PulseGateResult): boolean {
+  return (
+    result.status === 'fail' &&
+    (result.evidenceMode === 'observed' ||
+      result.confidence === 'high' ||
+      result.failureClass === 'missing_evidence' ||
+      result.failureClass === 'checker_gap')
+  );
+}
+
 /** Compute certification. */
 export function computeCertification(input: ComputeCertificationInput): PulseCertification {
   const env = getEnvironment();
@@ -266,6 +294,11 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
   const noHardcodedRealityState = buildPulseNoHardcodedRealityState(input.rootDir, timestamp);
   const noHardcodedRealitySummary = summarizeNoHardcodedRealityState(noHardcodedRealityState);
   const noHardcodedRealityGap = hasNoHardcodedRealityBlocker(noHardcodedRealitySummary);
+  const multiCycleConvergenceResult = withTemporaryGateAcceptance(
+    'multiCycleConvergencePass',
+    manifest,
+    evaluateMultiCycleConvergenceGate(input.autonomyState),
+  );
 
   const defaults = buildDefaultEvidence(
     env,
@@ -454,7 +487,12 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       evaluateFlowGate(
         evidenceSummary,
         manifest,
-        certificationTargetRequiresGate(certificationTarget, certificationTiers, 'flowPass'),
+        certificationTargetRequiresGate(
+          certificationTarget,
+          certificationTiers,
+          'flowPass',
+          gateEvidence,
+        ),
       ),
     ),
     invariantPass: withTemporaryGateAcceptance(
@@ -513,6 +551,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         evidenceSummary.customer,
         certificationTarget,
         certificationTiers,
+        gateEvidence,
       ),
     ),
     operatorPass: withTemporaryGateAcceptance(
@@ -524,6 +563,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         evidenceSummary.operator,
         certificationTarget,
         certificationTiers,
+        gateEvidence,
       ),
     ),
     adminPass: withTemporaryGateAcceptance(
@@ -535,6 +575,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         evidenceSummary.admin,
         certificationTarget,
         certificationTiers,
+        gateEvidence,
       ),
     ),
     soakPass: withTemporaryGateAcceptance(
@@ -546,6 +587,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         evidenceSummary.soak,
         certificationTarget,
         certificationTiers,
+        gateEvidence,
       ),
     ),
     syntheticCoveragePass: withTemporaryGateAcceptance(
@@ -577,26 +619,23 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         // The previous directive may carry claims from a run where the
         // certification was computed inconsistently.
         // Build a minimal current-state snapshot from available data.
+        const currentCycleProofProven = multiCycleConvergenceResult.status === 'pass';
         const currentCycleProof = input.autonomyState
           ? {
-              proven:
-                (input.autonomyState.history ?? []).filter(
-                  (entry) =>
-                    entry.codex?.executed &&
-                    entry.codex?.exitCode === 0 &&
-                    entry.validation?.executed &&
-                    (entry.validation?.commands ?? []).every((c) => c.exitCode === 0),
-                ).length >= 3,
+              proven: currentCycleProofProven,
+              successfulNonRegressingCycles: currentCycleProofProven
+                ? REQUIRED_NON_REGRESSING_CYCLES
+                : undefined,
             }
           : { proven: false };
+        const currentProofAllowsProduction =
+          currentCycleProofProven && !productionProofReadinessGap && !noHardcodedRealityGap;
 
         const currentDirective: PulseDirectiveSnapshot = {
-          // Zero-prompt and production autonomy are always NAO at certification time
-          // because cycleProof is never proven (requires multi-cycle convergence).
-          zeroPromptProductionGuidanceVerdict: 'NAO',
+          zeroPromptProductionGuidanceVerdict: currentProofAllowsProduction ? 'SIM' : 'NAO',
           productionAutonomyVerdict: 'NAO',
-          authorityMode: 'advisory-only',
-          advisoryOnly: true,
+          authorityMode: currentProofAllowsProduction ? 'autonomous-execution' : 'advisory-only',
+          advisoryOnly: !currentProofAllowsProduction,
           autonomyProof: {
             cycleProof: currentCycleProof,
             proofReadiness: proofReadinessSummary,
@@ -650,11 +689,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       manifest,
       evaluateBreakpointPrecisionGate(input.executionMatrix),
     ),
-    multiCycleConvergencePass: withTemporaryGateAcceptance(
-      'multiCycleConvergencePass',
-      manifest,
-      evaluateMultiCycleConvergenceGate(input.autonomyState),
-    ),
+    multiCycleConvergencePass: multiCycleConvergenceResult,
     testHonestyPass: withTemporaryGateAcceptance(
       'testHonestyPass',
       manifest,
@@ -709,18 +744,16 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
   };
 
   const gateOrder = deriveGateOrderFromResults(gates);
-  const configuredTierGates = unique(
-    certificationTiers.flatMap((tier) => tier.gates).filter((gateName) => gates[gateName]),
-  );
-  const foundationalGates: PulseGateName[] =
-    certificationTiers[0]?.gates.filter((gateName) => gates[gateName]) ??
-    configuredTierGates.slice(0, 1);
+  const foundationalGates = deriveFoundationalGates(certificationTiers, gateOrder);
   const allPass = gateOrder.every((gateName) => gates[gateName].status === 'pass');
   const foundationsPass = foundationalGates.every((gateName) => gates[gateName].status === 'pass');
   const tierStatus = buildTierStatuses(certificationTiers, gates, manifest, evidenceSummary);
   const blockingTier = getBlockingTier(tierStatus);
   const acceptedFlowsRemaining = getAcceptedCriticalFlows(manifest, evidenceSummary);
   const pendingCriticalScenarios = getPendingCriticalScenarios(evidenceSummary);
+  const finalReadinessBlockingGates = gateOrder.filter((gateName) =>
+    isGateBlockingFinalReadiness(gateName, gates[gateName]),
+  );
   const finalReadinessPass =
     (!finalReadinessCriteria.requireAllTiersPass || tierStatus.every((t) => t.status === 'pass')) &&
     (!finalReadinessCriteria.requireNoAcceptedCriticalFlows ||
@@ -729,8 +762,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       pendingCriticalScenarios.length === 0) &&
     (!finalReadinessCriteria.requireWorldStateConvergence ||
       !worldStateHasPendingCriticalExpectations(evidenceSummary)) &&
-    !productionProofReadinessGap &&
-    !noHardcodedRealityGap;
+    finalReadinessBlockingGates.length === 0;
 
   const rawScore = input.health.score;
   const score = computeScore(rawScore, gates);

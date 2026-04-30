@@ -77,62 +77,6 @@ type BehaviorClassNameRole =
   | 'service_like'
   | 'queue_like';
 
-type BehaviorFrameworkHint = {
-  language: 'typescript';
-  framework: string;
-  pluginScope: 'language_framework_frontend';
-  authority: 'weak_compatibility_hint';
-  decorators?: Record<string, BehaviorDecoratorRole[]>;
-  classNameSuffixes?: Record<string, BehaviorClassNameRole>;
-};
-
-const TYPESCRIPT_BEHAVIOR_HINTS: BehaviorFrameworkHint[] = [
-  {
-    language: 'typescript',
-    framework: 'nestjs',
-    pluginScope: 'language_framework_frontend',
-    authority: 'weak_compatibility_hint',
-    decorators: {
-      All: ['http_route'],
-      AuthGuard: ['auth_guard'],
-      Body: ['request_body'],
-      Cron: ['cron_job'],
-      Delete: ['http_route'],
-      EventPattern: ['queue_consumer'],
-      Get: ['http_route'],
-      Head: ['http_route'],
-      Headers: ['request_headers'],
-      Interval: ['cron_job'],
-      JwtAuthGuard: ['auth_guard'],
-      MessagePattern: ['queue_consumer'],
-      Options: ['http_route'],
-      Param: ['request_params'],
-      Patch: ['http_route'],
-      PermissionsGuard: ['auth_guard'],
-      Post: ['http_route'],
-      Put: ['http_route'],
-      Query: ['request_query'],
-      Req: ['request_context'],
-      Res: ['request_context'],
-      RolesGuard: ['auth_guard'],
-      SubscribeMessage: ['event_listener'],
-      ThrottlerGuard: ['auth_guard'],
-      Timeout: ['cron_job'],
-    },
-    classNameSuffixes: {
-      consumer: 'queue_like',
-      controller: 'controller_like',
-      gateway: 'gateway_like',
-      guard: 'guard_like',
-      pipe: 'validation_like',
-      processor: 'queue_like',
-      repository: 'service_like',
-      service: 'service_like',
-      validator: 'validation_like',
-    },
-  },
-];
-
 const IDENTIFIER_GRAMMAR = String.raw`[A-Za-z_$][\w$]*`;
 const UPPER_IDENTIFIER_GRAMMAR = String.raw`[A-Z][A-Za-z0-9_$]*`;
 const STRING_QUOTE_GRAMMAR = String.raw`['"]`;
@@ -167,21 +111,6 @@ const CONSTRUCTOR_CALL_PATTERN = new RegExp(
   String.raw`\bnew\s+(${UPPER_IDENTIFIER_GRAMMAR})\s*\(`,
   'g',
 );
-const LOCAL_RECEIVERS = new Set([
-  'array',
-  'console',
-  'date',
-  'eventEmitter',
-  'json',
-  'logger',
-  'math',
-  'object',
-  'prisma',
-  'promise',
-  'string',
-]);
-
-const HTTP_CLIENT_BINDING_NAMES = new Set(['axios', 'httpService']);
 
 function looksLikeExternalReceiverName(receiver: string): boolean {
   return /(client|provider|gateway|api|sdk|http|service)$/i.test(receiver);
@@ -223,6 +152,7 @@ type ParsedFunc = {
   docComment: string | null;
   isExported: boolean;
   className: string | null;
+  classDecorators: string[];
   parameters: Array<{ name: string; typeText: string }>;
   bodyText: string;
 };
@@ -230,6 +160,8 @@ type ParsedFunc = {
 type SourceExternalContext = {
   packageProviders: string[];
   importedBindings: Set<string>;
+  importedBindingProviders: Map<string, string>;
+  frameworkDecoratorBindings: Set<string>;
 };
 
 type SourceFileTarget = {
@@ -237,38 +169,79 @@ type SourceFileTarget = {
   sourceRoot: DetectedSourceRoot;
 };
 
-function sourceRootSupportsHint(
-  sourceRoot: DetectedSourceRoot | null,
-  hint: BehaviorFrameworkHint,
-): boolean {
-  if (!sourceRoot) return true;
-  return (
-    sourceRoot.languages.includes(hint.language) && sourceRoot.frameworks.includes(hint.framework)
-  );
+function identifierTokens(value: string): string[] {
+  return value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .split(/[^A-Za-z0-9]+/)
+    .map((token) => token.toLowerCase())
+    .filter(Boolean);
 }
 
 function decoratorRoles(
   decorator: string,
   sourceRoot: DetectedSourceRoot | null,
+  sourceContext: SourceExternalContext,
 ): BehaviorDecoratorRole[] {
-  return TYPESCRIPT_BEHAVIOR_HINTS.flatMap((hint) =>
-    sourceRootSupportsHint(sourceRoot, hint) ? (hint.decorators?.[decorator] ?? []) : [],
-  );
+  const roles = new Set<BehaviorDecoratorRole>();
+  const tokens = identifierTokens(decorator);
+  const packageName = sourceContext.importedBindingProviders.get(decorator) ?? null;
+  const frameworkBacked =
+    sourceContext.frameworkDecoratorBindings.has(decorator) ||
+    (packageName
+      ? (sourceRoot?.frameworks ?? []).some((framework) =>
+          packageName.toLowerCase().includes(framework.toLowerCase().replace(/js$/, '')),
+        )
+      : false);
+
+  if (!frameworkBacked) {
+    return [];
+  }
+
+  const joined = tokens.join('-');
+  if (/^(all|head|options|get|post|put|patch|delete)$/.test(joined)) roles.add('http_route');
+  if (tokens.some((token) => token === 'cron' || token === 'interval' || token === 'timeout')) {
+    roles.add('cron_job');
+  }
+  if (
+    tokens.some((token) => token === 'message' || token === 'event' || token === 'pattern') ||
+    joined.includes('process')
+  ) {
+    roles.add('queue_consumer');
+  }
+  if (tokens.some((token) => token === 'subscribe' || token === 'listener')) {
+    roles.add('event_listener');
+  }
+  if (tokens.includes('body')) roles.add('request_body');
+  if (tokens.includes('query')) roles.add('request_query');
+  if (tokens.some((token) => token === 'param' || token === 'params')) roles.add('request_params');
+  if (tokens.some((token) => token === 'header' || token === 'headers')) {
+    roles.add('request_headers');
+  }
+  if (tokens.some((token) => token === 'req' || token === 'res' || token === 'context')) {
+    roles.add('request_context');
+  }
+  if (tokens.some((token) => token === 'auth' || token === 'guard')) roles.add('auth_guard');
+
+  return [...roles];
 }
 
 function hasDecoratorRole(
   decorators: string[],
   role: BehaviorDecoratorRole,
   sourceRoot: DetectedSourceRoot | null,
+  sourceContext: SourceExternalContext,
 ): boolean {
-  return decorators.some((decorator) => decoratorRoles(decorator, sourceRoot).includes(role));
+  return decorators.some((decorator) =>
+    decoratorRoles(decorator, sourceRoot, sourceContext).includes(role),
+  );
 }
 
 function inputKindFromDecorator(
   decorator: string,
   sourceRoot: DetectedSourceRoot | null,
+  sourceContext: SourceExternalContext,
 ): BehaviorInputKind | null {
-  const roles = decoratorRoles(decorator, sourceRoot);
+  const roles = decoratorRoles(decorator, sourceRoot, sourceContext);
   if (roles.includes('request_body')) return 'body';
   if (roles.includes('request_query')) return 'query';
   if (roles.includes('request_params')) return 'params';
@@ -280,14 +253,34 @@ function inputKindFromDecorator(
 function classNameRole(
   className: string,
   sourceRoot: DetectedSourceRoot | null,
+  sourceContext: SourceExternalContext,
+  classDecorators: string[],
 ): BehaviorClassNameRole | null {
-  const lowerClass = className.toLowerCase();
-  for (const hint of TYPESCRIPT_BEHAVIOR_HINTS) {
-    if (!sourceRootSupportsHint(sourceRoot, hint)) continue;
-    for (const [suffix, role] of Object.entries(hint.classNameSuffixes ?? {})) {
-      if (lowerClass.includes(suffix)) return role;
+  for (const decorator of classDecorators) {
+    const tokens = identifierTokens(decorator);
+    if (tokens.includes('controller')) return 'controller_like';
+    if (tokens.includes('gateway')) return 'gateway_like';
+    if (tokens.includes('guard')) return 'guard_like';
+    if (tokens.some((token) => token === 'pipe' || token === 'validator')) {
+      return 'validation_like';
+    }
+    if (tokens.some((token) => token === 'processor' || token === 'consumer')) {
+      return 'queue_like';
     }
   }
+
+  const tokens = identifierTokens(className);
+  const hasFrameworkEvidence =
+    sourceRoot?.frameworks.length || sourceContext.frameworkDecoratorBindings.size;
+  if (!hasFrameworkEvidence) {
+    return null;
+  }
+  if (tokens.includes('controller')) return 'controller_like';
+  if (tokens.includes('gateway')) return 'gateway_like';
+  if (tokens.includes('guard')) return 'guard_like';
+  if (tokens.some((token) => token === 'pipe' || token === 'validator')) return 'validation_like';
+  if (tokens.some((token) => token === 'processor' || token === 'consumer')) return 'queue_like';
+  if (tokens.some((token) => token === 'service' || token === 'repository')) return 'service_like';
   return null;
 }
 
@@ -403,6 +396,7 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
       docComment,
       isExported: /\bexport\b/.test(decoratorPart),
       className: currentClass,
+      classDecorators: [],
       parameters: paramList,
       bodyText,
     });
@@ -468,6 +462,7 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
       docComment: null,
       isExported: /\bexport\b/.test(arrowMatch[0]),
       className: currentClass,
+      classDecorators: [],
       parameters: paramList,
       bodyText,
     });
@@ -507,10 +502,15 @@ function parseParamList(params: string): Array<{ name: string; typeText: string 
 function extractDecoratorsNear(source: string, index: number): string[] {
   const before = source.slice(Math.max(0, index - 600), index);
   const decorators: string[] = [];
-  const decoRegex = /@(\w+)(?:\s*\([^)]*\))?/g;
-  let match: RegExpExecArray | null;
-  while ((match = decoRegex.exec(before)) !== null) {
-    decorators.push(match[1]);
+  for (const line of before.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('@')) {
+      continue;
+    }
+    const match = /^@(\w+)(?:\s*\([^)]*\))?/.exec(trimmed);
+    if (match) {
+      decorators.push(match[1]);
+    }
   }
   return decorators.slice(-6);
 }
@@ -519,9 +519,16 @@ function extractLargeFileFunctionStubs(source: string): ParsedFunc[] {
   const functions: ParsedFunc[] = [];
 
   let offset = 0;
+  let currentClass: string | null = null;
+  let currentClassDecorators: string[] = [];
   const lines = source.split('\n');
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
+    const classMatch = /^(?:export\s+)?(?:abstract\s+)?class\s+(\w+)/.exec(line.trim());
+    if (classMatch) {
+      currentClass = classMatch[1];
+      currentClassDecorators = extractDecoratorsNear(source, offset);
+    }
     if (line.length > LINE_DECLARATION_BUDGET_BYTES) {
       offset += line.length + 1;
       continue;
@@ -551,7 +558,8 @@ function extractLargeFileFunctionStubs(source: string): ParsedFunc[] {
       decorators: extractDecoratorsNear(source, offset),
       docComment: null,
       isExported: /\bexport\b/.test(trimmed),
-      className: null,
+      className: currentClass,
+      classDecorators: currentClassDecorators,
       parameters: parseParamList(params),
       bodyText: trimmed,
     });
@@ -562,18 +570,28 @@ function extractLargeFileFunctionStubs(source: string): ParsedFunc[] {
 }
 
 // ===== Kind determination =====
-function determineKind(func: ParsedFunc, sourceRoot: DetectedSourceRoot | null): BehaviorNodeKind {
+function determineKind(
+  func: ParsedFunc,
+  sourceRoot: DetectedSourceRoot | null,
+  sourceContext: SourceExternalContext,
+): BehaviorNodeKind {
   const { decorators, className, name } = func;
 
-  if (hasDecoratorRole(decorators, 'http_route', sourceRoot)) return 'api_endpoint';
-  if (hasDecoratorRole(decorators, 'cron_job', sourceRoot)) return 'cron_job';
-  if (hasDecoratorRole(decorators, 'queue_consumer', sourceRoot)) return 'queue_consumer';
-  if (hasDecoratorRole(decorators, 'event_listener', sourceRoot)) return 'event_listener';
+  if (hasDecoratorRole(decorators, 'http_route', sourceRoot, sourceContext)) return 'api_endpoint';
+  if (hasDecoratorRole(decorators, 'cron_job', sourceRoot, sourceContext)) return 'cron_job';
+  if (hasDecoratorRole(decorators, 'queue_consumer', sourceRoot, sourceContext)) {
+    return 'queue_consumer';
+  }
+  if (hasDecoratorRole(decorators, 'event_listener', sourceRoot, sourceContext)) {
+    return 'event_listener';
+  }
 
   if (className) {
-    const role = classNameRole(className, sourceRoot);
+    const role = classNameRole(className, sourceRoot, sourceContext, func.classDecorators);
     if (role === 'controller_like') {
-      if (hasDecoratorRole(decorators, 'http_route', sourceRoot)) return 'api_endpoint';
+      if (hasDecoratorRole(decorators, 'http_route', sourceRoot, sourceContext)) {
+        return 'api_endpoint';
+      }
       return 'handler';
     }
     if (role === 'gateway_like') return 'event_listener';
@@ -594,7 +612,11 @@ function determineKind(func: ParsedFunc, sourceRoot: DetectedSourceRoot | null):
 }
 
 // ===== Input extraction =====
-function extractInputs(func: ParsedFunc, sourceRoot: DetectedSourceRoot | null): BehaviorInput[] {
+function extractInputs(
+  func: ParsedFunc,
+  sourceRoot: DetectedSourceRoot | null,
+  sourceContext: SourceExternalContext,
+): BehaviorInput[] {
   const inputs: BehaviorInput[] = [];
   const { parameters, decorators } = func;
 
@@ -609,7 +631,7 @@ function extractInputs(func: ParsedFunc, sourceRoot: DetectedSourceRoot | null):
     };
 
     const nestedInputKind = decorators
-      .map((decorator) => inputKindFromDecorator(decorator, sourceRoot))
+      .map((decorator) => inputKindFromDecorator(decorator, sourceRoot, sourceContext))
       .filter(Boolean)
       .pop();
     if (nestedInputKind) {
@@ -700,9 +722,14 @@ function parseNamedImportBindings(namedImports: string): string[] {
     .filter(Boolean);
 }
 
-function collectSourceExternalContext(sourceText: string): SourceExternalContext {
+function collectSourceExternalContext(
+  sourceText: string,
+  sourceRoot: DetectedSourceRoot | null,
+): SourceExternalContext {
   const packageProviders = new Set<string>();
   const importedBindings = new Set<string>();
+  const importedBindingProviders = new Map<string, string>();
+  const frameworkDecoratorBindings = new Set<string>();
 
   EXTERNAL_PACKAGE_IMPORT_PATTERN.lastIndex = 0;
   let packageMatch: RegExpExecArray | null;
@@ -719,11 +746,24 @@ function collectSourceExternalContext(sourceText: string): SourceExternalContext
     const defaultBinding = bindingMatch[1];
     const namespaceBinding = bindingMatch[2];
     const namedBindings = bindingMatch[3];
-    if (defaultBinding) importedBindings.add(defaultBinding);
-    if (namespaceBinding) importedBindings.add(namespaceBinding);
+    const packageName = bindingMatch[4];
+    const providerName = packageProviderName(packageName);
+    const observedBindings: string[] = [];
+    if (defaultBinding) observedBindings.push(defaultBinding);
+    if (namespaceBinding) observedBindings.push(namespaceBinding);
     if (namedBindings) {
       for (const binding of parseNamedImportBindings(namedBindings)) {
-        importedBindings.add(binding);
+        observedBindings.push(binding);
+      }
+    }
+    for (const binding of observedBindings) {
+      importedBindings.add(binding);
+      importedBindingProviders.set(binding, providerName);
+      const packageLooksLikeDetectedFramework = (sourceRoot?.frameworks ?? []).some((framework) =>
+        providerName.toLowerCase().includes(framework.toLowerCase().replace(/js$/, '')),
+      );
+      if (packageLooksLikeDetectedFramework) {
+        frameworkDecoratorBindings.add(binding);
       }
     }
   }
@@ -731,6 +771,8 @@ function collectSourceExternalContext(sourceText: string): SourceExternalContext
   return {
     packageProviders: [...packageProviders],
     importedBindings,
+    importedBindingProviders,
+    frameworkDecoratorBindings,
   };
 }
 
@@ -769,7 +811,7 @@ function detectExternalCalls(
       if (provider !== 'fetch') {
         const receiver = match[1] ?? '';
         const operation = match[2] ?? '';
-        if (!HTTP_CLIENT_BINDING_NAMES.has(receiver) || !looksLikeHttpOperation(operation)) {
+        if (!looksLikeExternalReceiverName(receiver) || !looksLikeHttpOperation(operation)) {
           continue;
         }
       }
@@ -785,13 +827,7 @@ function detectExternalCalls(
     const receiver = receiverMatch[1];
     const operation = receiverMatch[2];
     const normalized = receiver.replace(/^this\./, '');
-    if (LOCAL_RECEIVERS.has(normalized) || LOCAL_RECEIVERS.has(normalized.toLowerCase())) {
-      continue;
-    }
-    if (
-      !looksLikeExternalReceiverName(normalized) &&
-      !looksLikeExternalMutationOperation(operation)
-    ) {
+    if (!looksLikeExternalReceiverName(normalized)) {
       continue;
     }
     pushExternalCall(calls, seen, normalized, operation, bodyText);
@@ -982,10 +1018,11 @@ function determineExecutionMode(
   stateAccess: BehaviorStateAccess[],
   externalCalls: BehaviorExternalCall[],
   sourceRoot: DetectedSourceRoot | null,
+  sourceContext: SourceExternalContext,
 ): BehaviorNode['executionMode'] {
   if (risk === 'critical' || risk === 'high') return 'ai_safe';
 
-  if (hasDecoratorRole(decorators, 'auth_guard', sourceRoot)) return 'ai_safe';
+  if (hasDecoratorRole(decorators, 'auth_guard', sourceRoot, sourceContext)) return 'ai_safe';
 
   const sendsMessagesOrPayments = hasMessageOrPaymentSending(bodyText, externalCalls);
   if (sendsMessagesOrPayments) return 'ai_safe';
@@ -1175,11 +1212,11 @@ function buildNodesFromParsedFunctions(
   sourceText: string,
   sourceRoot: DetectedSourceRoot | null,
 ): BehaviorNodeArtifact[] {
-  const sourceContext = collectSourceExternalContext(sourceText);
+  const sourceContext = collectSourceExternalContext(sourceText, sourceRoot);
 
   return funcs.map((func) => {
-    const kind = determineKind(func, sourceRoot);
-    const inputs = extractInputs(func, sourceRoot);
+    const kind = determineKind(func, sourceRoot, sourceContext);
+    const inputs = extractInputs(func, sourceRoot, sourceContext);
     const stateAccess = detectStateAccess(func.bodyText);
     const externalCalls = detectExternalCalls(func.bodyText, sourceContext);
     const outputs = detectOutputs(func.bodyText, kind);
@@ -1200,6 +1237,7 @@ function buildNodesFromParsedFunctions(
       stateAccess,
       externalCalls,
       sourceRoot,
+      sourceContext,
     );
 
     const hasErrorHandler = func.bodyText.includes('try') && func.bodyText.includes('catch');
@@ -1228,7 +1266,7 @@ function buildNodesFromParsedFunctions(
     return {
       id: nextNodeId(),
       kind,
-      name: func.className ? `${func.className}.${func.name}` : func.name,
+      name: func.name,
       filePath: relPath,
       sourceRoot: sourceRoot
         ? {

@@ -69,8 +69,180 @@ function countBySourceKind(breaks: Break[], kind: GraphEvidenceKind): number {
   return breaks.filter((item) => item.source === `graph:confirmed_static:${kind}`).length;
 }
 
-function countSurface(breaks: Break[], surface: string): number {
-  return breaks.filter((item) => item.surface === surface).length;
+function tokenizeGraphEvidence(value: string | null | undefined): Set<string> {
+  const tokens = new Set<string>();
+  for (const token of (value ?? '').toLowerCase().match(/[a-z][a-z0-9]+/g) ?? []) {
+    tokens.add(token);
+  }
+  return tokens;
+}
+
+function hasTokenIntersection(left: Set<string>, right: Set<string>): boolean {
+  for (const token of left) {
+    if (right.has(token)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function addTokens(target: Set<string>, value: string | null | undefined): void {
+  for (const token of tokenizeGraphEvidence(value)) {
+    target.add(token);
+  }
+}
+
+function buildAuthEvidenceTokens(routes: BackendRoute[]): Set<string> {
+  const tokens = new Set<string>();
+  for (const route of routes) {
+    for (const guard of route.guards) {
+      addTokens(tokens, guard);
+    }
+    if (!route.isPublic && route.guards.length > 0) {
+      addTokens(tokens, route.methodName);
+      addTokens(tokens, route.controllerPath);
+    }
+  }
+  return tokens;
+}
+
+function buildStateEvidenceTokens(models: PrismaModel[], traces: ServiceTrace[]): Set<string> {
+  const tokens = new Set<string>();
+  for (const model of models) {
+    addTokens(tokens, model.name);
+    addTokens(tokens, model.accessorName);
+    for (const field of model.fields) {
+      addTokens(tokens, field.name);
+      addTokens(tokens, field.type);
+    }
+    for (const relation of model.relations) {
+      addTokens(tokens, relation.fieldName);
+      addTokens(tokens, relation.targetModel);
+    }
+  }
+  for (const trace of traces) {
+    for (const model of trace.prismaModels) {
+      addTokens(tokens, model);
+    }
+  }
+  return tokens;
+}
+
+function routeKeyFor(route: BackendRoute): RouteKey {
+  return `${route.httpMethod}:${normalizeForMatch(route.fullPath)}`;
+}
+
+function inferCallRunsInsideFrontendRuntime(call: APICall, proxyRoutes: ProxyRoute[]): boolean {
+  if (!call.isProxy) {
+    return false;
+  }
+
+  const matchingProxy = proxyRoutes.find(
+    (proxy) =>
+      normalizeForMatch(proxy.frontendPath) === normalizeForMatch(call.normalizedPath) &&
+      proxy.httpMethod === call.method,
+  );
+  if (matchingProxy) {
+    return false;
+  }
+
+  const pathTokens = tokenizeGraphEvidence(call.normalizedPath);
+  const fileTokens = tokenizeGraphEvidence(call.file);
+  const callerTokens = tokenizeGraphEvidence(call.callerFunction);
+  const runtimeTokens = new Set([...fileTokens, ...callerTokens]);
+  return fileTokens.has('route') && hasTokenIntersection(pathTokens, runtimeTokens);
+}
+
+function inferRouteHasExternalCaller(route: BackendRoute): boolean {
+  const routeTokens = tokenizeGraphEvidence(
+    `${route.controllerPath} ${route.methodPath} ${route.fullPath} ${route.methodName}`,
+  );
+  const guardTokens = new Set<string>();
+  for (const guard of route.guards) {
+    addTokens(guardTokens, guard);
+  }
+
+  return route.isPublic && (routeTokens.size > 0 || guardTokens.size === 0);
+}
+
+function inferTraceHasRuntimeEntry(trace: ServiceTrace): boolean {
+  const triggerTokens = new Set<string>();
+  for (const trigger of trace.triggers ?? []) {
+    addTokens(triggerTokens, trigger);
+  }
+
+  const serviceCallTokens = new Set<string>();
+  for (const serviceCall of trace.serviceCalls ?? []) {
+    addTokens(serviceCallTokens, serviceCall);
+  }
+
+  return triggerTokens.size > 0 || serviceCallTokens.size > 0;
+}
+
+function inferModelUsageEvidence(input: {
+  model: PrismaModel;
+  serviceTraces: ServiceTrace[];
+  consumedServiceCalls: Set<string>;
+}): boolean {
+  const accessor = input.model.accessorName;
+  return input.serviceTraces.some((trace) => {
+    if (!trace.prismaModels.includes(accessor)) {
+      return false;
+    }
+
+    const serviceCall = `${trace.serviceName}.${trace.methodName}`;
+    return input.consumedServiceCalls.has(serviceCall) || inferTraceHasRuntimeEntry(trace);
+  });
+}
+
+function inferBreakTextTokens(item: Break): Set<string> {
+  return tokenizeGraphEvidence(
+    `${item.type} ${item.source ?? ''} ${item.surface ?? ''} ${item.description} ${item.detail}`,
+  );
+}
+
+function countAuthRiskIssues(breaks: Break[], authTokens: Set<string>): number {
+  return breaks.filter((item) => hasTokenIntersection(inferBreakTextTokens(item), authTokens))
+    .length;
+}
+
+function countStateRiskIssues(
+  breaks: Break[],
+  stateTokens: Set<string>,
+  authTokens: Set<string>,
+): number {
+  return breaks.filter((item) => {
+    const tokens = inferBreakTextTokens(item);
+    return hasTokenIntersection(tokens, stateTokens) && !hasTokenIntersection(tokens, authTokens);
+  }).length;
+}
+
+function calculateDynamicScore(totalNodes: number, breaks: Break[]): number {
+  if (totalNodes === 0) {
+    return 100;
+  }
+
+  const observedSeverities = [...new Set(breaks.map((item) => item.severity))];
+  if (observedSeverities.length === 0) {
+    return 100;
+  }
+
+  const severityOrder: Break['severity'][] = ['low', 'medium', 'high', 'critical'];
+  const observedRank = new Map<Break['severity'], number>();
+  for (const severity of observedSeverities.sort(
+    (left, right) => severityOrder.indexOf(left) - severityOrder.indexOf(right),
+  )) {
+    observedRank.set(severity, observedRank.size + 1);
+  }
+
+  const maxObservedRank = observedRank.size;
+  const impact = breaks.reduce((sum, item) => {
+    const rank = observedRank.get(item.severity) ?? maxObservedRank;
+    return sum + rank / maxObservedRank;
+  }, 0);
+  const nodeCapacity = Math.max(totalNodes, breaks.length);
+  const penalty = (impact / nodeCapacity) * 100;
+  return Math.max(0, Math.min(100, Math.round(100 - penalty)));
 }
 
 /** Build route lookup. */
@@ -225,23 +397,26 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
   const breaks: Break[] = [];
   const routeLookup = buildRouteLookup(backendRoutes, globalPrefix);
   const serviceModelMap = buildServiceModelMap(serviceTraces);
+  const authEvidenceTokens = buildAuthEvidenceTokens(backendRoutes);
+  const stateEvidenceTokens = buildStateEvidenceTokens(prismaModels, serviceTraces);
 
   // Track which routes are consumed
   const consumedRoutes = new Set<string>();
+  const consumedServiceCalls = new Set<string>();
   // Track which models are used
   const usedModels = new Set<string>();
 
   // === API → Backend matching ===
   for (const call of apiCalls) {
-    // Skip auth/refresh proxy calls (they're internal Next.js routes)
-    if (call.normalizedPath.startsWith('/api/auth/')) {
+    if (inferCallRunsInsideFrontendRuntime(call, proxyRoutes)) {
       continue;
     }
 
     const route = matchApiCallToRoute(call, routeLookup, proxyRoutes);
     if (route) {
-      const key = `${route.httpMethod}:${normalizeForMatch(route.fullPath)}`;
+      const key = routeKeyFor(route);
       consumedRoutes.add(key);
+      route.serviceCalls.forEach((serviceCall) => consumedServiceCalls.add(serviceCall));
 
       // Trace models used by this route
       const models = resolveRouteModels(route, serviceModelMap, serviceTraces);
@@ -292,6 +467,7 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
           rPath.startsWith(normalTarget + '/')
         ) {
           consumedRoutes.add(routeKey);
+          route.serviceCalls.forEach((serviceCall) => consumedServiceCalls.add(serviceCall));
           const models = resolveRouteModels(route, serviceModelMap, serviceTraces);
           models.forEach((m) => usedModels.add(m));
         }
@@ -301,9 +477,9 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
 
   // === Backend routes not consumed ===
   for (const route of backendRoutes) {
-    const key = `${route.httpMethod}:${normalizeForMatch(route.fullPath)}`;
+    const key = routeKeyFor(route);
     if (!consumedRoutes.has(key)) {
-      if (route.isPublic) {
+      if (inferRouteHasExternalCaller(route)) {
         continue;
       }
 
@@ -327,9 +503,7 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
       continue;
     }
 
-    // Check if ANY service uses this model
-    const usedInService = serviceTraces.some((t) => t.prismaModels.includes(model.accessorName));
-    if (usedInService) {
+    if (inferModelUsageEvidence({ model, serviceTraces, consumedServiceCalls })) {
       usedModels.add(model.accessorName);
       continue;
     }
@@ -422,16 +596,7 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
   const coreNodes = apiCalls.length + backendRoutes.length + prismaModels.length;
   const extendedNodes = (input.extendedBreaks?.length || 0) + coreNodes;
   const totalNodes = Math.max(coreNodes, extendedNodes);
-  const critBreaks = breaks.filter((b) => b.severity === 'critical').length;
-  const highBreaks = breaks.filter((b) => b.severity === 'high').length;
-  const medBreaks = breaks.filter((b) => b.severity === 'medium').length;
-  const lowBreaks = breaks.filter((b) => b.severity === 'low').length;
-  const observedSeverityCount = critBreaks + highBreaks + medBreaks + lowBreaks;
-  const severityDensity = totalNodes > 0 ? observedSeverityCount / totalNodes : 0;
-  const criticalityDensity =
-    observedSeverityCount > 0 ? (critBreaks + highBreaks) / observedSeverityCount : 0;
-  const penalty = severityDensity * (1 + criticalityDensity) * 100;
-  const score = Math.max(0, Math.min(100, Math.round(100 - penalty)));
+  const score = calculateDynamicScore(totalNodes, breaks);
 
   // Stats
   const uiDeadHandlers = uiElements.filter(
@@ -443,8 +608,8 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
   const facadeBreaks = breaks.filter(
     (item) => item.source === 'graph:confirmed_static:facade_evidence',
   );
-  const securityIssues = countSurface(breaks, 'security');
-  const dataSafetyIssues = countSurface(breaks, 'data-safety');
+  const securityIssues = countAuthRiskIssues(breaks, authEvidenceTokens);
+  const dataSafetyIssues = countStateRiskIssues(breaks, stateEvidenceTokens, authEvidenceTokens);
   const graphOwnedIssues =
     apiNoRoute +
     countBySourceKind(breaks, 'route_caller_unobserved') +

@@ -3,7 +3,8 @@
 // Replaces regex-based call resolution with type-aware symbol traces.
 
 import * as path from 'path';
-import { Project, Node, SyntaxKind } from 'ts-morph';
+import { METHODS as NODE_HTTP_METHODS } from 'http';
+import { Project, Node, type Decorator } from 'ts-morph';
 import { pathExists, ensureDir, writeTextFile } from './safe-fs';
 import { sourceGlobsForTsMorph } from './source-root-detector';
 import type {
@@ -32,61 +33,7 @@ type DecoratorSemanticRole =
   | 'realtime_gateway'
   | 'graphql_resolver';
 
-type FrameworkDecoratorHint = {
-  language: 'typescript';
-  framework: string;
-  pluginScope: 'language_framework_frontend';
-  authority: 'weak_compatibility_hint';
-  decorators: Record<
-    string,
-    {
-      roles: DecoratorSemanticRole[];
-      httpMethod?: string;
-      routePathArgument?: number;
-    }
-  >;
-};
-
-const TYPESCRIPT_FRAMEWORK_DECORATOR_HINTS: FrameworkDecoratorHint[] = [
-  {
-    language: 'typescript',
-    framework: 'nestjs',
-    pluginScope: 'language_framework_frontend',
-    authority: 'weak_compatibility_hint',
-    decorators: {
-      All: { roles: ['http_route'], httpMethod: 'ALL', routePathArgument: 0 },
-      Controller: { roles: ['class_controller'], routePathArgument: 0 },
-      Cron: { roles: ['schedule'] },
-      Delete: { roles: ['http_route'], httpMethod: 'DELETE', routePathArgument: 0 },
-      EventPattern: { roles: ['queue_handler'] },
-      Get: { roles: ['http_route'], httpMethod: 'GET', routePathArgument: 0 },
-      Head: { roles: ['http_route'], httpMethod: 'HEAD', routePathArgument: 0 },
-      Injectable: { roles: ['provider'] },
-      Interval: { roles: ['schedule'] },
-      MessagePattern: { roles: ['queue_handler'] },
-      Module: { roles: ['framework_module'] },
-      Options: { roles: ['http_route'], httpMethod: 'OPTIONS', routePathArgument: 0 },
-      Patch: { roles: ['http_route'], httpMethod: 'PATCH', routePathArgument: 0 },
-      Post: { roles: ['http_route'], httpMethod: 'POST', routePathArgument: 0 },
-      Put: { roles: ['http_route'], httpMethod: 'PUT', routePathArgument: 0 },
-      SubscribeMessage: { roles: ['event_handler'] },
-      Timeout: { roles: ['schedule'] },
-      WebSocketGateway: { roles: ['realtime_gateway'], routePathArgument: 0 },
-    },
-  },
-  {
-    language: 'typescript',
-    framework: 'graphql',
-    pluginScope: 'language_framework_frontend',
-    authority: 'weak_compatibility_hint',
-    decorators: {
-      Mutation: { roles: ['graphql_resolver'] },
-      Query: { roles: ['graphql_resolver'] },
-      Resolver: { roles: ['graphql_resolver'] },
-      Subscription: { roles: ['graphql_resolver'] },
-    },
-  },
-];
+type DecoratorTargetKind = 'class' | 'method' | 'property' | 'unknown';
 
 const SKIP_PATTERNS = [
   /[\\/]node_modules[\\/]/,
@@ -131,7 +78,7 @@ interface FrameworkDecoratorMeta {
   semanticRoles: DecoratorSemanticRole[];
   httpMethod: string | null;
   routePath: string | null;
-  authority: 'weak_compatibility_hint' | 'unclassified_decorator';
+  authority: 'observed_ast_evidence' | 'unclassified_decorator';
 }
 
 function pathArgumentText(
@@ -140,11 +87,165 @@ function pathArgumentText(
 ): string | null {
   const args = decorator.getArguments();
   const raw = args[argumentIndex]?.getText() ?? '';
-  return raw ? raw.replace(/^['"]|['"]$/g, '') : null;
+  return /^(['"`]).*\1$/.test(raw) ? raw.replace(/^['"`]|['"`]$/g, '') : null;
+}
+
+function decoratorFullName(decorator: Decorator): string {
+  try {
+    return decorator.getFullName();
+  } catch {
+    return decorator.getName();
+  }
+}
+
+function decoratorLocalBinding(decorator: Decorator): string {
+  const fullName = decoratorFullName(decorator);
+  return fullName.includes('.') ? fullName.split('.')[0] : decorator.getName();
+}
+
+function packageIdentityFromModuleSpecifier(moduleSpecifier: string): string {
+  if (moduleSpecifier.startsWith('.') || moduleSpecifier.startsWith('/')) {
+    return `local-import:${moduleSpecifier}`;
+  }
+
+  const parts = moduleSpecifier.split('/');
+  if (moduleSpecifier.startsWith('@') && parts.length >= 2) {
+    return `${parts[0]}/${parts[1]}`;
+  }
+  return parts[0] ?? moduleSpecifier;
+}
+
+function importedNameMatches(
+  namedImport: {
+    getName(): string;
+    getAliasNode?(): { getText(): string } | undefined;
+  },
+  localName: string,
+): boolean {
+  return (namedImport.getAliasNode?.()?.getText() ?? namedImport.getName()) === localName;
+}
+
+function importSourceForDecorator(decorator: Decorator): string | null {
+  const localName = decoratorLocalBinding(decorator);
+  const sourceFile = decorator.getSourceFile();
+
+  for (const importDeclaration of sourceFile.getImportDeclarations()) {
+    const moduleSpecifier = importDeclaration.getModuleSpecifierValue();
+    const namespaceImport = importDeclaration.getNamespaceImport();
+    if (namespaceImport?.getText() === localName) {
+      return `import:${packageIdentityFromModuleSpecifier(moduleSpecifier)}`;
+    }
+
+    const defaultImport = importDeclaration.getDefaultImport();
+    if (defaultImport?.getText() === localName) {
+      return `import:${packageIdentityFromModuleSpecifier(moduleSpecifier)}`;
+    }
+
+    for (const namedImport of importDeclaration.getNamedImports()) {
+      if (importedNameMatches(namedImport, localName)) {
+        return `import:${packageIdentityFromModuleSpecifier(moduleSpecifier)}`;
+      }
+    }
+  }
+
+  return null;
+}
+
+function declarationSourceForDecorator(decorator: Decorator): string | null {
+  try {
+    const symbol = decorator.getNameNode().getSymbol();
+    const declaration = symbol?.getDeclarations()?.[0];
+    if (!declaration) return null;
+    const declarationFile = normalizePath(declaration.getSourceFile().getFilePath());
+    const nodeModulesMarker = '/node_modules/';
+    const nodeModulesIndex = declarationFile.lastIndexOf(nodeModulesMarker);
+    if (nodeModulesIndex >= 0) {
+      const packagePath = declarationFile.slice(nodeModulesIndex + nodeModulesMarker.length);
+      return `package:${packageIdentityFromModuleSpecifier(packagePath)}`;
+    }
+    return `local-declaration:${declarationFile}`;
+  } catch {
+    return null;
+  }
+}
+
+function observedDecoratorSources(decorator: Decorator): string[] {
+  return [
+    ...new Set(
+      [importSourceForDecorator(decorator), declarationSourceForDecorator(decorator)].filter(
+        (source): source is string => source != null,
+      ),
+    ),
+  ].sort();
+}
+
+function isObjectConfigArgument(decorator: Decorator, keys: string[]): boolean {
+  const firstArgument = decorator.getArguments()[0];
+  if (!firstArgument || !Node.isObjectLiteralExpression(firstArgument)) return false;
+  const propertyNames = new Set(
+    firstArgument.getProperties().flatMap((property) => {
+      if (Node.isPropertyAssignment(property) || Node.isShorthandPropertyAssignment(property)) {
+        return [property.getName()];
+      }
+      return [];
+    }),
+  );
+  return keys.some((key) => propertyNames.has(key));
+}
+
+function isHttpMethodDecoratorName(name: string): boolean {
+  const upperName = name.toUpperCase();
+  return upperName === 'ALL' || NODE_HTTP_METHODS.includes(upperName);
+}
+
+function inferDecoratorRoles(
+  decorator: Decorator,
+  targetKind: DecoratorTargetKind,
+): DecoratorSemanticRole[] {
+  const name = decorator.getName();
+  const normalizedName = name.toLowerCase();
+  const sources = observedDecoratorSources(decorator);
+  const sourceText = sources.join('\n').toLowerCase();
+  const roles = new Set<DecoratorSemanticRole>();
+
+  if (targetKind === 'class') {
+    if (normalizedName.includes('controller')) roles.add('class_controller');
+    if (
+      normalizedName.includes('module') ||
+      isObjectConfigArgument(decorator, ['imports', 'providers', 'controllers'])
+    ) {
+      roles.add('framework_module');
+    }
+    if (normalizedName.includes('gateway')) roles.add('realtime_gateway');
+    if (normalizedName.includes('resolver') || sourceText.includes('graphql')) {
+      roles.add('graphql_resolver');
+    }
+    if (
+      roles.size === 0 &&
+      (normalizedName.includes('injectable') ||
+        normalizedName.includes('service') ||
+        normalizedName.includes('provider'))
+    ) {
+      roles.add('provider');
+    }
+  }
+
+  if (targetKind === 'method') {
+    if (isHttpMethodDecoratorName(name)) roles.add('http_route');
+    if (/(cron|interval|timeout|schedule)/i.test(name)) roles.add('schedule');
+    if (/(process|processor|queue|job|pattern)/i.test(name)) roles.add('queue_handler');
+    if (/(event|subscribe|listen|message)/i.test(name)) roles.add('event_handler');
+    if (/(query|mutation|subscription|resolver)/i.test(name) || sourceText.includes('graphql')) {
+      roles.add('graphql_resolver');
+    }
+  }
+
+  return [...roles];
 }
 
 function extractFrameworkDecoratorMeta(
-  decorators: Iterable<{ getName(): string; getArguments(): Array<{ getText(): string }> }>,
+  decorators: Iterable<Decorator>,
+  targetKind: DecoratorTargetKind,
 ): FrameworkDecoratorMeta {
   let decorator: string | null = null;
   let httpMethod: string | null = null;
@@ -154,20 +255,20 @@ function extractFrameworkDecoratorMeta(
 
   for (const d of decorators) {
     const name = d.getName();
+    const roles = inferDecoratorRoles(d, targetKind);
+    if (roles.length === 0) continue;
 
-    for (const frameworkHint of TYPESCRIPT_FRAMEWORK_DECORATOR_HINTS) {
-      const hint = frameworkHint.decorators[name];
-      if (!hint) continue;
-      decorator ??= name;
-      frameworkHints.add(frameworkHint.framework);
-      for (const role of hint.roles) {
-        semanticRoles.add(role);
-      }
-      httpMethod ??= hint.httpMethod ?? null;
-      if (hint.routePathArgument != null) {
-        routePath ??= pathArgumentText(d, hint.routePathArgument);
-      }
+    decorator ??= name;
+    for (const source of observedDecoratorSources(d)) {
+      frameworkHints.add(source);
     }
+    for (const role of roles) {
+      semanticRoles.add(role);
+    }
+    if (isHttpMethodDecoratorName(name)) {
+      httpMethod ??= name.toUpperCase();
+    }
+    routePath ??= pathArgumentText(d, 0);
   }
 
   return {
@@ -176,7 +277,7 @@ function extractFrameworkDecoratorMeta(
     semanticRoles: [...semanticRoles],
     httpMethod,
     routePath,
-    authority: frameworkHints.size > 0 ? 'weak_compatibility_hint' : 'unclassified_decorator',
+    authority: semanticRoles.size > 0 ? 'observed_ast_evidence' : 'unclassified_decorator',
   };
 }
 
@@ -590,15 +691,7 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
           authority: 'unclassified_decorator',
         };
         if (Node.isClassDeclaration(node)) {
-          const classNode = node as unknown as {
-            getDecorators(): Array<{
-              getName(): string;
-              getArguments(): Array<{ getText(): string }>;
-            }>;
-          };
-          if (typeof classNode.getDecorators === 'function') {
-            decoratorMeta = extractFrameworkDecoratorMeta(classNode.getDecorators());
-          }
+          decoratorMeta = extractFrameworkDecoratorMeta(node.getDecorators(), 'class');
         }
 
         const kind = classifySymbolKind(name, decoratorMeta, node, null);
@@ -657,15 +750,8 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
         for (const method of classNode.getMethods()) {
           const methodName = method.getName();
           const decorators =
-            (
-              method as unknown as {
-                getDecorators?(): Array<{
-                  getName(): string;
-                  getArguments(): Array<{ getText(): string }>;
-                }>;
-              }
-            ).getDecorators?.() ?? [];
-          const decoratorMeta = extractFrameworkDecoratorMeta(decorators);
+            (method as unknown as { getDecorators?(): Decorator[] }).getDecorators?.() ?? [];
+          const decoratorMeta = extractFrameworkDecoratorMeta(decorators, 'method');
           const kind = classifySymbolKind(
             methodName,
             decoratorMeta,

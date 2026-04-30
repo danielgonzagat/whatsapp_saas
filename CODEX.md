@@ -492,3 +492,18 @@ backend/src/billing/stripe.service.ts  # FASE 0: single SDK wrapper (apiVersion 
 5. On completion, mark `[x]` with evidence (commit hash, test output, PR link).
 6. Re-read this file periodically. Treat it as durable instruction, not chat
    history.
+
+## PULSE Auditor Immutability
+
+`scripts/pulse/no-hardcoded-reality-audit.ts` is a locked PULSE governance
+surface.
+
+Codex and every other AI CLI are forbidden to edit, weaken, bypass, rename,
+delete, chmod, unflag, move, or replace this auditor.
+
+The auditor must keep scanning every source file inside `scripts/pulse/**` and
+must preserve hardcode debt when hardcode is deleted without a dynamic
+production replacement, including accumulated Git history debt.
+
+If the auditor itself needs to change, stop. The human owner must perform that
+change outside autonomous AI execution.

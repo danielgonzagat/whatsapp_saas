@@ -111,7 +111,7 @@ function observedMiddle<T>(items: T[]): T | undefined {
   return items[Math.floor(quotient(items.length, one() + one()))];
 }
 
-function leadingWindow(...counts: number[]): number {
+function leadingSpan(...counts: number[]): number {
   const observedCounts = counts.filter((count) => count > zero());
   if (!hasItems(observedCounts)) {
     return one();
@@ -416,7 +416,7 @@ function buildSurfaceBlockers(
       : '',
   ])
     .filter(Boolean)
-    .slice(zero(), leadingWindow(unitHits.length, runHits.length, entry.routeRoots.length));
+    .slice(zero(), leadingSpan(unitHits.length, runHits.length, entry.routeRoots.length));
 }
 
 function buildCapabilityCompletion(
@@ -531,6 +531,9 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
 
   const runtimeProbes = input.certification.evidenceSummary.runtime.probes || [];
   const runResults = input.certification.evidenceSummary.flows.results || [];
+  const runResultStates = runResults.map((entry) => entry.status);
+  const runtimeProbeStates = runtimeProbes.map((entry) => entry.status);
+  const completeRuntimeProbeState = observedHead(unique(runtimeProbeStates));
   const experiences = input.resolvedManifest.scenarioSpecs
     .filter((scenario) => scenario.critical)
     .map((scenario) => {
@@ -561,58 +564,31 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
         const declaredRunHit = familiesOverlap(scenario.flowSpecs, [flow.id, flow.name]);
         return pathHit || unitHit || declaredRunHit;
       });
-      const executionStatusScores = scenario.flowSpecs.map((runSpec) => {
+      const executionWeights = scenario.flowSpecs.map((runSpec) => {
         const result = runResults.find((entry) => entry.flowId === runSpec);
         if (!result) {
-          return 0;
+          return zero();
         }
-        if (result.status === 'passed') {
-          return 1;
-        }
-        if (result.status === 'accepted') {
-          return 0.75;
-        }
-        if (result.status === 'missing_evidence' || result.status === 'skipped') {
-          return 0.2;
-        }
-        return 0;
+        return observedRankWeight(result.status, runResultStates);
       });
-      const runtimeScore =
-        scenario.runtimeProbes.length === 0
-          ? 1
-          : clamp(
-              scenario.runtimeProbes.reduce((sum, probeId) => {
-                const probe = runtimeProbes.find((entry) => entry.probeId === probeId);
-                if (!probe) {
-                  return sum;
-                }
-                return sum + (probe.status === 'passed' ? 1 : 0);
-              }, 0) / scenario.runtimeProbes.length,
-            );
-      const surfaceScore =
-        experienceSurfaces.length === 0
-          ? 0
-          : clamp(
-              experienceSurfaces.reduce((sum, surface) => sum + surface.completion, 0) /
-                experienceSurfaces.length,
-            );
-      const runScore =
-        experienceRuns.length === 0
-          ? 0
-          : clamp(
-              experienceRuns.reduce((sum, flow) => sum + stateScore(flow.status, flowSeq), 0) /
-                experienceRuns.length,
-            );
-      const completion = clamp(
-        surfaceScore * 0.45 +
-          runScore * 0.35 +
-          (executionStatusScores.length > 0
-            ? executionStatusScores.reduce((sum, value) => sum + value, 0) /
-              executionStatusScores.length
-            : 0) *
-            0.15 +
-          runtimeScore * 0.05,
+      const runtimeWeight = observedAverage(
+        scenario.runtimeProbes.map((probeId) => {
+          const probe = runtimeProbes.find((entry) => entry.probeId === probeId);
+          return probe ? observedRankWeight(probe.status, runtimeProbeStates) : zero();
+        }),
       );
+      const surfaceWeight = observedAverage(
+        experienceSurfaces.map((surface) => surface.completion),
+      );
+      const runWeight = observedAverage(
+        experienceRuns.map((flow) => stateWeight(flow.status, flowSeq)),
+      );
+      const completion = observedAverage([
+        ...(hasItems(experienceSurfaces) ? [surfaceWeight] : []),
+        ...(hasItems(experienceRuns) ? [runWeight] : []),
+        ...(hasItems(executionWeights) ? [observedAverage(executionWeights)] : []),
+        ...(hasItems(scenario.runtimeProbes) ? [runtimeWeight] : []),
+      ]);
       const status: PulseFlowProjectionStatus =
         stateFromCompletion(completion, flowSeq) ?? flowWeak ?? 'phantom';
 
@@ -623,15 +599,26 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
         ...scenario.runtimeProbes
           .map((probeId) => runtimeProbes.find((probe) => probe.probeId === probeId))
           .filter((probe): probe is NonNullable<typeof probe> => Boolean(probe))
-          .filter((probe) => probe.status !== 'passed')
+          .filter((probe) =>
+            completeRuntimeProbeState ? probe.status !== completeRuntimeProbeState : true,
+          )
           .map((probe) => probe.summary || `Runtime probe ${probe.probeId} is not passing.`),
-        ...experienceSurfaces.flatMap((surface) => surface.blockers.slice(0, 2)),
+        ...experienceSurfaces.flatMap((surface) =>
+          surface.blockers.slice(zero(), Math.max(one(), surface.blockers.length)),
+        ),
         ...experienceRuns
           .filter((flow) => flow.status !== flowBest)
           .map((flow) => flow.blockingReasons[0] || `${flow.name} remains ${flow.status}.`),
       ])
         .filter(Boolean)
-        .slice(0, 6);
+        .slice(
+          zero(),
+          leadingSpan(
+            scenario.runtimeProbes.length,
+            experienceSurfaces.length,
+            experienceRuns.length,
+          ),
+        );
 
       return {
         id: scenario.id,
@@ -670,52 +657,62 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
       .filter(
         (surface) =>
           surface.status !== capBest &&
-          (surface.declaredByManifest || surface.critical || surface.routePatterns.length > 1),
+          (surface.declaredByManifest || surface.critical || multiple(surface.routePatterns)),
       )
-      .slice(0, 8)
+      .slice(zero(), leadingSpan(surfaces.length, input.parityGaps.gaps.length))
       .map(
         (surface) =>
           `${surface.name}: ${surface.blockers[0] || `${surface.status} surface with incomplete materialization.`}`,
       ),
   };
 
-  const topBlockers = unique([
-    ...(input.externalSignalState?.signals || [])
-      .filter((signal) => signal.impactScore >= 0.75)
-      .slice(0, 5)
+  const externalSignals = input.externalSignalState?.signals || [];
+  const blockerSpan = leadingSpan(
+    externalSignals.length,
+    promiseToProductionDelta.criticalGaps.length,
+    input.parityGaps.gaps.length,
+    experiences.length,
+    scopedUnits.length,
+  );
+  const leadingBlockers = unique([
+    ...[...externalSignals]
+      .sort((left, right) => right.impactScore - left.impactScore)
+      .slice(zero(), blockerSpan)
       .map((signal) => `${signal.source}/${signal.type}: ${signal.summary}`),
     ...promiseToProductionDelta.criticalGaps,
-    ...input.parityGaps.gaps.slice(0, 5).map((gap) => `${gap.title}: ${gap.summary}`),
+    ...input.parityGaps.gaps
+      .slice(zero(), blockerSpan)
+      .map((gap) => `${gap.title}: ${gap.summary}`),
     ...experiences
       .filter((experience) => experience.status !== flowBest)
-      .slice(0, 5)
+      .slice(zero(), blockerSpan)
       .map(
         (experience) =>
           `${experience.name}: ${experience.blockers[0] || `${experience.status} experience.`}`,
       ),
     ...scopedUnits
       .filter(
-        (capability) => capability.status === capWeak || capability.highSeverityIssueCount > 0,
+        (capability) =>
+          capability.status === capWeak || hasCount(capability.highSeverityIssueCount),
       )
-      .slice(0, 5)
+      .slice(zero(), blockerSpan)
       .map((capability) =>
-        capability.highSeverityIssueCount > 0
+        hasCount(capability.highSeverityIssueCount)
           ? `${capability.name}: ${capability.highSeverityIssueCount} HIGH Codacy issue(s).`
           : `${capability.name}: capability still phantom.`,
       ),
-  ]).slice(0, 10);
+  ]).slice(zero(), leadingSpan(blockerSpan, promiseToProductionDelta.criticalGaps.length));
 
   const evidenceBasis = summarizeEvidenceBasis(scopedUnits, input.flowProjection.flows);
 
   const surfaceNames = surfaces
     .filter((surface) => isMaterializedState(surface.status, capSeq))
-    .slice(0, 8)
+    .slice(zero(), leadingSpan(surfaces.length, experiences.length))
     .map((surface) => surface.name);
 
-  const inferredProductIdentity =
-    surfaceNames.length > 0
-      ? `If the currently connected structures converge, the product resolves toward a unified operational platform centered on ${unique(surfaceNames).join(', ')}.`
-      : 'The current repository still exposes too little converged surface area to infer a stable product identity.';
+  const inferredProductIdentity = hasItems(surfaceNames)
+    ? `If the currently connected structures converge, the product resolves toward a unified operational platform centered on ${unique(surfaceNames).join(', ')}.`
+    : 'The current repository still exposes too little converged surface area to infer a stable product identity.';
 
   return {
     generatedAt: new Date().toISOString(),
@@ -744,6 +741,6 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
     externalSignalSummary: input.externalSignalState?.summary,
     surfaces,
     experiences,
-    topBlockers,
+    topBlockers: leadingBlockers,
   };
 }

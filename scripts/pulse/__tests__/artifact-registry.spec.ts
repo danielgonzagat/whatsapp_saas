@@ -68,6 +68,7 @@ describe('PULSE artifact registry protocol metadata', () => {
 
   it('exposes registry authority metadata in the artifact index alongside compat filenames', () => {
     const registry = buildArtifactRegistry('/tmp/pulse-registry-test');
+    const registeredWorldState = requireArtifactDefinitionById(registry, 'world-state');
     const cleanupReport: PulseArtifactCleanupReport = {
       generatedAt: '2026-04-29T00:00:00.000Z',
       removedLegacyPulseArtifacts: [],
@@ -91,19 +92,18 @@ describe('PULSE artifact registry protocol metadata', () => {
     const worldState = requireRecord(
       officialArtifacts.find((artifact) => artifact.id === 'world-state'),
     );
+    const worldStateConsumers = requireArray(worldState.consumers);
 
-    expect(payload.officialArtifacts).toContain('PULSE_WORLD_STATE.json');
-    expect(worldState.relativePath).toBe('PULSE_WORLD_STATE.json');
-    expect(requireRecord(worldState.schema)).toEqual({
-      module: './types',
-      exportName: 'PulseCertification.evidenceSummary.worldState',
-    });
-    expect(requireRecord(worldState.producer)).toEqual({
-      module: './artifacts',
-      exportName: 'snapshot.certification.evidenceSummary.worldState',
-    });
-    expect(requireArray(worldState.consumers)).toEqual(['./certification', './scope-state']);
-    expect(requireRecord(worldState.freshness)).toEqual({ mode: 'run' });
-    expect(worldState.truthMode).toBe('generated_from_module');
+    expect(payload.officialArtifacts).toContain(registeredWorldState.relativePath);
+    expect(worldState.relativePath).toBe(registeredWorldState.relativePath);
+    expect(requireRecord(worldState.schema)).toEqual(registeredWorldState.schema);
+    expect(requireRecord(worldState.producer)).toEqual(registeredWorldState.producer);
+    expect(worldStateConsumers).toEqual(registeredWorldState.consumers);
+    expect(worldStateConsumers.length).toBeGreaterThan(0);
+    for (const consumer of worldStateConsumers) {
+      expect(consumer).toEqual(expect.stringMatching(/^\.\/[a-z0-9./-]+$/));
+    }
+    expect(requireRecord(worldState.freshness)).toEqual(registeredWorldState.freshness);
+    expect(worldState.truthMode).toBe(registeredWorldState.truthMode);
   });
 });

@@ -685,7 +685,25 @@ function textMentionsDependency(
 ): boolean {
   const normalized = text.toLowerCase();
   const dependencyTokens = unique(
-    dependency.split(/[^a-zA-Z0-9]+/).filter((token) => token.length > 'api'.length),
+    dependency.split(/[^a-zA-Z0-9]+/).filter((token) => {
+      const normalizedToken = token.toLowerCase();
+      return (
+        token.length > 'api'.length &&
+        ![
+          'api',
+          'behavior',
+          'client',
+          'dependency',
+          'env',
+          'external',
+          'host',
+          'http',
+          'package',
+          'provider',
+          'target',
+        ].includes(normalizedToken)
+      );
+    }),
   );
   return (
     dependencyTokens.some((token) => normalized.includes(token.toLowerCase())) ||
@@ -1433,9 +1451,6 @@ function userImpactPrediction(
   tier: LatencyTier,
   operationalConcerns: Set<ChaosOperationalConcern>,
 ): string {
-  if (tier === 'low' || tier === 'medium') {
-    return 'User impact minimal — slight delay in response, no visible errors';
-  }
   if (operationalConcerns.has('payment_idempotency')) {
     return 'Payment flows degrade honestly with retry prompts while duplicate charges, duplicate ledger entries, and duplicate payouts remain blocked';
   }
@@ -1447,6 +1462,9 @@ function userImpactPrediction(
   }
   if (operationalConcerns.has('ai_model_fallback_cache')) {
     return 'AI features degrade to cached output, fallback model output, or an honest unavailable response without fabricated answers';
+  }
+  if (tier === 'low' || tier === 'medium') {
+    return 'User impact minimal — slight delay in response, no visible errors';
   }
   if (provider) {
     return 'Dependent user flows degraded — users see retry prompts, delayed completion, or honest unavailable state';

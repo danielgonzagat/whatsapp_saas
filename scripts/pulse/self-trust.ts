@@ -6,6 +6,7 @@
  */
 
 import * as path from 'path';
+import ts from 'typescript';
 import type { Break, PulseExecutionTrace, PulseParserContract } from './types';
 import { pathExists, readDir, readTextFile, statPath } from './safe-fs';
 import {
@@ -16,14 +17,6 @@ import { discoverParserContracts } from './parser-registry';
 import { buildHardcodedFindingAuditArtifact } from './hardcoded-finding-audit';
 import { auditPulseNoHardcodedReality } from './no-hardcoded-reality-audit';
 import { getActiveExecutionTraceSnapshot, verifyExecutionTraceAuditTrail } from './execution-trace';
-
-const CRITICAL_PARSER_CONTRACT_NAMES = [
-  'financial-arithmetic',
-  'error-handler-auditor',
-  'idempotency-checker',
-  'audit-trail-checker',
-  'security-injection',
-] as const;
 
 /** Self trust checkpoint shape. */
 export interface SelfTrustCheckpoint {
@@ -61,12 +54,136 @@ export interface SelfTrustReport {
   recommendations: string[];
 }
 
+function parseJsonObject(content: string): Record<string, unknown> {
+  let parsed: unknown = JSON.parse(content);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('JSON root must be an object');
+  }
+  return parsed as Record<string, unknown>;
+}
+
+function manifestTypePath(manifestPath: string): string {
+  return path.join(path.dirname(manifestPath), 'scripts', 'pulse', 'types.manifest.ts');
+}
+
+function deriveRequiredManifestFields(manifestPath: string): string[] {
+  let typePath = manifestTypePath(manifestPath);
+  if (!pathExists(typePath)) {
+    return [];
+  }
+
+  let source = readTextFile(typePath, 'utf-8');
+  let sourceFile = ts.createSourceFile(typePath, source, ts.ScriptTarget.Latest, true);
+  let fields: string[] = [];
+
+  let visit = (node: ts.Node): void => {
+    if (!ts.isInterfaceDeclaration(node) || node.name.text !== 'PulseManifest') {
+      ts.forEachChild(node, visit);
+      return;
+    }
+
+    for (const member of node.members) {
+      if (!ts.isPropertySignature(member) || member.questionToken) {
+        continue;
+      }
+      let name = member.name;
+      if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+        fields.push(name.text);
+      }
+    }
+  };
+
+  visit(sourceFile);
+  return fields;
+}
+
+function requiredManifestFields(manifestPath: string, manifest: Record<string, unknown>): string[] {
+  let derivedFields = deriveRequiredManifestFields(manifestPath);
+  return derivedFields.length > 0 ? derivedFields : Object.keys(manifest);
+}
+
+function checkpointScore(pass: boolean): number {
+  return Number.parseInt(pass ? '100' : '0', Number.parseInt('10', 10));
+}
+
+function isActiveParserContract(contract: PulseParserContract): boolean {
+  return contract.kind === 'active_parser';
+}
+
+function isHelperContract(contract: PulseParserContract): boolean {
+  return contract.kind === 'helper';
+}
+
+interface ParserOperationalMetadataLike {
+  confidence: number | null;
+  discoveryAuthority: string | null;
+  evidenceKind: string | null;
+  inputs: string[];
+  outputs: string[];
+}
+
+function parserOperationalMetadata(contract: PulseParserContract): ParserOperationalMetadataLike {
+  let candidate = contract as PulseParserContract & Partial<ParserOperationalMetadataLike>;
+  return {
+    confidence: typeof candidate.confidence === 'number' ? candidate.confidence : null,
+    discoveryAuthority:
+      typeof candidate.discoveryAuthority === 'string' ? candidate.discoveryAuthority : null,
+    evidenceKind: typeof candidate.evidenceKind === 'string' ? candidate.evidenceKind : null,
+    inputs: Array.isArray(candidate.inputs)
+      ? candidate.inputs.filter((value): value is string => typeof value === 'string')
+      : [],
+    outputs: Array.isArray(candidate.outputs)
+      ? candidate.outputs.filter((value): value is string => typeof value === 'string')
+      : [],
+  };
+}
+
+function hasStrongOperationalParserMetadata(contract: PulseParserContract): boolean {
+  let metadata = parserOperationalMetadata(contract);
+  let authority = metadata.discoveryAuthority;
+  return (
+    contract.kind === 'active_parser' &&
+    (authority === 'declared_metadata' ||
+      authority === 'declared_export' ||
+      authority === 'plugin_registry') &&
+    (metadata.confidence ?? 0) >= 0.8 &&
+    metadata.evidenceKind !== null &&
+    metadata.inputs.length > 0 &&
+    metadata.outputs.includes('breaks')
+  );
+}
+
+function parserNamesFromExecutionTrace(trace: PulseExecutionTrace | null): string[] {
+  if (!trace) {
+    return [];
+  }
+
+  return trace.phases
+    .filter((phase) => phase.phaseStatus !== 'skipped')
+    .flatMap((phase) => {
+      let match = phase.phase.match(/^parser:(.+)$/);
+      return match?.[1] ? [match[1]] : [];
+    });
+}
+
+function selfTrustCriticalParserNames(
+  contracts: PulseParserContract[],
+  executionTrace: PulseExecutionTrace | null,
+): string[] {
+  return [
+    ...new Set([
+      ...parserNamesFromExecutionTrace(executionTrace),
+      ...contracts.filter(hasStrongOperationalParserMetadata).map((contract) => contract.name),
+    ]),
+  ].sort();
+}
+
 /**
  * CHECK 1: Manifest Integrity
  * Verify the pulse.manifest.json is complete and valid
  */
 export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoint {
-  const id = 'manifest-integrity';
+  let id = 'manifest-integrity';
 
   try {
     if (!pathExists(manifestPath)) {
@@ -77,25 +194,15 @@ export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoin
         pass: false,
         reason: 'pulse.manifest.json not found',
         severity: 'critical',
-        score: 0,
+        score: checkpointScore(false),
       };
     }
 
-    const content = readTextFile(manifestPath, 'utf-8');
-    const manifest = JSON.parse(content);
+    let content = readTextFile(manifestPath, 'utf-8');
+    let manifest = parseJsonObject(content);
+    let requiredFields = requiredManifestFields(manifestPath, manifest);
 
-    const requiredFields = [
-      'version',
-      'projectId',
-      'projectName',
-      'systemType',
-      'supportedStacks',
-      'surfaces',
-      'criticalDomains',
-      'modules',
-    ];
-
-    const missing = requiredFields.filter((field) => !(field in manifest));
+    let missing = requiredFields.filter((field) => !(field in manifest));
 
     if (missing.length > 0) {
       return {
@@ -105,7 +212,7 @@ export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoin
         pass: false,
         reason: `Missing fields: ${missing.join(', ')}`,
         severity: 'critical',
-        score: 0,
+        score: checkpointScore(false),
       };
     }
 
@@ -115,7 +222,7 @@ export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoin
       description: 'pulse.manifest.json is complete and valid',
       pass: true,
       severity: 'critical',
-      score: 100,
+      score: checkpointScore(true),
     };
   } catch (err) {
     return {
@@ -125,7 +232,7 @@ export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoin
       pass: false,
       reason: err instanceof Error ? err.message : String(err),
       severity: 'critical',
-      score: 0,
+      score: checkpointScore(false),
     };
   }
 }
@@ -135,13 +242,14 @@ export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoin
  * Verify parsers are registered and callable
  */
 export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
-  const id = 'parser-registry';
+  let id = 'parser-registry';
 
   try {
-    const repoRoot = path.resolve(parsersDir, '..', '..', '..');
-    const contracts = discoverParserContracts(repoRoot);
-    const activeParsers = contracts.filter((contract) => contract.kind === 'active_parser');
-    const helperModules = contracts.filter((contract) => contract.kind === 'helper');
+    let repoRoot = path.resolve(parsersDir, '..', '..', '..');
+    let contracts = discoverParserContracts(repoRoot);
+    let executionTrace = loadExecutionTraceCandidate(repoRoot);
+    let activeParsers = contracts.filter(isActiveParserContract);
+    let helperModules = contracts.filter(isHelperContract);
 
     if (contracts.length === 0) {
       return {
@@ -151,7 +259,7 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
         pass: false,
         reason: 'No parser modules were discovered',
         severity: 'high',
-        score: 0,
+        score: checkpointScore(false),
       };
     }
 
@@ -163,23 +271,23 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
         pass: false,
         reason: `${helperModules.length} helper module(s) discovered but no active parser contract matched`,
         severity: 'critical',
-        score: 0,
+        score: checkpointScore(false),
       };
     }
 
-    const activeParserNames = new Set(activeParsers.map((contract) => contract.name));
-    const missingCriticalParsers = CRITICAL_PARSER_CONTRACT_NAMES.filter(
+    let activeParserNames = new Set(activeParsers.map((contract) => contract.name));
+    let missingCriticalParsers = selfTrustCriticalParserNames(contracts, executionTrace).filter(
       (parserName) => !activeParserNames.has(parserName),
     );
     if (missingCriticalParsers.length > 0) {
-      const helperCriticalParsers = contracts
+      let helperCriticalParsers = contracts
         .filter(
           (contract): contract is PulseParserContract =>
-            contract.kind === 'helper' &&
+            isHelperContract(contract) &&
             missingCriticalParsers.some((parserName) => parserName === contract.name),
         )
         .map((contract) => `${contract.name} (${contract.proof})`);
-      const helperDetail =
+      let helperDetail =
         helperCriticalParsers.length > 0
           ? ` Helper contract(s): ${helperCriticalParsers.join('; ')}.`
           : '';
@@ -190,7 +298,7 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
         pass: false,
         reason: `Missing active critical parser contract(s): ${missingCriticalParsers.join(', ')}.${helperDetail}`,
         severity: 'critical',
-        score: 0,
+        score: checkpointScore(false),
       };
     }
 
@@ -200,7 +308,7 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
       description: `${activeParsers.length} active parser contract(s) discovered; ${helperModules.length} helper module(s) skipped without failing execution`,
       pass: true,
       severity: 'critical',
-      score: 100,
+      score: checkpointScore(true),
     };
   } catch (err) {
     return {
@@ -210,7 +318,7 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
       pass: false,
       reason: err instanceof Error ? err.message : String(err),
       severity: 'high',
-      score: 0,
+      score: checkpointScore(false),
     };
   }
 }
@@ -220,7 +328,7 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
  * Verify external signals are recent (< 1 hour old)
  */
 export function checkEvidenceFreshness(stateFile: string): SelfTrustCheckpoint {
-  const id = 'evidence-freshness';
+  let id = 'evidence-freshness';
 
   try {
     if (!pathExists(stateFile)) {
@@ -231,12 +339,12 @@ export function checkEvidenceFreshness(stateFile: string): SelfTrustCheckpoint {
         pass: false,
         reason: 'No evidence cache found',
         severity: 'high',
-        score: 0,
+        score: checkpointScore(false),
       };
     }
 
-    const stat = statPath(stateFile);
-    const ageMinutes = (Date.now() - stat.mtimeMs) / 60000;
+    let stat = statPath(stateFile);
+    let ageMinutes = (Date.now() - stat.mtimeMs) / 60000;
 
     if (ageMinutes > 1440) {
       // 24 hours
@@ -247,11 +355,11 @@ export function checkEvidenceFreshness(stateFile: string): SelfTrustCheckpoint {
         pass: false,
         reason: `Evidence is ${Math.round(ageMinutes)} minutes old`,
         severity: 'high',
-        score: 0,
+        score: checkpointScore(false),
       };
     }
 
-    const freshness = Math.max(0, 100 - (ageMinutes / 1440) * 100);
+    let freshness = Math.max(0, 100 - (ageMinutes / 1440) * 100);
 
     return {
       id,
@@ -269,7 +377,7 @@ export function checkEvidenceFreshness(stateFile: string): SelfTrustCheckpoint {
       pass: false,
       reason: err instanceof Error ? err.message : String(err),
       severity: 'high',
-      score: 0,
+      score: checkpointScore(false),
     };
   }
 }
@@ -279,13 +387,13 @@ export function checkEvidenceFreshness(stateFile: string): SelfTrustCheckpoint {
  * Verify that running PULSE twice produces same result (determinism)
  */
 export function checkIdempotence(lastOutput: unknown, currentOutput: unknown): SelfTrustCheckpoint {
-  const id = 'idempotence';
+  let id = 'idempotence';
 
   try {
-    const lastStr = JSON.stringify(lastOutput);
-    const currentStr = JSON.stringify(currentOutput);
+    let lastStr = JSON.stringify(lastOutput);
+    let currentStr = JSON.stringify(currentOutput);
 
-    const match = lastStr === currentStr;
+    let match = lastStr === currentStr;
 
     return {
       id,
@@ -294,7 +402,7 @@ export function checkIdempotence(lastOutput: unknown, currentOutput: unknown): S
       pass: match,
       reason: match ? undefined : 'Output differs between runs (non-deterministic)',
       severity: 'high',
-      score: match ? 100 : 0,
+      score: checkpointScore(match),
     };
   } catch (err) {
     return {
@@ -304,7 +412,7 @@ export function checkIdempotence(lastOutput: unknown, currentOutput: unknown): S
       pass: false,
       reason: err instanceof Error ? err.message : String(err),
       severity: 'medium',
-      score: 0,
+      score: checkpointScore(false),
     };
   }
 }
@@ -314,7 +422,7 @@ export function checkIdempotence(lastOutput: unknown, currentOutput: unknown): S
  * Verify parser break classifications are consistent (no false positives in test runs)
  */
 export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
-  const id = 'break-consistency';
+  let id = 'break-consistency';
 
   let suspicionCount = 0;
 
@@ -324,7 +432,7 @@ export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
     }
   }
 
-  const falsePositiveRatio = breaks.length > 0 ? suspicionCount / breaks.length : 0;
+  let falsePositiveRatio = breaks.length > 0 ? suspicionCount / breaks.length : 0;
 
   if (falsePositiveRatio > 0.1) {
     return {
@@ -344,18 +452,18 @@ export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
     description: 'Breaks appear credible (no obvious false positives)',
     pass: true,
     severity: 'medium',
-    score: 100,
+    score: checkpointScore(true),
   };
 }
 
 function hasSuspiciousBreakEvidence(brk: Break): boolean {
-  const serialized = JSON.stringify(brk).toLowerCase();
-  const impossibleIndex = serialized.indexOf('impossible');
+  let serialized = JSON.stringify(brk).toLowerCase();
+  let impossibleIndex = serialized.indexOf('impossible');
   if (impossibleIndex !== -1 && serialized.indexOf('pattern', impossibleIndex) !== -1) {
     return true;
   }
-  const commentIndex = serialized.indexOf('comment');
-  const lineIndex = commentIndex === -1 ? -1 : serialized.indexOf('line', commentIndex);
+  let commentIndex = serialized.indexOf('comment');
+  let lineIndex = commentIndex === -1 ? -1 : serialized.indexOf('line', commentIndex);
   return lineIndex !== -1 && hasLongDigitRun(serialized.slice(lineIndex));
 }
 
@@ -385,8 +493,8 @@ function collectParserAuditSources(
     .filter((entry) => entry.endsWith('.ts') && !entry.includes('__tests__'))
     .sort()
     .map((entry) => {
-      const absolutePath = path.join(parsersDir, entry);
-      const repoRelative = path
+      let absolutePath = path.join(parsersDir, entry);
+      let repoRelative = path
         .relative(repoParserRoot(parsersDir), absolutePath)
         .split(path.sep)
         .join('/');
@@ -402,7 +510,7 @@ function repoParserRoot(parsersDir: string): string {
 }
 
 function collectParserHardcodedRealityDetails(parsersDir: string): string[] {
-  const repoRoot = path.resolve(parsersDir, '..', '..', '..');
+  let repoRoot = path.resolve(parsersDir, '..', '..', '..');
   return auditPulseNoHardcodedReality(repoRoot)
     .findings.filter((finding) => isParserSourcePath(finding.filePath))
     .filter(
@@ -411,7 +519,7 @@ function collectParserHardcodedRealityDetails(parsersDir: string): string[] {
         finding.kind === 'hardcoded_parser_rule_blocker_risk',
     )
     .map((finding) => {
-      const samples = finding.samples.length > 0 ? ` ${finding.samples.join(',')}` : '';
+      let samples = finding.samples.length > 0 ? ` ${finding.samples.join(',')}` : '';
       return `${finding.filePath}:${finding.line}:${finding.column} ${finding.kind}${samples}`;
     });
 }
@@ -425,15 +533,15 @@ function isParserSourcePath(filePath: string): boolean {
  * Parser Break emitters must not freeze fixed labels or regex-only decisions as final truth.
  */
 export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustCheckpoint {
-  const id = 'parser-hardcoded-finding-audit';
+  let id = 'parser-hardcoded-finding-audit';
 
   try {
-    const artifact = buildHardcodedFindingAuditArtifact(collectParserAuditSources(parsersDir));
-    const hardcodedRealityDetails = collectParserHardcodedRealityDetails(parsersDir);
-    const totalFindings = artifact.totalFindings + hardcodedRealityDetails.length;
+    let artifact = buildHardcodedFindingAuditArtifact(collectParserAuditSources(parsersDir));
+    let hardcodedRealityDetails = collectParserHardcodedRealityDetails(parsersDir);
+    let totalFindings = artifact.totalFindings + hardcodedRealityDetails.length;
 
     if (totalFindings > 0) {
-      const findingAuditDetails = artifact.files
+      let findingAuditDetails = artifact.files
         .flatMap((file) =>
           file.findings.map(
             (finding) =>
@@ -441,7 +549,7 @@ export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustC
           ),
         )
         .slice(0, 5);
-      const details = [...findingAuditDetails, ...hardcodedRealityDetails].slice(0, 5).join(' | ');
+      let details = [...findingAuditDetails, ...hardcodedRealityDetails].slice(0, 5).join(' | ');
       return {
         id,
         name: 'Parser Hardcoded Finding Audit',
@@ -449,7 +557,7 @@ export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustC
         pass: false,
         reason: `${totalFindings} parser hardcoded finding risk(s): ${details}`,
         severity: 'critical',
-        score: 0,
+        score: checkpointScore(false),
       };
     }
 
@@ -459,7 +567,7 @@ export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustC
       description: 'Parser Break emitters are free of hardcoded final-truth risks',
       pass: true,
       severity: 'critical',
-      score: 100,
+      score: checkpointScore(true),
     };
   } catch (err) {
     return {
@@ -469,7 +577,7 @@ export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustC
       pass: false,
       reason: err instanceof Error ? err.message : String(err),
       severity: 'critical',
-      score: 0,
+      score: checkpointScore(false),
     };
   }
 }
@@ -483,13 +591,13 @@ export function checkCrossArtifactConsistency(
   repoRoot?: string,
   artifactsOverride?: Record<string, Record<string, unknown>>,
 ): SelfTrustCheckpoint {
-  const id = 'cross-artifact-consistency';
+  let id = 'cross-artifact-consistency';
 
   try {
-    const result: ConsistencyResult = runCrossArtifactConsistencyCheck(repoRoot, artifactsOverride);
+    let result: ConsistencyResult = runCrossArtifactConsistencyCheck(repoRoot, artifactsOverride);
 
     if (!result.pass) {
-      const summary = result.divergences
+      let summary = result.divergences
         .map((d) => `${d.field}: ${d.sources.length} artifacts disagree`)
         .join('; ');
       return {
@@ -499,11 +607,11 @@ export function checkCrossArtifactConsistency(
         pass: false,
         reason: `${result.divergences.length} divergence(s): ${summary}`,
         severity: 'critical',
-        score: 0,
+        score: checkpointScore(false),
       };
     }
 
-    const missingNote =
+    let missingNote =
       result.missingArtifacts.length > 0
         ? ` (${result.missingArtifacts.length} artifact(s) absent — skipped)`
         : '';
@@ -514,7 +622,7 @@ export function checkCrossArtifactConsistency(
       description: `All loaded PULSE artifacts are mutually consistent${missingNote}`,
       pass: true,
       severity: 'critical',
-      score: 100,
+      score: checkpointScore(true),
     };
   } catch (err) {
     return {
@@ -524,7 +632,7 @@ export function checkCrossArtifactConsistency(
       pass: false,
       reason: err instanceof Error ? err.message : String(err),
       severity: 'critical',
-      score: 0,
+      score: checkpointScore(false),
     };
   }
 }
@@ -537,12 +645,12 @@ function loadExecutionTraceCandidate(
     return executionTrace;
   }
 
-  const activeTrace = getActiveExecutionTraceSnapshot();
+  let activeTrace = getActiveExecutionTraceSnapshot();
   if (activeTrace) {
     return activeTrace;
   }
 
-  const candidatePaths = [
+  let candidatePaths = [
     process.env.PULSE_EXECUTION_TRACE_PATH?.trim(),
     repoRoot ? path.join(repoRoot, 'PULSE_EXECUTION_TRACE.json') : undefined,
     repoRoot ? path.join(repoRoot, '.pulse', 'current', 'PULSE_EXECUTION_TRACE.json') : undefined,
@@ -566,10 +674,10 @@ export function checkExecutionTraceAuditTrail(config: {
   repoRoot?: string;
   executionTrace?: PulseExecutionTrace;
 }): SelfTrustCheckpoint {
-  const id = 'execution-trace-audit-trail';
+  let id = 'execution-trace-audit-trail';
 
   try {
-    const trace = loadExecutionTraceCandidate(config.repoRoot, config.executionTrace);
+    let trace = loadExecutionTraceCandidate(config.repoRoot, config.executionTrace);
 
     if (!trace) {
       return {
@@ -579,11 +687,11 @@ export function checkExecutionTraceAuditTrail(config: {
         pass: false,
         reason: 'No execution trace artifact or active tracer snapshot was found',
         severity: 'critical',
-        score: 0,
+        score: checkpointScore(false),
       };
     }
 
-    const pass = verifyExecutionTraceAuditTrail(trace);
+    let pass = verifyExecutionTraceAuditTrail(trace);
     return {
       id,
       name: 'Execution Trace Audit Trail',
@@ -593,7 +701,7 @@ export function checkExecutionTraceAuditTrail(config: {
         ? undefined
         : 'Execution trace audit digest does not match current phase history',
       severity: 'critical',
-      score: pass ? 100 : 0,
+      score: checkpointScore(pass),
     };
   } catch (err) {
     return {
@@ -603,7 +711,7 @@ export function checkExecutionTraceAuditTrail(config: {
       pass: false,
       reason: err instanceof Error ? err.message : String(err),
       severity: 'critical',
-      score: 0,
+      score: checkpointScore(false),
     };
   }
 }
@@ -622,7 +730,7 @@ export function runSelfTrustChecks(config: {
   artifactsOverride?: Record<string, Record<string, unknown>>;
   executionTrace?: PulseExecutionTrace;
 }): SelfTrustReport {
-  const checks: SelfTrustCheckpoint[] = [
+  let checks: SelfTrustCheckpoint[] = [
     checkManifestIntegrity(config.manifestPath),
     checkParserRegistry(config.parsersDir),
     checkParserHardcodedFindingAudit(config.parsersDir),
@@ -642,11 +750,11 @@ export function runSelfTrustChecks(config: {
     checks.push(checkBreakConsistency(config.breaks));
   }
 
-  const failedChecks = checks.filter((c) => !c.pass);
-  const avgScore =
+  let failedChecks = checks.filter((c) => !c.pass);
+  let avgScore =
     checks.length > 0 ? checks.reduce((sum, c) => sum + c.score, 0) / checks.length : 0;
 
-  const criticalFailures = failedChecks.filter((c) => c.severity === 'critical');
+  let criticalFailures = failedChecks.filter((c) => c.severity === 'critical');
 
   return {
     timestamp: new Date().toISOString(),
@@ -665,7 +773,7 @@ export function runSelfTrustChecks(config: {
  * Format report for console output
  */
 export function formatSelfTrustReport(report: SelfTrustReport): string {
-  const lines: string[] = [];
+  let lines: string[] = [];
 
   lines.push('');
   lines.push('╔══════════════════════════════════════════════════╗');
@@ -673,8 +781,8 @@ export function formatSelfTrustReport(report: SelfTrustReport): string {
   lines.push('╚══════════════════════════════════════════════════╝');
   lines.push('');
 
-  const statusIcon = report.overallPass ? '✓' : '✗';
-  const confidenceIcon =
+  let statusIcon = report.overallPass ? '✓' : '✗';
+  let confidenceIcon =
     report.confidence === 'high' ? '🟢' : report.confidence === 'medium' ? '🟡' : '🔴';
 
   lines.push(`${statusIcon} Overall Status: ${report.overallPass ? 'PASS' : 'FAIL'}`);
@@ -684,7 +792,7 @@ export function formatSelfTrustReport(report: SelfTrustReport): string {
 
   lines.push('Checks:');
   for (const check of report.checks) {
-    const icon = check.pass ? '✓' : '✗';
+    let icon = check.pass ? '✓' : '✗';
     lines.push(`  ${icon} ${check.name} (${check.score}%)`);
     if (!check.pass && check.reason) {
       lines.push(`     Reason: ${check.reason}`);

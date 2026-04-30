@@ -176,6 +176,7 @@ function truthOrdinal(mode: PulseFindingTruthMode): number {
 }
 
 function severityOrdinal(severity: Break['severity']): number {
+  if (!severity) return 0;
   const tokenDiversity = new Set(severity.split('')).size;
   return severity.length + tokenDiversity;
 }

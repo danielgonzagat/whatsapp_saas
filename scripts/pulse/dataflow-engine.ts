@@ -132,6 +132,101 @@ interface PrismaFieldEvidence {
   relationReferences: string[];
 }
 
+interface SourceFileSnapshot {
+  absolutePath: string;
+  relativePath: string;
+  content: string;
+}
+
+interface FieldUsageEvidence {
+  writtenFields: Set<string>;
+  predicateFields: Set<string>;
+  projectedFields: Set<string>;
+  mentionedFields: Set<string>;
+  sourceFiles: Set<string>;
+}
+
+interface ModelUsageGraph {
+  usageByModel: Map<string, FieldUsageEvidence>;
+}
+
+function createFieldUsageEvidence(): FieldUsageEvidence {
+  return {
+    writtenFields: new Set(),
+    predicateFields: new Set(),
+    projectedFields: new Set(),
+    mentionedFields: new Set(),
+    sourceFiles: new Set(),
+  };
+}
+
+function sourceFileExtensionPattern(): RegExp {
+  return /\.(ts|tsx|js|jsx)$/;
+}
+
+function shouldSkipSourceDirectory(entryName: string): boolean {
+  return entryName.startsWith('.') || entryName === 'node_modules' || entryName === 'dist';
+}
+
+function discoverSourceFiles(rootDir: string): SourceFileSnapshot[] {
+  const files: SourceFileSnapshot[] = [];
+
+  function scanDir(dir: string): void {
+    if (!pathExists(dir)) return;
+    const entries = readDir(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (shouldSkipSourceDirectory(entry.name)) continue;
+        scanDir(fullPath);
+      } else if (entry.isFile() && sourceFileExtensionPattern().test(entry.name)) {
+        try {
+          files.push({
+            absolutePath: fullPath,
+            relativePath: path.relative(rootDir, fullPath),
+            content: readTextFile(fullPath),
+          });
+        } catch {
+          // skip unreadable files
+        }
+      }
+    }
+  }
+
+  scanDir(rootDir);
+  return files;
+}
+
+function sourceLooksLikeUi(content: string): boolean {
+  return (
+    /<[A-Za-z][\w.-]*(\s|>)/.test(content) || /\b(?:React|JSX|useState|useEffect)\b/.test(content)
+  );
+}
+
+function routeFromSourceFile(relativePath: string): string {
+  const normalized = relativePath.split(path.sep).join('/');
+  const extension = path.extname(normalized);
+  const withoutExtension = extension ? normalized.slice(0, -extension.length) : normalized;
+  const segments = withoutExtension.split('/').filter(Boolean);
+  const routeRootIndex = segments.findIndex((segment) => segment === 'pages' || segment === 'app');
+  const routeSegments = routeRootIndex >= 0 ? segments.slice(routeRootIndex + 1) : segments;
+  const normalizedSegments = routeSegments
+    .filter((segment) => segment !== 'index' && segment !== 'page')
+    .map((segment) => {
+      if (segment.startsWith('[[...') && segment.endsWith(']]')) {
+        return `:${segment.slice('[[...'.length, -']]'.length)}*`;
+      }
+      if (segment.startsWith('[...') && segment.endsWith(']')) {
+        return `:${segment.slice('[...'.length, -']'.length)}*`;
+      }
+      if (segment.startsWith('[') && segment.endsWith(']')) {
+        return `:${segment.slice('['.length, -']'.length)}`;
+      }
+      return segment;
+    });
+  return `/${normalizedSegments.join('/')}`.replace(/\/+/g, '/') || '/';
+}
+
 function parseBracketList(attributes: string, key: 'fields' | 'references'): string[] {
   const match = new RegExp(`${key}:\\s*\\[([^\\]]*)\\]`).exec(attributes);
   if (!match) return [];
@@ -217,13 +312,37 @@ function hasSchemaSensitivityEvidence(field: PrismaFieldEvidence): boolean {
   return /@sensitive\b|@pii\b/i.test(field.attributes);
 }
 
-function hasSupportedDataClassifierEvidence(field: PrismaFieldEvidence): boolean {
-  return isNumericMoneyStorage(field) || hasSchemaSensitivityEvidence(field);
+function hasFieldUsageEvidence(
+  field: PrismaFieldEvidence,
+  usage: FieldUsageEvidence | undefined,
+): boolean {
+  return (
+    usage?.mentionedFields.has(field.name) === true || usage?.writtenFields.has(field.name) === true
+  );
 }
 
-function collectUnclassifiedSchemaSignals(fields: PrismaFieldEvidence[]): DataflowRawSignal[] {
+function hasSupportedDataClassifierEvidence(
+  field: PrismaFieldEvidence,
+  usage: FieldUsageEvidence | undefined,
+): boolean {
+  return (
+    isNumericMoneyStorage(field) ||
+    hasSchemaSensitivityEvidence(field) ||
+    hasFieldUsageEvidence(field, usage)
+  );
+}
+
+function collectUnclassifiedSchemaSignals(
+  fields: PrismaFieldEvidence[],
+  usage: FieldUsageEvidence | undefined,
+): DataflowRawSignal[] {
   return fields
-    .filter((field) => !hasSupportedDataClassifierEvidence(field))
+    .filter(
+      (field) =>
+        !isNumericMoneyStorage(field) &&
+        !hasSchemaSensitivityEvidence(field) &&
+        usage !== undefined,
+    )
     .map((field) => ({
       detector: 'unclassified-schema-field',
       field: field.name,
@@ -235,11 +354,22 @@ function collectUnclassifiedSchemaSignals(fields: PrismaFieldEvidence[]): Datafl
     }));
 }
 
-function classifyFinancialFieldEvidence(fields: PrismaFieldEvidence[]): {
+function classifyFinancialFieldEvidence(
+  fields: PrismaFieldEvidence[],
+  usage: FieldUsageEvidence | undefined,
+): {
   financial: boolean;
 } {
   return {
-    financial: fields.some((field) => isNumericMoneyStorage(field)),
+    financial: fields.some(
+      (field) =>
+        isNumericMoneyStorage(field) &&
+        (usage === undefined ||
+          usage.sourceFiles.size === 0 ||
+          usage.writtenFields.has(field.name) ||
+          usage.predicateFields.has(field.name) ||
+          usage.projectedFields.has(field.name)),
+    ),
   };
 }
 
@@ -251,16 +381,19 @@ export function classifyFinancialModel(_modelName: string, fields: string[] = []
     relationFields: [],
     relationReferences: [],
   }));
-  return classifyFinancialFieldEvidence(fieldEvidence).financial;
+  return classifyFinancialFieldEvidence(fieldEvidence, undefined).financial;
 }
 
-function detectPIIFieldEvidence(fields: PrismaFieldEvidence[]): {
+function detectPIIFieldEvidence(
+  fields: PrismaFieldEvidence[],
+  usage: FieldUsageEvidence | undefined,
+): {
   piiFields: string[];
 } {
   const piiFields: string[] = [];
 
   for (const field of fields) {
-    if (hasSchemaSensitivityEvidence(field)) {
+    if (hasSchemaSensitivityEvidence(field) && hasSupportedDataClassifierEvidence(field, usage)) {
       piiFields.push(field.name);
     }
   }
@@ -332,6 +465,7 @@ function hasWorkspaceIsolation(
 
 function discoverAuditModels(
   fieldEvidenceByModel: Map<string, PrismaFieldEvidence[]>,
+  usageByModel: Map<string, FieldUsageEvidence>,
 ): Set<string> {
   const auditModels = new Set<string>();
   for (const [modelName, fields] of fieldEvidenceByModel) {
@@ -343,7 +477,13 @@ function discoverAuditModels(
         field.relationFields.length === 0 &&
         field.relationReferences.length === 0,
     );
-    if (hasTimestamp && descriptiveScalarFields.length >= 2) {
+    const usage = usageByModel.get(modelName);
+    const hasObservedDurableFields =
+      usage !== undefined &&
+      descriptiveScalarFields.some(
+        (field) => usage.writtenFields.has(field.name) || usage.mentionedFields.has(field.name),
+      );
+    if (hasTimestamp && hasObservedDurableFields) {
       auditModels.add(modelName);
     }
   }
@@ -419,6 +559,135 @@ function contextMentionsCreatedBinding(
   return false;
 }
 
+function collectFieldUsageFromContext(
+  context: string,
+  fields: PrismaFieldEvidence[],
+  usage: FieldUsageEvidence,
+  bucketName: 'createdBy' | 'readBy' | 'updatedBy' | 'deletedBy',
+  relativePath: string,
+): void {
+  for (const field of fields) {
+    const fieldPattern = new RegExp(`\\b${field.name}\\b`);
+    if (!fieldPattern.test(context)) continue;
+    usage.mentionedFields.add(field.name);
+    usage.sourceFiles.add(relativePath);
+    if (bucketName === 'createdBy' || bucketName === 'updatedBy') {
+      usage.writtenFields.add(field.name);
+    } else if (/\bwhere\s*:/.test(context)) {
+      usage.predicateFields.add(field.name);
+    } else if (/\bselect\s*:|\binclude\s*:/.test(context)) {
+      usage.projectedFields.add(field.name);
+    }
+  }
+}
+
+function buildUsageGraph(
+  sourceFiles: SourceFileSnapshot[],
+  modelByPrismaProperty: Map<string, string>,
+  fieldEvidenceByModel: Map<string, PrismaFieldEvidence[]>,
+): ModelUsageGraph {
+  const usageByModel = new Map<string, FieldUsageEvidence>();
+  for (const modelName of fieldEvidenceByModel.keys()) {
+    usageByModel.set(modelName, createFieldUsageEvidence());
+  }
+
+  const operationRegex = new RegExp(
+    `${PRISMA_CLIENT_PREFIX}(?:prisma|tx)\\.(\\w+)\\.(create|upsert|findUnique|findMany|findFirst|findFirstOrThrow|count|aggregate|groupBy|update|updateMany|delete|deleteMany)\\(`,
+    'g',
+  );
+
+  for (const sourceFile of sourceFiles) {
+    operationRegex.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = operationRegex.exec(sourceFile.content)) !== null) {
+      const modelName = modelByPrismaProperty.get(match[1]);
+      if (!modelName) continue;
+      const fields = fieldEvidenceByModel.get(modelName) ?? [];
+      const usage = usageByModel.get(modelName);
+      if (!usage) continue;
+      const operation = match[2];
+      const bucketName =
+        operation === 'create' || operation === 'upsert'
+          ? 'createdBy'
+          : operation === 'update' || operation === 'updateMany'
+            ? 'updatedBy'
+            : operation === 'delete' || operation === 'deleteMany'
+              ? 'deletedBy'
+              : 'readBy';
+      const context = sourceFile.content.slice(
+        Math.max(0, match.index - 600),
+        Math.min(sourceFile.content.length, match.index + 1200),
+      );
+      collectFieldUsageFromContext(context, fields, usage, bucketName, sourceFile.relativePath);
+    }
+  }
+
+  return { usageByModel };
+}
+
+function readArtifactObject(filePath: string): Record<string, unknown> | null {
+  if (!pathExists(filePath)) return null;
+  try {
+    const parsed = JSON.parse(readTextFile(filePath)) as unknown;
+    if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function stringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry): entry is string => typeof entry === 'string');
+}
+
+function mergeArtifactUsageEvidence(
+  rootDir: string,
+  usageByModel: Map<string, FieldUsageEvidence>,
+): void {
+  const artifactPaths = [
+    safeJoin(rootDir, '.pulse', 'current', 'PULSE_DATAFLOW_STATE.json'),
+    safeJoin(rootDir, 'PULSE_DATAFLOW_STATE.json'),
+  ];
+
+  for (const artifactPath of artifactPaths) {
+    const artifact = readArtifactObject(artifactPath);
+    if (!artifact) continue;
+    const artifactLabel = path.relative(rootDir, artifactPath);
+
+    if (Array.isArray(artifact.entities)) {
+      for (const entity of artifact.entities) {
+        if (entity === null || typeof entity !== 'object' || Array.isArray(entity)) continue;
+        const candidate = entity as Record<string, unknown>;
+        if (typeof candidate.model !== 'string') continue;
+        const usage = usageByModel.get(candidate.model);
+        if (!usage) continue;
+        for (const field of stringArray(candidate.piiFields)) {
+          usage.mentionedFields.add(field);
+          usage.sourceFiles.add(artifactLabel);
+        }
+      }
+    }
+
+    if (Array.isArray(artifact.mutations)) {
+      for (const mutation of artifact.mutations) {
+        if (mutation === null || typeof mutation !== 'object' || Array.isArray(mutation)) continue;
+        const candidate = mutation as Record<string, unknown>;
+        if (typeof candidate.targetModel !== 'string') continue;
+        const usage = usageByModel.get(candidate.targetModel);
+        if (!usage) continue;
+        for (const field of stringArray(candidate.fields)) {
+          usage.writtenFields.add(field);
+          usage.mentionedFields.add(field);
+          usage.sourceFiles.add(artifactLabel);
+        }
+      }
+    }
+  }
+}
+
 // ── State machine extraction ──
 
 interface StatusTransition {
@@ -434,7 +703,7 @@ interface StatusTransition {
  * where 'status' is a field that maps to a Prisma enum.
  */
 function extractStatusTransitions(
-  rootDir: string,
+  sourceFiles: SourceFileSnapshot[],
   modelName: string,
   statusFields: string[],
 ): Map<string, StatusTransition[]> {
@@ -445,52 +714,31 @@ function extractStatusTransitions(
     transitions.set(field, []);
   }
 
-  const backendDir = safeJoin(rootDir, 'backend', 'src');
-  if (!pathExists(backendDir)) return transitions;
-
-  function scanDir(dir: string): void {
-    const entries = readDir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '.git') continue;
-        scanDir(fullPath);
-      } else if (entry.isFile() && /\.(ts|tsx)$/.test(entry.name)) {
-        try {
-          const content = readTextFile(fullPath);
-          if (!content.toLowerCase().includes(modelName.toLowerCase())) return;
-          const relativePath = path.relative(rootDir, fullPath);
-
-          for (const field of statusFields) {
-            const patterns = [
-              new RegExp(`data:\\s*\\{[^}]*?${field}\\s*:\\s*['\"]?(\\w+)['\"]?`, 'g'),
-              new RegExp(`${field}\\s*:\\s*['\"]?(\\w+)['\"]?`, 'g'),
-            ];
-            for (const pat of patterns) {
-              let m: RegExpExecArray | null;
-              while ((m = pat.exec(content)) !== null) {
-                const to = m[1];
-                const existing = transitions.get(field) ?? [];
-                if (!existing.some((t) => t.to === to && t.sourceFile === relativePath)) {
-                  existing.push({
-                    from: null,
-                    to,
-                    operation: 'update',
-                    sourceFile: relativePath,
-                  });
-                  transitions.set(field, existing);
-                }
-              }
-            }
+  for (const sourceFile of sourceFiles) {
+    if (!sourceFile.content.toLowerCase().includes(modelName.toLowerCase())) continue;
+    for (const field of statusFields) {
+      const patterns = [
+        new RegExp(`data:\\s*\\{[^}]*?${field}\\s*:\\s*['"]?(\\w+)['"]?`, 'g'),
+        new RegExp(`${field}\\s*:\\s*['"]?(\\w+)['"]?`, 'g'),
+      ];
+      for (const pat of patterns) {
+        let m: RegExpExecArray | null;
+        while ((m = pat.exec(sourceFile.content)) !== null) {
+          const to = m[1];
+          const existing = transitions.get(field) ?? [];
+          if (!existing.some((t) => t.to === to && t.sourceFile === sourceFile.relativePath)) {
+            existing.push({
+              from: null,
+              to,
+              operation: 'update',
+              sourceFile: sourceFile.relativePath,
+            });
+            transitions.set(field, existing);
           }
-        } catch {
-          // skip unreadable
         }
       }
     }
   }
-
-  scanDir(backendDir);
   return transitions;
 }
 
@@ -543,15 +791,33 @@ export function findModelOperations(
   | 'hasVersionHistory'
   | 'stateMachine'
 > {
-  return (
-    scanBackendOperations(rootDir, [modelName]).get(modelName) ?? {
+  const schemaPath = safeJoin(rootDir, 'backend', 'prisma', 'schema.prisma');
+  const schemaContent = pathExists(schemaPath) ? readTextFile(schemaPath) : '';
+  const modelFieldEvidence =
+    schemaContent.length > 0 ? parseModelFieldEvidence(schemaContent) : new Map();
+  const sourceFiles = discoverSourceFiles(rootDir);
+  const operations = scanBackendOperations(
+    sourceFiles,
+    [modelName],
+    new Set(),
+    modelFieldEvidence,
+  ).get(modelName);
+  if (!operations) {
+    return {
       model: modelName,
       createdBy: [],
       readBy: [],
       updatedBy: [],
       deletedBy: [],
-    }
-  );
+    };
+  }
+  return {
+    model: operations.model,
+    createdBy: operations.createdBy,
+    readBy: operations.readBy,
+    updatedBy: operations.updatedBy,
+    deletedBy: operations.deletedBy,
+  };
 }
 
 interface ModelOperations {
@@ -563,14 +829,15 @@ interface ModelOperations {
   hasWorkspaceIsolation: boolean;
   hasMutableState: boolean;
   hasVersionHistory: boolean;
+  fieldUsage: FieldUsageEvidence;
 }
 
 function scanBackendOperations(
-  rootDir: string,
+  sourceFiles: SourceFileSnapshot[],
   modelNames: string[],
   auditModelNames: Set<string> = new Set(),
+  fieldEvidenceByModel: Map<string, PrismaFieldEvidence[]> = new Map(),
 ): Map<string, ModelOperations> {
-  const backendDir = safeJoin(rootDir, 'backend', 'src');
   const modelByPrismaProperty = new Map<string, string>();
   const operationsByModel = new Map<string, ModelOperations>();
 
@@ -586,11 +853,19 @@ function scanBackendOperations(
       hasWorkspaceIsolation: false,
       hasMutableState: false,
       hasVersionHistory: false,
+      fieldUsage: createFieldUsageEvidence(),
     });
   }
 
-  // Track files that contain auditLog.create for each model
-  const auditLogFilesByModel = new Map<string, Set<string>>();
+  const usageGraph = buildUsageGraph(sourceFiles, modelByPrismaProperty, fieldEvidenceByModel);
+  for (const [modelName, usage] of usageGraph.usageByModel) {
+    const operations = operationsByModel.get(modelName);
+    if (operations) {
+      operations.fieldUsage = usage;
+    }
+  }
+
+  const auditEvidenceFilesByModel = new Map<string, Set<string>>();
 
   function appendOperation(
     matchedModel: string,
@@ -611,79 +886,58 @@ function scanBackendOperations(
     });
   }
 
-  function scanFiles(dir: string): void {
-    if (!pathExists(dir)) return;
-    const entries = readDir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (entry.name === 'node_modules' || entry.name === '.git') continue;
-        scanFiles(fullPath);
-      } else if (entry.isFile() && /\.(ts|tsx|js|jsx)$/.test(entry.name)) {
-        try {
-          const content = readTextFile(fullPath);
-          const relativePath = path.relative(rootDir, fullPath);
-          const role = classifySourceRole(fullPath, content);
-          const source = role;
-          const createdBindingsByModel = collectCreatedModelBindings(
-            content,
-            modelByPrismaProperty,
-          );
+  for (const sourceFile of sourceFiles) {
+    const content = sourceFile.content;
+    const relativePath = sourceFile.relativePath;
+    const source = classifySourceRole(sourceFile.absolutePath, content);
+    const createdBindingsByModel = collectCreatedModelBindings(content, modelByPrismaProperty);
 
-          const collect = (
-            regex: RegExp,
-            bucketName: 'createdBy' | 'readBy' | 'updatedBy' | 'deletedBy',
-          ) => {
-            regex.lastIndex = 0;
-            let m: RegExpExecArray | null;
-            while ((m = regex.exec(content)) !== null) {
-              appendOperation(m[1], bucketName, source, relativePath);
-            }
-          };
+    const collect = (
+      regex: RegExp,
+      bucketName: 'createdBy' | 'readBy' | 'updatedBy' | 'deletedBy',
+    ) => {
+      regex.lastIndex = 0;
+      let m: RegExpExecArray | null;
+      while ((m = regex.exec(content)) !== null) {
+        appendOperation(m[1], bucketName, source, relativePath);
+      }
+    };
 
-          collect(CREATE_REGEX, 'createdBy');
-          collect(READ_REGEX, 'readBy');
-          collect(UPDATE_REGEX, 'updatedBy');
-          collect(DELETE_REGEX, 'deletedBy');
+    collect(CREATE_REGEX, 'createdBy');
+    collect(READ_REGEX, 'readBy');
+    collect(UPDATE_REGEX, 'updatedBy');
+    collect(DELETE_REGEX, 'deletedBy');
 
-          MODEL_CREATE_REGEX.lastIndex = 0;
-          let auditMatch: RegExpExecArray | null;
-          while ((auditMatch = MODEL_CREATE_REGEX.exec(content)) !== null) {
-            const auditModelName = modelByPrismaProperty.get(auditMatch[1]);
-            if (!auditModelName || !auditModelNames.has(auditModelName)) continue;
+    MODEL_CREATE_REGEX.lastIndex = 0;
+    let auditMatch: RegExpExecArray | null;
+    while ((auditMatch = MODEL_CREATE_REGEX.exec(content)) !== null) {
+      const auditModelName = modelByPrismaProperty.get(auditMatch[1]);
+      if (!auditModelName || !auditModelNames.has(auditModelName)) continue;
 
-            const beforeCtx = content.slice(Math.max(0, auditMatch.index - 400), auditMatch.index);
-            const afterCtx = content.slice(auditMatch.index, auditMatch.index + 400);
-            const context = `${beforeCtx}\n${afterCtx}`;
-            const hasDurableAuditEvidence =
-              TRANSACTION_REGEX.test(context) || /create\s*\(/.test(afterCtx);
-            if (!hasDurableAuditEvidence) continue;
+      const beforeCtx = content.slice(Math.max(0, auditMatch.index - 400), auditMatch.index);
+      const afterCtx = content.slice(auditMatch.index, auditMatch.index + 400);
+      const context = `${beforeCtx}\n${afterCtx}`;
+      const hasDurableAuditEvidence =
+        TRANSACTION_REGEX.test(context) || /create\s*\(/.test(afterCtx);
+      if (!hasDurableAuditEvidence) continue;
 
-            for (const modelName of modelNames) {
-              if (
-                modelName !== auditModelName &&
-                contextMentionsCreatedBinding(context, createdBindingsByModel.get(modelName))
-              ) {
-                const files = auditLogFilesByModel.get(modelName) ?? new Set();
-                files.add(relativePath);
-                auditLogFilesByModel.set(modelName, files);
-              }
-            }
-          }
-        } catch {
-          // skip unreadable files
+      for (const modelName of modelNames) {
+        if (
+          modelName !== auditModelName &&
+          contextMentionsCreatedBinding(context, createdBindingsByModel.get(modelName))
+        ) {
+          const files = auditEvidenceFilesByModel.get(modelName) ?? new Set();
+          files.add(relativePath);
+          auditEvidenceFilesByModel.set(modelName, files);
         }
       }
     }
   }
 
-  scanFiles(backendDir);
-
-  // Merge auditLog detection into gap analysis (returned alongside operations)
   (operationsByModel as Map<string, ModelOperations & { _auditLogFiles: string[] }>).forEach(
     (ops, model) => {
       (ops as ModelOperations & { _auditLogFiles: string[] })._auditLogFiles = [
-        ...(auditLogFilesByModel.get(model) ?? []),
+        ...(auditEvidenceFilesByModel.get(model) ?? []),
       ];
     },
   );
@@ -693,69 +947,22 @@ function scanBackendOperations(
 
 // ── Frontend UI scanning ──
 
-function findModelInUI(rootDir: string, modelName: string): string[] {
-  const frontendDir = safeJoin(rootDir, 'frontend', 'src');
-  if (!pathExists(frontendDir)) return [];
-
-  const pagesDir = safeJoin(frontendDir, 'pages');
-  const componentsDir = safeJoin(frontendDir, 'components');
+function findModelInUI(sourceFiles: SourceFileSnapshot[], modelName: string): string[] {
   const routes: string[] = [];
   const lowerModel = modelName.toLowerCase();
 
-  function routeFromUiFile(relativePath: string): string {
-    const extension = path.extname(relativePath);
-    const withoutExtension = extension ? relativePath.slice(0, -extension.length) : relativePath;
-    const pageRelative = withoutExtension.startsWith('pages/')
-      ? `/${withoutExtension.slice('pages/'.length)}`
-      : withoutExtension;
-    const withoutIndex = pageRelative.endsWith('/index')
-      ? pageRelative.slice(0, -'/index'.length) || '/'
-      : pageRelative;
-
-    return withoutIndex
-      .split('/')
-      .map((segment) => {
-        if (segment.startsWith('[[...') && segment.endsWith(']]')) {
-          return `:${segment.slice('[[...'.length, -']]'.length)}*`;
-        }
-        if (segment.startsWith('[...') && segment.endsWith(']')) {
-          return `:${segment.slice('[...'.length, -']'.length)}*`;
-        }
-        if (segment.startsWith('[') && segment.endsWith(']')) {
-          return `:${segment.slice('['.length, -']'.length)}`;
-        }
-        return segment;
-      })
-      .join('/');
-  }
-
-  function scanDir(dir: string): void {
-    if (!pathExists(dir)) return;
-    const entries = readDir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        scanDir(fullPath);
-      } else if (entry.isFile() && /\.(tsx|jsx|ts|js)$/.test(entry.name)) {
-        try {
-          const content = readTextFile(fullPath);
-          const relativePath = path.relative(frontendDir, fullPath);
-
-          if (content.includes(modelName) || content.toLowerCase().includes(lowerModel)) {
-            const route = routeFromUiFile(relativePath);
-            if (!routes.includes(route)) {
-              routes.push(route);
-            }
-          }
-        } catch {
-          // skip unreadable files
-        }
+  for (const sourceFile of sourceFiles) {
+    if (!sourceLooksLikeUi(sourceFile.content)) continue;
+    if (
+      sourceFile.content.includes(modelName) ||
+      sourceFile.content.toLowerCase().includes(lowerModel)
+    ) {
+      const route = routeFromSourceFile(sourceFile.relativePath);
+      if (!routes.includes(route)) {
+        routes.push(route);
       }
     }
   }
-
-  scanDir(pagesDir);
-  scanDir(componentsDir);
   return routes;
 }
 
@@ -769,16 +976,26 @@ export function buildDataflowState(rootDir: string): DataflowState {
   const modelFieldEvidence = parseModelFieldEvidence(schemaContent);
   const relationInboundCounts = buildRelationInboundCounts(modelFieldEvidence);
   const tenantAnchorModels = discoverTenantAnchorModels(relationInboundCounts);
-  const auditModelNames = discoverAuditModels(modelFieldEvidence);
   const enums = parseEnums(schemaContent);
+  const sourceFiles = discoverSourceFiles(rootDir);
+  const modelByPrismaProperty = new Map<string, string>();
+  for (const modelName of modelNames) {
+    modelByPrismaProperty.set(modelName, modelName);
+    modelByPrismaProperty.set(modelName.charAt(0).toLowerCase() + modelName.slice(1), modelName);
+  }
+  const usageGraph = buildUsageGraph(sourceFiles, modelByPrismaProperty, modelFieldEvidence);
+  mergeArtifactUsageEvidence(rootDir, usageGraph.usageByModel);
+  const auditModelNames = discoverAuditModels(modelFieldEvidence, usageGraph.usageByModel);
 
   const entities: EntityLifecycle[] = [];
   const mutations: DataflowStateMutation[] = [];
   const gaps: DataflowState['gaps'] = [];
-  const rawOps = scanBackendOperations(rootDir, modelNames, auditModelNames) as Map<
-    string,
-    ModelOperations & { _auditLogFiles: string[] }
-  >;
+  const rawOps = scanBackendOperations(
+    sourceFiles,
+    modelNames,
+    auditModelNames,
+    modelFieldEvidence,
+  ) as Map<string, ModelOperations & { _auditLogFiles: string[] }>;
   const operationsByModel = new Map<string, ModelOperations>();
 
   let fullyMappedModels = 0;
@@ -798,6 +1015,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
           hasWorkspaceIsolation: raw.hasWorkspaceIsolation,
           hasMutableState: raw.hasMutableState,
           hasVersionHistory: raw.hasVersionHistory,
+          fieldUsage: usageGraph.usageByModel.get(modelName) ?? raw.fieldUsage,
         }
       : {
           model: modelName,
@@ -808,17 +1026,19 @@ export function buildDataflowState(rootDir: string): DataflowState {
           hasWorkspaceIsolation: false,
           hasMutableState: false,
           hasVersionHistory: false,
+          fieldUsage: usageGraph.usageByModel.get(modelName) ?? createFieldUsageEvidence(),
         };
     operationsByModel.set(modelName, operations);
 
     const fieldEvidence = modelFieldEvidence.get(modelName) ?? [];
     const fields = modelFields.get(modelName) ?? [];
-    const financialEvidence = classifyFinancialFieldEvidence(fieldEvidence);
+    const usage = operations.fieldUsage;
+    const financialEvidence = classifyFinancialFieldEvidence(fieldEvidence, usage);
     const financial = financialEvidence.financial;
-    const piiEvidence = detectPIIFieldEvidence(fieldEvidence);
+    const piiEvidence = detectPIIFieldEvidence(fieldEvidence, usage);
     const piiFields = piiEvidence.piiFields;
-    const rawSignals = collectUnclassifiedSchemaSignals(fieldEvidence);
-    const shownInUI = findModelInUI(rootDir, modelName);
+    const rawSignals = collectUnclassifiedSchemaSignals(fieldEvidence, usage);
+    const shownInUI = findModelInUI(sourceFiles, modelName);
     const hasWorkspace = hasWorkspaceIsolation(fieldEvidence, relationInboundCounts);
     const mutableStateFields = discoverMutableStateFields(fieldEvidence, enums);
     const hasMutableState = mutableStateFields.length > 0;
@@ -895,7 +1115,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
 
     // ── State machine ──
     const statusFieldEnums = getStatusFieldEnums(modelName, fields, schemaContent, enums);
-    const transitions = extractStatusTransitions(rootDir, modelName, mutableStateFields);
+    const transitions = extractStatusTransitions(sourceFiles, modelName, mutableStateFields);
     const stateMachine: EntityLifecycle['stateMachine'] = [];
 
     for (const [field, details] of statusFieldEnums) {
@@ -949,7 +1169,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
         sourceNodeId: `${op.source}/${modelName}`,
         targetModel: modelName,
         operation: 'create',
-        fields: fields.slice(0, 20),
+        fields: Array.from(usage.writtenFields),
         conditions: null,
         sideEffects: [],
       });
@@ -959,7 +1179,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
         sourceNodeId: `${op.source}/${modelName}`,
         targetModel: modelName,
         operation: 'update',
-        fields: fields.slice(0, 20),
+        fields: Array.from(usage.writtenFields),
         conditions: null,
         sideEffects: [],
       });

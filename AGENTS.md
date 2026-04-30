@@ -356,3 +356,19 @@ Stats: 50 obs (23,883t read) | 3,461,087t work | 99% savings
 
 Access 3461k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
+
+## PULSE Auditor Immutability
+
+`scripts/pulse/no-hardcoded-reality-audit.ts` is a locked PULSE governance
+surface.
+
+No AI CLI may edit, weaken, bypass, rename, delete, chmod, unflag, move, or
+replace this auditor. This prohibition applies even when an agent believes the
+change is helpful.
+
+The auditor must remain exhaustive over every source file inside
+`scripts/pulse/**`. It must preserve hardcode debt when code is deleted without a
+dynamic production replacement, including accumulated Git history debt.
+
+Any required auditor change must stop the agent workflow and be performed by the
+human owner outside autonomous AI execution.

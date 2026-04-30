@@ -225,3 +225,15 @@ modules).
   `feedback_pulse_readonly.md`); atualização exige Daniel ou outro humano.
 - **CLAUDE.md FASE 1 do DAG**: troca "via legacy payment provider" por "via
   Stripe Connect". É arquivo protegido; aguarda Daniel ou autorização explícita.
+
+---
+
+## PULSE Auditor Immutability
+
+`scripts/pulse/no-hardcoded-reality-audit.ts` is a locked PULSE governance surface.
+
+No AI CLI may edit, weaken, bypass, rename, delete, chmod, unflag, move, or replace this auditor. This prohibition applies to Codex, Claude, OpenCode, and any autonomous or assisted AI agent.
+
+The auditor must keep scanning every source file inside `scripts/pulse/**` and must preserve hardcode debt when hardcode is deleted without a dynamic production replacement, including accumulated Git history debt.
+
+If the auditor itself needs to change, stop. The human owner must perform that change outside autonomous AI execution.

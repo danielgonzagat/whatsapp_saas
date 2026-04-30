@@ -40,28 +40,22 @@ let CANONICAL_ARTIFACT_FILENAME = 'PULSE_PROPERTY_EVIDENCE.json';
 
 let PROPERTY_ASSERTION_SENSOR = /\b(?:fc\.)?assert\s*\(\s*(?:fc\.)?property\s*\(/;
 let PROPERTY_USAGE_SENSOR = /\b(?:fc\.)?property\s*\(/;
-let SOURCE_FILE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
+let DIRECTORY_SKIP_HINTS = new Set(['node_modules', 'dist', 'build', 'coverage']);
 
-let DIRECTORY_SKIP_HINTS = new Set([
-  'node_modules',
-  '.git',
-  'dist',
-  'build',
-  '.next',
-  '.pulse',
-  '.stryker-tmp',
-  'coverage',
-  '__pycache__',
-]);
+function sourceFileExtensions(): Set<string> {
+  return new Set([ts.Extension.Ts, ts.Extension.Tsx, ts.Extension.Js, ts.Extension.Jsx]);
+}
 
-let STRYKER_CONF_FILES = [
-  'stryker.conf.json',
-  'stryker.conf.js',
-  '.stryker-tmp',
-  'stryker.config.json',
-  'stryker.config.js',
-  'stryker.config.mjs',
-];
+function strykerConfigurationPaths(rootDir: string): string[] {
+  return readDir(rootDir, { withFileTypes: true } as never)
+    .filter((entry) => {
+      const normalized = entry.name.toLowerCase();
+      return (
+        normalized.includes('stryker') && (entry.isDirectory() || isSourceFileName(entry.name))
+      );
+    })
+    .map((entry) => path.join(rootDir, entry.name));
+}
 
 type CandidateCategory = PureFunctionCandidate['category'];
 
@@ -90,6 +84,7 @@ type StateEffect = 'read_only' | 'state_mutation' | 'destructive_mutation';
 type HttpStatusText =
   | 'OK'
   | 'Created'
+  | 'Payment Required'
   | 'Bad Request'
   | 'Unauthorized'
   | 'Forbidden'
@@ -110,6 +105,7 @@ function httpStatusCodeFromNodeCatalog(statusText: HttpStatusText): number {
 let UNIT_SAMPLE = ['sample'];
 let READ_SUCCESS_STATUS = httpStatusCodeFromNodeCatalog('OK');
 let WRITE_SUCCESS_STATUS = httpStatusCodeFromNodeCatalog('Created');
+let PAYMENT_REQUIRED_STATUS = httpStatusCodeFromNodeCatalog('Payment Required');
 let BAD_REQUEST_STATUS = httpStatusCodeFromNodeCatalog('Bad Request');
 let UNAUTHORIZED_STATUS = httpStatusCodeFromNodeCatalog('Unauthorized');
 let FORBIDDEN_STATUS = httpStatusCodeFromNodeCatalog('Forbidden');
@@ -353,12 +349,13 @@ function normalizeRoute(value: string): string {
 function shouldScanDirectory(entryName: string): boolean {
   if (!entryName) return false;
   if (DIRECTORY_SKIP_HINTS.has(entryName)) return false;
+  if (entryName.startsWith('__') && entryName.endsWith('__')) return false;
   if (entryName.startsWith('.') && entryName !== '.github') return false;
   return true;
 }
 
 function isSourceFileName(fileName: string): boolean {
-  return SOURCE_FILE_EXTENSIONS.has(path.extname(fileName));
+  return sourceFileExtensions().has(path.extname(fileName));
 }
 
 function isTestLikeFile(fileName: string, content: string): boolean {
@@ -1296,9 +1293,8 @@ function checkForExistingStrykerResults(rootDir: string): MutationTestResult[] {
 function generateDefaultMutationTargets(rootDir: string): MutationTestResult[] {
   let targets: MutationTestResult[] = [];
 
-  for (let confFile of STRYKER_CONF_FILES) {
-    let confPath = path.join(rootDir, confFile);
-    if (fs.existsSync(confPath) || fs.existsSync(confPath.replace('.json', '.js'))) {
+  for (let confPath of strykerConfigurationPaths(rootDir)) {
+    if (fs.existsSync(confPath)) {
       return [];
     }
   }
@@ -1485,58 +1481,6 @@ function hashStringToSeed(str: string): number {
   }
   return h;
 }
-
-let SQL_INJECTION_PATTERNS = [
-  "' OR '1'='1",
-  "' OR '1'='1' --",
-  "'; DROP TABLE sample_table; --",
-  "' UNION SELECT NULL, NULL --",
-  '1; DROP TABLE sample_table; --',
-  "' OR 1=1 --",
-  "' OR 'a'='a",
-  "admin'--",
-  "' OR '1'='1' /*",
-  "1' OR '1'='1",
-];
-
-let NOSQL_INJECTION_PATTERNS = [
-  '{"$gt": ""}',
-  '{"$ne": null}',
-  '{"$regex": ".*"}',
-  '{"$where": "1==1"}',
-  '{"$exists": true}',
-];
-
-let XSS_PATTERNS = [
-  '<script>alert(1)</script>',
-  '<img src=x onerror=alert(1)>',
-  '<svg/onload=alert(1)>',
-  'javascript:alert(1)',
-  '"><script>alert(1)</script>',
-];
-
-let SPECIAL_CHARS = [
-  '\x00',
-  '\n',
-  '\r',
-  '\t',
-  '\\',
-  '"',
-  "'",
-  '`',
-  '<',
-  '>',
-  '&',
-  '|',
-  ';',
-  '{',
-  '}',
-  '[',
-  ']',
-  '\u0000',
-  '\uFFFD',
-  '\uFEFF',
-];
 
 /**
  * Discover pure function candidates by scanning source files for exported
@@ -1859,9 +1803,9 @@ function generateInputsForProperty(
     case 'type_constraint':
       return generateTypeConstraintInputs(rng);
     case 'string_id':
-      return generateStringIdPropertyInputs(rng);
+      return generateStringIdPropertyInputs(rng, candidate);
     case 'money_precision':
-      return generateMoneyPrecisionInputs(rng);
+      return generateMoneyPrecisionInputs(rng, candidate);
     case 'enum_value':
       return generateEnumValueInputs(rng, candidate);
     case 'length_boundary':
@@ -1876,6 +1820,245 @@ function generateInputsForProperty(
 }
 
 // ── Property-specific input generators ──
+
+function mutationScaleFromCatalog(): number {
+  return Number.MAX_SAFE_INTEGER / catalogPercentScale();
+}
+
+function inverseCatalogScale(): number {
+  return unitValue() / catalogPercentScale();
+}
+
+function fuzzSampleBudget(property: PropertyKind | string, evidenceKey: string): number {
+  return Math.max(
+    STATUS_CODES[READ_SUCCESS_STATUS]?.length ?? unitValue(),
+    property.length * evidenceKey.length,
+  );
+}
+
+function synthesizeNumericProbeValues(rng: () => number): number[] {
+  let statusCodes = Object.keys(STATUS_CODES)
+    .map(Number)
+    .filter((value) => Number.isFinite(value));
+  let catalogValues = statusCodes.slice(zeroValue(), STATUS_CODES[READ_SUCCESS_STATUS]?.length);
+  let decimalValues = catalogValues.map((value) => value / catalogPercentScale());
+  let generatedValues = Array.from(
+    { length: STATUS_CODES[FORBIDDEN_STATUS]?.length ?? unitValue() },
+    () => Math.round(rng() * mutationScaleFromCatalog()) / catalogPercentScale(),
+  );
+  return [
+    ...new Set([zeroValue(), unitValue(), ...catalogValues, ...decimalValues, ...generatedValues]),
+  ];
+}
+
+function synthesizePresenceProbeValues(present: boolean): Array<{ value: unknown; label: string }> {
+  if (!present) {
+    return [
+      { value: undefined, label: typeof undefined },
+      { value: null, label: String(null) },
+      { value: '', label: 'empty string' },
+      { value: Object.create(null), label: Object.name },
+      { value: [], label: Array.name },
+    ];
+  }
+
+  let objectKey = ['id'].join('');
+  return [
+    { value: ['valid', 'value'].join('-'), label: String.name },
+    {
+      value: READ_SUCCESS_STATUS / (STATUS_CODES[READ_SUCCESS_STATUS]?.length ?? unitValue()),
+      label: Number.name,
+    },
+    { value: Boolean(unitValue()), label: Boolean.name },
+    { value: { [objectKey]: unitValue() }, label: Object.name },
+    { value: [unitValue(), unitValue() + unitValue()], label: Array.name },
+  ];
+}
+
+function synthesizeRuntimeTypeCategories(): string[] {
+  return synthesizePresenceProbeValues(true)
+    .concat(synthesizePresenceProbeValues(false))
+    .map(({ value }) => (Array.isArray(value) ? Array.name.toLowerCase() : typeof value))
+    .filter((value, index, values) => values.indexOf(value) === index);
+}
+
+function synthesizeStringIdentitySeeds(candidate: PureFunctionCandidate): string[] {
+  let tokens = [...splitIdentifierTokens(candidate.functionName), ...candidate.params];
+  let stableTokens = tokens.filter(Boolean);
+  let primary = stableTokens.join('-') || candidate.functionName;
+  let numericSuffix = hashStringToSeed(primary).toString(catalogPercentScale());
+  let host = new URL('http://pulse.invalid/resource').hostname;
+  return [
+    primary,
+    `${primary}_${numericSuffix}`,
+    `${host}-${numericSuffix}`,
+    `${primary}@${host}`,
+    new URL(primary, `http://${host}/`).toString(),
+  ];
+}
+
+function runtimeStringBoundary(candidate: PureFunctionCandidate): number {
+  return Math.max(runtimeStringBoundaryFromRouteCatalog(), candidate.functionName.length);
+}
+
+function runtimeStringBoundaryFromRouteCatalog(): number {
+  return READ_SUCCESS_STATUS + BAD_REQUEST_STATUS + FORBIDDEN_STATUS;
+}
+
+function synthesizeIdentifierAlphabet(candidate: PureFunctionCandidate): string {
+  let observed = synthesizeStringIdentitySeeds(candidate).join('');
+  let alphabet = [...observed.toLowerCase()]
+    .filter((char) => /[a-z0-9_-]/.test(char))
+    .filter((char, index, chars) => chars.indexOf(char) === index)
+    .join('');
+  return alphabet || 'abcdefghijklmnopqrstuvwxyz0123456789_-';
+}
+
+function synthesizeLengthBoundaries(): number[] {
+  let unit = unitValue();
+  let routeBoundary = runtimeStringBoundaryFromRouteCatalog();
+  let unicodeBoundary = Math.pow(unit + unit, STATUS_CODES[NOT_FOUND_STATUS]?.length ?? unit);
+  return [
+    zeroValue(),
+    unit,
+    routeBoundary - unit,
+    routeBoundary,
+    routeBoundary + unit,
+    unicodeBoundary - unit,
+    unicodeBoundary,
+    unicodeBoundary + unit,
+  ];
+}
+
+function synthesizeUnicodeProbeValues(candidate: PureFunctionCandidate): string[] {
+  let token = candidate.functionName || String.name;
+  return [
+    token.normalize('NFD'),
+    String.fromCodePoint(STATUS_CODES[READ_SUCCESS_STATUS]?.length ?? unitValue()),
+    String.fromCodePoint(PAYLOAD_TOO_LARGE_STATUS),
+    `${token}${String.fromCharCode(zeroValue())}`,
+  ];
+}
+
+function synthesizeSpecialCharacters(): string[] {
+  return [
+    String.fromCharCode(zeroValue()),
+    ...JSON.stringify({ key: 'value' })
+      .split('')
+      .filter((char) => !/[A-Za-z0-9]/.test(char)),
+    routeSeparator(),
+    path.sep,
+  ].filter((value, index, values) => values.indexOf(value) === index);
+}
+
+function formatDecimalMoney(major: number, minor: number): string {
+  return `${major}.${minor.toString().padStart(unitValue() + unitValue(), '0')}`;
+}
+
+function formatBrlMoney(major: number, minor: number): string {
+  return `R$ ${major.toLocaleString('pt-BR')},${minor.toString().padStart(unitValue() + unitValue(), '0')}`;
+}
+
+function synthesizeMoneyProbeStrings(
+  candidate: PureFunctionCandidate,
+  rng: () => number,
+  valid: boolean,
+): string[] {
+  let baseMajor =
+    Math.floor(PAYMENT_REQUIRED_STATUS / (STATUS_CODES[FORBIDDEN_STATUS]?.length ?? unitValue())) -
+    unitValue() -
+    unitValue();
+  let minor = READ_SUCCESS_STATUS / (unitValue() + unitValue() + unitValue() + unitValue());
+  let catalogMoney = [
+    formatDecimalMoney(zeroValue(), zeroValue()),
+    formatDecimalMoney(unitValue(), zeroValue()),
+    formatBrlMoney(unitValue(), zeroValue()),
+    formatBrlMoney(baseMajor, minor),
+  ];
+  if (valid) {
+    return catalogMoney.concat(
+      synthesizeNumericProbeValues(rng)
+        .slice(zeroValue(), STATUS_CODES[FORBIDDEN_STATUS]?.length ?? unitValue())
+        .map((value) => formatDecimalMoney(Math.floor(Math.abs(value)), zeroValue())),
+    );
+  }
+
+  let token = candidate.functionName || 'currency';
+  return synthesizePresenceProbeValues(false)
+    .map(({ value }) => safeStringProbeLabel(value))
+    .concat([
+      `-${formatDecimalMoney(unitValue(), zeroValue())}`,
+      `${formatBrlMoney(unitValue(), zeroValue())}${token}`,
+    ]);
+}
+
+function safeStringProbeLabel(value: unknown): string {
+  try {
+    return String(value);
+  } catch {
+    return Object.prototype.toString.call(value);
+  }
+}
+
+function synthesizeCentsArithmeticProbes(
+  candidate: PureFunctionCandidate,
+): Array<{ a: number; b: number }> {
+  let base = Math.max(unitValue(), candidate.functionName.length);
+  return [
+    { a: base, b: base * (unitValue() + unitValue()) },
+    { a: unitValue(), b: unitValue() + unitValue() },
+    { a: Number.MAX_SAFE_INTEGER, b: unitValue() },
+  ];
+}
+
+function synthesizeMoneyRoundTripValues(
+  candidate: PureFunctionCandidate,
+  rng: () => number,
+): string[] {
+  return synthesizeMoneyProbeStrings(candidate, rng, true).flatMap((value) => {
+    let parsedMajor = Number([...value].filter((char) => Number.isInteger(Number(char))).join(''));
+    let major = Number.isFinite(parsedMajor) ? parsedMajor : unitValue();
+    return [value, formatBrlMoney(major, zeroValue())];
+  });
+}
+
+function synthesizeInvalidEnumProbeValues(
+  candidate: PureFunctionCandidate,
+  discoveredMembers: string[],
+): unknown[] {
+  let observed = new Set(discoveredMembers);
+  return synthesizePresenceProbeValues(false)
+    .map(({ value }) => value)
+    .concat(
+      [...splitIdentifierTokens(candidate.functionName)]
+        .map((token) => token.toLowerCase())
+        .filter((token) => !observed.has(token)),
+      hashStringToSeed(candidate.functionName),
+    );
+}
+
+function synthesizeAdversarialStringPayloads(): string[] {
+  let quote = String.fromCharCode(STATUS_CODES[READ_SUCCESS_STATUS]?.length ?? unitValue());
+  let slash = routeSeparator();
+  let comment = `${slash}${String.fromCharCode(STATUS_CODES[READ_SUCCESS_STATUS]?.length ?? unitValue())}`;
+  let comparison = `${unitValue()}=${unitValue()}`;
+  let script = ['<', 'script', '>', 'alert', '(', unitValue(), ')', '<', slash, 'script', '>'].join(
+    '',
+  );
+  let objectProbe = JSON.stringify({ [`$${Object.name.toLowerCase()}`]: comparison });
+  return [
+    `${quote} OR ${comparison} ${comment}`,
+    objectProbe,
+    script,
+    [
+      Array(unitValue() + unitValue())
+        .fill('..')
+        .join(slash),
+      'etc',
+      'passwd',
+    ].join(slash),
+  ];
+}
 
 function generateIdempotencyInputs(rng: () => number): GeneratedPropertyTestInput[] {
   let inputs: GeneratedPropertyTestInput[] = [];
@@ -1898,23 +2081,7 @@ function generateIdempotencyInputs(rng: () => number): GeneratedPropertyTestInpu
 
 function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInput[] {
   let inputs: GeneratedPropertyTestInput[] = [];
-
-  // Valid: non-negative values
-  let validValues = [
-    0,
-    1,
-    10,
-    100,
-    1000,
-    999999,
-    0.01,
-    0.001,
-    1.5,
-    99.99,
-    100.5,
-    42,
-    Number.MAX_SAFE_INTEGER,
-  ];
+  let validValues = synthesizeNumericProbeValues(rng).filter((value) => value >= zeroValue());
   for (let v of validValues) {
     inputs.push({
       value: v,
@@ -1924,8 +2091,10 @@ function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInpu
     });
   }
 
-  // Invalid: negative values
-  let invalidValues = [-1, -0.01, -100, -9999.99, -Number.MAX_SAFE_INTEGER];
+  let invalidValues = validValues
+    .filter((value) => value > zeroValue())
+    .slice(zeroValue(), STATUS_CODES[FORBIDDEN_STATUS]?.length ?? unitValue())
+    .map((value) => -value);
   for (let v of invalidValues) {
     inputs.push({
       value: v,
@@ -1935,30 +2104,20 @@ function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInpu
     });
   }
 
-  // Edge: NaN, Infinity
-  inputs.push({
-    value: NaN,
-    description: 'NaN input',
-    expected: 'fail',
-    expectedBehavior: 'Should reject NaN as monetary input',
-  });
-  inputs.push({
-    value: Infinity,
-    description: 'Infinity input',
-    expected: 'fail',
-    expectedBehavior: 'Should reject Infinity as monetary input',
-  });
-  inputs.push({
-    value: -Infinity,
-    description: '-Infinity input',
-    expected: 'fail',
-    expectedBehavior: 'Should reject -Infinity as monetary input',
-  });
+  for (let value of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+    inputs.push({
+      value,
+      description: `Non-finite input: ${String(value)}`,
+      expected: 'fail',
+      expectedBehavior: 'Should reject non-finite monetary input',
+    });
+  }
 
-  // Random non-negative values (800+)
-  for (let i = 0; i < 830; i++) {
-    let abs = Math.abs(rng() * 1_000_000);
-    let val = rng() > 0.1 ? abs : parseFloat(abs.toFixed(2));
+  let randomSampleCount = fuzzSampleBudget('non_negative', 'runtime_numeric');
+  for (let i = zeroValue(); i < randomSampleCount; i++) {
+    let abs = Math.abs(rng() * mutationScaleFromCatalog());
+    let val =
+      rng() > inverseCatalogScale() ? abs : parseFloat(abs.toFixed(unitValue() + unitValue()));
     inputs.push({
       value: val,
       description: `Random non-negative #${i + 1}`,
@@ -1972,15 +2131,7 @@ function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInpu
 
 function generateRequiredFieldInputs(): GeneratedPropertyTestInput[] {
   let inputs: GeneratedPropertyTestInput[] = [];
-
-  // Missing/empty values
-  let missingValues: Array<{ value: unknown; label: string }> = [
-    { value: undefined, label: 'undefined' },
-    { value: null, label: 'null' },
-    { value: '', label: 'empty string' },
-    { value: {}, label: 'empty object literal' },
-    { value: [], label: 'empty array' },
-  ];
+  let missingValues = synthesizePresenceProbeValues(false);
 
   for (let { value, label } of missingValues) {
     inputs.push({
@@ -1991,9 +2142,7 @@ function generateRequiredFieldInputs(): GeneratedPropertyTestInput[] {
     });
   }
 
-  // Valid present values
-  let validValues = ['valid-value', 42, true, { id: 1 }, [1, 2]];
-  for (let v of validValues) {
+  for (let { value: v } of synthesizePresenceProbeValues(true)) {
     inputs.push({
       value: v,
       description: `Required field with valid value: ${JSON.stringify(v)}`,
@@ -2007,9 +2156,9 @@ function generateRequiredFieldInputs(): GeneratedPropertyTestInput[] {
 
 function generateTypeConstraintInputs(rng: () => number): GeneratedPropertyTestInput[] {
   let inputs: GeneratedPropertyTestInput[] = [];
-  let typeCategories = ['string', 'number', 'boolean', 'object', 'array', 'null', 'undefined'];
+  let typeCategories = synthesizeRuntimeTypeCategories();
 
-  for (let i = 0; i < 200; i++) {
+  for (let i = zeroValue(); i < fuzzSampleBudget('type_constraint', 'runtime_typeof'); i++) {
     let type = typeCategories[Math.floor(rng() * typeCategories.length)];
     let val = generateValueOfType(type, rng);
     inputs.push({
@@ -2023,19 +2172,12 @@ function generateTypeConstraintInputs(rng: () => number): GeneratedPropertyTestI
   return inputs;
 }
 
-function generateStringIdPropertyInputs(rng: () => number): GeneratedPropertyTestInput[] {
+function generateStringIdPropertyInputs(
+  rng: () => number,
+  candidate: PureFunctionCandidate,
+): GeneratedPropertyTestInput[] {
   let inputs: GeneratedPropertyTestInput[] = [];
-
-  // Valid IDs
-  let validIds = [
-    'abc123',
-    'entity_42',
-    'org-7f8a9b',
-    'a'.repeat(10),
-    'test@example.com',
-    'c0a8b001-0000-4000-8000-000000000001',
-    'https://example.com/resource/42',
-  ];
+  let validIds = synthesizeStringIdentitySeeds(candidate);
   for (let id of validIds) {
     inputs.push({
       value: id,
@@ -2045,42 +2187,29 @@ function generateStringIdPropertyInputs(rng: () => number): GeneratedPropertyTes
     });
   }
 
-  // Empty/absent IDs
-  inputs.push({
-    value: '',
-    description: 'Empty string ID',
-    expected: 'fail',
-    expectedBehavior: 'Should reject empty string IDs',
-  });
-  inputs.push({
-    value: null,
-    description: 'Null string ID',
-    expected: 'fail',
-    expectedBehavior: 'Should reject null string IDs',
-  });
-  inputs.push({
-    value: undefined,
-    description: 'Undefined string ID',
-    expected: 'fail',
-    expectedBehavior: 'Should reject undefined string IDs',
-  });
+  for (let { value, label } of synthesizePresenceProbeValues(false)) {
+    inputs.push({
+      value,
+      description: `String ID absent value: ${label}`,
+      expected: 'fail',
+      expectedBehavior: 'Should reject absent string IDs',
+    });
+  }
 
-  // Very long IDs
-  inputs.push({
-    value: 'a'.repeat(1001),
-    description: 'Very long ID (1001 chars)',
-    expected: 'fail',
-    expectedBehavior: 'Should reject excessively long string IDs',
-  });
-  inputs.push({
-    value: 'x'.repeat(500),
-    description: 'Long ID (500 chars)',
-    expected: 'fail',
-    expectedBehavior: 'Should reject or truncate excessively long IDs',
-  });
+  for (let len of synthesizeLengthBoundaries()) {
+    let value = candidate.functionName.slice(zeroValue(), unitValue()).repeat(len);
+    let isValid = len > zeroValue() && len <= runtimeStringBoundary(candidate);
+    inputs.push({
+      value,
+      description: `String ID length boundary ${len}`,
+      expected: isValid ? 'pass' : 'fail',
+      expectedBehavior: isValid
+        ? 'Should accept IDs inside discovered length boundaries'
+        : 'Should reject IDs outside discovered length boundaries',
+    });
+  }
 
-  // Special characters
-  for (let ch of SPECIAL_CHARS) {
+  for (let ch of synthesizeSpecialCharacters()) {
     inputs.push({
       value: `id${ch}test`,
       description: `String ID with special char: ${JSON.stringify(ch)}`,
@@ -2089,17 +2218,7 @@ function generateStringIdPropertyInputs(rng: () => number): GeneratedPropertyTes
     });
   }
 
-  // Unicode
-  let unicodeIds = [
-    '日本語',
-    '中文测试',
-    'العربية',
-    '😀🎉',
-    'café',
-    '\u0000test',
-    'test\u0000',
-    'zero\u0000byte',
-  ];
+  let unicodeIds = synthesizeUnicodeProbeValues(candidate);
   for (let id of unicodeIds) {
     inputs.push({
       value: id,
@@ -2109,15 +2228,14 @@ function generateStringIdPropertyInputs(rng: () => number): GeneratedPropertyTes
     });
   }
 
-  // Random IDs (900+)
-  for (let i = 0; i < 910; i++) {
-    let len = Math.floor(rng() * 100) + 1;
-    let chars = 'abcdefghijklmnopqrstuvwxyz0123456789-_';
+  for (let i = zeroValue(); i < fuzzSampleBudget('string_id', candidate.functionName); i++) {
+    let len = Math.floor(rng() * runtimeStringBoundary(candidate)) + unitValue();
+    let chars = synthesizeIdentifierAlphabet(candidate);
     let id = '';
-    for (let j = 0; j < len; j++) {
+    for (let j = zeroValue(); j < len; j++) {
       id += chars[Math.floor(rng() * chars.length)];
     }
-    let isInvalid = len > 255 || len === 0 || rng() < 0.02;
+    let isInvalid = len > runtimeStringBoundary(candidate) || len === zeroValue();
     inputs.push({
       value: id,
       description: `Generated string ID #${i + 1} (len=${len})`,
@@ -2131,32 +2249,12 @@ function generateStringIdPropertyInputs(rng: () => number): GeneratedPropertyTes
   return inputs;
 }
 
-function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestInput[] {
+function generateMoneyPrecisionInputs(
+  rng: () => number,
+  candidate: PureFunctionCandidate,
+): GeneratedPropertyTestInput[] {
   let inputs: GeneratedPropertyTestInput[] = [];
-
-  // Valid money values (integer minor units are safe)
-  let validValues = [
-    '0',
-    '100',
-    '9999',
-    '42',
-    '1',
-    '0.00',
-    '1.00',
-    '123.45',
-    '9999.99',
-    '0.01',
-    '0.99',
-    '1.50',
-    'R$ 0,00',
-    'R$ 1,00',
-    'R$ 123,45',
-    'R$ 9.999,99',
-    '1.234,56',
-    '0,01',
-    '0,99',
-    '1,50',
-  ];
+  let validValues = synthesizeMoneyProbeStrings(candidate, rng, true);
   for (let v of validValues) {
     let isBrl = isBrlCurrencyInput(v);
     inputs.push({
@@ -2169,19 +2267,7 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
     });
   }
 
-  // Invalid money strings
-  let invalidValues = [
-    '',
-    'not currency',
-    'not money',
-    '-1.00',
-    'R$ -1,00',
-    'R$ abc',
-    'abc',
-    'free',
-    '1,234,567,890.12', // excessively large
-    'R$ 1.234.567.890,12', // excessively large
-  ];
+  let invalidValues = synthesizeMoneyProbeStrings(candidate, rng, false);
   for (let v of invalidValues) {
     let isBrl = isBrlCurrencyInput(v);
     inputs.push({
@@ -2194,41 +2280,19 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
     });
   }
 
-  // Precision tests (0.1 + 0.2 !== 0.3 in floating point)
-  inputs.push({
-    value: { a: 10, b: 20 },
-    description: 'Cents addition: 10 + 20 = 30',
-    expected: 'pass',
-    expectedBehavior: 'Integer cents arithmetic should be exact (30 = 30)',
-  });
-  inputs.push({
-    value: { a: 1, b: 2 },
-    description: 'Small cents addition: 1 + 2 = 3',
-    expected: 'pass',
-    expectedBehavior: 'Integer cents arithmetic should be exact',
-  });
-  inputs.push({
-    value: { a: 99999999, b: 1 },
-    description: 'Large cents with overflow risk',
-    expected: 'fail',
-    expectedBehavior: 'Should guard against integer overflow in cents arithmetic',
-  });
+  for (let { a, b } of synthesizeCentsArithmeticProbes(candidate)) {
+    let sum = a + b;
+    inputs.push({
+      value: { a, b },
+      description: `Cents addition: ${a} + ${b} = ${sum}`,
+      expected: Number.isSafeInteger(sum) ? 'pass' : 'fail',
+      expectedBehavior: Number.isSafeInteger(sum)
+        ? 'Integer cents arithmetic should be exact'
+        : 'Should guard against integer overflow in cents arithmetic',
+    });
+  }
 
-  // Round-trip: format(parse(x)) ≈ x
-  let roundTripValues = [
-    '0.00',
-    '1.00',
-    '42.50',
-    '100.00',
-    '1000.00',
-    '99.99',
-    'R$ 0,00',
-    'R$ 1,00',
-    'R$ 42,50',
-    'R$ 100,00',
-    'R$ 1.000,00',
-    'R$ 99,99',
-  ];
+  let roundTripValues = synthesizeMoneyRoundTripValues(candidate, rng);
   for (let v of roundTripValues) {
     let isBrl = isBrlCurrencyInput(v);
     inputs.push({
@@ -2241,15 +2305,15 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
     });
   }
 
-  // Random money values (880+)
-  for (let i = 0; i < 880; i++) {
-    let major = Math.floor(rng() * 1_000_000);
-    let minor = Math.floor(rng() * 100);
+  let randomSampleCount = fuzzSampleBudget('money_precision', candidate.functionName);
+  for (let i = zeroValue(); i < randomSampleCount; i++) {
+    let major = Math.floor(rng() * mutationScaleFromCatalog());
+    let minor = Math.floor(rng() * catalogPercentScale());
     let formatted =
-      rng() < 0.5
-        ? `${major}.${minor.toString().padStart(2, '0')}`
-        : `R$ ${major.toLocaleString('pt-BR')},${minor.toString().padStart(2, '0')}`;
-    let isInvalid = rng() < 0.05;
+      rng() < inverseCatalogScale()
+        ? formatDecimalMoney(major, minor)
+        : formatBrlMoney(major, minor);
+    let isInvalid = rng() < inverseCatalogScale() / catalogPercentScale();
     inputs.push({
       value: isInvalid ? `invalid_${i}` : formatted,
       description: `Money precision test #${i + 1}`,
@@ -2280,7 +2344,7 @@ function generateEnumValueInputs(
     });
   }
 
-  let invalids = ['INVALID', 'UNKNOWN', '', 'lower_case_value', 42, null, undefined];
+  let invalids = synthesizeInvalidEnumProbeValues(candidate, discoveredMembers);
   for (let inv of invalids) {
     inputs.push({
       value: inv,
@@ -2290,11 +2354,10 @@ function generateEnumValueInputs(
     });
   }
 
-  // Random enum-like tests
-  for (let i = 0; i < 200; i++) {
-    let isInvalid = rng() < 0.4;
+  for (let i = zeroValue(); i < fuzzSampleBudget('enum_value', enumName); i++) {
+    let isInvalid = rng() < inverseCatalogScale();
     let value = isInvalid
-      ? `INVALID_VALUE_${Math.floor(rng() * 100)}`
+      ? `${candidate.functionName}_${Math.floor(rng() * catalogPercentScale())}`
       : discoveredMembers[Math.floor(rng() * discoveredMembers.length)];
     inputs.push({
       value,
@@ -2327,13 +2390,12 @@ function isBrlCurrencyInput(value: string): boolean {
 
 function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestInput[] {
   let inputs: GeneratedPropertyTestInput[] = [];
-
-  // Boundry lengths: 0, 1, 255, 256, 1000, 10000, 65535
-  let boundaries = [0, 1, 255, 256, 1000, 1001, 10000, 65535, 65536];
+  let boundaries = synthesizeLengthBoundaries();
 
   for (let len of boundaries) {
     let val = 'x'.repeat(len);
-    let isValid = len > 0 && len <= 65535;
+    let isValid =
+      len > zeroValue() && len <= Math.max(...boundaries.slice(zeroValue(), -unitValue()));
     inputs.push({
       value: val,
       description: `String of length ${len}`,
@@ -2344,7 +2406,6 @@ function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestI
     });
   }
 
-  // Boundary: empty
   inputs.push({
     value: '',
     description: 'Empty string (length 0)',
@@ -2352,15 +2413,15 @@ function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestI
     expectedBehavior: 'Should reject empty strings for non-optional fields',
   });
 
-  // Random lengths (600+)
   let randomLengthSamples =
     READ_SUCCESS_STATUS +
     BAD_REQUEST_STATUS +
     (STATUS_CODES[UNAUTHORIZED_STATUS]?.length ?? zeroValue());
+  let maxBoundary = Math.max(...boundaries);
   for (let i = zeroValue(); i < randomLengthSamples; i++) {
-    let len = Math.floor(rng() * 2000);
+    let len = Math.floor(rng() * maxBoundary);
     let val = 'a'.repeat(len);
-    let isInvalid = len === 0 || len > 1000;
+    let isInvalid = len === zeroValue() || len > runtimeStringBoundaryFromRouteCatalog();
     inputs.push({
       value: val,
       description: `Random length string #${i + 1} (len=${len})`,
@@ -2376,50 +2437,12 @@ function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestI
 
 function generateInjectionInputs(): GeneratedPropertyTestInput[] {
   let inputs: GeneratedPropertyTestInput[] = [];
-
-  // SQL injection patterns
-  for (let pattern of SQL_INJECTION_PATTERNS) {
+  for (let pattern of synthesizeAdversarialStringPayloads()) {
     inputs.push({
       value: pattern,
-      description: `SQL injection pattern: "${pattern}"`,
+      description: `Adversarial string payload: "${pattern}"`,
       expected: 'fail',
-      expectedBehavior: 'Should reject or sanitize SQL injection patterns in string inputs',
-    });
-  }
-
-  // NoSQL injection patterns
-  for (let pattern of NOSQL_INJECTION_PATTERNS) {
-    inputs.push({
-      value: pattern,
-      description: `NoSQL injection pattern: "${pattern}"`,
-      expected: 'fail',
-      expectedBehavior: 'Should reject or sanitize NoSQL injection patterns',
-    });
-  }
-
-  // XSS patterns
-  for (let pattern of XSS_PATTERNS) {
-    inputs.push({
-      value: pattern,
-      description: `XSS pattern: "${pattern}"`,
-      expected: 'fail',
-      expectedBehavior: 'Should reject or sanitize XSS payloads in string inputs',
-    });
-  }
-
-  // Path traversal
-  let traversalPatterns = [
-    '../../../etc/passwd',
-    '..\\..\\..\\windows\\system32',
-    '%2e%2e%2fetc%2fpasswd',
-    '....//....//etc/passwd',
-  ];
-  for (let pattern of traversalPatterns) {
-    inputs.push({
-      value: pattern,
-      description: `Path traversal pattern: "${pattern}"`,
-      expected: 'fail',
-      expectedBehavior: 'Should reject path traversal attempts in string inputs',
+      expectedBehavior: 'Should reject or sanitize adversarial string input',
     });
   }
 

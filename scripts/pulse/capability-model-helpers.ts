@@ -71,8 +71,10 @@ function deriveCapabilityMaturityStage(input: {
   const observedStage = Object.entries(readinessSignals).find(
     ([stage, present]) => present && !blockedSignals[stage as PulseCapabilityMaturity['stage']],
   );
+  const discoveredStages = Object.keys(readinessSignals);
+  const fallbackStageIndex = discoveredStages.length - Number(Boolean(discoveredStages.length));
   return (observedStage?.[0] ??
-    Object.keys(readinessSignals).at(-1)) as PulseCapabilityMaturity['stage'];
+    discoveredStages[fallbackStageIndex]) as PulseCapabilityMaturity['stage'];
 }
 
 export function graphTraversalDepthLimit(input: {

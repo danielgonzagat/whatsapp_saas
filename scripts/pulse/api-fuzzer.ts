@@ -25,80 +25,6 @@ import type {
 } from './types.api-fuzzer';
 
 // ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const HTTP_METHODS = ['Get', 'Post', 'Put', 'Patch', 'Delete'] as const;
-
-const DECORATOR_REGEX_BY_METHOD: Readonly<Record<(typeof HTTP_METHODS)[number], RegExp>> = {
-  Get: /@Get\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/,
-  Post: /@Post\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/,
-  Put: /@Put\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/,
-  Patch: /@Patch\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/,
-  Delete: /@Delete\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/,
-};
-
-const IGNORE_DIRS = new Set([
-  'node_modules',
-  '.next',
-  'dist',
-  '.git',
-  'coverage',
-  '__tests__',
-  '__mocks__',
-  '.turbo',
-  '.vercel',
-]);
-
-const SQLI_PAYLOADS = [
-  "' OR '1'='1",
-  "' OR '1'='1' --",
-  "'; DROP TABLE __pulse_table--",
-  "' UNION SELECT NULL--",
-  "1' OR '1' = '1",
-  '" OR "1"="1',
-  '1; DROP TABLE __pulse_table--',
-  "' OR 1=1--",
-  "' WAITFOR DELAY '0:0:5'--",
-  "' OR 1=1#",
-];
-
-const XSS_PAYLOADS = [
-  '<script>alert(1)</script>',
-  '<img src=x onerror=alert(1)>',
-  '<svg onload=alert(1)>',
-  '"><script>alert(1)</script>',
-  '<body onload=alert(1)>',
-  '<iframe src=javascript:alert(1)>',
-  "'-alert(1)-'",
-  'javascript:alert(1)',
-  '<scr<script>ipt>alert(1)</scr</script>ipt>',
-  '<details open ontoggle=alert(1)>',
-];
-
-const NOSQLI_PAYLOADS = [
-  { $gt: '' } as unknown,
-  { $ne: null } as unknown,
-  { $where: '1==1' } as unknown,
-  { $regex: '.*' } as unknown,
-  { __pulse_field: { $exists: true } } as unknown,
-];
-
-const MASS_ASSIGNMENT_GRAMMAR_PAYLOADS = [
-  { __pulse_extra_boolean: true },
-  { __pulse_extra_scalar: '__pulse_extra_value' },
-  { __pulse_extra_object: { enabled: true } },
-];
-
-const OPEN_REDIRECT_PAYLOADS = [
-  'https://evil.com',
-  '//evil.com',
-  '\\\\evil.com',
-  'https://evil.com%23.mysite.com',
-  'javascript:alert(1)',
-];
-
-// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -107,6 +33,18 @@ function buildFullPath(controllerPath: string, methodPath: string): string {
   const mp = (methodPath || '').replace(/^\/|\/$/g, '');
   const full = mp ? `/${cp}/${mp}` : `/${cp}`;
   return full.replace(/\/+/g, '/');
+}
+
+function parseRouteDecorator(line: string): { method: string; path: string } | null {
+  const match = line.match(/^@(Get|Post|Put|Patch|Delete)\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    method: match[1].toUpperCase(),
+    path: match[2] || '',
+  };
 }
 
 function uniqueId(): string {
@@ -348,6 +286,35 @@ function findMethodName(
   return { line: decoratorLine, name: 'unknown' };
 }
 
+function extractEndpointEffectGraph(
+  lines: string[],
+  methodLine: number,
+  blockEndLine: number,
+): Record<string, unknown> {
+  const methodBody = lines.slice(methodLine, Math.min(methodLine + 80, blockEndLine)).join('\n');
+  const writes = new Set<string>();
+  const serviceCalls = new Set<string>();
+  let writePattern = /\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\s*\(/g;
+  let servicePattern = /this\.([A-Za-z_]\w*)\.([A-Za-z_]\w*)\s*\(/g;
+
+  let writeMatch = writePattern.exec(methodBody);
+  while (writeMatch) {
+    writes.add(writeMatch[1]);
+    writeMatch = writePattern.exec(methodBody);
+  }
+
+  let serviceMatch = servicePattern.exec(methodBody);
+  while (serviceMatch) {
+    serviceCalls.add(`${serviceMatch[1]}.${serviceMatch[2]}`);
+    serviceMatch = servicePattern.exec(methodBody);
+  }
+
+  return {
+    stateMutationSignals: [...writes],
+    serviceCallSignals: [...serviceCalls],
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Endpoint Discovery
 // ---------------------------------------------------------------------------
@@ -388,107 +355,105 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
         for (let i = block.startLine; i < block.endLine; i++) {
           const line = lines[i].trim();
 
-          for (const method of HTTP_METHODS) {
-            const decoratorRe = DECORATOR_REGEX_BY_METHOD[method];
-            const match = line.match(decoratorRe);
-            if (!match) {
-              continue;
-            }
-
-            const methodPath = match[1] || '';
-            const fullPath = buildFullPath(controllerPath, methodPath);
-
-            let methodPublic = block.isPublic;
-            let methodGuards = [...block.classGuards];
-            let methodThrottle = block.throttleConfig;
-
-            for (let j = Math.max(block.startLine, i - 8); j < i; j++) {
-              const above = lines[j].trim();
-              if (/@Public\(\s*\)/.test(above)) {
-                methodPublic = true;
-              }
-              const guardMatch = above.match(/@UseGuards\(([^)]+)\)/);
-              if (guardMatch) {
-                methodGuards.push(...extractGuardNames(guardMatch[1]));
-              }
-              const throttleMatch = above.match(
-                /@Throttle\(\s*(?:{\s*default:\s*{\s*limit:\s*(\d+)\s*,\s*ttl:\s*(\d+)\s*}\s*})?\s*\)/,
-              );
-              if (throttleMatch) {
-                methodThrottle = {
-                  max: throttleMatch[1] ? parseInt(throttleMatch[1], 10) : 30,
-                  windowMs: throttleMatch[2] ? parseInt(throttleMatch[2], 10) : 60000,
-                };
-              }
-            }
-
-            for (let j = i + 1; j < Math.min(i + 5, block.endLine); j++) {
-              const below = lines[j].trim();
-              if (/@Public\(\s*\)/.test(below)) {
-                methodPublic = true;
-              }
-              const guardMatch = below.match(/@UseGuards\(([^)]+)\)/);
-              if (guardMatch) {
-                methodGuards.push(...extractGuardNames(guardMatch[1]));
-              }
-              const throttleMatch = below.match(
-                /@Throttle\(\s*(?:{\s*default:\s*{\s*limit:\s*(\d+)\s*,\s*ttl:\s*(\d+)\s*}\s*})?\s*\)/,
-              );
-              if (throttleMatch) {
-                methodThrottle = {
-                  max: throttleMatch[1] ? parseInt(throttleMatch[1], 10) : 30,
-                  windowMs: throttleMatch[2] ? parseInt(throttleMatch[2], 10) : 60000,
-                };
-              }
-            }
-
-            const methodInfo = findMethodName(lines, i, block.endLine);
-            const dtoType = extractBodyDtoType(lines, methodInfo.line, block.endLine);
-            const routeParameters = parseRouteParameters(fullPath);
-            const methodMetadataDecorators = collectNonRouteMetadataDecorators(
-              lines,
-              Math.max(block.startLine, i - 8),
-              Math.min(i + 5, block.endLine),
-            );
-            methodGuards = uniqueStrings(methodGuards);
-            const authorizationMetadata = uniqueStrings([
-              ...block.classMetadataDecorators,
-              ...methodMetadataDecorators,
-            ]);
-            const requiresAuth = !methodPublic && methodGuards.length > 0;
-            const requiresTenant =
-              requiresAuth && (routeParameters.length > 0 || authorizationMetadata.length > 0);
-
-            const requestSchema: Record<string, unknown> | null = dtoType
-              ? { dtoType, source: 'inferred' }
-              : null;
-
-            const endpointId = `${method.toUpperCase()}:${fullPath}:${methodInfo.name}:${relFile}:${i + 1}`;
-
-            probes.push({
-              endpointId,
-              method: method.toUpperCase(),
-              path: fullPath,
-              controller: relFile,
-              filePath: relFile,
-              requiresAuth,
-              requiresTenant,
-              authProbeMetadata: {
-                guardNames: methodGuards,
-                authorizationMetadata,
-                routeParameters,
-                bodyDtoType: dtoType,
-              },
-              rateLimit: methodThrottle,
-              requestSchema,
-              responseSchema: null,
-              authTests: [],
-              schemaTests: [],
-              idempotencyTests: [],
-              rateLimitTests: [],
-              securityTests: [],
-            });
+          const routeDecorator = parseRouteDecorator(line);
+          if (!routeDecorator) {
+            continue;
           }
+
+          const methodPath = routeDecorator.path;
+          const fullPath = buildFullPath(controllerPath, methodPath);
+
+          let methodPublic = block.isPublic;
+          let methodGuards = [...block.classGuards];
+          let methodThrottle = block.throttleConfig;
+
+          for (let j = Math.max(block.startLine, i - 8); j < i; j++) {
+            const above = lines[j].trim();
+            if (/@Public\(\s*\)/.test(above)) {
+              methodPublic = true;
+            }
+            const guardMatch = above.match(/@UseGuards\(([^)]+)\)/);
+            if (guardMatch) {
+              methodGuards.push(...extractGuardNames(guardMatch[1]));
+            }
+            const throttleMatch = above.match(
+              /@Throttle\(\s*(?:{\s*default:\s*{\s*limit:\s*(\d+)\s*,\s*ttl:\s*(\d+)\s*}\s*})?\s*\)/,
+            );
+            if (throttleMatch) {
+              methodThrottle = {
+                max: throttleMatch[1] ? parseInt(throttleMatch[1], 10) : 30,
+                windowMs: throttleMatch[2] ? parseInt(throttleMatch[2], 10) : 60000,
+              };
+            }
+          }
+
+          for (let j = i + 1; j < Math.min(i + 5, block.endLine); j++) {
+            const below = lines[j].trim();
+            if (/@Public\(\s*\)/.test(below)) {
+              methodPublic = true;
+            }
+            const guardMatch = below.match(/@UseGuards\(([^)]+)\)/);
+            if (guardMatch) {
+              methodGuards.push(...extractGuardNames(guardMatch[1]));
+            }
+            const throttleMatch = below.match(
+              /@Throttle\(\s*(?:{\s*default:\s*{\s*limit:\s*(\d+)\s*,\s*ttl:\s*(\d+)\s*}\s*})?\s*\)/,
+            );
+            if (throttleMatch) {
+              methodThrottle = {
+                max: throttleMatch[1] ? parseInt(throttleMatch[1], 10) : 30,
+                windowMs: throttleMatch[2] ? parseInt(throttleMatch[2], 10) : 60000,
+              };
+            }
+          }
+
+          const methodInfo = findMethodName(lines, i, block.endLine);
+          const dtoType = extractBodyDtoType(lines, methodInfo.line, block.endLine);
+          const effectGraph = extractEndpointEffectGraph(lines, methodInfo.line, block.endLine);
+          const routeParameters = parseRouteParameters(fullPath);
+          const methodMetadataDecorators = collectNonRouteMetadataDecorators(
+            lines,
+            Math.max(block.startLine, i - 8),
+            Math.min(i + 5, block.endLine),
+          );
+          methodGuards = uniqueStrings(methodGuards);
+          const authorizationMetadata = uniqueStrings([
+            ...block.classMetadataDecorators,
+            ...methodMetadataDecorators,
+          ]);
+          const requiresAuth = !methodPublic && methodGuards.length > 0;
+          const requiresTenant =
+            requiresAuth && (routeParameters.length > 0 || authorizationMetadata.length > 0);
+
+          const requestSchema: Record<string, unknown> | null = dtoType
+            ? { dtoType, source: 'inferred' }
+            : null;
+
+          const endpointId = `${routeDecorator.method}:${fullPath}:${methodInfo.name}:${relFile}:${i + 1}`;
+
+          probes.push({
+            endpointId,
+            method: routeDecorator.method,
+            path: fullPath,
+            controller: relFile,
+            filePath: relFile,
+            requiresAuth,
+            requiresTenant,
+            authProbeMetadata: {
+              guardNames: methodGuards,
+              authorizationMetadata,
+              routeParameters,
+              bodyDtoType: dtoType,
+            },
+            rateLimit: methodThrottle,
+            requestSchema,
+            responseSchema: { effectGraph },
+            authTests: [],
+            schemaTests: [],
+            idempotencyTests: [],
+            rateLimitTests: [],
+            securityTests: [],
+          });
         }
       }
     } catch (e) {
@@ -802,16 +767,89 @@ function wrongTypeValueForFieldType(type: string): unknown {
 
 function buildMassAssignmentPayloads(endpoint: APIEndpointProbe): unknown[] {
   const schemaFields = schemaFieldsFromEndpoint(endpoint);
-  const fieldEntries = Object.entries(schemaFields).slice(0, 2);
+  const fieldEntries = Object.entries(schemaFields).slice(
+    0,
+    Math.max(1, Math.min(3, Object.keys(schemaFields).length)),
+  );
 
   if (fieldEntries.length === 0) {
-    return MASS_ASSIGNMENT_GRAMMAR_PAYLOADS;
+    const routeParameters =
+      endpoint.authProbeMetadata?.routeParameters ?? parseRouteParameters(endpoint.path);
+    const baseName = routeParameters[0] ?? endpoint.path.replace(/\W+/g, '_') ?? 'payload';
+    return [
+      {
+        [`${baseName}__unexpected`]: buildSentinel(endpoint, baseName),
+      },
+    ];
   }
 
   return fieldEntries.map(([fieldName, definition]) => ({
     [fieldName]: sampleValueForFieldType(definition.type),
-    [`${fieldName}__unexpected`]: '__pulse_extra_value',
+    [`${fieldName}__unexpected`]: buildSentinel(endpoint, fieldName),
   }));
+}
+
+function buildSentinel(endpoint: APIEndpointProbe, seed: string): string {
+  return `__pulse_${endpoint.method.toLowerCase()}_${seed.replace(/\W+/g, '_')}`;
+}
+
+function routeAndSchemaSeeds(endpoint: APIEndpointProbe): string[] {
+  const schemaFields = Object.keys(schemaFieldsFromEndpoint(endpoint));
+  const routeParameters =
+    endpoint.authProbeMetadata?.routeParameters ?? parseRouteParameters(endpoint.path);
+  const routeSegments = endpoint.path
+    .split('/')
+    .map((segment) => segment.replace(/^:/, ''))
+    .filter((segment) => segment.length > 0);
+
+  return uniqueStrings([...schemaFields, ...routeParameters, ...routeSegments]);
+}
+
+function synthesizeSqlMutationPayloads(endpoint: APIEndpointProbe): unknown[] {
+  return routeAndSchemaSeeds(endpoint).map((seed) => {
+    const sentinel = buildSentinel(endpoint, seed);
+    return `${sentinel}' OR '${seed}'='${seed}`;
+  });
+}
+
+function synthesizeMarkupMutationPayloads(endpoint: APIEndpointProbe): unknown[] {
+  return routeAndSchemaSeeds(endpoint).map((seed) => {
+    const sentinel = buildSentinel(endpoint, seed);
+    return `<${seed} data-pulse="${sentinel}">${sentinel}</${seed}>`;
+  });
+}
+
+function synthesizeOperatorMutationPayloads(endpoint: APIEndpointProbe): unknown[] {
+  return routeAndSchemaSeeds(endpoint).map((seed) => ({
+    [`$${seed}`]: buildSentinel(endpoint, seed),
+  }));
+}
+
+function synthesizeRedirectPayloads(endpoint: APIEndpointProbe): unknown[] {
+  return routeAndSchemaSeeds(endpoint)
+    .filter((seed) => /url|uri|redirect|callback|return|next/i.test(seed))
+    .map((seed) => {
+      const sentinel = buildSentinel(endpoint, seed);
+      return `https://${sentinel}.invalid/${seed}`;
+    });
+}
+
+function synthesizeIdorPayload(endpoint: APIEndpointProbe): Record<string, string> {
+  const routeParameters =
+    endpoint.authProbeMetadata?.routeParameters ?? parseRouteParameters(endpoint.path);
+  return Object.fromEntries(
+    routeParameters.map((routeParameter) => [routeParameter, `alternate-${routeParameter}-probe`]),
+  );
+}
+
+function endpointHasStateMutationSignal(endpoint: APIEndpointProbe): boolean {
+  const effectGraph = endpoint.responseSchema?.effectGraph;
+  if (!effectGraph || typeof effectGraph !== 'object') {
+    return false;
+  }
+
+  const candidate = effectGraph as { stateMutationSignals?: unknown };
+  return Array.isArray(candidate.stateMutationSignals) && candidate.stateMutationSignals.length > 0;
 }
 
 /**
@@ -978,20 +1016,43 @@ export function generateRateLimitTests(endpoint: APIEndpointProbe): RateLimitTes
  * @param vulnerabilityType The type of vulnerability to generate payloads for.
  * @returns Array of payloads to test.
  */
-export function generateSecurityPayloads(vulnerabilityType: string): unknown[] {
+export function generateSecurityPayloads(
+  vulnerabilityType: string,
+  endpoint?: APIEndpointProbe,
+): unknown[] {
+  const syntheticEndpoint =
+    endpoint ??
+    ({
+      endpointId: `synthetic:${vulnerabilityType}`,
+      method: 'POST',
+      path: `/${vulnerabilityType}`,
+      controller: '',
+      filePath: '',
+      requiresAuth: false,
+      requiresTenant: false,
+      rateLimit: null,
+      requestSchema: { dtoType: `${vulnerabilityType}Dto`, source: 'synthetic' },
+      responseSchema: null,
+      authTests: [],
+      schemaTests: [],
+      idempotencyTests: [],
+      rateLimitTests: [],
+      securityTests: [],
+    } satisfies APIEndpointProbe);
+
   switch (vulnerabilityType) {
     case 'sqli':
-      return SQLI_PAYLOADS;
+      return synthesizeSqlMutationPayloads(syntheticEndpoint);
     case 'xss':
-      return XSS_PAYLOADS;
+      return synthesizeMarkupMutationPayloads(syntheticEndpoint);
     case 'nosqli':
-      return NOSQLI_PAYLOADS;
+      return synthesizeOperatorMutationPayloads(syntheticEndpoint);
     case 'mass_assignment':
-      return MASS_ASSIGNMENT_GRAMMAR_PAYLOADS;
+      return buildMassAssignmentPayloads(syntheticEndpoint);
     case 'open_redirect':
-      return OPEN_REDIRECT_PAYLOADS;
+      return synthesizeRedirectPayloads(syntheticEndpoint);
     case 'idor':
-      return ['__pulse_alternate_subject__', '00000000-0000-0000-0000-000000000000', '1', '0'];
+      return [synthesizeIdorPayload(syntheticEndpoint)];
     default:
       return [];
   }
@@ -1009,38 +1070,16 @@ export function generateSecurityPayloads(vulnerabilityType: string): unknown[] {
 export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestCase[] {
   const tests: SecurityTestCase[] = [];
 
-  // SQL injection — applicable to all endpoints that accept input
-  SQLI_PAYLOADS.forEach((payload, idx) => {
-    tests.push({
-      testId: `${endpoint.endpointId}-sec-sqli-${idx}`,
-      vulnerabilityType: 'sqli',
-      payload,
-      expectedBlock: true,
-      actuallyBlocked: null,
-      status: 'planned',
-      severity: 'high',
-    });
-  });
+  const inputSeeds = routeAndSchemaSeeds(endpoint);
+  const probeLimit = Math.max(1, Math.min(3, inputSeeds.length || endpoint.path.length));
 
-  // XSS — applicable to all endpoints that accept input
-  XSS_PAYLOADS.slice(0, 3).forEach((payload, idx) => {
-    tests.push({
-      testId: `${endpoint.endpointId}-sec-xss-${idx}`,
-      vulnerabilityType: 'xss',
-      payload,
-      expectedBlock: true,
-      actuallyBlocked: null,
-      status: 'planned',
-      severity: 'medium',
-    });
-  });
-
-  // NoSQL injection — applicable to endpoints with JSON body (POST/PUT/PATCH)
-  if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
-    NOSQLI_PAYLOADS.slice(0, 2).forEach((payload, idx) => {
+  // SQL injection — synthesized from route/schema input surfaces.
+  synthesizeSqlMutationPayloads(endpoint)
+    .slice(0, probeLimit)
+    .forEach((payload, idx) => {
       tests.push({
-        testId: `${endpoint.endpointId}-sec-nosqli-${idx}`,
-        vulnerabilityType: 'nosqli',
+        testId: `${endpoint.endpointId}-sec-sqli-${idx}`,
+        vulnerabilityType: 'sqli',
         payload,
         expectedBlock: true,
         actuallyBlocked: null,
@@ -1048,12 +1087,43 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
         severity: 'high',
       });
     });
+
+  // XSS — synthesized from route/schema input surfaces.
+  synthesizeMarkupMutationPayloads(endpoint)
+    .slice(0, probeLimit)
+    .forEach((payload, idx) => {
+      tests.push({
+        testId: `${endpoint.endpointId}-sec-xss-${idx}`,
+        vulnerabilityType: 'xss',
+        payload,
+        expectedBlock: true,
+        actuallyBlocked: null,
+        status: 'planned',
+        severity: 'medium',
+      });
+    });
+
+  // Operator injection — applicable to endpoints with JSON body (POST/PUT/PATCH).
+  if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
+    synthesizeOperatorMutationPayloads(endpoint)
+      .slice(0, probeLimit)
+      .forEach((payload, idx) => {
+        tests.push({
+          testId: `${endpoint.endpointId}-sec-nosqli-${idx}`,
+          vulnerabilityType: 'nosqli',
+          payload,
+          expectedBlock: true,
+          actuallyBlocked: null,
+          status: 'planned',
+          severity: 'high',
+        });
+      });
   }
 
   // Mass assignment — applicable to create/update endpoints.
   if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
     buildMassAssignmentPayloads(endpoint)
-      .slice(0, 2)
+      .slice(0, probeLimit)
       .forEach((payload, idx) => {
         tests.push({
           testId: `${endpoint.endpointId}-sec-mass-assignment-${idx}`,
@@ -1075,12 +1145,7 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
     tests.push({
       testId: `${endpoint.endpointId}-sec-idor-0`,
       vulnerabilityType: 'idor',
-      payload: Object.fromEntries(
-        routeParameters.map((routeParameter) => [
-          routeParameter,
-          `alternate-${routeParameter}-probe`,
-        ]),
-      ),
+      payload: synthesizeIdorPayload(endpoint),
       expectedBlock: true,
       actuallyBlocked: null,
       status: 'planned',
@@ -1088,9 +1153,10 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
     });
   }
 
-  // Open redirect — applicable to endpoints that accept URLs or redirect params
-  if (/\bredirect\b|\breturnUrl\b|\bcallback\b|\bnext\b/.test(endpoint.path)) {
-    OPEN_REDIRECT_PAYLOADS.slice(0, 2).forEach((payload, idx) => {
+  // Open redirect — applicable to endpoints that expose URL-like route/schema fields.
+  const redirectPayloads = synthesizeRedirectPayloads(endpoint);
+  if (redirectPayloads.length > 0) {
+    redirectPayloads.slice(0, probeLimit).forEach((payload, idx) => {
       tests.push({
         testId: `${endpoint.endpointId}-sec-open-redirect-${idx}`,
         vulnerabilityType: 'open_redirect',
@@ -1126,13 +1192,20 @@ export function classifyEndpointRisk(
   const mutatesState = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(endpoint.method);
   const deletesState = endpoint.method === 'DELETE';
   const acceptsStructuredInput = endpoint.requestSchema !== null;
+  const hasObservedStateMutation = endpointHasStateMutationSignal(endpoint);
   const hasBoundaryProtection = endpoint.requiresAuth || endpoint.requiresTenant;
   const hasOperationalBrake = endpoint.rateLimit !== null;
 
   if (deletesState) return 'critical';
-  if (mutatesState && !hasBoundaryProtection) return 'critical';
-  if (mutatesState && endpoint.requiresTenant) return 'high';
-  if (mutatesState && acceptsStructuredInput && !hasOperationalBrake) return 'high';
+  if ((mutatesState || hasObservedStateMutation) && !hasBoundaryProtection) return 'critical';
+  if ((mutatesState || hasObservedStateMutation) && endpoint.requiresTenant) return 'high';
+  if (
+    (mutatesState || hasObservedStateMutation) &&
+    acceptsStructuredInput &&
+    !hasOperationalBrake
+  ) {
+    return 'high';
+  }
   if (mutatesState) return 'medium';
   if (endpoint.requiresAuth || endpoint.requiresTenant) return 'medium';
 

@@ -74,17 +74,13 @@ export interface PulseArtifactRegistry {
   runId?: string;
 }
 
-const OPTIONAL_EVIDENCE_MAX_BYTES = 1024 * 1024;
-const OPTIONAL_TRACE_MAX_BYTES = 512 * 1024;
-const EXTERNAL_SNAPSHOT_MAX_AGE_MINUTES = 6 * 60;
-const LONG_EXTERNAL_SNAPSHOT_MAX_AGE_MINUTES = 24 * 60;
-
 const ARTIFACT_FILE_PATTERN = /^PULSE_[A-Z0-9_]+\.(json|jsonl|md)$/;
 const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const IGNORED_DISCOVERY_DIRS = new Set([
   '.git',
   '.next',
   '.pulse',
+  '__tests__',
   'coverage',
   'dist',
   'node_modules',
@@ -98,6 +94,7 @@ interface RegisteredArtifactWriter {
   moduleRef: string;
   contentExpression: ts.Expression | null;
   sourceFile: ts.SourceFile;
+  variableInitializers: Map<string, ts.Expression>;
 }
 
 interface ArtifactDiscoveryContext {
@@ -157,11 +154,15 @@ function addReference(
   index.set(artifactPath, refs);
 }
 
-function discoverArtifactReferences(rootDir: string, pulseDir: string): ArtifactDiscoveryContext {
+function discoverArtifactReferences(
+  sourceRootDir: string,
+  artifactRootDir: string,
+  pulseDir: string,
+): ArtifactDiscoveryContext {
   const pulseReferences: ArtifactReferenceIndex = new Map();
   const repoReferences: ArtifactReferenceIndex = new Map();
   const referencedArtifacts = new Set<string>();
-  for (const filePath of collectSourceFiles(rootDir)) {
+  for (const filePath of collectSourceFiles(sourceRootDir)) {
     const sourceFile = readSourceFile(filePath);
     if (!sourceFile) {
       continue;
@@ -169,7 +170,7 @@ function discoverArtifactReferences(rootDir: string, pulseDir: string): Artifact
     const isPulseFile = filePath.startsWith(`${pulseDir}${path.sep}`);
     const moduleRef = isPulseFile
       ? moduleRefFromPulseFile(pulseDir, filePath)
-      : path.relative(rootDir, filePath).replace(/\\/g, '/');
+      : path.relative(sourceRootDir, filePath).replace(/\\/g, '/');
     const visit = (node: ts.Node): void => {
       if (ts.isStringLiteralLike(node) && ARTIFACT_FILE_PATTERN.test(node.text)) {
         referencedArtifacts.add(node.text);
@@ -184,12 +185,15 @@ function discoverArtifactReferences(rootDir: string, pulseDir: string): Artifact
   }
 
   const rootArtifacts = new Set(
-    fs
-      .readdirSync(rootDir)
-      .filter(
-        (entry) =>
-          ARTIFACT_FILE_PATTERN.test(entry) && fs.statSync(path.join(rootDir, entry)).isFile(),
-      ),
+    fs.existsSync(artifactRootDir)
+      ? fs
+          .readdirSync(artifactRootDir)
+          .filter(
+            (entry) =>
+              ARTIFACT_FILE_PATTERN.test(entry) &&
+              fs.statSync(path.join(artifactRootDir, entry)).isFile(),
+          )
+      : [],
   );
 
   return {
@@ -208,8 +212,12 @@ function discoverRegisteredWriters(pulseDir: string): RegisteredArtifactWriter[]
     return [];
   }
   const writers: RegisteredArtifactWriter[] = [];
+  const variableInitializers = new Map<string, ts.Expression>();
   const moduleRef = moduleRefFromPulseFile(pulseDir, artifactsPath);
   const visit = (node: ts.Node): void => {
+    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer) {
+      variableInitializers.set(node.name.text, node.initializer);
+    }
     if (
       ts.isCallExpression(node) &&
       ts.isIdentifier(node.expression) &&
@@ -222,6 +230,7 @@ function discoverRegisteredWriters(pulseDir: string): RegisteredArtifactWriter[]
           moduleRef,
           contentExpression: node.arguments[2] ?? null,
           sourceFile,
+          variableInitializers,
         });
       }
     }
@@ -248,17 +257,37 @@ function conventionalArtifactPath(id: string): string {
 
 function resolveDiscoveredArtifactPath(id: string, context: ArtifactDiscoveryContext): string {
   const idWords = wordsFrom(id);
+  const conventionalPath = conventionalArtifactPath(id);
+  if (context.referencedArtifacts.has(conventionalPath)) {
+    return conventionalPath;
+  }
   let bestPath = '';
   let bestScore = 0;
+  let bestExtraWords = Number.MAX_SAFE_INTEGER;
   for (const artifactPath of context.referencedArtifacts) {
     const artifactWords = wordsFrom(artifactPath);
+    if (![...idWords].every((word) => artifactWords.has(word))) {
+      continue;
+    }
     const score = [...idWords].filter((word) => artifactWords.has(word)).length;
-    if (score > bestScore) {
+    const extraWords = artifactWords.size - score;
+    if (score > bestScore || (score === bestScore && extraWords < bestExtraWords)) {
       bestPath = artifactPath;
       bestScore = score;
+      bestExtraWords = extraWords;
     }
   }
-  return bestPath || conventionalArtifactPath(id);
+  return bestPath || conventionalPath;
+}
+
+function resolveExpression(
+  expression: ts.Expression | null,
+  writer: RegisteredArtifactWriter,
+): ts.Expression | null {
+  if (expression && ts.isIdentifier(expression)) {
+    return writer.variableInitializers.get(expression.text) ?? expression;
+  }
+  return expression;
 }
 
 function firstCallIdentifier(expression: ts.Expression | null): string | null {
@@ -300,28 +329,31 @@ function snapshotPathFromExpression(
 }
 
 function producerExportName(writer: RegisteredArtifactWriter): string {
-  const builder = firstCallIdentifier(writer.contentExpression);
+  const expression = resolveExpression(writer.contentExpression, writer);
+  const builder = firstCallIdentifier(expression);
   if (builder && builder !== 'JSON' && builder !== 'JSON.stringify') {
     return builder;
   }
-  const snapshotPath = snapshotPathFromExpression(writer.contentExpression, writer.sourceFile);
+  const snapshotPath = snapshotPathFromExpression(expression, writer.sourceFile);
   return snapshotPath ?? `writeRegisteredArtifact.${writer.id}`;
 }
 
 function schemaExportName(writer: RegisteredArtifactWriter): string {
-  const builder = firstCallIdentifier(writer.contentExpression);
+  const expression = resolveExpression(writer.contentExpression, writer);
+  const builder = firstCallIdentifier(expression);
   if (builder && builder !== 'JSON' && builder !== 'JSON.stringify') {
     return builder;
   }
-  const snapshotPath = snapshotPathFromExpression(writer.contentExpression, writer.sourceFile);
+  const snapshotPath = snapshotPathFromExpression(expression, writer.sourceFile);
   if (snapshotPath) {
-    return snapshotPath.replace(/^snapshot\./, 'PulseArtifactSnapshot.');
+    return snapshotPath.replace(/^snapshot\.certification\./, 'PulseCertification.');
   }
   return producerExportName(writer);
 }
 
 function schemaModule(writer: RegisteredArtifactWriter): string {
-  const snapshotPath = snapshotPathFromExpression(writer.contentExpression, writer.sourceFile);
+  const expression = resolveExpression(writer.contentExpression, writer);
+  const snapshotPath = snapshotPathFromExpression(expression, writer.sourceFile);
   return snapshotPath ? './types' : writer.moduleRef;
 }
 
@@ -363,14 +395,7 @@ function isPreservedEvidence(artifactPath: string): boolean {
 
 function freshnessFor(artifactPath: string, references: string[]): PulseArtifactFreshnessPolicy {
   if (isExternalSnapshot(artifactPath, references)) {
-    const words = wordsFrom(artifactPath);
-    return {
-      mode: 'external_snapshot',
-      maxAgeMinutes:
-        words.has('gitnexus') || words.has('beads')
-          ? LONG_EXTERNAL_SNAPSHOT_MAX_AGE_MINUTES
-          : EXTERNAL_SNAPSHOT_MAX_AGE_MINUTES,
-    };
+    return { mode: 'external_snapshot' };
   }
   if (isPreservedEvidence(artifactPath)) {
     return { mode: 'preserved' };
@@ -397,22 +422,6 @@ function shouldMirrorToRoot(artifactPath: string, context: ArtifactDiscoveryCont
   );
 }
 
-function storagePolicyFor(
-  artifactPath: string,
-): Pick<PulseArtifactDefinition, 'maxBytes' | 'oversizedStrategy'> {
-  const words = wordsFrom(artifactPath);
-  if (!isPreservedEvidence(artifactPath)) {
-    return {};
-  }
-  return {
-    maxBytes:
-      words.has('trace') || words.has('traces')
-        ? OPTIONAL_TRACE_MAX_BYTES
-        : OPTIONAL_EVIDENCE_MAX_BYTES,
-    oversizedStrategy: 'summarize-json',
-  };
-}
-
 function buildDiscoveredArtifactDefinition(
   writer: RegisteredArtifactWriter,
   context: ArtifactDiscoveryContext,
@@ -436,7 +445,6 @@ function buildDiscoveredArtifactDefinition(
     freshness,
     truthMode: truthModeFor(freshness),
     mirrorToRoot: shouldMirrorToRoot(relativePath, context),
-    ...storagePolicyFor(relativePath),
   };
 }
 
@@ -459,12 +467,20 @@ function sortArtifacts(artifacts: PulseArtifactDefinition[]): PulseArtifactDefin
     .sort((left, right) => left.id.localeCompare(right.id));
 }
 
+function resolveDiscoveryRoot(rootDir: string): string {
+  if (fs.existsSync(path.join(rootDir, 'scripts', 'pulse', 'artifacts.ts'))) {
+    return rootDir;
+  }
+  return path.resolve(__dirname, '..', '..');
+}
+
 /** Build the canonical artifact registry for a PULSE run. */
 export function buildArtifactRegistry(rootDir: string): PulseArtifactRegistry {
   const canonicalDir = safeJoin(rootDir, '.pulse', 'current');
   const tempDir = safeJoin(rootDir, '.pulse', 'tmp');
-  const pulseDir = safeJoin(rootDir, 'scripts', 'pulse');
-  const context = discoverArtifactReferences(rootDir, pulseDir);
+  const sourceRootDir = resolveDiscoveryRoot(rootDir);
+  const pulseDir = safeJoin(sourceRootDir, 'scripts', 'pulse');
+  const context = discoverArtifactReferences(sourceRootDir, rootDir, pulseDir);
   const artifacts = sortArtifacts(
     discoverRegisteredWriters(pulseDir).map((writer) =>
       buildDiscoveredArtifactDefinition(writer, context),

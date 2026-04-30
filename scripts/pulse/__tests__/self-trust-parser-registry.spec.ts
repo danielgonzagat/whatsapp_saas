@@ -15,35 +15,75 @@ function writeParser(rootDir: string, name: string, source: string): void {
   fs.writeFileSync(target, source, 'utf8');
 }
 
-const criticalParserNames = [
-  'financial-arithmetic',
-  'error-handler-auditor',
-  'idempotency-checker',
-  'audit-trail-checker',
-  'security-injection',
-] as const;
+function writeExecutionTrace(rootDir: string, parserNames: string[]): void {
+  const target = path.join(rootDir, '.pulse', 'current', 'PULSE_EXECUTION_TRACE.json');
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(
+    target,
+    JSON.stringify(
+      {
+        runId: 'test-run',
+        generatedAt: '2026-04-30T00:00:00.000Z',
+        updatedAt: '2026-04-30T00:00:00.000Z',
+        phases: parserNames.map((name) => ({
+          phase: `parser:${name}`,
+          phaseStatus: 'passed',
+          startedAt: '2026-04-30T00:00:00.000Z',
+          finishedAt: '2026-04-30T00:00:00.000Z',
+          durationMs: 0,
+        })),
+        summary: 'test trace',
+        artifactPaths: ['.pulse/current/PULSE_EXECUTION_TRACE.json'],
+      },
+      null,
+      2,
+    ),
+    'utf8',
+  );
+}
+
+function parserWithDeclaredMetadata(exportName: string): string {
+  return [
+    'export const parserMetadata = {',
+    `  parserExport: '${exportName}',`,
+    "  inputs: ['pulse-config'],",
+    "  outputs: ['breaks'],",
+    "  evidenceKind: 'static-contract',",
+    '  confidence: 0.9,',
+    '};',
+    `export function ${exportName}() { return []; }`,
+  ].join('\n');
+}
 
 describe('checkParserRegistry critical parser contracts', () => {
-  it('fails when a critical parser file is missing from the active contract set', () => {
+  it('fails when an observed parser is missing from the active contract set', () => {
     const rootDir = makeRoot();
-    criticalParserNames
-      .filter((name) => name !== 'security-injection')
-      .forEach((name, index) => {
-        writeParser(rootDir, name, `export function checkCritical${index}() { return []; }`);
-      });
+    const observedParserNames = ['observed-auditor', 'observed-missing'];
+    writeExecutionTrace(rootDir, observedParserNames);
+    writeParser(
+      rootDir,
+      'observed-auditor',
+      'export function checkObservedAuditor() { return []; }',
+    );
 
     const result = checkParserRegistry(path.join(rootDir, 'scripts', 'pulse', 'parsers'));
 
     expect(result.pass).toBe(false);
     expect(result.severity).toBe('critical');
-    expect(result.reason).toContain('security-injection');
+    expect(result.reason).toContain('observed-missing');
   });
 
-  it('passes when all critical parser files expose active check contracts', () => {
+  it('passes when observed and metadata-critical parser files expose active contracts', () => {
     const rootDir = makeRoot();
-    criticalParserNames.forEach((name, index) => {
-      writeParser(rootDir, name, `export function checkCritical${index}() { return []; }`);
-    });
+    const observedParserNames = ['observed-auditor', 'observed-security'];
+    writeExecutionTrace(rootDir, observedParserNames);
+    writeParser(
+      rootDir,
+      'observed-auditor',
+      'export function checkObservedAuditor() { return []; }',
+    );
+    writeParser(rootDir, 'observed-security', parserWithDeclaredMetadata('runObservedSecurity'));
+    writeParser(rootDir, 'metadata-critical', parserWithDeclaredMetadata('runMetadataCritical'));
     writeParser(rootDir, 'parser-helper', 'export function buildHelper() { return []; }');
 
     const result = checkParserRegistry(path.join(rootDir, 'scripts', 'pulse', 'parsers'));

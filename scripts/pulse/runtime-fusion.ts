@@ -101,6 +101,28 @@ function observedInfluence(signal: CanonicalExternalSignal): number {
   return bound01(signal.impactScore / Math.max(signal.impactScore, signal.severity, 1));
 }
 
+function average(values: number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function observedSpread(values: number[]): number {
+  if (values.length <= 1) return 0;
+  let mean = average(values);
+  return Math.sqrt(average(values.map((value) => (value - mean) ** 2)));
+}
+
+function positiveObservedFloor(values: number[]): number {
+  let positives = values.filter((value) => value > 0).sort((left, right) => left - right);
+  if (positives.length === 0) return Number.POSITIVE_INFINITY;
+  return positives[0] / Math.max(1, Math.sqrt(positives.length));
+}
+
+function observedMeanOrSelf(values: number[], self: number): number {
+  let positives = values.filter((value) => value > 0);
+  return positives.length > 0 ? average(positives) : self;
+}
+
 function neutralMagnitude(left: number | null, right: number | null): number {
   return bound01(left ?? right ?? Math.SQRT1_2);
 }
@@ -180,7 +202,15 @@ function deriveOperationalEvidenceKind(signal: CanonicalExternalSignal): Operati
     .sort((a, b) => b.score - a.score);
 
   let best = ranked[0];
-  return best && best.score >= 0.22 ? best.kind : 'external';
+  let positiveScores = ranked.map((candidate) => candidate.score).filter((score) => score > 0);
+  let dynamicFloor = positiveObservedFloor(positiveScores);
+  let dynamicSeparation =
+    observedSpread(positiveScores) / Math.max(1, Math.sqrt(positiveScores.length));
+  let minimumEvidence = Math.min(
+    observedMeanOrSelf(positiveScores, 0),
+    dynamicFloor + dynamicSeparation,
+  );
+  return best && best.score >= minimumEvidence ? best.kind : 'external';
 }
 
 function deriveSignalType(
@@ -245,26 +275,51 @@ function deriveAction(severity: SignalSeverity, type: SignalType): SignalAction 
 }
 
 function runtimeRealityFactor(signal: RuntimeSignal): number {
-  if (signal.evidenceMode === 'observed' && signal.evidenceKind === 'runtime') return 1;
-  if (
-    signal.evidenceMode === 'observed' &&
-    (signal.evidenceKind === 'change' || signal.evidenceKind === 'dependency')
-  ) {
-    return 0.86;
-  }
-  if (signal.evidenceMode === 'observed' && signal.evidenceKind === 'static') return 0.58;
-  if (signal.evidenceMode === 'inferred' && signal.evidenceKind === 'runtime') return 0.62;
-  if (signal.evidenceMode === 'inferred') return 0.42;
-  return 0.25;
+  let provenanceSignals = [
+    signal.evidenceMode === 'observed' ? signal.confidence : 0,
+    signal.observedAt ? signal.confidence : 0,
+    signal.sourceArtifact ? signal.confidence : 0,
+    positiveSignal(signal.affectedFilePaths.length),
+    positiveSignal(signal.affectedCapabilityIds.length + signal.affectedFlowIds.length),
+    positiveSignal(signal.frequency),
+    positiveSignal(signal.affectedUsers),
+  ];
+  let inferredSignals = [
+    signal.evidenceMode === 'inferred' ? signal.confidence : 0,
+    signal.evidenceMode === 'simulated' || signal.evidenceMode === 'skipped'
+      ? signal.confidence / Math.max(1, signal.confidence + positiveSignal(signal.count))
+      : 0,
+  ];
+  let observedMass = average(provenanceSignals.filter((value) => value > 0));
+  let inferredMass = average(inferredSignals.filter((value) => value > 0));
+  return bound01(
+    Math.max(observedMass, inferredMass, signal.confidence / Math.max(1, signal.count)),
+  );
 }
 
-function normalizeImpactByRuntimeReality(signal: RuntimeSignal, impactScore: number): number {
+function normalizeImpactByRuntimeReality(
+  signal: RuntimeSignal,
+  impactScore: number,
+  cohort: RuntimeSignal[],
+): number {
   let weighted = bound01(impactScore) * runtimeRealityFactor(signal);
+  let comparable = cohort.filter(
+    (candidate) =>
+      candidate !== signal &&
+      candidate.evidenceMode === 'observed' &&
+      candidate.evidenceKind !== signal.evidenceKind,
+  );
+  let comparableImpact = comparable.map((candidate) =>
+    Math.max(bound01(candidate.impactScore), computeImpactScore(candidate)),
+  );
+  let observedPeerCeiling = Math.max(0, ...comparableImpact);
   if (signal.evidenceMode === 'observed' && signal.evidenceKind === 'runtime') {
-    return bound01(Math.max(weighted, signal.type === 'error' ? 0.82 : 0.72));
+    return bound01(Math.max(weighted, observedMeanOrSelf(comparableImpact, weighted)));
   }
-  if (signal.evidenceKind === 'static') {
-    return Math.min(0.69, weighted);
+  if (signal.evidenceKind === 'static' && observedPeerCeiling > 0) {
+    let staticCeiling =
+      observedPeerCeiling * bound01(signal.confidence / Math.max(1, signal.count));
+    return Math.min(staticCeiling, weighted);
   }
   return bound01(weighted);
 }
@@ -775,6 +830,12 @@ function otelLatencyToSignal(
 function runtimeTraceEvidenceToSignals(evidence: RuntimeCallGraphEvidence): RuntimeSignal[] {
   let signals: RuntimeSignal[] = [];
   let mappedPathsBySpanName = new Map<string, string[]>();
+  let endpointCounts = Object.values(evidence.summary.endpointMap);
+  let activeEndpointFloor = observedMeanOrSelf(endpointCounts, 0);
+  let durationSignals = [evidence.summary.avgDurationMs, evidence.summary.p95DurationMs].filter(
+    (value) => value > 0,
+  );
+  let durationFloor = observedMeanOrSelf(durationSignals, 0) + observedSpread(durationSignals);
 
   for (let mapping of evidence.spanToPathMappings) {
     if (mapping.confidence < 0.5 || mapping.matchedFilePaths.length === 0) continue;
@@ -795,10 +856,10 @@ function runtimeTraceEvidenceToSignals(evidence: RuntimeCallGraphEvidence): Runt
   }
 
   for (let [endpoint, count] of Object.entries(evidence.summary.endpointMap)) {
-    if (count < 2) continue;
+    if (count < activeEndpointFloor) continue;
     let p95 = evidence.summary.p95DurationMs;
     let avg = evidence.summary.avgDurationMs;
-    if (p95 > 500 || avg > 300) {
+    if (Math.max(p95, avg) >= durationFloor) {
       signals.push(otelLatencyToSignal(endpoint, avg, p95, count));
     }
   }
@@ -1165,11 +1226,7 @@ export function overridePriorities(
     let capabilitySignals = fusionState.signals.filter(
       (s) => s.affectedCapabilityIds.includes(capId) && isDecisiveRuntimeRealitySignal(s),
     );
-
-    let hasCritical = capabilitySignals.some(isCriticalSignal);
-    let hasHigh = capabilitySignals.some(isHighSignal);
-
-    if (!hasCritical && !hasHigh) continue;
+    if (capabilitySignals.length === 0) continue;
 
     let originalPriority = 'P2';
     if (convergencePlan) {
@@ -1182,18 +1239,24 @@ export function overridePriorities(
     }
 
     if (originalPriority === 'P0') continue;
+    let dynamicPriority = rankByRuntimeReality(capabilitySignals, originalPriority);
+    if ((ORDER_INDEX[dynamicPriority] ?? 2) >= (ORDER_INDEX[originalPriority] ?? 2)) continue;
 
     let uniqueSources = unique(capabilitySignals.map((s) => s.source));
+    let impactFloor = observedMeanOrSelf(
+      capabilitySignals.map((signal) => signal.impactScore),
+      0,
+    );
     let reasons = capabilitySignals
-      .filter((s) => isCriticalSignal(s) || isHighSignal(s))
+      .filter((s) => s.impactScore >= impactFloor || s.action === 'block_deploy')
       .map((s) => `[${s.severity}] ${s.message.slice(0, 100)}`)
       .slice(0, 3);
 
     overrides.push({
       capabilityId: capId,
       originalPriority,
-      newPriority: 'P0',
-      reason: `Dynamic signal semantics found ${hasCritical ? 'critical' : 'high'} operational impact from ${uniqueSources.join(', ')}: ${reasons.join('; ')}`,
+      newPriority: dynamicPriority,
+      reason: `Dynamic signal semantics promoted runtime priority from observed operational impact from ${uniqueSources.join(', ')}: ${reasons.join('; ')}`,
     });
   }
 
@@ -1230,20 +1293,28 @@ function deriveOrder(signals: RuntimeSignal[], staticOrder: string): string {
   );
   if (activeSignals.length === 0) return staticOrder;
 
-  let severities = activeSignals.map((s) => s.severity);
-  let types = activeSignals.map((s) => s.type);
+  let impactValues = activeSignals.map((signal) =>
+    Math.max(bound01(signal.impactScore), computeImpactScore(signal), runtimeRealityFactor(signal)),
+  );
+  let strongestImpact = Math.max(...impactValues);
+  let dynamicFloor = observedMeanOrSelf(impactValues, strongestImpact);
+  let dynamicSpread = observedSpread(impactValues);
+  let deployBlockingMass = activeSignals
+    .filter((signal) => signal.action === 'block_deploy')
+    .map((signal) => signal.impactScore);
+  let mergeBlockingMass = activeSignals
+    .filter((signal) => signal.action === 'block_merge')
+    .map((signal) => signal.impactScore);
 
   let runtimeOrder = staticOrder;
-
-  if (severities.includes('critical')) {
+  if (
+    strongestImpact >= dynamicFloor + dynamicSpread ||
+    average(deployBlockingMass) >= dynamicFloor
+  ) {
     runtimeOrder = 'P0';
-  } else if (types.includes('deploy_failure') || types.includes('error_rate')) {
-    runtimeOrder = 'P0';
-  } else if (severities.includes('high')) {
+  } else if (strongestImpact >= dynamicFloor || average(mergeBlockingMass) >= dynamicFloor) {
     runtimeOrder = 'P1';
-  } else if (types.includes('error') || types.includes('test_failure')) {
-    runtimeOrder = 'P1';
-  } else if (types.includes('latency') || types.includes('saturation')) {
+  } else if (strongestImpact > 0) {
     runtimeOrder = 'P2';
   }
 
@@ -1379,6 +1450,7 @@ export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
     signal.impactScore = normalizeImpactByRuntimeReality(
       signal,
       Math.max(bound01(signal.impactScore), computeImpactScore(signal)),
+      allSignals,
     );
     signal.confidence = bound01(signal.confidence);
     syncAffectedAliases(signal);

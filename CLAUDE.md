@@ -953,3 +953,20 @@ evolução nova deve partir dessa base única.
 
 - PIX capability na conta Stripe live — Daniel precisa solicitar via dashboard.
 - Webhook endpoint live em produção — criar via dashboard ou API após FASE 0.
+
+---
+
+## PULSE Auditor Immutability
+
+`scripts/pulse/no-hardcoded-reality-audit.ts` is a locked PULSE governance
+surface.
+
+Claude, Codex, OpenCode, and any other AI CLI are forbidden to edit, weaken,
+bypass, rename, delete, chmod, unflag, move, or replace this auditor.
+
+The auditor must keep scanning every source file inside `scripts/pulse/**` and
+must preserve hardcode debt when hardcode is deleted without a dynamic
+production replacement, including accumulated Git history debt.
+
+If the auditor itself needs to change, stop. The human owner must perform that
+change outside autonomous AI execution.

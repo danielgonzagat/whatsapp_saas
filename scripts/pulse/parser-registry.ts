@@ -33,18 +33,22 @@ type ParserDiscoveryAuthority =
   | 'declared_metadata'
   | 'declared_export'
   | 'plugin_registry'
+  | 'plugin_sensor'
   | 'legacy_weak_check_export'
   | 'helper';
 
 interface ParserOperationalMetadata {
   confidence: number | null;
   declaredExport: string | null;
+  dependencies: string[];
   discoveryAuthority: ParserDiscoveryAuthority;
   evidenceKind: string | null;
   inputs: string[];
   legacyCompatibility: boolean;
   outputs: string[];
   pluginId: string | null;
+  schema: unknown | null;
+  sourceKind: 'filesystem_module' | 'plugin_parser' | 'plugin_sensor';
 }
 
 type ParserContractWithOperationalMetadata = PulseParserContract & ParserOperationalMetadata;
@@ -52,29 +56,37 @@ type ParserDefinitionWithOperationalMetadata = PulseParserDefinition & ParserOpe
 
 interface PluginParserProvider {
   parsers?: () => unknown;
+  sensors?: () => unknown;
 }
+
+type PluginParserSurface = 'parsers' | 'sensors';
+
+type PluginParserDefinitionInput = Omit<PulseParserDefinition, 'file'> & {
+  confidence?: unknown;
+  dependencies?: unknown;
+  evidenceKind?: unknown;
+  file?: unknown;
+  inputs?: unknown;
+  outputs?: unknown;
+  schema?: unknown;
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object';
 }
 
-function isParserDefinition(value: unknown): value is PulseParserDefinition {
-  return (
-    isRecord(value) &&
-    typeof value.name === 'string' &&
-    typeof value.file === 'string' &&
-    typeof value.fn === 'function'
-  );
+function isPluginParserDefinition(value: unknown): value is PluginParserDefinitionInput {
+  return isRecord(value) && typeof value.name === 'string' && typeof value.fn === 'function';
 }
 
-function toPluginParserDefinitions(value: unknown): PulseParserDefinition[] | null {
+function toPluginParserDefinitions(value: unknown): PluginParserDefinitionInput[] | null {
   if (!Array.isArray(value)) {
     return null;
   }
 
-  const definitions: PulseParserDefinition[] = [];
+  const definitions: PluginParserDefinitionInput[] = [];
   for (const item of value) {
-    if (!isParserDefinition(item)) {
+    if (!isPluginParserDefinition(item)) {
       return null;
     }
     definitions.push(item);
@@ -171,6 +183,38 @@ function extractStringArrayProperty(objectSource: string, property: string): str
   });
 }
 
+function extractSchemaProperty(objectSource: string): unknown | null {
+  const sourceFile = ts.createSourceFile(
+    'pulse-parser-object.ts',
+    `const pulseParserObject = ${objectSource};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const declaration = sourceFile.statements.find(ts.isVariableStatement)?.declarationList
+    .declarations[0];
+  const initializer = declaration?.initializer;
+  if (!initializer || !ts.isObjectLiteralExpression(initializer)) {
+    return null;
+  }
+
+  const propertyAssignment = initializer.properties.find((item): item is ts.PropertyAssignment => {
+    return ts.isPropertyAssignment(item) && item.name.getText(sourceFile) === 'schema';
+  });
+  if (!propertyAssignment) {
+    return null;
+  }
+
+  if (
+    ts.isStringLiteral(propertyAssignment.initializer) ||
+    ts.isNoSubstitutionTemplateLiteral(propertyAssignment.initializer)
+  ) {
+    return propertyAssignment.initializer.text;
+  }
+
+  return propertyAssignment.initializer.getText(sourceFile);
+}
+
 function extractFunctionReferenceProperty(objectSource: string, property: string): string | null {
   return objectSource.match(FUNCTION_REFERENCE_PROPERTY_RE(property))?.[1] ?? null;
 }
@@ -199,10 +243,13 @@ function readDeclaredParserMetadata(
         metadata: {
           confidence: extractNumberProperty(objectSource, 'confidence'),
           declaredExport: exportName,
+          dependencies: extractStringArrayProperty(objectSource, 'dependencies'),
           evidenceKind: extractStringProperty(objectSource, 'evidenceKind'),
           inputs: extractStringArrayProperty(objectSource, 'inputs'),
           outputs: extractStringArrayProperty(objectSource, 'outputs'),
           pluginId: extractStringProperty(objectSource, 'pluginId'),
+          schema: extractSchemaProperty(objectSource),
+          sourceKind: 'filesystem_module',
         },
       });
     }
@@ -234,10 +281,13 @@ function readDeclaredParserMetadata(
         metadata: {
           confidence: extractNumberProperty(objectSource, 'confidence'),
           declaredExport: exportName,
+          dependencies: extractStringArrayProperty(objectSource, 'dependencies'),
           evidenceKind: extractStringProperty(objectSource, 'evidenceKind'),
           inputs: extractStringArrayProperty(objectSource, 'inputs'),
           outputs: extractStringArrayProperty(objectSource, 'outputs'),
           pluginId: extractStringProperty(objectSource, 'pluginId'),
+          schema: extractSchemaProperty(objectSource),
+          sourceKind: 'filesystem_module',
         },
       });
     }
@@ -252,12 +302,15 @@ function buildOperationalMetadata(
   return {
     confidence: overrides.confidence ?? null,
     declaredExport: overrides.declaredExport ?? null,
+    dependencies: overrides.dependencies ?? [],
     discoveryAuthority: overrides.discoveryAuthority ?? 'helper',
     evidenceKind: overrides.evidenceKind ?? null,
     inputs: overrides.inputs ?? [],
     legacyCompatibility: overrides.legacyCompatibility ?? false,
     outputs: overrides.outputs ?? [],
     pluginId: overrides.pluginId ?? null,
+    schema: overrides.schema ?? null,
+    sourceKind: overrides.sourceKind ?? 'filesystem_module',
   };
 }
 
@@ -266,12 +319,53 @@ function getOperationalMetadata(contract: PulseParserContract): ParserOperationa
   return buildOperationalMetadata({
     confidence: enriched.confidence,
     declaredExport: enriched.declaredExport,
+    dependencies: enriched.dependencies,
     discoveryAuthority: enriched.discoveryAuthority,
     evidenceKind: enriched.evidenceKind,
     inputs: enriched.inputs,
     legacyCompatibility: enriched.legacyCompatibility,
     outputs: enriched.outputs,
     pluginId: enriched.pluginId,
+    schema: enriched.schema,
+    sourceKind: enriched.sourceKind,
+  });
+}
+
+function stringArrayFromUnknown(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string' && item.length > 0)
+    : [];
+}
+
+function numberFromUnknown(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function stringFromUnknown(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+function operationalMetadataFromPluginDefinition(
+  pluginId: string,
+  surface: PluginParserSurface,
+  definition: PluginParserDefinitionInput,
+): ParserOperationalMetadata {
+  const authority: ParserDiscoveryAuthority =
+    surface === 'sensors' ? 'plugin_sensor' : 'plugin_registry';
+  const definitionRecord = definition as Record<string, unknown>;
+  return buildOperationalMetadata({
+    confidence: numberFromUnknown(definitionRecord.confidence) ?? 0.8,
+    declaredExport: surface,
+    dependencies: stringArrayFromUnknown(definitionRecord.dependencies),
+    discoveryAuthority: authority,
+    evidenceKind:
+      stringFromUnknown(definitionRecord.evidenceKind) ??
+      (surface === 'sensors' ? 'plugin-sensor' : 'plugin-parser'),
+    inputs: stringArrayFromUnknown(definitionRecord.inputs),
+    outputs: stringArrayFromUnknown(definitionRecord.outputs),
+    pluginId,
+    schema: definitionRecord.schema ?? null,
+    sourceKind: surface === 'sensors' ? 'plugin_sensor' : 'plugin_parser',
   });
 }
 
@@ -319,6 +413,7 @@ function buildParserContract(
           discoveryAuthority: 'legacy_weak_check_export',
           evidenceKind: 'legacy-static-export',
           legacyCompatibility: true,
+          outputs: ['breaks'],
         });
 
     return {
@@ -354,32 +449,27 @@ function buildPluginParserContract(
   rootDir: string,
   pluginId: string,
   entrypoint: string,
-  parserName: string,
+  surface: PluginParserSurface,
+  parserDefinition: PluginParserDefinitionInput,
 ): ParserContractWithOperationalMetadata {
   const sourceMtime = pathExists(entrypoint) ? statPath(entrypoint).mtime.toISOString() : null;
+  const metadata = operationalMetadataFromPluginDefinition(pluginId, surface, parserDefinition);
 
   return {
-    name: parserName,
+    name: parserDefinition.name,
     file: path.relative(rootDir, entrypoint),
     kind: 'active_parser',
     parserExports: [`plugin:${pluginId}`],
-    exportedFunctions: ['parsers'],
-    proof: `active parser contract registered dynamically by plugin ${pluginId}`,
+    exportedFunctions: [surface],
+    proof: `active parser contract registered dynamically by plugin ${pluginId} ${surface}`,
     sourceMtime,
-    ...buildOperationalMetadata({
-      confidence: 0.8,
-      declaredExport: 'parsers',
-      discoveryAuthority: 'plugin_registry',
-      evidenceKind: 'plugin-parser',
-      inputs: ['pulse-config'],
-      outputs: ['breaks'],
-      pluginId,
-    }),
+    ...metadata,
   };
 }
 
-/** Discover parser module contracts without loading the modules. */
-export function discoverParserContracts(rootDir: string): PulseParserContract[] {
+function discoverFilesystemParserContracts(
+  rootDir: string,
+): ParserContractWithOperationalMetadata[] {
   const parsersDir = safeJoin(rootDir, 'scripts', 'pulse', 'parsers');
   const files = pathExists(parsersDir)
     ? readDir(parsersDir).filter((file) => file.endsWith('.ts'))
@@ -388,6 +478,66 @@ export function discoverParserContracts(rootDir: string): PulseParserContract[] 
   return files
     .map((file) => buildParserContract(rootDir, parsersDir, file))
     .sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function parserSurfacesForProvider(provider: PluginParserProvider): PluginParserSurface[] {
+  return (['parsers', 'sensors'] as const).filter(
+    (surface) => typeof provider[surface] === 'function',
+  );
+}
+
+function discoverPluginParserContracts(rootDir: string): ParserContractWithOperationalMetadata[] {
+  const contracts: ParserContractWithOperationalMetadata[] = [];
+
+  for (const pluginDescriptor of discoverPlugins(rootDir)) {
+    const plugin = loadPlugin(pluginDescriptor.path);
+    if (!plugin) {
+      continue;
+    }
+
+    const provider = plugin as typeof plugin & PluginParserProvider;
+    for (const surface of parserSurfacesForProvider(provider)) {
+      let definitions: PluginParserDefinitionInput[] | null = null;
+      try {
+        definitions = toPluginParserDefinitions(provider[surface]?.());
+      } catch {
+        definitions = null;
+      }
+      if (!definitions) {
+        continue;
+      }
+
+      for (const definition of definitions) {
+        if (!PARSER_NAME_RE.test(definition.name)) {
+          continue;
+        }
+        contracts.push(
+          buildPluginParserContract(rootDir, plugin.id, pluginDescriptor.path, surface, definition),
+        );
+      }
+    }
+  }
+
+  return contracts.sort((left, right) => left.name.localeCompare(right.name));
+}
+
+/** Discover parser module, plugin, and sensor contracts from the live registry. */
+export function discoverParserContracts(rootDir: string): PulseParserContract[] {
+  return [
+    ...discoverFilesystemParserContracts(rootDir),
+    ...discoverPluginParserContracts(rootDir),
+  ].sort((left, right) => left.name.localeCompare(right.name));
+}
+
+function callPluginParserSurface(
+  provider: PluginParserProvider,
+  surface: PluginParserSurface,
+): PluginParserDefinitionInput[] | null {
+  const readDefinitions = provider[surface];
+  if (typeof readDefinitions !== 'function') {
+    return null;
+  }
+  return toPluginParserDefinitions(readDefinitions());
 }
 
 function loadParserPluginDefinitions(
@@ -417,77 +567,78 @@ function loadParserPluginDefinitions(
       continue;
     }
 
-    if (plugin.kind !== 'parser') {
-      continue;
-    }
-
     const parserProvider = plugin as typeof plugin & PluginParserProvider;
-    if (typeof parserProvider.parsers !== 'function') {
+    const surfaces = parserSurfacesForProvider(parserProvider);
+
+    if (plugin.kind !== 'parser' && surfaces.length === 0) {
+      continue;
+    }
+
+    if (plugin.kind === 'parser' && surfaces.length === 0) {
       unavailableChecks.push({
         name: plugin.id,
         file,
-        reason: 'Parser plugin loaded but did not expose parsers().',
+        reason: 'Parser plugin loaded but did not expose parsers() or sensors().',
       });
       continue;
     }
 
-    let parserDefinitions: PulseParserDefinition[] | null = null;
-    try {
-      parserDefinitions = toPluginParserDefinitions(parserProvider.parsers());
-    } catch (error) {
-      unavailableChecks.push({
-        name: plugin.id,
-        file,
-        reason: error instanceof Error ? error.message : String(error),
-      });
-      continue;
-    }
-
-    if (!parserDefinitions) {
-      unavailableChecks.push({
-        name: plugin.id,
-        file,
-        reason: 'Parser plugin parsers() did not return PulseParserDefinition[].',
-      });
-      continue;
-    }
-
-    for (const parserDefinition of parserDefinitions) {
-      if (options.includeParser && !options.includeParser(parserDefinition.name)) {
-        continue;
-      }
-
-      if (!PARSER_NAME_RE.test(parserDefinition.name)) {
+    for (const surface of surfaces) {
+      let parserDefinitions: PluginParserDefinitionInput[] | null = null;
+      try {
+        parserDefinitions = callPluginParserSurface(parserProvider, surface);
+      } catch (error) {
         unavailableChecks.push({
-          name: parserDefinition.name,
+          name: plugin.id,
           file,
-          reason: 'Plugin parser name failed safe-identifier validation.',
+          reason: error instanceof Error ? error.message : String(error),
         });
         continue;
       }
 
-      const metadata = buildOperationalMetadata({
-        confidence: 0.8,
-        declaredExport: 'parsers',
-        discoveryAuthority: 'plugin_registry',
-        evidenceKind: 'plugin-parser',
-        inputs: ['pulse-config'],
-        outputs: ['breaks'],
-        pluginId: plugin.id,
-      });
-      contracts.push(
-        buildPluginParserContract(
-          config.rootDir,
+      if (!parserDefinitions) {
+        unavailableChecks.push({
+          name: plugin.id,
+          file,
+          reason: `Parser plugin ${surface}() did not return PulseParserDefinition[].`,
+        });
+        continue;
+      }
+
+      for (const parserDefinition of parserDefinitions) {
+        if (options.includeParser && !options.includeParser(parserDefinition.name)) {
+          continue;
+        }
+
+        if (!PARSER_NAME_RE.test(parserDefinition.name)) {
+          unavailableChecks.push({
+            name: parserDefinition.name,
+            file,
+            reason: 'Plugin parser name failed safe-identifier validation.',
+          });
+          continue;
+        }
+
+        const metadata = operationalMetadataFromPluginDefinition(
           plugin.id,
-          pluginDescriptor.path,
-          parserDefinition.name,
-        ),
-      );
-      loadedChecks.push({
-        ...parserDefinition,
-        file: parserDefinition.file || file,
-        ...metadata,
-      });
+          surface,
+          parserDefinition,
+        );
+        contracts.push(
+          buildPluginParserContract(
+            config.rootDir,
+            plugin.id,
+            pluginDescriptor.path,
+            surface,
+            parserDefinition,
+          ),
+        );
+        loadedChecks.push({
+          ...parserDefinition,
+          file: stringFromUnknown(parserDefinition.file) ?? file,
+          ...metadata,
+        });
+      }
     }
   }
 
@@ -533,7 +684,7 @@ export function loadParserInventory(
   options: LoadParserInventoryOptions = {},
 ): PulseParserInventory {
   const generatedAt = new Date().toISOString();
-  const filesystemContracts = discoverParserContracts(config.rootDir);
+  const filesystemContracts = discoverFilesystemParserContracts(config.rootDir);
   const pluginInventory = loadParserPluginDefinitions(config, options);
   const contracts = [...filesystemContracts, ...pluginInventory.contracts].sort((left, right) =>
     left.name.localeCompare(right.name),

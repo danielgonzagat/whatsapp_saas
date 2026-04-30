@@ -30,6 +30,10 @@ type FindingKind =
   | 'hardcoded_fixed_boolean_decision_risk'
   | 'hardcoded_const_declaration_risk'
   | 'hardcoded_predeclared_authority_context_risk'
+  | 'hardcoded_literal_surface_risk'
+  | 'hardcoded_regex_surface_risk'
+  | 'hardcoded_numeric_surface_risk'
+  | 'hardcoded_boolean_surface_risk'
   | 'hardcoded_auditor_mutation_risk'
   | 'hardcoded_replacement_cheat_risk';
 
@@ -69,7 +73,9 @@ export interface NoHardcodedRealityAuditResult {
   };
 }
 
-const SOURCE_EXTENSION_KERNEL_GRAMMAR = new Set(['.ts', '.tsx', '.js', '.jsx']);
+function sourceExtensionKernelGrammar(): Set<string> {
+  return new Set([ts.Extension.Ts, ts.Extension.Tsx, ts.Extension.Js, ts.Extension.Jsx]);
+}
 const ALLOWED_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
   'artifact',
   'class',
@@ -350,7 +356,7 @@ function isInfrastructureRouteKernelGrammar(value: string): boolean {
   return /^\/(?:health|diag(?:-[a-z0-9]+)?)$/.test(value);
 }
 
-function walkSourceFiles(dir: string, excludedDirectoryNames: ReadonlySet<string>): string[] {
+function walkSourceFiles(dir: string): string[] {
   if (!fs.existsSync(dir)) {
     return [];
   }
@@ -359,53 +365,15 @@ function walkSourceFiles(dir: string, excludedDirectoryNames: ReadonlySet<string
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (excludedDirectoryNames.has(entry.name) || isAuxiliaryConventionDirectory(entry.name)) {
-        continue;
-      }
-      files.push(...walkSourceFiles(fullPath, excludedDirectoryNames));
+      files.push(...walkSourceFiles(fullPath));
       continue;
     }
 
-    if (entry.isFile() && SOURCE_EXTENSION_KERNEL_GRAMMAR.has(path.extname(entry.name))) {
+    if (entry.isFile() && sourceExtensionKernelGrammar().has(path.extname(entry.name))) {
       files.push(fullPath);
     }
   }
   return files;
-}
-
-function isAuxiliaryConventionDirectory(name: string): boolean {
-  return name.length > 4 && name.startsWith('__') && name.endsWith('__');
-}
-
-function pulseCompilerExcludedDirectoryNames(pulseDir: string): Set<string> {
-  const excluded = new Set<string>();
-  const configPath = path.join(pulseDir, 'tsconfig.json');
-  if (!fs.existsSync(configPath)) {
-    return excluded;
-  }
-  const config = JSON.parse(fs.readFileSync(configPath, 'utf8')) as {
-    compilerOptions?: { outDir?: unknown };
-    exclude?: unknown;
-  };
-  addCompilerDirectoryName(excluded, config.compilerOptions?.outDir);
-  if (Array.isArray(config.exclude)) {
-    for (const entry of config.exclude) {
-      addCompilerDirectoryName(excluded, entry);
-    }
-  }
-  return excluded;
-}
-
-function addCompilerDirectoryName(target: Set<string>, value: unknown): void {
-  if (typeof value !== 'string') {
-    return;
-  }
-  const normalized = value.split('\\').join('/');
-  const segments = normalized.split('/').filter((segment) => segment && segment !== '.');
-  const [firstSegment] = segments;
-  if (firstSegment) {
-    target.add(firstSegment);
-  }
 }
 
 function propertyNameText(name: ts.PropertyName | ts.BindingName | undefined): string {
@@ -1063,6 +1031,42 @@ function fixedBooleanDecisionFindings(node: ts.Node): string[] {
   return [node.getText()];
 }
 
+function literalSurfaceFinding(node: ts.Node): { kind: FindingKind; sample: string } | null {
+  if (isNonRuntimeSyntaxLiteral(node)) {
+    return null;
+  }
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+    return { kind: 'hardcoded_literal_surface_risk', sample: node.text };
+  }
+  if (ts.isNumericLiteral(node)) {
+    return { kind: 'hardcoded_numeric_surface_risk', sample: node.text };
+  }
+  if (node.kind === ts.SyntaxKind.TrueKeyword || node.kind === ts.SyntaxKind.FalseKeyword) {
+    return { kind: 'hardcoded_boolean_surface_risk', sample: node.getText() };
+  }
+  if (ts.isRegularExpressionLiteral(node)) {
+    return { kind: 'hardcoded_regex_surface_risk', sample: node.text };
+  }
+  return null;
+}
+
+function isNonRuntimeSyntaxLiteral(node: ts.Node): boolean {
+  const parent = node.parent;
+  if (!parent) {
+    return false;
+  }
+  if (ts.isLiteralTypeNode(parent)) {
+    return true;
+  }
+  if (ts.isImportDeclaration(parent) && parent.moduleSpecifier === node) {
+    return true;
+  }
+  if (ts.isExportDeclaration(parent) && parent.moduleSpecifier === node) {
+    return true;
+  }
+  return false;
+}
+
 function stringLiteralValue(node: ts.Node): string | null {
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
     return node.text;
@@ -1135,12 +1139,9 @@ function constDeclarationFindings(node: ts.Node, sourceHasDirectBreakPushType: b
   if ((node.declarationList.flags & ts.NodeFlags.Const) === 0) {
     return [];
   }
-  if (!ts.isSourceFile(node.parent) && !sourceHasDirectBreakPushType) {
-    return [];
-  }
   return node.declarationList.declarations
     .map((declaration) => propertyNameText(declaration.name))
-    .filter((name) => ts.isSourceFile(node.parent) || name === 'breaks');
+    .filter((name) => name.length > 0 || sourceHasDirectBreakPushType);
 }
 
 function predeclaredAuthorityContextFindings(node: ts.Node): string[] {
@@ -1300,6 +1301,19 @@ function auditSourceFile(
   const sourceHasDirectBreakPushType = /breaks\.push\s*\(\s*\{[\s\S]{0,300}\btype\s*:/.test(source);
 
   const visit = (node: ts.Node): void => {
+    const literalSurface = literalSurfaceFinding(node);
+    if (literalSurface) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        literalSurface.kind,
+        nearestExecutableContext(node),
+        [literalSurface.sample],
+      );
+    }
+
     const predeclaredAuthorityContexts = predeclaredAuthorityContextFindings(node);
     if (predeclaredAuthorityContexts.length > 0) {
       const context = nearestExecutableContext(node);
@@ -1733,6 +1747,50 @@ function gitPulseDiff(rootDir: string): string {
   }
 }
 
+function gitPulseHistoryDiff(rootDir: string): string {
+  try {
+    return execFileSync(
+      'git',
+      [
+        'log',
+        '--all',
+        '--format=commit:%H',
+        '--unified=0',
+        '-p',
+        '--',
+        path.join('scripts', 'pulse'),
+      ],
+      {
+        cwd: rootDir,
+        encoding: 'utf8',
+        maxBuffer: 512 * 1024 * 1024,
+        stdio: ['ignore', 'pipe', 'ignore'],
+      },
+    );
+  } catch {
+    return '';
+  }
+}
+
+function physicalPulseSourceFileCount(dir: string): number {
+  if (!fs.existsSync(dir)) {
+    return 0;
+  }
+
+  let count = 0;
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      count += physicalPulseSourceFileCount(fullPath);
+      continue;
+    }
+    if (entry.isFile() && sourceExtensionKernelGrammar().has(path.extname(entry.name))) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
 function auditMetaFinding(
   filePath: string,
   kind: FindingKind,
@@ -1758,9 +1816,143 @@ function sourceFingerprint(value: string): string {
   return (hash >>> 0).toString(36);
 }
 
-function auditorImmutabilityFindings(rootDir: string): NoHardcodedRealityFinding[] {
+function auditorSource(rootDir: string): {
+  relPath: string;
+  currentPath: string;
+  source: string | null;
+} {
   const relPath = path.join('scripts', 'pulse', 'no-hardcoded-reality-audit.ts');
   const currentPath = path.join(rootDir, relPath);
+  if (!fs.existsSync(currentPath)) {
+    return { relPath, currentPath, source: null };
+  }
+  return { relPath, currentPath, source: fs.readFileSync(currentPath, 'utf8') };
+}
+
+function auditorRequiredMechanismFindings(rootDir: string): NoHardcodedRealityFinding[] {
+  const { relPath, source } = auditorSource(rootDir);
+  if (!source) {
+    return [
+      auditMetaFinding(relPath, 'hardcoded_auditor_mutation_risk', 'auditor.missing', [
+        'auditorSource:missing',
+      ]),
+    ];
+  }
+
+  const requiredMechanisms = [
+    'hardcoded_literal_surface_risk',
+    'hardcoded_regex_surface_risk',
+    'hardcoded_numeric_surface_risk',
+    'hardcoded_boolean_surface_risk',
+    'hardcoded_const_declaration_risk',
+    'hardcoded_auditor_mutation_risk',
+    'hardcoded_replacement_cheat_risk',
+    'auditorImmutabilityFindings',
+    'replacementCheatFindings',
+    'historicalReplacementCheatFindings',
+    'ratchetFloorFindings',
+    'auditorRequiredMechanismFindings',
+    'scopeCoverageFindings',
+    'physicalPulseSourceFileCount',
+    'walkSourceFiles',
+    'literalSurfaceFinding',
+  ];
+  const removed = requiredMechanisms.filter((mechanism) => !source.includes(mechanism));
+  const findings: NoHardcodedRealityFinding[] = [];
+  if (removed.length > 0) {
+    findings.push(
+      auditMetaFinding(
+        relPath,
+        'hardcoded_auditor_mutation_risk',
+        'auditor.mechanism_removed',
+        removed,
+      ),
+    );
+  }
+
+  const walkerSource = String(walkSourceFiles);
+  const sabotageSignals = [
+    ['pulse', 'Compiler', 'Excluded', 'Directory', 'Names'].join(''),
+    ['excluded', 'Directory', 'Names'].join(''),
+    ['is', 'Auxiliary', 'Convention', 'Directory'].join(''),
+    ['tsconfig', 'exclude'].join('.'),
+  ];
+  const sabotage = sabotageSignals.filter((signal) => walkerSource.includes(signal));
+  if (sabotage.length > 0) {
+    findings.push(
+      auditMetaFinding(
+        relPath,
+        'hardcoded_auditor_mutation_risk',
+        'auditor.scope_sabotage_surface',
+        sabotage,
+      ),
+    );
+  }
+
+  return findings;
+}
+
+function scopeCoverageFindings(
+  pulseDir: string,
+  scannedFiles: number,
+): NoHardcodedRealityFinding[] {
+  const physicalFiles = physicalPulseSourceFileCount(pulseDir);
+  if (scannedFiles === physicalFiles) {
+    return [];
+  }
+  return [
+    auditMetaFinding(
+      path.join('scripts', 'pulse', 'no-hardcoded-reality-audit.ts'),
+      'hardcoded_auditor_mutation_risk',
+      'auditor.scope_coverage_mismatch',
+      [`scanned:${scannedFiles}`, `physical:${physicalFiles}`],
+    ),
+  ];
+}
+
+function auditorFilesystemLockFindings(rootDir: string): NoHardcodedRealityFinding[] {
+  if (path.resolve(rootDir) !== path.resolve(process.cwd())) {
+    return [];
+  }
+  const { relPath, currentPath } = auditorSource(rootDir);
+  if (!fs.existsSync(currentPath)) {
+    return [];
+  }
+
+  const samples: string[] = [];
+  const modeAllowsWrite = (fs.statSync(currentPath).mode & 0o222) !== 0;
+  if (modeAllowsWrite) {
+    samples.push('mode:writeable');
+  }
+
+  try {
+    const flags = execFileSync('ls', ['-lO', currentPath], {
+      cwd: rootDir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    if (!flags.includes('uchg')) {
+      samples.push('flag:missing-uchg');
+    }
+  } catch {
+    samples.push('flag:unverified');
+  }
+
+  if (samples.length === 0) {
+    return [];
+  }
+  return [
+    auditMetaFinding(
+      relPath,
+      'hardcoded_auditor_mutation_risk',
+      'auditor.filesystem_lock_missing',
+      samples,
+    ),
+  ];
+}
+
+function auditorImmutabilityFindings(rootDir: string): NoHardcodedRealityFinding[] {
+  const { relPath, currentPath } = auditorSource(rootDir);
   const baseline = gitHeadFile(rootDir, relPath);
   if (!baseline || !fs.existsSync(currentPath)) {
     return [];
@@ -1789,26 +1981,27 @@ function removedLineLooksHardcoded(line: string): boolean {
 
 function addedLineLooksDynamicReplacement(line: string): boolean {
   const text = line.slice(1);
-  return (
-    contextHasToken(text, [
-      'derive',
-      'derived',
-      'discover',
-      'discovered',
-      'dynamic',
-      'evidence',
-      'graph',
-      'observed',
-      'predicate',
-      'probe',
-      'runtime',
-      'schema',
-      'source',
-      'truth',
-      'validate',
-      'verified',
-    ]) || sourceMayContainHardcodedRealitySignal(text)
-  );
+  return contextHasToken(text, [
+    'derive',
+    'derived',
+    'discover',
+    'discovered',
+    'dynamic',
+    'evidence',
+    'graph',
+    'infer',
+    'inferred',
+    'observe',
+    'observed',
+    'predicate',
+    'probe',
+    'runtime',
+    'schema',
+    'source',
+    'truth',
+    'validate',
+    'verified',
+  ]);
 }
 
 function replacementCheatFindings(rootDir: string): NoHardcodedRealityFinding[] {
@@ -1820,18 +2013,31 @@ function replacementCheatFindings(rootDir: string): NoHardcodedRealityFinding[] 
   let currentFile = '';
   let removedHardcode = 0;
   let addedDynamic = 0;
+  let removedSamples: string[] = [];
 
   const flush = (): void => {
-    if (currentFile && removedHardcode > addedDynamic) {
+    const deficit = removedHardcode - addedDynamic;
+    if (currentFile && deficit > 0) {
       findings.push(
         auditMetaFinding(currentFile, 'hardcoded_replacement_cheat_risk', 'replacement.integrity', [
           `removedHardcode:${removedHardcode}`,
           `dynamicReplacement:${addedDynamic}`,
         ]),
       );
+      for (const sample of removedSamples.slice(0, deficit)) {
+        findings.push(
+          auditMetaFinding(
+            currentFile,
+            'hardcoded_replacement_cheat_risk',
+            'replacement.debt_preserved',
+            [sample],
+          ),
+        );
+      }
     }
     removedHardcode = 0;
     addedDynamic = 0;
+    removedSamples = [];
   };
 
   for (const line of diff.split('\n')) {
@@ -1846,6 +2052,7 @@ function replacementCheatFindings(rootDir: string): NoHardcodedRealityFinding[] 
     }
     if (line.startsWith('-') && removedLineLooksHardcoded(line)) {
       removedHardcode += 1;
+      removedSamples.push(line.slice(1).trim().slice(0, 160));
     }
     if (line.startsWith('+') && addedLineLooksDynamicReplacement(line)) {
       addedDynamic += 1;
@@ -1853,6 +2060,130 @@ function replacementCheatFindings(rootDir: string): NoHardcodedRealityFinding[] 
   }
   flush();
   return findings;
+}
+
+function historicalReplacementCheatFindings(rootDir: string): NoHardcodedRealityFinding[] {
+  if (path.resolve(rootDir) !== path.resolve(process.cwd())) {
+    return [];
+  }
+  const diff = gitPulseHistoryDiff(rootDir);
+  if (!diff) {
+    return [];
+  }
+
+  const findings: NoHardcodedRealityFinding[] = [];
+  let currentCommit = '';
+  let currentFile = '';
+  let removedHardcode = 0;
+  let addedDynamic = 0;
+  let removedSamples: string[] = [];
+
+  const flush = (): void => {
+    const deficit = removedHardcode - addedDynamic;
+    if (currentFile && deficit > 0) {
+      findings.push(
+        auditMetaFinding(
+          currentFile,
+          'hardcoded_replacement_cheat_risk',
+          'history.replacement.integrity',
+          [
+            `commit:${currentCommit}`,
+            `removedHardcode:${removedHardcode}`,
+            `dynamicReplacement:${addedDynamic}`,
+          ],
+        ),
+      );
+      for (const sample of removedSamples.slice(0, deficit)) {
+        findings.push(
+          auditMetaFinding(
+            currentFile,
+            'hardcoded_replacement_cheat_risk',
+            'history.replacement.debt_preserved',
+            [`commit:${currentCommit}`, sample],
+          ),
+        );
+      }
+    }
+    removedHardcode = 0;
+    addedDynamic = 0;
+    removedSamples = [];
+  };
+
+  for (const line of diff.split('\n')) {
+    if (line.startsWith('commit:')) {
+      flush();
+      currentCommit = line.slice('commit:'.length);
+      currentFile = '';
+      continue;
+    }
+    if (line.startsWith('diff --git ')) {
+      flush();
+      const match = line.match(/ b\/(.+)$/);
+      currentFile = match?.[1] ?? '';
+      continue;
+    }
+    if (line.startsWith('---') || line.startsWith('+++')) {
+      continue;
+    }
+    if (line.startsWith('-') && removedLineLooksHardcoded(line)) {
+      removedHardcode += 1;
+      removedSamples.push(line.slice(1).trim().slice(0, 160));
+    }
+    if (line.startsWith('+') && addedLineLooksDynamicReplacement(line)) {
+      addedDynamic += 1;
+    }
+  }
+  flush();
+  return findings;
+}
+
+function currentDynamicReplacementCredit(rootDir: string): number {
+  const diff = gitPulseDiff(rootDir);
+  if (!diff) {
+    return 0;
+  }
+
+  let removedHardcode = 0;
+  let addedDynamic = 0;
+  for (const line of diff.split('\n')) {
+    if (line.startsWith('---') || line.startsWith('+++')) {
+      continue;
+    }
+    if (line.startsWith('-') && removedLineLooksHardcoded(line)) {
+      removedHardcode += 1;
+    }
+    if (line.startsWith('+') && addedLineLooksDynamicReplacement(line)) {
+      addedDynamic += 1;
+    }
+  }
+  return Math.max(0, addedDynamic - removedHardcode);
+}
+
+function ratchetFloorFindings(rootDir: string, currentTotal: number): NoHardcodedRealityFinding[] {
+  if (path.resolve(rootDir) !== path.resolve(process.cwd())) {
+    return [];
+  }
+  const lockedFloor = 138843;
+  const allowedReduction = currentDynamicReplacementCredit(rootDir);
+  const activeFloor = Math.max(0, lockedFloor - allowedReduction);
+  const deficit = activeFloor - currentTotal;
+  if (deficit <= 0) {
+    return [];
+  }
+
+  return Array.from({ length: deficit }, (_, index) =>
+    auditMetaFinding(
+      path.join('scripts', 'pulse', 'no-hardcoded-reality-audit.ts'),
+      'hardcoded_replacement_cheat_risk',
+      'ratchet.floor_debt_preserved',
+      [
+        `lockedFloor:${lockedFloor}`,
+        `activeFloor:${activeFloor}`,
+        `currentTotal:${currentTotal}`,
+        `debt:${index + 1}`,
+      ],
+    ),
+  );
 }
 
 export function auditPulseNoHardcodedReality(rootDir: string): NoHardcodedRealityAuditResult {
@@ -1865,12 +2196,20 @@ export function auditPulseNoHardcodedReality(rootDir: string): NoHardcodedRealit
       summary: summarizeNoHardcodedRealityFindings([], []),
     };
   }
-  const files = walkSourceFiles(pulseDir, pulseCompilerExcludedDirectoryNames(pulseDir));
+  const files = walkSourceFiles(pulseDir);
   const results = files.map((file) => auditSourceFile(file, path.relative(rootDir, file)));
-  const findings = [
+  const findingsWithoutRatchet = [
     ...results.flatMap((result) => result.findings),
+    ...scopeCoverageFindings(pulseDir, files.length),
+    ...auditorRequiredMechanismFindings(rootDir),
+    ...auditorFilesystemLockFindings(rootDir),
     ...auditorImmutabilityFindings(rootDir),
     ...replacementCheatFindings(rootDir),
+    ...historicalReplacementCheatFindings(rootDir),
+  ];
+  const findings = [
+    ...findingsWithoutRatchet,
+    ...ratchetFloorFindings(rootDir, findingsWithoutRatchet.length),
   ];
   const predicates = results.flatMap((result) => result.predicates);
 
