@@ -3,6 +3,7 @@ import { readFileSync, statSync } from 'fs';
 import * as path from 'path';
 import type { MerkleDag, MerkleNode, MerkleProof } from './types.merkle-cache';
 import { ensureDir, pathExists, readDir, readJsonFile, writeTextFile } from './safe-fs';
+import { normalizePath } from './scope-state.codacy';
 
 const CACHE_DIR = '.pulse/cache';
 const DAG_FILE = 'merkle-dag.json';
@@ -265,7 +266,7 @@ function normalizeChangedFileSet(rootDir: string, changedFilePaths: string[]): S
   const normalized = new Set<string>();
   for (const filePath of changedFilePaths) {
     const relPath = path.isAbsolute(filePath) ? path.relative(rootDir, filePath) : filePath;
-    const normalizedPath = relPath.replace(/\\/g, '/');
+    const normalizedPath = normalizePath(relPath);
     if (!normalizedPath || normalizedPath.startsWith('../')) {
       continue;
     }

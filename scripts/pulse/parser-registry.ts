@@ -1,5 +1,6 @@
 import { safeJoin } from './safe-path';
 import * as path from 'path';
+import ts from 'typescript';
 import type {
   PulseConfig,
   PulseParserContract,
@@ -25,8 +26,6 @@ const STRING_PROPERTY_RE = (property: string): RegExp =>
   new RegExp(`${property}\\s*:\\s*['"]([^'"]+)['"]`);
 const NUMBER_PROPERTY_RE = (property: string): RegExp =>
   new RegExp(`${property}\\s*:\\s*(0(?:\\.\\d+)?|1(?:\\.0+)?|\\.\\d+)`);
-const STRING_ARRAY_PROPERTY_RE = (property: string): RegExp =>
-  new RegExp(`${property}\\s*:\\s*\\[([^\\]]*)\\]`, 'm');
 const FUNCTION_REFERENCE_PROPERTY_RE = (property: string): RegExp =>
   new RegExp(`${property}\\s*:\\s*([A-Za-z_$][A-Za-z0-9_$]*)`);
 
@@ -144,21 +143,32 @@ function extractNumberProperty(objectSource: string, property: string): number |
 }
 
 function extractStringArrayProperty(objectSource: string, property: string): string[] {
-  const rawItems = objectSource.match(STRING_ARRAY_PROPERTY_RE(property))?.[1];
-  if (!rawItems) {
+  const sourceFile = ts.createSourceFile(
+    'pulse-parser-object.ts',
+    `const pulseParserObject = ${objectSource};`,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const declaration = sourceFile.statements.find(ts.isVariableStatement)?.declarationList
+    .declarations[0];
+  const initializer = declaration?.initializer;
+  if (!initializer || !ts.isObjectLiteralExpression(initializer)) {
     return [];
   }
 
-  const values: string[] = [];
-  const itemPattern = /['"]([^'"]+)['"]/g;
-  for (const match of rawItems.matchAll(itemPattern)) {
-    const value = match[1];
-    if (value) {
-      values.push(value);
-    }
+  const propertyAssignment = initializer.properties.find((item): item is ts.PropertyAssignment => {
+    return ts.isPropertyAssignment(item) && item.name.getText(sourceFile) === property;
+  });
+  if (!propertyAssignment || !ts.isArrayLiteralExpression(propertyAssignment.initializer)) {
+    return [];
   }
 
-  return values;
+  return propertyAssignment.initializer.elements.flatMap((element) => {
+    return ts.isStringLiteral(element) || ts.isNoSubstitutionTemplateLiteral(element)
+      ? [element.text]
+      : [];
+  });
 }
 
 function extractFunctionReferenceProperty(objectSource: string, property: string): string | null {

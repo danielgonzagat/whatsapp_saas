@@ -225,7 +225,7 @@ export async function testPage(
         ssPath = await takeScreenshot(
           page,
           route,
-          label.replace(/[^a-zA-Z0-9]/g, '_'),
+          toScreenshotEvidenceToken(label),
           config.screenshotDir,
         );
       }
@@ -250,7 +250,7 @@ export async function testPage(
       const ssPath = await takeScreenshot(
         page,
         route,
-        label.replace(/[^a-zA-Z0-9]/g, '_'),
+        toScreenshotEvidenceToken(label),
         config.screenshotDir,
       );
       result = {
@@ -453,6 +453,28 @@ async function buildUniqueSelector(
   return `${baseSelector} >> nth=${index}`;
 }
 
+function toScreenshotEvidenceToken(value: string): string {
+  const tokens: string[] = [];
+  let current = '';
+  for (const char of value.normalize('NFKD')) {
+    const code = char.charCodeAt(0);
+    const alphaNumeric =
+      (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+    if (alphaNumeric) {
+      current += char;
+      continue;
+    }
+    if (current) {
+      tokens.push(current);
+      current = '';
+    }
+  }
+  if (current) {
+    tokens.push(current);
+  }
+  return tokens.join('_') || 'element';
+}
+
 async function takeScreenshot(
   page: Page,
   route: string,
@@ -462,7 +484,7 @@ async function takeScreenshot(
   try {
     const dir = safeJoin(screenshotDir, route.replace(/\//g, '_').replace(/^_/, '') || 'root');
     ensureDir(dir, { recursive: true });
-    const filename = `${label.slice(0, 40).replace(/[^a-zA-Z0-9_-]/g, '')}_${Date.now()}.png`;
+    const filename = `${toScreenshotEvidenceToken(label).slice(0, 40)}_${Date.now()}.png`;
     const fullPath = safeJoin(dir, filename);
     await page.screenshot({ path: fullPath, fullPage: false });
     return fullPath;

@@ -2,6 +2,7 @@ import * as path from 'path';
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import type { PulseScopeSurface } from './types.truth.scope';
 import { normalizePath } from './scope-state.codacy';
+import { extractLocalFileReferences } from './dynamic-reality-grammar';
 
 /**
  * Static lookup tables shared by `scope-state.ts`.
@@ -164,8 +165,6 @@ const PACKAGE_SCAN_SKIP_SEGMENTS = new Set([
   '.cache',
 ]);
 const PACKAGE_SCAN_MAX_DEPTH = 4;
-const LOCAL_COMMAND_PATH_PATTERN =
-  /(?:^|\s)(?:\.\/)?([A-Za-z0-9_.@/-]+\.(?:[cm]?[jt]sx?|json|prisma|sql|mjs|cjs))(?:\s|$)/g;
 const SOURCE_SIGNAL_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
 
 function readJsonObject(filePath: string): Record<string, unknown> | null {
@@ -325,11 +324,8 @@ function addScriptRoots(
   relRoot: string,
 ): void {
   for (const command of Object.values(pkg.scripts ?? {})) {
-    for (const match of command.matchAll(LOCAL_COMMAND_PATH_PATTERN)) {
-      const referencedPath = match[1];
-      if (referencedPath && !referencedPath.includes('node_modules/')) {
-        addRootFromPackageReference(structure.scriptRoots, relRoot, referencedPath);
-      }
+    for (const referencedPath of extractLocalFileReferences(command)) {
+      addRootFromPackageReference(structure.scriptRoots, relRoot, referencedPath);
     }
   }
 }

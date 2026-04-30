@@ -34,10 +34,6 @@ import type { AstCallGraph, AstCallEdge } from './types.ast-graph';
 const RUNTIME_TRACES_ARTIFACT = 'PULSE_RUNTIME_TRACES.json';
 const TRACE_DIFF_ARTIFACT = 'PULSE_TRACE_DIFF.json';
 
-const KNOWN_SERVICE_NAMES = ['backend', 'frontend', 'worker'];
-
-const ROUTE_PATTERNS = [/(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+(\/[^\s]*)/i] as const;
-
 const NESTJS_DECORATOR_NAMES = [
   'Controller',
   'Get',
@@ -110,30 +106,6 @@ const AXIOS_METHODS = [
   'options',
   'request',
   'create',
-];
-
-const HTTP_ROUTES = [
-  'GET /api/workspaces',
-  'GET /api/workspaces/:id',
-  'POST /api/auth/login',
-  'POST /api/auth/register',
-  'POST /api/auth/refresh',
-  'GET /api/billing/invoices',
-  'POST /api/billing/checkout',
-  'GET /api/webhooks',
-  'POST /api/webhooks/:provider',
-  'POST /api/messages/send',
-  'POST /api/messages/template',
-  'GET /api/integrations',
-  'POST /api/integrations/connect',
-  'PUT /api/users/me',
-  'GET /api/users/:id',
-  'DELETE /api/sessions',
-  'POST /api/stripe/webhook',
-  'POST /api/whatsapp/webhook',
-  'POST /api/sendgrid/send',
-  'GET /api/github/hooks',
-  'POST /api/openai/completions',
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -625,14 +597,36 @@ export function detectAllPatterns(astGraph: AstCallGraph): InstrumentationHint[]
 
 // ─── Span-to-path matching ───────────────────────────────────────────────────
 
-function extractRouteFromSpanName(spanName: string): string | null {
-  for (const pattern of ROUTE_PATTERNS) {
-    const match = spanName.match(pattern);
-    if (match) {
-      return `${match[1].toUpperCase()} ${match[2]}`;
-    }
+function extractRouteFromSpan(span: OtelSpan): { method: string | null; path: string } | null {
+  const attributeEntries = Object.entries(span.attributes);
+  const methodValue = attributeEntries.find(([key, value]) => {
+    const loweredKey = key.toLowerCase();
+    return loweredKey.includes('method') && typeof value === 'string' && value.length > 0;
+  })?.[1];
+  const pathValue = attributeEntries.find(([key, value]) => {
+    const loweredKey = key.toLowerCase();
+    return (
+      typeof value === 'string' &&
+      value.startsWith('/') &&
+      (loweredKey.includes('route') || loweredKey.includes('path') || loweredKey.includes('url'))
+    );
+  })?.[1];
+
+  if (typeof pathValue === 'string') {
+    return {
+      method: typeof methodValue === 'string' ? methodValue.toUpperCase() : null,
+      path: pathValue,
+    };
   }
-  return null;
+
+  const tokens = span.name.split(/\s+/).filter(Boolean);
+  const observedMethod = tokens.find((token) => /^[A-Z]+$/.test(token)) ?? null;
+  const observedPath = tokens.find((token) => token.startsWith('/'));
+  return observedPath ? { method: observedMethod, path: observedPath } : null;
+}
+
+function formatRoute(route: { method: string | null; path: string }): string {
+  return route.method ? `${route.method} ${route.path}` : route.path;
 }
 
 function buildSpanToPathMappings(
@@ -646,14 +640,11 @@ function buildSpanToPathMappings(
     const matchedNodeIds: string[] = [];
     const matchedFilePaths: string[] = [];
 
-    const route = extractRouteFromSpanName(span.name);
+    const route = extractRouteFromSpan(span);
     if (route) {
-      const routeSegments = route
-        .replace(/^(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+/, '')
-        .split('/')
-        .filter(Boolean);
+      const observedRouteParts = route.path.split('/').filter(Boolean);
       for (const edge of edges) {
-        const edgeContainsRoute = routeSegments.some(
+        const edgeContainsRoute = observedRouteParts.some(
           (seg) =>
             edge.from.toLowerCase().includes(seg.toLowerCase()) ||
             edge.to.toLowerCase().includes(seg.toLowerCase()),
@@ -710,8 +701,11 @@ function computeTraceSummary(traces: OtelTrace[]): OtelTraceSummary {
       const svc = span.serviceName || 'unknown';
       serviceMap[svc] = (serviceMap[svc] || 0) + 1;
 
-      const route = extractRouteFromSpanName(span.name);
-      if (route) endpointMap[route] = (endpointMap[route] || 0) + 1;
+      const route = extractRouteFromSpan(span);
+      if (route) {
+        const routeKey = formatRoute(route);
+        endpointMap[routeKey] = (endpointMap[routeKey] || 0) + 1;
+      }
     }
   }
 
@@ -859,7 +853,7 @@ function generateAstBasedTraces(
     const traceId = stableHex(traceSeed, 32);
     const spans: OtelSpan[] = [];
 
-    // Pick a root: prefer an AST-resolved HTTP route, fall back to random
+    // Pick a root: prefer an AST-resolved HTTP route, fall back to structural evidence.
     let rootName: string;
     let rootService: string;
     if (httpRoutes.length > 0) {
@@ -867,8 +861,8 @@ function generateAstBasedTraces(
       rootName = `${route.method} ${route.routePath}`;
       rootService = route.service;
     } else {
-      rootName = stableChoice(HTTP_ROUTES, `${traceSeed}:fallback-route`);
-      rootService = 'backend';
+      rootName = buildStructuralFallbackSpanName(astCtx, structCtx, `${traceSeed}:fallback-root`);
+      rootService = inferServiceFromSpanName(rootName);
     }
 
     const rootSpan = createManualSpanForTrace(
@@ -1021,7 +1015,11 @@ function buildChildSpanName(
       const r = stableChoice(routes, `${seed}:route`);
       return `${r.httpMethod} ${r.routePath}`;
     }
-    return stableChoice(HTTP_ROUTES, `${seed}:fallback-route`);
+    return buildStructuralFallbackSpanName(
+      astCtx,
+      { edges: [], nodeFiles: {} },
+      `${seed}:fallback`,
+    );
   }
 
   const baseName = path.basename(toFile, path.extname(toFile));
@@ -1083,10 +1081,45 @@ function buildSiblingSpanName(astCtx: AstGraphContext, seed: string): string {
           ? ['get', 'set', 'del', 'exists']
           : svcOps;
 
-  return `${category}:${stableChoice(KNOWN_SERVICE_NAMES, `${seed}:service`)}:${stableChoice(
+  return `${category}:${inferServiceFromAvailableSymbols(astCtx, seed)}:${stableChoice(
     ops,
     `${seed}:op`,
   )}`;
+}
+
+function buildStructuralFallbackSpanName(
+  astCtx: AstGraphContext,
+  structCtx: StructuralGraphContext,
+  seed: string,
+): string {
+  const symbols = [...astCtx.symbols.values()].sort((a, b) =>
+    `${a.kind}:${a.name}:${a.filePath}`.localeCompare(`${b.kind}:${b.name}:${b.filePath}`),
+  );
+  if (symbols.length > 0) {
+    const symbol = stableChoice(symbols, `${seed}:symbol`);
+    return `${symbol.kind}:${symbol.name}`;
+  }
+  const nodeFiles = Object.values(structCtx.nodeFiles).filter(Boolean).sort();
+  if (nodeFiles.length > 0) {
+    const filePath = stableChoice(nodeFiles, `${seed}:file`);
+    return `file:${path.basename(filePath, path.extname(filePath))}`;
+  }
+  return 'runtime:unresolved';
+}
+
+function inferServiceFromAvailableSymbols(astCtx: AstGraphContext, seed: string): string {
+  const serviceCandidates = [...astCtx.symbols.values()]
+    .map((symbol) => path.basename(path.dirname(symbol.filePath)))
+    .filter(Boolean)
+    .sort();
+  return serviceCandidates.length > 0
+    ? stableChoice(serviceCandidates, `${seed}:service`)
+    : 'unknown';
+}
+
+function inferServiceFromSpanName(spanName: string): string {
+  const [prefix] = spanName.split(':');
+  return prefix || 'unknown';
 }
 
 interface SpanGenOptions {
@@ -1115,20 +1148,17 @@ function createManualSpanForTrace(
 
   const attributes: Record<string, string | number | boolean> = {
     'service.name': serviceName,
-    'http.method': name.startsWith('GET')
-      ? 'GET'
-      : name.startsWith('POST')
-        ? 'POST'
-        : name.startsWith('PUT')
-          ? 'PUT'
-          : name.startsWith('DELETE')
-            ? 'DELETE'
-            : name.startsWith('PATCH')
-              ? 'PATCH'
-              : 'GET',
     'http.status_code': isError ? 500 : 200,
-    'http.route': name.split(' ')[1] || '/',
   };
+  const nameTokens = name.split(/\s+/).filter(Boolean);
+  const observedMethod = nameTokens.find((token) => /^[A-Z]+$/.test(token));
+  const observedPath = nameTokens.find((token) => token.startsWith('/'));
+  if (observedMethod) {
+    attributes['http.method'] = observedMethod;
+  }
+  if (observedPath) {
+    attributes['http.route'] = observedPath;
+  }
 
   if (edge) {
     attributes['pulse.structural.from'] = edge.from;

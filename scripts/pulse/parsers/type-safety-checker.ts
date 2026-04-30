@@ -1,38 +1,165 @@
 import * as path from 'path';
+import ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { buildParserDiagnosticBreak } from './diagnostic-break';
 
 const UNTYPED_CAST_TOKEN = ['an', 'y'].join('');
-const HIGH_RISK_CAST_PATTERN = new RegExp(` as ${UNTYPED_CAST_TOKEN}\\b`);
-const PRISMA_UNTYPED_CAST_PATTERN = new RegExp(
-  `\\(this\\.prisma\\s+as\\s+${UNTYPED_CAST_TOKEN}\\)`,
-);
+const PRISMA_UNTYPED_PROPERTY = `prisma${UNTYPED_CAST_TOKEN[0]?.toUpperCase() ?? 'A'}${UNTYPED_CAST_TOKEN.slice(1)}`;
 
 function isTestFile(filePath: string): boolean {
-  return /\.(spec|test)\.ts$|__tests__|__mocks__|\/seed\.|fixture/i.test(filePath);
+  const normalized = filePath.replaceAll('\\', '/').toLowerCase();
+  return (
+    normalized.endsWith('.spec.ts') ||
+    normalized.endsWith('.test.ts') ||
+    normalized.includes('/__tests__/') ||
+    normalized.includes('/__mocks__/') ||
+    normalized.includes('/seed.') ||
+    normalized.includes('fixture')
+  );
 }
 
-function isHighRiskTypeBoundary(content: string): boolean {
-  const mutatesPersistence =
-    /\b(?:this\.)?prisma\.\w+\.(create|update|updateMany|delete|deleteMany|upsert)\s*\(/.test(
-      content,
-    );
-  const receivesExternalInput =
-    /@(Body|Param|Query|Headers|Req)\b|Request\b|FastifyRequest\b|Express\.Request\b/.test(content);
-  const crossesProcessBoundary =
-    /\b(fetch|axios|httpService)\.(get|post|put|patch|delete|request)\s*\(/.test(content) ||
-    /\b[A-Za-z_$][\w$]*(Client|Provider|Gateway|Api|SDK|Sdk|Http)\.(get|post|put|patch|delete|request|send|create|update)\s*\(/.test(
-      content,
-    );
-  const handlesSecretsOrSignatures =
-    /\b(secret|signature|jwt|token|cookie|password|hash|encrypt|decrypt)\b/i.test(content);
+function methodName(node: ts.CallExpression): string | null {
+  if (ts.isPropertyAccessExpression(node.expression)) {
+    return node.expression.name.text;
+  }
+  if (ts.isIdentifier(node.expression)) {
+    return node.expression.text;
+  }
+  return null;
+}
+
+function receiverText(node: ts.CallExpression): string {
+  if (ts.isPropertyAccessExpression(node.expression)) {
+    return node.expression.expression.getText();
+  }
+  return '';
+}
+
+function sourceHasToken(content: string, tokens: readonly string[]): boolean {
+  return tokens.some((token) => content.includes(token));
+}
+
+function isHighRiskTypeBoundary(content: string, sourceFile: ts.SourceFile): boolean {
+  const persistenceMethods = new Set([
+    'create',
+    'update',
+    'updateMany',
+    'delete',
+    'deleteMany',
+    'upsert',
+  ]);
+  const processMethods = new Set([
+    'get',
+    'post',
+    'put',
+    'patch',
+    'delete',
+    'request',
+    'send',
+    'create',
+    'update',
+  ]);
+  let mutatesPersistence = false;
+  let crossesProcessBoundary = false;
+
+  const visit = (node: ts.Node): void => {
+    if (!ts.isCallExpression(node)) {
+      ts.forEachChild(node, visit);
+      return;
+    }
+
+    const method = methodName(node);
+    const receiver = receiverText(node);
+    if (method && persistenceMethods.has(method) && receiver.includes('prisma')) {
+      mutatesPersistence = true;
+    }
+    if (
+      method &&
+      processMethods.has(method) &&
+      (receiver.includes('fetch') ||
+        receiver.includes('axios') ||
+        receiver.includes('httpService') ||
+        receiver.includes('Client') ||
+        receiver.includes('Provider') ||
+        receiver.includes('Gateway') ||
+        receiver.includes('Api') ||
+        receiver.includes('SDK') ||
+        receiver.includes('Sdk') ||
+        receiver.includes('Http'))
+    ) {
+      crossesProcessBoundary = true;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+
+  const receivesExternalInput = sourceHasToken(content, [
+    '@Body',
+    '@Param',
+    '@Query',
+    '@Headers',
+    '@Req',
+    'Request',
+    'FastifyRequest',
+    'Express.Request',
+  ]);
+  const handlesSecretsOrSignatures = sourceHasToken(content.toLowerCase(), [
+    'secret',
+    'signature',
+    'jwt',
+    'token',
+    'cookie',
+    'password',
+    'hash',
+    'encrypt',
+    'decrypt',
+  ]);
 
   return (
     (receivesExternalInput && mutatesPersistence) ||
     (receivesExternalInput && handlesSecretsOrSignatures) ||
     (mutatesPersistence && crossesProcessBoundary)
   );
+}
+
+function locationOf(sourceFile: ts.SourceFile, node: ts.Node): number {
+  return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+}
+
+function isUntypedCast(node: ts.Node): node is ts.AsExpression | ts.TypeAssertion {
+  if (ts.isAsExpression(node) || ts.isTypeAssertionExpression(node)) {
+    return node.type.kind === ts.SyntaxKind.AnyKeyword;
+  }
+  return false;
+}
+
+function isThisPrismaAccess(node: ts.Node): boolean {
+  return (
+    ts.isPropertyAccessExpression(node) &&
+    node.name.text === 'prisma' &&
+    node.expression.kind === ts.SyntaxKind.ThisKeyword
+  );
+}
+
+function isThisPrismaAnyProperty(node: ts.Node): boolean {
+  return (
+    ts.isPropertyAccessExpression(node) &&
+    ts.isPropertyAccessExpression(node.expression) &&
+    node.expression.name.text === PRISMA_UNTYPED_PROPERTY &&
+    node.expression.expression.kind === ts.SyntaxKind.ThisKeyword
+  );
+}
+
+function isPrismaUntypedCast(node: ts.Node): boolean {
+  return isUntypedCast(node) && isThisPrismaAccess(node.expression);
+}
+
+function hasPulseOk(lines: string[], lineNumber: number): boolean {
+  const current = lines[lineNumber - 1] ?? '';
+  const previous = lineNumber > 1 ? (lines[lineNumber - 2] ?? '') : '';
+  return current.includes('PULSE:OK') || previous.includes('PULSE:OK');
 }
 
 /** Check type safety. */
@@ -51,77 +178,53 @@ export function checkTypeSafety(config: PulseConfig): Break[] {
 
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
-    const isHighRiskBoundary = isHighRiskTypeBoundary(content);
+    const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+    const isHighRiskBoundary = isHighRiskTypeBoundary(content, sourceFile);
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const trimmed = line.trim();
+    const visit = (node: ts.Node): void => {
+      const lineNumber = locationOf(sourceFile, node);
+      const trimmed = lines[lineNumber - 1]?.trim() ?? '';
 
-      // Skip full-line comments
-      if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) {
-        continue;
+      if (isHighRiskBoundary && isUntypedCast(node)) {
+        breaks.push(
+          buildParserDiagnosticBreak({
+            detector: 'typescript-ast-untyped-cast',
+            source: 'typescript-ast:type-safety-checker',
+            truthMode: 'confirmed_static',
+            severity: 'high',
+            file: relFile,
+            line: lineNumber,
+            summary: 'TypeScript AST confirmed untyped cast in a high-risk executable boundary',
+            detail: `Observed cast to ${UNTYPED_CAST_TOKEN} near external input, persistence, secrets, or process boundary: ${trimmed.slice(0, 120)}`,
+            surface: 'backend-type-safety',
+          }),
+        );
       }
 
-      // Only check the code portion before inline comments.
-      // Simple heuristic: split on // that isn't inside a string
-      const codePart = stripInlineComment(line);
-
-      // ---- High-risk executable boundaries: untyped casts are HIGH severity ----
-      // Match the cast token with a leading space to avoid identifier false positives.
-      if (isHighRiskBoundary && HIGH_RISK_CAST_PATTERN.test(codePart)) {
-        breaks.push({
-          type: 'UNSAFE_ANY_CAST',
-          severity: 'high',
-          file: relFile,
-          line: i + 1,
-          description: 'Untyped cast in high-risk executable boundary — type safety bypassed',
-          detail: trimmed.slice(0, 120),
-        });
-        continue; // Don't double-report
+      if (
+        (isThisPrismaAnyProperty(node) || isPrismaUntypedCast(node)) &&
+        !hasPulseOk(lines, lineNumber)
+      ) {
+        breaks.push(
+          buildParserDiagnosticBreak({
+            detector: 'typescript-ast-prisma-untyped-access',
+            source: 'typescript-ast:type-safety-checker',
+            truthMode: 'confirmed_static',
+            severity: 'medium',
+            file: relFile,
+            line: lineNumber,
+            summary: 'TypeScript AST confirmed Prisma access through an untyped escape hatch',
+            detail: trimmed.slice(0, 120),
+            surface: 'backend-prisma-type-safety',
+          }),
+        );
       }
 
-      // ---- All backend: this.prismaAny. or equivalent untyped Prisma cast ----
-      // These are the known "prismaAny" pattern — Prisma models not yet in generated schema.
-      // Tracked separately as PRISMA_ANY_ACCESS (medium), distinct from unsafe casts in business logic.
-      if (/this\.prismaAny\./.test(codePart) || PRISMA_UNTYPED_CAST_PATTERN.test(codePart)) {
-        // Skip if PULSE:OK annotation on this or preceding line
-        const prevLineChk = i > 0 ? lines[i - 1] : '';
-        if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLineChk)) {
-          continue;
-        }
-        breaks.push({
-          type: 'PRISMA_ANY_ACCESS',
-          severity: 'medium',
-          file: relFile,
-          line: i + 1,
-          description:
-            'Prisma accessed through an untyped escape hatch — model not yet in generated schema',
-          detail: trimmed.slice(0, 120),
-        });
-      }
-    }
+      ts.forEachChild(node, visit);
+    };
+
+    visit(sourceFile);
   }
 
   return breaks;
-}
-
-/**
- * Strip an inline comment from a line of TypeScript code.
- * Very conservative: only strips `//` that appears outside of string literals.
- */
-function stripInlineComment(line: string): string {
-  let inStr: string | null = null;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (inStr) {
-      if (ch === inStr && line[i - 1] !== '\\') {
-        inStr = null;
-      }
-    } else if (ch === '"' || ch === "'" || ch === '`') {
-      inStr = ch;
-    } else if (ch === '/' && line[i + 1] === '/') {
-      return line.slice(0, i);
-    }
-  }
-  return line;
 }

@@ -11,6 +11,7 @@
 
 import * as path from 'path';
 import { safeJoin } from './lib/safe-path';
+import { isObservedMutatingMethod } from './dynamic-reality-grammar';
 import { pathExists, readJsonFile, writeTextFile } from './safe-fs';
 import type { Scenario, ScenarioStep } from './types.scenario-engine';
 import type {
@@ -203,8 +204,8 @@ function hasHighImpactReplayEvidence(session: ReplaySession): boolean {
       return false;
     }
 
-    const method = String(event.detail.method || event.detail.httpMethod || '').toUpperCase();
-    return ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+    const method = String(event.detail.method || event.detail.httpMethod || '');
+    return isObservedMutatingMethod(method);
   });
 }
 

@@ -30,6 +30,8 @@
  * Emits E2E registration evidence failures; diagnostic identity is synthesized downstream.
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import {
   httpGet,
@@ -39,6 +41,12 @@ import {
   isDeepMode,
   getBackendUrl,
 } from './runtime-utils';
+import {
+  parsePrismaModels,
+  readFile,
+  resolveSchemaPath,
+  type PrismaModel,
+} from './structural-evidence';
 
 function registrationE2eFinding(input: {
   file: string;
@@ -58,6 +66,126 @@ function registrationE2eFinding(input: {
   };
 }
 
+function quoteIdent(identifier: string): string {
+  return `"${identifier.replace(/"/g, '""')}"`;
+}
+
+function modelHasFields(model: PrismaModel, fieldNames: readonly string[]): boolean {
+  const fields = new Set(model.fields.map((field) => field.name));
+  return fieldNames.every((fieldName) => fields.has(fieldName));
+}
+
+function discoverRegisteredActorModel(models: readonly PrismaModel[]): PrismaModel | null {
+  return (
+    models.find((model) => modelHasFields(model, ['id', 'email', 'workspaceId', 'password'])) ??
+    models.find((model) => modelHasFields(model, ['id', 'email', 'workspaceId'])) ??
+    null
+  );
+}
+
+function discoverWorkspaceModel(
+  models: readonly PrismaModel[],
+  actorModel: PrismaModel | null,
+): PrismaModel | null {
+  if (!actorModel) {
+    return null;
+  }
+  const workspaceRelation = actorModel.fields.find(
+    (field) => field.line.includes('@relation') && field.name.toLowerCase().includes('workspace'),
+  );
+  if (workspaceRelation) {
+    const relatedModel = models.find((model) => model.name === workspaceRelation.type);
+    if (relatedModel) {
+      return relatedModel;
+    }
+  }
+  return models.find((model) => modelHasFields(model, ['id', 'name'])) ?? null;
+}
+
+function buildRegisteredActorReadbackQuery(actorModel: PrismaModel): string {
+  const selectableFields = ['id', 'email', 'role', 'workspaceId', 'password'].filter((fieldName) =>
+    actorModel.fields.some((field) => field.name === fieldName),
+  );
+
+  return [
+    `SELECT ${selectableFields.map(quoteIdent).join(', ')}`,
+    `  FROM ${quoteIdent(actorModel.tableName)}`,
+    ` WHERE ${quoteIdent('email')} = $1`,
+    ` LIMIT 1`,
+  ].join('\n');
+}
+
+function buildWorkspaceReadbackQuery(workspaceModel: PrismaModel): string {
+  const selectableFields = ['id', 'name'].filter((fieldName) =>
+    workspaceModel.fields.some((field) => field.name === fieldName),
+  );
+
+  return [
+    `SELECT ${selectableFields.map(quoteIdent).join(', ')}`,
+    `  FROM ${quoteIdent(workspaceModel.tableName)}`,
+    ` WHERE ${quoteIdent('id')} = $1`,
+    ` LIMIT 1`,
+  ].join('\n');
+}
+
+function listTypeScriptFiles(dir: string): string[] {
+  if (!fs.existsSync(dir)) {
+    return [];
+  }
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      return entry.name === 'dist' || entry.name === 'node_modules'
+        ? []
+        : listTypeScriptFiles(fullPath);
+    }
+    return entry.isFile() && entry.name.endsWith('.ts') && !entry.name.endsWith('.spec.ts')
+      ? [fullPath]
+      : [];
+  });
+}
+
+function parseDecoratorPath(source: string, decoratorName: string): string | null {
+  const decoratorIndex = source.indexOf(`@${decoratorName}`);
+  if (decoratorIndex === -1) {
+    return null;
+  }
+  const openParen = source.indexOf('(', decoratorIndex);
+  const closeParen = openParen === -1 ? -1 : source.indexOf(')', openParen);
+  if (openParen === -1 || closeParen === -1) {
+    return '';
+  }
+  const quoted = /^['"`]([^'"`]*)['"`]$/.exec(source.slice(openParen + 1, closeParen).trim());
+  return quoted?.[1] ?? '';
+}
+
+function normalizeRoutePath(routePath: string): string {
+  return `/${routePath
+    .split('/')
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .join('/')}`;
+}
+
+function discoverProtectedReadRoutes(config: PulseConfig): string[] {
+  const backendSourceDir = path.join(config.rootDir, 'backend', 'src');
+  const routes: string[] = [];
+  for (const file of listTypeScriptFiles(backendSourceDir)) {
+    const source = fs.readFileSync(file, 'utf8');
+    const controllerBase = parseDecoratorPath(source, 'Controller');
+    if (controllerBase === null || !source.includes('@UseGuards')) {
+      continue;
+    }
+    for (const line of source.split('\n')) {
+      const routePart = parseDecoratorPath(line, 'Get');
+      if (routePart !== null && !routePart.includes(':')) {
+        routes.push(normalizeRoutePath([controllerBase, routePart].filter(Boolean).join('/')));
+      }
+    }
+  }
+  return [...new Set(routes)].sort((left, right) => left.length - right.length);
+}
+
 /** Check e2e registration. */
 export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
@@ -70,6 +198,10 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
   const testCredential = ['Pulse', 'Test', '#2025!'].join('');
   let registeredToken: string | null = null;
   let registeredUserId: string | null = null;
+  const schemaPath = resolveSchemaPath(config);
+  const models = parsePrismaModels(schemaPath ? readFile(schemaPath) : '');
+  const actorModel = discoverRegisteredActorModel(models);
+  const workspaceModel = discoverWorkspaceModel(models, actorModel);
 
   // ── Step 1: POST /auth/register ──────────────────────────────────────────
   try {
@@ -121,10 +253,9 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
 
     // ── Step 3: Verify user record in DB ────────────────────────────────────
     try {
-      const dbRows = await dbQuery(
-        `SELECT id, email, role, "workspaceId", password FROM "Agent" WHERE email = $1 LIMIT 1`,
-        [testEmail],
-      );
+      const dbRows = actorModel
+        ? await dbQuery(buildRegisteredActorReadbackQuery(actorModel), [testEmail])
+        : [];
       if (dbRows.length === 0) {
         breaks.push(
           registrationE2eFinding({
@@ -162,9 +293,9 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
           );
         } else {
           // Verify workspace actually exists
-          const wsRows = await dbQuery(`SELECT id, name FROM "Workspace" WHERE id = $1 LIMIT 1`, [
-            agent.workspaceId,
-          ]);
+          const wsRows = workspaceModel
+            ? await dbQuery(buildWorkspaceReadbackQuery(workspaceModel), [agent.workspaceId])
+            : [];
           if (wsRows.length === 0) {
             breaks.push(
               registrationE2eFinding({
@@ -183,22 +314,11 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
 
     // ── Step 4: Use access_token to call a protected route ──────────────────
     if (registeredToken) {
-      const profileRes = await httpGet('/auth/me', { jwt: registeredToken });
-      // /auth/me may not exist; try /workspace or /kloel/agent/status
-      if (profileRes.status === 404) {
-        // Route may not exist, try /workspace
-        const wsRes = await httpGet('/workspace', { jwt: registeredToken });
-        if (!wsRes.ok && wsRes.status !== 404) {
-          breaks.push(
-            registrationE2eFinding({
-              file: 'backend/src/auth/auth.controller.ts',
-              line: 36,
-              description: 'Registered JWT does not grant access to protected routes',
-              detail: `GET /workspace status: ${wsRes.status}`,
-            }),
-          );
-        }
-      } else if (profileRes.status === 401) {
+      const protectedRoute = discoverProtectedReadRoutes(config)[0];
+      const profileRes = protectedRoute
+        ? await httpGet(protectedRoute, { jwt: registeredToken })
+        : null;
+      if (profileRes?.status === 401) {
         breaks.push(
           registrationE2eFinding({
             file: 'backend/src/auth/auth.service.ts',

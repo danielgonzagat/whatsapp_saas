@@ -67,7 +67,6 @@ const QUEUE_OR_CACHE_RE =
   /\b(?:Queue|Worker|QueueEvents|createClient)\b|\.add\s*\(|\.process\s*\(|\.get\s*\(|\.set\s*\(/;
 const EXTERNAL_HTTP_RE =
   /\b(?:fetch|axios|httpService)\.(?:get|post|put|patch|delete|request)\s*\(|\bfetch\s*\(|\b[A-Za-z_$][\w$]*(?:Client|Provider|Gateway|Api|SDK|Sdk|Http)\.(?:get|post|put|patch|delete|request)\s*\(/;
-const INTERNAL_ROUTE_RE = /@Controller\s*\(|@(Get|Post|Put|Patch|Delete|All)\s*\(/;
 const WEBHOOK_RECEIVER_RE =
   /@(Post|All)\s*\([^)]*(callback|webhook|hook|event)[^)]*\)|signature|rawBody|x-[a-z-]*signature/i;
 
@@ -135,6 +134,37 @@ function slugDependency(value: string): string | null {
     .replace(/^-+|-+$/g, '')
     .toLowerCase();
   return slug.length > 0 ? slug : null;
+}
+
+function getNamedImportsFromModule(content: string, moduleName: string): string[] {
+  const imports: string[] = [];
+  const importRe = /import\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]/g;
+  for (const match of content.matchAll(importRe)) {
+    if (match[2] !== moduleName) {
+      continue;
+    }
+    for (const rawName of match[1].split(',')) {
+      const localName = rawName
+        .split(/\s+as\s+/i)
+        .pop()
+        ?.trim();
+      if (localName) {
+        imports.push(localName);
+      }
+    }
+  }
+  return unique(imports);
+}
+
+function hasDecoratorUse(content: string, decoratorName: string): boolean {
+  return content.includes(`@${decoratorName}(`);
+}
+
+function hasInternalRouteEvidence(content: string): boolean {
+  return getNamedImportsFromModule(content, '@nestjs/common').some(
+    (importedName) =>
+      importedName.toLowerCase().includes('controller') && hasDecoratorUse(content, importedName),
+  );
 }
 
 function dependencyId(source: string, value: string): ChaosProviderName | null {
@@ -400,7 +430,7 @@ export function classifyTargetsFromSource(content: string): Set<ChaosTarget> {
   if (QUEUE_OR_CACHE_RE.test(content)) {
     targets.add('redis');
   }
-  if (INTERNAL_ROUTE_RE.test(content)) {
+  if (hasInternalRouteEvidence(content)) {
     targets.add('internal_api');
   }
   if (EXTERNAL_HTTP_RE.test(content)) {

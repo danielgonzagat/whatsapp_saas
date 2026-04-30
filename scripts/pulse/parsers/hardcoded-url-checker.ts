@@ -2,15 +2,77 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { pathExists, readDir, readTextFile } from '../safe-fs';
-
-// Matches any http/https URL that contains a domain name
-const URL_RE = /https?:\/\/([a-zA-Z0-9.\-]+)/g;
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import {
+  buildPulseSignalGraph,
+  type PulseSignalEvidence,
+  type PulseSignalTruthMode,
+} from '../signal-graph';
 
 type DomainEvidenceSource = 'env' | 'config' | 'runtime_artifact';
 
 interface DomainEvidence {
   domain: string;
   sources: Set<DomainEvidenceSource>;
+}
+
+interface UrlWeakSignal {
+  fullUrl: string;
+  domain: string;
+  index: number;
+}
+
+function severityFromRisk(riskScore: number, fallback: Break['severity']): Break['severity'] {
+  if (riskScore >= 0.9) return 'critical';
+  if (riskScore >= 0.7) return 'high';
+  if (riskScore >= 0.4) return 'medium';
+  return fallback;
+}
+
+function synthesizeUrlDiagnosticBreak(
+  signal: PulseSignalEvidence,
+  fallback: Break['severity'],
+): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const risk = calculateDynamicRisk({ predicateGraph });
+  const diagnostic = synthesizeDiagnostic(signalGraph, predicateGraph, risk);
+
+  return {
+    type: diagnostic.id,
+    severity: severityFromRisk(risk.score, fallback),
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}; signal=${signal.detail ?? signal.summary}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode};proofMode=${diagnostic.proofMode}`,
+  };
+}
+
+function buildUrlBreak(input: {
+  file: string;
+  line: number;
+  summary: string;
+  detail: string;
+  truthMode: PulseSignalTruthMode;
+  fallbackSeverity: Break['severity'];
+}): Break {
+  return synthesizeUrlDiagnosticBreak(
+    {
+      source: 'url-literal-sensor',
+      detector: 'hardcoded-url-checker',
+      truthMode: input.truthMode,
+      summary: input.summary,
+      detail: input.detail,
+      location: {
+        file: input.file,
+        line: input.line,
+      },
+    },
+    input.fallbackSeverity,
+  );
 }
 
 const RUNTIME_ARTIFACT_NAMES = [
@@ -65,12 +127,62 @@ function normalizeDomain(domain: string): string {
 
 function extractDomainsFromText(text: string): string[] {
   const domains = new Set<string>();
-  URL_RE.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = URL_RE.exec(text)) !== null) {
-    domains.add(normalizeDomain(match[1]));
+  for (const signal of extractUrlWeakSignals(text)) {
+    domains.add(normalizeDomain(signal.domain));
   }
   return [...domains];
+}
+
+function isUrlTerminator(char: string | undefined): boolean {
+  return (
+    char === undefined ||
+    char.trim() === '' ||
+    char === '"' ||
+    char === "'" ||
+    char === '`' ||
+    char === ')' ||
+    char === ']'
+  );
+}
+
+function readUrlWeakSignal(text: string, index: number): UrlWeakSignal | null {
+  const lower = text.slice(index, index + 8).toLowerCase();
+  const schemeLength = lower.startsWith('https://') ? 8 : lower.startsWith('http://') ? 7 : 0;
+  if (schemeLength === 0) {
+    return null;
+  }
+
+  let cursor = index + schemeLength;
+  while (!isUrlTerminator(text[cursor])) {
+    cursor++;
+  }
+
+  const fullUrl = text.slice(index, cursor);
+  const domainEndCandidates = ['/', ':', '?', '#']
+    .map((separator) => {
+      const separatorIndex = fullUrl.indexOf(separator, schemeLength);
+      return separatorIndex === -1 ? fullUrl.length : separatorIndex;
+    })
+    .sort((a, b) => a - b);
+  const domain = fullUrl.slice(schemeLength, domainEndCandidates[0] ?? fullUrl.length);
+  if (!domain.includes('.')) {
+    return null;
+  }
+
+  return { fullUrl, domain, index };
+}
+
+function extractUrlWeakSignals(text: string): UrlWeakSignal[] {
+  const signals: UrlWeakSignal[] = [];
+  for (let index = 0; index < text.length; index++) {
+    const signal = readUrlWeakSignal(text, index);
+    if (!signal) {
+      continue;
+    }
+    signals.push(signal);
+    index += signal.fullUrl.length - 1;
+  }
+  return signals;
 }
 
 function addDomainEvidence(
@@ -248,12 +360,9 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
           continue;
         }
 
-        URL_RE.lastIndex = 0;
-        let m: RegExpExecArray | null;
-
-        while ((m = URL_RE.exec(raw)) !== null) {
-          const fullUrl = m[0];
-          const domain = m[1];
+        for (const signal of extractUrlWeakSignals(raw)) {
+          const fullUrl = signal.fullUrl;
+          const domain = signal.domain;
           const prevLines = lines.slice(Math.max(0, i - 8), i).join('\n');
 
           if (
@@ -269,19 +378,18 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
             ? [...observedEvidence.sources].sort().join(',')
             : 'unconfirmed';
 
-          breaks.push({
-            type: observedEvidence ? 'HARDCODED_CONFIRMED_URL' : 'HARDCODED_URL_WEAK_EVIDENCE',
-            severity: 'low',
-            file: relFile,
-            line: i + 1,
-            description: observedEvidence
-              ? `Hardcoded URL also appears in discovered runtime/config evidence: ${fullUrl}`
-              : `Hardcoded URL regex match needs runtime/config confirmation: ${fullUrl}`,
-            detail: `Evidence source: ${evidenceSummary}. Line: ${trimmed.slice(0, 120)}`,
-            source: observedEvidence
-              ? 'regex-confirmed-signal:hardcoded-url-checker'
-              : 'regex-weak-signal:hardcoded-url-checker:needs_probe',
-          });
+          breaks.push(
+            buildUrlBreak({
+              file: relFile,
+              line: i + 1,
+              truthMode: observedEvidence ? 'confirmed_static' : 'weak_signal',
+              fallbackSeverity: 'low',
+              summary: observedEvidence
+                ? `URL literal ${fullUrl} is corroborated by discovered runtime or config domain evidence`
+                : `URL literal ${fullUrl} was seen by the structural URL scanner and needs runtime or config confirmation`,
+              detail: `Evidence source: ${evidenceSummary}. Line: ${trimmed.slice(0, 120)}`,
+            }),
+          );
         }
       }
     }

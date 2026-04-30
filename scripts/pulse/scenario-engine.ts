@@ -11,6 +11,12 @@
 
 import * as path from 'path';
 import { safeJoin } from './lib/safe-path';
+import {
+  extractRouteFromSurfaceId,
+  isObservedHttpEntrypointMethod,
+  isObservedMutatingMethod,
+  toPlaywrightHttpMethod,
+} from './dynamic-reality-grammar';
 import { pathExists, readJsonFile, writeTextFile } from './safe-fs';
 import type {
   PulseProductCapability,
@@ -149,19 +155,35 @@ function loadAllArtifacts(rootDir: string): LoadedArtifacts {
 
 function tokenizeSurface(surface: PulseProductSurface): string[] {
   const raw = [surface.id, surface.name, ...surface.artifactIds, ...surface.capabilities].join(' ');
-  return [
-    ...new Set(
-      raw
-        .toLowerCase()
-        .split(/[^a-z0-9]+/g)
-        .filter((token) => token.length > 2 && !isSurfaceHintNoiseToken(token)),
-    ),
-  ];
+  return [...new Set(tokenizeScenarioText(raw).filter((token) => !isSurfaceHintNoiseToken(token)))];
 }
 
 function isSurfaceHintNoiseToken(token: string): boolean {
-  return /^(api|app|backend|component|components|controller|controllers|frontend|lib|page|pages|route|routes|service|services|src|tsx?|jsx?|get|post|put|patch|delete)$/.test(
-    token,
+  return (
+    token.length <= 2 ||
+    [
+      'api',
+      'app',
+      'backend',
+      'component',
+      'components',
+      'controller',
+      'controllers',
+      'frontend',
+      'lib',
+      'page',
+      'pages',
+      'route',
+      'routes',
+      'service',
+      'services',
+      'src',
+      'ts',
+      'tsx',
+      'js',
+      'jsx',
+    ].includes(token) ||
+    isObservedHttpEntrypointMethod(token)
   );
 }
 
@@ -181,13 +203,13 @@ function getEndpointsForSurface(
     (n) =>
       n.kind === 'api_endpoint' &&
       nodeMatchesSurface(n, surface) &&
-      n.decorators.some((d) => ['Get', 'Post', 'Put', 'Patch', 'Delete'].includes(d)),
+      n.decorators.some(isObservedHttpEntrypointMethod),
   );
 }
 
 function getHttpDecorator(node: BehaviorNode): string {
   for (const d of node.decorators) {
-    if (['Get', 'Post', 'Put', 'Patch', 'Delete'].includes(d)) {
+    if (isObservedHttpEntrypointMethod(d)) {
       return d.toUpperCase();
     }
   }
@@ -195,9 +217,12 @@ function getHttpDecorator(node: BehaviorNode): string {
 }
 
 function extractRoutePattern(node: BehaviorNode): string {
-  const match = node.filePath.match(/backend\/src\/(.+?)\/(.+?)\.controller\.ts/);
-  if (match) {
-    const segment = match[1];
+  const segments = node.filePath.split('/').filter(Boolean);
+  const backendIndex = segments.indexOf('backend');
+  const srcIndex = segments.indexOf('src');
+  const controllerIndex = segments.findIndex((segment) => segment.endsWith('.controller.ts'));
+  if (backendIndex >= 0 && srcIndex === backendIndex + 1 && controllerIndex > srcIndex + 1) {
+    const segment = segments[srcIndex + 1];
     return `/api/${segment}`;
   }
   return '/api/';
@@ -404,11 +429,7 @@ function generatePlaywrightSpec(scenario: {
 
 function getHttpMethodForStep(step: ScenarioStep): string {
   const method = step.target.trim().split(/\s+/)[0]?.toUpperCase();
-  if (method === 'POST') return 'post';
-  if (method === 'PUT') return 'put';
-  if (method === 'PATCH') return 'patch';
-  if (method === 'DELETE') return 'delete';
-  return 'get';
+  return toPlaywrightHttpMethod(method);
 }
 
 function getApiPathForStep(step: ScenarioStep): string {
@@ -557,22 +578,43 @@ function collectScenarioTokens(
 
   return {
     text: raw,
-    tokens: new Set(raw.split(/[^a-z0-9]+/g).filter((token) => token.length > 1)),
+    tokens: new Set(tokenizeScenarioText(raw).filter((token) => token.length > 1)),
   };
 }
 
-function hasScenarioSignal(text: string, pattern: RegExp): boolean {
-  return pattern.test(text);
+function tokenizeScenarioText(value: string): string[] {
+  const tokens: string[] = [];
+  let current = '';
+  for (const char of value.toLowerCase()) {
+    const isDigit = char >= '0' && char <= '9';
+    const isLetter = char >= 'a' && char <= 'z';
+    if (isDigit || isLetter) {
+      current += char;
+      continue;
+    }
+    if (current) {
+      tokens.push(current);
+      current = '';
+    }
+  }
+  if (current) {
+    tokens.push(current);
+  }
+  return tokens;
+}
+
+function hasAnyScenarioToken(tokens: Set<string>, values: string[]): boolean {
+  return values.some((value) => tokens.has(value));
 }
 
 function buildDynamicScenarioPlan(
   ctx: ScenarioBuildContext,
   subFlowId: string,
 ): DynamicScenarioPlan {
-  const { text, tokens } = collectScenarioTokens(ctx, subFlowId);
+  const { tokens } = collectScenarioTokens(ctx, subFlowId);
   const hasMutation = ctx.endpoints.some(
     (endpoint) =>
-      ['POST', 'PUT', 'PATCH', 'DELETE'].includes(getHttpDecorator(endpoint)) ||
+      isObservedMutatingMethod(getHttpDecorator(endpoint)) ||
       endpoint.outputs.some((output) => output.kind === 'db_write') ||
       endpoint.stateAccess.some((access) => access.operation !== 'read'),
   );
@@ -584,28 +626,57 @@ function buildDynamicScenarioPlan(
   const needsRequestContext = ctx.endpoints.some((endpoint) =>
     endpoint.inputs.some((input) => input.kind === 'context' || input.kind === 'headers'),
   );
-  const isAuthEntry = hasScenarioSignal(
-    text,
-    /\b(auth|login|sign(?:up|in)|register|oauth|token|session|password)\b/,
-  );
+  const isAuthEntry = hasAnyScenarioToken(tokens, [
+    'auth',
+    'login',
+    'signup',
+    'signin',
+    'register',
+    'oauth',
+    'token',
+    'session',
+    'password',
+  ]);
   const isFinancial =
     ctx.primaryEntity?.financial === true ||
-    hasScenarioSignal(
-      text,
-      /\b(amount|price|balance|currency|ledger|wallet|checkout|payment|payout|refund|subscription|order|invoice)\b/,
-    );
-  const isMessaging = hasScenarioSignal(
-    text,
-    /\b(whatsapp|message|inbox|webhook|qr|session|provider|phone)\b/,
-  );
+    hasAnyScenarioToken(tokens, [
+      'amount',
+      'price',
+      'balance',
+      'currency',
+      'ledger',
+      'wallet',
+      'checkout',
+      'payment',
+      'payout',
+      'refund',
+      'subscription',
+      'order',
+      'invoice',
+    ]);
+  const isMessaging = hasAnyScenarioToken(tokens, [
+    'whatsapp',
+    'message',
+    'inbox',
+    'webhook',
+    'qr',
+    'session',
+    'provider',
+    'phone',
+  ]);
   const isWorkspaceMutation =
-    hasScenarioSignal(text, /\b(workspace|tenant|member|invite|settings|account)\b/) && hasMutation;
+    hasAnyScenarioToken(tokens, [
+      'workspace',
+      'tenant',
+      'member',
+      'invite',
+      'settings',
+      'account',
+    ]) && hasMutation;
   const isProductMutation =
-    hasScenarioSignal(text, /\b(product|catalog|sku|item|offer|checkout)\b/) && hasMutation;
-  const isConnectionFlow = hasScenarioSignal(
-    text,
-    /\b(connect|disconnect|resume|verify|authorize|oauth|provider)\b/,
-  );
+    hasAnyScenarioToken(tokens, ['product', 'catalog', 'sku', 'item', 'offer', 'checkout']) &&
+    hasMutation;
+  const isConnectionFlow = hasExternalAsync && (hasMutation || needsRequestContext);
 
   return {
     needsLogin:
@@ -630,16 +701,55 @@ function buildDynamicScenarioPlan(
 
 function normalizeSelectorToken(inputName: string, fallbackIndex: number): string {
   const trimmed = inputName.trim();
-  if (/^[A-Za-z][A-Za-z0-9_.:-]{0,80}$/.test(trimmed)) {
+  if (isStableSelectorToken(trimmed)) {
     return trimmed;
   }
-  const normalized = trimmed
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 48);
+  const normalized = normalizeSelectorCharacters(trimmed).slice(0, 48);
   return normalized || `pulse-field-${fallbackIndex}`;
+}
+
+function isStableSelectorToken(value: string): boolean {
+  if (value.length === 0 || value.length > 80 || !isAsciiLetter(value[0])) {
+    return false;
+  }
+  return value
+    .split('')
+    .every(
+      (char) =>
+        isAsciiLetter(char) ||
+        (char >= '0' && char <= '9') ||
+        char === '_' ||
+        char === '.' ||
+        char === ':' ||
+        char === '-',
+    );
+}
+
+function normalizeSelectorCharacters(value: string): string {
+  const output: string[] = [];
+  for (const char of value) {
+    const isLetter = isAsciiLetter(char);
+    const isDigit = char >= '0' && char <= '9';
+    if (isLetter || isDigit || char === '_' || char === '-') {
+      output.push(char.toLowerCase());
+      continue;
+    }
+    if (output.length > 0 && output[output.length - 1] !== '-') {
+      output.push('-');
+    }
+  }
+  while (output[0] === '-') {
+    output.shift();
+  }
+  while (output[output.length - 1] === '-') {
+    output.pop();
+  }
+  return output.join('');
+}
+
+function isAsciiLetter(char: string): boolean {
+  const lower = char.toLowerCase();
+  return lower >= 'a' && lower <= 'z';
 }
 
 function buildInputSelector(inputName: string, fallbackIndex: number): string {
@@ -658,9 +768,7 @@ function generateStepsForSubFlow(
   let order = 0;
   const plan = buildDynamicScenarioPlan(ctx, subFlowId);
 
-  const routeFromSurface = primarySurfaceId.startsWith('/')
-    ? primarySurfaceId
-    : `/${primarySurfaceId.replace(/^surface[:-]?/, '').replace(/[^a-z0-9/_-]+/gi, '-')}`;
+  const routeFromSurface = extractRouteFromSurfaceId(primarySurfaceId);
   const routeFromEndpoint =
     endpoints.length > 0 ? extractRoutePattern(endpoints[0]) : routeFromSurface;
   const needsContext = endpoints.some((endpoint) =>

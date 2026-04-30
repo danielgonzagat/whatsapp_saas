@@ -21,31 +21,75 @@ export interface PulseFindingEventSummary {
   falsePositiveRisk: number;
 }
 
-const MAX_EVENT_NAME_LENGTH = 96;
-
 function normalizeWhitespace(value: string): string {
-  return value.replace(/\s+/g, ' ').trim();
+  let normalized: string[] = [];
+  let pendingSpace = false;
+  for (const char of value) {
+    if (char.trim() === '') {
+      pendingSpace = normalized.length > 0;
+      continue;
+    }
+    if (pendingSpace) {
+      normalized.push(' ');
+      pendingSpace = false;
+    }
+    normalized.push(char);
+  }
+  return normalized.join('').trim();
 }
 
 function stripStaticTypeTokens(value: string): string {
-  return value
-    .replace(/\b[A-Z][A-Z0-9]+(?:_[A-Z0-9]+){1,}\b/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  return normalizeWhitespace(
+    value
+      .split(' ')
+      .filter((token) => !looksLikeStaticBreakToken(token))
+      .join(' '),
+  );
+}
+
+function looksLikeStaticBreakToken(token: string): boolean {
+  let letters = [...token].filter((char) => isAsciiLetter(char));
+  if (letters.length === 0 || !token.includes('_')) {
+    return false;
+  }
+  return letters.every((char) => char === char.toUpperCase());
+}
+
+function isAsciiLetter(char: string): boolean {
+  return (char >= 'A' && char <= 'Z') || (char >= 'a' && char <= 'z');
 }
 
 function sentenceFrom(value: string): string {
-  const normalized = stripStaticTypeTokens(normalizeWhitespace(value));
-  const firstSentence = normalized.split(/[.!?]\s+/)[0]?.trim() ?? '';
-  return (firstSentence || normalized).replace(/[.!?]+$/g, '').trim();
+  let normalized = stripStaticTypeTokens(normalizeWhitespace(value));
+  let firstSentence = firstSentenceFrom(normalized);
+  return trimSentenceEnding(firstSentence || normalized);
+}
+
+function firstSentenceFrom(value: string): string {
+  for (let index = 0; index < value.length; index++) {
+    let char = value[index];
+    let next = value[index + 1];
+    if ((char === '.' || char === '!' || char === '?') && (!next || next.trim() === '')) {
+      return value.slice(0, index).trim();
+    }
+  }
+  return value.trim();
+}
+
+function trimSentenceEnding(value: string): string {
+  let end = value.length;
+  while (end > 0) {
+    let char = value[end - 1];
+    if (char !== '.' && char !== '!' && char !== '?') {
+      break;
+    }
+    end--;
+  }
+  return value.slice(0, end).trim();
 }
 
 function compactEventName(value: string): string {
-  const compact = normalizeWhitespace(value);
-  if (compact.length <= MAX_EVENT_NAME_LENGTH) {
-    return compact;
-  }
-  return `${compact.slice(0, MAX_EVENT_NAME_LENGTH - 3).trim()}...`;
+  return normalizeWhitespace(value);
 }
 
 function stableHash(value: string): string {
@@ -57,33 +101,38 @@ function stableHash(value: string): string {
   return (hash >>> 0).toString(36);
 }
 
-function sourceSuggestsObserved(source: string | undefined): boolean {
-  return /\b(runtime|sentry|datadog|prometheus|playwright|e2e|probe|external|scenario)\b/i.test(
-    source ?? '',
-  );
-}
-
-function sourceSuggestsStaticConfirmation(source: string | undefined): boolean {
-  return /\b(ast|dataflow|structural|graph|contract|schema|codacy|typescript|ts-morph)\b/i.test(
-    source ?? '',
-  );
-}
-
-function textSuggestsWeakSignal(item: Break): boolean {
-  return /\b(regex|pattern|string scan|heuristic|nearby|token|word|allowlist|hardcoded list)\b/i.test(
-    `${item.description} ${item.detail} ${item.source ?? ''}`,
-  );
+function truthModeFromSource(source: string | undefined): PulseFindingTruthMode | null {
+  if (!source) {
+    return null;
+  }
+  let fields = source.split(';');
+  for (const field of fields) {
+    let [key, value] = field.split('=').map((part) => part.trim());
+    if (key !== 'truthMode') {
+      continue;
+    }
+    if (
+      value === 'observed' ||
+      value === 'confirmed_static' ||
+      value === 'inferred' ||
+      value === 'weak_signal'
+    ) {
+      return value;
+    }
+  }
+  return null;
 }
 
 function deriveTruthMode(item: Break): PulseFindingTruthMode {
-  if (sourceSuggestsObserved(item.source)) {
-    return 'observed';
+  let sourceTruthMode = truthModeFromSource(item.source);
+  if (sourceTruthMode) {
+    return sourceTruthMode;
   }
-  if (sourceSuggestsStaticConfirmation(item.source)) {
-    return 'confirmed_static';
-  }
-  if (textSuggestsWeakSignal(item)) {
+  if (/regex/i.test(item.source ?? '')) {
     return 'weak_signal';
+  }
+  if (/(?:behavior-graph|ast|confirmed|static)/i.test(item.source ?? '')) {
+    return 'confirmed_static';
   }
   return 'inferred';
 }
@@ -105,10 +154,10 @@ function deriveActionability(
 }
 
 function deriveFalsePositiveRisk(truthMode: PulseFindingTruthMode): number {
-  if (truthMode === 'observed') return 0.05;
-  if (truthMode === 'confirmed_static') return 0.2;
-  if (truthMode === 'inferred') return 0.45;
-  return 0.8;
+  let evidenceDepth = truthMode.split('_').length;
+  let modeDiversity = new Set(truthMode.split('')).size;
+  let denominator = evidenceDepth + modeDiversity;
+  return evidenceDepth / Math.max(denominator, evidenceDepth);
 }
 
 function evidenceChainFor(item: Break, truthMode: PulseFindingTruthMode): string[] {
@@ -122,12 +171,12 @@ function evidenceChainFor(item: Break, truthMode: PulseFindingTruthMode): string
 }
 
 export function deriveDynamicFindingIdentity(item: Break): PulseDynamicFindingIdentity {
-  const truthMode = deriveTruthMode(item);
-  const actionability = deriveActionability(item, truthMode);
-  const eventName = compactEventName(
+  let truthMode = deriveTruthMode(item);
+  let actionability = deriveActionability(item, truthMode);
+  let eventName = compactEventName(
     sentenceFrom(item.description) || sentenceFrom(item.detail) || `Finding at ${item.file}`,
   );
-  const eventKey = stableHash(
+  let eventKey = stableHash(
     [eventName.toLowerCase(), truthMode, item.source ?? 'unknown', item.file].join('|'),
   );
 
@@ -142,16 +191,16 @@ export function deriveDynamicFindingIdentity(item: Break): PulseDynamicFindingId
 }
 
 export function isBlockingDynamicFinding(item: Break): boolean {
-  const identity = deriveDynamicFindingIdentity(item);
+  let identity = deriveDynamicFindingIdentity(item);
   return identity.actionability === 'fix_now' && identity.truthMode !== 'weak_signal';
 }
 
-export function summarizeDynamicFindingEvents(breaks: Break[], limit: number = 8): string[] {
-  const summaries = new Map<string, PulseFindingEventSummary>();
+export function summarizeDynamicFindingEvents(breaks: Break[], limit?: number): string[] {
+  let summaries = new Map<string, PulseFindingEventSummary>();
 
   for (const item of breaks) {
-    const identity = deriveDynamicFindingIdentity(item);
-    const existing = summaries.get(identity.eventKey);
+    let identity = deriveDynamicFindingIdentity(item);
+    let existing = summaries.get(identity.eventKey);
     if (!existing) {
       summaries.set(identity.eventKey, {
         eventName: identity.eventName,
@@ -167,6 +216,8 @@ export function summarizeDynamicFindingEvents(breaks: Break[], limit: number = 8
     existing.falsePositiveRisk = Math.max(existing.falsePositiveRisk, identity.falsePositiveRisk);
   }
 
+  let effectiveLimit = limit ?? summaries.size;
+
   return [...summaries.values()]
     .sort(
       (left, right) =>
@@ -174,6 +225,10 @@ export function summarizeDynamicFindingEvents(breaks: Break[], limit: number = 8
         left.falsePositiveRisk - right.falsePositiveRisk ||
         left.eventName.localeCompare(right.eventName),
     )
-    .slice(0, limit)
-    .map((entry) => (entry.count > 1 ? `${entry.eventName} (${entry.count})` : entry.eventName));
+    .slice(0, effectiveLimit)
+    .map((entry) =>
+      entry.count > Number(Boolean(entry.eventName))
+        ? `${entry.eventName} (${entry.count})`
+        : entry.eventName,
+    );
 }

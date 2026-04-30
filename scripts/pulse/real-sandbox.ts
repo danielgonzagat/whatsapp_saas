@@ -136,9 +136,6 @@ const DEFAULT_PROTECTED_BOUNDARY: RealSandboxProtectedBoundary = {
 };
 
 const GOVERNANCE_BOUNDARY_PATH = 'ops/protected-governance-files.json';
-const SECRET_PATH_RE = /(^|\/)\.env(?:[./-]|$)/i;
-const MIGRATION_PATH_RE = /(^|\/)(?:backend\/prisma|prisma)\/migrations(?:\/|$)/i;
-const PRISMA_SCHEMA_RE = /(^|\/)(?:backend\/prisma|prisma)\/schema\.prisma$/i;
 const APPROVED_COMMAND_RE =
   /^(?:(?:npm|pnpm|yarn)\s+(?:run\s+)?(?:lint|typecheck|test|build|check(?::[\w-]+)?|pulse(?::[\w-]+)?)\b|npx\s+vitest\s+run\b|node\s+scripts\/pulse\/run\.js\b|git\s+(?:status|diff|show|log|branch)\b)/;
 const VALIDATION_COMMAND_RE =
@@ -174,6 +171,63 @@ function unique(values: readonly string[]): string[] {
 function normalizePrefix(prefix: string): string {
   const normalized = normalizeRelPath(prefix);
   return normalized.endsWith('/') ? normalized : `${normalized}/`;
+}
+
+function pathSegments(relPath: string): string[] {
+  return normalizeRelPath(relPath)
+    .split('/')
+    .flatMap((segment) => segment.split(/[.\-_]/))
+    .map((segment) => segment.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function hasSecretPathEvidence(rootDir: string, relPath: string): boolean {
+  const absolutePath = path.join(resolveRoot(rootDir), relPath);
+  const basename = path.basename(relPath).toLowerCase();
+  if (basename.startsWith('.env')) {
+    return true;
+  }
+
+  if (!pathExists(absolutePath) || !fs.statSync(absolutePath).isFile()) {
+    return false;
+  }
+
+  const sample = fs.readFileSync(absolutePath, 'utf8').slice(0, 4096);
+  const assignmentLines = sample
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.includes('=') && !line.startsWith('#'));
+  if (assignmentLines.length === 0) {
+    return false;
+  }
+  const secretLikeLines = assignmentLines.filter((line) =>
+    pathSegments(line.split('=')[0] ?? '').some((token) => {
+      const sensitiveEvidenceTerms = ['secret', 'token', 'key', 'password', 'credential'];
+      return sensitiveEvidenceTerms.includes(token);
+    }),
+  );
+  return secretLikeLines.length > 0;
+}
+
+function hasMigrationArtifactEvidence(rootDir: string, relPath: string): boolean {
+  const segments = pathSegments(relPath);
+  if (segments.includes('migrations') || path.basename(relPath) === 'schema.prisma') {
+    return (
+      segments.includes('prisma') ||
+      segments.includes('migration') ||
+      segments.includes('migrations')
+    );
+  }
+
+  const absolutePath = path.join(resolveRoot(rootDir), relPath);
+  if (!pathExists(absolutePath) || !fs.statSync(absolutePath).isFile()) {
+    return false;
+  }
+
+  const sample = fs.readFileSync(absolutePath, 'utf8').slice(0, 4096).toLowerCase();
+  return (
+    sample.includes('create table') || sample.includes('alter table') || sample.includes('model ')
+  );
 }
 
 function normalizeCommand(command: string): string {
@@ -252,14 +306,14 @@ function classifyPath(
       reason: 'Path is protected by governance boundary.',
     });
   }
-  if (SECRET_PATH_RE.test(target)) {
+  if (hasSecretPathEvidence(rootDir, target)) {
     blockedReasons.push({
       code: 'secret_path',
       target,
       reason: 'Environment files are blocked from sandbox proof execution.',
     });
   }
-  if (MIGRATION_PATH_RE.test(target) || PRISMA_SCHEMA_RE.test(target)) {
+  if (hasMigrationArtifactEvidence(rootDir, target)) {
     blockedReasons.push({
       code: 'migration_path',
       target,

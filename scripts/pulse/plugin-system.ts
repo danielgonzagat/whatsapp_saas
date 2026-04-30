@@ -3,6 +3,7 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
+import ts from 'typescript';
 
 import { ensureDir, pathExists, statPath, writeTextFile } from './safe-fs';
 import type { PluginKind, PluginRegistry, PulsePlugin } from './types.plugin-system';
@@ -10,15 +11,7 @@ import type { PluginKind, PluginRegistry, PulsePlugin } from './types.plugin-sys
 const ARTIFACT_FILE_NAME = 'PULSE_PLUGIN_REGISTRY.json';
 const PLUGINS_DIR_NAME = 'plugins';
 const DOMAIN_PACK_PREFIX = 'domain-pack-';
-const PLUGIN_KIND_PROPERTY_RE = /\bkind\s*:\s*['"]([^'"]+)['"]/;
-const KNOWN_PLUGIN_KINDS: readonly PluginKind[] = [
-  'parser',
-  'adapter',
-  'evidence_provider',
-  'gate_provider',
-  'executor',
-  'domain_pack',
-];
+const pluginKindSchemaCache = new Map<string, Set<string>>();
 
 interface PluginDescriptor {
   id: string;
@@ -40,8 +33,49 @@ type PluginRegistryEntry = PluginRegistry['plugins'][number] & {
   execution: PluginExecutionProbe[];
 };
 
-function isPluginKind(value: string): value is PluginKind {
-  return KNOWN_PLUGIN_KINDS.some((kind) => kind === value);
+function findPulseDir(startDir: string): string {
+  let current = startDir;
+  while (current !== path.dirname(current)) {
+    const candidate = path.join(current, 'types.plugin-system.ts');
+    if (pathExists(candidate)) {
+      return current;
+    }
+    current = path.dirname(current);
+  }
+  return startDir;
+}
+
+function pluginKindSchema(pulseDir: string): Set<string> {
+  const cached = pluginKindSchemaCache.get(pulseDir);
+  if (cached) {
+    return cached;
+  }
+
+  const schema = new Set<string>();
+  const sourcePath = path.join(pulseDir, 'types.plugin-system.ts');
+  try {
+    const source = fs.readFileSync(sourcePath, 'utf8');
+    const sourceFile = ts.createSourceFile(sourcePath, source, ts.ScriptTarget.Latest, true);
+    sourceFile.forEachChild((node) => {
+      if (!ts.isTypeAliasDeclaration(node) || node.name.text !== 'PluginKind') {
+        return;
+      }
+      const typeNodes = ts.isUnionTypeNode(node.type) ? node.type.types : [node.type];
+      for (const typeNode of typeNodes) {
+        if (ts.isLiteralTypeNode(typeNode) && ts.isStringLiteral(typeNode.literal)) {
+          schema.add(typeNode.literal.text);
+        }
+      }
+    });
+  } catch {
+    // Missing schema keeps the registry fail-closed at the individual plugin.
+  }
+  pluginKindSchemaCache.set(pulseDir, schema);
+  return schema;
+}
+
+function asPluginKind(value: string, pulseDir: string): PluginKind | null {
+  return pluginKindSchema(pulseDir).has(value) ? (value as PluginKind) : null;
 }
 
 function readDeclaredPluginKind(pluginDir: string): PluginKind | null {
@@ -52,8 +86,22 @@ function readDeclaredPluginKind(pluginDir: string): PluginKind | null {
 
   try {
     const source = fs.readFileSync(indexPath, 'utf8');
-    const declaredKind = source.match(PLUGIN_KIND_PROPERTY_RE)?.[1];
-    return declaredKind && isPluginKind(declaredKind) ? declaredKind : null;
+    const sourceFile = ts.createSourceFile(indexPath, source, ts.ScriptTarget.Latest, true);
+    let declaredKind: string | null = null;
+    const visit = (node: ts.Node): void => {
+      if (
+        ts.isPropertyAssignment(node) &&
+        ts.isIdentifier(node.name) &&
+        node.name.text === 'kind' &&
+        ts.isStringLiteralLike(node.initializer)
+      ) {
+        declaredKind = node.initializer.text;
+        return;
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(sourceFile);
+    return declaredKind ? asPluginKind(declaredKind, findPulseDir(pluginDir)) : null;
   } catch {
     return null;
   }
@@ -121,14 +169,38 @@ export function discoverPlugins(rootDir: string): PluginDescriptor[] {
  * @param _pluginDir - Plugin directory path (reserved for future use)
  * @returns Inferred plugin kind
  */
-function inferPluginKind(dirName: string, _pluginDir: string): PluginKind {
-  if (dirName.startsWith('parser-')) return 'parser';
-  if (dirName.startsWith('adapter-')) return 'adapter';
-  if (dirName.startsWith('evidence-')) return 'evidence_provider';
-  if (dirName.startsWith('gate-')) return 'gate_provider';
-  if (dirName.startsWith('executor-')) return 'executor';
-  if (dirName.startsWith('domain-pack-')) return 'domain_pack';
-  return 'parser';
+function inferPluginKind(dirName: string, pluginDir: string): PluginKind {
+  const pulseDir = findPulseDir(pluginDir);
+  const normalizedName = dirName
+    .toLowerCase()
+    .split('')
+    .map((char) => (char === '_' || char === ':' ? '-' : char))
+    .join('');
+  const kinds = [...pluginKindSchema(pulseDir)];
+  for (const kind of kinds) {
+    const kindTokens = kind
+      .toLowerCase()
+      .split('')
+      .map((char) => (char === '_' || char === '-' ? ' ' : char))
+      .join('')
+      .split(' ')
+      .filter(Boolean);
+    const normalizedKind = kind.split('_').join('-');
+    if (
+      normalizedName.startsWith(`${normalizedKind}-`) ||
+      kindTokens.every((token) => normalizedName.includes(token))
+    ) {
+      const pluginKind = asPluginKind(kind, pulseDir);
+      if (pluginKind) {
+        return pluginKind;
+      }
+    }
+  }
+  const fallback = asPluginKind(kinds[0] ?? '', pulseDir);
+  if (!fallback) {
+    throw new Error(`Plugin kind schema could not be discovered from ${pulseDir}`);
+  }
+  return fallback;
 }
 
 /**

@@ -89,7 +89,7 @@ describe('FlowsService', () => {
       expect.objectContaining({ workspaceId: 'ws-1', action: 'UPDATE_FLOW' }),
     );
     expect(mockPrisma.flow.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'flow-1' } }),
+      expect.objectContaining({ where: { id: 'flow-1', workspaceId: 'ws-1' } }),
     );
     expect(result).toEqual({ id: 'flow-1' });
   });

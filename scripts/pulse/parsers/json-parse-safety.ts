@@ -2,6 +2,60 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
+
+function severityFromRisk(riskScore: number, fallback: Break['severity']): Break['severity'] {
+  if (riskScore >= 0.9) return 'critical';
+  if (riskScore >= 0.7) return 'high';
+  if (riskScore >= 0.4) return 'medium';
+  return fallback;
+}
+
+function synthesizeJsonDiagnosticBreak(
+  signal: PulseSignalEvidence,
+  fallback: Break['severity'],
+): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const risk = calculateDynamicRisk({ predicateGraph });
+  const diagnostic = synthesizeDiagnostic(signalGraph, predicateGraph, risk);
+
+  return {
+    type: diagnostic.id,
+    severity: severityFromRisk(risk.score, fallback),
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}; signal=${signal.detail ?? signal.summary}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode};proofMode=${diagnostic.proofMode}`,
+  };
+}
+
+function buildJsonSafetyBreak(input: {
+  file: string;
+  line: number;
+  summary: string;
+  detail: string;
+  fallbackSeverity: Break['severity'];
+}): Break {
+  return synthesizeJsonDiagnosticBreak(
+    {
+      source: 'json-api-weak-sensor',
+      detector: 'json-parse-safety',
+      truthMode: 'weak_signal',
+      summary: input.summary,
+      detail: input.detail,
+      location: {
+        file: input.file,
+        line: input.line,
+      },
+    },
+    input.fallbackSeverity,
+  );
+}
 
 /**
  * Build a Set of 0-based line indices that are inside a try block.
@@ -192,14 +246,15 @@ export function checkJsonParseSafety(config: PulseConfig): Break[] {
           }
 
           if (!tryLineSet.has(i) && !hasRecentTryGuard(lines, i)) {
-            breaks.push({
-              type: 'JSON_PARSE_UNSAFE',
-              severity: 'high',
-              file: relFile,
-              line: i + 1,
-              description: 'JSON.parse() outside try/catch — throws SyntaxError on invalid input',
-              detail: trimmed.slice(0, 120),
-            });
+            breaks.push(
+              buildJsonSafetyBreak({
+                file: relFile,
+                line: i + 1,
+                fallbackSeverity: 'high',
+                summary: 'JSON.parse call lacks nearby try/catch evidence',
+                detail: `${trimmed.slice(0, 120)}; syntax sensor needs control-flow confirmation before blocking.`,
+              }),
+            );
           }
         }
 
@@ -214,14 +269,16 @@ export function checkJsonParseSafety(config: PulseConfig): Break[] {
             continue;
           }
 
-          breaks.push({
-            type: 'STRINGIFY_CIRCULAR_RISK',
-            severity: 'low',
-            file: relFile,
-            line: i + 1,
-            description: 'JSON.stringify() on request/socket object — circular reference risk',
-            detail: trimmed.slice(0, 120),
-          });
+          breaks.push(
+            buildJsonSafetyBreak({
+              file: relFile,
+              line: i + 1,
+              fallbackSeverity: 'low',
+              summary:
+                'JSON.stringify call targets request-like object that may contain circular references',
+              detail: `${trimmed.slice(0, 120)}; syntax sensor needs runtime shape confirmation before blocking.`,
+            }),
+          );
         }
       }
     }

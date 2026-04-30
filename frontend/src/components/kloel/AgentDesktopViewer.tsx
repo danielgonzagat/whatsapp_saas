@@ -1,9 +1,5 @@
 'use client';
 
-// PULSE_VISUAL_OK: Tailwind bracket hex values (#0B0F14, #7E8794, #F7F7F5,
-// #C9CDD4) are custom Agent Desktop integration surface tones without exact
-// Monitor design token equivalents.
-
 import { kloelT, kloelError } from '@/lib/i18n/t';
 import { ensureAnonymousSession } from '@/lib/anonymous-session';
 import {
@@ -170,13 +166,13 @@ export function AgentDesktopViewer({
   const activityEntries = useMemo(() => traceEntries.slice(-4).reverse(), [traceEntries]);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-[28px] border border-white/10 bg-[#0B0F14] shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
+    <div className="relative w-full overflow-hidden rounded-[28px] border border-white/10 bg-[colors.background.void] shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
       <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.28em] text-[#7E8794]">
+          <p className="text-xs uppercase tracking-[0.28em] text-[colors.text.dim]">
             {kloelT(`Meta Cloud`)}
           </p>
-          <h2 className="mt-1 text-lg font-semibold text-[#F7F7F5]">
+          <h2 className="mt-1 text-lg font-semibold text-[colors.text.silver]">
             {kloelT(`Painel oficial de conexao`)}
           </h2>
         </div>
@@ -184,7 +180,7 @@ export function AgentDesktopViewer({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-[#C9CDD4] transition hover:border-white/20 hover:text-white"
+          className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-[colors.text.muted] transition hover:border-white/20 hover:text-white"
         >
           {kloelT(`Fechar`)}
         </button>
@@ -203,37 +199,41 @@ export function AgentDesktopViewer({
             {status?.connected ? 'WhatsApp conectado' : 'Conexao oficial pendente'}
           </div>
 
-          <p className="mt-4 text-sm leading-6 text-[#C9CDD4]">
+          <p className="mt-4 text-sm leading-6 text-[colors.text.muted]">
             {kloelT(`O runtime de QR e browser foi removido. Esta area agora opera apenas com a API oficial
             da Meta para WhatsApp, Instagram e outros canais Meta.`)}
           </p>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[colors.text.dim]">
                 {kloelT(`Numero`)}
               </p>
-              <p className="mt-2 text-sm text-[#F7F7F5]">{status?.phone || 'Nao conectado'}</p>
+              <p className="mt-2 text-sm text-[colors.text.silver]">
+                {status?.phone || 'Nao conectado'}
+              </p>
             </div>
             <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[colors.text.dim]">
                 {kloelT(`Phone Number ID`)}
               </p>
-              <p className="mt-2 break-all text-sm text-[#F7F7F5]">
+              <p className="mt-2 break-all text-sm text-[colors.text.silver]">
                 {status?.phoneNumberId || 'Nao resolvido'}
               </p>
             </div>
             <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">WABA</p>
-              <p className="mt-2 break-all text-sm text-[#F7F7F5]">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[colors.text.dim]">WABA</p>
+              <p className="mt-2 break-all text-sm text-[colors.text.silver]">
                 {status?.whatsappBusinessId || 'Nao resolvido'}
               </p>
             </div>
             <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[colors.text.dim]">
                 {kloelT(`Estado`)}
               </p>
-              <p className="mt-2 text-sm text-[#F7F7F5]">{status?.status || 'Desconhecido'}</p>
+              <p className="mt-2 text-sm text-[colors.text.silver]">
+                {status?.status || 'Desconhecido'}
+              </p>
             </div>
           </div>
 
@@ -254,7 +254,7 @@ export function AgentDesktopViewer({
               type="button"
               onClick={() => void connectMeta()}
               disabled={working}
-              className="inline-flex items-center gap-2 rounded-full bg-[#F7F7F5] px-4 py-2 text-sm font-medium text-[#0B0F14] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-full bg-[colors.text.silver] px-4 py-2 text-sm font-medium text-[colors.background.void] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ExternalLink className="h-4 w-4" aria-hidden="true" />
               {status?.connected ? 'Reconectar Meta' : 'Conectar com Meta'}
@@ -263,7 +263,7 @@ export function AgentDesktopViewer({
               type="button"
               onClick={() => void refreshStatus()}
               disabled={working}
-              className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-[#D9DDE3] transition hover:border-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-[colors.text.muted] transition hover:border-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshCcw
                 className={`h-4 w-4 ${working ? 'animate-spin' : ''}`}
@@ -275,24 +275,26 @@ export function AgentDesktopViewer({
           </div>
         </section>
 
-        <section className="flex min-h-[420px] flex-col rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-5">
+        <section className="flex min-h-[420px] flex-col rounded-[24px] border border-white/10 bg-[colors.background.elevated] p-5">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-[#F7F7F5]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-[colors.text.silver]">
               <Smartphone className="h-5 w-5" aria-hidden="true" />
             </div>
             <div>
-              <p className="text-sm font-medium text-[#F7F7F5]">{kloelT(`Atividade do agente`)}</p>
-              <p className="text-xs text-[#8D96A2]">
+              <p className="text-sm font-medium text-[colors.text.silver]">
+                {kloelT(`Atividade do agente`)}
+              </p>
+              <p className="text-xs text-[colors.text.dim]">
                 {kloelT(`O agente continua operando sobre inbox, automacoes e webhooks Meta.`)}
               </p>
             </div>
           </div>
 
           <div className="mt-5 rounded-2xl border border-white/8 bg-black/20 p-4">
-            <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">
+            <p className="text-[11px] uppercase tracking-[0.24em] text-[colors.text.dim]">
               {kloelT(`Pensamento atual`)}
             </p>
-            <p className="mt-3 text-sm leading-6 text-[#E7E9ED]">
+            <p className="mt-3 text-sm leading-6 text-[colors.text.silver]">
               {latestThought || (isThinking ? 'Processando...' : 'Aguardando evento do Kloel.')}
             </p>
           </div>
@@ -305,29 +307,28 @@ export function AgentDesktopViewer({
                   className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3"
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm text-[#F7F7F5]">{entry.message}</p>
-                    <span className="text-xs text-[#7E8794]">
+                    <p className="text-sm text-[colors.text.silver]">{entry.message}</p>
+                    <span className="text-xs text-[colors.text.dim]">
                       {formatTimestamp(entry.timestamp)}
                     </span>
                   </div>
                   {entry.phase ? (
-                    <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#7E8794]">
+                    <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[colors.text.dim]">
                       {entry.phase}
                     </p>
                   ) : null}
                 </div>
               ))
             ) : (
-              <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-[#8D96A2]">
+              <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-[colors.text.dim]">
                 {kloelT(`Nenhuma atividade recente do agente para exibir.`)}
               </div>
             )}
           </div>
 
           <div className="relative mt-4 h-28 overflow-hidden rounded-2xl border border-white/8 bg-black/30">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(87,195,255,0.18),transparent_55%)]" />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.32))]" />
-            <div className="relative flex h-full items-end justify-between px-4 py-3 text-xs text-[#AEB6C2]">
+            <div className="absolute inset-0 bg-[colors.background.surface]" />
+            <div className="relative flex h-full items-end justify-between px-4 py-3 text-xs text-[colors.text.muted]">
               <span>
                 {kloelT(`Workspace`)} {workspaceId || 'nao resolvido'}
               </span>

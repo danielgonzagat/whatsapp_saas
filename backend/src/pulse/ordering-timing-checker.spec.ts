@@ -63,11 +63,18 @@ describe('checkOrderingTiming webhook ordering detection', () => {
       };
 
       const results = checkOrderingTiming(config).filter(
-        (item) => item.type === 'ORDERING_WEBHOOK_OOO',
+        (item) =>
+          item.type === 'temporal-consistency-evidence-gap' &&
+          item.file === 'backend/src/webhooks/payment-webhook.controller.ts',
       );
 
       expect(results).toHaveLength(1);
-      expect(results[0]?.file).toBe('backend/src/webhooks/payment-webhook.controller.ts');
+      expect(results[0]).toEqual(
+        expect.objectContaining({
+          source: 'parser:weak_signal:temporal-consistency',
+          surface: 'temporal-correctness',
+        }),
+      );
     } finally {
       fs.rmSync(rootDir, { recursive: true, force: true });
     }

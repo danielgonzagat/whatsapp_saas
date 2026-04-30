@@ -20,6 +20,7 @@ import {
   titleCaseStructural,
 } from './structural-family';
 import { buildObservationFootprint, footprintMatchesFamilies } from './execution-observation';
+import { normalizePath } from './scope-state.codacy';
 import { readTextFile } from './safe-fs';
 import { safeJoin } from './lib/safe-path';
 import type { PulseCapabilityDoD, PulseDoDStatus } from './types.capabilities';
@@ -220,7 +221,7 @@ function buildStaticValidationSources(
 
   return scopeState.files
     .filter((file) => {
-      const filePath = file.path.replace(/\\/g, '/');
+      const filePath = normalizePath(file.path);
       const isSourceLikeTest = /\.[jt]sx?$/.test(filePath);
       return (
         isSourceLikeTest &&
@@ -231,7 +232,7 @@ function buildStaticValidationSources(
       );
     })
     .map((file) => {
-      const filePath = file.path.replace(/\\/g, '/');
+      const filePath = normalizePath(file.path);
       try {
         const source = readTextFile(safeJoin(scopeState.rootDir, filePath)).slice(0, 500_000);
         return {

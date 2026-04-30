@@ -278,12 +278,14 @@ function firstSemanticSegment(segments: string[]): string | null {
 
 function fileRole(filePath: string): string {
   const baseName = path.basename(filePath).toLowerCase();
-  const role = baseName.match(
-    /\.(controller|service|module|worker|processor|queue|cron|webhook|hook|component|page|route|schema|migration)\./,
-  )?.[1];
-  if (role) return role;
-  if (baseName === 'schema.prisma') return 'schema';
-  if (filePath.includes('/migrations/')) return 'migration';
+  const parts = baseName.split('.').filter(Boolean);
+  const extension = parts.length > 0 ? parts[parts.length - 1] : undefined;
+  const stemParts = extension ? parts.slice(0, -1) : parts;
+  const structuralRole = stemParts.length > 0 ? stemParts[stemParts.length - 1] : undefined;
+  if (structuralRole) return structuralRole;
+  const pathSegments = normalizePathSegments(filePath);
+  const parentSegment = pathSegments.length > 1 ? pathSegments[pathSegments.length - 2] : undefined;
+  if (parentSegment) return parentSegment.replace(/s$/, '');
   return 'change';
 }
 

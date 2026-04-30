@@ -3,6 +3,10 @@ import { execSync } from 'child_process';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { pathExists, readTextFile } from '../safe-fs';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 
 // Only run in DEEP/TOTAL mode — check for env var
 // Usage: PULSE_DEEP=1 npx ts-node scripts/pulse/index.ts
@@ -12,6 +16,55 @@ const MAX_ERRORS_PER_PROJECT = 50;
 
 // ESLint severity: 1 = warning, 2 = error
 const ESLINT_ERROR_SEVERITY = 2;
+
+function severityFromRisk(riskScore: number, fallback: Break['severity']): Break['severity'] {
+  if (riskScore >= 0.9) return 'critical';
+  if (riskScore >= 0.7) return 'high';
+  if (riskScore >= 0.4) return 'medium';
+  return fallback;
+}
+
+function synthesizeLintDiagnosticBreak(
+  signal: PulseSignalEvidence,
+  fallback: Break['severity'],
+): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const risk = calculateDynamicRisk({ predicateGraph });
+  const diagnostic = synthesizeDiagnostic(signalGraph, predicateGraph, risk);
+
+  return {
+    type: diagnostic.id,
+    severity: severityFromRisk(risk.score, fallback),
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}; signal=${signal.detail ?? signal.summary}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode};proofMode=${diagnostic.proofMode}`,
+  };
+}
+
+function buildLintBreak(input: {
+  file: string;
+  line: number;
+  summary: string;
+  detail: string;
+}): Break {
+  return synthesizeLintDiagnosticBreak(
+    {
+      source: 'eslint-json-output',
+      detector: 'lint-checker',
+      truthMode: 'observed',
+      summary: input.summary,
+      detail: input.detail,
+      location: {
+        file: input.file,
+        line: input.line,
+      },
+    },
+    'low',
+  );
+}
 
 interface ESLintMessage {
   ruleId: string | null;
@@ -109,14 +162,14 @@ function runESLint(projectDir: string, rootDir: string, label: string): Break[] 
       }
 
       const ruleLabel = msg.ruleId ? ` (${msg.ruleId})` : '';
-      breaks.push({
-        type: 'LINT_VIOLATION',
-        severity: 'low',
-        file: relFile,
-        line: msg.line || 1,
-        description: `${label} ESLint error${ruleLabel}`,
-        detail: msg.message.slice(0, 200),
-      });
+      breaks.push(
+        buildLintBreak({
+          file: relFile,
+          line: msg.line || 1,
+          summary: `${label} ESLint reported an error${ruleLabel}`,
+          detail: msg.message.slice(0, 200),
+        }),
+      );
     }
   }
 

@@ -102,22 +102,85 @@ function safeFilterStrings(arr: unknown[] | undefined): string[] {
   return arr.filter((item): item is string => typeof item === 'string');
 }
 
+function isRouteLiteralQuote(char: string | undefined): char is '"' | "'" | '`' {
+  return char === '"' || char === "'" || char === '`';
+}
+
+function readQuotedRouteLiteral(
+  source: string,
+  quoteIndex: number,
+): { raw: string; start: number; end: number } | null {
+  const quote = source[quoteIndex];
+  if (!isRouteLiteralQuote(quote)) {
+    return null;
+  }
+
+  let cursor = quoteIndex + 1;
+  let escaped = false;
+  let slashSeen = false;
+  while (cursor < source.length) {
+    const char = source[cursor];
+    if (escaped) {
+      escaped = false;
+      cursor++;
+      continue;
+    }
+    if (char === '\\') {
+      escaped = true;
+      cursor++;
+      continue;
+    }
+    if (char === quote) {
+      if (!slashSeen) {
+        return null;
+      }
+      return {
+        raw: source.slice(quoteIndex + 1, cursor).trim(),
+        start: quoteIndex,
+        end: cursor + 1,
+      };
+    }
+    if (char === '/') {
+      slashSeen = true;
+    }
+    cursor++;
+  }
+
+  return null;
+}
+
+function isImportSourceLine(source: string, index: number): boolean {
+  const lineStart = source.lastIndexOf('\n', index) + 1;
+  const lineEnd = source.indexOf('\n', index);
+  const line = source.slice(lineStart, lineEnd === -1 ? source.length : lineEnd).trimStart();
+  return line.startsWith('import ');
+}
+
+function stripRouteSearchAndHash(route: string): string {
+  const searchIndex = route.indexOf('?');
+  const hashIndex = route.indexOf('#');
+  const candidates = [searchIndex, hashIndex].filter((index) => index >= 0);
+  const end = candidates.length > 0 ? Math.min(...candidates) : route.length;
+  return route.slice(0, end) || route;
+}
+
 function extractReferencedRoutes(source: string): string[] {
   const routes = new Set<string>();
-  const patterns = [
-    /\b(?:router\.(?:push|replace)|navigate)\s*\(\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/g,
-    /\bhref\s*=\s*(?:["']([^"']+)["']|\{(?:['"`]([^'"`]+)['"`]|`([^`]+)`)\})/g,
-  ];
 
-  for (const pattern of patterns) {
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(source)) !== null) {
-      const raw = (match[1] || match[2] || match[3] || match[4] || match[5] || '').trim();
-      if (!raw.startsWith('/') || raw === '/') {
-        continue;
-      }
-      routes.add(raw.split(/[?#]/)[0] || raw);
+  for (let index = 0; index < source.length; index++) {
+    const literal = readQuotedRouteLiteral(source, index);
+    if (!literal) {
+      continue;
     }
+    index = literal.end - 1;
+    const raw = literal.raw;
+    if (!raw.startsWith('/') || raw === '/') {
+      continue;
+    }
+    if (isImportSourceLine(source, literal.start)) {
+      continue;
+    }
+    routes.add(stripRouteSearchAndHash(raw));
   }
 
   return [...routes];

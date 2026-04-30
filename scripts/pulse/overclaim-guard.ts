@@ -42,16 +42,13 @@ export interface OverclaimResult {
   violations: string[];
 }
 
-const GOVERNED_VALIDATION_BLOCKER_PATTERN =
-  /governed[ _-]?validation|observation[ _-]?only|protected[ _-]?surface|human_required|blocked_human_required/i;
-
 export function hasOpenGovernedValidationGap(
   evidence: OverclaimGovernedValidationEvidence,
 ): boolean {
   return (
     evidence.openUnitCount > 0 ||
     evidence.openGateCount > 0 ||
-    evidence.blockers.some((blocker) => GOVERNED_VALIDATION_BLOCKER_PATTERN.test(blocker))
+    evidence.blockers.some((blocker) => blocker.trim().length > 0)
   );
 }
 

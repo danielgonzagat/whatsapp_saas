@@ -41,6 +41,18 @@ interface WeakNumericInvariant {
   field: PrismaField;
 }
 
+interface CountedRelationInvariant {
+  invariant: RelationInvariant;
+  count: number;
+  file: string;
+}
+
+interface CountedWeakNumericInvariant {
+  invariant: WeakNumericInvariant;
+  count: number;
+  file: string;
+}
+
 function stripLineComment(line: string): string {
   const marker = line.indexOf('//');
   return marker === -1 ? line : line.slice(0, marker);
@@ -75,11 +87,45 @@ function resolveSchemaPath(config: PulseConfig): string | null {
 
 function parsePrismaModels(schema: string): PrismaModel[] {
   const models: PrismaModel[] = [];
-  const modelPattern = /model\s+(\w+)\s+\{([\s\S]*?)\n\s*\}/g;
-  let modelMatch: RegExpExecArray | null;
+  const modelKeyword = 'model';
+  let cursor = 0;
 
-  while ((modelMatch = modelPattern.exec(schema))) {
-    const [, name, body] = modelMatch;
+  while (cursor < schema.length) {
+    const modelStart = schema.indexOf(modelKeyword, cursor);
+    if (modelStart === -1) {
+      break;
+    }
+    const before = schema[modelStart - 1] ?? ' ';
+    const after = schema[modelStart + modelKeyword.length] ?? ' ';
+    if (/\w/.test(before) || !/\s/.test(after)) {
+      cursor = modelStart + modelKeyword.length;
+      continue;
+    }
+    const nameStart = modelStart + modelKeyword.length;
+    const openBrace = schema.indexOf('{', nameStart);
+    if (openBrace === -1) {
+      break;
+    }
+    const name = schema.slice(nameStart, openBrace).trim();
+    if (!/^[A-Za-z_]\w*$/.test(name)) {
+      cursor = openBrace + 1;
+      continue;
+    }
+    let depth = 0;
+    let closeBrace = -1;
+    for (let index = openBrace; index < schema.length; index += 1) {
+      const char = schema[index];
+      if (char === '{') depth += 1;
+      if (char === '}') depth -= 1;
+      if (depth === 0) {
+        closeBrace = index;
+        break;
+      }
+    }
+    if (closeBrace === -1) {
+      break;
+    }
+    const body = schema.slice(openBrace + 1, closeBrace);
     const fields: PrismaField[] = [];
     let tableName = name;
 
@@ -116,6 +162,7 @@ function parsePrismaModels(schema: string): PrismaModel[] {
     }
 
     models.push({ name, tableName, fields });
+    cursor = closeBrace + 1;
   }
 
   return models;
@@ -230,6 +277,40 @@ async function runCountQuery(sql: string): Promise<number | null> {
   }
 }
 
+function buildRelationDiagnostic(input: CountedRelationInvariant): Break {
+  const { invariant, count, file } = input;
+  return {
+    type: 'DATA_RELATION_ORPHANED_RECORD',
+    severity: 'high',
+    file,
+    line: 0,
+    source: 'schema-derived:prisma-relation',
+    description:
+      `${count} row(s) violate Prisma relation ` +
+      `${invariant.childModel.name}.${invariant.relationField.name}`,
+    detail:
+      `Schema-derived invariant: ${invariant.childModel.name}.` +
+      `${invariant.relationField.name} references ${invariant.parentModel.name}. Count: ${count}`,
+  };
+}
+
+function buildWeakNumericDiagnostic(input: CountedWeakNumericInvariant): Break {
+  const { invariant, count, file } = input;
+  return {
+    type: 'DATA_NEGATIVE_NUMERIC_WEAK_SIGNAL',
+    severity: 'low',
+    file,
+    line: 0,
+    source: 'legacy-weak-sensor:data-integrity:needs_schema_owner_review',
+    description:
+      `${count} row(s) have negative values in discovered numeric field ` +
+      `${invariant.model.name}.${invariant.field.name}`,
+    detail:
+      'Weak schema-discovered signal only; negative numeric values can be valid in some ledgers. ' +
+      `Field: ${invariant.model.name}.${invariant.field.name}. Count: ${count}`,
+  };
+}
+
 /** Check data integrity. */
 export async function checkDataIntegrity(config: PulseConfig): Promise<Break[]> {
   if (!process.env.PULSE_DEEP) {
@@ -250,19 +331,7 @@ export async function checkDataIntegrity(config: PulseConfig): Promise<Break[]> 
     if (count === null || count === 0) {
       continue;
     }
-    breaks.push({
-      type: 'DATA_RELATION_ORPHANED_RECORD',
-      severity: 'high',
-      file: baseFile,
-      line: 0,
-      source: 'schema-derived:prisma-relation',
-      description:
-        `${count} row(s) violate Prisma relation ` +
-        `${invariant.childModel.name}.${invariant.relationField.name}`,
-      detail:
-        `Schema-derived invariant: ${invariant.childModel.name}.` +
-        `${invariant.relationField.name} references ${invariant.parentModel.name}. Count: ${count}`,
-    });
+    breaks.push(buildRelationDiagnostic({ invariant, count, file: baseFile }));
   }
 
   for (const invariant of buildWeakNumericInvariants(models)) {
@@ -270,19 +339,7 @@ export async function checkDataIntegrity(config: PulseConfig): Promise<Break[]> 
     if (count === null || count === 0) {
       continue;
     }
-    breaks.push({
-      type: 'DATA_NEGATIVE_NUMERIC_WEAK_SIGNAL',
-      severity: 'low',
-      file: baseFile,
-      line: 0,
-      source: 'legacy-weak-sensor:data-integrity:needs_schema_owner_review',
-      description:
-        `${count} row(s) have negative values in discovered numeric field ` +
-        `${invariant.model.name}.${invariant.field.name}`,
-      detail:
-        'Weak schema-discovered signal only; negative numeric values can be valid in some ledgers. ' +
-        `Field: ${invariant.model.name}.${invariant.field.name}. Count: ${count}`,
-    });
+    breaks.push(buildWeakNumericDiagnostic({ invariant, count, file: baseFile }));
   }
 
   return breaks;

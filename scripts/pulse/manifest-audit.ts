@@ -1,4 +1,5 @@
 import * as path from 'path';
+import ts from 'typescript';
 import { isDirectory, pathExists, readDir, readTextFile } from './safe-fs';
 import { assertWithinRoot, safeJoin } from './lib/safe-path';
 import type { PulseManifest } from './types.manifest';
@@ -15,23 +16,63 @@ interface ManifestAudit {
 
 function extractCanonicalArtifactPaths(registryContent: string): Set<string> {
   const registeredPaths = new Set<string>();
-  const relativePathRegex = /relativePath:\s*['"]([^'"]+)['"]/g;
-  for (const match of registryContent.matchAll(relativePathRegex)) {
-    registeredPaths.add(match[1]);
-  }
-  const optionalEvidenceRegex = /optionalEvidence\(\s*['"][^'"]+['"]\s*,\s*['"]([^'"]+)['"]/g;
-  for (const match of registryContent.matchAll(optionalEvidenceRegex)) {
-    registeredPaths.add(match[1]);
-  }
+  const sourceFile = ts.createSourceFile(
+    'artifact-registry.ts',
+    registryContent,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isPropertyAssignment(node) && node.name.getText(sourceFile) === 'relativePath') {
+      const initializer = node.initializer;
+      if (ts.isStringLiteral(initializer) || ts.isNoSubstitutionTemplateLiteral(initializer)) {
+        registeredPaths.add(initializer.text);
+      }
+    }
+
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'optionalEvidence'
+    ) {
+      const artifactPathArgument = node.arguments[1];
+      if (
+        artifactPathArgument &&
+        (ts.isStringLiteral(artifactPathArgument) ||
+          ts.isNoSubstitutionTemplateLiteral(artifactPathArgument))
+      ) {
+        registeredPaths.add(artifactPathArgument.text);
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
   return registeredPaths;
 }
 
 function extractStringLiterals(content: string): Set<string> {
   const literals = new Set<string>();
-  const stringRegex = /['"]([^'"]+)['"]/g;
-  for (const match of content.matchAll(stringRegex)) {
-    literals.add(match[1]);
-  }
+  const sourceFile = ts.createSourceFile(
+    'pulse-source.ts',
+    content,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
+      literals.add(node.text);
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
   return literals;
 }
 

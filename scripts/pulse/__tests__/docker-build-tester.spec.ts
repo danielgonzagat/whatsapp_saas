@@ -23,22 +23,24 @@ function makeConfig(): PulseConfig {
 }
 
 describe('docker build checker', () => {
-  it('reports static Docker findings as weak evidence without changing the break type', () => {
+  it('reports static Docker findings as rich weak-signal diagnostics', () => {
     const config = makeConfig();
 
     const breaks = checkDockerBuild(config);
 
     expect(breaks).toContainEqual(
       expect.objectContaining({
-        type: 'DOCKER_BUILD_FAILS',
+        type: expect.stringMatching(/^diagnostic:/),
         severity: 'high',
         description: 'No Dockerfile found for backend',
-        source: 'filesystem-regex-weak-signal:docker-build-tester:needs_probe',
+        source:
+          'filesystem-scan:docker-build-tester;detector=dockerfile-presence-filesystem-scan;truthMode=weak_signal',
+        surface: 'dockerfile-presence',
       }),
     );
     expect(breaks[0].detail).toContain(
       'Evidence source: static Dockerfile/docker-compose filesystem scan.',
     );
-    expect(breaks[0].detail).toContain('Truth mode: weak_signal');
+    expect(breaks[0].detail).toContain('predicates=truth_weak_signal');
   });
 });

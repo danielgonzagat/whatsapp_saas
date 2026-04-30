@@ -26,11 +26,25 @@ interface ResolveHandlerInput {
   apiModuleMap: ApiModuleMap;
 }
 
-/** Resolve handler. */
-export function resolveHandler(input: ResolveHandlerInput): {
+type HandlerResolution = {
   type: UIElement['handlerType'];
   apiCalls: string[];
-} {
+};
+
+const HANDLER_TYPE_NOOP: UIElement['handlerType'] = 'noop';
+const HANDLER_TYPE_NAVIGATION: UIElement['handlerType'] = 'navigation';
+const HANDLER_TYPE_REAL: UIElement['handlerType'] = 'real';
+const HANDLER_TYPE_DEAD: UIElement['handlerType'] = 'dead';
+
+function handlerResolution(
+  type: UIElement['handlerType'],
+  apiCalls: string[] = [],
+): HandlerResolution {
+  return { type, apiCalls };
+}
+
+/** Resolve handler. */
+export function resolveHandler(input: ResolveHandlerInput): HandlerResolution {
   const {
     handlerExpr,
     lines,
@@ -51,22 +65,22 @@ export function resolveHandler(input: ResolveHandlerInput): {
     /^\(\)\s*=>\s*null$/.test(trimmed) ||
     /^\(\)\s*=>\s*undefined$/.test(trimmed)
   ) {
-    return { type: 'noop', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_NOOP);
   }
 
   if (hasBrowserNavigationEffect(trimmed)) {
-    return { type: 'navigation', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_NAVIGATION);
   }
 
   const apiCalls = extractApiCallEndpoints(trimmed, apiModuleMap, apiImportsInFile);
   if (hasApiCall(trimmed)) {
-    return { type: 'real', apiCalls };
+    return handlerResolution(HANDLER_TYPE_REAL, apiCalls);
   }
 
   for (const [localName] of hookDestructures) {
     if (hasFunctionCall(trimmed, localName)) {
       return {
-        type: 'real',
+        type: HANDLER_TYPE_REAL,
         apiCalls: hookFunctionApiCalls(trimmed, hookDestructures, hookRegistry),
       };
     }
@@ -75,7 +89,7 @@ export function resolveHandler(input: ResolveHandlerInput): {
   if (apiImportsInFile.size > 0) {
     for (const importedName of apiImportsInFile) {
       if (trimmed.includes(importedName)) {
-        return { type: 'real', apiCalls };
+        return handlerResolution(HANDLER_TYPE_REAL, apiCalls);
       }
     }
   }
@@ -97,24 +111,23 @@ export function resolveHandler(input: ResolveHandlerInput): {
   }
 
   if (/\(\)\s*=>\s*set\w+\s*\(/.test(trimmed)) {
-    return { type: 'real', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_REAL);
   }
 
   if (/\(\w*\)\s*=>\s*set\w+\s*\(/.test(trimmed)) {
-    return { type: 'real', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_REAL);
   }
 
   if (/confirm\s*\(/.test(trimmed)) {
-    return { type: 'real', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_REAL);
   }
 
-  return { type: 'real', apiCalls: [] };
+  return handlerResolution(HANDLER_TYPE_REAL);
 }
 
-function resolveNamedFunction(input: ResolveHandlerInput & { funcName: string }): {
-  type: UIElement['handlerType'];
-  apiCalls: string[];
-} {
+function resolveNamedFunction(
+  input: ResolveHandlerInput & { funcName: string },
+): HandlerResolution {
   const {
     funcName,
     lines,
@@ -128,17 +141,17 @@ function resolveNamedFunction(input: ResolveHandlerInput & { funcName: string })
 
   if (hookDestructures.has(funcName)) {
     return {
-      type: 'real',
+      type: HANDLER_TYPE_REAL,
       apiCalls: hookFunctionApiCalls(`${funcName}()`, hookDestructures, hookRegistry),
     };
   }
 
   const defIdx = findFunctionDeclarationIndex(lines, funcName);
   if (defIdx === -1 && /^on[A-Z]/.test(funcName)) {
-    return { type: 'real', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_REAL);
   }
   if (defIdx === -1) {
-    return { type: 'real', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_REAL);
   }
 
   const bodyEnd = findFunctionBodyEnd(lines, defIdx, 60, 40);
@@ -146,27 +159,27 @@ function resolveNamedFunction(input: ResolveHandlerInput & { funcName: string })
   const bodyApiCalls = extractApiCallEndpoints(bodyText, apiModuleMap, apiImportsInFile);
 
   if (hasApiCall(bodyText)) {
-    return { type: 'real', apiCalls: bodyApiCalls };
+    return handlerResolution(HANDLER_TYPE_REAL, bodyApiCalls);
   }
 
   if (bodyCallsHookFunction(bodyText, hookDestructures, hookRegistry)) {
     return {
-      type: 'real',
+      type: HANDLER_TYPE_REAL,
       apiCalls: hookFunctionApiCalls(bodyText, hookDestructures, hookRegistry),
     };
   }
 
   for (const importedName of apiImportsInFile) {
     if (hasFunctionOrMemberUse(bodyText, importedName)) {
-      return { type: 'real', apiCalls: bodyApiCalls };
+      return handlerResolution(HANDLER_TYPE_REAL, bodyApiCalls);
     }
   }
   if (bodyApiCalls.length > 0) {
-    return { type: 'real', apiCalls: bodyApiCalls };
+    return handlerResolution(HANDLER_TYPE_REAL, bodyApiCalls);
   }
 
   if (/useCallback\s*\(/.test(bodyText)) {
-    return { type: 'real', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_REAL);
   }
 
   if (
@@ -174,7 +187,7 @@ function resolveNamedFunction(input: ResolveHandlerInput & { funcName: string })
       bodyText,
     )
   ) {
-    return { type: 'real', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_REAL);
   }
 
   if (
@@ -182,11 +195,11 @@ function resolveNamedFunction(input: ResolveHandlerInput & { funcName: string })
       bodyText,
     )
   ) {
-    return { type: 'real', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_REAL);
   }
 
   if (hasBrowserNavigationEffect(bodyText)) {
-    return { type: 'navigation', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_NAVIGATION);
   }
 
   const nestedResult = resolveNestedLocalCall(input, bodyText);
@@ -199,41 +212,38 @@ function resolveNamedFunction(input: ResolveHandlerInput & { funcName: string })
     /^(?:on)(?:Save|Submit)\b/.test(funcName) ||
     /^(?:do|confirm)(?:Save|Submit|Create)\b/i.test(funcName);
   if (!isSaveFunction && hasSaveHandler && /set\w+\s*\(/.test(bodyText)) {
-    return { type: 'real', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_REAL);
   }
 
   if (callsCallbackProp(bodyText, fileContent)) {
-    return { type: 'real', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_REAL);
   }
 
   const isStateUpdater = /set\w+\s*\(|updateForm\s*\(|dispatch\s*\(|toggle\s*\(/.test(bodyText);
   if (!isSaveFunction && isStateUpdater && !hasApiCall(bodyText)) {
-    return { type: 'real', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_REAL);
   }
 
-  return { type: 'dead', apiCalls: [] };
+  return handlerResolution(HANDLER_TYPE_DEAD);
 }
 
-function resolveInlineCall(input: ResolveHandlerInput & { calledFunc: string }): {
-  type: UIElement['handlerType'];
-  apiCalls: string[];
-} {
+function resolveInlineCall(input: ResolveHandlerInput & { calledFunc: string }): HandlerResolution {
   const { calledFunc, hookDestructures, hasSaveHandler, lines } = input;
 
   if (hookDestructures.has(calledFunc)) {
     return {
-      type: 'real',
+      type: HANDLER_TYPE_REAL,
       apiCalls: hookFunctionApiCalls(`${calledFunc}()`, hookDestructures, input.hookRegistry),
     };
   }
 
   if (/^set[A-Z]/.test(calledFunc)) {
-    return { type: 'real', apiCalls: [] };
+    return handlerResolution(HANDLER_TYPE_REAL);
   }
 
   if (/^on[A-Z]/.test(calledFunc)) {
     if (findFunctionDeclarationIndex(lines, calledFunc) === -1) {
-      return { type: 'real', apiCalls: [] };
+      return handlerResolution(HANDLER_TYPE_REAL);
     }
   }
 
@@ -247,7 +257,7 @@ function resolveInlineCall(input: ResolveHandlerInput & { calledFunc: string }):
     if (defIdx !== -1) {
       const bodyText = lines.slice(defIdx, Math.min(defIdx + 20, lines.length)).join('\n');
       if (/set\w+\s*\(/.test(bodyText)) {
-        return { type: 'real', apiCalls: [] };
+        return handlerResolution(HANDLER_TYPE_REAL);
       }
     }
   }
@@ -295,13 +305,13 @@ function resolveNestedLocalCall(
     const cnApiCalls = extractApiCallEndpoints(cnBody, apiModuleMap, apiImportsInFile);
     if (hasApiCall(cnBody) || cnApiCalls.length > 0) {
       return {
-        type: 'real',
+        type: HANDLER_TYPE_REAL,
         apiCalls: cnApiCalls,
       };
     }
     if (bodyCallsHookFunction(cnBody, hookDestructures, hookRegistry)) {
       return {
-        type: 'real',
+        type: HANDLER_TYPE_REAL,
         apiCalls: hookFunctionApiCalls(cnBody, hookDestructures, hookRegistry),
       };
     }

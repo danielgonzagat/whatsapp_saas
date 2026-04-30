@@ -1,5 +1,5 @@
 import * as path from 'path';
-import ts from 'typescript';
+import * as ts from 'typescript';
 import type { PulseScopeState, PulseStructuralNode, PulseTruthMode } from './types';
 import { readTextFile } from './safe-fs';
 

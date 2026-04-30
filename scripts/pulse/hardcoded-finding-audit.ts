@@ -40,8 +40,6 @@ const MASS_EMITTER_TYPE_THRESHOLD = 3;
 const ALLOWLIST_NAME_RE =
   /(?:^|[^a-z])(?:allow(?:ed|list)?|denylist|blocklist|known|fixed|supported|permitted|accepted|whitelist|blacklist)(?:$|[^a-z])/i;
 const BREAK_TYPE_RE = /^[A-Z][A-Z0-9_]{2,}$/;
-const DECISION_REGEX_NAME_RE =
-  /(?:^|[^a-z])(?:domain|gate|profile|threshold|route|path|capability|flow|module|provider|role|decision|risk|critical|state|status)(?:$|[^a-z])/i;
 
 function locationOf(sourceFile: ts.SourceFile, node: ts.Node): { line: number; column: number } {
   const position = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
@@ -161,15 +159,81 @@ function regexBody(node: ts.Node): string {
   return node.getText();
 }
 
+function isIdentifierLike(value: string): boolean {
+  const [firstChar] = value;
+  if (
+    !firstChar ||
+    !(
+      firstChar === '_' ||
+      firstChar === '$' ||
+      (firstChar >= 'A' && firstChar <= 'Z') ||
+      (firstChar >= 'a' && firstChar <= 'z')
+    )
+  ) {
+    return false;
+  }
+  return [...value.slice(1)].every(
+    (char) =>
+      char === '_' ||
+      char === '$' ||
+      (char >= 'A' && char <= 'Z') ||
+      (char >= 'a' && char <= 'z') ||
+      (char >= '0' && char <= '9'),
+  );
+}
+
+function containsPathGrammar(body: string): boolean {
+  for (let index = 0; index < body.length - 1; index++) {
+    if (body[index] !== '/') {
+      continue;
+    }
+    const next = body[index + 1];
+    if (
+      (next >= 'A' && next <= 'Z') ||
+      (next >= 'a' && next <= 'z') ||
+      (next >= '0' && next <= '9') ||
+      next === '_' ||
+      next === '*' ||
+      next === ':' ||
+      next === '.' ||
+      next === '-'
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function containsNumericDecisionGrammar(body: string): boolean {
+  for (let index = 0; index < body.length; index++) {
+    const char = body[index];
+    const next = body[index + 1];
+    if (char === '\\' && next === 'd') {
+      return true;
+    }
+    if (char === '[' && next && next >= '0' && next <= '9') {
+      return true;
+    }
+    if (char === '<' || char === '>') {
+      return true;
+    }
+  }
+  return false;
+}
+
+function containsNamedCaptureGrammar(body: string): boolean {
+  return body.includes('?<') && body.includes('>');
+}
+
 function isDecisionTokenRegex(name: string, body: string): boolean {
-  if (!DECISION_REGEX_NAME_RE.test(name)) {
+  if (!isIdentifierLike(name)) {
     return false;
   }
   const hasBranchingAlternatives = body.includes('|');
-  const hasPathPattern = /\/[A-Za-z0-9_*:.-]+/.test(body);
-  const hasNumericDecision = /\\d|\[[0-9]|[<>]=?/.test(body);
-  const hasNamedCapture = /\?<[^>]+>/.test(body);
-  return hasBranchingAlternatives || hasPathPattern || hasNumericDecision || hasNamedCapture;
+  const hasPathPattern = containsPathGrammar(body);
+  const hasNumericDecisionGrammar = containsNumericDecisionGrammar(body);
+  const hasNamedCapture = containsNamedCaptureGrammar(body);
+  return hasBranchingAlternatives || hasPathPattern || hasNumericDecisionGrammar || hasNamedCapture;
 }
 
 function objectBreakType(node: ts.ObjectLiteralExpression): string | null {
@@ -261,11 +325,99 @@ function nodeContainsRegexPredicate(node: ts.Node): boolean {
   return found;
 }
 
-function hasStructuralParserSignal(node: ts.Node): boolean {
-  const text = node.getText();
-  return /\bts\.|createSourceFile|forEachChild|SyntaxKind|parse|compilerOptions|SourceFile\b/.test(
-    text,
+function hasExportModifier(node: ts.Node): boolean {
+  return ts.canHaveModifiers(node)
+    ? Boolean(
+        ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword),
+      )
+    : false;
+}
+
+function isCallableDeclaration(node: ts.Node): boolean {
+  return (
+    ts.isFunctionDeclaration(node) ||
+    ts.isFunctionExpression(node) ||
+    ts.isArrowFunction(node) ||
+    ts.isMethodDeclaration(node)
   );
+}
+
+function initializerIsCallable(node: ts.VariableDeclaration): boolean {
+  return Boolean(node.initializer && isCallableDeclaration(node.initializer));
+}
+
+function hasStructuralParserSignal(node: ts.Node): boolean {
+  let found = false;
+  const visit = (child: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (ts.isCallExpression(child)) {
+      const expression = child.expression;
+      if (
+        ts.isPropertyAccessExpression(expression) &&
+        ['forEachChild', 'getText', 'getStart'].includes(expression.name.text)
+      ) {
+        found = true;
+        return;
+      }
+      if (
+        ts.isIdentifier(expression) &&
+        ['createSourceFile', 'forEachChild'].includes(expression.text)
+      ) {
+        found = true;
+        return;
+      }
+    }
+    if (ts.isPropertyAccessExpression(child) && child.expression.getText() === 'ts') {
+      found = true;
+      return;
+    }
+    ts.forEachChild(child, visit);
+  };
+  ts.forEachChild(node, visit);
+  return found;
+}
+
+function hasExportedExecutableDeclaration(sourceFile: ts.SourceFile): boolean {
+  let found = false;
+  const visit = (node: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (ts.isFunctionDeclaration(node) && hasExportModifier(node)) {
+      found = true;
+      return;
+    }
+    if (ts.isVariableStatement(node) && hasExportModifier(node)) {
+      for (const declaration of node.declarationList.declarations) {
+        if (
+          initializerIsCallable(declaration) ||
+          ts.isObjectLiteralExpression(declaration.initializer)
+        ) {
+          found = true;
+          return;
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return found;
+}
+
+function isAuditableSource(input: HardcodedFindingAuditSource): boolean {
+  if (!input.filePath.split(/[\\/]/).includes('pulse')) {
+    return false;
+  }
+
+  const sourceFile = ts.createSourceFile(
+    input.filePath,
+    input.source,
+    ts.ScriptTarget.Latest,
+    true,
+  );
+  return hasExportedExecutableDeclaration(sourceFile) || hasStructuralParserSignal(sourceFile);
 }
 
 function pushUniqueFinding(
@@ -414,7 +566,7 @@ export function buildHardcodedFindingAuditArtifact(
   sources: readonly HardcodedFindingAuditSource[],
 ): HardcodedFindingAuditArtifact {
   const files = sources
-    .filter((source) => source.filePath.includes('scripts/pulse/parsers/'))
+    .filter(isAuditableSource)
     .map(auditSource)
     .filter((file) => file.findings.length > 0)
     .sort((left, right) => left.filePath.localeCompare(right.filePath));

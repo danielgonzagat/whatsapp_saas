@@ -19,6 +19,15 @@ import {
 
 export { normalizeEndpoint } from './api-parser-normalize';
 
+function removeLeadingRouteSegment(routePath: string, segment: string): string {
+  const parts = routePath.split('/').filter(Boolean);
+  if (parts[0] !== segment) {
+    return routePath;
+  }
+  const remainder = parts.slice(1).join('/');
+  return remainder ? `/${remainder}` : '/';
+}
+
 // Pass 1: Parse API module files to build function-to-endpoint map
 export function buildApiModuleMap(
   config: PulseConfig,
@@ -516,7 +525,7 @@ export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
 
   const routeFiles = apiDirs
     .flatMap((apiDir) => walkFiles(apiDir, ['.ts']))
-    .filter((f) => f.endsWith('route.ts'));
+    .filter((filePath) => path.parse(filePath).name === 'route');
 
   for (const file of routeFiles) {
     try {
@@ -527,21 +536,21 @@ export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
       if (appIdx === -1) {
         continue;
       }
-      const routePart = file.substring(appIdx + 4).replace(/\/route\.ts$/, '');
+      const routePart = path.dirname(file.substring(appIdx + 4));
       const frontendPath = routePart.replace(/\/\[\.\.\.?\w+\]/, '/:path');
 
       const handlerRe = /export\s+(?:async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE)\s*\(/g;
       let match;
       while ((match = handlerRe.exec(content)) !== null) {
         const method = match[1];
-        let backendPath = frontendPath.replace(/^\/api\//, '/');
+        let backendPath = removeLeadingRouteSegment(frontendPath, 'api');
 
         const templateFetchMatch = content.match(/fetch\s*\(\s*`\$\{[^}]+\}(\/[^`]+)`/);
         if (templateFetchMatch) {
           backendPath = templateFetchMatch[1];
         }
 
-        if (backendPath === frontendPath.replace(/^\/api\//, '/')) {
+        if (backendPath === removeLeadingRouteSegment(frontendPath, 'api')) {
           const proxyMatch = content.match(/['"`](\/[^'"`]+)['"`]\s*(?:,|\))/);
           if (proxyMatch) {
             const candidate = proxyMatch[1];

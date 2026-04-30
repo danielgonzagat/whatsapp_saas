@@ -20,6 +20,10 @@ export interface UIElement {
   handlerType: 'real' | 'dead' | 'noop' | 'navigation';
   /** Api calls property. */
   apiCalls: string[];
+  /** Handler evidence observed by the UI parser before downstream classification. */
+  handlerEvidence?: string[];
+  /** Predicate tokens observed by the UI parser for downstream classifiers. */
+  handlerPredicates?: string[];
   /** Component property. */
   component: string | null;
 }

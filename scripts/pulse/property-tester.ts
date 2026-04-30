@@ -12,6 +12,7 @@
 import * as path from 'path';
 import * as fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
+import ts from 'typescript';
 import type { PulseStructuralGraph, PulseStructuralNode } from './types';
 import type {
   FuzzStrategy,
@@ -27,14 +28,18 @@ import type {
 } from './types.property-tester';
 import { ensureDir, pathExists, readTextFile, readDir } from './safe-fs';
 import { safeJoin } from './lib/safe-path';
+import {
+  isObservedDestructiveMethod,
+  isObservedHttpEntrypointMethod,
+  isObservedMutatingMethod,
+  observedMethodAcceptsBody,
+} from './dynamic-reality-grammar';
 
 const CANONICAL_ARTIFACT_FILENAME = 'PULSE_PROPERTY_EVIDENCE.json';
 
-const SOURCE_FILE_PATTERN = /\.(ts|tsx|js|jsx)$/;
 const PROPERTY_ASSERTION_SENSOR = /\b(?:fc\.)?assert\s*\(\s*(?:fc\.)?property\s*\(/;
 const PROPERTY_USAGE_SENSOR = /\b(?:fc\.)?property\s*\(/;
-const PROPERTY_LIBRARY_SENSOR = /(?:require\(|from\s+|import\s+)[^;'\n]*['"]fast-check['"]/;
-const TEST_RUNTIME_SENSOR = /\b(?:describe|it|test)\s*\(/;
+const SOURCE_FILE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.jsx']);
 
 const DIRECTORY_SKIP_HINTS = new Set([
   'node_modules',
@@ -275,23 +280,30 @@ function extractRoute(node: PulseStructuralNode): string | null {
     return normalizeRoute(backendPath);
   }
 
-  // Parse route from label like "POST /api/auth/anonymous"
   const label = node.label ?? '';
-  const labelMatch = label.match(/^(?:GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD|ALL)\s+(\S+)/i);
-  if (labelMatch) {
-    return normalizeRoute(labelMatch[1]);
+  const labelParts = splitWhitespace(label);
+  if (labelParts.length >= 2 && isObservedHttpEntrypointMethod(labelParts[0])) {
+    return normalizeRoute(labelParts[1]);
   }
 
   return null;
 }
 
 function normalizeRoute(value: string): string {
-  return (
-    String(value || '')
-      .trim()
-      .replace(/\/+/g, '/')
-      .replace(/\/$/, '') || '/'
-  );
+  const output: string[] = [];
+  for (const char of String(value || '').trim()) {
+    if (char === '/') {
+      if (output[output.length - 1] !== '/') {
+        output.push(char);
+      }
+      continue;
+    }
+    output.push(char);
+  }
+  while (output.length > 1 && output[output.length - 1] === '/') {
+    output.pop();
+  }
+  return output.join('') || '/';
 }
 
 function shouldScanDirectory(entryName: string): boolean {
@@ -302,15 +314,15 @@ function shouldScanDirectory(entryName: string): boolean {
 }
 
 function isSourceFileName(fileName: string): boolean {
-  return SOURCE_FILE_PATTERN.test(fileName);
+  return SOURCE_FILE_EXTENSIONS.has(path.extname(fileName));
 }
 
 function isTestLikeFile(fileName: string, content: string): boolean {
-  const hasTestRuntime = TEST_RUNTIME_SENSOR.test(content);
+  const hasTestRuntime = hasTestRuntimeEvidence(content);
   const hasPropertySignal =
     PROPERTY_ASSERTION_SENSOR.test(content) ||
     PROPERTY_USAGE_SENSOR.test(content) ||
-    PROPERTY_LIBRARY_SENSOR.test(content);
+    hasFastCheckImportEvidence(content);
 
   if (hasTestRuntime && hasPropertySignal) return true;
   return hasTestFileNameEvidence(fileName) && (hasTestRuntime || hasPropertySignal);
@@ -349,9 +361,36 @@ function splitFileNameEvidenceParts(value: string): string[] {
 function hasPropertyEvidence(content: string): boolean {
   const hasPropertyAssertion = PROPERTY_ASSERTION_SENSOR.test(content);
   const hasPropertyUsage = PROPERTY_USAGE_SENSOR.test(content);
-  const hasPropertyLibrary = PROPERTY_LIBRARY_SENSOR.test(content);
+  const hasPropertyLibrary = hasFastCheckImportEvidence(content);
 
   return hasPropertyAssertion || (hasPropertyUsage && hasPropertyLibrary);
+}
+
+function hasTestRuntimeEvidence(content: string): boolean {
+  return ['describe(', 'it(', 'test('].some((token) => content.includes(token));
+}
+
+function hasFastCheckImportEvidence(content: string): boolean {
+  return content.includes('fast-check');
+}
+
+function splitWhitespace(value: string): string[] {
+  const parts: string[] = [];
+  let current = '';
+  for (const char of value) {
+    if (char.trim() === '') {
+      if (current) {
+        parts.push(current);
+        current = '';
+      }
+      continue;
+    }
+    current += char;
+  }
+  if (current) {
+    parts.push(current);
+  }
+  return parts;
 }
 
 /**
@@ -360,8 +399,6 @@ function hasPropertyEvidence(content: string): boolean {
  */
 function discoverEndpointsFromSource(rootDir: string): EndpointDescriptor[] {
   const endpoints: EndpointDescriptor[] = [];
-  const httpMethodPattern = /@(Get|Post|Put|Delete|Patch|Options|Head|All)\(\s*(['"])([^'"]*)\2/;
-  const controllerPattern = /@Controller\(\s*(['"])([^'"]*)\1/;
 
   function scanDir(dir: string, controllerPrefix: string) {
     if (!fs.existsSync(dir)) return;
@@ -382,28 +419,12 @@ function discoverEndpointsFromSource(rootDir: string): EndpointDescriptor[] {
       } else if (entry.isFile() && isSourceFileName(entry.name)) {
         try {
           const content = fs.readFileSync(fullPath, 'utf-8');
-          const controllerMatch = controllerPattern.exec(content);
-          const currentPrefix = controllerMatch
-            ? normalizeRoute(controllerMatch[2])
-            : controllerPrefix;
-
-          if (controllerMatch || currentPrefix) {
-            const methodRegex = new RegExp(httpMethodPattern.source, 'g');
-            let methodMatch: RegExpExecArray | null;
-            while ((methodMatch = methodRegex.exec(content)) !== null) {
-              const method = methodMatch[1].toUpperCase();
-              const route = normalizeRoute(methodMatch[3]);
-              const fullRoute = joinRoutes(currentPrefix, route);
-              const relativePath = fullPath.replace(rootDir + path.sep, '');
-
-              endpoints.push({
-                method,
-                path: fullRoute,
-                filePath: relativePath,
-              });
-            }
-
-            methodRegex.lastIndex = 0;
+          const discovered = discoverControllerEndpoints(content, controllerPrefix);
+          for (const endpoint of discovered) {
+            endpoints.push({
+              ...endpoint,
+              filePath: fullPath.replace(rootDir + path.sep, ''),
+            });
           }
         } catch {
           // Skip unreadable files
@@ -440,9 +461,6 @@ function discoverEndpointsFromBackendDir(rootDir: string): EndpointDescriptor[] 
 
   if (!fs.existsSync(backendDir)) return endpoints;
 
-  const httpMethodPattern = /@(Get|Post|Put|Delete|Patch|Options|Head|All)\(\s*(['"])([^'"]*)\2/;
-  const controllerPattern = /@Controller\(\s*(['"])([^'"]*)\1/;
-
   function scanDir(dir: string, controllerPrefix: string) {
     if (!fs.existsSync(dir)) return;
     let entries: fs.Dirent[];
@@ -462,28 +480,12 @@ function discoverEndpointsFromBackendDir(rootDir: string): EndpointDescriptor[] 
       } else if (entry.isFile() && isSourceFileName(entry.name)) {
         try {
           const content = fs.readFileSync(fullPath, 'utf-8');
-          const controllerMatch = controllerPattern.exec(content);
-          const currentPrefix = controllerMatch
-            ? normalizeRoute(controllerMatch[2])
-            : controllerPrefix;
-
-          if (controllerMatch || controllerPrefix) {
-            const methodRegex = new RegExp(httpMethodPattern.source, 'g');
-            let methodMatch: RegExpExecArray | null;
-            while ((methodMatch = methodRegex.exec(content)) !== null) {
-              const method = methodMatch[1].toUpperCase();
-              const route = normalizeRoute(methodMatch[3]);
-              const fullRoute = joinRoutes(currentPrefix, route);
-              const relativePath = fullPath.replace(rootDir + path.sep, '');
-
-              endpoints.push({
-                method,
-                path: fullRoute,
-                filePath: relativePath,
-              });
-            }
-
-            methodRegex.lastIndex = 0;
+          const discovered = discoverControllerEndpoints(content, controllerPrefix);
+          for (const endpoint of discovered) {
+            endpoints.push({
+              ...endpoint,
+              filePath: fullPath.replace(rootDir + path.sep, ''),
+            });
           }
         } catch {
           // Skip unreadable files
@@ -495,6 +497,74 @@ function discoverEndpointsFromBackendDir(rootDir: string): EndpointDescriptor[] 
   scanDir(backendDir, '');
 
   return endpoints;
+}
+
+function discoverControllerEndpoints(
+  content: string,
+  fallbackPrefix: string,
+): Array<Pick<EndpointDescriptor, 'method' | 'path' | 'filePath'>> {
+  const sourceFile = ts.createSourceFile('controller.ts', content, ts.ScriptTarget.Latest, true);
+  const endpoints: Array<Pick<EndpointDescriptor, 'method' | 'path' | 'filePath'>> = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isClassDeclaration(node)) {
+      const classPrefix = normalizeRoute(
+        findDecoratorStringArg(node, 'Controller') ?? fallbackPrefix,
+      );
+      for (const member of node.members) {
+        if (!ts.isMethodDeclaration(member)) {
+          continue;
+        }
+        const decorator = findHttpDecorator(member);
+        if (!decorator) {
+          continue;
+        }
+        endpoints.push({
+          method: decorator.name.toUpperCase(),
+          path: joinRoutes(classPrefix, normalizeRoute(decorator.route ?? '')),
+          filePath: '',
+        });
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return endpoints;
+}
+
+function findHttpDecorator(node: ts.Node): { name: string; route: string | null } | null {
+  const decorators = ts.canHaveDecorators(node) ? (ts.getDecorators(node) ?? []) : [];
+  for (const decorator of decorators) {
+    const expression = decorator.expression;
+    if (!ts.isCallExpression(expression) || !ts.isIdentifier(expression.expression)) {
+      continue;
+    }
+    const name = expression.expression.text;
+    if (!isObservedHttpEntrypointMethod(name)) {
+      continue;
+    }
+    const firstArg = expression.arguments[0];
+    return {
+      name,
+      route: firstArg && ts.isStringLiteralLike(firstArg) ? firstArg.text : null,
+    };
+  }
+  return null;
+}
+
+function findDecoratorStringArg(node: ts.Node, decoratorName: string): string | null {
+  const decorators = ts.canHaveDecorators(node) ? (ts.getDecorators(node) ?? []) : [];
+  for (const decorator of decorators) {
+    const expression = decorator.expression;
+    if (
+      ts.isCallExpression(expression) &&
+      ts.isIdentifier(expression.expression) &&
+      expression.expression.text === decoratorName
+    ) {
+      const firstArg = expression.arguments[0];
+      return firstArg && ts.isStringLiteralLike(firstArg) ? firstArg.text : null;
+    }
+  }
+  return null;
 }
 
 /**
@@ -533,7 +603,7 @@ function buildEndpointProofProfile(endpoint: EndpointDescriptor): EndpointProofP
   const inputTypes = new Set<ProofInputType>();
   const routeText = `${endpoint.path} ${endpoint.filePath}`;
   const hasSchema = Boolean(endpoint.requestSchema);
-  const acceptsBody = hasSchema || ['POST', 'PUT', 'PATCH'].includes(method);
+  const acceptsBody = observedMethodAcceptsBody(method, hasSchema);
   const hasExternalReceiverShape = /\b(webhook|callback|event|receiver|listener)\b/i.test(
     routeText,
   );
@@ -554,12 +624,11 @@ function buildEndpointProofProfile(endpoint: EndpointDescriptor): EndpointProofP
     inputTypes.add('none');
   }
 
-  const stateEffect: StateEffect =
-    method === 'DELETE'
-      ? 'destructive_mutation'
-      : ['POST', 'PUT', 'PATCH'].includes(method)
-        ? 'state_mutation'
-        : 'read_only';
+  const stateEffect: StateEffect = isObservedDestructiveMethod(method)
+    ? 'destructive_mutation'
+    : isObservedMutatingMethod(method)
+      ? 'state_mutation'
+      : 'read_only';
   const runtimeExposure =
     endpoint.requiresAuth === true || endpoint.requiresTenant === true
       ? 'protected'
@@ -693,7 +762,7 @@ function generateExpectedStatusCodes(
 ): Record<number, number> {
   const codes: Record<number, number> = {};
   const method = endpoint.method.toUpperCase();
-  const successCode = method === 'POST' ? 201 : 200;
+  const successCode = isObservedMutatingMethod(method) ? 201 : 200;
 
   switch (strategy) {
     case 'valid_only':
@@ -774,7 +843,7 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
           if (!isTestLikeFile(entry.name, content)) {
             continue;
           }
-          const hasFastCheckImport = PROPERTY_LIBRARY_SENSOR.test(content);
+          const hasFastCheckImport = hasFastCheckImportEvidence(content);
           const hasFastCheckUsage = hasPropertyEvidence(content);
 
           if (hasFastCheckImport || hasFastCheckUsage) {
@@ -910,8 +979,34 @@ function extractProcessFailure(error: unknown): string {
     .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
     .map((part) => part.trim());
 
-  const text = parts.join('\n').replace(/\s+/g, ' ').slice(0, 500);
+  const text = collapseWhitespace(parts.join('\n')).slice(0, 500);
   return text || 'property test runner exited with a non-zero status';
+}
+
+function collapseWhitespace(value: string): string {
+  return splitWhitespace(value).join(' ');
+}
+
+function stripKnownTestSourceSuffix(filePath: string): string {
+  let parsed = path.parse(filePath);
+  let name = parsed.name;
+  let suffixes = splitKnownTestSourceSuffixesFromObservedName(name);
+  while (suffixes.length > 0) {
+    let suffix = suffixes.shift();
+    if (suffix && name.endsWith(suffix)) {
+      name = name.slice(0, name.length - suffix.length);
+      suffixes = splitKnownTestSourceSuffixesFromObservedName(name);
+    }
+  }
+  return path.join(parsed.dir, `${name}${parsed.ext}`);
+}
+
+function splitKnownTestSourceSuffixesFromObservedName(name: string): string[] {
+  return name
+    .split('.')
+    .slice(Number(Boolean(name)))
+    .map((part) => `.${part}`)
+    .filter((part) => part.length > Number(Boolean(part)));
 }
 
 function countPropertyTestsInContent(content: string): number {
@@ -925,7 +1020,7 @@ function countPropertyTestsInContent(content: string): number {
 }
 
 function inferCapabilityId(filePath: string): string {
-  const segments = filePath.replace(/\.(spec|test|property)\.(ts|tsx|js|jsx)$/, '').split(/[\\/]/);
+  const segments = stripKnownTestSourceSuffix(filePath).split(path.sep);
 
   const meaningful = segments.filter(
     (s) => s && s !== 'src' && s !== 'tests' && s !== '__tests__' && s !== 'test' && s !== 'spec',
@@ -935,12 +1030,11 @@ function inferCapabilityId(filePath: string): string {
 }
 
 function extractTargetFunction(filePath: string): string {
-  const base = path
-    .basename(filePath)
-    .replace(/\.(spec|test|property)\.(ts|tsx|js|jsx)$/, '')
-    .replace(/\.property$/, '')
-    .replace(/\.prop$/, '');
-  return base;
+  return stripKnownTestSourceSuffix(path.basename(filePath))
+    .split('.property')
+    .join('')
+    .split('.prop')
+    .join('');
 }
 
 /**
@@ -1161,11 +1255,14 @@ function hasCorrespondingSpec(filePath: string, rootDir: string): boolean {
   const baseDir = path.dirname(filePath);
   const ext = path.extname(filePath);
   const name = path.basename(filePath, ext);
+  const testDir = path.join(
+    ...baseDir.split(path.sep).map((segment) => (segment === 'src' ? '__tests__' : segment)),
+  );
 
   const specCandidates = [
     path.join(baseDir, `${name}.spec${ext}`),
     path.join(baseDir, `${name}.test${ext}`),
-    path.join(baseDir.replace(/\/src\//, '/__tests__/'), `${name}.spec${ext}`),
+    path.join(testDir, `${name}.spec${ext}`),
   ];
 
   for (const candidate of specCandidates) {
@@ -1200,16 +1297,30 @@ function estimateCoverage(filePath: string): number {
  * Check if two module paths match (source file → spec file mapping).
  */
 function modulePathMatch(specPath: string, srcPath: string): boolean {
-  const specClean = specPath
-    .replace(/\.(spec|test)\.(ts|tsx|js|jsx)$/, '')
-    .replace(/\.property$/, '');
-  const srcClean = srcPath.replace(/\.(ts|tsx|js|jsx)$/, '');
+  const specClean = stripKnownTestSourceSuffix(specPath).split('.property').join('');
+  const srcClean = stripKnownSourceSuffix(srcPath);
 
   if (specClean === srcClean) return true;
   if (specClean === `${srcClean}.spec`) return true;
   if (specClean === `${srcClean}.test`) return true;
 
   return false;
+}
+
+function stripKnownTestSourceSuffix(value: string): string {
+  const ext = path.extname(value);
+  const withoutExt = ext ? value.slice(0, -ext.length) : value;
+  for (const marker of ['.spec', '.test', '.property']) {
+    if (withoutExt.endsWith(marker)) {
+      return withoutExt.slice(0, -marker.length);
+    }
+  }
+  return withoutExt;
+}
+
+function stripKnownSourceSuffix(value: string): string {
+  const ext = path.extname(value);
+  return ext ? value.slice(0, -ext.length) : value;
 }
 
 /**
@@ -1325,36 +1436,6 @@ export function discoverPureFunctionCandidates(rootDir: string): PureFunctionCan
   const candidates: PureFunctionCandidate[] = [];
   const scanned = new Set<string>();
 
-  const categoryPatterns: Array<{
-    category: CandidateCategory;
-    regex: RegExp;
-  }> = [
-    { category: 'validation', regex: /\b(validate|isValid|assert|check)\w*/i },
-    { category: 'parsing', regex: /\b(parse|deserialize|decode|extract)\w*/i },
-    {
-      category: 'money_handler',
-      regex:
-        /\b(?:parseCurrency|formatCurrency|parseBRL|formatBRL|currency|amount|cents|money|brl)\w*/i,
-    },
-    {
-      category: 'formatting',
-      regex: /\b(format|serialize|encode|stringify|normalize|to[A-Z])\w*/i,
-    },
-    {
-      category: 'numeric',
-      regex: /\b(compute|calculate|sum|multiply|divide|add|subtract|mul|div)\w*/i,
-    },
-    { category: 'transform', regex: /\b(transform|convert|map|reduce|filter)\w*/i },
-    {
-      category: 'string_manipulation',
-      regex: /\b(slugify|truncat|pad|sanitize|escape|unescape|camelCase|kebabCase|pascalCase)\w*/i,
-    },
-    {
-      category: 'enum_handler',
-      regex: /\b(enum|status|state|type|kind|variant|mode)\w*/i,
-    },
-  ];
-
   function scanDir(dir: string) {
     if (!fs.existsSync(dir)) return;
     let entries: fs.Dirent[];
@@ -1385,8 +1466,7 @@ export function discoverPureFunctionCandidates(rootDir: string): PureFunctionCan
             scanned.add(key);
 
             const category =
-              discovered.categoryHint ??
-              categoryPatterns.find(({ regex }) => regex.test(discovered.functionName))?.category;
+              discovered.categoryHint ?? inferCandidateCategory(discovered.functionName);
 
             if (category) {
               candidates.push({
@@ -1412,116 +1492,149 @@ export function discoverPureFunctionCandidates(rootDir: string): PureFunctionCan
 
 function discoverExportedPropertyCandidates(content: string): DiscoveredExport[] {
   const candidates: DiscoveredExport[] = [];
-
-  const exportFnRe = /export\s+function\s+(\w+)\s*(?:<[^>{}]+>)?\s*\(/g;
-  let functionMatch: RegExpExecArray | null;
-  while ((functionMatch = exportFnRe.exec(content)) !== null) {
-    candidates.push({
-      functionName: functionMatch[1],
-      params: parseParamNames(extractFunctionParams(content, functionMatch.index)),
-      hasReturnType: hasReturnAnnotation(content, functionMatch.index),
-      categoryHint: null,
-    });
-  }
-
-  const exportConstFunctionRe =
-    /export\s+const\s+(\w+)\s*(?::\s*[^=]+)?=\s*(?:async\s+)?(?:function\s*\w*\s*)?\(/g;
-  let constFunctionMatch: RegExpExecArray | null;
-  while ((constFunctionMatch = exportConstFunctionRe.exec(content)) !== null) {
-    candidates.push({
-      functionName: constFunctionMatch[1],
-      params: parseParamNames(extractFunctionParams(content, constFunctionMatch.index)),
-      hasReturnType: hasReturnAnnotation(content, constFunctionMatch.index),
-      categoryHint: null,
-    });
-  }
-
-  const exportConstSingleArgArrowRe =
-    /export\s+const\s+(\w+)\s*(?::\s*[^=]+)?=\s*(?:async\s+)?([A-Za-z_]\w*)\s*=>/g;
-  let arrowMatch: RegExpExecArray | null;
-  while ((arrowMatch = exportConstSingleArgArrowRe.exec(content)) !== null) {
-    candidates.push({
-      functionName: arrowMatch[1],
-      params: [arrowMatch[2]],
-      hasReturnType: hasReturnAnnotation(content, arrowMatch.index),
-      categoryHint: null,
-    });
-  }
-
-  const exportEnumRe = /export\s+enum\s+(\w+)\s*\{([\s\S]*?)\}/g;
-  let enumMatch: RegExpExecArray | null;
-  while ((enumMatch = exportEnumRe.exec(content)) !== null) {
-    candidates.push({
-      functionName: enumMatch[1],
-      params: parseEnumMembers(enumMatch[2]),
-      hasReturnType: true,
-      categoryHint: 'enum_handler',
-    });
-  }
+  const sourceFile = ts.createSourceFile(
+    'property-candidates.ts',
+    content,
+    ts.ScriptTarget.Latest,
+    true,
+  );
+  const visit = (node: ts.Node): void => {
+    if (ts.isFunctionDeclaration(node) && node.name && hasExportModifier(node)) {
+      candidates.push({
+        functionName: node.name.text,
+        params: node.parameters.map(parameterName),
+        hasReturnType: Boolean(node.type),
+        categoryHint: null,
+      });
+    }
+    if (ts.isVariableStatement(node) && hasExportModifier(node)) {
+      for (const declaration of node.declarationList.declarations) {
+        if (!ts.isIdentifier(declaration.name) || !declaration.initializer) {
+          continue;
+        }
+        if (
+          ts.isFunctionExpression(declaration.initializer) ||
+          ts.isArrowFunction(declaration.initializer)
+        ) {
+          candidates.push({
+            functionName: declaration.name.text,
+            params: declaration.initializer.parameters.map(parameterName),
+            hasReturnType: Boolean(declaration.type ?? declaration.initializer.type),
+            categoryHint: null,
+          });
+        }
+      }
+    }
+    if (ts.isEnumDeclaration(node) && hasExportModifier(node)) {
+      candidates.push({
+        functionName: node.name.text,
+        params: node.members.map(enumMemberName),
+        hasReturnType: true,
+        categoryHint: 'enum_handler',
+      });
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
 
   return candidates;
 }
 
-function extractFunctionParams(content: string, fnStartIndex: number): string {
-  const slice = content.slice(fnStartIndex);
-  const openParen = slice.indexOf('(');
-  if (openParen === -1) return '';
-  let depth = 0;
-  for (let i = openParen; i < Math.min(slice.length, 400); i++) {
-    if (slice[i] === '(') depth++;
-    if (slice[i] === ')') {
-      depth--;
-      if (depth === 0) return slice.slice(openParen + 1, i);
+function hasExportModifier(node: ts.Node): boolean {
+  return Boolean(
+    ts.canHaveModifiers(node) &&
+    ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword),
+  );
+}
+
+function parameterName(parameter: ts.ParameterDeclaration): string {
+  return ts.isIdentifier(parameter.name) ? parameter.name.text : parameter.name.getText();
+}
+
+function enumMemberName(member: ts.EnumMember): string {
+  if (ts.isStringLiteral(member.initializer)) {
+    return member.initializer.text;
+  }
+  return ts.isIdentifier(member.name) || ts.isStringLiteral(member.name)
+    ? member.name.text
+    : member.name.getText();
+}
+
+function inferCandidateCategory(functionName: string): CandidateCategory | null {
+  const tokens = splitIdentifierTokens(functionName);
+  if (hasToken(tokens, ['validate', 'valid', 'assert', 'check'])) return 'validation';
+  if (hasToken(tokens, ['parse', 'deserialize', 'decode', 'extract'])) return 'parsing';
+  if (hasToken(tokens, ['currency', 'amount', 'cents', 'money', 'brl'])) return 'money_handler';
+  if (hasToken(tokens, ['format', 'serialize', 'encode', 'stringify', 'normalize'])) {
+    return 'formatting';
+  }
+  if (
+    hasToken(tokens, [
+      'compute',
+      'calculate',
+      'sum',
+      'multiply',
+      'divide',
+      'add',
+      'subtract',
+      'mul',
+      'div',
+    ])
+  ) {
+    return 'numeric';
+  }
+  if (hasToken(tokens, ['transform', 'convert', 'map', 'reduce', 'filter'])) return 'transform';
+  if (
+    hasToken(tokens, [
+      'slugify',
+      'truncate',
+      'truncat',
+      'pad',
+      'sanitize',
+      'escape',
+      'unescape',
+      'camel',
+      'kebab',
+      'pascal',
+    ])
+  ) {
+    return 'string_manipulation';
+  }
+  if (hasToken(tokens, ['enum', 'status', 'state', 'type', 'kind', 'variant', 'mode'])) {
+    return 'enum_handler';
+  }
+  return null;
+}
+
+function hasToken(tokens: Set<string>, values: string[]): boolean {
+  return values.some((value) => tokens.has(value));
+}
+
+function splitIdentifierTokens(value: string): Set<string> {
+  const tokens = new Set<string>();
+  let current = '';
+  for (const char of value) {
+    const isUpper = char >= 'A' && char <= 'Z';
+    const isLower = char >= 'a' && char <= 'z';
+    const isDigit = char >= '0' && char <= '9';
+    if (isUpper && current && current.toLowerCase() === current) {
+      tokens.add(current.toLowerCase());
+      current = '';
+    }
+    if (isUpper || isLower || isDigit) {
+      current += char;
+      continue;
+    }
+    if (current) {
+      tokens.add(current.toLowerCase());
+      current = '';
     }
   }
-  return '';
-}
-
-function hasReturnAnnotation(content: string, fnStartIndex: number): boolean {
-  const slice = content.slice(fnStartIndex, fnStartIndex + 500);
-  const arrowIndex = slice.indexOf('=>');
-  const braceIndex = slice.indexOf('{');
-  const boundary =
-    arrowIndex === -1
-      ? braceIndex
-      : braceIndex === -1
-        ? arrowIndex
-        : Math.min(arrowIndex, braceIndex);
-
-  return boundary > -1 && /:\s*[^=({;]+/.test(slice.slice(0, boundary));
-}
-
-function parseParamNames(paramsStr: string): string[] {
-  if (!paramsStr.trim()) return [];
-  return paramsStr
-    .split(',')
-    .map((p) => {
-      const clean = p.trim();
-      const colonIdx = clean.lastIndexOf(':');
-      const eqIdx = clean.lastIndexOf('=');
-      let endIdx = clean.length;
-      if (colonIdx > 0) endIdx = Math.min(endIdx, colonIdx);
-      if (eqIdx > 0) endIdx = Math.min(endIdx, eqIdx);
-      return clean.slice(0, endIdx).trim();
-    })
-    .filter(Boolean);
-}
-
-function parseEnumMembers(enumBody: string): string[] {
-  return enumBody
-    .split(',')
-    .map((entry) =>
-      entry
-        .replace(/\/\/.*$/gm, '')
-        .replace(/\/\*[\s\S]*?\*\//g, '')
-        .trim(),
-    )
-    .map((entry) => {
-      const [namePart, valuePart] = entry.split('=').map((part) => part.trim());
-      const explicitValue = valuePart?.match(/^['"`]([^'"`]+)['"`]$/)?.[1];
-      return explicitValue ?? namePart;
-    })
-    .filter((member) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(member));
+  if (current) {
+    tokens.add(current.toLowerCase());
+  }
+  tokens.add(value.toLowerCase());
+  return tokens;
 }
 
 /**
@@ -1933,7 +2046,7 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
     '1,50',
   ];
   for (const v of validValues) {
-    const isBrl = /R\$|,/.test(v);
+    const isBrl = isBrlCurrencyInput(v);
     inputs.push({
       value: v,
       description: `Valid ${isBrl ? 'BRL' : 'currency'} string: "${v}"`,
@@ -1958,7 +2071,7 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
     'R$ 1.234.567.890,12', // excessively large
   ];
   for (const v of invalidValues) {
-    const isBrl = /R\$|,/.test(v);
+    const isBrl = isBrlCurrencyInput(v);
     inputs.push({
       value: v,
       description: `Invalid ${isBrl ? 'BRL' : 'currency'} string: "${v}"`,
@@ -2005,7 +2118,7 @@ function generateMoneyPrecisionInputs(rng: () => number): GeneratedPropertyTestI
     'R$ 99,99',
   ];
   for (const v of roundTripValues) {
-    const isBrl = /R\$|,/.test(v);
+    const isBrl = isBrlCurrencyInput(v);
     inputs.push({
       value: v,
       description: `Round-trip property: format(parse("${v}")) ≈ "${v}"`,
@@ -2089,13 +2202,15 @@ function inferEnumMembersFromCandidate(candidate: PureFunctionCandidate): string
     return [...new Set(candidate.params)];
   }
 
-  const words = candidate.functionName
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .split(/[^a-zA-Z0-9]+/)
-    .map((word) => word.trim().toUpperCase())
+  const words = [...splitIdentifierTokens(candidate.functionName)]
+    .map((word) => word.toUpperCase())
     .filter((word) => word.length > 2);
 
-  return [...new Set([...words, 'VALUE_A', 'VALUE_B', 'VALUE_C'])];
+  return words.length > 0 ? [...new Set(words)] : [candidate.functionName.toUpperCase()];
+}
+
+function isBrlCurrencyInput(value: string): boolean {
+  return value.includes('R$') || value.includes(',');
 }
 
 function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestInput[] {

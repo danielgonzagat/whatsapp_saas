@@ -2,6 +2,10 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 
 const HTTP_METHODS = ['Get', 'Post', 'Put', 'Patch', 'Delete'] as const;
 type HttpMethod = (typeof HTTP_METHODS)[number];
@@ -15,6 +19,33 @@ interface RouteEntry {
   methodPath: string;
   fullPath: string;
   normalizedPath: string;
+}
+
+function severityFromRisk(riskScore: number, fallback: Break['severity']): Break['severity'] {
+  if (riskScore >= 0.9) return 'critical';
+  if (riskScore >= 0.7) return 'high';
+  if (riskScore >= 0.4) return 'medium';
+  return fallback;
+}
+
+function synthesizeRouteDiagnosticBreak(
+  signal: PulseSignalEvidence,
+  fallback: Break['severity'],
+): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const risk = calculateDynamicRisk({ predicateGraph });
+  const diagnostic = synthesizeDiagnostic(signalGraph, predicateGraph, risk);
+
+  return {
+    type: diagnostic.id,
+    severity: severityFromRisk(risk.score, fallback),
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}; signal=${signal.detail ?? signal.summary}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode};proofMode=${diagnostic.proofMode}`,
+  };
 }
 
 /**
@@ -147,14 +178,22 @@ export function checkDuplicateRoutes(config: PulseConfig): Break[] {
     // Report each duplicate entry (after the first)
     const [first, ...rest] = entries;
     for (const dup of rest) {
-      breaks.push({
-        type: 'DUPLICATE_ROUTE',
-        severity: 'high',
-        file: dup.relFile,
-        line: dup.line,
-        description: `Duplicate route: ${key.replace(':', ' ')}`,
-        detail: `"${dup.fullPath}" [${dup.httpMethod}] in ${path.basename(dup.file)} conflicts with same route in ${path.basename(first.file)}:${first.line}. NestJS will only serve the first-registered handler.`,
-      });
+      breaks.push(
+        synthesizeRouteDiagnosticBreak(
+          {
+            source: 'static-route-topology',
+            detector: 'duplicate-route-checker',
+            truthMode: 'confirmed_static',
+            summary: `Route topology contains repeated handler registration for ${key.replace(':', ' ')}`,
+            detail: `"${dup.fullPath}" [${dup.httpMethod}] in ${path.basename(dup.file)} conflicts with same route in ${path.basename(first.file)}:${first.line}. NestJS will only serve the first-registered handler.`,
+            location: {
+              file: dup.relFile,
+              line: dup.line,
+            },
+          },
+          'high',
+        ),
+      );
     }
   }
 

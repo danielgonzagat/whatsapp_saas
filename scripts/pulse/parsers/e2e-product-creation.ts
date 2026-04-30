@@ -40,6 +40,13 @@ import {
   isDeepMode,
   getBackendUrl,
 } from './runtime-utils';
+import {
+  parsePrismaModels,
+  readFile,
+  resolveSchemaPath,
+  type PrismaField,
+  type PrismaModel,
+} from './structural-evidence';
 
 function productE2eFinding(input: {
   file: string;
@@ -59,6 +66,76 @@ function productE2eFinding(input: {
   };
 }
 
+function quoteIdent(identifier: string): string {
+  return `"${identifier.replace(/"/g, '""')}"`;
+}
+
+function modelHasFields(model: PrismaModel, fieldNames: readonly string[]): boolean {
+  const fields = new Set(model.fields.map((field) => field.name));
+  return fieldNames.every((fieldName) => fields.has(fieldName));
+}
+
+function discoverWorkspaceActorModel(models: readonly PrismaModel[]): PrismaModel | null {
+  return (
+    models.find(
+      (model) =>
+        modelHasFields(model, ['id', 'email', 'workspaceId']) &&
+        model.fields.some((field) => /kyc.*status|status.*kyc/i.test(field.name)),
+    ) ??
+    models.find((model) => modelHasFields(model, ['id', 'email', 'workspaceId'])) ??
+    null
+  );
+}
+
+function discoverProductPersistenceModel(
+  models: readonly PrismaModel[],
+  responseKeys: readonly string[],
+): PrismaModel | null {
+  const responseKeySet = new Set(responseKeys);
+  const candidates = models
+    .filter((model) => modelHasFields(model, ['id', 'name']))
+    .map((model) => ({
+      model,
+      score: model.fields.filter((field) => responseKeySet.has(field.name)).length,
+    }))
+    .sort((left, right) => right.score - left.score);
+
+  return candidates[0]?.model ?? null;
+}
+
+function discoverKycStatusField(model: PrismaModel): PrismaField | null {
+  return model.fields.find((field) => /kyc.*status|status.*kyc/i.test(field.name)) ?? null;
+}
+
+function buildWorkspaceActorQuery(actorModel: PrismaModel): string {
+  const kycStatusField = discoverKycStatusField(actorModel);
+  const selectedColumns = ['id', 'workspaceId', 'email'];
+  const whereClauses = [
+    `${quoteIdent('workspaceId')} IS NOT NULL`,
+    `${quoteIdent('email')} IS NOT NULL`,
+  ];
+
+  if (kycStatusField) {
+    whereClauses.push(`${quoteIdent(kycStatusField.name)} IS NOT NULL`);
+  }
+
+  return [
+    `SELECT ${selectedColumns.map(quoteIdent).join(', ')}`,
+    `  FROM ${quoteIdent(actorModel.tableName)}`,
+    ` WHERE ${whereClauses.join(' AND ')}`,
+    ` LIMIT 5`,
+  ].join('\n');
+}
+
+function buildCreatedEntityReadbackQuery(model: PrismaModel): string {
+  return [
+    `SELECT ${['id', 'name'].map(quoteIdent).join(', ')}`,
+    `  FROM ${quoteIdent(model.tableName)}`,
+    ` WHERE ${quoteIdent('id')} = $1`,
+    ` LIMIT 1`,
+  ].join('\n');
+}
+
 /** Check e2e product creation. */
 export async function checkE2eProductCreation(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running backend + DB
@@ -69,19 +146,18 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
   const breaks: Break[] = [];
   let productId: string | null = null;
   let jwt: string | null = null;
+  const schemaPath = resolveSchemaPath(config);
+  const models = parsePrismaModels(schemaPath ? readFile(schemaPath) : '');
+  const actorModel = discoverWorkspaceActorModel(models);
 
-  // ── Find a real workspace with KYC-approved agent ────────────────────────
-  // POST /products requires KycApprovedGuard, so we need a real approved user in DB
+  // ── Find a real workspace actor from discovered schema shape ─────────────
   try {
-    const approvedAgents = await dbQuery(
-      `SELECT a.id, a."workspaceId", a.email FROM "Agent" a
-       WHERE a."kycStatus" = 'approved' AND a."workspaceId" IS NOT NULL
-       LIMIT 1`,
-    );
+    if (!actorModel) {
+      return breaks;
+    }
+    const approvedAgents = await dbQuery(buildWorkspaceActorQuery(actorModel));
 
     if (approvedAgents.length === 0) {
-      // No KYC-approved agent exists — can't test product creation
-      // This is informational, not a break in the product flow itself
       return breaks;
     }
 
@@ -185,9 +261,10 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
 
     // ── Step 4: Verify product in DB ─────────────────────────────────────
     try {
-      const dbRows = await dbQuery(`SELECT id, name, format FROM "Product" WHERE id = $1 LIMIT 1`, [
-        productId,
-      ]);
+      const persistenceModel = discoverProductPersistenceModel(models, Object.keys(product));
+      const dbRows = persistenceModel
+        ? await dbQuery(buildCreatedEntityReadbackQuery(persistenceModel), [productId])
+        : [];
       if (dbRows.length === 0) {
         breaks.push(
           productE2eFinding({

@@ -1,4 +1,8 @@
 import * as path from 'path';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
@@ -76,6 +80,56 @@ function containsIdentifier(content: string, name: string): boolean {
   return false;
 }
 
+interface DeadExportBreakInput {
+  file: string;
+  line: number;
+  exportedName: string;
+  sourceFileName: string;
+}
+
+function diagnosticToken(value: string): string {
+  return value
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase();
+}
+
+function buildDeadExportBreak(input: DeadExportBreakInput): Break {
+  const predicates = ['exported_symbol_observed', 'cross_file_reference_absent'];
+  const summary = `Exported symbol '${input.exportedName}' has no references in other files`;
+  const detail = `'${input.exportedName}' is exported from ${input.sourceFileName} but not imported/used anywhere in the backend. Consider removing or making it private.`;
+  const signal: PulseSignalEvidence = {
+    source: `grammar-kernel:dead-code-finder;predicates=${predicates.join(',')}`,
+    detector: 'dead-code-finder',
+    truthMode: 'confirmed_static',
+    summary,
+    detail,
+    location: {
+      file: input.file,
+      line: input.line,
+    },
+  };
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const diagnostic = synthesizeDiagnostic(
+    signalGraph,
+    predicateGraph,
+    calculateDynamicRisk({ predicateGraph }),
+  );
+  const predicateToken = predicates.map(diagnosticToken).filter(Boolean).join('+');
+
+  return {
+    type: `diagnostic:dead-code-finder:${predicateToken || diagnostic.id}`,
+    severity: 'low',
+    file: input.file,
+    line: input.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; ${detail}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
+    surface: 'dead-code',
+  };
+}
+
 /** Check dead code. */
 export function checkDeadCode(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
@@ -150,14 +204,14 @@ export function checkDeadCode(config: PulseConfig): Break[] {
           }
         }
 
-        breaks.push({
-          type: 'DEAD_EXPORT',
-          severity: 'low',
-          file: relFile,
-          line: lineNum,
-          description: `Exported symbol '${name}' has no references in other files`,
-          detail: `'${name}' is exported from ${path.basename(file)} but not imported/used anywhere in the backend. Consider removing or making it private.`,
-        });
+        breaks.push(
+          buildDeadExportBreak({
+            file: relFile,
+            line: lineNum,
+            exportedName: name,
+            sourceFileName: path.basename(file),
+          }),
+        );
       }
     }
   }

@@ -646,31 +646,15 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     ),
   };
 
-  const foundationalGates: PulseGateName[] = [
-    'scopeClosed',
-    'adapterSupported',
-    'specComplete',
-    'truthExtractionPass',
-    'changeRiskPass',
-    'productionDecisionPass',
-    'pulseSelfTrustPass',
-  ];
-  const pulseCoreRequiredGates: PulseGateName[] = [
-    ...foundationalGates,
-    'adapterSupported',
-    'specComplete',
-    'runtimePass',
-    'evidenceFresh',
-    'noOverclaimPass',
-    'executionMatrixCompletePass',
-    'criticalPathObservedPass',
-    'breakpointPrecisionPass',
-    'multiCycleConvergencePass',
-    'testHonestyPass',
-    'assertionStrengthPass',
-    'typeIntegrityPass',
-  ];
   const gateOrder = deriveGateOrderFromResults(gates);
+  const configuredTierGates = unique(
+    certificationTiers.flatMap((tier) => tier.gates).filter((gateName) => gates[gateName]),
+  );
+  const foundationalGates: PulseGateName[] =
+    certificationTiers[0]?.gates.filter((gateName) => gates[gateName]) ??
+    configuredTierGates.slice(0, 1);
+  const pulseCoreRequiredGates: PulseGateName[] =
+    configuredTierGates.length > 0 ? configuredTierGates : gateOrder;
   const allPass = gateOrder.every((gateName) => gates[gateName].status === 'pass');
   const pulseCorePass = pulseCoreRequiredGates.every(
     (gateName) => gates[gateName].status === 'pass',

@@ -21,7 +21,13 @@ type FindingKind =
   | 'hardcoded_decision_enum_risk'
   | 'hardcoded_decision_regex_risk'
   | 'hardcoded_path_decision_risk'
-  | 'hardcoded_auditor_bootstrap_reality_risk';
+  | 'hardcoded_auditor_bootstrap_reality_risk'
+  | 'hardcoded_numeric_decision_literal_risk'
+  | 'hardcoded_identity_limit_risk'
+  | 'hardcoded_identity_normalization_regex_risk'
+  | 'hardcoded_fixed_literal_decision_risk'
+  | 'hardcoded_fixed_boolean_decision_risk'
+  | 'hardcoded_const_declaration_risk';
 
 type PredicateKind = 'hardcoded_branch_decision_predicate';
 
@@ -209,6 +215,92 @@ const DECISION_AUTHORITY_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
   'providers',
   'role',
   'roles',
+];
+const UNIVERSAL_HARDCODE_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
+  ...DECISION_AUTHORITY_CONTEXT_KERNEL_GRAMMAR_TOKENS,
+  'actionability',
+  'budget',
+  'cache',
+  'cooldown',
+  'confidence',
+  'count',
+  'event',
+  'events',
+  'fallback',
+  'finding',
+  'findings',
+  'identity',
+  'iteration',
+  'iterations',
+  'key',
+  'keys',
+  'latency',
+  'lease',
+  'length',
+  'limit',
+  'limits',
+  'max',
+  'maximum',
+  'min',
+  'minimum',
+  'priority',
+  'rank',
+  'ratio',
+  'recovery',
+  'retry',
+  'retries',
+  'risk',
+  'score',
+  'sort',
+  'timeout',
+  'ttl',
+  'weight',
+  'weights',
+  'window',
+];
+const IDENTITY_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
+  'break',
+  'event',
+  'events',
+  'finding',
+  'findings',
+  'identity',
+  'key',
+  'keys',
+  'name',
+  'names',
+  'summary',
+  'summaries',
+];
+const LIMIT_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
+  'budget',
+  'cap',
+  'count',
+  'length',
+  'limit',
+  'max',
+  'maximum',
+  'min',
+  'minimum',
+  'size',
+  'slice',
+  'take',
+  'top',
+  'truncate',
+  'window',
+];
+const SCORE_THRESHOLD_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
+  'confidence',
+  'latency',
+  'priority',
+  'rank',
+  'ratio',
+  'risk',
+  'score',
+  'severity',
+  'threshold',
+  'tier',
+  'weight',
 ];
 const STRUCTURAL_CONTEXT_KERNEL_GRAMMAR_TOKENS = [
   'ast',
@@ -750,6 +842,147 @@ function branchDecisionPredicateFindings(node: ts.Node): string[] {
   return [];
 }
 
+function contextLooksLikeUniversalHardcode(context: string): boolean {
+  return (
+    contextHasToken(context, UNIVERSAL_HARDCODE_CONTEXT_KERNEL_GRAMMAR_TOKENS) &&
+    !contextHasToken(context, ['kernel', 'grammar', 'syntax', 'ast'])
+  );
+}
+
+function contextLooksLikeIdentity(context: string): boolean {
+  return contextHasToken(context, IDENTITY_CONTEXT_KERNEL_GRAMMAR_TOKENS);
+}
+
+function numericTextFromNode(node: ts.Node): string | null {
+  if (ts.isNumericLiteral(node)) {
+    return node.text;
+  }
+  if (
+    ts.isPrefixUnaryExpression(node) &&
+    node.operator === ts.SyntaxKind.MinusToken &&
+    ts.isNumericLiteral(node.operand)
+  ) {
+    return `-${node.operand.text}`;
+  }
+  return null;
+}
+
+function isCollectionIndexGrammar(node: ts.Node): boolean {
+  if (!ts.isNumericLiteral(node) || node.text !== '0') {
+    return false;
+  }
+  const parent = node.parent;
+  if (ts.isElementAccessExpression(parent) && parent.argumentExpression === node) {
+    return true;
+  }
+  return (
+    ts.isCallExpression(parent) &&
+    ts.isPropertyAccessExpression(parent.expression) &&
+    (parent.expression.name.text === 'slice' || parent.expression.name.text === 'substring') &&
+    parent.arguments[0] === node
+  );
+}
+
+function numericDecisionLiteralFindings(node: ts.Node): string[] {
+  const numeric = numericTextFromNode(node);
+  if (!numeric || isCollectionIndexGrammar(node)) {
+    return [];
+  }
+
+  const collectionContext = nearestCollectionContext(node);
+  const executableContext = nearestExecutableContext(node);
+  const parent = node.parent;
+  const isNamedLimit =
+    contextHasToken(collectionContext, LIMIT_CONTEXT_KERNEL_GRAMMAR_TOKENS) ||
+    contextHasToken(collectionContext, SCORE_THRESHOLD_CONTEXT_KERNEL_GRAMMAR_TOKENS);
+  const isDecisionPredicate =
+    ts.isBinaryExpression(parent) &&
+    contextLooksLikeUniversalHardcode(executableContext) &&
+    (contextHasToken(executableContext, LIMIT_CONTEXT_KERNEL_GRAMMAR_TOKENS) ||
+      contextHasToken(executableContext, SCORE_THRESHOLD_CONTEXT_KERNEL_GRAMMAR_TOKENS) ||
+      contextHasToken(executableContext, DECISION_GATE_CONTEXT_KERNEL_GRAMMAR_TOKENS));
+
+  if (!isNamedLimit && !isDecisionPredicate) {
+    return [];
+  }
+  return [parent && ts.isBinaryExpression(parent) ? parent.getText() : numeric];
+}
+
+function identityLimitFindings(node: ts.Node, relPath: string): string[] {
+  const numeric = numericTextFromNode(node);
+  if (!numeric || isCollectionIndexGrammar(node)) {
+    return [];
+  }
+  const pathLooksIdentity = relPath
+    .split(path.sep)
+    .join('/')
+    .endsWith('scripts/pulse/finding-identity.ts');
+  const collectionContext = nearestCollectionContext(node);
+  const executableContext = nearestExecutableContext(node);
+  const hasIdentityContext =
+    pathLooksIdentity ||
+    contextLooksLikeIdentity(collectionContext) ||
+    contextLooksLikeIdentity(executableContext);
+  const hasLimitContext =
+    contextHasToken(collectionContext, LIMIT_CONTEXT_KERNEL_GRAMMAR_TOKENS) ||
+    contextHasToken(executableContext, LIMIT_CONTEXT_KERNEL_GRAMMAR_TOKENS);
+  return hasIdentityContext && hasLimitContext ? [numeric] : [];
+}
+
+function identityNormalizationRegexFindings(node: ts.Node, relPath: string): string[] {
+  if (!ts.isRegularExpressionLiteral(node)) {
+    return [];
+  }
+  const normalizedRelPath = relPath.split(path.sep).join('/');
+  const collectionContext = nearestCollectionContext(node);
+  const executableContext = nearestExecutableContext(node);
+  const pathLooksIdentity = normalizedRelPath.endsWith('scripts/pulse/finding-identity.ts');
+  const contextLooksNormalizer =
+    contextHasToken(collectionContext, ['normalize', 'normalizer', 'strip', 'compact']) ||
+    contextHasToken(executableContext, ['normalize', 'normalizer', 'strip', 'compact']);
+  if (
+    !pathLooksIdentity &&
+    !(contextLooksLikeIdentity(collectionContext) || contextLooksLikeIdentity(executableContext))
+  ) {
+    return [];
+  }
+  return contextLooksNormalizer || pathLooksIdentity ? [node.text] : [];
+}
+
+function fixedLiteralDecisionFindings(node: ts.Node): string[] {
+  const literal = literalPredicateValue(node);
+  if (literal === null || literal.trim().length === 0) {
+    return [];
+  }
+  const context = nearestExecutableContext(node);
+  if (!contextLooksLikeUniversalHardcode(context)) {
+    return [];
+  }
+  if (
+    ts.isCaseClause(node.parent) ||
+    (ts.isBinaryExpression(node.parent) && literalPredicateValue(node.parent.left) !== null) ||
+    (ts.isBinaryExpression(node.parent) && literalPredicateValue(node.parent.right) !== null)
+  ) {
+    return [node.parent.getText()];
+  }
+  return [];
+}
+
+function fixedBooleanDecisionFindings(node: ts.Node): string[] {
+  if (node.kind !== ts.SyntaxKind.TrueKeyword && node.kind !== ts.SyntaxKind.FalseKeyword) {
+    return [];
+  }
+  const collectionContext = nearestCollectionContext(node);
+  const executableContext = nearestExecutableContext(node);
+  if (
+    !contextLooksLikeUniversalHardcode(collectionContext) &&
+    !contextLooksLikeUniversalHardcode(executableContext)
+  ) {
+    return [];
+  }
+  return [node.getText()];
+}
+
 function stringLiteralValue(node: ts.Node): string | null {
   if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) {
     return node.text;
@@ -813,6 +1046,16 @@ function parserRuleBlockerFindings(
     return [];
   }
   return [name];
+}
+
+function constDeclarationFindings(node: ts.Node): string[] {
+  if (!ts.isVariableStatement(node)) {
+    return [];
+  }
+  if ((node.declarationList.flags & ts.NodeFlags.Const) === 0) {
+    return [];
+  }
+  return node.declarationList.declarations.map((declaration) => propertyNameText(declaration.name));
 }
 
 function sqlRealityTableFindings(node: ts.Node): string[] {
@@ -887,6 +1130,19 @@ function auditSourceFile(
   const sourceHasBreakPush = source.includes('breaks.push');
 
   const visit = (node: ts.Node): void => {
+    const constDeclarations = constDeclarationFindings(node);
+    if (constDeclarations.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_const_declaration_risk',
+        'const.declaration',
+        constDeclarations,
+      );
+    }
+
     const breakTypeAuthority = breakTypeAuthorityFindings(node);
     if (breakTypeAuthority.length > 0) {
       pushFinding(
@@ -963,6 +1219,71 @@ function auditSourceFile(
         'hardcoded_decision_regex_risk',
         nearestCollectionContext(node),
         regexDecisions,
+      );
+    }
+
+    const identityRegex = identityNormalizationRegexFindings(node, relPath);
+    if (identityRegex.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_identity_normalization_regex_risk',
+        nearestExecutableContext(node),
+        identityRegex,
+      );
+    }
+
+    const numericDecisions = numericDecisionLiteralFindings(node);
+    if (numericDecisions.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_numeric_decision_literal_risk',
+        nearestExecutableContext(node),
+        numericDecisions,
+      );
+    }
+
+    const identityLimits = identityLimitFindings(node, relPath);
+    if (identityLimits.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_identity_limit_risk',
+        nearestExecutableContext(node),
+        identityLimits,
+      );
+    }
+
+    const fixedLiteralDecisions = fixedLiteralDecisionFindings(node);
+    if (fixedLiteralDecisions.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_fixed_literal_decision_risk',
+        nearestExecutableContext(node),
+        fixedLiteralDecisions,
+      );
+    }
+
+    const fixedBooleanDecisions = fixedBooleanDecisionFindings(node);
+    if (fixedBooleanDecisions.length > 0) {
+      pushFinding(
+        findings,
+        sourceFile,
+        relPath,
+        node,
+        'hardcoded_fixed_boolean_decision_risk',
+        nearestExecutableContext(node),
+        fixedBooleanDecisions,
       );
     }
 

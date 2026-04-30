@@ -1,10 +1,5 @@
 'use client';
 
-// PULSE_VISUAL_OK: Tailwind bracket hex values in this file use both Monitor
-// palette colors (colors.background.surface, colors.border.space, colors.text.silver, colors.text.muted, colors.background.elevated) and custom
-// WhatsApp surface/message colors (#E5DDD5, #075E54, #E05252). Token-mapped
-// bracket hexes cannot be replaced with colors.* in className strings.
-
 import { kloelT } from '@/lib/i18n/t';
 // @deprecated Legacy lateral WhatsApp console kept only for isolated e2e/debug routes.
 // The production chat experience now uses AgentDesktopViewer as the primary UI.
@@ -79,7 +74,7 @@ class WhatsAppConsoleErrorBoundary extends React.Component<
     if (this.state.hasError) {
       return (
         <aside className="fixed right-0 top-0 z-50 flex h-full w-[340px] flex-col border-l border-[colors.border.space] bg-[colors.background.surface] px-4 py-6 shadow-2xl">
-          <div className="rounded-3xl border border-[#E05252]/20 bg-[colors.background.surface] px-4 py-4 shadow-sm">
+          <div className="rounded-3xl border border-[colors.ember.primary]/20 bg-[colors.background.surface] px-4 py-4 shadow-sm">
             <div className="text-sm font-semibold text-slate-900">
               {kloelT(`O painel do WhatsApp caiu, mas o restante da aplicação continua vivo.`)}
             </div>
@@ -108,7 +103,7 @@ function getActivityTone(activity: AgentActivity) {
     case 'follow_up_scheduled':
       return 'bg-[colors.text.muted]/10 text-[colors.text.muted] border-[colors.text.muted]/15';
     case 'error':
-      return 'bg-[#E05252]/10 text-[#E05252] border-[#E05252]/15';
+      return 'bg-[colors.ember.primary]/10 text-[colors.ember.primary] border-[colors.ember.primary]/15';
     default:
       return 'bg-[colors.text.muted]/10 text-[colors.text.muted] border-[colors.text.muted]/15';
   }
@@ -133,8 +128,8 @@ function WhatsAppLiveView({
   return (
     <div className="space-y-3">
       <div className="mx-auto w-full max-w-[270px] rounded-[32px] border-[8px] border-slate-900 bg-slate-900 p-1 shadow-2xl">
-        <div className="rounded-[24px] bg-[#E5DDD5] overflow-hidden">
-          <div className="flex items-center justify-between bg-[#075E54] px-3 pb-2 pt-3 text-white">
+        <div className="rounded-[24px] bg-[colors.background.surface] overflow-hidden">
+          <div className="flex items-center justify-between bg-[colors.background.elevated] px-3 pb-2 pt-3 text-white">
             <div>
               <div className="text-[10px] uppercase tracking-[0.24em] text-white/70">
                 {isPaused ? 'IA pausada' : 'IA ativa'}
@@ -150,7 +145,7 @@ function WhatsAppLiveView({
             </div>
           </div>
 
-          <div className="max-h-[420px] min-h-[420px] space-y-2 overflow-y-auto bg-[linear-gradient(180deg,rgba(10,10,20,0.6),rgba(10,10,20,0.3))] px-3 py-3">
+          <div className="max-h-[420px] min-h-[420px] space-y-2 overflow-y-auto bg-[colors.background.surface] px-3 py-3">
             {renderedMessages.length === 0 ? (
               <div className="rounded-md bg-[colors.background.surface]/90 px-3 py-4 text-center text-xs text-[colors.text.muted] shadow-sm">
                 {kloelT(`Nenhuma conversa sincronizada ainda. Assim que a sessão estiver ativa, as mensagens
@@ -284,7 +279,7 @@ function QrConnectCard({
               <div className="mb-3">
                 <KloelMushroomVisual
                   size={44}
-                  traceColor={kloelT(`#FFFFFF`)}
+                  traceColor={colors.text.silver}
                   animated={connecting}
                   spores={connecting ? 'animated' : 'none'}
                 />

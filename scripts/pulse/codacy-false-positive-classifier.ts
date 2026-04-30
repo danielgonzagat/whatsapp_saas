@@ -11,6 +11,7 @@
 import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { normalizePath } from './scope-state.codacy';
 import type { PulseCodacySummary } from './types.truth';
 import type { CodacyClassification } from './types.codacy-classification';
 import type {
@@ -172,7 +173,7 @@ function hasMatchingHumanDecision(
 }
 
 function hasGovernanceOrPathContext(issue: CodacyIssueLike): boolean {
-  const normalizedPath = issue.filePath.replace(/\\/g, '/');
+  const normalizedPath = normalizePath(issue.filePath);
   return (
     normalizedPath === 'AGENTS.md' ||
     normalizedPath === 'CLAUDE.md' ||

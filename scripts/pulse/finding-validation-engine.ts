@@ -1,3 +1,5 @@
+import { normalizePath } from './scope-state.codacy';
+
 export type PulseFindingTruthMode = 'observed' | 'confirmed_static' | 'inferred' | 'weak_signal';
 
 export type PulseFindingActionability = 'fix_now' | 'needs_probe' | 'needs_context' | 'ignore';
@@ -190,7 +192,7 @@ function dedupeKey(
   return [
     normalizeText(signal.detector),
     normalizeText(signal.type),
-    signal.filePath.replace(/\\/g, '/'),
+    normalizePath(signal.filePath),
     String(normalizeLine(signal.line)),
     normalizeText(signal.evidence),
   ].join('\u0000');
@@ -231,7 +233,7 @@ export function verifyPulseRawSignal(signal: PulseRawSignal): PulseVerifiedFindi
   return {
     detector: normalizeText(signal.detector),
     type: normalizeText(signal.type),
-    filePath: signal.filePath.replace(/\\/g, '/'),
+    filePath: normalizePath(signal.filePath),
     line: normalizeLine(signal.line),
     evidence: normalizeText(signal.evidence),
     truthMode,

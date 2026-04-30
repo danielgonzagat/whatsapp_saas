@@ -125,7 +125,34 @@ describe('hardcoded finding audit', () => {
     expect(artifact.totalFindings).toBe(0);
   });
 
-  it('ignores non-parser sources until integration chooses a wider surface', () => {
+  it('audits parser-like PULSE sources by code evidence instead of parser path alone', () => {
+    const artifact = buildHardcodedFindingAuditArtifact([
+      {
+        filePath: 'scripts/pulse/no-hardcoded-reality-audit.ts',
+        source: [
+          'export function auditHardcodedReality(): void {',
+          "  const ALLOWED_PULSE_PROFILES = ['scan', 'guidance', 'production-final'];",
+          '  void ALLOWED_PULSE_PROFILES;',
+          '}',
+        ].join('\n'),
+      },
+    ]);
+
+    expect(artifact.files).toEqual([
+      expect.objectContaining({
+        filePath: 'scripts/pulse/no-hardcoded-reality-audit.ts',
+        findings: [
+          expect.objectContaining({
+            kind: 'fixed_allowlist',
+            symbol: 'ALLOWED_PULSE_PROFILES',
+          }),
+        ],
+      }),
+    ]);
+    expect(artifact.totalFindings).toBe(1);
+  });
+
+  it('ignores PULSE sources without parser-like code evidence', () => {
     const artifact = buildHardcodedFindingAuditArtifact([
       {
         filePath: 'scripts/pulse/no-hardcoded-reality-audit.ts',

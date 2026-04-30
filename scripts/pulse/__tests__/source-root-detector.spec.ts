@@ -4,7 +4,7 @@ import * as path from 'path';
 import { describe, expect, it } from 'vitest';
 
 import { detectConfig } from '../config';
-import { detectSourceRoots } from '../source-root-detector';
+import { detectSourceRoots, sourceGlobsForTsMorph } from '../source-root-detector';
 
 function writeJson(filePath: string, value: unknown): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -157,5 +157,30 @@ describe('PULSE source root detector', () => {
         languageExtensions: [],
       }),
     );
+  });
+
+  it('returns exact ts-morph files without skipped directories or duplicate nested roots', () => {
+    const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-source-root-globs-'));
+    const frontendSrc = path.join(rootDir, 'frontend/src');
+    fs.mkdirSync(frontendSrc, { recursive: true });
+    fs.mkdirSync(path.join(rootDir, 'frontend/.next/generated'), { recursive: true });
+    fs.mkdirSync(path.join(rootDir, 'frontend/src/nested'), { recursive: true });
+
+    writeJson(path.join(rootDir, 'frontend/package.json'), {
+      dependencies: { next: '1.0.0', react: '1.0.0' },
+    });
+    writeJson(path.join(rootDir, 'frontend/tsconfig.json'), {
+      include: ['src/**/*.tsx'],
+    });
+    fs.writeFileSync(path.join(frontendSrc, 'page.tsx'), 'export function Page() { return null; }');
+    fs.writeFileSync(path.join(frontendSrc, 'nested/page.tsx'), 'export const nested = true;');
+    fs.writeFileSync(
+      path.join(rootDir, 'frontend/.next/generated/page.tsx'),
+      'export const generated = true;',
+    );
+
+    const files = sourceGlobsForTsMorph(rootDir).map((file) => path.relative(rootDir, file));
+
+    expect(files).toEqual(['frontend/src/nested/page.tsx', 'frontend/src/page.tsx']);
   });
 });

@@ -3,8 +3,9 @@ import { createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { buildCodacyEvidence } from '../codacy-evidence';
 import { classifyCodacyIssues } from '../codacy-false-positive-classifier';
-import type { PulseCodacyIssue, PulseCodacySummary } from '../types.truth';
+import type { PulseCodacyIssue, PulseCodacySummary, PulseScopeState } from '../types.truth';
 import type { CodacyClassification } from '../types.codacy-classification';
 import type {
   AdjudicatedFinding,
@@ -131,6 +132,70 @@ function makeSummary(overrides: Partial<PulseCodacySummary> = {}): PulseCodacySu
     topFiles: overrides.topFiles ?? [],
     highPriorityBatch: overrides.highPriorityBatch ?? [],
     observedFiles: overrides.observedFiles ?? [],
+  };
+}
+
+function makeScopeState(rootDir: string, codacy: PulseCodacySummary): PulseScopeState {
+  return {
+    generatedAt: '2026-04-29T00:00:00.000Z',
+    rootDir,
+    summary: {
+      totalFiles: 0,
+      totalLines: 0,
+      runtimeCriticalFiles: 0,
+      userFacingFiles: 0,
+      humanRequiredFiles: 0,
+      surfaceCounts: {
+        frontend: 0,
+        'frontend-admin': 0,
+        backend: 0,
+        worker: 0,
+        prisma: 0,
+        e2e: 0,
+        scripts: 0,
+        docs: 0,
+        infra: 0,
+        governance: 0,
+        'root-config': 0,
+        artifacts: 0,
+        misc: 0,
+      },
+      kindCounts: {
+        source: 0,
+        spec: 0,
+        migration: 0,
+        config: 0,
+        document: 0,
+        artifact: 0,
+      },
+      unmappedModuleCandidates: [],
+      inventoryCoverage: 100,
+      classificationCoverage: 100,
+      structuralGraphCoverage: 0,
+      testCoverage: 0,
+      scenarioCoverage: 0,
+      runtimeEvidenceCoverage: 0,
+      productionProofCoverage: 0,
+      orphanFiles: [],
+      unknownFiles: [],
+    },
+    parity: {
+      status: 'pass',
+      mode: 'repo_inventory_with_codacy_spotcheck',
+      confidence: 'high',
+      reason: 'test fixture',
+      inventoryFiles: 0,
+      codacyObservedFiles: codacy.observedFiles.length,
+      codacyObservedFilesCovered: codacy.observedFiles.length,
+      missingCodacyFiles: [],
+    },
+    codacy,
+    files: [],
+    moduleAggregates: [],
+    excludedFiles: [],
+    scopeSource: 'repo_filesystem',
+    manifestBoundary: false,
+    manifestRole: 'semantic_overlay',
   };
 }
 
@@ -377,5 +442,47 @@ describe('classifyCodacyIssues', () => {
 
     expect(result.nonActionableHigh).toBe(0);
     expect(result.actionableHigh).toBe(1);
+  });
+
+  it('builds Codacy evidence from scope root instead of process cwd', () => {
+    const rootDir = makeTempRoot();
+    const otherCwd = makeTempRoot();
+    const issue = makeIssue({
+      patternId: RAC_PATTERN,
+      message: 'generic.sql RAC_ demo rule requires table names to use a sample prefix',
+    });
+    const fileHash = writeFile(rootDir, issue.filePath, 'create table users (id text);\n');
+    const adjudicationState = makeAdjudicationState([
+      makeAdjudicatedFinding(issue, { fileHashAtSuppression: fileHash }),
+      makeAdjudicatedFinding(makeIssue({ issueId: 'rac-repeat', patternId: RAC_PATTERN }), {
+        findingId: 'repeat',
+        fileHashAtSuppression: fileHash,
+      }),
+    ]);
+    fs.mkdirSync(path.join(rootDir, '.pulse', 'current'), { recursive: true });
+    fs.writeFileSync(
+      path.join(rootDir, '.pulse', 'current', 'PULSE_FP_ADJUDICATION.json'),
+      JSON.stringify(adjudicationState),
+      'utf8',
+    );
+    const summary = makeSummary({
+      sourcePath: path.join(rootDir, 'PULSE_CODACY_STATE.json'),
+      totalIssues: 1,
+      severityCounts: { HIGH: 1, MEDIUM: 0, LOW: 0, UNKNOWN: 0 },
+      highPriorityBatch: [issue],
+      observedFiles: [issue.filePath],
+    });
+
+    const originalCwd = process.cwd();
+    try {
+      process.chdir(otherCwd);
+      const evidence = buildCodacyEvidence(makeScopeState(rootDir, summary));
+
+      expect(evidence.nonActionableHigh).toBe(1);
+      expect(evidence.actionableHigh).toBe(0);
+      expect(evidence.classification.nonActionableByPattern).toEqual({ [RAC_PATTERN]: 1 });
+    } finally {
+      process.chdir(originalCwd);
+    }
   });
 });

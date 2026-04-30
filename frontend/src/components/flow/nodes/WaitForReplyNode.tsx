@@ -1,14 +1,9 @@
 'use client';
 
-// PULSE_VISUAL_OK: Tailwind bracket hex values (colors.background.surface, colors.border.space, colors.text.silver,
-// colors.text.muted, colors.text.dim, #8B5CF6) are a mix of Monitor palette colors and node
-// flow-specific accents (purple #8B5CF6 for Wait-for-reply nodes).
-
 import { kloelT } from '@/lib/i18n/t';
 import { Hourglass } from 'lucide-react';
 import { memo } from 'react';
 import { Handle, type NodeProps, Position } from 'reactflow';
-import { colors } from '@/lib/design-tokens';
 
 /** Wait for reply node data shape. */
 export interface WaitForReplyNodeData {
@@ -42,14 +37,18 @@ function WaitForReplyNodeComponent({ data, selected }: NodeProps<WaitForReplyNod
     <div
       className={`
       px-4 py-3 rounded-lg border-2 bg-[colors.background.surface] shadow-md min-w-[200px] max-w-[280px]
-      ${selected ? 'border-[#8B5CF6] ring-2 ring-[#8B5CF6]/30' : 'border-[colors.border.space]'}
+      ${selected ? 'border-[colors.ember.primary] ring-2 ring-[colors.ember.primary]/30' : 'border-[colors.border.space]'}
     `}
     >
-      <Handle type="target" position={Position.Top} className="!bg-[#8B5CF6] !w-3 !h-3" />
+      <Handle
+        type="target"
+        position={Position.Top}
+        className="!bg-[colors.ember.primary] !w-3 !h-3"
+      />
 
       <div className="flex items-center gap-2 mb-2">
-        <div className="p-1.5 bg-[#8B5CF6]/15 rounded-md">
-          <Hourglass className="w-4 h-4 text-[#8B5CF6]" aria-hidden="true" />
+        <div className="p-1.5 bg-[colors.ember.primary]/15 rounded-md">
+          <Hourglass className="w-4 h-4 text-[colors.ember.primary]" aria-hidden="true" />
         </div>
         <span className="font-medium text-sm text-[colors.text.silver]">
           {data.label || 'Aguardar Resposta'}
@@ -61,7 +60,7 @@ function WaitForReplyNodeComponent({ data, selected }: NodeProps<WaitForReplyNod
       </div>
 
       {data.fallbackMessage && (
-        <div className="text-[10px] text-[#8B5CF6] bg-[#8B5CF6]/10 px-2 py-0.5 rounded-md mt-1 truncate">
+        <div className="text-[10px] text-[colors.ember.primary] bg-[colors.ember.primary]/10 px-2 py-0.5 rounded-md mt-1 truncate">
           {data.fallbackMessage}
         </div>
       )}

@@ -85,7 +85,7 @@ export function buildCodacyEvidence(
     }),
   );
 
-  const classification = classifyCodacyIssues(scopeState.codacy);
+  const classification = classifyCodacyIssues(scopeState.codacy, { rootDir: scopeState.rootDir });
 
   return {
     generatedAt: new Date().toISOString(),

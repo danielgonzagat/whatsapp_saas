@@ -104,7 +104,9 @@ export function checkOrderingTiming(config: PulseConfig): Break[] {
       mutatesWebhookState
     ) {
       const hasTimestampCheck =
-        /event\.timestamp|createdAt|occurredAt|eventDate|sequence|order/i.test(content);
+        /event\.(?:timestamp|createdAt|occurredAt|dateCreated)|\b(?:createdAt|occurredAt|eventDate|sequence|order)\b/i.test(
+          content,
+        );
       const hasAlreadyProcessed =
         /alreadyProcessed|isDuplicate|externalId.*unique|webhookEvent/i.test(content);
 

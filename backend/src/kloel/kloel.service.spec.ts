@@ -180,6 +180,7 @@ describe('KloelService', () => {
       whatsappService as never as ConstructorParameters<typeof KloelWhatsAppToolsService>[1],
       { getSessionStatus: jest.fn(), startSession: jest.fn() } as never,
       { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as never,
+      planLimitsMock as never,
     );
 
     service = new KloelService(

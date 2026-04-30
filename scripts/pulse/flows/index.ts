@@ -149,6 +149,52 @@ function getConfiguredWithdrawalAmount(manifest: PulseManifest | null): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function titleFromEvidenceToken(value: string): string {
+  return value
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function deriveReplayBirthDate(seed: string): string {
+  const checksum = [...seed].reduce((total, char) => total + char.charCodeAt(0), 0);
+  const now = new Date();
+  const adultYear = now.getUTCFullYear() - (25 + (checksum % 20));
+  const month = checksum % 12;
+  const day = (checksum % 27) + 1;
+  return new Date(Date.UTC(adultYear, month, day)).toISOString().slice(0, 10);
+}
+
+function buildReplayProfilePayload(
+  manifest: PulseManifest | null,
+  auth: AuthCredentials,
+  replayPhone: string,
+  replayMarker: string,
+): Record<string, unknown> {
+  const configured = getManifestAdapterValue<unknown>(manifest, 'pulseKycProfile');
+  if (isRecord(configured)) {
+    return {
+      ...configured,
+      phone: String(configured.phone || replayPhone),
+      birthDate: String(configured.birthDate || deriveReplayBirthDate(replayMarker)),
+    };
+  }
+
+  const identity = titleFromEvidenceToken(auth.email.split('@')[0] || auth.workspaceId);
+  const name = identity ? `${identity} ${replayMarker}` : replayMarker;
+  return {
+    name,
+    publicName: identity || replayMarker,
+    phone: replayPhone,
+    birthDate: deriveReplayBirthDate(replayMarker),
+  };
+}
+
 function normalizePhone(value: string | null | undefined): string {
   return String(value || '').replace(/\D+/g, '');
 }
@@ -375,12 +421,12 @@ async function runWalletWithdrawalFlow(
     const replayPhone = getReplayPhone(context.manifest);
 
     if (replayMode) {
-      const profileRes = await fetchJsonWithAuth('PUT', '/kyc/profile', auth.token, {
-        name: 'PULSE Replay Operator',
-        publicName: 'PULSE Replay',
-        phone: replayPhone,
-        birthDate: '1990-01-01',
-      });
+      const profileRes = await fetchJsonWithAuth(
+        'PUT',
+        '/kyc/profile',
+        auth.token,
+        buildReplayProfilePayload(context.manifest, auth, replayPhone, replayMarker),
+      );
 
       if (!profileRes.ok) {
         return buildFailureResult(

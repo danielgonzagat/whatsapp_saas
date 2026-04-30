@@ -18,6 +18,7 @@ import type {
 import type { PulseCodacyEvidence } from './types';
 import type { PulseSignalDraft } from './signal-parsers';
 import {
+  normalizePathValue,
   normalizeRoutePattern,
   routeMatches,
   tokenize,
@@ -55,7 +56,7 @@ function buildFlowTerms(flow: PulseFlowProjectionItem): string[] {
 function buildCapabilityIndexes(capabilities: PulseCapability[]) {
   return capabilities.map((capability) => ({
     capability,
-    filePaths: new Set(capability.filePaths.map((entry) => entry.replace(/\\/g, '/'))),
+    filePaths: new Set(capability.filePaths.map((entry) => normalizePathValue('', entry))),
     routePatterns: capability.routePatterns.map((entry) => normalizeRoutePattern(entry)),
     terms: buildCapabilityTerms(capability),
   }));
@@ -133,7 +134,9 @@ export function buildSignalState(
   const capabilityIndexes = buildCapabilityIndexes(input.capabilityState.capabilities);
   const flowIndexes = buildFlowIndexes(input.flowProjection.flows);
   const scopeFilesByPath = new Map(
-    input.scopeState.files.map((file) => [file.path.replace(/\\/g, '/'), file] as const),
+    input.scopeState.files.map(
+      (file) => [normalizePathValue(input.rootDir, file.path), file] as const,
+    ),
   );
 
   const mappedSignals = drafts.map((draft) => {

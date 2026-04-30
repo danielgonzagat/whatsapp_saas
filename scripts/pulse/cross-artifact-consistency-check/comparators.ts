@@ -22,9 +22,6 @@ interface ProofDebtSignal {
   value: unknown;
 }
 
-const MACHINE_ARTIFACT_PATTERN =
-  /(^|\/|\\)(\.pulse($|\/|\\)|PULSE_[^/\\]+\.json$|pulse\.manifest\.json$)/;
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -61,16 +58,46 @@ function getDirectiveUnitArray(artifact: LoadedArtifact, field: string): Directi
 }
 
 function normalizePathForCheck(filePath: string): string {
-  return filePath.replace(/\\/g, '/').replace(/^\.\//, '');
+  const normalized = filePath.split('\\').join('/');
+  return normalized.startsWith('./') ? normalized.slice(2) : normalized;
+}
+
+function pathSegments(filePath: string): string[] {
+  return normalizePathForCheck(filePath)
+    .split('/')
+    .filter((segment) => segment.length > 0);
+}
+
+function isPulseSourcePath(filePath: string): boolean {
+  const segments = pathSegments(filePath);
+  return segments[0] === 'scripts' && segments[1] === 'pulse';
+}
+
+function isUpperSnakeArtifactName(fileName: string): boolean {
+  const dotIndex = fileName.lastIndexOf('.');
+  const stem = dotIndex === -1 ? fileName : fileName.slice(0, dotIndex);
+  const extension = dotIndex === -1 ? '' : fileName.slice(dotIndex + 1);
+  return (
+    ['json', 'jsonl', 'md'].includes(extension) &&
+    stem.length > 0 &&
+    [...stem].every(
+      (char) => char === '_' || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9'),
+    )
+  );
+}
+
+function isPulseArtifactPath(filePath: string): boolean {
+  const segments = pathSegments(filePath);
+  const fileName = segments[segments.length - 1];
+  return (
+    segments.includes('.pulse') ||
+    fileName === 'pulse.manifest.json' ||
+    Boolean(fileName && isUpperSnakeArtifactName(fileName))
+  );
 }
 
 function isMachineEvidencePath(filePath: string): boolean {
-  const normalized = normalizePathForCheck(filePath);
-  return (
-    normalized.startsWith('scripts/pulse/') ||
-    normalized === 'scripts/pulse' ||
-    MACHINE_ARTIFACT_PATTERN.test(normalized)
-  );
+  return isPulseSourcePath(filePath) || isPulseArtifactPath(filePath);
 }
 
 function getUnitProductFiles(unit: DirectiveUnitView): string[] {

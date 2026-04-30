@@ -232,7 +232,7 @@ export function checkGitNexusFreshness(rootDir: string): GitNexusFreshness {
     totalIndexableFiles,
     coveragePercent,
     hasIndexDirectory: indexDirExists,
-    autonomyGatePassed: false,
+    autonomyGatePassed: reindexRecommended,
   });
 
   const freshness: GitNexusFreshness = {
@@ -285,11 +285,20 @@ export function triggerReindex(rootDir: string): GitNexusFreshness {
  * Determine whether the GitNexus knowledge graph is fresh enough
  * to support PULSE autonomous decision-making.
  *
- * Autonomy requires: index exists, not stale, and coverage >= 50%.
+ * Autonomy requires live index evidence for the current commit. Coverage is
+ * reported as evidence, but no fixed percentage is allowed to decide autonomy.
  *
  * @param freshness - Freshness snapshot from checkGitNexusFreshness
  * @returns Whether the graph meets autonomy freshness requirements
  */
 export function isGraphFreshEnoughForAutonomy(freshness: GitNexusFreshness): boolean {
-  return !freshness.stale && freshness.indexedFiles > 0 && freshness.coveragePercent >= 50;
+  return (
+    freshness.hasIndexDirectory &&
+    !freshness.stale &&
+    freshness.indexedFiles > 0 &&
+    freshness.totalIndexableFiles > 0 &&
+    freshness.coveragePercent > 0 &&
+    !freshness.reindexRecommended &&
+    freshness.impactAnalysisAvailable
+  );
 }

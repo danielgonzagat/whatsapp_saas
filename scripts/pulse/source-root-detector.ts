@@ -875,11 +875,16 @@ export function detectSourceRoots(rootDir: string): DetectedSourceRoot[] {
 }
 
 export function sourceGlobsForTsMorph(rootDir: string): string[] {
-  const globs: string[] = [];
+  const files = new Set<string>();
   for (const root of detectSourceRoots(rootDir)) {
-    for (const ext of root.languageExtensions) {
-      globs.push(`${root.absolutePath.split(path.sep).join('/')}/**/*${ext}`);
+    if (!pathExists(root.absolutePath)) continue;
+    for (const entry of readDir(root.absolutePath, { recursive: true }) as string[]) {
+      const relativeEntry = normalizeRelative(entry);
+      if (hasSkippedSegment(relativeEntry)) continue;
+      const extension = path.extname(relativeEntry);
+      if (!root.languageExtensions.includes(extension)) continue;
+      files.add(safeJoin(root.absolutePath, relativeEntry).split(path.sep).join('/'));
     }
   }
-  return globs;
+  return [...files].sort();
 }

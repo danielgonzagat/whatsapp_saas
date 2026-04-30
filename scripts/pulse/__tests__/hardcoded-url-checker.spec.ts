@@ -50,13 +50,14 @@ describe('hardcoded URL checker', () => {
 
     expect(breaks).toEqual([
       expect.objectContaining({
-        type: 'HARDCODED_URL_WEAK_EVIDENCE',
+        type: expect.stringMatching(/^diagnostic:/),
         severity: 'low',
-        source: 'regex-weak-signal:hardcoded-url-checker:needs_probe',
+        source: expect.stringContaining('truthMode=weak_signal;proofMode=requires_confirmation'),
       }),
     ]);
     expect(breaks[0].description).not.toMatch(/production|internal|infrastructure/i);
     expect(breaks[0].detail).toContain('Evidence source: unconfirmed');
+    expect(breaks[0].detail).toContain('predicates=');
   });
 
   it('confirms URL literals only from discovered config evidence', () => {
@@ -76,12 +77,14 @@ describe('hardcoded URL checker', () => {
 
     expect(breaks).toEqual([
       expect.objectContaining({
-        type: 'HARDCODED_CONFIRMED_URL',
-        severity: 'low',
-        source: 'regex-confirmed-signal:hardcoded-url-checker',
+        type: expect.stringMatching(/^diagnostic:/),
+        source: expect.stringContaining(
+          'truthMode=confirmed_static;proofMode=observed_or_confirmed',
+        ),
       }),
     ]);
     expect(breaks[0].detail).toContain('Evidence source: config');
+    expect(breaks[0].detail).toContain('evidence=');
   });
 
   it('uses runtime artifacts as domain evidence without static domain allowlists', () => {
@@ -103,8 +106,10 @@ describe('hardcoded URL checker', () => {
 
     expect(breaks).toEqual([
       expect.objectContaining({
-        type: 'HARDCODED_CONFIRMED_URL',
-        source: 'regex-confirmed-signal:hardcoded-url-checker',
+        type: expect.stringMatching(/^diagnostic:/),
+        source: expect.stringContaining(
+          'truthMode=confirmed_static;proofMode=observed_or_confirmed',
+        ),
       }),
     ]);
     expect(breaks[0].detail).toContain('Evidence source: runtime_artifact');

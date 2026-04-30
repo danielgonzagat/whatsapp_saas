@@ -222,37 +222,26 @@ describe('PULSE no-hardcoded-reality contracts', () => {
 
     const result = auditPulseNoHardcodedReality(rootDir);
 
-    expect(result.findings.map((finding) => finding.kind)).toEqual([
-      'fixed_product_route_collection',
-      'fixed_capability_id_collection',
-      'fixed_flow_id_collection',
-      'fixed_module_decision_collection',
-      'fixed_product_catalog_collection',
-      'fixed_domain_catalog_collection',
-      'fixed_provider_catalog_collection',
-      'fixed_role_catalog_collection',
-    ]);
-    expect(result.summary).toEqual({
-      totalFindings: 8,
-      byKind: {
-        fixed_product_route_collection: 1,
-        fixed_capability_id_collection: 1,
-        fixed_flow_id_collection: 1,
-        fixed_module_decision_collection: 1,
-        fixed_product_catalog_collection: 1,
-        fixed_domain_catalog_collection: 1,
-        fixed_provider_catalog_collection: 1,
-        fixed_role_catalog_collection: 1,
+    expect(result.findings.map((finding) => finding.kind)).toEqual(
+      expect.arrayContaining([
+        'hardcoded_const_declaration_risk',
+        'fixed_product_route_collection',
+        'fixed_capability_id_collection',
+        'fixed_flow_id_collection',
+        'fixed_module_decision_collection',
+        'fixed_product_catalog_collection',
+        'fixed_domain_catalog_collection',
+        'fixed_provider_catalog_collection',
+        'fixed_role_catalog_collection',
+      ]),
+    );
+    expect(result.summary.byKind.hardcoded_const_declaration_risk).toBe(8);
+    expect(result.summary.topFiles).toEqual([
+      {
+        filePath: 'scripts/pulse/bad.ts',
+        findings: 16,
       },
-      topFiles: [
-        {
-          filePath: 'scripts/pulse/bad.ts',
-          findings: 8,
-        },
-      ],
-      totalPredicates: 0,
-      byPredicateKind: {},
-    });
+    ]);
   });
 
   it('limits zero-hardcode reality audit to PULSE machine code, not product code', () => {
@@ -277,17 +266,24 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     );
 
     const result = auditPulseNoHardcodedReality(rootDir);
-    expect(result.findings).toEqual([
-      expect.objectContaining({
-        filePath: 'scripts/pulse/machine-decision.ts',
-        kind: 'fixed_product_catalog_collection',
-        samples: ['pulse-should-report', 'pulse-other'],
-      }),
-    ]);
+    expect(result.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          filePath: 'scripts/pulse/machine-decision.ts',
+          kind: 'hardcoded_const_declaration_risk',
+          samples: ['PRODUCT_CATALOG'],
+        }),
+        expect.objectContaining({
+          filePath: 'scripts/pulse/machine-decision.ts',
+          kind: 'fixed_product_catalog_collection',
+          samples: ['pulse-should-report', 'pulse-other'],
+        }),
+      ]),
+    );
     expect(result.summary.topFiles).toEqual([
       {
         filePath: 'scripts/pulse/machine-decision.ts',
-        findings: 1,
+        findings: 2,
       },
     ]);
   });
@@ -315,7 +311,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     });
   });
 
-  it('allows kernel grammar collections that do not claim product reality', () => {
+  it('flags kernel grammar const collections as hardcode surface', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-hardcoded-grammar-'));
     const pulseDir = path.join(rootDir, 'scripts/pulse');
     fs.mkdirSync(pulseDir, { recursive: true });
@@ -333,7 +329,20 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       ].join('\n'),
     );
 
-    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([]);
+    const result = auditPulseNoHardcodedReality(rootDir);
+    expect(result.findings).toHaveLength(8);
+    expect(result.findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'hardcoded_const_declaration_risk',
+          samples: ['TRUTH_MODES'],
+        }),
+        expect.objectContaining({
+          kind: 'hardcoded_const_declaration_risk',
+          samples: ['KERNEL_ROLE_GRAMMAR'],
+        }),
+      ]),
+    );
   });
 
   it('fails fixed source root globs in new core PULSE code', () => {
@@ -364,7 +373,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     );
   });
 
-  it('allows the source-root detector legacy compatibility shim while blocking new fixed roots', () => {
+  it('flags legacy compatibility const shims as hardcode surface', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-legacy-source-roots-'));
     const pulseDir = path.join(rootDir, 'scripts/pulse');
     fs.mkdirSync(pulseDir, { recursive: true });
@@ -373,7 +382,13 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       "const LEGACY_SOURCE_ROOTS = ['backend/src', 'frontend/src', 'worker/src'];",
     );
 
-    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([]);
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([
+      expect.objectContaining({
+        kind: 'hardcoded_const_declaration_risk',
+        context: 'const.declaration',
+        samples: ['LEGACY_SOURCE_ROOTS'],
+      }),
+    ]);
   });
 
   it('does not let the no-hardcode auditor hide its own bootstrap allowlists as final truth', () => {
@@ -419,13 +434,20 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       "const CRITICAL_DOMAINS = ['checkout', 'billing', 'wallet'];",
     );
 
-    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([
-      expect.objectContaining({
-        kind: 'fixed_domain_criticality_collection',
-        context: 'CRITICAL_DOMAINS',
-        samples: ['checkout', 'billing', 'wallet'],
-      }),
-    ]);
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'hardcoded_const_declaration_risk',
+          context: 'const.declaration',
+          samples: ['CRITICAL_DOMAINS'],
+        }),
+        expect.objectContaining({
+          kind: 'fixed_domain_criticality_collection',
+          context: 'CRITICAL_DOMAINS',
+          samples: ['checkout', 'billing', 'wallet'],
+        }),
+      ]),
+    );
   });
 
   it('classifies BreakType unions as hardcoded authority risk', () => {
@@ -461,13 +483,20 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       ].join('\n'),
     );
 
-    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([
-      expect.objectContaining({
-        kind: 'hardcoded_break_push_type_risk',
-        context: 'breaks.push.type',
-        samples: ['STATIC_PRODUCT_BLOCKER'],
-      }),
-    ]);
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'hardcoded_const_declaration_risk',
+          context: 'const.declaration',
+          samples: ['breaks'],
+        }),
+        expect.objectContaining({
+          kind: 'hardcoded_break_push_type_risk',
+          context: 'breaks.push.type',
+          samples: ['STATIC_PRODUCT_BLOCKER'],
+        }),
+      ]),
+    );
   });
 
   it('classifies parser ALLOWED and regex gates that emit direct blockers as evidence risk', () => {
@@ -512,13 +541,20 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       'const query = `SELECT id, name FROM "Product" WHERE id = $1 LIMIT 1`;',
     );
 
-    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual([
-      expect.objectContaining({
-        kind: 'hardcoded_sql_reality_table_risk',
-        context: 'sql.reality_table',
-        samples: ['Product'],
-      }),
-    ]);
+    expect(auditPulseNoHardcodedReality(rootDir).findings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'hardcoded_const_declaration_risk',
+          context: 'const.declaration',
+          samples: ['query'],
+        }),
+        expect.objectContaining({
+          kind: 'hardcoded_sql_reality_table_risk',
+          context: 'sql.reality_table',
+          samples: ['Product'],
+        }),
+      ]),
+    );
   });
 
   it('classifies fixed gate, profile, and threshold collections as decision risk', () => {
@@ -670,7 +706,19 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       (finding) => finding.filePath === 'scripts/pulse/cert-constants.ts',
     );
 
-    expect(certConstantFindings).toEqual([]);
+    expect(certConstantFindings.length).toBeGreaterThan(0);
+    expect(certConstantFindings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: 'hardcoded_const_declaration_risk',
+          samples: ['SECURITY_BREAK_TYPE_KERNEL_GRAMMAR'],
+        }),
+        expect.objectContaining({
+          kind: 'hardcoded_const_declaration_risk',
+          samples: ['CHECKER_GAP_TYPES'],
+        }),
+      ]),
+    );
   });
 
   it('does not seed built-in product domain packs from the core', () => {

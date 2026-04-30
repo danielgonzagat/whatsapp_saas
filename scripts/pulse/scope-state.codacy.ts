@@ -18,7 +18,8 @@ import type {
 
 /** Normalise an OS path to forward-slash form, dropping any leading `./`. */
 export function normalizePath(input: string): string {
-  return input.split(path.sep).join('/').replace(/^\.\//, '');
+  const normalized = input.split(path.sep).join('/').split('\\').join('/');
+  return normalized.startsWith('./') ? normalized.slice(2) : normalized;
 }
 
 /** Coerce an arbitrary severity string into the PulseCodacySeverity enum. */
