@@ -235,9 +235,12 @@ function looksLikeFixedId(value: string): boolean {
 }
 
 function looksLikeRealityLabel(value: string): boolean {
+  const startsWithLower = /^[a-z]/.test(value);
+  const restIsAlphaNumeric = /^[a-z][A-Za-z0-9]*$/.test(value);
+  const hasUppercase = /[A-Z]/.test(value);
   return (
     looksLikeFixedId(value) ||
-    /^[a-z][a-z0-9]*[A-Z](?:[A-Za-z0-9]*[A-Z])*[A-Za-z0-9]*$/.test(value) ||
+    (startsWithLower && restIsAlphaNumeric && hasUppercase) ||
     /^[A-Z][A-Za-z0-9 ]{2,}$/.test(value) ||
     /^[a-z][a-z0-9]{2,}$/.test(value)
   );
