@@ -807,6 +807,146 @@ function buildCapabilityObservability(
   });
 }
 
+function scanPillarEvidence(
+  capability: PulseCapability,
+  pillar: ObservabilityPillar,
+  relevantFiles: string[],
+  runtimeContext: ObservabilityRuntimeContext,
+): PillarScanResult {
+  if (pillar === 'error_budget' && !capability.runtimeCritical) {
+    return {
+      status: 'not_applicable',
+      sourceKind: 'not_applicable',
+      source: 'non-runtime-critical capability',
+      reason: 'Error budget evidence is not required for non-runtime-critical capabilities.',
+      filePaths: [],
+    };
+  }
+
+  const runtimeSignalEvidence = findRuntimeSignalEvidence(capability.id, pillar, runtimeContext);
+  if (runtimeSignalEvidence) return runtimeSignalEvidence;
+
+  const behaviorGraphEvidence = findBehaviorGraphEvidence(pillar, relevantFiles, runtimeContext);
+  if (behaviorGraphEvidence) return behaviorGraphEvidence;
+
+  const artifactSignal = observabilitySignalForPillar(runtimeContext.observabilityEvidence, pillar);
+  if (artifactSignal) {
+    return {
+      status: 'partial',
+      sourceKind: 'configuration',
+      source: `observability artifact signal ${artifactSignal}`,
+      reason:
+        'The shared observability artifact contains this signal, but it is not scoped to the capability.',
+      filePaths: [],
+    };
+  }
+
+  const runtimeProbeEvidence = findRuntimeProbeEvidence(pillar, runtimeContext);
+  if (runtimeProbeEvidence) return runtimeProbeEvidence;
+
+  return scanStaticPillarEvidence(pillar, relevantFiles);
+}
+
+function findRuntimeSignalEvidence(
+  capabilityId: string,
+  pillar: ObservabilityPillar,
+  runtimeContext: ObservabilityRuntimeContext,
+): PillarScanResult | null {
+  const matchingSignals = (
+    runtimeContext.runtimeSignalsByCapability.get(capabilityId) ?? []
+  ).filter(
+    (signal) =>
+      signal.evidenceMode !== 'simulated' &&
+      (signalMatchesPillar(signal.source, pillar) ||
+        signalMatchesPillar(signal.type, pillar) ||
+        signalMatchesPillar(signal.evidenceKind, pillar) ||
+        signalMatchesPillar(signal.message, pillar)),
+  );
+  const observedSignals = matchingSignals.filter((signal) => signal.evidenceMode === 'observed');
+  const signal = observedSignals[0] ?? matchingSignals[0];
+  if (!signal) return null;
+
+  return {
+    status: signal.evidenceMode === 'observed' ? 'observed' : 'partial',
+    sourceKind: signal.evidenceMode === 'observed' ? 'runtime_observed' : 'configuration',
+    source: `runtime fusion signal ${signal.id}`,
+    reason: signal.message,
+    filePaths: signal.affectedFilePaths,
+  };
+}
+
+function findBehaviorGraphEvidence(
+  pillar: ObservabilityPillar,
+  relevantFiles: string[],
+  runtimeContext: ObservabilityRuntimeContext,
+): PillarScanResult | null {
+  const graphFlag = `has${pillar
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('')}`;
+  const observedFiles: string[] = [];
+
+  for (const filePath of relevantFiles) {
+    const nodes = runtimeContext.behaviorNodesByFile.get(filePath) ?? [];
+    if (
+      nodes.some((node) => {
+        const nodeRecord: Record<string, unknown> = node;
+        return nodeRecord[graphFlag] === true;
+      })
+    ) {
+      observedFiles.push(filePath);
+    }
+  }
+
+  if (observedFiles.length === 0) return null;
+  return {
+    status: 'observed',
+    sourceKind: 'static_instrumentation',
+    source: `behavior graph ${graphFlag}`,
+    reason: 'The behavior graph reports capability-owned nodes with this observability signal.',
+    filePaths: observedFiles,
+  };
+}
+
+function findRuntimeProbeEvidence(
+  pillar: ObservabilityPillar,
+  runtimeContext: ObservabilityRuntimeContext,
+): PillarScanResult | null {
+  const probes = runtimeContext.runtimeEvidence?.probes ?? [];
+  const matchingProbe = probes.find(
+    (probe) =>
+      probe.executed &&
+      probe.status === 'passed' &&
+      (signalMatchesPillar(probe.probeId, pillar) ||
+        signalMatchesPillar(probe.target, pillar) ||
+        signalMatchesPillar(probe.summary, pillar)),
+  );
+  if (!matchingProbe) return null;
+  return {
+    status: 'partial',
+    sourceKind: 'configuration',
+    source: `runtime probe ${matchingProbe.probeId}`,
+    reason:
+      'A runtime probe produced matching evidence, but the probe artifact is not scoped to this capability.',
+    filePaths: [],
+  };
+}
+
+function scanStaticPillarEvidence(
+  pillar: ObservabilityPillar,
+  relevantFiles: string[],
+): PillarScanResult {
+  if (pillar === 'logs') return scanForLoggingEvidence(relevantFiles);
+  if (pillar === 'metrics') return scanForMetricsEvidence(relevantFiles);
+  if (pillar === 'tracing') return scanForTracingEvidence(relevantFiles);
+  if (pillar === 'alerts') return scanForAlertsEvidence(relevantFiles);
+  if (pillar === 'dashboards') return findDashboardEvidence(relevantFiles);
+  if (pillar === 'health_probes') return findHealthEndpointEvidence(relevantFiles);
+  if (pillar === 'error_budget') return findErrorBudgetEvidence(relevantFiles);
+  if (pillar === 'sentry') return scanForErrorTrackingEvidence(relevantFiles);
+  return missingEvidence(`No scanner is registered for observability pillar ${pillar}.`);
+}
+
 function normalizePillarEvidence(
   capabilityId: string,
   pillar: ObservabilityPillar,
@@ -868,6 +1008,7 @@ function buildObservabilityMachineSignal(
 function buildFlowObservability(
   flows: PulseFlowProjectionItem[],
   capabilityItems: CapabilityObservability[],
+  runtimeContext: ObservabilityRuntimeContext,
 ): FlowObservability[] {
   const capById = new Map(capabilityItems.map((c) => [c.capabilityId, c]));
 
@@ -877,27 +1018,34 @@ function buildFlowObservability(
       .map((cid) => capById.get(cid))
       .filter(Boolean) as CapabilityObservability[];
 
-    const pillarCounts: Record<ObservabilityPillar, { observed: number; total: number }> = {
-      logs: { observed: 0, total: flowCaps.length },
-      metrics: { observed: 0, total: flowCaps.length },
-      tracing: { observed: 0, total: flowCaps.length },
-      alerts: { observed: 0, total: flowCaps.length },
-      dashboards: { observed: 0, total: flowCaps.length },
-      health_probes: { observed: 0, total: flowCaps.length },
-      error_budget: { observed: 0, total: flowCaps.length },
-      sentry: { observed: 0, total: flowCaps.length },
-    };
+    const pillarCounts = Object.fromEntries(
+      runtimeContext.pillars.map((pillar) => [pillar, { observed: 0, total: flowCaps.length }]),
+    ) as Record<ObservabilityPillar, { observed: number; total: number }>;
 
     for (const cap of flowCaps) {
-      for (const pillar of Object.keys(pillarCounts) as ObservabilityPillar[]) {
+      for (const pillar of runtimeContext.pillars) {
         if (cap.pillars[pillar] === 'observed') {
           pillarCounts[pillar].observed++;
         }
       }
     }
 
+    for (const signal of runtimeContext.runtimeSignalsByFlow.get(flow.id) ?? []) {
+      if (signal.evidenceMode === 'simulated') continue;
+      for (const pillar of runtimeContext.pillars) {
+        if (
+          signalMatchesPillar(signal.source, pillar) ||
+          signalMatchesPillar(signal.type, pillar) ||
+          signalMatchesPillar(signal.message, pillar)
+        ) {
+          pillarCounts[pillar].observed = Math.max(pillarCounts[pillar].observed, 1);
+          pillarCounts[pillar].total = Math.max(pillarCounts[pillar].total, 1);
+        }
+      }
+    }
+
     const pillars = Object.fromEntries(
-      (Object.keys(pillarCounts) as ObservabilityPillar[]).map((pillar) => {
+      runtimeContext.pillars.map((pillar) => {
         const count = pillarCounts[pillar];
         if (count.total === 0) return [pillar, 'not_applicable' as ObservabilityStatus];
         const ratio = count.observed / count.total;

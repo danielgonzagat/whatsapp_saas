@@ -350,7 +350,7 @@ function isInfrastructureRouteKernelGrammar(value: string): boolean {
   return /^\/(?:health|diag(?:-[a-z0-9]+)?)$/.test(value);
 }
 
-function walkSourceFiles(dir: string, excludedDirectoryNames: ReadonlySet<string>): string[] {
+function walkSourceFiles(dir: string): string[] {
   if (!fs.existsSync(dir)) {
     return [];
   }
@@ -359,10 +359,7 @@ function walkSourceFiles(dir: string, excludedDirectoryNames: ReadonlySet<string
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (excludedDirectoryNames.has(entry.name) || isAuxiliaryConventionDirectory(entry.name)) {
-        continue;
-      }
-      files.push(...walkSourceFiles(fullPath, excludedDirectoryNames));
+      files.push(...walkSourceFiles(fullPath));
       continue;
     }
 
@@ -371,41 +368,6 @@ function walkSourceFiles(dir: string, excludedDirectoryNames: ReadonlySet<string
     }
   }
   return files;
-}
-
-function isAuxiliaryConventionDirectory(name: string): boolean {
-  return name.length > 4 && name.startsWith('__') && name.endsWith('__');
-}
-
-function pulseCompilerExcludedDirectoryNames(pulseDir: string): Set<string> {
-  const excluded = new Set<string>();
-  const configPath = path.join(pulseDir, 'tsconfig.json');
-  if (!fs.existsSync(configPath)) {
-    return excluded;
-  }
-  const config = JSON.parse(fs.readFileSync(configPath, 'utf8')) as {
-    compilerOptions?: { outDir?: unknown };
-    exclude?: unknown;
-  };
-  addCompilerDirectoryName(excluded, config.compilerOptions?.outDir);
-  if (Array.isArray(config.exclude)) {
-    for (const entry of config.exclude) {
-      addCompilerDirectoryName(excluded, entry);
-    }
-  }
-  return excluded;
-}
-
-function addCompilerDirectoryName(target: Set<string>, value: unknown): void {
-  if (typeof value !== 'string') {
-    return;
-  }
-  const normalized = value.split('\\').join('/');
-  const segments = normalized.split('/').filter((segment) => segment && segment !== '.');
-  const [firstSegment] = segments;
-  if (firstSegment) {
-    target.add(firstSegment);
-  }
 }
 
 function propertyNameText(name: ts.PropertyName | ts.BindingName | undefined): string {
@@ -1292,9 +1254,6 @@ function auditSourceFile(
   predicates: NoHardcodedRealityPredicate[];
 } {
   const source = fs.readFileSync(filePath, 'utf8');
-  if (!sourceMayContainHardcodedRealitySignal(source)) {
-    return { findings: [], predicates: [] };
-  }
   const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true);
   const findings: NoHardcodedRealityFinding[] = [];
   const predicates: NoHardcodedRealityPredicate[] = [];
@@ -1868,7 +1827,7 @@ export function auditPulseNoHardcodedReality(rootDir: string): NoHardcodedRealit
       summary: summarizeNoHardcodedRealityFindings([], []),
     };
   }
-  const files = walkSourceFiles(pulseDir, pulseCompilerExcludedDirectoryNames(pulseDir));
+  const files = walkSourceFiles(pulseDir);
   const results = files.map((file) => auditSourceFile(file, path.relative(rootDir, file)));
   const findings = [
     ...results.flatMap((result) => result.findings),
