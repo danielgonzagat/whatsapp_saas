@@ -1,5 +1,5 @@
 import * as path from 'path';
-import ts from 'typescript';
+import * as ts from 'typescript';
 import { isDirectory, pathExists, readDir, readTextFile } from './safe-fs';
 import { assertWithinRoot, safeJoin } from './lib/safe-path';
 import type { PulseManifest } from './types.manifest';

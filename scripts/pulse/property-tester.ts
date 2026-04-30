@@ -13,7 +13,7 @@ import * as path from 'path';
 import * as fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { STATUS_CODES } from 'node:http';
-import ts from 'typescript';
+import * as ts from 'typescript';
 import type { PulseStructuralGraph, PulseStructuralNode } from './types';
 import type {
   FuzzStrategy,

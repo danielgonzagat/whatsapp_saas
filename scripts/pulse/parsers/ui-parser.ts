@@ -1,5 +1,5 @@
 import * as path from 'path';
-import ts from 'typescript';
+import * as ts from 'typescript';
 import type { UIElement, PulseConfig } from '../types';
 import type { HookRegistry } from './hook-registry';
 import { buildApiModuleMap } from './api-parser';

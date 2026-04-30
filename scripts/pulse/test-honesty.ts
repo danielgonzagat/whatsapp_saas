@@ -1,6 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import ts from 'typescript';
+import * as ts from 'typescript';
 
 export interface PlaceholderTestResult {
   count: number;

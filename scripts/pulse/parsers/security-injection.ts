@@ -41,7 +41,7 @@
  */
 
 import * as path from 'path';
-import ts from 'typescript';
+import * as ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { readTextFile } from '../safe-fs';
 import { httpGet, httpPost, makeTestJwt, isDeepMode } from './runtime-utils';
