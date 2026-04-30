@@ -664,7 +664,7 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
   });
 
   // ── 8. Compute critical target stats ──
-  const governedSet = allTargets.filter(isCriticalHarnessTarget);
+  const governedGroup = allTargets.filter(isCriticalHarnessTarget);
 
   const passedResults = combinedResults.filter((r) => isPassedHarnessStatus(r.status));
   const failedResults = combinedResults.filter((r) => r.status === 'failed');
@@ -684,12 +684,12 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
     passedTargets: passedResults.length,
     failedTargets: failedResults.length,
     blockedTargets: blockedResults.length,
-    criticalTargets: governedSet.length,
-    criticalTested: governedSet.filter((t) => {
+    criticalTargets: governedGroup.length,
+    criticalTested: governedGroup.filter((t) => {
       const r = combinedResults.find((rr) => rr.targetId === t.targetId);
       return r && isObservedHarnessStatus(r.status);
     }).length,
-    criticalPassed: governedSet.filter((t) => {
+    criticalPassed: governedGroup.filter((t) => {
       const r = combinedResults.find((rr) => rr.targetId === t.targetId);
       return r && isPassedHarnessStatus(r.status);
     }).length,
@@ -728,29 +728,29 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
 export function discoverEndpoints(config: PulseConfig): HarnessTarget[] {
   const parsedBackendEntries = parseBackendRoutes(config);
 
-  return parsedBackendEntries.map((parsedRoute) => {
-    const kind = targetKindFromDecorator(parsedRoute.httpMethod);
-    const normalizedLocator = normalizeDiscoveredLocator(parsedRoute.fullPath);
-    const targetId = `endpoint:${parsedRoute.httpMethod.toLowerCase()}:${camelToKebab(normalizedLocator)}`;
+  return parsedBackendEntries.map((parsedEntry) => {
+    const kind = targetKindFromDecorator(parsedEntry.httpMethod);
+    const normalizedLocator = normalizeDiscoveredLocator(parsedEntry.fullPath);
+    const targetId = `endpoint:${parsedEntry.httpMethod.toLowerCase()}:${camelToKebab(normalizedLocator)}`;
 
-    const requiresAuth = !parsedRoute.isPublic && parsedRoute.guards.length > 0;
+    const requiresAuth = !parsedEntry.isPublic && parsedEntry.guards.length > 0;
     const requiresTenant =
       requiresAuth &&
       (parseRouteParameters(normalizedLocator).length > 0 ||
-        parsedRoute.serviceCalls.length > 0 ||
-        mutatingHttpVerbs().has(parsedRoute.httpMethod.toUpperCase()));
+        parsedEntry.serviceCalls.length > 0 ||
+        mutatingHttpVerbs().has(parsedEntry.httpMethod.toUpperCase()));
 
     return {
       targetId,
       kind,
-      name: `${parsedRoute.controllerPath}/${parsedRoute.methodName}`,
-      filePath: parsedRoute.file,
-      methodName: parsedRoute.methodName,
+      name: `${parsedEntry.controllerPath}/${parsedEntry.methodName}`,
+      filePath: parsedEntry.file,
+      methodName: parsedEntry.methodName,
       routePattern: normalizedLocator,
-      httpMethod: parsedRoute.httpMethod,
+      httpMethod: parsedEntry.httpMethod,
       requiresAuth,
       requiresTenant,
-      dependencies: parsedRoute.serviceCalls.map((call) => {
+      dependencies: parsedEntry.serviceCalls.map((call) => {
         const dotIndex = call.lastIndexOf('.');
         return dotIndex !== -1 ? call.slice(0, dotIndex) : call;
       }),
@@ -1301,10 +1301,10 @@ export function classifyExecutionFeasibility(
 
   // ── Check 4: external API calls ──
   if (behaviorNode?.externalCalls && behaviorNode.externalCalls.length > 0) {
-    const externalProviderNames = [...new Set(behaviorNode.externalCalls.map((c) => c.provider))];
+    const upstreamNames = [...new Set(behaviorNode.externalCalls.map((c) => c.provider))];
     return {
       feasibility: 'needs_staging',
-      reason: `Behavior graph detects external calls to: ${externalProviderNames.join(', ')}`,
+      reason: `Behavior graph detects external calls to: ${upstreamNames.join(', ')}`,
     };
   }
 
@@ -1413,7 +1413,7 @@ function buildHarnessBlueprintCode(
   executionMode: 'ai_safe' | 'governed_validation',
   terminalReason: string,
 ): string {
-  const assertionList = buildHarnessRequiredAssertions(target);
+  const assertionItems = buildHarnessRequiredAssertions(target);
   const blueprint = {
     targetId: target.targetId,
     kind: target.kind,
@@ -1461,7 +1461,7 @@ function buildHarnessBlueprintCode(
         name: fixture.name,
         description: fixture.description,
       })),
-    requiredAssertions: assertionList,
+    requiredAssertions: assertionItems,
   };
 
   return [
