@@ -10,6 +10,7 @@
  */
 
 import * as path from 'path';
+import { randomBytes } from 'crypto';
 import { safeJoin } from './lib/safe-path';
 import { isObservedMutatingMethod } from './dynamic-reality-grammar';
 import { pathExists, readJsonFile, writeTextFile } from './safe-fs';
@@ -31,6 +32,10 @@ const MIN_ERROR_COUNT_FOR_FAILURE = 1;
 
 /** Evidence file paths where replay data may exist. */
 const REPLAY_EVIDENCE_FILES = ['PULSE_EXTERNAL_SIGNAL_STATE.json', 'PULSE_BROWSER_EVIDENCE.json'];
+
+function createReplaySessionIdFallback(): string {
+  return `replay-${Date.now().toString(36)}-${randomBytes(4).toString('hex')}`;
+}
 
 /**
  * Extract replay sessions from external signal state.
@@ -58,9 +63,7 @@ function extractSessionsFromExternalSignals(filePath: string): ReplaySession[] {
         continue;
       }
 
-      const sessionId = String(
-        signal.id || `replay-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-      );
+      const sessionId = String(signal.id || createReplaySessionIdFallback());
       if (seen.has(sessionId)) {
         continue;
       }
@@ -110,10 +113,7 @@ function extractSessionsFromExternalSignals(filePath: string): ReplaySession[] {
           continue;
         }
 
-        const sessionId = String(
-          signal.id ||
-            `replay-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-        );
+        const sessionId = String(signal.id || createReplaySessionIdFallback());
         if (seen.has(sessionId)) {
           continue;
         }

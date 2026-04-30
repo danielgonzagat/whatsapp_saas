@@ -321,7 +321,7 @@ export class EmailService {
 
     return new Promise((resolve, reject) => {
       const socket = secure
-        ? tlsConnect(port, host, { rejectUnauthorized: false })
+        ? tlsConnect(port, host, { rejectUnauthorized: true })
         : createConnection(port, host);
 
       socket.setTimeout(30_000, () => {
@@ -391,7 +391,7 @@ export class EmailService {
       `--${boundary}`,
       'Content-Type: text/plain; charset=UTF-8',
       '',
-      html.replace(/<[^>]*>/g, ''),
+      this.stripHtmlTagsSafely(html),
       `--${boundary}`,
       'Content-Type: text/html; charset=UTF-8',
       '',
@@ -400,6 +400,16 @@ export class EmailService {
       '',
     ];
     return lines.join('\r\n');
+  }
+
+  private stripHtmlTagsSafely(input: string): string {
+    let previous: string;
+    let current = input;
+    do {
+      previous = current;
+      current = current.replace(/<[^>]*>/g, '');
+    } while (current !== previous);
+    return current;
   }
 
   // ============================================
