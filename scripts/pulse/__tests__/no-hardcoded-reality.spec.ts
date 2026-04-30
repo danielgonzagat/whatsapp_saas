@@ -37,6 +37,8 @@ import type { PulseCapability, PulseConfig, PulseProductGraph } from '../types';
 import type { ReplaySession } from '../types.replay-adapter';
 import type { InteractionChain } from '../functional-map-types';
 
+const currentPulseCoreAudit = auditPulseNoHardcodedReality(process.cwd());
+
 function endpointProbe(overrides: Partial<APIEndpointProbe> = {}): APIEndpointProbe {
   return {
     endpointId: 'GET:/anything:index:test.ts:1',
@@ -687,7 +689,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   });
 
   it('keeps core PULSE free of hardcoded product reality decision collections', () => {
-    const result = auditPulseNoHardcodedReality(process.cwd());
+    const result = currentPulseCoreAudit;
     const fixedRealityCollections = result.findings.filter(
       (finding) => !finding.kind.endsWith('_risk'),
     );
@@ -697,7 +699,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   });
 
   it('treats cert constants regex groups as Break.type kernel grammar, not decision authority', () => {
-    const result = auditPulseNoHardcodedReality(process.cwd());
+    const result = currentPulseCoreAudit;
     const certConstantFindings = result.findings.filter(
       (finding) => finding.filePath === 'scripts/pulse/cert-constants.ts',
     );
