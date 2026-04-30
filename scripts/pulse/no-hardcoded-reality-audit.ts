@@ -1850,6 +1850,7 @@ function auditorRequiredMechanismFindings(rootDir: string): NoHardcodedRealityFi
     'auditorImmutabilityFindings',
     'replacementCheatFindings',
     'historicalReplacementCheatFindings',
+    'historicalDebtFloorFindings',
     'ratchetFloorFindings',
     'auditorRequiredMechanismFindings',
     'scopeCoverageFindings',
@@ -2137,6 +2138,33 @@ function historicalReplacementCheatFindings(rootDir: string): NoHardcodedReality
   return findings;
 }
 
+function historicalDebtFloorFindings(
+  rootDir: string,
+  historicalDebtCount: number,
+): NoHardcodedRealityFinding[] {
+  if (path.resolve(rootDir) !== path.resolve(process.cwd())) {
+    return [];
+  }
+  const lockedHistoricalDebtFloor = 17790;
+  const deficit = lockedHistoricalDebtFloor - historicalDebtCount;
+  if (deficit <= 0) {
+    return [];
+  }
+
+  return Array.from({ length: deficit }, (_, index) =>
+    auditMetaFinding(
+      path.join('scripts', 'pulse', 'no-hardcoded-reality-audit.ts'),
+      'hardcoded_replacement_cheat_risk',
+      'history.replacement.floor_debt_preserved',
+      [
+        `lockedHistoryFloor:${lockedHistoricalDebtFloor}`,
+        `currentHistoryDebt:${historicalDebtCount}`,
+        `debt:${index + 1}`,
+      ],
+    ),
+  );
+}
+
 function currentDynamicReplacementCredit(rootDir: string): number {
   const diff = gitPulseDiff(rootDir);
   if (!diff) {
@@ -2163,7 +2191,7 @@ function ratchetFloorFindings(rootDir: string, currentTotal: number): NoHardcode
   if (path.resolve(rootDir) !== path.resolve(process.cwd())) {
     return [];
   }
-  const lockedFloor = 138843;
+  const lockedFloor = 138905;
   const allowedReduction = currentDynamicReplacementCredit(rootDir);
   const activeFloor = Math.max(0, lockedFloor - allowedReduction);
   const deficit = activeFloor - currentTotal;
@@ -2198,6 +2226,7 @@ export function auditPulseNoHardcodedReality(rootDir: string): NoHardcodedRealit
   }
   const files = walkSourceFiles(pulseDir);
   const results = files.map((file) => auditSourceFile(file, path.relative(rootDir, file)));
+  const historicalDebtFindings = historicalReplacementCheatFindings(rootDir);
   const findingsWithoutRatchet = [
     ...results.flatMap((result) => result.findings),
     ...scopeCoverageFindings(pulseDir, files.length),
@@ -2205,7 +2234,8 @@ export function auditPulseNoHardcodedReality(rootDir: string): NoHardcodedRealit
     ...auditorFilesystemLockFindings(rootDir),
     ...auditorImmutabilityFindings(rootDir),
     ...replacementCheatFindings(rootDir),
-    ...historicalReplacementCheatFindings(rootDir),
+    ...historicalDebtFindings,
+    ...historicalDebtFloorFindings(rootDir, historicalDebtFindings.length),
   ];
   const findings = [
     ...findingsWithoutRatchet,
