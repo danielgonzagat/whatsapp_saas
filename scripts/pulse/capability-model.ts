@@ -40,16 +40,19 @@ import {
   buildCapabilityMaturity,
   chooseDominantLabel,
   chooseTruthMode,
+  capabilityCompletenessScore,
+  confidenceFromCapabilityEvidence,
   getNodeFamilies,
   getNodeRoutePatterns,
   getPrimaryFamily,
+  graphTraversalDepthLimit,
   inferStatus,
-  MAX_REACHABLE_ROUTE_PATTERNS_PER_NODE,
+  missingProductionRoles,
   pickExecutionMode,
   pickOwnerLane,
+  reachableRoutePatternLimit,
   shouldTraverseNeighbor,
   unique,
-  clamp,
 } from './capability-model-helpers';
 import type { PulseCapabilityDoD } from './types.capabilities';
 import { evaluateDone } from './definition-of-done';
@@ -128,6 +131,28 @@ function zero(): number {
   return Number(false);
 }
 
+function countCapabilityStatus(
+  capabilities: PulseCapability[],
+  status: PulseCapability['status'],
+): number {
+  return capabilities.filter((item) => statusIs(item.status, status)).length;
+}
+
+function countMaturityStage(
+  capabilities: PulseCapability[],
+  stage: PulseCapability['maturity']['stage'],
+): number {
+  return capabilities.filter((item) => maturityStageIs(item.maturity.stage, stage)).length;
+}
+
+function countHumanRequiredCapabilities(capabilities: PulseCapability[]): number {
+  return capabilities.filter(
+    (item) =>
+      sameToken(item.executionMode, 'human_required') ||
+      sameToken(item.executionMode, 'observation_only'),
+  ).length;
+}
+
 export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCapabilityState {
   const nodeById = new Map(input.structuralGraph.nodes.map((node) => [node.id, node] as const));
   const neighbors = new Map<string, Set<string>>();
@@ -148,12 +173,13 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
   }
 
   const routePatternsByReachableNode = new Map<string, Set<string>>();
+  const reachableRoutePatternLimitValue = reachableRoutePatternLimit(input.structuralGraph.nodes);
   const registerReachableRoutePattern = (nodeId: string, routePattern: string) => {
     if (!routePatternsByReachableNode.has(nodeId)) {
       routePatternsByReachableNode.set(nodeId, new Set<string>());
     }
     const patterns = routePatternsByReachableNode.get(nodeId)!;
-    if (patterns.size < MAX_REACHABLE_ROUTE_PATTERNS_PER_NODE) {
+    if (patterns.size < reachableRoutePatternLimitValue) {
       patterns.add(routePattern);
     }
   };
@@ -170,9 +196,14 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     }
     const queue = [{ nodeId: seedNode.id, depth: 0 }];
     const visited = new Set<string>();
+    const traversalDepthLimit = graphTraversalDepthLimit({
+      nodeCount: input.structuralGraph.nodes.length,
+      edgeCount: input.structuralGraph.edges.length,
+      seedPatternCount: seedPatterns.length,
+    });
     while (queue.length > 0) {
       const current = queue.shift();
-      if (!current || visited.has(current.nodeId) || current.depth > 8) {
+      if (!current || visited.has(current.nodeId) || current.depth > traversalDepthLimit) {
         continue;
       }
       visited.add(current.nodeId);
@@ -327,7 +358,8 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     const routeFamilies = unique(
       routePatterns.map((routePattern) => deriveRouteFamily(routePattern)).filter(Boolean),
     ) as string[];
-    const capabilityId = `capability:${slugifyStructural(group.family) || `cluster-${capabilitiesById.size + 1}`}`;
+    const fallbackCapabilityKey = slugifyStructural([...componentIds].sort().join(' '));
+    const capabilityId = `capability:${slugifyStructural(group.family) || fallbackCapabilityKey}`;
     const flowEvidenceMatches = flowResults.filter(
       (result) =>
         routeFamilies.some((family) => result.flowId.includes(family)) ||
@@ -339,7 +371,7 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     const dominantLabel = chooseDominantLabel(
       componentNodes,
       routePatterns,
-      capabilitiesById.size + 1,
+      fallbackCapabilityKey,
       group.family,
     );
     const capabilityFamilies = deriveStructuralFamilies([
@@ -382,21 +414,16 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
       scenarioFailureMatches.length > 0 ||
       (nonzero(highSeverityIssueCount) && runtimeCritical);
     const status = inferStatus(rolesPresent, simulationOnly, hasObservedFailure);
-    const missingRoles = (
-      ['interface', 'orchestration', 'persistence', 'side_effect'] as PulseStructuralRole[]
-    ).filter((role) => !rolesPresent.includes(role));
+    const missingRoles = missingProductionRoles(rolesPresent);
     const truthMode = chooseTruthMode(nonzero(executedEvidenceCount), statusIs(status, 'latent'));
-    const completenessScore =
-      rolesPresent.filter((role) =>
-        ['interface', 'orchestration', 'persistence', 'side_effect'].includes(role),
-      ).length / 4;
-    const confidence = clamp(
-      completenessScore +
-        (executedEvidenceCount > 0 ? 0.25 : 0) +
-        (runtimeObserved ? 0.05 : 0) +
-        (highSeverityIssueCount > 0 ? -0.15 : 0) +
-        (componentNodes.length >= 4 ? 0.1 : 0),
-    );
+    const completenessScore = capabilityCompletenessScore(rolesPresent);
+    const confidence = confidenceFromCapabilityEvidence({
+      completenessScore,
+      executedEvidenceCount,
+      runtimeObserved,
+      highSeverityIssueCount,
+      componentNodeCount: componentNodes.length,
+    });
     const evidenceSources = unique([
       ...componentNodes.map((item) => item.adapter),
       observedFlowEvidenceMatches.length > 0 ? 'execution-flow-evidence' : '',
@@ -554,26 +581,15 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     generatedAt: new Date().toISOString(),
     summary: {
       totalCapabilities: sortedCapabilities.length,
-      realCapabilities: sortedCapabilities.filter((item) => statusIs(item.status, 'real')).length,
-      partialCapabilities: sortedCapabilities.filter((item) => statusIs(item.status, 'partial'))
-        .length,
-      latentCapabilities: sortedCapabilities.filter((item) => statusIs(item.status, 'latent'))
-        .length,
-      phantomCapabilities: sortedCapabilities.filter((item) => statusIs(item.status, 'phantom'))
-        .length,
-      humanRequiredCapabilities: 0,
-      foundationalCapabilities: sortedCapabilities.filter((item) =>
-        maturityStageIs(item.maturity.stage, 'foundational'),
-      ).length,
-      connectedCapabilities: sortedCapabilities.filter((item) =>
-        maturityStageIs(item.maturity.stage, 'connected'),
-      ).length,
-      operationalCapabilities: sortedCapabilities.filter((item) =>
-        maturityStageIs(item.maturity.stage, 'operational'),
-      ).length,
-      productionReadyCapabilities: sortedCapabilities.filter((item) =>
-        maturityStageIs(item.maturity.stage, 'production_ready'),
-      ).length,
+      realCapabilities: countCapabilityStatus(sortedCapabilities, 'real'),
+      partialCapabilities: countCapabilityStatus(sortedCapabilities, 'partial'),
+      latentCapabilities: countCapabilityStatus(sortedCapabilities, 'latent'),
+      phantomCapabilities: countCapabilityStatus(sortedCapabilities, 'phantom'),
+      humanRequiredCapabilities: countHumanRequiredCapabilities(sortedCapabilities),
+      foundationalCapabilities: countMaturityStage(sortedCapabilities, 'foundational'),
+      connectedCapabilities: countMaturityStage(sortedCapabilities, 'connected'),
+      operationalCapabilities: countMaturityStage(sortedCapabilities, 'operational'),
+      productionReadyCapabilities: countMaturityStage(sortedCapabilities, 'production_ready'),
       runtimeObservedCapabilities: sortedCapabilities.filter(
         (item) => item.maturity.dimensions.runtimeEvidencePresent,
       ).length,

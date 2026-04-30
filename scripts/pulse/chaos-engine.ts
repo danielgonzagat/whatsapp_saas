@@ -98,39 +98,6 @@ const HTTP_CLIENT_IDENTIFIER_RE =
 const EXTERNAL_PACKAGE_HINT_RE =
   /(?:api|auth|cache|client|cloud|gateway|http|mail|mq|payment|provider|queue|sdk|sms|storage|transport)$/i;
 
-// ── Default injection configurations ──────────────────────────────────────
-
-const DEFAULT_LATENCY_MS: Record<string, number> = {
-  postgres: 500,
-  redis: 200,
-  external_http: 1500,
-  webhook_receiver: 2000,
-  internal_api: 300,
-};
-
-const DEFAULT_TIMEOUT_MS: Record<string, number> = {
-  postgres: 30000,
-  redis: 10000,
-  external_http: 30000,
-  webhook_receiver: 60000,
-  internal_api: 10000,
-};
-
-const DEFAULT_EVENT_HORIZON_MS: Record<string, number> = {
-  postgres: 120000,
-  redis: 30000,
-  external_http: 60000,
-  webhook_receiver: 300000,
-  internal_api: 20000,
-};
-
-function latencyTierMsValues(): number[] {
-  return unique(Object.values(DEFAULT_LATENCY_MS).map((value) => String(value)))
-    .map((value) => Number(value))
-    .filter((value) => Number.isFinite(value))
-    .sort((left, right) => left - right);
-}
-
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function readSafe(filePath: string): string {

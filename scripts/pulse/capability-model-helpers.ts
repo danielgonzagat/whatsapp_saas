@@ -371,7 +371,7 @@ export function shouldTraverseNeighbor(
 export function chooseDominantLabel(
   componentNodes: PulseStructuralNode[],
   routePatterns: string[],
-  fallbackId: number,
+  fallbackSignature: string,
   family: string,
 ): string {
   const routeFamily = deriveRouteFamily(routePatterns[0] || '');
@@ -399,7 +399,7 @@ export function chooseDominantLabel(
     return titleCaseStructural(textLabel);
   }
 
-  return `Capability ${fallbackId}`;
+  return titleCaseStructural(fallbackSignature || componentNodes.map((node) => node.id).join(' '));
 }
 
 /** Build capability state from structural graph components. */

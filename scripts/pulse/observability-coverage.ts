@@ -211,9 +211,11 @@ function loadObservabilityRuntimeContext(
   const behaviorNodesByFile = new Map<string, BehaviorNode[]>();
   for (const node of behaviorGraph?.nodes ?? []) {
     const absolutePath = safeResolve(rootDir, node.filePath);
-    const existing = behaviorNodesByFile.get(absolutePath) ?? [];
-    existing.push(node);
-    behaviorNodesByFile.set(absolutePath, existing);
+    for (const key of [absolutePath, node.filePath]) {
+      const existing = behaviorNodesByFile.get(key) ?? [];
+      existing.push(node);
+      behaviorNodesByFile.set(key, existing);
+    }
   }
 
   const runtimeSignalsByCapability = new Map<string, RuntimeSignal[]>();
@@ -673,13 +675,12 @@ export function detectIntegrationsWithoutObservability(
   capabilities: CapabilityObservability[],
 ): string[] {
   return capabilities
-    .filter((cap) => {
-      const hasExternalCall =
-        cap.details.matchedFilePaths.length > 0 &&
-        cap.details.perFileLogging.some((entry) => entry.filePath.includes('/integrations/'));
-      const hasObservability = cap.overallStatus === 'covered' || cap.overallStatus === 'partial';
-      return hasExternalCall && !hasObservability;
-    })
+    .filter(
+      (cap) =>
+        cap.details.matchedFilePaths.length === 0 &&
+        cap.overallStatus !== 'covered' &&
+        cap.untrustedEvidencePillars.length > 0,
+    )
     .map((cap) => cap.capabilityId);
 }
 

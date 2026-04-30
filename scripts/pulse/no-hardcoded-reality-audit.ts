@@ -350,7 +350,7 @@ function isInfrastructureRouteKernelGrammar(value: string): boolean {
   return /^\/(?:health|diag(?:-[a-z0-9]+)?)$/.test(value);
 }
 
-function walkSourceFiles(dir: string): string[] {
+function walkSourceFiles(dir: string, excludedDirectoryNames: ReadonlySet<string>): string[] {
   if (!fs.existsSync(dir)) {
     return [];
   }
@@ -359,7 +359,10 @@ function walkSourceFiles(dir: string): string[] {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      files.push(...walkSourceFiles(fullPath));
+      if (excludedDirectoryNames.has(entry.name) || isAuxiliaryConventionDirectory(entry.name)) {
+        continue;
+      }
+      files.push(...walkSourceFiles(fullPath, excludedDirectoryNames));
       continue;
     }
 
@@ -368,6 +371,41 @@ function walkSourceFiles(dir: string): string[] {
     }
   }
   return files;
+}
+
+function isAuxiliaryConventionDirectory(name: string): boolean {
+  return name.length > 4 && name.startsWith('__') && name.endsWith('__');
+}
+
+function pulseCompilerExcludedDirectoryNames(pulseDir: string): Set<string> {
+  const excluded = new Set<string>();
+  const configPath = path.join(pulseDir, 'tsconfig.json');
+  if (!fs.existsSync(configPath)) {
+    return excluded;
+  }
+  const config = JSON.parse(fs.readFileSync(configPath, 'utf8')) as {
+    compilerOptions?: { outDir?: unknown };
+    exclude?: unknown;
+  };
+  addCompilerDirectoryName(excluded, config.compilerOptions?.outDir);
+  if (Array.isArray(config.exclude)) {
+    for (const entry of config.exclude) {
+      addCompilerDirectoryName(excluded, entry);
+    }
+  }
+  return excluded;
+}
+
+function addCompilerDirectoryName(target: Set<string>, value: unknown): void {
+  if (typeof value !== 'string') {
+    return;
+  }
+  const normalized = value.split('\\').join('/');
+  const segments = normalized.split('/').filter((segment) => segment && segment !== '.');
+  const [firstSegment] = segments;
+  if (firstSegment) {
+    target.add(firstSegment);
+  }
 }
 
 function propertyNameText(name: ts.PropertyName | ts.BindingName | undefined): string {
@@ -1827,7 +1865,7 @@ export function auditPulseNoHardcodedReality(rootDir: string): NoHardcodedRealit
       summary: summarizeNoHardcodedRealityFindings([], []),
     };
   }
-  const files = walkSourceFiles(pulseDir);
+  const files = walkSourceFiles(pulseDir, pulseCompilerExcludedDirectoryNames(pulseDir));
   const results = files.map((file) => auditSourceFile(file, path.relative(rootDir, file)));
   const findings = [
     ...results.flatMap((result) => result.findings),
