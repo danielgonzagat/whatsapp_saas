@@ -132,6 +132,123 @@ function resolveCapabilityFiles(
   return [...new Set(resolved)].sort();
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function readPulseArtifact<T>(pulseCurrentDir: string, fileName: string): T | null {
+  const artifactPath = safeJoin(pulseCurrentDir, fileName);
+  if (!pathExists(artifactPath)) return null;
+  try {
+    return readJsonFile<T>(artifactPath);
+  } catch {
+    return null;
+  }
+}
+
+function deriveObservabilityPillars(rootDir: string): ObservabilityPillar[] {
+  const localTypePath = safeJoin(__dirname, 'types.observability-coverage.ts');
+  const repoTypePath = safeJoin(rootDir, 'scripts', 'pulse', 'types.observability-coverage.ts');
+  const typePath = pathExists(localTypePath) ? localTypePath : repoTypePath;
+  if (!pathExists(typePath)) return [];
+
+  const content = readTextFile(typePath);
+  const union = content.match(/export type ObservabilityPillar\s*=([\s\S]*?);/m)?.[1] ?? '';
+  const pillars = [...union.matchAll(/'([^']+)'/g)].map((match) => match[1] as ObservabilityPillar);
+  return [...new Set(pillars)];
+}
+
+function tokenizeObservabilityTerm(value: string): Set<string> {
+  return new Set(
+    value
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/[_./:-]+/g, ' ')
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean),
+  );
+}
+
+function tokenOverlap(left: Set<string>, right: Set<string>): number {
+  let overlap = 0;
+  for (const token of left) {
+    if (right.has(token)) overlap++;
+  }
+  return overlap;
+}
+
+function signalMatchesPillar(signalName: string, pillar: ObservabilityPillar): boolean {
+  const signalTokens = tokenizeObservabilityTerm(signalName);
+  const pillarTokens = tokenizeObservabilityTerm(pillar);
+  return tokenOverlap(signalTokens, pillarTokens) > 0;
+}
+
+function observabilitySignalForPillar(
+  evidence: PulseObservabilityEvidence | null,
+  pillar: ObservabilityPillar,
+): string | null {
+  if (!evidence?.executed || !isRecord(evidence.signals)) return null;
+  for (const [name, value] of Object.entries(evidence.signals)) {
+    if (value === true && signalMatchesPillar(name, pillar)) {
+      return name;
+    }
+  }
+  return null;
+}
+
+function loadObservabilityRuntimeContext(
+  rootDir: string,
+  pulseCurrentDir: string,
+): ObservabilityRuntimeContext {
+  const runtimeFusion = readPulseArtifact<RuntimeFusionState>(
+    pulseCurrentDir,
+    'PULSE_RUNTIME_FUSION.json',
+  );
+  const behaviorGraph = readPulseArtifact<BehaviorGraph>(
+    pulseCurrentDir,
+    'PULSE_BEHAVIOR_GRAPH.json',
+  );
+  const behaviorNodesByFile = new Map<string, BehaviorNode[]>();
+  for (const node of behaviorGraph?.nodes ?? []) {
+    const absolutePath = safeResolve(rootDir, node.filePath);
+    const existing = behaviorNodesByFile.get(absolutePath) ?? [];
+    existing.push(node);
+    behaviorNodesByFile.set(absolutePath, existing);
+  }
+
+  const runtimeSignalsByCapability = new Map<string, RuntimeSignal[]>();
+  const runtimeSignalsByFlow = new Map<string, RuntimeSignal[]>();
+  for (const signal of runtimeFusion?.signals ?? []) {
+    for (const capabilityId of signal.affectedCapabilityIds ?? []) {
+      const existing = runtimeSignalsByCapability.get(capabilityId) ?? [];
+      existing.push(signal);
+      runtimeSignalsByCapability.set(capabilityId, existing);
+    }
+    for (const flowId of signal.affectedFlowIds ?? []) {
+      const existing = runtimeSignalsByFlow.get(flowId) ?? [];
+      existing.push(signal);
+      runtimeSignalsByFlow.set(flowId, existing);
+    }
+  }
+
+  return {
+    pillars: deriveObservabilityPillars(rootDir),
+    observabilityEvidence: readPulseArtifact<PulseObservabilityEvidence>(
+      pulseCurrentDir,
+      'PULSE_OBSERVABILITY_EVIDENCE.json',
+    ),
+    runtimeEvidence: readPulseArtifact<PulseRuntimeEvidence>(
+      pulseCurrentDir,
+      'PULSE_RUNTIME_EVIDENCE.json',
+    ),
+    runtimeFusion,
+    behaviorGraph,
+    behaviorNodesByFile,
+    runtimeSignalsByCapability,
+    runtimeSignalsByFlow,
+  };
+}
+
 /**
  * Main entry point. Scans every capability and flow for observability
  * coverage across all eight pillars.
