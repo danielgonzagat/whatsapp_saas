@@ -188,6 +188,15 @@ function findPillarByTerm(
   );
 }
 
+function statusForDerivedPillar(
+  pillars: Record<ObservabilityPillar, ObservabilityStatus>,
+  availablePillars: ObservabilityPillar[],
+  term: string,
+): ObservabilityStatus {
+  const pillar = findPillarByTerm(availablePillars, term);
+  return pillar ? pillars[pillar] : 'not_applicable';
+}
+
 function signalMatchesPillar(signalName: string, pillar: ObservabilityPillar): boolean {
   const signalTokens = tokenizeObservabilityTerm(signalName);
   const pillarTokens = tokenizeObservabilityTerm(pillar);
@@ -777,6 +786,8 @@ function buildCapabilityObservability(
       ...entry,
       filePath: toRepoRelativePath(rootDir, entry.filePath),
     }));
+    const healthProbePillar = findPillarByTerm(runtimeContext.pillars, 'health probe');
+    const healthProbeEvidence = healthProbePillar ? evidence[healthProbePillar] : null;
 
     const detail = {
       matchedFilePaths: relevantFiles.map((filePath) => toRepoRelativePath(rootDir, filePath)),
@@ -786,8 +797,8 @@ function buildCapabilityObservability(
       alertRules: countAlertRules(relevantFiles, getContent),
       dashboardUrls: findDashboardUrls(relevantFiles, getContent),
       healthProbeUrl:
-        evidence.health_probes.status === 'observed'
-          ? evidence.health_probes.source.replace(/^health endpoint /, '')
+        healthProbeEvidence?.status === 'observed'
+          ? healthProbeEvidence.source.replace(/^health endpoint /, '')
           : null,
       errorBudgetRemaining: null,
       sentryProjectId: null,
@@ -798,9 +809,9 @@ function buildCapabilityObservability(
     const overallStatus = computeOverallStatus(pillars);
 
     const logQuality = computeLogQuality(
-      pillars.logs,
-      pillars.tracing,
-      pillars.sentry,
+      statusForDerivedPillar(pillars, runtimeContext.pillars, 'logs'),
+      statusForDerivedPillar(pillars, runtimeContext.pillars, 'tracing'),
+      statusForDerivedPillar(pillars, runtimeContext.pillars, 'sentry'),
       structuredLogFields.length,
     );
 

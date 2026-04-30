@@ -44,6 +44,37 @@ function productionRoleNames(): PulseStructuralRole[] {
   return ['interface', 'orchestration', 'persistence', 'side_effect'];
 }
 
+function deriveCapabilityMaturityStage(input: {
+  status: PulseCapability['status'];
+  dimensions: PulseCapabilityMaturity['dimensions'];
+}): PulseCapabilityMaturity['stage'] {
+  const readinessSignals = {
+    production_ready:
+      tokenIs(input.status, 'real') &&
+      (input.dimensions.runtimeEvidencePresent || input.dimensions.scenarioCoveragePresent) &&
+      input.dimensions.codacyHealthy,
+    operational:
+      (input.dimensions.persistencePresent || input.dimensions.sideEffectPresent) &&
+      (input.dimensions.runtimeEvidencePresent || input.dimensions.validationPresent),
+    connected:
+      input.dimensions.interfacePresent ||
+      input.dimensions.apiSurfacePresent ||
+      input.dimensions.orchestrationPresent,
+    foundational: true,
+  } satisfies Record<PulseCapabilityMaturity['stage'], boolean>;
+  const blockedSignals = {
+    production_ready: tokenIs(input.status, 'phantom') && input.dimensions.simulationOnly,
+    operational: tokenIs(input.status, 'phantom') && input.dimensions.simulationOnly,
+    connected: tokenIs(input.status, 'phantom') && input.dimensions.simulationOnly,
+    foundational: false,
+  } satisfies Record<PulseCapabilityMaturity['stage'], boolean>;
+  const observedStage = Object.entries(readinessSignals).find(
+    ([stage, present]) => present && !blockedSignals[stage as PulseCapabilityMaturity['stage']],
+  );
+  return (observedStage?.[0] ??
+    Object.keys(readinessSignals).at(-1)) as PulseCapabilityMaturity['stage'];
+}
+
 export function graphTraversalDepthLimit(input: {
   nodeCount: number;
   edgeCount: number;
@@ -161,29 +192,7 @@ export function buildCapabilityMaturity(input: {
     ]),
   );
 
-  let stage: PulseCapabilityMaturity['stage'] = 'foundational';
-  if (
-    tokenIs(input.status, 'real') &&
-    (dimensions.runtimeEvidencePresent || dimensions.scenarioCoveragePresent) &&
-    dimensions.codacyHealthy
-  ) {
-    stage = 'production_ready';
-  } else if (
-    (dimensions.persistencePresent || dimensions.sideEffectPresent) &&
-    (dimensions.runtimeEvidencePresent || dimensions.validationPresent)
-  ) {
-    stage = 'operational';
-  } else if (
-    dimensions.interfacePresent ||
-    dimensions.apiSurfacePresent ||
-    dimensions.orchestrationPresent
-  ) {
-    stage = 'connected';
-  }
-
-  if (tokenIs(input.status, 'phantom') && dimensions.simulationOnly) {
-    stage = 'foundational';
-  }
+  const stage = deriveCapabilityMaturityStage({ status: input.status, dimensions });
 
   const missing = unique([
     !dimensions.interfacePresent ? 'interface' : '',
