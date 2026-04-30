@@ -563,22 +563,25 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     generatedAt: new Date().toISOString(),
     summary: {
       totalCapabilities: sortedCapabilities.length,
-      realCapabilities: sortedCapabilities.filter((item) => item.status === 'real').length,
-      partialCapabilities: sortedCapabilities.filter((item) => item.status === 'partial').length,
-      latentCapabilities: sortedCapabilities.filter((item) => item.status === 'latent').length,
-      phantomCapabilities: sortedCapabilities.filter((item) => item.status === 'phantom').length,
+      realCapabilities: sortedCapabilities.filter((item) => statusIs(item.status, 'real')).length,
+      partialCapabilities: sortedCapabilities.filter((item) => statusIs(item.status, 'partial'))
+        .length,
+      latentCapabilities: sortedCapabilities.filter((item) => statusIs(item.status, 'latent'))
+        .length,
+      phantomCapabilities: sortedCapabilities.filter((item) => statusIs(item.status, 'phantom'))
+        .length,
       humanRequiredCapabilities: 0,
-      foundationalCapabilities: sortedCapabilities.filter(
-        (item) => item.maturity.stage === 'foundational',
+      foundationalCapabilities: sortedCapabilities.filter((item) =>
+        maturityStageIs(item.maturity.stage, 'foundational'),
       ).length,
-      connectedCapabilities: sortedCapabilities.filter(
-        (item) => item.maturity.stage === 'connected',
+      connectedCapabilities: sortedCapabilities.filter((item) =>
+        maturityStageIs(item.maturity.stage, 'connected'),
       ).length,
-      operationalCapabilities: sortedCapabilities.filter(
-        (item) => item.maturity.stage === 'operational',
+      operationalCapabilities: sortedCapabilities.filter((item) =>
+        maturityStageIs(item.maturity.stage, 'operational'),
       ).length,
-      productionReadyCapabilities: sortedCapabilities.filter(
-        (item) => item.maturity.stage === 'production_ready',
+      productionReadyCapabilities: sortedCapabilities.filter((item) =>
+        maturityStageIs(item.maturity.stage, 'production_ready'),
       ).length,
       runtimeObservedCapabilities: sortedCapabilities.filter(
         (item) => item.maturity.dimensions.runtimeEvidencePresent,
