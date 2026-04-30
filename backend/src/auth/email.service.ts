@@ -321,7 +321,7 @@ export class EmailService {
 
     return new Promise((resolve, reject) => {
       const socket = secure
-        ? tlsConnect(port, host, { rejectUnauthorized: false })
+        ? tlsConnect(port, host, { rejectUnauthorized: true })
         : createConnection(port, host);
 
       socket.setTimeout(30_000, () => {
