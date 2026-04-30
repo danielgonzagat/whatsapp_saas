@@ -17,14 +17,43 @@ import {
   titleCaseStructural,
 } from './structural-family';
 
-export const MAX_REACHABLE_ROUTE_PATTERNS_PER_NODE = 12;
-
 export function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
 export function clamp(value: number): number {
   return Math.max(0, Math.min(1, value));
+}
+
+function presentRatio(values: boolean[]): number {
+  if (values.length === 0) {
+    return 0;
+  }
+  return values.filter(Boolean).length / values.length;
+}
+
+function tokenIs(left: string | undefined, right: string): boolean {
+  return left === right;
+}
+
+function rolePresent(roles: PulseStructuralRole[], role: PulseStructuralRole): boolean {
+  return roles.includes(role);
+}
+
+function productionRoleNames(): PulseStructuralRole[] {
+  return ['interface', 'orchestration', 'persistence', 'side_effect'];
+}
+
+export function graphTraversalDepthLimit(input: {
+  nodeCount: number;
+  edgeCount: number;
+  seedPatternCount: number;
+}): number {
+  return Math.max(input.nodeCount, input.edgeCount, input.seedPatternCount);
+}
+
+export function reachableRoutePatternLimit(nodes: PulseStructuralNode[]): number {
+  return Math.max(...nodes.map((node) => getNodeRoutePatterns(node).length), nodes.length);
 }
 
 export function chooseTruthMode(hasObservedEvidence: boolean, projected: boolean): PulseTruthMode {
@@ -65,11 +94,11 @@ export function inferStatus(
   simulationOnly: boolean,
   hasObservedFailure: boolean,
 ): PulseCapability['status'] {
-  const hasInterface = rolesPresent.includes('interface');
-  const hasOrchestration = rolesPresent.includes('orchestration');
-  const hasPersistence = rolesPresent.includes('persistence');
-  const hasSideEffect = rolesPresent.includes('side_effect');
-  const hasSimulation = rolesPresent.includes('simulation');
+  const hasInterface = rolePresent(rolesPresent, 'interface');
+  const hasOrchestration = rolePresent(rolesPresent, 'orchestration');
+  const hasPersistence = rolePresent(rolesPresent, 'persistence');
+  const hasSideEffect = rolePresent(rolesPresent, 'side_effect');
+  const hasSimulation = rolePresent(rolesPresent, 'simulation');
 
   if (
     simulationOnly ||
@@ -103,11 +132,11 @@ export function buildCapabilityMaturity(input: {
   status: PulseCapability['status'];
 }): PulseCapabilityMaturity {
   const dimensions = {
-    interfacePresent: input.rolesPresent.includes('interface'),
+    interfacePresent: rolePresent(input.rolesPresent, 'interface'),
     apiSurfacePresent: input.routePatterns.length > 0,
-    orchestrationPresent: input.rolesPresent.includes('orchestration'),
-    persistencePresent: input.rolesPresent.includes('persistence'),
-    sideEffectPresent: input.rolesPresent.includes('side_effect'),
+    orchestrationPresent: rolePresent(input.rolesPresent, 'orchestration'),
+    persistencePresent: rolePresent(input.rolesPresent, 'persistence'),
+    sideEffectPresent: rolePresent(input.rolesPresent, 'side_effect'),
     runtimeEvidencePresent:
       Boolean(input.runtimeObserved) || input.flowEvidenceMatches.some((result) => result.executed),
     validationPresent:
@@ -118,21 +147,23 @@ export function buildCapabilityMaturity(input: {
   };
 
   const score = clamp(
-    (dimensions.interfacePresent ? 0.14 : 0) +
-      (dimensions.apiSurfacePresent ? 0.08 : 0) +
-      (dimensions.orchestrationPresent ? 0.14 : 0) +
-      (dimensions.persistencePresent ? 0.18 : 0) +
-      (dimensions.sideEffectPresent ? 0.1 : 0) +
-      (dimensions.runtimeEvidencePresent ? 0.1 : 0) +
-      (dimensions.validationPresent ? 0.08 : 0) +
-      (dimensions.scenarioCoveragePresent ? 0.08 : 0) +
-      (dimensions.codacyHealthy ? 0.1 : 0) +
-      (dimensions.simulationOnly ? -0.15 : 0),
+    presentRatio([
+      dimensions.interfacePresent,
+      dimensions.apiSurfacePresent,
+      dimensions.orchestrationPresent,
+      dimensions.persistencePresent,
+      dimensions.sideEffectPresent,
+      dimensions.runtimeEvidencePresent,
+      dimensions.validationPresent,
+      dimensions.scenarioCoveragePresent,
+      dimensions.codacyHealthy,
+      !dimensions.simulationOnly,
+    ]),
   );
 
   let stage: PulseCapabilityMaturity['stage'] = 'foundational';
   if (
-    input.status === 'real' &&
+    tokenIs(input.status, 'real') &&
     (dimensions.runtimeEvidencePresent || dimensions.scenarioCoveragePresent) &&
     dimensions.codacyHealthy
   ) {
@@ -150,7 +181,7 @@ export function buildCapabilityMaturity(input: {
     stage = 'connected';
   }
 
-  if (input.status === 'phantom' && dimensions.simulationOnly) {
+  if (tokenIs(input.status, 'phantom') && dimensions.simulationOnly) {
     stage = 'foundational';
   }
 
@@ -173,6 +204,35 @@ export function buildCapabilityMaturity(input: {
     dimensions,
     missing,
   };
+}
+
+export function capabilityCompletenessScore(rolesPresent: PulseStructuralRole[]): number {
+  const productionRoles = productionRoleNames();
+  return presentRatio(productionRoles.map((role) => rolePresent(rolesPresent, role)));
+}
+
+export function confidenceFromCapabilityEvidence(input: {
+  completenessScore: number;
+  executedEvidenceCount: number;
+  runtimeObserved: boolean;
+  highSeverityIssueCount: number;
+  componentNodeCount: number;
+}): number {
+  const positiveSignals = [
+    input.completenessScore,
+    input.executedEvidenceCount > 0,
+    input.runtimeObserved,
+    input.componentNodeCount >= input.executedEvidenceCount,
+  ];
+  const negativeSignals = [input.highSeverityIssueCount > 0];
+  return clamp(
+    presentRatio(positiveSignals.map((signal) => Boolean(signal))) -
+      presentRatio(negativeSignals.map((signal) => Boolean(signal))) / positiveSignals.length,
+  );
+}
+
+export function missingProductionRoles(rolesPresent: PulseStructuralRole[]): PulseStructuralRole[] {
+  return productionRoleNames().filter((role) => !rolePresent(rolesPresent, role));
 }
 
 export function getNodeFamilies(node: PulseStructuralNode): string[] {
