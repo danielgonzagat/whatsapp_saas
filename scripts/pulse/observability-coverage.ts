@@ -275,7 +275,7 @@ export function buildObservabilityCoverage(rootDir: string): ObservabilityCovera
   );
 
   const flows = loadFlows(pulseCurrentDir);
-  const flowItems = buildFlowObservability(flows, capabilityItems, runtimeContext);
+  const flowItems = buildFlowObservability(flows, capabilityItems);
 
   const topGaps = buildTopGaps(capabilityItems);
 
@@ -711,6 +711,7 @@ function buildCapabilityObservability(
   rootDir: string,
   capabilities: PulseCapability[],
   allFiles: string[],
+  runtimeContext: ObservabilityRuntimeContext,
 ): CapabilityObservability[] {
   const fileCache = new Map<string, string>();
   const allFileSet = new Set(allFiles.map((filePath) => safeResolve(filePath)));
@@ -724,72 +725,23 @@ function buildCapabilityObservability(
 
   return capabilities.map((cap) => {
     const relevantFiles = resolveCapabilityFiles(rootDir, cap.filePaths, allFileSet);
+    const evidence = Object.fromEntries(
+      runtimeContext.pillars.map((pillar) => [
+        pillar,
+        normalizePillarEvidence(
+          cap.id,
+          pillar,
+          scanPillarEvidence(cap, pillar, relevantFiles, runtimeContext),
+          rootDir,
+        ),
+      ]),
+    ) as Record<ObservabilityPillar, ObservabilityPillarEvidence>;
 
-    const evidence: Record<ObservabilityPillar, ObservabilityPillarEvidence> = {
-      logs: normalizePillarEvidence(cap.id, 'logs', scanForLoggingEvidence(relevantFiles), rootDir),
-      metrics: normalizePillarEvidence(
-        cap.id,
-        'metrics',
-        scanForMetricsEvidence(relevantFiles),
-        rootDir,
+    const pillars = Object.fromEntries(
+      (Object.entries(evidence) as Array<[ObservabilityPillar, ObservabilityPillarEvidence]>).map(
+        ([pillar, item]) => [pillar, item.status],
       ),
-      tracing: normalizePillarEvidence(
-        cap.id,
-        'tracing',
-        scanForTracingEvidence(relevantFiles),
-        rootDir,
-      ),
-      alerts: normalizePillarEvidence(
-        cap.id,
-        'alerts',
-        scanForAlertsEvidence(relevantFiles),
-        rootDir,
-      ),
-      dashboards: normalizePillarEvidence(
-        cap.id,
-        'dashboards',
-        findDashboardEvidence(relevantFiles),
-        rootDir,
-      ),
-      health_probes: normalizePillarEvidence(
-        cap.id,
-        'health_probes',
-        findHealthEndpointEvidence(relevantFiles),
-        rootDir,
-      ),
-      error_budget: normalizePillarEvidence(
-        cap.id,
-        'error_budget',
-        cap.runtimeCritical
-          ? findErrorBudgetEvidence(relevantFiles)
-          : {
-              status: 'not_applicable',
-              sourceKind: 'not_applicable',
-              source: 'non-runtime-critical capability',
-              reason:
-                'Error budget evidence is not required for non-runtime-critical capabilities.',
-              filePaths: [],
-            },
-        rootDir,
-      ),
-      sentry: normalizePillarEvidence(
-        cap.id,
-        'sentry',
-        scanForErrorTrackingEvidence(relevantFiles),
-        rootDir,
-      ),
-    };
-
-    const pillars: Record<ObservabilityPillar, ObservabilityStatus> = {
-      logs: evidence.logs.status,
-      metrics: evidence.metrics.status,
-      tracing: evidence.tracing.status,
-      alerts: evidence.alerts.status,
-      dashboards: evidence.dashboards.status,
-      health_probes: evidence.health_probes.status,
-      error_budget: evidence.error_budget.status,
-      sentry: evidence.sentry.status,
-    };
+    ) as Record<ObservabilityPillar, ObservabilityStatus>;
 
     const structuredLogFields = scanForStructuredFields(relevantFiles, getContent);
     const perFileLogging = scanPerFileLogging(relevantFiles, getContent).map((entry) => ({
