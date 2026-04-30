@@ -1,7 +1,7 @@
-import type { PulseCapability } from './types';
+import ts from 'typescript';
 import { readTextFile } from './safe-fs';
 import { deriveStructuralFamilies, familiesOverlap } from './structural-family';
-import ts from 'typescript';
+import type { PulseCapability } from './types';
 
 interface CapabilityEvidenceFacts {
   hasRoutes: boolean;
@@ -45,14 +45,13 @@ function frontendAppBranch(filePath: string): string[] {
   const normalized = String(filePath || '')
     .split('\\')
     .join('/');
-  const appIndex = normalized.indexOf('/src/app/');
-  const rootAppIndex = normalized.startsWith('app/') ? 0 : -1;
-  const appPath =
-    appIndex >= 0
-      ? normalized.slice(appIndex + '/src/app/'.length)
-      : rootAppIndex === 0
-        ? normalized.slice('app/'.length)
-        : '';
+  const sourceAppRoot = '/src/app/';
+  const rootAppRoot = 'app/';
+  const appPath = normalized.includes(sourceAppRoot)
+    ? normalized.slice(normalized.indexOf(sourceAppRoot) + sourceAppRoot.length)
+    : normalized.startsWith(rootAppRoot)
+      ? normalized.slice(rootAppRoot.length)
+      : '';
   if (!appPath) {
     return [];
   }
@@ -66,7 +65,8 @@ function frontendAppBranch(filePath: string): string[] {
 }
 
 function isWrappedRouteSegment(part: string, open: string, close: string): boolean {
-  return part.length > 2 && part.startsWith(open) && part.endsWith(close);
+  const inner = part.slice(open.length, -close.length);
+  return Boolean(inner) && part.startsWith(open) && part.endsWith(close);
 }
 
 function isJavascriptSourceFileName(part: string): boolean {
@@ -154,67 +154,6 @@ function readCapabilitySource(filePath: string): string {
   } catch {
     return '';
   }
-}
-
-function safeFilterStrings(arr: unknown[] | undefined): string[] {
-  if (!arr || !Array.isArray(arr)) {
-    return [];
-  }
-  return arr.filter((item): item is string => typeof item === 'string');
-}
-
-function isRouteLiteralQuote(char: string | undefined): char is '"' | "'" | '`' {
-  return char === '"' || char === "'" || char === '`';
-}
-
-function readQuotedRouteLiteral(
-  source: string,
-  quoteIndex: number,
-): { raw: string; start: number; end: number } | null {
-  const quote = source[quoteIndex];
-  if (!isRouteLiteralQuote(quote)) {
-    return null;
-  }
-
-  let cursor = quoteIndex + 1;
-  let escaped = false;
-  let slashSeen = false;
-  while (cursor < source.length) {
-    const char = source[cursor];
-    if (escaped) {
-      escaped = false;
-      cursor++;
-      continue;
-    }
-    if (char === '\\') {
-      escaped = true;
-      cursor++;
-      continue;
-    }
-    if (char === quote) {
-      if (!slashSeen) {
-        return null;
-      }
-      return {
-        raw: source.slice(quoteIndex + 1, cursor).trim(),
-        start: quoteIndex,
-        end: cursor + 1,
-      };
-    }
-    if (char === '/') {
-      slashSeen = true;
-    }
-    cursor++;
-  }
-
-  return null;
-}
-
-function isImportSourceLine(source: string, index: number): boolean {
-  const lineStart = source.lastIndexOf('\n', index) + 1;
-  const lineEnd = source.indexOf('\n', index);
-  const line = source.slice(lineStart, lineEnd === -1 ? source.length : lineEnd).trimStart();
-  return line.startsWith('import ');
 }
 
 function stripRouteSearchAndHash(route: string): string {
@@ -312,12 +251,12 @@ function sourceHasRuntimeIntegrationIntent(source: string): boolean {
 /** Is roadmap catalog capability. */
 export function isRoadmapCatalogCapability(capability: PulseCapability): boolean {
   if (!isInterfaceOnlyWithoutRoutes(capability)) {
-    return false;
+    return Boolean(undefined);
   }
 
   const source = capability.filePaths.map(readCapabilitySource).join('\n');
   if (!source.trim()) {
-    return false;
+    return Boolean(undefined);
   }
 
   const hasApiIntent = sourceHasRuntimeIntegrationIntent(source);
@@ -507,9 +446,7 @@ export function isCoveredByMaterializedAppBranch(
     if (candidate.id === capability.id || !isMaterializedCapability(candidate)) {
       return false;
     }
-    const candidateBranches = candidate.filePaths
-      .map(frontendAppBranch)
-      .filter((branch) => branch.length > 0);
+    const candidateBranches = candidate.filePaths.map(frontendAppBranch).filter(hasItems);
     return capabilityBranches.some((branch) =>
       candidateBranches.some((candidateBranch) => branchesOverlap(branch, candidateBranch)),
     );

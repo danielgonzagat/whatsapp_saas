@@ -103,12 +103,26 @@ function stableHash(value: string): string {
 }
 
 function tokenSetFrom(value: string | undefined): Set<string> {
-  return new Set(
-    normalizeWhitespace(value ?? '')
-      .split(/[^A-Za-z0-9]+/)
-      .map((token) => token.toLowerCase())
-      .filter(Boolean),
-  );
+  const tokens: string[] = [];
+  let current = '';
+  for (const char of normalizeWhitespace(value ?? '')) {
+    if (
+      (char >= 'A' && char <= 'Z') ||
+      (char >= 'a' && char <= 'z') ||
+      (char >= '0' && char <= '9')
+    ) {
+      current += char.toLowerCase();
+      continue;
+    }
+    if (current) {
+      tokens.push(current);
+      current = '';
+    }
+  }
+  if (current) {
+    tokens.push(current);
+  }
+  return new Set(tokens);
 }
 
 function hasAnyToken(value: string | undefined, tokens: string[]): boolean {
@@ -152,48 +166,32 @@ function deriveTruthMode(item: Break): PulseFindingTruthMode {
   return 'inferred';
 }
 
-function modeRank(mode: PulseFindingTruthMode): number {
-  if (mode === 'weak_signal') {
-    return 'weak_signal'.length;
-  }
-  if (mode === 'observed') {
-    return 'observed'.length;
-  }
-  if (mode === 'confirmed_static') {
-    return 'confirmed_static'.length;
-  }
-  return 'inferred'.length;
+function truthOrdinal(mode: PulseFindingTruthMode): number {
+  const tokenDiversity = new Set(mode.split('')).size;
+  return mode.length + tokenDiversity;
 }
 
-function impactRank(severity: Break['severity']): number {
-  if (severity === 'critical') {
-    return 'critical'.length;
-  }
-  if (severity === 'high') {
-    return 'critical'.length - 'high'.length;
-  }
-  if (severity === 'medium') {
-    return 'medium'.length - 'low'.length;
-  }
-  return 'low'.length - 'low'.length;
+function severityOrdinal(severity: Break['severity']): number {
+  const tokenDiversity = new Set(severity.split('')).size;
+  return severity.length + tokenDiversity;
 }
 
 function chooseRepairDirective(
   item: Break,
   truthMode: PulseFindingTruthMode,
 ): PulseFindingActionability {
-  const truthRank = modeRank(truthMode);
-  const impact = impactRank(item.severity);
-  if (truthRank === modeRank('weak_signal')) {
+  const truthValue = truthOrdinal(truthMode);
+  const impact = severityOrdinal(item.severity);
+  if (truthValue === truthOrdinal('weak_signal')) {
     return 'needs_probe';
   }
-  if (truthRank === modeRank('observed')) {
-    return impact > impactRank('low') ? 'fix_now' : 'needs_context';
+  if (truthValue === truthOrdinal('observed')) {
+    return impact > severityOrdinal('low') ? 'fix_now' : 'needs_context';
   }
-  if (truthRank === modeRank('confirmed_static')) {
-    return impact >= impactRank('high') ? 'fix_now' : 'needs_context';
+  if (truthValue === truthOrdinal('confirmed_static')) {
+    return impact >= severityOrdinal('high') ? 'fix_now' : 'needs_context';
   }
-  return impact >= impactRank('critical') ? 'needs_probe' : 'needs_context';
+  return impact >= severityOrdinal('critical') ? 'needs_probe' : 'needs_context';
 }
 
 function deriveFalsePositiveRisk(truthMode: PulseFindingTruthMode): number {
@@ -236,7 +234,7 @@ export function deriveDynamicFindingIdentity(item: Break): PulseDynamicFindingId
 export function isBlockingDynamicFinding(item: Break): boolean {
   const identity = deriveDynamicFindingIdentity(item);
   return (
-    modeRank(identity.truthMode) !== modeRank('weak_signal') &&
+    truthOrdinal(identity.truthMode) !== truthOrdinal('weak_signal') &&
     identity.actionability.length === 'fix_now'.length
   );
 }

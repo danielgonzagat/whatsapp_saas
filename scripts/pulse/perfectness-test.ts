@@ -648,9 +648,33 @@ function buildUnknownGate(context: GateEvaluationContext): PerfectnessGate {
   };
 }
 
+function evidencePlanHasSource(context: GateEvaluationContext, source: string): boolean {
+  return Boolean(
+    context.evidencePlan?.evidenceSources.some(
+      (evidenceSource) => evidenceSource.source === source,
+    ),
+  );
+}
+
+function evidencePlanHasField(context: GateEvaluationContext, field: string): boolean {
+  return Boolean(
+    context.evidencePlan?.evidenceSources.some((evidenceSource) => evidenceSource.field === field),
+  );
+}
+
+function evidencePlanMentions(context: GateEvaluationContext, token: string): boolean {
+  const normalized = normalizeProofToken(token);
+  return Boolean(
+    context.evidencePlan?.evidenceSources.some((evidenceSource) =>
+      normalizeProofToken(evidenceSource.interpretation).includes(normalized),
+    ) || normalizeProofToken(context.target).includes(normalized),
+  );
+}
+
 const GATE_EVALUATION_RULES: GateEvaluationRule[] = [
   {
-    supports: (context) => context.evidencePlan?.gateName === 'pulse-core-green',
+    supports: (context) =>
+      evidencePlanHasField(context, 'certified') && evidencePlanHasField(context, 'gates'),
     evaluate: (context) => {
       const certified = context.cert?.certified === true || isPassingStatus(context.cert?.status);
       const gateMetric = allCertificationGatesPass(context.cert);
@@ -666,7 +690,7 @@ const GATE_EVALUATION_RULES: GateEvaluationRule[] = [
     },
   },
   {
-    supports: (context) => context.evidencePlan?.gateName === 'product-core-green',
+    supports: (context) => evidencePlanHasField(context, 'capabilities'),
     evaluate: (context) => {
       const capabilityMetric = capabilityRealityMetric(context.cert);
       const allCapabilitiesReal =
@@ -683,7 +707,7 @@ const GATE_EVALUATION_RULES: GateEvaluationRule[] = [
     },
   },
   {
-    supports: (context) => context.evidencePlan?.gateName === 'e2e-core-pass',
+    supports: (context) => evidencePlanHasSource(context, SCENARIO_EVIDENCE_FILE),
     evaluate: (context) => {
       if (context.scenarioData.total > 0) {
         const passed = context.scenarioData.rate >= targetNumber(context, 0);
@@ -709,7 +733,7 @@ const GATE_EVALUATION_RULES: GateEvaluationRule[] = [
     },
   },
   {
-    supports: (context) => context.evidencePlan?.gateName === 'runtime-stable',
+    supports: (context) => evidencePlanMentions(context, 'critical errors'),
     evaluate: (context) => {
       const failureMetric = runtimeFailureMetric(context.cert);
       return {
@@ -723,7 +747,8 @@ const GATE_EVALUATION_RULES: GateEvaluationRule[] = [
     },
   },
   {
-    supports: (context) => context.evidencePlan?.gateName === 'no-regression',
+    supports: (context) =>
+      evidencePlanHasField(context, 'score') && evidencePlanMentions(context, 'score start'),
     evaluate: (context) => {
       const scoreEnd = context.cert?.score ?? 0;
       const delta = scoreEnd - context.startScore;
@@ -738,7 +763,7 @@ const GATE_EVALUATION_RULES: GateEvaluationRule[] = [
     },
   },
   {
-    supports: (context) => context.evidencePlan?.gateName === 'no-rollback-unrecovered',
+    supports: (context) => evidencePlanHasSource(context, PULSE_AUTONOMY_STATE_FILE),
     evaluate: (context) => {
       const rollbackCount = context.autonomy?.rollbacks ?? 0;
       const unrecoveredRollbacks = rollbackFailureMetric(context.autonomy);
@@ -753,7 +778,7 @@ const GATE_EVALUATION_RULES: GateEvaluationRule[] = [
     },
   },
   {
-    supports: (context) => context.evidencePlan?.gateName === 'no-protected-violation',
+    supports: (context) => evidencePlanHasSource(context, PULSE_SANDBOX_STATE_FILE),
     evaluate: (context) => {
       const metric = sandboxViolationMetric(context.sandbox);
       const totalViolations = metric.governanceViolations + metric.unsafePatches;
@@ -768,7 +793,7 @@ const GATE_EVALUATION_RULES: GateEvaluationRule[] = [
     },
   },
   {
-    supports: (context) => context.evidencePlan?.gateName === '72h-elapsed',
+    supports: (context) => evidencePlanHasSource(context, 'system_clock'),
     evaluate: (context) => {
       const longRun = evaluateLongRunEvidence(context.startTime, context.autonomy);
       return {

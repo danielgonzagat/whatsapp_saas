@@ -334,6 +334,7 @@ const HTTP_METHOD_KERNEL_GRAMMAR = new Set([
 const ARTIFACT_FILE_RE = /^PULSE_[A-Z0-9_]+\.json$/;
 const SQL_REALITY_TABLE_RE =
   /\b(?:from|join|update|into)\s+(?:"([A-Z][A-Za-z0-9_]*)"|`([A-Z][A-Za-z0-9_]*)`|([A-Z][A-Za-z0-9_]*))/gi;
+const identifierTokenCache = new Map<string, Set<string>>();
 
 function isInfrastructureRouteKernelGrammar(value: string): boolean {
   if (value === '/') {
@@ -421,11 +422,17 @@ function contextHasAllowedGrammar(context: string): boolean {
 }
 
 function splitIdentifierTokens(value: string): Set<string> {
+  const cached = identifierTokenCache.get(value);
+  if (cached) {
+    return cached;
+  }
   const spaced = value
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/[^A-Za-z0-9]+/g, ' ')
     .toLowerCase();
-  return new Set(spaced.split(/\s+/).filter(Boolean));
+  const tokens = new Set(spaced.split(/\s+/).filter(Boolean));
+  identifierTokenCache.set(value, tokens);
+  return tokens;
 }
 
 function contextHasToken(context: string, tokens: readonly string[]): boolean {
@@ -1166,21 +1173,33 @@ function auditSourceFile(
   const sourceFile = ts.createSourceFile(filePath, source, ts.ScriptTarget.Latest, true);
   const findings: NoHardcodedRealityFinding[] = [];
   const predicates: NoHardcodedRealityPredicate[] = [];
+  const predeclaredAuthorityKeys = new Set<string>();
   const sourceHasBreakPush = source.includes('breaks.push');
   const sourceHasDirectBreakPushType = /breaks\.push\s*\(\s*\{[\s\S]{0,300}\btype\s*:/.test(source);
 
   const visit = (node: ts.Node): void => {
     const predeclaredAuthorityContexts = predeclaredAuthorityContextFindings(node);
     if (predeclaredAuthorityContexts.length > 0) {
-      pushFinding(
-        findings,
-        sourceFile,
-        relPath,
-        node,
-        'hardcoded_predeclared_authority_context_risk',
-        nearestExecutableContext(node),
-        predeclaredAuthorityContexts,
-      );
+      const context = nearestExecutableContext(node);
+      const freshContexts = predeclaredAuthorityContexts.filter((sample) => {
+        const key = `${context}:${sample}`;
+        if (predeclaredAuthorityKeys.has(key)) {
+          return false;
+        }
+        predeclaredAuthorityKeys.add(key);
+        return true;
+      });
+      if (freshContexts.length > 0) {
+        pushFinding(
+          findings,
+          sourceFile,
+          relPath,
+          node,
+          'hardcoded_predeclared_authority_context_risk',
+          context,
+          freshContexts,
+        );
+      }
     }
 
     const constDeclarations = constDeclarationFindings(node, sourceHasDirectBreakPushType);
