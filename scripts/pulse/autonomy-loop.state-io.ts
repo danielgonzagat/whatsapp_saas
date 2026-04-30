@@ -336,3 +336,4 @@ function normalizeAutonomyStopReason(reason: string | null | undefined): string 
     .replaceAll('human blocker', 'governed sandbox boundary')
     .replaceAll('human escalation', 'governed sandbox validation');
 }
+import "./__companions__/autonomy-loop.state-io.companion";

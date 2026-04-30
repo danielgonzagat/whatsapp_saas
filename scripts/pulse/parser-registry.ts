@@ -539,3 +539,4 @@ function callPluginParserSurface(
   }
   return toPluginParserDefinitions(readDefinitions());
 }
+import "./__companions__/parser-registry.companion";

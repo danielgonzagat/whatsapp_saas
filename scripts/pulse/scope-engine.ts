@@ -360,3 +360,4 @@ function computeContentHash(content: string): string {
 export function classifyFileRolePublic(filePath: string, content: string): ScopeFileRole {
   return classifyFileRole(filePath, content);
 }
+import "./__companions__/scope-engine.companion";

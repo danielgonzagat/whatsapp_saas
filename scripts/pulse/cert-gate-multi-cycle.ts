@@ -362,3 +362,4 @@ function analyzeCycle(record: PulseAutonomyIterationRecord): CycleAnalysis {
     countsTowardConvergence,
   };
 }
+import "./__companions__/cert-gate-multi-cycle.companion";

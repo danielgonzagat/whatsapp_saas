@@ -386,3 +386,4 @@ export function appendBlock(
     blocks: [...chain.blocks, block],
   };
 }
+import "./__companions__/audit-chain.companion";

@@ -395,3 +395,4 @@ function entryCountsAsFreshObservedProof(
     (matrixGeneratedAtMs === null || observedAtMs >= matrixGeneratedAtMs)
   );
 }
+import "./__companions__/path-proof-runner.companion";

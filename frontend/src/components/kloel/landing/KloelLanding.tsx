@@ -567,3 +567,4 @@ function HeroLoop() {
     </div>
   );
 }
+import "../../../__companions__/KloelLanding.companion";

@@ -579,3 +579,4 @@ function determineExternalKind(
   }
   return 'change';
 }
+import "./__companions__/convergence-plan.companion";

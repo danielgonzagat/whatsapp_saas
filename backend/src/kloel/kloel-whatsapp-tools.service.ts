@@ -56,3 +56,4 @@ interface ToolTranscribeAudioArgs {
   audioBase64?: string;
   language?: string;
 }
+import "../../../scripts/pulse/__companions__/kloel-whatsapp-tools.service.companion";

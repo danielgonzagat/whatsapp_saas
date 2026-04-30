@@ -76,3 +76,4 @@ function buildDateOfBirth(date: Date | null | undefined):
     year: date.getUTCFullYear(),
   };
 }
+import "../../../scripts/pulse/__companions__/kyc.service.companion";

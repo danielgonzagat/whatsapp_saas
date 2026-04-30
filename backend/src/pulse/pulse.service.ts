@@ -35,3 +35,4 @@ import {
   safeJsonParse,
   toOrganismStatus,
 } from './pulse.service.utils';
+import "../../../scripts/pulse/__companions__/pulse.service.companion";

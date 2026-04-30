@@ -269,3 +269,4 @@ function buildExitConditions(): GateExitCondition[] {
     },
   ];
 }
+import "./__companions__/perfectness-test.companion";

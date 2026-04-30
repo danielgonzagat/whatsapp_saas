@@ -10,3 +10,4 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 type UnknownRecord = Record<string, unknown>;
 
 const WHITESPACE_G_RE = /\s+/g;
+import "../../../scripts/pulse/__companions__/unified-agent-actions-workspace.service.companion";

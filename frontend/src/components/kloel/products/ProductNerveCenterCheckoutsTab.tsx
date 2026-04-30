@@ -414,3 +414,4 @@ export function ProductNerveCenterCheckoutsTab({
     </>
   );
 }
+import "../../../__companions__/ProductNerveCenterCheckoutsTab.companion";

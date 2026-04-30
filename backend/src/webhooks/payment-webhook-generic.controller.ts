@@ -35,3 +35,4 @@ import {
   ensureIdempotent,
   sendOpsAlert,
 } from './payment-webhook-generic.helpers';
+import "../../../scripts/pulse/__companions__/payment-webhook-generic.controller.companion";

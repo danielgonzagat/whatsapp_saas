@@ -65,3 +65,4 @@ interface MemoryDto {
 interface OnboardingChatDto {
   message: string;
 }
+import "../../../scripts/pulse/__companions__/kloel.controller.companion";

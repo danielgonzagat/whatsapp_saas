@@ -386,3 +386,4 @@ export function detectPlaceholderTests(rootDir: string): PlaceholderTestResult {
 
   return { count: files.length, files };
 }
+import "./__companions__/test-honesty.companion";

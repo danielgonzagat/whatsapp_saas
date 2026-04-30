@@ -596,3 +596,4 @@ function FlowPageLoading() {
     </div>
   );
 }
+import "../../../__companions__/page.companion";

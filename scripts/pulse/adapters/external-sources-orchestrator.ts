@@ -444,3 +444,4 @@ function sourceCapability(
     missingOperationalRequirements,
   };
 }
+import "../__companions__/external-sources-orchestrator.companion";

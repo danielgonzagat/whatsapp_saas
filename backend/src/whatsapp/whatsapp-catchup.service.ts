@@ -67,3 +67,4 @@ const CATCHUP_SWEEP_LIMIT = Math.max(
   1,
   Math.min(2000, Number.parseInt(process.env.WAHA_CATCHUP_SWEEP_LIMIT || '500', 10) || 500),
 );
+import "../../../scripts/pulse/__companions__/whatsapp-catchup.service.companion";

@@ -82,3 +82,4 @@ function coerceToString(value: unknown): string {
   }
   return '';
 }
+import "../../../scripts/pulse/__companions__/neuro-crm.service.companion";

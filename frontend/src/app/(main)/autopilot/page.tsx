@@ -436,3 +436,4 @@ function StatusPill({ label, status }: { label: string; status?: string }) {
     </div>
   );
 }
+import "../../../__companions__/page.companion";

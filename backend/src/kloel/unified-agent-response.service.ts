@@ -18,3 +18,4 @@ import {
   WHITESPACE_G_RE,
   WHITESPACE_RE,
 } from './unified-agent-response.regex';
+import "../../../scripts/pulse/__companions__/unified-agent-response.service.companion";

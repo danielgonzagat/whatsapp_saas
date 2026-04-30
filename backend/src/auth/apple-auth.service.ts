@@ -27,3 +27,4 @@ import {
   sanitizeAppleError,
   tokenAudienceIncludes,
 } from './apple-auth.support';
+import "../../../scripts/pulse/__companions__/apple-auth.service.companion";

@@ -132,3 +132,4 @@ function buildDuplicateAwareKey(prefix: string, values: string[], position: numb
   const occurrence = values.slice(0, position).filter((value) => value === currentValue).length;
   return `${prefix}-${currentValue.slice(0, 24)}-${occurrence}`;
 }
+import "../../../__companions__/brain-settings-section.companion";

@@ -346,3 +346,4 @@ describe('checkCrossArtifactConsistency – self-trust integration', () => {
     expect(checkpoint.reason).toContain('finalProduction.observedProof');
   });
 });
+import "../__companions__/cross-artifact-consistency.spec.companion";

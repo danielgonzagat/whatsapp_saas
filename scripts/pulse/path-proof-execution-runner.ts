@@ -352,3 +352,4 @@ function buildSkippedResult(
     reason,
   };
 }
+import "./__companions__/path-proof-execution-runner.companion";

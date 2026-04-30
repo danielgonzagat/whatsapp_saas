@@ -354,3 +354,4 @@ function normalizeActorEvidence(
     results,
   };
 }
+import "./__companions__/scenario-evidence-loader.companion";

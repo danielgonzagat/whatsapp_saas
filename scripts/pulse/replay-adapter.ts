@@ -344,3 +344,4 @@ function mergeSessions(all: ReplaySession[], incoming: ReplaySession[]): ReplayS
   }
   return merged;
 }
+import "./__companions__/replay-adapter.companion";

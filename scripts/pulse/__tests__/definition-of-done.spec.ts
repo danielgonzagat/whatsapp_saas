@@ -372,3 +372,4 @@ describe('evaluateDone — multiple simultaneous failures', () => {
     expect(result.missingRoles).toContain('persistence');
   });
 });
+import "../__companions__/definition-of-done.spec.companion";

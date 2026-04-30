@@ -395,3 +395,4 @@ function isOpenApiSpecFile(rootDir: string, filePath: string): boolean {
   const firstNameSegment = parsed.name.toLowerCase().split('.')[0];
   return firstNameSegment === 'openapi' || firstNameSegment === 'swagger';
 }
+import "./__companions__/contract-tester.companion";

@@ -332,3 +332,4 @@ function baseInput(rootDir: string): CertificationInput {
     certificationTarget: { tier: null, final: true, profile: 'full-product' },
   } as CertificationInput;
 }
+import "../__companions__/certification-proof-readiness.spec.companion";

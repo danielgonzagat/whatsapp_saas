@@ -368,3 +368,4 @@ export function applyWorkerPatchToRoot(
     summary: `Worker ${workerId} patch applied cleanly to the main workspace.`,
   };
 }
+import "./__companions__/autonomy-loop.workspace.companion";

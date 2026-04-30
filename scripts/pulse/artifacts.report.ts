@@ -229,3 +229,4 @@ export function buildPulseMachineReadiness(
     blockers,
   };
 }
+import "./__companions__/artifacts.report.companion";

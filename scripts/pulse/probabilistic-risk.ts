@@ -290,3 +290,4 @@ function countAutonomyEvidence(
 
   return { passed, failed };
 }
+import "./__companions__/probabilistic-risk.companion";

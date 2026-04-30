@@ -331,3 +331,4 @@ function validatePlugin(obj: unknown): obj is PulsePlugin {
 export function isDomainPack(pluginId: string, _rootDir: string): boolean {
   return pluginId.startsWith(DOMAIN_PACK_PREFIX);
 }
+import "./__companions__/plugin-system.companion";

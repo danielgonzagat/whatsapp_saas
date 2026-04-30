@@ -382,3 +382,4 @@ export function evaluateRuntimeGate(
     reason: evidence.runtime.summary || 'Runtime evidence executed without blocking findings.',
   };
 }
+import "./__companions__/cert-gate-evaluators.companion";

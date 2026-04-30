@@ -529,3 +529,4 @@ function buildElement(
     component,
   };
 }
+import "../__companions__/ui-parser.companion";

@@ -44,3 +44,4 @@ interface ResumeResult {
   /** Full execution state so the worker can continue */
   state?: Record<string, unknown>;
 }
+import "../../../scripts/pulse/__companions__/flows.service.companion";

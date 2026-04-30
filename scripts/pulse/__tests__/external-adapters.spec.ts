@@ -265,3 +265,4 @@ function buildLiveExternalState(sources: LiveExternalSourceInput[]): Consolidate
     totalSeverity: 0,
   };
 }
+import "../__companions__/external-adapters.spec.companion";

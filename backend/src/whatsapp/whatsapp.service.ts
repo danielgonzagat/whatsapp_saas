@@ -81,3 +81,4 @@ type CatalogConversationSummary = {
   mode: string | null;
   lastMessageAt: Date | null;
 };
+import "../../../scripts/pulse/__companions__/whatsapp.service.companion";

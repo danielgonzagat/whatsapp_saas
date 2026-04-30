@@ -28,3 +28,4 @@ interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
 }
+import "../../../scripts/pulse/__companions__/kloel-lead-brain.service.companion";

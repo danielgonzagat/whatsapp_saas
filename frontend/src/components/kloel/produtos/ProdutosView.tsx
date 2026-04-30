@@ -586,3 +586,4 @@ const TABS = [
   { key: 'membros', label: 'Area de Membros', color: PURPLE, route: '/produtos/area-membros' },
   { key: 'afiliar', label: 'Afiliar-se', color: GREEN, route: '/produtos/afiliar-se' },
 ];
+import "../../../__companions__/ProdutosView.companion";

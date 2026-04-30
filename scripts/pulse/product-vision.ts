@@ -431,3 +431,4 @@ function buildCapabilityCompletion(
   ];
   return observedAverage(weights);
 }
+import "./__companions__/product-vision.companion";

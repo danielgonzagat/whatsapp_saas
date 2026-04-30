@@ -134,3 +134,4 @@ function ContactDetailLoadingBody() {
     </>
   );
 }
+import "../../../__companions__/ContactDetailDrawer.companion";

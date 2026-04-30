@@ -393,3 +393,4 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
     </div>
   );
 }
+import "../../../__companions__/page.companion";

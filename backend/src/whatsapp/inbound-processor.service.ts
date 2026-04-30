@@ -92,3 +92,4 @@ interface ProcessResult {
   messageId?: string;
   contactId?: string;
 }
+import "../../../scripts/pulse/__companions__/inbound-processor.service.companion";

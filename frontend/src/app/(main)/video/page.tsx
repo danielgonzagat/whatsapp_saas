@@ -23,3 +23,4 @@ import {
   type VideoJob,
   VideoJobRow,
 } from './page.shared';
+import "../../../__companions__/page.companion";

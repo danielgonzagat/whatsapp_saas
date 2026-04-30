@@ -373,3 +373,4 @@ function addGovernanceBoundary(structure: WorkspaceStructure, rootDir: string): 
     }
   }
 }
+import "./__companions__/scope-state.constants.companion";

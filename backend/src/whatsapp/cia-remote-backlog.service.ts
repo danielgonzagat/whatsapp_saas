@@ -14,3 +14,4 @@ import { WhatsappService } from './whatsapp.service';
 type BacklogMode = 'reply_all_recent_first' | 'reply_only_new' | 'prioritize_hot';
 const safeStr = (v: unknown, fb = ''): string =>
   typeof v === 'string' ? v : typeof v === 'number' || typeof v === 'boolean' ? String(v) : fb;
+import "../../../scripts/pulse/__companions__/cia-remote-backlog.service.companion";

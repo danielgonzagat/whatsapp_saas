@@ -380,3 +380,4 @@ function scanForLoggingEvidence(filePaths: string[]): PillarScanResult {
   }
   return missingEvidence('No logging instrumentation was found.');
 }
+import "./__companions__/observability-coverage.companion";

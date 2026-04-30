@@ -368,3 +368,4 @@ function deriveRequirementsFromEffectGraph(
       (riskLevel === 'high' || graph.patchEffects.has('external_mutation') || persistentOrExternal),
   };
 }
+import "./__companions__/safety-sandbox.companion";

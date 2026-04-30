@@ -384,3 +384,4 @@ const DEVICES = [
 ] as const;
 
 type DeviceId = (typeof DEVICES)[number]['id'];
+import "../../../../__companions__/page.companion";

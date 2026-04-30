@@ -350,3 +350,4 @@ function attemptGitNexusReindex(input: {
     skippedReason: null,
   };
 }
+import "./__companions__/context-broadcast.companion";

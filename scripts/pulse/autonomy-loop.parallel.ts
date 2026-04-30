@@ -78,3 +78,4 @@ export function getContextFabricBlocker(
     ? 'Parallel worker selected without a valid lease and fresh contextDigest.'
     : null;
 }
+import "./__companions__/autonomy-loop.parallel.companion";

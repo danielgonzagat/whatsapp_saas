@@ -41,3 +41,4 @@ type KloelPrismaMock = {
   auditLog: { create: jest.Mock };
   $transaction: jest.Mock;
 };
+import "../../../scripts/pulse/__companions__/kloel.service.spec.companion";

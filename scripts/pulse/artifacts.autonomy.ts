@@ -340,3 +340,4 @@ function hasRuntimeTouchingValidationEvidence(
     (command) => command.command.trim().length > 0 && command.exitCode === 0,
   );
 }
+import "./__companions__/artifacts.autonomy.companion";

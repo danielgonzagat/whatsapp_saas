@@ -389,3 +389,4 @@ export function detectProviders(rootDir: string): Map<ChaosProviderName, string[
 
   return providerFiles;
 }
+import "./__companions__/chaos-engine.companion";

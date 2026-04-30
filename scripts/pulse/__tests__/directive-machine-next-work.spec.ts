@@ -364,3 +364,4 @@ describe('buildPulseAutonomyProofDebtNextWork', () => {
     expect(work[0].forbiddenActions).toContain('Do not edit SaaS product code for this unit');
   });
 });
+import "../__companions__/directive-machine-next-work.spec.companion";

@@ -583,3 +583,4 @@ const CONNECT_STATE_CONFIG: Record<
     icon: Icons.check,
   },
 };
+import "../../../__companions__/ContaView.companion";

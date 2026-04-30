@@ -374,3 +374,4 @@ function hasDirectMutationSignal(evidence: ElementRiskEvidence): boolean {
   if (evidence.apiEndpoint && evidence.kind !== 'link' && evidence.kind !== 'nav') return true;
   return Boolean(evidence.handlerName && !isNavigationHandler(evidence.handlerName));
 }
+import "./__companions__/ui-crawler.companion";

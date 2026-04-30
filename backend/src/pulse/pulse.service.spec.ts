@@ -16,3 +16,4 @@ function buildExpectedIntervalHandlerError() {
   error.message = 'Expected callback interval handler';
   return error;
 }
+import "../../../scripts/pulse/__companions__/pulse.service.spec.companion";

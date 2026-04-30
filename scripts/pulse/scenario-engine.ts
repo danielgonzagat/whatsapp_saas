@@ -309,3 +309,4 @@ function getFlowsForSurface(
   );
   return productGraph.flows.filter((f) => caps.has(f.entryCapability));
 }
+import "./__companions__/scenario-engine.companion";

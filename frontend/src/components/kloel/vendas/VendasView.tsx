@@ -307,3 +307,4 @@ function MiniChart({ data, color = 'colors.ember.primary' }: { data: number[]; c
     </div>
   );
 }
+import "../../../__companions__/VendasView.companion";

@@ -378,3 +378,4 @@ function buildDimensionEvidence(
     ),
   ) as Record<ProductionProofDimension, ProductionProofDimensionEvidence>;
 }
+import "./__companions__/production-proof.companion";

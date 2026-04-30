@@ -395,3 +395,4 @@ export function buildRuntimeProbesArtifact(
     },
   );
 }
+import "./__companions__/runtime-probes.companion";

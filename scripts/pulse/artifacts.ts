@@ -593,3 +593,4 @@ export function generateArtifacts(
     artifactIndexPath,
   };
 }
+import "./__companions__/artifacts.companion";

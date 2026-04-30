@@ -367,3 +367,4 @@ export function buildAuthorityState(rootDir: string): AuthorityState {
  * Backward-compatibility alias for existing daemon integration.
  */
 export const evaluateAuthorityState = buildAuthorityState;
+import "./__companions__/authority-engine.companion";

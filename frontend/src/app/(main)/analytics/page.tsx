@@ -573,3 +573,4 @@ const IC: Record<string, (s: number) => React.ReactNode> = {
     </svg>
   ),
 };
+import "../../../__companions__/page.companion";

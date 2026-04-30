@@ -19,3 +19,4 @@ import {
   getQrCode,
   listLidMappings,
 } from './waha-session-lifecycle.util';
+import "../../../../scripts/pulse/__companions__/waha-session.provider.companion";

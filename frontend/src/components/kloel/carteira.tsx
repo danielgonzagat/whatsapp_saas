@@ -474,3 +474,4 @@ type TransactionItem = {
   time: string;
   fee: number;
 };
+import "../../__companions__/carteira.companion";

@@ -64,3 +64,4 @@ type WorkItemUpsertInput = {
   evidence?: Record<string, unknown> | null;
   metadata?: Record<string, unknown> | null;
 };
+import "../../../scripts/pulse/__companions__/account-agent.service.companion";

@@ -80,6 +80,37 @@ function canonicalArtifactFilename(): string {
   return discoverAllObservedArtifactFilenames().propertyEvidence;
 }
 
+function canonicalStructuralGraphFilename(): string {
+  return discoverAllObservedArtifactFilenames().structuralGraph;
+}
+
+function observedStatusAt(statuses: Set<string>, offset: number): string {
+  const observed = Array.from(statuses);
+  return observed[offset] ?? observed[deriveZeroValue()] ?? String();
+}
+
+function observedPassedStatus(): string {
+  return observedStatusAt(discoverPropertyPassedStatusFromTypeEvidence(), deriveZeroValue());
+}
+
+function observedPlannedStatus(): string {
+  return observedStatusAt(discoverPropertyUnexecutedStatusFromExecutionEvidence(), deriveZeroValue());
+}
+
+function observedNotExecutedStatus(): string {
+  return observedStatusAt(
+    discoverPropertyUnexecutedStatusFromExecutionEvidence(),
+    deriveUnitValue(),
+  );
+}
+
+function countByObservedStatus<T extends { status: string }>(
+  tests: T[],
+  observedStatus: string,
+): number {
+  return tests.filter((test) => test.status === observedStatus).length;
+}
+
 let PROPERTY_ASSERTION_SENSOR = /\b(?:fc\.)?assert\s*\(\s*(?:fc\.)?property\s*\(/;
 let PROPERTY_USAGE_SENSOR = /\b(?:fc\.)?property\s*\(/;
 
@@ -184,18 +215,18 @@ export function buildPropertyTestEvidence(
   let generatedTests = generatePropertyTestCases(rootDir);
 
   let totalProperty = allPropertyTests.length;
-  let plannedProperty = allPropertyTests.filter((t) => t.status === 'planned').length;
-  let notExecutedProperty = allPropertyTests.filter((t) => t.status === 'not_executed').length;
-  let passedProperty = allPropertyTests.filter((t) => t.status === 'passed').length;
+  let plannedProperty = countByObservedStatus(allPropertyTests, observedPlannedStatus());
+  let notExecutedProperty = countByObservedStatus(allPropertyTests, observedNotExecutedStatus());
+  let passedProperty = countByObservedStatus(allPropertyTests, observedPassedStatus());
   let failedProperty = allPropertyTests.filter((t) => t.status === 'failed').length;
   let totalFuzz = fuzzTests.length;
-  let plannedFuzz = fuzzTests.filter((t) => t.status === 'planned').length;
-  let notExecutedFuzz = fuzzTests.filter((t) => t.status === 'not_executed').length;
-  let passedFuzz = fuzzTests.filter((t) => t.status === 'passed').length;
+  let plannedFuzz = countByObservedStatus(fuzzTests, observedPlannedStatus());
+  let notExecutedFuzz = countByObservedStatus(fuzzTests, observedNotExecutedStatus());
+  let passedFuzz = countByObservedStatus(fuzzTests, observedPassedStatus());
   let failedFuzz = fuzzTests.filter((t) => t.status === 'failed').length;
   let totalMutation = mutationTests.length;
-  let plannedMutation = mutationTests.filter((t) => t.status === 'planned').length;
-  let notExecutedMutation = mutationTests.filter((t) => t.status === 'not_executed').length;
+  let plannedMutation = countByObservedStatus(mutationTests, observedPlannedStatus());
+  let notExecutedMutation = countByObservedStatus(mutationTests, observedNotExecutedStatus());
   let hasMutationEvidence = totalMutation > zeroValue();
   let avgMutationScore = hasMutationEvidence
     ? Math.round(
@@ -251,7 +282,7 @@ export function buildPropertyTestEvidence(
       criticalCapabilitiesCovered: criticalCapabilities.size,
       criticalCapabilitiesPlanned: criticalCapabilitiesPlanned.size,
       totalGeneratedTests: generatedTests.length,
-      plannedGeneratedTests: generatedTests.filter((t) => t.status === 'planned').length,
+      plannedGeneratedTests: countByObservedStatus(generatedTests, observedPlannedStatus()),
     },
     propertyTests: allPropertyTests,
     fuzzTests,
@@ -274,7 +305,7 @@ export function buildPropertyTestEvidence(
  * @returns        List of endpoint descriptors with method, path, and filePath.
  */
 export function discoverEndpoints(rootDir: string): EndpointDescriptor[] {
-  let structuralPath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_STRUCTURAL_GRAPH.json');
+  let structuralPath = safeJoin(rootDir, '.pulse', 'current', canonicalStructuralGraphFilename());
 
   if (pathExists(structuralPath)) {
     try {
@@ -393,3 +424,4 @@ function isTestLikeFile(fileName: string, content: string): boolean {
   if (hasTestRuntime && hasPropertySignal) return true;
   return hasTestFileNameEvidence(fileName) && (hasTestRuntime || hasPropertySignal);
 }
+import "./__companions__/property-tester.companion";

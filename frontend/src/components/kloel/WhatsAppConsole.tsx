@@ -378,3 +378,4 @@ function ChatsSyncList({
     </div>
   );
 }
+import "../../__companions__/WhatsAppConsole.companion";

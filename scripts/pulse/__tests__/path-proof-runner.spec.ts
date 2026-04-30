@@ -158,3 +158,4 @@ function makeMatrix(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix {
     paths,
   };
 }
+import "../__companions__/path-proof-runner.spec.companion";

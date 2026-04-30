@@ -379,3 +379,4 @@ function resolveCallExpression(
 
   return { resolved, targetSymbol, genericArgs };
 }
+import "./__companions__/ast-graph.companion";

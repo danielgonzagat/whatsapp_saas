@@ -355,3 +355,4 @@ function extractChangedFilesFromPatch(patchContent: string): string[] {
 
   return [...changed].sort();
 }
+import "./__companions__/real-sandbox.companion";

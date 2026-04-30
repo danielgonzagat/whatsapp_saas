@@ -392,3 +392,4 @@ function discoverCandidateFiles(rootDir: string, maxDepth: number): string[] {
   visit('.', 0);
   return files.sort();
 }
+import "./__companions__/design-token-discovery.companion";

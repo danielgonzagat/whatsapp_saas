@@ -585,3 +585,4 @@ function isStructuralFlowCandidate(nodes: PulseStructuralNode[]): boolean {
   );
   return hasEntry && hasAction && hasStatefulOrSideEffect;
 }
+import "./__companions__/product-model.companion";

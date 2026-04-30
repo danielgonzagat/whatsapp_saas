@@ -391,3 +391,4 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
     </div>
   );
 }
+import "../../../__companions__/ParceriasView.companion";

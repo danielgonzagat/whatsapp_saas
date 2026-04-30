@@ -47,3 +47,4 @@ import { isUrlAllowed, safeRequest, validateUrl } from './utils/ssrf-protection'
 
 const PATTERN_RE = /\{\{(.*?)\}\}/g;
 const D_RE = /\D/g;
+import "../scripts/pulse/__companions__/flow-engine-global.companion";

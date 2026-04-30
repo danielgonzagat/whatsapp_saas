@@ -32,3 +32,4 @@ import {
 import { errorMessage, formatMoney } from './crm-settings-section.helpers';
 import { ContactCard, SegmentationCard, StatCard, fieldClass } from './crm-settings-section.parts';
 import { colors } from '@/lib/design-tokens';
+import "../../../__companions__/crm-settings-section.companion";

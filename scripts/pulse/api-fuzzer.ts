@@ -314,3 +314,4 @@ function extractEndpointEffectGraph(
     serviceCallSignals: [...serviceCalls],
   };
 }
+import "./__companions__/api-fuzzer.companion";

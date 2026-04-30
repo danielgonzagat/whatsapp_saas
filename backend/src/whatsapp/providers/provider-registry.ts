@@ -65,3 +65,4 @@ export interface SessionStatus {
   /** Degraded reason property. */
   degradedReason?: string | null;
 }
+import "../../../../scripts/pulse/__companions__/provider-registry.companion";

@@ -369,3 +369,4 @@ export function getAutomationExecutionCost(unit: PulseAutonomousDirectiveUnit): 
     getEvidenceRank(unit.evidenceMode)
   );
 }
+import "./__companions__/autonomy-loop.unit-ranking.companion";

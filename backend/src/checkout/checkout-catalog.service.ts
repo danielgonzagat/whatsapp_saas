@@ -16,3 +16,4 @@ import {
   VALID_PIXEL_TYPES,
   validateCouponHelper,
 } from './checkout-catalog.helpers';
+import "../../../scripts/pulse/__companions__/checkout-catalog.service.companion";

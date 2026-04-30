@@ -586,3 +586,4 @@ function PixelAddPanel({
     </div>
   );
 }
+import "../../__companions__/CheckoutConfigPage.companion";

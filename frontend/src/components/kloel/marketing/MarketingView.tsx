@@ -567,3 +567,4 @@ function ChannelInfoGridCard({ label, value }: ChannelStatRow) {
     </div>
   );
 }
+import "../../../__companions__/MarketingView.companion";

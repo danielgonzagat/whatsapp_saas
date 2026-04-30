@@ -373,3 +373,4 @@ function deriveObservedScoreCeiling(
   }
   return Math.max(artifactCeiling, graph.summary.totalNodes);
 }
+import "./__companions__/continuous-daemon.companion";

@@ -214,3 +214,4 @@ function collectProofDebtSignals(artifacts: LoadedArtifact[]): ProofDebtSignal[]
 
   return signals;
 }
+import "../__companions__/comparators.companion";

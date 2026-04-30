@@ -16,3 +16,4 @@ function describeUnknownError(error: unknown): string {
   }
   return 'Unknown error';
 }
+import "../../../scripts/pulse/__companions__/unified-agent-actions-sales.service.companion";

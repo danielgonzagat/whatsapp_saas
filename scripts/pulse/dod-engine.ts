@@ -393,3 +393,4 @@ function zero(): number {
 function isElevatedLevel(riskLevel: DoDRiskLevel): boolean {
   return riskLevel === 'critical' || riskLevel === 'high';
 }
+import "./__companions__/dod-engine.companion";

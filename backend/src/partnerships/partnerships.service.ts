@@ -24,3 +24,4 @@ const PARTNER_ROLE_LABELS: Record<string, string> = {
   MANAGER: 'gerente',
   PRODUCER: 'produtor',
 };
+import "../../../scripts/pulse/__companions__/partnerships.service.companion";

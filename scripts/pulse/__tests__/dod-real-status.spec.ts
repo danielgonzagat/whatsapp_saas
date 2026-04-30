@@ -28,3 +28,4 @@ afterEach(() => {
     fs.rmSync(root, { recursive: true, force: true });
   }
 });
+import "../__companions__/dod-real-status.spec.companion";

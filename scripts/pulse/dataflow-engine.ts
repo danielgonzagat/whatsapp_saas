@@ -383,3 +383,4 @@ export function classifyFinancialModel(_modelName: string, fields: string[] = []
   }));
   return classifyFinancialFieldEvidence(fieldEvidence, undefined).financial;
 }
+import "./__companions__/dataflow-engine.companion";

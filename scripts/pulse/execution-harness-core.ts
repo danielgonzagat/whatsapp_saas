@@ -381,3 +381,4 @@ interface ExtractedMethod {
   isPublic: boolean;
   returnType: string | null;
 }
+import "./__companions__/execution-harness-core.companion";

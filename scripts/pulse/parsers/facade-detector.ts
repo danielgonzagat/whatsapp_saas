@@ -448,3 +448,4 @@ function contextAllowsEmptyReturn(context: string): boolean {
     'json.parse',
   ]);
 }
+import "../__companions__/facade-detector.companion";

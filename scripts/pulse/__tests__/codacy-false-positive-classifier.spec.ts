@@ -202,3 +202,4 @@ function makeScopeState(rootDir: string, codacy: PulseCodacySummary): PulseScope
 function governedValidationAction(result: CodacyClassification): string | undefined {
   return result.humanRequiredAction;
 }
+import "../__companions__/codacy-false-positive-classifier.spec.companion";

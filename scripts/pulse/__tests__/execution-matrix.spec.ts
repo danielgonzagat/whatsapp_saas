@@ -247,3 +247,4 @@ function makeEvidence(overrides: Partial<PulseExecutionEvidence> = {}): PulseExe
     ...overrides,
   };
 }
+import "../__companions__/execution-matrix.spec.companion";

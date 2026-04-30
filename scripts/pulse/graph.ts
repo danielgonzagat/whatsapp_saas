@@ -380,3 +380,4 @@ export interface PulseGraphInput {
   /** Extended breaks property. */
   extendedBreaks?: Break[];
 }
+import "./__companions__/graph.companion";

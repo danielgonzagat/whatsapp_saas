@@ -390,3 +390,4 @@ function resolvePulseCurrentDir(rootDir: string): string {
   }
   return p.join(rootDir, '.pulse', 'current');
 }
+import "./__companions__/runtime-fusion.companion";

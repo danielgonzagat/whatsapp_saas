@@ -383,3 +383,4 @@ export interface RollbackOutcome {
   /** True when rollback was skipped because it would be unsafe (e.g. file outside the unit's declared scope had user changes). */
   skipped: boolean;
 }
+import "./__companions__/regression-guard.companion";

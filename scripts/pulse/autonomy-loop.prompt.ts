@@ -386,3 +386,4 @@ export function buildAdaptiveDecision(
     strategyMode: 'adaptive_narrow_scope',
   };
 }
+import "./__companions__/autonomy-loop.prompt.companion";

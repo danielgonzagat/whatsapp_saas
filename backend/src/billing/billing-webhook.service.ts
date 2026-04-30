@@ -21,3 +21,4 @@ import type {
   StripeSubscription,
 } from './stripe-types';
 import type { StripeSubscriptionWithPeriodEnd, WhatsappNotifier } from './billing-webhook.types';
+import "../../../scripts/pulse/__companions__/billing-webhook.service.companion";

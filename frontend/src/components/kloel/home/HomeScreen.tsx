@@ -176,3 +176,4 @@ function useTypingSimulation() {
 interface HomeScreenProps {
   onSendMessage?: (text: string) => void;
 }
+import "../../../__companions__/HomeScreen.companion";

@@ -279,3 +279,4 @@ function isGateBlockingFinalReadiness(_gateName: PulseGateName, result: PulseGat
       result.failureClass === 'checker_gap')
   );
 }
+import "./__companions__/certification.companion";

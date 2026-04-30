@@ -425,3 +425,4 @@ function AnunciosTabBar({
     </div>
   );
 }
+import "../../../__companions__/AnunciosView.companion";

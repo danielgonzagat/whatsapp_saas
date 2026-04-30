@@ -152,3 +152,4 @@ function countHumanRequiredCapabilities(capabilities: PulseCapability[]): number
       sameToken(item.executionMode, 'observation_only'),
   ).length;
 }
+import "./__companions__/capability-model.companion";

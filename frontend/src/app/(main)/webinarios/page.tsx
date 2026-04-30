@@ -107,3 +107,4 @@ function StatusIcon({ status }: { status: string }) {
 function toEmbedUrl(url: string): string | null {
   return toSupportedEmbedUrl(url);
 }
+import "../../../__companions__/page.companion";

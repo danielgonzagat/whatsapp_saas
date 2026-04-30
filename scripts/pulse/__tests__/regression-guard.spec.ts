@@ -35,3 +35,4 @@ function makeSnapshot(overrides: Partial<PulseSnapshot> = {}): PulseSnapshot {
     ...overrides,
   };
 }
+import "../__companions__/regression-guard.spec.companion";

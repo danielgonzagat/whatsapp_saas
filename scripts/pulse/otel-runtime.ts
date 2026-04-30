@@ -372,3 +372,4 @@ export interface InstrumentationHint {
   /** Service name. */
   service: string;
 }
+import "./__companions__/otel-runtime.companion";

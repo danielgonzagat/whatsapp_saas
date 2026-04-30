@@ -385,3 +385,4 @@ function RichTextContentSubTab({
     </>
   );
 }
+import "../../../__companions__/ProductNerveCenterComissaoTab.companion";

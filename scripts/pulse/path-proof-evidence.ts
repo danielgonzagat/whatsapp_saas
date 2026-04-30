@@ -394,3 +394,4 @@ function summarize(
     notExecutableTasks: plan.summary.notExecutableTasks,
   };
 }
+import "./__companions__/path-proof-evidence.companion";

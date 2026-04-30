@@ -378,3 +378,4 @@ function hasStructuralParserSignal(node: ts.Node): boolean {
   ts.forEachChild(node, visit);
   return found;
 }
+import "./__companions__/hardcoded-finding-audit.companion";

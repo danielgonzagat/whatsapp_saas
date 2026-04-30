@@ -12,3 +12,4 @@ import { CheckoutProductService } from './checkout-product.service';
 import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder';
 
 export type { CheckoutOrderStatusValue } from './checkout-order-status';
+import "../../../scripts/pulse/__companions__/checkout.service.companion";

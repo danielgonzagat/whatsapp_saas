@@ -29,3 +29,4 @@ afterEach(() => {
   }
   tempRoots = [];
 });
+import "../__companions__/runtime-fusion.spec.companion";

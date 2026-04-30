@@ -359,3 +359,4 @@ export interface PulseExternalAdapterSnapshot {
   /** Signals property. */
   signals: PulseSignal[];
 }
+import "./__companions__/types.capabilities.companion";

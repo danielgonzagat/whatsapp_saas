@@ -408,3 +408,4 @@ function inferWhatsappFailureCode(summary: string): PulseBrowserFailureCode {
   }
   return 'backend_auth_unreachable';
 }
+import "../__companions__/index.companion";

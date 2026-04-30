@@ -283,3 +283,4 @@ function classNameRole(
   if (tokens.some((token) => token === 'service' || token === 'repository')) return 'service_like';
   return null;
 }
+import "./__companions__/behavior-graph.companion";

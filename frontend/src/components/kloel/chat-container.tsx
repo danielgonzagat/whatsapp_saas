@@ -61,3 +61,4 @@ const EMPTY_AGENT_STATS: AgentStats = {
   activeConversations: 0,
   avgResponseTime: 'ao vivo',
 };
+import "../../__companions__/chat-container.companion";

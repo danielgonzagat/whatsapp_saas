@@ -581,3 +581,4 @@ export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustC
     };
   }
 }
+import "./__companions__/self-trust.companion";

@@ -344,3 +344,4 @@ function collectAuthArtifactSourceFiles(productGraph: PulseProductGraph | null):
     .map(artifactIdToLikelySourcePath)
     .filter((sourcePath): sourcePath is string => sourcePath !== null);
 }
+import "../__companions__/live-artifacts.companion";

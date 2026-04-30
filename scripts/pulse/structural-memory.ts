@@ -337,3 +337,4 @@ function computeSummary(
     learnedStrategies: learnedPatterns.length,
   };
 }
+import "./__companions__/structural-memory.companion";

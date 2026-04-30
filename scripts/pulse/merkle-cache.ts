@@ -375,3 +375,4 @@ function addAncestors(
     }
   }
 }
+import "./__companions__/merkle-cache.companion";

@@ -394,3 +394,4 @@ function artifactRelatedFiles(artifact: PulseArtifactDefinition): string[] {
     ].filter((filePath): filePath is string => filePath !== null),
   );
 }
+import "./__companions__/artifacts.directive.companion";

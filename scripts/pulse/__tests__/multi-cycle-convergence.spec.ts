@@ -245,3 +245,4 @@ describe('cycle with runtime validation DOES count toward convergence', () => {
     expect(result.status).toBe('pass');
   });
 });
+import "../__companions__/multi-cycle-convergence.spec.companion";

@@ -78,3 +78,4 @@ afterEach(() => {
     }
   }
 });
+import "../__companions__/execution-blueprints.spec.companion";

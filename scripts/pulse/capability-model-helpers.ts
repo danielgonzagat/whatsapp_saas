@@ -378,3 +378,4 @@ export function shouldTraverseNeighbor(
 
   return familyAligned;
 }
+import "./__companions__/capability-model-helpers.companion";

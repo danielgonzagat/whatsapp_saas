@@ -220,3 +220,4 @@ function interactionChain(overrides: Partial<InteractionChain> = {}): Interactio
     ...overrides,
   };
 }
+import "../__companions__/no-hardcoded-reality.spec.companion";

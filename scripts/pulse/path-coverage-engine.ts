@@ -392,3 +392,4 @@ function normalizeCoverageExecutionMode(
   }
   return isHighOrCriticalRisk(risk) ? 'governed_validation' : 'ai_safe';
 }
+import "./__companions__/path-coverage-engine.companion";

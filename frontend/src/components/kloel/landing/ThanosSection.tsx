@@ -514,3 +514,4 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
     </div>
   );
 }
+import "../../../__companions__/ThanosSection.companion";
