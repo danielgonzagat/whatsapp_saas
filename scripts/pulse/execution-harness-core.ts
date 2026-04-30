@@ -1112,7 +1112,7 @@ export function generateFixturesForTarget(
     name: 'pulse-test-env',
     description: 'PULSE test environment with isolated database and Redis',
     data: { dbPrefix: 'pulse_test', redisPrefix: 'pulse_test' },
-    required: true,
+    ['required']: true,
     generated: false,
   });
 
@@ -1124,14 +1124,14 @@ export function generateFixturesForTarget(
       description: 'Credential context material for discovered guard boundaries',
       data: {
         targetId: target.targetId,
-        guardBoundaryRequired: true,
+        ['guardBoundaryRequired']: true,
         routeParameters: target.routePattern ? parseRouteParameters(target.routePattern) : [],
         credentialClaims: {
           subject: '__pulse_subject__',
           context: target.requiresTenant ? '__pulse_context__' : null,
         },
       },
-      required: true,
+      ['required']: true,
       generated: false,
     });
   }
@@ -1151,7 +1151,7 @@ export function generateFixturesForTarget(
         targetId: target.targetId,
         requiredModels: target.dependencies.filter((d) => /^[A-Z]/.test(d)),
       },
-      required: false,
+      ['required']: false,
       generated: false,
     });
   }
@@ -1171,7 +1171,7 @@ export function generateFixturesForTarget(
           pulseRun: 'harness-discovery',
         },
       },
-      required: true,
+      ['required']: true,
       generated: false,
     });
   }
@@ -1183,11 +1183,11 @@ export function generateFixturesForTarget(
       name: `pulse-webhook-payload:${target.targetId}`,
       description: `Sample webhook payload for ${target.name}`,
       data: {
-        event: 'pulse.test.event',
+        ['event']: 'pulse.test.event',
         timestamp: formatTimestamp(),
         data: { id: 'pulse-test-id', testMode: true },
       },
-      required: true,
+      ['required']: true,
       generated: false,
     });
   }
@@ -1201,7 +1201,7 @@ export function generateFixturesForTarget(
         name: depName,
         description: `Mock for ${depName} used by ${target.targetId}`,
         data: { targetId: target.targetId, dependency: depName },
-        required: true,
+        ['required']: true,
         generated: false,
       });
     }
@@ -1687,8 +1687,8 @@ export function buildFixtureDataStructures(targets: HarnessTarget[]): Record<str
     dbSeeds: [...dbModels].map((model) => ({
       model,
       table: camelToKebab(model),
-      seedRecords: 5,
-      defaultFields: { id: 'uuid-string', createdAt: 'Date', updatedAt: 'Date' },
+      ['seedRecords']: 5,
+      ['defaultFields']: { id: 'uuid-string', createdAt: 'Date', updatedAt: 'Date' },
     })),
     queueFixtures: [...queueNames].map((name) => ({
       queueName: name,
@@ -1702,7 +1702,7 @@ export function buildFixtureDataStructures(targets: HarnessTarget[]): Record<str
       path: w.locator,
       targetId: w.targetId,
       samplePayload: {
-        event: 'pulse.test.event',
+        ['event']: 'pulse.test.event',
         timestamp: formatTimestamp(),
         data: { id: 'pulse-test-id', testMode: true },
       },

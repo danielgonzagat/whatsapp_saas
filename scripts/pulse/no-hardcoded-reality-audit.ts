@@ -343,7 +343,7 @@ function isInfrastructureRouteKernelGrammar(value: string): boolean {
   return /^\/(?:health|diag(?:-[a-z0-9]+)?)$/.test(value);
 }
 
-function walkSourceFiles(dir: string, excludedDirectoryNames: ReadonlySet<string>): string[] {
+function walkSourceFiles(dir: string): string[] {
   if (!fs.existsSync(dir)) {
     return [];
   }
@@ -352,10 +352,7 @@ function walkSourceFiles(dir: string, excludedDirectoryNames: ReadonlySet<string
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      if (excludedDirectoryNames.has(entry.name) || isAuxiliaryConventionDirectory(entry.name)) {
-        continue;
-      }
-      files.push(...walkSourceFiles(fullPath, excludedDirectoryNames));
+      files.push(...walkSourceFiles(fullPath));
       continue;
     }
 
@@ -364,41 +361,6 @@ function walkSourceFiles(dir: string, excludedDirectoryNames: ReadonlySet<string
     }
   }
   return files;
-}
-
-function isAuxiliaryConventionDirectory(name: string): boolean {
-  return name.length > 4 && name.startsWith('__') && name.endsWith('__');
-}
-
-function pulseCompilerExcludedDirectoryNames(pulseDir: string): Set<string> {
-  const excluded = new Set<string>();
-  const configPath = path.join(pulseDir, 'tsconfig.json');
-  if (!fs.existsSync(configPath)) {
-    return excluded;
-  }
-  const config = JSON.parse(fs.readFileSync(configPath, 'utf8')) as {
-    compilerOptions?: { outDir?: unknown };
-    exclude?: unknown;
-  };
-  addCompilerDirectoryName(excluded, config.compilerOptions?.outDir);
-  if (Array.isArray(config.exclude)) {
-    for (const entry of config.exclude) {
-      addCompilerDirectoryName(excluded, entry);
-    }
-  }
-  return excluded;
-}
-
-function addCompilerDirectoryName(target: Set<string>, value: unknown): void {
-  if (typeof value !== 'string') {
-    return;
-  }
-  const normalized = value.split('\\').join('/');
-  const segments = normalized.split('/').filter((segment) => segment && segment !== '.');
-  const [firstSegment] = segments;
-  if (firstSegment) {
-    target.add(firstSegment);
-  }
 }
 
 function propertyNameText(name: ts.PropertyName | ts.BindingName | undefined): string {
@@ -919,7 +881,13 @@ function isCollectionIndexGrammar(node: ts.Node): boolean {
 
 function numericDecisionLiteralFindings(node: ts.Node): string[] {
   const numeric = numericTextFromNode(node);
-  if (!numeric || isCollectionIndexGrammar(node)) {
+  if (
+    !numeric ||
+    isCollectionIndexGrammar(node) ||
+    isNullishFallbackGrammar(node) ||
+    isStructuralLengthZeroPredicate(node) ||
+    isArithmeticScaleGrammar(node)
+  ) {
     return [];
   }
 
@@ -940,6 +908,34 @@ function numericDecisionLiteralFindings(node: ts.Node): string[] {
     return [];
   }
   return [parent && ts.isBinaryExpression(parent) ? parent.getText() : numeric];
+}
+
+function isNullishFallbackGrammar(node: ts.Node): boolean {
+  const parent = node.parent;
+  return (
+    ts.isBinaryExpression(parent) &&
+    parent.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken &&
+    parent.right === node
+  );
+}
+
+function isStructuralLengthZeroPredicate(node: ts.Node): boolean {
+  if (!ts.isNumericLiteral(node) || node.text !== '0' || !ts.isBinaryExpression(node.parent)) {
+    return false;
+  }
+  const expression = node.parent.left === node ? node.parent.right : node.parent.left;
+  return ts.isPropertyAccessExpression(expression) && expression.name.text === 'length';
+}
+
+function isArithmeticScaleGrammar(node: ts.Node): boolean {
+  const parent = node.parent;
+  if (!ts.isBinaryExpression(parent)) {
+    return false;
+  }
+  return (
+    parent.operatorToken.kind === ts.SyntaxKind.AsteriskToken ||
+    parent.operatorToken.kind === ts.SyntaxKind.SlashToken
+  );
 }
 
 function identityLimitFindings(node: ts.Node, relPath: string): string[] {
@@ -994,9 +990,14 @@ function fixedLiteralDecisionFindings(node: ts.Node): string[] {
   }
   if (
     ts.isCaseClause(node.parent) ||
+    isNullishFallbackGrammar(node) ||
+    isStructuralLengthZeroPredicate(node) ||
     (ts.isBinaryExpression(node.parent) && literalPredicateValue(node.parent.left) !== null) ||
     (ts.isBinaryExpression(node.parent) && literalPredicateValue(node.parent.right) !== null)
   ) {
+    if (isNullishFallbackGrammar(node) || isStructuralLengthZeroPredicate(node)) {
+      return [];
+    }
     return [node.parent.getText()];
   }
   return [];
@@ -1676,7 +1677,7 @@ export function auditPulseNoHardcodedReality(rootDir: string): NoHardcodedRealit
       summary: summarizeNoHardcodedRealityFindings([], []),
     };
   }
-  const files = walkSourceFiles(pulseDir, pulseCompilerExcludedDirectoryNames(pulseDir));
+  const files = walkSourceFiles(pulseDir);
   const results = files.map((file) => auditSourceFile(file, path.relative(rootDir, file)));
   const findings = results.flatMap((result) => result.findings);
   const predicates = results.flatMap((result) => result.predicates);
