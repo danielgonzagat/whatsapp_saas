@@ -584,8 +584,8 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
     partialSurfaces: surfaces.filter((surface) => surface.status === capSeq[1]).length,
     latentSurfaces: surfaces.filter((surface) => surface.status === capSeq[2]).length,
     phantomSurfaces: surfaces.filter((surface) => surface.status === capWeak).length,
-    productFacingWeakUnits,
-    systemWeakUnits,
+    productFacingPhantomCapabilities: productFacingWeakUnits,
+    systemPhantomCapabilities: systemWeakUnits,
     criticalGaps: surfaces
       .filter(
         (surface) =>

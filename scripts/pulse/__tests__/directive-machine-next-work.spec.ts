@@ -66,7 +66,9 @@ describe('buildPulseMachineNextWork', () => {
       affectedCapabilities: [],
       affectedFlows: [],
     });
-    expect(work[0].relatedFiles).toContain('scripts/pulse/external-signals.ts');
+    expect(work[0].proofAuthority).toBe('artifact_registry');
+    expect(work[0].validationArtifacts).toContain('PULSE_EXTERNAL_SIGNAL_STATE.json');
+    expect(work[0].relatedFiles).toContain('scripts/pulse/runtime-fusion.ts');
     expect(work[0].forbiddenActions).toContain('Do not edit SaaS product code for this unit');
   });
 
@@ -292,7 +294,7 @@ describe('buildPulseCertificationProofDebtNextWork', () => {
     expect(work[0].forbiddenActions).toContain('Do not edit SaaS product code for this unit');
   });
 
-  it('marks registry misses as weak compatibility fallback instead of gate authority', () => {
+  it('marks registry misses as registry gaps instead of choosing fixed fallback files', () => {
     const work = buildPulseCertificationProofDebtNextWork({
       gates: {
         noOverclaimPass: {
@@ -306,11 +308,12 @@ describe('buildPulseCertificationProofDebtNextWork', () => {
     expect(work).toHaveLength(1);
     expect(work[0]).toMatchObject({
       gateNames: ['noOverclaimPass'],
-      proofAuthority: 'weak_compat_fallback',
+      proofAuthority: 'registry_gap',
     });
     expect(work[0].proofBasis).toEqual([
-      expect.stringContaining('weak compat fallback: no registry artifact'),
+      expect.stringContaining('registry gap: no artifact producer/consumer/freshness evidence'),
     ]);
+    expect(work[0].relatedFiles).toEqual([]);
   });
 
   it('does not convert product-failure gates into machine proof work', () => {
@@ -357,6 +360,7 @@ describe('buildPulseAutonomyProofDebtNextWork', () => {
     expect(
       collectRelatedFiles(work).every((filePath) => filePath.startsWith('scripts/pulse/')),
     ).toBe(true);
+    expect(work.every((unit) => Array.isArray(unit.proofBasis))).toBe(true);
     expect(work[0].forbiddenActions).toContain('Do not edit SaaS product code for this unit');
   });
 });

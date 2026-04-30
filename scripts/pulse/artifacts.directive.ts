@@ -61,13 +61,6 @@ const PATH_PROOF_TASKS_ARTIFACT = 'PULSE_PATH_PROOF_TASKS.json';
 const PATH_COVERAGE_ARTIFACT = 'PULSE_PATH_COVERAGE.json';
 const PROOF_READINESS_ARTIFACT = 'PULSE_PROOF_READINESS.json';
 
-const WEAK_COMPAT_MACHINE_PROOF_DEBT_FILES = [
-  'scripts/pulse/artifacts.autonomy.ts',
-  'scripts/pulse/artifacts.directive.ts',
-  'scripts/pulse/autonomy-loop.ts',
-  'scripts/pulse/cert-gate-multi-cycle.ts',
-];
-
 function summarizeMachineProofGates(
   certification: PulseCertification,
 ): Array<{ gate: PulseGateName; status: PulseGateResult['status']; reason: string }> {
@@ -331,84 +324,26 @@ function evidenceString(
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
-function machineUnitTitle(criterionId: string): string {
-  if (criterionId === 'external_reality') {
-    return 'Close PULSE external-reality adapters';
-  }
-  if (criterionId === 'critical_path_terminal') {
-    return 'Convert terminal critical paths into observed proof';
-  }
-  if (criterionId === 'artifact_consistency') {
-    return 'Repair PULSE cross-artifact consistency';
-  }
-  if (criterionId === 'execution_matrix') {
-    return 'Complete PULSE execution matrix classification';
-  }
-  if (criterionId === 'breakpoint_precision') {
-    return 'Repair PULSE breakpoint precision';
-  }
-  if (criterionId === 'self_trust') {
-    return 'Repair PULSE self-trust';
-  }
-  if (criterionId === 'multi_cycle') {
-    return 'Prove non-regressing autonomous PULSE cycles';
-  }
-  return 'Restore bounded PULSE autonomous execution';
+function directiveLabelFromIdentifier(identifier: string): string {
+  const label = identifier
+    .replace(/Pass$/, '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .trim()
+    .toLowerCase();
+  return label.length > 0 ? label : identifier;
 }
 
-function machineUnitFiles(criterionId: string): string[] {
-  if (criterionId === 'external_reality') {
-    return [
-      'scripts/pulse/adapters/external-sources-orchestrator.ts',
-      'scripts/pulse/external-signals.ts',
-      'scripts/pulse/runtime-fusion.ts',
-    ];
-  }
-  if (criterionId === 'critical_path_terminal' || criterionId === 'execution_matrix') {
-    return [
-      'scripts/pulse/execution-matrix.ts',
-      'scripts/pulse/path-coverage-engine.ts',
-      'scripts/pulse/execution-observation.ts',
-    ];
-  }
-  if (criterionId === 'artifact_consistency' || criterionId === 'self_trust') {
-    return [
-      'scripts/pulse/cross-artifact-consistency-check.ts',
-      'scripts/pulse/self-trust.ts',
-      'scripts/pulse/artifacts.directive.ts',
-    ];
-  }
-  if (criterionId === 'multi_cycle') {
-    return [
-      'scripts/pulse/autonomy-loop.ts',
-      'scripts/pulse/cert-gate-multi-cycle.ts',
-      'scripts/pulse/artifacts.autonomy.ts',
-    ];
-  }
-  return ['scripts/pulse/artifacts.report.ts', 'scripts/pulse/artifacts.directive.ts'];
+function machineUnitTitle(criterionId: string): string {
+  return `Close PULSE ${directiveLabelFromIdentifier(criterionId)} criterion`;
 }
 
 function machineProofGateTitle(gateName: PulseGateName): string {
-  if (gateName === 'runtimePass') return 'Make PULSE runtime proof executable';
-  if (gateName === 'performancePass') return 'Make PULSE performance proof executable';
-  if (gateName === 'observabilityPass') return 'Make PULSE observability proof executable';
-  if (gateName === 'customerPass') return 'Make PULSE customer scenarios observed';
-  if (gateName === 'operatorPass') return 'Make PULSE operator scenarios observed';
-  if (gateName === 'adminPass') return 'Make PULSE admin scenarios observed';
-  if (gateName === 'soakPass') return 'Make PULSE soak scenarios observed';
-  if (gateName === 'syntheticCoveragePass') return 'Close PULSE synthetic coverage proof';
-  if (gateName === 'truthExtractionPass') return 'Close PULSE truth extraction proof debt';
-  if (gateName === 'criticalPathObservedPass') return 'Observe PULSE critical paths';
-  if (gateName === 'executionMatrixCompletePass') return 'Complete PULSE execution matrix proof';
-  if (gateName === 'breakpointPrecisionPass') return 'Sharpen PULSE breakpoint proof';
-  if (gateName === 'multiCycleConvergencePass') return 'Prove PULSE multi-cycle convergence';
-  if (gateName === 'pulseSelfTrustPass') return 'Repair PULSE self-trust proof';
-  if (gateName === 'noOverclaimPass') return 'Repair PULSE no-overclaim proof';
-  return `Repair PULSE proof gate ${gateName}`;
+  return `Repair PULSE ${directiveLabelFromIdentifier(gateName)} proof`;
 }
 
 type MachineProofRegistryEvidence = {
-  authority: 'artifact_registry' | 'weak_compat_fallback';
+  authority: 'artifact_registry' | 'registry_gap';
   artifactPaths: string[];
   relatedFiles: string[];
   proofBasis: string[];
@@ -460,11 +395,11 @@ function artifactRelatedFiles(artifact: PulseArtifactDefinition): string[] {
   );
 }
 
-function buildMachineProofRegistryEvidence(
-  gateName: PulseGateName,
+function buildRegistryEvidenceForDirective(
+  identifier: string,
   registry: PulseArtifactRegistry = buildArtifactRegistry(process.cwd()),
 ): MachineProofRegistryEvidence {
-  const tokens = tokenizeGateName(gateName);
+  const tokens = tokenizeGateName(identifier as PulseGateName);
   const artifacts = registry.artifacts.filter((artifact) => {
     const searchText = artifactRegistrySearchText(artifact);
     return tokens.some((token) => searchText.includes(token));
@@ -487,20 +422,33 @@ function buildMachineProofRegistryEvidence(
   }
 
   return {
-    authority: 'weak_compat_fallback',
+    authority: 'registry_gap',
     artifactPaths: [],
-    relatedFiles: WEAK_COMPAT_MACHINE_PROOF_DEBT_FILES,
+    relatedFiles: [],
     proofBasis: [
-      `weak compat fallback: no registry artifact producer/consumer/freshness evidence matched ${gateName}`,
+      `registry gap: no artifact producer/consumer/freshness evidence matched ${identifier}`,
     ],
   };
 }
 
-function isMachineProofGate(gateName: PulseGateName, gate: PulseGateResult): boolean {
-  if (gate.status !== 'fail') {
-    return false;
-  }
-  return gate.failureClass === 'missing_evidence' || gate.failureClass === 'checker_gap';
+function buildMachineProofRegistryEvidence(
+  gateName: PulseGateName,
+  registry: PulseArtifactRegistry = buildArtifactRegistry(process.cwd()),
+): MachineProofRegistryEvidence {
+  return buildRegistryEvidenceForDirective(gateName, registry);
+}
+
+function buildMachineCriterionRegistryEvidence(
+  criterionId: string,
+  registry: PulseArtifactRegistry = buildArtifactRegistry(process.cwd()),
+): MachineProofRegistryEvidence {
+  return buildRegistryEvidenceForDirective(criterionId, registry);
+}
+
+function isMachineProofGate(_gateName: PulseGateName, gate: PulseGateResult): boolean {
+  const machineOwnedFailure =
+    gate.failureClass === 'missing_evidence' || gate.failureClass === 'checker_gap';
+  return gate.status === 'fail' && machineOwnedFailure;
 }
 
 function deriveMachineProofGateNames(
@@ -604,6 +552,15 @@ export function buildPulseAutonomyProofDebtNextWork(
   >,
 ): PulseMachineDirectiveUnit[] {
   const units: PulseMachineDirectiveUnit[] = [];
+  const registry = buildArtifactRegistry(process.cwd());
+  const productionAutonomyEvidence = buildRegistryEvidenceForDirective(
+    'productionAutonomy',
+    registry,
+  );
+  const zeroPromptGuidanceEvidence = buildRegistryEvidenceForDirective(
+    'zeroPromptProductionGuidance',
+    registry,
+  );
 
   if (autonomyProof.verdicts.productionAutonomy === 'NAO') {
     units.push({
@@ -638,8 +595,11 @@ export function buildPulseAutonomyProofDebtNextWork(
         'PULSE_CERTIFICATE.json',
         'PULSE_CLI_DIRECTIVE.json',
         'PULSE_AUTONOMY_STATE.json',
+        ...productionAutonomyEvidence.artifactPaths,
       ],
-      relatedFiles: WEAK_COMPAT_MACHINE_PROOF_DEBT_FILES,
+      proofAuthority: productionAutonomyEvidence.authority,
+      proofBasis: productionAutonomyEvidence.proofBasis,
+      relatedFiles: productionAutonomyEvidence.relatedFiles,
       exitCriteria: [
         JSON.stringify({
           id: 'pulse-proof-productionAutonomy-exit-0',
@@ -704,8 +664,11 @@ export function buildPulseAutonomyProofDebtNextWork(
         'PULSE_CERTIFICATE.json',
         'PULSE_CLI_DIRECTIVE.json',
         'PULSE_AUTONOMY_STATE.json',
+        ...zeroPromptGuidanceEvidence.artifactPaths,
       ],
-      relatedFiles: WEAK_COMPAT_MACHINE_PROOF_DEBT_FILES,
+      proofAuthority: zeroPromptGuidanceEvidence.authority,
+      proofBasis: zeroPromptGuidanceEvidence.proofBasis,
+      relatedFiles: zeroPromptGuidanceEvidence.relatedFiles,
       exitCriteria: [
         JSON.stringify({
           id: 'pulse-proof-zeroPromptProductionGuidance-exit-0',
@@ -756,10 +719,12 @@ export function buildPulseMachineNextWork(
   return readiness.criteria.filter(shouldEmitMachineCriterionWork).map((criterion, index) => {
     const terminalPathId = evidenceString(criterion, 'firstTerminalPathId');
     const validationCommand = evidenceString(criterion, 'nextAiSafeAction');
+    const registryEvidence = buildMachineCriterionRegistryEvidence(criterion.id);
     const validationArtifacts = [
       'PULSE_MACHINE_READINESS.json',
       'PULSE_CLI_DIRECTIVE.json',
       'PULSE_CERTIFICATE.json',
+      ...registryEvidence.artifactPaths,
       ...(criterion.id === 'external_reality' ? ['PULSE_EXTERNAL_SIGNAL_STATE.json'] : []),
       ...(criterion.id === 'critical_path_terminal'
         ? ['PULSE_EXECUTION_MATRIX.json', 'PULSE_PATH_COVERAGE.json']
@@ -793,8 +758,10 @@ export function buildPulseMachineNextWork(
       gateNames: [criterion.id],
       expectedGateShift: `Pass PULSE machine criterion ${criterion.id}`,
       validationTargets: validationArtifacts,
-      validationArtifacts,
-      relatedFiles: machineUnitFiles(criterion.id),
+      validationArtifacts: unique(validationArtifacts),
+      proofAuthority: registryEvidence.authority,
+      proofBasis: registryEvidence.proofBasis,
+      relatedFiles: registryEvidence.relatedFiles,
       exitCriteria: [
         JSON.stringify({
           id: `pulse-machine-${criterion.id}-exit-0`,

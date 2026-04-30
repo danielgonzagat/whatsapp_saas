@@ -22,6 +22,8 @@ export interface PulseFindingEventSummary {
 }
 
 function normalizeWhitespace(value: string): string {
+  if (!value) return '';
+  if (typeof value !== 'string') value = String(value);
   let normalized: string[] = [];
   let pendingSpace = false;
   for (const char of value) {
