@@ -9,17 +9,18 @@ import type { PulseArtifactCleanupReport } from '../artifact-gc';
 import type { AuthorityState } from '../artifacts.autonomy';
 
 function requireRecord(value: unknown): Record<string, unknown> {
-  expect(value).toEqual(expect.any(Object));
+  expect(value).toBeTruthy();
+  expect(typeof value).toBe('object');
   return value as Record<string, unknown>;
 }
 
 function requireRecordArray(value: unknown): Record<string, unknown>[] {
-  expect(value).toEqual(expect.any(Array));
+  expect(Array.isArray(value)).toBe(true);
   return value as Record<string, unknown>[];
 }
 
 function requireArray(value: unknown): unknown[] {
-  expect(value).toEqual(expect.any(Array));
+  expect(Array.isArray(value)).toBe(true);
   return value as unknown[];
 }
 

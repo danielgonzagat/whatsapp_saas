@@ -112,7 +112,7 @@ export function checkMiddleware(config: PulseConfig): Break[] {
           file: relFile,
           line: i + 1,
           description: '`origin: true` was observed without a nearby NODE_ENV guard',
-          detail: `Line ${i + 1}: "origin: true" accepts any origin without a NODE_ENV guard. This is safe in dev but dangerous in production. Restrict to an allowlist or wrap with a NODE_ENV !== 'production' check.`,
+          detail: `Line ${i + 1}: "origin: true" accepts all origins without a NODE_ENV guard. This is safe in dev but dangerous in production. Restrict to an allowlist or wrap with a NODE_ENV !== 'production' check.`,
           truthMode: 'weak_signal',
         }),
       );

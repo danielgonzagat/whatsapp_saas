@@ -16,7 +16,7 @@ export interface AdminStructuralCheck {
 }
 
 export interface AdminStructuralCheckSpec {
-  label: string;
+  label?: string;
   relPath: string;
   /**
    * Optional content fragments that must all appear in the file. If the path
@@ -25,17 +25,22 @@ export interface AdminStructuralCheckSpec {
   mustContain?: string[];
 }
 
+function deriveStructuralCheckLabel(entry: AdminStructuralCheckSpec): string {
+  return entry.label ?? entry.relPath.split(/[\\/]/).join(':');
+}
+
 export function checkAdminPaths(
   rootDir: string,
   paths: ReadonlyArray<AdminStructuralCheckSpec>,
 ): AdminStructuralCheck[] {
   return paths.map((entry) => {
     const absolute = safeJoin(rootDir, entry.relPath);
+    const label = deriveStructuralCheckLabel(entry);
     if (!pathExists(absolute)) {
-      return { label: entry.label, path: entry.relPath, present: false };
+      return { label, path: entry.relPath, present: false };
     }
     if (!entry.mustContain || entry.mustContain.length === 0) {
-      return { label: entry.label, path: entry.relPath, present: true };
+      return { label, path: entry.relPath, present: true };
     }
     let present = true;
     try {
@@ -44,7 +49,7 @@ export function checkAdminPaths(
     } catch {
       present = false;
     }
-    return { label: entry.label, path: entry.relPath, present };
+    return { label, path: entry.relPath, present };
   });
 }
 

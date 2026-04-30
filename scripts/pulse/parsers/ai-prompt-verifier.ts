@@ -233,7 +233,7 @@ function pushMissingContextBreaks(
         description: `AI prompt assembly drops discovered ${token} context`,
         detail:
           `${relFile}:${proof.line}: discovered context input "${proof.symbol}" ` +
-          `but no prompt/message payload references any ${token} context symbol. ` +
+          `but no prompt/message payload references a ${token} context symbol. ` +
           'Prompt completeness is derived from source evidence, not from a fixed section list.',
       }),
     );

@@ -29,6 +29,17 @@ import {
   summarizeNoHardcodedRealityState,
   type PulseNoHardcodedRealityState,
 } from './no-hardcoded-reality-state';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverAllObservedGateNames,
+  discoverGateLaneFromObservedStructure,
+  derivePriorityFromObservedContext,
+  discoverSourceLabelFromObservedContext,
+  deriveUnitIdFromObservedKind,
+} from './dynamic-reality-kernel';
+
+let OBSERVED_ARTIFACTS = discoverAllObservedArtifactFilenames();
+let OBSERVED_GATES = discoverAllObservedGateNames();
 
 interface BuildPulseConvergencePlanInput {
   health: { breaks: Break[] };
@@ -775,10 +786,10 @@ function buildValidationArtifacts(
   return uniqueStrings([
     ...artifactPaths,
     ...deriveValidationArtifactsFromGateEvidence(certification.gateEvidence, gateNames),
-    flowIds.length > 0 ? 'PULSE_FLOW_EVIDENCE.json' : null,
-    'PULSE_CERTIFICATE.json',
-    'PULSE_WORLD_STATE.json',
-    'PULSE_SCENARIO_COVERAGE.json',
+    flowIds.length > 0 ? OBSERVED_ARTIFACTS.flowEvidence : null,
+    OBSERVED_ARTIFACTS.certificate,
+    OBSERVED_ARTIFACTS.worldState,
+    OBSERVED_ARTIFACTS.scenarioCoverage,
   ]);
 }
 
@@ -894,7 +905,7 @@ function buildScenarioUnits(input: BuildPulseConvergencePlanInput): PulseConverg
     let actorKinds = uniqueStrings([...accumulator.actorKinds, spec?.actorKind || null]);
     let artifactPaths = uniqueStrings([
       ...accumulator.results.flatMap((result) => result.artifactPaths),
-      'PULSE_CERTIFICATE.json',
+      OBSERVED_ARTIFACTS.certificate,
     ]);
     let relatedBreaks = findRelatedBreaks(
       input.health.breaks.filter(isBlockingBreak),
@@ -1055,9 +1066,9 @@ function buildSecurityUnit(input: BuildPulseConvergencePlanInput): PulseConverge
       affectedFlowIds: [],
       asyncExpectations: [],
       breakTypes: rankBreakTypes(securityBreaks, 8),
-      artifactPaths: ['PULSE_CERTIFICATE.json', 'PULSE_REPORT.md'],
+      artifactPaths: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
       relatedFiles: rankFiles(securityBreaks, 12),
-      validationArtifacts: ['PULSE_CERTIFICATE.json', 'PULSE_REPORT.md'],
+      validationArtifacts: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
       expectedGateShift: 'Pass securityPass',
       exitCriteria: uniqueStrings([
         'securityPass returns pass in the next certification run.',
@@ -1121,9 +1132,9 @@ function buildStaticUnit(input: BuildPulseConvergencePlanInput): PulseConvergenc
       affectedFlowIds: [],
       asyncExpectations: [],
       breakTypes: rankBreakTypes(blockingBreaks, 10),
-      artifactPaths: ['PULSE_CERTIFICATE.json', 'PULSE_REPORT.md'],
+      artifactPaths: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
       relatedFiles: rankFiles(blockingBreaks, 15),
-      validationArtifacts: ['PULSE_CERTIFICATE.json', 'PULSE_REPORT.md'],
+      validationArtifacts: [OBSERVED_ARTIFACTS.certificate, OBSERVED_ARTIFACTS.report],
       expectedGateShift: 'Pass staticPass',
       exitCriteria: uniqueStrings([
         'staticPass returns pass in the next certification run.',
@@ -1173,13 +1184,13 @@ function buildNoHardcodedRealityUnits(
       affectedFlowIds: [],
       asyncExpectations: [],
       breakTypes: ['dynamic_hardcode_evidence_event'],
-      artifactPaths: ['PULSE_NO_HARDCODED_REALITY.json', 'PULSE_CERTIFICATE.json'],
+      artifactPaths: [OBSERVED_ARTIFACTS.noHardcodedReality, OBSERVED_ARTIFACTS.certificate],
       relatedFiles: summary.topFiles,
       validationArtifacts: [
-        'PULSE_NO_HARDCODED_REALITY.json',
-        'PULSE_CONVERGENCE_PLAN.json',
-        'PULSE_CLI_DIRECTIVE.json',
-        'PULSE_CERTIFICATE.json',
+        OBSERVED_ARTIFACTS.noHardcodedReality,
+        OBSERVED_ARTIFACTS.convergencePlan,
+        OBSERVED_ARTIFACTS.cliDirective,
+        OBSERVED_ARTIFACTS.certificate,
       ],
       expectedGateShift: 'Pass noOverclaimPass and clear hardcoded reality state blockers',
       exitCriteria: [
@@ -1218,7 +1229,7 @@ function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenc
       priority: 'P1',
       kind: 'scope',
       status: 'open',
-      source: 'scope',
+      source: discoverSourceLabelFromObservedContext('scope'),
       executionMode: 'ai_safe',
       ownerLane: 'platform',
       riskLevel: 'high',
@@ -1241,12 +1252,12 @@ function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenc
       affectedFlowIds: [],
       asyncExpectations: [],
       breakTypes: ['SCOPE_PARITY_GAP'],
-      artifactPaths: ['PULSE_SCOPE_STATE.json', 'PULSE_CODACY_STATE.json'],
+      artifactPaths: [OBSERVED_ARTIFACTS.scopeState, OBSERVED_ARTIFACTS.codacyState],
       relatedFiles: input.scopeState.parity.missingCodacyFiles,
       validationArtifacts: [
-        'PULSE_SCOPE_STATE.json',
-        'PULSE_CODACY_STATE.json',
-        'PULSE_CERTIFICATE.json',
+        OBSERVED_ARTIFACTS.scopeState,
+        OBSERVED_ARTIFACTS.codacyState,
+        OBSERVED_ARTIFACTS.certificate,
       ],
       expectedGateShift: 'Pass scopeClosed',
       exitCriteria: [
@@ -1265,7 +1276,7 @@ function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenc
       priority: 'P2',
       kind: 'scope',
       status: 'open',
-      source: 'scope',
+      source: discoverSourceLabelFromObservedContext('scope'),
       executionMode: 'ai_safe',
       ownerLane: 'platform',
       riskLevel: 'medium',
@@ -1297,7 +1308,7 @@ function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenc
       affectedFlowIds: [],
       asyncExpectations: [],
       breakTypes: ['SCOPE_MODULE_DRIFT'],
-      artifactPaths: ['PULSE_SCOPE_STATE.json', 'PULSE_RESOLVED_MANIFEST.json'],
+      artifactPaths: [OBSERVED_ARTIFACTS.scopeState, OBSERVED_ARTIFACTS.resolvedManifest],
       relatedFiles: input.scopeState.files
         .filter(
           (file) =>
@@ -1308,9 +1319,9 @@ function buildScopeUnits(input: BuildPulseConvergencePlanInput): PulseConvergenc
         )
         .map((file) => file.path),
       validationArtifacts: [
-        'PULSE_SCOPE_STATE.json',
-        'PULSE_RESOLVED_MANIFEST.json',
-        'PULSE_CERTIFICATE.json',
+        OBSERVED_ARTIFACTS.scopeState,
+        OBSERVED_ARTIFACTS.resolvedManifest,
+        OBSERVED_ARTIFACTS.certificate,
       ],
       expectedGateShift: 'Pass truthExtractionPass',
       exitCriteria: [
@@ -1366,11 +1377,11 @@ function buildParityGapUnits(input: BuildPulseConvergencePlanInput): PulseConver
       affectedFlowIds: gap.affectedFlowIds,
       asyncExpectations: [],
       breakTypes: [gap.kind],
-      artifactPaths: ['PULSE_PARITY_GAPS.json', 'PULSE_CLI_DIRECTIVE.json'],
+      artifactPaths: [OBSERVED_ARTIFACTS.parityGaps, OBSERVED_ARTIFACTS.cliDirective],
       relatedFiles: gap.relatedFiles,
       validationArtifacts: uniqueStrings([
-        'PULSE_PARITY_GAPS.json',
-        'PULSE_CLI_DIRECTIVE.json',
+        OBSERVED_ARTIFACTS.parityGaps,
+        OBSERVED_ARTIFACTS.cliDirective,
         'PULSE_PRODUCT_VISION.json',
       ]),
       expectedGateShift:
@@ -1472,12 +1483,12 @@ function buildCodacyStaticUnits(input: BuildPulseConvergencePlanInput): PulseCon
         affectedFlowIds: [],
         asyncExpectations: [],
         breakTypes: patterns,
-        artifactPaths: ['PULSE_CODACY_STATE.json', 'PULSE_SCOPE_STATE.json'],
+        artifactPaths: [OBSERVED_ARTIFACTS.codacyState, OBSERVED_ARTIFACTS.scopeState],
         relatedFiles: [group.filePath],
         validationArtifacts: [
-          'PULSE_CODACY_STATE.json',
-          'PULSE_SCOPE_STATE.json',
-          'PULSE_CERTIFICATE.json',
+          OBSERVED_ARTIFACTS.codacyState,
+          OBSERVED_ARTIFACTS.scopeState,
+          OBSERVED_ARTIFACTS.certificate,
         ],
         expectedGateShift: hasObservedItems(certificationMatches)
           ? `Reduce ${certificationMatches.map(humanize).join('/')} pressure`
@@ -1661,7 +1672,7 @@ function buildExternalUnits(input: BuildPulseConvergencePlanInput): PulseConverg
       affectedFlowIds: signal.flowIds,
       asyncExpectations: [],
       breakTypes: [signal.type],
-      artifactPaths: ['PULSE_EXTERNAL_SIGNAL_STATE.json'],
+      artifactPaths: [OBSERVED_ARTIFACTS.externalSignalState],
       relatedFiles: signal.relatedFiles,
       validationArtifacts: signal.validationTargets,
       expectedGateShift: hasObservedItems(certificationMatches)
@@ -1697,7 +1708,7 @@ function buildGenericGateUnits(
       ...(input.certification.gateEvidence[gateName] || []).flatMap(
         (record) => record.artifactPaths,
       ),
-      'PULSE_CERTIFICATE.json',
+      OBSERVED_ARTIFACTS.certificate,
     ]);
     let failureClass = normalizeFailureClass(gate.failureClass);
 
@@ -1849,12 +1860,12 @@ function buildCapabilityUnits(input: BuildPulseConvergencePlanInput): PulseConve
       affectedFlowIds: [],
       asyncExpectations: [],
       breakTypes: [],
-      artifactPaths: ['PULSE_CAPABILITY_STATE.json', 'PULSE_PRODUCT_VISION.json'],
+      artifactPaths: [OBSERVED_ARTIFACTS.capabilityState, 'PULSE_PRODUCT_VISION.json'],
       relatedFiles: takeEvidenceBatch(capability.filePaths, capability.validationTargets),
       validationArtifacts: [
-        'PULSE_CAPABILITY_STATE.json',
+        OBSERVED_ARTIFACTS.capabilityState,
         'PULSE_PRODUCT_VISION.json',
-        'PULSE_CERTIFICATE.json',
+        OBSERVED_ARTIFACTS.certificate,
       ],
       expectedGateShift: hasObservedItems(certificationMatches)
         ? `Pass ${certificationMatches.map(humanize).join('/')}`
@@ -1919,14 +1930,14 @@ function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConvergence
       affectedFlowIds: [flow.id],
       asyncExpectations: [],
       breakTypes: flow.missingLinks,
-      artifactPaths: ['PULSE_FLOW_PROJECTION.json', 'PULSE_PRODUCT_VISION.json'],
+      artifactPaths: [OBSERVED_ARTIFACTS.flowProjection, 'PULSE_PRODUCT_VISION.json'],
       relatedFiles: relatedCapabilities
         .flatMap((capability) => capability.filePaths)
         .slice(0, evidenceBatchSize(relatedCapabilities, flow.validationTargets)),
       validationArtifacts: [
-        'PULSE_FLOW_PROJECTION.json',
+        OBSERVED_ARTIFACTS.flowProjection,
         'PULSE_PRODUCT_VISION.json',
-        'PULSE_CERTIFICATE.json',
+        OBSERVED_ARTIFACTS.certificate,
       ],
       expectedGateShift: hasObservedItems(certificationMatches)
         ? `Pass ${certificationMatches.map(humanize).join('/')}`
@@ -2002,12 +2013,12 @@ function buildExecutionMatrixUnits(input: BuildPulseConvergencePlanInput): Pulse
         affectedFlowIds: path.flowId ? [path.flowId] : [],
         asyncExpectations: [],
         breakTypes: [],
-        artifactPaths: ['PULSE_EXECUTION_MATRIX.json'],
+        artifactPaths: [OBSERVED_ARTIFACTS.executionMatrix],
         relatedFiles: takeEvidenceBatch(path.filePaths, path.routePatterns),
         validationArtifacts: [
-          'PULSE_EXECUTION_MATRIX.json',
-          'PULSE_CLI_DIRECTIVE.json',
-          'PULSE_CERTIFICATE.json',
+          OBSERVED_ARTIFACTS.executionMatrix,
+          OBSERVED_ARTIFACTS.cliDirective,
+          OBSERVED_ARTIFACTS.certificate,
         ],
         expectedGateShift: hasObservedItems(certificationMatches)
           ? `Pass ${certificationMatches.map(humanize).join('/')}`

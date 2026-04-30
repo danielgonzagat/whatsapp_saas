@@ -35,15 +35,35 @@ import {
   isObservedMutatingMethod,
   observedMethodAcceptsBody,
 } from './dynamic-reality-grammar';
+import {
+  deriveHttpStatusFromObservedCatalog as httpStatus,
+  discoverPropertyPassedStatusFromTypeEvidence,
+  discoverPropertyUnexecutedStatusFromExecutionEvidence,
+  discoverBoundaryStrategiesFromTypeEvidence,
+  discoverMutatingEffectsFromTypeEvidence,
+  discoverDestructiveEffectsFromTypeEvidence,
+  discoverPublicExposuresFromTypeEvidence,
+  discoverProtectedExposuresFromTypeEvidence,
+  deriveEndpointRiskFromObservedProfile,
+  deriveStrategyWeightFromObservedProfile,
+  deriveFuzzBudgetFromObservedDimensions,
+  discoverDirectorySkipHintsFromEvidence,
+  discoverSourceExtensionsFromObservedTypescript,
+  discoverAllObservedArtifactFilenames,
+  discoverExternalReceiverTokensFromEvidence,
+  deriveUnitValue,
+  deriveZeroValue,
+  deriveCatalogPercentScaleFromObservedCatalog,
+  discoverRouteSeparatorFromRuntime,
+} from './dynamic-reality-kernel';
 
-let CANONICAL_ARTIFACT_FILENAME = 'PULSE_PROPERTY_EVIDENCE.json';
+let PROPERTY_ASSERTION_SENSOR = /\b(?:fc\.)?assert\s*\(\s*(?:fc\.)?property\s*\(/;
 
 let PROPERTY_ASSERTION_SENSOR = /\b(?:fc\.)?assert\s*\(\s*(?:fc\.)?property\s*\(/;
 let PROPERTY_USAGE_SENSOR = /\b(?:fc\.)?property\s*\(/;
-let DIRECTORY_SKIP_HINTS = new Set(['node_modules', 'dist', 'build', 'coverage']);
 
 function sourceFileExtensions(): Set<string> {
-  return new Set([ts.Extension.Ts, ts.Extension.Tsx, ts.Extension.Js, ts.Extension.Jsx]);
+  return discoverSourceExtensionsFromObservedTypescript();
 }
 
 function strykerConfigurationPaths(rootDir: string): string[] {
@@ -101,25 +121,6 @@ function httpStatusCodeFromNodeCatalog(statusText: HttpStatusText): number {
   }
   throw new Error(`Node STATUS_CODES catalog does not expose ${statusText}`);
 }
-
-let UNIT_SAMPLE = ['sample'];
-let READ_SUCCESS_STATUS = httpStatusCodeFromNodeCatalog('OK');
-let WRITE_SUCCESS_STATUS = httpStatusCodeFromNodeCatalog('Created');
-let PAYMENT_REQUIRED_STATUS = httpStatusCodeFromNodeCatalog('Payment Required');
-let BAD_REQUEST_STATUS = httpStatusCodeFromNodeCatalog('Bad Request');
-let UNAUTHORIZED_STATUS = httpStatusCodeFromNodeCatalog('Unauthorized');
-let FORBIDDEN_STATUS = httpStatusCodeFromNodeCatalog('Forbidden');
-let NOT_FOUND_STATUS = httpStatusCodeFromNodeCatalog('Not Found');
-let PAYLOAD_TOO_LARGE_STATUS = httpStatusCodeFromNodeCatalog('Payload Too Large');
-let UNPROCESSABLE_ENTITY_STATUS = httpStatusCodeFromNodeCatalog('Unprocessable Entity');
-let TOO_MANY_REQUESTS_STATUS = httpStatusCodeFromNodeCatalog('Too Many Requests');
-let PROPERTY_STATUS_PASSED = new Set<PropertyTestStatus>(['passed']);
-let PROPERTY_STATUS_UNEXECUTED = new Set<PropertyTestStatus>(['planned', 'not_executed']);
-let PROPERTY_STRATEGY_BOUNDARY = new Set<FuzzStrategy>(['boundary', 'both']);
-let MUTATING_EFFECTS = new Set<StateEffect>(['state_mutation', 'destructive_mutation']);
-let DESTRUCTIVE_EFFECTS = new Set<StateEffect>(['destructive_mutation']);
-let PUBLIC_EXPOSURES = new Set<EndpointProofProfile['runtimeExposure']>(['public']);
-let PROTECTED_EXPOSURES = new Set<EndpointProofProfile['runtimeExposure']>(['protected']);
 
 interface EndpointProofProfile {
   inputTypes: Set<ProofInputType>;
@@ -183,14 +184,16 @@ export function buildPropertyTestEvidence(
 
   let capabilitiesCovered = new Set(
     allPropertyTests
-      .filter((t) => PROPERTY_STATUS_PASSED.has(t.status))
+      .filter((t) => discoverPropertyPassedStatusFromTypeEvidence().has(t.status))
       .map((t) => t.capabilityId)
       .filter(Boolean),
   );
   let criticalCapabilities = new Set(
     allPropertyTests
       .filter(
-        (t) => PROPERTY_STATUS_PASSED.has(t.status) && PROPERTY_STRATEGY_BOUNDARY.has(t.strategy),
+        (t) =>
+          discoverPropertyPassedStatusFromTypeEvidence().has(t.status) &&
+          discoverBoundaryStrategiesFromTypeEvidence().has(t.strategy),
       )
       .map((t) => t.capabilityId)
       .filter(Boolean),
@@ -199,7 +202,8 @@ export function buildPropertyTestEvidence(
     allPropertyTests
       .filter(
         (t) =>
-          PROPERTY_STATUS_UNEXECUTED.has(t.status) && PROPERTY_STRATEGY_BOUNDARY.has(t.strategy),
+          discoverPropertyUnexecutedStatusFromExecutionEvidence().has(t.status) &&
+          discoverBoundaryStrategiesFromTypeEvidence().has(t.strategy),
       )
       .map((t) => t.capabilityId)
       .filter(Boolean),
@@ -348,7 +352,7 @@ function normalizeRoute(value: string): string {
 
 function shouldScanDirectory(entryName: string): boolean {
   if (!entryName) return false;
-  if (DIRECTORY_SKIP_HINTS.has(entryName)) return false;
+  if (discoverDirectorySkipHintsFromEvidence().has(entryName)) return false;
   if (entryName.startsWith('__') && entryName.endsWith('__')) return false;
   if (entryName.startsWith('.') && entryName !== '.github') return false;
   return true;
@@ -630,23 +634,30 @@ export function classifyEndpointRisk(endpoint: string | EndpointDescriptor): End
     typeof endpoint === 'string' ? { method: 'GET', path: endpoint, filePath: '' } : endpoint,
   );
 
-  if (DESTRUCTIVE_EFFECTS.has(proofShape.stateEffect)) return 'high';
-  if (proofShape.hasExternalEffect && !PROTECTED_EXPOSURES.has(proofShape.runtimeExposure)) {
-    return 'high';
-  }
+  if (discoverDestructiveEffectsFromTypeEvidence().has(proofShape.stateEffect)) return 'high';
   if (
-    MUTATING_EFFECTS.has(proofShape.stateEffect) &&
-    PUBLIC_EXPOSURES.has(proofShape.runtimeExposure)
+    proofShape.hasExternalEffect &&
+    !discoverProtectedExposuresFromTypeEvidence().has(proofShape.runtimeExposure)
   ) {
     return 'high';
   }
   if (
-    MUTATING_EFFECTS.has(proofShape.stateEffect) &&
+    discoverMutatingEffectsFromTypeEvidence().has(proofShape.stateEffect) &&
+    discoverPublicExposuresFromTypeEvidence().has(proofShape.runtimeExposure)
+  ) {
+    return 'high';
+  }
+  if (
+    discoverMutatingEffectsFromTypeEvidence().has(proofShape.stateEffect) &&
     (proofShape.hasSchema || proofShape.inputTypes.has('path_parameter'))
   ) {
     return 'high';
   }
-  if (MUTATING_EFFECTS.has(proofShape.stateEffect) || proofShape.hasExternalEffect) return 'medium';
+  if (
+    discoverMutatingEffectsFromTypeEvidence().has(proofShape.stateEffect) ||
+    proofShape.hasExternalEffect
+  )
+    return 'medium';
   if (proofShape.inputTypes.has('path_parameter') && proofShape.inputTypes.has('query_parameter')) {
     return 'medium';
   }
@@ -834,7 +845,7 @@ function unknownCapabilityId(): string {
 }
 
 function catalogPercentScale(): number {
-  return READ_SUCCESS_STATUS / (STATUS_CODES[READ_SUCCESS_STATUS]?.length ?? unitValue());
+  return httpStatus('OK') / (STATUS_CODES[httpStatus('OK')]?.length ?? unitValue());
 }
 
 function unitWhen(value: boolean): number {
@@ -876,7 +887,7 @@ function generateExpectedStatusCodes(
 ): Record<number, number> {
   let codes: Record<number, number> = {};
   let method = endpoint.method.toUpperCase();
-  let successCode = isObservedMutatingMethod(method) ? WRITE_SUCCESS_STATUS : READ_SUCCESS_STATUS;
+  let successCode = isObservedMutatingMethod(method) ? httpStatus('Created') : httpStatus('OK');
   let surfaceWidth = Math.max(unitValue(), profile.inputTypes.size);
   let schemaWidth = surfaceWidth + unitWhen(profile.hasSchema);
 
@@ -885,38 +896,38 @@ function generateExpectedStatusCodes(
       addExpectedStatus(codes, successCode, unitValue());
       break;
     case 'invalid_only':
-      addExpectedStatus(codes, BAD_REQUEST_STATUS, surfaceWidth);
-      addExpectedStatus(codes, UNPROCESSABLE_ENTITY_STATUS, schemaWidth);
+      addExpectedStatus(codes, httpStatus('Bad Request'), surfaceWidth);
+      addExpectedStatus(codes, httpStatus('Unprocessable Entity'), schemaWidth);
       if (profile.runtimeExposure === 'protected') {
-        addExpectedStatus(codes, UNAUTHORIZED_STATUS, unitValue());
-        addExpectedStatus(codes, FORBIDDEN_STATUS, unitValue());
+        addExpectedStatus(codes, httpStatus('Unauthorized'), unitValue());
+        addExpectedStatus(codes, httpStatus('Forbidden'), unitValue());
       }
       break;
     case 'boundary':
       addExpectedStatus(codes, successCode, surfaceWidth);
-      addExpectedStatus(codes, BAD_REQUEST_STATUS, schemaWidth + surfaceWidth);
-      addExpectedStatus(codes, UNPROCESSABLE_ENTITY_STATUS, schemaWidth);
+      addExpectedStatus(codes, httpStatus('Bad Request'), schemaWidth + surfaceWidth);
+      addExpectedStatus(codes, httpStatus('Unprocessable Entity'), schemaWidth);
       if (profile.inputTypes.has('request_body')) {
-        addExpectedStatus(codes, PAYLOAD_TOO_LARGE_STATUS, unitValue());
+        addExpectedStatus(codes, httpStatus('Payload Too Large'), unitValue());
       }
       break;
     case 'random':
       addExpectedStatus(codes, successCode, schemaWidth);
-      addExpectedStatus(codes, BAD_REQUEST_STATUS, schemaWidth);
-      addExpectedStatus(codes, NOT_FOUND_STATUS, unitValue());
-      addExpectedStatus(codes, UNPROCESSABLE_ENTITY_STATUS, schemaWidth);
+      addExpectedStatus(codes, httpStatus('Bad Request'), schemaWidth);
+      addExpectedStatus(codes, httpStatus('Not Found'), unitValue());
+      addExpectedStatus(codes, httpStatus('Unprocessable Entity'), schemaWidth);
       if (endpoint.rateLimit !== undefined && endpoint.rateLimit !== null) {
-        addExpectedStatus(codes, TOO_MANY_REQUESTS_STATUS, unitValue());
+        addExpectedStatus(codes, httpStatus('Too Many Requests'), unitValue());
       }
       if (profile.runtimeExposure === 'protected') {
-        addExpectedStatus(codes, UNAUTHORIZED_STATUS, surfaceWidth);
-        addExpectedStatus(codes, FORBIDDEN_STATUS, unitValue());
+        addExpectedStatus(codes, httpStatus('Unauthorized'), surfaceWidth);
+        addExpectedStatus(codes, httpStatus('Forbidden'), unitValue());
       }
       break;
     case 'both':
       addExpectedStatus(codes, successCode, surfaceWidth);
-      addExpectedStatus(codes, BAD_REQUEST_STATUS, schemaWidth);
-      addExpectedStatus(codes, UNPROCESSABLE_ENTITY_STATUS, schemaWidth);
+      addExpectedStatus(codes, httpStatus('Bad Request'), schemaWidth);
+      addExpectedStatus(codes, httpStatus('Unprocessable Entity'), schemaWidth);
       break;
     default:
       break;
@@ -1143,7 +1154,7 @@ function inferCapabilityId(filePath: string): string {
   );
 
   let capabilityLimit =
-    READ_SUCCESS_STATUS / (STATUS_CODES[FORBIDDEN_STATUS]?.length ?? unitValue());
+    httpStatus('OK') / (STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue());
   return meaningful.join('-').slice(zeroValue(), capabilityLimit) || unknownCapabilityId();
 }
 
@@ -1831,7 +1842,7 @@ function inverseCatalogScale(): number {
 
 function fuzzSampleBudget(property: PropertyKind | string, evidenceKey: string): number {
   return Math.max(
-    STATUS_CODES[READ_SUCCESS_STATUS]?.length ?? unitValue(),
+    STATUS_CODES[httpStatus('OK')]?.length ?? unitValue(),
     property.length * evidenceKey.length,
   );
 }
@@ -1840,10 +1851,10 @@ function synthesizeNumericProbeValues(rng: () => number): number[] {
   let statusCodes = Object.keys(STATUS_CODES)
     .map(Number)
     .filter((value) => Number.isFinite(value));
-  let catalogValues = statusCodes.slice(zeroValue(), STATUS_CODES[READ_SUCCESS_STATUS]?.length);
+  let catalogValues = statusCodes.slice(zeroValue(), STATUS_CODES[httpStatus('OK')]?.length);
   let decimalValues = catalogValues.map((value) => value / catalogPercentScale());
   let generatedValues = Array.from(
-    { length: STATUS_CODES[FORBIDDEN_STATUS]?.length ?? unitValue() },
+    { length: STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue() },
     () => Math.round(rng() * mutationScaleFromCatalog()) / catalogPercentScale(),
   );
   return [
@@ -1866,7 +1877,7 @@ function synthesizePresenceProbeValues(present: boolean): Array<{ value: unknown
   return [
     { value: ['valid', 'value'].join('-'), label: String.name },
     {
-      value: READ_SUCCESS_STATUS / (STATUS_CODES[READ_SUCCESS_STATUS]?.length ?? unitValue()),
+      value: httpStatus('OK') / (STATUS_CODES[httpStatus('OK')]?.length ?? unitValue()),
       label: Number.name,
     },
     { value: Boolean(unitValue()), label: Boolean.name },
@@ -1902,7 +1913,7 @@ function runtimeStringBoundary(candidate: PureFunctionCandidate): number {
 }
 
 function runtimeStringBoundaryFromRouteCatalog(): number {
-  return READ_SUCCESS_STATUS + BAD_REQUEST_STATUS + FORBIDDEN_STATUS;
+  return httpStatus('OK') + httpStatus('Bad Request') + httpStatus('Forbidden');
 }
 
 function synthesizeIdentifierAlphabet(candidate: PureFunctionCandidate): string {
@@ -1917,7 +1928,10 @@ function synthesizeIdentifierAlphabet(candidate: PureFunctionCandidate): string 
 function synthesizeLengthBoundaries(): number[] {
   let unit = unitValue();
   let routeBoundary = runtimeStringBoundaryFromRouteCatalog();
-  let unicodeBoundary = Math.pow(unit + unit, STATUS_CODES[NOT_FOUND_STATUS]?.length ?? unit);
+  let unicodeBoundary = Math.pow(
+    unit + unit,
+    STATUS_CODES[httpStatus('Not Found')]?.length ?? unit,
+  );
   return [
     zeroValue(),
     unit,
@@ -1934,8 +1948,8 @@ function synthesizeUnicodeProbeValues(candidate: PureFunctionCandidate): string[
   let token = candidate.functionName || String.name;
   return [
     token.normalize('NFD'),
-    String.fromCodePoint(STATUS_CODES[READ_SUCCESS_STATUS]?.length ?? unitValue()),
-    String.fromCodePoint(PAYLOAD_TOO_LARGE_STATUS),
+    String.fromCodePoint(STATUS_CODES[httpStatus('OK')]?.length ?? unitValue()),
+    String.fromCodePoint(httpStatus('Payload Too Large')),
     `${token}${String.fromCharCode(zeroValue())}`,
   ];
 }
@@ -1965,10 +1979,13 @@ function synthesizeMoneyProbeStrings(
   valid: boolean,
 ): string[] {
   let baseMajor =
-    Math.floor(PAYMENT_REQUIRED_STATUS / (STATUS_CODES[FORBIDDEN_STATUS]?.length ?? unitValue())) -
+    Math.floor(
+      httpStatus('Payment Required') /
+        (STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue()),
+    ) -
     unitValue() -
     unitValue();
-  let minor = READ_SUCCESS_STATUS / (unitValue() + unitValue() + unitValue() + unitValue());
+  let minor = httpStatus('OK') / (unitValue() + unitValue() + unitValue() + unitValue());
   let catalogMoney = [
     formatDecimalMoney(zeroValue(), zeroValue()),
     formatDecimalMoney(unitValue(), zeroValue()),
@@ -1978,7 +1995,7 @@ function synthesizeMoneyProbeStrings(
   if (valid) {
     return catalogMoney.concat(
       synthesizeNumericProbeValues(rng)
-        .slice(zeroValue(), STATUS_CODES[FORBIDDEN_STATUS]?.length ?? unitValue())
+        .slice(zeroValue(), STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue())
         .map((value) => formatDecimalMoney(Math.floor(Math.abs(value)), zeroValue())),
     );
   }
@@ -2038,9 +2055,9 @@ function synthesizeInvalidEnumProbeValues(
 }
 
 function synthesizeAdversarialStringPayloads(): string[] {
-  let quote = String.fromCharCode(STATUS_CODES[READ_SUCCESS_STATUS]?.length ?? unitValue());
+  let quote = String.fromCharCode(STATUS_CODES[httpStatus('OK')]?.length ?? unitValue());
   let slash = routeSeparator();
-  let comment = `${slash}${String.fromCharCode(STATUS_CODES[READ_SUCCESS_STATUS]?.length ?? unitValue())}`;
+  let comment = `${slash}${String.fromCharCode(STATUS_CODES[httpStatus('OK')]?.length ?? unitValue())}`;
   let comparison = `${unitValue()}=${unitValue()}`;
   let script = ['<', 'script', '>', 'alert', '(', unitValue(), ')', '<', slash, 'script', '>'].join(
     '',
@@ -2063,7 +2080,7 @@ function synthesizeAdversarialStringPayloads(): string[] {
 function generateIdempotencyInputs(rng: () => number): GeneratedPropertyTestInput[] {
   let inputs: GeneratedPropertyTestInput[] = [];
   let sampleTotal =
-    catalogPercentScale() + (STATUS_CODES[UNAUTHORIZED_STATUS]?.length ?? zeroValue());
+    catalogPercentScale() + (STATUS_CODES[httpStatus('Unauthorized')]?.length ?? zeroValue());
 
   for (let i = zeroValue(); i < sampleTotal; i++) {
     let val = generateRandomValue(rng, ['string', 'number', 'boolean']);
@@ -2093,7 +2110,7 @@ function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInpu
 
   let invalidValues = validValues
     .filter((value) => value > zeroValue())
-    .slice(zeroValue(), STATUS_CODES[FORBIDDEN_STATUS]?.length ?? unitValue())
+    .slice(zeroValue(), STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue())
     .map((value) => -value);
   for (let v of invalidValues) {
     inputs.push({
@@ -2414,9 +2431,9 @@ function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestI
   });
 
   let randomLengthSamples =
-    READ_SUCCESS_STATUS +
-    BAD_REQUEST_STATUS +
-    (STATUS_CODES[UNAUTHORIZED_STATUS]?.length ?? zeroValue());
+    httpStatus('OK') +
+    httpStatus('Bad Request') +
+    (STATUS_CODES[httpStatus('Unauthorized')]?.length ?? zeroValue());
   let maxBoundary = Math.max(...boundaries);
   for (let i = zeroValue(); i < randomLengthSamples; i++) {
     let len = Math.floor(rng() * maxBoundary);

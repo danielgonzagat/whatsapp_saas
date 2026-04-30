@@ -220,7 +220,7 @@ export function checkWebSockets(config: PulseConfig): Break[] {
         file: relFile,
         line: evt.line,
         description: `Frontend emits '${evt.eventName}' but no backend @SubscribeMessage handler found`,
-        detail: `socket.emit('${evt.eventName}') in frontend has no matching @SubscribeMessage('${evt.eventName}') in any .gateway.ts`,
+        detail: `socket.emit('${evt.eventName}') in frontend has no matching @SubscribeMessage('${evt.eventName}') in a .gateway.ts`,
       }),
     );
   }

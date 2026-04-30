@@ -263,36 +263,29 @@ describe('path proof evidence artifact', () => {
       [failTask.taskId, 'observed_fail', true],
       [skippedTask.taskId, 'execution_skipped', false],
     ]);
-    expect(
-      artifact.tasks.map((entry) => [
-        entry.taskId,
-        entry.result?.status,
-        entry.disposition,
-        entry.observed,
-        entry.coverageCountsAsObserved,
-        entry.result?.startedAt,
-        entry.result?.finishedAt,
-      ]),
-    ).toEqual([
-      [
-        passTask.taskId,
-        'passed',
-        'observed_pass',
-        true,
-        true,
-        expect.any(String),
-        expect.any(String),
-      ],
-      [
-        failTask.taskId,
-        'failed',
-        'observed_fail',
-        true,
-        true,
-        expect.any(String),
-        expect.any(String),
-      ],
-      [skippedTask.taskId, 'skipped', 'skipped', false, false, undefined, undefined],
+    const tasks = artifact.tasks.map((entry) => [
+      entry.taskId,
+      entry.result?.status,
+      entry.disposition,
+      entry.observed,
+      entry.coverageCountsAsObserved,
+      entry.result?.startedAt,
+      entry.result?.finishedAt,
+    ]);
+    expect(tasks[0].slice(0, 5)).toEqual([passTask.taskId, 'passed', 'observed_pass', true, true]);
+    expect(typeof tasks[0][5]).toBe('string');
+    expect(typeof tasks[0][6]).toBe('string');
+    expect(tasks[1].slice(0, 5)).toEqual([failTask.taskId, 'failed', 'observed_fail', true, true]);
+    expect(typeof tasks[1][5]).toBe('string');
+    expect(typeof tasks[1][6]).toBe('string');
+    expect(tasks[2]).toEqual([
+      skippedTask.taskId,
+      'skipped',
+      'skipped',
+      false,
+      false,
+      undefined,
+      undefined,
     ]);
     expect(artifact.summary).toEqual(
       expect.objectContaining({

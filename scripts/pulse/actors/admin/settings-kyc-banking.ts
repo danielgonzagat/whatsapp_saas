@@ -20,48 +20,42 @@ import {
   type AdminStructuralCheckSpec,
 } from './structural-checks';
 
-const CHECKS: ReadonlyArray<AdminStructuralCheckSpec> = [
-  // Frontend admin surfaces (KYC review, workspace inspection, wallet).
-  {
-    label: 'frontend-admin-kyc-page',
-    relPath: 'frontend-admin/src/app/(admin)/contas/kyc/page.tsx',
-    mustContain: ['approveKyc', 'rejectKyc'],
-  },
-  {
-    label: 'frontend-admin-workspace-page',
-    relPath: 'frontend-admin/src/app/(admin)/contas/[workspaceId]/page.tsx',
-  },
-  {
-    label: 'frontend-admin-carteira-page',
-    relPath: 'frontend-admin/src/app/(admin)/carteira/page.tsx',
-  },
+function deriveSettingsKycBankingChecks(): ReadonlyArray<AdminStructuralCheckSpec> {
+  return [
+    // Frontend admin surfaces (KYC review, workspace inspection, wallet).
+    {
+      relPath: 'frontend-admin/src/app/(admin)/contas/kyc/page.tsx',
+      mustContain: ['approveKyc', 'rejectKyc'],
+    },
+    {
+      relPath: 'frontend-admin/src/app/(admin)/contas/[workspaceId]/page.tsx',
+    },
+    {
+      relPath: 'frontend-admin/src/app/(admin)/carteira/page.tsx',
+    },
 
-  // Backend admin compliance stack (KYC review).
-  {
-    label: 'backend-admin-compliance-controller',
-    relPath: 'backend/src/admin/compliance/admin-compliance.controller.ts',
-  },
-  {
-    label: 'backend-admin-compliance-service',
-    relPath: 'backend/src/admin/compliance/admin-compliance.service.ts',
-    mustContain: ['kycStatus'],
-  },
-  {
-    label: 'backend-admin-compliance-module',
-    relPath: 'backend/src/admin/compliance/admin-compliance.module.ts',
-  },
+    // Backend admin compliance stack (KYC review).
+    {
+      relPath: 'backend/src/admin/compliance/admin-compliance.controller.ts',
+    },
+    {
+      relPath: 'backend/src/admin/compliance/admin-compliance.service.ts',
+      mustContain: ['kycStatus'],
+    },
+    {
+      relPath: 'backend/src/admin/compliance/admin-compliance.module.ts',
+    },
 
-  // Backend admin carteira (banking approval + wallet ledger linkage).
-  {
-    label: 'backend-admin-carteira-controller',
-    relPath: 'backend/src/admin/carteira/admin-carteira.controller.ts',
-    mustContain: ['ledger'],
-  },
-  {
-    label: 'backend-admin-carteira-module',
-    relPath: 'backend/src/admin/carteira/admin-carteira.module.ts',
-  },
-];
+    // Backend admin carteira (banking approval + wallet ledger linkage).
+    {
+      relPath: 'backend/src/admin/carteira/admin-carteira.controller.ts',
+      mustContain: ['ledger'],
+    },
+    {
+      relPath: 'backend/src/admin/carteira/admin-carteira.module.ts',
+    },
+  ];
+}
 
 export interface SettingsKycBankingObservation {
   passed: boolean;
@@ -71,7 +65,7 @@ export interface SettingsKycBankingObservation {
 }
 
 export function observeSettingsKycBanking(rootDir: string): SettingsKycBankingObservation {
-  const checks = checkAdminPaths(rootDir, CHECKS);
+  const checks = checkAdminPaths(rootDir, deriveSettingsKycBankingChecks());
   const passed = allAdminPresent(checks);
   const summary = passed
     ? `admin-settings-kyc-banking: ${checks.length} structural anchors present (inferred from file paths — no HTTP/DB execution).`

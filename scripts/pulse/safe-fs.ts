@@ -101,8 +101,9 @@ export function readDir(filePath: string, options: { recursive: true }): string[
 export function readDir(filePath: string, options?: unknown): unknown[] {
   try {
     return nodeReaddirSync(safeResolve(filePath), options as never) as unknown[];
-  } catch (err: any) {
-    if (err?.code === 'ENOENT') return [];
+  } catch (err: unknown) {
+    const error = err as NodeJS.ErrnoException;
+    if (error?.code === 'ENOENT') return [];
     throw err;
   }
 }

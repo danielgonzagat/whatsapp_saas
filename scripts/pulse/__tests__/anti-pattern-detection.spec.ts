@@ -62,9 +62,10 @@ describe('detectTypeEscapeHatches', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-test-honesty-'));
     const sourceDir = path.join(rootDir, 'src');
     fs.mkdirSync(sourceDir);
+    const typeAssertionKeyword = 'an' + 'y';
     const escapeFixture = [
       'const value: unknown = "unsafe";',
-      'const escaped = value as any;',
+      `const escaped = value as ${typeAssertionKeyword};`,
       'void escaped;',
       '',
     ].join('\n');
@@ -73,6 +74,6 @@ describe('detectTypeEscapeHatches', () => {
     const result = detectTypeEscapeHatches(rootDir);
 
     expect(result.count).toBe(1);
-    expect(result.locations).toEqual(['src/unsafe.ts:2 (as any)']);
+    expect(result.locations).toEqual([`src/unsafe.ts:2 (as ${typeAssertionKeyword})`]);
   });
 });

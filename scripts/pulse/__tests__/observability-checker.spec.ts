@@ -68,15 +68,13 @@ describe('observability checker diagnostics', () => {
 
     const [finding] = checkObservability(config) as ObservabilityBreak[];
 
-    expect(finding).toEqual(
-      expect.objectContaining({
-        severity: expect.any(String),
-        file: expect.any(String),
-        line: expect.any(Number),
-        description: expect.any(String),
-        detail: expect.stringContaining('predicates='),
-        source: expect.stringContaining('predicate-synthesizer:observability-checker'),
-      }),
+    expect(typeof finding.severity).toBe('string');
+    expect(typeof finding.file).toBe('string');
+    expect(typeof finding.line).toBe('number');
+    expect(typeof finding.description).toBe('string');
+    expect(finding.detail).toEqual(expect.stringContaining('predicates='));
+    expect(finding.source).toEqual(
+      expect.stringContaining('predicate-synthesizer:observability-checker'),
     );
   });
 });

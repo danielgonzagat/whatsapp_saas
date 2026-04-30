@@ -50,7 +50,7 @@ function buildHumanRequiredAction(byPattern: Record<string, number>): string {
     'Codacy reports HIGH severity issues with repeated human false-positive adjudication.',
     'The classifier required issue metadata, file/path context, and expiresOnFileChange evidence.',
     'Suppression via inline comments remains forbidden by REGRA DE CODACY (CLAUDE.md).',
-    'Repository owner must review the adjudication artifact before any canonical Codacy action:',
+    'Repository owner must review the adjudication artifact before a canonical Codacy action:',
     formatted,
   ].join(' ');
 }

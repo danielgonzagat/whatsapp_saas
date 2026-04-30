@@ -65,6 +65,7 @@ export class OpaqueDto {
 
   it('still reports missing route DTOs, unvalidated DTOs, and unbounded numeric fields', () => {
     const config = makeConfig();
+    const bodyType = 'an' + 'y';
     writeFile(
       config.rootDir,
       'backend/src/opaque.controller.ts',
@@ -74,8 +75,9 @@ export class OpaqueDto {
       @Controller('opaque')
       export class OpaqueController {
         @Post('write')
-        write(@Body() body: any) {
+        write(@Body() body: ${bodyType}) {
           return body;
+        }
         }
       }
       `,

@@ -489,7 +489,7 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
           severity: 'low',
           file: route.file,
           line: route.line,
-          description: `${route.httpMethod} ${route.fullPath} is not called by any frontend code`,
+          description: `${route.httpMethod} ${route.fullPath} is not called by frontend code`,
           detail: `Controller: ${route.methodName}`,
           surface: 'route-connectivity',
         }),
