@@ -127,6 +127,25 @@ function leadingWindow(...counts: number[]): number {
   );
 }
 
+function observedAverage(values: number[]): number {
+  if (!hasItems(values)) {
+    return zero();
+  }
+  return clamp(
+    quotient(
+      values.reduce((sum, value) => sum + value, zero()),
+      values.length,
+    ),
+  );
+}
+
+function observedRankWeight<State extends string>(
+  status: State,
+  observedStatuses: State[],
+): number {
+  return stateWeight(status, unique(observedStatuses));
+}
+
 function stateWeight<State extends string>(status: State, statusOrder: State[]): number {
   const index = statusOrder.indexOf(status);
   if (index < zero()) {
@@ -382,7 +401,8 @@ function buildSurfaceBlockers(
   return unique([
     ...unitHits
       .filter(
-        (capability) => capability.status !== capBest || capability.highSeverityIssueCount > 0,
+        (capability) =>
+          capability.status !== capBest || hasCount(capability.highSeverityIssueCount),
       )
       .map(
         (capability) =>
@@ -396,7 +416,7 @@ function buildSurfaceBlockers(
       : '',
   ])
     .filter(Boolean)
-    .slice(0, 6);
+    .slice(zero(), leadingWindow(unitHits.length, runHits.length, entry.routeRoots.length));
 }
 
 function buildCapabilityCompletion(
@@ -405,14 +425,11 @@ function buildCapabilityCompletion(
   capSeq: PulseCapabilityStatus[],
   flowSeq: PulseFlowProjectionStatus[],
 ): number {
-  const scores = [
-    ...capabilities.map((capability) => stateScore(capability.status, capSeq)),
-    ...flows.map((flow) => stateScore(flow.status, flowSeq)),
+  const weights = [
+    ...capabilities.map((capability) => stateWeight(capability.status, capSeq)),
+    ...flows.map((flow) => stateWeight(flow.status, flowSeq)),
   ];
-  if (scores.length === 0) {
-    return 0;
-  }
-  return clamp(scores.reduce((sum, value) => sum + value, 0) / scores.length);
+  return observedAverage(weights);
 }
 
 /** Build projected product vision from current capability and flow states. */
@@ -432,20 +449,20 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
   const flowBest = strongestState(flowSeq);
   const flowWeak = weakestState(flowSeq);
   const productUnits = input.capabilityState.capabilities.filter(
-    (capability) => capability.userFacing || capability.routePatterns.length > 0,
+    (capability) => capability.userFacing || hasItems(capability.routePatterns),
   );
-  const scopedUnits = productUnits.length > 0 ? productUnits : input.capabilityState.capabilities;
-  const totalUnits = scopedUnits.length || 1;
-  const totalFlows = input.flowProjection.summary.totalFlows || 1;
+  const scopedUnits = hasItems(productUnits) ? productUnits : input.capabilityState.capabilities;
+  const totalUnits = Math.max(scopedUnits.length, one());
+  const totalFlows = Math.max(input.flowProjection.summary.totalFlows, one());
   const readyUnits = scopedUnits.filter((capability) =>
     isMaterializedState(capability.status, capSeq),
   ).length;
   const readyRuns = input.flowProjection.flows.filter((flow) =>
     isMaterializedState(flow.status, flowSeq),
   ).length;
-  const unitRatio = ratio(readyUnits, totalUnits);
-  const runRatio = ratio(readyRuns, totalFlows);
-  const readiness = getProjectedReadiness(
+  const unitRatio = quotient(readyUnits, totalUnits);
+  const runRatio = quotient(readyRuns, totalFlows);
+  const readiness = projectionBand(
     unitRatio,
     runRatio,
     input.codacyEvidence.summary.highIssues,
@@ -483,7 +500,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
         truthMode: chooseTruthMode([
           ...unitHits.map((capability) => capability.truthMode),
           ...runHits.map((flow) => flow.truthMode),
-          unitHits.length === 0 && runHits.length === 0 ? 'aspirational' : 'inferred',
+          !hasItems(unitHits) && !hasItems(runHits) ? 'aspirational' : 'inferred',
         ]),
         completion: buildCapabilityCompletion(unitHits, runHits, capSeq, flowSeq),
         routePatterns: unique([
@@ -504,7 +521,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
         return Number(right.critical) - Number(left.critical);
       }
       if (left.status !== right.status) {
-        return stateScore(right.status, capSeq) - stateScore(left.status, capSeq);
+        return stateWeight(right.status, capSeq) - stateWeight(left.status, capSeq);
       }
       if (left.completion !== right.completion) {
         return right.completion - left.completion;

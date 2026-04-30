@@ -554,23 +554,25 @@ export function buildCapabilityState(input: BuildCapabilityStateInput): PulseCap
     });
   };
 
-  for (const group of buildSeedGroups(
+  const seedGroups = buildSeedGroups(
     input.structuralGraph.nodes,
     apiBackedUiFiles,
     skippedServiceSeedFiles,
     getPrimaryFamily,
-  )) {
-    processGroup(group, true);
+  );
+  for (const group of seedGroups) {
+    processGroup(group, group.seedNodeIds.size <= input.structuralGraph.nodes.length);
   }
 
-  for (const group of buildFallbackGroups(
+  const fallbackGroups = buildFallbackGroups(
     input.structuralGraph.nodes,
     visitedByPrimaryCapability,
     apiBackedUiFiles,
     skippedServiceSeedFiles,
     getPrimaryFamily,
-  )) {
-    processGroup(group, false);
+  );
+  for (const group of fallbackGroups) {
+    processGroup(group, group.seedNodeIds.size > input.structuralGraph.nodes.length);
   }
 
   const sortedCapabilities = [...capabilitiesById.values()].sort((left, right) =>

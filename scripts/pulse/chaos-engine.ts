@@ -14,11 +14,9 @@
  * The engine scans source and PULSE artifacts for external dependencies
  * discovered from imports, environment references, URL hosts, HTTP clients,
  * package usage, runtime signals, and side-effect graph evidence. Each
- * external dependency gets:
- *
- * - Multi-tier latency injection (50 / 200 / 1000 / 5000 ms)
- * - Connection-drop simulation
- * - Slow-close / partial-response scenarios
+ * external dependency gets a probe set derived from its observed dependency
+ * shape, runtime probe metrics, execution trace durations, and side-effect
+ * graph evidence instead of a fixed scenario catalog.
  *
  * Every scenario includes a predicted graceful-degradation path:
  * circuit-breaker trip, fallback-to-cache, queue retry, or user-visible
@@ -856,7 +854,12 @@ function deriveChaosScenarioSeeds(context: ChaosEvidenceContext): ChaosScenarioS
     });
   };
 
-  if (context.runtimeProbes.some((probe) => typeof probe.latencyMs === 'number')) {
+  if (
+    context.runtimeProbes.some((probe) => typeof probe.latencyMs === 'number') ||
+    context.files.length > 0 ||
+    context.capabilities.length > 0 ||
+    context.artifactRecords.length > 0
+  ) {
     addSeed('latency');
   }
   if (
