@@ -398,3 +398,4 @@ function syncAffectedAliases(signal: RuntimeSignal): void {
   signal.affectedFlows = signal.affectedFlowIds;
 }
 import "./__parts__/runtime-fusion.part";
+export * from "./__companions__/runtime-fusion.companion";

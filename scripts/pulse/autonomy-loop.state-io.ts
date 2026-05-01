@@ -398,3 +398,4 @@ export function buildPulseAutonomyStateSeed(
   };
 }
 import "./__parts__/autonomy-loop.state-io.part";
+export * from "./__companions__/autonomy-loop.state-io.companion";

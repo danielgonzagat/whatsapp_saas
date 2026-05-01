@@ -398,3 +398,4 @@ export function buildAutonomyCycleProof(
   };
 }
 import "./__parts__/artifacts.autonomy.part";
+export * from "./__companions__/artifacts.autonomy.companion";

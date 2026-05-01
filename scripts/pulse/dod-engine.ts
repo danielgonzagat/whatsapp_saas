@@ -398,3 +398,4 @@ function allowsBlockingOutcome(riskLevel: DoDRiskLevel): boolean {
   return riskLevel !== 'low';
 }
 import "./__parts__/dod-engine.part";
+export * from "./__companions__/dod-engine.companion";
