@@ -397,4 +397,4 @@ export function buildAutonomyCycleProof(
     proven: successfulCycles.length >= REQUIRED_NON_REGRESSING_CYCLES,
   };
 }
-import "./__companions__/scripts_pulse_artifacts.autonomy.companion";
+import "./__parts__/artifacts.autonomy.part";

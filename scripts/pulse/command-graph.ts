@@ -396,4 +396,4 @@ function isEnvNameChar(char: string | undefined): boolean {
   }
   return (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') || char === '_';
 }
-import "./__companions__/scripts_pulse_command-graph.companion";
+import "./__parts__/command-graph.part";
