@@ -12,28 +12,65 @@ function isAnimationContext(lines: string[], idx: number): boolean {
 
   // Also check if the FILE itself is an animation/visual component
   const fullFile = lines.join('\n');
+  const contextLower = context.toLowerCase();
+  const fullFileLower = fullFile.toLowerCase();
   const isAnimationFile =
-    /\.getContext\s*\(\s*['"`]2d['"`]\s*\)|requestAnimationFrame|<canvas/i.test(fullFile) ||
-    /waveform|heartbeat|loading-screen|scramble|glitch|particle|animation/i.test(fullFile);
+    fullFile.includes(".getContext('2d')") ||
+    fullFile.includes('.getContext("2d")') ||
+    fullFile.includes('.getContext(`2d`)') ||
+    fullFile.includes('requestAnimationFrame') ||
+    fullFile.includes('<canvas') ||
+    ['waveform', 'heartbeat', 'loading-screen', 'scramble', 'glitch', 'particle', 'animation'].some(
+      (token) => fullFileLower.includes(token),
+    );
 
   if (isAnimationFile) {
     return true;
   }
 
   return (
-    /useEffect|requestAnimationFrame|canvas|ctx\.|\.getContext|animation|animate|transition|keyframe/i.test(
-      context,
-    ) ||
-    /svg|path\s+d=|viewBox|stroke|fill|opacity|transform/i.test(context) ||
-    /waveform|heartbeat|pulse|scramble|glitch|particle/i.test(context) ||
-    /makeBeat|drawFrame|renderLoop|animationLoop/i.test(context) ||
-    /setInterval.*(?:animation|visual|render|draw|frame)/i.test(context)
+    [
+      'useeffect',
+      'requestanimationframe',
+      'canvas',
+      'ctx.',
+      '.getcontext',
+      'animation',
+      'animate',
+      'transition',
+      'keyframe',
+      'svg',
+      'path d=',
+      'viewbox',
+      'stroke',
+      'fill',
+      'opacity',
+      'transform',
+      'waveform',
+      'heartbeat',
+      'pulse',
+      'scramble',
+      'glitch',
+      'particle',
+      'makebeat',
+      'drawframe',
+      'renderloop',
+      'animationloop',
+    ].some((token) => contextLower.includes(token)) ||
+    (contextLower.includes('setinterval') &&
+      ['animation', 'visual', 'render', 'draw', 'frame'].some((token) =>
+        contextLower.includes(token),
+      ))
   );
 }
 
 function isIdContext(lines: string[], idx: number): boolean {
   const line = lines[idx];
-  return /\.toString\(36\)|crypto|uuid|nanoid|key=|key:/i.test(line);
+  const lower = line.toLowerCase();
+  return (
+    line.includes('.toString(36)') ||
+    ['crypto', 'uuid', 'nanoid', 'key=', 'key:'].some((token) => lower.includes(token))
+  );
 }
 
 function isGuardedEmptyReturnContext(context: string): boolean {

@@ -4,8 +4,10 @@ import type { HookRegistry } from './hook-registry';
 import {
   bodyCallsHookFunction,
   callsCallbackProp,
-  escapeRegExp,
+  findFunctionDeclarationIndex,
   findFunctionBodyEnd,
+  hasFunctionCall,
+  hasFunctionOrMemberUse,
   hasApiCall,
   NAV_PATTERNS,
 } from './ui-handler-resolver-utils';
@@ -30,7 +32,6 @@ export function resolveHandler(input: ResolveHandlerInput): {
   const {
     handlerExpr,
     lines,
-    fileContent,
     hookDestructures,
     hookRegistry,
     hasSaveHandler,
@@ -63,8 +64,7 @@ export function resolveHandler(input: ResolveHandlerInput): {
   }
 
   for (const [localName] of hookDestructures) {
-    const callRe = new RegExp(`(^|[^.\\w$])${escapeRegExp(localName)}\\s*\\(`);
-    if (callRe.test(trimmed)) {
+    if (hasFunctionCall(trimmed, localName)) {
       return { type: 'real', apiCalls: [] };
     }
   }
@@ -127,19 +127,14 @@ function resolveNamedFunction(input: ResolveHandlerInput & { funcName: string })
     return { type: 'real', apiCalls: [] };
   }
 
-  const funcDefRe = new RegExp(
-    `(?:const|let|function|async function)\\s+${funcName}\\s*(?:=|\\()`,
-    'g',
-  );
-  const defMatch = funcDefRe.exec(fileContent);
-  if (!defMatch && /^on[A-Z]/.test(funcName)) {
+  const defIdx = findFunctionDeclarationIndex(lines, funcName);
+  if (defIdx === -1 && /^on[A-Z]/.test(funcName)) {
     return { type: 'real', apiCalls: [] };
   }
-  if (!defMatch) {
+  if (defIdx === -1) {
     return { type: 'real', apiCalls: [] };
   }
 
-  const defIdx = fileContent.substring(0, defMatch.index).split('\n').length - 1;
   const bodyEnd = findFunctionBodyEnd(lines, defIdx, 60, 40);
   const bodyText = lines.slice(defIdx, bodyEnd).join('\n');
   const bodyApiCalls = extractApiCallEndpoints(bodyText, apiModuleMap, apiImportsInFile);
@@ -153,8 +148,7 @@ function resolveNamedFunction(input: ResolveHandlerInput & { funcName: string })
   }
 
   for (const importedName of apiImportsInFile) {
-    const callRe = new RegExp(`\\b${escapeRegExp(importedName)}(?:\\s*\\(|\\.[a-zA-Z])`);
-    if (callRe.test(bodyText)) {
+    if (hasFunctionOrMemberUse(bodyText, importedName)) {
       return { type: 'real', apiCalls: bodyApiCalls };
     }
   }
@@ -217,17 +211,14 @@ function resolveInlineCall(input: ResolveHandlerInput & { calledFunc: string }):
   type: UIElement['handlerType'];
   apiCalls: string[];
 } {
-  const { calledFunc, fileContent, hookDestructures, hasSaveHandler, lines } = input;
+  const { calledFunc, hookDestructures, hasSaveHandler, lines } = input;
 
   if (hookDestructures.has(calledFunc) || /^set[A-Z]/.test(calledFunc)) {
     return { type: 'real', apiCalls: [] };
   }
 
   if (/^on[A-Z]/.test(calledFunc)) {
-    const callbackDefRe = new RegExp(
-      `(?:const|let|function|async function)\\s+${calledFunc}\\s*(?:=|\\()`,
-    );
-    if (!callbackDefRe.test(fileContent)) {
+    if (findFunctionDeclarationIndex(lines, calledFunc) === -1) {
       return { type: 'real', apiCalls: [] };
     }
   }
@@ -238,13 +229,8 @@ function resolveInlineCall(input: ResolveHandlerInput & { calledFunc: string }):
   });
 
   if (result.type === 'dead' && hasSaveHandler) {
-    const funcDefRe = new RegExp(
-      `(?:const|let|function|async function)\\s+${calledFunc}\\s*(?:=|\\()`,
-      'g',
-    );
-    const defMatch = funcDefRe.exec(fileContent);
-    if (defMatch) {
-      const defIdx = fileContent.substring(0, defMatch.index).split('\n').length - 1;
+    const defIdx = findFunctionDeclarationIndex(lines, calledFunc);
+    if (defIdx !== -1) {
       const bodyText = lines.slice(defIdx, Math.min(defIdx + 20, lines.length)).join('\n');
       if (/set\w+\s*\(/.test(bodyText)) {
         return { type: 'real', apiCalls: [] };
@@ -259,7 +245,7 @@ function resolveNestedLocalCall(
   input: ResolveHandlerInput & { funcName: string },
   bodyText: string,
 ): { type: UIElement['handlerType']; apiCalls: string[] } | null {
-  const { fileContent, lines, apiModuleMap, apiImportsInFile } = input;
+  const { lines, apiModuleMap, apiImportsInFile } = input;
   const localCallRe = /\b([a-z]\w+)\s*\(/gi;
   let lcMatch;
   while ((lcMatch = localCallRe.exec(bodyText)) !== null) {
@@ -275,13 +261,11 @@ function resolveNestedLocalCall(
       continue;
     }
 
-    const cnDefRe = new RegExp(`(?:const|let|function|async function)\\s+${cn}\\s*(?:=|\\()`, 'g');
-    const cnDef = cnDefRe.exec(fileContent);
-    if (!cnDef) {
+    const cnIdx = findFunctionDeclarationIndex(lines, cn);
+    if (cnIdx === -1) {
       continue;
     }
 
-    const cnIdx = fileContent.substring(0, cnDef.index).split('\n').length - 1;
     const cnBody = lines.slice(cnIdx, findFunctionBodyEnd(lines, cnIdx, 40, 20)).join('\n');
     const cnApiCalls = extractApiCallEndpoints(cnBody, apiModuleMap, apiImportsInFile);
     if (hasApiCall(cnBody) || cnApiCalls.length > 0) {

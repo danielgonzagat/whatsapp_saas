@@ -74,11 +74,11 @@ function extractEnclosingFunction(lines: string[], targetIdx: number): string {
  */
 function isInsideTry(lines: string[], targetIdx: number): boolean {
   for (let i = targetIdx; i >= Math.max(0, targetIdx - 20); i--) {
-    if (/\btry\s*\{/.test(lines[i])) {
+    if (lines[i].includes('try {') || lines[i].includes('try{')) {
       return true;
     }
     // If we hit a catch/finally that closes back to this scope, stop
-    if (i < targetIdx && /\}\s*catch\b/.test(lines[i])) {
+    if (i < targetIdx && (lines[i].includes('} catch') || lines[i].includes('}catch'))) {
       return false;
     }
   }

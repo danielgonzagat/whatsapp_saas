@@ -1,4 +1,4 @@
-import * as path from 'path';
+import { safeJoin } from './safe-path';
 
 export interface PulseArtifactDefinition {
   id: string;
@@ -55,8 +55,8 @@ const CANONICAL_ARTIFACTS: PulseArtifactDefinition[] = [
 
 /** Build the canonical artifact registry for a PULSE run. */
 export function buildArtifactRegistry(rootDir: string): PulseArtifactRegistry {
-  const canonicalDir = path.join(rootDir, '.pulse', 'current');
-  const tempDir = path.join(rootDir, '.pulse', 'tmp');
+  const canonicalDir = safeJoin(rootDir, '.pulse', 'current');
+  const tempDir = safeJoin(rootDir, '.pulse', 'tmp');
   const mirrors = CANONICAL_ARTIFACTS.filter((artifact) => artifact.mirrorToRoot).map(
     (artifact) => artifact.relativePath,
   );

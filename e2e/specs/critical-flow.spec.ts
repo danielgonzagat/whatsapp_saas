@@ -35,7 +35,10 @@ test.describe('Critical Flow: Login -> Create Flow -> Execute', () => {
     // Abre o builder atual (/flow) e valida carregamento com sinais estáveis da UI.
     const flowId = `e2e-flow-${Date.now()}`;
     await page.goto(`${APP_URL}/flow?id=${flowId}`);
-    await page.waitForURL(new RegExp(`/flow\\?id=${flowId}`), { timeout: 30000 });
+    await page.waitForURL(
+      (url) => url.pathname === '/flow' && url.searchParams.get('id') === flowId,
+      { timeout: 30000 },
+    );
     await expect(page.getByRole('button', { name: 'Editor' })).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('button', { name: 'Templates' })).toBeVisible();
     await expect(page.getByRole('button', { name: /^Execuções$/ })).toBeVisible();

@@ -54,13 +54,7 @@ const FINANCIAL_SERVICE_PATTERNS = [
   /stripe.*\.service\.ts$/i,
 ];
 
-// Patterns that indicate Prisma CREATE operations (prisma accessor pattern, not Stripe/external APIs)
-// Matches: this.prisma.Model.create(, this.prismaAny.Model.create(, prisma.model.create(
-const CREATE_OPERATIONS = [
-  /this\.prisma(?:Any)?\.[a-zA-Z]\w+\.create\(/,
-  /this\.prisma(?:Any)?\.[a-zA-Z]\w+\.createMany\(/,
-  /this\.prisma(?:Any)?\.[a-zA-Z]\w+\.upsert\(/,
-];
+const CREATE_OPERATION_TOKENS = ['.create(', '.createMany(', '.upsert('];
 
 // Keywords that indicate existence validation before create
 const VALIDATION_READS = ['findFirst(', 'findUnique(', 'findMany(', 'count('];
@@ -120,25 +114,8 @@ function extractFunctionBodies(
  * Check if a function body performs a create operation without a prior read/validation.
  * writePatterns are static regex literals; readKeywords are plain strings.
  */
-function hasWriteWithoutValidation(
-  body: string,
-  writePatterns: RegExp[],
-  readKeywords: string[],
-): boolean {
-  const hasWrite = writePatterns.some((pattern) => pattern.test(body));
-  if (!hasWrite) {
-    return false;
-  }
-
-  // Determine the index of the first write operation in the body
-  const firstWriteIdx = Math.min(
-    ...writePatterns
-      .map((pattern) => {
-        const m = body.search(pattern);
-        return m === -1 ? Infinity : m;
-      })
-      .filter((idx) => idx !== Infinity),
-  );
+function hasWriteWithoutValidation(body: string, readKeywords: string[]): boolean {
+  const firstWriteIdx = findFirstPrismaWriteIndex(body);
   if (firstWriteIdx === Infinity) {
     return false;
   }
@@ -150,6 +127,22 @@ function hasWriteWithoutValidation(
   });
 
   return !hasValidation;
+}
+
+function findFirstPrismaWriteIndex(body: string): number {
+  let firstWriteIdx = Number.POSITIVE_INFINITY;
+  for (const token of CREATE_OPERATION_TOKENS) {
+    let cursor = body.indexOf(token);
+    while (cursor !== -1) {
+      const prefix = body.slice(Math.max(0, cursor - 80), cursor);
+      if (prefix.includes('this.prisma') || prefix.includes('prisma.')) {
+        firstWriteIdx = Math.min(firstWriteIdx, cursor);
+        break;
+      }
+      cursor = body.indexOf(token, cursor + token.length);
+    }
+  }
+  return firstWriteIdx;
 }
 
 /** Check data consistency. */
@@ -181,7 +174,7 @@ export function checkDataConsistency(config: PulseConfig): Break[] {
 
       // Check for create without prior findFirst/findUnique in financial context
       // (updates are excluded — they usually already have a validated ID from the request)
-      if (hasWriteWithoutValidation(fn.body, CREATE_OPERATIONS, VALIDATION_READS)) {
+      if (hasWriteWithoutValidation(fn.body, VALIDATION_READS)) {
         // Determine the most specific break type based on file
         let breakType: 'DATA_PRODUCT_NO_PLAN' | 'DATA_ORDER_NO_PAYMENT' | 'DATA_WORKSPACE_NO_OWNER';
         let description: string;

@@ -6,8 +6,61 @@ function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function isIdentifierChar(value: string | undefined): boolean {
+  return Boolean(value && /[\w$]/.test(value));
+}
+
+function hasIdentifierAt(text: string, offset: number, identifier: string): boolean {
+  if (!text.startsWith(identifier, offset)) {
+    return false;
+  }
+  return !isIdentifierChar(text[offset - 1]) && !isIdentifierChar(text[offset + identifier.length]);
+}
+
+function hasFunctionCall(text: string, functionName: string): boolean {
+  let offset = text.indexOf(functionName);
+  while (offset !== -1) {
+    if (hasIdentifierAt(text, offset, functionName)) {
+      let cursor = offset + functionName.length;
+      while (/\s/.test(text[cursor] || '')) {
+        cursor += 1;
+      }
+      if (text[cursor] === '(') {
+        return true;
+      }
+    }
+    offset = text.indexOf(functionName, offset + functionName.length);
+  }
+  return false;
+}
+
+function hasMemberCall(text: string, objectName: string, methodName: string): boolean {
+  let offset = text.indexOf(objectName);
+  while (offset !== -1) {
+    if (hasIdentifierAt(text, offset, objectName)) {
+      let cursor = offset + objectName.length;
+      while (/\s/.test(text[cursor] || '')) {
+        cursor += 1;
+      }
+      if (text[cursor] === '.') {
+        cursor += 1;
+        while (/\s/.test(text[cursor] || '')) {
+          cursor += 1;
+        }
+        if (hasIdentifierAt(text, cursor, methodName)) {
+          cursor += methodName.length;
+          while (/\s/.test(text[cursor] || '')) {
+            cursor += 1;
+          }
+          if (text[cursor] === '(') {
+            return true;
+          }
+        }
+      }
+    }
+    offset = text.indexOf(objectName, offset + objectName.length);
+  }
+  return false;
 }
 
 function extractDirectApiEndpoints(text: string): string[] {
@@ -42,17 +95,16 @@ function extractMappedApiEndpoints(
   for (const [callName, { endpoint }] of apiModuleMap) {
     const [objectName, methodName] = callName.split('.');
     if (methodName) {
-      const callRe = new RegExp(
-        `\\b${escapeRegExp(objectName)}\\s*\\.\\s*${escapeRegExp(methodName)}\\s*\\(`,
-      );
-      if ((apiImportsInFile.size === 0 || apiImportsInFile.has(objectName)) && callRe.test(text)) {
+      if (
+        (apiImportsInFile.size === 0 || apiImportsInFile.has(objectName)) &&
+        hasMemberCall(text, objectName, methodName)
+      ) {
         endpoints.push(endpoint);
       }
       continue;
     }
 
-    const callRe = new RegExp(`\\b${escapeRegExp(callName)}\\s*\\(`);
-    if (apiImportsInFile.has(callName) && callRe.test(text)) {
+    if (apiImportsInFile.has(callName) && hasFunctionCall(text, callName)) {
       endpoints.push(endpoint);
     }
   }
@@ -71,22 +123,12 @@ export function extractApiCallEndpoints(
   ]);
 }
 
-function extractFunctionBody(
-  lines: string[],
-  fileContent: string,
-  functionName: string,
-  maxLines = 80,
-): string | null {
-  const funcDefRe = new RegExp(
-    `(?:const|let|function|async function)\\s+${escapeRegExp(functionName)}\\s*(?:=|\\()`,
-    'g',
-  );
-  const defMatch = funcDefRe.exec(fileContent);
-  if (!defMatch) {
+function extractFunctionBody(lines: string[], functionName: string, maxLines = 80): string | null {
+  const defIdx = lines.findIndex((line) => lineDeclaresFunction(line, functionName));
+  if (defIdx === -1) {
     return null;
   }
 
-  const defIdx = fileContent.substring(0, defMatch.index).split('\n').length - 1;
   let depth = 0;
   let bodyEnd = Math.min(defIdx + Math.floor(maxLines / 2), lines.length);
   let bodyStarted = false;
@@ -109,6 +151,17 @@ function extractFunctionBody(
   return lines.slice(defIdx, bodyEnd).join('\n');
 }
 
+function lineDeclaresFunction(line: string, functionName: string): boolean {
+  const trimmed = line.trimStart();
+  if (trimmed.startsWith(`function ${functionName}`)) {
+    return true;
+  }
+  if (trimmed.startsWith(`async function ${functionName}`)) {
+    return true;
+  }
+  return trimmed.startsWith(`const ${functionName}`) || trimmed.startsWith(`let ${functionName}`);
+}
+
 export function extractSaveHandlerApiCalls(
   fileContent: string,
   apiModuleMap: ApiModuleMap,
@@ -121,7 +174,7 @@ export function extractSaveHandlerApiCalls(
   let match: RegExpExecArray | null;
 
   while ((match = saveHandlerRe.exec(fileContent)) !== null) {
-    const body = extractFunctionBody(lines, fileContent, match[1]);
+    const body = extractFunctionBody(lines, match[1]);
     if (body) {
       endpoints.push(...extractApiCallEndpoints(body, apiModuleMap, apiImportsInFile));
     }

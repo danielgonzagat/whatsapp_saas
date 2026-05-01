@@ -18,10 +18,6 @@ const B_MEU_MINHA_MEUS_MINHAS_RE =
   /\b(meu|minha|meus|minhas|trabalho|empresa|rotina|familia|cliente)\b/i;
 const PROBLEMA_ERRO_RECLAMA_N_RE =
   /(problema|erro|reclama|nao funciona|nao resolveu|demora|frustr)/i;
-const PRECO_VALOR_PARCELA_RE = /(preco|valor|parcela)/i;
-const PRAZO_URGENTE_HOJE_AGOR_RE = /(prazo|urgente|hoje|agora)/i;
-const FUNCIONA_GARANTIA_RESUL_RE = /(funciona|garantia|resultado)/i;
-const RESULTADO_FUNCIONA_PREC_RE = /(resultado|funciona|preco|valor|prazo)/i;
 const OI_OL_A___E_AI_OPA_RE = /^(oi|ol[aá]|e ai|opa)[!,.]?\s*/i;
 const QUALQUER_D_U__VIDA_FI_RE =
   /(?:qualquer d[uú]vida|fico [aà] disposi[cç][aã]o|estou [aà] disposi[cç][aã]o).*$/i;
@@ -203,14 +199,18 @@ function needsValidation(
   return complaintDetected || wordCount > 18 || isValidationTone(emotionalTone);
 }
 
+function includesAny(text: string, terms: string[]): boolean {
+  return terms.some((term) => text.includes(term));
+}
+
 function inferNeed(normalized: string, personalDetailShared: boolean): string | null {
-  if (PRECO_VALOR_PARCELA_RE.test(normalized)) {
+  if (includesAny(normalized, ['preco', 'valor', 'parcela'])) {
     return 'seguranca sobre investimento';
   }
-  if (PRAZO_URGENTE_HOJE_AGOR_RE.test(normalized)) {
+  if (includesAny(normalized, ['prazo', 'urgente', 'hoje', 'agora'])) {
     return 'agilidade';
   }
-  if (FUNCIONA_GARANTIA_RESUL_RE.test(normalized)) {
+  if (includesAny(normalized, ['funciona', 'garantia', 'resultado'])) {
     return 'confianca';
   }
   if (personalDetailShared) {
@@ -246,7 +246,7 @@ function buildOpenLoopOpportunity(
   normalized: string,
   contactName: string | null | undefined,
 ): string {
-  if (RESULTADO_FUNCIONA_PREC_RE.test(normalized)) {
+  if (includesAny(normalized, ['resultado', 'funciona', 'preco', 'valor', 'prazo'])) {
     return 'Tem um detalhe nisso que costuma mudar a decisao.';
   }
   if (contactName) {

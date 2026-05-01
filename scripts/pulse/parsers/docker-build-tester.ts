@@ -63,6 +63,45 @@ function dockerfilePath(serviceDir: string): string {
   return safeJoin(serviceDir, 'Dockerfile');
 }
 
+function isCommentLine(line: string): boolean {
+  return line.trimStart().startsWith('#');
+}
+
+function isSecretTokenCharacter(character: string): boolean {
+  return (
+    (character >= 'A' && character <= 'Z') ||
+    (character >= 'a' && character <= 'z') ||
+    (character >= '0' && character <= '9') ||
+    character === '+' ||
+    character === '/' ||
+    character === '=' ||
+    character === '_' ||
+    character === '-'
+  );
+}
+
+function hasHardcodedComposeSecret(line: string): boolean {
+  const separatorIndex = line.indexOf(':');
+  if (separatorIndex < 0) {
+    return false;
+  }
+
+  const rawValue = line.slice(separatorIndex + 1).trim();
+  if (!rawValue || rawValue.startsWith('${')) {
+    return false;
+  }
+
+  let token = '';
+  for (const character of rawValue) {
+    if (!isSecretTokenCharacter(character)) {
+      break;
+    }
+    token += character;
+  }
+
+  return token.length >= 32;
+}
+
 /** Check docker build. */
 export function checkDockerBuild(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
@@ -256,7 +295,9 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
     // Check 9: Services have restart policy
     const appServices = ['backend', 'worker', 'frontend'];
     for (const svcName of appServices) {
-      const svcIdx = composeLines.findIndex((l) => new RegExp(`^  ${svcName}:`).test(l));
+      const svcIdx = composeLines.findIndex(
+        (line) => line.startsWith('  ') && line.trim() === `${svcName}:`,
+      );
       if (svcIdx === -1) {
         continue;
       }
@@ -305,13 +346,13 @@ export function checkDockerBuild(config: PulseConfig): Break[] {
 
     // Check 11: No hardcoded secrets in docker-compose (values that look like real secrets)
     // Exclude placeholder patterns like ${VAR:-default} and obvious dev defaults
-    const hardcodedSecretLine = composeLines.findIndex((line, idx) => {
+    const hardcodedSecretLine = composeLines.findIndex((line) => {
       // Skip comments
-      if (/^\s*#/.test(line)) {
+      if (isCommentLine(line)) {
         return false;
       }
       // Look for KEY: value where value is a long token not from env var
-      return /:\s+(?!\$\{)[A-Za-z0-9+/=_-]{32,}/.test(line);
+      return hasHardcodedComposeSecret(line);
     });
     if (hardcodedSecretLine !== -1) {
       breaks.push({

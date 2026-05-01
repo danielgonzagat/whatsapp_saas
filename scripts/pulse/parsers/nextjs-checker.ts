@@ -38,38 +38,54 @@ function isInStringOrComment(line: string, matchIndex: number): boolean {
 function hasGuardAbove(lines: string[], idx: number, lookback = 30): boolean {
   // Check same line first (inline guard: typeof window !== 'undefined' && window.x)
   const currentLine = lines[idx] || '';
-  if (/typeof\s+window\s*!==\s*['"`]undefined['"`]/.test(currentLine)) {
+  if (hasDefinedGuard(currentLine, 'window')) {
     return true;
   }
-  if (/typeof\s+document\s*!==\s*['"`]undefined['"`]/.test(currentLine)) {
+  if (hasDefinedGuard(currentLine, 'document')) {
     return true;
   }
-  if (/isBrowser/.test(currentLine)) {
+  if (currentLine.includes('isBrowser')) {
     return true;
   }
 
   for (let j = Math.max(0, idx - lookback); j < idx; j++) {
-    if (/typeof\s+window\s*!==\s*['"`]undefined['"`]/.test(lines[j])) {
+    if (hasDefinedGuard(lines[j], 'window')) {
       return true;
     }
-    if (/typeof\s+document\s*!==\s*['"`]undefined['"`]/.test(lines[j])) {
+    if (hasDefinedGuard(lines[j], 'document')) {
       return true;
     }
     // Also catch `if (typeof window === 'undefined') return` early-exit guards
-    if (/typeof\s+window\s*===\s*['"`]undefined['"`]/.test(lines[j])) {
+    if (hasUndefinedEarlyExit(lines[j], 'window')) {
       return true;
     }
-    if (/typeof\s+document\s*===\s*['"`]undefined['"`]/.test(lines[j])) {
+    if (hasUndefinedEarlyExit(lines[j], 'document')) {
       return true;
     }
-    if (/useEffect\s*\(/.test(lines[j])) {
+    if (lines[j].includes('useEffect(')) {
       return true;
     }
-    if (/isBrowser/.test(lines[j])) {
+    if (lines[j].includes('isBrowser')) {
       return true;
     }
   }
   return false;
+}
+
+function hasDefinedGuard(line: string, globalName: 'document' | 'window'): boolean {
+  return (
+    line.includes(`typeof ${globalName} !== 'undefined'`) ||
+    line.includes(`typeof ${globalName} !== "undefined"`) ||
+    line.includes(`typeof ${globalName} !== \`undefined\``)
+  );
+}
+
+function hasUndefinedEarlyExit(line: string, globalName: 'document' | 'window'): boolean {
+  return (
+    line.includes(`typeof ${globalName} === 'undefined'`) ||
+    line.includes(`typeof ${globalName} === "undefined"`) ||
+    line.includes(`typeof ${globalName} === \`undefined\``)
+  );
 }
 
 /** Returns true if this line is deeply indented (inside a function/block body). */

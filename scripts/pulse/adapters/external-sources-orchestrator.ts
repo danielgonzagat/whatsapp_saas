@@ -3,7 +3,6 @@
  * Runs all external adapters in parallel and consolidates signals
  */
 
-import * as path from 'path';
 import { execFileSync } from 'child_process';
 import { fetchGitHubSignals } from './github-adapter';
 import { fetchSentrySignals } from './sentry-adapter';
@@ -14,6 +13,7 @@ import { fetchDependabotSignals } from './dependabot-adapter';
 import { fetchGitHubActionsSignals } from './github-actions-adapter';
 import type { PulseExternalAdapterStatus, PulseExternalSignalSource, PulseSignal } from '../types';
 import { pathExists, readTextFile } from '../safe-fs';
+import { safeJoin } from '../safe-path';
 
 export interface ExternalSourcesConfig {
   rootDir: string;
@@ -159,8 +159,8 @@ export async function runExternalSourcesOrchestrator(
   let totalSeverity = 0;
 
   // Try to load environment from .env.pulse.local if available
-  const envLocal = readDotEnvFile(path.join(config.rootDir, '.env.pulse.local'));
-  const envPath = readDotEnvFile(path.join(config.rootDir, '.env'));
+  const envLocal = readDotEnvFile(safeJoin(config.rootDir, '.env.pulse.local'));
+  const envPath = readDotEnvFile(safeJoin(config.rootDir, '.env'));
 
   const mergedEnv = { ...process.env, ...envPath, ...envLocal };
   const gitHubRemote = readGitHubRemote(config.rootDir);

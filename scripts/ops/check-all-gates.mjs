@@ -5,6 +5,7 @@ import { repoRoot } from './lib/scan-utils.mjs';
 
 const steps = [
   { label: 'governance-boundary', command: 'node scripts/ops/check-governance-boundary.mjs' },
+  { label: 'ai-constitution', command: 'node scripts/ops/check-ai-constitution.mjs' },
   { label: 'visual-contract', command: 'node scripts/ops/check-visual-contract.mjs' },
   { label: 'test-integrity', command: 'node scripts/ops/check-test-integrity.mjs' },
   { label: 'unsafe-casts', command: 'node scripts/ops/check-unsafe-casts.mjs' },

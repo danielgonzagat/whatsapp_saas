@@ -129,7 +129,7 @@ export const whatsappApi = {
   },
 
   getChats: () => {
-    return apiFetch<Array<Record<string, unknown>>>(`/api/whatsapp-api/chats`);
+    return apiFetch<Array<Record<string, unknown>>>('/api/whatsapp-api/chats');
   },
 
   getChatMessages: (

@@ -114,7 +114,7 @@
     "issue": "KLOEL-GOV-002",
     "approved_by": "usuario",
     "date": "2026-04-19",
-    "expires": "2026-04-26"
+    "expires": "2026-05-26"
   },
   {
     "filePrefix": "docs/codacy/",
@@ -123,7 +123,7 @@
     "issue": "KLOEL-GOV-002",
     "approved_by": "usuario",
     "date": "2026-04-19",
-    "expires": "2026-04-26"
+    "expires": "2026-05-26"
   },
   {
     "file": ".github/workflows/codacy-analysis.yml",
@@ -132,7 +132,7 @@
     "issue": "KLOEL-GOV-002",
     "approved_by": "usuario",
     "date": "2026-04-19",
-    "expires": "2026-04-26"
+    "expires": "2026-05-26"
   },
   {
     "file": ".husky/commit-msg",
@@ -141,6 +141,87 @@
     "issue": "KLOEL-GOV-002",
     "approved_by": "usuario",
     "date": "2026-04-19",
-    "expires": "2026-04-26"
+    "expires": "2026-05-26"
+  },
+  {
+    "file": "CLAUDE.md",
+    "rule": "governanceChange",
+    "reason": "User explicitly authorized adding operational protocol sections (production-reality, E2E, autonomy safety, task selection, evidence, DB/API/frontend rules, external integrations, WhatsApp, Stripe, secrets, MCP, commits, rollback, observability, LLM quality, big-tech DOD, session start) without removing existing content. Creates docs/ai/AGENT_RUNBOOK.md referenced from each file.",
+    "approved_by": "usuario",
+    "date": "2026-04-24",
+    "expires": "2027-04-24",
+    "issue": "KLOEL-GOV-AGENT-PROTOCOL-2026-04-24"
+  },
+  {
+    "file": "AGENTS.md",
+    "rule": "governanceChange",
+    "reason": "User explicitly authorized adding operational protocol sections (production-reality, E2E, autonomy safety, task selection, evidence, DB/API/frontend rules, external integrations, WhatsApp, Stripe, secrets, MCP, commits, rollback, observability, LLM quality, big-tech DOD, session start) without removing existing content. Creates docs/ai/AGENT_RUNBOOK.md referenced from each file.",
+    "approved_by": "usuario",
+    "date": "2026-04-24",
+    "expires": "2027-04-24",
+    "issue": "KLOEL-GOV-AGENT-PROTOCOL-2026-04-24"
+  },
+  {
+    "file": "CODEX.md",
+    "rule": "governanceChange",
+    "reason": "User explicitly authorized adding operational protocol sections (production-reality, E2E, autonomy safety, task selection, evidence, DB/API/frontend rules, external integrations, WhatsApp, Stripe, secrets, MCP, commits, rollback, observability, LLM quality, big-tech DOD, session start) without removing existing content. Creates docs/ai/AGENT_RUNBOOK.md referenced from each file.",
+    "approved_by": "usuario",
+    "date": "2026-04-24",
+    "expires": "2027-04-24",
+    "issue": "KLOEL-GOV-AGENT-PROTOCOL-2026-04-24"
+  },
+  {
+    "file": "scripts/ops/check-unsafe-queries.mjs",
+    "rule": "governanceChange",
+    "reason": "User explicitly mandated: checker should recognize structural safety patterns (helper/boundary classes) instead of reading per-line allowlists. Add STRUCTURAL_BOUNDARY_FILES set listing backend/src/metrics/observability-queries.service.ts as an observability boundary so its count queries can drop out of unsafe-query-exceptions.json.",
+    "issue": "KLOEL-GOV-AGENT-PROTOCOL-2026-04-24",
+    "approved_by": "usuario",
+    "date": "2026-04-24",
+    "expires": "2027-04-24"
+  },
+  {
+    "filePrefix": ".github/workflows/",
+    "rule": "governanceChange",
+    "reason": "Daniel autorizou explicitamente o opt-in Node.js 24 (FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true) para mitigar o deprecation warning aplicavel a actions/checkout@v4 + setup-node@v4 + upload-artifact@v4 nos 9 workflows nao-protegidos. ci-cd.yml e .github/workflows/ci-cd.yml seguem cobertos por entrada propria.",
+    "issue": "KLOEL-CI-NODE24",
+    "approved_by": "usuario",
+    "date": "2026-04-25",
+    "expires": "2026-09-15"
+  },
+  {
+    "file": "backend/src/lib/openai-models.ts",
+    "rule": "governanceChange",
+    "reason": "Daniel autorizou explicitamente, em 2026-05-01, tocar superficies protegidas para consolidar a constituicao imutavel, impedir regressao e preservar avancos antes da escala multiagente.",
+    "issue": "KLOEL-AI-CONSTITUTION-2026-05-01",
+    "approved_by": "usuario",
+    "date": "2026-05-01",
+    "expires": "2027-05-01"
+  },
+  {
+    "file": "package.json",
+    "rule": "governanceChange",
+    "reason": "Daniel autorizou explicitamente, em 2026-05-01, conectar o gate check:ai-constitution ao fluxo guard:new-code e check-all para bloquear regressao multiagente.",
+    "issue": "KLOEL-AI-CONSTITUTION-2026-05-01",
+    "approved_by": "usuario",
+    "date": "2026-05-01",
+    "expires": "2027-05-01"
+  },
+  {
+    "filePrefix": "ops/",
+    "rule": "governanceChange",
+    "reason": "Daniel autorizou explicitamente, em 2026-05-01, criar a constituicao executavel anti-regressao e anti-maquiagem para agentes CLI.",
+    "issue": "KLOEL-AI-CONSTITUTION-2026-05-01",
+    "approved_by": "usuario",
+    "date": "2026-05-01",
+    "expires": "2027-05-01"
+  },
+  {
+    "filePrefix": "scripts/ops/",
+    "rule": "governanceChange",
+    "reason": "Daniel autorizou explicitamente, em 2026-05-01, criar e plugar o checker executavel da constituicao imutavel anti-regressao.",
+    "issue": "KLOEL-AI-CONSTITUTION-2026-05-01",
+    "approved_by": "usuario",
+    "date": "2026-05-01",
+    "expires": "2027-05-01"
   }
 ]

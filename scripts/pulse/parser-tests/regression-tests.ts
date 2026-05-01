@@ -88,7 +88,7 @@ async function testErrorHandlerAuditorRegression() {
     [
       {
         name: 'detects financial catch without rethrow',
-        input: `catch (e) { wallet.balance -= amount; console.error(e); }`,
+        input: 'catch (e) { wallet.balance -= amount; console.error(e); }',
         expectedOutput: [
           {
             type: 'FINANCIAL_CATCH_NO_RETHROW',
@@ -100,12 +100,12 @@ async function testErrorHandlerAuditorRegression() {
       },
       {
         name: 'allows financial catch with rethrow',
-        input: `catch (e) { wallet.balance -= amount; throw e; }`,
+        input: 'catch (e) { wallet.balance -= amount; throw e; }',
         expectedOutput: [],
       },
       {
         name: 'ignores non-financial catch',
-        input: `catch (e) { console.error('Error:', e); }`,
+        input: "catch (e) { console.error('Error:', e); }",
         expectedOutput: [],
       },
     ],
@@ -137,7 +137,7 @@ async function testIdempotencyCheckerRegression() {
     [
       {
         name: 'detects webhook without idempotency',
-        input: `async function stripeWebhookHandler(event) { processPayment(event.data); }`,
+        input: 'async function stripeWebhookHandler(event) { processPayment(event.data); }',
         expectedOutput: [
           {
             type: 'WEBHOOK_NO_IDEMPOTENCY',
@@ -148,7 +148,8 @@ async function testIdempotencyCheckerRegression() {
       },
       {
         name: 'allows webhook with idempotency check',
-        input: `async function handler(event) { if (!checkIdempotency(event.id)) return; process(); }`,
+        input:
+          'async function handler(event) { if (!checkIdempotency(event.id)) return; process(); }',
         expectedOutput: [],
       },
     ],

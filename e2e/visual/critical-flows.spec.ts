@@ -83,41 +83,37 @@ const VISUAL_BROWSER_ARGS = [
   '--disable-skia-runtime-opts',
 ];
 const VISUAL_PIXEL_CHANNEL_TOLERANCE = 3;
-const VISUAL_FREEZE_STYLE = `
-  html, body {
-    overflow-y: scroll !important;
-    scrollbar-gutter: stable !important;
-  }
-
-  html[data-visual-capture='true'] {
-    cursor: default !important;
-  }
-
-  html[data-visual-capture='true'] a,
-  html[data-visual-capture='true'] button,
-  html[data-visual-capture='true'] input,
-  html[data-visual-capture='true'] label,
-  html[data-visual-capture='true'] select,
-  html[data-visual-capture='true'] textarea,
-  html[data-visual-capture='true'] [role='button'] {
-    pointer-events: none !important;
-  }
-
-  *, *::before, *::after {
-    animation-delay: 0s !important;
-    animation-duration: 0s !important;
-    animation-iteration-count: 1 !important;
-    caret-color: transparent !important;
-    scroll-behavior: auto !important;
-    transition-delay: 0s !important;
-    transition-duration: 0s !important;
-  }
-
-  *:focus,
-  *:focus-visible {
-    outline: none !important;
-  }
-`;
+const VISUAL_FREEZE_STYLE = [
+  'html, body {',
+  'overflow-y: scroll !important;',
+  'scrollbar-gutter: stable !important;',
+  '}',
+  "html[data-visual-capture='true'] {",
+  'cursor: default !important;',
+  '}',
+  "html[data-visual-capture='true'] a,",
+  "html[data-visual-capture='true'] button,",
+  "html[data-visual-capture='true'] input,",
+  "html[data-visual-capture='true'] label,",
+  "html[data-visual-capture='true'] select,",
+  "html[data-visual-capture='true'] textarea,",
+  "html[data-visual-capture='true'] [role='button'] {",
+  'pointer-events: none !important;',
+  '}',
+  '*, *::before, *::after {',
+  'animation-delay: 0s !important;',
+  'animation-duration: 0s !important;',
+  'animation-iteration-count: 1 !important;',
+  'caret-color: transparent !important;',
+  'scroll-behavior: auto !important;',
+  'transition-delay: 0s !important;',
+  'transition-duration: 0s !important;',
+  '}',
+  '*:focus,',
+  '*:focus-visible {',
+  'outline: none !important;',
+  '}',
+].join('\n');
 
 type ScreenshotAssertionOptions = {
   fullPage?: boolean;

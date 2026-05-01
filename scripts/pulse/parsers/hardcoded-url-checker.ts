@@ -14,62 +14,59 @@ const INTERNAL_DOMAIN_RE =
 const PROD_DOMAIN_RE = /\b(kloel\.com|api\.kloel\.com)\b/i;
 
 // External well-known services that are legitimately referenced in code
-const ALLOWED_EXTERNAL_RE = new RegExp(
-  [
-    'github\\.com',
-    'githubusercontent\\.com',
-    'npmjs\\.com',
-    'nodejs\\.org',
-    'googleapis\\.com',
-    'google\\.com',
-    'openai\\.com',
-    'anthropic\\.com',
-    'stripe\\.com',
-    'twilio\\.com',
-    'meta\\.com',
-    'facebook\\.com',
-    'graph\\.facebook\\.com',
-    'w3\\.org',
-    'schema\\.org',
-    'json-schema\\.org',
-    'swagger\\.io',
-    'prisma\\.io',
-    'nestjs\\.com',
-    'nextjs\\.org',
-    'vercel\\.com', // vercel.com docs ≠ vercel.app deployment
-    'cloudflare\\.com',
-    'sentry\\.io',
-    'datadog\\.com',
-    'example\\.com',
-    'example\\.org',
-    'placeholder\\.com',
-    'via\\.placeholder\\.com',
-    'unsplash\\.com',
-    'tailwindcss\\.com',
-    'fontawesome\\.com',
-    'jsdelivr\\.net',
-    'cdnjs\\.cloudflare\\.com',
-    'fonts\\.googleapis\\.com',
-    'fonts\\.gstatic\\.com',
-    'maps\\.googleapis\\.com',
-    'storage\\.googleapis\\.com',
-    'accounts\\.google\\.com',
-    'oauth2\\.googleapis\\.com',
-    'whatsapp\\.com',
-    'web\\.whatsapp\\.com',
-    'lh3\\.googleusercontent\\.com',
-    'avatars\\.githubusercontent\\.com',
-    'raw\\.githubusercontent\\.com',
-    'registry\\.npmjs\\.org',
-    'registry\\.yarnpkg\\.com',
-    'dl\\.k9s\\.io',
-    'hub\\.docker\\.com',
-    'index\\.docker\\.io',
-    // Kloel pixel CDN — must be hardcoded in user-facing embed snippets
-    'px\\.kloel\\.com',
-  ].join('|'),
-  'i',
-);
+const ALLOWED_EXTERNAL_DOMAINS = [
+  'github.com',
+  'githubusercontent.com',
+  'npmjs.com',
+  'nodejs.org',
+  'googleapis.com',
+  'google.com',
+  'openai.com',
+  'anthropic.com',
+  'stripe.com',
+  'twilio.com',
+  'meta.com',
+  'facebook.com',
+  'graph.facebook.com',
+  'w3.org',
+  'schema.org',
+  'json-schema.org',
+  'swagger.io',
+  'prisma.io',
+  'nestjs.com',
+  'nextjs.org',
+  'vercel.com', // vercel.com docs != vercel.app deployment
+  'cloudflare.com',
+  'sentry.io',
+  'datadog.com',
+  'example.com',
+  'example.org',
+  'placeholder.com',
+  'via.placeholder.com',
+  'unsplash.com',
+  'tailwindcss.com',
+  'fontawesome.com',
+  'jsdelivr.net',
+  'cdnjs.cloudflare.com',
+  'fonts.googleapis.com',
+  'fonts.gstatic.com',
+  'maps.googleapis.com',
+  'storage.googleapis.com',
+  'accounts.google.com',
+  'oauth2.googleapis.com',
+  'whatsapp.com',
+  'web.whatsapp.com',
+  'lh3.googleusercontent.com',
+  'avatars.githubusercontent.com',
+  'raw.githubusercontent.com',
+  'registry.npmjs.org',
+  'registry.yarnpkg.com',
+  'dl.k9s.io',
+  'hub.docker.com',
+  'index.docker.io',
+  // Kloel pixel CDN must be hardcoded in user-facing embed snippets.
+  'px.kloel.com',
+];
 
 function shouldSkipFile(file: string): boolean {
   return /node_modules|\.(spec|test)\.(ts|tsx|js|jsx)$|__tests__|__mocks__|\.next[/\\]/.test(file);
@@ -94,6 +91,13 @@ function isConfigDocLine(file: string): boolean {
   // Skip files that are explicitly configuration / documentation
   return /(?:README|CHANGELOG|\.md$|\.env|env\.ts$|env\.js$|constants\.ts$|config\.ts$|app-config\.module\.ts$|next\.config\.|jest\.config\.|tsconfig\.|\.eslintrc|\.prettierrc|package\.json$)/.test(
     path.basename(file),
+  );
+}
+
+function isAllowedExternalDomain(domain: string): boolean {
+  const normalized = domain.toLowerCase();
+  return ALLOWED_EXTERNAL_DOMAINS.some(
+    (allowed) => normalized === allowed || normalized.endsWith(`.${allowed}`),
   );
 }
 
@@ -146,7 +150,7 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
           const domain = m[1];
 
           // Skip well-known external services
-          if (ALLOWED_EXTERNAL_RE.test(domain)) {
+          if (isAllowedExternalDomain(domain)) {
             continue;
           }
 

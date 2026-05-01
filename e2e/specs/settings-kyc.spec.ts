@@ -23,11 +23,11 @@ async function revisitSettings(page: Page, request: any) {
 }
 
 async function clickSidebarSection(page: Page, name: string) {
-  await page.getByRole('button', { name: new RegExp(name, 'i') }).click();
+  await page.getByRole('button').filter({ hasText: name }).click();
 }
 
 async function clickSave(page: Page, label = 'Salvar alteracoes') {
-  await page.getByRole('button', { name: new RegExp(label, 'i') }).click();
+  await page.getByRole('button').filter({ hasText: label }).click();
 }
 
 async function saveAndWaitForKycPut(
