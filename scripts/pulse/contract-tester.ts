@@ -12,7 +12,7 @@
 import * as path from 'path';
 import * as fs from 'node:fs';
 import type { Dirent } from 'fs';
-import * as ts from 'typescript';
+import ts from 'typescript';
 import type {
   ContractProvider,
   ContractStatus,

@@ -3,7 +3,7 @@
 
 import * as path from 'path';
 import * as fs from 'fs';
-import * as ts from 'typescript';
+import ts from 'typescript';
 
 import { ensureDir, pathExists, statPath, writeTextFile } from './safe-fs';
 import type { PluginKind, PluginRegistry, PulsePlugin } from './types.plugin-system';

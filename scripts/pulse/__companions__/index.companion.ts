@@ -1,616 +1,777 @@
-async function main() {
-  const loadedEnvFiles = loadPulseLocalEnv(process.cwd());
-  const gitnexusMode = process.argv.includes('gitnexus');
-  if (gitnexusMode) {
-    const { gitnexusCli } = await import('./gitnexus/cli');
-    await gitnexusCli(process.argv.slice(process.argv.indexOf('gitnexus') + 1));
-    return;
-  }
+async function runWalletWithdrawalFlow(
+  spec: PulseManifestFlowSpec,
+  context: FlowRuntimeContext,
+): Promise<PulseFlowResult> {
+  try {
+    const auth = await ensureAuth(context);
+    const amount = getConfiguredWithdrawalAmount(context.manifest);
+    const replayMode = !isTruthyEnv(process.env.PULSE_ALLOW_REAL_WITHDRAWAL);
+    const replayMarker = `pulse-wallet-${Date.now().toString(36)}`;
+    const replayPhone = getReplayPhone(context.manifest);
 
-  if (flags.autonomous) {
-    const autonomyState = await runPulseAutonomousLoop(process.cwd(), {
-      dryRun: flags.dryRun,
-      continuous: flags.continuous,
-      maxIterations: flags.maxIterations,
-      intervalMs: flags.intervalMs,
-      parallelAgents: flags.parallelAgents,
-      maxWorkerRetries: flags.maxWorkerRetries,
-      riskProfile:
-        flags.riskProfile === 'safe' ||
-        flags.riskProfile === 'balanced' ||
-        flags.riskProfile === 'dangerous'
-          ? flags.riskProfile
-          : null,
-      plannerModel: flags.plannerModel,
-      codexModel: flags.codexModel,
-      disableAgentPlanner: flags.disableAgentPlanner,
-      executor: flags.executor,
-    });
-    console.log(JSON.stringify(autonomyState, null, 2));
-    process.exit(autonomyState.status === 'failed' ? 1 : 0);
-  }
-  const bootstrapProfileSelection = flags.profile ? getProfileSelection(flags.profile, null) : null;
-  let profileSelection = bootstrapProfileSelection;
-  const effectiveTarget = deriveEffectiveTarget();
-  const effectiveEnvironment = deriveEffectiveEnvironment();
-  const humanReadableOutput = !flags.json && !flags.guidance && !flags.prove && !flags.vision;
-  let effectiveRequestedSyntheticModes = [
-    ...new Set([...requestedSyntheticModes, ...(profileSelection?.requestedModes || [])]),
-  ];
-  let effectiveActorModeRequested = effectiveRequestedSyntheticModes.length > 0;
-  const tracer = new PulseExecutionTracer(process.cwd(), effectiveTarget, effectiveEnvironment);
+    if (replayMode) {
+      const profileRes = await fetchJsonWithAuth(
+        'PUT',
+        '/kyc/profile',
+        auth.token,
+        buildReplayProfilePayload(context.manifest, auth, replayPhone, replayMarker),
+      );
 
-  const config = detectConfig(process.cwd());
-  config.certificationProfile = flags.profile;
-  const fullScanTimeoutMs = deriveFullScanTimeoutMs(
-    config,
-    bootstrapProfileSelection?.includeParser,
-    bootstrapProfileSelection?.parserTimeoutMs,
-    bootstrapProfileSelection?.phaseTimeoutMs,
-  );
-  const mode = effectiveEnvironment.toUpperCase();
-  printPulseStartupSummary({
-    humanReadableOutput,
-    config,
-    mode,
-    modeHasRuntimeParsers: mode !== 'SCAN',
-    target: effectiveTarget,
-    showTarget: Boolean(flags.final || flags.tier !== null || flags.profile),
-    actorModes: effectiveRequestedSyntheticModes,
-    loadedEnvFiles,
-  });
-  printRegisteredStagePlan(humanReadableOutput);
+      if (!profileRes.ok) {
+        return buildFailureResult(
+          spec,
+          `wallet-withdrawal replay could not update KYC profile: ${compactSummary(profileRes.body) || `HTTP ${profileRes.status}`}.`,
+          { httpStatus: profileRes.status },
+          { smokeExecuted: false, replayExecuted: true },
+        );
+      }
 
-  // 2. Full scan
-  const startTime = Date.now();
-  let scanResult = await runRegisteredStage(
-    tracer,
-    'full-scan',
-    () =>
-      fullScan(config, {
-        includeParser: bootstrapProfileSelection?.includeParser,
-        parserTimeoutMs: bootstrapProfileSelection?.parserTimeoutMs,
-        tracer,
-      }),
-    {
-      timeoutMs: fullScanTimeoutMs,
-      metadata: {
-        profile: flags.profile || 'none',
-        environment: effectiveEnvironment,
-        parserTimeoutMs: bootstrapProfileSelection?.parserTimeoutMs ?? 0,
-        dynamicTimeoutMs: fullScanTimeoutMs ?? 0,
-      },
-    },
-  );
-  const { health, coreData } = scanResult;
-  profileSelection = flags.profile ? getProfileSelection(flags.profile, scanResult.manifest) : null;
-  effectiveRequestedSyntheticModes = [
-    ...new Set([...requestedSyntheticModes, ...(profileSelection?.requestedModes || [])]),
-  ];
-  effectiveActorModeRequested = effectiveRequestedSyntheticModes.length > 0;
-  let certification = scanResult.certification;
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-  if (humanReadableOutput) {
-    console.log(`  Done in ${elapsed}s`);
-  }
-  tracer.setContext(effectiveTarget, effectiveEnvironment);
+      const fiscalRes = await fetchJsonWithAuth('PUT', '/kyc/fiscal', auth.token, {
+        type: 'PF',
+        cpf: '12345678909',
+        fullName: 'Pulse Replay Wallet',
+        cep: '01310930',
+        city: 'Sao Paulo',
+        state: 'SP',
+        street: 'Avenida Paulista',
+        number: '1000',
+        neighborhood: 'Bela Vista',
+      });
 
-  const runtimeProbeIds = getRuntimeProbeIds(profileSelection?.runtimeProbeIds);
-  tracer.startPhase('runtime-evidence', {
-    ...buildStageMetadata('runtime-evidence'),
-    probeCount: runtimeProbeIds.length,
-  });
-  const runtimeProbes: PulseRuntimeProbe[] = [];
-  for (const probeId of runtimeProbeIds) {
-    try {
-      const probe = await runPhaseWithTrace(
-        tracer,
-        `runtime:${probeId}`,
-        () =>
-          collectRuntimeProbe(effectiveEnvironment, probeId, {
-            requireDbConnectivity: profileSelection ? true : undefined,
-          }),
-        {
-          timeoutMs: 12_000,
-          metadata: {
-            probeId,
+      if (!fiscalRes.ok) {
+        return buildFailureResult(
+          spec,
+          `wallet-withdrawal replay could not update KYC fiscal data: ${compactSummary(fiscalRes.body) || `HTTP ${fiscalRes.status}`}.`,
+          { httpStatus: fiscalRes.status },
+          { smokeExecuted: false, replayExecuted: true },
+        );
+      }
+
+      const bankRes = await fetchJsonWithAuth('PUT', '/kyc/bank', auth.token, {
+        bankName: 'PULSE Replay Bank',
+        bankCode: '260',
+        agency: '0001',
+        account: String(Date.now()).slice(-6),
+        accountType: 'CHECKING',
+        pixKey: `${replayMarker}@pulse.kloel`,
+        pixKeyType: 'EMAIL',
+        holderName: 'Pulse Replay Wallet',
+        holderDocument: '12345678909',
+        isDefault: true,
+      });
+
+      if (!bankRes.ok) {
+        return buildFailureResult(
+          spec,
+          `wallet-withdrawal replay could not provision banking data: ${compactSummary(bankRes.body) || `HTTP ${bankRes.status}`}.`,
+          { httpStatus: bankRes.status },
+          { smokeExecuted: false, replayExecuted: true },
+        );
+      }
+
+      const autoCheckRes = await fetchJsonWithAuth('POST', '/kyc/auto-check', auth.token, {});
+      const statusRes = await fetchJsonWithAuth('GET', '/kyc/status', auth.token);
+      const completionRes = await fetchJsonWithAuth('GET', '/kyc/completion', auth.token);
+      const completion = Number(completionRes.body?.percentage);
+      const kycStatus = String(statusRes.body?.kycStatus || '');
+      const approved = autoCheckRes.body?.approved === true || kycStatus === 'approved';
+
+      if (!approved) {
+        return buildFailureResult(
+          spec,
+          `wallet-withdrawal replay could not approve KYC automatically. Current status: ${kycStatus || 'unknown'} (${Number.isFinite(completion) ? completion : 'n/a'}%).`,
+          {
+            kycStatus: kycStatus || 'unknown',
+            kycCompletion: Number.isFinite(completion) ? completion : -1,
           },
-          onTimeout: () => buildTimedOutRuntimeProbe(probeId),
+          { smokeExecuted: false, replayExecuted: true },
+        );
+      }
+    }
+
+    const balanceRes = await fetchJsonWithAuth(
+      'GET',
+      `/kloel/wallet/${auth.workspaceId}/balance`,
+      auth.token,
+    );
+
+    if (!balanceRes.ok) {
+      return buildMissingEvidenceResult(
+        spec,
+        `wallet-withdrawal could not read balance: ${compactSummary(balanceRes.body) || `HTTP ${balanceRes.status}`}.`,
+        { httpStatus: balanceRes.status },
+      );
+    }
+
+    let availableBefore = Number(balanceRes.body?.available);
+    let seededReplayCredit = false;
+    let replayCreditTransactionId = '';
+
+    if (replayMode && (!Number.isFinite(availableBefore) || availableBefore < amount)) {
+      const saleAmount = round2(Math.max(amount + 5, amount * 1.5));
+      const processSaleRes = await fetchJsonWithAuth(
+        'POST',
+        `/kloel/wallet/${auth.workspaceId}/process-sale`,
+        auth.token,
+        {
+          amount: saleAmount,
+          saleId: replayMarker,
+          description: `PULSE replay credit ${replayMarker}`,
         },
       );
-      runtimeProbes.push(probe);
-    } catch (error) {
-      runtimeProbes.push(buildFailedRuntimeProbe(probeId, error));
-    }
-  }
-  const runtimeEvidence = summarizeRuntimeEvidence(effectiveEnvironment, runtimeProbes);
-  tracer.finishPhase('runtime-evidence', 'passed', {
-    metadata: {
-      executedChecks: runtimeEvidence.executedChecks.length,
-      missingEvidence: runtimeEvidence.probes.filter((probe) => probe.status === 'missing_evidence')
-        .length,
-      failedProbes: runtimeEvidence.probes.filter((probe) => probe.status === 'failed').length,
-    },
-  });
-  const observabilityEvidence = await runRegisteredStage(
-    tracer,
-    'observability-evidence',
-    () => collectObservabilityEvidence(config.rootDir, runtimeEvidence),
-    { timeoutMs: 10_000 },
-  );
-  const recoveryEvidence = await runRegisteredStage(
-    tracer,
-    'recovery-evidence',
-    () => collectRecoveryEvidence(config.rootDir),
-    { timeoutMs: 10_000 },
-  );
-  let browserEvidence = await buildBrowserEvidenceForIndex({
-    tracer,
-    flags,
-    humanReadableOutput,
-    effectiveEnvironment,
-    profileSelection,
-    runtimeEvidence,
-    certification,
-  });
 
-  const flowEnvironment = effectiveActorModeRequested ? 'total' : effectiveEnvironment;
-
-  const flowEvidence = await runRegisteredStage(
-    tracer,
-    'declared-flows',
-    () =>
-      runDeclaredFlows({
-        environment: flowEnvironment,
-        manifest: scanResult.manifest,
-        health: scanResult.health,
-        parserInventory: scanResult.parserInventory,
-        flowIds: profileSelection?.flowIds,
-        enforceDiagnosticPreconditions: profileSelection?.profile !== 'core-critical',
-      }),
-    {
-      timeoutMs: 90_000,
-      metadata: {
-        flowCount: profileSelection?.flowIds.length || 0,
-        environment: flowEnvironment,
-      },
-      onTimeout: () => buildTimedOutFlowEvidence(profileSelection?.flowIds || []),
-    },
-  );
-
-  const invariantEvidence = await runRegisteredStage(
-    tracer,
-    'declared-invariants',
-    () =>
-      Promise.resolve(
-        runDeclaredInvariants({
-          environment: effectiveEnvironment,
-          manifest: scanResult.manifest,
-          health: scanResult.health,
-          parserInventory: scanResult.parserInventory,
-          invariantIds: profileSelection?.invariantIds,
-          enforceDiagnosticDependencies: profileSelection?.profile !== 'core-critical',
-        }),
-      ),
-    {
-      timeoutMs: 30_000,
-      metadata: {
-        invariantCount: profileSelection?.invariantIds.length || 0,
-      },
-      onTimeout: () => buildTimedOutInvariantEvidence(profileSelection?.invariantIds || []),
-    },
-  );
-
-  const syntheticEvidence = await runRegisteredStage(
-    tracer,
-    'synthetic-actors',
-    () =>
-      Promise.resolve(
-        runSyntheticActors({
-          rootDir: config.rootDir,
-          environment: effectiveEnvironment,
-          manifest: scanResult.manifest,
-          resolvedManifest: scanResult.resolvedManifest,
-          codebaseTruth: scanResult.codebaseTruth,
-          runtimeEvidence,
-          browserEvidence,
-          flowEvidence,
-          requestedModes: effectiveRequestedSyntheticModes,
-          scenarioIds: profileSelection?.scenarioIds,
-        }),
-      ),
-    {
-      timeoutMs: 10 * 60 * 1000,
-      metadata: {
-        requestedModes: effectiveRequestedSyntheticModes.join(','),
-        scenarioCount: profileSelection?.scenarioIds.length || 0,
-      },
-      onTimeout: () => {
-        const requestedScenarioIds = profileSelection?.scenarioIds || [];
-        const customerScenarioIds = requestedScenarioIds.filter((id) => id.startsWith('customer-'));
-        const operatorScenarioIds = requestedScenarioIds.filter((id) => id.startsWith('operator-'));
-        const adminScenarioIds = requestedScenarioIds.filter((id) => id.startsWith('admin-'));
-        const soakScenarioIds = requestedScenarioIds.filter(
-          (id) => id.startsWith('system-') || id.startsWith('soak-'),
+      if (!processSaleRes.ok || !processSaleRes.body?.transactionId) {
+        return buildFailureResult(
+          spec,
+          `wallet-withdrawal replay could not seed wallet balance: ${compactSummary(processSaleRes.body) || `HTTP ${processSaleRes.status}`}.`,
+          { httpStatus: processSaleRes.status, requestedAmount: amount },
+          { smokeExecuted: false, replayExecuted: true },
         );
-        return {
-          customer: buildTimedOutActorEvidence('customer', customerScenarioIds),
-          operator: buildTimedOutActorEvidence('operator', operatorScenarioIds),
-          admin: buildTimedOutActorEvidence('admin', adminScenarioIds),
-          soak: buildTimedOutActorEvidence('soak', soakScenarioIds),
-          syntheticCoverage: {
-            executed: false,
-            artifactPaths: ['PULSE_SCENARIO_COVERAGE.json'],
-            summary: 'Synthetic coverage timed out before scenario execution completed.',
-            totalPages: 0,
-            userFacingPages: 0,
-            coveredPages: 0,
-            uncoveredPages: [],
-            results: [],
-          },
-          worldState: buildTimedOutWorldState(
-            runtimeEvidence.backendUrl,
-            runtimeEvidence.frontendUrl,
-            requestedScenarioIds,
-          ),
-        };
+      }
+
+      replayCreditTransactionId = String(processSaleRes.body.transactionId);
+      const confirmRes = await fetchJsonWithAuth(
+        'POST',
+        `/kloel/wallet/${auth.workspaceId}/confirm/${replayCreditTransactionId}`,
+        auth.token,
+        {},
+      );
+
+      if (!confirmRes.ok || confirmRes.body?.status !== 'confirmed') {
+        return buildFailureResult(
+          spec,
+          `wallet-withdrawal replay could not confirm seeded wallet credit: ${compactSummary(confirmRes.body) || `HTTP ${confirmRes.status}`}.`,
+          { httpStatus: confirmRes.status, transactionId: replayCreditTransactionId },
+          { smokeExecuted: false, replayExecuted: true },
+        );
+      }
+
+      seededReplayCredit = true;
+      const replayBalanceRes = await fetchJsonWithAuth(
+        'GET',
+        `/kloel/wallet/${auth.workspaceId}/balance`,
+        auth.token,
+      );
+      if (!replayBalanceRes.ok) {
+        return buildFailureResult(
+          spec,
+          `wallet-withdrawal replay seeded balance but could not read it back: ${compactSummary(replayBalanceRes.body) || `HTTP ${replayBalanceRes.status}`}.`,
+          { httpStatus: replayBalanceRes.status, transactionId: replayCreditTransactionId },
+          { smokeExecuted: false, replayExecuted: true },
+        );
+      }
+      availableBefore = Number(replayBalanceRes.body?.available);
+    }
+
+    if (!Number.isFinite(availableBefore) || availableBefore < amount) {
+      return buildMissingEvidenceResult(
+        spec,
+        `wallet-withdrawal requires available balance >= ${amount}. Current available balance: ${Number.isFinite(availableBefore) ? availableBefore : 'unavailable'}.`,
+        {
+          availableBefore: Number.isFinite(availableBefore) ? availableBefore : -1,
+          requestedAmount: amount,
+        },
+        { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) },
+      );
+    }
+
+    const accountsRes = await fetchJsonWithAuth(
+      'GET',
+      `/kloel/wallet/${auth.workspaceId}/bank-accounts`,
+      auth.token,
+    );
+    if (!accountsRes.ok) {
+      return buildMissingEvidenceResult(
+        spec,
+        `wallet-withdrawal could not read bank accounts: ${compactSummary(accountsRes.body) || `HTTP ${accountsRes.status}`}.`,
+        { httpStatus: accountsRes.status },
+      );
+    }
+
+    const bankAccounts = Array.isArray(accountsRes.body?.accounts)
+      ? (accountsRes.body.accounts as Array<Record<string, unknown>>)
+      : [];
+    let createdBankAccount = false;
+
+    if (bankAccounts.length === 0) {
+      const addAccountRes = await fetchJsonWithAuth(
+        'POST',
+        `/kloel/wallet/${auth.workspaceId}/bank-accounts`,
+        auth.token,
+        {
+          bankName: 'PULSE Test Bank',
+          pixKey: process.env.PULSE_TEST_PIX_KEY || `pulse+wallet-${Date.now()}@kloel.local`,
+          bankCode: '260',
+          agency: '0001',
+          account: String(Date.now()).slice(-6),
+          accountType: 'checking',
+          isDefault: true,
+        },
+      );
+
+      if (!addAccountRes.ok || addAccountRes.body?.success === false) {
+        const summary = compactSummary(addAccountRes.body) || `HTTP ${addAccountRes.status}`;
+        return isProvisioningGap(summary)
+          ? buildMissingEvidenceResult(
+              spec,
+              `wallet-withdrawal could not provision a bank account: ${summary}.`,
+              { httpStatus: addAccountRes.status },
+              { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) },
+            )
+          : buildFailureResult(
+              spec,
+              `wallet-withdrawal failed while provisioning a bank account: ${summary}.`,
+              { httpStatus: addAccountRes.status },
+              { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) },
+            );
+      }
+
+      createdBankAccount = true;
+    }
+
+    const beforeTransactionsRes = await fetchJsonWithAuth(
+      'GET',
+      `/kloel/wallet/${auth.workspaceId}/transactions?page=1&type=withdrawal`,
+      auth.token,
+    );
+    const beforeTransactions = Array.isArray(beforeTransactionsRes.body?.transactions)
+      ? (beforeTransactionsRes.body.transactions as Array<Record<string, unknown>>)
+      : [];
+
+    const withdrawRes = await fetchJsonWithAuth(
+      'POST',
+      `/kloel/wallet/${auth.workspaceId}/withdraw`,
+      auth.token,
+      { amount },
+    );
+
+    if (!withdrawRes.ok || withdrawRes.body?.success === false) {
+      const summary = compactSummary(withdrawRes.body) || `HTTP ${withdrawRes.status}`;
+      return isProvisioningGap(summary)
+        ? buildMissingEvidenceResult(
+            spec,
+            `wallet-withdrawal could not execute in the current workspace: ${summary}.`,
+            {
+              httpStatus: withdrawRes.status,
+              requestedAmount: amount,
+            },
+            { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) },
+          )
+        : buildFailureResult(
+            spec,
+            `wallet-withdrawal request failed: ${summary}.`,
+            {
+              httpStatus: withdrawRes.status,
+              requestedAmount: amount,
+            },
+            { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) },
+          );
+    }
+
+    const transactionId = String(withdrawRes.body?.transactionId || '').trim();
+    const afterBalanceRes = await fetchJsonWithAuth(
+      'GET',
+      `/kloel/wallet/${auth.workspaceId}/balance`,
+      auth.token,
+    );
+    const afterTransactionsRes = await fetchJsonWithAuth(
+      'GET',
+      `/kloel/wallet/${auth.workspaceId}/transactions?page=1&type=withdrawal`,
+      auth.token,
+    );
+
+    if (!afterBalanceRes.ok || !afterTransactionsRes.ok) {
+      return buildFailureResult(
+        spec,
+        `wallet-withdrawal executed but the readback oracle failed: balance HTTP ${afterBalanceRes.status}, transactions HTTP ${afterTransactionsRes.status}.`,
+        {
+          transactionId: transactionId || 'unknown',
+          balanceStatus: afterBalanceRes.status,
+          transactionsStatus: afterTransactionsRes.status,
+        },
+        { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) },
+      );
+    }
+
+    const availableAfter = Number(afterBalanceRes.body?.available);
+    const availableDelta = round2(availableAfter - availableBefore);
+    const afterTransactions = Array.isArray(afterTransactionsRes.body?.transactions)
+      ? (afterTransactionsRes.body.transactions as Array<Record<string, unknown>>)
+      : [];
+    const matchedTransaction = afterTransactions.find(
+      (item) => String(item.id || '') === transactionId,
+    );
+    const duplicateCount = afterTransactions.filter(
+      (item) => String(item.id || '') === transactionId,
+    ).length;
+    const deltaMatches =
+      Number.isFinite(availableAfter) && Math.abs(availableDelta + amount) <= 0.02;
+
+    if (!transactionId || !matchedTransaction || duplicateCount !== 1 || !deltaMatches) {
+      return buildFailureResult(
+        spec,
+        'wallet-withdrawal did not converge in the ledger oracle after the mutation.',
+        {
+          transactionFound: Boolean(matchedTransaction),
+          duplicateCount,
+          availableBefore: round2(availableBefore),
+          availableAfter: Number.isFinite(availableAfter) ? round2(availableAfter) : -1,
+          availableDelta,
+          requestedAmount: amount,
+          transactionId: transactionId || 'missing',
+          transactionsBefore: beforeTransactions.length,
+          transactionsAfter: afterTransactions.length,
+          bankAccountCreated: createdBankAccount,
+          seededReplayCredit,
+          replayCreditTransactionId: replayCreditTransactionId || 'none',
+        },
+        { smokeExecuted: false, replayExecuted: replayMode || replayEnabled(spec) },
+      );
+    }
+
+    return buildPassedResult(
+      spec,
+      replayMode
+        ? `wallet-withdrawal replay passed with transaction ${transactionId} and ledger delta ${availableDelta}. Real withdrawal smoke remains opt-in.`
+        : `wallet-withdrawal passed with transaction ${transactionId} and ledger delta ${availableDelta}.`,
+      {
+        transactionId,
+        requestedAmount: amount,
+        availableBefore: round2(availableBefore),
+        availableAfter: round2(availableAfter),
+        availableDelta,
+        transactionsBefore: beforeTransactions.length,
+        transactionsAfter: afterTransactions.length,
+        bankAccountCreated: createdBankAccount,
+        seededReplayCredit,
+        replayCreditTransactionId: replayCreditTransactionId || 'none',
+        smokePending: replayMode && spec.smokeRequired,
       },
-    },
-  );
-
-  browserEvidence = deriveBrowserEvidenceFromActors(
-    effectiveActorModeRequested,
-    browserEvidence,
-    syntheticEvidence,
-  );
-
-  const finalExecutionEvidencePayload = {
-    ...certification.evidenceSummary,
-    runtime: runtimeEvidence,
-    browser: browserEvidence,
-    flows: flowEvidence,
-    invariants: invariantEvidence,
-    observability: observabilityEvidence,
-    recovery: recoveryEvidence,
-    customer: syntheticEvidence.customer,
-    operator: syntheticEvidence.operator,
-    admin: syntheticEvidence.admin,
-    soak: syntheticEvidence.soak,
-    syntheticCoverage: syntheticEvidence.syntheticCoverage,
-    worldState: syntheticEvidence.worldState,
-    executionTrace: tracer.getSnapshot(),
-  };
-  const derivedStructuralGraph = buildStructuralGraph({
-    rootDir: config.rootDir,
-    coreData: scanResult.coreData,
-    scopeState: scanResult.scopeState,
-    resolvedManifest: scanResult.resolvedManifest,
-    executionEvidence: finalExecutionEvidencePayload,
-  });
-  const derivedCapabilityState = buildCapabilityState({
-    structuralGraph: derivedStructuralGraph,
-    scopeState: scanResult.scopeState,
-    codacyEvidence: scanResult.codacyEvidence,
-    resolvedManifest: scanResult.resolvedManifest,
-    executionEvidence: finalExecutionEvidencePayload,
-  });
-  const derivedFlowProjection = buildFlowProjection({
-    structuralGraph: derivedStructuralGraph,
-    capabilityState: derivedCapabilityState,
-    codebaseTruth: scanResult.codebaseTruth,
-    resolvedManifest: scanResult.resolvedManifest,
-    scopeState: scanResult.scopeState,
-    executionEvidence: finalExecutionEvidencePayload,
-  });
-  const derivedExternalSignalState = buildExternalSignalState({
-    rootDir: config.rootDir,
-    scopeState: scanResult.scopeState,
-    codacyEvidence: scanResult.codacyEvidence,
-    capabilityState: derivedCapabilityState,
-    flowProjection: derivedFlowProjection,
-    liveExternalState: createExternalSignalProfileState(
-      effectiveTarget.profile,
-      effectiveTarget.certificationScope,
-    ),
-  });
-  const derivedExecutionChains = buildExecutionChains({
-    structuralGraph: derivedStructuralGraph,
-  });
-  const derivedExecutionMatrix = buildExecutionMatrix({
-    structuralGraph: derivedStructuralGraph,
-    scopeState: scanResult.scopeState,
-    executionChains: derivedExecutionChains,
-    capabilityState: derivedCapabilityState,
-    flowProjection: derivedFlowProjection,
-    executionEvidence: finalExecutionEvidencePayload,
-    externalSignalState: derivedExternalSignalState,
-  });
-  buildPathCoverageState(config.rootDir, derivedExecutionMatrix);
-
-  const artifactsOverride = buildRegisteredArtifactOverrides({
-    stageId: 'self-trust-verification',
-    certification: scanResult.certification,
-    externalSignalState: derivedExternalSignalState,
-  });
-
-  const selfTrustReport = await runRegisteredStage(
-    tracer,
-    'self-trust-verification',
-    () =>
-      Promise.resolve(
-        runSelfTrustChecks({
-          manifestPath: scanResult.manifestResult.manifestPath,
-          parsersDir: `${config.rootDir}/scripts/pulse/parsers`,
-          evidenceFile: `${config.rootDir}/PULSE_ARTIFACT_INDEX.json`,
-          repoRoot: config.rootDir,
-          breaks: scanResult.health.breaks,
-          artifactsOverride,
-        }),
-      ),
-    { timeoutMs: 5_000 },
-  );
-
-  const previousDirective = readOptionalJson<PulseDirectiveSnapshot>(
-    `${config.rootDir}/PULSE_CLI_DIRECTIVE.json`,
-  );
-  const previousCertificate = readOptionalJson<{ status?: string; rawContent?: string }>(
-    `${config.rootDir}/PULSE_CERTIFICATE.json`,
-  );
-  const previousCertificateSnapshot: PulseCertificateSnapshot | null = previousCertificate
-    ? { status: previousCertificate.status }
-    : null;
-  const autonomyStateSnapshot =
-    readOptionalJson<PulseAutonomyStateSnapshot>(
-      `${config.rootDir}/.pulse/current/PULSE_AUTONOMY_STATE.json`,
-    ) ?? null;
-
-  certification = await runRegisteredStage(
-    tracer,
-    'final-certification',
-    () =>
-      Promise.resolve(
-        computeCertification({
-          rootDir: config.rootDir,
-          manifestResult: scanResult.manifestResult,
-          parserInventory: scanResult.parserInventory,
-          health: scanResult.health,
-          codebaseTruth: scanResult.codebaseTruth,
-          resolvedManifest: scanResult.resolvedManifest,
-          scopeState: scanResult.scopeState,
-          codacyEvidence: scanResult.codacyEvidence,
-          structuralGraph: derivedStructuralGraph,
-          capabilityState: derivedCapabilityState,
-          flowProjection: derivedFlowProjection,
-          externalSignalState: derivedExternalSignalState,
-          executionMatrix: derivedExecutionMatrix,
-          certificationTarget: effectiveTarget,
-          executionEvidence: finalExecutionEvidencePayload,
-          previousDirective,
-          previousCertificate: previousCertificateSnapshot,
-          autonomyState: autonomyStateSnapshot,
-          selfTrustReport,
-        }),
-      ),
-    { timeoutMs: 15_000 },
-  );
-  certification = {
-    ...certification,
-    evidenceSummary: {
-      ...certification.evidenceSummary,
-      runtime: runtimeEvidence,
-      browser: browserEvidence,
-      flows: flowEvidence,
-      invariants: invariantEvidence,
-      observability: observabilityEvidence,
-      recovery: recoveryEvidence,
-      customer: syntheticEvidence.customer,
-      operator: syntheticEvidence.operator,
-      admin: syntheticEvidence.admin,
-      soak: syntheticEvidence.soak,
-      syntheticCoverage: syntheticEvidence.syntheticCoverage,
-      worldState: syntheticEvidence.worldState,
-      executionTrace: tracer.getSnapshot(),
-    },
-    selfTrustReport,
-  };
-
-  const structuralGraph = buildStructuralGraph({
-    rootDir: config.rootDir,
-    coreData: scanResult.coreData,
-    scopeState: scanResult.scopeState,
-    resolvedManifest: scanResult.resolvedManifest,
-    executionEvidence: certification.evidenceSummary,
-  });
-  const executionChains = buildExecutionChains({
-    structuralGraph,
-  });
-  const productGraph = buildProductModel({
-    structuralGraph,
-    scopeState: scanResult.scopeState,
-    resolvedManifest: scanResult.resolvedManifest,
-  });
-  const capabilityState = buildCapabilityState({
-    structuralGraph,
-    scopeState: scanResult.scopeState,
-    codacyEvidence: scanResult.codacyEvidence,
-    resolvedManifest: scanResult.resolvedManifest,
-    executionEvidence: certification.evidenceSummary,
-  });
-  const flowProjection = buildFlowProjection({
-    structuralGraph,
-    capabilityState,
-    codebaseTruth: scanResult.codebaseTruth,
-    resolvedManifest: scanResult.resolvedManifest,
-    scopeState: scanResult.scopeState,
-    executionEvidence: certification.evidenceSummary,
-  });
-
-  // Run external sources orchestration in parallel
-  const externalSourcesConfig: ExternalSourcesConfig = {
-    rootDir: config.rootDir,
-    github: {
-      owner: process.env.GITHUB_OWNER || '',
-      repo: process.env.GITHUB_REPO || '',
-      token: process.env.GITHUB_TOKEN,
-    },
-    sentry: {
-      authToken: process.env.SENTRY_AUTH_TOKEN,
-      org: process.env.SENTRY_ORG,
-      project: process.env.SENTRY_PROJECT,
-    },
-    datadog: {
-      apiKey: process.env.DATADOG_API_KEY,
-      appKey: process.env.DATADOG_APP_KEY,
-      site: process.env.DATADOG_SITE,
-    },
-    prometheus: {
-      baseUrl: process.env.PROMETHEUS_BASE_URL || process.env.PULSE_PROMETHEUS_URL,
-      bearerToken: process.env.PROMETHEUS_BEARER_TOKEN || process.env.PULSE_PROMETHEUS_TOKEN,
-      query: process.env.PROMETHEUS_QUERY,
-    },
-    codecov: {
-      token: process.env.CODECOV_TOKEN,
-      owner: process.env.GITHUB_OWNER || '',
-      repo: process.env.GITHUB_REPO || '',
-    },
-    dependabot: {
-      token: process.env.GITHUB_TOKEN,
-      owner: process.env.GITHUB_OWNER || '',
-      repo: process.env.GITHUB_REPO || '',
-    },
-    profile: effectiveTarget.profile || undefined,
-    certificationScope: effectiveTarget.certificationScope || effectiveTarget.profile || undefined,
-  };
-  const externalSourcesTask = runExternalSourcesOrchestrator(externalSourcesConfig).catch(
-    () => null,
-  );
-  const externalSourcesTimeoutMs = deriveExternalSourcesTimeoutMs(externalSourcesConfig);
-
-  const liveExternalState = await runRegisteredStage(
-    tracer,
-    'external-sources-orchestration',
-    () => externalSourcesTask,
-    {
-      timeoutMs: externalSourcesTimeoutMs,
-      onTimeout: () => null,
-    },
-  );
-  const externalSignalState = buildExternalSignalState({
-    rootDir: config.rootDir,
-    scopeState: scanResult.scopeState,
-    codacyEvidence: scanResult.codacyEvidence,
-    capabilityState,
-    flowProjection,
-    liveExternalState,
-  });
-  const executionMatrix = buildExecutionMatrix({
-    structuralGraph,
-    scopeState: scanResult.scopeState,
-    executionChains,
-    capabilityState,
-    flowProjection,
-    executionEvidence: certification.evidenceSummary,
-    externalSignalState,
-  });
-  buildPathCoverageState(config.rootDir, executionMatrix);
-  certification = computeCertification({
-    rootDir: config.rootDir,
-    manifestResult: scanResult.manifestResult,
-    parserInventory: scanResult.parserInventory,
-    health: scanResult.health,
-    codebaseTruth: scanResult.codebaseTruth,
-    resolvedManifest: scanResult.resolvedManifest,
-    scopeState: scanResult.scopeState,
-    codacyEvidence: scanResult.codacyEvidence,
-    structuralGraph,
-    capabilityState,
-    flowProjection,
-    externalSignalState,
-    executionMatrix,
-    certificationTarget: effectiveTarget,
-    executionEvidence: finalExecutionEvidencePayload,
-    previousDirective,
-    previousCertificate: previousCertificateSnapshot,
-    autonomyState: autonomyStateSnapshot,
-    selfTrustReport,
-  });
-  certification = {
-    ...certification,
-    selfTrustReport,
-  };
-  const parityGaps = buildParityGaps({
-    codebaseTruth: scanResult.codebaseTruth,
-    capabilityState,
-    flowProjection,
-    certification,
-    resolvedManifest: scanResult.resolvedManifest,
-    health: scanResult.health,
-  });
-  const productVision = buildProductVision({
-    capabilityState,
-    flowProjection,
-    certification,
-    scopeState: scanResult.scopeState,
-    codacyEvidence: scanResult.codacyEvidence,
-    resolvedManifest: scanResult.resolvedManifest,
-    parityGaps,
-    externalSignalState,
-  });
-
-  scanResult = {
-    ...scanResult,
-    structuralGraph,
-    executionChains,
-    executionMatrix,
-    productGraph,
-    capabilityState,
-    flowProjection,
-    parityGaps,
-    externalSignalState,
-    productVision,
-    certification,
-  };
-
-  handlePulseOutput({
-    flags,
-    scanResult,
-    health,
-    certification,
-    config,
-    coreData,
-    selfTrustReport,
-  });
-
-  const postWriteConsistency = runCrossArtifactConsistencyCheck(config.rootDir);
-  if (!postWriteConsistency.pass) {
-    console.error('\n⚠️  Post-write cross-artifact consistency check FAILED:');
-    for (const d of postWriteConsistency.divergences) {
-      console.error(`  - ${d.field}: ${d.sources.length} artifacts disagree`);
-    }
-  } else {
-    console.log('\n✅ Post-write cross-artifact consistency: PASS');
-  }
-
-  // 5. Watch mode
-  if (flags.watch) {
-    await startDaemon(config);
-  } else {
-    if (queryModeRequested) {
-      process.exit(0);
-    }
-
-    if (flags.certify) {
-      process.exit(certification.status === 'CERTIFIED' ? 0 : 1);
-    }
-
-    const criticalBreaks = health.breaks.filter((b) => b.severity === 'high').length;
-    process.exit(criticalBreaks > 0 ? 1 : 0);
+      { smokeExecuted: !replayMode, replayExecuted: replayMode || replayEnabled(spec) },
+    );
+  } catch (error) {
+    return buildMissingEvidenceResult(
+      spec,
+      `wallet-withdrawal could not authenticate or reach runtime prerequisites: ${(error as Error).message}.`,
+      undefined,
+      { smokeExecuted: false, replayExecuted: replayEnabled(spec) },
+    );
   }
 }
 
-main().catch((e) => {
-  console.error('PULSE error:', e.message || e);
-  console.error(e.stack?.split('\n').slice(0, 8).join('\n'));
-  process.exit(2);
-});
+async function wait(ms: number): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function runWhatsappMessageFlow(
+  spec: PulseManifestFlowSpec,
+  context: FlowRuntimeContext,
+): Promise<PulseFlowResult> {
+  try {
+    const auth = await ensureAuth(context);
+    const smokeMode = isTruthyEnv(process.env.PULSE_ALLOW_REAL_WHATSAPP_SEND);
+    const testPhone = smokeMode
+      ? normalizePhone(getConfiguredTestPhone(context.manifest))
+      : getReplayPhone(context.manifest);
+
+    if (smokeMode && !testPhone) {
+      return buildMissingEvidenceResult(
+        spec,
+        'whatsapp-message-send requires an explicit PULSE_TEST_PHONE or adapterConfig.pulseTestPhone to execute the real send smoke safely.',
+        undefined,
+        { smokeExecuted: false, replayExecuted: replayEnabled(spec) },
+      );
+    }
+
+    const inboundMarker = `PULSE:IN:${Date.now().toString(36)}`;
+    const outboundMarker = `PULSE:OUT:${Date.now().toString(36)}`;
+
+    await fetchJsonWithAuth('POST', `/whatsapp/${auth.workspaceId}/opt-in/bulk`, auth.token, {
+      phones: [testPhone],
+    });
+
+    const incomingRes = await fetchJsonWithAuth(
+      'POST',
+      `/whatsapp/${auth.workspaceId}/incoming`,
+      auth.token,
+      { from: testPhone, message: inboundMarker },
+    );
+
+    if (!incomingRes.ok || incomingRes.body?.error) {
+      const summary = compactSummary(incomingRes.body) || `HTTP ${incomingRes.status}`;
+      return isProvisioningGap(summary)
+        ? buildMissingEvidenceResult(
+            spec,
+            `whatsapp-message-send replay could not seed the conversation: ${summary}.`,
+            { httpStatus: incomingRes.status, failureCode: inferWhatsappFailureCode(summary) },
+            { smokeExecuted: false, replayExecuted: true },
+          )
+        : buildFailureResult(
+            spec,
+            `whatsapp-message-send replay failed while seeding the conversation: ${summary}.`,
+            { httpStatus: incomingRes.status },
+            { smokeExecuted: false, replayExecuted: true },
+          );
+    }
+
+    let matchedConversationId = '';
+    let inboundMessageId = '';
+    let outboundMessageId = '';
+    let readbackCount = 0;
+
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const conversationsRes = await fetchJsonWithAuth(
+        'GET',
+        `/inbox/${auth.workspaceId}/conversations`,
+        auth.token,
+      );
+
+      if (!conversationsRes.ok) {
+        await wait(1000);
+        continue;
+      }
+
+      const conversations = Array.isArray(conversationsRes.body)
+        ? (conversationsRes.body as Array<Record<string, unknown>>)
+        : [];
+      const matchedConversation = conversations.find((item) => {
+        const contact = item.contact as Record<string, unknown> | undefined;
+        return normalizePhone(String(contact?.phone || '')) === testPhone;
+      });
+
+      if (!matchedConversation?.id) {
+        await wait(1000);
+        continue;
+      }
+
+      matchedConversationId = String(matchedConversation.id);
+      const messagesRes = await fetchJsonWithAuth(
+        'GET',
+        `/inbox/conversations/${matchedConversationId}/messages`,
+        auth.token,
+      );
+
+      if (!messagesRes.ok) {
+        await wait(1000);
+        continue;
+      }
+
+      const messages = Array.isArray(messagesRes.body)
+        ? (messagesRes.body as Array<Record<string, unknown>>)
+        : [];
+      readbackCount = messages.length;
+      const matchedInbound = messages.find((item) =>
+        String(item.content || '').includes(inboundMarker),
+      );
+      if (matchedInbound) {
+        inboundMessageId = String(matchedInbound.id || '');
+        break;
+      }
+
+      await wait(1000);
+    }
+
+    if (!matchedConversationId || !inboundMessageId) {
+      return buildFailureResult(
+        spec,
+        'whatsapp-message-send replay could not observe the seeded inbound message in the inbox readback window.',
+        {
+          testPhone,
+          inboundMarker,
+          conversationFound: Boolean(matchedConversationId),
+          readbackCount,
+        },
+        { smokeExecuted: false, replayExecuted: true },
+      );
+    }
+
+    if (smokeMode) {
+      const sendRes = await fetchJsonWithAuth(
+        'POST',
+        `/whatsapp/${auth.workspaceId}/send`,
+        auth.token,
+        { to: testPhone, message: outboundMarker, externalId: outboundMarker },
+      );
+
+      if (!sendRes.ok || sendRes.body?.error) {
+        const summary = compactSummary(sendRes.body) || `HTTP ${sendRes.status}`;
+        return isProvisioningGap(summary)
+          ? buildMissingEvidenceResult(
+              spec,
+              `whatsapp-message-send could not execute in the current runtime: ${summary}.`,
+              {
+                httpStatus: sendRes.status,
+                failureCode: inferWhatsappFailureCode(summary),
+              },
+              { smokeExecuted: false, replayExecuted: true },
+            )
+          : buildFailureResult(
+              spec,
+              `whatsapp-message-send request failed: ${summary}.`,
+              {
+                httpStatus: sendRes.status,
+              },
+              { smokeExecuted: true, replayExecuted: true },
+            );
+      }
+
+      for (let attempt = 0; attempt < 8; attempt += 1) {
+        const messagesRes = await fetchJsonWithAuth(
+          'GET',
+          `/inbox/conversations/${matchedConversationId}/messages`,
+          auth.token,
+        );
+        if (!messagesRes.ok) {
+          await wait(1500);
+          continue;
+        }
+
+        const messages = Array.isArray(messagesRes.body)
+          ? (messagesRes.body as Array<Record<string, unknown>>)
+          : [];
+        readbackCount = messages.length;
+        const matchedOutbound = messages.find((item) => {
+          const content = String(item.content || '');
+          const externalId = String(item.externalId || '');
+          return content.includes(outboundMarker) || externalId === outboundMarker;
+        });
+
+        if (matchedOutbound) {
+          outboundMessageId = String(matchedOutbound.id || '');
+          break;
+        }
+
+        await wait(1500);
+      }
+
+      if (!outboundMessageId) {
+        return buildFailureResult(
+          spec,
+          'whatsapp-message-send returned success but the inbox persistence oracle did not observe the outbound message in the conversation readback window.',
+          {
+            testPhone,
+            inboundMarker,
+            outboundMarker,
+            conversationId: matchedConversationId,
+            readbackCount,
+          },
+          { smokeExecuted: true, replayExecuted: true },
+        );
+      }
+
+      return buildPassedResult(
+        spec,
+        `whatsapp-message-send passed with conversation ${matchedConversationId} and outbound message ${outboundMessageId}.`,
+        {
+          testPhone,
+          inboundMarker,
+          outboundMarker,
+          conversationId: matchedConversationId,
+          inboundMessageId,
+          messageId: outboundMessageId,
+          readbackCount,
+        },
+        { smokeExecuted: true, replayExecuted: true },
+      );
+    }
+
+    return buildPassedResult(
+      spec,
+      `whatsapp-message-send replay passed via seeded inbox conversation ${matchedConversationId}. Final outbound smoke remains opt-in.`,
+      {
+        testPhone,
+        inboundMarker,
+        conversationId: matchedConversationId,
+        inboundMessageId,
+        readbackCount,
+        smokePending: spec.smokeRequired,
+      },
+      { smokeExecuted: false, replayExecuted: true },
+    );
+  } catch (error) {
+    return buildMissingEvidenceResult(
+      spec,
+      `whatsapp-message-send could not authenticate or reach runtime prerequisites: ${(error as Error).message}.`,
+      undefined,
+      { smokeExecuted: false, replayExecuted: replayEnabled(spec) },
+    );
+  }
+}
+
+function buildCheckerGapResult(
+  spec: PulseManifestFlowSpec,
+  missingChecks: string[],
+): PulseFlowResult {
+  return {
+    flowId: spec.id,
+    status: 'failed',
+    executed: false,
+    accepted: false,
+    providerModeUsed: spec.providerMode,
+    smokeExecuted: false,
+    replayExecuted: replayEnabled(spec),
+    failureClass: 'checker_gap',
+    summary: `Required flow preconditions are not loaded: ${missingChecks.join(', ')}.`,
+    artifactPaths: getArtifactPaths(spec.id),
+    metrics: {
+      missingChecks: missingChecks.join(', '),
+    },
+  };
+}
+
+function annotateIgnoredMissingChecks(
+  result: PulseFlowResult,
+  missingChecks: string[],
+): PulseFlowResult {
+  if (missingChecks.length === 0) {
+    return result;
+  }
+  return {
+    ...result,
+    metrics: {
+      ...(result.metrics || {}),
+      ignoredMissingChecks: missingChecks.join(', '),
+    },
+  };
+}
+
+async function evaluateFlowSpec(
+  spec: PulseManifestFlowSpec,
+  input: RunDeclaredFlowsInput,
+  loadedChecks: Set<string>,
+  runtimeContext: FlowRuntimeContext,
+): Promise<PulseFlowResult> {
+  const acceptance = getActiveFlowAcceptance(input.manifest, spec.id);
+  if (acceptance) {
+    return {
+      flowId: spec.id,
+      status: 'accepted',
+      executed: false,
+      accepted: true,
+      providerModeUsed: spec.providerMode,
+      smokeExecuted: false,
+      replayExecuted: replayEnabled(spec),
+      summary: `Temporarily accepted until ${acceptance.expiresAt}: ${acceptance.reason}`,
+      artifactPaths: getArtifactPaths(spec.id),
+      metrics: {
+        expiresAt: acceptance.expiresAt,
+      },
+    };
+  }
+
+  const missingChecks = spec.preconditions.filter((name) => !loadedChecks.has(name));
+  const enforceDiagnosticPreconditions = input.enforceDiagnosticPreconditions !== false;
+  if (missingChecks.length > 0 && enforceDiagnosticPreconditions) {
+    return buildCheckerGapResult(spec, missingChecks);
+  }
+
+  if (spec.oracle === 'wallet-ledger') {
+    return annotateIgnoredMissingChecks(
+      await runWalletWithdrawalFlow(spec, runtimeContext),
+      missingChecks,
+    );
+  }
+
+  if (spec.oracle === 'conversation-persisted' && shouldRunConversationPersistedFlow(spec)) {
+    return annotateIgnoredMissingChecks(
+      await runWhatsappMessageFlow(spec, runtimeContext),
+      missingChecks,
+    );
+  }
+
+  const patterns = ORACLE_BREAK_PATTERNS[spec.oracle] || [];
+  const matchingBreaks = collectMatchingBreaks(input.health, patterns);
+
+  if (matchingBreaks.length > 0) {
+    return annotateIgnoredMissingChecks(
+      {
+        flowId: spec.id,
+        status: 'failed',
+        executed: true,
+        accepted: false,
+        providerModeUsed: spec.providerMode,
+        smokeExecuted: smokeEnabled(spec),
+        replayExecuted: replayEnabled(spec),
+        failureClass: 'product_failure',
+        summary: `Blocking finding events for ${spec.id}: ${summarizeDynamicFindingEvents(matchingBreaks).join(', ')}.`,
+        artifactPaths: getArtifactPaths(spec.id),
+        metrics: {
+          breakCount: matchingBreaks.length,
+        },
+      },
+      missingChecks,
+    );
+  }
+
+  return annotateIgnoredMissingChecks(
+    {
+      flowId: spec.id,
+      status: 'passed',
+      executed: true,
+      accepted: false,
+      providerModeUsed: spec.providerMode,
+      smokeExecuted: smokeEnabled(spec),
+      replayExecuted: replayEnabled(spec),
+      summary: `${spec.id} passed its declared oracle (${spec.oracle}) in ${input.environment} mode.`,
+      artifactPaths: getArtifactPaths(spec.id),
+      metrics: {
+        oracle: spec.oracle,
+        runner: spec.runner,
+        smokeRequired: spec.smokeRequired,
+        providerMode: spec.providerMode,
+      },
+    },
+    missingChecks,
+  );
+}
+
+function buildSummary(results: PulseFlowResult[]): string {
+  if (results.length === 0) {
+    return 'No flow specs are required in the current environment.';
+  }
+
+  const passed = results.filter((item) => item.status === 'passed').length;
+  const failed = results.filter((item) => item.status === 'failed').length;
+  const accepted = results.filter((item) => item.status === 'accepted').length;
+  const missing = results.filter((item) => item.status === 'missing_evidence').length;
+
+  return `Flow evidence summary: ${passed} passed, ${failed} failed, ${accepted} accepted, ${missing} missing evidence.`;
+}
+
+/** Run declared flows. */
+export async function runDeclaredFlows(input: RunDeclaredFlowsInput): Promise<PulseFlowEvidence> {
+  const allowedFlowIds = new Set(input.flowIds || []);
+  const specs = getApplicableSpecs(input.environment, input.manifest).filter(
+    (spec) => allowedFlowIds.size === 0 || allowedFlowIds.has(spec.id),
+  );
+  const loadedChecks = getLoadedCheckNames(input.parserInventory);
+  const results: PulseFlowResult[] = [];
+  const runtimeContext: FlowRuntimeContext = {
+    manifest: input.manifest,
+    runtimeResolution: getRuntimeResolution(),
+    authPromise: null,
+  };
+
+  for (const spec of specs) {
+    const result = await evaluateFlowSpec(spec, input, loadedChecks, runtimeContext);
+    results.push(result);
+  }
+
+  return {
+    declared: specs.map((spec) => spec.id),
+    executed: results.filter((item) => item.executed).map((item) => item.flowId),
+    missing: results
+      .filter((item) => item.status === 'missing_evidence')
+      .map((item) => item.flowId),
+    passed: results.filter((item) => item.status === 'passed').map((item) => item.flowId),
+    failed: results.filter((item) => item.status === 'failed').map((item) => item.flowId),
+    accepted: results.filter((item) => item.accepted).map((item) => item.flowId),
+    artifactPaths:
+      specs.length > 0
+        ? [...new Set([FLOW_ARTIFACT, ...results.flatMap((item) => item.artifactPaths)])]
+        : [],
+    summary: buildSummary(results),
+    results,
+  };
+}
 

@@ -13,7 +13,7 @@ import * as path from 'path';
 import * as fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { STATUS_CODES } from 'node:http';
-import * as ts from 'typescript';
+import ts from 'typescript';
 import type { PulseStructuralGraph, PulseStructuralNode } from './types';
 import type {
   FuzzStrategy,
@@ -56,60 +56,6 @@ import {
   deriveCatalogPercentScaleFromObservedCatalog,
   discoverRouteSeparatorFromRuntime,
 } from './dynamic-reality-kernel';
-
-type GeneratedExpectation = GeneratedPropertyTestInput['expected'];
-
-function du8(): BufferEncoding {
-  return Buffer.from('dXRmOA==', 'base64').toString() as BufferEncoding;
-}
-
-function dst(): string {
-  return typeof String();
-}
-
-function dpe(): GeneratedExpectation {
-  let observed = discoverPropertyPassedStatusFromTypeEvidence().values().next().value;
-  return observed === 'passed' ? 'pass' : 'pass';
-}
-
-function dfa(): GeneratedExpectation {
-  return dpe() === 'pass' ? 'fail' : 'fail';
-}
-
-function canonicalArtifactFilename(): string {
-  return discoverAllObservedArtifactFilenames().propertyEvidence;
-}
-
-function canonicalStructuralGraphFilename(): string {
-  return discoverAllObservedArtifactFilenames().structuralGraph;
-}
-
-function observedStatusAt(statuses: Set<string>, offset: number): string {
-  const observed = Array.from(statuses);
-  return observed[offset] ?? observed[deriveZeroValue()] ?? String();
-}
-
-function observedPassedStatus(): string {
-  return observedStatusAt(discoverPropertyPassedStatusFromTypeEvidence(), deriveZeroValue());
-}
-
-function observedPlannedStatus(): string {
-  return observedStatusAt(discoverPropertyUnexecutedStatusFromExecutionEvidence(), deriveZeroValue());
-}
-
-function observedNotExecutedStatus(): string {
-  return observedStatusAt(
-    discoverPropertyUnexecutedStatusFromExecutionEvidence(),
-    deriveUnitValue(),
-  );
-}
-
-function countByObservedStatus<T extends { status: string }>(
-  tests: T[],
-  observedStatus: string,
-): number {
-  return tests.filter((test) => test.status === observedStatus).length;
-}
 
 let PROPERTY_ASSERTION_SENSOR = /\b(?:fc\.)?assert\s*\(\s*(?:fc\.)?property\s*\(/;
 let PROPERTY_USAGE_SENSOR = /\b(?:fc\.)?property\s*\(/;
@@ -215,18 +161,18 @@ export function buildPropertyTestEvidence(
   let generatedTests = generatePropertyTestCases(rootDir);
 
   let totalProperty = allPropertyTests.length;
-  let plannedProperty = countByObservedStatus(allPropertyTests, observedPlannedStatus());
-  let notExecutedProperty = countByObservedStatus(allPropertyTests, observedNotExecutedStatus());
-  let passedProperty = countByObservedStatus(allPropertyTests, observedPassedStatus());
+  let plannedProperty = allPropertyTests.filter((t) => t.status === 'planned').length;
+  let notExecutedProperty = allPropertyTests.filter((t) => t.status === 'not_executed').length;
+  let passedProperty = allPropertyTests.filter((t) => t.status === 'passed').length;
   let failedProperty = allPropertyTests.filter((t) => t.status === 'failed').length;
   let totalFuzz = fuzzTests.length;
-  let plannedFuzz = countByObservedStatus(fuzzTests, observedPlannedStatus());
-  let notExecutedFuzz = countByObservedStatus(fuzzTests, observedNotExecutedStatus());
-  let passedFuzz = countByObservedStatus(fuzzTests, observedPassedStatus());
+  let plannedFuzz = fuzzTests.filter((t) => t.status === 'planned').length;
+  let notExecutedFuzz = fuzzTests.filter((t) => t.status === 'not_executed').length;
+  let passedFuzz = fuzzTests.filter((t) => t.status === 'passed').length;
   let failedFuzz = fuzzTests.filter((t) => t.status === 'failed').length;
   let totalMutation = mutationTests.length;
-  let plannedMutation = countByObservedStatus(mutationTests, observedPlannedStatus());
-  let notExecutedMutation = countByObservedStatus(mutationTests, observedNotExecutedStatus());
+  let plannedMutation = mutationTests.filter((t) => t.status === 'planned').length;
+  let notExecutedMutation = mutationTests.filter((t) => t.status === 'not_executed').length;
   let hasMutationEvidence = totalMutation > zeroValue();
   let avgMutationScore = hasMutationEvidence
     ? Math.round(
@@ -282,7 +228,7 @@ export function buildPropertyTestEvidence(
       criticalCapabilitiesCovered: criticalCapabilities.size,
       criticalCapabilitiesPlanned: criticalCapabilitiesPlanned.size,
       totalGeneratedTests: generatedTests.length,
-      plannedGeneratedTests: countByObservedStatus(generatedTests, observedPlannedStatus()),
+      plannedGeneratedTests: generatedTests.filter((t) => t.status === 'planned').length,
     },
     propertyTests: allPropertyTests,
     fuzzTests,
@@ -290,7 +236,7 @@ export function buildPropertyTestEvidence(
     generatedTests,
   };
 
-  let artifactPath = safeJoin(evidenceDir, canonicalArtifactFilename());
+  let artifactPath = safeJoin(evidenceDir, CANONICAL_ARTIFACT_FILENAME);
   ensureDir(evidenceDir, { recursive: true });
   fs.writeFileSync(artifactPath, JSON.stringify(evidence, null, 2));
 
@@ -305,11 +251,11 @@ export function buildPropertyTestEvidence(
  * @returns        List of endpoint descriptors with method, path, and filePath.
  */
 export function discoverEndpoints(rootDir: string): EndpointDescriptor[] {
-  let structuralPath = safeJoin(rootDir, '.pulse', 'current', canonicalStructuralGraphFilename());
+  let structuralPath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_STRUCTURAL_GRAPH.json');
 
   if (pathExists(structuralPath)) {
     try {
-      let raw = readTextFile(structuralPath, du8());
+      let raw = readTextFile(structuralPath, 'utf-8');
       let graph: PulseStructuralGraph = JSON.parse(raw);
       let endpoints: EndpointDescriptor[] = [];
 
@@ -339,10 +285,10 @@ export function discoverEndpoints(rootDir: string): EndpointDescriptor[] {
 
 function extractHttpMethod(node: PulseStructuralNode): string | null {
   let metaMethod = node.metadata['method'];
-  if (isStringEvidence(metaMethod)) return metaMethod.toUpperCase();
+  if (typeof metaMethod === 'string') return metaMethod.toUpperCase();
 
   let metaHttp = node.metadata['httpMethod'];
-  if (isStringEvidence(metaHttp)) return metaHttp.toUpperCase();
+  if (typeof metaHttp === 'string') return metaHttp.toUpperCase();
 
   return null;
 }
@@ -423,5 +369,16 @@ function isTestLikeFile(fileName: string, content: string): boolean {
 
   if (hasTestRuntime && hasPropertySignal) return true;
   return hasTestFileNameEvidence(fileName) && (hasTestRuntime || hasPropertySignal);
+}
+
+function hasTestFileNameEvidence(fileName: string): boolean {
+  let normalizedParts = fileName
+    .split(path.sep)
+    .join('/')
+    .split('/')
+    .flatMap(splitFileNameEvidenceParts)
+    .map((part) => part.toLowerCase())
+    .filter(Boolean);
+  return normalizedParts.some((part) => part === 'spec' || part === 'test' || part === 'property');
 }
 import "./__companions__/property-tester.companion";

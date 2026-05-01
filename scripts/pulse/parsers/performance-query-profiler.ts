@@ -10,7 +10,7 @@
  */
 
 import * as path from 'path';
-import * as ts from 'typescript';
+import ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { readTextFile } from '../safe-fs';
 import { walkFiles } from './utils';

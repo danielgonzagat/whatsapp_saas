@@ -394,3 +394,104 @@ status.
 Regra final deste guia: reducao de auditor so conta quando comportamento e prova
 continuam vivos. Se a contagem cai porque codigo foi apagado, nao e solucao do
 PULSE liquido; e perda de realidade.
+
+## Checkpoint Atualizado Apos `manifest.ts` E Reaplicacao De `property-tester.ts`
+
+Auditor completo executado novamente:
+
+```json
+{
+  "scannedFiles": 708,
+  "totalFindings": 138905,
+  "ratchet": [
+    "lockedFloor:138905",
+    "activeFloor:138905",
+    "currentTotal:110308",
+    "debt:1"
+  ],
+  "counts": {
+    "scripts/pulse/property-tester.ts": { "total": 1052, "current": 45 },
+    "scripts/pulse/source-root-detector.ts": { "total": 591, "current": 374 },
+    "scripts/pulse/manifest.ts": { "total": 356, "current": 49 },
+    "scripts/pulse/api-fuzzer.ts": { "total": 593, "current": 161 },
+    "scripts/pulse/runtime-fusion.ts": { "total": 735, "current": 183 },
+    "scripts/pulse/certification.ts": { "total": 1086, "current": 36 }
+  }
+}
+```
+
+Leitura correta:
+
+- O ratchet global voltou para o floor `138905`, entao o total global nao pode
+  ser usado sozinho como prova de progresso nesta etapa.
+- Os deltas file-level continuam comprovando reducao real em arquivos tocados:
+  - `property-tester.ts`: `1061/54 -> 1052/45`.
+  - `manifest.ts`: `369/67 -> 356/49`.
+- `source-root-detector.ts` nao foi tratado como reducao de hardcode; foi tratado
+  como restauracao funcional. O spec passou e a divida restante ficou explicita.
+
+## Novo Achado: Capability Model Tambem Esta Truncado
+
+Worker read-only confirmou:
+
+- `scripts/pulse/capability-model.ts` nao exporta `buildCapabilityState`.
+- Callers importam `buildCapabilityState` de `./capability-model`.
+- A implementacao esta em `scripts/pulse/__companions__/capability-model.companion.ts`.
+- `capability-model-helpers.ts` tambem perdeu helper usado, como
+  `chooseDominantLabel`, que vive no companion correspondente.
+
+Conclusao pratica:
+
+A proxima classe de trabalho nao deve ser mais uma reducao pequena isolada. Deve
+ser uma restauracao ordenada de fonte de verdade dos modulos principais, sempre
+com auditor e spec focada depois de cada modulo. Ordem sugerida:
+
+1. `manifest.ts` recebe `loadPulseManifest` do companion.
+2. `capability-model.ts` recebe `buildCapabilityState` e helpers relacionados.
+3. `certification.ts` recebe `computeCertification`.
+4. `runtime-fusion.ts` recebe `buildRuntimeFusionState`.
+5. `api-fuzzer.ts` recebe `buildAPIFuzzCatalog`/`discoverAPIEndpoints`.
+
+Somente depois dessa restauracao e que as reducoes de hardcode em cada modulo
+podem ser consideradas prova completa, porque hoje varios modulos principais nao
+contem a realidade executavel que os callers esperam.
+
+## Checkpoint De Restauracao Do Manifest
+
+Depois do checkpoint anterior, `manifest.ts` recebeu o corpo executavel que estava
+no companion. Isso mudou a baseline do arquivo porque mais codigo real voltou ao
+modulo principal.
+
+Evidencia funcional:
+
+```sh
+backend/node_modules/.bin/ts-node --project scripts/pulse/tsconfig.json -e "import * as manifest from './scripts/pulse/manifest'; console.log('manifest import ok', typeof manifest.loadPulseManifest)"
+```
+
+Resultado:
+
+```text
+manifest import ok function
+```
+
+Evidencia do auditor:
+
+```json
+{
+  "before_ast_reapply_after_restore": { "total": 626, "current": 319 },
+  "after_ast_reapply_after_restore": { "total": 608, "current": 301 }
+}
+```
+
+Leitura correta:
+
+- O numero absoluto de `manifest.ts` subiu em relacao ao checkpoint `356/49`
+  porque o arquivo deixou de ser apenas helpers truncados e passou a conter
+  novamente `loadPulseManifest` e validacao completa.
+- A fatia AST continuou valida dentro da nova baseline: removeu 18 findings
+  atuais sem quebrar import.
+- Uma tentativa posterior de derivar todos os predicados por nome de funcao piorou
+  o auditor e foi revertida. Motivo: criou novas superficies literais e regex-like
+  ao transformar nomes de predicado em nomes de tipo. A abordagem correta agora e
+  criar um contract resolver cacheado com mapeamento derivado de AST, nao por
+  string construction em runtime.

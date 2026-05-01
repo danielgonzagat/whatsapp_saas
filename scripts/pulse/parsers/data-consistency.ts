@@ -8,7 +8,7 @@
  */
 
 import * as path from 'path';
-import * as ts from 'typescript';
+import ts from 'typescript';
 import { walkFiles, readFileSafe } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
 import type { Break, PulseConfig } from '../types';

@@ -378,7 +378,7 @@ export function discoverAllObservedArtifactFilenames(): Record<string, string> {
 
 export function discoverSourceLabelFromObservedContext(
   context: 'certification' | 'scope' | 'external' | 'pulse',
-): PulseConvergenceSource {
+): string {
   switch (context) {
     case 'scope':
       return 'scope';
@@ -401,7 +401,7 @@ export function discoverExternalReceiverTokensFromEvidence(): string[] {
   return ['webhook', 'callback', 'event', 'receiver', 'listener'];
 }
 export function discoverDirectorySkipHintsFromEvidence(): Set<string> {
-  return new Set(['node_modules', 'dist', 'build', 'coverage']);
+  return new Set(['node_modules', 'dist', 'build', 'coverage', '.next', '.git', '__tests__', '__mocks__', '.turbo', '.vercel', '.claude', '.pulse', 'tmp', 'temp', '.cache']);
 }
 export function discoverSourceExtensionsFromObservedTypescript(): Set<string> {
   return new Set([ts.Extension.Ts, ts.Extension.Tsx, ts.Extension.Js, ts.Extension.Jsx]);

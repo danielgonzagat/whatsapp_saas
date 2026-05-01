@@ -393,4 +393,8 @@ function zero(): number {
 function isElevatedLevel(riskLevel: DoDRiskLevel): boolean {
   return riskLevel === 'critical' || riskLevel === 'high';
 }
+
+function allowsBlockingOutcome(riskLevel: DoDRiskLevel): boolean {
+  return riskLevel !== 'low';
+}
 import "./__companions__/dod-engine.companion";

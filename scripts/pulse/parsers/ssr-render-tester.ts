@@ -24,7 +24,7 @@
 import type { Break, PulseConfig } from '../types';
 import { getFrontendUrl } from './runtime-utils';
 import * as path from 'path';
-import * as ts from 'typescript';
+import ts from 'typescript';
 import { pathExists, readTextFile } from '../safe-fs';
 import { safeJoin } from '../safe-path';
 import { walkFiles } from './utils';

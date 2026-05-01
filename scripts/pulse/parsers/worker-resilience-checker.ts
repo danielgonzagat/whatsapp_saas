@@ -1,6 +1,6 @@
 import { safeJoin } from '../safe-path';
 import * as path from 'path';
-import * as ts from 'typescript';
+import ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';

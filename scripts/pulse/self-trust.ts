@@ -6,7 +6,7 @@
  */
 
 import * as path from 'path';
-import * as ts from 'typescript';
+import ts from 'typescript';
 import type { Break, PulseExecutionTrace, PulseParserContract } from './types';
 import { pathExists, readDir, readTextFile, statPath } from './safe-fs';
 import {
