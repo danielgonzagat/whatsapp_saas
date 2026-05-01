@@ -38,8 +38,8 @@
     "cleanup:legacy-products": "ts-node scripts/remove-legacy-products.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1039.0",
-    "@aws-sdk/s3-request-presigner": "3.1039.0",
+    "@aws-sdk/client-s3": "3.1040.0",
+    "@aws-sdk/s3-request-presigner": "3.1040.0",
     "@nestjs-modules/ioredis": "2.2.1",
     "@nestjs/common": "11.1.19",
     "@nestjs/config": "4.0.4",
@@ -64,7 +64,7 @@
     "class-validator": "0.15.1",
     "cookie-parser": "1.4.7",
     "cors": "2.8.6",
-    "dd-trace": "5.98.0",
+    "dd-trace": "5.99.0",
     "dotenv": "17.4.2",
     "facebook-nodejs-business-sdk": "24.0.1",
     "firebase-admin": "13.8.0",
