@@ -566,4 +566,4 @@ async function buildQuotedReplyPlan(params: {
     return fallback();
   }
 }
-import "../../scripts/pulse/__companions__/autopilot-processor.companion";
+import '../../scripts/pulse/__companions__/autopilot-processor.companion';

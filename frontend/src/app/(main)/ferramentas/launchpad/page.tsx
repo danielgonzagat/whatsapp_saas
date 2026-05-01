@@ -524,4 +524,6 @@ function AddGroupModal({
     </div>
   );
 }
-import "../../../../__companions__/page.companion";
+
+/** Launchpad page. */
+import { LaunchpadPage } from "./LaunchpadPage";

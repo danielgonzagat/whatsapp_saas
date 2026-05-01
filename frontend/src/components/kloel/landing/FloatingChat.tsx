@@ -176,4 +176,6 @@ function AssistantMessageRow({
     </div>
   );
 }
-import "../../../__companions__/FloatingChat.companion";
+
+/** Floating chat. */
+import { FloatingChat } from "./FloatingChat";

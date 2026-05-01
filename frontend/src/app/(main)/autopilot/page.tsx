@@ -436,4 +436,6 @@ function StatusPill({ label, status }: { label: string; status?: string }) {
     </div>
   );
 }
-import "../../../__companions__/page.companion";
+
+/** Autopilot page. */
+import { AutopilotPage } from "./AutopilotPage";

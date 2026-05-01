@@ -596,4 +596,12 @@ function FlowPageLoading() {
     </div>
   );
 }
-import "../../../__companions__/frontend_src_app_(main)_flow_page.companion";
+
+/** Flow page. */
+export default function FlowPage() {
+  return (
+    <Suspense fallback={<FlowPageLoading />}>
+      <FlowPageContent />
+    </Suspense>
+  );
+}

@@ -134,4 +134,6 @@ function ContactDetailLoadingBody() {
     </>
   );
 }
-import "../../../__companions__/ContactDetailDrawer.companion";
+
+/* ── Component ── */
+import { ContactDetailDrawer } from "./ContactDetailDrawer";

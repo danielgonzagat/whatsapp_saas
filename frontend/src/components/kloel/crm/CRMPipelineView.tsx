@@ -29,4 +29,7 @@ const PRIORITY_CFG: Record<string, { label: string; color: string }> = {
   medium: { label: 'Média', color: '#F59E0B' },
   low: { label: 'Baixa', color: 'var(--app-text-secondary)' },
 };
-import "../../../__companions__/CRMPipelineView.companion";
+
+/* ── component ── */
+// PULSE_OK: form state preserved in React state, connection errors shown to user
+import { CRMPipelineView } from "./CRMPipelineView";

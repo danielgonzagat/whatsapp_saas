@@ -176,4 +176,9 @@ function useTypingSimulation() {
 interface HomeScreenProps {
   onSendMessage?: (text: string) => void;
 }
-import "../../../__companions__/HomeScreen.companion";
+
+// ════════════════════════════════════════════
+// HOME SCREEN v2 — home / transitioning / chat
+// ════════════════════════════════════════════
+
+import { HomeScreen } from "./HomeScreen";

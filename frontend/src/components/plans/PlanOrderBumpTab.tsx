@@ -150,4 +150,6 @@ const cardStyle: React.CSSProperties = {
   borderRadius: '6px',
   padding: '20px',
 };
-import "../../__companions__/PlanOrderBumpTab.companion";
+
+/** Plan order bump tab. */
+import { PlanOrderBumpTab } from "./PlanOrderBumpTab";
