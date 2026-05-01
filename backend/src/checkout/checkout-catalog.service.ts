@@ -382,25 +382,12 @@ export class CheckoutCatalogService {
   /** Delete pixel. */
   // PULSE_OK: rate-limited by CheckoutPublicController
   async deletePixel(id: string, workspaceId?: string) {
-    const existing = await this.prisma.checkoutPixel.findUnique({
-      where: { id },
-      select: { id: true },
-    });
-    if (!existing) {
-      throw new NotFoundException('CheckoutPixel not found');
-    }
-    await this.auditService.log({
-      workspaceId: workspaceId || 'unknown',
-      action: 'DELETE_RECORD',
-      resource: 'CheckoutPixel',
-      resourceId: id,
-      details: { deletedBy: 'user' },
-    });
-    await this.prisma.checkoutPixel.delete({ where: { id } });
-    return { deleted: true };
+    return deleteCheckoutPixel(
+      { prisma: this.prisma, auditService: this.auditService },
+      id,
+      workspaceId,
+    );
   }
-
-  // ─── Shipping ──────────────────────────────────────────────────────────────
 
   /** Calculate shipping. */
   // PULSE_OK: rate-limited by CheckoutPublicController
@@ -408,11 +395,10 @@ export class CheckoutCatalogService {
     return this.catalogConfigService.calculateShipping(slug, cep);
   }
 
-  // ─── Config Reset ─────────────────────────────────────────────────────────
-
   /** Reset config to defaults. */
   // PULSE_OK: rate-limited by CheckoutPublicController
   async resetConfig(planId: string) {
     return this.catalogConfigService.resetConfig(planId);
   }
 }
+import { deleteCheckoutPixel } from './__companions__/checkout-catalog.service.companion';

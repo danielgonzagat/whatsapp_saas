@@ -13,6 +13,7 @@ import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../auth/email.service';
 import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
 import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
+import { isPublicCodeTaken } from './__companions__/partnerships.service.companion';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
@@ -66,22 +67,7 @@ export class PartnershipsService {
   }
 
   private async isPublicCodeTaken(code: string) {
-    const [plan, checkoutLink, affiliateLink] = await Promise.all([
-      this.prisma.checkoutProductPlan.findFirst({
-        where: { referenceCode: code },
-        select: { id: true },
-      }),
-      this.prisma.checkoutPlanLink.findFirst({
-        where: { referenceCode: code },
-        select: { id: true },
-      }),
-      this.prisma.affiliateLink.findFirst({
-        where: { code },
-        select: { id: true },
-      }),
-    ]);
-
-    return Boolean(plan || checkoutLink || affiliateLink);
+    return isPublicCodeTaken(this.prisma, code);
   }
 
   private async generateAffiliateCode() {

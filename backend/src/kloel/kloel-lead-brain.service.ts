@@ -10,24 +10,14 @@ import { KLOEL_SALES_PROMPT } from './kloel.prompts';
 import OpenAI from 'openai';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
-const NON_DIGIT_RE = /\D/g;
-
-function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  return fallback;
-}
-
-function asUnknownRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
+import {
+  NON_DIGIT_RE,
+  safeStr,
+  asUnknownRecord,
+} from './__companions__/kloel-lead-brain.service.companion';
+import type { ChatMessage } from './__companions__/kloel-lead-brain.service.companion';
+export { NON_DIGIT_RE, safeStr, asUnknownRecord };
+export type { ChatMessage };
 
 /**
  * Handles WhatsApp autopilot lead processing, buy-intent detection,
