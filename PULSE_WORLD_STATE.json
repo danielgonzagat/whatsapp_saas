@@ -1,0 +1,288 @@
+{
+  "generatedAt": "2026-04-23T05:04:18.527Z",
+  "backendUrl": "https://api.kloel.com",
+  "frontendUrl": "https://kloel-frontend.vercel.app",
+  "actorProfiles": [
+    "synthetic-customer",
+    "synthetic-operator",
+    "synthetic-admin",
+    "synthetic-system"
+  ],
+  "executedScenarios": [
+    "admin-ops-surface-map",
+    "customer-onboarding-public-map",
+    "operator-ads-surface-map",
+    "operator-canvas-surface-map",
+    "operator-media-surface-map",
+    "operator-partnerships-surface-map",
+    "operator-sales-surface-map",
+    "operator-sites-surface-map",
+    "operator-tools-surface-map"
+  ],
+  "pendingAsyncExpectations": [
+    "admin-settings-kyc-banking:kyc-doc-processing",
+    "admin-settings-kyc-banking:withdrawal-ledger-consistency",
+    "admin-whatsapp-session-control:provider-status-sync",
+    "admin-whatsapp-session-control:session-reconnect",
+    "customer-product-and-checkout:payment-webhook-reconciliation",
+    "customer-whatsapp-and-inbox:conversation-reload",
+    "customer-whatsapp-and-inbox:message-persistence",
+    "operator-autopilot-run:job-enqueued",
+    "operator-autopilot-run:worker-health-visible",
+    "operator-campaigns-and-flows:flow-resume-after-wait",
+    "system-payment-reconciliation:payment-webhook-replay",
+    "system-payment-reconciliation:wallet-ledger-reconciliation"
+  ],
+  "entities": {
+    "customer-auth-shell": [
+      "auth.session",
+      "workspace.shell"
+    ],
+    "customer-product-and-checkout": [
+      "products.catalog",
+      "checkout.session",
+      "billing.status"
+    ],
+    "customer-whatsapp-and-inbox": [
+      "whatsapp.session",
+      "inbox.conversation"
+    ],
+    "operator-campaigns-and-flows": [
+      "flows.execution",
+      "crm.wait-state"
+    ],
+    "operator-autopilot-run": [
+      "autopilot.queue",
+      "worker.health"
+    ],
+    "admin-settings-kyc-banking": [
+      "settings.kyc",
+      "wallet.bank-account",
+      "billing.suspension"
+    ],
+    "admin-whatsapp-session-control": [
+      "whatsapp.session",
+      "provider.connection"
+    ],
+    "system-payment-reconciliation": [
+      "payments.reconciliation",
+      "wallet.ledger"
+    ],
+    "operator-ads-surface-map": [
+      "ads.surface"
+    ],
+    "operator-canvas-surface-map": [
+      "canvas.surface"
+    ],
+    "operator-tools-surface-map": [
+      "tools.surface"
+    ],
+    "operator-sites-surface-map": [
+      "sites.surface"
+    ],
+    "operator-partnerships-surface-map": [
+      "partnerships.surface"
+    ],
+    "operator-sales-surface-map": [
+      "sales.surface"
+    ],
+    "customer-onboarding-public-map": [
+      "public.surface",
+      "onboarding.surface"
+    ],
+    "operator-media-surface-map": [
+      "media.surface"
+    ],
+    "admin-ops-surface-map": [
+      "ops.surface"
+    ]
+  },
+  "asyncExpectationsStatus": [
+    {
+      "scenarioId": "customer-product-and-checkout",
+      "expectation": "payment-webhook-reconciliation",
+      "status": "missing_evidence"
+    },
+    {
+      "scenarioId": "customer-whatsapp-and-inbox",
+      "expectation": "message-persistence",
+      "status": "missing_evidence"
+    },
+    {
+      "scenarioId": "customer-whatsapp-and-inbox",
+      "expectation": "conversation-reload",
+      "status": "missing_evidence"
+    },
+    {
+      "scenarioId": "operator-campaigns-and-flows",
+      "expectation": "flow-resume-after-wait",
+      "status": "missing_evidence"
+    },
+    {
+      "scenarioId": "operator-autopilot-run",
+      "expectation": "job-enqueued",
+      "status": "missing_evidence"
+    },
+    {
+      "scenarioId": "operator-autopilot-run",
+      "expectation": "worker-health-visible",
+      "status": "missing_evidence"
+    },
+    {
+      "scenarioId": "admin-settings-kyc-banking",
+      "expectation": "kyc-doc-processing",
+      "status": "missing_evidence"
+    },
+    {
+      "scenarioId": "admin-settings-kyc-banking",
+      "expectation": "withdrawal-ledger-consistency",
+      "status": "missing_evidence"
+    },
+    {
+      "scenarioId": "admin-whatsapp-session-control",
+      "expectation": "session-reconnect",
+      "status": "missing_evidence"
+    },
+    {
+      "scenarioId": "admin-whatsapp-session-control",
+      "expectation": "provider-status-sync",
+      "status": "missing_evidence"
+    },
+    {
+      "scenarioId": "system-payment-reconciliation",
+      "expectation": "payment-webhook-replay",
+      "status": "missing_evidence"
+    },
+    {
+      "scenarioId": "system-payment-reconciliation",
+      "expectation": "wallet-ledger-reconciliation",
+      "status": "missing_evidence"
+    }
+  ],
+  "artifactsByScenario": {
+    "customer-auth-shell": [
+      "PULSE_CUSTOMER_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json",
+      "PULSE_RUNTIME_EVIDENCE.json"
+    ],
+    "customer-product-and-checkout": [
+      "PULSE_CUSTOMER_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json",
+      "PULSE_FLOW_EVIDENCE.json",
+      "PULSE_RUNTIME_EVIDENCE.json"
+    ],
+    "customer-whatsapp-and-inbox": [
+      "PULSE_CUSTOMER_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json",
+      "PULSE_BROWSER_EVIDENCE.json",
+      "PULSE_RUNTIME_EVIDENCE.json"
+    ],
+    "operator-campaigns-and-flows": [
+      "PULSE_SOAK_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json",
+      "PULSE_RUNTIME_EVIDENCE.json"
+    ],
+    "operator-autopilot-run": [
+      "PULSE_SOAK_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json",
+      "PULSE_RUNTIME_EVIDENCE.json"
+    ],
+    "admin-settings-kyc-banking": [
+      "PULSE_ADMIN_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json",
+      "PULSE_FLOW_EVIDENCE.json",
+      "PULSE_RUNTIME_EVIDENCE.json"
+    ],
+    "admin-whatsapp-session-control": [
+      "PULSE_ADMIN_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json",
+      "PULSE_BROWSER_EVIDENCE.json",
+      "PULSE_RUNTIME_EVIDENCE.json"
+    ],
+    "system-payment-reconciliation": [
+      "PULSE_SOAK_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json",
+      "PULSE_FLOW_EVIDENCE.json",
+      "PULSE_RUNTIME_EVIDENCE.json"
+    ],
+    "operator-ads-surface-map": [
+      "PULSE_OPERATOR_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json"
+    ],
+    "operator-canvas-surface-map": [
+      "PULSE_OPERATOR_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json"
+    ],
+    "operator-tools-surface-map": [
+      "PULSE_OPERATOR_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json"
+    ],
+    "operator-sites-surface-map": [
+      "PULSE_OPERATOR_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json"
+    ],
+    "operator-partnerships-surface-map": [
+      "PULSE_OPERATOR_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json"
+    ],
+    "operator-sales-surface-map": [
+      "PULSE_OPERATOR_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json"
+    ],
+    "customer-onboarding-public-map": [
+      "PULSE_CUSTOMER_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json"
+    ],
+    "operator-media-surface-map": [
+      "PULSE_OPERATOR_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json"
+    ],
+    "admin-ops-surface-map": [
+      "PULSE_ADMIN_EVIDENCE.json",
+      "PULSE_WORLD_STATE.json",
+      "PULSE_SCENARIO_COVERAGE.json"
+    ]
+  },
+  "sessions": [
+    {
+      "kind": "customer",
+      "declaredScenarios": 4,
+      "executedScenarios": 1,
+      "passedScenarios": 1
+    },
+    {
+      "kind": "operator",
+      "declaredScenarios": 9,
+      "executedScenarios": 7,
+      "passedScenarios": 7
+    },
+    {
+      "kind": "admin",
+      "declaredScenarios": 3,
+      "executedScenarios": 1,
+      "passedScenarios": 1
+    },
+    {
+      "kind": "system",
+      "declaredScenarios": 1,
+      "executedScenarios": 0,
+      "passedScenarios": 0
+    }
+  ]
+}
