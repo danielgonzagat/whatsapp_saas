@@ -596,4 +596,4 @@ function FlowPageLoading() {
     </div>
   );
 }
-import "../../../__companions__/page.companion";
+import "../../../__companions__/frontend_src_app_(main)_flow_page.companion";

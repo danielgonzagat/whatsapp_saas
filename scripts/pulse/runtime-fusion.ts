@@ -397,4 +397,4 @@ function syncAffectedAliases(signal: RuntimeSignal): void {
   signal.affectedCapabilities = signal.affectedCapabilityIds;
   signal.affectedFlows = signal.affectedFlowIds;
 }
-import "./__companions__/runtime-fusion.companion";
+import "./__companions__/scripts_pulse_runtime-fusion.companion";

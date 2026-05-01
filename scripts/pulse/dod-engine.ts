@@ -397,4 +397,4 @@ function isElevatedLevel(riskLevel: DoDRiskLevel): boolean {
 function allowsBlockingOutcome(riskLevel: DoDRiskLevel): boolean {
   return riskLevel !== 'low';
 }
-import "./__companions__/dod-engine.companion";
+import "./__companions__/scripts_pulse_dod-engine.companion";

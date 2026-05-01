@@ -495,3 +495,49 @@ Leitura correta:
   ao transformar nomes de predicado em nomes de tipo. A abordagem correta agora e
   criar um contract resolver cacheado com mapeamento derivado de AST, nao por
   string construction em runtime.
+
+## Checkpoint De Concorrencia Do Processo PULSE
+
+Durante a continuacao, apareceu um processo ativo:
+
+```text
+node .../backend/node_modules/.bin/ts-node --transpile-only --project scripts/pulse/tsconfig.json scripts/pulse/index.ts
+```
+
+Ele consumia CPU alta e reescreveu varias superficies `scripts/pulse/**`, deixando o worktree oscilar entre limpo e centenas de arquivos modificados. A consequencia pratica foi:
+
+- `property-tester.ts` perdeu novamente a fatia aplicada e voltou a `1077 total / 54 current`.
+- `source-root-detector.ts` perdeu as exports e voltou a falhar `source-root-detector.spec.ts` ate o processo ser encerrado.
+- `manifest.ts` manteve a fatia AST estavel em `356 total / 49 current` quando visto na baseline helper/truncada.
+
+Acao tomada:
+
+- O processo escritor foi encerrado com `kill` para estabilizar o workspace.
+- `source-root-detector.ts` recebeu novamente as exports no modulo principal, sem depender do side-effect companion.
+
+Validacao depois de parar o processo escritor:
+
+```sh
+npx vitest run scripts/pulse/__tests__/source-root-detector.spec.ts
+```
+
+Resultado:
+
+```text
+Test Files  1 passed (1)
+Tests       4 passed (4)
+```
+
+Auditor file-level depois desse checkpoint:
+
+```text
+scripts/pulse/source-root-detector.ts 791 total / 362 current
+scripts/pulse/manifest.ts             356 total / 49 current
+scripts/pulse/property-tester.ts      1077 total / 54 current
+```
+
+Leitura correta:
+
+- `source-root-detector.ts` esta funcional de novo, mas com debt alto porque foi restaurado para conter comportamento real.
+- `property-tester.ts` deve ser reaplicado somente depois de confirmar que nao ha processo PULSE escritor ativo.
+- Qualquer agente futuro deve verificar `ps aux | grep scripts/pulse/index.ts` antes de aplicar patch em PULSE; caso contrario, o proprio PULSE pode sobrescrever a solucao.
