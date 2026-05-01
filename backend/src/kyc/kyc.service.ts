@@ -586,8 +586,6 @@ export class KycService {
     return { success: true, status: 'submitted' };
   }
 
-  // ═══ AUTO-APPROVAL ═══
-
   async autoApproveIfComplete(agentId: string, workspaceId: string) {
     return doAutoApproveIfComplete(
       { prisma: this.prisma },
@@ -597,7 +595,6 @@ export class KycService {
     );
   }
 
-  /** Admin approve. */
   async adminApprove(agentId: string) {
     return doAdminApprove({ prisma: this.prisma }, agentId);
   }
