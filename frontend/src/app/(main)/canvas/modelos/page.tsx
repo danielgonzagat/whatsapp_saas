@@ -122,8 +122,8 @@ export default function CanvasModelos() {
             onClick={() => setActiveTag(null)}
             style={{
               padding: '4px 10px',
-              background: !activeTag ? colors.ember.primary : 'colors.ember.glow10',
-              border: `1px solid ${!activeTag ? colors.ember.primary : 'colors.ember.glow10'}`,
+              background: !activeTag ? colors.ember.primary : colors.ember.glow10,
+              border: `1px solid ${!activeTag ? colors.ember.primary : colors.ember.glow10}`,
               borderRadius: 4,
               color: !activeTag ? colors.background.void : colors.ember.primary,
               fontSize: 10,
@@ -141,8 +141,8 @@ export default function CanvasModelos() {
               onClick={() => setActiveTag(activeTag === t ? null : t)}
               style={{
                 padding: '4px 10px',
-                background: activeTag === t ? colors.ember.primary : 'colors.ember.glow10',
-                border: `1px solid ${activeTag === t ? colors.ember.primary : 'colors.ember.glow10'}`,
+                background: activeTag === t ? colors.ember.primary : colors.ember.glow10,
+                border: `1px solid ${activeTag === t ? colors.ember.primary : colors.ember.glow10}`,
                 borderRadius: 4,
                 color: activeTag === t ? colors.background.void : colors.ember.primary,
                 fontSize: 10,

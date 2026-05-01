@@ -53,7 +53,7 @@ export const metadata: Metadata = {
       { url: '/kloel-icon-16.png', sizes: '16x16', type: 'image/png' },
     ],
     apple: '/apple-touch-icon.png',
-    other: [{ rel: 'mask-icon', url: '/kloel-logo-mushroom.svg', color: 'colors.ember.primary' }],
+    other: [{ rel: 'mask-icon', url: '/kloel-logo-mushroom.svg', color: colors.ember.primary }],
   },
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'),
 };
@@ -76,7 +76,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         style={{
           fontFamily: "var(--font-sora), 'Sora', sans-serif",
           background: '#FFFFFF',
-          color: 'colors.background.void',
+          color: colors.background.void,
         }}
       >
         <DatadogRumRouter />

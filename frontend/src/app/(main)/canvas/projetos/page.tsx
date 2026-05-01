@@ -192,7 +192,7 @@ function ProjectCard({
       onMouseLeave={() => setH(false)}
       style={{
         background: 'var(--app-bg-card)',
-        border: `1px solid ${h ? 'colors.ember.primary50' : '#1C1C1F'}`,
+        border: `1px solid ${h ? colors.ember.primary : '#1C1C1F'}`,
         borderRadius: 6,
         overflow: 'hidden',
         textAlign: 'left',
