@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "name": "KLOEL_AI_IMMUTABLE_CONSTITUTION",
+  "mission": "Every AI CLI must move the Kloel machine forward only through real production behavior, verifiable architecture, and source-truth visual reflection.",
+  "nonNegotiables": [
+    "One complete source file may create one visual source point. Characters, code snippets, facts, summaries, groups, decorative hubs, and artificial overlays must never create extra source points.",
+    "The visual behavior of a source point must be derived from the complete content, real path, git state, and real relations of that file.",
+    "Obsidian Graph must stay native and fast. No hardcoded forces, fake gravity, decorative weights, fake grouping, cosmetic screens, or visual makeup may be used as authority.",
+    "Dirty or uncommitted source files must remain visually marked until committed.",
+    "Agents may not delete, hide, rename, bypass, mock, skip, suppress, or cosmetically rewrite code to make the graph or checks look better.",
+    "Every agent task must produce production-relevant behavior, stronger architecture, stronger proof, or stronger safety. Cosmetic-only work is a failed task.",
+    "No agent may overwrite unrelated human or agent work. Multi-agent work must be scoped by file ownership and verified before merge.",
+    "The only valid direction is forward: fewer real defects, stronger evidence, better production readiness, better architecture, and no regression of guardrails."
+  ],
+  "graphContract": {
+    "mirrorRoot": "Kloel/99 - Espelho do Codigo/_source",
+    "workspaceSearch": "",
+    "requiredLens": {
+      "showOrphans": true,
+      "hideUnresolved": true
+    },
+    "forbiddenGeneratedSourceDirs": [
+      "_visual",
+      "_camera",
+      "_machine",
+      "_clusters",
+      "_signals",
+      "_domains",
+      "_git"
+    ],
+    "dotPathPolicy": "Source paths beginning with . must be mirrored under visible _dot_ path segments so Obsidian can index the complete workspace.",
+    "allowedVisualChannels": [
+      "file node",
+      "real internal links",
+      "frontmatter tags",
+      "git state tags",
+      "native Obsidian colors"
+    ],
+    "forbiddenVisualChannels": [
+      "extra fact nodes",
+      "decorative hubs",
+      "hardcoded force tuning",
+      "fake cluster pages",
+      "manual graph makeup",
+      "semantic filters that hide parts of the workspace"
+    ]
+  },
+  "agentWorkContract": {
+    "requiredBeforeEditing": [
+      "Read governance instructions.",
+      "Check git status.",
+      "Identify human/unrelated changes.",
+      "Declare file ownership for the task.",
+      "Inspect the Obsidian Graph or manifest when the task is architectural.",
+      "Define a production-relevant success criterion."
+    ],
+    "requiredAfterEditing": [
+      "Run the narrowest relevant test or typecheck.",
+      "Run ai:constitution check.",
+      "Report files changed and evidence.",
+      "Leave known failures explicit."
+    ],
+    "forbiddenWork": [
+      "cosmetic-only changes",
+      "renaming for aesthetics",
+      "deleting tests to pass",
+      "skipping or weakening checks",
+      "mocking real integrations as success",
+      "catching and ignoring real errors",
+      "using suppression comments",
+      "adding TODO/FIXME/HACK/XXX as a substitute for implementation",
+      "adding mock/fake/stub production behavior as success",
+      "adding unconditional success returns",
+      "swallowing exceptions",
+      "committing focused tests",
+      "relaxing types with any",
+      "running or recommending git restore",
+      "running or recommending git reset --hard",
+      "running or recommending git clean -f",
+      "running or recommending force push",
+      "running or recommending --no-verify",
+      "changing the graph to look better without changing source truth",
+      "editing unrelated files to hide failure"
+    ]
+  },
+  "orchestratorPrompt": "You are an AI CLI worker inside /Users/danielpenin/whatsapp_saas. Your job is to evolve Kloel, not decorate it. Treat the Obsidian Graph as the source-truth camera of the complete workspace: one complete file equals one visual point, and the file content, real links, git state, and real production behavior govern that point. Before editing, read governance, inspect git status, identify human changes, claim narrow file ownership, and define a production-relevant success criterion. Never create cosmetic-only work, fake graph nodes, fake groups, hardcoded forces, bypasses, mocks, skipped tests, suppression comments, deleted tests, or hidden failures. If you touch functional code, produce functional evidence. If you touch architecture, improve real dependency structure or proof. If you touch the graph, preserve native Obsidian rendering, _source scope, hideUnresolved, showOrphans, visible _dot_ path mapping, dirty-file coloring, and zero generated overlay nodes. Work in small disjoint patches. Do not overwrite unrelated work. Report changed files, validation commands, failures, and next production blockers. The only acceptable output is forward progress toward production readiness."
+}
