@@ -187,5 +187,41 @@
     "approved_by": "usuario",
     "date": "2026-04-25",
     "expires": "2026-09-15"
+  },
+  {
+    "file": "backend/src/lib/openai-models.ts",
+    "rule": "governanceChange",
+    "reason": "Daniel autorizou explicitamente, em 2026-05-01, tocar superficies protegidas para consolidar a constituicao imutavel, impedir regressao e preservar avancos antes da escala multiagente.",
+    "issue": "KLOEL-AI-CONSTITUTION-2026-05-01",
+    "approved_by": "usuario",
+    "date": "2026-05-01",
+    "expires": "2027-05-01"
+  },
+  {
+    "file": "package.json",
+    "rule": "governanceChange",
+    "reason": "Daniel autorizou explicitamente, em 2026-05-01, conectar o gate check:ai-constitution ao fluxo guard:new-code e check-all para bloquear regressao multiagente.",
+    "issue": "KLOEL-AI-CONSTITUTION-2026-05-01",
+    "approved_by": "usuario",
+    "date": "2026-05-01",
+    "expires": "2027-05-01"
+  },
+  {
+    "filePrefix": "ops/",
+    "rule": "governanceChange",
+    "reason": "Daniel autorizou explicitamente, em 2026-05-01, criar a constituicao executavel anti-regressao e anti-maquiagem para agentes CLI.",
+    "issue": "KLOEL-AI-CONSTITUTION-2026-05-01",
+    "approved_by": "usuario",
+    "date": "2026-05-01",
+    "expires": "2027-05-01"
+  },
+  {
+    "filePrefix": "scripts/ops/",
+    "rule": "governanceChange",
+    "reason": "Daniel autorizou explicitamente, em 2026-05-01, criar e plugar o checker executavel da constituicao imutavel anti-regressao.",
+    "issue": "KLOEL-AI-CONSTITUTION-2026-05-01",
+    "approved_by": "usuario",
+    "date": "2026-05-01",
+    "expires": "2027-05-01"
   }
 ]
