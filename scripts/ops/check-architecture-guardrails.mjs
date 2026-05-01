@@ -93,7 +93,36 @@ function runGit(args, allowFailure = false) {
   }
 }
 
-const LOCKED_FILES = new Set(['scripts/pulse/no-hardcoded-reality-audit.ts']);
+const LOCKED_FILES = new Set([
+  'scripts/pulse/no-hardcoded-reality-audit.ts',
+  'frontend/src/app/(main)/analytics/page.tsx',
+  'frontend/src/app/(main)/autopilot/page.tsx',
+  'frontend/src/app/(main)/ferramentas/launchpad/page.tsx',
+  'frontend/src/app/(main)/flow/page.tsx',
+  'frontend/src/app/(main)/scrapers/page.tsx',
+  'frontend/src/app/(main)/video/page.tsx',
+  'frontend/src/app/(main)/webinarios/page.tsx',
+  'frontend/src/components/canvas/CreateModal.tsx',
+  'frontend/src/components/kloel/WhatsAppConsole.tsx',
+  'frontend/src/components/kloel/anuncios/AnunciosView.tsx',
+  'frontend/src/components/kloel/conta/ContaView.tsx',
+  'frontend/src/components/kloel/crm/CRMPipelineView.tsx',
+  'frontend/src/components/kloel/crm/ContactDetailDrawer.tsx',
+  'frontend/src/components/kloel/home/HomeScreen.tsx',
+  'frontend/src/components/kloel/landing/FloatingChat.tsx',
+  'frontend/src/components/kloel/landing/KloelLanding.tsx',
+  'frontend/src/components/kloel/landing/ThanosSection.tsx',
+  'frontend/src/components/kloel/marketing/MarketingView.tsx',
+  'frontend/src/components/kloel/parcerias/ParceriasView.tsx',
+  'frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx',
+  'frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx',
+  'frontend/src/components/kloel/produtos/ProdutosView.tsx',
+  'frontend/src/components/kloel/settings/brain-settings-section.tsx',
+  'frontend/src/components/kloel/sites/SitesView.tsx',
+  'frontend/src/components/kloel/vendas/VendasView.tsx',
+  'frontend/src/components/plans/PlanOrderBumpTab.tsx',
+  'frontend/src/components/products/CheckoutConfigPage.tsx',
+]);
 
 function isRelevantPath(relPath) {
   if (!SOURCE_FILE_RE.test(relPath)) return false;
