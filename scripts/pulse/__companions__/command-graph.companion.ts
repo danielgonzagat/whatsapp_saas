@@ -1,3 +1,10 @@
+function isEnvNameChar(char: string | undefined): boolean {
+  if (!char) {
+    return false;
+  }
+  return (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') || char === '_';
+}
+
 function isLikelyEnvName(value: string): boolean {
   if (value.length < 3) {
     return false;
@@ -225,4 +232,3 @@ export function buildPulseCommandGraph(rootDir = process.cwd()): PulseCommandGra
     ),
   };
 }
-

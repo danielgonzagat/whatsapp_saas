@@ -64,4 +64,1512 @@ type WorkItemUpsertInput = {
   evidence?: Record<string, unknown> | null;
   metadata?: Record<string, unknown> | null;
 };
-import "../../../scripts/pulse/__companions__/account-agent.service.companion";
+
+/** Account agent service. */
+// PULSE_OK: new Date(string) calls parse ISO strings generated internally via new Date().toISOString() — always valid
+@Injectable()
+export class AccountAgentService {
+  private readonly logger = new Logger(AccountAgentService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly agentEvents: AgentEventsService,
+  ) {}
+
+  /** Detect catalog gap. */
+  async detectCatalogGap(input: {
+    workspaceId: string;
+    contactId?: string | null;
+    phone?: string | null;
+    conversationId?: string | null;
+    messageContent: string;
+  }) {
+    const messageContent = String(input.messageContent || '').trim();
+    if (!messageContent) {
+      return {
+        created: false,
+        approval: null,
+        reason: 'empty_message' as const,
+      };
+    }
+
+    const productNames = await this.listCatalogProductNames(input.workspaceId);
+    const detection = detectCatalogGap({
+      messageContent,
+      productNames,
+    });
+
+    if (!detection.buyingIntent) {
+      return {
+        created: false,
+        approval: null,
+        reason: 'no_buying_intent' as const,
+      };
+    }
+
+    if (detection.matchedProducts.length > 0) {
+      return {
+        created: false,
+        approval: null,
+        reason: 'catalog_match_found' as const,
+      };
+    }
+
+    const missingProductName = String(detection.missingProductName || '').trim();
+    if (!missingProductName) {
+      return {
+        created: false,
+        approval: null,
+        reason: 'candidate_not_found' as const,
+      };
+    }
+
+    const normalizedProductName = slugifyCatalogKey(missingProductName);
+    if (!normalizedProductName) {
+      return {
+        created: false,
+        approval: null,
+        reason: 'candidate_not_normalized' as const,
+      };
+    }
+
+    const key = this.buildApprovalKey(normalizedProductName);
+    const existing = await this.prisma.kloelMemory.findUnique({
+      where: {
+        workspaceId_key: {
+          workspaceId: input.workspaceId,
+          key,
+        },
+      },
+    });
+
+    const contact = input.contactId
+      ? await this.prisma.contact.findFirst({
+          where: { id: input.contactId, workspaceId: input.workspaceId },
+          select: { id: true, name: true, phone: true },
+        })
+      : null;
+
+    const now = new Date().toISOString();
+    const previous = parseApprovalPayload(existing?.value);
+
+    const approval: AccountApprovalPayload = {
+      id: previous?.id || randomUUID(),
+      kind: 'product_creation',
+      status:
+        previous?.status === 'APPROVED' ||
+        previous?.status === 'REJECTED' ||
+        previous?.status === 'COMPLETED'
+          ? previous.status
+          : 'OPEN',
+      requestedProductName: previous?.requestedProductName || missingProductName,
+      normalizedProductName,
+      contactId: input.contactId || previous?.contactId || null,
+      contactName: contact?.name || previous?.contactName || null,
+      phone: input.phone || contact?.phone || previous?.phone || null,
+      conversationId: input.conversationId || previous?.conversationId || null,
+      customerMessage: messageContent,
+      operatorPrompt:
+        previous?.operatorPrompt ||
+        `Cliente ${contact?.name || input.phone || 'sem nome'} está querendo comprar ${missingProductName}. Deseja criar esse produto?`,
+      source: 'inbound_catalog_gap',
+      firstDetectedAt: previous?.firstDetectedAt || now,
+      lastDetectedAt: now,
+      inputSessionId: previous?.inputSessionId || null,
+      materializedProductId: previous?.materializedProductId || null,
+    };
+
+    await this.upsertMemory(input.workspaceId, key, {
+      value: approval,
+      category: 'account_approval',
+      type: 'product_creation',
+      content: approval.operatorPrompt,
+      metadata: {
+        status: approval.status,
+        contactId: approval.contactId,
+        phone: approval.phone,
+        requestedProductName: approval.requestedProductName,
+      },
+    });
+    await this.upsertApprovalRequest(input.workspaceId, approval);
+    await this.upsertAccountWorkItem(input.workspaceId, {
+      kind: 'catalog_gap_detected',
+      entityType: 'product',
+      entityId: approval.normalizedProductName,
+      state:
+        approval.status === 'REJECTED'
+          ? 'BLOCKED'
+          : approval.status === 'COMPLETED'
+            ? 'COMPLETED'
+            : 'WAITING_APPROVAL',
+      title: `Criar produto ${approval.requestedProductName}`,
+      summary: approval.operatorPrompt,
+      priority: 95,
+      utility: 95,
+      requiresApproval: true,
+      requiresInput: approval.status === 'APPROVED' && !!approval.inputSessionId,
+      approvalState: approval.status,
+      inputState: approval.inputSessionId ? 'OPEN' : null,
+      blockedBy:
+        approval.status === 'REJECTED'
+          ? {
+              reason: 'operator_rejected_product_creation',
+              approvalId: approval.id,
+            }
+          : null,
+      evidence: {
+        approvalId: approval.id,
+        requestedProductName: approval.requestedProductName,
+        contactId: approval.contactId,
+        phone: approval.phone,
+      },
+      metadata: {
+        source: approval.source,
+        conversationId: approval.conversationId,
+      },
+    });
+
+    if (!existing) {
+      await this.agentEvents.publish({
+        type: 'prompt',
+        workspaceId: input.workspaceId,
+        phase: 'account_catalog_gap',
+        persistent: true,
+        message: approval.operatorPrompt,
+        meta: {
+          approvalId: approval.id,
+          requestedProductName: approval.requestedProductName,
+          contactId: approval.contactId,
+          phone: approval.phone,
+          options: [
+            { id: 'approve', label: 'Sim' },
+            { id: 'reject', label: 'Não' },
+          ],
+        },
+      });
+    }
+
+    return {
+      created: !existing,
+      approval,
+      reason: !existing ? 'created' : 'updated',
+    };
+  }
+
+  /** List approvals. */
+  async listApprovals(workspaceId: string): Promise<AccountApprovalListItem[]> {
+    const rows = await this.prisma.approvalRequest.findMany({
+      where: { workspaceId, kind: 'product_creation' },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+      select: {
+        id: true,
+        workspaceId: true,
+        kind: true,
+        state: true,
+        payload: true,
+        response: true,
+        respondedAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return rows.flatMap((row) => {
+      const payload = parseApprovalPayload(row.payload);
+      if (!payload) {
+        return [];
+      }
+
+      return [
+        {
+          ...payload,
+          memoryId: row.id,
+          approvalRequestId: row.id,
+          canonical: true,
+          status: normalizeApprovalStatus(row.state),
+          respondedAt: row.respondedAt ? row.respondedAt.toISOString() : null,
+        },
+      ];
+    });
+  }
+
+  /** List input sessions. */
+  async listInputSessions(workspaceId: string): Promise<AccountInputSessionListItem[]> {
+    const rows = await this.prisma.inputCollectionSession.findMany({
+      where: { workspaceId, kind: 'product_creation' },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+      select: {
+        id: true,
+        workspaceId: true,
+        kind: true,
+        state: true,
+        payload: true,
+        answers: true,
+        completedAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return rows.flatMap((row) => {
+      const payload = parseInputSessionPayload(row.payload);
+      if (!payload) {
+        return [];
+      }
+
+      const status = normalizeInputSessionStatus(row.state);
+      const answers = asRecord(row.answers) ?? asRecord(payload.answers) ?? {};
+      const productName =
+        typeof payload.productName === 'string' && payload.productName.trim()
+          ? payload.productName
+          : 'o produto';
+
+      return [
+        {
+          ...payload,
+          memoryId: row.id,
+          inputCollectionSessionId: row.id,
+          canonical: true,
+          status,
+          answers: {
+            description:
+              typeof answers.description === 'string'
+                ? answers.description
+                : payload.answers.description,
+            offers: typeof answers.offers === 'string' ? answers.offers : payload.answers.offers,
+            company:
+              typeof answers.company === 'string' ? answers.company : payload.answers.company,
+          },
+          currentPrompt: getPromptForStage(status, productName),
+        },
+      ];
+    });
+  }
+
+  /** Get work items. */
+  async getWorkItems(workspaceId: string) {
+    await this.materializeAccountCapabilityGaps(workspaceId);
+    return this.listAccountWorkItems(workspaceId);
+  }
+
+  /** Get runtime. */
+  async getRuntime(workspaceId: string) {
+    await this.materializeAccountCapabilityGaps(workspaceId);
+    const [approvals, inputSessions, workItems] = await Promise.all([
+      this.listApprovals(workspaceId),
+      this.listInputSessions(workspaceId),
+      this.listAccountWorkItems(workspaceId),
+    ]);
+
+    const openApprovals = approvals.filter((item) => item.status === 'OPEN');
+    const pendingInputs = inputSessions.filter((item) => item.status !== 'COMPLETED');
+    const actionableWorkItems = workItems.filter((item: { state?: string | null }) =>
+      ['OPEN', 'WAITING_APPROVAL', 'WAITING_INPUT', 'BLOCKED'].includes(String(item.state || '')),
+    );
+    const noLegalActions =
+      actionableWorkItems.length === 0 && openApprovals.length === 0 && pendingInputs.length === 0;
+
+    return {
+      objective: 'revenue',
+      mode:
+        openApprovals.length > 0 || pendingInputs.length > 0 ? 'HUMAN_INPUT_REQUIRED' : 'ACTIVE',
+      openApprovalCount: openApprovals.length,
+      pendingInputCount: pendingInputs.length,
+      completedApprovalCount: approvals.filter((item) => item.status === 'COMPLETED').length,
+      openApprovals: openApprovals.slice(0, 10),
+      pendingInputs: pendingInputs.slice(0, 10),
+      workItems: workItems.slice(0, 20),
+      openWorkItemCount: workItems.filter(
+        (item: { state?: string | null }) => item.state !== 'COMPLETED',
+      ).length,
+      noLegalActions,
+      noLegalActionReasons: noLegalActions
+        ? ['account_universe_exhausted_for_current_registry']
+        : [],
+      capabilityRegistryVersion: ACCOUNT_CAPABILITY_REGISTRY_VERSION,
+      capabilityCount: ACCOUNT_CAPABILITY_REGISTRY.length,
+      conversationActionRegistryVersion: CONVERSATION_ACTION_REGISTRY_VERSION,
+      conversationActionCount: CONVERSATION_ACTION_REGISTRY.length,
+      lastMeaningfulActionAt:
+        approvals[0]?.lastDetectedAt ||
+        pendingInputs[0]?.updatedAt ||
+        workItems[0]?.updatedAt ||
+        null,
+    };
+  }
+
+  /** Get capability registry. */
+  getCapabilityRegistry() {
+    return {
+      version: ACCOUNT_CAPABILITY_REGISTRY_VERSION,
+      items: ACCOUNT_CAPABILITY_REGISTRY,
+    };
+  }
+
+  /** Get conversation action registry. */
+  getConversationActionRegistry() {
+    return {
+      version: CONVERSATION_ACTION_REGISTRY_VERSION,
+      items: CONVERSATION_ACTION_REGISTRY,
+    };
+  }
+
+  /** Approve catalog approval. */
+  async approveCatalogApproval(workspaceId: string, approvalId: string) {
+    const { record, approval } = await this.findApproval(workspaceId, approvalId);
+    const session = await this.ensureInputSession(workspaceId, approval);
+    const now = new Date().toISOString();
+
+    const nextApproval: AccountApprovalPayload = {
+      ...approval,
+      status: 'APPROVED',
+      inputSessionId: session.id,
+      lastDetectedAt: now,
+    };
+
+    await this.prisma.kloelMemory.update({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key: record.key,
+        },
+      },
+      data: {
+        value: this.toJson(nextApproval),
+        metadata: {
+          ...(asRecord(record.metadata) ?? {}),
+          status: nextApproval.status,
+          inputSessionId: session.id,
+        },
+      },
+    });
+    await this.upsertApprovalRequest(workspaceId, nextApproval);
+    await this.upsertInputCollectionSession(workspaceId, session);
+    await this.upsertAccountWorkItem(workspaceId, {
+      kind: 'catalog_gap_detected',
+      entityType: 'product',
+      entityId: approval.normalizedProductName,
+      state: 'WAITING_INPUT',
+      title: `Criar produto ${approval.requestedProductName}`,
+      summary: approval.operatorPrompt,
+      priority: 95,
+      utility: 95,
+      requiresApproval: true,
+      requiresInput: true,
+      approvalState: nextApproval.status,
+      inputState: session.status,
+      blockedBy: null,
+      evidence: {
+        approvalId: approval.id,
+        inputSessionId: session.id,
+      },
+      metadata: {
+        conversationId: approval.conversationId,
+        contactId: approval.contactId,
+        phone: approval.phone,
+      },
+    });
+
+    const prompt = getPromptForStage(session.status, session.productName);
+    await this.agentEvents.publish({
+      type: 'prompt',
+      workspaceId,
+      phase: 'account_input_description',
+      persistent: true,
+      message: prompt,
+      meta: {
+        approvalId,
+        inputSessionId: session.id,
+        stage: session.status,
+      },
+    });
+
+    return {
+      approved: true,
+      approvalId,
+      inputSessionId: session.id,
+      nextPrompt: prompt,
+      session,
+    };
+  }
+
+  /** Reject catalog approval. */
+  async rejectCatalogApproval(workspaceId: string, approvalId: string) {
+    const { record, approval } = await this.findApproval(workspaceId, approvalId);
+    const nextApproval: AccountApprovalPayload = {
+      ...approval,
+      status: 'REJECTED',
+      lastDetectedAt: new Date().toISOString(),
+    };
+
+    await this.prisma.kloelMemory.update({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key: record.key,
+        },
+      },
+      data: {
+        value: this.toJson(nextApproval),
+        metadata: {
+          ...(asRecord(record.metadata) ?? {}),
+          status: nextApproval.status,
+        },
+      },
+    });
+    await this.upsertApprovalRequest(workspaceId, nextApproval);
+    await this.upsertAccountWorkItem(workspaceId, {
+      kind: 'catalog_gap_detected',
+      entityType: 'product',
+      entityId: approval.normalizedProductName,
+      state: 'BLOCKED',
+      title: `Criar produto ${approval.requestedProductName}`,
+      summary: approval.operatorPrompt,
+      priority: 95,
+      utility: 0,
+      requiresApproval: true,
+      requiresInput: false,
+      approvalState: nextApproval.status,
+      inputState: null,
+      blockedBy: {
+        reason: 'operator_rejected_product_creation',
+        approvalId: approval.id,
+      },
+      evidence: {
+        approvalId: approval.id,
+      },
+      metadata: {
+        conversationId: approval.conversationId,
+        contactId: approval.contactId,
+        phone: approval.phone,
+      },
+    });
+
+    await this.agentEvents.publish({
+      type: 'status',
+      workspaceId,
+      phase: 'account_catalog_gap_rejected',
+      persistent: true,
+      message: `Entendido. Não vou criar ${approval.requestedProductName} sem sua autorização.`,
+      meta: {
+        approvalId,
+        requestedProductName: approval.requestedProductName,
+      },
+    });
+
+    return {
+      rejected: true,
+      approvalId,
+    };
+  }
+
+  /** Respond to input session. */
+  async respondToInputSession(workspaceId: string, sessionId: string, answer: string) {
+    const trimmedAnswer = String(answer || '').trim();
+    if (!trimmedAnswer) {
+      throw new BadRequestException('Resposta vazia');
+    }
+
+    const { record, session } = await this.findInputSession(workspaceId, sessionId);
+    const next = {
+      ...session,
+      answers: {
+        ...session.answers,
+      },
+      updatedAt: new Date().toISOString(),
+    } as AccountInputSessionPayload;
+
+    let nextPrompt: string | null = null;
+    let completed = false;
+    let productId: string | null = null;
+
+    switch (session.status) {
+      case 'WAITING_DESCRIPTION':
+        next.answers.description = trimmedAnswer;
+        next.status = 'WAITING_OFFERS';
+        nextPrompt = getPromptForStage(next.status, next.productName);
+        break;
+      case 'WAITING_OFFERS':
+        next.answers.offers = trimmedAnswer;
+        next.status = 'WAITING_COMPANY';
+        nextPrompt = getPromptForStage(next.status, next.productName);
+        break;
+      case 'WAITING_COMPANY': {
+        next.answers.company = trimmedAnswer;
+        const materialized = await this.materializeProduct(workspaceId, next);
+        next.status = 'COMPLETED';
+        next.completedAt = new Date().toISOString();
+        next.materializedProductId = materialized.productId;
+        productId = materialized.productId;
+        completed = true;
+        nextPrompt = null;
+        break;
+      }
+      case 'COMPLETED':
+      default:
+        return {
+          completed: true,
+          session: next,
+          nextPrompt: null,
+        };
+    }
+
+    await this.prisma.kloelMemory.update({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key: record.key,
+        },
+      },
+      data: {
+        value: this.toJson(next),
+        metadata: {
+          ...(asRecord(record.metadata) ?? {}),
+          status: next.status,
+        },
+      },
+    });
+    await this.upsertInputCollectionSession(workspaceId, next);
+
+    if (completed) {
+      await this.finishApprovalFromSession(workspaceId, next.approvalId, productId);
+      await this.upsertAccountWorkItem(workspaceId, {
+        kind: 'catalog_gap_detected',
+        entityType: 'product',
+        entityId: next.normalizedProductName,
+        state: 'COMPLETED',
+        title: `Criar produto ${next.productName}`,
+        summary: `${next.productName} criado e pronto para venda.`,
+        priority: 95,
+        utility: 100,
+        requiresApproval: true,
+        requiresInput: true,
+        approvalState: 'COMPLETED',
+        inputState: next.status,
+        blockedBy: null,
+        evidence: {
+          approvalId: next.approvalId,
+          inputSessionId: next.id,
+          productId,
+        },
+        metadata: {
+          contactId: next.contactId,
+          phone: next.phone,
+        },
+      });
+      await this.upsertAccountWorkItem(workspaceId, {
+        kind: 'conversation_reply',
+        entityType: 'contact',
+        entityId: next.contactId || next.phone || next.id,
+        state: 'OPEN',
+        title: `Retomar conversa sobre ${next.productName}`,
+        summary: `Produto ${next.productName} já existe e a conversa precisa ser retomada.`,
+        priority: 98,
+        utility: 98,
+        requiresApproval: false,
+        requiresInput: false,
+        approvalState: null,
+        inputState: null,
+        blockedBy: null,
+        evidence: {
+          productId,
+          sourceWorkItem: `catalog_gap_detected:product:${next.normalizedProductName}`,
+        },
+        metadata: {
+          contactId: next.contactId,
+          phone: next.phone,
+          customerMessage: next.customerMessage,
+        },
+      });
+      await this.agentEvents.publish({
+        type: 'status',
+        workspaceId,
+        phase: 'account_product_materialized',
+        persistent: true,
+        message: `${next.productName} foi criado, enriquecido e está pronto para venda.`,
+        meta: {
+          inputSessionId: next.id,
+          productId,
+          requestedProductName: next.productName,
+        },
+      });
+      await this.enqueueContactResumption(workspaceId, next);
+    } else if (nextPrompt) {
+      await this.upsertAccountWorkItem(workspaceId, {
+        kind: 'catalog_gap_detected',
+        entityType: 'product',
+        entityId: next.normalizedProductName,
+        state: 'WAITING_INPUT',
+        title: `Criar produto ${next.productName}`,
+        summary: nextPrompt,
+        priority: 95,
+        utility: 95,
+        requiresApproval: true,
+        requiresInput: true,
+        approvalState: 'APPROVED',
+        inputState: next.status,
+        blockedBy: null,
+        evidence: {
+          approvalId: next.approvalId,
+          inputSessionId: next.id,
+        },
+        metadata: {
+          contactId: next.contactId,
+          phone: next.phone,
+        },
+      });
+      await this.agentEvents.publish({
+        type: 'prompt',
+        workspaceId,
+        phase: next.status === 'WAITING_OFFERS' ? 'account_input_offers' : 'account_input_company',
+        persistent: true,
+        message: nextPrompt,
+        meta: {
+          inputSessionId: next.id,
+          stage: next.status,
+        },
+      });
+    }
+
+    return {
+      completed,
+      productId,
+      session: next,
+      nextPrompt,
+    };
+  }
+
+  private async listCatalogProductNames(workspaceId: string) {
+    const [products, memoryProducts] = await Promise.all([
+      this.prisma.product.findMany({
+        where: { workspaceId, active: true },
+        select: { name: true },
+        take: 100,
+      }),
+      this.prisma.kloelMemory.findMany({
+        where: {
+          workspaceId,
+          OR: [{ type: 'product' }, { category: 'products' }],
+        },
+        select: { value: true },
+        take: 100,
+      }),
+    ]);
+
+    return Array.from(
+      new Set(
+        [
+          ...products.map((item) => item.name),
+          ...memoryProducts
+            .map((item) => readString(asRecord(item.value)?.name))
+            .filter((item): item is string => Boolean(item)),
+        ]
+          .map((item) => String(item || '').trim())
+          .filter(Boolean),
+      ),
+    );
+  }
+
+  private buildApprovalKey(normalizedProductName: string) {
+    return `account_approval:product_creation:${normalizedProductName}`;
+  }
+
+  private buildInputSessionKey(normalizedProductName: string) {
+    return `account_input_session:product_creation:${normalizedProductName}`;
+  }
+
+  private async ensureInputSession(workspaceId: string, approval: AccountApprovalPayload) {
+    const key = this.buildInputSessionKey(approval.normalizedProductName);
+    const existing = await this.prisma.kloelMemory.findUnique({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key,
+        },
+      },
+    });
+
+    if (existing?.value) {
+      const parsed = parseInputSessionPayload(existing.value);
+      if (parsed) {
+        return parsed;
+      }
+    }
+
+    const session: AccountInputSessionPayload = {
+      id: randomUUID(),
+      approvalId: approval.id,
+      kind: 'product_creation',
+      status: 'WAITING_DESCRIPTION',
+      productName: approval.requestedProductName,
+      normalizedProductName: approval.normalizedProductName,
+      contactId: approval.contactId,
+      contactName: approval.contactName,
+      phone: approval.phone,
+      customerMessage: approval.customerMessage,
+      answers: {},
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await this.upsertMemory(workspaceId, key, {
+      value: session,
+      category: 'account_input_session',
+      type: 'product_creation',
+      content: `Coleta guiada para criar ${approval.requestedProductName}`,
+      metadata: {
+        approvalId: approval.id,
+        status: session.status,
+        requestedProductName: approval.requestedProductName,
+      },
+    });
+    await this.upsertInputCollectionSession(workspaceId, session);
+
+    return session;
+  }
+
+  private async materializeProduct(workspaceId: string, session: AccountInputSessionPayload) {
+    const descriptionAnswer = String(session.answers.description || '').trim();
+    const offersAnswer = String(session.answers.offers || '').trim();
+    const companyAnswer = String(session.answers.company || '').trim();
+    const offers = parseOfferLines(offersAnswer);
+    const urls = extractUrls(offersAnswer);
+    const prices = extractMoneyValues(offersAnswer);
+    const maxDiscount = extractPercentages(offersAnswer);
+    const maxInstallments = extractMaxInstallments(offersAnswer);
+    const faq = buildProductFaq({
+      productName: session.productName,
+      descriptionAnswer,
+      offersAnswer,
+      companyAnswer,
+    });
+    const description = buildProductDescription({
+      productName: session.productName,
+      descriptionAnswer,
+      offers,
+      companyAnswer,
+    });
+
+    const existingProducts = await this.prisma.product.findMany({
+      where: { workspaceId },
+      select: { id: true, name: true },
+      take: 200,
+    });
+    const existing = existingProducts.find(
+      (item) => slugifyCatalogKey(item.name) === session.normalizedProductName,
+    );
+
+    const product = existing
+      ? await (async () => {
+          await this.prisma.product.updateMany({
+            where: { id: existing.id, workspaceId },
+            data: {
+              description,
+              price: prices[0] || 0,
+              paymentLink: urls[0] || null,
+              active: true,
+              metadata: this.toJson({
+                createdBy: 'account_agent',
+                faq,
+                offers,
+                companyProfile: {
+                  raw: companyAnswer,
+                },
+                operatorInputs: {
+                  description: descriptionAnswer,
+                  offers: offersAnswer,
+                  company: companyAnswer,
+                },
+                negotiation: {
+                  maxDiscountPercent: maxDiscount.length > 0 ? Math.max(...maxDiscount) : null,
+                  maxInstallments,
+                },
+              }),
+            },
+          });
+
+          return this.prisma.product.findFirstOrThrow({
+            where: { id: existing.id, workspaceId },
+          });
+        })()
+      : await this.prisma.product.create({
+          data: {
+            workspaceId,
+            name: session.productName,
+            description,
+            price: prices[0] || 0,
+            paymentLink: urls[0] || null,
+            active: true,
+            metadata: this.toJson({
+              createdBy: 'account_agent',
+              faq,
+              offers,
+              companyProfile: {
+                raw: companyAnswer,
+              },
+              operatorInputs: {
+                description: descriptionAnswer,
+                offers: offersAnswer,
+                company: companyAnswer,
+              },
+              negotiation: {
+                maxDiscountPercent: maxDiscount.length > 0 ? Math.max(...maxDiscount) : null,
+                maxInstallments,
+              },
+            }),
+          },
+        });
+
+    await this.upsertMemory(workspaceId, `company_info:primary`, {
+      value: {
+        source: 'account_agent',
+        productName: session.productName,
+        raw: companyAnswer,
+        updatedAt: new Date().toISOString(),
+      },
+      category: 'business',
+      type: 'company_info',
+      content: companyAnswer.slice(0, 1000),
+      metadata: {
+        productId: product.id,
+      },
+    });
+
+    await this.upsertMemory(workspaceId, `faq:product:${session.normalizedProductName}`, {
+      value: {
+        productId: product.id,
+        productName: session.productName,
+        items: faq,
+        updatedAt: new Date().toISOString(),
+      },
+      category: 'catalog_asset',
+      type: 'faq',
+      content: faq
+        .map((item) => item.question)
+        .join(' | ')
+        .slice(0, 1000),
+      metadata: {
+        productId: product.id,
+      },
+    });
+
+    const existingLinks = await this.prisma.externalPaymentLink.findMany({
+      where: {
+        workspaceId,
+        productName: session.productName,
+      },
+      select: { paymentUrl: true },
+      take: 100,
+    });
+    const existingUrls = new Set(existingLinks.map((item) => item.paymentUrl));
+
+    await forEachSequential(
+      offers.filter((item) => item.url && !existingUrls.has(String(item.url))),
+      async (offer) => {
+        // PULSE:OK — each external link has unique URL/price; createMany doesn't return created records
+        await this.prisma.externalPaymentLink.create({
+          data: {
+            workspaceId,
+            platform: 'other',
+            productName: session.productName,
+            price: offer.price || prices[0] || 0,
+            paymentUrl: offer.url,
+            checkoutUrl: offer.url,
+            isActive: true,
+          },
+        });
+      },
+    );
+
+    this.logger.log(
+      `Account agent materialized product ${session.productName} (${product.id}) for workspace ${workspaceId}`,
+    );
+
+    return {
+      productId: product.id,
+    };
+  }
+
+  private async finishApprovalFromSession(
+    workspaceId: string,
+    approvalId: string,
+    productId: string | null,
+  ) {
+    const { record, approval } = await this.findApproval(workspaceId, approvalId);
+    const nextApproval: AccountApprovalPayload = {
+      ...approval,
+      status: 'COMPLETED',
+      materializedProductId: productId,
+      lastDetectedAt: new Date().toISOString(),
+    };
+
+    await this.prisma.kloelMemory.update({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key: record.key,
+        },
+      },
+      data: {
+        value: this.toJson(nextApproval),
+        metadata: {
+          ...(asRecord(record.metadata) ?? {}),
+          status: nextApproval.status,
+          productId,
+        },
+      },
+    });
+    await this.upsertApprovalRequest(workspaceId, nextApproval);
+  }
+
+  private async enqueueContactResumption(workspaceId: string, session: AccountInputSessionPayload) {
+    if (!session.contactId && !session.phone) {
+      return;
+    }
+
+    try {
+      await autopilotQueue.add(
+        'scan-contact',
+        {
+          workspaceId,
+          contactId: session.contactId || undefined,
+          phone: session.phone || undefined,
+          messageContent: session.customerMessage,
+        },
+        {
+          jobId: buildQueueJobId(
+            'scan-contact',
+            workspaceId,
+            session.contactId || session.phone || session.id,
+            session.id,
+          ),
+          deduplication: {
+            id: buildQueueDedupId(
+              'scan-contact',
+              workspaceId,
+              session.contactId || session.phone || session.id,
+            ),
+            ttl: 5_000,
+          },
+          removeOnComplete: true,
+        },
+      );
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.warn(
+        `Failed to enqueue scan-contact after product creation: ${errorInstanceofError.message}`,
+      );
+    }
+  }
+
+  private async findApproval(workspaceId: string, approvalId: string) {
+    const approvals = await this.listApprovals(workspaceId);
+    const approval = approvals.find((item) => item.id === approvalId);
+    if (!approval) {
+      throw new NotFoundException('Aprovação de conta não encontrada');
+    }
+
+    const key = this.buildApprovalKey(approval.normalizedProductName);
+    const record = await this.prisma.kloelMemory.findUnique({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key,
+        },
+      },
+    });
+
+    if (!record) {
+      throw new NotFoundException('Registro de aprovação não encontrado');
+    }
+
+    return {
+      record,
+      approval,
+    };
+  }
+
+  private async findInputSession(workspaceId: string, sessionId: string) {
+    const sessions = await this.listInputSessions(workspaceId);
+    const session = sessions.find((item) => item.id === sessionId);
+    if (!session) {
+      throw new NotFoundException('Sessão de input não encontrada');
+    }
+
+    const key = this.buildInputSessionKey(session.normalizedProductName);
+    const record = await this.prisma.kloelMemory.findUnique({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key,
+        },
+      },
+    });
+
+    if (!record) {
+      throw new NotFoundException('Registro da sessão não encontrado');
+    }
+
+    return {
+      record,
+      session,
+    };
+  }
+
+  private async listAccountWorkItems(workspaceId: string) {
+    return this.prisma.agentWorkItem.findMany({
+      where: { workspaceId },
+      orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
+      take: 100,
+      select: {
+        id: true,
+        workspaceId: true,
+        kind: true,
+        entityType: true,
+        entityId: true,
+        state: true,
+        owner: true,
+        title: true,
+        summary: true,
+        priority: true,
+        utility: true,
+        eligibleAt: true,
+        requiresApproval: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  private async materializeAccountCapabilityGaps(workspaceId: string) {
+    const [
+      workspace,
+      apiKeyCount,
+      webhookCount,
+      agentCount,
+      flowCount,
+      campaignCount,
+      productCount,
+    ] = await Promise.all([
+      this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: {
+          id: true,
+          customDomain: true,
+          providerSettings: true,
+        },
+      }),
+      this.prisma.apiKey.count({ where: { workspaceId } }),
+      this.prisma.webhookSubscription.count({
+        where: { workspaceId, isActive: true },
+      }),
+      this.prisma.agent.count({ where: { workspaceId } }),
+      this.prisma.flow.count({ where: { workspaceId } }),
+      this.prisma.campaign.count({ where: { workspaceId } }),
+      this.prisma.product.count({ where: { workspaceId, active: true } }),
+    ]);
+
+    const billingSuspended =
+      asProviderSettings(workspace?.providerSettings).billingSuspended === true;
+
+    await Promise.all([
+      this.upsertAccountWorkItem(workspaceId, {
+        kind: 'billing_update_required',
+        entityType: 'workspace',
+        entityId: workspaceId,
+        state: billingSuspended ? 'BLOCKED' : 'COMPLETED',
+        title: billingSuspended
+          ? 'Billing da conta exige ação'
+          : 'Billing da conta está operacional',
+        summary: billingSuspended
+          ? 'A conta está suspensa por billing e exige intervenção estrutural.'
+          : 'Billing operacional sem bloqueio estrutural.',
+        priority: 100,
+        utility: billingSuspended ? 100 : 0,
+        requiresApproval: true,
+        requiresInput: billingSuspended,
+        approvalState: billingSuspended ? 'REQUIRED' : null,
+        inputState: billingSuspended ? 'REQUIRED' : null,
+        blockedBy: billingSuspended ? { reason: 'billing_suspended' } : null,
+        evidence: { billingSuspended },
+        metadata: { capabilityCode: 'BILLING_CONFIGURATION' },
+      }),
+      this.upsertAccountWorkItem(workspaceId, {
+        kind: 'domain_gap',
+        entityType: 'workspace',
+        entityId: workspaceId,
+        state: workspace?.customDomain ? 'COMPLETED' : 'OPEN',
+        title: workspace?.customDomain
+          ? 'Domínio da conta configurado'
+          : 'Conta sem domínio configurado',
+        summary: workspace?.customDomain
+          ? `Domínio ativo: ${workspace.customDomain}`
+          : 'A conta ainda não possui domínio próprio configurado.',
+        priority: 48,
+        utility: workspace?.customDomain ? 0 : 48,
+        requiresApproval: true,
+        requiresInput: !workspace?.customDomain,
+        approvalState: workspace?.customDomain ? null : 'REQUIRED',
+        inputState: workspace?.customDomain ? null : 'REQUIRED',
+        blockedBy: null,
+        evidence: { customDomain: workspace?.customDomain || null },
+        metadata: { capabilityCode: 'DOMAIN_CONFIGURATION' },
+      }),
+      this.upsertAccountWorkItem(workspaceId, {
+        kind: 'webhook_gap',
+        entityType: 'workspace',
+        entityId: workspaceId,
+        state: webhookCount > 0 ? 'COMPLETED' : 'OPEN',
+        title: webhookCount > 0 ? 'Webhooks configurados' : 'Conta sem webhooks ativos',
+        summary:
+          webhookCount > 0
+            ? `${webhookCount} webhook(s) ativo(s).`
+            : 'A conta ainda não possui webhook ativo configurado.',
+        priority: 44,
+        utility: webhookCount > 0 ? 0 : 44,
+        requiresApproval: true,
+        requiresInput: webhookCount === 0,
+        approvalState: webhookCount > 0 ? null : 'REQUIRED',
+        inputState: webhookCount > 0 ? null : 'REQUIRED',
+        blockedBy: null,
+        evidence: { activeWebhookCount: webhookCount },
+        metadata: { capabilityCode: 'WEBHOOK_CONFIGURATION' },
+      }),
+      this.upsertAccountWorkItem(workspaceId, {
+        kind: 'api_key_gap',
+        entityType: 'workspace',
+        entityId: workspaceId,
+        state: apiKeyCount > 0 ? 'COMPLETED' : 'OPEN',
+        title: apiKeyCount > 0 ? 'API keys configuradas' : 'Conta sem API key',
+        summary:
+          apiKeyCount > 0
+            ? `${apiKeyCount} API key(s) cadastrada(s).`
+            : 'A conta ainda não possui API key configurada.',
+        priority: 42,
+        utility: apiKeyCount > 0 ? 0 : 42,
+        requiresApproval: true,
+        requiresInput: apiKeyCount === 0,
+        approvalState: apiKeyCount > 0 ? null : 'REQUIRED',
+        inputState: apiKeyCount > 0 ? null : 'REQUIRED',
+        blockedBy: null,
+        evidence: { apiKeyCount },
+        metadata: { capabilityCode: 'API_KEY_CONFIGURATION' },
+      }),
+      this.upsertAccountWorkItem(workspaceId, {
+        kind: 'team_configuration_gap',
+        entityType: 'workspace',
+        entityId: workspaceId,
+        state: agentCount > 0 ? 'COMPLETED' : 'OPEN',
+        title: agentCount > 0 ? 'Time configurado' : 'Conta sem agentes',
+        summary:
+          agentCount > 0
+            ? `${agentCount} agente(s) cadastrado(s).`
+            : 'A conta ainda não possui agentes/equipe configurados.',
+        priority: 40,
+        utility: agentCount > 0 ? 0 : 40,
+        requiresApproval: true,
+        requiresInput: agentCount === 0,
+        approvalState: agentCount > 0 ? null : 'REQUIRED',
+        inputState: agentCount > 0 ? null : 'REQUIRED',
+        blockedBy: null,
+        evidence: { agentCount },
+        metadata: { capabilityCode: 'TEAM_CONFIGURATION' },
+      }),
+      this.upsertAccountWorkItem(workspaceId, {
+        kind: 'flow_creation_candidate',
+        entityType: 'workspace',
+        entityId: workspaceId,
+        state: flowCount > 0 ? 'COMPLETED' : 'OPEN',
+        title: flowCount > 0 ? 'Flows configurados' : 'Conta sem flow comercial',
+        summary:
+          flowCount > 0
+            ? `${flowCount} flow(s) disponível(is).`
+            : 'A conta ainda não possui flow comercial configurado.',
+        priority: 32,
+        utility: flowCount > 0 ? 0 : 32,
+        requiresApproval: false,
+        requiresInput: flowCount === 0,
+        approvalState: null,
+        inputState: flowCount > 0 ? null : 'REQUIRED',
+        blockedBy: null,
+        evidence: { flowCount },
+        metadata: { capabilityCode: 'FLOW_CONFIGURATION' },
+      }),
+      this.upsertAccountWorkItem(workspaceId, {
+        kind: 'campaign_launch_candidate',
+        entityType: 'workspace',
+        entityId: workspaceId,
+        state: campaignCount > 0 ? 'COMPLETED' : 'OPEN',
+        title: campaignCount > 0 ? 'Campanhas configuradas' : 'Conta sem campanha ativa',
+        summary:
+          campaignCount > 0
+            ? `${campaignCount} campanha(s) cadastrada(s).`
+            : 'A conta ainda não possui campanha comercial configurada.',
+        priority: 28,
+        utility: campaignCount > 0 ? 0 : 28,
+        requiresApproval: false,
+        requiresInput: campaignCount === 0,
+        approvalState: null,
+        inputState: campaignCount > 0 ? null : 'REQUIRED',
+        blockedBy: null,
+        evidence: { campaignCount },
+        metadata: { capabilityCode: 'CAMPAIGN_CONFIGURATION' },
+      }),
+      this.upsertAccountWorkItem(workspaceId, {
+        kind: 'catalog_gap_detected',
+        entityType: 'catalog',
+        entityId: 'primary',
+        state: productCount > 0 ? 'COMPLETED' : 'OPEN',
+        title: productCount > 0 ? 'Catálogo ativo' : 'Conta sem produto ativo',
+        summary:
+          productCount > 0
+            ? `${productCount} produto(s) ativo(s) no catálogo.`
+            : 'A conta ainda não possui produto ativo no catálogo.',
+        priority: 60,
+        utility: productCount > 0 ? 0 : 60,
+        requiresApproval: true,
+        requiresInput: productCount === 0,
+        approvalState: productCount > 0 ? null : 'REQUIRED',
+        inputState: productCount > 0 ? null : 'REQUIRED',
+        blockedBy: null,
+        evidence: { activeProductCount: productCount },
+        metadata: { capabilityCode: 'CATALOG_PRODUCT_CREATE' },
+      }),
+    ]);
+  }
+
+  private async upsertApprovalRequest(workspaceId: string, approval: AccountApprovalPayload) {
+    return this.prisma.approvalRequest.upsert({
+      where: { id: approval.id },
+      create: {
+        id: approval.id,
+        workspaceId,
+        kind: approval.kind,
+        scope: 'account',
+        entityType: 'product',
+        entityId: approval.normalizedProductName,
+        state: approval.status,
+        title: `Criar produto ${approval.requestedProductName}`,
+        prompt: approval.operatorPrompt,
+        payload: this.toJson(approval),
+        respondedAt:
+          approval.status === 'APPROVED' ||
+          approval.status === 'REJECTED' ||
+          approval.status === 'COMPLETED'
+            ? new Date(approval.lastDetectedAt)
+            : undefined,
+      },
+      update: {
+        state: approval.status,
+        prompt: approval.operatorPrompt,
+        payload: this.toJson(approval),
+        respondedAt:
+          approval.status === 'APPROVED' ||
+          approval.status === 'REJECTED' ||
+          approval.status === 'COMPLETED'
+            ? new Date(approval.lastDetectedAt)
+            : null,
+      },
+    });
+  }
+
+  private async upsertInputCollectionSession(
+    workspaceId: string,
+    session: AccountInputSessionPayload,
+  ) {
+    return this.prisma.inputCollectionSession.upsert({
+      where: { id: session.id },
+      create: {
+        id: session.id,
+        workspaceId,
+        kind: session.kind,
+        state: session.status,
+        entityType: 'product',
+        entityId: session.normalizedProductName,
+        prompt: getPromptForStage(session.status, session.productName),
+        answers: this.toJson(session.answers || {}),
+        payload: this.toJson(session),
+        completedAt: session.completedAt ? new Date(session.completedAt) : undefined,
+      },
+      update: {
+        state: session.status,
+        prompt: getPromptForStage(session.status, session.productName),
+        answers: this.toJson(session.answers || {}),
+        payload: this.toJson(session),
+        completedAt: session.completedAt ? new Date(session.completedAt) : null,
+      },
+    });
+  }
+
+  private async findPreviousWorkItem(workspaceId: string, id: string) {
+    const select = {
+      id: true,
+      state: true,
+      title: true,
+      summary: true,
+      priority: true,
+      utility: true,
+      metadata: true,
+    };
+    return this.prisma.agentWorkItem.findFirst({
+      where: { id, workspaceId },
+      select,
+    });
+  }
+
+  private buildWorkItemUpdateData(
+    input: WorkItemUpsertInput,
+    missingValue: Prisma.InputJsonValue | null | undefined,
+  ) {
+    return {
+      state: input.state,
+      owner: input.state === 'BLOCKED' ? 'RULES' : 'AGENT',
+      title: input.title,
+      summary: input.summary || null,
+      priority: input.priority,
+      utility: input.utility,
+      blockedBy: input.blockedBy ? this.toJson(input.blockedBy) : missingValue,
+      requiresApproval: input.requiresApproval,
+      requiresInput: input.requiresInput,
+      approvalState: input.approvalState || null,
+      inputState: input.inputState || null,
+      evidence: input.evidence ? this.toJson(input.evidence) : missingValue,
+      metadata: input.metadata ? this.toJson(input.metadata) : missingValue,
+    };
+  }
+
+  private isWorkItemChanged(
+    previous: {
+      state: string;
+      title: string;
+      summary: string | null;
+      priority: number;
+      utility: number;
+    } | null,
+    input: WorkItemUpsertInput,
+  ): boolean {
+    if (!previous) {
+      return true;
+    }
+    if (previous.state !== input.state) {
+      return true;
+    }
+    if (previous.title !== input.title) {
+      return true;
+    }
+    if (String(previous.summary || '') !== String(input.summary || '')) {
+      return true;
+    }
+    if (Number(previous.priority || 0) !== Number(input.priority || 0)) {
+      return true;
+    }
+    if (Number(previous.utility || 0) !== Number(input.utility || 0)) {
+      return true;
+    }
+    return false;
+  }
+
+  private async upsertAccountWorkItem(workspaceId: string, input: WorkItemUpsertInput) {
+    const entityKey = String(input.entityId || 'global');
+    const id = `${workspaceId}:${input.kind}:${input.entityType}:${entityKey}`;
+    const previous = await this.findPreviousWorkItem(workspaceId, id);
+
+    const updateData = this.buildWorkItemUpdateData(input, null);
+    const createData = {
+      id,
+      workspaceId,
+      kind: input.kind,
+      entityType: input.entityType,
+      entityId: input.entityId || null,
+      ...this.buildWorkItemUpdateData(input, undefined),
+    };
+
+    const existing = await this.prisma.agentWorkItem.findFirst({
+      where: { id, workspaceId },
+      select: { id: true },
+    });
+    let record;
+    if (existing) {
+      await this.prisma.agentWorkItem.updateMany({
+        where: { id, workspaceId },
+        data: updateData,
+      });
+      record = { id };
+    } else {
+      record = await this.prisma.agentWorkItem.create({
+        data: createData,
+      });
+    }
+
+    if (this.isWorkItemChanged(previous, input)) {
+      await this.agentEvents.publish({
+        type: 'account',
+        workspaceId,
+        phase: previous ? 'account_work_item_updated' : 'account_work_item_created',
+        persistent: input.state === 'BLOCKED',
+        message: previous
+          ? `Atualizei ${input.title} para ${input.state}.`
+          : `Materializei ${input.title} no universo operacional da conta.`,
+        meta: {
+          workItemId: id,
+          kind: input.kind,
+          entityType: input.entityType,
+          entityId: input.entityId || null,
+          state: input.state,
+          previousState: previous?.state || null,
+          priority: input.priority,
+          utility: input.utility,
+          requiresApproval: input.requiresApproval,
+          requiresInput: input.requiresInput,
+          capabilityCode: input.metadata?.capabilityCode || null,
+        },
+      });
+    }
+
+    return record;
+  }
+
+  private async upsertMemory(
+    workspaceId: string,
+    key: string,
+    input: {
+      value: object;
+      category: string;
+      type: string;
+      content?: string;
+      metadata?: object;
+    },
+  ) {
+    await this.prisma.kloelMemory.upsert({
+      where: {
+        workspaceId_key: {
+          workspaceId,
+          key,
+        },
+      },
+      create: {
+        workspaceId,
+        key,
+        value: this.toJson(input.value),
+        category: input.category,
+        type: input.type,
+        content: input.content,
+        metadata: input.metadata ? this.toJson(input.metadata) : undefined,
+      },
+      update: {
+        value: this.toJson(input.value),
+        category: input.category,
+        type: input.type,
+        content: input.content,
+        metadata: input.metadata ? this.toJson(input.metadata) : undefined,
+      },
+    });
+  }
+
+  private toJson(value: unknown): Prisma.InputJsonValue {
+    return toPrismaJsonValue(value);
+  }
+}

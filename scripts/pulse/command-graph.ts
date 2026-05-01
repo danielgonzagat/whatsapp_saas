@@ -390,11 +390,5 @@ function workflowCommands(sourcePath: string, text: string): PulseDiscoveredComm
   });
 }
 
-function isEnvNameChar(char: string | undefined): boolean {
-  if (!char) {
-    return false;
-  }
-  return (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') || char === '_';
-}
-import "./__parts__/command-graph.part";
-export * from "./__companions__/command-graph.companion";
+import './__parts__/command-graph.part';
+export * from './__companions__/command-graph.companion';
