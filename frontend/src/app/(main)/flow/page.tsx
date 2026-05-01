@@ -596,4 +596,12 @@ function FlowPageLoading() {
     </div>
   );
 }
-import "./__parts__/page.part";
+
+/** Flow page. */
+export default function FlowPage() {
+  return (
+    <Suspense fallback={<FlowPageLoading />}>
+      <FlowPageContent />
+    </Suspense>
+  );
+}
