@@ -75,3 +75,29 @@ export async function deleteCheckoutPixel(
   await deps.prisma.checkoutPixel.delete({ where: { id } });
   return { deleted: true };
 }
+
+export async function deleteCouponHelper(
+  deps: { prisma: any; auditService: any; opsAlert?: any },
+  id: string,
+  workspaceId?: string,
+) {
+  if (!workspaceId) {
+    throw new BadRequestException('workspaceId is required');
+  }
+  const existing = await deps.prisma.checkoutCoupon.findFirst({
+    where: { id, workspaceId },
+    select: { id: true },
+  });
+  if (!existing) {
+    throw new NotFoundException('CheckoutCoupon not found');
+  }
+  await deps.auditService.log({
+    workspaceId,
+    action: 'DELETE_RECORD',
+    resource: 'CheckoutCoupon',
+    resourceId: id,
+    details: { deletedBy: 'user' },
+  });
+  await deps.prisma.checkoutCoupon.deleteMany({ where: { id, workspaceId } });
+  return { deleted: true };
+}

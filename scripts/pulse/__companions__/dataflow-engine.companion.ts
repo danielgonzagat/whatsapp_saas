@@ -848,6 +848,17 @@ export function buildDataflowState(rootDir: string): DataflowState {
   return state;
 }
 
+export function classifyFinancialModel(_modelName: string, fields: string[] = []): boolean {
+  const fieldEvidence = fields.map((field) => ({
+    name: field,
+    type: 'Unknown',
+    attributes: '',
+    relationFields: [],
+    relationReferences: [],
+  }));
+  return classifyFinancialFieldEvidence(fieldEvidence, undefined).financial;
+}
+
 /**
  * Entry point when invoked as a script:
  *   npx ts-node scripts/pulse/dataflow-engine.ts [--root /path/to/repo]
@@ -891,4 +902,3 @@ if (typeof require !== 'undefined' && require.main === module) {
     );
   }
 }
-

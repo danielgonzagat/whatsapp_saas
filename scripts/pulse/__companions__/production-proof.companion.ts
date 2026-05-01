@@ -190,3 +190,23 @@ export function buildProductionProofState(rootDir: string): ProductionProofState
   return state;
 }
 
+function buildDimensionEvidence(
+  statuses: Record<ProductionProofDimension, ProofStatus>,
+): Record<ProductionProofDimension, ProductionProofDimensionEvidence> {
+  return Object.fromEntries(
+    (Object.entries(statuses) as Array<[ProductionProofDimension, ProofStatus]>).map(
+      ([dimension, status]) => [
+        dimension,
+        {
+          dimension,
+          status,
+          truthMode: truthModeForProofStatus(status),
+          targetEngine: DIMENSION_TARGET_ENGINES[dimension],
+          reason: reasonForProofStatus(dimension, status),
+          recommendedPulseAction: DIMENSION_ACTIONS[dimension],
+          productEditRequired: false,
+        },
+      ],
+    ),
+  ) as Record<ProductionProofDimension, ProductionProofDimensionEvidence>;
+}

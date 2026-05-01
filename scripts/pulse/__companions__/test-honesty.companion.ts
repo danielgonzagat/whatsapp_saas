@@ -52,3 +52,38 @@ export function detectPlaceholderTests(rootDir: string): PlaceholderTestResult {
 
   return { count: files.length, files };
 }
+
+function hasMarkerAt(line: string, marker: string, index: number): boolean {
+  return line.slice(index, index + marker.length) === marker;
+}
+
+function hasIdentifierBoundary(line: string, index: number, marker: string): boolean {
+  const before = index > 0 ? line[index - 1] : '';
+  const afterIndex = index + marker.length;
+  const after = afterIndex < line.length ? line[afterIndex] : '';
+  return !isIdentifierCharacter(before) && !isIdentifierCharacter(after);
+}
+
+function isIdentifierCharacter(value: string): boolean {
+  if (value.length === 0) {
+    return false;
+  }
+  const code = value.charCodeAt(0);
+  const isLower = code >= 97 && code <= 122;
+  const isUpper = code >= 65 && code <= 90;
+  const isDigit = code >= 48 && code <= 57;
+  return isLower || isUpper || isDigit || value === '_' || value === '$';
+}
+
+function lineMatchesTypeEscape(line: string, pattern: TypeEscapePattern): boolean {
+  for (let index = 0; index <= line.length - pattern.marker.length; index += 1) {
+    if (!hasMarkerAt(line, pattern.marker, index)) {
+      continue;
+    }
+    if (pattern.requiresWordBoundary && !hasIdentifierBoundary(line, index, pattern.marker)) {
+      continue;
+    }
+    return true;
+  }
+  return false;
+}

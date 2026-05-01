@@ -355,38 +355,4 @@ export function deriveMutantEstimateFromObservedFileEvidence(
     return 5;
   }
 }
-
-// ── Strategy weight ────────────────────────────────────────────────────────
-
-export function deriveStrategyWeightFromObservedProfile(
-  strategy: DerivedFuzzStrategy,
-  inputTypeCount: number,
-  isMutating: boolean,
-  hasSchema: boolean,
-  isPublic: boolean,
-): number {
-  let u = deriveUnitValue();
-  let sw = Math.max(u, inputTypeCount);
-  let stW = sw + (isMutating ? u : 0);
-  let schW = stW + (hasSchema ? u : 0);
-  let pubW = schW + (isPublic ? u : 0);
-  let graph = new Map<DerivedFuzzStrategy, number[]>([
-    ['valid_only', [sw, u]],
-    ['invalid_only', [pubW, sw]],
-    ['boundary', [schW, sw, stW]],
-    ['random', [pubW, schW, stW, sw]],
-    ['both', [schW, stW]],
-  ]);
-  return (graph.get(strategy) ?? [sw]).reduce((t, v) => t + v, 0);
-}
-
-// ── Fuzz budget ────────────────────────────────────────────────────────────
-
-export function deriveFuzzBudgetFromObservedDimensions(
-  propertyName: string,
-  evidenceKey: string,
-): number {
-  let ok = deriveHttpStatusFromObservedCatalog('OK');
-  return Math.max(observeStatusTextLengthFromCatalog(ok), propertyName.length * evidenceKey.length);
-}
-import "./__companions__/dynamic-reality-kernel.companion";
+export * from './__companions__/dynamic-reality-kernel.companion';

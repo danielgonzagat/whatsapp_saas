@@ -336,46 +336,4 @@ export function getNodeRoutePatterns(node: PulseStructuralNode): string[] {
     : [];
   return unique([...directPatterns, ...triggers]);
 }
-
-export function shouldTraverseNeighbor(
-  currentNode: PulseStructuralNode,
-  neighborNode: PulseStructuralNode,
-  family: string,
-  neighborFamilies: string[],
-  neighborPrimaryFamily: string | null,
-): boolean {
-  const familyAligned = neighborFamilies.length === 0 || familiesOverlap(neighborFamilies, family);
-
-  if (
-    neighborNode.role === 'persistence' ||
-    neighborNode.role === 'side_effect' ||
-    neighborNode.role === 'simulation'
-  ) {
-    return (
-      (familyAligned || currentNode.role === 'orchestration') &&
-      (currentNode.role === 'interface' || currentNode.role === 'orchestration')
-    );
-  }
-
-  if (neighborNode.role === 'orchestration' && currentNode.role === 'orchestration') {
-    return true;
-  }
-
-  const primaryAligned =
-    !neighborPrimaryFamily || familiesOverlap(neighborPrimaryFamily, family) || familyAligned;
-
-  if (!primaryAligned) {
-    return false;
-  }
-
-  if (neighborNode.role === 'orchestration') {
-    return familyAligned;
-  }
-
-  if (neighborNode.role === 'interface') {
-    return familyAligned && currentNode.role !== 'persistence';
-  }
-
-  return familyAligned;
-}
-import "./__companions__/capability-model-helpers.companion";
+export * from './__companions__/capability-model-helpers.companion';

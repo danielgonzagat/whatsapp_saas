@@ -201,3 +201,39 @@ export function buildHardcodedFindingAuditArtifact(
   };
 }
 
+function initializerIsCallable(node: ts.VariableDeclaration): boolean {
+  return Boolean(node.initializer && isCallableDeclaration(node.initializer));
+}
+
+function hasStructuralParserSignal(node: ts.Node): boolean {
+  let found = false;
+  const visit = (child: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (ts.isCallExpression(child)) {
+      const expression = child.expression;
+      if (
+        ts.isPropertyAccessExpression(expression) &&
+        ['forEachChild', 'getText', 'getStart'].includes(expression.name.text)
+      ) {
+        found = true;
+        return;
+      }
+      if (
+        ts.isIdentifier(expression) &&
+        ['createSourceFile', 'forEachChild'].includes(expression.text)
+      ) {
+        found = true;
+        return;
+      }
+    }
+    if (ts.isPropertyAccessExpression(child) && child.expression.getText() === 'ts') {
+      found = true;
+      return;
+    }
+    ts.forEachChild(child, visit);
+  };
+  ts.forEachChild(node, visit);
+  return found;
+}

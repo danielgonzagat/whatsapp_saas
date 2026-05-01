@@ -153,22 +153,21 @@ export function buildMockProviderRegistry() {
   };
 }
 
-export function buildMockPrisma(allContacts: () => any[]) {
+export function buildMockPrisma(localContactsSeed: any[]) {
   const createdContacts: any[] = [];
+  const allContacts = () => [...localContactsSeed, ...createdContacts];
   return {
     contact: {
       findMany: jest
         .fn()
         .mockImplementation(({ where }: any) =>
           Promise.resolve(
-            allContacts().filter(
-              (c: any) => !where?.workspaceId || c.workspaceId === where.workspaceId,
-            ),
+            allContacts().filter((c) => !where?.workspaceId || c.workspaceId === where.workspaceId),
           ),
         ),
       upsert: jest.fn().mockImplementation(({ where, create, update }: any) => {
         const existing = allContacts().find(
-          (c: any) =>
+          (c) =>
             c.workspaceId === where.workspaceId_phone.workspaceId &&
             c.phone === where.workspaceId_phone.phone,
         );
@@ -179,7 +178,7 @@ export function buildMockPrisma(allContacts: () => any[]) {
             email: update?.email ?? existing.email,
             updatedAt: new Date('2026-03-20T12:00:00.000Z'),
           });
-        const next: any = {
+        const next = {
           id: `contact-${createdContacts.length + 10}`,
           workspaceId: create.workspaceId,
           phone: create.phone,
@@ -193,7 +192,7 @@ export function buildMockPrisma(allContacts: () => any[]) {
       }),
       findUnique: jest.fn().mockImplementation(({ where }: any) => {
         const found = allContacts().find(
-          (c: any) =>
+          (c) =>
             c.workspaceId === where.workspaceId_phone.workspaceId &&
             c.phone === where.workspaceId_phone.phone,
         );
@@ -216,57 +215,6 @@ export function buildMockPrisma(allContacts: () => any[]) {
     tag: {
       upsert: jest.fn().mockResolvedValue({ id: 'tag-1' }),
       findUnique: jest.fn().mockResolvedValue(null),
-    },
-  };
-}
-
-export function buildMockDeps() {
-  return {
-    workspaceService: {
-      getWorkspace: jest.fn().mockResolvedValue({
-        id: 'ws-1',
-        providerSettings: {
-          autopilot: { enabled: false },
-          whatsappApiSession: { status: 'connected' },
-        },
-      }),
-      toEngineWorkspace: jest.fn((w: any) => w),
-    },
-    inboxService: {
-      saveMessageByPhone: jest.fn().mockResolvedValue({ id: 'msg-1', contactId: 'contact-1' }),
-    },
-    planLimits: {
-      trackMessageSend: jest.fn().mockResolvedValue(undefined),
-      ensureSubscriptionActive: jest.fn().mockResolvedValue(undefined),
-      ensureMessageRate: jest.fn().mockResolvedValue(undefined),
-    },
-    redis: {
-      get: jest.fn().mockResolvedValue(null),
-      setex: jest.fn().mockResolvedValue('OK'),
-      set: jest.fn().mockResolvedValue('OK'),
-      publish: jest.fn().mockResolvedValue(1),
-      rpush: jest.fn().mockResolvedValue(1),
-      expire: jest.fn().mockResolvedValue(1),
-    },
-    neuroCrm: { analyzeContact: jest.fn().mockResolvedValue(undefined) },
-    catchupService: {
-      triggerCatchup: jest
-        .fn()
-        .mockImplementation((_ws: string, reason: string) => ({ scheduled: true, reason })),
-    },
-    ciaRuntime: { startBacklogRun: jest.fn().mockResolvedValue({ queued: true, runId: 'run-1' }) },
-    workerRuntime: { isAvailable: jest.fn().mockResolvedValue(true) },
-    whatsappApi: {
-      getRuntimeConfigDiagnostics: jest.fn().mockReturnValue({
-        webhookUrl: 'https://api.kloel.test/webhooks/whatsapp-api',
-        webhookConfigured: true,
-        inboundEventsConfigured: true,
-        events: ['session.status', 'message', 'message.any', 'message.ack'],
-        secretConfigured: true,
-        storeEnabled: true,
-        storeFullSync: true,
-        allowSessionWithoutWebhook: false,
-      }),
     },
   };
 }

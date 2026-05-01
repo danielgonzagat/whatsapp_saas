@@ -21,10 +21,15 @@ import {
   digitsOnly,
   buildPersonName,
   buildDateOfBirth,
+  buildConnectAddress,
+  doAdminApprove,
+  doAutoApproveIfComplete,
+  syncSellerConnectOnboarding,
 } from './__companions__/kyc.service.companion';
 import type { UploadedFile, SubmitKycContext } from './__companions__/kyc.service.companion';
-export { trimToUndefined, digitsOnly, buildPersonName, buildDateOfBirth };
+export { trimToUndefined, digitsOnly, buildPersonName, buildDateOfBirth, buildConnectAddress };
 export type { UploadedFile, SubmitKycContext };
+
 /** Kyc service. */
 @Injectable()
 export class KycService {
@@ -35,186 +40,12 @@ export class KycService {
     private readonly connectService: ConnectService,
   ) {}
 
-  private buildConnectAddress(fiscal: {
-    street?: string | null;
-    number?: string | null;
-    complement?: string | null;
-    neighborhood?: string | null;
-    city?: string | null;
-    state?: string | null;
-    cep?: string | null;
-  }) {
-    const line1 = [trimToUndefined(fiscal.street), trimToUndefined(fiscal.number)]
-      .filter(Boolean)
-      .join(', ');
-    const line2 = [trimToUndefined(fiscal.complement), trimToUndefined(fiscal.neighborhood)]
-      .filter(Boolean)
-      .join(' - ');
-
+  private get syncDeps() {
     return {
-      line1: line1 || undefined,
-      line2: line2 || undefined,
-      city: trimToUndefined(fiscal.city),
-      state: trimToUndefined(fiscal.state),
-      postalCode: trimToUndefined(fiscal.cep),
-      country: 'BR',
+      prisma: this.prisma,
+      connectService: this.connectService,
+      buildConnectAddress,
     };
-  }
-
-  private async ensureSellerConnectAccount(params: {
-    workspaceId: string;
-    email: string;
-    displayName: string;
-  }) {
-    const existing = await this.prisma.connectAccountBalance.findFirst({
-      where: { workspaceId: params.workspaceId, accountType: 'SELLER' },
-    });
-    if (existing?.stripeAccountId) {
-      return existing.stripeAccountId;
-    }
-
-    const created = await this.connectService.createCustomAccount({
-      workspaceId: params.workspaceId,
-      accountType: 'SELLER',
-      email: params.email,
-      displayName: params.displayName,
-    });
-    return created.stripeAccountId;
-  }
-
-  private async syncSellerConnectOnboarding(
-    agentId: string,
-    workspaceId: string,
-    context?: SubmitKycContext,
-  ) {
-    const [agent, workspace, fiscal, bankAccount] = await Promise.all([
-      this.prisma.agent.findUnique({
-        where: { id: agentId },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          phone: true,
-          birthDate: true,
-          documentNumber: true,
-          publicName: true,
-          website: true,
-        },
-      }),
-      this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: {
-          id: true,
-          name: true,
-        },
-      }),
-      this.prisma.fiscalData.findUnique({ where: { workspaceId } }),
-      this.prisma.bankAccount.findFirst({
-        where: { workspaceId, isDefault: true },
-        orderBy: { createdAt: 'asc' },
-      }),
-    ]);
-
-    if (!agent?.email) {
-      throw new NotFoundException('Agente responsavel nao encontrado para onboarding financeiro');
-    }
-    if (!workspace) {
-      throw new NotFoundException('Workspace nao encontrado para onboarding financeiro');
-    }
-    if (!fiscal) {
-      throw new BadRequestException('Dados fiscais ausentes para onboarding financeiro');
-    }
-    if (!bankAccount) {
-      throw new BadRequestException('Conta bancaria ausente para onboarding financeiro');
-    }
-
-    const businessType = fiscal.type === 'PJ' ? 'company' : 'individual';
-    const address = this.buildConnectAddress(fiscal);
-    const businessName =
-      trimToUndefined(fiscal.nomeFantasia) ||
-      trimToUndefined(fiscal.razaoSocial) ||
-      trimToUndefined(fiscal.fullName) ||
-      trimToUndefined(agent.publicName) ||
-      trimToUndefined(agent.name) ||
-      workspace.name;
-    const representativeName =
-      businessType === 'company'
-        ? trimToUndefined(fiscal.responsavelNome) || trimToUndefined(agent.name)
-        : trimToUndefined(fiscal.fullName) || trimToUndefined(agent.name);
-    const representativeDocument =
-      businessType === 'company'
-        ? trimToUndefined(fiscal.responsavelCpf) ||
-          trimToUndefined(agent.documentNumber) ||
-          undefined
-        : trimToUndefined(fiscal.cpf) || trimToUndefined(agent.documentNumber) || undefined;
-    const { firstName, lastName } = buildPersonName(representativeName);
-    const routingNumber =
-      [digitsOnly(bankAccount.bankCode), digitsOnly(bankAccount.agency)].filter(Boolean).join('') ||
-      undefined;
-    const accountNumber = digitsOnly(bankAccount.account);
-    const stripeAccountId = await this.ensureSellerConnectAccount({
-      workspaceId,
-      email: agent.email,
-      displayName: businessName,
-    });
-
-    await this.connectService.submitOnboardingProfile({
-      stripeAccountId,
-      email: agent.email,
-      country: 'BR',
-      businessType,
-      businessProfile: {
-        name: businessName,
-        url: trimToUndefined(agent.website),
-        supportEmail: agent.email,
-        supportPhone: trimToUndefined(agent.phone),
-      },
-      individual:
-        firstName || lastName || representativeDocument || representativeName
-          ? {
-              firstName,
-              lastName,
-              email: agent.email,
-              phone: trimToUndefined(agent.phone),
-              dateOfBirth: buildDateOfBirth(agent.birthDate),
-              idNumber: representativeDocument,
-              address,
-            }
-          : undefined,
-      company:
-        businessType === 'company'
-          ? {
-              name: trimToUndefined(fiscal.razaoSocial) || businessName,
-              taxId: trimToUndefined(fiscal.cnpj),
-              phone: trimToUndefined(agent.phone),
-              address,
-            }
-          : undefined,
-      externalAccount:
-        accountNumber && routingNumber
-          ? {
-              country: 'BR',
-              currency: 'BRL',
-              accountHolderName: trimToUndefined(bankAccount.holderName) || businessName,
-              accountHolderType: businessType,
-              routingNumber,
-              accountNumber,
-            }
-          : undefined,
-      tosAcceptance:
-        context?.ipAddress || context?.userAgent
-          ? {
-              acceptedAt: new Date().toISOString(),
-              ipAddress: trimToUndefined(context.ipAddress),
-              userAgent: trimToUndefined(context.userAgent),
-            }
-          : undefined,
-      metadata: {
-        kycWorkspaceId: workspaceId,
-        kycAgentId: agentId,
-        kycSource: 'kyc_submit',
-      },
-    });
   }
 
   // ═══ PROFILE ═══
@@ -246,12 +77,8 @@ export class KycService {
   /** Update profile. */
   async updateProfile(agentId: string, dto: UpdateProfileDto) {
     const data: Prisma.AgentUpdateInput = { ...dto };
-    if (dto.birthDate) {
-      // PULSE_OK: birthDate validated by class-validator (IsISO8601) in DTO layer before reaching service
-      data.birthDate = new Date(dto.birthDate);
-    }
+    if (dto.birthDate) data.birthDate = new Date(dto.birthDate);
 
-    // If agent was rejected, reset to pending so they can re-submit
     const agent = await this.prisma.agent.findUnique({
       where: { id: agentId },
       select: { kycStatus: true },
@@ -260,37 +87,20 @@ export class KycService {
       data.kycStatus = 'pending';
       data.kycRejectedReason = null;
     }
-
     return this.prisma.agent.update({ where: { id: agentId }, data });
   }
 
   /** Upload avatar. */
   async uploadAvatar(agentId: string, file: UploadedFile) {
-    if (!file) {
-      throw new BadRequestException('No file provided');
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      throw new BadRequestException('File too large (max 5MB)');
-    }
-
+    if (!file) throw new BadRequestException('No file provided');
+    if (file.size > 5 * 1024 * 1024) throw new BadRequestException('File too large (max 5MB)');
     const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedMimes.includes(file.mimetype)) {
+    if (!allowedMimes.includes(file.mimetype))
       throw new BadRequestException('Only JPG, PNG, and WebP images are allowed');
-    }
-
     const ext = file.originalname?.split('.').pop() || 'jpg';
     const filename = `kyc/avatars/avatar_${agentId}_${Date.now()}.${ext}`;
-
-    const result = await this.storage.upload(file.buffer, {
-      filename,
-      mimeType: file.mimetype,
-    });
-
-    await this.prisma.agent.update({
-      where: { id: agentId },
-      data: { avatarUrl: result.url },
-    });
-
+    const result = await this.storage.upload(file.buffer, { filename, mimeType: file.mimetype });
+    await this.prisma.agent.update({ where: { id: agentId }, data: { avatarUrl: result.url } });
     return { avatarUrl: result.url };
   }
 
@@ -336,30 +146,16 @@ export class KycService {
       'PROOF_OF_ADDRESS',
       'COMPANY_DOCUMENT',
     ];
-    if (!allowedTypes.includes(type)) {
+    if (!allowedTypes.includes(type))
       throw new BadRequestException(`Invalid document type. Allowed: ${allowedTypes.join(', ')}`);
-    }
-
-    if (!file) {
-      throw new BadRequestException('No file provided');
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      throw new BadRequestException('File too large (max 10MB)');
-    }
-
+    if (!file) throw new BadRequestException('No file provided');
+    if (file.size > 10 * 1024 * 1024) throw new BadRequestException('File too large (max 10MB)');
     const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-    if (!allowedMimes.includes(file.mimetype)) {
+    if (!allowedMimes.includes(file.mimetype))
       throw new BadRequestException('Only JPG, PNG, WebP, and PDF files are allowed');
-    }
-
     const ext = file.originalname?.split('.').pop() || 'pdf';
     const filename = `kyc/documents/kyc_${type}_${agentId}_${Date.now()}.${ext}`;
-
-    const result = await this.storage.upload(file.buffer, {
-      filename,
-      mimeType: file.mimetype,
-    });
-
+    const result = await this.storage.upload(file.buffer, { filename, mimeType: file.mimetype });
     return this.prisma.kycDocument.create({
       data: {
         workspaceId,
@@ -378,18 +174,12 @@ export class KycService {
     const doc = await this.prisma.kycDocument.findUnique({
       where: workspaceId ? { id: documentId, workspaceId } : { id: documentId },
     });
-    if (!doc) {
-      throw new NotFoundException('Document not found');
-    }
-    if (doc.agentId !== agentId) {
-      throw new BadRequestException('Not your document');
-    }
-    if (doc.status !== 'pending') {
+    if (!doc) throw new NotFoundException('Document not found');
+    if (doc.agentId !== agentId) throw new BadRequestException('Not your document');
+    if (doc.status !== 'pending')
       throw new BadRequestException(
         'Cannot delete a document that is already under review or approved',
       );
-    }
-
     await this.auditService.log({
       workspaceId: doc.workspaceId,
       action: 'DELETE_RECORD',
@@ -410,10 +200,7 @@ export class KycService {
     });
     return (
       defaultAccount ??
-      this.prisma.bankAccount.findFirst({
-        where: { workspaceId },
-        orderBy: { createdAt: 'desc' },
-      })
+      this.prisma.bankAccount.findFirst({ where: { workspaceId }, orderBy: { createdAt: 'desc' } })
     );
   }
 
@@ -422,17 +209,13 @@ export class KycService {
     const existing = await this.prisma.bankAccount.findFirst({
       where: { workspaceId, isDefault: true },
     });
-
     const last4 = dto.account?.slice(-4) || dto.pixKey?.slice(-4) || '';
     const displayAccount = last4 ? `****${last4}` : null;
-
-    if (existing) {
+    if (existing)
       return this.prisma.bankAccount.update({
         where: { id: existing.id },
         data: { ...dto, displayAccount },
       });
-    }
-
     return this.prisma.bankAccount.create({
       data: { workspaceId, ...dto, isDefault: true, displayAccount },
     });
@@ -445,25 +228,13 @@ export class KycService {
       where: { id: agentId },
       select: { password: true, provider: true },
     });
-
-    if (!agent) {
-      throw new NotFoundException('Agent not found');
-    }
-    if (agent.provider && !agent.password) {
+    if (!agent) throw new NotFoundException('Agent not found');
+    if (agent.provider && !agent.password)
       throw new BadRequestException('OAuth users cannot change password here');
-    }
-
     const valid = await bcryptCompare(dto.currentPassword, agent.password);
-    if (!valid) {
-      throw new UnauthorizedException('Current password is incorrect');
-    }
-
+    if (!valid) throw new UnauthorizedException('Current password is incorrect');
     const hashedPassword = await bcryptHash(dto.newPassword, BCRYPT_ROUNDS);
-    await this.prisma.agent.update({
-      where: { id: agentId },
-      data: { password: hashedPassword },
-    });
-
+    await this.prisma.agent.update({ where: { id: agentId }, data: { password: hashedPassword } });
     return { success: true };
   }
 
@@ -496,9 +267,7 @@ export class KycService {
       }),
       this.prisma.bankAccount.findFirst({ where: { workspaceId } }),
     ]);
-
     const documentTypes = new Set(documents.map((d) => d.type));
-
     const sections = [
       {
         name: 'profile',
@@ -526,15 +295,9 @@ export class KycService {
             : documentTypes.has('PROOF_OF_ADDRESS')),
         weight: 25,
       },
-      {
-        name: 'bank',
-        complete: !!bankAccount,
-        weight: 25,
-      },
+      { name: 'bank', complete: !!bankAccount, weight: 25 },
     ];
-
     const percentage = sections.reduce((sum, s) => sum + (s.complete ? s.weight : 0), 0);
-
     return {
       percentage,
       sections: sections.map((s) => ({
@@ -549,40 +312,30 @@ export class KycService {
   /** Submit kyc. */
   async submitKyc(agentId: string, workspaceId: string, context?: SubmitKycContext) {
     const completion = await this.getCompletion(agentId, workspaceId);
-    if (completion.percentage < 100) {
+    if (completion.percentage < 100)
       throw new BadRequestException('Complete all required sections before submitting');
-    }
-
     const agent = await this.prisma.agent.findUnique({
       where: { id: agentId },
       select: { kycStatus: true },
     });
-
-    if (agent?.kycStatus === 'submitted') {
+    if (agent?.kycStatus === 'submitted')
       throw new BadRequestException('KYC already submitted and under review');
-    }
-    if (agent?.kycStatus === 'approved') {
-      throw new BadRequestException('KYC already approved');
-    }
+    if (agent?.kycStatus === 'approved') throw new BadRequestException('KYC already approved');
 
-    await this.syncSellerConnectOnboarding(agentId, workspaceId, context);
+    await syncSellerConnectOnboarding(this.syncDeps, agentId, workspaceId, context);
 
     await this.prisma.agent.update({
       where: { id: agentId },
       data: { kycStatus: 'submitted', kycSubmittedAt: new Date() },
     });
-
-    // Auto-approve if completion is sufficient
     const autoResult = await this.autoApproveIfComplete(agentId, workspaceId);
-    if (autoResult.approved) {
+    if (autoResult.approved)
       return {
         success: true,
         status: 'approved',
         autoApproved: true,
         percentage: autoResult.percentage,
       };
-    }
-
     return { success: true, status: 'submitted' };
   }
 
@@ -599,4 +352,3 @@ export class KycService {
     return doAdminApprove({ prisma: this.prisma }, agentId);
   }
 }
-import { doAdminApprove, doAutoApproveIfComplete } from './__companions__/kyc.service.companion';

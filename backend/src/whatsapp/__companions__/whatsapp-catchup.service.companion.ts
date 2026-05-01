@@ -1,107 +1,59 @@
-import type { WahaChatMessage, WahaChatSummary } from '../providers/whatsapp-api.provider';
-import { InboundMessage } from '../inbound-processor.service';
+import type { WhatsAppProviderRegistry } from '../providers/provider-registry';
+import type {
+  WahaChatMessage,
+  WahaChatSummary,
+  WahaLidMapping,
+} from '../providers/whatsapp-api.provider';
 
 const D_RE = /\D/g;
+const LID_RE = /@lid$/i;
 
-export function normalizePhone(phone: string): string {
+export function normalizePhoneExt(phone: string): string {
   return String(phone || '')
     .replace(D_RE, '')
     .replace('@c.us', '')
     .replace('@s.whatsapp.net', '');
 }
-
-export function safeStr(v: unknown, fb = ''): string {
-  return typeof v === 'string'
-    ? v
-    : typeof v === 'number' || typeof v === 'boolean'
-      ? String(v)
-      : fb;
+export function normalizeTimestampExt(value?: Date | string | number | null): Date | null {
+  if (!value && value !== 0) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const n = value > 1e12 ? value : value * 1000;
+    const p = new Date(n);
+    return Number.isNaN(p.getTime()) ? null : p;
+  }
+  const numeric = Number(value);
+  if (Number.isFinite(numeric) && numeric > 0) {
+    const n = numeric > 1e12 ? numeric : numeric * 1000;
+    const p = new Date(n);
+    return Number.isNaN(p.getTime()) ? null : p;
+  }
+  const p = new Date(String(value));
+  return Number.isNaN(p.getTime()) ? null : p;
 }
 
-export function normalizeOptionalText(value: unknown): string {
-  if (typeof value === 'string') {
-    return value.trim();
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value).trim();
-  }
+export function normalizeJsonObjExt(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? { ...(value as Record<string, unknown>) }
+    : {};
+}
+
+function normalizeOptionalText(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
   return '';
 }
 
-export function normalizeJsonObject(value: unknown): Record<string, unknown> {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return { ...(value as Record<string, unknown>) };
-  }
-  return {};
-}
-
-const D__D_S____S_DOE_RE = /^\+?\d[\d\s-]*\s+doe$/i;
-
-export function isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
-  const normalized = normalizeOptionalText(value);
-  if (!normalized) {
-    return true;
-  }
-
-  const lowered = normalized.toLowerCase();
-  const phoneDigits = normalizePhone(String(phone || ''));
-
-  if (lowered === 'doe' || lowered === 'unknown' || lowered === 'desconhecido') {
-    return true;
-  }
-
-  if (D__D_S____S_DOE_RE.test(normalized)) {
-    return true;
-  }
-
-  if (phoneDigits && lowered === `${phoneDigits} doe`) {
-    return true;
-  }
-
-  if (phoneDigits && normalizePhone(normalized) === phoneDigits) {
-    return true;
-  }
-
-  return false;
-}
-
-// PULSE_OK: validates every new Date(input) with Number.isNaN(parsed.getTime()) — returns null on invalid
-export function normalizeTimestamp(value?: Date | string | number | null): Date | null {
-  if (!value && value !== 0) {
-    return null;
-  }
-  if (value instanceof Date) {
-    return Number.isNaN(value.getTime()) ? null : value;
-  }
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    const normalized = value > 1e12 ? value : value * 1000;
-    const parsed = new Date(normalized);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
-
-  const numeric = Number(value);
-  if (Number.isFinite(numeric) && numeric > 0) {
-    const normalized = numeric > 1e12 ? numeric : numeric * 1000;
-    const parsed = new Date(normalized);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
-
-  const parsed = new Date(String(value));
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-// PULSE_OK: resolves timestamps safely — numeric paths return parsed milliseconds,
-// string path validates with isNaN before returning
-export function resolveTimestamp(value: unknown): number {
+export function resolveTimestampExt(value: unknown): number {
   const val = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
-  const valChat = val._chat as Record<string, unknown> | undefined;
-  const valLastMessage = val.lastMessage as Record<string, unknown> | undefined;
-  const valLastMsgData = valLastMessage?._data as Record<string, unknown> | undefined;
-  const candidates: unknown[] = [
-    valChat?.conversationTimestamp,
-    valChat?.lastMessageRecvTimestamp,
-    valLastMessage?.timestamp,
-    valLastMsgData?.messageTimestamp,
+  const vChat = val._chat as Record<string, unknown> | undefined;
+  const vLm = val.lastMessage as Record<string, unknown> | undefined;
+  const vLmd = vLm?._data as Record<string, unknown> | undefined;
+  for (const c of [
+    vChat?.conversationTimestamp,
+    vChat?.lastMessageRecvTimestamp,
+    vLm?.timestamp,
+    vLmd?.messageTimestamp,
     val.conversationTimestamp,
     val.lastMessageRecvTimestamp,
     val.lastMessageSentTimestamp,
@@ -110,53 +62,175 @@ export function resolveTimestamp(value: unknown): number {
     val.createdAt,
     val.lastMessageTimestamp,
     val.last_time,
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === 'number' && Number.isFinite(candidate)) {
-      return candidate > 1e12 ? candidate : candidate * 1000;
-    }
-    if (typeof candidate === 'string') {
-      const numeric = Number(candidate);
-      if (Number.isFinite(numeric) && numeric > 0) {
-        return numeric > 1e12 ? numeric : numeric * 1000;
-      }
-      const date = new Date(candidate);
-      if (!Number.isNaN(date.getTime())) {
-        return date.getTime();
-      }
+  ]) {
+    if (typeof c === 'number' && Number.isFinite(c)) return c > 1e12 ? c : c * 1000;
+    if (typeof c === 'string') {
+      const n = Number(c);
+      if (Number.isFinite(n) && n > 0) return n > 1e12 ? n : n * 1000;
+      const d = new Date(c);
+      if (!Number.isNaN(d.getTime())) return d.getTime();
     }
   }
-
   return 0;
 }
 
-export function resolveChatActivityTimestamp(chat: WahaChatSummary): number {
+export function resolveChatActivityTimestampExt(chat: WahaChatSummary): number {
   return Math.max(Number(chat.timestamp || 0) || 0, Number(chat.lastMessageTimestamp || 0) || 0);
 }
 
-export function isRemoteChatAwaitingReply(chat: WahaChatSummary): boolean {
-  return chat.lastMessageFromMe === false;
+export function isNowebStoreMisconfiguredExt(error: unknown): boolean {
+  const msg = String(
+    typeof error === 'string'
+      ? error
+      : error instanceof Error
+        ? error.message
+        : normalizeOptionalText(error),
+  ).toLowerCase();
+  return (
+    msg.includes('enable noweb store') ||
+    msg.includes('config.noweb.store.enabled') ||
+    msg.includes('config.noweb.store.full_sync') ||
+    (msg.includes('noweb') &&
+      msg.includes('store') &&
+      (msg.includes('full_sync') || msg.includes('full sync')))
+  );
 }
 
-export function pickBooleanFromMe(
+export function expandComparablePhoneVariantsExt(phone: string): string[] {
+  const digits = normalizePhoneExt(phone);
+  if (!digits) return [];
+  const variants = new Set<string>([digits]);
+  if (digits.startsWith('55') && digits.length > 11) variants.add(digits.slice(2));
+  if (!digits.startsWith('55') && digits.length >= 10 && digits.length <= 11)
+    variants.add(`55${digits}`);
+  return Array.from(variants);
+}
+
+export function areEquivalentPhonesExt(left: string, right: string): boolean {
+  const lv = expandComparablePhoneVariantsExt(left);
+  const rv = expandComparablePhoneVariantsExt(right);
+  return lv.some((c) => rv.includes(c));
+}
+
+export function resolveCanonicalChatIdExt(chatId: string, mappings: Map<string, string>): string {
+  const n = String(chatId || '').trim();
+  if (!n) return '';
+  if (LID_RE.test(n)) {
+    const m = mappings.get(n) || mappings.get(n.replace(LID_RE, '')) || '';
+    if (m) return m;
+  }
+  return n;
+}
+
+export async function resolveCanonicalPhoneExt(
+  deps: { providerRegistry: WhatsAppProviderRegistry },
+  workspaceId: string,
+  chatId: string,
+  lidMapCacheMs: number,
+  lidMapCache: Map<string, { expiresAt: number; mappings: Map<string, string> }>,
+): Promise<string> {
+  const n = String(chatId || '').trim();
+  if (!n) return '';
+  if (LID_RE.test(n)) {
+    const mappings = await getLidPnMapExt(deps, workspaceId, lidMapCacheMs, lidMapCache);
+    const m = mappings.get(n) || mappings.get(n.replace(LID_RE, '')) || '';
+    if (m) return normalizePhoneExt(m);
+  }
+  return normalizePhoneExt(n);
+}
+
+export async function getLidPnMapExt(
+  deps: { providerRegistry: WhatsAppProviderRegistry },
+  workspaceId: string,
+  cacheTtlMs: number,
+  cache: Map<string, { expiresAt: number; mappings: Map<string, string> }>,
+): Promise<Map<string, string>> {
+  const cached = cache.get(workspaceId);
+  if (cached && cached.expiresAt > Date.now()) return cached.mappings;
+  const raw = await deps.providerRegistry
+    .listLidMappings(workspaceId)
+    .catch(() => [] as WahaLidMapping[]);
+  const normalized = new Map<string, string>();
+  for (const m of raw) {
+    const lid = String(m?.lid || '').trim();
+    const pn = String(m?.pn || '').trim();
+    if (!lid || !pn) continue;
+    normalized.set(lid, pn);
+    normalized.set(lid.replace(LID_RE, ''), pn);
+  }
+  cache.set(workspaceId, { expiresAt: Date.now() + cacheTtlMs, mappings: normalized });
+  return normalized;
+}
+
+export function isWorkspaceSelfChatIdExt(
+  chatId: string,
+  selfPhone: string | null,
+  selfIds: string[],
+  mappings: Map<string, string>,
+): boolean {
+  const n = String(chatId || '').trim();
+  if (selfIds.some((c) => String(c || '').trim() === n)) return true;
+  if (!selfPhone) return false;
+  const canonical = resolveCanonicalChatIdExt(n, mappings);
+  return areEquivalentPhonesExt(normalizePhoneExt(canonical), selfPhone);
+}
+
+function pickBooleanFromMe(
   lastMessage: Record<string, unknown> | null | undefined,
   lastMsgDataId: Record<string, unknown> | undefined,
   lastMsgId: Record<string, unknown> | undefined,
 ): boolean | null {
-  if (typeof lastMessage?.fromMe === 'boolean') {
-    return lastMessage.fromMe;
-  }
-  if (typeof lastMsgDataId?.fromMe === 'boolean') {
-    return lastMsgDataId.fromMe;
-  }
-  if (typeof lastMsgId?.fromMe === 'boolean') {
-    return lastMsgId.fromMe;
-  }
+  if (typeof lastMessage?.fromMe === 'boolean') return lastMessage.fromMe;
+  if (typeof lastMsgDataId?.fromMe === 'boolean') return lastMsgDataId.fromMe;
+  if (typeof lastMsgId?.fromMe === 'boolean') return lastMsgId.fromMe;
   return null;
 }
 
-export function normalizeChats(raw: unknown): WahaChatSummary[] {
+export function normalizeChatEntryExt(chatRaw: unknown): WahaChatSummary {
+  const chat = (chatRaw && typeof chatRaw === 'object' ? chatRaw : {}) as Record<string, unknown>;
+  const chatIdObj = chat.id as Record<string, unknown> | string | undefined;
+  const lm = chat.lastMessage as Record<string, unknown> | null | undefined;
+  const lmd = lm?._data as Record<string, unknown> | undefined;
+  const lmi = lm?.id as Record<string, unknown> | undefined;
+  const cc = chat._chat as Record<string, unknown> | undefined;
+  const contact = chat.contact as Record<string, unknown> | undefined;
+  const lmdId = lmd?.id as Record<string, unknown> | undefined;
+  const id =
+    (typeof chatIdObj === 'object' && chatIdObj ? chatIdObj._serialized : undefined) ||
+    chat.id ||
+    chat.chatId ||
+    chat.wid ||
+    '';
+  const lmt =
+    Number(
+      chat.lastMessageTimestamp ||
+        lm?.timestamp ||
+        lmd?.messageTimestamp ||
+        chat.last_time ||
+        cc?.conversationTimestamp ||
+        0,
+    ) || 0;
+  const lmrt =
+    Number(
+      chat.lastMessageRecvTimestamp ||
+        cc?.lastMessageRecvTimestamp ||
+        lm?.timestamp ||
+        lmd?.messageTimestamp ||
+        cc?.conversationTimestamp ||
+        0,
+    ) || 0;
+  return {
+    id,
+    unreadCount: Number(chat.unreadCount || chat.unread || 0) || 0,
+    timestamp: resolveTimestampExt(chat),
+    lastMessageTimestamp: lmt,
+    lastMessageRecvTimestamp: lmrt,
+    lastMessageFromMe: pickBooleanFromMe(lm, lmdId, lmi),
+    name: chat.name || contact?.pushName || lmd?.verifiedBizName || null,
+  } as WahaChatSummary;
+}
+
+export function normalizeChatsExt(raw: unknown): WahaChatSummary[] {
   const rawObj = raw as Record<string, unknown> | unknown[] | null;
   const candidates: unknown[] = Array.isArray(rawObj)
     ? rawObj
@@ -167,61 +241,10 @@ export function normalizeChats(raw: unknown): WahaChatSummary[] {
         : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.data)
           ? (rawObj.data as unknown[])
           : [];
-
-  return candidates
-    .map((chatRaw: unknown) => normalizeChatEntry(chatRaw))
-    .filter((chat) => !!chat.id);
+  return candidates.map((c) => normalizeChatEntryExt(c)).filter((c) => !!c.id);
 }
 
-export function normalizeChatEntry(chatRaw: unknown): WahaChatSummary {
-  const chat = (chatRaw && typeof chatRaw === 'object' ? chatRaw : {}) as Record<string, unknown>;
-  const chatIdObj = chat.id as Record<string, unknown> | string | undefined;
-  const lastMessage = chat.lastMessage as Record<string, unknown> | null | undefined;
-  const lastMsgData = lastMessage?._data as Record<string, unknown> | undefined;
-  const lastMsgId = lastMessage?.id as Record<string, unknown> | undefined;
-  const chatChat = chat._chat as Record<string, unknown> | undefined;
-  const contact = chat.contact as Record<string, unknown> | undefined;
-  const lastMsgDataId = lastMsgData?.id as Record<string, unknown> | undefined;
-
-  const id =
-    (typeof chatIdObj === 'object' && chatIdObj ? chatIdObj._serialized : undefined) ||
-    chat.id ||
-    chat.chatId ||
-    chat.wid ||
-    '';
-
-  const lastMessageTimestamp =
-    Number(
-      chat.lastMessageTimestamp ||
-        lastMessage?.timestamp ||
-        lastMsgData?.messageTimestamp ||
-        chat.last_time ||
-        chatChat?.conversationTimestamp ||
-        0,
-    ) || 0;
-
-  const lastMessageRecvTimestamp =
-    Number(
-      chat.lastMessageRecvTimestamp ||
-        chatChat?.lastMessageRecvTimestamp ||
-        lastMessage?.timestamp ||
-        lastMsgData?.messageTimestamp ||
-        chatChat?.conversationTimestamp ||
-        0,
-    ) || 0;
-
-  return {
-    id,
-    unreadCount: Number(chat.unreadCount || chat.unread || 0) || 0,
-    timestamp: resolveTimestamp(chat),
-    lastMessageTimestamp,
-    lastMessageRecvTimestamp,
-    lastMessageFromMe: pickBooleanFromMe(lastMessage, lastMsgDataId, lastMsgId),
-    name: chat.name || contact?.pushName || lastMsgData?.verifiedBizName || null,
-  } as WahaChatSummary;
-}
-
-export function normalizeMessages(raw: unknown, fallbackChatId: string): WahaChatMessage[] {
+export function normalizeMessagesExt(raw: unknown, fallbackChatId: string): WahaChatMessage[] {
   const rawObj = raw as Record<string, unknown> | unknown[] | null;
   const candidates: unknown[] = Array.isArray(rawObj)
     ? rawObj
@@ -232,164 +255,52 @@ export function normalizeMessages(raw: unknown, fallbackChatId: string): WahaCha
         : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.data)
           ? (rawObj.data as unknown[])
           : [];
-
-  return candidates.map((messageRaw: unknown) => {
-    const message = (messageRaw && typeof messageRaw === 'object' ? messageRaw : {}) as Record<
-      string,
-      unknown
-    >;
-    const msgId = message.id as Record<string, unknown> | string | undefined;
-    const msgKey = message.key as Record<string, unknown> | undefined;
-    const msgText = message.text as Record<string, unknown> | undefined;
-    const msgMedia = message.media as Record<string, unknown> | undefined;
+  return candidates.map((mr: unknown) => {
+    const m = (mr && typeof mr === 'object' ? mr : {}) as Record<string, unknown>;
+    const mid = m.id as Record<string, unknown> | string | undefined;
+    const mk = m.key as Record<string, unknown> | undefined;
+    const mt = m.text as Record<string, unknown> | undefined;
+    const mm = m.media as Record<string, unknown> | undefined;
     return {
       id:
-        (typeof msgId === 'object' && msgId ? msgId._serialized || msgId.id : undefined) ||
-        msgKey?.id ||
-        message.id ||
+        (typeof mid === 'object' && mid ? mid._serialized || mid.id : undefined) ||
+        mk?.id ||
+        m.id ||
         '',
-      from: resolvePreferredChatId(message) || message.from,
-      to: message.to,
-      fromMe: message.fromMe === true,
-      body: message.body || msgText?.body || '',
-      type: message.type,
-      hasMedia: message.hasMedia === true,
-      mediaUrl: message.mediaUrl || msgMedia?.url,
-      mimetype: message.mimetype || msgMedia?.mimetype,
-      timestamp: resolveTimestamp(message),
-      chatId: resolvePreferredChatId(message) || fallbackChatId,
-      raw: message,
+      from: resolvePreferredChatIdExt(m) || m.from,
+      to: m.to,
+      fromMe: m.fromMe === true,
+      body: m.body || mt?.body || '',
+      type: m.type,
+      hasMedia: m.hasMedia === true,
+      mediaUrl: m.mediaUrl || mm?.url,
+      mimetype: m.mimetype || mm?.mimetype,
+      timestamp: resolveTimestampExt(m),
+      chatId: resolvePreferredChatIdExt(m) || fallbackChatId,
+      raw: m,
     } as WahaChatMessage;
   });
 }
 
-function resolvePreferredChatId(
+function resolvePreferredChatIdExt(
   payload: Record<string, unknown> | null | undefined,
 ): string | null {
   const data = payload?._data as Record<string, unknown> | undefined;
-  const dataKey = data?.key as Record<string, unknown> | undefined;
-  const payloadKey = payload?.key as Record<string, unknown> | undefined;
+  const dk = data?.key as Record<string, unknown> | undefined;
+  const pk = payload?.key as Record<string, unknown> | undefined;
   const candidates = [
-    dataKey?.remoteJidAlt,
-    payloadKey?.remoteJidAlt,
+    dk?.remoteJidAlt,
+    pk?.remoteJidAlt,
     payload?.remoteJidAlt,
     payload?.chatId,
     payload?.from,
-    dataKey?.remoteJid,
-    payloadKey?.remoteJid,
+    dk?.remoteJid,
+    pk?.remoteJid,
     payload?.to,
   ]
-    .filter((candidate) => typeof candidate === 'string')
-    .map((candidate) => String(candidate).trim())
+    .filter((c) => typeof c === 'string')
+    .map((c) => String(c).trim())
     .filter(Boolean);
-
-  if (!candidates.length) {
-    return null;
-  }
-
-  return candidates.find((candidate) => !candidate.includes('@lid')) || candidates[0] || null;
-}
-
-export function extractSenderName(
-  payload: Record<string, unknown> | null | undefined,
-): string | undefined {
-  const data = payload?._data as Record<string, unknown> | undefined;
-  const candidates: unknown[] = [
-    data?.pushName,
-    payload?.pushName,
-    data?.notifyName,
-    payload?.notifyName,
-    payload?.author,
-    payload?.senderName,
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate !== 'string') {
-      continue;
-    }
-
-    const normalized = candidate.trim();
-    if (normalized) {
-      return normalized;
-    }
-  }
-
-  return undefined;
-}
-
-export function mapInboundType(type?: string): InboundMessage['type'] {
-  const normalized = String(type || '').toLowerCase();
-  if (normalized === 'chat' || normalized === 'text') {
-    return 'text';
-  }
-  if (normalized === 'audio' || normalized === 'ptt') {
-    return 'audio';
-  }
-  if (normalized === 'image') {
-    return 'image';
-  }
-  if (normalized === 'document') {
-    return 'document';
-  }
-  if (normalized === 'video') {
-    return 'video';
-  }
-  if (normalized === 'sticker') {
-    return 'sticker';
-  }
-  return 'unknown';
-}
-
-export function toInboundMessage(
-  workspaceId: string,
-  message: WahaChatMessage,
-  provider: InboundMessage['provider'] = 'meta-cloud',
-): InboundMessage | null {
-  const providerMessageId = String(message.id || '').trim();
-  const from = String(message.from || message.chatId || '').trim();
-
-  if (!providerMessageId || !from) {
-    return null;
-  }
-
-  return {
-    workspaceId,
-    provider,
-    ingestMode: 'catchup',
-    createdAt: normalizeTimestamp(message.timestamp),
-    providerMessageId,
-    from,
-    to: message.to,
-    senderName: extractSenderName(message.raw),
-    type: mapInboundType(message.type),
-    text: message.body,
-    mediaUrl: message.mediaUrl,
-    mediaMime: message.mimetype,
-    raw: message.raw,
-  };
-}
-
-export function resolveRemoteContactName(
-  chat: WahaChatSummary,
-  extractPhoneFromChatId: (chatId: string) => string,
-): string {
-  const fallbackPhone = normalizePhone(extractPhoneFromChatId(chat?.id || ''));
-  const candidates = [
-    chat?.name,
-    chat?.contact?.pushName,
-    chat?.contact?.name,
-    chat?.pushName,
-    chat?.notifyName,
-    chat?.lastMessage?._data?.notifyName,
-    chat?.lastMessage?._data?.verifiedBizName,
-  ];
-
-  for (const candidate of candidates) {
-    const normalized = String(candidate || '').trim();
-    if (normalized && !isPlaceholderContactName(normalized, fallbackPhone)) {
-      return normalized;
-    }
-  }
-
-  return '';
+  if (!candidates.length) return null;
+  return candidates.find((c) => !c.includes('@lid')) || candidates[0] || null;
 }

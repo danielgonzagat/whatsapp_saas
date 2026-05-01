@@ -18,7 +18,7 @@ import {
   type JsonRecord,
 } from './product-nerve-center.shared';
 import { formatOneDecimalPercent } from './ProductNerveCenterComissaoTab.helpers';
-import { DialogFrame } from './ProductNerveCenterComissaoTab.richtext';
+import { CoprodDeleteDialog } from './__companions__/ProductNerveCenterComissaoTab.coprod.DeleteDialog';
 
 export function CoprodSubTab({
   productId,
@@ -362,27 +362,11 @@ export function CoprodSubTab({
         )}
       </div>
       {deleteTarget ? (
-        <DialogFrame
-          title={kloelT(`Excluir coprodutor`)}
-          description={[
-            kloelT(`Esta ação remove `),
-            deleteTarget.agentName,
-            kloelT(` da divisão atual de comissão.`),
-          ].join('')}
+        <CoprodDeleteDialog
+          agentName={deleteTarget.agentName}
           onClose={() => setDeleteTarget(null)}
-          footer={
-            <>
-              <Bt onClick={() => setDeleteTarget(null)}>{kloelT(`Cancelar`)}</Bt>
-              <Bt primary onClick={handleDelete}>
-                {kloelT(`Excluir`)}
-              </Bt>
-            </>
-          }
-        >
-          <div style={{ fontSize: 12, color: V.t2, lineHeight: 1.5 }}>
-            {kloelT(`Confirme para remover o vínculo de coprodução ou gerência deste produto.`)}
-          </div>
-        </DialogFrame>
+          onDelete={handleDelete}
+        />
       ) : null}
     </>
   );

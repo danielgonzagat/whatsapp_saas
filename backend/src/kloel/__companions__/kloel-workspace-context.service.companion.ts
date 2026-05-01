@@ -26,3 +26,9 @@ export function createWorkspaceIntegration(
 ) {
   return prisma.integration.create({ data: { workspaceId, ...data } });
 }
+
+export function safeStr(value: unknown, fallback = ''): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return fallback;
+}

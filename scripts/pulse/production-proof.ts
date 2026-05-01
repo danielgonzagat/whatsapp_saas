@@ -357,25 +357,4 @@ function reasonForProofStatus(dimension: ProductionProofDimension, status: Proof
   if (status === 'not_required') return `${dimension} is not required for this capability.`;
   return `${dimension} has no observed PULSE proof for this capability.`;
 }
-
-function buildDimensionEvidence(
-  statuses: Record<ProductionProofDimension, ProofStatus>,
-): Record<ProductionProofDimension, ProductionProofDimensionEvidence> {
-  return Object.fromEntries(
-    (Object.entries(statuses) as Array<[ProductionProofDimension, ProofStatus]>).map(
-      ([dimension, status]) => [
-        dimension,
-        {
-          dimension,
-          status,
-          truthMode: truthModeForProofStatus(status),
-          targetEngine: DIMENSION_TARGET_ENGINES[dimension],
-          reason: reasonForProofStatus(dimension, status),
-          recommendedPulseAction: DIMENSION_ACTIONS[dimension],
-          productEditRequired: false,
-        },
-      ],
-    ),
-  ) as Record<ProductionProofDimension, ProductionProofDimensionEvidence>;
-}
-import "./__companions__/production-proof.companion";
+export * from './__companions__/production-proof.companion';

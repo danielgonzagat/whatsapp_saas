@@ -357,36 +357,4 @@ function addDependenciesFromPulseArtifacts(
   ]);
   addDependenciesFromArtifactFiles(dependencies, rootDir, signalFiles);
 }
-
-// ── Dependency detection ──────────────────────────────────────────────────
-
-/** Scan source and artifacts for external dependencies used in the codebase. */
-export function detectProviders(rootDir: string): Map<ChaosProviderName, string[]> {
-  const providerFiles = new Map<ChaosProviderName, string[]>();
-  const backendDirs = [
-    safeJoin(rootDir, 'backend', 'src'),
-    safeJoin(rootDir, 'worker', 'src'),
-    safeJoin(rootDir, 'worker'),
-  ];
-
-  const allFiles: string[] = [];
-  for (const dir of backendDirs) {
-    if (pathExists(dir)) {
-      allFiles.push(
-        ...walkFiles(dir, ['.ts', '.tsx']).filter(
-          (f) => !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f),
-        ),
-      );
-    }
-  }
-
-  for (const file of allFiles) {
-    const content = readSafe(file);
-    addDependenciesFromSource(providerFiles, rootDir, file, content);
-  }
-
-  addDependenciesFromPulseArtifacts(providerFiles, rootDir);
-
-  return providerFiles;
-}
-import "./__companions__/chaos-engine.companion";
+export * from './__companions__/chaos-engine.companion';

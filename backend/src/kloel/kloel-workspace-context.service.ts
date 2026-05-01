@@ -9,13 +9,9 @@ import { KloelWorkspaceContextLinkedProductService } from './kloel-workspace-con
 import {
   listWorkspaceIntegrations,
   createWorkspaceIntegration,
+  safeStr,
 } from './__companions__/kloel-workspace-context.service.companion';
 import type { WorkspaceProductContextInput } from './kloel-workspace-context.types';
-function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  return fallback;
-}
 
 const LIMITS: KloelContextFormatterLimits = {
   workspaceProductPlanLimit: 3,

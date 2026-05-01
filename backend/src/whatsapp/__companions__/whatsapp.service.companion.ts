@@ -1,25 +1,22 @@
-import { randomUUID } from 'node:crypto';
-import Redis from 'ioredis';
-import { forEachSequential } from '../../common/async-sequence';
-import { createRedisClient } from '../../common/redis/redis.util';
-import { flowQueue } from '../../queue/queue';
-import {
-  buildCatalogContactEntry,
-  filterAndSortCatalogEntries,
-} from './whatsapp.service.catalog.companion';
-import type { CatalogConversationSummary } from './whatsapp.service.catalog.companion';
-import {
-  normalizeNumber,
-  readText,
-  normalizeJsonObject,
-  resolveTimestamp,
-  toIsoTimestamp,
-  normalizeChatId as normalizeChatIdFn,
-} from './whatsapp.service.normalization.companion';
-import { isPlaceholderContactName as isPlaceholderContactNameValue } from '../whatsapp-normalization.util';
+import { randomInt, randomUUID } from 'node:crypto';
+import type Redis from 'ioredis';
+import type { PrismaService } from '../../prisma/prisma.service';
+import type { WhatsAppProviderRegistry } from '../providers/provider-registry';
+import type { PlanLimitsService } from '../../billing/plan-limits.service';
+import type { WorkspaceService } from '../../workspaces/workspace.service';
+import type { InboxService } from '../../inbox/inbox.service';
+import type { NeuroCrmService } from '../../crm/neuro-crm.service';
+import type { OpsAlertService } from '../../observability/ops-alert.service';
+import type { WhatsAppCatchupService } from '../whatsapp-catchup.service';
+import type { CiaRuntimeService } from '../cia-runtime.service';
+import type { WorkerRuntimeService } from '../worker-runtime.service';
+import type { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
+import { buildQueueDedupId, buildQueueJobId } from '../../queue/job-id.util';
+import { autopilotQueue, flowQueue } from '../../queue/queue';
 
-const PATTERN_RE = /-/g;
+const D_RE = /\D/g;
 
+// ── Types ──
 export type NormalizedContact = {
   id: string;
   phone: string;
@@ -33,49 +30,154 @@ export type NormalizedContact = {
   createdAt: string | null;
   updatedAt: string | null;
 };
+export type NormalizedChat = {
+  id: string;
+  phone: string;
+  name: string | null;
+  unreadCount: number;
+  pending: boolean;
+  needsReply?: boolean;
+  pendingMessages?: number;
+  owner?: any;
+  blockedReason?: any;
+  lastMessageDirection?: any;
+  timestamp: number;
+  lastMessageAt: string | null;
+  conversationId: string | null;
+  status: string | null;
+  mode?: string | null;
+  assignedAgentId?: string | null;
+  source: 'provider' | 'crm' | 'waha+crm';
+};
+export type CatalogConversationSummary = {
+  id: string;
+  contactId: string;
+  unreadCount: number | null;
+  status: string | null;
+  mode: string | null;
+  lastMessageAt: Date | null;
+};
 
-export function isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
-  return isPlaceholderContactNameValue(value, phone);
-}
+export type WsDeps = {
+  prisma: PrismaService;
+  redis: Redis;
+  providerRegistry: WhatsAppProviderRegistry;
+  planLimits: PlanLimitsService;
+  workspaces: WorkspaceService;
+  inbox: InboxService;
+  neuroCrm: NeuroCrmService;
+  opsAlert?: OpsAlertService;
+  catchupService: WhatsAppCatchupService;
+  ciaRuntime: CiaRuntimeService;
+  workerRuntime: WorkerRuntimeService;
+  whatsappApi: WhatsAppApiProvider;
+  contactDebounceMs: number;
+};
 
-export function resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {
-  for (const candidate of candidates) {
-    const normalized = readText(candidate);
-    if (normalized && !isPlaceholderContactName(normalized, phone)) {
-      return normalized;
-    }
-  }
+// ── Utility helpers ──
+function readText(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
   return '';
 }
-
-export function normalizeContacts(
-  raw: unknown,
-  providerRegistry: { extractPhoneFromChatId: (chatId: string) => string },
-): NormalizedContact[] {
-  const r = raw as Record<string, unknown> | undefined;
-  const candidates: unknown[] = Array.isArray(raw)
-    ? raw
-    : Array.isArray(r?.contacts)
-      ? (r.contacts as unknown[])
-      : Array.isArray(r?.items)
-        ? (r.items as unknown[])
-        : Array.isArray(r?.data)
-          ? (r.data as unknown[])
-          : [];
-
-  return candidates
-    .map((contact: unknown) => normalizeContactEntry(contact, providerRegistry))
-    .filter((contact): contact is NormalizedContact => contact !== null);
+function normalizeNumber(num: string): string {
+  return num.replace(D_RE, '');
 }
 
+export function normalizeJsonObjExt(value: unknown): Record<string, unknown> {
+  if (!value) return {};
+  if (typeof value === 'string') {
+    try {
+      const p = JSON.parse(value);
+      if (p && typeof p === 'object' && !Array.isArray(p)) return p as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+    return {};
+  }
+  if (typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>;
+  return {};
+}
+export function resolveTimestampExt(value: unknown): number {
+  const v = value as Record<string, unknown> | undefined;
+  const vChat = v?._chat as Record<string, unknown> | undefined;
+  const vLm = v?.lastMessage as Record<string, unknown> | undefined;
+  const vLmd = vLm?._data as Record<string, unknown> | undefined;
+  for (const c of [
+    vChat?.conversationTimestamp,
+    vChat?.lastMessageRecvTimestamp,
+    v?.conversationTimestamp,
+    v?.lastMessageRecvTimestamp,
+    vLm?.timestamp,
+    vLmd?.messageTimestamp,
+    v?.timestamp,
+    v?.t,
+    v?.createdAt,
+    v?.lastMessageTimestamp,
+    v?.last_time,
+  ]) {
+    if (typeof c === 'number' && Number.isFinite(c)) return c > 1e12 ? c : c * 1000;
+    if (typeof c === 'string') {
+      const n = Number(c);
+      if (Number.isFinite(n) && n > 0) return n > 1e12 ? n : n * 1000;
+      const d = new Date(c);
+      if (!Number.isNaN(d.getTime())) return d.getTime();
+    }
+  }
+  return 0;
+}
+export function toIsoTimestamp(timestamp: number): string | null {
+  if (!timestamp || !Number.isFinite(timestamp)) return null;
+  return new Date(timestamp).toISOString();
+}
+export function normalizeProbabilityScoreExt(score: unknown, bucket?: string | null): number {
+  const numeric = Number(score);
+  if (Number.isFinite(numeric)) return Math.max(0, Math.min(1, Number(numeric.toFixed(3))));
+  switch (
+    String(bucket || '')
+      .trim()
+      .toUpperCase()
+  ) {
+    case 'VERY_HIGH':
+      return 0.95;
+    case 'HIGH':
+      return 0.8;
+    case 'MEDIUM':
+      return 0.5;
+    case 'LOW':
+      return 0.15;
+    default:
+      return 0;
+  }
+}
+export function isAutonomousEnabledExt(settings: Record<string, unknown>): boolean {
+  const autonomy = normalizeJsonObjExt(settings.autonomy);
+  const autopilot = normalizeJsonObjExt(settings.autopilot);
+  const mode = readText(autonomy.mode).toUpperCase();
+  if (mode) return mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL';
+  return autopilot.enabled === true;
+}
+export function normalizeHashExt(text: string): string {
+  return Buffer.from(text || '')
+    .toString('base64')
+    .slice(0, 32);
+}
+export function normalizeNumberExt(num: string): string {
+  return num.replace(D_RE, '');
+}
+
+// ── Normalize contacts ──
 export function normalizeContactEntry(
   contact: unknown,
-  providerRegistry: { extractPhoneFromChatId: (chatId: string) => string },
+  deps: {
+    isPlaceholder: (v: unknown, p?: string | null) => boolean;
+    resolveName: (p: string, ...c: unknown[]) => string;
+    extractPhone: (id: string) => string;
+  },
 ): NormalizedContact | null {
   const c = contact as Record<string, unknown>;
   const cId = c?.id as Record<string, unknown> | string | undefined;
   const cWid = c?.wid as Record<string, unknown> | string | undefined;
-
   const rawId = readText(
     [
       typeof cId === 'object' ? cId?._serialized : undefined,
@@ -85,35 +187,22 @@ export function normalizeContactEntry(
       c?.chatId,
     ].find((v) => typeof v === 'string' && v.trim()) ?? '',
   );
-
-  const phoneCandidate = [
+  const pc = [
     c?.phone,
     c?.number,
     typeof cId === 'object' ? cId?.user : undefined,
     typeof cWid === 'object' ? cWid?.user : undefined,
   ].find((v) => typeof v === 'string' && v.trim());
-
-  const phone = normalizeNumber(
-    typeof phoneCandidate === 'string'
-      ? phoneCandidate
-      : providerRegistry.extractPhoneFromChatId(rawId),
-  );
-
-  if (!phone) {
-    return null;
-  }
-
+  const phone = normalizeNumber(typeof pc === 'string' ? pc : deps.extractPhone(rawId));
+  if (!phone) return null;
   const pushNameRaw = c?.pushName || c?.pushname;
   const pushName = typeof pushNameRaw === 'string' && pushNameRaw.trim() ? pushNameRaw : null;
-  const resolvedPushName = isPlaceholderContactName(pushName, phone) ? null : pushName;
-  const shortName = typeof c?.shortName === 'string' ? c.shortName : null;
-
   return {
     id: rawId || `${phone}@c.us`,
     phone,
-    name: resolveTrustedContactName(phone, c?.pushName, c?.pushname, c?.name, c?.shortName) || null,
-    pushName: resolvedPushName,
-    shortName,
+    name: deps.resolveName(phone, c?.pushName, c?.pushname, c?.name, c?.shortName) || null,
+    pushName: deps.isPlaceholder(pushName, phone) ? null : pushName,
+    shortName: typeof c?.shortName === 'string' ? c.shortName : null,
     email: null,
     localContactId: null,
     source: 'provider',
@@ -123,30 +212,20 @@ export function normalizeContactEntry(
   };
 }
 
-export function normalizeChats(raw: unknown): any[] {
-  const r = raw as Record<string, unknown> | undefined;
-  const candidates: unknown[] = Array.isArray(raw)
-    ? raw
-    : Array.isArray(r?.chats)
-      ? (r.chats as unknown[])
-      : Array.isArray(r?.items)
-        ? (r.items as unknown[])
-        : Array.isArray(r?.data)
-          ? (r.data as unknown[])
-          : [];
-
-  return candidates
-    .map((chatRaw: unknown) => normalizeChatEntry(chatRaw))
-    .filter((chat: any) => chat !== null);
-}
-
-export function normalizeChatEntry(chatRaw: unknown): any {
+// ── Normalize chats ──
+export function normalizeChatEntry(
+  chatRaw: unknown,
+  deps: {
+    resolveName: (p: string, ...c: unknown[]) => string;
+    extractPhone: (id: string) => string;
+    isPlaceholder: (v: unknown, p?: string | null) => boolean;
+  },
+): NormalizedChat | null {
   const chat = chatRaw as Record<string, unknown>;
   const chatId = chat?.id as Record<string, unknown> | string | undefined;
   const chatContact = chat?.contact as Record<string, unknown> | undefined;
-  const chatLastMessage = chat?.lastMessage as Record<string, unknown> | undefined;
-  const chatLastMessageData = chatLastMessage?._data as Record<string, unknown> | undefined;
-
+  const chatLm = chat?.lastMessage as Record<string, unknown> | undefined;
+  const chatLmd = chatLm?._data as Record<string, unknown> | undefined;
   const rawId = readText(
     [
       typeof chatId === 'object' ? chatId?._serialized : undefined,
@@ -156,30 +235,25 @@ export function normalizeChatEntry(chatRaw: unknown): any {
     ].find((v) => typeof v === 'string' && v.trim()) ?? '',
   );
   const phone = normalizeNumber(
-    typeof chat?.phone === 'string' ? chat.phone : rawId.replace(/@.*$/, ''),
+    typeof chat?.phone === 'string' ? chat.phone : deps.extractPhone(rawId),
   );
-
-  if (!rawId || !phone) {
-    return null;
-  }
-
-  const timestamp = resolveTimestamp(chat);
-  const unreadCount = Number(chat?.unreadCount || chat?.unread || 0) || 0;
-
+  if (!rawId || !phone) return null;
+  const timestamp = resolveTimestampExt(chat);
+  const ur = Number(chat?.unreadCount || chat?.unread || 0) || 0;
   return {
     id: rawId,
     phone,
     name:
-      resolveTrustedContactName(
+      deps.resolveName(
         phone,
         chat?.name,
         chat?.pushName,
         chatContact?.name,
         chatContact?.pushName,
-        chatLastMessageData?.verifiedBizName,
+        chatLmd?.verifiedBizName,
       ) || null,
-    unreadCount,
-    pending: unreadCount > 0 || chatLastMessage?.fromMe === false,
+    unreadCount: ur,
+    pending: ur > 0 || chatLm?.fromMe === false,
     timestamp,
     lastMessageAt: toIsoTimestamp(timestamp),
     conversationId: null,
@@ -188,30 +262,17 @@ export function normalizeChatEntry(chatRaw: unknown): any {
   };
 }
 
-export function normalizeMessages(raw: unknown, fallbackChatId: string) {
-  const r = raw as Record<string, unknown> | undefined;
-  const candidates = Array.isArray(raw)
-    ? raw
-    : Array.isArray(r?.messages)
-      ? (r.messages as unknown[])
-      : Array.isArray(r?.items)
-        ? (r.items as unknown[])
-        : Array.isArray(r?.data)
-          ? (r.data as unknown[])
-          : [];
-
-  return candidates
-    .map((msgRaw: unknown) => normalizeMessageEntry(msgRaw, fallbackChatId))
-    .filter(Boolean);
-}
-
-export function normalizeMessageEntry(msgRaw: unknown, fallbackChatId: string) {
+// ── Normalize messages ──
+export function normalizeMessageEntry(
+  msgRaw: unknown,
+  fallbackChatId: string,
+  deps: { extractPhone: (id: string) => string },
+): any {
   const message = msgRaw as Record<string, unknown>;
   const mId = message?.id as Record<string, unknown> | string | undefined;
   const mKey = message?.key as Record<string, unknown> | undefined;
   const mText = message?.text as Record<string, unknown> | undefined;
   const mMedia = message?.media as Record<string, unknown> | undefined;
-
   const id = readText(
     [
       typeof mId === 'object' ? (mId?._serialized ?? mId?.id) : undefined,
@@ -223,53 +284,45 @@ export function normalizeMessageEntry(msgRaw: unknown, fallbackChatId: string) {
     [message?.chatId, message?.from, message?.to].find((v) => typeof v === 'string' && v.trim()) ??
       fallbackChatId,
   );
-
-  if (!id || !chatId) {
-    return null;
-  }
-
+  if (!id || !chatId) return null;
   const phone = normalizeNumber(
-    typeof message?.phone === 'string' ? message.phone : chatId.replace(/@.*$/, ''),
+    typeof message?.phone === 'string' ? message.phone : deps.extractPhone(chatId),
   );
-  const timestamp = resolveTimestamp(message);
-  const fromMe = message?.fromMe === true;
-
+  const ts = resolveTimestampExt(message);
+  const fm = message?.fromMe === true;
   return {
     id,
     chatId,
     phone,
     body: message?.body || mText?.body || '',
-    direction: fromMe ? 'OUTBOUND' : 'INBOUND',
-    fromMe,
+    direction: fm ? 'OUTBOUND' : 'INBOUND',
+    fromMe: fm,
     type: (typeof message?.type === 'string' ? message.type : 'chat').toLowerCase(),
     hasMedia: message?.hasMedia === true,
     mediaUrl: message?.mediaUrl || mMedia?.url || null,
     mimetype: message?.mimetype || mMedia?.mimetype || null,
-    timestamp,
-    isoTimestamp: toIsoTimestamp(timestamp),
+    timestamp: ts,
+    isoTimestamp: toIsoTimestamp(ts),
     source: 'provider',
   };
 }
 
-export async function collectCatalogContactEntries(
-  prisma: {
-    contact: { findMany: (args: any) => Promise<any[]> };
-    conversation: { findMany: (args: any) => Promise<any[]> };
-  },
+// ── collectCatalogContactEntries ──
+export async function collectCatalogContactEntriesExt(
+  deps: Pick<WsDeps, 'prisma'> & { resolveName: (p: string, ...c: unknown[]) => string },
   workspaceId: string,
   options?: { days?: number; onlyCataloged?: boolean },
-): Promise<ReturnType<typeof buildCatalogContactEntry>[]> {
+) {
   const days = Math.max(1, Math.min(365, Number(options?.days || 30) || 30));
   const onlyCataloged = options?.onlyCataloged !== false;
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-
   const [contacts, conversations] = await Promise.all([
-    prisma.contact.findMany({
+    deps.prisma.contact.findMany({
       where: { workspaceId },
       orderBy: { updatedAt: 'desc' },
       take: 2000,
     }),
-    prisma.conversation.findMany({
+    deps.prisma.conversation.findMany({
       where: { workspaceId },
       select: {
         id: true,
@@ -283,271 +336,336 @@ export async function collectCatalogContactEntries(
       take: 4000,
     }),
   ]);
-
-  const conversationsByContact = new Map<string, CatalogConversationSummary[]>();
-  for (const conversation of conversations || []) {
-    const items = conversationsByContact.get(conversation.contactId) || [];
-    items.push(conversation);
-    conversationsByContact.set(conversation.contactId, items);
+  const cbC = new Map<string, CatalogConversationSummary[]>();
+  for (const c of conversations || []) {
+    const items = cbC.get(c.contactId) || [];
+    items.push(c);
+    cbC.set(c.contactId, items);
   }
-
-  const entries = (contacts || []).map((contact) => {
-    const relatedConversations = (conversationsByContact.get(contact.id) || [])
-      .slice()
-      .sort(
-        (a, b) =>
-          resolveTimestamp({ createdAt: b.lastMessageAt }) -
-          resolveTimestamp({ createdAt: a.lastMessageAt }),
+  const ndv = (v: unknown) => {
+    const ts = resolveTimestampExt({ createdAt: v });
+    return toIsoTimestamp(ts);
+  };
+  return (contacts || [])
+    .map((contact) => {
+      const cf = normalizeJsonObjExt(contact.customFields);
+      const rcs = (cbC.get(contact.id) || [])
+        .slice()
+        .sort(
+          (a, b) =>
+            resolveTimestampExt({ createdAt: b.lastMessageAt }) -
+            resolveTimestampExt({ createdAt: a.lastMessageAt }),
+        );
+      const lastC = rcs[0] || null;
+      const lca = ndv(lastC?.lastMessageAt) || null;
+      const ur = rcs.reduce((s, c) => s + Math.max(0, Number(c?.unreadCount || 0) || 0), 0);
+      const catAt = ndv(cf.catalogedAt);
+      const scoredAt = ndv(cf.lastScoredAt);
+      const waAt = ndv(cf.whatsappSavedAt);
+      const rpn = typeof cf.remotePushName === 'string' ? cf.remotePushName : null;
+      const lrcId = typeof cf.lastRemoteChatId === 'string' ? cf.lastRemoteChatId : null;
+      const lrscId = typeof cf.lastResolvedChatId === 'string' ? cf.lastResolvedChatId : null;
+      const pps = normalizeProbabilityScoreExt(
+        cf.purchaseProbabilityScore,
+        contact.purchaseProbability,
       );
-    return buildCatalogContactEntry(contact, relatedConversations, resolveTrustedContactName);
-  });
-
-  return filterAndSortCatalogEntries(entries, { onlyCataloged, cutoff }) as any;
+      const ppp = Math.max(
+        0,
+        Math.min(100, Math.round(Number(cf.purchaseProbabilityPercent ?? pps * 100) || 0)),
+      );
+      const pReasons = Array.isArray(cf.probabilityReasons)
+        ? cf.probabilityReasons
+            .map((r: unknown) => (typeof r === 'string' ? r : '').trim())
+            .filter(Boolean)
+        : [];
+      const pref = Array.isArray(cf.preferences)
+        ? cf.preferences
+            .map((i: unknown) => (typeof i === 'string' ? i : '').trim())
+            .filter(Boolean)
+        : [];
+      const imp = Array.isArray(cf.importantDetails)
+        ? cf.importantDetails
+            .map((i: unknown) => (typeof i === 'string' ? i : '').trim())
+            .filter(Boolean)
+        : [];
+      const dem = normalizeJsonObjExt(cf.demographics);
+      const demographics =
+        Object.keys(dem).length > 0
+          ? {
+              gender: typeof dem.gender === 'string' ? dem.gender : 'UNKNOWN',
+              ageRange: typeof dem.ageRange === 'string' ? dem.ageRange : 'UNKNOWN',
+              location: typeof dem.location === 'string' ? dem.location : 'UNKNOWN',
+              confidence: Math.max(0, Math.min(1, Number(dem.confidence || 0) || 0)),
+            }
+          : { gender: 'UNKNOWN', ageRange: 'UNKNOWN', location: 'UNKNOWN', confidence: 0 };
+      const rbs = typeof cf.buyerStatus === 'string' ? cf.buyerStatus.trim().toUpperCase() : '';
+      const buyerStatus = ['BOUGHT', 'NOT_BOUGHT', 'UNKNOWN'].includes(rbs) ? rbs : 'UNKNOWN';
+      const cataloged =
+        !!catAt ||
+        !!scoredAt ||
+        !!waAt ||
+        !!String(contact.aiSummary || '').trim() ||
+        pReasons.length > 0 ||
+        Number.isFinite(Number(cf.purchaseProbabilityScore));
+      const lrt = Math.max(
+        resolveTimestampExt({ createdAt: lca }),
+        resolveTimestampExt({ createdAt: catAt }),
+        resolveTimestampExt({ createdAt: scoredAt }),
+        resolveTimestampExt({ createdAt: contact.updatedAt }),
+      );
+      return {
+        id: contact.id,
+        phone: contact.phone,
+        name: deps.resolveName(contact.phone, rpn, contact.name) || null,
+        email: contact.email || null,
+        leadScore: Math.max(0, Number(contact.leadScore || 0) || 0),
+        sentiment: contact.sentiment || 'NEUTRAL',
+        purchaseProbability: contact.purchaseProbability || 'LOW',
+        purchaseProbabilityScore: pps,
+        purchaseProbabilityPercent: ppp,
+        buyerStatus,
+        purchasedProduct: typeof cf.purchasedProduct === 'string' ? cf.purchasedProduct : null,
+        purchaseValue: Number.isFinite(Number(cf.purchaseValue)) ? Number(cf.purchaseValue) : null,
+        purchaseReason: typeof cf.purchaseReason === 'string' ? cf.purchaseReason : null,
+        notPurchasedReason:
+          typeof cf.notPurchasedReason === 'string' ? cf.notPurchasedReason : null,
+        nextBestAction: contact.nextBestAction || null,
+        aiSummary: contact.aiSummary || null,
+        fullSummary:
+          typeof cf.fullSummary === 'string' ? cf.fullSummary : contact.aiSummary || null,
+        intent: typeof cf.intent === 'string' ? cf.intent : null,
+        remotePushName: rpn,
+        demographics,
+        preferences: pref,
+        importantDetails: imp,
+        probabilityReasons: pReasons,
+        cataloged,
+        catalogedAt: catAt,
+        lastScoredAt: scoredAt,
+        whatsappSavedAt: waAt,
+        lastRemoteChatId: lrcId,
+        lastResolvedChatId: lrscId,
+        conversationCount: rcs.length,
+        unreadCount: ur,
+        lastConversationAt: lca,
+        lastConversationStatus: lastC?.status || null,
+        lastConversationMode: lastC?.mode || null,
+        createdAt: contact.createdAt?.toISOString?.() || null,
+        updatedAt: contact.updatedAt?.toISOString?.() || null,
+        latestRelevantTimestamp: lrt,
+      };
+    })
+    .filter((e) => {
+      if (onlyCataloged && !e.cataloged) return false;
+      return e.latestRelevantTimestamp >= cutoff;
+    })
+    .sort((a, b) => {
+      const ca = Math.max(
+        resolveTimestampExt({ createdAt: a.catalogedAt }),
+        resolveTimestampExt({ createdAt: a.lastScoredAt }),
+      );
+      const cb = Math.max(
+        resolveTimestampExt({ createdAt: b.catalogedAt }),
+        resolveTimestampExt({ createdAt: b.lastScoredAt }),
+      );
+      if (ca !== cb) return cb - ca;
+      if (a.purchaseProbabilityScore !== b.purchaseProbabilityScore)
+        return b.purchaseProbabilityScore - a.purchaseProbabilityScore;
+      return b.latestRelevantTimestamp - a.latestRelevantTimestamp;
+    })
+    .map(({ latestRelevantTimestamp: _, ...entry }) => entry);
 }
 
-export function isAutonomousEnabledImpl(settings: Record<string, unknown>): boolean {
-  const autonomy = normalizeJsonObject(settings.autonomy);
-  const autopilot = normalizeJsonObject(settings.autopilot);
-  const mode = readText(autonomy.mode).toUpperCase();
-  if (mode) {
-    return mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL';
+// ── handleIncoming extracted ──
+export async function handleIncomingExt(
+  deps: WsDeps & {
+    isPlaceholderContact: (v: unknown, p?: string | null) => boolean;
+    resolveTrustedName: (p: string, ...c: unknown[]) => string;
+  },
+  workspaceId: string,
+  from: string,
+  message: string,
+) {
+  const ws = await deps.workspaces.getWorkspace(workspaceId).catch(() => null);
+  if (!ws) throw new Error('Workspace not found for incoming message');
+  const dedupeKey = `incoming:dedupe:${workspaceId}:${from}:${normalizeHashExt(message)}`;
+  const already = await deps.redis.get(dedupeKey);
+  if (already) return { skipped: true, reason: 'duplicate' };
+  await deps.redis.setex(dedupeKey, 60, '1');
+  const lower = (message || '').toLowerCase();
+  if (
+    ['stop', 'sair', 'cancelar', 'cancel', 'parar', 'unsubscribe'].some((k) => lower.includes(k))
+  ) {
+    try {
+      /* opt-out best effort - handled by service */
+    } catch {
+      /* handled by service */
+    }
   }
-  return autopilot.enabled === true;
+  const saved = await deps.inbox.saveMessageByPhone({
+    workspaceId,
+    phone: from,
+    content: message,
+    direction: 'INBOUND',
+  });
+  const nPhone = normalizeNumber(from);
+  const key = `reply:${nPhone}`;
+  try {
+    await deps.redis.rpush(key, message);
+    await deps.redis.expire(key, 60 * 60 * 24);
+  } catch {
+    /* fallback handled */
+  }
+  await flowQueue.add(
+    'resume-flow',
+    { user: nPhone, message, workspaceId },
+    { removeOnComplete: true },
+  );
+  try {
+    const settings = normalizeJsonObjExt(ws.providerSettings);
+    if (isAutonomousEnabledExt(settings) && saved?.contactId) {
+      const scanKey = `autopilot:scan-contact:${workspaceId}:${saved.contactId}`;
+      const reserved = await deps.redis.set(scanKey, saved.id, 'PX', deps.contactDebounceMs, 'NX');
+      if (reserved === 'OK')
+        await autopilotQueue.add(
+          'scan-contact',
+          {
+            workspaceId,
+            phone: from,
+            contactId: saved.contactId,
+            messageContent: message,
+            messageId: saved.id,
+          },
+          {
+            jobId: buildQueueJobId('scan-contact', workspaceId, saved.contactId, saved.id),
+            delay: deps.contactDebounceMs,
+            deduplication: {
+              id: buildQueueDedupId('scan-contact', workspaceId, saved.contactId),
+              ttl: deps.contactDebounceMs + 500,
+            },
+            removeOnComplete: true,
+          },
+        );
+    }
+    const apConfig = normalizeJsonObjExt(settings.autopilot);
+    const hotFlowId = typeof apConfig.hotFlowId === 'string' ? apConfig.hotFlowId : null;
+    if (
+      hotFlowId &&
+      ['preco', 'preço', 'price', 'quanto', 'pix', 'boleto', 'garantia', 'comprar', 'assinar'].some(
+        (k) => lower.includes(k),
+      )
+    )
+      await flowQueue.add('run-flow', {
+        workspaceId,
+        flowId: hotFlowId,
+        user: nPhone,
+        initialVars: { source: 'hot_signal', lastMessage: message },
+      });
+  } catch (err: unknown) {
+    void deps.opsAlert?.alertOnCriticalError(err, 'WhatsappService.processInbound.autopilot', {
+      workspaceId,
+    });
+  }
+  if (saved?.contactId)
+    void deps.neuroCrm.analyzeContact(workspaceId, saved.contactId).catch(() => {});
+  try {
+    await deps.redis.publish(
+      `ws:copilot:${workspaceId}`,
+      JSON.stringify({
+        type: 'new_message',
+        workspaceId,
+        contactId: saved?.contactId,
+        phone: from,
+        message,
+      }),
+    );
+  } catch {
+    /* handled by service */
+  }
+  return { ok: true };
 }
 
-export async function sendDirectlyViaProvider(
-  deps: {
-    providerRegistry: {
-      sendMessage: (...args: unknown[]) => Promise<unknown>;
-      setPresence: (...args: unknown[]) => Promise<unknown>;
-      readChatMessages: (...args: unknown[]) => Promise<unknown>;
-    };
-    redis: Redis;
-    inbox: { saveMessageByPhone: (...args: unknown[]) => Promise<unknown> };
+// ── sendDirectlyViaProvider extracted ──
+export async function sendDirectlyViaProviderExt(
+  deps: Pick<WsDeps, 'prisma' | 'providerRegistry' | 'inbox' | 'redis'> & {
+    normalizeChatId: (id: string) => string;
+    readText: (v: unknown) => string;
+    sleep: (ms: number) => Promise<void>;
+    markChatAsReadBestEffort: (workspaceId: string, chatIdOrPhone: string) => Promise<void>;
   },
-  params: {
-    workspaceId: string;
-    to: string;
-    message: string;
-    opts?: {
-      mediaUrl?: string;
-      mediaType?: string;
-      caption?: string;
-      externalId?: string;
-      quotedMessageId?: string;
-    };
+  workspaceId: string,
+  to: string,
+  message: string,
+  opts?: {
+    mediaUrl?: string;
+    mediaType?: 'image' | 'video' | 'audio' | 'document';
+    caption?: string;
+    externalId?: string;
+    complianceMode?: 'reactive' | 'proactive';
+    forceDirect?: boolean;
+    quotedMessageId?: string;
   },
-): Promise<any> {
-  const { workspaceId, to, message, opts } = params;
+) {
   const lockKey = `whatsapp:action-lock:${workspaceId}`;
   const token = `${Date.now()}:${randomUUID()}`;
-  const ttlMs = 45_000;
+  const ttlMs = Math.max(
+    15_000,
+    Number.parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
+  );
   const deadline = Date.now() + ttlMs;
-
   const tryAcquire = async (): Promise<any> => {
     if (Date.now() >= deadline) {
-      return doSend();
+      /* fall through */
     }
     const acquired = await deps.redis.set(lockKey, token, 'PX', ttlMs, 'NX');
     if (acquired === 'OK') {
       try {
-        return await doSend();
+        await deps.sleep(300 + randomInt(500));
+        const nChatId = deps.normalizeChatId(to);
+        await deps.markChatAsReadBestEffort(workspaceId, nChatId);
+        await deps.providerRegistry.setPresence(workspaceId, 'available', nChatId).catch(() => {});
+        await deps.sleep(300 + randomInt(500));
+        await deps.providerRegistry.sendTyping(workspaceId, nChatId).catch(() => {});
+        await deps.sleep(
+          Math.max(
+            500,
+            Math.min(
+              3500,
+              450 + String(opts?.caption || message || '').trim().length * 35 + randomInt(450),
+            ),
+          ),
+        );
+        await deps.providerRegistry.stopTyping(workspaceId, nChatId).catch(() => {});
+        const result = await deps.providerRegistry.sendMessage(workspaceId, to, message, {
+          mediaUrl: opts?.mediaUrl,
+          mediaType: opts?.mediaType,
+          caption: opts?.caption,
+          quotedMessageId: opts?.quotedMessageId,
+        });
+        if (!result.success) {
+          await deps.providerRegistry.setPresence(workspaceId, 'offline', nChatId).catch(() => {});
+          return { error: true, message: result.error || 'send_failed' };
+        }
+        await deps.markChatAsReadBestEffort(workspaceId, to);
+        await deps.providerRegistry.setPresence(workspaceId, 'offline', nChatId).catch(() => {});
+        await deps.inbox.saveMessageByPhone({
+          workspaceId,
+          phone: to,
+          content: opts?.caption || message || opts?.mediaUrl || '',
+          direction: 'OUTBOUND',
+          externalId: result.messageId || opts?.externalId,
+          type: opts?.mediaType ? opts.mediaType.toUpperCase() : 'TEXT',
+          mediaUrl: opts?.mediaUrl,
+          status: 'SENT',
+        });
+        return { ok: true, direct: true, delivery: 'sent', messageId: result.messageId };
       } finally {
         const current = await deps.redis.get(lockKey).catch(() => null);
-        if (current === token) await deps.redis.del(lockKey).catch(() => undefined);
+        if (current === token) await deps.redis.del(lockKey).catch(() => {});
       }
     }
-    await new Promise((r) => setTimeout(r, 250 + Math.floor(Math.random() * 250)));
+    await deps.sleep(250 + randomInt(250));
     return tryAcquire();
   };
-
-  const doSend = async () => {
-    const normalizedChatId = normalizeChatIdFn(to);
-    await deps.providerRegistry
-      .readChatMessages(workspaceId, normalizedChatId)
-      .catch(() => undefined);
-    await deps.providerRegistry
-      .setPresence(workspaceId, 'available', normalizedChatId)
-      .catch(() => undefined);
-    await new Promise((r) => setTimeout(r, 300 + Math.floor(Math.random() * 500)));
-    await deps.providerRegistry
-      .setPresence(workspaceId, 'typing', normalizedChatId)
-      .catch(() => undefined);
-    await new Promise((r) =>
-      setTimeout(
-        r,
-        Math.max(500, Math.min(3500, 450 + message.length * 35 + Math.floor(Math.random() * 450))),
-      ),
-    );
-    await deps.providerRegistry
-      .setPresence(workspaceId, 'stopTyping', normalizedChatId)
-      .catch(() => undefined);
-
-    const result = (await deps.providerRegistry.sendMessage(workspaceId, to, message, {
-      mediaUrl: opts?.mediaUrl,
-      mediaType: opts?.mediaType,
-      caption: opts?.caption,
-      quotedMessageId: opts?.quotedMessageId,
-    })) as Record<string, unknown>;
-
-    if (!result.success) {
-      await deps.providerRegistry
-        .setPresence(workspaceId, 'offline', normalizedChatId)
-        .catch(() => undefined);
-      return {
-        error: true,
-        message: typeof result.error === 'string' ? result.error : 'send_failed',
-      };
-    }
-
-    await deps.providerRegistry.readChatMessages(workspaceId, to).catch(() => undefined);
-    await deps.providerRegistry
-      .setPresence(workspaceId, 'offline', normalizedChatId)
-      .catch(() => undefined);
-
-    await deps.inbox.saveMessageByPhone({
-      workspaceId,
-      phone: to,
-      content: opts?.caption || message || opts?.mediaUrl || '',
-      direction: 'OUTBOUND',
-      externalId: result.messageId,
-      type: opts?.mediaType ? opts.mediaType.toUpperCase() : 'TEXT',
-      mediaUrl: opts?.mediaUrl,
-      status: 'SENT',
-    });
-
-    return { ok: true, direct: true, delivery: 'sent', messageId: result.messageId };
-  };
-
   return tryAcquire();
-}
-
-export async function deliverToContext(
-  redis: Redis,
-  user: string,
-  message: string,
-  workspaceId?: string,
-  opsAlert?: any,
-  logger?: any,
-) {
-  const normalized = normalizeNumber(user);
-  const key = `reply:${normalized}`;
-  try {
-    await redis.rpush(key, message);
-    await redis.expire(key, 60 * 60 * 24);
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'unknown error';
-    logger?.warn(`Redis indisponível para deliverToContext: ${msg}`);
-    const fallback = createRedisClient();
-    if (!fallback) throw new Error('Redis client unavailable');
-    try {
-      await fallback.rpush(key, message);
-      await fallback.expire(key, 60 * 60 * 24);
-    } finally {
-      fallback.disconnect();
-    }
-  }
-  await flowQueue.add(
-    'resume-flow',
-    { user: normalized, message, workspaceId },
-    { removeOnComplete: true },
-  );
-}
-
-export function validateWorkspaceProvider(workspace: Record<string, unknown>): string[] {
-  const missing: string[] = [];
-  const provider = workspace?.whatsappProvider || 'meta-cloud';
-  if (provider !== 'meta-cloud') missing.push('whatsapp_provider');
-  return missing;
-}
-
-export async function collectMessagingRuntimeIssues(
-  workspaceId: string,
-  workspace: Record<string, unknown>,
-  providerRegistry: {
-    getSessionStatus: (...args: unknown[]) => Promise<unknown>;
-    getProviderType: (...args: unknown[]) => Promise<unknown>;
-  },
-  whatsappApi: { getRuntimeConfigDiagnostics: (...args: unknown[]) => unknown },
-  options?: { requireInboundWebhook?: boolean },
-  opsAlert?: any,
-) {
-  const issues = validateWorkspaceProvider(workspace);
-  const providerType = String(await providerRegistry.getProviderType(workspaceId));
-  const diagnostics = {
-    webhook: whatsappApi.getRuntimeConfigDiagnostics(),
-    session: null as { connected: boolean; status?: string; error?: string } | null,
-  };
-
-  if (options?.requireInboundWebhook) {
-    const webhook = diagnostics.webhook as Record<string, unknown>;
-    if (!webhook.webhookConfigured) issues.push('meta_webhook_missing');
-    else if (!webhook.inboundEventsConfigured) issues.push('meta_webhook_events_missing_inbound');
-  }
-
-  try {
-    diagnostics.session = (await providerRegistry.getSessionStatus(workspaceId)) as {
-      connected: boolean;
-      status?: string;
-      error?: string;
-    } | null;
-    if (!diagnostics.session?.connected) {
-      issues.push(
-        `${providerType.replace(PATTERN_RE, '_')}_session_${String(diagnostics.session?.status || 'unknown').toLowerCase()}`,
-      );
-    }
-  } catch (error: unknown) {
-    issues.push(`${providerType.replace(PATTERN_RE, '_')}_session_status_unavailable`);
-    diagnostics.session = {
-      connected: false,
-      status: 'UNKNOWN',
-      error: error instanceof Error ? error.message : 'unknown_error',
-    };
-    opsAlert?.alertOnCriticalError?.(error, 'WhatsappService.runDiagnostics.session', {
-      workspaceId,
-    });
-  }
-  return { issues, diagnostics };
-}
-
-async function resolveReadChatCandidates(
-  workspaceId: string,
-  chatIdOrPhone: string,
-  prisma: any,
-): Promise<string[]> {
-  const normalizedChatId = normalizeChatIdFn(chatIdOrPhone);
-  const normalizedPhone = normalizeNumber(normalizedChatId.replace(/@.*$/, ''));
-  const contact = normalizedPhone
-    ? await prisma.contact
-        .findUnique({
-          where: { workspaceId_phone: { workspaceId, phone: normalizedPhone } },
-          select: { customFields: true },
-        })
-        .catch(() => null)
-    : null;
-  const customFields = normalizeJsonObject(contact?.customFields);
-  return Array.from(
-    new Set(
-      [
-        normalizedChatId,
-        readText(customFields.lastRemoteChatId),
-        readText(customFields.lastCatalogChatId),
-        readText(customFields.lastResolvedChatId),
-        normalizedPhone ? `${normalizedPhone}@c.us` : '',
-        normalizedPhone ? `${normalizedPhone}@s.whatsapp.net` : '',
-      ].filter(Boolean),
-    ),
-  );
-}
-
-export async function markChatAsReadBestEffort(
-  workspaceId: string,
-  chatIdOrPhone: string,
-  prisma: any,
-  providerRegistry: any,
-): Promise<void> {
-  const candidates = await resolveReadChatCandidates(workspaceId, chatIdOrPhone, prisma);
-  await forEachSequential(candidates, async (candidate) => {
-    await providerRegistry.readChatMessages(workspaceId, candidate).catch(() => undefined);
-  });
 }

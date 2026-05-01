@@ -232,3 +232,51 @@ export function buildPulseCommandGraph(rootDir = process.cwd()): PulseCommandGra
     ),
   };
 }
+
+function workflowRunBlocks(text: string): string[] {
+  const commands: string[] = [];
+  const lines = text.split(/\r?\n/);
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? '';
+    const inlineMatch = /^(\s*)run:\s*(.+)$/.exec(line);
+    if (inlineMatch?.[2] && !['|', '>'].includes(inlineMatch[2].trim())) {
+      commands.push(inlineMatch[2].trim());
+      continue;
+    }
+    const blockMatch = /^(\s*)run:\s*[|>]?\s*$/.exec(line);
+    if (!blockMatch) {
+      continue;
+    }
+    const baseIndent = blockMatch[1].length;
+    const blockLines: string[] = [];
+    for (let cursor = index + 1; cursor < lines.length; cursor += 1) {
+      const candidate = lines[cursor] ?? '';
+      if (candidate.trim() && candidate.search(/\S/) <= baseIndent) {
+        break;
+      }
+      if (candidate.trim()) {
+        blockLines.push(candidate.trim());
+      }
+      index = cursor;
+    }
+    if (blockLines.length > 0) {
+      commands.push(blockLines.join(' && '));
+    }
+  }
+  return commands;
+}
+
+function workflowCommands(sourcePath: string, text: string): PulseDiscoveredCommand[] {
+  return workflowRunBlocks(text).map((command, index) => {
+    const classification = classifyCommand(null, command);
+    return {
+      id: `workflow:${sourcePath}:${index + 1}`,
+      purpose: classification.purpose,
+      command,
+      sourcePath,
+      sourceKind: 'github-workflow' as const,
+      confidence: classification.confidence,
+      signals: ['github-workflow', ...classification.signals],
+    };
+  });
+}

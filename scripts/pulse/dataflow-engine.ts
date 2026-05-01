@@ -372,15 +372,4 @@ function classifyFinancialFieldEvidence(
     ),
   };
 }
-
-export function classifyFinancialModel(_modelName: string, fields: string[] = []): boolean {
-  const fieldEvidence = fields.map((field) => ({
-    name: field,
-    type: 'Unknown',
-    attributes: '',
-    relationFields: [],
-    relationReferences: [],
-  }));
-  return classifyFinancialFieldEvidence(fieldEvidence, undefined).financial;
-}
-import "./__companions__/dataflow-engine.companion";
+export * from './__companions__/dataflow-engine.companion';

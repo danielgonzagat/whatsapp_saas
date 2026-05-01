@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-// messageLimit: this service imports messages, does not send; rate limit enforced at send time
 import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
@@ -17,17 +16,28 @@ import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
 import { AgentEventsService } from './agent-events.service';
 import { CiaRuntimeService } from './cia-runtime.service';
-import { InboundMessage, InboundProcessorService } from './inbound-processor.service';
+import { InboundProcessorService, type InboundMessage } from './inbound-processor.service';
 import { asProviderSettings } from './provider-settings.types';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
-import {
-  WahaChatMessage,
-  WahaChatSummary,
-  WahaLidMapping,
-} from './providers/whatsapp-api.provider';
+import { type WahaChatMessage, type WahaChatSummary } from './providers/whatsapp-api.provider';
 import { WorkerRuntimeService } from './worker-runtime.service';
+import {
+  normalizePhoneExt,
+  normalizeTimestampExt,
+  normalizeJsonObjExt,
+  resolveTimestampExt,
+  resolveChatActivityTimestampExt,
+  isNowebStoreMisconfiguredExt,
+  areEquivalentPhonesExt,
+  resolveCanonicalChatIdExt,
+  getLidPnMapExt,
+  resolveCanonicalPhoneExt,
+  isWorkspaceSelfChatIdExt,
+  normalizeChatsExt,
+  normalizeMessagesExt,
+} from './__companions__/whatsapp-catchup.service.companion';
 
-const D_RE = /\D/g;
+const D__D_S____S_DOE_RE = /^\+?\d[\d\s-]*\s+doe$/i;
 
 function safeStr(v: unknown, fb = ''): string {
   return typeof v === 'string'
@@ -36,17 +46,9 @@ function safeStr(v: unknown, fb = ''): string {
       ? String(v)
       : fb;
 }
-
-const D__D_S____S_DOE_RE = /^\+?\d[\d\s-]*\s+doe$/i;
-const LID_RE = /@lid$/i;
-
 function normalizeOptionalText(value: unknown): string {
-  if (typeof value === 'string') {
-    return value.trim();
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value).trim();
-  }
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
   return '';
 }
 
@@ -56,7 +58,6 @@ type CatchupRunSummary = {
   processedChats: number;
   overflow: boolean;
 };
-
 type CatchupBackfillCursor = {
   chatId: string;
   activityTimestamp: number;
@@ -68,7 +69,6 @@ const CATCHUP_SWEEP_LIMIT = Math.max(
   Math.min(2000, Number.parseInt(process.env.WAHA_CATCHUP_SWEEP_LIMIT || '500', 10) || 500),
 );
 
-/** Whats app catchup service. */
 @Injectable()
 export class WhatsAppCatchupService {
   private readonly logger = new Logger(WhatsAppCatchupService.name);
@@ -118,13 +118,10 @@ export class WhatsAppCatchupService {
     1,
     Number.parseInt(process.env.WAHA_CATCHUP_MAX_PAGES_PER_CHAT || '10', 10) || 10,
   );
-  private readonly fallbackChatsPerPass = Math.max(
-    0,
-    (() => {
-      const parsed = Number.parseInt(process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS || '100', 10);
-      return Number.isFinite(parsed) ? parsed : 0;
-    })(),
-  );
+  private readonly fallbackChatsPerPass = (() => {
+    const p = Number.parseInt(process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS || '100', 10);
+    return Number.isFinite(p) ? p : 0;
+  })();
   private readonly includeZeroUnreadActivity =
     String(process.env.WAHA_CATCHUP_INCLUDE_ZERO_UNREAD_ACTIVITY || 'true').toLowerCase() ===
     'true';
@@ -142,8 +139,7 @@ export class WhatsAppCatchupService {
     private readonly providerRegistry: WhatsAppProviderRegistry,
     @Inject(forwardRef(() => InboundProcessorService))
     private readonly inboundProcessor: InboundProcessorService,
-    @Inject(forwardRef(() => CiaRuntimeService))
-    private readonly ciaRuntime: CiaRuntimeService,
+    @Inject(forwardRef(() => CiaRuntimeService)) private readonly ciaRuntime: CiaRuntimeService,
     private readonly inbox: InboxService,
     private readonly workerRuntime: WorkerRuntimeService,
     @InjectRedis() private readonly redis: Redis,
@@ -151,450 +147,311 @@ export class WhatsAppCatchupService {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
+  // ═══ thin wrappers ═══
   private isNowebStoreMisconfigured(error: unknown): boolean {
-    const message = String(
-      typeof error === 'string'
-        ? error
-        : error instanceof Error
-          ? error.message
-          : normalizeOptionalText(error),
-    ).toLowerCase();
-
-    return (
-      message.includes('enable noweb store') ||
-      message.includes('config.noweb.store.enabled') ||
-      message.includes('config.noweb.store.full_sync') ||
-      (message.includes('noweb') &&
-        message.includes('store') &&
-        (message.includes('full_sync') || message.includes('full sync')))
-    );
+    return isNowebStoreMisconfiguredExt(error);
   }
-
   private isSessionMissingError(error: unknown): boolean {
-    const message = String(
+    const m = String(
       typeof error === 'string'
         ? error
         : error instanceof Error
           ? error.message
           : normalizeOptionalText(error),
     ).toLowerCase();
-
     return (
-      message.includes('session') &&
-      (message.includes('does not exist') ||
-        message.includes('not found') ||
-        message.includes('404'))
+      m.includes('session') &&
+      (m.includes('does not exist') || m.includes('not found') || m.includes('404'))
     );
   }
-
-  private isGuestWorkspace(
-    workspaceName?: string,
-    settings?: Record<string, unknown> | null,
-  ): boolean {
-    const normalizedName = String(workspaceName || '')
+  private isGuestWorkspace(name?: string, s?: Record<string, unknown> | null): boolean {
+    const n = String(name || '')
       .trim()
       .toLowerCase();
-
-    if (normalizedName === 'guest workspace') {
-      return true;
-    }
-
+    if (n === 'guest workspace') return true;
     return (
-      settings?.guestMode === true ||
-      settings?.anonymousGuest === true ||
-      settings?.workspaceMode === 'guest' ||
-      settings?.authMode === 'anonymous' ||
-      (settings?.auth as Record<string, unknown> | undefined)?.anonymous === true
+      s?.guestMode === true ||
+      s?.anonymousGuest === true ||
+      s?.workspaceMode === 'guest' ||
+      s?.authMode === 'anonymous' ||
+      (s?.auth as Record<string, unknown> | undefined)?.anonymous === true
     );
   }
-
   private getLifecycleBlockReason(
-    workspaceName?: string,
-    settings?: Record<string, unknown> | null,
+    name?: string,
+    s?: Record<string, unknown> | null,
   ): string | null {
-    const lifecycle = (settings?.whatsappLifecycle || {}) as Record<string, unknown>;
-
-    if (this.isGuestWorkspace(workspaceName, settings)) {
-      return 'guest_workspace_disabled';
-    }
-
-    if (
-      lifecycle.catchupEnabled === false ||
-      lifecycle.autoManage === false ||
-      lifecycle.autoCatchup === false
-    ) {
+    const lc = (s?.whatsappLifecycle || {}) as Record<string, unknown>;
+    if (this.isGuestWorkspace(name, s)) return 'guest_workspace_disabled';
+    if (lc.catchupEnabled === false || lc.autoManage === false || lc.autoCatchup === false)
       return 'catchup_disabled';
-    }
-
     return null;
   }
-
-  private async getCatchupBlockReason(workspaceId: string): Promise<string | null> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
+  private async getCatchupBlockReason(ws: string): Promise<string | null> {
+    const w = await this.prisma.workspace.findUnique({
+      where: { id: ws },
       select: { name: true, providerSettings: true },
     });
-    if (!workspace) {
-      return null;
-    }
-
-    const settings = asProviderSettings(workspace.providerSettings);
-    const lifecycleBlockReason = this.getLifecycleBlockReason(
-      workspace.name || undefined,
-      settings,
+    if (!w) return null;
+    const s = asProviderSettings(w.providerSettings);
+    const lb = this.getLifecycleBlockReason(w.name || undefined, s);
+    if (lb) return lb;
+    const sm = (s.whatsappApiSession || {}) as Record<string, unknown>;
+    const rb = safeStr(sm.recoveryBlockedReason).trim();
+    return this.isNowebStoreMisconfigured(rb) ? rb || 'noweb_store_misconfigured' : null;
+  }
+  private getLockKey(ws: string) {
+    return `whatsapp:catchup:${ws}`;
+  }
+  private getCooldownKey(ws: string) {
+    return `whatsapp:catchup:cooldown:${ws}`;
+  }
+  private resolveTimestamp(value: unknown): number {
+    return resolveTimestampExt(value);
+  }
+  private normalizeTimestamp(value?: Date | string | number | null): Date | null {
+    return normalizeTimestampExt(value);
+  }
+  private normalizePhone(phone: string): string {
+    return normalizePhoneExt(phone);
+  }
+  private normalizeJsonObject(value: unknown): Record<string, unknown> {
+    return normalizeJsonObjExt(value);
+  }
+  private areEquivalentPhones(left: string, right: string): boolean {
+    return areEquivalentPhonesExt(left, right);
+  }
+  private resolveCanonicalChatId(chatId: string, mappings: Map<string, string>): string {
+    return resolveCanonicalChatIdExt(chatId, mappings);
+  }
+  private isWorkspaceSelfChatId(
+    chatId: string,
+    selfPhone: string | null,
+    selfIds: string[],
+    mappings: Map<string, string>,
+  ): boolean {
+    return isWorkspaceSelfChatIdExt(chatId, selfPhone, selfIds, mappings);
+  }
+  private normalizeChats(raw: unknown): WahaChatSummary[] {
+    return normalizeChatsExt(raw);
+  }
+  private normalizeMessages(raw: unknown, fallbackChatId: string): WahaChatMessage[] {
+    return normalizeMessagesExt(raw, fallbackChatId);
+  }
+  private resolveChatActivityTimestamp(chat: WahaChatSummary): number {
+    return resolveChatActivityTimestampExt(chat);
+  }
+  private async getLidPnMap(ws: string): Promise<Map<string, string>> {
+    return getLidPnMapExt(
+      { providerRegistry: this.providerRegistry },
+      ws,
+      this.lidMapCacheTtlMs,
+      this.lidMapCache,
     );
-    if (lifecycleBlockReason) {
-      return lifecycleBlockReason;
-    }
-
-    const sessionMeta = (settings.whatsappApiSession || {}) as Record<string, unknown>;
-    const recoveryBlockedReason = safeStr(sessionMeta.recoveryBlockedReason).trim();
-
-    return this.isNowebStoreMisconfigured(recoveryBlockedReason)
-      ? recoveryBlockedReason || 'noweb_store_misconfigured'
-      : null;
+  }
+  private async resolveCanonicalPhone(ws: string, chatId: string): Promise<string> {
+    return resolveCanonicalPhoneExt(
+      { providerRegistry: this.providerRegistry },
+      ws,
+      chatId,
+      this.lidMapCacheTtlMs,
+      this.lidMapCache,
+    );
   }
 
-  /** Trigger catchup. */
-  async triggerCatchup(
-    workspaceId: string,
-    reason = 'unknown',
-  ): Promise<{ scheduled: boolean; reason?: string }> {
-    const blockReason = await this.getCatchupBlockReason(workspaceId);
-    if (blockReason) {
-      return { scheduled: false, reason: blockReason };
-    }
-
-    const cooldownKey = this.getCooldownKey(workspaceId);
-    const cooldown = await this.redis.set(
-      cooldownKey,
-      reason,
-      'EX',
-      this.minTriggerIntervalSeconds,
-      'NX',
-    );
-    if (cooldown !== 'OK') {
+  // ═══ PUBLIC ═══
+  async triggerCatchup(ws: string, reason = 'unknown') {
+    const br = await this.getCatchupBlockReason(ws);
+    if (br) return { scheduled: false, reason: br };
+    const ck = this.getCooldownKey(ws);
+    if ((await this.redis.set(ck, reason, 'EX', this.minTriggerIntervalSeconds, 'NX')) !== 'OK')
       return { scheduled: false, reason: 'catchup_cooldown' };
-    }
-
-    const lockKey = this.getLockKey(workspaceId);
-    const token = randomUUID();
-    const acquired = await this.redis.set(lockKey, token, 'EX', this.lockTtlSeconds, 'NX');
-
-    if (acquired !== 'OK') {
+    const lk = this.getLockKey(ws);
+    const t = randomUUID();
+    if ((await this.redis.set(lk, t, 'EX', this.lockTtlSeconds, 'NX')) !== 'OK')
       return { scheduled: false, reason: 'catchup_locked' };
-    }
-
-    void this.runCatchup(workspaceId, reason, token).catch((error) => {
-      this.logger.error(
-        `catchup_failed workspace=${workspaceId} reason=${reason}: ${error?.message || error}`,
-      );
-    });
-
+    void this.runCatchup(ws, reason, t).catch((e) =>
+      this.logger.error(`catchup_failed ws=${ws}: ${e?.message || e}`),
+    );
     return { scheduled: true };
   }
 
-  /** Run catchup now. */
   async runCatchupNow(
-    workspaceId: string,
+    ws: string,
     reason = 'manual_sync',
   ): Promise<({ scheduled: true } & CatchupRunSummary) | { scheduled: false; reason?: string }> {
-    const blockReason = await this.getCatchupBlockReason(workspaceId);
-    if (blockReason) {
-      return { scheduled: false, reason: blockReason };
-    }
-
-    const lockKey = this.getLockKey(workspaceId);
-    const token = randomUUID();
-    const acquired = await this.redis.set(lockKey, token, 'EX', this.lockTtlSeconds, 'NX');
-
-    if (acquired !== 'OK') {
+    const br = await this.getCatchupBlockReason(ws);
+    if (br) return { scheduled: false, reason: br };
+    const lk = this.getLockKey(ws);
+    const t = randomUUID();
+    if ((await this.redis.set(lk, t, 'EX', this.lockTtlSeconds, 'NX')) !== 'OK')
       return { scheduled: false, reason: 'catchup_locked' };
-    }
-
-    const summary = await this.runCatchup(workspaceId, reason, token);
-    return {
-      scheduled: true,
-      ...summary,
-    };
+    const s = await this.runCatchup(ws, reason, t);
+    return { scheduled: true, ...s };
   }
 
-  private async runCatchup(
-    workspaceId: string,
-    reason: string,
-    token: string,
-  ): Promise<CatchupRunSummary> {
-    let importedMessages = 0;
-    let touchedChats = 0;
-    let processedChats = 0;
-    let hadOverflow = false;
-    let estimatedTotalChats = 0;
-    let nextBackfillCursor: CatchupBackfillCursor = null;
-
+  // ═══ runCatchup (main runner, kept inline as it's the core orchestrator) ═══
+  private async runCatchup(ws: string, reason: string, token: string): Promise<CatchupRunSummary> {
+    let im = 0,
+      tc = 0,
+      pc = 0;
+    let ho = false;
+    let etc = 0;
+    let nbc: CatchupBackfillCursor = null;
     try {
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
+      const w = await this.prisma.workspace.findUnique({
+        where: { id: ws },
         select: { name: true, providerSettings: true },
       });
-      if (!workspace) {
-        return {
-          importedMessages,
-          touchedChats,
-          processedChats,
-          overflow: hadOverflow,
-        };
+      if (!w) return { importedMessages: im, touchedChats: tc, processedChats: pc, overflow: ho };
+      await this.sanitizePlaceholderContacts(ws);
+      const s = asProviderSettings(w.providerSettings) as Record<string, unknown>;
+      await this.providerRegistry.getProviderType(ws);
+      const lb = this.getLifecycleBlockReason(w.name || undefined, s);
+      if (lb) {
+        this.logger.debug(`Skipping catchup for ${ws}: ${lb}`);
+        return { importedMessages: im, touchedChats: tc, processedChats: pc, overflow: ho };
       }
-
-      await this.sanitizePlaceholderContacts(workspaceId);
-
-      const settings = asProviderSettings(workspace.providerSettings) as Record<string, unknown>;
-      const providerType = await this.providerRegistry.getProviderType(workspaceId);
-      const lifecycleBlockReason = this.getLifecycleBlockReason(
-        workspace.name || undefined,
-        settings,
-      );
-      if (lifecycleBlockReason) {
-        this.logger.debug(`Skipping catchup for ${workspaceId}: ${lifecycleBlockReason}`);
-        return;
-      }
-
-      const sessionMeta = (settings.whatsappApiSession || {}) as Record<string, unknown>;
+      const sm = (s.whatsappApiSession || {}) as Record<string, unknown>;
       const firstSync = !this.normalizeTimestamp(
-        sessionMeta.lastCatchupAt as string | number | Date | null | undefined,
+        sm.lastCatchupAt as string | number | Date | null | undefined,
       );
-      const backfillCursor = this.resolveBackfillCursor(sessionMeta);
-      nextBackfillCursor = backfillCursor;
-      const workspaceSelfPhone = await this.resolveWorkspaceSelfPhone(workspaceId, settings);
-      const sessionSelfIds = (sessionMeta.selfIds || []) as unknown[];
-      const workspaceSelfIds = Array.isArray(sessionSelfIds)
-        ? sessionSelfIds.map((value: unknown) => safeStr(value).trim()).filter(Boolean)
+      const bc = this.resolveBackfillCursor(sm);
+      nbc = bc;
+      const selfPhone = await this.resolveWorkspaceSelfPhone(ws, s);
+      const ssi = (sm.selfIds || []) as unknown[];
+      const selfIds = Array.isArray(ssi)
+        ? ssi.map((v: unknown) => safeStr(v).trim()).filter(Boolean)
         : [];
-      const lidMappings = await this.getLidPnMap(workspaceId);
-
+      const mappings = await this.getLidPnMap(ws);
       await this.agentEvents.publish({
         type: 'thought',
-        workspaceId,
+        workspaceId: ws,
         phase: 'sync',
         message: 'Sincronizando suas conversas',
       });
-
-      const since = this.resolveCatchupSince(sessionMeta);
+      const since = this.resolveCatchupSince(sm);
       const processedChatIds = new Set<string>();
 
       const runPass = async (pass: number): Promise<void> => {
-        if (pass >= this.maxPasses) {
-          return;
-        }
-
-        const rawChats = await this.providerRegistry.getChats(workspaceId);
-        const pendingChats = this.normalizeChats(rawChats)
-          .filter((chat) => !!chat.id)
-          .filter(
-            (chat) =>
-              !this.isWorkspaceSelfChatId(
-                chat.id,
-                workspaceSelfPhone,
-                workspaceSelfIds,
-                lidMappings,
-              ),
-          )
-          .filter((chat) => !processedChatIds.has(chat.id));
-        const { chats: candidateChats, fallbackChatIds } = this.selectCandidateChats(
-          pendingChats,
-          since,
-          nextBackfillCursor,
-        );
-
-        // Not a security-sensitive comparison — comparing loop iteration counter
+        if (pass >= this.maxPasses) return;
+        const raw = await this.providerRegistry.getChats(ws);
+        const pending = this.normalizeChats(raw)
+          .filter((c) => !!c.id)
+          .filter((c) => !this.isWorkspaceSelfChatId(c.id, selfPhone, selfIds, mappings))
+          .filter((c) => !processedChatIds.has(c.id));
+        const { chats: ccs, fallbackChatIds } = this.selectCandidateChats(pending, since, nbc);
         if (pass === 0) {
-          estimatedTotalChats = candidateChats.length;
+          etc = ccs.length;
           await this.agentEvents.publish({
             type: 'status',
-            workspaceId,
+            workspaceId: ws,
             phase: 'sync_start',
             message:
-              estimatedTotalChats > 0
-                ? `Começando a sincronização de ${estimatedTotalChats} conversas.`
+              etc > 0
+                ? `Começando a sincronização de ${etc} conversas.`
                 : 'Não encontrei novas conversas para sincronizar.',
-            meta: {
-              totalChats: estimatedTotalChats,
-              reason,
-            },
+            meta: { totalChats: etc, reason },
           });
         }
-
-        const chats = candidateChats.slice(0, this.maxChats);
-        if (!chats.length) {
-          return;
-        }
-
-        if (candidateChats.length > chats.length || pendingChats.length > candidateChats.length) {
-          hadOverflow = true;
-        }
-
+        const chats = ccs.slice(0, this.maxChats);
+        if (!chats.length) return;
+        if (ccs.length > chats.length || pending.length > ccs.length) ho = true;
         await forEachSequential(chats, async (chat) => {
           processedChatIds.add(chat.id);
-          processedChats += 1;
-
-          if (fallbackChatIds.has(chat.id)) {
-            nextBackfillCursor = {
+          pc += 1;
+          if (fallbackChatIds.has(chat.id))
+            nbc = {
               chatId: chat.id,
               activityTimestamp: this.resolveChatActivityTimestamp(chat),
               updatedAt: new Date().toISOString(),
             };
-          }
-
-          if (
-            processedChats === 1 ||
-            processedChats === estimatedTotalChats ||
-            processedChats % 5 === 0
-          ) {
+          if (pc === 1 || pc === etc || pc % 5 === 0)
             await this.agentEvents.publish({
               type: 'status',
-              workspaceId,
+              workspaceId: ws,
               phase: 'sync_progress',
-              message: `Sincronizando conversa ${processedChats} de ${Math.max(
-                estimatedTotalChats,
-                processedChats,
-              )}.`,
-              meta: {
-                processedChats,
-                totalChats: Math.max(estimatedTotalChats, processedChats),
-                importedMessages,
-              },
+              message: `Sincronizando conversa ${pc} de ${Math.max(etc, pc)}.`,
+              meta: { processedChats: pc, totalChats: Math.max(etc, pc), importedMessages: im },
             });
-          }
-
-          const { messages, hadOverflow: chatOverflow } = await this.loadCatchupMessages(
-            workspaceId,
-            chat,
-            since,
-            {
-              fallbackScan: fallbackChatIds.has(chat.id),
-              firstSync,
-            },
-          );
-
-          if (chatOverflow) {
-            hadOverflow = true;
-          }
-
-          await this.reconcileRemoteChatState(workspaceId, chat).catch((error) => {
+          const { messages, hadOverflow: co } = await this.loadCatchupMessages(ws, chat, since, {
+            fallbackScan: fallbackChatIds.has(chat.id),
+            firstSync,
+          });
+          if (co) ho = true;
+          await this.reconcileRemoteChatState(ws, chat).catch((e) =>
             this.logger.warn(
-              `catchup_reconcile_failed workspace=${workspaceId} chat=${chat.id}: ${error?.message || error}`,
-            );
-          });
-
-          if (!messages.length) {
-            return;
-          }
-
-          touchedChats += 1;
-
-          await forEachSequential(messages, async (message) => {
-            if (message.fromMe) {
-              const persisted = await this.persistHistoricalOutboundMessage(workspaceId, message);
-              if (persisted) {
-                importedMessages += 1;
-              }
+              `catchup_reconcile_failed ws=${ws} chat=${chat.id}: ${e?.message || e}`,
+            ),
+          );
+          if (!messages.length) return;
+          tc += 1;
+          await forEachSequential(messages, async (m) => {
+            if (m.fromMe) {
+              const p = await this.persistHistoricalOutboundMessage(ws, m);
+              if (p) im += 1;
               return;
             }
-
-            const inbound = this.toInboundMessage(workspaceId, message, providerType);
-            if (!inbound) {
-              return;
-            }
-
-            const result = await this.inboundProcessor.process(inbound);
-            if (!result.deduped) {
-              importedMessages += 1;
-            }
+            const ib = this.toInboundMessage(ws, m);
+            if (!ib) return;
+            const r = await this.inboundProcessor.process(ib);
+            if (!r.deduped) im += 1;
           });
-
-          if (this.markReadWithoutReplyOnImport) {
+          if (this.markReadWithoutReplyOnImport)
             await this.providerRegistry
-              .readChatMessages(workspaceId, chat.id)
-              .catch((err) => this.logger.warn('Failed to mark chat as read', err.message));
-          }
+              .readChatMessages(ws, chat.id)
+              .catch((e) => this.logger.warn('Failed to mark chat as read', e.message));
         });
-
         await runPass(pass + 1);
       };
-
       await runPass(0);
-
-      await this.persistCatchupSnapshot(workspaceId, {
+      await this.persistCatchupSnapshot(ws, {
         lastCatchupAt: new Date().toISOString(),
         lastCatchupReason: reason,
-        lastCatchupImportedMessages: importedMessages,
-        lastCatchupTouchedChats: touchedChats,
-        lastCatchupProcessedChats: processedChats,
-        lastCatchupOverflow: hadOverflow,
+        lastCatchupImportedMessages: im,
+        lastCatchupTouchedChats: tc,
+        lastCatchupProcessedChats: pc,
+        lastCatchupOverflow: ho,
         lastCatchupError: null,
         lastCatchupFailedAt: null,
         recoveryBlockedReason: null,
         recoveryBlockedAt: null,
-        backfillCursor: nextBackfillCursor,
+        backfillCursor: nbc,
       });
-
-      this.logger.log(
-        `catchup_completed workspace=${workspaceId} chats=${touchedChats} imported=${importedMessages} overflow=${hadOverflow} reason=${reason}`,
-      );
       await this.agentEvents.publish({
         type: 'status',
-        workspaceId,
+        workspaceId: ws,
         phase: 'sync_complete',
         persistent: true,
         message:
-          importedMessages > 0
-            ? `Sincronização concluída. Importei ${importedMessages} mensagens em ${touchedChats} conversas.`
+          im > 0
+            ? `Sincronização concluída. Importei ${im} mensagens em ${tc} conversas.`
             : 'Sincronização concluída. Não encontrei mensagens novas para importar.',
-        meta: {
-          importedMessages,
-          touchedChats,
-          processedChats,
-          overflow: hadOverflow,
-          reason,
-        },
+        meta: { importedMessages: im, touchedChats: tc, processedChats: pc, overflow: ho, reason },
       });
-
-      await this.scheduleUnreadSweep(workspaceId, {
-        reason,
-        processedChats,
-        touchedChats,
-      }).catch((error) => {
-        this.logger.warn(
-          `catchup_sweep_schedule_failed workspace=${workspaceId}: ${error?.message || error}`,
-        );
-      });
-
-      return {
-        importedMessages,
-        touchedChats,
-        processedChats,
-        overflow: hadOverflow,
-      };
+      await this.scheduleUnreadSweep(ws, { reason, processedChats: pc, touchedChats: tc }).catch(
+        (e) => this.logger.warn(`catchup_sweep_schedule_failed ws=${ws}: ${e?.message || e}`),
+      );
+      return { importedMessages: im, touchedChats: tc, processedChats: pc, overflow: ho };
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'WhatsAppCatchupService.runCatchup', {
-        workspaceId,
+        workspaceId: ws,
       });
-      const errorInstanceofError =
-        error instanceof Error
+      const em = String(
+        (error instanceof Error
           ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      const errorMessage = String(errorInstanceofError?.message || 'erro desconhecido');
-      const sessionMissing = this.isSessionMissingError(error);
-      const recoveryBlockedReason =
-        !sessionMissing && this.isNowebStoreMisconfigured(error)
-          ? 'noweb_store_misconfigured'
-          : null;
-
-      await this.persistCatchupSnapshot(workspaceId, {
-        ...(sessionMissing
+          : new Error(typeof error === 'string' ? error : 'unknown error')
+        ).message || 'erro desconhecido',
+      );
+      const sess = this.isSessionMissingError(error);
+      const rb =
+        !sess && this.isNowebStoreMisconfigured(error) ? 'noweb_store_misconfigured' : null;
+      await this.persistCatchupSnapshot(ws, {
+        ...(sess
           ? {
               status: 'disconnected',
               rawStatus: 'SESSION_MISSING',
-              disconnectReason: errorMessage,
+              disconnectReason: em,
               phoneNumber: null,
               pushName: null,
               qrCode: null,
@@ -602,80 +459,60 @@ export class WhatsAppCatchupService {
             }
           : {}),
         lastCatchupReason: reason,
-        lastCatchupError: errorMessage,
+        lastCatchupError: em,
         lastCatchupFailedAt: new Date().toISOString(),
-        recoveryBlockedReason,
-        recoveryBlockedAt: recoveryBlockedReason ? new Date().toISOString() : null,
+        recoveryBlockedReason: rb,
+        recoveryBlockedAt: rb ? new Date().toISOString() : null,
       });
-
       await this.agentEvents.publish({
         type: 'error',
-        workspaceId,
+        workspaceId: ws,
         phase: 'sync_error',
         persistent: true,
-        message: sessionMissing
-          ? 'Não consegui sincronizar porque a sessão do WhatsApp não existe mais no WAHA. Reconecte pelo QR code.'
-          : recoveryBlockedReason
-            ? 'Não consegui sincronizar suas conversas porque o WAHA está sem NOWEB store habilitado. Corrija a configuração da sessão antes de tentar reconectar.'
-            : `Não consegui sincronizar suas conversas. Motivo: ${errorMessage}.`,
+        message: sess
+          ? 'Não consegui sincronizar porque a sessão do WhatsApp não existe mais no WAHA.'
+          : rb
+            ? 'WAHA está sem NOWEB store habilitado.'
+            : `Não consegui sincronizar suas conversas. Motivo: ${em}.`,
         meta: {
-          importedMessages,
-          touchedChats,
-          processedChats,
-          overflow: hadOverflow,
+          importedMessages: im,
+          touchedChats: tc,
+          processedChats: pc,
+          overflow: ho,
           reason,
-          sessionMissing,
-          recoveryBlockedReason,
-          errorMessage,
+          sessionMissing: sess,
+          recoveryBlockedReason: rb,
+          errorMessage: em,
         },
       });
       throw error;
     } finally {
-      await this.releaseLock(workspaceId, token);
+      await this.releaseLock(ws, token);
     }
   }
 
-  private resolveCatchupSince(sessionMeta: Record<string, unknown>): Date {
-    const lastCatchupAt = this.normalizeTimestamp(
-      sessionMeta.lastCatchupAt as string | number | Date | null | undefined,
+  // ═══ PRIVATE helpers (thin wrappers around extracted logic) ═══
+
+  private resolveCatchupSince(sm: Record<string, unknown>): Date {
+    const lca = this.normalizeTimestamp(
+      sm.lastCatchupAt as string | number | Date | null | undefined,
     );
-    if (lastCatchupAt) {
-      return lastCatchupAt;
-    }
-
-    return new Date(Date.now() - this.firstRunLookbackMs);
-  }
-
-  private resolveChatActivityTimestamp(chat: WahaChatSummary): number {
-    return Math.max(Number(chat.timestamp || 0) || 0, Number(chat.lastMessageTimestamp || 0) || 0);
+    return lca || new Date(Date.now() - this.firstRunLookbackMs);
   }
 
   private sortChatsByPriority(chats: WahaChatSummary[], since: Date): WahaChatSummary[] {
     return [...chats].sort((a, b) => {
-      const unreadDelta = (b.unreadCount || 0) - (a.unreadCount || 0);
-      if (unreadDelta !== 0) {
-        return unreadDelta;
-      }
-
-      const activityDelta =
-        this.resolveChatActivityTimestamp(b) - this.resolveChatActivityTimestamp(a);
-      if (activityDelta !== 0) {
-        return activityDelta;
-      }
-
-      const replyPendingDelta =
+      const ud = (b.unreadCount || 0) - (a.unreadCount || 0);
+      if (ud !== 0) return ud;
+      const ad = this.resolveChatActivityTimestamp(b) - this.resolveChatActivityTimestamp(a);
+      if (ad !== 0) return ad;
+      const rpd =
         Number(this.isRemoteChatAwaitingReply(b)) - Number(this.isRemoteChatAwaitingReply(a));
-      if (replyPendingDelta !== 0) {
-        return replyPendingDelta;
-      }
-
-      const recentDelta =
+      if (rpd !== 0) return rpd;
+      const rd =
         Number(this.resolveChatActivityTimestamp(b) >= since.getTime()) -
         Number(this.resolveChatActivityTimestamp(a) >= since.getTime());
-      if (recentDelta !== 0) {
-        return recentDelta;
-      }
-
+      if (rd !== 0) return rd;
       return String(a.id).localeCompare(String(b.id));
     });
   }
@@ -684,68 +521,48 @@ export class WhatsAppCatchupService {
     chats: WahaChatSummary[],
     since: Date,
     cursor?: CatchupBackfillCursor,
-  ): {
-    chats: WahaChatSummary[];
-    fallbackChatIds: Set<string>;
-  } {
-    const priorityChats = this.sortChatsByPriority(
+  ) {
+    const pri = this.sortChatsByPriority(
       chats.filter(
-        (chat) =>
-          (chat.unreadCount || 0) > 0 ||
-          this.isRemoteChatAwaitingReply(chat) ||
+        (c) =>
+          (c.unreadCount || 0) > 0 ||
+          this.isRemoteChatAwaitingReply(c) ||
           (this.includeZeroUnreadActivity &&
-            this.resolveChatActivityTimestamp(chat) >= since.getTime()),
+            this.resolveChatActivityTimestamp(c) >= since.getTime()),
       ),
       since,
     );
-    const staleChats = this.sortChatsByPriority(
+    const stale = this.sortChatsByPriority(
       chats.filter(
-        (chat) =>
-          (chat.unreadCount || 0) <= 0 &&
-          !this.isRemoteChatAwaitingReply(chat) &&
-          this.resolveChatActivityTimestamp(chat) < since.getTime(),
+        (c) =>
+          (c.unreadCount || 0) <= 0 &&
+          !this.isRemoteChatAwaitingReply(c) &&
+          this.resolveChatActivityTimestamp(c) < since.getTime(),
       ),
       since,
     );
-    const fallbackChats = this.rotateFallbackChatsByCursor(staleChats, cursor).slice(
-      0,
-      this.fallbackChatsPerPass,
-    );
-
+    const fb = this.rotateFallbackChatsByCursor(stale, cursor).slice(0, this.fallbackChatsPerPass);
     const deduped = new Map<string, WahaChatSummary>();
-    for (const chat of [...priorityChats, ...fallbackChats]) {
-      if (!deduped.has(chat.id)) {
-        deduped.set(chat.id, chat);
-      }
+    for (const c of [...pri, ...fb]) {
+      if (!deduped.has(c.id)) deduped.set(c.id, c);
     }
-
-    return {
-      chats: Array.from(deduped.values()),
-      fallbackChatIds: new Set(fallbackChats.map((chat) => chat.id)),
-    };
+    return { chats: Array.from(deduped.values()), fallbackChatIds: new Set(fb.map((c) => c.id)) };
   }
 
-  private resolveBackfillCursor(sessionMeta: Record<string, unknown>): CatchupBackfillCursor {
-    const rawCursor = sessionMeta?.backfillCursor;
-    if (!rawCursor || typeof rawCursor !== 'object') {
-      return null;
-    }
-
-    const cursor = rawCursor as Record<string, unknown>;
-    const chatId = safeStr(cursor.chatId).trim();
-    const activityTimestamp = Number(cursor.activityTimestamp || cursor.timestamp || 0) || 0;
-    const updatedAt = this.normalizeTimestamp(
-      cursor.updatedAt as string | number | Date | null | undefined,
-    );
-
-    if (!chatId || activityTimestamp <= 0) {
-      return null;
-    }
-
+  private resolveBackfillCursor(sm: Record<string, unknown>): CatchupBackfillCursor {
+    const rc = sm?.backfillCursor;
+    if (!rc || typeof rc !== 'object') return null;
+    const c = rc as Record<string, unknown>;
+    const cid = safeStr(c.chatId).trim();
+    const at = Number(c.activityTimestamp || c.timestamp || 0) || 0;
+    if (!cid || at <= 0) return null;
     return {
-      chatId,
-      activityTimestamp,
-      updatedAt: updatedAt?.toISOString() || new Date(activityTimestamp).toISOString(),
+      chatId: cid,
+      activityTimestamp: at,
+      updatedAt:
+        normalizeTimestampExt(
+          c.updatedAt as string | number | Date | null | undefined,
+        )?.toISOString() || new Date(at).toISOString(),
     };
   }
 
@@ -753,176 +570,110 @@ export class WhatsAppCatchupService {
     chats: WahaChatSummary[],
     cursor?: CatchupBackfillCursor,
   ): WahaChatSummary[] {
-    if (!cursor || !chats.length) {
-      return chats;
+    if (!cursor || !chats.length) return chats;
+    const i = chats.findIndex((c) => c.id === cursor.chatId);
+    if (i >= 0) {
+      const s = (i + 1) % chats.length;
+      return s === 0 ? chats : [...chats.slice(s), ...chats.slice(0, s)];
     }
-
-    const chatIndex = chats.findIndex((chat) => chat.id === cursor.chatId);
-    if (chatIndex >= 0) {
-      const start = (chatIndex + 1) % chats.length;
-      return start === 0 ? chats : [...chats.slice(start), ...chats.slice(0, start)];
-    }
-
-    const activityIndex = chats.findIndex(
-      (chat) => this.resolveChatActivityTimestamp(chat) < cursor.activityTimestamp,
+    const ai = chats.findIndex(
+      (c) => this.resolveChatActivityTimestamp(c) < cursor.activityTimestamp,
     );
-    if (activityIndex > 0) {
-      return [...chats.slice(activityIndex), ...chats.slice(0, activityIndex)];
-    }
-
+    if (ai > 0) return [...chats.slice(ai), ...chats.slice(0, ai)];
     return chats;
   }
 
-  private normalizeChats(raw: unknown): WahaChatSummary[] {
-    const rawObj = raw as Record<string, unknown> | unknown[] | null;
-    const candidates: unknown[] = Array.isArray(rawObj)
-      ? rawObj
-      : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.chats)
-        ? (rawObj.chats as unknown[])
-        : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.items)
-          ? (rawObj.items as unknown[])
-          : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.data)
-            ? (rawObj.data as unknown[])
-            : [];
-
-    return candidates
-      .map((chatRaw: unknown) => this.normalizeChatEntry(chatRaw))
-      .filter((chat) => !!chat.id);
+  private isRemoteChatAwaitingReply(chat: WahaChatSummary): boolean {
+    return chat.lastMessageFromMe === false;
   }
 
-  private pickBooleanFromMe(
-    lastMessage: Record<string, unknown> | null | undefined,
-    lastMsgDataId: Record<string, unknown> | undefined,
-    lastMsgId: Record<string, unknown> | undefined,
-  ): boolean | null {
-    if (typeof lastMessage?.fromMe === 'boolean') {
-      return lastMessage.fromMe;
-    }
-    if (typeof lastMsgDataId?.fromMe === 'boolean') {
-      return lastMsgDataId.fromMe;
-    }
-    if (typeof lastMsgId?.fromMe === 'boolean') {
-      return lastMsgId.fromMe;
-    }
-    return null;
-  }
+  private async loadCatchupMessages(
+    ws: string,
+    chat: WahaChatSummary,
+    since: Date,
+    o?: { fallbackScan?: boolean; firstSync?: boolean },
+  ): Promise<{ messages: WahaChatMessage[]; hadOverflow: boolean }> {
+    const collected: WahaChatMessage[] = [];
+    const seen = new Set<string>();
+    let ho = false;
+    let off = 0;
+    const ur = Math.max(0, Number(chat.unreadCount || 0) || 0);
+    const fs = o?.fallbackScan === true;
+    const fS = o?.firstSync === true;
+    const mp = fs
+      ? Math.min(this.maxPagesPerChat, this.fallbackPagesPerChat)
+      : this.maxPagesPerChat;
 
-  private normalizeChatEntry(chatRaw: unknown): WahaChatSummary {
-    const chat = (chatRaw && typeof chatRaw === 'object' ? chatRaw : {}) as Record<string, unknown>;
-    const chatIdObj = chat.id as Record<string, unknown> | string | undefined;
-    const lastMessage = chat.lastMessage as Record<string, unknown> | null | undefined;
-    const lastMsgData = lastMessage?._data as Record<string, unknown> | undefined;
-    const lastMsgId = lastMessage?.id as Record<string, unknown> | undefined;
-    const chatChat = chat._chat as Record<string, unknown> | undefined;
-    const contact = chat.contact as Record<string, unknown> | undefined;
-    const lastMsgDataId = lastMsgData?.id as Record<string, unknown> | undefined;
-
-    const id =
-      (typeof chatIdObj === 'object' && chatIdObj ? chatIdObj._serialized : undefined) ||
-      chat.id ||
-      chat.chatId ||
-      chat.wid ||
-      '';
-
-    const lastMessageTimestamp =
-      Number(
-        chat.lastMessageTimestamp ||
-          lastMessage?.timestamp ||
-          lastMsgData?.messageTimestamp ||
-          chat.last_time ||
-          chatChat?.conversationTimestamp ||
-          0,
-      ) || 0;
-
-    const lastMessageRecvTimestamp =
-      Number(
-        chat.lastMessageRecvTimestamp ||
-          chatChat?.lastMessageRecvTimestamp ||
-          lastMessage?.timestamp ||
-          lastMsgData?.messageTimestamp ||
-          chatChat?.conversationTimestamp ||
-          0,
-      ) || 0;
-
+    const loadPage = async (page: number): Promise<void> => {
+      if (page >= mp) return;
+      const raw = await this.providerRegistry.getChatMessages(ws, chat.id, {
+        limit: this.maxMessagesPerChat,
+        offset: off,
+      });
+      const np = this.normalizeMessages(raw, chat.id)
+        .filter((m) => !!m.id)
+        .sort((a, b) => this.resolveTimestamp(a) - this.resolveTimestamp(b));
+      if (!np.length) return;
+      if (np.length >= this.maxMessagesPerChat) ho = true;
+      for (const m of np) {
+        if (seen.has(m.id)) continue;
+        seen.add(m.id);
+        collected.push(m);
+      }
+      off += np.length;
+      if (np.length < this.maxMessagesPerChat) return;
+      const ic = collected.filter((m) => !m.fromMe).length;
+      if (ur > 0 && ic >= ur) return;
+      if (ur === 0 && !fS && !fs && np.every((m) => this.resolveTimestamp(m) < since.getTime()))
+        return;
+      return loadPage(page + 1);
+    };
+    await loadPage(0);
+    if (ur > 0 && collected.length < ur) ho = true;
+    const cm = await this.canonicalizeMessages(ws, collected);
     return {
-      id,
-      unreadCount: Number(chat.unreadCount || chat.unread || 0) || 0,
-      timestamp: this.resolveTimestamp(chat),
-      lastMessageTimestamp,
-      lastMessageRecvTimestamp,
-      lastMessageFromMe: this.pickBooleanFromMe(lastMessage, lastMsgDataId, lastMsgId),
-      name: chat.name || contact?.pushName || lastMsgData?.verifiedBizName || null,
-    } as WahaChatSummary;
+      messages:
+        ur > 0 || fs || fS ? cm : cm.filter((m) => this.resolveTimestamp(m) >= since.getTime()),
+      hadOverflow: ho,
+    };
   }
 
-  private normalizeMessages(raw: unknown, fallbackChatId: string): WahaChatMessage[] {
-    const rawObj = raw as Record<string, unknown> | unknown[] | null;
-    const candidates: unknown[] = Array.isArray(rawObj)
-      ? rawObj
-      : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.messages)
-        ? (rawObj.messages as unknown[])
-        : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.items)
-          ? (rawObj.items as unknown[])
-          : rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.data)
-            ? (rawObj.data as unknown[])
-            : [];
-
-    return candidates.map((messageRaw: unknown) => {
-      const message = (messageRaw && typeof messageRaw === 'object' ? messageRaw : {}) as Record<
-        string,
-        unknown
-      >;
-      const msgId = message.id as Record<string, unknown> | string | undefined;
-      const msgKey = message.key as Record<string, unknown> | undefined;
-      const msgText = message.text as Record<string, unknown> | undefined;
-      const msgMedia = message.media as Record<string, unknown> | undefined;
-      return {
-        id:
-          (typeof msgId === 'object' && msgId ? msgId._serialized || msgId.id : undefined) ||
-          msgKey?.id ||
-          message.id ||
-          '',
-        from: this.resolvePreferredChatId(message) || message.from,
-        to: message.to,
-        fromMe: message.fromMe === true,
-        body: message.body || msgText?.body || '',
-        type: message.type,
-        hasMedia: message.hasMedia === true,
-        mediaUrl: message.mediaUrl || msgMedia?.url,
-        mimetype: message.mimetype || msgMedia?.mimetype,
-        timestamp: this.resolveTimestamp(message),
-        chatId: this.resolvePreferredChatId(message) || fallbackChatId,
-        raw: message,
-      } as WahaChatMessage;
-    });
+  private async canonicalizeMessages(
+    ws: string,
+    messages: WahaChatMessage[],
+  ): Promise<WahaChatMessage[]> {
+    const mappings = await this.getLidPnMap(ws);
+    return (messages || []).map((m) => ({
+      ...m,
+      chatId:
+        this.resolveCanonicalChatId(String(m.chatId || m.from || '').trim(), mappings) || m.chatId,
+      from: this.resolveCanonicalChatId(String(m.from || m.chatId).trim(), mappings) || m.from,
+      to: this.resolveCanonicalChatId(String(m.to || '').trim(), mappings) || m.to,
+    }));
   }
 
   private toInboundMessage(
-    workspaceId: string,
-    message: WahaChatMessage,
+    ws: string,
+    m: WahaChatMessage,
     provider: InboundMessage['provider'] = 'meta-cloud',
   ): InboundMessage | null {
-    const providerMessageId = String(message.id || '').trim();
-    const from = String(message.from || message.chatId || '').trim();
-
-    if (!providerMessageId || !from) {
-      return null;
-    }
-
+    const pid = String(m.id || '').trim();
+    const from = String(m.from || m.chatId || '').trim();
+    if (!pid || !from) return null;
     return {
-      workspaceId,
+      workspaceId: ws,
       provider,
       ingestMode: 'catchup',
-      createdAt: this.normalizeTimestamp(message.timestamp),
-      providerMessageId,
+      createdAt: this.normalizeTimestamp(m.timestamp),
+      providerMessageId: pid,
       from,
-      to: message.to,
-      senderName: this.extractSenderName(message.raw),
-      type: this.mapInboundType(message.type),
-      text: message.body,
-      mediaUrl: message.mediaUrl,
-      mediaMime: message.mimetype,
-      raw: message.raw,
+      to: m.to,
+      senderName: this.extractSenderName(m.raw),
+      type: this.mapInboundType(m.type),
+      text: m.body,
+      mediaUrl: m.mediaUrl,
+      mediaMime: m.mimetype,
+      raw: m.raw,
     };
   }
 
@@ -930,34 +681,31 @@ export class WhatsAppCatchupService {
     payload: Record<string, unknown> | null | undefined,
   ): string | null {
     const data = payload?._data as Record<string, unknown> | undefined;
-    const dataKey = data?.key as Record<string, unknown> | undefined;
-    const payloadKey = payload?.key as Record<string, unknown> | undefined;
+    const dk = data?.key as Record<string, unknown> | undefined;
+    const pk = payload?.key as Record<string, unknown> | undefined;
     const candidates = [
-      dataKey?.remoteJidAlt,
-      payloadKey?.remoteJidAlt,
+      dk?.remoteJidAlt,
+      pk?.remoteJidAlt,
       payload?.remoteJidAlt,
       payload?.chatId,
       payload?.from,
-      dataKey?.remoteJid,
-      payloadKey?.remoteJid,
+      dk?.remoteJid,
+      pk?.remoteJid,
       payload?.to,
     ]
-      .filter((candidate) => typeof candidate === 'string')
-      .map((candidate) => String(candidate).trim())
+      .filter((c) => typeof c === 'string')
+      .map((c) => String(c).trim())
       .filter(Boolean);
-
-    if (!candidates.length) {
-      return null;
-    }
-
-    return candidates.find((candidate) => !candidate.includes('@lid')) || candidates[0] || null;
+    return !candidates.length
+      ? null
+      : candidates.find((c) => !c.includes('@lid')) || candidates[0] || null;
   }
 
   private extractSenderName(
     payload: Record<string, unknown> | null | undefined,
   ): string | undefined {
     const data = payload?._data as Record<string, unknown> | undefined;
-    const candidates: unknown[] = [
+    const cs: unknown[] = [
       data?.pushName,
       payload?.pushName,
       data?.notifyName,
@@ -965,142 +713,60 @@ export class WhatsAppCatchupService {
       payload?.author,
       payload?.senderName,
     ];
-
-    for (const candidate of candidates) {
-      if (typeof candidate !== 'string') {
-        continue;
-      }
-
-      const normalized = candidate.trim();
-      if (normalized) {
-        return normalized;
-      }
+    for (const c of cs) {
+      if (typeof c === 'string' && c.trim()) return c.trim();
     }
-
     return undefined;
   }
 
   private mapInboundType(type?: string): InboundMessage['type'] {
-    const normalized = String(type || '').toLowerCase();
-    if (normalized === 'chat' || normalized === 'text') {
-      return 'text';
-    }
-    if (normalized === 'audio' || normalized === 'ptt') {
-      return 'audio';
-    }
-    if (normalized === 'image') {
-      return 'image';
-    }
-    if (normalized === 'document') {
-      return 'document';
-    }
-    if (normalized === 'video') {
-      return 'video';
-    }
-    if (normalized === 'sticker') {
-      return 'sticker';
-    }
+    const n = String(type || '').toLowerCase();
+    if (n === 'chat' || n === 'text') return 'text';
+    if (n === 'audio' || n === 'ptt') return 'audio';
+    if (n === 'image') return 'image';
+    if (n === 'document') return 'document';
+    if (n === 'video') return 'video';
+    if (n === 'sticker') return 'sticker';
     return 'unknown';
   }
 
-  // PULSE_OK: resolves timestamps safely — numeric paths return parsed milliseconds,
-  // string path validates with isNaN before returning
-  private resolveTimestamp(value: unknown): number {
-    const val = (value && typeof value === 'object' ? value : {}) as Record<string, unknown>;
-    const valChat = val._chat as Record<string, unknown> | undefined;
-    const valLastMessage = val.lastMessage as Record<string, unknown> | undefined;
-    const valLastMsgData = valLastMessage?._data as Record<string, unknown> | undefined;
-    const candidates: unknown[] = [
-      valChat?.conversationTimestamp,
-      valChat?.lastMessageRecvTimestamp,
-      valLastMessage?.timestamp,
-      valLastMsgData?.messageTimestamp,
-      val.conversationTimestamp,
-      val.lastMessageRecvTimestamp,
-      val.lastMessageSentTimestamp,
-      val.timestamp,
-      val.t,
-      val.createdAt,
-      val.lastMessageTimestamp,
-      val.last_time,
-    ];
-
-    for (const candidate of candidates) {
-      if (typeof candidate === 'number' && Number.isFinite(candidate)) {
-        return candidate > 1e12 ? candidate : candidate * 1000;
-      }
-      if (typeof candidate === 'string') {
-        const numeric = Number(candidate);
-        if (Number.isFinite(numeric) && numeric > 0) {
-          return numeric > 1e12 ? numeric : numeric * 1000;
-        }
-        const date = new Date(candidate);
-        if (!Number.isNaN(date.getTime())) {
-          return date.getTime();
-        }
-      }
-    }
-
-    return 0;
-  }
-
-  private async persistCatchupSnapshot(workspaceId: string, update: Record<string, unknown>) {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
+  // ═══ PERSISTENCE ═══
+  private async persistCatchupSnapshot(ws: string, update: Record<string, unknown>) {
+    const w = await this.prisma.workspace.findUnique({
+      where: { id: ws },
       select: { providerSettings: true },
     });
-    if (!workspace) {
-      return;
-    }
-
-    const settings = asProviderSettings(workspace.providerSettings);
-    const sessionMeta = settings.whatsappApiSession || {};
-
+    if (!w) return;
+    const s = asProviderSettings(w.providerSettings);
+    const sm = s.whatsappApiSession || {};
     await this.prisma.workspace.update({
-      where: { id: workspaceId },
+      where: { id: ws },
       data: {
         providerSettings: toPrismaJsonValue({
-          ...settings,
+          ...s,
           ...(typeof update.status === 'string' ? { connectionStatus: update.status } : {}),
-          whatsappApiSession: {
-            ...sessionMeta,
-            ...update,
-          },
+          whatsappApiSession: { ...sm, ...update },
         }),
       },
     });
   }
 
   private async scheduleUnreadSweep(
-    workspaceId: string,
-    input: {
-      reason: string;
-      processedChats: number;
-      touchedChats: number;
-    },
+    ws: string,
+    input: { reason: string; processedChats: number; touchedChats: number },
   ): Promise<void> {
-    if (!workspaceId) {
-      return;
-    }
-
+    if (!ws) return;
+    const workerOk = await this.workerRuntime.isAvailable().catch(() => false);
     const triggeredBy = `catchup:${input.reason}`;
-    const workerAvailable = await this.workerRuntime.isAvailable().catch(() => false);
-
-    if (!workerAvailable) {
-      await this.ciaRuntime.startBacklogRun(
-        workspaceId,
-        'reply_all_recent_first',
-        CATCHUP_SWEEP_LIMIT,
-        {
-          autoStarted: true,
-          runtimeState: 'EXECUTING_BACKLOG',
-          triggeredBy,
-        },
-      );
-
+    if (!workerOk) {
+      await this.ciaRuntime.startBacklogRun(ws, 'reply_all_recent_first', CATCHUP_SWEEP_LIMIT, {
+        autoStarted: true,
+        runtimeState: 'EXECUTING_BACKLOG',
+        triggeredBy,
+      });
       await this.agentEvents.publish({
         type: 'status',
-        workspaceId,
+        workspaceId: ws,
         phase: 'sync_queue_unread',
         persistent: true,
         message:
@@ -1115,25 +781,20 @@ export class WhatsAppCatchupService {
       });
       return;
     }
-
     await autopilotQueue.add(
       AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
       buildSweepUnreadConversationsJobData({
-        workspaceId,
+        workspaceId: ws,
         runId: randomUUID(),
         limit: CATCHUP_SWEEP_LIMIT,
         mode: 'reply_all_recent_first',
         triggeredBy,
       }),
-      {
-        jobId: buildQueueJobId('catchup-sweep-unread', workspaceId),
-        removeOnComplete: true,
-      },
+      { jobId: buildQueueJobId('catchup-sweep-unread', ws), removeOnComplete: true },
     );
-
     await this.agentEvents.publish({
       type: 'status',
-      workspaceId,
+      workspaceId: ws,
       phase: 'sync_queue_unread',
       persistent: true,
       message:
@@ -1149,151 +810,20 @@ export class WhatsAppCatchupService {
     });
   }
 
-  private getLockKey(workspaceId: string) {
-    return `whatsapp:catchup:${workspaceId}`;
-  }
-
-  private getCooldownKey(workspaceId: string) {
-    return `whatsapp:catchup:cooldown:${workspaceId}`;
-  }
-
-  private async loadCatchupMessages(
-    workspaceId: string,
-    chat: WahaChatSummary,
-    since: Date,
-    options?: {
-      fallbackScan?: boolean;
-      firstSync?: boolean;
-    },
-  ): Promise<{ messages: WahaChatMessage[]; hadOverflow: boolean }> {
-    const collected: WahaChatMessage[] = [];
-    const seenIds = new Set<string>();
-    let hadOverflow = false;
-    let offset = 0;
-    const unreadCount = Math.max(0, Number(chat.unreadCount || 0) || 0);
-    const fallbackScan = options?.fallbackScan === true;
-    const firstSync = options?.firstSync === true;
-    const maxPages = fallbackScan
-      ? Math.min(this.maxPagesPerChat, this.fallbackPagesPerChat)
-      : this.maxPagesPerChat;
-
-    const loadPage = async (page: number): Promise<void> => {
-      if (page >= maxPages) {
-        return;
-      }
-
-      const rawMessages = await this.providerRegistry.getChatMessages(workspaceId, chat.id, {
-        limit: this.maxMessagesPerChat,
-        offset,
-      });
-      const normalizedPage = this.normalizeMessages(rawMessages, chat.id)
-        .filter((message) => !!message.id)
-        .sort((a, b) => this.resolveTimestamp(a) - this.resolveTimestamp(b));
-
-      if (!normalizedPage.length) {
-        return;
-      }
-
-      if (normalizedPage.length >= this.maxMessagesPerChat) {
-        hadOverflow = true;
-      }
-
-      for (const message of normalizedPage) {
-        if (seenIds.has(message.id)) {
-          continue;
-        }
-        seenIds.add(message.id);
-        collected.push(message);
-      }
-
-      offset += normalizedPage.length;
-
-      if (normalizedPage.length < this.maxMessagesPerChat) {
-        return;
-      }
-
-      const inboundCollectedCount = collected.filter((message) => !message.fromMe).length;
-
-      if (unreadCount > 0 && inboundCollectedCount >= unreadCount) {
-        return;
-      }
-
-      if (
-        unreadCount === 0 &&
-        !firstSync &&
-        !fallbackScan &&
-        normalizedPage.every((message) => this.resolveTimestamp(message) < since.getTime())
-      ) {
-        return;
-      }
-      await loadPage(page + 1);
-    };
-
-    await loadPage(0);
-
-    if (unreadCount > 0 && collected.length < unreadCount) {
-      hadOverflow = true;
-    }
-
-    const canonicalMessages = await this.canonicalizeMessages(workspaceId, collected);
-
-    return {
-      messages:
-        unreadCount > 0 || fallbackScan || firstSync
-          ? canonicalMessages
-          : canonicalMessages.filter(
-              (message) => this.resolveTimestamp(message) >= since.getTime(),
-            ),
-      hadOverflow,
-    };
-  }
-
-  private isRemoteChatAwaitingReply(chat: WahaChatSummary): boolean {
-    return chat.lastMessageFromMe === false;
-  }
-
-  // PULSE_OK: validates every new Date(input) with Number.isNaN(parsed.getTime()) — returns null on invalid
-  private normalizeTimestamp(value?: Date | string | number | null): Date | null {
-    if (!value && value !== 0) {
-      return null;
-    }
-    if (value instanceof Date) {
-      return Number.isNaN(value.getTime()) ? null : value;
-    }
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      const normalized = value > 1e12 ? value : value * 1000;
-      const parsed = new Date(normalized);
-      return Number.isNaN(parsed.getTime()) ? null : parsed;
-    }
-
-    const numeric = Number(value);
-    if (Number.isFinite(numeric) && numeric > 0) {
-      const normalized = numeric > 1e12 ? numeric : numeric * 1000;
-      const parsed = new Date(normalized);
-      return Number.isNaN(parsed.getTime()) ? null : parsed;
-    }
-
-    const parsed = new Date(String(value));
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
-  }
-
   private async persistHistoricalOutboundMessage(
-    workspaceId: string,
+    ws: string,
     message: WahaChatMessage,
   ): Promise<boolean> {
     const phone = this.normalizePhone(String(message.chatId || message.from || '').trim());
-    const providerMessageId = String(message.id || '').trim();
-    if (!phone || !providerMessageId) {
-      return false;
-    }
-
+    const pid = String(message.id || '').trim();
+    if (!phone || !pid) return false;
     try {
       await this.inbox.saveMessageByPhone({
-        workspaceId,
+        workspaceId: ws,
         phone,
         content: message.body || '',
         direction: 'OUTBOUND',
-        externalId: providerMessageId,
+        externalId: pid,
         type: this.mapInboundType(message.type).toUpperCase(),
         mediaUrl: message.mediaUrl,
         status: 'READ',
@@ -1303,221 +833,149 @@ export class WhatsAppCatchupService {
         silent: true,
       });
       return true;
-    } catch (error: unknown) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+    } catch (e: unknown) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
         void this.opsAlert?.alertOnDegradation(
-          error.message,
+          e.message,
           'WhatsAppCatchupService.persistHistoricalOutboundMessage.duplicate',
-          { workspaceId },
+          { workspaceId: ws },
         );
         return false;
       }
       void this.opsAlert?.alertOnCriticalError(
-        error,
+        e,
         'WhatsAppCatchupService.persistHistoricalOutboundMessage',
-        { workspaceId },
+        { workspaceId: ws },
       );
-      throw error;
+      throw e;
     }
   }
 
-  private async releaseLock(workspaceId: string, token: string) {
-    const lockKey = this.getLockKey(workspaceId);
-    const current = await this.redis.get(lockKey);
-    // Not a security-sensitive comparison — comparing Redis lock tokens (random UUIDs)
-    // for distributed-lock ownership. Timing leakage is irrelevant here.
-    if (current === token) {
-      await this.redis.del(lockKey);
-    }
+  private async releaseLock(ws: string, token: string) {
+    const c = await this.redis.get(this.getLockKey(ws));
+    if (c === token) await this.redis.del(this.getLockKey(ws));
   }
 
-  private async reconcileRemoteChatState(
-    workspaceId: string,
-    chat: WahaChatSummary,
-  ): Promise<void> {
-    const chatId = String(chat.id || '').trim();
-    if (!chatId || chatId.includes('@g.us')) {
-      return;
-    }
-
-    const phone = await this.resolveCanonicalPhone(workspaceId, chatId);
-    if (!phone) {
-      return;
-    }
-
-    const existingContact = await this.prisma.contact.findUnique({
-      where: {
-        workspaceId_phone: {
-          workspaceId,
-          phone,
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        customFields: true,
-      },
+  // ═══ RECONCILE ═══
+  private async reconcileRemoteChatState(ws: string, chat: WahaChatSummary): Promise<void> {
+    const cid = String(chat.id || '').trim();
+    if (!cid || cid.includes('@g.us')) return;
+    const phone = await this.resolveCanonicalPhone(ws, cid);
+    if (!phone) return;
+    const ec = await this.prisma.contact.findUnique({
+      where: { workspaceId_phone: { workspaceId: ws, phone } },
+      select: { id: true, name: true, customFields: true },
     });
-    const existingCustomFields = this.normalizeJsonObject(existingContact?.customFields);
-    const existingRemotePushName = safeStr(existingCustomFields.remotePushName).trim();
-    const existingStoredName = String(existingContact?.name || '').trim();
-    const remotePushName =
+    const ecf = this.normalizeJsonObject(ec?.customFields);
+    const erp = safeStr(ecf.remotePushName).trim();
+    const esn = String(ec?.name || '').trim();
+    const rpn =
       this.resolveRemoteContactName(chat) ||
-      (!this.isPlaceholderContactName(existingRemotePushName, phone)
-        ? existingRemotePushName
-        : '') ||
+      (!this.isPlaceholderContactName(erp, phone) ? erp : '') ||
       null;
-    const contactName =
-      remotePushName ||
-      (!this.isPlaceholderContactName(existingStoredName, phone) ? existingStoredName : '') ||
-      null;
-    const mappings = await this.getLidPnMap(workspaceId);
-    const resolvedChatId = this.resolveCanonicalChatId(chatId, mappings);
+    const cn = rpn || (!this.isPlaceholderContactName(esn, phone) ? esn : '') || null;
+    const mappings = await this.getLidPnMap(ws);
+    const rcid = this.resolveCanonicalChatId(cid, mappings);
     const contact = await this.prisma.contact.upsert({
-      where: {
-        workspaceId_phone: {
-          workspaceId,
-          phone,
-        },
-      },
+      where: { workspaceId_phone: { workspaceId: ws, phone } },
       update: {
-        name: contactName,
+        name: cn,
         customFields: JSON.parse(
           JSON.stringify({
-            ...existingCustomFields,
-            remotePushName: remotePushName || undefined,
-            remotePushNameUpdatedAt: remotePushName
+            ...ecf,
+            remotePushName: rpn || undefined,
+            remotePushNameUpdatedAt: rpn
               ? new Date().toISOString()
-              : existingCustomFields.remotePushNameUpdatedAt || undefined,
-            lastRemoteChatId: chatId,
-            lastResolvedChatId: resolvedChatId || chatId,
-          } satisfies Record<string, unknown>),
+              : ecf.remotePushNameUpdatedAt || undefined,
+            lastRemoteChatId: cid,
+            lastResolvedChatId: rcid || cid,
+          }),
         ) as Prisma.InputJsonObject,
       },
       create: {
-        workspaceId,
+        workspaceId: ws,
         phone,
-        name: contactName,
+        name: cn,
         customFields: JSON.parse(
           JSON.stringify({
-            remotePushName: remotePushName || undefined,
-            remotePushNameUpdatedAt: remotePushName ? new Date().toISOString() : undefined,
-            lastRemoteChatId: chatId,
-            lastResolvedChatId: resolvedChatId || chatId,
-          } satisfies Record<string, unknown>),
+            remotePushName: rpn || undefined,
+            remotePushNameUpdatedAt: rpn ? new Date().toISOString() : undefined,
+            lastRemoteChatId: cid,
+            lastResolvedChatId: rcid || cid,
+          }),
         ) as Prisma.InputJsonObject,
       },
-      select: {
-        id: true,
-      },
+      select: { id: true },
     });
-
-    const savedToWhatsapp = contactName
-      ? await this.providerRegistry
-          .upsertContactProfile(workspaceId, {
-            phone,
-            name: contactName,
-          })
-          .catch(() => false)
+    const saved = cn
+      ? await this.providerRegistry.upsertContactProfile(ws, { phone, name: cn }).catch(() => false)
       : false;
-
-    if (savedToWhatsapp) {
+    if (saved)
       await this.prisma.contact.updateMany({
-        where: { id: contact.id, workspaceId },
+        where: { id: contact.id, workspaceId: ws },
         data: {
           customFields: JSON.parse(
             JSON.stringify({
               ...this.normalizeJsonObject(
                 (
                   await this.prisma.contact.findFirst({
-                    where: { id: contact.id, workspaceId },
+                    where: { id: contact.id, workspaceId: ws },
                     select: { customFields: true },
                   })
                 )?.customFields,
               ),
               whatsappSavedAt: new Date().toISOString(),
-              lastRemoteChatId: chatId,
-              lastResolvedChatId: resolvedChatId || chatId,
-              remotePushName: remotePushName || undefined,
-            } satisfies Record<string, unknown>),
+              lastRemoteChatId: cid,
+              lastResolvedChatId: rcid || cid,
+              remotePushName: rpn || undefined,
+            }),
           ) as Prisma.InputJsonObject,
         },
       });
-    }
-
-    const remoteActivityAt = this.normalizeTimestamp(this.resolveChatActivityTimestamp(chat));
-    const existingConversation = await this.prisma.conversation.findFirst({
-      where: {
-        workspaceId,
-        contactId: contact.id,
-      },
+    const rAt = this.normalizeTimestamp(this.resolveChatActivityTimestamp(chat));
+    const exC = await this.prisma.conversation.findFirst({
+      where: { workspaceId: ws, contactId: contact.id },
       orderBy: { updatedAt: 'desc' },
-      select: {
-        id: true,
-        unreadCount: true,
-        lastMessageAt: true,
-      },
+      select: { id: true, unreadCount: true, lastMessageAt: true },
     });
-
-    if (!existingConversation) {
+    if (!exC) {
       await this.prisma.conversation.create({
         data: {
-          workspaceId,
+          workspaceId: ws,
           contactId: contact.id,
           status: 'OPEN',
           priority: 'MEDIUM',
           channel: 'WHATSAPP',
           mode: 'AI',
           unreadCount: Math.max(0, Number(chat.unreadCount || 0) || 0),
-          lastMessageAt: remoteActivityAt || new Date(),
+          lastMessageAt: rAt || new Date(),
         },
       });
       return;
     }
-
-    const currentLastMessageAt =
-      existingConversation.lastMessageAt instanceof Date
-        ? existingConversation.lastMessageAt
-        : this.normalizeTimestamp(existingConversation.lastMessageAt);
-
+    const clm =
+      exC.lastMessageAt instanceof Date
+        ? exC.lastMessageAt
+        : this.normalizeTimestamp(exC.lastMessageAt);
     await this.prisma.conversation.updateMany({
-      where: { id: existingConversation.id, workspaceId },
+      where: { id: exC.id, workspaceId: ws },
       data: {
         unreadCount: Math.max(
           0,
-          Number(existingConversation.unreadCount || 0) || 0,
+          Number(exC.unreadCount || 0) || 0,
           Number(chat.unreadCount || 0) || 0,
         ),
-        lastMessageAt:
-          remoteActivityAt && (!currentLastMessageAt || remoteActivityAt > currentLastMessageAt)
-            ? remoteActivityAt
-            : currentLastMessageAt || new Date(),
+        lastMessageAt: rAt && (!clm || rAt > clm) ? rAt : clm || new Date(),
       },
     });
   }
 
-  private normalizePhone(phone: string): string {
-    return String(phone || '')
-      .replace(D_RE, '')
-      .replace('@c.us', '')
-      .replace('@s.whatsapp.net', '');
-  }
-
-  private normalizeJsonObject(value: unknown): Record<string, unknown> {
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      return { ...(value as Record<string, unknown>) };
-    }
-    return {};
-  }
-
-  private async sanitizePlaceholderContacts(workspaceId: string): Promise<void> {
-    if (typeof this.prisma.contact?.findMany !== 'function') {
-      return;
-    }
-
+  // ═══ SANITIZE ═══
+  private async sanitizePlaceholderContacts(ws: string): Promise<void> {
+    if (typeof this.prisma.contact?.findMany !== 'function') return;
     const contacts = await this.prisma.contact.findMany({
       take: 5000,
-      where: { workspaceId },
+      where: { workspaceId: ws },
       select: {
         id: true,
         phone: true,
@@ -1536,278 +994,95 @@ export class WhatsAppCatchupService {
       },
       orderBy: { updatedAt: 'desc' },
     });
-
     await forEachSequential(contacts, async (contact) => {
-      const customFields = this.normalizeJsonObject(contact.customFields);
-      const storedName = String(contact.name || '').trim();
-      const remotePushName = safeStr(customFields.remotePushName).trim();
-      const trustedName =
-        (!this.isPlaceholderContactName(remotePushName, contact.phone) ? remotePushName : '') ||
-        (!this.isPlaceholderContactName(storedName, contact.phone) ? storedName : '');
-      const hasPlaceholderData =
-        this.isPlaceholderContactName(storedName, contact.phone) ||
-        this.isPlaceholderContactName(remotePushName, contact.phone);
-
-      if (!hasPlaceholderData) {
-        return;
-      }
-
-      const nextCustomFields = { ...customFields };
-      const relationCount =
+      const cf = this.normalizeJsonObject(contact.customFields);
+      const sn = String(contact.name || '').trim();
+      const rp = safeStr(cf.remotePushName).trim();
+      const tn =
+        (!this.isPlaceholderContactName(rp, contact.phone) ? rp : '') ||
+        (!this.isPlaceholderContactName(sn, contact.phone) ? sn : '');
+      const hp =
+        this.isPlaceholderContactName(sn, contact.phone) ||
+        this.isPlaceholderContactName(rp, contact.phone);
+      if (!hp) return;
+      const ncf = { ...cf };
+      const rc =
         Number(contact._count?.messages || 0) +
         Number(contact._count?.conversations || 0) +
         Number(contact._count?.deals || 0) +
         Number(contact._count?.executions || 0) +
         Number(contact._count?.autopilotEvents || 0) +
         Number(contact._count?.insights || 0);
-
-      if (this.isPlaceholderContactName(remotePushName, contact.phone)) {
-        delete nextCustomFields.remotePushName;
-        delete nextCustomFields.remotePushNameUpdatedAt;
-      } else if (trustedName) {
-        nextCustomFields.remotePushName = trustedName;
-        nextCustomFields.remotePushNameUpdatedAt =
-          nextCustomFields.remotePushNameUpdatedAt || new Date().toISOString();
+      if (this.isPlaceholderContactName(rp, contact.phone)) {
+        delete ncf.remotePushName;
+        delete ncf.remotePushNameUpdatedAt;
+      } else if (tn) {
+        ncf.remotePushName = tn;
+        ncf.remotePushNameUpdatedAt = ncf.remotePushNameUpdatedAt || new Date().toISOString();
       }
-      nextCustomFields.placeholderSanitizedAt = new Date().toISOString();
-      nextCustomFields.placeholderRelationCount = relationCount;
-      nextCustomFields.nameResolutionStatus = trustedName ? 'resolved' : 'pending';
-
+      ncf.placeholderSanitizedAt = new Date().toISOString();
+      ncf.placeholderRelationCount = rc;
+      ncf.nameResolutionStatus = tn ? 'resolved' : 'pending';
       await this.prisma.contact.updateMany({
-        where: { id: contact.id, workspaceId },
-        data: {
-          name: trustedName || null,
-          customFields: nextCustomFields as Prisma.InputJsonValue,
-        },
+        where: { id: contact.id, workspaceId: ws },
+        data: { name: tn || null, customFields: ncf as Prisma.InputJsonValue },
       });
     });
   }
 
+  // ═══ CONTACT HELPERS ═══
   private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
-    const normalized = normalizeOptionalText(value);
-    if (!normalized) {
-      return true;
-    }
-
-    const lowered = normalized.toLowerCase();
-    const phoneDigits = this.normalizePhone(String(phone || ''));
-
-    if (lowered === 'doe' || lowered === 'unknown' || lowered === 'desconhecido') {
-      return true;
-    }
-
-    if (D__D_S____S_DOE_RE.test(normalized)) {
-      return true;
-    }
-
-    if (phoneDigits && lowered === `${phoneDigits} doe`) {
-      return true;
-    }
-
-    if (phoneDigits && this.normalizePhone(normalized) === phoneDigits) {
-      return true;
-    }
-
+    const n = normalizeOptionalText(value);
+    if (!n) return true;
+    const l = n.toLowerCase();
+    const pd = this.normalizePhone(String(phone || ''));
+    if (l === 'doe' || l === 'unknown' || l === 'desconhecido') return true;
+    if (D__D_S____S_DOE_RE.test(n)) return true;
+    if (pd && l === `${pd} doe`) return true;
+    if (pd && this.normalizePhone(n) === pd) return true;
     return false;
   }
 
   private resolveRemoteContactName(chat: WahaChatSummary): string {
-    const fallbackPhone = this.normalizePhone(
-      this.providerRegistry.extractPhoneFromChatId(chat?.id || ''),
-    );
-    const candidates = [
+    const fp = this.normalizePhone(this.providerRegistry.extractPhoneFromChatId(chat?.id || ''));
+    for (const c of [
       chat?.name,
-      chat?.contact?.pushName,
-      chat?.contact?.name,
-      chat?.pushName,
-      chat?.notifyName,
-      chat?.lastMessage?._data?.notifyName,
-      chat?.lastMessage?._data?.verifiedBizName,
-    ];
-
-    for (const candidate of candidates) {
-      const normalized = String(candidate || '').trim();
-      if (normalized && !this.isPlaceholderContactName(normalized, fallbackPhone)) {
-        return normalized;
-      }
+      (chat as any)?.contact?.pushName,
+      (chat as any)?.contact?.name,
+      (chat as any)?.pushName,
+      (chat as any)?.notifyName,
+      (chat as any)?.lastMessage?._data?.notifyName,
+      (chat as any)?.lastMessage?._data?.verifiedBizName,
+    ]) {
+      const n = String(c || '').trim();
+      if (n && !this.isPlaceholderContactName(n, fp)) return n;
     }
-
     return '';
   }
 
   private async resolveWorkspaceSelfPhone(
-    workspaceId: string,
-    settings?: Record<string, unknown> | null,
+    ws: string,
+    s?: Record<string, unknown> | null,
   ): Promise<string | null> {
-    const cached = this.selfPhoneCache.get(workspaceId);
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.phone;
+    const cached = this.selfPhoneCache.get(ws);
+    if (cached && cached.expiresAt > Date.now()) return cached.phone;
+    const wS = s?.whatsappWebSession as Record<string, unknown> | undefined;
+    const aS = s?.whatsappApiSession as Record<string, unknown> | undefined;
+    const sp = this.normalizePhone(safeStr(wS?.phoneNumber || aS?.phoneNumber));
+    if (sp) {
+      this.selfPhoneCache.set(ws, { expiresAt: Date.now() + this.selfPhoneCacheTtlMs, phone: sp });
+      return sp;
     }
-
-    const webSession = settings?.whatsappWebSession as Record<string, unknown> | undefined;
-    const apiSession = settings?.whatsappApiSession as Record<string, unknown> | undefined;
-    const storedPhone = this.normalizePhone(
-      safeStr(webSession?.phoneNumber || apiSession?.phoneNumber),
-    );
-    if (storedPhone) {
-      this.selfPhoneCache.set(workspaceId, {
-        expiresAt: Date.now() + this.selfPhoneCacheTtlMs,
-        phone: storedPhone,
-      });
-      return storedPhone;
-    }
-
     if (process.env.NODE_ENV === 'test') {
-      this.selfPhoneCache.set(workspaceId, {
+      this.selfPhoneCache.set(ws, {
         expiresAt: Date.now() + this.selfPhoneCacheTtlMs,
         phone: null,
       });
       return null;
     }
-
-    const remote = await this.providerRegistry.getSessionStatus(workspaceId).catch(() => null);
-    const remotePhone = this.normalizePhone(String(remote?.phoneNumber || ''));
-    const resolvedPhone = remotePhone || null;
-
-    this.selfPhoneCache.set(workspaceId, {
-      expiresAt: Date.now() + this.selfPhoneCacheTtlMs,
-      phone: resolvedPhone,
-    });
-
-    return resolvedPhone;
-  }
-
-  private isWorkspaceSelfChatId(
-    chatId: string,
-    workspaceSelfPhone: string | null,
-    workspaceSelfIds: string[],
-    mappings: Map<string, string>,
-  ): boolean {
-    const normalizedChatId = String(chatId || '').trim();
-    if (workspaceSelfIds.some((candidate) => String(candidate || '').trim() === normalizedChatId)) {
-      return true;
-    }
-
-    if (!workspaceSelfPhone) {
-      return false;
-    }
-
-    const canonicalChatId = this.resolveCanonicalChatId(normalizedChatId, mappings);
-    const phone = this.normalizePhone(canonicalChatId);
-
-    return this.areEquivalentPhones(phone, workspaceSelfPhone);
-  }
-
-  private expandComparablePhoneVariants(phone: string): string[] {
-    const digits = this.normalizePhone(phone);
-    if (!digits) {
-      return [];
-    }
-
-    const variants = new Set<string>([digits]);
-    if (digits.startsWith('55') && digits.length > 11) {
-      variants.add(digits.slice(2));
-    }
-    if (!digits.startsWith('55') && digits.length >= 10 && digits.length <= 11) {
-      variants.add(`55${digits}`);
-    }
-
-    return Array.from(variants);
-  }
-
-  private areEquivalentPhones(left: string, right: string): boolean {
-    const leftVariants = this.expandComparablePhoneVariants(left);
-    const rightVariants = this.expandComparablePhoneVariants(right);
-
-    return leftVariants.some((candidate) => rightVariants.includes(candidate));
-  }
-
-  private resolveCanonicalChatId(chatId: string, mappings: Map<string, string>): string {
-    const normalizedChatId = String(chatId || '').trim();
-    if (!normalizedChatId) {
-      return '';
-    }
-
-    if (LID_RE.test(normalizedChatId)) {
-      const mapped =
-        mappings.get(normalizedChatId) || mappings.get(normalizedChatId.replace(LID_RE, '')) || '';
-      if (mapped) {
-        return mapped;
-      }
-    }
-
-    return normalizedChatId;
-  }
-
-  private async getLidPnMap(workspaceId: string): Promise<Map<string, string>> {
-    const cached = this.lidMapCache.get(workspaceId);
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.mappings;
-    }
-
-    const mappings = await this.providerRegistry
-      .listLidMappings(workspaceId)
-      .catch(() => [] as WahaLidMapping[]);
-    const normalized = new Map<string, string>();
-
-    for (const mapping of mappings) {
-      const lid = String(mapping?.lid || '').trim();
-      const pn = String(mapping?.pn || '').trim();
-      if (!lid || !pn) {
-        continue;
-      }
-      normalized.set(lid, pn);
-      normalized.set(lid.replace(LID_RE, ''), pn);
-    }
-
-    this.lidMapCache.set(workspaceId, {
-      expiresAt: Date.now() + this.lidMapCacheTtlMs,
-      mappings: normalized,
-    });
-
-    return normalized;
-  }
-
-  private async resolveCanonicalPhone(workspaceId: string, chatId: string): Promise<string> {
-    const normalizedChatId = String(chatId || '').trim();
-    if (!normalizedChatId) {
-      return '';
-    }
-
-    if (LID_RE.test(normalizedChatId)) {
-      const mappings = await this.getLidPnMap(workspaceId);
-      const mapped =
-        mappings.get(normalizedChatId) || mappings.get(normalizedChatId.replace(LID_RE, '')) || '';
-      if (mapped) {
-        return this.normalizePhone(mapped);
-      }
-    }
-
-    return this.normalizePhone(normalizedChatId);
-  }
-
-  private async canonicalizeMessages(
-    workspaceId: string,
-    messages: WahaChatMessage[],
-  ): Promise<WahaChatMessage[]> {
-    const mappings = await this.getLidPnMap(workspaceId);
-    return (messages || []).map((message) => {
-      const canonicalChatId = this.resolveCanonicalChatId(
-        String(message.chatId || message.from || '').trim(),
-        mappings,
-      );
-      const canonicalFrom = this.resolveCanonicalChatId(
-        String(message.from || canonicalChatId).trim(),
-        mappings,
-      );
-      const canonicalTo = this.resolveCanonicalChatId(String(message.to || '').trim(), mappings);
-
-      return {
-        ...message,
-        chatId: canonicalChatId || message.chatId,
-        from: canonicalFrom || message.from,
-        to: canonicalTo || message.to,
-      };
-    });
+    const r = await this.providerRegistry.getSessionStatus(ws).catch(() => null);
+    const rp = this.normalizePhone(String(r?.phoneNumber || '')) || null;
+    this.selfPhoneCache.set(ws, { expiresAt: Date.now() + this.selfPhoneCacheTtlMs, phone: rp });
+    return rp;
   }
 }

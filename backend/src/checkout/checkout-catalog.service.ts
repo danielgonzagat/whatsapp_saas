@@ -272,25 +272,11 @@ export class CheckoutCatalogService {
   /** Delete coupon. */
   // PULSE_OK: rate-limited by CheckoutPublicController
   async deleteCoupon(id: string, workspaceId?: string) {
-    if (!workspaceId) {
-      throw new BadRequestException('workspaceId is required');
-    }
-    const existing = await this.prisma.checkoutCoupon.findFirst({
-      where: { id, workspaceId },
-      select: { id: true },
-    });
-    if (!existing) {
-      throw new NotFoundException('CheckoutCoupon not found');
-    }
-    await this.auditService.log({
+    return deleteCouponHelper(
+      { prisma: this.prisma, auditService: this.auditService, opsAlert: this.opsAlert },
+      id,
       workspaceId,
-      action: 'DELETE_RECORD',
-      resource: 'CheckoutCoupon',
-      resourceId: id,
-      details: { deletedBy: 'user' },
-    });
-    await this.prisma.checkoutCoupon.deleteMany({ where: { id, workspaceId } });
-    return { deleted: true };
+    );
   }
 
   /** List coupons. */
@@ -388,5 +374,6 @@ import {
   calcShipping,
   createCheckoutPixel,
   deleteCheckoutPixel,
+  deleteCouponHelper,
   resetCatalogConfig,
 } from './__companions__/checkout-catalog.service.companion';

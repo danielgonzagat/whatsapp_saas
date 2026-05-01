@@ -1,3 +1,38 @@
+function resolveCallExpression(
+  node: Node,
+  typeChecker: AstTypeChecker,
+): { resolved: boolean; targetSymbol: AstTargetSymbol | null; genericArgs: string[] } {
+  const genericArgs: string[] = [];
+  let targetSymbol: AstTargetSymbol | null = null;
+  let resolved = false;
+
+  try {
+    if (Node.isCallExpression(node)) {
+      const expression = node.getExpression();
+      const symbol = resolveAliasedSymbol(expression.getSymbol(), typeChecker);
+      if (symbol) {
+        targetSymbol = symbol;
+        resolved = true;
+      }
+    }
+  } catch {
+    // resolution failed, leave unresolved
+  }
+
+  try {
+    if (Node.isCallExpression(node)) {
+      const typeArgs = node.getTypeArguments();
+      for (const ta of typeArgs) {
+        genericArgs.push(ta.getText());
+      }
+    }
+  } catch {
+    // no type arguments or resolution failed
+  }
+
+  return { resolved, targetSymbol, genericArgs };
+}
+
 function resolveNewExpression(
   node: Node,
   typeChecker: AstTypeChecker,
@@ -721,4 +756,3 @@ if (require.main === module) {
       process.exit(1);
     });
 }
-
