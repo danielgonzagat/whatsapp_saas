@@ -16,8 +16,12 @@ import {
   PRE_C__O_QUANTO_VALOR_C_RE,
   S_______S_RE,
   WHITESPACE_G_RE,
-  WHITESPACE_RE,
 } from './unified-agent-response.regex';
+import {
+  countResponseWords,
+  computeReplyStyleBudget,
+  buildReplyStyleInstruction,
+} from './__companions__/unified-agent-response.service.companion';
 
 /**
  * Handles response generation, reply style, and fallback logic
@@ -95,10 +99,7 @@ export class UnifiedAgentResponseService {
     }
   }
 
-  buildReplyStyleInstruction(message: string, historyTurns = 0): string {
-    const budget = this.computeReplyStyleBudget(message, historyTurns);
-    return `O cliente usou ${budget.words} palavra(s) e a conversa já tem ${historyTurns} turno(s) relevantes. Responda com no máximo ${budget.maxSentences} frase(s) e ${budget.maxWords} palavra(s). Pergunta curta pede resposta curta. Conversa longa permite resposta mais rica, mais humana e mais convincente. Termine, quando fizer sentido, com uma pergunta curta que puxe a próxima resposta do cliente.`;
-  }
+  buildReplyStyleInstruction = buildReplyStyleInstruction;
 
   finalizeReplyStyle(
     customerMessage: string,
@@ -112,7 +113,7 @@ export class UnifiedAgentResponseService {
 
     if (!normalized) return undefined;
 
-    const budget = this.computeReplyStyleBudget(customerMessage, historyTurns);
+    const budget = computeReplyStyleBudget(customerMessage, historyTurns);
     const allowEmoji = Array.from(customerMessage).some((character) =>
       P_EXTENDED_PICTOGRAPHIC_RE.test(character),
     );
@@ -139,7 +140,7 @@ export class UnifiedAgentResponseService {
     let selectedWords = 0;
 
     for (const sentence of limitedSentences) {
-      const sentenceWords = this.countWords(sentence);
+      const sentenceWords = countResponseWords(sentence);
       if (!selectedSentences.length) {
         selectedSentences.push(sentence);
         selectedWords = sentenceWords;
@@ -366,34 +367,6 @@ export class UnifiedAgentResponseService {
     return Math.min(confidence, 1);
   }
 
-  countWords(value?: string | null): number {
-    return Math.max(
-      1,
-      String(value || '')
-        .trim()
-        .split(WHITESPACE_RE)
-        .filter(Boolean).length,
-    );
-  }
-
-  computeReplyStyleBudget(
-    message: string,
-    historyTurns = 0,
-  ): { words: number; maxSentences: number; maxWords: number } {
-    const words = this.countWords(message);
-    let maxSentences = words <= 8 ? 2 : words <= 20 ? 3 : 4;
-    let maxWords = Math.min(
-      140,
-      words <= 4 ? 26 : words <= 12 ? Math.max(24, words + 12) : Math.ceil(words * 1.8),
-    );
-    if (historyTurns >= 6) {
-      maxSentences += 1;
-      maxWords += 24;
-    }
-    if (historyTurns >= 10) {
-      maxSentences += 1;
-      maxWords += 36;
-    }
-    return { words, maxSentences: Math.min(6, maxSentences), maxWords: Math.min(220, maxWords) };
-  }
+  countWords = countResponseWords;
+  computeReplyStyleBudget = computeReplyStyleBudget;
 }

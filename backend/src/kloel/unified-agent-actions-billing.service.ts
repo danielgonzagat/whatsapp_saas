@@ -5,6 +5,13 @@ import type { StripeClient, StripeSubscription } from '../billing/stripe-types';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ToolArgs } from './unified-agent.service';
 import { createFunnelFlows } from './unified-agent-actions-billing.helpers';
+import {
+  getProductPlans as getProductPlansCompanion,
+  getProductAIConfig as getProductAIConfigCompanion,
+  getProductReviews as getProductReviewsCompanion,
+  getProductUrls as getProductUrlsCompanion,
+  validateCoupon as validateCouponCompanion,
+} from './__companions__/unified-agent-actions-billing.service.companion';
 
 type AnalyticsResult = Record<string, unknown>;
 
@@ -334,56 +341,22 @@ export class UnifiedAgentActionsBillingService {
   // ───────── product data query tools ─────────
 
   async getProductPlans(productId: string) {
-    return {
-      plans: await this.prisma.productPlan.findMany({
-        where: { productId },
-        select: {
-          id: true,
-          name: true,
-          price: true,
-          billingType: true,
-          maxInstallments: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
-      }),
-    };
+    return getProductPlansCompanion(this.prisma, productId);
   }
 
   async getProductAIConfig(productId: string) {
-    return { config: await this.prisma.productAIConfig.findUnique({ where: { productId } }) };
+    return getProductAIConfigCompanion(this.prisma, productId);
   }
 
   async getProductReviews(productId: string) {
-    return {
-      reviews: await this.prisma.productReview.findMany({
-        where: { productId },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
-      }),
-    };
+    return getProductReviewsCompanion(this.prisma, productId);
   }
 
   async getProductUrls(productId: string) {
-    return {
-      urls: await this.prisma.productUrl.findMany({
-        where: { productId, active: true },
-        select: { id: true, productId: true, url: true, description: true, active: true },
-        take: 20,
-      }),
-    };
+    return getProductUrlsCompanion(this.prisma, productId);
   }
 
   async validateCoupon(productId: string, code: string) {
-    const coupon = await this.prisma.productCoupon.findFirst({
-      where: { productId, code, active: true },
-    });
-    if (!coupon) return { valid: false, reason: 'not_found' };
-    if (coupon.maxUses && coupon.usedCount >= coupon.maxUses)
-      return { valid: false, reason: 'max_uses_reached' };
-    if (coupon.expiresAt && coupon.expiresAt < new Date())
-      return { valid: false, reason: 'expired' };
-    return { valid: true, coupon };
+    return validateCouponCompanion(this.prisma, productId, code);
   }
 }

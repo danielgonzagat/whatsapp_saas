@@ -1075,6 +1075,45 @@ function parseMigrationSql(migrationName: string, sql: string): MigrationSafetyC
  *                `before` and `after` values.
  * @returns       The classified severity level.
  */
+// ── Moved from contract-tester.ts ───────────────────────────────────────
+
+function looksLikeExternalSdkImport(packageName: string): boolean {
+  return (
+    !packageName.startsWith('@nestjs/') &&
+    !packageName.startsWith('@types/') &&
+    !packageName.startsWith('@prisma/') &&
+    !packageName.startsWith('node:') &&
+    ![
+      'fs',
+      'path',
+      'crypto',
+      'util',
+      'events',
+      'stream',
+      'http',
+      'https',
+      'url',
+      'zlib',
+      'os',
+    ].includes(packageName)
+  );
+}
+
+function isOpenApiSpecFile(rootDir: string, filePath: string): boolean {
+  const relative = path.relative(rootDir, filePath);
+  if (relative.startsWith('..')) {
+    return false;
+  }
+
+  const parsed = path.parse(filePath);
+  if (parsed.ext.toLowerCase() !== '.json') {
+    return false;
+  }
+
+  const firstNameSegment = parsed.name.toLowerCase().split('.')[0];
+  return firstNameSegment === 'openapi' || firstNameSegment === 'swagger';
+}
+
 export function classifyBreakingChange(change: {
   type: string;
   before?: unknown;
@@ -1119,4 +1158,3 @@ export function classifyBreakingChange(change: {
 
   return 'non_breaking';
 }
-

@@ -1,3 +1,15 @@
+function buildAdjacency(graph: PulseStructuralGraph): Map<string, Set<string>> {
+  const adjacency = new Map<string, Set<string>>();
+  for (const node of graph.nodes) {
+    adjacency.set(node.id, new Set<string>());
+  }
+  for (const edge of graph.edges) {
+    adjacency.get(edge.from)?.add(edge.to);
+    adjacency.get(edge.to)?.add(edge.from);
+  }
+  return adjacency;
+}
+
 function deriveCapabilityFlowId(
   capability: PulseProductCapability,
   nodes: PulseStructuralNode[],
@@ -213,4 +225,3 @@ function determineTruthModeFromCapabilities(caps: PulseProductCapability[]): Pul
 function isExcludedArtifact(file: string): boolean {
   return /\.(?:spec|test|d)\.[cm]?[jt]sx?$/.test(file) || file.endsWith('.config.ts');
 }
-

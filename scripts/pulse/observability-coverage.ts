@@ -369,15 +369,6 @@ function scanForLoggingEvidence(filePaths: string[]): PillarScanResult {
       filePaths: consoleFiles,
     };
   }
-  if (simulatedFiles.length > 0) {
-    return {
-      status: 'missing',
-      sourceKind: 'simulated',
-      source: 'simulated observability marker',
-      reason: 'Only simulated observability markers were found.',
-      filePaths: simulatedFiles,
-    };
-  }
   return missingEvidence('No logging instrumentation was found.');
 }
-import "./__companions__/observability-coverage.companion";
+import './__companions__/observability-coverage.companion';

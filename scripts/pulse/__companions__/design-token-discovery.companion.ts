@@ -79,3 +79,45 @@ export function findDiscoveredDesignColorEvidence(
   return discovery.colors.filter((color) => color.normalizedValue === normalizedValue);
 }
 
+// ── Moved from design-token-discovery.ts ─────────────────────────────────
+
+function extractTokenSourceColors(
+  content: string,
+  sourcePath: string,
+  sourceKind: DesignTokenSourceKind,
+): DiscoveredDesignColorEvidence[] {
+  return extractColorValues(content).map((color) => ({
+    value: color.value,
+    normalizedValue: normalizeColorValue(color.value),
+    sourcePath,
+    sourceKind,
+    line: lineForIndex(content, color.index),
+  }));
+}
+
+function discoverCandidateFiles(rootDir: string, maxDepth: number): string[] {
+  const files: string[] = [];
+  const visit = (relativeDir: string, depth: number): void => {
+    if (depth > maxDepth) {
+      return;
+    }
+    const absoluteDir = safeJoin(rootDir, relativeDir);
+    if (!pathExists(absoluteDir) || !statPath(absoluteDir).isDirectory()) {
+      return;
+    }
+    for (const entry of readDir(absoluteDir, { withFileTypes: true })) {
+      const relativePath = normalizeRepoPath(path.join(relativeDir, entry.name));
+      if (entry.isDirectory()) {
+        if (!IGNORED_DIRS.has(entry.name)) {
+          visit(relativePath, depth + 1);
+        }
+        continue;
+      }
+      if (entry.isFile() && isSupportedSourceFile(relativePath)) {
+        files.push(relativePath);
+      }
+    }
+  };
+  visit('.', 0);
+  return files.sort();
+}

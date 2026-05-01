@@ -13,7 +13,6 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import {
   VALID_CHARGE_TYPES,
   VALID_DISCOUNT_TYPES,
-  VALID_PIXEL_TYPES,
   validateCouponHelper,
 } from './checkout-catalog.helpers';
 
@@ -346,23 +345,7 @@ export class CheckoutCatalogService {
       trackPurchase?: boolean;
     },
   ) {
-    if (data.type && !VALID_PIXEL_TYPES.includes(data.type)) {
-      throw new BadRequestException(
-        `Invalid pixel type: ${data.type}. Must be one of: ${VALID_PIXEL_TYPES.join(', ')}`,
-      );
-    }
-
-    const config = await this.prisma.checkoutConfig.findUnique({
-      where: { id: checkoutConfigId },
-      select: { id: true },
-    });
-    if (!config) {
-      throw new BadRequestException('Checkout config not found');
-    }
-
-    return this.prisma.checkoutPixel.create({
-      data: { checkoutConfigId, ...data },
-    });
+    return createCheckoutPixel({ prisma: this.prisma }, checkoutConfigId, data);
   }
 
   /** Update pixel. */
@@ -392,13 +375,18 @@ export class CheckoutCatalogService {
   /** Calculate shipping. */
   // PULSE_OK: rate-limited by CheckoutPublicController
   async calculateShipping(slug: string, cep: string) {
-    return this.catalogConfigService.calculateShipping(slug, cep);
+    return calcShipping(this.catalogConfigService, slug, cep);
   }
 
   /** Reset config to defaults. */
   // PULSE_OK: rate-limited by CheckoutPublicController
   async resetConfig(planId: string) {
-    return this.catalogConfigService.resetConfig(planId);
+    return resetCatalogConfig(this.catalogConfigService, planId);
   }
 }
-import { deleteCheckoutPixel } from './__companions__/checkout-catalog.service.companion';
+import {
+  calcShipping,
+  createCheckoutPixel,
+  deleteCheckoutPixel,
+  resetCatalogConfig,
+} from './__companions__/checkout-catalog.service.companion';

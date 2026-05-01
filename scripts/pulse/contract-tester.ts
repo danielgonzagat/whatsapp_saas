@@ -299,28 +299,6 @@ function normalizePackageName(raw: string): string | null {
   return trimmed.split('/')[0] || null;
 }
 
-function looksLikeExternalSdkImport(packageName: string): boolean {
-  return (
-    !packageName.startsWith('@nestjs/') &&
-    !packageName.startsWith('@types/') &&
-    !packageName.startsWith('@prisma/') &&
-    !packageName.startsWith('node:') &&
-    ![
-      'fs',
-      'path',
-      'crypto',
-      'util',
-      'events',
-      'stream',
-      'http',
-      'https',
-      'url',
-      'zlib',
-      'os',
-    ].includes(packageName)
-  );
-}
-
 function discoverContractsFromOpenApi(rootDir: string): ProviderContract[] {
   const contracts: ProviderContract[] = [];
   const files = walkFiles(rootDir, ['.json']).filter((filePath) =>
@@ -381,18 +359,4 @@ function discoverContractsFromOpenApi(rootDir: string): ProviderContract[] {
   return contracts;
 }
 
-function isOpenApiSpecFile(rootDir: string, filePath: string): boolean {
-  const relative = path.relative(rootDir, filePath);
-  if (relative.startsWith('..')) {
-    return false;
-  }
-
-  const parsed = path.parse(filePath);
-  if (parsed.ext.toLowerCase() !== '.json') {
-    return false;
-  }
-
-  const firstNameSegment = parsed.name.toLowerCase().split('.')[0];
-  return firstNameSegment === 'openapi' || firstNameSegment === 'swagger';
-}
-import "./__companions__/contract-tester.companion";
+import './__companions__/contract-tester.companion';

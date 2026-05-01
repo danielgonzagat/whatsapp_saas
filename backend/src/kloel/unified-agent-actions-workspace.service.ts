@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import type { ToolArgs } from './unified-agent.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { actionGetWorkspaceStatus as actionGetWorkspaceStatusFn } from './__companions__/unified-agent-actions-workspace.service.companion';
 
 type UnknownRecord = Record<string, unknown>;
 
@@ -348,55 +349,10 @@ export class UnifiedAgentActionsWorkspaceService {
   }
 
   async actionGetWorkspaceStatus(workspaceId: string, args: ToolArgs) {
-    const { includeMetrics = true, includeConnections = true, includeHealth = true } = args;
-    const result: {
-      workspaceId: string;
-      connections?: unknown;
-      metrics?: unknown;
-      health?: { status: 'healthy' | 'warning'; lastActivity: string; warnings: string[] };
-    } = { workspaceId };
-
-    if (includeConnections) {
-      const workspace = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
-      const settings = (workspace?.providerSettings as UnknownRecord) || {};
-      const wapiSession = (settings.whatsappApiSession ?? {}) as Record<string, unknown>;
-      const autopilotSettings = (settings.autopilot ?? {}) as Record<string, unknown>;
-      result.connections = {
-        whatsapp: {
-          provider: settings.whatsappProvider || 'none',
-          status: wapiSession.status || settings.connectionStatus || 'disconnected',
-          sessionId: wapiSession.sessionName || settings.sessionId,
-        },
-        autopilot: {
-          enabled: autopilotSettings.enabled === true,
-          mode: autopilotSettings.mode || 'off',
-        },
-      };
-    }
-
-    if (includeMetrics) {
-      const last30Days = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      result.metrics = {
-        totalContacts: await this.prisma.contact.count({ where: { workspaceId } }),
-        totalMessages: await this.prisma.message.count({
-          where: { workspaceId, createdAt: { gte: last30Days } },
-        }),
-        activeFlows: await this.prisma.flow.count({ where: { workspaceId, isActive: true } }),
-        products: await this.prisma.product.count({ where: { workspaceId } }),
-      };
-    }
-
-    if (includeHealth) {
-      result.health = { status: 'healthy', lastActivity: new Date().toISOString(), warnings: [] };
-      const conn = result.connections as UnknownRecord | undefined;
-      const wa = conn ? (conn.whatsapp as UnknownRecord) : undefined;
-      if (!wa?.sessionId) {
-        result.health.warnings.push('WhatsApp não conectado');
-        result.health.status = 'warning';
-      }
-      const met = result.metrics as { activeFlows?: number } | undefined;
-      if (met?.activeFlows === 0) result.health.warnings.push('Nenhum fluxo ativo');
-    }
-    return { success: true, ...result };
+    return actionGetWorkspaceStatusFn({
+      workspaceId,
+      args,
+      prisma: this.prisma,
+    });
   }
 }

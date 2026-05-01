@@ -354,7 +354,6 @@ export function buildDivergence(
     .filter((item) => (item.connected || item.persistent) && !item.declaredFlow)
     .map((item) => `${item.id} -> ${item.pageRoute}`)
     .sort();
-
   const backendCapabilityWithoutFrontendSurface = inferBackendCapabilityWithoutFrontendSurface(
     coreData.backendRoutes,
     discoveredModules,
@@ -369,7 +368,6 @@ export function buildDivergence(
     frontendSurfaceWithoutBackendSupport.length +
     backendCapabilityWithoutFrontendSurface.length +
     shellWithoutPersistence.length;
-
   return {
     declaredNotDiscovered,
     discoveredNotDeclared,

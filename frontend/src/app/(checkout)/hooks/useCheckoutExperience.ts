@@ -15,6 +15,11 @@ import {
 } from './useCheckoutExperience.effects';
 import type { UseCheckoutExperienceOptions } from './useCheckoutExperience.types';
 import {
+  buildOrderPayload as buildOrderPayloadHelper,
+  resolveSuccessRedirect as resolveSuccessRedirectHelper,
+  type BuildOrderPayloadParams,
+} from './__companions__/useCheckoutExperience.helpers';
+import {
   EMPTY_CHECKOUT_EXPERIENCE_FORM,
   applyFieldFormatter,
   buildCheckoutFormDraftKey,
@@ -355,42 +360,20 @@ export function useCheckoutExperience({
 
   const resolveSuccessRedirect = useCallback(
     (result: Record<string, unknown>) => {
-      const data = result?.data as Record<string, unknown> | undefined;
-      const orderId = result?.id || data?.id;
-      if (!orderId) {
-        return null;
-      }
-      if (payMethod === 'pix') {
-        return `/order/${orderId}/pix`;
-      }
-      if (payMethod === 'boleto') {
-        return `/order/${orderId}/boleto`;
-      }
-      const paymentData = result?.paymentData as Record<string, unknown> | undefined;
-      const planData = result?.plan as Record<string, unknown> | undefined;
-      if (
-        paymentData?.approved &&
-        Array.isArray(planData?.upsells) &&
-        (planData.upsells as unknown[]).length > 0
-      ) {
-        return `/order/${orderId}/upsell`;
-      }
-      return `/order/${orderId}/success`;
+      return resolveSuccessRedirectHelper(result, payMethod);
     },
     [payMethod],
   );
 
   const buildOrderPayload = useCallback(
     (resolvedPlanId: string, resolvedWorkspaceId: string): CreateOrderData => {
-      const payload: CreateOrderData = {
-        planId: resolvedPlanId,
-        workspaceId: resolvedWorkspaceId,
+      return buildOrderPayloadHelper(resolvedPlanId, resolvedWorkspaceId, {
         checkoutCode,
-        customerName: form.name.trim(),
-        customerEmail: form.email.trim(),
-        customerCPF: form.cpf,
-        customerPhone: form.phone,
-        shippingAddress: {
+        form: {
+          name: form.name,
+          email: form.email,
+          cpf: form.cpf,
+          phone: form.phone,
           cep: form.cep,
           street: form.street,
           number: form.number,
@@ -399,24 +382,20 @@ export function useCheckoutExperience({
           city: form.city,
           state: form.state,
           destinatario: form.destinatario || form.name,
+          cardName: form.cardName,
         },
-        shippingMethod: resolveShippingMethodLabel(shippingMode, shippingInCents),
-        shippingPrice: shippingInCents,
-        orderQuantity: qty,
-        subtotalInCents: subtotal,
-        discountInCents: discount,
-        totalInCents: total,
-        couponCode: couponApplied ? couponCode : undefined,
-        couponDiscount: couponApplied ? discount : undefined,
-        paymentMethod: resolvePaymentMethodCode(payMethod),
-        installments: payMethod === 'card' ? installments : 1,
-        affiliateId: affiliateContext?.affiliateWorkspaceId,
-      };
-
-      if (payMethod === 'card') {
-        payload.cardHolderName = form.cardName || form.name;
-      }
-      return payload;
+        payMethod,
+        shippingMode,
+        shippingInCents,
+        qty,
+        subtotal,
+        discount,
+        total,
+        couponApplied,
+        couponCode,
+        installments,
+        affiliateWorkspaceId: affiliateContext?.affiliateWorkspaceId,
+      });
     },
     [
       affiliateContext?.affiliateWorkspaceId,

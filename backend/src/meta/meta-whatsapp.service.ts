@@ -5,6 +5,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken } from './meta-token-crypto';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { readRecord, readStrictText, readText } from './__companions__/meta-read-helpers';
 
 const D_RE = /\D/g;
 
@@ -37,27 +38,6 @@ export class MetaWhatsAppService {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
-  private readText(value: unknown): string {
-    if (typeof value === 'string') {
-      return value;
-    }
-    if (typeof value === 'number' || typeof value === 'boolean') {
-      return String(value);
-    }
-    return '';
-  }
-
-  private readStrictText(value: unknown): string | undefined {
-    return typeof value === 'string' && value.trim() ? value : undefined;
-  }
-
-  private readRecord(value: unknown): Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : {};
-  }
-
-  /** Build embedded signup url. */
   buildEmbeddedSignupUrl(
     workspaceId: string,
     options?: { channel?: string | null; returnTo?: string | null },
@@ -285,9 +265,8 @@ export class MetaWhatsAppService {
         throw new Error(phoneInfo.error.message);
       }
 
-      const displayPhoneNumber = this.readStrictText(phoneInfo?.display_phone_number) ?? null;
-      const verifiedName =
-        this.readStrictText(phoneInfo?.verified_name) || resolved.pageName || null;
+      const displayPhoneNumber = readStrictText(phoneInfo?.display_phone_number) ?? null;
+      const verifiedName = readStrictText(phoneInfo?.verified_name) || resolved.pageName || null;
       const phoneDigits = this.normalizePhone(displayPhoneNumber || '');
 
       return {
@@ -517,10 +496,10 @@ export class MetaWhatsAppService {
     }
 
     const settings = asProviderSettings(workspace.providerSettings);
-    const currentSession = this.readRecord(settings.whatsappApiSession);
-    const patchRecord = this.readRecord(patch);
-    const persistedStatus = this.readStrictText(currentSession.status);
-    const heartbeatStatus = this.readStrictText(patchRecord.status);
+    const currentSession = readRecord(settings.whatsappApiSession);
+    const patchRecord = readRecord(patch);
+    const persistedStatus = readStrictText(currentSession.status);
+    const heartbeatStatus = readStrictText(patchRecord.status);
     const { status: _ignoredStatus, ...patchWithoutStatus } = patchRecord;
     const nextStatus = heartbeatStatus || persistedStatus || 'connected';
 
@@ -567,7 +546,7 @@ export class MetaWhatsAppService {
   }
 
   private normalizePublicBaseUrl(candidate: unknown): string {
-    const raw = this.readText(candidate).trim().replace(PATTERN_RE, '');
+    const raw = readText(candidate).trim().replace(PATTERN_RE, '');
     if (!raw) {
       return '';
     }

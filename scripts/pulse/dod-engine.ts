@@ -365,37 +365,5 @@ function loadSupportingArtifacts(rootDir: string): LoadedArtifacts {
   };
 }
 
-function nodePrefixesForKind(nodeIds: string[], prefix: string): string[] {
-  const pattern = new RegExp(`^${prefix}:`);
-  return nodeIds.filter((id) => pattern.test(id));
-}
-
-function hasNodeKind(nodeIds: string[], prefix: string): boolean {
-  return nodePrefixesForKind(nodeIds, prefix).length > 0;
-}
-
-function containsObservedItems(items: readonly unknown[] | null | undefined): boolean {
-  return Array.isArray(items) && items.length > zero();
-}
-
-function containsReportedIssue(value: number | null | undefined): boolean {
-  return typeof value === 'number' && value > zero();
-}
-
-function lineNumberFromIndex(index: number): number {
-  return index + Number(Number.isInteger(index));
-}
-
-function zero(): number {
-  return Number(false);
-}
-
-function isElevatedLevel(riskLevel: DoDRiskLevel): boolean {
-  return riskLevel === 'critical' || riskLevel === 'high';
-}
-
-function allowsBlockingOutcome(riskLevel: DoDRiskLevel): boolean {
-  return riskLevel !== 'low';
-}
-import "./__parts__/dod-engine.part";
-export * from "./__companions__/dod-engine.companion";
+import './__parts__/dod-engine.part';
+export * from './__companions__/dod-engine.companion';

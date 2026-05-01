@@ -29,32 +29,9 @@ import {
   ConnectAccountAlreadyExistsError,
   type SubmitOnboardingProfileInput,
 } from './connect.types';
+import { CONNECT_LEDGER_ENTRY_TYPES, parseSkip, parseTake } from './__companions__/connect-helpers';
 
-const CONNECT_LEDGER_ENTRY_TYPES: ConnectLedgerEntryType[] = [
-  'CREDIT_PENDING',
-  'MATURE',
-  'DEBIT_PAYOUT',
-  'DEBIT_CHARGEBACK',
-  'DEBIT_REFUND',
-  'ADJUSTMENT',
-];
 const CONNECT_ACCOUNT_TYPES = Object.values(ConnectAccountType);
-
-function parseSkip(value?: string): number | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.max(0, Math.trunc(parsed)) : undefined;
-}
-
-function parseTake(value?: string): number | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.min(200, Math.max(1, Math.trunc(parsed))) : undefined;
-}
 
 /** Connect controller. */
 @Controller('payments/connect')

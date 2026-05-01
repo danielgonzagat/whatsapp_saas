@@ -3,15 +3,16 @@ import * as path from 'node:path';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DEFAULT_ARTIFACT_MAX_AGE_MS, type PulseArtifactPayload } from './pulse.service.contract';
-
-/**
- * Runtime authority mode subset for backend consumption.
- * Maps to CLI AuthorityMode but uses simplified labels for production snapshot.
- */
-type RuntimeAuthorityMode = 'advisory-only' | 'autonomous-execution' | 'certified-autonomous';
-type RuntimeMachineReadinessStatus = 'blocked' | 'certified' | 'ready' | 'unknown';
-type RuntimeReadinessVerdict = 'NAO' | 'SIM' | 'UNKNOWN';
-type JsonObject = Record<string, unknown>;
+import type { RuntimeMachineReadinessStatus } from './__companions__/pulse-artifact.service.types';
+import {
+  getBoolean,
+  getJsonObject,
+  getNumber,
+  getString,
+  getStringArray,
+  normalizeAuthorityMode,
+  normalizeVerdict,
+} from './__companions__/pulse-artifact.service.companion';
 
 /**
  * PulseArtifactService
@@ -338,47 +339,4 @@ export class PulseArtifactService {
     if (input.directiveMissing) return 'unknown';
     return 'blocked';
   }
-}
-
-function getJsonObject(value: unknown): JsonObject | null {
-  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : null;
-}
-
-function getString(record: JsonObject | null | undefined, key: string): string | null {
-  const value = record?.[key];
-  return typeof value === 'string' && value.trim() ? value : null;
-}
-
-function getBoolean(record: JsonObject | null | undefined, key: string): boolean | null {
-  const value = record?.[key];
-  return typeof value === 'boolean' ? value : null;
-}
-
-function getNumber(record: JsonObject | null | undefined, key: string): number | null {
-  const value = record?.[key];
-  return typeof value === 'number' && Number.isFinite(value) ? value : null;
-}
-
-function getStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
-}
-
-function normalizeAuthorityMode(
-  value: string | null,
-  humanReplacementStatus: string | null,
-): RuntimeAuthorityMode {
-  if (
-    value === 'advisory-only' ||
-    value === 'autonomous-execution' ||
-    value === 'certified-autonomous'
-  ) {
-    return value;
-  }
-  return humanReplacementStatus === 'READY' ? 'certified-autonomous' : 'advisory-only';
-}
-
-function normalizeVerdict(value: string | null): RuntimeReadinessVerdict {
-  if (value === 'SIM' || value === 'NAO') return value;
-  return 'UNKNOWN';
 }

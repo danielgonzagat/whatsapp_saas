@@ -237,3 +237,12 @@ export function rollbackRegression(
 // to work without churn.
 export { RegressionError, throwOnRegression } from './regression-guard.hard-enforcement';
 
+// ── Moved from regression-guard.ts ──────────────────────────────────────
+
+export interface RollbackOutcome {
+  attempted: boolean;
+  revertedFiles: string[];
+  removedUntracked: string[];
+  summary: string;
+  skipped: boolean;
+}

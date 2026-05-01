@@ -14,6 +14,7 @@ import type {
   CreatePlanInput,
   CreateProductInput,
 } from './checkout-product.types';
+import { createCheckout as createCheckoutFn } from './__companions__/checkout-product.service.companion';
 
 /** Checkout product service — handles Product and Plan CRUD. */
 /** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
@@ -293,51 +294,16 @@ export class CheckoutProductService {
   /** Create checkout. */
   // PULSE_OK: workspaceId validated by product lookup above
   async createCheckout(productId: string, data: CreateCheckoutInput, workspaceId: string) {
-    const product = await this.prisma.product.findFirst({
-      where: { id: productId, workspaceId },
-      select: { id: true },
-    });
-    if (!product) {
-      throw new NotFoundException('Product not found');
-    }
-
-    const { brandName, ...checkoutData } = data;
-    const slug = await this.planLinkManager.generateCheckoutSlug(
-      data.slug || `${data.name}-checkout`,
-    );
-    const referenceCode = await this.planLinkManager.generatePublicCheckoutCode();
-
-    return this.prisma.$transaction(
-      async (tx) => {
-        const checkout = await tx.checkoutProductPlan.create({
-          data: {
-            productId,
-            kind: 'CHECKOUT',
-            legacyCheckoutEnabled: false,
-            slug,
-            referenceCode,
-            ...checkoutData,
-          },
-        });
-
-        await tx.checkoutConfig.create({
-          data: {
-            planId: checkout.id,
-            ...this.buildDefaultCheckoutConfigInput(brandName || data.name),
-          },
-        });
-
-        return tx.checkoutProductPlan.findUnique({
-          where: { id: checkout.id },
-          include: {
-            checkoutConfig: true,
-            checkoutLinks: {
-              include: { plan: { select: { id: true, name: true } } },
-            },
-          },
-        });
+    return createCheckoutFn(
+      {
+        prisma: this.prisma,
+        buildDefaultCheckoutConfigInput: (brandName) =>
+          this.buildDefaultCheckoutConfigInput(brandName),
+        planLinkManager: this.planLinkManager,
       },
-      { isolationLevel: 'ReadCommitted' },
+      productId,
+      data,
+      workspaceId,
     );
   }
 

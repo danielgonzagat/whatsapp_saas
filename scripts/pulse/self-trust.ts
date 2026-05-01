@@ -54,14 +54,6 @@ export interface SelfTrustReport {
   recommendations: string[];
 }
 
-function parseJsonObject(content: string): Record<string, unknown> {
-  let parsed: unknown = JSON.parse(content);
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error('JSON root must be an object');
-  }
-  return parsed as Record<string, unknown>;
-}
-
 function manifestTypePath(manifestPath: string): string {
   return path.join(path.dirname(manifestPath), 'scripts', 'pulse', 'types.manifest.ts');
 }
@@ -100,10 +92,6 @@ function deriveRequiredManifestFields(manifestPath: string): string[] {
 function requiredManifestFields(manifestPath: string, manifest: Record<string, unknown>): string[] {
   let derivedFields = deriveRequiredManifestFields(manifestPath);
   return derivedFields.length > 0 ? derivedFields : Object.keys(manifest);
-}
-
-function checkpointScore(pass: boolean): number {
-  return Number.parseInt(pass ? '100' : '0', Number.parseInt('10', 10));
 }
 
 function isActiveParserContract(contract: PulseParserContract): boolean {
@@ -581,4 +569,4 @@ export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustC
     };
   }
 }
-import "./__companions__/self-trust.companion";
+import './__companions__/self-trust.companion';

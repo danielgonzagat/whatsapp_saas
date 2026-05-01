@@ -498,3 +498,48 @@ export function sourceGlobsForTsMorph(rootDir: string): string[] {
   return [...files].sort();
 }
 
+// ── Moved from source-root-detector.ts ──────────────────────────────────
+
+function readJsonOrNull<T>(filePath: string): T | null {
+  try {
+    if (!pathExists(filePath)) return null;
+    return readJsonFile<T>(filePath);
+  } catch {
+    return null;
+  }
+}
+
+function workspacePatterns(pkg: PackageJson | null): string[] {
+  if (!pkg?.workspaces) return [];
+  if (Array.isArray(pkg.workspaces)) return pkg.workspaces;
+  return pkg.workspaces.packages ?? [];
+}
+
+function packageDirsFromWorkspaces(rootDir: string, patterns: string[]): string[] {
+  const dirs = new Set<string>();
+
+  for (const pattern of patterns) {
+    const normalized = normalizeRelative(pattern);
+    if (!normalized || normalized.includes('..')) continue;
+
+    if (!normalized.includes('*')) {
+      const packageJson = safeJoin(rootDir, normalized, 'package.json');
+      if (pathExists(packageJson)) dirs.add(normalized);
+      continue;
+    }
+
+    const wildcardIndex = normalized.indexOf('*');
+    const base = normalizeRelative(normalized.slice(0, wildcardIndex));
+    const baseDir = safeJoin(rootDir, base || '.');
+    if (!pathExists(baseDir)) continue;
+
+    for (const entry of readDir(baseDir)) {
+      const candidate = normalizeRelative(safeJoin(base, entry));
+      if (pathExists(safeJoin(rootDir, candidate, 'package.json'))) {
+        dirs.add(candidate);
+      }
+    }
+  }
+
+  return [...dirs];
+}

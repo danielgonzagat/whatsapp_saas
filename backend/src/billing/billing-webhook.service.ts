@@ -21,6 +21,7 @@ import type {
   StripeSubscription,
 } from './stripe-types';
 import type { StripeSubscriptionWithPeriodEnd, WhatsappNotifier } from './billing-webhook.types';
+import { markSubscriptionStatusHelper } from './__companions__/billing-webhook.service.companion';
 /**
  * BillingWebhookService
  *
@@ -223,131 +224,19 @@ export class BillingWebhookService {
     return ws?.id || null;
   }
   async markSubscriptionStatus(stripeSubscriptionId: string, status: string) {
-    let workspaceId: string | null = null;
-    if (this.stripe) {
-      try {
-        const sub = await this.stripe.subscriptions.retrieve(stripeSubscriptionId);
-        workspaceId = await this.resolveWorkspaceId(sub);
-      } catch {
-        this.logger.debug('Unable to resolve workspace from Stripe subscription; checking local.');
-      }
-    }
-    if (!workspaceId) {
-      const subRecord = await this.prisma.subscription.findFirst({
-        where: { stripeId: stripeSubscriptionId },
-        select: { workspaceId: true },
-      });
-      workspaceId = subRecord?.workspaceId || null;
-    }
-    if (!workspaceId) return;
-
-    if (['PAST_DUE', 'CANCELED'].includes(status)) {
-      const ws = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true },
-      });
-      const settings = (ws?.providerSettings as Record<string, unknown>) || {};
-      const autopilot = (settings.autopilot ?? {}) as Record<string, unknown>;
-      const nextSettings = {
-        ...settings,
-        autopilot: { ...autopilot, enabled: false },
-        billingSuspended: true,
-      };
-      await this.prisma.$transaction(
-        async (tx) => {
-          const existing = await tx.subscription.findUnique({
-            where: { workspaceId },
-            select: { id: true },
-          });
-          if (!existing) {
-            this.logger.warn(
-              `markSubscriptionStatus: subscription not found for workspace ${workspaceId}`,
-            );
-            return;
-          }
-          await tx.subscription.update({ where: { workspaceId }, data: { status } });
-          await tx.workspace.update({
-            where: { id: workspaceId },
-            data: { providerSettings: nextSettings },
-          });
-          await tx.auditLog.create({
-            data: {
-              workspaceId,
-              action: 'SUBSCRIPTION_STATUS',
-              resource: 'subscription',
-              resourceId: stripeSubscriptionId,
-              details: { status, billingSuspended: true },
-            },
-          });
-        },
-        { isolationLevel: 'ReadCommitted' },
-      );
-      await this.notifyOps('billing_suspended', {
-        workspaceId,
-        subscription: stripeSubscriptionId,
-        status,
-      });
-    } else if (status === 'ACTIVE') {
-      const ws = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true },
-      });
-      const settings = (ws?.providerSettings as Record<string, unknown>) || {};
-      const nextSettings = { ...settings };
-      if (settings.billingSuspended) {
-        delete nextSettings.billingSuspended;
-      }
-      await this.prisma.$transaction(
-        async (tx) => {
-          const existing = await tx.subscription.findUnique({
-            where: { workspaceId },
-            select: { id: true },
-          });
-          if (!existing) {
-            this.logger.warn(
-              `markSubscriptionStatus: subscription not found for workspace ${workspaceId}`,
-            );
-            return;
-          }
-          await tx.subscription.update({ where: { workspaceId }, data: { status } });
-          if (settings.billingSuspended) {
-            await tx.workspace.update({
-              where: { id: workspaceId },
-              data: { providerSettings: nextSettings as Prisma.InputJsonValue },
-            });
-          }
-          await tx.auditLog.create({
-            data: {
-              workspaceId,
-              action: 'SUBSCRIPTION_STATUS',
-              resource: 'subscription',
-              resourceId: stripeSubscriptionId,
-              details: { status, billingSuspended: false },
-            },
-          });
-        },
-        { isolationLevel: 'ReadCommitted' },
-      );
-      await this.notifyOps('billing_active', {
-        workspaceId,
-        subscription: stripeSubscriptionId,
-        status,
-      });
-    } else {
-      try {
-        await this.prisma.subscription.update({
-          where: { workspaceId },
-          data: { status },
-        });
-      } catch (error: unknown) {
-        if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')) {
-          throw error;
-        }
-        this.logger.warn(
-          `markSubscriptionStatus: subscription not found for workspace ${workspaceId}`,
-        );
-      }
-    }
+    return markSubscriptionStatusHelper(
+      {
+        prisma: this.prisma,
+        stripe: this.stripe,
+        logger: this.logger,
+        financialAlert: this.financialAlert,
+        resolveWorkspaceId: (sub: StripeSubscription) => this.resolveWorkspaceId(sub),
+        notifyOps: (event: string, payload: Record<string, unknown>) =>
+          this.notifyOps(event, payload),
+      },
+      stripeSubscriptionId,
+      status,
+    );
   }
   private async cancelSubscriptionByStripeId(stripeId: string) {
     let workspaceId: string | null = null;

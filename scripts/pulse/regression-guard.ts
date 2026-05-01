@@ -372,15 +372,9 @@ export function detectRegression(before: PulseSnapshot, after: PulseSnapshot): R
  * Result of a scoped rollback attempt.
  */
 export interface RollbackOutcome {
-  /** True when at least one path was actually reverted (or the noop case where nothing was changed). */
   attempted: boolean;
-  /** Files the rollback touched (relative to repo root). */
   revertedFiles: string[];
-  /** Untracked files removed (relative to repo root). */
   removedUntracked: string[];
-  /** Human-readable summary, suitable for stopReason or log lines. */
   summary: string;
-  /** True when rollback was skipped because it would be unsafe (e.g. file outside the unit's declared scope had user changes). */
-  skipped: boolean;
 }
-import "./__companions__/regression-guard.companion";
+import './__companions__/regression-guard.companion';

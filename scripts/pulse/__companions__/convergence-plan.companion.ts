@@ -1,3 +1,15 @@
+function evidenceBatchSize(...collections: Array<{ length: number } | null | undefined>): number {
+  let observedSize = collections.reduce((largest, collection) => {
+    let currentSize = collection?.length ?? Number();
+    return currentSize > largest ? currentSize : largest;
+  }, Number());
+  return Math.max(1, Math.ceil(Math.sqrt(Math.max(1, observedSize))));
+}
+
+function takeEvidenceBatch<T>(values: T[], ...context: Array<{ length: number }>): T[] {
+  return values.slice(0, evidenceBatchSize(values, ...context));
+}
+
 function determineExternalPriority(
   signal: NonNullable<BuildPulseConvergencePlanInput['externalSignalState']>['signals'][number],
   impactThreshold: number,
@@ -1604,4 +1616,3 @@ export function renderConvergencePlanMarkdown(plan: PulseConvergencePlan): strin
 
   return lines.join('\n');
 }
-

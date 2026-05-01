@@ -43,3 +43,12 @@ export function detectTypeEscapeHatches(rootDir: string): TypeEscapeHatchResult 
   return { count: locations.length, locations };
 }
 
+// ── Moved from test-honesty.ts ──────────────────────────────────────────
+
+export function detectPlaceholderTests(rootDir: string): PlaceholderTestResult {
+  const files = walkSourceFiles(rootDir, (_relativePath, fileName) => isTestFileName(fileName))
+    .filter((candidate) => hasPlaceholderEvidence(parseTypeScriptFile(candidate.absolutePath)))
+    .map((candidate) => candidate.relativePath);
+
+  return { count: files.length, files };
+}

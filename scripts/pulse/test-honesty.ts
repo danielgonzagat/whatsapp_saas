@@ -378,12 +378,4 @@ function lineMatchesTypeEscape(line: string, pattern: TypeEscapePattern): boolea
   }
   return false;
 }
-
-export function detectPlaceholderTests(rootDir: string): PlaceholderTestResult {
-  const files = walkSourceFiles(rootDir, (_relativePath, fileName) => isTestFileName(fileName))
-    .filter((candidate) => hasPlaceholderEvidence(parseTypeScriptFile(candidate.absolutePath)))
-    .map((candidate) => candidate.relativePath);
-
-  return { count: files.length, files };
-}
-import "./__companions__/test-honesty.companion";
+import './__companions__/test-honesty.companion';

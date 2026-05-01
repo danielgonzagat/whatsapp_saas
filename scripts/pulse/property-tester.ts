@@ -370,15 +370,4 @@ function isTestLikeFile(fileName: string, content: string): boolean {
   if (hasTestRuntime && hasPropertySignal) return true;
   return hasTestFileNameEvidence(fileName) && (hasTestRuntime || hasPropertySignal);
 }
-
-function hasTestFileNameEvidence(fileName: string): boolean {
-  let normalizedParts = fileName
-    .split(path.sep)
-    .join('/')
-    .split('/')
-    .flatMap(splitFileNameEvidenceParts)
-    .map((part) => part.toLowerCase())
-    .filter(Boolean);
-  return normalizedParts.some((part) => part === 'spec' || part === 'test' || part === 'property');
-}
-import "./__companions__/property-tester.companion";
+import './__companions__/property-tester.companion';

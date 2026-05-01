@@ -9,6 +9,7 @@ import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-
 import { type ResolvedWhatsAppProvider, resolveDefaultWhatsAppProvider } from './provider-env';
 import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
+import { sendMessage as companionSendMessage } from './__companions__/provider-send-message';
 
 class MissingWahaProviderError extends Error {
   constructor() {
@@ -349,49 +350,20 @@ export class WhatsAppProviderRegistry {
     message: string,
     options?: SendMessageOptions,
   ): Promise<SendResult> {
-    try {
-      if (this.isWahaMode()) {
-        const result = options?.mediaUrl
-          ? await this.wahaProvider.sendMediaFromUrl(
-              workspaceId,
-              to,
-              options.mediaUrl,
-              options.caption || message,
-              options.mediaType || 'image',
-            )
-          : await this.wahaProvider.sendMessage(workspaceId, to, message);
-        const messageRecord = this.readRecord(this.readRecord(result).message);
-        return {
-          success: Boolean(this.readRecord(result).success),
-          messageId: typeof messageRecord.id === 'string' ? messageRecord.id : undefined,
-        };
-      }
-
-      const result = options?.mediaUrl
-        ? await this.metaCloudProvider.sendMediaFromUrl(
-            workspaceId,
-            to,
-            options.mediaUrl,
-            options.caption || message,
-            options.mediaType || 'image',
-            { quotedMessageId: options.quotedMessageId },
-          )
-        : await this.metaCloudProvider.sendMessage(workspaceId, to, message, {
-            quotedMessageId: options?.quotedMessageId,
-          });
-      return {
-        success: Boolean(result?.success),
-        messageId: result?.message?.id || undefined,
-      };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'unknown error';
-      void this.opsAlert?.alertOnCriticalError(error, 'WhatsAppProviderRegistry.sendMessage', {
-        workspaceId,
-        metadata: { provider: this.isWahaMode() ? 'waha' : 'meta-cloud' },
-      });
-      this.logger.error(`Send failed: ${msg}`);
-      return { success: false, error: msg || 'send_failed' };
-    }
+    return companionSendMessage(
+      {
+        isWahaMode: () => this.isWahaMode(),
+        wahaProvider: this.wahaProvider,
+        metaCloudProvider: this.metaCloudProvider,
+        opsAlert: this.opsAlert,
+        logger: this.logger,
+        readRecord: (value: unknown) => this.readRecord(value),
+      },
+      workspaceId,
+      to,
+      message,
+      options,
+    );
   }
 
   /** Send media. */

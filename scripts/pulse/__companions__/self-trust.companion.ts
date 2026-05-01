@@ -3,6 +3,19 @@
  * Verify that key fields are coherent across all PULSE artifacts.
  * PULSE self-trust fails when artifacts contradict each other.
  */
+
+function parseJsonObject(content: string): Record<string, unknown> {
+  let parsed: unknown = JSON.parse(content);
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error('JSON root must be an object');
+  }
+  return parsed as Record<string, unknown>;
+}
+
+function checkpointScore(pass: boolean): number {
+  return Number.parseInt(pass ? '100' : '0', Number.parseInt('10', 10));
+}
+
 export function checkCrossArtifactConsistency(
   repoRoot?: string,
   artifactsOverride?: Record<string, Record<string, unknown>>,
@@ -227,4 +240,3 @@ export function formatSelfTrustReport(report: SelfTrustReport): string {
 
   return lines.join('\n');
 }
-

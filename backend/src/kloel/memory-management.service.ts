@@ -9,6 +9,7 @@ import { AuditService } from '../audit/audit.service';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { computeMemoryStats, type MemoryStats } from './__companions__/memory-stats';
 
 interface MemoryCleanupResult {
   expiredRemoved: number;
@@ -19,15 +20,7 @@ interface MemoryCleanupResult {
   duration: number;
 }
 
-interface MemoryStats {
-  total: number;
-  byCategory: Record<string, number>;
-  byWorkspace: Record<string, number>;
-  oldestEntry: Date | null;
-  averageAge: number;
-}
-
-// cache.invalidate — memory cleanup runs via cron; no external Redis cache to invalidate
+// Cache.invalidate — memory cleanup runs via cron; no external Redis cache to invalidate
 @Injectable()
 export class MemoryManagementService {
   private readonly logger = new Logger(MemoryManagementService.name);
@@ -354,66 +347,8 @@ export class MemoryManagementService {
    * Obtém estatísticas de memória
    */
   async getStats(): Promise<MemoryStats> {
-    if (!this.prisma.kloelMemory) {
-      return {
-        total: 0,
-        byCategory: {},
-        byWorkspace: {},
-        oldestEntry: null,
-        averageAge: 0,
-      };
-    }
-
     try {
-      // Total (cross-workspace stats; workspaceId filter is universal).
-      const total = await this.prisma.kloelMemory.count({
-        where: { workspaceId: { not: undefined } },
-      });
-
-      // Por categoria (cross-workspace aggregate).
-      const byCategory: Record<string, number> = {};
-      const categoryGroups = await this.prisma.kloelMemory.groupBy({
-        by: ['category'],
-        where: { workspaceId: { not: undefined } },
-        _count: { id: true },
-      });
-      for (const g of categoryGroups) {
-        byCategory[g.category || 'uncategorized'] = g._count.id;
-      }
-
-      // Por workspace (top 10)
-      const byWorkspace: Record<string, number> = {};
-      const workspaceGroups = await this.prisma.kloelMemory.groupBy({
-        by: ['workspaceId'],
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-        take: 10,
-      });
-      for (const g of workspaceGroups) {
-        byWorkspace[g.workspaceId] = g._count.id;
-      }
-
-      // Entrada mais antiga (cross-workspace stats).
-      const oldest = await this.prisma.kloelMemory.findFirst({
-        where: { workspaceId: { not: undefined } },
-        orderBy: { createdAt: 'asc' },
-        select: { createdAt: true, workspaceId: true },
-      });
-
-      // Idade média (aproximada)
-      const avgResult = await this.prisma.$queryRaw`
-        SELECT AVG(EXTRACT(EPOCH FROM (NOW() - "createdAt"))) / 86400 as avg_days
-        FROM "RAC_KloelMemory"
-      `;
-      const averageAge = Number.parseFloat(avgResult?.[0]?.avg_days || '0');
-
-      return {
-        total,
-        byCategory,
-        byWorkspace,
-        oldestEntry: oldest?.createdAt || null,
-        averageAge,
-      };
+      return await computeMemoryStats(this.prisma);
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.parseFloat');
       this.logger.error(

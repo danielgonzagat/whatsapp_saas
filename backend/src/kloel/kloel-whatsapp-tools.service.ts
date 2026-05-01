@@ -5,7 +5,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AudioService } from './audio.service';
-import { NON_DIGIT_RE } from './__companions__/kloel-whatsapp-tools.service.companion';
+import {
+  NON_DIGIT_RE,
+  toolSendAudio as toolSendAudioFn,
+  toolSendDocument as toolSendDocumentFn,
+} from './__companions__/kloel-whatsapp-tools.service.companion';
 import type {
   ToolResult,
   ToolSendWhatsAppMessageArgs,
@@ -284,67 +288,31 @@ export class KloelWhatsAppToolsService {
   }
 
   async toolSendAudio(workspaceId: string, args: ToolSendAudioArgs): Promise<ToolResult> {
-    const { phone, text, voice = 'nova' } = args;
-    if (!phone || !text) {
-      return { success: false, error: 'Parâmetros obrigatórios: phone e text' };
-    }
-    try {
-      const audioBuffer = await this.audioService.textToSpeech(text, voice, workspaceId);
-      const dataUri = `data:audio/mpeg;base64,${audioBuffer.toString('base64')}`;
-      const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
-      await this.planLimits.ensureDailyMessageQuota(workspaceId);
-      await this.whatsappService.sendMessage(workspaceId, normalizedPhone, '', {
-        mediaUrl: dataUri,
-        mediaType: 'audio',
-      });
-      return { success: true, message: `Áudio enviado para ${normalizedPhone}` };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'unknown error';
-      this.logger.error('Erro ao enviar áudio:', error);
-      void this.opsAlert?.alertOnCriticalError(error, 'KloelWhatsAppToolsService.toolSendAudio', {
-        workspaceId,
-      });
-      return { success: false, error: msg };
-    }
+    return toolSendAudioFn(
+      {
+        audioService: this.audioService,
+        planLimits: this.planLimits,
+        whatsappService: this.whatsappService,
+        logger: this.logger,
+        opsAlert: this.opsAlert,
+      },
+      workspaceId,
+      args,
+    );
   }
 
   async toolSendDocument(workspaceId: string, args: ToolSendDocumentArgs): Promise<ToolResult> {
-    const { phone, documentName, url, caption } = args;
-    if (!phone) return { success: false, error: 'Parâmetro obrigatório: phone' };
-    try {
-      const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
-      let documentUrl = url;
-      if (!documentUrl && documentName) {
-        const doc = await this.prisma.document?.findFirst({
-          where: { workspaceId, name: { contains: documentName, mode: 'insensitive' } },
-        });
-        documentUrl = doc?.filePath;
-      }
-      if (!documentUrl) {
-        return {
-          success: false,
-          error: 'Documento não encontrado. Forneça URL ou nome cadastrado.',
-        };
-      }
-      await this.planLimits.ensureDailyMessageQuota(workspaceId);
-      await this.whatsappService.sendMessage(workspaceId, normalizedPhone, caption || '', {
-        mediaUrl: documentUrl,
-        mediaType: 'document',
-        caption,
-      });
-      return { success: true, message: `Documento enviado para ${normalizedPhone}` };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'unknown error';
-      this.logger.error('Erro ao enviar documento:', error);
-      void this.opsAlert?.alertOnCriticalError(
-        error,
-        'KloelWhatsAppToolsService.toolSendDocument',
-        {
-          workspaceId,
-        },
-      );
-      return { success: false, error: msg };
-    }
+    return toolSendDocumentFn(
+      {
+        prisma: this.prisma,
+        planLimits: this.planLimits,
+        whatsappService: this.whatsappService,
+        logger: this.logger,
+        opsAlert: this.opsAlert,
+      },
+      workspaceId,
+      args,
+    );
   }
 
   toolSendVoiceNote(workspaceId: string, args: ToolSendAudioArgs): Promise<ToolResult> {

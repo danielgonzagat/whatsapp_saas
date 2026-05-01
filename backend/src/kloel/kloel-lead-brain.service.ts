@@ -14,9 +14,10 @@ import {
   NON_DIGIT_RE,
   safeStr,
   asUnknownRecord,
+  detectBuyIntent,
 } from './__companions__/kloel-lead-brain.service.companion';
 import type { ChatMessage } from './__companions__/kloel-lead-brain.service.companion';
-export { NON_DIGIT_RE, safeStr, asUnknownRecord };
+export { NON_DIGIT_RE, safeStr, asUnknownRecord, detectBuyIntent };
 export type { ChatMessage };
 
 /**
@@ -36,57 +37,6 @@ export class KloelLeadBrainService {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  }
-
-  detectBuyIntent(message: string): 'high' | 'medium' | 'low' | 'objection' {
-    const lowerMessage = message.toLowerCase();
-    const highIntentKeywords = [
-      'quero comprar',
-      'vou comprar',
-      'pode enviar',
-      'manda o link',
-      'aceito',
-      'fechado',
-      'como pago',
-      'pix',
-      'cartão',
-      'boleto',
-      'quero esse',
-      'vou levar',
-      'me envia',
-      'pode mandar',
-    ];
-    const mediumIntentKeywords = [
-      'quanto custa',
-      'qual o valor',
-      'tem desconto',
-      'parcelado',
-      'como funciona',
-      'me conta mais',
-      'interessado',
-      'gostei',
-    ];
-    const objectionKeywords = [
-      'tá caro',
-      'muito caro',
-      'não tenho',
-      'vou pensar',
-      'depois',
-      'não sei',
-      'não posso',
-      'não quero',
-      'sem interesse',
-    ];
-    for (const kw of highIntentKeywords) {
-      if (lowerMessage.includes(kw)) return 'high';
-    }
-    for (const kw of mediumIntentKeywords) {
-      if (lowerMessage.includes(kw)) return 'medium';
-    }
-    for (const kw of objectionKeywords) {
-      if (lowerMessage.includes(kw)) return 'objection';
-    }
-    return 'low';
   }
 
   async getOrCreateLead(workspaceId: string, phone: string): Promise<KloelLead> {
@@ -146,7 +96,7 @@ export class KloelLeadBrainService {
     _assistantResponse: string,
   ): Promise<void> {
     try {
-      const buyIntent = this.detectBuyIntent(userMessage);
+      const buyIntent = detectBuyIntent(userMessage);
       const updateData: Prisma.KloelLeadUpdateManyMutationInput = {
         lastMessage: userMessage,
         lastIntent: buyIntent,
@@ -366,7 +316,7 @@ export class KloelLeadBrainService {
       message,
       getWorkspaceContext,
     );
-    const buyIntent = this.detectBuyIntent(message);
+    const buyIntent = detectBuyIntent(message);
     if (buyIntent === 'high') {
       const productMention = await this.extractProductFromMessage(workspaceId, message);
       if (productMention) {

@@ -374,11 +374,4 @@ function getClassMethodDeclarationName(trimmedLine: string): string | null {
 
   return methodName;
 }
-
-interface ExtractedMethod {
-  name: string;
-  line: number;
-  isPublic: boolean;
-  returnType: string | null;
-}
-import "./__companions__/execution-harness-core.companion";
+import './__companions__/execution-harness-core.companion';

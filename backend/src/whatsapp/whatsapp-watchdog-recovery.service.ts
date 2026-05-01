@@ -11,9 +11,7 @@ import { randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger } from '@nestjs/common';
 import type Redis from 'ioredis';
-import { getTraceHeaders } from '../common/trace-headers';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
-import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { CiaRuntimeService } from './cia-runtime.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
@@ -21,6 +19,7 @@ import { asProviderSettings } from './provider-settings.types';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import type { SessionHealth } from './whatsapp-watchdog-session.service';
+import { alertOpsHelper } from './__companions__/whatsapp-watchdog-recovery.service.companion';
 
 /** Watchdog recovery and reconnect service. */
 @Injectable()
@@ -350,41 +349,6 @@ export class WhatsAppWatchdogRecoveryService {
     workspaceName: string | undefined,
     health: SessionHealth,
   ): Promise<void> {
-    const webhook = process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL;
-    if (!webhook) {
-      return;
-    }
-
-    try {
-      validateNoInternalAccess(webhook);
-      await fetch(webhook, {
-        method: 'POST',
-        headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'whatsapp_session_alert',
-          severity: 'high',
-          workspaceId,
-          workspaceName,
-          consecutiveFailures: health.consecutiveFailures,
-          lastCheck: health.lastCheck.toISOString(),
-          message:
-            `WhatsApp session disconnected for ${workspaceName || workspaceId}. ` +
-            `${health.consecutiveFailures} consecutive failures.`,
-          at: new Date().toISOString(),
-          env: process.env.NODE_ENV || 'development',
-        }),
-        signal: AbortSignal.timeout(10000),
-      });
-      this.logger.warn(`Alert sent for workspace ${workspaceName || workspaceId}`);
-    } catch (error: unknown) {
-      const msg =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'string'
-            ? error
-            : 'unknown error';
-      // PULSE:OK — Ops alert webhook non-critical; monitoring via logs continues
-      this.logger.error(`Failed to send ops alert: ${msg}`);
-    }
+    return alertOpsHelper(this.logger, workspaceId, workspaceName, health);
   }
 }

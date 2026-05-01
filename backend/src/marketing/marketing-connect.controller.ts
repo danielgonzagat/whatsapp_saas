@@ -14,15 +14,11 @@ import { buildUnsubscribeFooterHtml } from '../common/utils/unsubscribe-footer.u
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-
-/**
- * Server-rendered HTML body sent to validate email connectivity for the
- * Marketing module. Kept as a module-level constant (instead of an inline
- * literal at the call site) to make intent explicit: this is a transactional
- * email payload, not user-facing JSX text.
- */
-const EMAIL_VALIDATION_HTML_BODY =
-  '<h1>Conexao validada</h1><p>Seu canal de email esta ativo dentro do Marketing do KLOEL.</p>';
+import {
+  EMAIL_VALIDATION_HTML_BODY,
+  extractSetupConfigField,
+  normalizeWhatsAppSelectedProducts,
+} from './__companions__/marketing-connect.controller.companion';
 
 /**
  * Marketing Connect Controller
@@ -256,7 +252,7 @@ export class MarketingConnectController {
         ? (providerSettings.whatsappSetup as Record<string, unknown>)
         : {};
 
-    const selectedProducts = this.normalizeWhatsAppSelectedProducts(setup.selectedProducts);
+    const selectedProducts = normalizeWhatsAppSelectedProducts(setup.selectedProducts);
     const productNames = [
       ...new Set(selectedProducts.map((product) => product.name).filter(Boolean)),
     ];
@@ -290,57 +286,14 @@ export class MarketingConnectController {
       configuredAt: setup.configuredAt || null,
       activatedAt: setup.activatedAt || null,
       arsenalCount: Array.isArray(setup.arsenal) ? setup.arsenal.length : 0,
-      tone: this.extractSetupConfigField(setup, 'tone', null),
-      maxDiscount: Number(this.extractSetupConfigField(setup, 'maxDiscount', 0)) || 0,
-      followUpEnabled: Boolean(this.extractSetupConfigField(setup, 'followUpEnabled', false)),
+      tone: extractSetupConfigField(setup, 'tone', null),
+      maxDiscount: Number(extractSetupConfigField(setup, 'maxDiscount', 0)) || 0,
+      followUpEnabled: Boolean(extractSetupConfigField(setup, 'followUpEnabled', false)),
       selectedProducts: selectedProducts.map((product) => {
         const performance = salesMap.get(product.name) || { salesCount: 0, revenue: 0 };
         return { ...product, salesCount: performance.salesCount, revenue: performance.revenue };
       }),
     };
-  }
-
-  private extractSetupConfigField(
-    setup: Record<string, unknown>,
-    field: string,
-    fallback: unknown,
-  ) {
-    const cfg =
-      setup?.config && typeof setup.config === 'object'
-        ? (setup.config as Record<string, unknown>)
-        : null;
-    return cfg ? (cfg[field] ?? fallback) : fallback;
-  }
-
-  private serializeWhatsAppSelectedProduct(product: Record<string, unknown>) {
-    const pickString = (v: unknown, fb: string) =>
-      typeof v === 'string' && v.trim() ? v.trim() : fb;
-    const pickOptional = (v: unknown, v2?: unknown): string | null => {
-      if (typeof v === 'string' && v.trim()) return v.trim();
-      if (typeof v2 === 'string' && v2.trim()) return v2.trim();
-      return null;
-    };
-    const id = pickString(
-      product.id ?? (typeof product.productId === 'string' ? product.productId : ''),
-      '',
-    );
-    return {
-      id,
-      name: pickString(product.name, 'Produto'),
-      price: Number(product.price || 0) || 0,
-      type: product.type === 'affiliate' ? 'affiliate' : 'own',
-      affiliateComm: product.affiliateComm == null ? null : Number(product.affiliateComm || 0) || 0,
-      imageUrl: pickOptional(product.imageUrl, product.image),
-      producer: pickOptional(product.producer),
-    };
-  }
-
-  private normalizeWhatsAppSelectedProducts(raw: unknown) {
-    if (!Array.isArray(raw)) return [];
-    return raw
-      .filter((item): item is Record<string, unknown> => !!item && typeof item === 'object')
-      .map((item) => this.serializeWhatsAppSelectedProduct(item))
-      .filter((product) => product.id);
   }
 
   /** Connect email. */

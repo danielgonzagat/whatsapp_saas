@@ -376,10 +376,5 @@ export function evaluateRuntimeGate(
       'product_failure',
     );
   }
-
-  return {
-    status: 'pass',
-    reason: evidence.runtime.summary || 'Runtime evidence executed without blocking findings.',
-  };
+  return { status: 'pass', reason: evidence.runtime.summary || 'No blocking findings.' };
 }
-import "./__companions__/cert-gate-evaluators.companion";

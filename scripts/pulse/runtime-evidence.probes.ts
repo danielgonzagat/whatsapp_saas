@@ -395,4 +395,5 @@ export async function runAdRulesProbe(
       artifactPaths: PROBE_ARTIFACT_PATHS,
     };
   }
-export * from "./__companions__/runtime-evidence.probes_extra";
+}
+export * from './__companions__/runtime-evidence.probes_extra';

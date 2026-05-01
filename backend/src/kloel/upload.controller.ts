@@ -43,6 +43,11 @@ import {
 } from './pdf-processor.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import {
+  deleteStoredFileIfNeeded as companionDeleteStored,
+  insufficientWalletMessage as companionInsufficientWallet,
+  storeUploadedFile as companionStoreFile,
+} from './__companions__/upload-helpers';
 
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
 const IMAGE___JPEG_PNG_GIF_W_RE = /^(image\/(jpeg|png|gif|webp)|application\/pdf|text\/plain)$/;
@@ -89,37 +94,15 @@ export class UploadController {
   ) {}
 
   private insufficientWalletMessage() {
-    return 'Saldo insuficiente na wallet prepaid para analisar documentos. Recarregue via PIX ou aguarde a auto-recarga antes de tentar novamente.';
+    return companionInsufficientWallet();
   }
 
   private async storeUploadedFile(file: UploadedFileType, workspaceId: string) {
-    return this.storageService.upload(file.buffer, {
-      filename: `${Date.now()}_${file.originalname}`,
-      mimeType: file.mimetype,
-      folder: `uploads/${workspaceId}`,
-      workspaceId,
-    });
+    return companionStoreFile(this.storageService, file, workspaceId);
   }
 
   private async deleteStoredFileIfNeeded(relativePath?: string) {
-    if (!relativePath) {
-      return;
-    }
-
-    try {
-      await this.storageService.delete(relativePath);
-    } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(error, 'UploadController.delete');
-      this.logger.error(
-        `Falha ao remover upload parcial ${relativePath}: ${
-          error instanceof Error
-            ? error instanceof Error
-              ? error.message
-              : String(error)
-            : String(error)
-        }`,
-      );
-    }
+    return companionDeleteStored(this.storageService, this.logger, this.opsAlert, relativePath);
   }
 
   private estimatePdfAnalysisQuote(text: string, sourceName: string): bigint | undefined {

@@ -442,18 +442,6 @@ function limitSorted<T>(values: T[], maxItems: number): T[] {
   return values.slice(0, maxItems);
 }
 
-function buildAdjacency(graph: PulseStructuralGraph): Map<string, Set<string>> {
-  const adjacency = new Map<string, Set<string>>();
-  for (const node of graph.nodes) {
-    adjacency.set(node.id, new Set<string>());
-  }
-  for (const edge of graph.edges) {
-    adjacency.get(edge.from)?.add(edge.to);
-    adjacency.get(edge.to)?.add(edge.from);
-  }
-  return adjacency;
-}
-
 function nodeFamilies(node: PulseStructuralNode): string[] {
   const metadataValues = Object.values(node.metadata).flatMap((value) =>
     Array.isArray(value) ? value.map(String) : [String(value || '')],
@@ -585,4 +573,4 @@ function isStructuralFlowCandidate(nodes: PulseStructuralNode[]): boolean {
   );
   return hasEntry && hasAction && hasStatefulOrSideEffect;
 }
-import "./__companions__/product-model.companion";
+import './__companions__/product-model.companion';

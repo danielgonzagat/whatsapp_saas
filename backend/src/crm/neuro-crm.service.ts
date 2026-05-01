@@ -6,57 +6,12 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
-
-const PRECO_PRE_O_VALOR_QUANT_RE = /(preco|preço|valor|quanto|pix|boleto|comprar|fechar|pagar)/i;
-const RECLAMA_RUIM_PROBLEMA_C_RE = /(reclama|ruim|problema|cancel|demora|erro)/i;
-
-type PurchaseProbabilityBucket = 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH';
-type SentimentBucket = 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
-type IntentBucket = 'BUY' | 'SUPPORT' | 'COMPLAINT' | 'INFO' | 'COLD';
-
-interface RawAnalysis {
-  leadScore?: unknown;
-  score?: unknown;
-  purchaseProbability?: unknown;
-  urgency?: unknown;
-  purchaseProbabilityScore?: unknown;
-  sentiment?: unknown;
-  intent?: unknown;
-  summary?: unknown;
-  nextBestAction?: unknown;
-  cluster?: unknown;
-  reasons?: unknown;
-}
-
-interface AnalysisContact {
-  name?: string | null;
-  phone: string;
-  leadScore?: number | null;
-  sentiment?: string | null;
-  messages: Array<{ direction: string; content: string | null; createdAt: Date }>;
-}
-
-/** Analysis result shape. */
-export interface AnalysisResult {
-  /** Lead score property. */
-  leadScore: number;
-  /** Purchase probability property. */
-  purchaseProbability: PurchaseProbabilityBucket;
-  /** Purchase probability score property. */
-  purchaseProbabilityScore: number;
-  /** Sentiment property. */
-  sentiment: SentimentBucket;
-  /** Intent property. */
-  intent: IntentBucket;
-  /** Summary property. */
-  summary: string;
-  /** Next best action property. */
-  nextBestAction: string;
-  /** Cluster property. */
-  cluster: string | null;
-  /** Reasons property. */
-  reasons: string[];
-}
+import { buildFallbackAnalysis, normalizeAnalysis } from './__companions__/neuro-crm-analysis';
+import {
+  type AnalysisContact,
+  type AnalysisResult,
+  type RawAnalysis,
+} from './__companions__/neuro-crm-analysis.shared';
 
 interface ClusterPoint {
   contact: {
@@ -68,19 +23,6 @@ interface ClusterPoint {
   };
   x: number;
   y: number;
-}
-
-// Coerce an unknown value to a string without triggering
-// @typescript-eslint/no-base-to-string. Returns '' for objects/arrays/null
-// rather than the misleading "[object Object]" default.
-function coerceToString(value: unknown): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-    return String(value);
-  }
-  return '';
 }
 
 /** Neuro crm service. */
@@ -300,7 +242,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     currentCustomFields: Prisma.JsonValue | null | undefined,
   ): Promise<AnalysisResult> {
     if (!this.openai) {
-      const fallback = this.buildFallbackAnalysis(contact, history);
+      const fallback = buildFallbackAnalysis(contact, history);
       await this.persistAnalysis(workspaceId, contactId, currentCustomFields, fallback);
       return fallback;
     }
@@ -345,193 +287,18 @@ Return strictly JSON with:
         .catch(() => {});
 
       const rawResult = JSON.parse(completion.choices[0]?.message?.content || '{}') as RawAnalysis;
-      const result = this.normalizeAnalysis(rawResult, contact, history);
+      const result = normalizeAnalysis(rawResult, contact, history);
 
       await this.persistAnalysis(workspaceId, contactId, currentCustomFields, result);
 
       return result;
     } catch (error) {
-      const message = error instanceof Error ? error.message : coerceToString(error);
+      const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`NeuroCRM analysis failed: ${message}`);
-      const fallback = this.buildFallbackAnalysis(contact, history);
+      const fallback = buildFallbackAnalysis(contact, history);
       await this.persistAnalysis(workspaceId, contactId, currentCustomFields, fallback);
       return fallback;
     }
-  }
-
-  private normalizeAnalysis(
-    raw: RawAnalysis,
-    contact: AnalysisContact,
-    history: string,
-  ): AnalysisResult {
-    const leadScore = Math.max(
-      0,
-      Math.min(100, Number(raw?.leadScore ?? raw?.score ?? contact?.leadScore ?? 50) || 0),
-    );
-    const purchaseProbability = this.normalizeProbabilityBucket(
-      raw?.purchaseProbability ?? raw?.urgency,
-    );
-    const purchaseProbabilityScore = this.normalizeProbabilityScore(
-      raw?.purchaseProbabilityScore,
-      leadScore,
-      purchaseProbability,
-    );
-    const sentiment = this.normalizeSentiment(raw?.sentiment ?? contact?.sentiment);
-    const intent = this.normalizeIntent(raw?.intent);
-    const summary =
-      coerceToString(raw?.summary).trim() || this.buildFallbackSummary(contact, history, leadScore);
-    const nextBestAction = coerceToString(raw?.nextBestAction).trim() || 'FOLLOW_UP_SOFT';
-    const cluster = coerceToString(raw?.cluster).trim() || null;
-    const reasons = Array.isArray(raw?.reasons)
-      ? raw.reasons.map((reason) => coerceToString(reason).trim()).filter(Boolean)
-      : [];
-
-    return {
-      leadScore,
-      purchaseProbability,
-      purchaseProbabilityScore,
-      sentiment,
-      intent,
-      summary,
-      nextBestAction,
-      cluster,
-      reasons,
-    };
-  }
-
-  private normalizeProbabilityBucket(value: unknown): PurchaseProbabilityBucket {
-    const normalized = coerceToString(value).trim().toUpperCase();
-    if (
-      normalized === 'LOW' ||
-      normalized === 'MEDIUM' ||
-      normalized === 'HIGH' ||
-      normalized === 'VERY_HIGH'
-    ) {
-      return normalized;
-    }
-    if (normalized.includes('ALTA') || normalized.includes('HIGH')) {
-      return 'HIGH';
-    }
-    if (normalized.includes('BAIXA') || normalized.includes('LOW')) {
-      return 'LOW';
-    }
-    return 'LOW';
-  }
-
-  private normalizeProbabilityScore(value: unknown, leadScore: number, bucket: string): number {
-    const numeric = Number(value);
-    if (Number.isFinite(numeric)) {
-      const normalized = numeric > 1 ? numeric / 100 : numeric;
-      return Math.max(0, Math.min(1, Number(normalized.toFixed(3))));
-    }
-
-    if (bucket === 'VERY_HIGH') {
-      return 0.95;
-    }
-    if (bucket === 'HIGH') {
-      return Math.max(0.75, Number((leadScore / 100).toFixed(3)));
-    }
-    if (bucket === 'MEDIUM') {
-      return Math.max(0.35, Number((leadScore / 100).toFixed(3)));
-    }
-    return Math.min(0.2, Number((leadScore / 100).toFixed(3)));
-  }
-
-  private normalizeSentiment(value: unknown): SentimentBucket {
-    const normalized = coerceToString(value).trim().toUpperCase();
-    if (normalized === 'POSITIVE' || normalized === 'NEUTRAL' || normalized === 'NEGATIVE') {
-      return normalized;
-    }
-    if (normalized.includes('POSITIV')) {
-      return 'POSITIVE';
-    }
-    if (normalized.includes('NEGATIV')) {
-      return 'NEGATIVE';
-    }
-    return 'NEUTRAL';
-  }
-
-  private normalizeIntent(value: unknown): IntentBucket {
-    const normalized = coerceToString(value).trim().toUpperCase();
-    if (
-      normalized === 'BUY' ||
-      normalized === 'SUPPORT' ||
-      normalized === 'COMPLAINT' ||
-      normalized === 'INFO' ||
-      normalized === 'COLD'
-    ) {
-      return normalized;
-    }
-    if (normalized.includes('COMPRA') || normalized.includes('BUY')) {
-      return 'BUY';
-    }
-    if (normalized.includes('SUPORTE') || normalized.includes('SUPPORT')) {
-      return 'SUPPORT';
-    }
-    if (normalized.includes('RECLAM')) {
-      return 'COMPLAINT';
-    }
-    return 'INFO';
-  }
-
-  private buildFallbackSummary(
-    contact: AnalysisContact,
-    history: string,
-    leadScore: number,
-  ): string {
-    if (history) {
-      return `${contact.name || contact.phone} tem histórico recente e score ${leadScore}/100.`;
-    }
-    return `${contact.name || contact.phone} ainda tem pouco histórico e score ${leadScore}/100.`;
-  }
-
-  private buildFallbackAnalysis(contact: AnalysisContact, history: string): AnalysisResult {
-    const normalizedHistory = String(history || '').toLowerCase();
-    const leadScore = normalizedHistory
-      ? Math.max(20, Math.min(95, 30 + contact.messages.length * 6))
-      : Math.max(10, contact.leadScore || 10);
-    const buyingSignal = PRECO_PRE_O_VALOR_QUANT_RE.test(normalizedHistory);
-    const complaintSignal = RECLAMA_RUIM_PROBLEMA_C_RE.test(normalizedHistory);
-    const intent = complaintSignal ? 'COMPLAINT' : buyingSignal ? 'BUY' : history ? 'INFO' : 'COLD';
-    const sentiment = complaintSignal ? 'NEGATIVE' : buyingSignal ? 'POSITIVE' : 'NEUTRAL';
-    const purchaseProbability =
-      buyingSignal && leadScore >= 80
-        ? 'VERY_HIGH'
-        : buyingSignal
-          ? 'HIGH'
-          : leadScore >= 45
-            ? 'MEDIUM'
-            : 'LOW';
-
-    return {
-      leadScore,
-      purchaseProbability,
-      purchaseProbabilityScore: this.normalizeProbabilityScore(
-        null,
-        leadScore,
-        purchaseProbability,
-      ),
-      sentiment,
-      intent,
-      summary: this.buildFallbackSummary(contact, history, leadScore),
-      nextBestAction:
-        intent === 'BUY'
-          ? 'SEND_OFFER'
-          : intent === 'COMPLAINT'
-            ? 'TRATAR_OBJECAO'
-            : 'FOLLOW_UP_SOFT',
-      cluster:
-        purchaseProbability === 'VERY_HIGH' || purchaseProbability === 'HIGH'
-          ? 'Warm'
-          : purchaseProbability === 'MEDIUM'
-            ? 'Warm'
-            : 'Cold',
-      reasons: buyingSignal
-        ? ['buying_signal_detected']
-        : complaintSignal
-          ? ['complaint_signal_detected']
-          : ['insufficient_signal'],
-    };
   }
 
   // PULSE_OK: workspaceId validated by caller guard; updateMany scoped to workspaceId + contactId

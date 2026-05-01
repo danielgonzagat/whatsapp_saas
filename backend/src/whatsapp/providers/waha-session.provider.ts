@@ -19,6 +19,10 @@ import {
   getQrCode,
   listLidMappings,
 } from './waha-session-lifecycle.util';
+import {
+  listSessionsHelper,
+  logoutSessionHelper,
+} from './__companions__/waha-session.provider.companion';
 
 /**
  * Session lifecycle layer for WAHA.
@@ -196,40 +200,16 @@ export class WahaSessionProvider extends WahaSessionConfigProvider {
 
   /** List sessions. */
   async listSessions(): Promise<WahaSessionOverview[]> {
-    try {
-      const data = await this.request<unknown[]>('GET', '/api/sessions');
-      if (!Array.isArray(data)) {
-        return [];
-      }
-      return data
-        .map((entry): WahaSessionOverview | null => {
-          const entryRecord = this.readRecord(entry);
-          const resolvedStatus = resolveWahaSessionState(entryRecord);
-          const identity = this.resolveSessionIdentity(entryRecord, { allowTopLevelName: false });
-          const name = this.readString(entryRecord.name);
-          if (!name) {
-            return null;
-          }
-          return {
-            name,
-            success: true,
-            rawStatus: resolvedStatus.rawStatus,
-            state: resolvedStatus.state,
-            phoneNumber: identity.phoneNumber,
-            pushName: identity.pushName,
-          };
-        })
-        .filter((entry): entry is WahaSessionOverview => Boolean(entry));
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      void this.sessionOpsAlert?.alertOnDegradation(
-        msg.message,
-        'WahaSessionProvider.listSessions',
-      );
-      this.logger.warn(`Failed to list WAHA sessions: ${msg.message}`);
-      return [];
-    }
+    return listSessionsHelper(
+      {
+        request: (method, path) => this.request(method, path),
+        readRecord: (value) => this.readRecord(value),
+        readString: (value) => this.readString(value),
+        resolveSessionIdentity: (payload, options) => this.resolveSessionIdentity(payload, options),
+      },
+      this.logger,
+      this.sessionOpsAlert,
+    );
   }
 
   /** List lid mappings. */
@@ -367,33 +347,12 @@ export class WahaSessionProvider extends WahaSessionConfigProvider {
 
   /** Logout session. */
   async logoutSession(sessionId: string): Promise<{ success: boolean; message: string }> {
-    const resolvedSessionId = this.resolveSessionName(sessionId);
-    try {
-      await this.request('POST', '/api/sessions/logout', { name: resolvedSessionId });
-      return { success: true, message: 'session_logged_out' };
-    } catch (err: unknown) {
-      const msg =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      try {
-        void this.sessionOpsAlert?.alertOnDegradation(
-          msg.message,
-          'WahaSessionProvider.logoutSession.primary',
-          { metadata: { sessionId: resolvedSessionId } },
-        );
-        await this.request('POST', '/api/sessions/stop', { name: resolvedSessionId, logout: true });
-        return { success: true, message: 'session_logged_out' };
-      } catch (fallbackErr: unknown) {
-        const fallbackMsg =
-          fallbackErr instanceof Error
-            ? fallbackErr
-            : new Error(typeof fallbackErr === 'string' ? fallbackErr : 'unknown error');
-        void this.sessionOpsAlert?.alertOnCriticalError(
-          fallbackErr,
-          'WahaSessionProvider.logoutSession.fallback',
-          { metadata: { sessionId: resolvedSessionId } },
-        );
-        return { success: false, message: fallbackMsg?.message || msg?.message || 'logout_failed' };
-      }
-    }
+    return logoutSessionHelper(
+      {
+        request: (method, path, body) => this.request(method, path, body),
+      },
+      this.resolveSessionName(sessionId),
+      this.sessionOpsAlert,
+    );
   }
 }

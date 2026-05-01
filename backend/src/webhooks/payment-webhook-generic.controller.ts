@@ -16,7 +16,6 @@ import { type Contact, type WebhookEvent } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { Public } from '../auth/public.decorator';
 import { AutopilotService } from '../autopilot/autopilot.service';
-import { validatePaymentTransition } from '../common/payment-state-machine';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { WebhooksService } from './webhooks.service';
@@ -35,6 +34,10 @@ import {
   ensureIdempotent,
   sendOpsAlert,
 } from './payment-webhook-generic.helpers';
+import {
+  updateSaleAndPaymentHelper,
+  sendGenericConfirmationHelper,
+} from './__companions__/payment-webhook-generic.controller.companion';
 
 /**
  * Handles generic, Shopify, PagHiper, and WooCommerce payment webhooks.
@@ -324,57 +327,7 @@ export class PaymentWebhookGenericController {
     workspaceId: string,
     _normalizedPhone: string | undefined,
   ): Promise<void> {
-    if (body.orderId || body.provider) {
-      try {
-        await this.prisma.kloelSale.updateMany({
-          where: {
-            workspaceId,
-            OR: [
-              body.orderId ? { externalPaymentId: String(body.orderId) } : undefined,
-              body.orderId ? { id: String(body.orderId) } : undefined,
-            ].filter(Boolean) as Array<{ externalPaymentId: string } | { id: string }>,
-          },
-          data: { status: 'paid', paidAt: new Date() },
-        });
-      } catch (saleErr: unknown) {
-        const msg =
-          saleErr instanceof Error
-            ? saleErr
-            : new Error(typeof saleErr === 'string' ? saleErr : 'unknown error');
-        this.logger.warn(`Não foi possível atualizar KloelSale (generic): ${msg?.message}`);
-      }
-    }
-    if (body.orderId) {
-      try {
-        const genericExternalRef = String(body.orderId);
-        const existingGenericPayment = await this.prisma.payment.findFirst({
-          where: { workspaceId, externalId: genericExternalRef },
-        });
-        const canTransitionGeneric =
-          !existingGenericPayment ||
-          validatePaymentTransition(existingGenericPayment.status || 'PENDING', 'RECEIVED', {
-            paymentId: existingGenericPayment?.id,
-            provider: body.provider || 'generic',
-            externalId: genericExternalRef,
-          });
-        if (canTransitionGeneric) {
-          await this.prisma.payment.updateMany({
-            where: { workspaceId, externalId: genericExternalRef },
-            data: { status: 'RECEIVED' },
-          });
-        } else {
-          this.logger.warn(
-            `Generic webhook rejected by state machine: ${existingGenericPayment?.status} -> RECEIVED for ${genericExternalRef}`,
-          );
-        }
-      } catch (paymentErr: unknown) {
-        const msg =
-          paymentErr instanceof Error
-            ? paymentErr
-            : new Error(typeof paymentErr === 'string' ? paymentErr : 'unknown error');
-        this.logger.warn(`Não foi possível atualizar Payment (generic): ${msg?.message}`);
-      }
-    }
+    return updateSaleAndPaymentHelper(this.prisma, this.logger, body, workspaceId);
   }
 
   private async sendGenericConfirmation(
@@ -382,19 +335,12 @@ export class PaymentWebhookGenericController {
     normalizedPhone: string,
     body: GenericPaymentWebhookBody,
   ): Promise<void> {
-    try {
-      const amountText =
-        typeof body.amount === 'number'
-          ? body.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-          : undefined;
-      const msg = `Pagamento confirmado.\n\n${amountText ? `Valor: R$ ${amountText}\n` : ''}${body.orderId ? `Pedido: ${body.orderId}\n` : ''}\nObrigado pela sua compra!`;
-      await this.whatsapp.sendMessage(workspaceId, normalizedPhone, msg);
-    } catch (notifyErr: unknown) {
-      const notifyMsg =
-        notifyErr instanceof Error
-          ? notifyErr
-          : new Error(typeof notifyErr === 'string' ? notifyErr : 'unknown error');
-      this.logger.warn(`Falha ao notificar cliente (generic): ${notifyMsg?.message}`);
-    }
+    return sendGenericConfirmationHelper(
+      this.whatsapp,
+      this.logger,
+      workspaceId,
+      normalizedPhone,
+      body,
+    );
   }
 }

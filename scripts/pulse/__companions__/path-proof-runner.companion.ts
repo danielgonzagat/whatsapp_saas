@@ -54,3 +54,53 @@ export function buildPathProofPlan(
   return plan;
 }
 
+// ── Moved from path-proof-runner.ts ──────────────────────────────────────
+
+function readMatrix(rootDir: string): PulseExecutionMatrix {
+  return readJsonFile<PulseExecutionMatrix>(safeJoin(rootDir, MATRIX_ARTIFACT));
+}
+
+function readPathCoverage(rootDir: string): PathCoverageState | undefined {
+  const coveragePath = safeJoin(rootDir, COVERAGE_ARTIFACT);
+  if (!pathExists(coveragePath)) {
+    return undefined;
+  }
+  return readJsonFile<PathCoverageState>(coveragePath);
+}
+
+function parseTimestamp(value: string | null | undefined): number | null {
+  if (!value) {
+    return null;
+  }
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function readPathProofEvidence(rootDir: string): ObservedPathProofEvidenceArtifact | undefined {
+  const evidencePath = safeJoin(rootDir, PATH_PROOF_EVIDENCE_ARTIFACT);
+  if (!pathExists(evidencePath)) {
+    return undefined;
+  }
+  return readJsonFile<ObservedPathProofEvidenceArtifact>(evidencePath);
+}
+
+function entryCountsAsFreshObservedProof(
+  entry: ObservedPathProofEvidenceEntry,
+  matrixGeneratedAt: string | undefined,
+): boolean {
+  const dispositionObserved =
+    entry.disposition === 'observed_pass' || entry.disposition === 'observed_fail';
+  const observedAt = entry.observedEvidenceLink?.observedAt ?? entry.freshness?.observedAt ?? null;
+  const observedAtMs = parseTimestamp(observedAt);
+  const matrixGeneratedAtMs = parseTimestamp(matrixGeneratedAt);
+
+  return (
+    entry.observed === true &&
+    entry.coverageCountsAsObserved === true &&
+    entry.evidenceState === 'observed' &&
+    dispositionObserved &&
+    entry.freshness?.status === 'fresh' &&
+    observedAtMs !== null &&
+    (matrixGeneratedAtMs === null || observedAtMs >= matrixGeneratedAtMs)
+  );
+}

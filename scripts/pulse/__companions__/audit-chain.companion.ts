@@ -106,3 +106,39 @@ function verifyBlockDetailed(
   return { valid: true, reason: null };
 }
 
+// ── Moved from audit-chain.ts ───────────────────────────────────────────
+
+export function appendBlock(
+  chain: AuditChain,
+  metadata: AuditBlock['metadata'],
+  rootDir: string,
+): AuditChain {
+  const resolvedRoot = resolveRoot(rootDir);
+
+  const prevBlock = chain.blocks[chain.blocks.length - 1] ?? null;
+  const prevHash = prevBlock ? computeBlockHash(prevBlock) : chain.genesisHash;
+
+  const treeHash = computeFilesHash(resolvedRoot, metadata.filesChanged);
+
+  const decisionHash = computeDecisionHash(metadata);
+
+  const block: AuditBlock = {
+    index: chain.blocks.length,
+    prevHash,
+    treeHash,
+    decisionHash,
+    signature: '',
+    signatureMode: 'unsigned',
+    signingKeyStatus: 'not_configured',
+    timestamp: new Date().toISOString(),
+    metadata: { ...metadata },
+  };
+
+  signBlock(block);
+  appendBlockToFile(resolvedRoot, block);
+
+  return {
+    ...chain,
+    blocks: [...chain.blocks, block],
+  };
+}

@@ -349,41 +349,4 @@ export function buildPlannerPrompt(
     2,
   );
 }
-export function summarizeBatchUnits(units: PulseAutonomousDirectiveUnit[]): string {
-  return units.map((unit) => unit.title).join(' | ');
-}
-export function buildAdaptiveDecision(
-  directive: PulseAutonomousDirective,
-  validationCommands: string[],
-  riskProfile: 'safe' | 'balanced' | 'dangerous',
-  previousState?: PulseAutonomyState | null,
-): import('./autonomy-loop.types').PulseAutonomyDecision {
-  const stalledCandidates = getAutomationSafeUnits(directive, riskProfile);
-  const candidate = stalledCandidates.find(
-    (unit) => !hasAdaptiveRetryBeenExhausted(previousState, unit.id),
-  );
-  if (!candidate) {
-    return {
-      shouldContinue: false,
-      selectedUnitId: '',
-      rationale:
-        'Only previously stalled automation-safe units remain, and adaptive narrow-scope retries are already exhausted.',
-      codexPrompt: '',
-      validationCommands,
-      stopReason:
-        'Only previously stalled automation-safe units remain and the adaptive retry path is exhausted.',
-      strategyMode: 'adaptive_narrow_scope',
-    };
-  }
-  return {
-    shouldContinue: true,
-    selectedUnitId: candidate.id,
-    rationale:
-      'Only stalled automation-safe work remains, so the loop is retrying with a narrower adaptive scope.',
-    codexPrompt: buildAdaptivePrompt(directive, candidate),
-    validationCommands: buildUnitValidationCommands(directive, candidate, validationCommands),
-    stopReason: '',
-    strategyMode: 'adaptive_narrow_scope',
-  };
-}
-import "./__companions__/autonomy-loop.prompt.companion";
+import './__companions__/autonomy-loop.prompt.companion';

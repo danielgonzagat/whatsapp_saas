@@ -1,7 +1,8 @@
 import { ChatCompletionTool } from 'openai/resources/chat';
 import { KLOEL_CHAT_TOOLS_MEDIA_BILLING } from './kloel-chat-tools-b.definition';
+import { KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS } from './__companions__/kloel-chat-tools.definition.companion';
 
-/** Core tool definitions (products, automation, metrics, payments, whatsapp, leads, settings, campaigns). */
+/** Core tool definitions (products, automation, metrics, payments, whatsapp, leads). */
 const KLOEL_CHAT_TOOLS_CORE: ChatCompletionTool[] = [
   // === PRODUTOS ===
   {
@@ -332,63 +333,11 @@ const KLOEL_CHAT_TOOLS_CORE: ChatCompletionTool[] = [
       },
     },
   },
-  // === CONFIGURAÇÕES ===
-  {
-    type: 'function',
-    function: {
-      name: 'save_business_info',
-      description: 'Salva informações do negócio',
-      parameters: {
-        type: 'object',
-        properties: {
-          businessName: { type: 'string', description: 'Nome do negócio' },
-          description: { type: 'string', description: 'Descrição do negócio' },
-          segment: { type: 'string', description: 'Segmento (ecommerce, serviços, etc)' },
-        },
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'set_business_hours',
-      description: 'Define o horário de funcionamento',
-      parameters: {
-        type: 'object',
-        properties: {
-          weekdayStart: { type: 'string', description: 'Horário início dias úteis (ex: 09:00)' },
-          weekdayEnd: { type: 'string', description: 'Horário fim dias úteis (ex: 18:00)' },
-          saturdayStart: { type: 'string', description: 'Horário início sábado' },
-          saturdayEnd: { type: 'string', description: 'Horário fim sábado' },
-          workOnSunday: { type: 'boolean', description: 'Funciona aos domingos?' },
-        },
-      },
-    },
-  },
-  // === CAMPANHAS ===
-  {
-    type: 'function',
-    function: {
-      name: 'create_campaign',
-      description: 'Cria uma campanha de mensagens em massa',
-      parameters: {
-        type: 'object',
-        properties: {
-          name: { type: 'string', description: 'Nome da campanha' },
-          message: { type: 'string', description: 'Mensagem da campanha' },
-          targetAudience: {
-            type: 'string',
-            description: 'Público-alvo (ex: todos, leads_quentes)',
-          },
-        },
-        required: ['name', 'message'],
-      },
-    },
-  },
 ];
 
 /** Tool definitions available in the KLOEL dashboard chat. */
 export const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
   ...KLOEL_CHAT_TOOLS_CORE,
   ...KLOEL_CHAT_TOOLS_MEDIA_BILLING,
+  ...KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS,
 ];

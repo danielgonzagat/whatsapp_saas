@@ -6,6 +6,10 @@ import { KloelContextFormatter } from './kloel-context-formatter';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 import { KloelWorkspaceContextDataService } from './kloel-workspace-context-data.service';
 import { KloelWorkspaceContextLinkedProductService } from './kloel-workspace-context-linked-product.service';
+import {
+  listWorkspaceIntegrations,
+  createWorkspaceIntegration,
+} from './__companions__/kloel-workspace-context.service.companion';
 import type { WorkspaceProductContextInput } from './kloel-workspace-context.types';
 function safeStr(value: unknown, fallback = ''): string {
   if (typeof value === 'string') return value;
@@ -348,27 +352,13 @@ export class KloelWorkspaceContextService {
     });
   }
   async listIntegrations(workspaceId: string) {
-    return this.prisma.integration.findMany({
-      where: { workspaceId },
-      orderBy: { createdAt: 'desc' },
-      take: 50,
-      select: {
-        id: true,
-        type: true,
-        name: true,
-        credentials: true,
-        isActive: true,
-        workspaceId: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+    return listWorkspaceIntegrations(this.prisma, workspaceId);
   }
   async createIntegration(
     workspaceId: string,
     data: { type: string; name: string; credentials: Prisma.InputJsonValue },
   ) {
-    return this.prisma.integration.create({ data: { workspaceId, ...data } });
+    return createWorkspaceIntegration(this.prisma, workspaceId, data);
   }
   async buildLinkedProductPromptContext(
     workspaceId: string,

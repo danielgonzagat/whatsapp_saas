@@ -5,12 +5,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createPublicKey, createSign, createVerify } from 'node:crypto';
+import { createPublicKey, createVerify } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { buildClientSecret } from './__companions__/apple-auth.service.companion';
 import { getTraceHeaders } from '../common/trace-headers';
 import { GoogleVerifiedProfile } from './google-auth.service';
 import {
-  APPLE_CLIENT_SECRET_TTL_SECONDS,
   APPLE_ISSUER,
   APPLE_JWKS_URL,
   APPLE_TOKEN_URL,
@@ -268,32 +268,6 @@ export class AppleAuthService {
     }
   }
 
-  private buildClientSecret(input: {
-    clientId: string;
-    teamId: string;
-    keyId: string;
-    privateKey: string;
-  }): string {
-    const issuedAt = Math.floor(Date.now() / 1000);
-    const header = { alg: 'ES256', kid: input.keyId };
-    const payload = {
-      iss: input.teamId,
-      iat: issuedAt,
-      exp: issuedAt + APPLE_CLIENT_SECRET_TTL_SECONDS,
-      aud: APPLE_ISSUER,
-      sub: input.clientId,
-    };
-    const signingInput = `${this.encodeJson(header)}.${this.encodeJson(payload)}`;
-    const signer = createSign('SHA256');
-    signer.update(signingInput);
-    signer.end();
-    const signature = signer.sign({
-      key: input.privateKey,
-      dsaEncoding: 'ieee-p1363',
-    });
-    return `${signingInput}.${signature.toString('base64url')}`;
-  }
-
   private resolveClientSecret(input: {
     clientId: string;
     teamId?: string;
@@ -304,16 +278,12 @@ export class AppleAuthService {
     if (staticSecret) {
       return staticSecret;
     }
-    return this.buildClientSecret({
+    return buildClientSecret({
       clientId: input.clientId,
       teamId: input.teamId || '',
       keyId: input.keyId || '',
       privateKey: input.privateKey || '',
     });
-  }
-
-  private encodeJson(value: Record<string, string | number>): string {
-    return Buffer.from(JSON.stringify(value)).toString('base64url');
   }
 
   private async exchangeCode(input: {

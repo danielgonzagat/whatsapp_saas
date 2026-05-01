@@ -5,7 +5,7 @@ import {
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { CheckoutSocialLeadStatus, CheckoutSocialProvider, Prisma } from '@prisma/client';
+import { CheckoutSocialLeadStatus, CheckoutSocialProvider } from '@prisma/client';
 import { AppleAuthService } from '../auth/apple-auth.service';
 import { FacebookAuthService } from '../auth/facebook-auth.service';
 import { GoogleAuthService } from '../auth/google-auth.service';
@@ -14,6 +14,7 @@ import { buildQueueJobId } from '../queue/job-id.util';
 import { crmQueue } from '../queue/queue';
 import { CaptureSocialLeadDto } from './dto/capture-social-lead.dto';
 import { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
+import { findLatestCandidate as companionFindLatestCandidate } from './__companions__/checkout-social-lead-candidate';
 import {
   extractAddressFromEnrichment,
   mergeGooglePeopleProfile,
@@ -382,7 +383,7 @@ export class CheckoutSocialLeadService {
           where: { id: input.capturedLeadId, workspaceId: input.workspaceId },
           select: { id: true },
         })
-      : await this.findLatestCandidate(input);
+      : await companionFindLatestCandidate(this.prisma, input);
 
     if (!target) {
       return null;
@@ -520,43 +521,6 @@ export class CheckoutSocialLeadService {
         removeOnComplete: true,
       },
     );
-  }
-
-  private async findLatestCandidate(input: ConversionInput) {
-    const filters: Prisma.CheckoutSocialLeadWhereInput[] = [];
-    const email = normalizeEmail(input.customerEmail);
-    if (email) {
-      filters.push({
-        email: {
-          equals: email,
-          mode: 'insensitive',
-        },
-      });
-    }
-
-    const phone = normalizePhone(input.customerPhone);
-    if (phone) {
-      filters.push({ phone });
-    }
-
-    const fingerprint = normalizeOptional(input.deviceFingerprint);
-    if (fingerprint) {
-      filters.push({ deviceFingerprint: fingerprint });
-    }
-
-    if (filters.length === 0) {
-      return null;
-    }
-
-    return this.prisma.checkoutSocialLead.findFirst({
-      where: {
-        workspaceId: input.workspaceId,
-        convertedAt: null,
-        OR: filters,
-      },
-      select: { id: true },
-      orderBy: { createdAt: 'desc' },
-    });
   }
 
   private async upsertContact(input: {

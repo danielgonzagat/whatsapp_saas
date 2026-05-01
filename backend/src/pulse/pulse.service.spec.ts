@@ -10,6 +10,10 @@ import {
   setInternalValue,
   spyOnRunBackgroundTask,
 } from '../../test/pulse/pulse.service-test-helpers';
+import {
+  testStaleOrganismState,
+  testMissingCanonicalArtifacts,
+} from './__companions__/pulse.spec-companions';
 
 function buildExpectedIntervalHandlerError() {
   const error = new Error();
@@ -46,50 +50,11 @@ describe('PulseService', () => {
   });
 
   it('returns a stale organism state when no live nodes are registered', async () => {
-    const { service } = createService({
-      configGet: jest.fn((key: string) => (key === 'PULSE_ARTIFACT_ROOT' ? artifactRootDir : '')),
-    });
-
-    await expect(service.getOrganismState()).resolves.toMatchObject({
-      status: 'STALE',
-      authorityMode: 'advisory-only',
-      circulation: {
-        registeredNodes: 0,
-        freshNodes: 0,
-        staleNodes: 0,
-      },
-      advice: {
-        level: 'watch',
-      },
-    });
+    await testStaleOrganismState(artifactRootDir);
   });
 
   it('returns missing canonical artifacts when no pulse production snapshot exists yet', () => {
-    const { service } = createService({
-      configGet: jest.fn((key: string) => (key === 'PULSE_ARTIFACT_ROOT' ? artifactRootDir : '')),
-    });
-
-    expect(service.getProductionSnapshot()).toMatchObject({
-      status: 'empty',
-      authorityMode: 'advisory-only',
-      machineReadiness: {
-        status: 'unknown',
-        authorityMode: 'advisory-only',
-        autonomyVerdict: 'UNKNOWN',
-        executionMatrixSummary: null,
-      },
-      missingArtifacts: expect.arrayContaining([
-        'PULSE_CLI_DIRECTIVE.json',
-        'PULSE_CERTIFICATE.json',
-        'PULSE_PRODUCT_VISION.json',
-        'PULSE_PARITY_GAPS.json',
-        'PULSE_EXECUTION_MATRIX.json',
-        'PULSE_EXTERNAL_SIGNAL_STATE.json',
-        'PULSE_AUTONOMY_STATE.json',
-        'PULSE_AGENT_ORCHESTRATION_STATE.json',
-        'PULSE_CONVERGENCE_PLAN.json',
-      ]),
-    });
+    testMissingCanonicalArtifacts(artifactRootDir);
   });
 
   it('reads canonical pulse artifacts for production runtime consumers', async () => {

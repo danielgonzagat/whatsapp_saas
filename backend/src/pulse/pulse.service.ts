@@ -5,18 +5,22 @@ import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { forEachSequential } from '../common/async-sequence';
 import type { JwtPayload } from '../common/interfaces/jwt-payload.interface';
-import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { SystemHealthService } from '../health/system-health.service';
 import { PulseArtifactService } from './pulse-artifact.service';
+import {
+  getBackendHeartbeatEveryMs,
+  getFrontendPruneSweepEveryMs,
+  getLiveKey,
+  getStaleAlertKey,
+  getStaleSweepEveryMs,
+  sendAlertWebhook,
+} from './__companions__/pulse-webhook-config';
 import { PulseFrontendHeartbeatDto } from './dto/frontend-heartbeat.dto';
 import { PulseInternalHeartbeatDto } from './dto/internal-heartbeat.dto';
 import {
   CRITICAL_REGISTRY_REDIS_SLOT,
   DEFAULT_BACKEND_TTL_MS,
-  DEFAULT_FRONTEND_PRUNE_SWEEP_MS,
   DEFAULT_FRONTEND_TTL_MS,
-  DEFAULT_HEARTBEAT_INTERVAL_MS,
-  DEFAULT_STALE_SWEEP_MS,
   DEFAULT_WORKER_TTL_MS,
   FRONTEND_REGISTRY_REDIS_SLOT,
   FRONTEND_RETENTION_MS,
@@ -61,11 +65,11 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID) {
       return;
     }
-    const everyMs = this.getBackendHeartbeatEveryMs();
-    const frontendPruneEveryMs = this.getFrontendPruneSweepEveryMs();
+    const everyMs = getBackendHeartbeatEveryMs();
+    const frontendPruneEveryMs = getFrontendPruneSweepEveryMs();
     this.runBackgroundTask('backend heartbeat startup', this.captureStartupHeartbeatTask);
     this.heartbeatTimer = setInterval(this.emitIntervalHeartbeat, everyMs);
-    this.staleSweepTimer = setInterval(this.emitCriticalStaleSweep, this.getStaleSweepEveryMs());
+    this.staleSweepTimer = setInterval(this.emitCriticalStaleSweep, getStaleSweepEveryMs());
     this.frontendPruneTimer = setInterval(this.emitFrontendPrune, frontendPruneEveryMs);
   }
   /** On module destroy. */
@@ -338,13 +342,13 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     return this.artifacts.getProductionSnapshot();
   }
   private async persistHeartbeat(record: PulseHeartbeatRecord) {
-    const liveKey = this.getLiveKey(record.nodeId);
+    const liveKey = getLiveKey(record.nodeId);
     const previous = safeJsonParse<PulseHeartbeatRecord>(await this.redis.get(liveKey));
     const pipeline = this.redis.multi();
     pipeline
       .set(liveKey, JSON.stringify(record), 'PX', record.ttlMs)
       .hset(REGISTRY_REDIS_SLOT, record.nodeId, JSON.stringify(record))
-      .del(this.getStaleAlertKey(record.nodeId));
+      .del(getStaleAlertKey(record.nodeId));
     if (record.critical) {
       pipeline.hset(CRITICAL_REGISTRY_REDIS_SLOT, record.nodeId, JSON.stringify(record));
     } else {
@@ -396,7 +400,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       return [];
     }
     const pipeline = this.redis.pipeline();
-    nodeIds.forEach((nodeId) => pipeline.get(this.getLiveKey(nodeId)));
+    nodeIds.forEach((nodeId) => pipeline.get(getLiveKey(nodeId)));
     const liveResults = await pipeline.exec();
     const now = Date.now();
     const nodes: PulseOrganismNode[] = [];
@@ -440,7 +444,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       if (!node.stale) {
         return;
       }
-      const staleAlertKey = this.getStaleAlertKey(node.nodeId);
+      const staleAlertKey = getStaleAlertKey(node.nodeId);
       const alreadyAlerted = await this.redis.set(
         staleAlertKey,
         String(now),
@@ -477,7 +481,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         .multi()
         .hdel(FRONTEND_REGISTRY_REDIS_SLOT, node.nodeId)
         .hdel(REGISTRY_REDIS_SLOT, node.nodeId)
-        .del(this.getLiveKey(node.nodeId))
+        .del(getLiveKey(node.nodeId))
         .exec();
     });
   }
@@ -512,74 +516,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         }),
       )
       .exec();
-    await this.sendAlertWebhook(incident);
-  }
-  private async sendAlertWebhook(incident: PulseIncident) {
-    const webhookUrl = this.getAlertWebhookUrl();
-    if (!webhookUrl) {
-      return;
-    }
-    try {
-      // SSRF protection: validate env-configured webhook URL before use
-      validateNoInternalAccess(webhookUrl);
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Request-ID': incident.incidentId,
-        },
-        body: JSON.stringify({
-          type: 'pulse_incident',
-          incident,
-          at: new Date().toISOString(),
-          environment: process.env.NODE_ENV || 'development',
-        }),
-        signal: AbortSignal.timeout(8_000),
-      });
-      if (!response.ok) {
-        this.logger.warn(`Pulse alert webhook returned HTTP ${response.status}`);
-      }
-    } catch (error: unknown) {
-      this.logger.warn(
-        `Pulse alert webhook failed: ${(error as Error)?.message || 'unknown error'}`,
-      );
-    }
-  }
-  private getAlertWebhookUrl() {
-    return (
-      this.config.get<string>('PULSE_ALERT_WEBHOOK_URL') ||
-      this.config.get<string>('OPS_WEBHOOK_URL') ||
-      this.config.get<string>('AUTOPILOT_ALERT_WEBHOOK_URL') ||
-      this.config.get<string>('DLQ_WEBHOOK_URL') ||
-      ''
-    );
-  }
-  private getBackendHeartbeatEveryMs() {
-    const raw = Number.parseInt(process.env.PULSE_BACKEND_HEARTBEAT_MS || '', 10);
-    if (Number.isFinite(raw) && raw >= 5_000) {
-      return raw;
-    }
-    return DEFAULT_HEARTBEAT_INTERVAL_MS;
-  }
-  private getStaleSweepEveryMs() {
-    const raw = Number.parseInt(process.env.PULSE_STALE_SWEEP_MS || '', 10);
-    if (Number.isFinite(raw) && raw >= 15_000) {
-      return raw;
-    }
-    return DEFAULT_STALE_SWEEP_MS;
-  }
-  private getFrontendPruneSweepEveryMs() {
-    const raw = Number.parseInt(process.env.PULSE_FRONTEND_PRUNE_MS || '', 10);
-    if (Number.isFinite(raw) && raw >= 60_000) {
-      return raw;
-    }
-    return DEFAULT_FRONTEND_PRUNE_SWEEP_MS;
-  }
-  private getLiveKey(nodeId: string) {
-    return `pulse:organism:live:${nodeId}`;
-  }
-  private getStaleAlertKey(nodeId: string) {
-    return `pulse:organism:stale-alert:${nodeId}`;
+    await sendAlertWebhook(this.config, this.logger, incident);
   }
   private getNodeSuffix() {
     const safeHostname =

@@ -25,6 +25,9 @@ import type {
   RuntimeFusionMachineImprovementSignal,
 } from './types.runtime-fusion';
 
+type CanonicalExternalSignal =
+  import('./__companions__/runtime-fusion.companion').CanonicalExternalSignal;
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 let EXTERNAL_SIGNAL_STATE_FILE = 'PULSE_EXTERNAL_SIGNAL_STATE.json';
@@ -354,48 +357,15 @@ function safeJsonParseFile(fsLoc: string): Record<string, unknown> | null {
   }
 }
 
-function asArray(value: unknown): unknown[] {
-  return Array.isArray(value) ? value : [];
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 }
-
-function asString(value: unknown): string {
-  return typeof value === 'string' ? value : '';
-}
-
 function asNumber(value: unknown, fallback: number = 0): number {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   return fallback;
 }
-
-function asOptionalNumber(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  return null;
+function computeImpactScore(candidate: RuntimeSignal): number {
+  return bound01(candidate.impactScore);
 }
-
-function asStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter((e): e is string => typeof e === 'string')
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-}
-
-function resolvePulseCurrentDir(rootDir: string): string {
-  if (p.basename(rootDir) === 'current' && p.basename(p.dirname(rootDir)) === '.pulse') {
-    return rootDir;
-  }
-  return p.join(rootDir, '.pulse', 'current');
-}
-
-function syncAffectedAliases(signal: RuntimeSignal): void {
-  signal.affectedCapabilityIds = unique(signal.affectedCapabilityIds);
-  signal.affectedFlowIds = unique(signal.affectedFlowIds);
-  signal.affectedCapabilities = signal.affectedCapabilityIds;
-  signal.affectedFlows = signal.affectedFlowIds;
-}
-import "./__parts__/runtime-fusion.part";
-export * from "./__companions__/runtime-fusion.companion";
+import './__parts__/runtime-fusion.part';
+export * from './__companions__/runtime-fusion.companion';

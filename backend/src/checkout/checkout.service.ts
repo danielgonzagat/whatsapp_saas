@@ -1,15 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH,
-  isValidPublicCheckoutCode,
-  normalizePublicCheckoutCode,
-} from './checkout-code.util';
 import { CheckoutCatalogService } from './checkout-catalog.service';
 import { CheckoutOrderService } from './checkout-order.service';
 import { CheckoutProductService } from './checkout-product.service';
 import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder';
+import { getCheckoutByCode as companionGetCheckoutByCode } from './__companions__/checkout-code-lookup';
 
 export type { CheckoutOrderStatusValue } from './checkout-order-status';
 
@@ -320,207 +316,16 @@ export class CheckoutService {
     code: string,
     context?: { correlationId?: string; lookupSource?: string },
   ) {
-    const planLinkManager = this.productService.getPlanLinkManager();
-    const correlationId = context?.correlationId ?? randomUUID();
-    const normalizedCode = normalizePublicCheckoutCode(code);
-    const normalizedCodePrefix = normalizedCode.slice(0, DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH);
-    const legacyCode = String(code ?? '')
-      .trim()
-      .toLowerCase();
-
-    this.logCheckoutEvent('checkout_public_lookup_start', {
-      correlationId,
-      lookupType: 'code',
-      lookupValue: code,
-      normalizedCode,
-      lookupSource: context?.lookupSource ?? 'direct',
-    });
-
-    const codeOrConditions = [
-      { referenceCode: normalizedCode },
-      ...(normalizedCodePrefix &&
-      normalizedCodePrefix !== normalizedCode &&
-      isValidPublicCheckoutCode(normalizedCodePrefix)
-        ? [{ referenceCode: normalizedCodePrefix }]
-        : []),
-      { referenceCode: code },
-    ];
-
-    const checkoutLink = await this.prisma.checkoutPlanLink.findFirst({
-      where: {
-        isActive: true,
-        checkout: { isActive: true, kind: 'CHECKOUT' },
-        plan: { isActive: true, kind: 'PLAN' },
-        OR: codeOrConditions,
+    return companionGetCheckoutByCode(
+      {
+        prisma: this.prisma,
+        productService: this.productService,
+        publicPayloadBuilder: this.publicPayloadBuilder,
+        logCheckoutEvent: (event, payload) => this.logCheckoutEvent(event, payload),
       },
-      include: {
-        checkout: { include: { checkoutConfig: { include: { pixels: true } } } },
-        plan: {
-          include: {
-            product: true,
-            checkoutConfig: { include: { pixels: true } },
-            orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-            upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-          },
-        },
-      },
-    });
-
-    if (checkoutLink) {
-      this.logCheckoutEvent('checkout_public_lookup_resolved', {
-        correlationId,
-        lookupType: 'code',
-        lookupValue: code,
-        resolution: 'checkout_link',
-        checkoutId: checkoutLink.checkoutId,
-        planId: checkoutLink.planId,
-      });
-      return this.publicPayloadBuilder.build(checkoutLink.plan, {
-        checkoutLink,
-        checkoutConfigOverride:
-          checkoutLink.checkout.checkoutConfig || checkoutLink.plan.checkoutConfig,
-      });
-    }
-
-    const planRecord = await this.prisma.checkoutProductPlan.findFirst({
-      where: {
-        OR: [...codeOrConditions, { id: { startsWith: legacyCode } }],
-      },
-      include: {
-        product: true,
-        checkoutConfig: { include: { pixels: true } },
-        orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-        upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-      },
-    });
-
-    if (planRecord?.isActive && planRecord.kind === 'PLAN' && planRecord.legacyCheckoutEnabled) {
-      await this.productService.ensureLegacyCheckoutForPlan(planRecord.id);
-      const migratedLink = await this.prisma.checkoutPlanLink.findFirst({
-        where: {
-          isActive: true,
-          checkout: { isActive: true, kind: 'CHECKOUT' },
-          plan: { isActive: true, kind: 'PLAN' },
-          OR: codeOrConditions,
-        },
-        include: {
-          checkout: { include: { checkoutConfig: { include: { pixels: true } } } },
-          plan: {
-            include: {
-              product: true,
-              checkoutConfig: { include: { pixels: true } },
-              orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-              upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-            },
-          },
-        },
-      });
-
-      if (migratedLink) {
-        this.logCheckoutEvent('checkout_public_lookup_resolved', {
-          correlationId,
-          lookupType: 'code',
-          lookupValue: code,
-          resolution: 'legacy_checkout_link',
-          checkoutId: migratedLink.checkoutId,
-          planId: migratedLink.planId,
-        });
-        return this.publicPayloadBuilder.build(migratedLink.plan, {
-          checkoutLink: migratedLink,
-          checkoutConfigOverride:
-            migratedLink.checkout.checkoutConfig || migratedLink.plan.checkoutConfig,
-        });
-      }
-    }
-
-    if (planRecord?.isActive && planRecord.kind === 'PLAN') {
-      const plan = await planLinkManager.ensurePlanReferenceCode(planRecord);
-      this.logCheckoutEvent('checkout_public_lookup_resolved', {
-        correlationId,
-        lookupType: 'code',
-        lookupValue: code,
-        resolution: 'plan',
-        planId: plan.id,
-      });
-      return this.publicPayloadBuilder.build(plan);
-    }
-
-    const affiliateCodeConditions = [
-      { code: normalizedCode },
-      ...(normalizedCodePrefix &&
-      normalizedCodePrefix !== normalizedCode &&
-      isValidPublicCheckoutCode(normalizedCodePrefix)
-        ? [{ code: normalizedCodePrefix }]
-        : []),
-      { code },
-    ];
-    const affiliateLink = await this.prisma.affiliateLink.findFirst({
-      where: { active: true, OR: affiliateCodeConditions },
-      include: { affiliateProduct: true },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    if (!affiliateLink?.affiliateProduct?.productId) {
-      this.logCheckoutEvent('checkout_public_lookup_not_found', {
-        correlationId,
-        lookupType: 'code',
-        lookupValue: code,
-      });
-      throw new NotFoundException('Checkout not found');
-    }
-
-    const affiliatePlanRecord = await this.prisma.checkoutProductPlan.findFirst({
-      where: { productId: affiliateLink.affiliateProduct.productId, isActive: true, kind: 'PLAN' },
-      include: {
-        product: true,
-        checkoutConfig: { include: { pixels: true } },
-        orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-        upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    if (!affiliatePlanRecord) {
-      this.logCheckoutEvent('checkout_public_lookup_not_found', {
-        correlationId,
-        lookupType: 'code',
-        lookupValue: code,
-        resolution: 'affiliate_missing_plan',
-      });
-      throw new NotFoundException('Checkout not found');
-    }
-
-    const affiliatePlan = await planLinkManager.ensurePlanReferenceCode(affiliatePlanRecord);
-    const affiliateCheckoutLink = await this.prisma.checkoutPlanLink.findFirst({
-      where: {
-        planId: affiliatePlan.id,
-        isActive: true,
-        checkout: { isActive: true, kind: 'CHECKOUT' },
-      },
-      include: { checkout: { include: { checkoutConfig: { include: { pixels: true } } } } },
-      orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
-    });
-
-    await this.prisma.affiliateLink.update({
-      where: { id: affiliateLink.id },
-      data: { clicks: { increment: 1 } },
-    });
-
-    this.logCheckoutEvent('checkout_public_lookup_resolved', {
-      correlationId,
-      lookupType: 'code',
-      lookupValue: code,
-      resolution: 'affiliate_link',
-      affiliateLinkId: affiliateLink.id,
-      planId: affiliatePlan.id,
-    });
-
-    return this.publicPayloadBuilder.build(affiliatePlan, {
-      affiliateLink,
-      checkoutLink: affiliateCheckoutLink,
-      checkoutConfigOverride:
-        affiliateCheckoutLink?.checkout?.checkoutConfig || affiliatePlan.checkoutConfig,
-    });
+      code,
+      context,
+    );
   }
 
   /** Duplicate checkout. */

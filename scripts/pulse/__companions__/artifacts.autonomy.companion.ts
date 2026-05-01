@@ -152,32 +152,75 @@ export function buildPulseMachineReadiness(
               `${snapshot.certification.gates.multiCycleConvergencePass.reason} Cycle proof: ${cycleProof.successfulNonRegressingCycles}/${cycleProof.requiredCycles}.`,
             ),
     };
-  const blockers = Object.entries(gateKernelGrammarResults)
-    .filter(([, gate]) => gate.status === 'fail')
-    .map(([name, gate]) => `${name}: ${gate.reason}`);
-  const passingGates = Object.values(gateKernelGrammarResults).filter(
-    (gate) => gate.status === 'pass',
-  ).length;
-  const ready = blockers.length === 0;
+}
+
+// ── Moved from artifacts.autonomy.ts ─────────────────────────────────────
+
+function hasRuntimeTouchingValidationEvidence(
+  entry: PulseAutonomyState['history'][number],
+): boolean {
+  if (!entry.codex.executed || !entry.validation.executed) {
+    return false;
+  }
+  return entry.validation.commands.some(
+    (command) => command.command.trim().length > 0 && command.exitCode === 0,
+  );
+}
+
+export function buildAutonomyCycleProof(
+  previousAutonomyState: PulseAutonomyState | null,
+): CycleProof {
+  const history = previousAutonomyState?.history || [];
+  const realExecutedCycles = history.filter((entry) => entry.codex.executed);
+  const runtimeTouchingCycles = realExecutedCycles.filter(hasRuntimeTouchingValidationEvidence);
+  const executionMatrixComparisons = realExecutedCycles.map((entry) =>
+    evaluateCycleExecutionMatrixNonRegression(entry),
+  );
+  const successfulCycles = realExecutedCycles.filter((entry) => {
+    const codexPassed = entry.codex.exitCode === 0;
+    const validationPassed =
+      entry.validation.executed &&
+      entry.validation.commands.length > 0 &&
+      entry.validation.commands.every((command) => command.exitCode === 0);
+    const beforeScore =
+      typeof entry.directiveBefore.score === 'number' ? entry.directiveBefore.score : null;
+    const afterScore =
+      typeof entry.directiveAfter?.score === 'number' ? entry.directiveAfter.score : null;
+    const scoreNonRegressing =
+      beforeScore === null || afterScore === null || afterScore >= beforeScore;
+    const beforeTier =
+      typeof entry.directiveBefore.blockingTier === 'number'
+        ? entry.directiveBefore.blockingTier
+        : null;
+    const afterTier =
+      typeof entry.directiveAfter?.blockingTier === 'number'
+        ? entry.directiveAfter.blockingTier
+        : null;
+    const tierNonRegressing = beforeTier === null || afterTier === null || afterTier <= beforeTier;
+    const matrix = evaluateCycleExecutionMatrixNonRegression(entry);
+    const runtimeTouched = hasRuntimeTouchingValidationEvidence(entry);
+    return (
+      codexPassed &&
+      validationPassed &&
+      runtimeTouched &&
+      scoreNonRegressing &&
+      tierNonRegressing &&
+      matrix.nonRegressing
+    );
+  });
 
   return {
-    generatedAt: snapshot.certification.timestamp,
-    status: ready ? 'READY' : 'NOT_READY',
-    canDeclarePulseComplete: ready,
-    authorityMode: authority.mode,
-    gates: gateKernelGrammarResults,
-    blockers,
-    summary: {
-      totalGates: Object.keys(gateKernelGrammarResults).length,
-      passingGates,
-      failingGates: Object.keys(gateKernelGrammarResults).length - passingGates,
-      executionMatrixPaths: matrix?.summary.totalPaths ?? 0,
-      criticalUnobservedPaths: matrix?.summary.criticalUnobservedPaths ?? 0,
-      impreciseBreakpoints: matrix?.summary.impreciseBreakpoints ?? 0,
-      automationSafeUnits: autonomyQueue.length,
-      successfulNonRegressingCycles: cycleProof.successfulNonRegressingCycles,
-      requiredCycles: cycleProof.requiredCycles,
-    },
+    requiredCycles: REQUIRED_NON_REGRESSING_CYCLES,
+    totalRecordedCycles: history.length,
+    realExecutedCycles: realExecutedCycles.length,
+    successfulNonRegressingCycles: successfulCycles.length,
+    runtimeTouchingCycles: runtimeTouchingCycles.length,
+    executionMatrixComparedCycles: executionMatrixComparisons.filter((result) => result.compared)
+      .length,
+    executionMatrixRegressedCycles: executionMatrixComparisons.filter(
+      (result) => !result.nonRegressing,
+    ).length,
+    proven: successfulCycles.length >= REQUIRED_NON_REGRESSING_CYCLES,
   };
 }
 
@@ -431,4 +474,3 @@ export function buildAutonomyProof(
     ],
   };
 }
-

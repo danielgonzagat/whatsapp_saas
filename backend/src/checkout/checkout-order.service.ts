@@ -16,7 +16,10 @@ import { buildCheckoutShippingQuote } from './checkout-shipping-profile.util';
 import { CheckoutCatalogService } from './checkout-catalog.service';
 import { CheckoutOrderQueryService } from './checkout-order-query.service';
 import { buildCheckoutOrderMetadata } from './checkout-order-metadata.util';
-import { processOrderPostPayment } from './checkout-order-payment.helpers';
+import {
+  executeProcessOrderPostPayment,
+  type ProcessOrderPostPaymentParams,
+} from './__companions__/checkout-order.service.companion';
 import type { CheckoutOrderStatusValue } from './checkout-order-status';
 
 const D_RE = /\D/g;
@@ -303,27 +306,10 @@ export class CheckoutOrderService {
     return { ...order, paymentData };
   }
 
-  private async processOrderPostPayment(params: {
-    order: { id: string };
-    orderNumber: string;
-    correlationId: string;
-    data: {
-      workspaceId: string;
-      planId: string;
-      customerName: string;
-      customerEmail: string;
-      customerCPF?: string;
-      customerPhone?: string;
-      couponCode?: string;
-      shippingAddress: Prisma.InputJsonValue;
-    };
-    orderData: { paymentMethod: Prisma.EnumPaymentMethodFilter['equals'] };
-    qualityGate: { phoneDigits: string };
-    normalizedBaseTotalInCents: number;
-    normalizedInstallments: number;
-    cardHolderName?: string;
-  }): Promise<Record<string, unknown> | null> {
-    return processOrderPostPayment(params, {
+  private async processOrderPostPayment(
+    params: ProcessOrderPostPaymentParams,
+  ): Promise<Record<string, unknown> | null> {
+    return executeProcessOrderPostPayment(params, {
       prisma: this.prisma,
       paymentService: this.paymentService,
       orderSupport: this.orderSupport,

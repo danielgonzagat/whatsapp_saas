@@ -1,7 +1,6 @@
 import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
-import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
@@ -11,6 +10,11 @@ import type {
   WaitForReplyNodeData,
   WaitState,
   ResumeResult,
+} from './__companions__/flows.service.companion';
+import {
+  pauseForWaitNode as pauseForWaitNodeFn,
+  resumeFromWait as resumeFromWaitFn,
+  expireWaitTimeouts as expireWaitTimeoutsFn,
 } from './__companions__/flows.service.companion';
 export type { WaitForReplyNodeData, WaitState, ResumeResult };
 
@@ -298,270 +302,32 @@ export class FlowsService {
   }
 
   // ==========================================================================
-  // WaitForReply node support
+  // WaitForReply node support — thin wrappers delegating to companion
   // ==========================================================================
 
-  /**
-   * Called by the flow worker when it encounters a 'waitForReply' node.
-   *
-   * Persists the execution as WAITING_INPUT so it can be resumed later when
-   * the contact replies or the timeout expires.
-   */
   async pauseForWaitNode(params: {
     executionId: string;
     contactPhone: string;
     waitNodeId: string;
     nodeData: WaitForReplyNodeData;
   }): Promise<void> {
-    const { executionId, contactPhone, waitNodeId, nodeData } = params;
-
-    // Calculate absolute expiry timestamp from relative timeout
-    const timeoutMs = this.resolveTimeoutMs(
-      nodeData.timeout ?? 60,
-      nodeData.timeoutUnit ?? 'minutes',
-    );
-    const waitExpiresAt = new Date(Date.now() + timeoutMs).toISOString();
-
-    const execution = await this.prisma.flowExecution.findFirst({
-      where: { id: executionId, workspaceId: { not: '' } },
-    });
-    if (!execution) {
-      this.logger.warn(`[WaitForReply] Execution ${executionId} not found, cannot pause`);
-      return;
-    }
-
-    // Merge wait metadata into the existing state JSON
-    const existingState = (execution.state as Record<string, unknown>) || {};
-    const waitState: WaitState = {
-      ...existingState,
-      waitNodeId,
-      waitingForContact: contactPhone,
-      waitExpiresAt,
-      fallbackMessage: nodeData.fallbackMessage || undefined,
-    };
-
-    await this.prisma.flowExecution.updateMany({
-      where: { id: executionId, workspaceId: execution.workspaceId },
-      data: {
-        status: 'WAITING_INPUT',
-        currentNodeId: waitNodeId,
-        state: waitState as Prisma.InputJsonValue,
-        logs: {
-          push: {
-            timestamp: Date.now(),
-            nodeId: waitNodeId,
-            message: `Aguardando resposta do contato ${contactPhone} (expira em ${waitExpiresAt})`,
-            level: 'info',
-          },
-        },
-      },
-    });
-
-    this.logger.log(
-      `[WaitForReply] Execution ${executionId} paused at node ${waitNodeId}, ` +
-        `waiting for ${contactPhone} until ${waitExpiresAt}`,
-    );
+    return pauseForWaitNodeFn({ prisma: this.prisma, logger: this.logger }, params);
   }
 
-  /**
-   * Called when a contact sends a message (via the 'resume-flow' BullMQ job).
-   * messageLimit: enforced via PlanLimitsService.trackMessageSend at send time
-   *
-   * Finds the WAITING_INPUT execution for that contact and resumes it through
-   * the "Respondeu" (replied) output edge. If the wait has expired, resumes
-   * through the "Timeout" edge instead.
-   */
   async resumeFromWait(params: {
     contactPhone: string;
     workspaceId: string;
     message?: string;
   }): Promise<ResumeResult> {
-    const { contactPhone, workspaceId, message } = params;
-
-    // Find the waiting execution whose state.waitingForContact matches.
-    // Prisma's Json filtering works on PostgreSQL with path-based filters.
-    // PULSE_OK: bounded by workspace + WAITING_INPUT status + contact filter
-    const executions = await this.prisma.flowExecution.findMany({
-      where: {
-        workspaceId,
-        status: 'WAITING_INPUT',
-        state: {
-          path: ['waitingForContact'],
-          equals: contactPhone,
-        },
-      },
-      select: {
-        id: true,
-        workspaceId: true,
-        flowId: true,
-        contactId: true,
-        status: true,
-        state: true,
-        currentNodeId: true,
-        updatedAt: true,
-      },
-      orderBy: { updatedAt: 'desc' },
-      take: 1,
-    });
-
-    if (executions.length === 0) {
-      return { resumed: false };
-    }
-
-    const execution = executions[0];
-    const state = (execution.state as WaitState) || ({} as WaitState);
-    const now = new Date();
-    // PULSE_OK: waitExpiresAt is an ISO string set internally via new Date().toISOString(); null-guard prevents NaN comparisons
-    const expired = state.waitExpiresAt ? now > new Date(state.waitExpiresAt) : false;
-
-    const resumeEdge: 'Respondeu' | 'Timeout' = expired ? 'Timeout' : 'Respondeu';
-
-    // Store the reply message in state so the worker can use it downstream
-    const updatedState: Record<string, unknown> = {
-      ...state,
-      lastReplyMessage: message || null,
-      resumedAt: now.toISOString(),
-      resumeEdge,
-    };
-
-    await this.prisma.flowExecution.updateMany({
-      where: { id: execution.id, workspaceId },
-      data: {
-        status: 'RUNNING',
-        state: updatedState as Prisma.InputJsonValue,
-        logs: {
-          push: {
-            timestamp: Date.now(),
-            nodeId: state.waitNodeId,
-            message: expired
-              ? `Timeout expirado — retomando pelo edge "Timeout"`
-              : `Contato ${contactPhone} respondeu — retomando pelo edge "Respondeu"`,
-            level: 'info',
-          },
-        },
-      },
-    });
-
-    this.logger.log(
-      `[WaitForReply] Execution ${execution.id} resumed via "${resumeEdge}" ` +
-        `(contact: ${contactPhone})`,
-    );
-
-    return {
-      resumed: true,
-      executionId: execution.id,
-      flowId: execution.flowId,
-      workspaceId: execution.workspaceId,
-      resumeEdge,
-      waitNodeId: state.waitNodeId,
-      fallbackMessage: expired ? state.fallbackMessage : undefined,
-      state: updatedState,
-    };
+    return resumeFromWaitFn({ prisma: this.prisma, logger: this.logger }, params);
   }
 
-  /**
-   * Scans for WAITING_INPUT executions whose timeout has expired and
-   * transitions them through the "Timeout" edge.
-   *
-   * Intended to be called from a scheduled job (e.g. cron every minute) or
-   * invoked inline during message processing as a lightweight sweep.
-   *
-   * Returns the list of execution IDs that were timed out.
-   */
   async expireWaitTimeouts(workspaceId?: string, batchSize = 50): Promise<ResumeResult[]> {
-    const now = new Date();
-    const results: ResumeResult[] = [];
-
-    // Prisma doesn't support lte on Json paths directly, so we fetch all
-    // WAITING_INPUT candidates and filter by expiry in application code.
-    // The batch size keeps memory bounded.
-    const candidates = await this.prisma.flowExecution.findMany({
-      where: {
-        status: 'WAITING_INPUT',
-        ...(workspaceId ? { workspaceId } : {}),
-      },
-      select: {
-        id: true,
-        workspaceId: true,
-        flowId: true,
-        contactId: true,
-        status: true,
-        state: true,
-        currentNodeId: true,
-        updatedAt: true,
-      },
-      orderBy: { updatedAt: 'asc' },
-      take: batchSize,
-    });
-
-    await forEachSequential(candidates, async (execution) => {
-      const state = (execution.state as WaitState) || ({} as WaitState);
-      if (!state.waitExpiresAt) {
-        return;
-      }
-      // PULSE_OK: waitExpiresAt set internally as ISO string — null-guarded above
-      if (now <= new Date(state.waitExpiresAt)) {
-        return;
-      }
-
-      // Expired — transition to Timeout
-      const updatedState: Record<string, unknown> = {
-        ...state,
-        resumedAt: now.toISOString(),
-        resumeEdge: 'Timeout',
-      };
-
-      await this.prisma.flowExecution.updateMany({
-        where: { id: execution.id, workspaceId: execution.workspaceId },
-        data: {
-          status: 'RUNNING',
-          state: updatedState as Prisma.InputJsonValue,
-          logs: {
-            push: {
-              timestamp: Date.now(),
-              nodeId: state.waitNodeId,
-              message: `Timeout expirado para contato ${state.waitingForContact} — retomando pelo edge "Timeout"`,
-              level: 'warn',
-            },
-          },
-        },
-      });
-
-      this.logger.log(
-        `[WaitForReply] Execution ${execution.id} expired (timeout), resuming via "Timeout"`,
-      );
-
-      results.push({
-        resumed: true,
-        executionId: execution.id,
-        flowId: execution.flowId,
-        workspaceId: execution.workspaceId,
-        resumeEdge: 'Timeout',
-        waitNodeId: state.waitNodeId,
-        fallbackMessage: state.fallbackMessage,
-        state: updatedState,
-      });
-    });
-
-    return results;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Private helpers
-  // ---------------------------------------------------------------------------
-
-  /** Convert a relative timeout value + unit into milliseconds. */
-  private resolveTimeoutMs(
-    timeout: number,
-    unit: 'seconds' | 'minutes' | 'hours' | 'days',
-  ): number {
-    const multipliers: Record<string, number> = {
-      seconds: 1_000,
-      minutes: 60_000,
-      hours: 3_600_000,
-      days: 86_400_000,
-    };
-    return Math.max(1_000, timeout * (multipliers[unit] || 60_000));
+    return expireWaitTimeoutsFn(
+      { prisma: this.prisma, logger: this.logger },
+      workspaceId,
+      batchSize,
+    );
   }
 
   // ── Flow Variables ──

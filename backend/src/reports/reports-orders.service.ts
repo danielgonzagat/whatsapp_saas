@@ -1,82 +1,20 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { OrderStatus, PaymentMethod, Prisma } from '@prisma/client';
+import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { assertValidOrderStatusFilter } from '../common/checkout-order-state-machine';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportFiltersDto } from './dto/report-filters.dto';
+import {
+  dateRange,
+  paginate,
+  applyCommonOrderFilters,
+  toOrderStatus,
+  toPaymentMethod,
+} from './__companions__/reports-orders.service.companion';
 
-const ORDER_STATUSES = new Set<string>(Object.values(OrderStatus));
-const PAYMENT_METHODS = new Set<string>(Object.values(PaymentMethod));
-
-function assertValidReportDate(parsed: Date, field: string): void {
-  if (Number.isNaN(parsed.getTime())) {
-    throw new BadRequestException(`Invalid ${field}`);
-  }
-}
-
-function toOrderStatus(value: string | undefined): OrderStatus | undefined {
-  return value && ORDER_STATUSES.has(value) ? (value as OrderStatus) : undefined;
-}
-
-function toPaymentMethod(value: string | undefined): PaymentMethod | undefined {
-  return value && PAYMENT_METHODS.has(value) ? (value as PaymentMethod) : undefined;
-}
-
-/** Shared filter/pagination utilities for order-based reports. */
-export function dateRange(f: ReportFiltersDto) {
-  const start = f.startDate ? new Date(f.startDate) : new Date(Date.now() - 30 * 86400000);
-  const end = f.endDate ? new Date(`${f.endDate}T23:59:59Z`) : new Date();
-  assertValidReportDate(start, 'startDate');
-  assertValidReportDate(end, 'endDate');
-  return { start, end };
-}
-
-export function validatedPaidOrderStatus(caller: string): OrderStatus {
-  assertValidOrderStatusFilter(OrderStatus.PAID, caller);
-  return OrderStatus.PAID;
-}
-
-function paginate(f: ReportFiltersDto) {
-  const page = f.page || 1;
-  const perPage = Math.min(f.perPage || 10, 100);
-  return { skip: (page - 1) * perPage, take: perPage };
-}
-
-/**
- * Apply common CheckoutOrder filters shared across multiple report methods.
- * Mutates the `where` object in place for efficiency.
- */
-export function applyCommonOrderFilters(
-  where: Prisma.CheckoutOrderWhereInput,
-  f: ReportFiltersDto,
-): void {
-  if (f.orderCode) {
-    where.orderNumber = { contains: f.orderCode, mode: 'insensitive' };
-  }
-  if (f.buyerName) {
-    where.customerName = { contains: f.buyerName, mode: 'insensitive' };
-  }
-  if (f.buyerEmail) {
-    where.customerEmail = { contains: f.buyerEmail, mode: 'insensitive' };
-  }
-  if (f.cpfCnpj) {
-    where.customerCPF = { contains: f.cpfCnpj };
-  }
-  if (f.utmSource) {
-    where.utmSource = { contains: f.utmSource, mode: 'insensitive' };
-  }
-  if (f.utmMedium) {
-    where.utmMedium = { contains: f.utmMedium, mode: 'insensitive' };
-  }
-  if (f.planName) {
-    where.plan = { name: { contains: f.planName, mode: 'insensitive' } };
-  }
-  if (f.isUpsell === 'true') {
-    where.upsellOrders = { some: {} };
-  }
-  if (f.isRecovery === 'true') {
-    where.couponCode = { contains: 'RECOVERY', mode: 'insensitive' };
-  }
-}
+export {
+  dateRange,
+  applyCommonOrderFilters,
+} from './__companions__/reports-orders.service.companion';
 
 /**
  * Handles CheckoutOrder and CheckoutPayment report queries:

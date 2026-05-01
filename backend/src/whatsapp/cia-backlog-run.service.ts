@@ -16,12 +16,12 @@ import { asProviderSettings } from './provider-settings.types';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
-import { CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT, CiaBootstrapService } from './cia-bootstrap.service';
-
-type BacklogMode = 'reply_all_recent_first' | 'reply_only_new' | 'prioritize_hot';
-type WorkspaceAutonomyMode = 'OFF' | 'LIVE' | 'BACKLOG' | 'FULL' | 'HUMAN_ONLY' | 'SUSPENDED';
-const safeStr = (v: unknown, fb = ''): string =>
-  typeof v === 'string' ? v : typeof v === 'number' || typeof v === 'boolean' ? String(v) : fb;
+import { CiaBootstrapService } from './cia-bootstrap.service';
+import type {
+  BacklogMode,
+  WorkspaceAutonomyMode,
+} from './__companions__/cia-backlog-run.service.companion';
+import { ensureBacklogCoverageHelper } from './__companions__/cia-backlog-run.service.companion';
 
 /**
  * Orchestrates the backlog run: decides between queue-based (BullMQ worker),
@@ -268,122 +268,20 @@ export class CiaBacklogRunService {
     startPresenceHeartbeat: (workspaceId: string) => Promise<void>,
     stopPresenceHeartbeat: (workspaceId: string) => Promise<void>,
   ) {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    const settings = asProviderSettings(workspace?.providerSettings);
-    const autonomy = (settings.autonomy || {}) as Record<string, unknown>;
-    const runtime = (settings.ciaRuntime || {}) as Record<string, unknown>;
-    const autonomyMode = safeStr(autonomy.mode).trim().toUpperCase();
-    const triggeredBy = options?.triggeredBy || 'runtime_maintenance';
-    const staleRuntimeReset = await this.runtimeState.resetStaleRuntimeRunIfNeeded(
-      workspaceId,
-      runtime,
-      triggeredBy,
-    );
-    const effectiveRuntime = staleRuntimeReset ? staleRuntimeReset : runtime;
-    const effectiveRuntimeState = safeStr(effectiveRuntime.state).trim().toUpperCase();
-
-    if (autonomy.autoBootstrapOnConnected === false) {
-      return { action: 'skipped', reason: 'auto_bootstrap_disabled' };
-    }
-
-    if (!autonomyMode || autonomyMode === 'OFF' || effectiveRuntimeState === 'PAUSED') {
-      await stopPresenceHeartbeat(workspaceId);
-      if (options?.allowBootstrap === false) {
-        return { action: 'skipped', reason: 'bootstrap_disallowed' };
-      }
-      return bootstrapFn();
-    }
-
-    if (autonomyMode === 'HUMAN_ONLY' || autonomyMode === 'SUSPENDED') {
-      await stopPresenceHeartbeat(workspaceId);
-      return { action: 'skipped', reason: 'autonomy_blocked' };
-    }
-
-    await startPresenceHeartbeat(workspaceId);
-
-    if (
-      ['EXECUTING_BACKLOG', 'EXECUTING_IMMEDIATELY'].includes(effectiveRuntimeState) ||
-      safeStr(effectiveRuntime.currentRunId).trim()
-    ) {
-      return { action: 'skipped', reason: 'run_in_progress' };
-    }
-
-    const pendingConversations = await this.bootstrapService.listPendingConversations(
-      workspaceId,
-      options?.limit || 500,
-    );
-    if (!pendingConversations.length) {
-      const chats = this.chatFilter.normalizeChats(
-        await this.providerRegistry.getChats(workspaceId),
-      );
-      const remotePending = this.chatFilter.selectRemotePendingChats(chats);
-      if (remotePending.length > 0) {
-        return {
-          action: 'backlog_started',
-          run: await this.startBacklogRun(
-            workspaceId,
-            'reply_all_recent_first',
-            Math.max(
-              1,
-              Math.min(options?.limit || CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT, remotePending.length),
-            ),
-            {
-              autoStarted: true,
-              runtimeState: 'EXECUTING_BACKLOG',
-              triggeredBy,
-            },
-          ),
-          remotePending: remotePending.length,
-        };
-      }
-
-      await this.runtimeState.updateWorkspaceAutonomy(workspaceId, {
-        mode: 'FULL',
-        reason: triggeredBy,
-        runtime: {
-          state: 'LIVE_READY',
-          currentRunId: null,
-          mode: 'reply_only_new',
-        },
-        autonomy: {
-          reactiveEnabled: true,
-          proactiveEnabled: false,
-          autoBootstrapOnConnected: settings.autonomy?.autoBootstrapOnConnected ?? true,
-        },
-      });
-      const catalog = await this.runtimeState.scheduleContactCatalogRefresh(
-        workspaceId,
-        triggeredBy,
-      );
-
-      return {
-        action: catalog.scheduled ? 'catalog_scheduled' : 'idle',
-        pendingConversations: 0,
-        catalog,
-      };
-    }
-
-    const run = await this.startBacklogRun(
-      workspaceId,
-      'reply_all_recent_first',
-      Math.max(
-        1,
-        Math.min(options?.limit || CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT, pendingConversations.length),
-      ),
+    return ensureBacklogCoverageHelper(
       {
-        autoStarted: true,
-        runtimeState: 'EXECUTING_BACKLOG',
-        triggeredBy,
+        prisma: this.prisma,
+        providerRegistry: this.providerRegistry,
+        chatFilter: this.chatFilter,
+        bootstrapService: this.bootstrapService,
+        runtimeState: this.runtimeState,
+        startBacklogRun: this.startBacklogRun.bind(this),
       },
+      workspaceId,
+      options,
+      bootstrapFn,
+      startPresenceHeartbeat,
+      stopPresenceHeartbeat,
     );
-
-    return {
-      action: 'backlog_started',
-      run,
-      pendingConversations: pendingConversations.length,
-    };
   }
 }

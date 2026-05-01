@@ -371,27 +371,4 @@ function buildEvidenceEntry(
   };
 }
 
-function summarize(
-  plan: PathProofPlan,
-  runnerResults: PathProofRunnerResult[],
-  tasks: PathProofEvidenceEntry[],
-): PathProofEvidenceArtifact['summary'] {
-  return {
-    totalTasks: tasks.length,
-    runnerResults: runnerResults.length,
-    observedEvidenceLinks: tasks.filter((task) => task.observedEvidenceLink !== null).length,
-    observedPass: tasks.filter((task) => task.disposition === 'observed_pass').length,
-    observedFail: tasks.filter((task) => task.disposition === 'observed_fail').length,
-    notRun: tasks.filter((task) => task.evidenceState === 'not_run').length,
-    plannedOnly: tasks.filter((task) => task.disposition === 'planned_only').length,
-    skipped: tasks.filter((task) => task.disposition === 'skipped').length,
-    stale: tasks.filter((task) => task.disposition === 'stale').length,
-    missingResult: tasks.filter((task) => task.disposition === 'missing_result').length,
-    notObserved: tasks.filter((task) => !task.observed).length,
-    commandlessResults: runnerResults.filter((result) => !resultHasCommandProof(result)).length,
-    executableTasks: plan.summary.executableTasks,
-    humanRequiredTasks: plan.summary.humanRequiredTasks,
-    notExecutableTasks: plan.summary.notExecutableTasks,
-  };
-}
-import "./__companions__/path-proof-evidence.companion";
+import './__companions__/path-proof-evidence.companion';

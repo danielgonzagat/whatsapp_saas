@@ -828,3 +828,50 @@ export function buildArtifactIndex(
   );
 }
 
+// ── Moved from artifacts.directive.ts ───────────────────────────────────
+
+function tokenizeGateName(gateName: PulseGateName): string[] {
+  const spaced = gateName
+    .replace(/Pass$/, '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .toLowerCase();
+  return unique(spaced.split(/\s+/).filter((token) => token.length > 2));
+}
+
+function artifactRegistrySearchText(artifact: PulseArtifactDefinition): string {
+  return [
+    artifact.id,
+    artifact.relativePath,
+    artifact.schema.module,
+    artifact.schema.exportName,
+    artifact.producer.module,
+    artifact.producer.exportName,
+    ...artifact.consumers,
+    artifact.freshness.mode,
+    artifact.truthMode,
+  ]
+    .join(' ')
+    .toLowerCase();
+}
+
+function moduleRefToPulseFile(moduleRef: string): string | null {
+  if (!moduleRef.startsWith('./')) {
+    return null;
+  }
+  const normalized = moduleRef.replace(/^\.\//, '');
+  if (!/^[a-z0-9./-]+$/i.test(normalized)) {
+    return null;
+  }
+  return `scripts/pulse/${normalized}.ts`;
+}
+
+function artifactRelatedFiles(artifact: PulseArtifactDefinition): string[] {
+  return unique(
+    [
+      moduleRefToPulseFile(artifact.schema.module),
+      moduleRefToPulseFile(artifact.producer.module),
+      ...artifact.consumers.map(moduleRefToPulseFile),
+    ].filter((filePath): filePath is string => filePath !== null),
+  );
+}

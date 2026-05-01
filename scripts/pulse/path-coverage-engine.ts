@@ -351,45 +351,4 @@ function generateProbeFileContent(
   );
 }
 
-function normalizeBlueprintMatrixStatus(
-  status: PulseExecutionMatrixPath['status'],
-):
-  | Exclude<PulseExecutionMatrixPath['status'], 'blocked_human_required'>
-  | 'governed_validation_required' {
-  if (status === 'blocked_human_required') {
-    return 'governed_validation_required';
-  }
-  return status;
-}
-
-function getEvidenceMode(classification: PathClassification): PathCoverageEntry['evidenceMode'] {
-  if (classification === 'observed_pass' || classification === 'observed_fail') {
-    return 'observed';
-  }
-  if (classification === 'probe_blueprint_generated') {
-    return 'blueprint';
-  }
-  return 'inferred';
-}
-
-function isCriticalRisk(risk: PathCoverageEntry['risk']): boolean {
-  return risk === 'critical';
-}
-
-function isHighOrCriticalRisk(risk: PathCoverageEntry['risk']): boolean {
-  return risk === 'high' || risk === 'critical';
-}
-
-function normalizeCoverageExecutionMode(
-  mode: PulseExecutionMatrixPath['executionMode'],
-  risk: PathCoverageEntry['risk'],
-): PathCoverageExecutionMode {
-  if (mode === 'governed_validation') {
-    return 'governed_validation';
-  }
-  if (mode === 'human_required' || mode === 'observation_only') {
-    return 'governed_validation';
-  }
-  return isHighOrCriticalRisk(risk) ? 'governed_validation' : 'ai_safe';
-}
-import "./__companions__/path-coverage-engine.companion";
+import './__companions__/path-coverage-engine.companion';

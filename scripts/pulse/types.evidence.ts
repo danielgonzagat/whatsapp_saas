@@ -308,9 +308,7 @@ export interface PulseSelfTrustReport {
 export interface PulseCertification {
   /** Certification scope property. */
   certificationScope?: PulseCertificationProfile | null;
-  /** Version property. */
   version: string;
-  /** Status property. */
   status: 'CERTIFIED' | 'PARTIAL' | 'NOT_CERTIFIED';
   /** Human replacement status property. */
   humanReplacementStatus: 'READY' | 'NOT_READY';
@@ -358,7 +356,6 @@ export interface PulseCertification {
   blockingAdaptersCount?: number;
   /** Execution matrix summary property. */
   executionMatrixSummary?: PulseExecutionMatrixSummary | null;
-  /** Resolved manifest summary property. */
   resolvedManifestSummary: PulseResolvedManifestSummary;
   /** Structural graph summary property. */
   structuralGraphSummary?: PulseStructuralGraphSummary | null;
@@ -366,30 +363,17 @@ export interface PulseCertification {
   capabilityStateSummary?: PulseCapabilityStateSummary | null;
   /** Flow projection summary property. */
   flowProjectionSummary?: PulseFlowProjectionSummary | null;
-  /** Unresolved modules property. */
   unresolvedModules: string[];
-  /** Unresolved flows property. */
   unresolvedFlows: string[];
-  /** Certification target property. */
   certificationTarget: PulseCertificationTarget;
-  /** Tier status property. */
   tierStatus: PulseCertificationTierStatus[];
-  /** Blocking tier property. */
   blockingTier: number | null;
-  /** Accepted flows remaining property. */
   acceptedFlowsRemaining: string[];
-  /** Pending critical scenarios property. */
   pendingCriticalScenarios: string[];
-  /** Final readiness criteria property. */
   finalReadinessCriteria: PulseManifestFinalReadinessCriteria | null;
-  /** Evidence summary property. */
   evidenceSummary: PulseExecutionEvidence;
-  /** Gate evidence property. */
   gateEvidence: Partial<Record<PulseGateName, PulseEvidenceRecord[]>>;
-  /** Dynamic blocking reasons property. */
   dynamicBlockingReasons: string[];
-  /** PULSE self-trust report property. */
   selfTrustReport?: PulseSelfTrustReport | null;
-  /** No-hardcoded-reality state used by certification and downstream artifacts. */
   noHardcodedRealityState?: PulseNoHardcodedRealityState | null;
 }
