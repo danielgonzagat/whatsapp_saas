@@ -42,7 +42,7 @@ describe('WhatsappService', () => {
           whatsappApiSession: { status: 'connected' },
         },
       }),
-      toEngineWorkspace: jest.fn((w: any) => w),
+      toEngineWorkspace: jest.fn((w: unknown) => w),
     };
     inboxService = {
       saveMessageByPhone: jest.fn().mockResolvedValue({ id: 'msg-1', contactId: 'contact-1' }),
@@ -176,7 +176,7 @@ describe('WhatsappService', () => {
         pendingMessages: 3,
       }),
     );
-    expect(messages.map((m: any) => m.id)).toEqual(['m-old', 'm-out', 'm-new']);
+    expect(messages.map((m: { id: string }) => m.id)).toEqual(['m-old', 'm-out', 'm-new']);
   });
 
   it('builds a WAHA-first operational backlog report with remote/local drift visibility', async () => {

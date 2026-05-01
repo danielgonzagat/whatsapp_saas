@@ -156,7 +156,7 @@ export class InboundProcessorService {
         .catch(() => undefined);
     }
     const processedContent = msg.text || getDefaultContent(msg.type);
-    let savedMessage: any;
+    let savedMessage: { id: string; conversationId?: string | null };
     try {
       savedMessage = await this.inbox.saveMessageByPhone({
         workspaceId: msg.workspaceId,

@@ -1047,12 +1047,12 @@ export class WhatsAppCatchupService {
     const fp = this.normalizePhone(this.providerRegistry.extractPhoneFromChatId(chat?.id || ''));
     for (const c of [
       chat?.name,
-      (chat as any)?.contact?.pushName,
-      (chat as any)?.contact?.name,
-      (chat as any)?.pushName,
-      (chat as any)?.notifyName,
-      (chat as any)?.lastMessage?._data?.notifyName,
-      (chat as any)?.lastMessage?._data?.verifiedBizName,
+      chat?.contact?.pushName,
+      chat?.contact?.name,
+      chat?.pushName,
+      chat?.notifyName,
+      chat?.lastMessage?._data?.notifyName,
+      chat?.lastMessage?._data?.verifiedBizName,
     ]) {
       const n = String(c || '').trim();
       if (n && !this.isPlaceholderContactName(n, fp)) return n;

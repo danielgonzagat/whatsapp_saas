@@ -202,7 +202,7 @@ export class AccountAgentService {
     ]);
     const oa = approvals.filter((a) => a.status === 'OPEN');
     const pi = inputSessions.filter((a) => a.status !== 'COMPLETED');
-    const aw = workItems.filter((w: any) =>
+    const aw = workItems.filter((w) =>
       ['OPEN', 'WAITING_APPROVAL', 'WAITING_INPUT', 'BLOCKED'].includes(String(w.state || '')),
     );
     const noLegal = aw.length === 0 && oa.length === 0 && pi.length === 0;
@@ -215,7 +215,7 @@ export class AccountAgentService {
       openApprovals: oa.slice(0, 10),
       pendingInputs: pi.slice(0, 10),
       workItems: workItems.slice(0, 20),
-      openWorkItemCount: workItems.filter((w: any) => w.state !== 'COMPLETED').length,
+      openWorkItemCount: workItems.filter((w) => w.state !== 'COMPLETED').length,
       noLegalActions: noLegal,
       noLegalActionReasons: noLegal ? ['account_universe_exhausted_for_current_registry'] : [],
       capabilityRegistryVersion: ACCOUNT_CAPABILITY_REGISTRY_VERSION,

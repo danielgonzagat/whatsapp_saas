@@ -29,7 +29,7 @@ import {
 import * as chatHelpers from './whatsapp.service.chats';
 import type { ChatHelperDeps } from './whatsapp.service.chats';
 import { CiaRuntimeService } from './cia-runtime.service';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { WhatsAppProviderRegistry, type SessionStatus } from './providers/provider-registry';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
@@ -325,7 +325,7 @@ export class WhatsappService {
   ) {
     const reason = String(o?.reason || 'manual_catalog_rescore').trim();
     const limit = Math.max(1, Math.min(500, Number(o?.limit || 100) || 100));
-    let targets: any[] = [];
+    let targets: { contactId: string; phone: string; contactName: string; chatId: string }[] = [];
     if (o?.contactId) {
       const c = await this.prisma.contact.findFirst({
         where: { id: o.contactId, workspaceId: ws },
@@ -898,7 +898,7 @@ export class WhatsappService {
       Number.parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
     );
     const deadline = Date.now() + ttlMs;
-    const tryAcquire = async (): Promise<any> => {
+    const tryAcquire = async (): ReturnType<typeof this._sendDirectCore> => {
       if (Date.now() >= deadline) return this._sendDirectCore(ws, to, message, opts);
       if ((await this.redis.set(lockKey, token, 'PX', ttlMs, 'NX')) !== 'OK') {
         await this.sleep(250 + randomInt(250));
@@ -913,7 +913,18 @@ export class WhatsappService {
     };
     return tryAcquire();
   }
-  private async _sendDirectCore(ws: string, to: string, message: string, opts?: any) {
+  private async _sendDirectCore(
+    ws: string,
+    to: string,
+    message: string,
+    opts?: {
+      mediaUrl?: string;
+      mediaType?: 'image' | 'video' | 'audio' | 'document';
+      caption?: string;
+      quotedMessageId?: string;
+      externalId?: string;
+    },
+  ) {
     const n = this.normalizeChatId(to);
     await this.markChatAsReadBestEffort(ws, n);
     const isTest = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
@@ -1032,7 +1043,10 @@ export class WhatsappService {
       select: { id: true, tags: { select: { name: true } } },
     });
     if (!c) return { optIn: false, contactExists: false };
-    return { optIn: c.tags.some((t: any) => t.name === 'optin_whatsapp'), contactExists: true };
+    return {
+      optIn: c.tags.some((t: { name: string }) => t.name === 'optin_whatsapp'),
+      contactExists: true,
+    };
   }
 
   private async ensureOptInAllowed(
@@ -1060,7 +1074,7 @@ export class WhatsappService {
       const cf = (c.customFields as Record<string, unknown>) || {};
       const has =
         c.optIn === true ||
-        c.tags.some((t: any) => t.name === 'optin_whatsapp') ||
+        c.tags.some((t: { name: string }) => t.name === 'optin_whatsapp') ||
         cf.optin === true ||
         cf.optin_whatsapp === true;
       if (!has) throw new ForbiddenException('Contato sem opt-in para WhatsApp');
@@ -1088,7 +1102,13 @@ export class WhatsappService {
   ) {
     const issues = this.validateWorkspaceProvider(workspace);
     const pt = await this.providerRegistry.getProviderType(ws);
-    const d = { webhook: this.whatsappApi.getRuntimeConfigDiagnostics(), session: null as any };
+    const d: {
+      webhook: ReturnType<typeof this.whatsappApi.getRuntimeConfigDiagnostics>;
+      session: (SessionStatus & { error?: string }) | null;
+    } = {
+      webhook: this.whatsappApi.getRuntimeConfigDiagnostics(),
+      session: null,
+    };
     if (o?.requireInboundWebhook) {
       if (!d.webhook.webhookConfigured) issues.push('meta_webhook_missing');
       else if (!d.webhook.inboundEventsConfigured)
