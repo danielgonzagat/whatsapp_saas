@@ -1,5 +1,5 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
@@ -29,6 +29,7 @@ export class SystemHealthService {
     private readonly storageService: StorageService,
     private readonly observabilityQueries: ObservabilityQueriesService,
     private readonly queueHealth: QueueHealthService,
+    @Optional()
     private readonly stripeService: StripeService,
   ) {}
 
