@@ -2,6 +2,14 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { ApiKeyGuard } from './api-key.guard';
 
+type MockValidateKeyFn = jest.Mock<
+  (key: string) => Promise<{ id: string; workspaceId: string } | null>
+>;
+
+interface MockApiKeysService {
+  validateKey: MockValidateKeyFn;
+}
+
 function mockExecutionContext(headers: Record<string, string>): ExecutionContext {
   return {
     switchToHttp: () => ({
@@ -19,7 +27,7 @@ function mockExecutionContext(headers: Record<string, string>): ExecutionContext
 
 describe('ApiKeyGuard', () => {
   let guard: ApiKeyGuard;
-  let mockApiKeysService: any;
+  let mockApiKeysService: MockApiKeysService;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -58,8 +66,8 @@ describe('ApiKeyGuard', () => {
         workspaceId: 'ws-123',
       });
 
-      const request: any = { headers: { 'x-api-key': 'sk_live_valid' } };
-      const ctx: any = {
+      const request: Record<string, unknown> = { headers: { 'x-api-key': 'sk_live_valid' } };
+      const ctx: ExecutionContext = {
         switchToHttp: () => ({ getRequest: () => request }),
         getClass: () => ({}),
         getHandler: () => ({}),
@@ -68,7 +76,7 @@ describe('ApiKeyGuard', () => {
         getType: () => 'http',
         switchToRpc: () => ({}),
         switchToWs: () => ({}),
-      };
+      } as unknown as ExecutionContext;
 
       const result = await guard.canActivate(ctx);
 

@@ -11,10 +11,21 @@ jest.mock('./api-key.guard', () => ({
   },
 }));
 
+type SavedMessage = { id: string; content: string };
+type MockSaveFn = jest.Mock<(args: Record<string, unknown>) => Promise<SavedMessage>>;
+
+interface MockInboxService {
+  saveMessageByPhone: MockSaveFn;
+}
+
+interface AuthenticatedRequest {
+  user: { workspaceId: string };
+}
+
 describe('PublicApiController', () => {
   let controller: PublicApiController;
 
-  const mockInboxService: any = {
+  const mockInboxService: MockInboxService = {
     saveMessageByPhone: jest.fn(),
   };
 
@@ -30,12 +41,12 @@ describe('PublicApiController', () => {
   });
 
   describe('sendMessage', () => {
-    const mockRequest: any = {
+    const mockRequest: AuthenticatedRequest = {
       user: { workspaceId: 'ws-1' },
     };
 
     it('envia mensagem de texto via InboxService', async () => {
-      const saved: any = { id: 'msg-1', content: 'Hello from API!' };
+      const saved: SavedMessage = { id: 'msg-1', content: 'Hello from API!' };
       mockInboxService.saveMessageByPhone.mockResolvedValue(saved);
 
       const result = await controller.sendMessage(mockRequest, {
@@ -54,7 +65,7 @@ describe('PublicApiController', () => {
     });
 
     it('passa workspaceId extraído do request', async () => {
-      mockInboxService.saveMessageByPhone.mockResolvedValue({ id: 'msg-2' });
+      mockInboxService.saveMessageByPhone.mockResolvedValue({ id: 'msg-2', content: '' });
 
       await controller.sendMessage(
         { user: { workspaceId: 'ws-custom' } },

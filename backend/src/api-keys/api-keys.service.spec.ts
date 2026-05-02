@@ -6,14 +6,36 @@ import { ApiKeysService } from './api-keys.service';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 
+type MockedApiKeyRecord = {
+  id: string;
+  name: string;
+  key: string;
+  workspaceId: string;
+  createdAt: Date;
+  lastUsedAt: Date | null;
+  workspace?: { id: string; name: string };
+};
+
+type MockedDeleteResult = { count: number };
+
+type MockedApiKeyDelegate = {
+  findMany: jest.Mock<() => Promise<MockedApiKeyRecord[]>>;
+  create: jest.Mock<(args: { data: Record<string, unknown> }) => Promise<MockedApiKeyRecord>>;
+  findFirst: jest.Mock<() => Promise<MockedApiKeyRecord | null>>;
+  deleteMany: jest.Mock<() => Promise<MockedDeleteResult>>;
+  update: jest.Mock<() => Promise<Record<string, unknown>>>;
+};
+
+type MockedLogFn = jest.Mock<(args: Record<string, unknown>) => Promise<void>>;
+
 describe('ApiKeysService', () => {
   let service: ApiKeysService;
 
-  const mockAuditLog: any = {
+  const mockAuditLog = {
     create: jest.fn().mockResolvedValue({} as never),
   };
 
-  const mockApiKey: any = {
+  const mockApiKey: MockedApiKeyDelegate = {
     findMany: jest.fn(),
     create: jest.fn(),
     findFirst: jest.fn(),
@@ -21,14 +43,14 @@ describe('ApiKeysService', () => {
     update: jest.fn(),
   };
 
-  const mockPrisma: any = {
+  const mockPrisma = {
     apiKey: mockApiKey,
     auditLog: mockAuditLog,
-  };
+  } as unknown as PrismaService;
 
-  const mockAuditService: any = {
-    log: jest.fn().mockResolvedValue(undefined as never),
-  };
+  const mockAuditService = {
+    log: jest.fn().mockResolvedValue(undefined as never) as MockedLogFn,
+  } as unknown as AuditService;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -49,13 +71,14 @@ describe('ApiKeysService', () => {
 
   describe('list', () => {
     it('retorna chaves do workspace ordenadas por createdAt desc', async () => {
-      const keys: any = [
+      const keys: MockedApiKeyRecord[] = [
         {
           id: 'k2',
           name: 'Staging',
           createdAt: new Date('2026-02-01'),
           lastUsedAt: null,
           workspaceId: 'ws-1',
+          key: 'hash2',
         },
         {
           id: 'k1',
@@ -63,6 +86,7 @@ describe('ApiKeysService', () => {
           createdAt: new Date('2026-01-01'),
           lastUsedAt: new Date('2026-04-01'),
           workspaceId: 'ws-1',
+          key: 'hash1',
         },
       ];
       mockApiKey.findMany.mockResolvedValue(keys);
@@ -95,12 +119,13 @@ describe('ApiKeysService', () => {
 
   describe('create', () => {
     it('cria api key, armazena hash e retorna raw key', async () => {
-      const createdRecord: any = {
+      const createdRecord: MockedApiKeyRecord = {
         id: 'ak-1',
         workspaceId: 'ws-1',
         name: 'Production Key',
         key: 'SHA256_HASH_VALUE',
         createdAt: new Date(),
+        lastUsedAt: null,
       };
       mockApiKey.create.mockResolvedValue(createdRecord);
 
@@ -112,17 +137,18 @@ describe('ApiKeysService', () => {
       expect(result.name).toBe('Production Key');
 
       // Stored key is a SHA-256 hash
-      const storedKey = mockApiKey.create.mock.calls[0][0].data.key;
+      const callArgs = mockApiKey.create.mock.calls[0][0] as { data: { key: string } };
+      const storedKey = callArgs.data.key;
       expect(storedKey).toMatch(/^[a-f0-9]{64}$/); // SHA-256 hex = 64 chars
     });
 
     it('cada chamada gera uma key diferente', async () => {
       const storedHashes: string[] = [];
       const rawKeys: string[] = [];
-      mockApiKey.create.mockImplementation((args: any) => {
-        storedHashes.push(args.data.key);
+      mockApiKey.create.mockImplementation((args: { data: Record<string, unknown> }) => {
+        storedHashes.push(args.data.key as string);
         const entry = { id: `ak-${storedHashes.length}`, ...args.data };
-        return Promise.resolve(entry);
+        return Promise.resolve(entry) as Promise<MockedApiKeyRecord>;
       });
 
       const result1 = await service.create('ws-1', 'Key A');
@@ -147,7 +173,14 @@ describe('ApiKeysService', () => {
 
   describe('rotate', () => {
     it('rotaciona key gerando novo raw, armazenando new hash', async () => {
-      const existing: any = { id: 'ak-1', name: 'Old Key', workspaceId: 'ws-1', key: 'old_hash' };
+      const existing: MockedApiKeyRecord = {
+        id: 'ak-1',
+        name: 'Old Key',
+        workspaceId: 'ws-1',
+        key: 'old_hash',
+        createdAt: new Date(),
+        lastUsedAt: null,
+      };
       mockApiKey.findFirst.mockResolvedValue(existing);
       mockApiKey.update.mockResolvedValue({ ...existing, key: 'new_hash' });
 
@@ -157,7 +190,8 @@ describe('ApiKeysService', () => {
       expect(result.id).toBe('ak-1');
       expect(result.name).toBe('Old Key');
 
-      const storedKey = mockApiKey.update.mock.calls[0][0].data.key;
+      const callArgs = mockApiKey.update.mock.calls[0][0] as { data: { key: string } };
+      const storedKey = callArgs.data.key;
       expect(storedKey).toMatch(/^[a-f0-9]{64}$/);
       expect(storedKey).not.toBe('old_hash');
 
@@ -187,7 +221,14 @@ describe('ApiKeysService', () => {
 
   describe('delete', () => {
     it('deleta chave e registra auditoria', async () => {
-      const keyRecord: any = { id: 'ak-1', name: 'Old Key', workspaceId: 'ws-1' };
+      const keyRecord: MockedApiKeyRecord = {
+        id: 'ak-1',
+        name: 'Old Key',
+        workspaceId: 'ws-1',
+        key: 'hash',
+        createdAt: new Date(),
+        lastUsedAt: null,
+      };
       mockApiKey.findFirst.mockResolvedValue(keyRecord);
       mockApiKey.deleteMany.mockResolvedValue({ count: 1 });
 
@@ -228,11 +269,14 @@ describe('ApiKeysService', () => {
     it('faz lookup por hash da key e retorna apiKey com workspace', async () => {
       const rawKey = 'sk_live_valid_key_for_test';
       const keyHash = createHash('sha256').update(rawKey).digest('hex');
-      const apiKeyRecord: any = {
+      const apiKeyRecord: MockedApiKeyRecord = {
         id: 'ak-1',
         key: keyHash,
         workspaceId: 'ws-1',
         workspace: { id: 'ws-1', name: 'Test Corp' },
+        name: 'Key',
+        createdAt: new Date(),
+        lastUsedAt: null,
       };
       mockApiKey.findFirst.mockResolvedValue(apiKeyRecord);
       mockApiKey.update.mockResolvedValue({});
@@ -258,11 +302,14 @@ describe('ApiKeysService', () => {
     it('atualiza lastUsedAt de forma assincrona (fire and forget)', async () => {
       const rawKey = 'sk_live_valid';
       const keyHash = createHash('sha256').update(rawKey).digest('hex');
-      const apiKeyRecord: any = {
+      const apiKeyRecord: MockedApiKeyRecord = {
         id: 'ak-1',
         key: keyHash,
         workspaceId: 'ws-1',
         workspace: { id: 'ws-1', name: 'Test Corp' },
+        name: 'Key',
+        createdAt: new Date(),
+        lastUsedAt: null,
       };
       mockApiKey.findFirst.mockResolvedValue(apiKeyRecord);
       mockApiKey.update.mockResolvedValue({});
@@ -270,20 +317,22 @@ describe('ApiKeysService', () => {
       const result = await service.validateKey(rawKey);
 
       expect(result).toEqual(apiKeyRecord);
-      expect(mockApiKey.update).toHaveBeenCalledWith({
-        where: { id: 'ak-1' },
-        data: { lastUsedAt: expect.any(Date) },
-      });
+      const callArg = mockApiKey.update.mock.calls[0][0] as { data: { lastUsedAt: Date } };
+      expect(callArg.data.lastUsedAt).toBeInstanceOf(Date);
+      expect(callArg.where).toEqual({ id: 'ak-1' });
     });
 
     it('não lança exceção se update de lastUsedAt falhar', async () => {
       const rawKey = 'sk_live_valid';
       const keyHash = createHash('sha256').update(rawKey).digest('hex');
-      const apiKeyRecord: any = {
+      const apiKeyRecord: MockedApiKeyRecord = {
         id: 'ak-1',
         key: keyHash,
         workspaceId: 'ws-1',
         workspace: { id: 'ws-1', name: 'Test Corp' },
+        name: 'Key',
+        createdAt: new Date(),
+        lastUsedAt: null,
       };
       mockApiKey.findFirst.mockResolvedValue(apiKeyRecord);
       mockApiKey.update.mockRejectedValue(new Error('DB timeout'));

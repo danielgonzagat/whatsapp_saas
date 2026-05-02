@@ -31,30 +31,30 @@ const { mockRedisCtor, mockBullQueueCtor, mockQueueEventsCtor, mockWorkerClose }
 
 vi.mock('ioredis', () => {
   // Default export: a class-like function that records construction.
-  const RedisClass = function (this: any, ...args: any[]) {
+  const RedisClass = function (this: unknown, ...args: unknown[]) {
     mockRedisCtor(...args);
     this.on = vi.fn().mockReturnThis();
     this.quit = vi.fn().mockResolvedValue('OK');
-  } as unknown as new (...args: any[]) => any;
+  } as unknown as new (...args: unknown[]) => unknown;
   return { default: RedisClass };
 });
 
 vi.mock('bullmq', () => {
-  const QueueClass = function (this: any, name: string, opts: any) {
+  const QueueClass = function (this: unknown, name: string, opts: unknown) {
     mockBullQueueCtor(name, opts);
     this.name = name;
     this.add = vi.fn().mockResolvedValue({ id: 'mock-job' });
     this.getJob = vi.fn().mockResolvedValue(null);
     this.close = vi.fn().mockResolvedValue(undefined);
-  } as unknown as new (...args: any[]) => any;
-  const QueueEventsClass = function (this: any, name: string, opts: any) {
+  } as unknown as new (...args: unknown[]) => unknown;
+  const QueueEventsClass = function (this: unknown, name: string, opts: unknown) {
     mockQueueEventsCtor(name, opts);
     this.on = vi.fn();
     this.close = vi.fn().mockResolvedValue(undefined);
-  } as unknown as new (...args: any[]) => any;
-  const WorkerClass = function (this: any) {
+  } as unknown as new (...args: unknown[]) => unknown;
+  const WorkerClass = function (this: unknown) {
     this.close = mockWorkerClose;
-  } as unknown as new (...args: any[]) => any;
+  } as unknown as new (...args: unknown[]) => unknown;
   return {
     Queue: QueueClass,
     QueueEvents: QueueEventsClass,

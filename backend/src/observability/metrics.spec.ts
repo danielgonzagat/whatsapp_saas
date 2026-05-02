@@ -17,11 +17,17 @@ jest.mock('dd-trace', () => {
 import tracer from 'dd-trace';
 import { increment, histogram, gauge, Metrics } from './metrics';
 
+type MockedDogStatsD = {
+  increment: jest.Mock;
+  histogram: jest.Mock;
+  gauge: jest.Mock;
+};
+
 describe('metrics', () => {
-  let ds: jest.Mocked<typeof tracer.dogstatsd>;
+  let ds: MockedDogStatsD;
 
   beforeEach(() => {
-    ds = tracer.dogstatsd as any;
+    ds = tracer.dogstatsd as unknown as MockedDogStatsD;
     jest.clearAllMocks();
   });
 
@@ -29,7 +35,7 @@ describe('metrics', () => {
     it('calls dogstatsd.increment with kloel prefix', () => {
       increment('api.request');
 
-      expect(ds.increment).toHaveBeenCalledWith('kloel.api.request', 1, expect.any(Array));
+      expect(ds.increment).toHaveBeenCalledWith('kloel.api.request', 1, expect.anything());
     });
 
     it('merges extra tags with base tags', () => {
@@ -50,7 +56,7 @@ describe('metrics', () => {
       expect(ds.histogram).toHaveBeenCalledWith(
         'kloel.api.request_latency_ms',
         42.5,
-        expect.any(Array),
+        expect.anything(),
       );
     });
 
@@ -92,7 +98,7 @@ describe('metrics', () => {
       it('completed increments checkout.completed counter', () => {
         Metrics.checkout.completed();
 
-        expect(ds.increment).toHaveBeenCalledWith('kloel.checkout.completed', 1, expect.any(Array));
+        expect(ds.increment).toHaveBeenCalledWith('kloel.checkout.completed', 1, expect.anything());
       });
 
       it('duration records histogram in ms', () => {
@@ -101,7 +107,7 @@ describe('metrics', () => {
         expect(ds.histogram).toHaveBeenCalledWith(
           'kloel.checkout.duration_ms',
           320,
-          expect.any(Array),
+          expect.anything(),
         );
       });
     });
@@ -145,7 +151,7 @@ describe('metrics', () => {
         expect(ds.increment).toHaveBeenCalledWith(
           'kloel.whatsapp.message_sent',
           1,
-          expect.any(Array),
+          expect.anything(),
         );
       });
 

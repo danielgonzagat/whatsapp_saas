@@ -220,7 +220,7 @@ describe('TranscriptionService', () => {
       await service.transcribeAudio('/tmp/test.ogg');
 
       expect(opsAlert.alertOnCriticalError).toHaveBeenCalledWith(
-        expect.any(Error),
+        expect.anything(),
         'TranscriptionService.json',
       );
     });

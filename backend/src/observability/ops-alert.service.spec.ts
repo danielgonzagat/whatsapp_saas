@@ -8,6 +8,20 @@ jest.mock('@sentry/node', () => ({
   captureMessage: jest.fn(),
 }));
 
+interface MockLogger {
+  error: jest.Mock;
+  warn: jest.Mock;
+  log: jest.Mock;
+}
+
+interface ServiceWithLogger {
+  logger: MockLogger;
+}
+
+function getLogger(service: OpsAlertService): MockLogger {
+  return (service as unknown as ServiceWithLogger).logger;
+}
+
 describe('OpsAlertService', () => {
   let service: OpsAlertService;
   let prisma: {
@@ -36,7 +50,7 @@ describe('OpsAlertService', () => {
     it('logs with OPS_CRITICAL prefix and forwards to Sentry', async () => {
       const error = new Error('db connection lost');
       const context = 'PrismaService.connect';
-      const loggerSpy = jest.spyOn((service as any).logger, 'error');
+      const loggerSpy = jest.spyOn(getLogger(service), 'error');
 
       await service.alertOnCriticalError(error, context);
 
@@ -54,36 +68,33 @@ describe('OpsAlertService', () => {
     });
 
     it('handles string errors by wrapping in Error object', async () => {
-      const loggerSpy = jest.spyOn((service as any).logger, 'error');
+      const loggerSpy = jest.spyOn(getLogger(service), 'error');
 
       await service.alertOnCriticalError('timeout', 'Queue.worker');
 
-      expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('timeout'),
-        expect.any(String),
-      );
+      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('timeout'), expect.anything());
     });
 
     it('handles unknown errors by wrapping with fallback message', async () => {
-      const loggerSpy = jest.spyOn((service as any).logger, 'error');
+      const loggerSpy = jest.spyOn(getLogger(service), 'error');
 
       await service.alertOnCriticalError({ foo: 1 }, 'SomeService.method');
 
       expect(loggerSpy).toHaveBeenCalledWith(
         expect.stringContaining('unknown error'),
-        expect.any(String),
+        expect.anything(),
       );
     });
 
     it('includes workspaceId in log when provided', async () => {
       const extra = { workspaceId: 'ws-42' };
-      const loggerSpy = jest.spyOn((service as any).logger, 'error');
+      const loggerSpy = jest.spyOn(getLogger(service), 'error');
 
       await service.alertOnCriticalError(new Error('fail'), 'Svc.m', extra);
 
       expect(loggerSpy).toHaveBeenCalledWith(
         expect.stringContaining('ws=ws-42'),
-        expect.any(String),
+        expect.anything(),
       );
     });
 
@@ -125,7 +136,7 @@ describe('OpsAlertService', () => {
 
   describe('alertOnDegradation', () => {
     it('logs with OPS_DEGRADATION prefix', async () => {
-      const loggerSpy = jest.spyOn((service as any).logger, 'warn');
+      const loggerSpy = jest.spyOn(getLogger(service), 'warn');
 
       await service.alertOnDegradation('slow response', 'Api.gateway');
 
@@ -167,7 +178,7 @@ describe('OpsAlertService', () => {
 
   describe('alertOnRecovery', () => {
     it('logs with OPS_RECOVERY prefix', async () => {
-      const loggerSpy = jest.spyOn((service as any).logger, 'log');
+      const loggerSpy = jest.spyOn(getLogger(service), 'log');
 
       await service.alertOnRecovery('db reconnected', 'PrismaService.connect');
 

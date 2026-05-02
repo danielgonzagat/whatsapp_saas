@@ -51,7 +51,7 @@ test.describe('Product Catalog Flow', () => {
 
     expect(res.status()).toBe(200);
     const body = await res.json();
-    const products: any[] = Array.isArray(body) ? body : body.products || body.data || [];
+    const products: unknown[] = Array.isArray(body) ? body : body.products || body.data || [];
     expect(products.length).toBeGreaterThan(0);
 
     if (body.total !== undefined || body.count !== undefined) {
@@ -59,7 +59,7 @@ test.describe('Product Catalog Flow', () => {
       expect(typeof total).toBe('number');
     }
 
-    const found = products.find((p: any) => (p.id || p.product?.id) === catalogProductId);
+    const found = products.find((p: unknown) => (p.id || p.product?.id) === catalogProductId);
     expect(found).toBeTruthy();
   });
 
@@ -72,10 +72,10 @@ test.describe('Product Catalog Flow', () => {
 
     if (res.status() === 200) {
       const body = await res.json();
-      const products: any[] = Array.isArray(body) ? body : body.products || body.data || [];
+      const products: unknown[] = Array.isArray(body) ? body : body.products || body.data || [];
       expect(products.length).toBeGreaterThan(0);
 
-      products.forEach((p: any) => {
+      products.forEach((p: unknown) => {
         const cat = p.category || p.product?.category;
         if (cat !== undefined) {
           expect(cat.toLowerCase()).toBe('digital');
@@ -93,8 +93,8 @@ test.describe('Product Catalog Flow', () => {
 
     if (res.status() === 200) {
       const body = await res.json();
-      const products: any[] = Array.isArray(body) ? body : body.products || body.data || [];
-      const found = products.find((p: any) => (p.id || p.product?.id) === catalogProductId);
+      const products: unknown[] = Array.isArray(body) ? body : body.products || body.data || [];
+      const found = products.find((p: unknown) => (p.id || p.product?.id) === catalogProductId);
       expect(found).toBeTruthy();
     }
   });

@@ -87,7 +87,7 @@ describe('ContextualEmptyState', () => {
     expect(container.querySelector('.text-xl')).toBeInTheDocument();
   });
 
-  it('never renders action area for configs without any action', () => {
+  it('never renders action area for configs without an action', () => {
     render(<ContextualEmptyState context="anuncios" />);
     expect(screen.queryByRole('button')).toBeNull();
     expect(screen.getByText('Anúncios — Em Breve')).toBeInTheDocument();

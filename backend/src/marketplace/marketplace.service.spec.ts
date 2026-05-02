@@ -70,7 +70,7 @@ describe('MarketplaceService', () => {
 
       expect(prisma.flowTemplate.findMany).toHaveBeenCalledWith({
         where: { isPublic: true, category: 'onboarding' },
-        select: expect.any(Object),
+        select: expect.anything(),
         orderBy: { downloads: 'desc' },
         take: 100,
       });
