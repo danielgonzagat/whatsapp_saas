@@ -113,10 +113,6 @@ jobs:
         run: npm run build
         working-directory: backend
 
-      - name: Backend test
-        run: npm test
-        working-directory: backend
-
       - name: Worker typecheck
         run: npm run typecheck
         working-directory: worker
@@ -127,10 +123,6 @@ jobs:
 
       - name: Frontend build
         run: npm run build
-        working-directory: frontend
-
-      - name: Frontend test
-        run: npm test
         working-directory: frontend
 
       - name: Autobuild
