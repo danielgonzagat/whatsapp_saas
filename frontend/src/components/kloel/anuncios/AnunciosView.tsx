@@ -452,7 +452,7 @@ function WarRoom({
       return;
     }
     const newStatus = campaign.status === 'active' ? 'PAUSED' : 'ACTIVE';
-    await metaAdsApi.updateCampaignStatus(campaign.id, newStatus, metaAccessToken);
+    await metaAdsApi.updateCampaignStatus(campaign.id, newStatus);
     // Update local state optimistically
     CAMPAIGNS = CAMPAIGNS.map((c) =>
       c.id === campaign.id

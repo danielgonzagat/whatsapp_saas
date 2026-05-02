@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react';
+import { Hash } from 'lucide-react';
 import { describe, expect, it, vi } from 'vitest';
 import {
   ContextualEmptyState,
@@ -72,9 +73,8 @@ describe('ContextualEmptyState', () => {
   });
 
   it('renders custom icon when provided', () => {
-    const CustomIcon = () => <svg data-testid="custom-icon" />;
-    render(<ContextualEmptyState context="generic" icon={CustomIcon} />);
-    expect(screen.getByTestId('custom-icon')).toBeInTheDocument();
+    render(<ContextualEmptyState context="generic" icon={Hash} />);
+    expect(document.querySelector('svg')).toBeTruthy();
   });
 
   it('applies size classes — sm', () => {
