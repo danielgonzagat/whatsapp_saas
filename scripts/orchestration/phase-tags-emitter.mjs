@@ -7,6 +7,7 @@ import {
   renameSync,
   readdirSync,
   statSync,
+  mkdirSync,
 } from 'node:fs';
 import { join, relative, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -355,12 +356,19 @@ function readMirrorTags(mirrorRelPath) {
   return tags;
 }
 
+function mirrorVisibleSegment(segment) {
+  return segment.startsWith('.') ? `_dot_${segment.slice(1)}` : segment;
+}
+
 function mirrorRelPathForSource(relPath) {
-  return relPath.replace(/\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/, '.md');
+  const segments = relPath.replace(/\\/g, '/').split('/');
+  const mirrored = segments.map(mirrorVisibleSegment);
+  return mirrored.join('/') + '.md';
 }
 
 function atomWrite(absPath, content) {
   const tmp = absPath + '.tmp';
+  mkdirSync(dirname(absPath), { recursive: true });
   writeFileSync(tmp, content, 'utf8');
   renameSync(tmp, absPath);
 }
@@ -391,6 +399,7 @@ function main() {
   let sidecarsEmitted = 0;
   let mirrorsTouched = 0;
   let skipped = 0;
+  let skippedNoMirror = 0;
 
   for (const relPath of allFiles) {
     const module = pathToModule(relPath);
@@ -407,6 +416,11 @@ function main() {
 
     const mirrorRel = mirrorRelPathForSource(relPath);
     const mirrorAbs = join(SOURCE_MIRROR_DIR, mirrorRel);
+
+    if (!existsSync(mirrorAbs)) {
+      skippedNoMirror++;
+      continue;
+    }
 
     const sidecarPath = mirrorAbs.replace(/\.md$/, '.phase.json');
     const sidecar =
@@ -427,8 +441,6 @@ function main() {
     }
     sidecarsEmitted++;
     phaseDistribution[phase]++;
-
-    if (!existsSync(mirrorAbs)) continue;
 
     const existingTags = readMirrorTags(mirrorRel);
     if (existingTags === null) continue;
@@ -452,6 +464,7 @@ function main() {
     sidecarsEmitted,
     mirrorsTouched,
     skipped,
+    skippedNoMirror,
   };
   process.stderr.write(JSON.stringify(summary) + '\n');
 }
