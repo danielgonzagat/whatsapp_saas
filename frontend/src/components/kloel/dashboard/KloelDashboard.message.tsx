@@ -281,7 +281,7 @@ export function MessageBlock({
             width: 8,
             height: '1.1em',
             marginLeft: 6,
-            borderRadius: 999,
+            borderRadius: 14,
             verticalAlign: 'text-bottom',
             background: KLOEL_THEME.accent,
             animation: 'kloel-stream-caret 1s steps(1, end) infinite',

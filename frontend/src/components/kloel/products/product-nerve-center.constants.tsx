@@ -16,13 +16,13 @@ export const V = {
   t: KLOEL_THEME.textPrimary,
   t2: KLOEL_THEME.textSecondary,
   t3: KLOEL_THEME.textTertiary,
-  g: '#25D366',
-  g2: '#10B981',
-  p: '#8B5CF6',
-  bl: '#3B82F6',
-  y: '#F59E0B',
-  r: '#EF4444',
-  pk: '#EC4899',
+  g: KLOEL_THEME.success,
+  g2: KLOEL_THEME.success,
+  p: KLOEL_THEME.info,
+  bl: KLOEL_THEME.info,
+  y: KLOEL_THEME.warning,
+  r: KLOEL_THEME.error,
+  pk: KLOEL_THEME.error,
 } as const;
 
 /** Cs. */

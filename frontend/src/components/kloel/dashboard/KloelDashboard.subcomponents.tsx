@@ -264,7 +264,7 @@ export function DashboardGlobalStyles() {
 
         ::-webkit-scrollbar-thumb {
           background: ${DIVIDER};
-          border-radius: 999px;
+          border-radius: 14px;
         }
       `}</style>
   );
