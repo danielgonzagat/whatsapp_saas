@@ -13,42 +13,66 @@ describe('extractRawStatus', () => {
   it('prefers session.rawStatus when present', () => {
     const session = { rawStatus: 'CONNECTED', status: 'DISCONNECTED' };
     const settings = { connectionStatus: 'FAILED' };
-    expect(extractRawStatus(session as any, settings as any)).toBe('CONNECTED');
+    expect(
+      extractRawStatus(
+        session as unknown as Record<string, unknown>,
+        settings as unknown as Record<string, unknown>,
+      ),
+    ).toBe('CONNECTED');
   });
 
   it('falls back to session.status', () => {
     const session = { rawStatus: '', status: 'WORKING' };
     const settings = { connectionStatus: '' };
-    expect(extractRawStatus(session as any, settings as any)).toBe('WORKING');
+    expect(
+      extractRawStatus(
+        session as unknown as Record<string, unknown>,
+        settings as unknown as Record<string, unknown>,
+      ),
+    ).toBe('WORKING');
   });
 
   it('falls back to settings.connectionStatus', () => {
     const session = { rawStatus: '', status: '' };
     const settings = { connectionStatus: 'connected' };
-    expect(extractRawStatus(session as any, settings as any)).toBe('CONNECTED');
+    expect(
+      extractRawStatus(
+        session as unknown as Record<string, unknown>,
+        settings as unknown as Record<string, unknown>,
+      ),
+    ).toBe('CONNECTED');
   });
 
   it('returns empty string when all empty', () => {
     const session = { rawStatus: '', status: '' };
     const settings = { connectionStatus: '' };
-    expect(extractRawStatus(session as any, settings as any)).toBe('');
+    expect(
+      extractRawStatus(
+        session as unknown as Record<string, unknown>,
+        settings as unknown as Record<string, unknown>,
+      ),
+    ).toBe('');
   });
 });
 
 describe('extractPhoneNumberId', () => {
   it('returns null for non-meta-cloud providers', () => {
     const session = { phoneNumberId: '123456789' };
-    expect(extractPhoneNumberId('whatsapp-api', session as any)).toBeNull();
+    expect(
+      extractPhoneNumberId('whatsapp-api', session as unknown as Record<string, unknown>),
+    ).toBeNull();
   });
 
   it('returns phoneNumberId for meta-cloud', () => {
     const session = { phoneNumberId: ' 123456789 ' };
-    expect(extractPhoneNumberId('meta-cloud', session as any)).toBe('123456789');
+    expect(extractPhoneNumberId('meta-cloud', session as unknown as Record<string, unknown>)).toBe(
+      '123456789',
+    );
   });
 
   it('returns null when phoneNumberId is empty for meta-cloud', () => {
-    expect(extractPhoneNumberId('meta-cloud', {} as any)).toBeNull();
-    expect(extractPhoneNumberId('meta-cloud', { phoneNumberId: '' } as any)).toBeNull();
+    expect(extractPhoneNumberId('meta-cloud', {})).toBeNull();
+    expect(extractPhoneNumberId('meta-cloud', { phoneNumberId: '' })).toBeNull();
   });
 });
 
@@ -136,7 +160,7 @@ describe('computeDisconnectReason', () => {
   it('uses session.disconnectReason when present and non-empty', () => {
     expect(
       computeDisconnectReason(
-        { disconnectReason: 'session_expired' } as any,
+        { disconnectReason: 'session_expired' },
         'meta-cloud',
         'disconnected',
         '123',
@@ -146,19 +170,19 @@ describe('computeDisconnectReason', () => {
 
   it('falls back to meta reason when session reason is empty', () => {
     expect(
-      computeDisconnectReason({ disconnectReason: '' } as any, 'meta-cloud', 'disconnected', null),
+      computeDisconnectReason({ disconnectReason: '' }, 'meta-cloud', 'disconnected', null),
     ).toBe('meta_auth_required');
   });
 
   it('falls back to waha reason for whatsapp-api', () => {
     expect(
-      computeDisconnectReason({ disconnectReason: '' } as any, 'whatsapp-api', 'connecting', null),
+      computeDisconnectReason({ disconnectReason: '' }, 'whatsapp-api', 'connecting', null),
     ).toBe('waha_qr_pending');
   });
 
   it('returns null when connected with no session reason', () => {
     expect(
-      computeDisconnectReason({ disconnectReason: '' } as any, 'whatsapp-api', 'connected', null),
+      computeDisconnectReason({ disconnectReason: '' }, 'whatsapp-api', 'connected', null),
     ).toBe('waha_session_disconnected');
   });
 });

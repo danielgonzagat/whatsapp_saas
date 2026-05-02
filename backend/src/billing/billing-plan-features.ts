@@ -46,7 +46,12 @@ const PLAN_LIMITS: Record<
 /** Activate plan features for a workspace.
  *  Caller is responsible for wrapping in a transaction when needed. */
 export async function activatePlanFeatures(
-  prisma: { workspace: { findUnique(args: any): Promise<any>; update(args: any): Promise<any> } },
+  prisma: {
+    workspace: {
+      findUnique(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
+      update(args: Record<string, unknown>): Promise<Record<string, unknown>>;
+    };
+  },
   workspaceId: string,
   plan: string,
 ): Promise<void> {

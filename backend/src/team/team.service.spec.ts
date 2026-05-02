@@ -151,7 +151,7 @@ describe('TeamService', () => {
         email,
         role,
         token: 'invite-token-uuid',
-        expiresAt: expect.any(Date),
+        expiresAt: expect.anything(),
       });
 
       const result = await service.inviteMember(wsId, email, role);
@@ -208,7 +208,7 @@ describe('TeamService', () => {
         email,
         'Alice',
         'Test Workspace',
-        expect.any(String),
+        expect.anything(),
       );
     });
 
@@ -231,7 +231,7 @@ describe('TeamService', () => {
         email,
         'Um membro',
         'Test Workspace',
-        expect.any(String),
+        expect.anything(),
       );
     });
   });

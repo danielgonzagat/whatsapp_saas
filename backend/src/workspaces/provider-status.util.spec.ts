@@ -154,7 +154,7 @@ describe('buildProviderSessionSnapshot', () => {
       whatsappBusinessId: null,
       rawStatus: '',
       provider: 'meta-cloud',
-    } as any,
+    } as unknown as Record<string, unknown>,
     rawStatus: '',
     normalizedStatus: 'disconnected' as const,
     phoneNumberId: null as string | null,
