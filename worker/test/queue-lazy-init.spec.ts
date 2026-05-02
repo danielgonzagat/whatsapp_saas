@@ -73,7 +73,7 @@ describe('queue lazy init', () => {
   type MockedQueue = { start: () => Promise<void> };
 
   async function loadQueue(): Promise<MockedQueue> {
-    const mod = (await import('../queue')) as { queue: MockedQueue };
+    const mod = (await import('../queue')) as unknown as { queue: MockedQueue };
     return mod.queue;
   }
 
