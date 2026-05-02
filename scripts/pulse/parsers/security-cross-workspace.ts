@@ -9,7 +9,7 @@
  */
 
 import * as path from 'path';
-import ts from 'typescript';
+import * as ts from 'typescript';
 import { calculateDynamicRisk } from '../dynamic-risk-model';
 import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
 import { buildPredicateGraph } from '../predicate-graph';

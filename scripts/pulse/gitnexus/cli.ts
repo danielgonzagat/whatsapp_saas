@@ -335,7 +335,14 @@ async function runReportCommand(
   writeStdout(reportText);
   logCli('Report written to PULSE_GITNEXUS_IMPACT.md');
 }
-export * from './__companions__/cli.companion';
+
+/**
+ * Prints the usage banner for unknown flags and exits the handler.
+ */
+function printUnknownFlag(flag: string): void {
+  logCli(`Unknown flag: ${flag}`);
+  writeStdout('Usage: pulse gitnexus [--status|--index|--impact|--report]');
+}
 
 /**
  * Entry point for `pulse gitnexus ...` invocations. Dispatches to the

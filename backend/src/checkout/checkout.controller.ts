@@ -22,7 +22,6 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { syncAllWorkspaceCheckoutCouponsForProduct } from '../kloel/product-coupon-sync.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutService } from './checkout.service';
-import { type CheckoutOrderStatusValue } from './checkout.service';
 import { CreateBumpDto } from './dto/create-bump.dto';
 import { CreateCouponDto } from './dto/create-coupon.dto';
 import { CreatePixelDto } from './dto/create-pixel.dto';
@@ -30,6 +29,7 @@ import { CreatePlanDto } from './dto/create-plan.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { CreateUpsellDto } from './dto/create-upsell.dto';
 import { UpdateConfigDto } from './dto/update-config.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z0_9_RE = /[^a-z0-9]+/g;
@@ -481,10 +481,9 @@ export class CheckoutController {
   updateOrderStatus(
     @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body()
-    body: { status: CheckoutOrderStatusValue; trackingCode?: string; trackingUrl?: string },
+    @Body() dto: UpdateOrderStatusDto,
   ) {
-    const { status, ...extra } = body;
+    const { status, ...extra } = dto;
     return this.checkoutService.updateOrderStatus(
       id,
       req.user?.workspaceId,

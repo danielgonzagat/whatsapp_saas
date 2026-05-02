@@ -66,7 +66,14 @@ export class CrmService {
           phone,
         },
       },
-      include: { tags: true },
+      include: {
+        tags: true,
+        deals: {
+          include: { stage: { select: { id: true, name: true } } },
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+        },
+      },
     });
   }
 

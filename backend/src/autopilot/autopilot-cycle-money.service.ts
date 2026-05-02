@@ -37,7 +37,7 @@ export class AutopilotCycleMoneyService {
     const bestTime = await this.smartTime.getBestTime(workspaceId);
     const now = new Date();
     const currentHour = now.getHours();
-    const targetHour = bestTime.bestHour;
+    const targetHour = bestTime.peakHour;
     let hoursToAdd = targetHour - currentHour;
     if (hoursToAdd <= 0) {
       hoursToAdd += 24;

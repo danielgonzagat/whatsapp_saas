@@ -28,8 +28,18 @@ export class SmartTimeService {
       select: { createdAt: true },
     });
 
+    const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sab'];
+
     if (messages.length === 0) {
-      return { bestHour: 10, bestDay: 1, confidence: 'LOW' }; // Default: Mon 10am
+      return {
+        bestHours: [10],
+        bestDays: ['Seg'],
+        peakHour: 10,
+        peakDay: 'Seg',
+        heatmap: [],
+        confidence: 'LOW',
+        totalAnalyzed: 0,
+      };
     }
 
     // 2. Bucketize
@@ -48,17 +58,42 @@ export class SmartTimeService {
     const total = messages.length;
 
     // 4. Calculate Confidence
-    // Simple heuristic: if peak has > 2x average, confidence is high
     const avgHour = total / 24;
     const peakHourCount = hourBuckets[bestHour];
     const confidence = peakHourCount > avgHour * 2 ? 'HIGH' : 'MEDIUM';
 
+    // 5. Build heatmap: normalize hour×day scores to [0, 1]
+    const maxCount = Math.max(...hourBuckets, 1);
+    const heatmap: Array<{ hour: number; day: string; score: number }> = [];
+    for (let h = 0; h < 24; h++) {
+      for (let d = 0; d < 7; d++) {
+        const count = hourBuckets[h] * (dayBuckets[d] / total) * 24;
+        const score = Math.round((count / maxCount) * 100) / 100;
+        if (score > 0) {
+          heatmap.push({ hour: h, day: DAY_NAMES[d], score });
+        }
+      }
+    }
+
+    // 6. Secondary best hours and days (top 3)
+    const sortedHours = hourBuckets
+      .map((count, h) => ({ h, count }))
+      .sort((a, b) => b.count - a.count);
+    const bestHours = sortedHours.slice(0, 3).map((e) => e.h);
+
+    const sortedDays = dayBuckets
+      .map((count, d) => ({ d, count }))
+      .sort((a, b) => b.count - a.count);
+    const bestDays = sortedDays.slice(0, 3).map((e) => DAY_NAMES[e.d]);
+
     return {
-      bestHour,
-      bestDay,
+      bestHours,
+      bestDays,
+      peakHour: bestHour,
+      peakDay: DAY_NAMES[bestDay],
+      heatmap,
       confidence,
       totalAnalyzed: total,
-      distribution: { hours: hourBuckets, days: dayBuckets },
     };
   }
 }

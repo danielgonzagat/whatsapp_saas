@@ -70,6 +70,7 @@ interface FlowBuilderProps {
   flowId?: string;
   workspaceId?: string;
   onSave?: (flow: { nodes: Node[]; edges: Edge[]; name: string }) => Promise<void>;
+  onTest?: (flow: { nodes: Node[]; edges: Edge[]; name: string }) => void;
   initialNodes?: Node[];
   initialEdges?: Edge[];
   readOnly?: boolean;
@@ -80,6 +81,7 @@ export default function FlowBuilder({
   flowId: _flowId,
   workspaceId: _workspaceId,
   onSave,
+  onTest,
   initialNodes = [],
   initialEdges = [],
   readOnly = false,
@@ -377,6 +379,7 @@ export default function FlowBuilder({
                 </button>
                 <button
                   type="button"
+                  onClick={() => onTest?.({ nodes, edges, name: flowName })}
                   className="flex items-center gap-2 px-3 py-1.5 bg-green-500 text-white text-sm rounded-md hover:bg-green-600"
                 >
                   <Play className="w-4 h-4" aria-hidden="true" />

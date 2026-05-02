@@ -136,8 +136,8 @@ export class AutopilotCycleService {
     const bestTime = await this.smartTime.getBestTime(workspaceId);
     const currentHour = new Date().getHours();
     const isOptimalTime =
-      currentHour === bestTime.bestHour ||
-      (currentHour >= bestTime.bestHour - 1 && currentHour <= bestTime.bestHour + 1);
+      currentHour === bestTime.peakHour ||
+      (currentHour >= bestTime.peakHour - 1 && currentHour <= bestTime.peakHour + 1);
 
     await forEachSequential(conversations, async (conv) => {
       await this.processConversation(conv, isOptimalTime);
@@ -164,15 +164,32 @@ export class AutopilotCycleService {
 
     const bestTime = await this.smartTime.getBestTime(workspaceId);
     const currentHour = new Date().getHours();
-    if (Math.abs(currentHour - bestTime.bestHour) > 3) {
+    if (Math.abs(currentHour - bestTime.peakHour) > 3) {
       this.logger.log(
-        `[Autopilot] Skipping proactive mode. Current hour ${currentHour} is too far from optimal ${bestTime.bestHour}`,
+        `[Autopilot] Skipping proactive mode. Current hour ${currentHour} is too far from optimal ${bestTime.peakHour}`,
       );
       return;
     }
 
     await forEachSequential(stalled, async (conv) => {
-      const isHot = true; // Mock score
+      const lastMsg = conv.messages[0];
+      if (!lastMsg) {
+        return;
+      }
+      const text = (lastMsg.content || '').toLowerCase();
+      const ageHours = (Date.now() - lastMsg.createdAt.getTime()) / 3600000;
+
+      const isHot =
+        lastMsg.direction === 'INBOUND' &&
+        ageHours < 168 &&
+        (text.includes('preço') ||
+          text.includes('preco') ||
+          text.includes('valor') ||
+          text.includes('quanto') ||
+          text.includes('pix') ||
+          text.includes('boleto') ||
+          text.includes('comprar') ||
+          text.includes('quero'));
       if (isHot) {
         const compliance = await this.ensureCompliance(
           conv.workspaceId,

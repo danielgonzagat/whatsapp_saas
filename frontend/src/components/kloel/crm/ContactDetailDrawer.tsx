@@ -16,6 +16,7 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { type KeyboardEvent, useCallback, useState } from 'react';
 
 /* ── Types ── */
@@ -24,7 +25,7 @@ interface Deal {
   id?: string;
   title?: string;
   value?: number;
-  stage?: string;
+  stage?: string | { id?: string; name?: string };
   currency?: string;
 }
 
@@ -137,6 +138,7 @@ function ContactDetailLoadingBody() {
 
 /* ── Component ── */
 export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps) {
+  const router = useRouter();
   const { contact: raw, isLoading, mutate } = useContact(phone);
   const { addTag, removeTag } = useCRMMutations();
   const [tagInput, setTagInput] = useState('');
@@ -568,7 +570,11 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                             {deal.title ?? 'Sem titulo'}
                           </div>
                           {deal.stage && (
-                            <div style={{ fontSize: 11, color: C.muted }}>{deal.stage}</div>
+                            <div style={{ fontSize: 11, color: C.muted }}>
+                              {typeof deal.stage === 'string'
+                                ? deal.stage
+                                : (deal.stage.name ?? '')}
+                            </div>
                           )}
                         </div>
                         {deal.value != null && (
@@ -602,15 +608,70 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
             background: C.surface,
           }}
         >
-          <ActionButton
-            icon={<MessageCircle size={14} aria-hidden="true" />}
-            label={kloelT(`Enviar mensagem`)}
-            primary
-          />
-          <ActionButton
-            icon={<Briefcase size={14} aria-hidden="true" />}
-            label={kloelT(`Criar deal`)}
-          />
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              router.push('/whatsapp');
+            }}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              padding: '10px 0',
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: 'none',
+              background: C.accent,
+              color: '#fff',
+              fontFamily: C.sora,
+              transition: 'opacity .15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.85';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
+            }}
+          >
+            <MessageCircle size={14} aria-hidden="true" /> {kloelT(`Enviar mensagem`)}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              router.push('/vendas/pipeline');
+            }}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              padding: '10px 0',
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: `1px solid ${C.border}`,
+              background: 'transparent',
+              color: C.text,
+              fontFamily: C.sora,
+              transition: 'opacity .15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.85';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
+            }}
+          >
+            <Briefcase size={14} aria-hidden="true" /> {kloelT(`Criar deal`)}
+          </button>
         </div>
       </aside>
 
@@ -657,46 +718,5 @@ function InfoRow({ icon, label }: { icon: React.ReactNode; label: string }) {
       <span style={{ color: C.muted, display: 'flex' }}>{icon}</span>
       <span style={{ fontFamily: C.mono }}>{label}</span>
     </div>
-  );
-}
-
-function ActionButton({
-  icon,
-  label,
-  primary,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  primary?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      style={{
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 6,
-        padding: '10px 0',
-        borderRadius: 6,
-        fontSize: 13,
-        fontWeight: 600,
-        cursor: 'pointer',
-        border: primary ? 'none' : `1px solid ${C.border}`,
-        background: primary ? C.accent : 'transparent',
-        color: primary ? '#fff' : C.text,
-        fontFamily: C.sora,
-        transition: 'opacity .15s',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.opacity = '0.85';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.opacity = '1';
-      }}
-    >
-      {icon} {label}
-    </button>
   );
 }

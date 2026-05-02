@@ -28,9 +28,13 @@ describe('SmartTimeService', () => {
     const result = await service.getBestTime('ws-1');
 
     expect(result).toEqual({
-      bestHour: 10,
-      bestDay: 1,
+      bestHours: [10],
+      bestDays: ['Seg'],
+      peakHour: 10,
+      peakDay: 'Seg',
+      heatmap: [],
       confidence: 'LOW',
+      totalAnalyzed: 0,
     });
   });
 
@@ -45,14 +49,13 @@ describe('SmartTimeService', () => {
 
     const result = await service.getBestTime('ws-1');
 
-    expect(result.bestHour).toBeGreaterThanOrEqual(0);
-    expect(result.bestHour).toBeLessThanOrEqual(23);
-    expect(result.bestDay).toBeGreaterThanOrEqual(0);
-    expect(result.bestDay).toBeLessThanOrEqual(6);
+    expect(result.peakHour).toBeGreaterThanOrEqual(0);
+    expect(result.peakHour).toBeLessThanOrEqual(23);
+    expect(result.bestHours.length).toBeGreaterThanOrEqual(1);
+    expect(result.bestDays.length).toBeGreaterThanOrEqual(1);
+    expect(typeof result.peakDay).toBe('string');
     expect(typeof result.confidence).toBe('string');
-    expect(result.distribution).toBeDefined();
-    expect(result.distribution!.hours).toHaveLength(24);
-    expect(result.distribution!.days).toHaveLength(7);
+    expect(Array.isArray(result.heatmap)).toBe(true);
     expect(result.totalAnalyzed).toBe(messages.length);
   });
 
@@ -78,7 +81,7 @@ describe('SmartTimeService', () => {
 
     const result = await service.getBestTime('ws-1');
 
-    expect(result.bestHour).toBe(peakHour);
+    expect(result.peakHour).toBe(peakHour);
     expect(result.confidence).toBe('HIGH');
   });
 

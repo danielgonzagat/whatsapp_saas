@@ -55,6 +55,11 @@ services:
     restart: always
     security_opt:
       - 'no-new-privileges:true'
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
     ports:
       - '3001:3001'
     environment:
@@ -95,6 +100,11 @@ services:
     restart: always
     security_opt:
       - 'no-new-privileges:true'
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-whatsapp_saas}
       REDIS_HOST: redis
@@ -154,6 +164,11 @@ services:
     restart: always
     security_opt:
       - 'no-new-privileges:true'
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
     ports:
       - '3000:3000'
     environment:

@@ -989,12 +989,17 @@ export class WhatsappService {
       phone: to,
       content: opts?.caption || message || opts?.mediaUrl || '',
       direction: 'OUTBOUND',
-      externalId: r.messageId || opts?.externalId,
+      externalId: 'messageId' in r ? r.messageId : (opts?.externalId ?? null),
       type: opts?.mediaType ? opts.mediaType.toUpperCase() : 'TEXT',
       mediaUrl: opts?.mediaUrl,
       status: 'SENT',
     });
-    return { ok: true, direct: true, delivery: 'sent', messageId: r.messageId };
+    return {
+      ok: true,
+      direct: true,
+      delivery: 'sent',
+      messageId: 'messageId' in r ? r.messageId : null,
+    };
   }
 
   // ═══ OPT-IN / OUT ═══

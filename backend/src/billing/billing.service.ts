@@ -302,7 +302,9 @@ export class BillingService {
     return this.webhookService.handleWebhook(signature, rawBody);
   }
 
-  /** Cancel subscription. */
+  /** Cancel subscription — sets cancel_at_period_end so the subscription
+   *  stays active until the period ends, then Stripe fires
+   *  `customer.subscription.deleted` which the webhook handles. */
   async cancelSubscription(workspaceId: string) {
     const sub = await this.prisma.subscription.findUnique({
       where: { workspaceId },
@@ -328,7 +330,22 @@ export class BillingService {
       async (tx) => {
         await tx.subscription.update({
           where: { workspaceId },
-          data: { status: 'CANCELED' },
+          data: {
+            cancelAtPeriodEnd: true,
+            status: this.stripe && sub.stripeId ? sub.status : 'CANCELED',
+          },
+        });
+        await tx.auditLog.create({
+          data: {
+            workspaceId,
+            action: 'SUBSCRIPTION_CANCEL',
+            resource: 'subscription',
+            resourceId: workspaceId,
+            details: {
+              mode:
+                this.stripe && sub.stripeId ? 'stripe_cancel_at_period_end' : 'immediate_cancel',
+            },
+          },
         });
       },
       { isolationLevel: 'ReadCommitted' },

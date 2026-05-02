@@ -3,6 +3,7 @@
  * Heavy logic lives in artifacts.io, artifacts.queue, artifacts.report,
  * artifacts.autonomy, and artifacts.directive sub-modules.
  */
+import * as path from 'path';
 import {
   buildPulseAutonomyMemoryState,
   buildPulseAgentOrchestrationStateSeed,
@@ -105,6 +106,21 @@ export interface PulseArtifactPaths {
 // Re-export PulseArtifactRegistry for consumers that import it from here.
 export type { PulseArtifactRegistry };
 
+/**
+ * Resolve `fileName` against `registry.canonicalDir` and assert the resulting
+ * path stays inside the canonical artifact directory. Throws on traversal
+ * attempts so the path that reaches readOptionalJson is provably bounded.
+ */
+function resolveInsideCanonicalDir(registry: PulseArtifactRegistry, fileName: string): string {
+  const root = path.resolve(registry.canonicalDir);
+  const resolved = path.resolve(root, fileName);
+  const boundary = root + path.sep;
+  if (resolved !== root && !resolved.startsWith(boundary)) {
+    throw new Error(`Path traversal detected: ${resolved} is outside ${root}`);
+  }
+  return resolved;
+}
+
 function readRegisteredJson<T>(registry: PulseArtifactRegistry, artifactId: string): T | null {
   return readOptionalJson<T>(
     resolveInsideCanonicalDir(registry, resolveArtifactRelativePath(registry, artifactId)),
@@ -123,6 +139,36 @@ function writeRegisteredArtifact(
     registry,
     identity,
   );
+}
+
+function buildFindingValidationState(snapshot: PulseArtifactSnapshot): unknown {
+  const eventSurface = buildFindingEventSurface(snapshot.health.breaks, 20);
+  const generatedDiagnostic =
+    snapshot.health.breaks.length > 0
+      ? synthesizeDiagnosticFromBreaks(snapshot.health.breaks)
+      : null;
+  const proofPlan = generatedDiagnostic ? synthesizeProofPlan(generatedDiagnostic) : null;
+  return normalizeCanonicalArtifactValue({
+    artifact: 'PULSE_FINDING_VALIDATION_STATE',
+    version: 1,
+    generatedAt: snapshot.certification.timestamp,
+    operationalIdentity: 'dynamic_finding_event',
+    compatibility: {
+      internalBreakTypeRetained: true,
+      internalBreakTypeIsOperationalIdentity: false,
+      parserSignalMustPassValidationBeforeBlocking: true,
+      weakSignalCanBlock: false,
+    },
+    eventSurface,
+    generatedDiagnostic,
+    proofPlan,
+    blockerPolicy: {
+      weak_signal: 'needs_probe_only',
+      inferred: 'needs_context_or_probe',
+      confirmed_static: 'can_block_when_actionable',
+      observed: 'can_block_when_actionable',
+    },
+  });
 }
 
 /** Generate artifacts. */
@@ -547,4 +593,7 @@ export function generateArtifacts(
     artifactIndexPath,
   };
 }
-import './__companions__/artifacts.companion';
+
+function buildHealth(snapshot: PulseArtifactSnapshot): string {
+  return JSON.stringify(snapshot.health, null, 2);
+}

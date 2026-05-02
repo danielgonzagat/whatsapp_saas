@@ -1,6 +1,6 @@
 import { safeJoin } from './safe-path';
 import * as path from 'path';
-import ts from 'typescript';
+import * as ts from 'typescript';
 import type {
   PulseConfig,
   PulseParserContract,
@@ -540,84 +540,6 @@ function callPluginParserSurface(
   return toPluginParserDefinitions(readDefinitions());
 }
 
-/** Load parser inventory. */
-export function loadParserInventory(
-  config: PulseConfig,
-  options: LoadParserInventoryOptions = {},
-): PulseParserInventory {
-  const generatedAt = new Date().toISOString();
-  const filesystemContracts = discoverFilesystemParserContracts(config.rootDir);
-  const pluginInventory = loadParserPluginDefinitions(config, options);
-  const contracts = [...filesystemContracts, ...pluginInventory.contracts].sort((left, right) =>
-    left.name.localeCompare(right.name),
-  );
-  const checks = contracts
-    .filter((contract) => contract.kind === 'active_parser')
-    .map((contract) => contract.name);
-  const helperFilesSkipped = contracts
-    .filter((contract) => contract.kind === 'helper')
-    .map((contract) => contract.name);
-  const loadedChecks: PulseParserDefinition[] = [];
-  const unavailableChecks: PulseParserInventory['unavailableChecks'] = [
-    ...pluginInventory.unavailableChecks,
-  ];
-
-  for (const contract of filesystemContracts.filter((item) => item.kind === 'active_parser')) {
-    const name = contract.name;
-    if (options.includeParser && !options.includeParser(name)) {
-      continue;
-    }
-
-    if (!PARSER_NAME_RE.test(name)) {
-      unavailableChecks.push({
-        name,
-        file: name,
-        reason: 'Parser module name failed safe-identifier validation.',
-      });
-      continue;
-    }
-
-    const file = safeJoin(config.rootDir, 'scripts', 'pulse', 'parsers', `${name}.ts`);
-
-    try {
-      const mod = require(file);
-      const fn = resolveParserFunction(mod, contract);
-
-      if (!fn) {
-        unavailableChecks.push({
-          name,
-          file: path.relative(config.rootDir, file),
-          reason: 'Parser module did not export a callable check function.',
-        });
-        continue;
-      }
-
-      loadedChecks.push({
-        name,
-        file: path.relative(config.rootDir, file),
-        fn,
-        ...getOperationalMetadata(contract),
-      });
-    } catch (error) {
-      unavailableChecks.push({
-        name,
-        file: path.relative(config.rootDir, file),
-        reason: (error as Error).message || 'Unknown parser load failure',
-      });
-    }
-  }
-  loadedChecks.push(...pluginInventory.loadedChecks);
-
-  return {
-    contracts,
-    generatedAt,
-    discoveredChecks: checks,
-    loadedChecks,
-    unavailableChecks,
-    helperFilesSkipped,
-  };
-}
-
 function loadParserPluginDefinitions(
   config: PulseConfig,
   options: LoadParserInventoryOptions,
@@ -754,4 +676,82 @@ function resolveParserFunction(
   }
 
   return null;
+}
+
+/** Load parser inventory. */
+export function loadParserInventory(
+  config: PulseConfig,
+  options: LoadParserInventoryOptions = {},
+): PulseParserInventory {
+  const generatedAt = new Date().toISOString();
+  const filesystemContracts = discoverFilesystemParserContracts(config.rootDir);
+  const pluginInventory = loadParserPluginDefinitions(config, options);
+  const contracts = [...filesystemContracts, ...pluginInventory.contracts].sort((left, right) =>
+    left.name.localeCompare(right.name),
+  );
+  const checks = contracts
+    .filter((contract) => contract.kind === 'active_parser')
+    .map((contract) => contract.name);
+  const helperFilesSkipped = contracts
+    .filter((contract) => contract.kind === 'helper')
+    .map((contract) => contract.name);
+  const loadedChecks: PulseParserDefinition[] = [];
+  const unavailableChecks: PulseParserInventory['unavailableChecks'] = [
+    ...pluginInventory.unavailableChecks,
+  ];
+
+  for (const contract of filesystemContracts.filter((item) => item.kind === 'active_parser')) {
+    const name = contract.name;
+    if (options.includeParser && !options.includeParser(name)) {
+      continue;
+    }
+
+    if (!PARSER_NAME_RE.test(name)) {
+      unavailableChecks.push({
+        name,
+        file: name,
+        reason: 'Parser module name failed safe-identifier validation.',
+      });
+      continue;
+    }
+
+    const file = safeJoin(config.rootDir, 'scripts', 'pulse', 'parsers', `${name}.ts`);
+
+    try {
+      const mod = require(file);
+      const fn = resolveParserFunction(mod, contract);
+
+      if (!fn) {
+        unavailableChecks.push({
+          name,
+          file: path.relative(config.rootDir, file),
+          reason: 'Parser module did not export a callable check function.',
+        });
+        continue;
+      }
+
+      loadedChecks.push({
+        name,
+        file: path.relative(config.rootDir, file),
+        fn,
+        ...getOperationalMetadata(contract),
+      });
+    } catch (error) {
+      unavailableChecks.push({
+        name,
+        file: path.relative(config.rootDir, file),
+        reason: (error as Error).message || 'Unknown parser load failure',
+      });
+    }
+  }
+  loadedChecks.push(...pluginInventory.loadedChecks);
+
+  return {
+    contracts,
+    generatedAt,
+    discoveredChecks: checks,
+    loadedChecks,
+    unavailableChecks,
+    helperFilesSkipped,
+  };
 }

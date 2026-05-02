@@ -147,7 +147,7 @@ describe('KloelService', () => {
 
     whatsappToolsService = new KloelWhatsAppToolsService(
       prisma as never as ConstructorParameters<typeof KloelWhatsAppToolsService>[0],
-      whatsappService as never as ConstructorParameters<typeof KloelWhatsAppToolsService>[1],
+      whatsappService as never,
       { getSessionStatus: jest.fn(), startSession: jest.fn() } as never,
       { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as never,
       planLimitsMock as never,
@@ -156,7 +156,7 @@ describe('KloelService', () => {
     service = new KloelService(
       prisma as never as ConstructorParameters<typeof KloelService>[0],
       { createSmartPayment: jest.fn() } as never,
-      whatsappService as never as ConstructorParameters<typeof KloelService>[2],
+      whatsappService as never,
       { getSessionStatus: jest.fn(), startSession: jest.fn() } as never,
       unifiedAgentService as never,
       { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as never,

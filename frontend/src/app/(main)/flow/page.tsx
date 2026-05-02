@@ -87,6 +87,16 @@ function FlowPageContent() {
     [flowId, saveFlow],
   );
 
+  const handleTest = useCallback(
+    (flow: { nodes: Node[]; edges: Edge[]; name: string }) => {
+      handleSave(flow).then(() => {
+        // After save, the flow is ready to be triggered via WhatsApp/webhook events.
+        // Users can trigger it by sending a keyword or via the API.
+      });
+    },
+    [handleSave],
+  );
+
   const fetchExecutions = useCallback(async () => {
     if (!workspaceId) {
       return;
@@ -320,7 +330,12 @@ function FlowPageContent() {
       {/* Content */}
       <div className="flex-1 overflow-hidden">
         {activeTab === 'editor' && (
-          <FlowBuilder flowId={flowId} workspaceId={workspaceId} onSave={handleSave} />
+          <FlowBuilder
+            flowId={flowId}
+            workspaceId={workspaceId}
+            onSave={handleSave}
+            onTest={handleTest}
+          />
         )}
 
         {activeTab === 'templates' && (

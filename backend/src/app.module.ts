@@ -11,6 +11,7 @@ import { AppService } from './app.service';
 import { JwtModule } from '@nestjs/jwt';
 import { AlertsGateway } from './alerts/alerts.gateway';
 import { AuthModule } from './auth/auth.module'; // Enabled AuthModule
+import { CacheModule } from './common/cache/cache.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard'; // Enabled JwtAuthGuard
 import { RolesGuard } from './auth/roles.guard'; // Enabled RolesGuard
 import { BillingModule } from './billing/billing.module';
@@ -122,6 +123,9 @@ const isProd = process.env.NODE_ENV === 'production';
 
     // Prisma (banco principal)
     PrismaModule,
+
+    // Global cache service (wraps the global Redis connection)
+    CacheModule,
 
     // Redis para filas e workers - SEMPRE carregado para satisfazer @InjectRedis()
     // Se Redis não estiver configurado, usa URL fictícia e conexões falham silenciosamente

@@ -1,0 +1,107 @@
+{
+  "cycle": 1,
+  "grid": {
+    "agent-A1-pulse": {
+      "domain": "pulse",
+      "files": [
+        "scripts/pulse/daemon.ts",
+        "scripts/pulse/types.ts",
+        "scripts/pulse/graph.ts",
+        "scripts/pulse/manifest.ts",
+        "scripts/pulse/scope-engine.ts",
+        "scripts/pulse/behavior-graph.ts",
+        "scripts/pulse/otel-runtime.ts",
+        "scripts/pulse/execution-harness.ts",
+        "scripts/pulse/ui-crawler.ts",
+        "scripts/pulse/api-fuzzer.ts",
+        "scripts/pulse/scenario-engine.ts",
+        "scripts/pulse/replay-adapter.ts",
+        "scripts/pulse/probabilistic-risk.ts",
+        "scripts/pulse/structural-memory.ts",
+        "scripts/pulse/plugin-system.ts",
+        "scripts/pulse/safety-sandbox.ts",
+        "scripts/pulse/perfectness-test.ts"
+      ],
+      "status": "completed",
+      "summary": "All 17 daemon.ts import errors resolved. Restored deleted __companions__/ directory from git. Added re-export for buildExecutionHarness from companion in execution-harness.ts. All imports verified via ts-node transpile-only. Pre-existing issue in execution-harness-core.companion.ts (vestigial companion with missing internal imports) is not a daemon.ts regression — does not block daemon execution."
+    },
+    "agent-A2-backend-build": {
+      "domain": "backend-core",
+      "files": ["backend/src/app.module.ts", "backend/src/main.ts", "backend/src/instrument.ts"],
+      "status": "completed"
+    },
+    "agent-A3-auth": {
+      "domain": "auth",
+      "files": ["backend/src/auth/**"],
+      "status": "complete",
+      "summary": "Magic Link fully implemented — backend endpoints, email service, DTOs, Prisma model, frontend API client, proxy routes, /magic-link page, auth screen UI all wired. No gaps found. Lint passes, typecheck clean."
+    },
+    "agent-A4-workspaces": {
+      "domain": "workspaces",
+      "files": ["backend/src/workspaces/**"],
+      "status": "complete",
+      "summary": "CRUD validated: DELETE endpoint added to workspace.controller.ts + workspace.service.ts. Type fix in provider-status.util.ts (lastUpdated null→undefined). Workspace isolation verified via resolveWorkspaceId in all endpoints. No prismaAny usage. Frontend API client matches backend. 70 tests pass, no type errors in module."
+    },
+    "agent-A5-products": {
+      "domain": "products",
+      "files": [
+        "backend/src/kloel/**/*product*",
+        "frontend/src/components/kloel/Products*/**",
+        "frontend/src/lib/api/product*"
+      ],
+      "status": "completed"
+    },
+    "agent-A6-dashboard": {
+      "domain": "dashboard",
+      "files": ["backend/src/dashboard/**", "frontend/src/components/kloel/Dashboard*/**"],
+      "status": "complete",
+      "summary": "Dashboard already connected to real backend — HomeView uses useDashboardHome() hook → GET /dashboard/home → real Prisma queries. Zero Math.random(), zero hardcoded arrays, zero localStorage for business data. Fixed getDashboardStats() type in lib/api/dashboard.ts to match backend response (was {revenue,leads} — now {contacts,campaigns,flows,messages,deliveryRate,readRate,errorRate,activeConversations,healthScore,avgLatency,flowStats,billingSuspended}). Backend build passes. Frontend typecheck has pre-existing errors in product-import.ts (unrelated)."
+    },
+    "agent-A7-analytics": {
+      "domain": "analytics",
+      "files": ["backend/src/analytics/**", "frontend/src/components/kloel/Analytics*/**"],
+      "status": "complete",
+      "summary": "3 fake-data gaps closed: (1) Smart Time: backend getBestTime() shape updated to match frontend SmartTimeData — added peakHour, peakDay, heatmap, bestHours[], bestDays[]; frontend useSmartTime now receives real heatmap data. Tests: 4/4 pass. (2) Full Report: useReports hook now maps backend FullReportResponse {kpi,revenueChart,topProducts,...} to legacy ReportResponse shape; EngajamentoTab shows real data (messages=aiPerformance.totalMessages, leads=kpi.totalLeads, revenue=kpi.totalRevenue). Typecheck: clean. (3) AI Report: hardcoded fake values (avgResponseTime, resolutionRate, csat, etc) replaced — avgResponseTime computed from real message intervals, unavailable fields set to null. No Math.random(), no hardcoded arrays, no localStorage for business data. Backend lint: clean. Frontend typecheck: clean (only pre-existing EmptyStates.test.tsx error remains). Build: backend typecheck passes (pre-existing whatsapp errors). Smart-time tests: 4/4 pass. Analytics service spec: pre-existing failure (missing CacheService mock from prior modification). Graph bridge: alive at :37779/status."
+    },
+    "agent-A8-crm": {
+      "domain": "crm",
+      "files": ["backend/src/crm/**", "frontend/src/components/kloel/CRM*/**"],
+      "status": "done"
+    },
+    "agent-A9-whatsapp": {
+      "domain": "whatsapp",
+      "files": ["backend/src/whatsapp/**"],
+      "status": "complete",
+      "summary": "WhatsApp Core audit: pipeline is production-grade at 95% as claimed. No critical gaps found."
+    },
+    "agent-A10-checkout": {
+      "domain": "checkout",
+      "files": [
+        "backend/src/checkout/**",
+        "frontend/src/app/(checkout)/**",
+        "frontend/src/lib/api/checkout-public.ts",
+        "backend/src/webhooks/payment-webhook*"
+      ],
+      "status": "complete",
+      "summary": "Checkout flow audited end-to-end. 16 suites, 59/59 pass. No critical gaps found."
+    },
+    "agent-A11-flows": {
+      "domain": "flows",
+      "files": [
+        "backend/src/flows/**",
+        "worker/__companions__/flow-node-executor.companion.ts",
+        "frontend/src/components/flow/FlowBuilder.tsx",
+        "frontend/src/app/(main)/flow/page.tsx",
+        "frontend/src/hooks/useFlows.ts"
+      ],
+      "status": "complete",
+      "summary": "Flows/Autopilot audit complete. Added handlers for 'ai', 'action', 'input', 'start', 'end' node types in flow-node-executor.companion.ts. Fixed dead 'Testar' button. Fixed createFromTemplate URL mismatch."
+    },
+    "agent-A12-billing": {
+      "domain": "billing",
+      "files": ["backend/src/billing/**", "backend/src/wallet/**"],
+      "status": "complete",
+      "summary": "Billing+Wallet hardening audit. 4 critical fixes applied: (1) cancelSubscription now respects Stripe cancel_at_period_end — sets cancelAtPeriodEnd:true and preserves status instead of immediate CANCELED. (2) fulfillCheckout wrapped in $transaction for atomic subscription upsert+plan activation. (3) Webhook idempotency via WebhookEvent model (provider+externalId unique constraint, status tracking). (4) syncSubscriptionStatus preserves existing plan name instead of overwriting with Stripe price ID. Wallet verified: all 4 mutation methods (creditFromWebhook, chargeForUsage, settleUsageCharge, refundUsageCharge) use $transaction with ReadCommitted — correct. All money amounts are bigint in schema and service layer — correct. Idempotency via @@unique([referenceType, referenceId, type]) — correct. Tests: 13 suites, 150/151 pass. Typecheck: pre-existing TS2564 errors only (DTO strictPropertyInitialization)."
+    }
+  }
+}

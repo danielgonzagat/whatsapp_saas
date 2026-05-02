@@ -3280,7 +3280,7 @@ function EngajamentoTab({ filters }: { filters: RF }) {
             }}
           >
             {[
-              { l: 'Mensagens', v: report?.messages?.total || report?.messages || 0 },
+              { l: 'Mensagens', v: report?.messages?.total ?? 0 },
               { l: 'Leads novos', v: report?.leads?.newContacts || 0 },
               { l: 'Flows executados', v: report?.flows?.executions || 0 },
               { l: 'Flows concluidos', v: report?.flows?.completed || 0 },

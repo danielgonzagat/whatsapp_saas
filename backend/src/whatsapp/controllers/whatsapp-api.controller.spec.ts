@@ -173,15 +173,13 @@ describe('WhatsAppApiController', () => {
       catchupService as never,
       agentEvents as never,
       ciaRuntime as never,
-      whatsappService as never as ConstructorParameters<typeof WhatsAppApiController>[5],
+      whatsappService as never,
       accountAgent as never,
       workspaces as never,
       watchdog as never,
     );
     metaCompatController = new WhatsAppMetaCompatController(providerRegistry as never);
-    catalogController = new WhatsAppCatalogController(
-      whatsappService as never as ConstructorParameters<typeof WhatsAppCatalogController>[0],
-    );
+    catalogController = new WhatsAppCatalogController(whatsappService as never);
   });
 
   it('returns provider-aware session status', async () => {

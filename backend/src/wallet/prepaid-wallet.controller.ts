@@ -173,8 +173,8 @@ export class PrepaidWalletController {
     }
 
     const enabled = body.enabled ?? false;
-    const threshold = body.enabled ? BigInt(body.thresholdCents) : null;
-    const amount = body.enabled ? BigInt(body.amountCents) : null;
+    const threshold = body.enabled ? BigInt(body.thresholdCents!) : null;
+    const amount = body.enabled ? BigInt(body.amountCents!) : null;
 
     const wallet = await this.prisma.prepaidWallet.upsert({
       where: { workspaceId },

@@ -22,7 +22,7 @@
  *   is used to request a probe, not as runtime authority by itself.
  */
 import * as path from 'path';
-import ts from 'typescript';
+import * as ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';

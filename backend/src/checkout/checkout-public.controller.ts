@@ -15,11 +15,13 @@ import { Prisma } from '@prisma/client';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { Idempotent } from '../common/idempotency.guard';
+import { CalculateShippingDto } from './dto/calculate-shipping.dto';
 import { CaptureSocialLeadDto } from './dto/capture-social-lead.dto';
 import { CheckoutService } from './checkout.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { GooglePeopleProfileDto } from './dto/google-people-profile.dto';
 import { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
+import { ValidateCouponDto } from './dto/validate-coupon.dto';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 
 /** Checkout public controller. */
@@ -113,20 +115,12 @@ export class CheckoutPublicController {
   /** Validate coupon. */
   // PULSE_OK: called from frontend/src/app/(checkout)/hooks/useCheckout.ts (/n/ prefix proxy)
   @Post('validate-coupon')
-  validateCoupon(
-    @Body()
-    body: {
-      workspaceId: string;
-      code: string;
-      planId: string;
-      orderValue: number;
-    },
-  ) {
+  validateCoupon(@Body() dto: ValidateCouponDto) {
     return this.checkoutService.validateCoupon(
-      body.workspaceId,
-      body.code,
-      body.planId,
-      body.orderValue,
+      dto.workspaceId,
+      dto.code,
+      dto.planId,
+      dto.orderValue,
     );
   }
 
@@ -174,8 +168,8 @@ export class CheckoutPublicController {
   /** Calculate shipping. */
   // PULSE_OK: called from frontend/src/lib/api/misc.ts (/n/ prefix proxy)
   @Post('shipping')
-  async calculateShipping(@Body() body: { slug: string; cep: string }) {
-    return this.checkoutService.calculateShipping(body.slug, body.cep);
+  async calculateShipping(@Body() dto: CalculateShippingDto) {
+    return this.checkoutService.calculateShipping(dto.slug, dto.cep);
   }
 
   /** Capture social lead. */

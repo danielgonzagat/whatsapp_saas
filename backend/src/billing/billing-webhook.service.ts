@@ -100,6 +100,26 @@ export class BillingWebhookService {
       throw new Error(`Webhook signature verification failed`);
     }
     this.logger.log(`Webhook recebido: ${JSON.stringify({ type: event.type, id: event.id })}`);
+
+    const webhookIdempotencyKey = `stripe:${event.id}`;
+    const alreadyProcessed = await this.prisma.webhookEvent.findFirst({
+      where: { provider: 'stripe', externalId: webhookIdempotencyKey, status: 'processed' },
+    });
+    if (alreadyProcessed) {
+      this.logger.log(`Webhook idempotent skip: ${event.type} (id=${event.id})`);
+      return { received: true, idempotent: true };
+    }
+
+    await this.prisma.webhookEvent.create({
+      data: {
+        provider: 'stripe',
+        eventType: event.type,
+        externalId: webhookIdempotencyKey,
+        payload: event as unknown as Prisma.InputJsonValue,
+        status: 'received',
+      },
+    });
+
     try {
       switch (event.type) {
         case 'checkout.session.completed': {
@@ -135,58 +155,91 @@ export class BillingWebhookService {
           break;
       }
     } catch (err: unknown) {
+      await this.prisma.webhookEvent
+        .update({
+          where: { provider_externalId: { provider: 'stripe', externalId: webhookIdempotencyKey } },
+          data: {
+            status: 'failed',
+            error: err instanceof Error ? err.message : String(err),
+            processedAt: new Date(),
+          },
+        })
+        .catch(() => {
+          /* best-effort */
+        });
       this.financialAlert?.webhookProcessingFailed(
         err instanceof Error ? err : new Error(String(err)),
         { provider: 'stripe', eventType: event.type, externalId: event.id },
       );
       throw err;
     }
+
+    await this.prisma.webhookEvent
+      .update({
+        where: { provider_externalId: { provider: 'stripe', externalId: webhookIdempotencyKey } },
+        data: { status: 'processed', processedAt: new Date() },
+      })
+      .catch(() => {
+        /* best-effort */
+      });
+
     return { received: true };
   }
   private async fulfillCheckout(session: StripeCheckoutSession) {
     const workspaceId = session.metadata?.workspaceId;
     const plan = session.metadata?.plan || 'PRO';
     const subscriptionId = session.subscription as string;
-    if (workspaceId) {
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { id: true },
-      });
-      if (!workspace) {
-        this.logger.warn(
-          `fulfillCheckout: workspace ${workspaceId} not found, skipping subscription upsert`,
-        );
-        return;
-      }
-      await this.prisma.subscription.upsert({
-        where: { workspaceId },
-        update: {
-          status: 'ACTIVE',
-          plan,
-          stripeId: subscriptionId,
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        },
-        create: {
-          workspaceId,
-          status: 'ACTIVE',
-          plan,
-          stripeId: subscriptionId,
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        },
-      });
-      await activatePlanFeatures(this.prisma, workspaceId, plan);
-      const whatsappService = await this.resolveWhatsappService();
-      await notifyCustomerPaymentConfirmedHelper(
-        this.logger,
-        this.prisma,
-        whatsappService,
-        workspaceId,
-        session,
-        plan,
-        this.financialAlert,
-      );
-      this.logger.log(`Subscription ACTIVATED for Workspace ${workspaceId} - Plan: ${plan}`);
+    if (!workspaceId) {
+      return;
     }
+
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { id: true },
+    });
+    if (!workspace) {
+      this.logger.warn(
+        `fulfillCheckout: workspace ${workspaceId} not found, skipping subscription upsert`,
+      );
+      return;
+    }
+
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.subscription.upsert({
+          where: { workspaceId },
+          update: {
+            status: 'ACTIVE',
+            plan,
+            stripeId: subscriptionId,
+            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            cancelAtPeriodEnd: false,
+          },
+          create: {
+            workspaceId,
+            status: 'ACTIVE',
+            plan,
+            stripeId: subscriptionId,
+            currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            cancelAtPeriodEnd: false,
+          },
+        });
+        await activatePlanFeatures(tx, workspaceId, plan);
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+
+    const whatsappService = await this.resolveWhatsappService();
+    await notifyCustomerPaymentConfirmedHelper(
+      this.logger,
+      this.prisma,
+      whatsappService,
+      workspaceId,
+      session,
+      plan,
+      this.financialAlert,
+    );
+    this.logger.log(`Subscription ACTIVATED for Workspace ${workspaceId} - Plan: ${plan}`);
   }
   private async syncSubscriptionStatus(subscription: StripeSubscription) {
     const workspaceId = await this.resolveWorkspaceId(subscription);
@@ -195,18 +248,26 @@ export class BillingWebhookService {
     const currentPeriodEndRaw = (subscription as StripeSubscriptionWithPeriodEnd)
       .current_period_end;
     const periodEnd = currentPeriodEndRaw ? new Date(currentPeriodEndRaw * 1000) : undefined;
+
+    const existing = await this.prisma.subscription.findUnique({
+      where: { workspaceId },
+      select: { plan: true },
+    });
+
+    const inferredPlan =
+      existing?.plan || (subscription.metadata as Record<string, string> | null)?.plan || 'PRO';
+
     await this.prisma.subscription.upsert({
       where: { workspaceId },
       update: {
         status,
-        plan: subscription.items.data[0]?.price?.id || subscription.id,
         stripeId: subscription.id,
         currentPeriodEnd: periodEnd || new Date(),
       },
       create: {
         workspaceId,
         status,
-        plan: subscription.items.data[0]?.price?.id || 'PRO',
+        plan: inferredPlan,
         stripeId: subscription.id,
         currentPeriodEnd: periodEnd || new Date(),
       },

@@ -124,7 +124,7 @@ export class CampaignsService {
       // Calculate ms until next best hour
       const now = new Date();
       const currentHour = now.getHours();
-      const targetHour = bestTime.bestHour;
+      const targetHour = bestTime.peakHour;
 
       let hoursToAdd = targetHour - currentHour;
       if (hoursToAdd <= 0) {
@@ -234,11 +234,11 @@ export class CampaignsService {
           sent++;
           return;
         }
-        // Fallback: log if no email and no WhatsApp
-        this.logger.log(
+        // Fallback: log if no email and no WhatsApp — count as skipped, not sent
+        this.logger.warn(
           `Campaign ${campaign.name}: no channel available for ${contact.name || contact.id}`,
         );
-        sent++; // Count as "processed" even if no channel
+        failed++;
       } catch (e: unknown) {
         void this.opsAlert?.alertOnCriticalError(e, 'CampaignsService.processCampaignJob');
         this.logger.error(`Campaign send failed for contact ${contact.id}: ${String(e)}`);

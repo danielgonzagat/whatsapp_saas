@@ -227,6 +227,9 @@ export class AutopilotCycleExecutorService {
         responseText = await this.generateResponse('chat', conv, analysis);
         break;
       case 'handover_human':
+        this.logger.warn(
+          `[Autopilot] Handover to human for conv ${conv.id} — complaint intent detected`,
+        );
         return;
       default:
         return;

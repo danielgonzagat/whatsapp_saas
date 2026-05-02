@@ -1,22 +1,6 @@
-import type { Prisma, PrismaClient } from '@prisma/client';
 import { Logger } from '@nestjs/common';
 
 const logger = new Logger('BillingPlanFeatures');
-
-/**
- * Minimal Prisma surface that this module needs: the interactive
- * `$transaction(fn, options)` overload — including `isolationLevel` —
- * plus the `workspace` delegate. Typing the parameter to this interface
- * avoids the previous `as PrismaClient` force-cast and keeps the contract
- * explicit at every call site.
- */
-type PrismaTxLike = {
-  $transaction: <R>(
-    fn: (tx: Pick<PrismaClient, 'workspace'>) => Promise<R>,
-    options?: { isolationLevel?: Prisma.TransactionIsolationLevel },
-  ) => Promise<R>;
-  workspace: PrismaClient['workspace'];
-};
 
 const PLAN_LIMITS: Record<
   string,
@@ -59,37 +43,33 @@ const PLAN_LIMITS: Record<
   },
 };
 
-/** Activate plan features for a workspace. */
+/** Activate plan features for a workspace.
+ *  Caller is responsible for wrapping in a transaction when needed. */
 export async function activatePlanFeatures(
-  prisma: PrismaTxLike,
+  prisma: { workspace: { findUnique(args: any): Promise<any>; update(args: any): Promise<any> } },
   workspaceId: string,
   plan: string,
 ): Promise<void> {
   const limits = PLAN_LIMITS[plan.toUpperCase()] || PLAN_LIMITS.STARTER;
-  await prisma.$transaction(
-    async (tx) => {
-      const workspace = await tx.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true },
-      });
-      const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
-      await tx.workspace.update({
-        where: { id: workspaceId },
-        data: {
-          providerSettings: {
-            ...currentSettings,
-            billingSuspended: false,
-            plan: { name: plan, limits, activatedAt: new Date().toISOString() },
-            autopilot: {
-              ...((currentSettings.autopilot ?? {}) as Record<string, unknown>),
-              enabled: true,
-              monthlyLimit: limits.autopilotLimit,
-            },
-          },
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { providerSettings: true },
+  });
+  const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+  await prisma.workspace.update({
+    where: { id: workspaceId },
+    data: {
+      providerSettings: {
+        ...currentSettings,
+        billingSuspended: false,
+        plan: { name: plan, limits, activatedAt: new Date().toISOString() },
+        autopilot: {
+          ...((currentSettings.autopilot ?? {}) as Record<string, unknown>),
+          enabled: true,
+          monthlyLimit: limits.autopilotLimit,
         },
-      });
+      },
     },
-    { isolationLevel: 'ReadCommitted' },
-  );
+  });
   logger.log(`Plan features activated for ${workspaceId}: ${plan} ${JSON.stringify(limits)}`);
 }
