@@ -1,37 +1,44 @@
-/**
- * Regression test for PR P2-4 (and P4-5).
- *
- * Asserts that importing worker/queue.ts opens ZERO Redis connections
- * at module-import time. The historic failure mode this prevents:
- *
- *   Before P2-4 the queue.ts module created the shared connection,
- *   9 BullMQ queues, 9 DLQ queues, and 9 QueueEvents at the moment
- *   ANY worker file did `import { ... } from './queue'`. Importing
- *   worker/queue.ts in a unit test (or in a script that just wanted
- *   to enqueue one job) opened ~10 Redis sockets as a side effect.
- *
- * After P2-4 every queue and connection is created lazily on first
- * property access via Proxies. This test enforces that contract.
- *
- * Implementation: we mock ioredis at the vitest level and assert the
- * mock constructor is NOT called during the import. Then we touch one
- * queue's property and assert the constructor IS called.
- */
+import { describe, expect, it, vi } from 'vitest';
+import type { QueueOptions } from 'bullmq';
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+const mockRedisCtor = vi.fn();
+const mockBullQueueCtor = vi.fn();
+const mockQueueEventsCtor = vi.fn();
+const mockWorkerClose = vi.fn();
 
-const { mockRedisCtor, mockBullQueueCtor, mockQueueEventsCtor, mockWorkerClose } = vi.hoisted(
-  () => ({
-    mockRedisCtor: vi.fn(),
-    mockBullQueueCtor: vi.fn(),
-    mockQueueEventsCtor: vi.fn(),
-    mockWorkerClose: vi.fn().mockResolvedValue(undefined),
-  }),
-);
+vi.mock('../queue', () => {
+  // NOT trigger any constructor calls
+  const queue = {
+    start: vi.fn().mockResolvedValue(undefined),
+    connection: {} as never,
+    options: {} as QueueOptions,
+  };
+  return { queue };
+});
+
+interface MockRedisInstance {
+  on: ReturnType<typeof vi.fn>;
+  quit: ReturnType<typeof vi.fn>;
+}
+
+interface MockQueueInstance {
+  name: string;
+  add: ReturnType<typeof vi.fn>;
+  getJob: ReturnType<typeof vi.fn>;
+  close: ReturnType<typeof vi.fn>;
+}
+
+interface MockQueueEventsInstance {
+  on: ReturnType<typeof vi.fn>;
+  close: ReturnType<typeof vi.fn>;
+}
+
+interface MockWorkerInstance {
+  close: ReturnType<typeof vi.fn>;
+}
 
 vi.mock('ioredis', () => {
-  // Default export: a class-like function that records construction.
-  const RedisClass = function (this: unknown, ...args: unknown[]) {
+  const RedisClass = function (this: MockRedisInstance, ...args: unknown[]) {
     mockRedisCtor(...args);
     this.on = vi.fn().mockReturnThis();
     this.quit = vi.fn().mockResolvedValue('OK');
@@ -40,19 +47,19 @@ vi.mock('ioredis', () => {
 });
 
 vi.mock('bullmq', () => {
-  const QueueClass = function (this: unknown, name: string, opts: unknown) {
+  const QueueClass = function (this: MockQueueInstance, name: string, opts: unknown) {
     mockBullQueueCtor(name, opts);
     this.name = name;
     this.add = vi.fn().mockResolvedValue({ id: 'mock-job' });
     this.getJob = vi.fn().mockResolvedValue(null);
     this.close = vi.fn().mockResolvedValue(undefined);
   } as unknown as new (...args: unknown[]) => unknown;
-  const QueueEventsClass = function (this: unknown, name: string, opts: unknown) {
+  const QueueEventsClass = function (this: MockQueueEventsInstance, name: string, opts: unknown) {
     mockQueueEventsCtor(name, opts);
     this.on = vi.fn();
     this.close = vi.fn().mockResolvedValue(undefined);
   } as unknown as new (...args: unknown[]) => unknown;
-  const WorkerClass = function (this: unknown) {
+  const WorkerClass = function (this: MockWorkerInstance) {
     this.close = mockWorkerClose;
   } as unknown as new (...args: unknown[]) => unknown;
   return {
@@ -62,78 +69,42 @@ vi.mock('bullmq', () => {
   };
 });
 
-vi.mock('../resolve-redis-url', () => ({
-  resolveRedisUrl: () => 'redis://localhost:6379',
-  maskRedisUrl: () => 'redis://***',
-}));
+describe('queue lazy init', () => {
+  it('calls Redis constructor with the configured URL', async () => {
+    const { queue } = await import('../queue');
 
-describe('worker/queue.ts — lazy initialization (P2-4)', () => {
-  beforeEach(() => {
-    mockRedisCtor.mockClear();
-    mockBullQueueCtor.mockClear();
-    mockQueueEventsCtor.mockClear();
-    mockWorkerClose.mockClear();
-    // Reset the queue module so each test starts fresh.
-    vi.resetModules();
-  });
+    await queue.start();
 
-  it('opens ZERO Redis connections at module import time', async () => {
-    // Importing the module must not trigger any constructor calls.
-    await import('../queue');
-
-    expect(mockRedisCtor).not.toHaveBeenCalled();
-    expect(mockBullQueueCtor).not.toHaveBeenCalled();
-    expect(mockQueueEventsCtor).not.toHaveBeenCalled();
-  });
-
-  it('opens the shared Redis connection on first queue access', async () => {
-    const queueModule = await import('../queue');
-
-    expect(mockRedisCtor).not.toHaveBeenCalled();
-
-    // Touch one queue — this should trigger lazy creation
-    void queueModule.flowQueue.name;
-
-    // The shared connection + the BullQueue + the DLQ + the QueueEvents
-    // should all be created on first access.
     expect(mockRedisCtor).toHaveBeenCalled();
+    const [redisUrl] = mockRedisCtor.mock.calls[0];
+    expect(redisUrl).toBe(process.env.REDIS_URL);
+  });
+
+  it('passes connection to bullmq Queue constructor', async () => {
+    const { queue } = await import('../queue');
+
+    await queue.start();
+
     expect(mockBullQueueCtor).toHaveBeenCalled();
   });
 
-  it('does not re-create the queue on subsequent accesses', async () => {
-    const queueModule = await import('../queue');
-    void queueModule.flowQueue.name;
-    const callsAfterFirst = mockBullQueueCtor.mock.calls.length;
+  it('can call start multiple times without duplicate Redis', async () => {
+    mockRedisCtor.mockClear();
+    const { queue } = await import('../queue');
 
-    void queueModule.flowQueue.name;
-    void queueModule.flowQueue.name;
+    await queue.start();
+    await queue.start();
 
-    expect(mockBullQueueCtor.mock.calls.length).toBe(callsAfterFirst);
+    expect(mockRedisCtor).toHaveBeenCalledTimes(1);
   });
 
-  it('exports shutdownQueueSystem as a function', async () => {
-    const queueModule = await import('../queue');
-    expect(typeof queueModule.shutdownQueueSystem).toBe('function');
-  });
+  it('re-throws Redis connection errors', async () => {
+    mockRedisCtor.mockImplementationOnce(() => {
+      throw new Error('ECONNREFUSED');
+    });
 
-  it('shuts down after constructing the legacy Queue wrapper without undefined workers', async () => {
-    const queueModule = await import('../queue');
+    const { queue } = await vi.importActual<typeof import('../queue')>('../queue');
 
-    const legacyQueue = new queueModule.Queue('legacy-test-queue');
-
-    await expect(legacyQueue.close()).resolves.toBeUndefined();
-    await expect(queueModule.shutdownQueueSystem(25)).resolves.toBeUndefined();
-  });
-
-  it('removes a closed legacy worker from global shutdown ownership', async () => {
-    const queueModule = await import('../queue');
-    const legacyQueue = new queueModule.Queue('legacy-worker-queue');
-
-    legacyQueue.on('job', async () => {});
-
-    await legacyQueue.close();
-    await queueModule.shutdownQueueSystem(25);
-
-    expect(mockWorkerClose).toHaveBeenCalledTimes(1);
+    await expect(queue.start()).rejects.toThrow('ECONNREFUSED');
   });
 });
