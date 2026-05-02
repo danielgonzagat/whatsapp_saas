@@ -250,7 +250,7 @@ describe('authApi', () => {
 
     expect(result.error).toBeUndefined();
     const request = getFetchRequest(fetchSpy);
-    expect(request.url).toBe('http://localhost:3001/auth/facebook');
+    expect(request.url).toBe('http://localhost:3001/auth/oauth/facebook');
     await expect(request.text()).resolves.toBe(
       JSON.stringify({ accessToken: 'meta-user-token', userId: 'fb-user-123' }),
     );
