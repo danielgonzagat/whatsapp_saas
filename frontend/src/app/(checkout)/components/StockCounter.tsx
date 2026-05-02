@@ -1,7 +1,7 @@
 'use client';
 
 interface StockCounterProps {
-  message?: string; // "Restam apenas {n} unidades"
+  message?: string;
   count: number;
   accentColor?: string;
 }
@@ -38,7 +38,7 @@ export default function StockCounter({
         }}
       />
       <span style={{ fontSize: 13, fontWeight: 600, color: accentColor }}>
-        {message.replace('{n}', String(count))}
+        {message.replace('{n}', String(count)).replace('{count}', String(count))}
       </span>
     </div>
   );

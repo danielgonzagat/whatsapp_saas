@@ -2,6 +2,7 @@ import { type Job, Worker } from 'bullmq';
 import { AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB } from '../contracts/autopilot-jobs';
 import { autopilotDecisionCounter } from '../metrics';
 import { connection } from '../queue';
+import { WorkerError, isRetryableError } from '../src/utils/error-handler';
 import {
   log,
   SHOULD_RUN_AUTOPILOT_WORKER,
@@ -26,6 +27,8 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
       'autopilot-jobs',
       async (job: Job) => {
         try {
+          await job.updateProgress(10);
+
           if (job.name === 'cycle-all') {
             return await runCycleAll();
           }
@@ -86,17 +89,23 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
             return await runCiaGlobalLearningAll();
           }
 
+          await job.updateProgress(90);
           return await runScanContact(job.data);
         } catch (err: unknown) {
-          const errInstanceofError =
-            err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-          log.error('autopilot_error', { error: errInstanceofError.message });
+          const msg = err instanceof Error ? err.message : String(err);
+          log.error('autopilot_error', { error: msg, jobId: job.id, name: job.name });
           autopilotDecisionCounter.inc({
             workspaceId: job.data?.workspaceId || 'unknown',
             intent: 'ERROR',
             action: 'NONE',
             result: 'error',
           });
+
+          if (!isRetryableError(err)) {
+            throw new WorkerError(msg, 'AUTOPILOT_PERMANENT', false);
+          }
+
+          throw err;
         }
       },
       { connection, concurrency: 4, lockDuration: 60000 },

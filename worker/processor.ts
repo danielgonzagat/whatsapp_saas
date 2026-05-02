@@ -11,6 +11,7 @@ import './media-processor'; // Start Media Worker
 import './voice-processor'; // Start Voice Worker
 import './processors/memory-processor'; // Start Memory Worker
 import './processors/webhook-processor'; // Start Webhook Worker
+import './processors/crm-processor'; // Start CRM Worker
 import './metrics-server'; // Expose /metrics and /health
 import './dlq-monitor'; // Monitor DLQs and alert ops
 import { v4 as uuidv4 } from 'uuid';
@@ -305,12 +306,14 @@ const autopilotMonitorInterval = setInterval(checkAutopilotQueueHealth, 60_000);
 async function gracefulShutdown(signal: string) {
   log.info('shutdown_started', { signal });
   clearInterval(autopilotMonitorInterval);
-  engine.shutdown();
+  await engine
+    .shutdown()
+    .catch((err) => log.warn('flow_engine_shutdown_error', { error: getErrorMessage(err) }));
   // PR P2-4: close all BullMQ queues, DLQs, QueueEvents, and the
   // shared Redis connection in reverse order. 10s timeout caps the
   // total wait so a stuck close cannot block process exit indefinitely.
   await shutdownQueueSystem(10_000).catch((err) =>
-    log.warn('shutdown_queue_system_error', { error: (err as Error)?.message }),
+    log.warn('shutdown_queue_system_error', { error: getErrorMessage(err) }),
   );
   log.info('shutdown_complete', { signal });
   process.exit(0);

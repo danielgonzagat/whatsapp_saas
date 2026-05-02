@@ -45,18 +45,52 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const DEBOUNCE_MS = 250;
 const GIT_STATE_POLL_MS = 3000;
 const GRAPH_LENS_ENFORCE_MS = 2000;
-const MIRROR_FORMAT_VERSION = 17;
+const MIRROR_FORMAT_VERSION = 21;
 const SOURCE_BODY_MIRROR_MAX_BYTES = Number(
-  process.env.KLOEL_SOURCE_BODY_MIRROR_MAX_BYTES || String(MAX_FILE_SIZE),
+  process.env.KLOEL_SOURCE_BODY_MIRROR_MAX_BYTES || String(Number.MAX_SAFE_INTEGER),
 );
 const GENERATED_PAGE_SIZE = Number(process.env.KLOEL_GRAPH_PAGE_SIZE || '120');
 const DIRTY_WORKSPACE_TAG = 'workspace/dirty';
 const DIRTY_WORKSPACE_QUERY = 'tag:#workspace/dirty';
 const DIRTY_WORKSPACE_COLOR_RGB = 14724096; // Obsidian yellow #e0ac00.
+const LOCAL_COMMIT_TAG = 'workspace/local-commit';
 const LOCAL_COMMIT_QUERY = 'tag:#workspace/local-commit';
 const METADATA_ONLY_TAG = 'mirror/metadata-only';
 const METADATA_ONLY_QUERY = 'tag:#mirror/metadata-only';
 const METADATA_ONLY_COLOR_RGB = 8421504; // Obsidian gray #808080.
+const GRAPH_ACTION_REQUIRED_TAG = 'graph/action-required';
+const GRAPH_ACTION_REQUIRED_QUERY = 'tag:#graph/action-required';
+const GRAPH_ACTION_REQUIRED_COLOR_RGB = 16711680; // red.
+const GRAPH_EVIDENCE_GAP_TAG = 'graph/evidence-gap';
+const GRAPH_EVIDENCE_GAP_QUERY = 'tag:#graph/evidence-gap';
+const GRAPH_EVIDENCE_GAP_COLOR_RGB = 16711935; // magenta.
+const GRAPH_EFFECT_SECURITY_TAG = 'graph/effect-security';
+const GRAPH_EFFECT_SECURITY_QUERY = 'tag:#graph/effect-security';
+const GRAPH_EFFECT_SECURITY_COLOR_RGB = 10040524; // violet.
+const GRAPH_EFFECT_ERROR_TAG = 'graph/effect-error';
+const GRAPH_EFFECT_ERROR_QUERY = 'tag:#graph/effect-error';
+const GRAPH_EFFECT_ERROR_COLOR_RGB = 16724736; // orange-red.
+const GRAPH_EFFECT_ENTRYPOINT_TAG = 'graph/effect-entrypoint';
+const GRAPH_EFFECT_ENTRYPOINT_QUERY = 'tag:#graph/effect-entrypoint';
+const GRAPH_EFFECT_ENTRYPOINT_COLOR_RGB = 65280; // green.
+const GRAPH_EFFECT_DATA_TAG = 'graph/effect-data';
+const GRAPH_EFFECT_DATA_QUERY = 'tag:#graph/effect-data';
+const GRAPH_EFFECT_DATA_COLOR_RGB = 255; // blue.
+const GRAPH_EFFECT_NETWORK_TAG = 'graph/effect-network';
+const GRAPH_EFFECT_NETWORK_QUERY = 'tag:#graph/effect-network';
+const GRAPH_EFFECT_NETWORK_COLOR_RGB = 65535; // cyan.
+const GRAPH_EFFECT_ASYNC_TAG = 'graph/effect-async';
+const GRAPH_EFFECT_ASYNC_QUERY = 'tag:#graph/effect-async';
+const GRAPH_EFFECT_ASYNC_COLOR_RGB = 5635925; // teal.
+const GRAPH_EFFECT_STATE_TAG = 'graph/effect-state';
+const GRAPH_EFFECT_STATE_QUERY = 'tag:#graph/effect-state';
+const GRAPH_EFFECT_STATE_COLOR_RGB = 13789470; // pink.
+const GRAPH_EFFECT_CONTRACT_TAG = 'graph/effect-contract';
+const GRAPH_EFFECT_CONTRACT_QUERY = 'tag:#graph/effect-contract';
+const GRAPH_EFFECT_CONTRACT_COLOR_RGB = 12632256; // silver.
+const GRAPH_EFFECT_CONFIG_TAG = 'graph/effect-config';
+const GRAPH_EFFECT_CONFIG_QUERY = 'tag:#graph/effect-config';
+const GRAPH_EFFECT_CONFIG_COLOR_RGB = 11184810; // light gray.
 const PULSE_MACHINE_TAG = 'source/pulse-machine';
 const PULSE_MACHINE_QUERY = 'tag:#source/pulse-machine';
 const PULSE_MACHINE_COLOR_RGB = 10040524; // violet.
@@ -110,6 +144,37 @@ const CAMERA_DIR = '_camera';
 const OBRA_DIR = '_obra';
 const CLUSTER_DIR = '_clusters';
 const VISUAL_FACT_DIR = '_visual';
+
+const CODE_STATE_COLOR_GROUPS = [
+  { query: DIRTY_WORKSPACE_QUERY, color: { a: 1, rgb: DIRTY_WORKSPACE_COLOR_RGB } },
+  { query: GRAPH_ACTION_REQUIRED_QUERY, color: { a: 1, rgb: GRAPH_ACTION_REQUIRED_COLOR_RGB } },
+  { query: GRAPH_EVIDENCE_GAP_QUERY, color: { a: 1, rgb: GRAPH_EVIDENCE_GAP_COLOR_RGB } },
+  { query: GRAPH_EFFECT_SECURITY_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_SECURITY_COLOR_RGB } },
+  { query: GRAPH_EFFECT_ERROR_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_ERROR_COLOR_RGB } },
+  { query: GRAPH_EFFECT_ENTRYPOINT_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_ENTRYPOINT_COLOR_RGB } },
+  { query: GRAPH_EFFECT_DATA_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_DATA_COLOR_RGB } },
+  { query: GRAPH_EFFECT_NETWORK_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_NETWORK_COLOR_RGB } },
+  { query: GRAPH_EFFECT_ASYNC_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_ASYNC_COLOR_RGB } },
+  { query: GRAPH_EFFECT_STATE_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_STATE_COLOR_RGB } },
+  { query: GRAPH_EFFECT_CONTRACT_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_CONTRACT_COLOR_RGB } },
+  { query: GRAPH_EFFECT_CONFIG_QUERY, color: { a: 1, rgb: GRAPH_EFFECT_CONFIG_COLOR_RGB } },
+  { query: METADATA_ONLY_QUERY, color: { a: 1, rgb: METADATA_ONLY_COLOR_RGB } },
+  { query: PULSE_MACHINE_QUERY, color: { a: 1, rgb: PULSE_MACHINE_COLOR_RGB } },
+  { query: SIGNAL_STATIC_HIGH_QUERY, color: { a: 1, rgb: SIGNAL_STATIC_HIGH_COLOR_RGB } },
+  { query: SIGNAL_HOTSPOT_QUERY, color: { a: 1, rgb: 14524637 } },
+  { query: SIGNAL_EXTERNAL_QUERY, color: { a: 1, rgb: SIGNAL_EXTERNAL_COLOR_RGB } },
+  { query: GRAPH_RISK_CRITICAL_QUERY, color: { a: 1, rgb: GRAPH_RISK_CRITICAL_COLOR_RGB } },
+  { query: GRAPH_RISK_HIGH_QUERY, color: { a: 1, rgb: 16724787 } },
+  { query: GRAPH_PROOF_TEST_QUERY, color: { a: 1, rgb: GRAPH_PROOF_TEST_COLOR_RGB } },
+  { query: GRAPH_RUNTIME_API_QUERY, color: { a: 1, rgb: GRAPH_RUNTIME_API_COLOR_RGB } },
+  { query: GRAPH_SURFACE_UI_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_UI_COLOR_RGB } },
+  { query: GRAPH_SURFACE_BACKEND_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_BACKEND_COLOR_RGB } },
+  { query: GRAPH_SURFACE_WORKER_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_WORKER_COLOR_RGB } },
+  { query: GRAPH_SURFACE_SOURCE_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_SOURCE_COLOR_RGB } },
+  { query: GRAPH_GOVERNANCE_QUERY, color: { a: 1, rgb: GRAPH_GOVERNANCE_COLOR_RGB } },
+  { query: GRAPH_ORPHAN_QUERY, color: { a: 1, rgb: GRAPH_ORPHAN_COLOR_RGB } },
+  { query: GRAPH_MOLECULE_QUERY, color: { a: 1, rgb: GRAPH_MOLECULE_COLOR_RGB } },
+];
 
 // ── Path Mappings ───────────────────────────────────────────────────────────
 
@@ -172,6 +237,13 @@ const SKIP_DIR_PATTERNS = [
   /test-results/,
   /^tmp$/,
   /^Obsidian$/,
+  /^\.pulse$/,
+  /^\.omx$/,
+  /^\.gitnexus$/,
+  /^\.kilo$/,
+  /^\.beads$/,
+  /^\.agents$/,
+  /^\.serena$/,
 ];
 
 const SKIP_FILE_PATTERNS = [
@@ -210,9 +282,8 @@ const SKIP_FILE_PATTERNS = [
 
 const SKIP_SECRET_PATTERNS = [
   /\.env$/,
-  /\.env\.local$/,
-  /\.env\.production$/,
-  /\.env\.development$/,
+  /(^|\/)\.env(?:\.(?!example$)[^/]+)?$/,
+  /(^|\/)\.npmrc$/,
   /credentials/,
   /\.pem$/,
   /\.key$/,
@@ -392,7 +463,7 @@ function gitStateForSource(sourcePath) {
   };
 }
 
-function ensureGraphDirtyColorGroup() {
+function ensureGraphLensSettings() {
   if (!existsSync(GRAPH_SETTINGS_PATH)) return false;
 
   let currentSettings;
@@ -404,39 +475,20 @@ function ensureGraphDirtyColorGroup() {
   }
 
   const graphSettings = {
+    ...currentSettings,
     search: WORKSPACE_GRAPH_SEARCH,
     showOrphans: true,
-    hideUnresolved: true,
-    colorGroups: [
-      { query: DIRTY_WORKSPACE_QUERY, color: { a: 1, rgb: DIRTY_WORKSPACE_COLOR_RGB } },
-      { query: METADATA_ONLY_QUERY, color: { a: 1, rgb: METADATA_ONLY_COLOR_RGB } },
-      { query: PULSE_MACHINE_QUERY, color: { a: 1, rgb: PULSE_MACHINE_COLOR_RGB } },
-      { query: SIGNAL_STATIC_HIGH_QUERY, color: { a: 1, rgb: SIGNAL_STATIC_HIGH_COLOR_RGB } },
-      { query: SIGNAL_HOTSPOT_QUERY, color: { a: 1, rgb: SIGNAL_HOTSPOT_COLOR_RGB } },
-      { query: SIGNAL_EXTERNAL_QUERY, color: { a: 1, rgb: SIGNAL_EXTERNAL_COLOR_RGB } },
-      { query: GRAPH_RISK_CRITICAL_QUERY, color: { a: 1, rgb: GRAPH_RISK_CRITICAL_COLOR_RGB } },
-      { query: GRAPH_RISK_HIGH_QUERY, color: { a: 1, rgb: GRAPH_RISK_HIGH_COLOR_RGB } },
-      { query: GRAPH_PROOF_TEST_QUERY, color: { a: 1, rgb: GRAPH_PROOF_TEST_COLOR_RGB } },
-      { query: GRAPH_RUNTIME_API_QUERY, color: { a: 1, rgb: GRAPH_RUNTIME_API_COLOR_RGB } },
-      { query: GRAPH_SURFACE_UI_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_UI_COLOR_RGB } },
-      { query: GRAPH_SURFACE_BACKEND_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_BACKEND_COLOR_RGB } },
-      { query: GRAPH_SURFACE_WORKER_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_WORKER_COLOR_RGB } },
-      { query: GRAPH_SURFACE_SOURCE_QUERY, color: { a: 1, rgb: GRAPH_SURFACE_SOURCE_COLOR_RGB } },
-      { query: GRAPH_GOVERNANCE_QUERY, color: { a: 1, rgb: GRAPH_GOVERNANCE_COLOR_RGB } },
-      { query: GRAPH_ORPHAN_QUERY, color: { a: 1, rgb: GRAPH_ORPHAN_COLOR_RGB } },
-      { query: GRAPH_MOLECULE_QUERY, color: { a: 1, rgb: GRAPH_MOLECULE_COLOR_RGB } },
-    ],
+    hideUnresolved: false,
+    colorGroups: CODE_STATE_COLOR_GROUPS,
   };
-  const next = JSON.stringify(graphSettings, null, 2) + '\n';
-  const current = JSON.stringify(currentSettings, null, 2) + '\n';
-  const changed = current !== next;
-  if (changed) {
-    const tmp = GRAPH_SETTINGS_PATH + '.tmp';
-    writeFileSync(tmp, next, 'utf8');
-    renameSync(tmp, GRAPH_SETTINGS_PATH);
-  }
+  const next = `${JSON.stringify(graphSettings, null, 2)}\n`;
+  const current = `${JSON.stringify(currentSettings, null, 2)}\n`;
+  if (current === next) return false;
 
-  return changed;
+  const tmp = `${GRAPH_SETTINGS_PATH}.tmp`;
+  writeFileSync(tmp, next, 'utf8');
+  renameSync(tmp, GRAPH_SETTINGS_PATH);
+  return true;
 }
 
 function obsidianLinkTarget(filePath) {
@@ -528,7 +580,7 @@ function ensureSourceDir() {
       files: {},
     });
   }
-  ensureGraphDirtyColorGroup();
+  ensureGraphLensSettings();
   return readManifest();
 }
 
@@ -793,7 +845,7 @@ function extractEmbeddedRepoPathRelations(content, sourcePath) {
   const seen = new Set();
   const text = String(content || '');
   const pathTokenPattern =
-    /(?:^|[\s"'`(=:#])((?:(?:backend|frontend|frontend-admin|worker|scripts|docs|prisma|ops|e2e|nginx|\.pulse|\.agents|\.github))\/[^\s"'`),;]+?\.[A-Za-z0-9]+)(?=$|[\s"'`),;#])/g;
+    /(?:^|[\s"'`(=:#])((?:(?:backend|frontend|frontend-admin|worker|scripts|docs|prisma|ops|e2e|nginx|\.pulse|\.agents|\.github))\/[^\s"'`,;]+?\.[A-Za-z0-9]+)(?=$|[\s"'`,;#])/g;
   const rootFilePattern =
     /(?:^|[\s"'`(=:#])((?:PULSE_[A-Za-z0-9_-]+|CODEX|CLAUDE|AGENTS|README|package-lock|package|tsconfig|vitest\.config|playwright\.config)\.(?:json|md|js|mjs|ts|yml|yaml))(?=$|[\s"'`),;#])/g;
 
@@ -1748,28 +1800,18 @@ function isLightweightMirrorSource(sourcePath) {
 }
 
 function shouldOmitSourceBody(sourcePath, sourceSize) {
-  return (
-    sourceSize > MAX_FILE_SIZE ||
-    isLightweightMirrorSource(sourcePath) ||
-    sourceSize > SOURCE_BODY_MIRROR_MAX_BYTES
-  );
+  return sourceSize > SOURCE_BODY_MIRROR_MAX_BYTES;
 }
 
 function buildMirrorContent(sourcePath, content) {
   const st = statSync(sourcePath);
-  const tooLargeForTextMirror = st.size > MAX_FILE_SIZE;
-  const raw = tooLargeForTextMirror ? '' : (content ?? readFileSync(sourcePath, 'utf8'));
+  const raw = content ?? readFileSync(sourcePath, 'utf8');
   const lang = detectLanguage(sourcePath);
   const relPath = relative(REPO_ROOT, sourcePath);
   const omitSourceBody = shouldOmitSourceBody(sourcePath, st.size);
-  const relations =
-    tooLargeForTextMirror || isLightweightMirrorSource(sourcePath)
-      ? []
-      : extractInternalRelations(raw, sourcePath);
+  const relations = extractInternalRelations(raw, sourcePath);
   const gitState = gitStateForSource(sourcePath);
-  const sourceHash = tooLargeForTextMirror
-    ? execFileSync('shasum', ['-a', '256', sourcePath], { encoding: 'utf8' }).split(/\s+/)[0]
-    : sha256(raw);
+  const sourceHash = sha256(raw);
   const signalInfo = buildMirrorSignalIndex().get(normalizePath(relPath));
   const machine = classifyMachineSource(normalizePath(relPath), raw);
   const clusterKey = clusterKeyForSource(normalizePath(relPath));
@@ -1880,11 +1922,10 @@ function mirrorFile(sourcePath, manifest) {
   const mirrorPath = sourceToMirrorPath(sourcePath);
   const relSource = relative(REPO_ROOT, sourcePath);
   const sourceStat = statSync(sourcePath);
-  const tooLargeForTextMirror = sourceStat.size > MAX_FILE_SIZE;
 
   let content;
   try {
-    content = tooLargeForTextMirror ? '' : readFileSync(sourcePath, 'utf8');
+    content = readFileSync(sourcePath, 'utf8');
   } catch (e) {
     log('ERR', `Cannot read source: ${relSource} — ${e.message}`);
     // Remove stale mirror if source can't be read
@@ -1895,25 +1936,17 @@ function mirrorFile(sourcePath, manifest) {
     return { status: 'error', reason: e.message };
   }
 
-  const hash = tooLargeForTextMirror
-    ? execFileSync('shasum', ['-a', '256', sourcePath], { encoding: 'utf8' }).split(/\s+/)[0]
-    : sha256(content);
+  const hash = sha256(content);
   const relMirror = relative(SOURCE_MIRROR_DIR, mirrorPath);
   const existing = manifest.files[relMirror];
   const gitState = gitStateForSource(sourcePath);
 
-  const relations =
-    tooLargeForTextMirror || isLightweightMirrorSource(sourcePath)
-      ? []
-      : extractInternalRelations(content, sourcePath);
-  const machine = classifyMachineSource(
-    normalizePath(relSource),
-    tooLargeForTextMirror ? '' : content,
-  );
+  const relations = extractInternalRelations(content, sourcePath);
+  const machine = classifyMachineSource(normalizePath(relSource), content);
   const clusterKey = clusterKeyForSource(normalizePath(relSource));
   const visualFacts = extractVisualFacts(
     sourcePath,
-    tooLargeForTextMirror ? '' : content,
+    content,
     machine,
     gitState,
     relations,
@@ -2178,11 +2211,34 @@ function buildSignalNote(source, bucket, index) {
 
 function visualFactTag(fact) {
   if (fact.kind === 'debt') return SIGNAL_STATIC_HIGH_TAG;
-  if (fact.kind === 'problem') return SIGNAL_STATIC_HIGH_TAG;
+  if (fact.kind === 'problem') return GRAPH_ACTION_REQUIRED_TAG;
   if (fact.kind === 'architecture') return SIGNAL_HOTSPOT_TAG;
-  if (fact.kind === 'missing') return SIGNAL_STATIC_HIGH_TAG;
-  if (fact.kind === 'computational-effect') return SIGNAL_HOTSPOT_TAG;
-  if (fact.kind === 'effect-intensity') return SIGNAL_HOTSPOT_TAG;
+  if (fact.kind === 'missing') return GRAPH_EVIDENCE_GAP_TAG;
+  if (fact.kind === 'computational-effect') {
+    if (fact.value === 'auth-or-isolation') return GRAPH_EFFECT_SECURITY_TAG;
+    if (fact.value === 'http-server' || fact.value === 'service-logic')
+      return GRAPH_EFFECT_ENTRYPOINT_TAG;
+    if (
+      fact.value === 'database-io' ||
+      fact.value === 'database-read' ||
+      fact.value === 'database-write'
+    )
+      return GRAPH_EFFECT_DATA_TAG;
+    if (fact.value === 'network-io' || fact.value === 'external-provider')
+      return GRAPH_EFFECT_NETWORK_TAG;
+    if (fact.value === 'queue-work') return GRAPH_EFFECT_ASYNC_TAG;
+    if (fact.value === 'ui-reactivity' || fact.value === 'browser-persistence')
+      return GRAPH_EFFECT_STATE_TAG;
+    if (fact.value === 'documentation-or-contract' || fact.value === 'type-contract-only')
+      return GRAPH_EFFECT_CONTRACT_TAG;
+    if (fact.value === 'configuration') return GRAPH_EFFECT_CONFIG_TAG;
+    return SIGNAL_HOTSPOT_TAG;
+  }
+  if (fact.kind === 'effect-intensity') {
+    if (String(fact.value).startsWith('async:')) return GRAPH_EFFECT_ASYNC_TAG;
+    if (String(fact.value).startsWith('errors:')) return GRAPH_EFFECT_ERROR_TAG;
+    return SIGNAL_HOTSPOT_TAG;
+  }
   if (fact.kind === 'flow') return GRAPH_PROOF_TEST_TAG;
   if (fact.kind === 'risk' && fact.value === 'critical') return GRAPH_RISK_CRITICAL_TAG;
   if (fact.kind === 'risk' && fact.value === 'high') return GRAPH_RISK_HIGH_TAG;
@@ -2395,6 +2451,50 @@ function writeSignalNotes() {
       unlinkSync(join(SOURCE_MIRROR_DIR, relPath));
     } catch (e) {
       log('WARN', `Cannot remove stale signal note ${relPath}:`, e.message);
+    }
+  }
+}
+
+function writeDomainIndexes(manifest) {
+  const entries = Object.values(manifest.files)
+    .filter((entry) => entry.source)
+    .sort((a, b) => a.source.localeCompare(b.source));
+  const domains = new Map();
+  for (const entry of entries) {
+    const domain = domainForSource(entry.source);
+    const bucket = domains.get(domain) || [];
+    bucket.push(entry);
+    domains.set(domain, bucket);
+  }
+
+  const expected = new Set(['INDEX.md']);
+  writeGeneratedNote('INDEX.md', buildGeneratedIndex(manifest));
+
+  for (const [domain, domainEntries] of [...domains.entries()].sort((a, b) =>
+    a[0].localeCompare(b[0]),
+  )) {
+    const domainRel = normalizePath(join('_domains', `${domain}.md`));
+    expected.add(domainRel);
+    writeGeneratedNote(domainRel, buildDomainNote(domain, domainEntries));
+
+    const pages = paginate(domainEntries);
+    pages.forEach((pageEntries, index) => {
+      const pageRel = normalizePath(domainPageRelPath(domain, index + 1));
+      expected.add(pageRel);
+      writeGeneratedNote(
+        pageRel,
+        buildDomainPageNote(domain, pageEntries, index + 1, pages.length),
+      );
+    });
+  }
+
+  const domainRoot = join(SOURCE_MIRROR_DIR, '_domains');
+  for (const relPath of listGeneratedMarkdownRelPaths(domainRoot, '_domains')) {
+    if (expected.has(relPath)) continue;
+    try {
+      unlinkSync(join(SOURCE_MIRROR_DIR, relPath));
+    } catch (e) {
+      log('WARN', `Cannot remove stale domain note ${relPath}:`, e.message);
     }
   }
 }
@@ -2868,9 +2968,15 @@ function writeClusterIndexes(manifest) {
 }
 
 function writeGeneratedIndexes(manifest) {
+  // Disabled: generated artifacts (_visual, _clusters, _signals, _machine, _domains) inflate Obsidian graph
+  // with 29k+ non-source files. Only source-code mirror is needed for architectural diagnosis.
+  return;
   removeGeneratedGraphOverlays();
   applyGraphDerivedTags(manifest);
-  return;
+  writeSignalNotes();
+  writeDomainIndexes(manifest);
+  writeMachineIndexes(manifest);
+  writeClusterIndexes(manifest);
 
   const facts = new Map();
   const entries = Object.values(manifest.files);
@@ -3529,8 +3635,6 @@ function startWatch() {
         continue;
       }
       if (st.isDirectory()) continue;
-      if (st.size > MAX_FILE_SIZE) continue;
-
       const rel = relative(REPO_ROOT, absPath);
       const result = mirrorFile(absPath, manifest);
       if (result.status === 'updated') {
@@ -3585,7 +3689,7 @@ function startWatch() {
   }
 
   function enforceGraphLens() {
-    ensureGraphDirtyColorGroup();
+    ensureGraphLensSettings();
   }
 
   const watcher = watch(REPO_ROOT, { recursive: true }, (event, filename) => {

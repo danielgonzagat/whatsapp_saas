@@ -9,6 +9,7 @@ import { toFile } from 'openai/uploads';
 import { prisma } from './db';
 import { resolveWorkerOpenAIModel } from './providers/openai-models';
 import { connection } from './queue';
+import { isRetryableError, WorkerError } from './src/utils/error-handler';
 import { safeRequest, validateUrl } from './utils/ssrf-protection';
 
 const PATTERN_RE = /\/+$/;
@@ -69,16 +70,21 @@ async function handleGenerateAudio(job: Job) {
   };
 
   if (!workspaceId) {
-    throw new Error(`Voice Job ${jobId} enqueued without workspaceId`);
+    throw new WorkerError(
+      `Voice Job ${jobId} enqueued without workspaceId`,
+      'VOICE_NO_WORKSPACE',
+      false,
+    );
   }
 
   try {
+    await job.updateProgress(10);
     const jobRecord = await prisma.voiceJob.findFirst({
       where: { id: jobId, workspaceId },
       select: { workspaceId: true, profileId: true },
     });
     if (!jobRecord) {
-      throw new Error(`Voice Job ${jobId} not found`);
+      throw new WorkerError(`Voice Job ${jobId} not found`, 'VOICE_JOB_NOT_FOUND', false);
     }
 
     const profile = await prisma.voiceProfile.findFirst({
@@ -87,13 +93,18 @@ async function handleGenerateAudio(job: Job) {
     });
 
     if (!profile) {
-      throw new Error(`Voice Profile ${profileId} not found`);
+      throw new WorkerError(
+        `Voice Profile ${profileId} not found`,
+        'VOICE_PROFILE_NOT_FOUND',
+        false,
+      );
     }
 
     const openai = getOpenAIClient();
     const ttsVoice = profile.voiceId || process.env.OPENAI_TTS_VOICE || 'nova';
     const ttsSpeed = Number.parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
 
+    await job.updateProgress(30);
     const response = await openai.audio.speech.create({
       model: 'tts-1',
       voice: ttsVoice,
@@ -102,6 +113,7 @@ async function handleGenerateAudio(job: Job) {
       response_format: 'opus',
     });
 
+    await job.updateProgress(60);
     const buffer = Buffer.from(await response.arrayBuffer());
     const fileName = `${jobId}.mp3`;
     const fileUrl = safeFileUrl(UPLOAD_DIR, fileName);
@@ -109,6 +121,7 @@ async function handleGenerateAudio(job: Job) {
 
     const publicUrl = `${resolvePublicBackendBaseUrl()}/audio/${fileName}`;
 
+    await job.updateProgress(80);
     await prisma.voiceJob.updateMany({
       where: { id: jobId, workspaceId },
       data: {
@@ -118,6 +131,7 @@ async function handleGenerateAudio(job: Job) {
       },
     });
 
+    await job.updateProgress(100);
     console.log('✅ Voice Job completed', { jobId, publicUrl });
     return { success: true, outputUrl: publicUrl };
   } catch (err) {
@@ -126,6 +140,15 @@ async function handleGenerateAudio(job: Job) {
       where: { id: jobId, workspaceId },
       data: { status: 'FAILED' },
     });
+
+    if (!isRetryableError(err)) {
+      throw new WorkerError(
+        err instanceof Error ? err.message : String(err),
+        'VOICE_GENERATE_PERMANENT',
+        false,
+      );
+    }
+
     throw err;
   }
 }
@@ -135,12 +158,17 @@ async function handleTranscription(job: Job) {
   const { workspaceId, phone, mediaUrl, messageType } = job.data;
 
   try {
-    // SSRF protection: validate mediaUrl before fetching
+    await job.updateProgress(10);
     const urlValidation = await validateUrl(mediaUrl);
     if (!urlValidation.valid) {
-      throw new Error(`SSRF blocked for media URL: ${urlValidation.error}`);
+      throw new WorkerError(
+        `SSRF blocked for media URL: ${urlValidation.error}`,
+        'TRANSCRIBE_SSRF',
+        false,
+      );
     }
 
+    await job.updateProgress(20);
     const response = await safeRequest({
       url: mediaUrl,
       timeout: 30000,
@@ -149,6 +177,7 @@ async function handleTranscription(job: Job) {
       throw new Error(`Failed to download audio: ${response.statusText}`);
     }
 
+    await job.updateProgress(40);
     const audioBuffer = Buffer.from(await response.arrayBuffer());
     const transcriptionUpload = await toFile(audioBuffer, `temp_${randomUUID()}.mp3`, {
       type: 'audio/mpeg',
@@ -157,6 +186,7 @@ async function handleTranscription(job: Job) {
     const openai = getOpenAIClient();
     let transcription: OpenAI.Audio.Transcriptions.TranscriptionVerbose;
     try {
+      await job.updateProgress(60);
       transcription = await openai.audio.transcriptions.create({
         file: transcriptionUpload,
         model: resolveWorkerOpenAIModel('audio_understanding'),
@@ -174,6 +204,7 @@ async function handleTranscription(job: Job) {
 
     const transcribedText = transcription.text || '';
 
+    await job.updateProgress(80);
     const contact = await prisma.contact.findFirst({
       where: { workspaceId, phone },
     });
@@ -198,8 +229,8 @@ async function handleTranscription(job: Job) {
         });
       }
 
-      const autopilotQueue = await import('./queue').then((m) => m.autopilotQueue);
-      await autopilotQueue.add('process-message', {
+      const autopilotQueueRef = await import('./queue').then((m) => m.autopilotQueue);
+      await autopilotQueueRef.add('process-message', {
         workspaceId,
         contactId: contact.id,
         phone,
@@ -211,17 +242,23 @@ async function handleTranscription(job: Job) {
       console.log(`🤖 Autopilot triggered with transcription`);
     }
 
+    await job.updateProgress(100);
     return { success: true, transcription: transcribedText };
   } catch (err: unknown) {
-    // Pass `phone` as a separate console.error argument instead of
-    // interpolating it into the format string. Removes Codacy's
-    // unsafe-formatstring surface (console.error does not honour printf
-    // tokens here, but the multi-arg form is still the safer shape).
     console.error(
       'Transcription failed for phone:',
       phone,
       err instanceof Error ? err.message : err,
     );
+
+    if (!isRetryableError(err)) {
+      throw new WorkerError(
+        err instanceof Error ? err.message : String(err),
+        'TRANSCRIBE_PERMANENT',
+        false,
+      );
+    }
+
     throw err;
   }
 }

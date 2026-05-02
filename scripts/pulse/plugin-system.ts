@@ -8,8 +8,8 @@ import ts from 'typescript';
 import { ensureDir, pathExists, statPath, writeTextFile } from './safe-fs';
 import type { PluginKind, PluginRegistry, PulsePlugin } from './types.plugin-system';
 
-const ARTIFACT_FILE_NAME = 'PULSE_PLUGIN_REGISTRY.json';
-const PLUGINS_DIR_NAME = 'plugins';
+export const ARTIFACT_FILE_NAME = 'PULSE_PLUGIN_REGISTRY.json';
+export const PLUGINS_DIR_NAME = 'plugins';
 const DOMAIN_PACK_PREFIX = 'domain-pack-';
 const pluginKindSchemaCache = new Map<string, Set<string>>();
 
@@ -28,7 +28,7 @@ interface PluginExecutionProbe {
   error: string | null;
 }
 
-type PluginRegistryEntry = PluginRegistry['plugins'][number] & {
+export type PluginRegistryEntry = PluginRegistry['plugins'][number] & {
   status: PluginLoadStatus;
   execution: PluginExecutionProbe[];
 };
@@ -216,7 +216,7 @@ export function loadPlugin(pluginPath: string): PulsePlugin | null {
   return loadPluginAttempt(pluginPath).plugin;
 }
 
-function loadPluginAttempt(pluginPath: string): {
+export function loadPluginAttempt(pluginPath: string): {
   plugin: PulsePlugin | null;
   error: string | null;
   status: Extract<PluginLoadStatus, 'loaded' | 'contract_invalid' | 'load_failed'>;
@@ -264,7 +264,7 @@ function runPluginExecutionProbe(
   }
 }
 
-function executePlugin(plugin: PulsePlugin): PluginExecutionProbe[] {
+export function executePlugin(plugin: PulsePlugin): PluginExecutionProbe[] {
   let nodes: ReturnType<PulsePlugin['discover']> = [];
   const discoverProbe = (() => {
     try {
@@ -331,4 +331,4 @@ function validatePlugin(obj: unknown): obj is PulsePlugin {
 export function isDomainPack(pluginId: string, _rootDir: string): boolean {
   return pluginId.startsWith(DOMAIN_PACK_PREFIX);
 }
-import "./__companions__/plugin-system.companion";
+import './__companions__/plugin-system.companion';

@@ -1,3 +1,13 @@
+import * as path from 'path';
+import type { PluginRegistry } from '../types.plugin-system';
+import type { PluginRegistryEntry } from '../plugin-system';
+import { discoverPlugins } from '../plugin-system';
+import { loadPluginAttempt } from '../plugin-system';
+import { executePlugin } from '../plugin-system';
+import { PLUGINS_DIR_NAME } from '../plugin-system';
+import { ARTIFACT_FILE_NAME } from '../plugin-system';
+import { ensureDir, pathExists, statPath, writeTextFile } from '../safe-fs';
+
 /**
  * Build the full plugin registry by discovering and loading all plugins.
  *
@@ -104,4 +114,3 @@ export function loadPluginRegistry(rootDir: string): PluginRegistry {
 
   return registry;
 }
-

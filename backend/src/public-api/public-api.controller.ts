@@ -1,11 +1,13 @@
 import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { Public } from '../auth/public.decorator';
 import { InboxService } from '../inbox/inbox.service';
 import { ApiKeyGuard } from './api-key.guard';
 
 /** Public api controller. */
 @ApiTags('Public API v1')
 @ApiSecurity('x-api-key')
+@Public()
 @Controller('api/v1')
 @UseGuards(ApiKeyGuard)
 export class PublicApiController {

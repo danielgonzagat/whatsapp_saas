@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Check, Eye, EyeOff, X } from 'lucide-react';
 import { useCallback, useEffect, useState, useId } from 'react';
+import { authApi } from '@/lib/api/auth';
 import { KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
 import { useAuth } from './auth-provider';
 import { GoogleSignInButton } from './google-sign-in-button';
@@ -195,14 +196,9 @@ export function AuthModal({
     setErrors({});
     setIsLoading(true);
     try {
-      const res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setErrors({ password: data.message || 'Erro ao enviar e-mail de recuperacao.' });
+      const res = await authApi.forgotPassword(email.trim());
+      if (res.error) {
+        setErrors({ password: res.error || 'Erro ao enviar e-mail de recuperacao.' });
       } else {
         setForgotSent(true);
       }

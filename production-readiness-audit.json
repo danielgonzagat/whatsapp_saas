@@ -1,0 +1,44 @@
+{
+  "failures": [
+    "ai-constitution gate failed: 4 violations in obsidian scripts (hideUnresolved, writeGeneratedIndexes, codex-obsidian-bridge)"
+  ],
+  "readiness_status": "pass (231 passes, 0 failures)",
+  "health_check_modules": [],
+  "idempotency_count": 152,
+  "rate_limit_modules": [],
+  "dlq_modules": [],
+  "unsafe_patterns_count": 0,
+  "skipped_tests_count": 3,
+  "critical_gaps": [
+    {
+      "rank": 1,
+      "issue": "Zero health check endpoints in backend/src",
+      "impact": "No way for orchestrators, load balancers, or monitoring to verify service liveness/readiness",
+      "fix": "Add @nestjs/terminus health endpoint with DB/Redis/WhatsApp connectivity checks"
+    },
+    {
+      "rank": 2,
+      "issue": "Zero rate limiting implementations in backend",
+      "impact": "All API endpoints exposed to abuse, DDoS, and brute-force attacks",
+      "fix": "Add @nestjs/throttler guard globally and per-route for auth/payment endpoints"
+    },
+    {
+      "rank": 3,
+      "issue": "Zero dead-letter queue or retry/backoff patterns in worker",
+      "impact": "Failed jobs can be silently lost with no recovery mechanism",
+      "fix": "Implement BullMQ backoff strategies, failure event handlers, and DLQ routing"
+    },
+    {
+      "rank": 4,
+      "issue": "AI constitution gate failing in check:all pipeline",
+      "impact": "CI gate can't pass, blocking deployment confidence; obsidian scripts have config violations",
+      "fix": "Restore hideUnresolved:true and showOrphans config in obsidian scripts"
+    },
+    {
+      "rank": 5,
+      "issue": "3 skipped tests (1 backend conditional, 2 e2e)",
+      "impact": "Reduced test coverage confidence; e2e auth-flows and worker-health skipped by design",
+      "fix": "Ensure e2e tests run in CI, gate skipped e2e tests to prevent silent coverage drop"
+    }
+  ]
+}

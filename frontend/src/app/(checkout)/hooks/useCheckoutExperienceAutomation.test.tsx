@@ -2,7 +2,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { useCheckoutExperienceAutomation } from './useCheckoutExperienceAutomation';
 
-vi.mock('@/lib/api/misc', () => ({
+vi.mock('@/lib/api/checkout-public', () => ({
   checkoutPublicApi: {
     calculateShipping: vi.fn(),
   },

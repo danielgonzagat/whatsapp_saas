@@ -77,7 +77,7 @@ export type KycUpdatePayload = Record<string, unknown>;
 // ═══ PROFILE ═══
 
 export function useProfile() {
-  const { data, error, isLoading, mutate } = useSWR<KycProfile>('/api/kyc/profile', swrFetcher);
+  const { data, error, isLoading, mutate } = useSWR<KycProfile>('/kyc/profile', swrFetcher);
   return {
     profile: data || null,
     isLoading,
@@ -97,7 +97,7 @@ export function useProfileMutations() {
 // ═══ FISCAL ═══
 
 export function useFiscalData() {
-  const { data, error, isLoading, mutate } = useSWR<KycFiscal>('/api/kyc/fiscal', swrFetcher);
+  const { data, error, isLoading, mutate } = useSWR<KycFiscal>('/kyc/fiscal', swrFetcher);
   return {
     fiscal: data || null,
     isLoading,
@@ -116,10 +116,7 @@ export function useFiscalMutations() {
 // ═══ DOCUMENTS ═══
 
 export function useKycDocuments() {
-  const { data, error, isLoading, mutate } = useSWR<KycDocument[]>(
-    '/api/kyc/documents',
-    swrFetcher,
-  );
+  const { data, error, isLoading, mutate } = useSWR<KycDocument[]>('/kyc/documents', swrFetcher);
   return {
     documents: data || [],
     isLoading,
@@ -139,7 +136,7 @@ export function useDocumentMutations() {
 // ═══ BANK ═══
 
 export function useBankAccount() {
-  const { data, error, isLoading, mutate } = useSWR<KycBankAccount>('/api/kyc/bank', swrFetcher);
+  const { data, error, isLoading, mutate } = useSWR<KycBankAccount>('/kyc/bank', swrFetcher);
   return {
     bankAccount: data || null,
     isLoading,
@@ -167,7 +164,7 @@ export function useSecurityMutations() {
 // ═══ KYC STATUS & COMPLETION ═══
 
 export function useKycStatus() {
-  const { data, error, isLoading, mutate } = useSWR<KycStatus>('/api/kyc/status', swrFetcher, {
+  const { data, error, isLoading, mutate } = useSWR<KycStatus>('/kyc/status', swrFetcher, {
     dedupingInterval: 60000,
     revalidateOnFocus: false,
   });
@@ -181,14 +178,10 @@ export function useKycStatus() {
 
 /** Use kyc completion. */
 export function useKycCompletion() {
-  const { data, error, isLoading, mutate } = useSWR<KycCompletion>(
-    '/api/kyc/completion',
-    swrFetcher,
-    {
-      dedupingInterval: 30000,
-      revalidateOnFocus: false,
-    },
-  );
+  const { data, error, isLoading, mutate } = useSWR<KycCompletion>('/kyc/completion', swrFetcher, {
+    dedupingInterval: 30000,
+    revalidateOnFocus: false,
+  });
   return {
     completion: data || null,
     isLoading,

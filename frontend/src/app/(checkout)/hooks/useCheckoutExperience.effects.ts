@@ -1,4 +1,4 @@
-import { checkoutPublicApi } from '@/lib/api/misc';
+import { checkoutPublicApi } from '@/lib/api/checkout-public';
 import { useEffect, useRef } from 'react';
 import type {
   BooleanSetter,

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import * as Sentry from '@sentry/node';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
@@ -498,6 +499,11 @@ export class AccountAgentService {
       this.logger.warn(
         `Failed to enqueue scan-contact: ${(e instanceof Error ? e : new Error(String(e))).message}`,
       );
+      Sentry.captureException(e, {
+        tags: { type: 'whatsapp_alert', operation: 'enqueue_scan_contact' },
+        extra: { workspaceId, contactId: session.contactId, phone: session.phone },
+        level: 'warning',
+      });
     }
   }
 

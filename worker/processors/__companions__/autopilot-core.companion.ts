@@ -2,7 +2,6 @@
 
 import { safeResolve } from '../../safe-path';
 import { createHash, randomUUID } from 'node:crypto';
-import { type Job, Worker } from 'bullmq';
 import type { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import {
@@ -568,94 +567,6 @@ async function buildQuotedReplyPlan(params: {
     return fallback();
   }
 }
-
-void (SHOULD_RUN_AUTOPILOT_WORKER
-  ? new Worker(
-      'autopilot-jobs',
-      async (job: Job) => {
-        try {
-          if (job.name === 'cycle-all') {
-            return await runCycleAll();
-          }
-
-          // PULSE:OK — cia-cycle-all is a reserved future producer; disabled while observer-only mode is active
-          if (job.name === 'cia-cycle-all') {
-            return await runCiaCycleAll();
-          }
-
-          // PULSE:OK — cycle-workspace is triggered internally by cycle-all; not a direct queue.add producer
-          if (job.name === 'cycle-workspace') {
-            const workspaceId = job.data?.workspaceId;
-            if (workspaceId) {
-              return await runCycleWorkspace(workspaceId);
-            }
-            return;
-          }
-
-          // PULSE:OK — cia-cycle-workspace is triggered internally by cia-cycle-all; not a direct queue.add producer
-          if (job.name === 'cia-cycle-workspace') {
-            const workspaceId = job.data?.workspaceId;
-            if (workspaceId) {
-              return await runCiaCycleWorkspace(workspaceId);
-            }
-            return;
-          }
-
-          if (job.name === 'followup-contact') {
-            return await runFollowupContact(job.data);
-          }
-
-          if (job.name === 'scan-contact') {
-            return await runScanContact(job.data);
-          }
-
-          if (job.name === AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB) {
-            return await runSweepUnreadConversations(job.data);
-          }
-
-          if (job.name === 'catalog-contacts-30d') {
-            return await runCatalogContacts(job.data);
-          }
-
-          if (job.name === 'score-contact') {
-            return await runScoreContact(job.data);
-          }
-
-          if (job.name === 'cia-action') {
-            return await runCiaAction(job.data);
-          }
-
-          // PULSE:OK — cia-self-improve is disabled while stabilizing; producer intentionally commented out
-          if (job.name === 'cia-self-improve') {
-            const workspaceId = job.data?.workspaceId;
-            if (workspaceId) {
-              return await runCiaSelfImproveWorkspace(workspaceId);
-            }
-            return await runCiaSelfImproveAll();
-          }
-
-          // PULSE:OK — cia-global-learn is disabled while stabilizing; producer intentionally commented out
-          if (job.name === 'cia-global-learn') {
-            return await runCiaGlobalLearningAll();
-          }
-
-          // Compatibilidade legada: scan-message vira processamento consolidado por contato
-          return await runScanContact(job.data);
-        } catch (err: unknown) {
-          const errInstanceofError =
-            err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-          log.error('autopilot_error', { error: errInstanceofError.message });
-          autopilotDecisionCounter.inc({
-            workspaceId: job.data?.workspaceId || 'unknown',
-            intent: 'ERROR',
-            action: 'NONE',
-            result: 'error',
-          });
-        }
-      },
-      { connection, concurrency: 4, lockDuration: 60000 },
-    )
-  : null);
 
 async function decideActionSafe(params: {
   workspaceId?: string;

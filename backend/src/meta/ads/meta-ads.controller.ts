@@ -4,6 +4,10 @@ import { resolveWorkspaceId } from '../../auth/workspace-access';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 import { normalizeMetaGraphSegment } from '../meta-input.util';
+import {
+  MetaAdsDailyInsightsQueryDto,
+  MetaAdsInsightsQueryDto,
+} from './dto/meta-ads-insights-query.dto';
 import { MetaAdsService } from './meta-ads.service';
 
 /** Meta ads controller. */
@@ -45,20 +49,16 @@ export class MetaAdsController {
   @Get('insights/account')
   async getAccountInsights(
     @Req() req: AuthenticatedRequest,
-    @Query('adAccountId') adAccountId: string,
-    @Query('since') since: string,
-    @Query('until') until: string,
-    @Query('level') level: string,
-    @Query('accessToken') accessToken: string,
+    @Query() query: MetaAdsInsightsQueryDto,
   ) {
     resolveWorkspaceId(req);
     return this.metaAdsService.getAccountInsights(
-      normalizeMetaGraphSegment(adAccountId, 'Meta ad account id'),
-      accessToken,
+      normalizeMetaGraphSegment(query.adAccountId, 'Meta ad account id'),
+      query.accessToken,
       {
-        since,
-        until,
-        level,
+        since: query.since,
+        until: query.until,
+        level: query.level,
       },
     );
   }
@@ -67,17 +67,14 @@ export class MetaAdsController {
   @Get('insights/daily')
   async getDailyInsights(
     @Req() req: AuthenticatedRequest,
-    @Query('campaignId') campaignId: string,
-    @Query('since') since: string,
-    @Query('until') until: string,
-    @Query('accessToken') accessToken: string,
+    @Query() query: MetaAdsDailyInsightsQueryDto,
   ) {
     resolveWorkspaceId(req);
     return this.metaAdsService.getCampaignInsights(
-      normalizeMetaGraphSegment(campaignId, 'Meta campaign id'),
-      accessToken,
-      since,
-      until,
+      normalizeMetaGraphSegment(query.campaignId, 'Meta campaign id'),
+      query.accessToken,
+      query.since,
+      query.until,
     );
   }
 

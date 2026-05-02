@@ -37,13 +37,21 @@ if (ddEnabled) {
   });
 }
 
-import { init as initSentry } from '@sentry/node';
+import * as Sentry from '@sentry/node';
 
-initSentry({
+Sentry.init({
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 0.1,
   environment: process.env.NODE_ENV || 'development',
   enabled: process.env.NODE_ENV === 'production',
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[WORKER] unhandledRejection:', reason);
+  Sentry.captureException(reason, {
+    tags: { type: 'worker_alert', operation: 'unhandled_rejection' },
+    level: 'fatal',
+  });
 });
 
 import { RedisConfigurationError, maskRedisUrl, resolveRedisUrl } from './resolve-redis-url';

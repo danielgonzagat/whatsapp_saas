@@ -15,7 +15,8 @@ import {
   usePartnerMessages,
 } from '@/hooks/usePartnerships';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import { affiliateApi, partnershipsApi } from '@/lib/api/misc';
+import { affiliateApi } from '@/lib/api/affiliate';
+import { partnershipsApi } from '@/lib/api/partnerships';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { buildPayUrl } from '@/lib/subdomains';
 import { usePathname, useRouter } from 'next/navigation';

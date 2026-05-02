@@ -277,14 +277,21 @@ export class PaymentWebhookGenericController {
   /**
    * WooCommerce webhook (order paid) — POST /webhook/payment/woocommerce
    * Header: X-WC-Webhook-Signature validated with WC_WEBHOOK_SECRET.
+   * Idempotency via Redis SETEX NX on x-event-id or body hash; duplicates return 200.
    */
   @Public()
   @Post('woocommerce')
   async handleWoo(
     @Req() req: WebhookRequest,
     @Headers('x-wc-webhook-signature') signature: string,
+    @Headers('x-event-id') eventId: string | undefined,
     @Body() body: WooCommerceWebhookBody,
   ) {
+    const wooDupe = await ensureIdempotent(eventId, req, this.redis, this.logger, (msg, meta) =>
+      sendOpsAlert(msg, meta, this.redis),
+    );
+    if (wooDupe) return wooDupe;
+
     const secret = process.env.WC_WEBHOOK_SECRET;
     if (!secret) throw new BadRequestException('WC_WEBHOOK_SECRET not set');
     const raw: string | Buffer = req?.rawBody || JSON.stringify(body);

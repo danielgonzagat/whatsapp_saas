@@ -65,5 +65,7 @@ export type ExecutionState = {
   logs?: PersistedFlowLogEntry[];
   waitingForResponse?: boolean;
   timeoutAt?: number;
+  /** Timestamp (ms) when the flow execution started — used for max-duration guard */
+  startedAt?: number;
   stack?: Array<{ flowId: string; nodeId: string }>;
 };

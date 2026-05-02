@@ -17,6 +17,8 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { CalendarEvent, CalendarService } from './calendar.service';
+import { CreateEventDto } from './dto/create-event.dto';
+import { ListEventsQueryDto } from './dto/list-events-query.dto';
 
 function parseDateOrFail(raw: string | undefined, label: string): Date | undefined {
   if (!raw) {
@@ -27,15 +29,6 @@ function parseDateOrFail(raw: string | undefined, label: string): Date | undefin
     throw new BadRequestException(`Invalid ${label}`);
   }
   return parsed;
-}
-
-class CreateEventDto {
-  summary: string;
-  description?: string;
-  startTime: string; // ISO string
-  endTime: string; // ISO string
-  attendees?: string[];
-  location?: string;
 }
 
 /** Calendar controller. */
@@ -51,16 +44,12 @@ export class CalendarController {
   /** List events. */
   @Get('events')
   @ApiOperation({ summary: 'List calendar events' })
-  async listEvents(
-    @Req() req: AuthenticatedRequest,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-  ) {
+  async listEvents(@Req() req: AuthenticatedRequest, @Query() query: ListEventsQueryDto) {
     const workspaceId = resolveWorkspaceId(req);
     return this.calendarService.listEvents(
       workspaceId,
-      parseDateOrFail(startDate, 'startDate'),
-      parseDateOrFail(endDate, 'endDate'),
+      parseDateOrFail(query.startDate, 'startDate'),
+      parseDateOrFail(query.endDate, 'endDate'),
     );
   }
 

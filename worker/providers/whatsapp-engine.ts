@@ -280,6 +280,16 @@ export const WhatsAppEngine = {
         `\n⚡ [UWE-Ω] Enviando Mídia (${type}) | workspace=${normalizedWorkspace.id} | provider=${normalizedWorkspace.whatsappProvider}`,
       );
 
+      const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(normalizedWorkspace.id);
+      if (!subStatus.active) {
+        throw new Error(subStatus.reason || 'Assinatura inativa');
+      }
+
+      const msgLimit = await PlanLimitsProvider.checkMessageLimit(normalizedWorkspace.id);
+      if (!msgLimit.allowed) {
+        throw new Error(msgLimit.reason || 'Limite de mensagens excedido');
+      }
+
       await AntiBan.apply(normalizedWorkspace);
 
       try {

@@ -20,11 +20,14 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockRedisCtor, mockBullQueueCtor, mockQueueEventsCtor } = vi.hoisted(() => ({
-  mockRedisCtor: vi.fn(),
-  mockBullQueueCtor: vi.fn(),
-  mockQueueEventsCtor: vi.fn(),
-}));
+const { mockRedisCtor, mockBullQueueCtor, mockQueueEventsCtor, mockWorkerClose } = vi.hoisted(
+  () => ({
+    mockRedisCtor: vi.fn(),
+    mockBullQueueCtor: vi.fn(),
+    mockQueueEventsCtor: vi.fn(),
+    mockWorkerClose: vi.fn().mockResolvedValue(undefined),
+  }),
+);
 
 vi.mock('ioredis', () => {
   // Default export: a class-like function that records construction.
@@ -49,7 +52,9 @@ vi.mock('bullmq', () => {
     this.on = vi.fn();
     this.close = vi.fn().mockResolvedValue(undefined);
   } as unknown as new (...args: any[]) => any;
-  const WorkerClass = function () {} as unknown as new (...args: any[]) => any;
+  const WorkerClass = function (this: any) {
+    this.close = mockWorkerClose;
+  } as unknown as new (...args: any[]) => any;
   return {
     Queue: QueueClass,
     QueueEvents: QueueEventsClass,
@@ -67,6 +72,7 @@ describe('worker/queue.ts — lazy initialization (P2-4)', () => {
     mockRedisCtor.mockClear();
     mockBullQueueCtor.mockClear();
     mockQueueEventsCtor.mockClear();
+    mockWorkerClose.mockClear();
     // Reset the queue module so each test starts fresh.
     vi.resetModules();
   });
@@ -108,5 +114,26 @@ describe('worker/queue.ts — lazy initialization (P2-4)', () => {
   it('exports shutdownQueueSystem as a function', async () => {
     const queueModule = await import('../queue');
     expect(typeof queueModule.shutdownQueueSystem).toBe('function');
+  });
+
+  it('shuts down after constructing the legacy Queue wrapper without undefined workers', async () => {
+    const queueModule = await import('../queue');
+
+    const legacyQueue = new queueModule.Queue('legacy-test-queue');
+
+    await expect(legacyQueue.close()).resolves.toBeUndefined();
+    await expect(queueModule.shutdownQueueSystem(25)).resolves.toBeUndefined();
+  });
+
+  it('removes a closed legacy worker from global shutdown ownership', async () => {
+    const queueModule = await import('../queue');
+    const legacyQueue = new queueModule.Queue('legacy-worker-queue');
+
+    legacyQueue.on('job', async () => {});
+
+    await legacyQueue.close();
+    await queueModule.shutdownQueueSystem(25);
+
+    expect(mockWorkerClose).toHaveBeenCalledTimes(1);
   });
 });

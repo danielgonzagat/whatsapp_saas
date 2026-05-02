@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
+import { QueueHealthService } from '../metrics/queue-health.service';
 import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
@@ -25,6 +26,7 @@ export class SystemHealthService {
     private readonly whatsappApi: WhatsAppApiProvider,
     private readonly storageService: StorageService,
     private readonly observabilityQueries: ObservabilityQueriesService,
+    private readonly queueHealth: QueueHealthService,
   ) {}
 
   /**
@@ -68,6 +70,7 @@ export class SystemHealthService {
       whatsapp,
       worker: await this.checkWorker(),
       storage: await this.checkStorage(),
+      queues: await this.checkQueues(),
       config: this.checkCriticalConfig(),
       openai: this.checkOpenAI(),
       anthropic: this.checkAnthropic(),
@@ -218,6 +221,31 @@ export class SystemHealthService {
         status: 'DOWN',
         url: this.maskUrl(workerHealthUrl),
         error: e instanceof Error ? (e instanceof Error ? e.message : String(e)) : 'unknown_error',
+      };
+    }
+  }
+
+  private async checkQueues() {
+    try {
+      const statuses = await this.queueHealth.getQueuesStatus();
+      const totalWaiting = statuses.reduce((sum, q) => sum + (q.main.waiting || 0), 0);
+      const totalFailed = statuses.reduce((sum, q) => sum + (q.main.failed || 0), 0);
+      const totalDlqWaiting = statuses.reduce((sum, q) => sum + (q.dlq.waiting || 0), 0);
+      const totalDlqFailed = statuses.reduce((sum, q) => sum + (q.dlq.failed || 0), 0);
+      const threshold = statuses[0]?.threshold ?? 200;
+      const alert = totalWaiting > threshold || totalFailed > 0 || totalDlqFailed > 0;
+      return {
+        status: alert ? 'DEGRADED' : 'UP',
+        waiting: totalWaiting,
+        failed: totalFailed,
+        dlqWaiting: totalDlqWaiting,
+        dlqFailed: totalDlqFailed,
+        threshold,
+      };
+    } catch (e: unknown) {
+      return {
+        status: 'DOWN',
+        error: e instanceof Error ? e.message : String(e),
       };
     }
   }

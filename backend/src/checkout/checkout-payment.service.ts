@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import * as Sentry from '@sentry/node';
 
 import { AuditService } from '../audit/audit.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
@@ -367,6 +368,17 @@ export class CheckoutPaymentService {
     const amount = chargedTotalInCents / 100;
 
     try {
+      Sentry.addBreadcrumb({
+        message: `checkout payment processing via Stripe`,
+        category: 'payment',
+        level: 'info',
+        data: {
+          orderId: params.orderId,
+          workspaceId: params.workspaceId,
+          amount,
+          paymentMethod: params.paymentMethod,
+        },
+      });
       const charge = await this.stripeCharge.createSaleCharge(
         this.buildChargeInput(params, {
           sellerStripeAccountId,
@@ -420,6 +432,16 @@ export class CheckoutPaymentService {
       this.logger.error(
         `Stripe payment processing failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
       );
+      Sentry.captureException(error, {
+        tags: { type: 'financial_alert', operation: 'checkout_stripe_payment' },
+        extra: {
+          workspaceId: params.workspaceId,
+          orderId: params.orderId,
+          amount,
+          gateway: 'stripe',
+        },
+        level: 'fatal',
+      });
       this.financialAlert.paymentFailed(error as Error, {
         workspaceId: params.workspaceId,
         orderId: params.orderId,

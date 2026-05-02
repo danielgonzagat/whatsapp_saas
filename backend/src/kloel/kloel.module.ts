@@ -59,12 +59,11 @@ import { WalletModule } from '../wallet/wallet.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { AdRulesEngineService } from './ad-rules-engine.service';
 import { AdRulesController } from './ad-rules.controller';
-import { AudioController } from './audio.controller';
-import { AudioService } from './audio.service';
 import { CanvasController } from './canvas.controller';
 import { CartRecoveryService } from './cart-recovery.service';
 import { DiagnosticsController } from './diagnostics.controller';
 import { EmailCampaignService } from './email-campaign.service';
+import { KloelAudioModule } from './kloel-audio.module';
 import { LeadsController } from './leads.controller';
 import { LeadsService } from './leads.service';
 import { OrderAlertsService } from './order-alerts.service';
@@ -116,6 +115,7 @@ import { WebinarController } from './webinar.controller';
     FraudModule,
     PartnershipsModule,
     MetricsModule,
+    KloelAudioModule,
   ],
   controllers: [
     KloelController,
@@ -126,7 +126,6 @@ import { WebinarController } from './webinar.controller';
     MemoryController,
     PdfProcessorController,
     WalletController,
-    AudioController,
     UnifiedAgentController,
     SmartPaymentController,
     DiagnosticsController,
@@ -188,7 +187,6 @@ import { WebinarController } from './webinar.controller';
     WalletService,
     WalletLedgerService,
     LLMBudgetService,
-    AudioService,
     UnifiedAgentService,
     UnifiedAgentContextService,
     UnifiedAgentContextDataService,
@@ -235,7 +233,7 @@ import { WebinarController } from './webinar.controller';
     WalletService,
     WalletLedgerService,
     LLMBudgetService,
-    AudioService,
+    KloelAudioModule,
     UnifiedAgentService,
     UnifiedAgentContextDataService,
     UnifiedAgentActionsMessagingService,

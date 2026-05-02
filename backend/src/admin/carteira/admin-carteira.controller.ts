@@ -31,6 +31,8 @@ import { LedgerService } from '../../payments/ledger/ledger.service';
 import { MarketplaceTreasuryPayoutService } from '../../marketplace-treasury/marketplace-treasury-payout.service';
 import { MarketplaceTreasuryReconcileService } from '../../marketplace-treasury/marketplace-treasury-reconcile.service';
 import { MarketplaceTreasuryService } from '../../marketplace-treasury/marketplace-treasury.service';
+import { AddFraudBlacklistDto } from './dto/add-fraud-blacklist.dto';
+import { AdminCarteiraLedgerQueryDto } from './dto/admin-carteira-ledger-query.dto';
 
 function parseSkip(value?: string): number | undefined {
   if (!value) {
@@ -94,26 +96,21 @@ export class AdminCarteiraController {
   @Get('ledger')
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.VIEW)
-  async ledger(
-    @Query('currency') currency?: string,
-    @Query('kind') kind?: string,
-    @Query('from') from?: string,
-    @Query('to') to?: string,
-    @Query('skip') skip?: string,
-    @Query('take') take?: string,
-  ) {
+  async ledger(@Query() query: AdminCarteiraLedgerQueryDto) {
     const parsedKind =
-      kind &&
-      Object.values(MarketplaceTreasuryLedgerKind).includes(kind as MarketplaceTreasuryLedgerKind)
-        ? (kind as MarketplaceTreasuryLedgerKind)
+      query.kind &&
+      Object.values(MarketplaceTreasuryLedgerKind).includes(
+        query.kind as MarketplaceTreasuryLedgerKind,
+      )
+        ? (query.kind as MarketplaceTreasuryLedgerKind)
         : undefined;
     return this.wallet.listLedger({
-      currency,
+      currency: query.currency,
       kind: parsedKind,
-      from: parseDateOrFail(from, 'from'),
-      to: parseDateOrFail(to, 'to'),
-      skip: parseSkip(skip),
-      take: parseTake(take),
+      from: parseDateOrFail(query.from, 'from'),
+      to: parseDateOrFail(query.to, 'to'),
+      skip: parseSkip(query.skip),
+      take: parseTake(query.take),
     });
   }
 
@@ -269,13 +266,7 @@ export class AdminCarteiraController {
   @Post('fraud/blacklist')
   @RequireAdminPermission(AdminModule.CARTEIRA, AdminAction.EDIT)
   async addFraudBlacklist(
-    @Body()
-    body: {
-      type?: string;
-      value?: string;
-      reason?: string;
-      expiresAt?: string | null;
-    },
+    @Body() body: AddFraudBlacklistDto,
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
     const type = this.parseFraudBlacklistType(body.type);

@@ -439,6 +439,9 @@ export class WhatsappService {
       await this.redis.rpush(ctxKey, message);
       await this.redis.expire(ctxKey, 60 * 60 * 24);
     } catch (_e: unknown) {
+      this.logger.warn(
+        `Redis reply context write failed for ${workspaceId}, trying fallback: ${(_e instanceof Error ? _e : new Error(String(_e))).message}`,
+      );
       const fc = createRedisClient();
       if (fc) {
         try {
@@ -561,15 +564,28 @@ export class WhatsappService {
           message,
         }),
       );
-    } catch {
-      /* best effort pub/sub */
+    } catch (e: unknown) {
+      this.logger.warn(
+        `Copilot pub/sub failed for ws=${workspaceId}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
+      );
     }
     return { ok: true };
   }
 
   // ═══ CONTACTS ═══
   async listContacts(ws: string) {
-    const rContacts = this.normalizeContacts(await this.providerRegistry.getContacts(ws));
+    const rContacts = this.normalizeContacts(
+      await this.providerRegistry.getContacts(ws).catch((e: unknown) => {
+        this.slog.error('list_contacts_provider_failed', {
+          workspaceId: ws,
+          error: String(e instanceof Error ? e.message : e),
+        });
+        void this.opsAlert?.alertOnCriticalError(e, 'WhatsappService.listContacts', {
+          workspaceId: ws,
+        });
+        return [];
+      }),
+    );
     const lContacts =
       (await this.prisma.contact.findMany({
         take: 500,
@@ -943,12 +959,25 @@ export class WhatsappService {
       );
       await this.providerRegistry.stopTyping(ws, n).catch(() => {});
     }
-    const r = await this.providerRegistry.sendMessage(ws, to, message, {
-      mediaUrl: opts?.mediaUrl,
-      mediaType: opts?.mediaType,
-      caption: opts?.caption,
-      quotedMessageId: opts?.quotedMessageId,
-    });
+    const r = await this.providerRegistry
+      .sendMessage(ws, to, message, {
+        mediaUrl: opts?.mediaUrl,
+        mediaType: opts?.mediaType,
+        caption: opts?.caption,
+        quotedMessageId: opts?.quotedMessageId,
+      })
+      .catch((e: unknown) => {
+        this.slog.error('send_direct_provider_failed', {
+          workspaceId: ws,
+          to,
+          error: String(e instanceof Error ? e.message : e),
+        });
+        void this.opsAlert?.alertOnCriticalError(e, 'WhatsappService._sendDirectCore', {
+          workspaceId: ws,
+          metadata: { to },
+        });
+        return { success: false, error: String(e instanceof Error ? e.message : e) };
+      });
     if (!r.success) {
       await this.providerRegistry.setPresence(ws, 'offline', n).catch(() => {});
       return { error: true, message: r.error || 'send_failed' };
@@ -1018,7 +1047,10 @@ export class WhatsappService {
       try {
         await this.optInContact(ws, p);
         r.push({ phone: p, ok: true });
-      } catch {
+      } catch (e: unknown) {
+        this.logger.warn(
+          `optInContact failed for ${p} in ws=${ws}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
+        );
         r.push({ phone: p, ok: false });
       }
     });
@@ -1031,7 +1063,10 @@ export class WhatsappService {
       try {
         await this.optOutContact(ws, p);
         r.push({ phone: p, ok: true });
-      } catch {
+      } catch (e: unknown) {
+        this.logger.warn(
+          `optOutContact failed for ${p} in ws=${ws}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
+        );
         r.push({ phone: p, ok: false });
       }
     });

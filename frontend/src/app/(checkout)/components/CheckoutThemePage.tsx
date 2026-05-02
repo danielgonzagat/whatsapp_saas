@@ -5,6 +5,8 @@ import type { PublicCheckoutThemeProps } from '@/lib/public-checkout-contract';
 import { useCheckoutExperienceSocial } from '../hooks/useCheckoutExperienceSocial';
 import { CheckoutLeadSections } from './CheckoutLeadSections';
 import { CheckoutPaymentSection, CheckoutSuccessModal } from './CheckoutPaymentSection';
+import CountdownTimer from './CountdownTimer';
+import StockCounter from './StockCounter';
 import {
   CheckoutDesktopSidebar,
   CheckoutFooter,
@@ -27,6 +29,10 @@ type Props = PublicCheckoutThemeProps & {
     testimonials: Array<{ name: string; stars: number; text: string; avatar: string }>;
   };
 };
+
+function normalizeTimerPosition(value?: string) {
+  return value === 'above_button' || value === 'below_header' ? value : 'top';
+}
 
 /** Checkout theme page. */
 export function CheckoutThemePage({
@@ -55,6 +61,25 @@ export function CheckoutThemePage({
     defaults,
     helpers: { fmt, normalizeTestimonials, buildFooterPrimaryLine, formatCnpj },
   });
+  const urgency = (
+    <>
+      <CountdownTimer
+        enabled={Boolean(config?.enableTimer)}
+        type={config?.timerType}
+        minutes={config?.timerMinutes}
+        message={config?.timerMessage}
+        expiredMessage={config?.timerExpiredMessage}
+        position={normalizeTimerPosition(config?.timerPosition)}
+        accentColor={theme.accent}
+        textColor={theme.text}
+      />
+      <StockCounter
+        count={config?.fakeStockCount ?? 0}
+        message={config?.stockMessage}
+        accentColor={theme.accentSecondary}
+      />
+    </>
+  );
 
   return (
     <div
@@ -160,6 +185,9 @@ export function CheckoutThemePage({
           {checkout.headerSecondary}
         </div>
       </div>
+      {config?.timerPosition !== 'above_button' ? (
+        <div style={{ maxWidth: 500, margin: '16px auto 0', padding: '0 24px' }}>{urgency}</div>
+      ) : null}
 
       <div
         style={{
@@ -249,6 +277,9 @@ export function CheckoutThemePage({
           shippingInCents={checkout.shippingInCents}
           fmtBrl={fmt.brl}
         />
+        {config?.timerPosition === 'above_button' ? (
+          <div style={{ flex: '1 1 100%', maxWidth: 420 }}>{urgency}</div>
+        ) : null}
         <CheckoutPaymentSection
           theme={theme}
           config={config}

@@ -5,6 +5,8 @@
 export interface JwtPayload {
   /** Agent/user ID */
   sub: string;
+  /** Unique JWT ID for per-token revocation */
+  jti?: string;
   /** Email property. */
   email: string;
   /** Workspace id property. */

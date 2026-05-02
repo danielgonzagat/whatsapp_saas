@@ -407,6 +407,7 @@ model Flow {
   versions   FlowVersion[]
   followUps  FollowUp[]
 
+  @@index([workspaceId])
   @@map("RAC_Flow")
 }
 
@@ -450,6 +451,9 @@ model FlowExecution {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([contactId])
+  @@index([flowId])
+  @@index([workspaceId])
   @@map("RAC_FlowExecution")
 }
 
@@ -479,6 +483,8 @@ model Campaign {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([workspaceId])
+  @@index([parentId])
   @@map("RAC_Campaign")
 }
 
@@ -615,6 +621,7 @@ model KnowledgeBase {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([workspaceId])
   @@map("RAC_KnowledgeBase")
 }
 
@@ -860,6 +867,7 @@ model Pipeline {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([workspaceId])
   @@map("RAC_Pipeline")
 }
 
@@ -877,6 +885,7 @@ model Stage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([pipelineId])
   @@map("RAC_Stage")
 }
 
@@ -939,6 +948,8 @@ model VoiceJob {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([profileId])
+  @@index([workspaceId])
   @@map("RAC_VoiceJob")
 }
 
@@ -1136,6 +1147,10 @@ model RoutingRule {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([queueId])
+  @@index([workspaceId])
+  @@map("RAC_RoutingRule")
 }
 
 // =========================================

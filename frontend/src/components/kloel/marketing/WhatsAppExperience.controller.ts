@@ -1,7 +1,7 @@
 'use client';
 
 import { useProducts } from '@/hooks/useProducts';
-import { affiliateApi } from '@/lib/api/misc';
+import { affiliateApi } from '@/lib/api/affiliate';
 import {
   type WhatsAppConnectionStatus,
   getWhatsAppQrImageOnly,

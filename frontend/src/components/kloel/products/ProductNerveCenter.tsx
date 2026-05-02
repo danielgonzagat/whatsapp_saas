@@ -8,6 +8,7 @@ import { useToast } from '@/components/kloel/ToastProvider';
 import { ProductUrlsTab } from '@/components/products/ProductUrlsTab';
 import { useCheckoutConfig, useCheckoutPlans, useOrderBumps } from '@/hooks/useCheckoutPlans';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { useProduct, useProductMutations, useProducts } from '@/hooks/useProducts';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { apiFetch } from '@/lib/api';
@@ -84,25 +85,6 @@ import {
    V — KLOEL Terminator palette (Nerve Center)
    ═══════════════════════════════════════════════════ */
 const R$ = formatBrlCents;
-
-const usePrefersReducedMotion = () => {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const syncPreference = () => setPrefersReducedMotion(mediaQuery.matches);
-
-    syncPreference();
-    mediaQuery.addEventListener?.('change', syncPreference);
-    return () => mediaQuery.removeEventListener?.('change', syncPreference);
-  }, []);
-
-  return prefersReducedMotion;
-};
 
 /* ═══════════════════════════════════════════════════
    PLACEHOLDER DATA — empty arrays until backend endpoints
@@ -223,7 +205,7 @@ export default function ProductNerveCenter({
   const router = useRouter();
   const { showToast } = useToast();
   const { isMobile } = useResponsiveViewport();
-  const prefersReducedMotion = usePrefersReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion({ defaultValue: true });
   const rootShellPadding = isMobile
     ? '16px 16px calc(env(safe-area-inset-bottom, 0px) + 40px)'
     : '28px 28px 48px';

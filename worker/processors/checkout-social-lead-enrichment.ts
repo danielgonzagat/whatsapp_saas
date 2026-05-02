@@ -5,6 +5,7 @@ import {
 } from '@prisma/client';
 import { prisma } from '../db';
 import { WorkerLogger } from '../logger';
+import { throwIfRetryable } from '../src/utils/error-handler';
 
 const D_RE = /\D/g;
 
@@ -132,6 +133,7 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.FAILED,
       },
     });
+    throwIfRetryable(error, 'checkout-social-lead-enrichment');
   }
 }
 

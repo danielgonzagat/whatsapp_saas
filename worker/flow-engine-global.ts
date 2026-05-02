@@ -36,6 +36,15 @@ import { safeEvaluateBoolean } from './utils/safe-eval';
 
 const D_RE = /\D/g;
 
+/** Maximum number of node transitions before the flow is forcefully aborted. */
+const MAX_ITERATIONS = 1000;
+/** Maximum wall-clock duration (ms) a single flow execution may run. 10 minutes. */
+const MAX_FLOW_DURATION_MS = 10 * 60_000;
+/** Per-node step timeout (ms). If a node handler takes longer it is aborted. */
+const STEP_TIMEOUT_MS = 60_000;
+/** Maximum automatic retries for a single node before escalating the error. */
+const MAX_RETRIES = 3;
+
 /** Flow engine global. */
 export class FlowEngineGlobal {
   private static instance: FlowEngineGlobal;
@@ -56,11 +65,12 @@ export class FlowEngineGlobal {
   }
 
   /** Shutdown. */
-  shutdown(): void {
+  async shutdown(): Promise<void> {
     if (this.timeoutChecker) {
       clearInterval(this.timeoutChecker);
       this.timeoutChecker = null;
     }
+    await this.queue.close();
   }
 
   /** Get. */
@@ -106,6 +116,7 @@ export class FlowEngineGlobal {
       nodeId: flow.startNode,
       variables: { ...contactVars, ...initialVars },
       logs: [],
+      startedAt: Date.now(),
       stack: [],
     };
 
@@ -251,8 +262,27 @@ export class FlowEngineGlobal {
       return;
     }
 
-    const MAX_ITERATIONS = 1000;
     let iterations = 0;
+
+    const executeNodeWithTimeout = async (
+      currentState: ExecutionState,
+      node: FlowNode,
+    ): Promise<string | 'WAIT' | 'END'> => {
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(
+          () =>
+            reject(
+              new Error(
+                `Step timeout: node ${node.id} (${node.type}) exceeded ${STEP_TIMEOUT_MS}ms`,
+              ),
+            ),
+          STEP_TIMEOUT_MS,
+        ).unref(),
+      );
+
+      const execute = executeNodeWithRetry(currentState, node);
+      return Promise.race([execute, timeout]);
+    };
 
     const executeNodeWithRetry = async (
       currentState: ExecutionState,
@@ -263,7 +293,6 @@ export class FlowEngineGlobal {
         return await this.executeNode(currentState, node);
       } catch (nodeErr) {
         const nextRetryCount = retryCount + 1;
-        const MAX_RETRIES = 3;
         if (nextRetryCount >= MAX_RETRIES) {
           throw nodeErr;
         }
@@ -302,6 +331,23 @@ export class FlowEngineGlobal {
         return;
       }
 
+      // Max flow duration guard
+      if (state.startedAt && Date.now() - state.startedAt > MAX_FLOW_DURATION_MS) {
+        this.log.error('flow_duration_limit', {
+          user: state.user,
+          flowId: state.flowId,
+          nodeId: state.nodeId,
+          durationMs: Date.now() - state.startedAt,
+        });
+        await failExecutionExternal(
+          this.context,
+          this.log,
+          state,
+          `Flow execution aborted: exceeded ${MAX_FLOW_DURATION_MS}ms total duration`,
+        );
+        return;
+      }
+
       const node = flow.nodes[state.nodeId];
       if (!node) {
         this.log.error('node_missing', { user: state.user, nodeId: state.nodeId });
@@ -322,7 +368,7 @@ export class FlowEngineGlobal {
           type: node.type,
         });
 
-        const result = await executeNodeWithRetry(state, node);
+        const result = await executeNodeWithTimeout(state, node);
 
         this.log.info('node_end', { user: state.user, nodeId: node.id, result });
         await appendLogExternal(this.context, state, {

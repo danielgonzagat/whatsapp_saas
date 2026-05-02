@@ -35,6 +35,28 @@ const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /^-|-$/g;
 
+function normalizeTimerType(value: unknown): TimerType | undefined {
+  if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
+    return undefined;
+  }
+
+  const normalized = String(value).trim().toUpperCase();
+
+  if (normalized === 'COUNTDOWN' || normalized === 'EVERGREEN') {
+    return TimerType.COUNTDOWN;
+  }
+
+  if (normalized === 'EXPIRATION' || normalized === 'FIXED') {
+    return TimerType.EXPIRATION;
+  }
+
+  if (normalized === TimerType.STOCK) {
+    return TimerType.STOCK;
+  }
+
+  return undefined;
+}
+
 /** Checkout controller. */
 @Controller('checkout')
 @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
@@ -278,10 +300,7 @@ export class CheckoutController {
     const { orderBumps: _orderBumps, upsells: _upsells, pixels: _pixels, ...configDto } = dto;
     const configInput: Prisma.CheckoutConfigUpdateInput = {
       ...configDto,
-      timerType:
-        dto.timerType && Object.values(TimerType).includes(dto.timerType as TimerType)
-          ? (dto.timerType as TimerType)
-          : undefined,
+      timerType: normalizeTimerType(dto.timerType),
       testimonials: dto.testimonials ? toPrismaJsonValue(dto.testimonials) : undefined,
       trustBadges: dto.trustBadges ? toPrismaJsonValue(dto.trustBadges) : undefined,
     };

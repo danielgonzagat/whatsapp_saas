@@ -30,18 +30,12 @@
  */
 
 import { detectConfig } from './config';
-import { fullScan, startDaemon } from './daemon';
-import { computeCertification } from './certification';
 import { buildStructuralGraph } from './structural-graph';
 import { buildExecutionChains } from './execution-chains';
-import { buildExecutionMatrix } from './execution-matrix';
-import { buildCapabilityState } from './capability-model';
 import { buildFlowProjection } from './flow-projection';
 import { buildParityGaps } from './parity-gaps';
-import { buildProductVision } from './product-vision';
 import { buildProductModel } from './product-model';
 import { buildExternalSignalState, createExternalSignalProfileState } from './external-signals';
-import { runExternalSourcesOrchestrator } from './adapters/external-sources-orchestrator';
 import type { ExternalSourcesConfig } from './adapters/external-sources-orchestrator';
 import { deriveExternalSourcesTimeoutMs } from './external-sources-timeout';
 import { buildPathCoverageState } from './path-coverage-engine';
@@ -55,11 +49,9 @@ import {
   buildTimedOutWorldState,
 } from './timeout-evidence';
 import { PulseExecutionTracer, runPhaseWithTrace } from './execution-trace';
-import { runSelfTrustChecks } from './self-trust';
 import { runCrossArtifactConsistencyCheck } from './cross-artifact-consistency-check';
-import { runDeclaredFlows } from './flows';
 import { runDeclaredInvariants } from './invariants';
-import { loadParserInventory } from './parser-registry';
+const { loadParserInventory } = require('./parser-registry');
 import { loadPulseLocalEnv } from './local-env';
 import { runSyntheticActors } from './actors';
 import { getProfileSelection } from './profiles';
@@ -326,4 +318,3 @@ function deriveFullScanTimeoutMs(
   const dynamicBudgetMs = parserBudgetMs + baseScanOverheadMs + unavailableBudgetMs;
   return Math.max(phaseTimeoutMs ?? 0, dynamicBudgetMs);
 }
-import "./__companions__/index.companion";

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 
 import { StripeService } from '../../billing/stripe.service';
 import type { StripeAccount } from '../../billing/stripe-types';
@@ -164,6 +165,17 @@ export class ConnectPayoutService {
         amountCents: Number(input.amountCents),
         requestId: input.requestId,
         error: (error as Error).message,
+      });
+      Sentry.captureException(error, {
+        tags: { type: 'financial_alert', operation: 'connect_payout' },
+        extra: {
+          workspaceId: balance.workspaceId,
+          accountBalanceId: balance.id,
+          stripeAccountId: balance.stripeAccountId,
+          amountCents: Number(input.amountCents),
+          requestId: input.requestId,
+        },
+        level: 'fatal',
       });
 
       await this.ledgerService.creditAvailableByAdjustment({

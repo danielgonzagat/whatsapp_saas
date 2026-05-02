@@ -22,7 +22,7 @@ import {
 } from '@/hooks/useSales';
 import { useSalesPipeline } from '@/hooks/useSalesPipeline';
 import { apiFetch, tokenStorage } from '@/lib/api';
-import { smartPaymentApi } from '@/lib/api/misc';
+import { smartPaymentApi } from '@/lib/api/smart-payment';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { startTransition, useEffect, useRef, useState, useId } from 'react';
 import { mutate } from 'swr';

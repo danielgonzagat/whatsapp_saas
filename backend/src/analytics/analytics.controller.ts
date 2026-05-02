@@ -14,6 +14,7 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AdvancedAnalyticsService } from './advanced-analytics.service';
 import { AnalyticsService } from './analytics.service';
+import { AnalyticsDateRangeQueryDto, AnalyticsReportQueryDto } from './dto/analytics-query.dto';
 import { SmartTimeService } from './smart-time/smart-time.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 
@@ -83,28 +84,19 @@ export class AnalyticsController {
 
   /** Get advanced. */
   @Get('advanced')
-  async getAdvanced(
-    @Request() req,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-  ) {
-    const { start, end } = parseDateRange(startDate, endDate);
+  async getAdvanced(@Request() req, @Query() query: AnalyticsDateRangeQueryDto) {
+    const { start, end } = parseDateRange(query.startDate, query.endDate);
     return this.advancedAnalyticsService.getAdvancedDashboard(req.user.workspaceId, start, end);
   }
 
   /** Get full report. */
   @Get('reports')
-  async getFullReport(
-    @Request() req,
-    @Query('period') period?: string,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-  ) {
-    if (startDate && endDate) {
-      const { start, end } = parseDateRange(startDate, endDate);
+  async getFullReport(@Request() req, @Query() query: AnalyticsReportQueryDto) {
+    if (query.startDate && query.endDate) {
+      const { start, end } = parseDateRange(query.startDate, query.endDate);
       return this.analyticsService.getFullReport(req.user.workspaceId, 'custom', start, end);
     }
-    return this.analyticsService.getFullReport(req.user.workspaceId, period || '30d');
+    return this.analyticsService.getFullReport(req.user.workspaceId, query.period || '30d');
   }
 
   /** Get ai report. */

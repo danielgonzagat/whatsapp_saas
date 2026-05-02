@@ -35,7 +35,7 @@ export class AuthService {
     private readonly welcomeEmailService?: WelcomeAndOnboardingEmailService,
   ) {
     this.rateLimitService = new RateLimitService(this.redis || null);
-    this.tokenService = new AuthTokenService(this.prisma, this.jwt);
+    this.tokenService = new AuthTokenService(this.prisma, this.jwt, this.redis);
     this.passwordService = new AuthPasswordService(
       this.prisma,
       this.tokenService,
@@ -244,6 +244,18 @@ export class AuthService {
   /** Resend verification email. */
   async resendVerificationEmail(email: string, ip?: string) {
     return this.authVerificationService.resendVerificationEmail(email, ip);
+  }
+
+  /** Logout — revoke all refresh tokens for the authenticated agent. */
+  async logout(agentId: string, accessTokenJti?: string, accessTokenExp?: number) {
+    await this.prisma.refreshToken.updateMany({
+      where: { agentId, revoked: false },
+      data: { revoked: true },
+    });
+    if (accessTokenJti && accessTokenExp) {
+      await this.tokenService.revokeAccessToken(accessTokenJti, accessTokenExp);
+    }
+    return { success: true };
   }
 
   /**

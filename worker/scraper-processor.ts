@@ -2,6 +2,7 @@ import { type Job, Worker } from 'bullmq';
 import type { Prisma } from '@prisma/client';
 import { prisma } from './db';
 import { connection } from './queue';
+import { isRetryableError, WorkerError } from './src/utils/error-handler';
 import { triggerFlowForScrapedLeads } from './scrapers/auto-trigger';
 import { scrapeGoogleMaps } from './scrapers/google-maps';
 import { forEachSequential } from './utils/async-sequence';
@@ -129,21 +130,30 @@ async function processScraperJob(job: Job): Promise<void> {
   const { jobId, query, type, workspaceId } = job.data;
 
   try {
+    await job.updateProgress(5);
     await prisma.scrapingJob.update({ where: { id: jobId }, data: {} });
 
+    await job.updateProgress(20);
     const leads = await scrapeLeadsByType(type, query, job.data.targetUrl);
 
+    await job.updateProgress(40);
     const pipeline = await ensureDefaultPipeline(workspaceId);
     const stage = await ensureFirstStage(pipeline.id);
     const firstStageId = stage.id;
 
     const importedContacts: string[] = [];
     let savedCount = 0;
-    await forEachSequential(leads, async (lead) => {
+    await job.updateProgress(50);
+    await forEachSequential(leads, async (lead, index) => {
       const contactId = await persistLeadWithCrm(lead, { jobId, workspaceId, firstStageId });
       importedContacts.push(contactId);
       savedCount++;
+      if (leads.length > 0 && index % Math.max(1, Math.floor(leads.length / 10)) === 0) {
+        await job.updateProgress(50 + Math.floor((40 * (index + 1)) / leads.length));
+      }
     });
+
+    await job.updateProgress(95);
 
     await prisma.scrapingJob.update({
       where: { id: jobId },
@@ -154,10 +164,20 @@ async function processScraperJob(job: Job): Promise<void> {
 
     await triggerFlowForScrapedLeads(workspaceId, importedContacts);
 
+    await job.updateProgress(100);
     console.log(`✅ [SCRAPER] Job ${jobId} finished. Saved ${savedCount} leads.`);
   } catch (err) {
     console.error(`❌ [SCRAPER] Job ${jobId} failed:`, err);
     await prisma.scrapingJob.update({ where: { id: jobId }, data: {} });
+
+    if (!isRetryableError(err)) {
+      throw new WorkerError(
+        err instanceof Error ? err.message : String(err),
+        'SCRAPER_PERMANENT',
+        false,
+      );
+    }
+
     throw err;
   }
 }

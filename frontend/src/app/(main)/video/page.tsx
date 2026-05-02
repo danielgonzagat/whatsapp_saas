@@ -9,7 +9,7 @@ import { Card } from '@/components/kloel/Card';
 import { ContextualEmptyState } from '@/components/kloel/EmptyStates';
 import { SectionPage } from '@/components/kloel/SectionPage';
 import { tokenStorage } from '@/lib/api';
-import { type VoiceProfile, mediaApi, videoApi, voiceApi } from '@/lib/api/misc';
+import { type VoiceProfile, mediaApi, videoApi, voiceApi } from '@/lib/api/media';
 import { swrFetcher } from '@/lib/fetcher';
 import { useCallback, useEffect, useState } from 'react';
 import useSWR from 'swr';

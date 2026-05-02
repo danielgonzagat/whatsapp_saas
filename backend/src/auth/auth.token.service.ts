@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
 import { Prisma } from '@prisma/client';
+import type { Redis } from 'ioredis';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { assertAgentCanAuthenticate, buildAuthLogMessage } from './auth.helpers';
@@ -30,6 +31,7 @@ export class AuthTokenService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    @Optional() private readonly redis?: Redis,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -40,7 +42,8 @@ export class AuthTokenService {
     role: string,
     name?: string,
   ): Promise<string> {
-    const payload: Record<string, unknown> = { sub: agentId, email, workspaceId, role };
+    const jti = randomUUID();
+    const payload: Record<string, unknown> = { sub: agentId, jti, email, workspaceId, role };
     if (name) {
       payload.name = name;
     }
@@ -246,5 +249,30 @@ export class AuthTokenService {
 
     assertAgentCanAuthenticate(stored.agent);
     return this.issueTokens(stored.agent);
+  }
+
+  /** Blacklist an access token JTI so it cannot be reused before natural expiry. */
+  async revokeAccessToken(jti: string, exp: number): Promise<void> {
+    if (!this.redis) return;
+    const ttlSeconds = Math.max(0, Math.ceil(exp - Date.now() / 1000));
+    if (ttlSeconds <= 0) return;
+    try {
+      await this.redis.setex(`jti:revoked:${jti}`, ttlSeconds, '1');
+    } catch (error: unknown) {
+      this.logger.warn(
+        `Failed to blacklist access token jti ${jti.slice(0, 8)}: ${error instanceof Error ? error.message : 'unknown'}`,
+      );
+    }
+  }
+
+  /** Check whether an access token JTI has been revoked. */
+  async isAccessTokenRevoked(jti: string): Promise<boolean> {
+    if (!this.redis) return false;
+    try {
+      const entry = await this.redis.exists(`jti:revoked:${jti}`);
+      return entry === 1;
+    } catch {
+      return false;
+    }
   }
 }

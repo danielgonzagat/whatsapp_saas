@@ -128,3 +128,11 @@ Sentry.init({
 // ---------------------------------------------------------------------------
 
 initSentryContext('backend');
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[KLOEL] unhandledRejection:', reason);
+  Sentry.captureException(reason, {
+    tags: { type: 'backend_alert', operation: 'unhandled_rejection' },
+    level: 'fatal',
+  });
+});

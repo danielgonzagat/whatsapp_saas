@@ -1,6 +1,6 @@
 'use client';
 import { apiFetch } from '@/lib/api';
-import { memberAreaStudentsApi } from '@/lib/api/misc';
+import { memberAreaStudentsApi } from '@/lib/api/member-area';
 import { swrFetcher } from '@/lib/fetcher';
 import useSWR, { useSWRConfig } from 'swr';
 

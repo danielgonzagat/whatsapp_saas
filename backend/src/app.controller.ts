@@ -1,4 +1,5 @@
 import { Controller, Get, Req, UnauthorizedException } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { AppService } from './app.service';
 import { Public } from './auth/public.decorator';
 import { safeCompareStrings } from './common/utils/crypto-compare.util';
@@ -20,6 +21,7 @@ interface DiagnosticResult {
 }
 
 /** App controller. */
+@SkipThrottle()
 @Controller()
 export class AppController {
   constructor(

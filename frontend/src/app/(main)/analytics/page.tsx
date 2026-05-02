@@ -12,7 +12,7 @@ import {
 import { useNps } from '@/hooks/useDetailedReports';
 import { useAnalyticsStats, useReports, useSmartTime } from '@/hooks/useReports';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import { sendReportEmail } from '@/lib/api/misc';
+import { sendReportEmail } from '@/lib/api/reports';
 import { swrFetcher } from '@/lib/fetcher';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { useRouter, useSearchParams } from 'next/navigation';

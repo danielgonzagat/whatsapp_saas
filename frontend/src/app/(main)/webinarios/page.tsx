@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { apiFetch } from '@/lib/api';
-import { webinarApi } from '@/lib/api/misc';
+import { webinarApi } from '@/lib/api/webinars';
 import { toSupportedEmbedUrl } from '@/lib/video-embed';
 import {
   Calendar,

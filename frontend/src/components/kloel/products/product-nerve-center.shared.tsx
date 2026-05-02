@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type React from 'react';
@@ -111,7 +112,7 @@ export function NP({
   h?: number;
   intensity?: number;
 }) {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
+  const prefersReducedMotion = usePrefersReducedMotion({ defaultValue: true });
   const cv = useRef<HTMLCanvasElement>(null);
   const staticWave = Array.from({ length: Math.max(2, Math.floor(w / 2)) }, (_, index) => {
     const x = (index / (Math.max(2, Math.floor(w / 2)) - 1)) * w;
@@ -119,19 +120,6 @@ export function NP({
     const y = h / 2 + Math.sin(index * 0.55) * amplitude;
     return `${x.toFixed(2)},${y.toFixed(2)}`;
   }).join(' ');
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const syncPreference = () => setPrefersReducedMotion(mediaQuery.matches);
-
-    syncPreference();
-    mediaQuery.addEventListener?.('change', syncPreference);
-    return () => mediaQuery.removeEventListener?.('change', syncPreference);
-  }, []);
 
   useEffect(() => {
     if (prefersReducedMotion) {

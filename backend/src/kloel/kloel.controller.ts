@@ -17,7 +17,7 @@ import {
   Optional,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
@@ -177,6 +177,7 @@ export class KloelController {
 
   @Public()
   @Get('health')
+  @SkipThrottle()
   health() {
     return { status: 'online', identity: 'KLOEL - Inteligência Comercial Autônoma' };
   }

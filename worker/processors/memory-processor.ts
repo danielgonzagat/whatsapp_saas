@@ -11,6 +11,7 @@ import {
   quoteSerializedInputTokenCostCents,
   settleQuotedUsageCharge,
 } from './prepaid-wallet-settlement';
+import { WorkerError } from '../src/utils/error-handler';
 
 const WHITESPACE_RE = /\s+/g;
 const SENTENCE_ENDINGS = ['. ', '? ', '! '];
@@ -160,7 +161,7 @@ const processIngestSource = async (job: Job): Promise<void> => {
 
   if (!apiKey) {
     await markSourceFailed(sourceId);
-    throw new Error('No OpenAI Key for embedding');
+    throw new WorkerError('No OpenAI Key for embedding', 'MEMORY_NO_API_KEY', false);
   }
 
   const openai = new OpenAI({ apiKey });
@@ -170,8 +171,14 @@ const processIngestSource = async (job: Job): Promise<void> => {
   );
   let actualInputTokens = BigInt(0);
 
+  await job.updateProgress(10);
+  let processed = 0;
   await forEachSequential(chunks, async (chunk) => {
     actualInputTokens += BigInt(await insertChunkVector(openai, chunk, sourceId));
+    processed++;
+    if (chunks.length > 0) {
+      await job.updateProgress(10 + Math.floor((80 * processed) / chunks.length));
+    }
   });
 
   if (walletUsage) {
@@ -184,10 +191,12 @@ const processIngestSource = async (job: Job): Promise<void> => {
     });
   }
 
+  await job.updateProgress(90);
   await prisma.knowledgeSource.update({
     data: { status: 'INDEXED' },
     where: { id: sourceId },
   });
+  await job.updateProgress(100);
   log.info('ingest_source_complete', {
     actualInputTokens: actualInputTokens.toString(),
     chunks: chunks.length,
@@ -276,7 +285,7 @@ const handleMemoryJobFailure = async (job: Job, err: unknown): Promise<void> => 
   log.error('memory_job_failed', { error: errInstance.message, jobId: job.id });
 
   if (job.name === 'ingest-source' && job.data.sourceId) {
-    await cleanupFailedIngest(job.data.sourceId, errInstance.message);
+    await cleanupFailedIngest(String(job.data.sourceId), errInstance.message);
   }
 };
 

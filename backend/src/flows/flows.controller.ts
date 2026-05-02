@@ -21,6 +21,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { flowQueue } from '../queue/queue';
 import { WorkspaceService } from '../workspaces/workspace.service';
+import { CreateFlowDto } from './dto/flow.dto';
 import { LogExecutionDto } from './dto/log-execution.dto';
 import { RunFlowDto } from './dto/run-flow.dto';
 import { SaveFlowVersionDto } from './dto/save-flow-version.dto';
@@ -129,11 +130,12 @@ export class FlowsController {
   /** Save flow. */
   @Post('save/:workspaceId/:flowId')
   @Roles('ADMIN')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
   async saveFlow(
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
-    @Body() body: { nodes: unknown; edges: unknown; name?: string },
+    @Body() body: CreateFlowDto,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     const existingRecord = await this.flows.get(effectiveWorkspaceId, flowId);
@@ -145,11 +147,12 @@ export class FlowsController {
 
   /** Update flow. */
   @Put(':workspaceId/:flowId')
+  @UsePipes(new ValidationPipe({ whitelist: true }))
   async updateFlow(
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
-    @Body() body: { nodes: unknown; edges: unknown; name?: string },
+    @Body() body: CreateFlowDto,
   ) {
     return this.saveFlow(req, workspaceId, flowId, body);
   }

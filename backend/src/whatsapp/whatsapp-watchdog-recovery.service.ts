@@ -11,6 +11,7 @@ import { randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger } from '@nestjs/common';
 import type Redis from 'ioredis';
+import * as Sentry from '@sentry/node';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CiaRuntimeService } from './cia-runtime.service';
@@ -114,6 +115,11 @@ export class WhatsAppWatchdogRecoveryService {
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : 'unknown error';
       this.logger.warn(`Connected maintenance failed for ${workspaceName || workspaceId}: ${msg}`);
+      Sentry.captureException(error, {
+        tags: { type: 'whatsapp_alert', operation: 'watchdog_maintenance' },
+        extra: { workspaceId, workspaceName },
+        level: 'warning',
+      });
       return false;
     }
   }

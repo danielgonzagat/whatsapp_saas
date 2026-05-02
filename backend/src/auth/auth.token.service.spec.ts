@@ -33,6 +33,7 @@ describe('AuthTokenService', () => {
     service = new AuthTokenService(
       prismaMock as never as PrismaService,
       jwtMock as never as JwtService,
+      undefined,
     );
   });
 

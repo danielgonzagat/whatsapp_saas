@@ -1,7 +1,7 @@
 'use client';
 
 import { tokenStorage } from '@/lib/api/core';
-import { scrapersApi } from '@/lib/api/misc';
+import { scrapersApi } from '@/lib/api/scrapers';
 import { swrFetcher } from '@/lib/fetcher';
 import useSWR from 'swr';
 

@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
 import { SectionPage } from '@/components/kloel/SectionPage';
-import { launchApi } from '@/lib/api/misc';
+import { launchApi } from '@/lib/api/launch';
 import { useRouter } from 'next/navigation';
 import { useState, useId } from 'react';
 

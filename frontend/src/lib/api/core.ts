@@ -4,111 +4,12 @@ import {
   isAnonymousKloelToken,
 } from '@/lib/auth-identity';
 import { getSharedCookieDomain } from '@/lib/subdomains';
-// API Client for KLOEL Backend - Core module
-// Types, token storage, apiFetch, wallet & memory functions
 import { mutate } from 'swr';
 import { API_BASE } from '../http';
 
 /** Invalidate SWR cache keys matching a prefix after a write operation */
 export function invalidateCache(prefix: string) {
   mutate((key: unknown) => typeof key === 'string' && key.startsWith(prefix));
-}
-
-// ============================================
-// Types
-// ============================================
-
-export interface WalletBalance {
-  /** Available property. */
-  available: number;
-  /** Pending property. */
-  pending: number;
-  /** Blocked property. */
-  blocked: number;
-  /** Total property. */
-  total: number;
-  /** Formatted available property. */
-  formattedAvailable: string;
-  /** Formatted pending property. */
-  formattedPending: string;
-  /** Formatted total property. */
-  formattedTotal: string;
-}
-
-/** Wallet transaction shape. */
-export interface WalletTransaction {
-  /** Id property. */
-  id: string;
-  /** Type property. */
-  type: 'sale' | 'withdrawal' | 'refund' | 'fee';
-  /** Amount property. */
-  amount: number;
-  /** Gross amount property. */
-  grossAmount?: number;
-  /** Gateway fee property. */
-  gatewayFee?: number;
-  /** Kloel fee property. */
-  kloelFee?: number;
-  /** Net amount property. */
-  netAmount?: number;
-  /** Status property. */
-  status: 'pending' | 'confirmed' | 'failed';
-  /** Description property. */
-  description?: string;
-  /** Created at property. */
-  createdAt: string;
-}
-
-/** Memory item shape. */
-export interface MemoryItem {
-  /** Id property. */
-  id: string;
-  /** Key property. */
-  key: string;
-  /** Value property. */
-  value: unknown;
-  /** Type property. */
-  type: string;
-  /** Created at property. */
-  createdAt: string;
-  /** Embedding property. */
-  embedding?: number[];
-}
-
-/** Product shape. */
-export interface Product {
-  /** Name property. */
-  name: string;
-  /** Price property. */
-  price: number;
-  /** Description property. */
-  description?: string;
-}
-
-/** Lead shape. */
-export interface Lead {
-  /** Id property. */
-  id: string;
-  /** Phone property. */
-  phone: string;
-  /** Name property. */
-  name?: string;
-  /** Email property. */
-  email?: string;
-  /** Status property. */
-  status: string;
-  /** Last intent property. */
-  lastIntent?: string;
-  /** Last interaction property. */
-  lastInteraction?: string;
-  /** Total messages property. */
-  totalMessages?: number;
-  /** Metadata property. */
-  metadata?: Record<string, unknown>;
-  /** Created at property. */
-  createdAt?: string;
-  /** Updated at property. */
-  updatedAt?: string;
 }
 
 /** Whats app connection status shape. */
@@ -745,7 +646,7 @@ async function doRefreshAccessToken(): Promise<boolean> {
   }
 
   try {
-    const res = await fetch(`/api/auth/refresh`, {
+    const res = await fetch(`${API_URL}/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken }),
@@ -775,9 +676,7 @@ async function doRefreshAccessToken(): Promise<boolean> {
 }
 
 function resolveApiEndpoint(endpoint: string): string {
-  return endpoint === '/marketing' || endpoint.startsWith('/marketing/')
-    ? `/api${endpoint}`
-    : endpoint;
+  return endpoint;
 }
 
 function isTrustedAbsoluteRequestTarget(value: string): boolean {
@@ -815,10 +714,10 @@ function createTrustedRequest(input: string, init?: RequestInit): Request {
   return new Request(input, init);
 }
 
-function buildApiHeaders(
-  options: { headers?: HeadersInit; body?: unknown },
-  isProxyEndpoint: boolean,
-): Record<string, string> {
+function buildApiHeaders(options: {
+  headers?: HeadersInit;
+  body?: unknown;
+}): Record<string, string> {
   const isFormData = options.body instanceof FormData;
   const token = tokenStorage.getToken();
   const workspaceId = tokenStorage.getWorkspaceId();
@@ -832,15 +731,9 @@ function buildApiHeaders(
 
   if (token) {
     headers.Authorization = `Bearer ${token}`;
-    if (isProxyEndpoint) {
-      headers['x-kloel-access-token'] = token;
-    }
   }
   if (workspaceId) {
     headers['x-workspace-id'] = workspaceId;
-    if (isProxyEndpoint) {
-      headers['x-kloel-workspace-id'] = workspaceId;
-    }
   }
   return headers;
 }
@@ -931,12 +824,8 @@ export async function apiFetch<T = unknown>(
   } = {},
 ): Promise<ApiResponse<T>> {
   const resolvedEndpoint = resolveApiEndpoint(endpoint);
-  const isProxyEndpoint = resolvedEndpoint.startsWith('/api/');
-  const headers = buildApiHeaders(options, isProxyEndpoint);
-  const url = appendQueryParams(
-    isProxyEndpoint ? resolvedEndpoint : `${API_URL}${resolvedEndpoint}`,
-    options.params,
-  );
+  const headers = buildApiHeaders(options);
+  const url = appendQueryParams(`${API_URL}${resolvedEndpoint}`, options.params);
   const body = serializeApiBody(options.body);
   const baseInit: RequestInit = {
     ...options,
@@ -983,178 +872,6 @@ export const buildQuery = (params: Record<string, string | number | undefined | 
 /** Auth headers. */
 export const authHeaders = (token?: string): Record<string, string> =>
   token ? { authorization: `Bearer ${token}` } : {};
-
-// ============================================
-// Wallet API
-// ============================================
-
-export async function getWalletBalance(workspaceId: string): Promise<WalletBalance> {
-  const res = await apiFetch<WalletBalance>(
-    `/kloel/wallet/${encodeURIComponent(workspaceId)}/balance`,
-  );
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data as WalletBalance;
-}
-
-/** Get wallet transactions. */
-export async function getWalletTransactions(workspaceId: string): Promise<WalletTransaction[]> {
-  const res = await apiFetch<WalletTransaction[] | { transactions: WalletTransaction[] }>(
-    `/kloel/wallet/${encodeURIComponent(workspaceId)}/transactions`,
-  );
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  const data = res.data;
-  if (Array.isArray(data)) {
-    return data;
-  }
-  return (data as { transactions: WalletTransaction[] })?.transactions || [];
-}
-
-/** Process sale. */
-export async function processSale(
-  workspaceId: string,
-  data: { amount: number; saleId: string; description: string; kloelFeePercent?: number },
-): Promise<unknown> {
-  const res = await apiFetch<unknown>(
-    `/kloel/wallet/${encodeURIComponent(workspaceId)}/process-sale`,
-    {
-      method: 'POST',
-      body: data,
-    },
-  );
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data;
-}
-
-/** Request withdrawal. */
-export async function requestWithdrawal(
-  workspaceId: string,
-  amount: number,
-  bankAccount: string,
-): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/withdraw`, {
-    method: 'POST',
-    body: { amount, bankAccount },
-  });
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data;
-}
-
-/** Confirm transaction. */
-export async function confirmTransaction(
-  workspaceId: string,
-  transactionId: string,
-): Promise<unknown> {
-  const res = await apiFetch<unknown>(
-    `/kloel/wallet/${encodeURIComponent(workspaceId)}/confirm/${encodeURIComponent(transactionId)}`,
-    {
-      method: 'POST',
-    },
-  );
-  if (res.error) {
-    throw new Error(res.error);
-  }
-  return res.data;
-}
-
-// ============================================
-// Memory API
-// ============================================
-
-export async function getMemoryStats(
-  workspaceId: string,
-): Promise<{ totalItems: number; products: number; knowledge: number }> {
-  const res = await apiFetch<{ totalItems: number; products: number; knowledge: number }>(
-    `/kloel/memory/${workspaceId}/stats`,
-  );
-  if (res.error) {
-    throw new Error('Failed to fetch memory stats');
-  }
-  return res.data as { totalItems: number; products: number; knowledge: number };
-}
-
-/** Get memory list. */
-export async function getMemoryList(workspaceId: string): Promise<MemoryItem[]> {
-  const res = await apiFetch<{ memories: MemoryItem[] }>(`/kloel/memory/${workspaceId}/list`);
-  if (res.error) {
-    throw new Error('Failed to fetch memories');
-  }
-  return res.data?.memories || [];
-}
-
-/** Save product. */
-export async function saveProduct(workspaceId: string, product: Product): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/kloel/memory/${workspaceId}/product`, {
-    method: 'POST',
-    body: product,
-  });
-  if (res.error) {
-    throw new Error('Failed to save product');
-  }
-  return res.data;
-}
-
-/** Search memory. */
-export async function searchMemory(workspaceId: string, query: string): Promise<MemoryItem[]> {
-  const res = await apiFetch<{ memories: MemoryItem[] }>(`/kloel/memory/${workspaceId}/search`, {
-    method: 'POST',
-    body: { query },
-  });
-  if (res.error) {
-    throw new Error('Failed to search memory');
-  }
-  return res.data?.memories || [];
-}
-
-// ============================================
-// Leads API
-// ============================================
-
-export async function getLeads(
-  workspaceId: string,
-  params?: { status?: string; search?: string; limit?: number },
-): Promise<Lead[]> {
-  const query = new URLSearchParams();
-  if (params?.status) {
-    query.set('status', params.status);
-  }
-  if (params?.search) {
-    query.set('q', params.search);
-  }
-  if (params?.limit) {
-    query.set('limit', String(params.limit));
-  }
-
-  const endpoint = `/kloel/leads/${encodeURIComponent(workspaceId)}${
-    query.toString() ? `?${query.toString()}` : ''
-  }`;
-
-  const res = await apiFetch<Lead[] | { leads: Lead[] }>(endpoint);
-  if (res.error) {
-    throw new Error(res.error);
-  }
-
-  const data = res.data;
-  if (Array.isArray(data)) {
-    return data;
-  }
-  if (
-    data &&
-    typeof data === 'object' &&
-    'leads' in data &&
-    Array.isArray((data as { leads: Lead[] }).leads)
-  ) {
-    return (data as { leads: Lead[] }).leads;
-  }
-  return [];
-}
 
 // ============================================
 // Generic API client

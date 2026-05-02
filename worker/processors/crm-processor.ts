@@ -6,6 +6,7 @@ import { WorkerLogger } from '../logger';
 import { processCheckoutSocialLeadEnrichment } from './checkout-social-lead-enrichment';
 import { PlanLimitsProvider } from '../providers/plan-limits';
 import { connection } from '../queue';
+import { isRetryableError, WorkerError } from '../src/utils/error-handler';
 
 const log = new WorkerLogger('ghost-closer');
 const engine = FlowEngineGlobal.get();
@@ -16,8 +17,8 @@ export const ghostCloserWorker = new Worker(
   async (job: Job) => {
     log.info('job_start', { jobId: job.id, name: job.name });
     try {
+      await job.updateProgress(10);
       switch (job.name) {
-        // PULSE:OK — check-inactivity is scheduled via repeatable jobs or cron; no direct queue.add call
         case 'check-inactivity':
           await checkInactivity(job.data.workspaceId);
           break;
@@ -29,15 +30,22 @@ export const ghostCloserWorker = new Worker(
         default:
           log.warn('unknown_job', { name: job.name });
       }
+      await job.updateProgress(100);
     } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'unknown error';
       log.error('job_failed', {
         jobId: job.id,
-        error: err instanceof Error ? err.message : 'unknown error',
+        error: msg,
       });
+
+      if (!isRetryableError(err)) {
+        throw new WorkerError(msg, 'CRM_PERMANENT', false);
+      }
+
       throw err;
     }
   },
-  { connection, concurrency: 1 }, // Single concurrency to avoid race conditions
+  { connection, concurrency: 1 },
 );
 
 async function checkInactivity(workspaceId: string) {

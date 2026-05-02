@@ -15,7 +15,7 @@ import {
   type KloelChatSelectableProduct,
 } from '@/components/kloel/dashboard/KloelChatComposer';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
-import { affiliateApi } from '@/lib/api/misc';
+import { affiliateApi } from '@/lib/api/affiliate';
 import { productApi } from '@/lib/api/products';
 import { uploadChatFile } from '@/lib/api/kloel';
 import {

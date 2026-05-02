@@ -5,6 +5,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 import { DashboardService } from './dashboard.service';
+import { HomeQueryDto } from './dto/home-query.dto';
 
 /** Dashboard controller. */
 @Controller('dashboard')
@@ -21,18 +22,12 @@ export class DashboardController {
 
   /** Get home. */
   @Get('home')
-  async getHome(
-    @Req() req: AuthenticatedRequest,
-    @Query('workspaceId') workspaceId: string,
-    @Query('period') period?: string,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-  ) {
-    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+  async getHome(@Req() req: AuthenticatedRequest, @Query() query: HomeQueryDto) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, query.workspaceId);
     const snapshot = await this.dashboardService.getHomeSnapshot(effectiveWorkspaceId, {
-      period,
-      startDate,
-      endDate,
+      period: query.period,
+      startDate: query.startDate,
+      endDate: query.endDate,
     });
 
     return {

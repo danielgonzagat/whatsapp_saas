@@ -8,9 +8,10 @@ import {
 } from '@/components/kloel/ui/subinterface-pill';
 import { useMemberAreaMutations, useMemberAreas } from '@/hooks/useMemberAreas';
 import { useProductMutations, useProducts } from '@/hooks/useProducts';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { apiFetch } from '@/lib/api';
-import { affiliateApi } from '@/lib/api/misc';
+import { affiliateApi } from '@/lib/api/affiliate';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { buildMemberAreaPreviewPath } from '@/lib/member-area-preview';
 import { toSupportedEmbedUrl } from '@/lib/video-embed';
@@ -35,25 +36,6 @@ const _TEXT_MUTED = KLOEL_THEME.textTertiary;
 const PURPLE = '#8B5CF6';
 const GREEN = EMBER;
 
-function usePrefersReducedMotion() {
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return;
-    }
-
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const apply = () => setPrefersReducedMotion(mediaQuery.matches);
-
-    apply();
-    mediaQuery.addEventListener?.('change', apply);
-    return () => mediaQuery.removeEventListener?.('change', apply);
-  }, []);
-
-  return prefersReducedMotion;
-}
-
 // ── Icons (IC) ──
 // Extracted into a sibling module to keep this file focused on layout/logic.
 import { IC } from './ProdutosView.icons';
@@ -71,7 +53,7 @@ function NP({
   h?: number;
   color?: string;
 }) {
-  const prefersReducedMotion = usePrefersReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion({ defaultValue: true });
   const ref = useRef<HTMLCanvasElement>(null);
 
   const staticWave = Array.from({ length: Math.max(2, Math.floor(w / 2)) }, (_, index) => {
@@ -177,7 +159,7 @@ function Ticker({
   color?: string;
   duration?: string;
 }) {
-  const prefersReducedMotion = usePrefersReducedMotion();
+  const prefersReducedMotion = usePrefersReducedMotion({ defaultValue: true });
   const text = items.join('  ///  ');
   return (
     <div

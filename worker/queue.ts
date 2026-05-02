@@ -375,11 +375,11 @@ export class Queue {
   private queue: BullQueue;
   private name: string;
   private worker?: Worker;
+  private closed = false;
 
   constructor(name: string) {
     this.name = name;
     this.queue = new BullQueue(name, buildQueueOptions());
-    additionalWorkers.push(); // placeholder; real workers added in on()
     console.log(`📦 [Queue] Criada fila "${name}" com conexão Redis configurada`);
   }
 
@@ -404,11 +404,22 @@ export class Queue {
   }
 
   /** Close. */
-  async close() {
+  async close(): Promise<void> {
+    if (this.closed) {
+      return;
+    }
+
     if (this.worker) {
-      await this.worker.close();
+      const worker = this.worker;
+      await worker.close();
+      const workerIndex = additionalWorkers.indexOf(worker);
+      if (workerIndex >= 0) {
+        additionalWorkers.splice(workerIndex, 1);
+      }
+      this.worker = undefined;
     }
     await this.queue.close();
+    this.closed = true;
   }
 }
 

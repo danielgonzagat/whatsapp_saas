@@ -1,6 +1,7 @@
 // SSE agent stream connector extracted from chat-container.tsx.
 // Pure async + callback — no React, no JSX.
 
+import { API_BASE } from '@/lib/http';
 import { tokenStorage } from '@/lib/api';
 import type { AgentStreamEvent } from './chat-container.types';
 
@@ -11,7 +12,7 @@ export interface AgentStreamCallbacks {
 }
 
 /**
- * Opens a persistent SSE connection to /api/whatsapp-api/live.
+ * Opens a persistent SSE connection to /whatsapp-api/live.
  * Returns a cleanup function that cancels retries and aborts the fetch.
  */
 export function connectAgentStream(callbacks: AgentStreamCallbacks): () => void {
@@ -30,14 +31,12 @@ export function connectAgentStream(callbacks: AgentStreamCallbacks): () => void 
 
     controller = new AbortController();
     try {
-      const response = await fetch('/api/whatsapp-api/live', {
+      const response = await fetch(`${API_BASE}/whatsapp-api/live`, {
         method: 'GET',
         headers: {
           Accept: 'text/event-stream',
           Authorization: `Bearer ${tokenStorage.getToken() || token}`,
-          'x-kloel-access-token': tokenStorage.getToken() || token,
           'x-workspace-id': tokenStorage.getWorkspaceId() || workspaceId,
-          'x-kloel-workspace-id': tokenStorage.getWorkspaceId() || workspaceId,
         },
         signal: controller.signal,
       });

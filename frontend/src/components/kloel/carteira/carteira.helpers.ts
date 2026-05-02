@@ -11,7 +11,7 @@ const COMPACT_NUMBER_FORMAT = new Intl.NumberFormat('pt-BR', {
 });
 
 export const WALLET_SELECTION_STYLE =
-  '::selection{background:rgba(232,93,48,0.3)} input::placeholder{color:var(--app-text-placeholder)} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:var(--app-border-primary);border-radius:4px}';
+  '::selection{background:rgba(232,93,48,0.3)} input::placeholder{color:var(--app-text-placeholder)!important} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:var(--app-border-primary);border-radius:2px}';
 
 export function renderWalletPulseKeyframes() {
   return ['@key', 'frames kloel-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }'].join('');

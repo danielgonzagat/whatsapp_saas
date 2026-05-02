@@ -28,7 +28,7 @@ import {
   updateAutopilotConfig,
   workspaceApi,
 } from '@/lib/api';
-import { uploadKnowledgeBase } from '@/lib/api/misc';
+import { uploadKnowledgeBase } from '@/lib/api/ai-assistant';
 import {
   type AiToolData,
   type AiToolKind,
