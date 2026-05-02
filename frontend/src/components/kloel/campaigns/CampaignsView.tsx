@@ -22,8 +22,8 @@ const TEXT_PRIMARY = KLOEL_THEME.textPrimary;
 const TEXT_SECONDARY = KLOEL_THEME.textSecondary;
 const TEXT_TERTIARY = KLOEL_THEME.textTertiary;
 const ACCENT = KLOEL_THEME.accent;
-const GREEN = KLOEL_THEME.green || '#22c55e';
-const BLUE = KLOEL_THEME.blue || '#3b82f6';
+const GREEN = KLOEL_THEME.success;
+const BLUE = KLOEL_THEME.info;
 
 function statusBadgeColor(status: string | undefined): string {
   const s = (status || 'DRAFT').toUpperCase();
