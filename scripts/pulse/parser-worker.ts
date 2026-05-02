@@ -3,12 +3,15 @@ import type { Break, PulseConfig, PulseParserDefinition } from './types';
 const RESULT_PREFIX = '__PULSE_PARSER_RESULT__';
 const PARSER_NAME_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
-function resolveParserFunction(mod: Record<string, unknown>): PulseParserDefinition['fn'] | null {
+export function resolveParserFunction(
+  _parserName: string,
+  mod: Record<string, unknown>,
+): PulseParserDefinition['fn'] | null {
   if (typeof mod.default === 'function') {
     return mod.default as PulseParserDefinition['fn'];
   }
-  for (const value of Object.values(mod)) {
-    if (typeof value === 'function') {
+  for (const [key, value] of Object.entries(mod)) {
+    if (typeof value === 'function' && /^check[A-Z]/.test(key)) {
       return value as PulseParserDefinition['fn'];
     }
   }
@@ -31,7 +34,7 @@ async function main(): Promise<void> {
   const decoded = Buffer.from(encodedConfig, 'base64url').toString('utf8');
   const config = JSON.parse(decoded) as PulseConfig;
   const mod = require(`./parsers/${parserName}`) as Record<string, unknown>;
-  const fn = resolveParserFunction(mod);
+  const fn = resolveParserFunction(parserName, mod);
 
   if (!fn) {
     writeResult({ ok: false, error: 'Parser module did not export a callable check function.' });
@@ -50,11 +53,13 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error: unknown) => {
-  writeResult({
-    ok: false,
-    error:
-      error instanceof Error ? error.message : String(error || 'Unknown parser worker failure'),
+if (process.argv[1]?.includes('parser-worker')) {
+  main().catch((error: unknown) => {
+    writeResult({
+      ok: false,
+      error:
+        error instanceof Error ? error.message : String(error || 'Unknown parser worker failure'),
+    });
+    process.exit(1);
   });
-  process.exit(1);
-});
+}

@@ -164,6 +164,9 @@ function deriveTruthMode(item: Break): PulseFindingTruthMode {
   if (hasAnyToken(item.source, ['regex'])) {
     return 'weak_signal';
   }
+  if (hasAnyToken(item.source, ['playwright', 'probe', 'runtime', 'e2e', 'smoke', 'observed'])) {
+    return 'observed';
+  }
   if (hasAnyToken(item.source, ['behavior', 'graph', 'ast', 'confirmed', 'static'])) {
     return 'confirmed_static';
   }

@@ -79,6 +79,25 @@ export const memberAreaStudentsApi = {
       `/member-areas/${encodeURIComponent(areaId)}/students${qs}`,
     );
   },
+  enroll: async (
+    areaId: string,
+    data: { studentName: string; studentEmail: string; studentPhone?: string },
+  ) => {
+    const res = await apiFetch<MemberAreaStudent>(
+      `/member-areas/${encodeURIComponent(areaId)}/students`,
+      { method: 'POST', body: data },
+    );
+    mutate((key: string) => typeof key === 'string' && key.startsWith('/member-areas'));
+    return res;
+  },
+  remove: async (areaId: string, studentId: string) => {
+    const res = await apiFetch<{ success: boolean }>(
+      `/member-areas/${encodeURIComponent(areaId)}/students/${encodeURIComponent(studentId)}`,
+      { method: 'DELETE' },
+    );
+    mutate((key: string) => typeof key === 'string' && key.startsWith('/member-areas'));
+    return res;
+  },
   update: async (areaId: string, studentId: string, data: Record<string, unknown>) => {
     const res = await apiFetch<MemberAreaStudent>(
       `/member-areas/${encodeURIComponent(areaId)}/students/${encodeURIComponent(studentId)}`,
@@ -86,6 +105,18 @@ export const memberAreaStudentsApi = {
         method: 'PUT',
         body: data,
       },
+    );
+    mutate((key: string) => typeof key === 'string' && key.startsWith('/member-areas'));
+    return res;
+  },
+  completeLesson: async (
+    areaId: string,
+    lessonId: string,
+    data: { studentEmail: string; completed: boolean },
+  ) => {
+    const res = await apiFetch<{ progress: number; totalLessons: number; completed: boolean }>(
+      `/member-areas/${encodeURIComponent(areaId)}/lessons/${encodeURIComponent(lessonId)}/complete`,
+      { method: 'POST', body: data },
     );
     mutate((key: string) => typeof key === 'string' && key.startsWith('/member-areas'));
     return res;

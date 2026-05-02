@@ -18,6 +18,13 @@ class ConcurrentWalletUpdateError extends Error {
   }
 }
 
+class KloelWalletNotFoundError extends Error {
+  constructor(workspaceId: string) {
+    super(`KloelWallet not found for workspace ${workspaceId}`);
+    this.name = 'KloelWalletNotFoundError';
+  }
+}
+
 @Injectable()
 export class WalletService {
   private readonly logger = new Logger(WalletService.name);
@@ -93,7 +100,7 @@ export class WalletService {
         `kloel=${kloelFeeInCents}, net=${netAmountInCents})`,
     );
 
-    const wallet = await this.getOrCreateWallet(workspaceId);
+    const wallet = await this.getWalletOrThrow(workspaceId);
 
     const transaction = await this.prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
@@ -281,10 +288,7 @@ export class WalletService {
       return { success: false, message: 'Valor de saque invalido.' };
     }
 
-    const wallet = await this.getOrCreateWallet(workspaceId);
-    if (!wallet) {
-      return { success: false, message: 'Carteira nao encontrada.' };
-    }
+    const wallet = await this.getWalletOrThrow(workspaceId);
 
     if (wallet.availableBalance < amount) {
       return {
@@ -560,6 +564,16 @@ export class WalletService {
         details: { error: err instanceof Error ? err.message : String(err) },
       });
     }
+  }
+
+  private async getWalletOrThrow(workspaceId: string) {
+    const wallet = await this.prisma.kloelWallet.findUnique({
+      where: { workspaceId },
+    });
+    if (!wallet) {
+      throw new KloelWalletNotFoundError(workspaceId);
+    }
+    return wallet;
   }
 
   private async getOrCreateWallet(workspaceId: string) {

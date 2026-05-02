@@ -42,7 +42,8 @@ type CalibrationSource =
   | 'history'
   | 'evidence_graph'
   | 'dynamic_risk'
-  | 'graph_availability';
+  | 'graph_availability'
+  | 'weak_fallback';
 
 interface CalibrationValue {
   value: number;
@@ -61,7 +62,7 @@ interface DaemonCalibrationSnapshot {
   riskPriority: Record<string, CalibrationValue>;
   fileEvidenceDeficits: Record<string, number>;
   fileRiskImpact: Record<string, number>;
-  derivedFloors: string[];
+  weakFallbacks: string[];
 }
 
 type CalibratedDaemonState = ContinuousDaemonState & {
@@ -264,7 +265,7 @@ function buildDaemonCalibration(
     riskPriority,
     fileEvidenceDeficits,
     fileRiskImpact,
-    derivedFloors: [
+    weakFallbacks: [
       targetScore,
       maxIterations,
       cooldownCycles,
@@ -273,7 +274,7 @@ function buildDaemonCalibration(
       ...Object.values(kindPriority),
       ...Object.values(riskPriority),
     ]
-      .filter((entry) => entry.source === 'graph_availability')
+      .filter((entry) => entry.source === 'graph_availability' || entry.source === 'weak_fallback')
       .map((entry) => entry.detail),
   };
 }
@@ -324,7 +325,7 @@ function deriveTargetScore(
     );
     if (numericTargets.length) {
       let normalized = numericTargets.every((value) => value <= 1)
-        ? Math.round(Math.max(...numericTargets) * observedCeiling)
+        ? Math.round(Math.max(...numericTargets) * 100)
         : Math.round(Math.max(...numericTargets));
       return derived(normalized, 'artifact', 'directive.targetCheckpoint');
     }
@@ -344,8 +345,8 @@ function deriveTargetScore(
 
   return derived(
     observedCeiling,
-    'graph_availability',
-    'behavior graph projected score ceiling without explicit objective artifact',
+    'weak_fallback',
+    'DEFAULT_TARGET_SCORE without objective artifact',
   );
 }
 
@@ -513,8 +514,8 @@ function deriveLeaseTtlMs(
   );
   return derived(
     Math.max(Math.sign(graph.nodes.length || graph.summary.totalNodes), availabilityMs),
-    'graph_availability',
-    'lease ttl derived from graph freshness and ai-safe availability',
+    'weak_fallback',
+    'LEASE_TTL_MS without duration history',
   );
 }
 

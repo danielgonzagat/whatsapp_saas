@@ -88,4 +88,44 @@ export const Metrics = {
       gauge('queue.depth', d, { queue: q });
     },
   },
+  billing: {
+    subscriptionCreated(plan: string, t?: Record<string, string>) {
+      increment('billing.subscription.created', { ...t, plan });
+    },
+    subscriptionCancelled(plan: string, t?: Record<string, string>) {
+      increment('billing.subscription.cancelled', { ...t, plan });
+    },
+    paymentFailed(reason: string, gateway: string, t?: Record<string, string>) {
+      increment('billing.payment.failed', { ...t, reason, gateway });
+    },
+    invoicePaid(amountCents: number, t?: Record<string, string>) {
+      histogram('billing.invoice.amount_cents', amountCents, t);
+    },
+  },
+  wallet: {
+    credited(amountCents: number, t?: Record<string, string>) {
+      increment('wallet.credited', t);
+      histogram('wallet.credit_amount_cents', amountCents, t);
+    },
+    debited(amountCents: number, t?: Record<string, string>) {
+      increment('wallet.debited', t);
+      histogram('wallet.debit_amount_cents', amountCents, t);
+    },
+    topupInitiated(amountCents: number, t?: Record<string, string>) {
+      increment('wallet.topup_initiated', t);
+      histogram('wallet.topup_amount_cents', amountCents, t);
+    },
+    balanceLow(balanceCents: number, t?: Record<string, string>) {
+      increment('wallet.balance_low', t);
+      gauge('wallet.balance_cents', balanceCents, t);
+    },
+  },
+  ledger: {
+    reconciliationDrift(amountCents: number, t?: Record<string, string>) {
+      gauge('ledger.reconciliation_drift_cents', amountCents, t);
+    },
+    reconciliationRun(t?: Record<string, string>) {
+      increment('ledger.reconciliation.run', t);
+    },
+  },
 } as const;

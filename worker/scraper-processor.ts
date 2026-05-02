@@ -24,11 +24,7 @@ interface ScrapedLeadNormalized {
   metadata: Prisma.InputJsonObject;
 }
 
-async function scrapeLeadsByType(
-  type: string,
-  query: string,
-  targetUrl: string | undefined,
-): Promise<ScrapedLeadNormalized[]> {
+async function scrapeLeadsByType(type: string, query: string): Promise<ScrapedLeadNormalized[]> {
   if (type === 'MAPS') {
     console.log(`[SCRAPER] Launching Real Browser for Maps query: "${query}"`);
     const rawLeads = await scrapeGoogleMaps(query, 20);
@@ -53,10 +49,13 @@ async function scrapeLeadsByType(
     }));
   }
   if (type === 'GROUP') {
-    console.log(`[SCRAPER] Group scraping not yet implemented for: "${query || targetUrl}"`);
-    return [];
+    throw new WorkerError(
+      'WhatsApp Group scraping is not yet implemented.',
+      'SCRAPER_NOT_IMPLEMENTED',
+      false,
+    );
   }
-  return [];
+  throw new WorkerError(`Unknown scraper type: ${type}`, 'SCRAPER_INVALID_TYPE', false);
 }
 
 async function ensureDefaultPipeline(workspaceId: string) {
@@ -134,7 +133,7 @@ async function processScraperJob(job: Job): Promise<void> {
     await prisma.scrapingJob.update({ where: { id: jobId }, data: {} });
 
     await job.updateProgress(20);
-    const leads = await scrapeLeadsByType(type, query, job.data.targetUrl);
+    const leads = await scrapeLeadsByType(type, query);
 
     await job.updateProgress(40);
     const pipeline = await ensureDefaultPipeline(workspaceId);

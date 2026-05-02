@@ -182,4 +182,66 @@ export class MemberEnrollmentsController {
 
     return { success: true };
   }
+
+  /** Mark a lesson as complete and update student progress. */
+  @Post(':id/lessons/:lessonId/complete')
+  async completeLesson(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') areaId: string,
+    @Param('lessonId') lessonId: string,
+    @Body() body: { studentEmail: string; completed: boolean },
+  ) {
+    const workspaceId = req.user.workspaceId;
+    const studentEmail = body.studentEmail?.trim();
+
+    if (!studentEmail) {
+      throw new BadRequestException('studentEmail is required');
+    }
+
+    const area = await this.prisma.memberArea.findFirst({
+      where: { id: areaId, workspaceId },
+      include: { modules: { include: { lessons: { select: { id: true } } } } },
+    });
+
+    if (!area) {
+      throw new NotFoundException('Member area not found');
+    }
+
+    const enrollment = await this.prisma.memberEnrollment.findFirst({
+      where: { memberAreaId: areaId, workspaceId, studentEmail },
+    });
+
+    if (!enrollment) {
+      throw new NotFoundException('Student is not enrolled in this area');
+    }
+
+    const lesson = await this.prisma.memberLesson.findFirst({
+      where: { id: lessonId, module: { memberAreaId: areaId } },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found in this area');
+    }
+
+    const totalLessons = area.modules.reduce((s, m) => s + m.lessons.length, 0);
+
+    if (totalLessons === 0) {
+      return { progress: 0, totalLessons: 0, completed: false };
+    }
+
+    const currentProgress = typeof enrollment.progress === 'number' ? enrollment.progress : 0;
+    const lessonWeight = 100 / totalLessons;
+    const newProgress = body.completed
+      ? Math.min(100, Math.round((currentProgress + lessonWeight) * 100) / 100)
+      : Math.max(0, Math.round((currentProgress - lessonWeight) * 100) / 100);
+
+    await this.prisma.memberEnrollment.update({
+      where: { id: enrollment.id },
+      data: { progress: newProgress },
+    });
+
+    await this.stats.recalculate(areaId, workspaceId);
+
+    return { progress: newProgress, totalLessons, completed: body.completed };
+  }
 }

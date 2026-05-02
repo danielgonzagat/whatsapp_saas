@@ -2,6 +2,8 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
+
+import { StripeService } from '../billing/stripe.service';
 import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { QueueHealthService } from '../metrics/queue-health.service';
@@ -27,6 +29,7 @@ export class SystemHealthService {
     private readonly storageService: StorageService,
     private readonly observabilityQueries: ObservabilityQueriesService,
     private readonly queueHealth: QueueHealthService,
+    private readonly stripeService: StripeService,
   ) {}
 
   /**
@@ -64,19 +67,31 @@ export class SystemHealthService {
   /** Check. */
   async check() {
     const whatsapp = await this.checkWhatsAppTransport();
+    const [database, redis, worker, storage, queues, backup, email] = await Promise.all([
+      this.checkDatabase(),
+      this.checkRedis(),
+      this.checkWorker(),
+      this.checkStorage(),
+      this.checkQueues(),
+      this.checkBackup(),
+      this.checkEmail(),
+    ]);
+    const stripe = this.checkStripe();
     const status = {
-      database: await this.checkDatabase(),
-      redis: await this.checkRedis(),
+      database,
+      redis,
       whatsapp,
-      worker: await this.checkWorker(),
-      storage: await this.checkStorage(),
-      queues: await this.checkQueues(),
+      worker,
+      storage,
+      queues,
+      backup,
+      email,
       config: this.checkCriticalConfig(),
       openai: this.checkOpenAI(),
       anthropic: this.checkAnthropic(),
-      stripe: this.checkStripe(),
+      stripe,
       googleAuth: this.checkGoogleAuth(),
-      version: '0.0.365', // From context
+      version: '0.0.365',
       timestamp: new Date().toISOString(),
     };
 

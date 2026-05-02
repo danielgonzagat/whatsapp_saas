@@ -39,6 +39,10 @@ const MIRROR_ROOT = resolve(
 const VAULT_ROOT = resolve(process.env.KLOEL_VAULT_ROOT || dirname(dirname(MIRROR_ROOT)));
 const SOURCE_MIRROR_DIR = join(MIRROR_ROOT, '_source');
 const MANIFEST_PATH = join(SOURCE_MIRROR_DIR, 'manifest.json');
+const MIRROR_DAEMON_LOCK_PATH = join(REPO_ROOT, '.obsidian-mirror-daemon.lock');
+const LOCK_ACQUIRE_TIMEOUT_MS = Number(process.env.KLOEL_MIRROR_LOCK_TIMEOUT_MS || '30000');
+const LOCK_STALE_MS = Number(process.env.KLOEL_MIRROR_LOCK_STALE_MS || '120000');
+const LOCK_POLL_MS = Number(process.env.KLOEL_MIRROR_LOCK_POLL_MS || '75');
 const GRAPH_SETTINGS_PATH = join(VAULT_ROOT, '.obsidian', 'graph.json');
 const WORKSPACE_GRAPH_SEARCH = '';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -383,6 +387,90 @@ function log(level, ...args) {
   console.log(prefix, ...args);
 }
 
+function sleepSync(ms) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    // intentionally busy wait to keep lock acquisition lightweight and predictable
+  }
+}
+
+function readMirrorLock() {
+  try {
+    return JSON.parse(readFileSync(MIRROR_DAEMON_LOCK_PATH, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function isMirrorLockStale(lock) {
+  if (!lock) return true;
+  const marker = lock.updatedAt || lock.heartbeatAt || lock.startedAt;
+  if (!marker) return false;
+  const markerTs = new Date(marker).getTime();
+  if (!Number.isFinite(markerTs)) return false;
+  return Date.now() - markerTs > LOCK_STALE_MS;
+}
+
+function acquireMirrorLock(context) {
+  const token = {
+    pid: process.pid,
+    context,
+    startedAt: new Date().toISOString(),
+  };
+  const timeoutAt = Date.now() + LOCK_ACQUIRE_TIMEOUT_MS;
+  while (true) {
+    try {
+      writeFileSync(
+        MIRROR_DAEMON_LOCK_PATH,
+        JSON.stringify({ ...token, heartbeatAt: new Date().toISOString() }) + '\n',
+        { flag: 'wx' },
+      );
+      return token;
+    } catch (error) {
+      if (error.code !== 'EEXIST') {
+        throw error;
+      }
+
+      const current = readMirrorLock();
+      if (isMirrorLockStale(current)) {
+        try {
+          unlinkSync(MIRROR_DAEMON_LOCK_PATH);
+          log('WARN', `Removed stale mirror lock (${MIRROR_DAEMON_LOCK_PATH}).`);
+        } catch {
+          // race to remove lock is expected under contention
+        }
+      } else if (Date.now() >= timeoutAt) {
+        throw new Error(
+          `Timeout waiting for obsidian mirror lock at ${MIRROR_DAEMON_LOCK_PATH}: held by pid=${current?.pid || 'unknown'} context=${current?.context || 'unknown'}`,
+        );
+      } else {
+        sleepSync(LOCK_POLL_MS);
+      }
+    }
+  }
+}
+
+function releaseMirrorLock(token) {
+  const current = readMirrorLock();
+  if (!current) return;
+  if (current.pid === token.pid && current.startedAt === token.startedAt) {
+    try {
+      unlinkSync(MIRROR_DAEMON_LOCK_PATH);
+    } catch {
+      // best-effort release on best-effort path
+    }
+  }
+}
+
+function withMirrorLock(context, action) {
+  const token = acquireMirrorLock(context);
+  try {
+    return action();
+  } finally {
+    releaseMirrorLock(token);
+  }
+}
+
 function sha256(content) {
   return createHash('sha256').update(content).digest('hex');
 }
@@ -478,7 +566,7 @@ function ensureGraphLensSettings() {
     ...currentSettings,
     search: WORKSPACE_GRAPH_SEARCH,
     showOrphans: true,
-    hideUnresolved: false,
+    hideUnresolved: true,
     colorGroups: CODE_STATE_COLOR_GROUPS,
   };
   const next = `${JSON.stringify(graphSettings, null, 2)}\n`;
@@ -573,7 +661,7 @@ function ensureDir(dirPath) {
 function ensureSourceDir() {
   ensureDir(SOURCE_MIRROR_DIR);
   if (!existsSync(MANIFEST_PATH)) {
-    writeManifest({
+    persistManifestState({
       version: 2,
       generated: new Date().toISOString(),
       repo_root: REPO_ROOT,
@@ -601,6 +689,13 @@ function writeManifest(data) {
   const tmp = MANIFEST_PATH + '.tmp';
   writeFileSync(tmp, JSON.stringify(data, null, 2) + '\n', 'utf8');
   renameSync(tmp, MANIFEST_PATH);
+}
+
+function persistManifestState(manifest) {
+  withMirrorLock('persist-mirror-state', () => {
+    writeGeneratedIndexes(manifest);
+    writeManifest(manifest);
+  });
 }
 
 // ── Mirrored File Content Builder ───────────────────────────────────────────
@@ -2970,6 +3065,8 @@ function writeClusterIndexes(manifest) {
 function writeGeneratedIndexes(manifest) {
   // Disabled: generated artifacts (_visual, _clusters, _signals, _machine, _domains) inflate Obsidian graph
   // with 29k+ non-source files. Only source-code mirror is needed for architectural diagnosis.
+  removeGeneratedGraphOverlays();
+  applyGraphDerivedTags(manifest);
   return;
   removeGeneratedGraphOverlays();
   applyGraphDerivedTags(manifest);
@@ -3428,8 +3525,7 @@ function rebuild(force) {
   cleanupEmptyDirs(SOURCE_MIRROR_DIR);
 
   // Write manifest
-  writeGeneratedIndexes(manifest);
-  writeManifest(manifest);
+  persistManifestState(manifest);
 
   log(
     'OK',
@@ -3646,8 +3742,7 @@ function startWatch() {
     }
 
     if (toRemove.length > 0 || updatedCount > 0) {
-      writeGeneratedIndexes(manifest);
-      writeManifest(manifest);
+      persistManifestState(manifest);
       cleanupEmptyDirs(SOURCE_MIRROR_DIR);
     }
   }
@@ -3681,8 +3776,7 @@ function startWatch() {
     }
 
     if (updatedCount > 0) {
-      writeGeneratedIndexes(manifest);
-      writeManifest(manifest);
+      persistManifestState(manifest);
       cleanupEmptyDirs(SOURCE_MIRROR_DIR);
       log('INFO', `Git dirty graph state refreshed: ${updatedCount} nodes updated.`);
     }

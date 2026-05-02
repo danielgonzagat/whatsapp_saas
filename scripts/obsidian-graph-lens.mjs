@@ -46,13 +46,13 @@ const LENSES = {
   factory: {
     search: WORKSPACE_GRAPH_SEARCH,
     showOrphans: true,
-    hideUnresolved: false,
+    hideUnresolved: true,
     colorGroups: CODE_STATE_COLOR_GROUPS,
   },
   runtime: {
     search: WORKSPACE_GRAPH_SEARCH,
     showOrphans: true,
-    hideUnresolved: false,
+    hideUnresolved: true,
     colorGroups: CODE_STATE_COLOR_GROUPS,
   },
 };

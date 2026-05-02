@@ -23,6 +23,7 @@ type ResolvedMetaConnection = {
   pageAccessToken: string | null;
   instagramAccountId: string | null;
   instagramUsername: string | null;
+  adAccountId: string | null;
   tokenExpired: boolean;
   persistedConnection: boolean;
 };
@@ -106,6 +107,7 @@ export class MetaWhatsAppService {
         instagramUsername: true,
         whatsappPhoneNumberId: true,
         whatsappBusinessId: true,
+        adAccountId: true,
       },
     });
 
@@ -132,6 +134,7 @@ export class MetaWhatsAppService {
       pageAccessToken: decryptMetaToken(connection?.pageAccessToken),
       instagramAccountId: connection?.instagramAccountId || null,
       instagramUsername: connection?.instagramUsername || null,
+      adAccountId: connection?.adAccountId || null,
       tokenExpired,
       persistedConnection: Boolean(connection),
     };

@@ -1,6 +1,6 @@
 import { buildPaymentWebhookController as buildController } from '../../test/payment-webhook-controller-harness';
 import { PaymentWebhookGenericController } from './payment-webhook-generic.controller';
-import crypto from 'node:crypto';
+import * as crypto from 'node:crypto';
 
 describe('PaymentWebhookController — idempotency and replay safety', () => {
   beforeEach(() => {

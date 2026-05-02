@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/node';
 
 import { AuditService } from '../audit/audit.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
-import { validatePaymentTransition } from '../common/payment-state-machine';
+import { validateOrderTransition } from '../common/checkout-order-state-machine';
 import { ConnectService } from '../payments/connect/connect.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
@@ -512,7 +512,7 @@ export class CheckoutPaymentService {
     },
     orderId: string,
     workspaceId: string,
-    transitionContext: {
+    _transitionContext: {
       paymentId: string;
       provider: 'stripe';
       externalId: string;
@@ -525,11 +525,10 @@ export class CheckoutPaymentService {
     let currentStatus = currentOrder?.status || 'PENDING';
 
     if (currentStatus !== 'PROCESSING') {
-      const canEnterProcessing = validatePaymentTransition(
-        currentStatus,
-        'PROCESSING',
-        transitionContext,
-      );
+      const canEnterProcessing = validateOrderTransition(currentStatus, 'PROCESSING', {
+        orderId,
+        workspaceId,
+      });
       if (!canEnterProcessing) {
         return;
       }
@@ -541,8 +540,11 @@ export class CheckoutPaymentService {
       currentStatus = 'PROCESSING';
     }
 
-    const canApprove = validatePaymentTransition(currentStatus, 'APPROVED', transitionContext);
-    if (!canApprove) {
+    const canBecomePaid = validateOrderTransition(currentStatus, 'PAID', {
+      orderId,
+      workspaceId,
+    });
+    if (!canBecomePaid) {
       return;
     }
 

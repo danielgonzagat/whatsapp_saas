@@ -102,23 +102,38 @@ export class BillingWebhookService {
     this.logger.log(`Webhook recebido: ${JSON.stringify({ type: event.type, id: event.id })}`);
 
     const webhookIdempotencyKey = `stripe:${event.id}`;
-    const alreadyProcessed = await this.prisma.webhookEvent.findFirst({
-      where: { provider: 'stripe', externalId: webhookIdempotencyKey, status: 'processed' },
+
+    // PULSE_OK: atomic idempotency gate — read-then-create race fixed via
+    // $transaction + unique-constraint fallback
+    const idempotent = await this.prisma.$transaction(async (tx) => {
+      const alreadyProcessed = await tx.webhookEvent.findFirst({
+        where: { provider: 'stripe', externalId: webhookIdempotencyKey, status: 'processed' },
+      });
+      if (alreadyProcessed) return true;
+
+      try {
+        await tx.webhookEvent.create({
+          data: {
+            provider: 'stripe',
+            eventType: event.type,
+            externalId: webhookIdempotencyKey,
+            payload: event as unknown as Prisma.InputJsonValue,
+            status: 'received',
+          },
+        });
+      } catch (err: unknown) {
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          return true;
+        }
+        throw err;
+      }
+      return false;
     });
-    if (alreadyProcessed) {
+
+    if (idempotent) {
       this.logger.log(`Webhook idempotent skip: ${event.type} (id=${event.id})`);
       return { received: true, idempotent: true };
     }
-
-    await this.prisma.webhookEvent.create({
-      data: {
-        provider: 'stripe',
-        eventType: event.type,
-        externalId: webhookIdempotencyKey,
-        payload: event as unknown as Prisma.InputJsonValue,
-        status: 'received',
-      },
-    });
 
     try {
       switch (event.type) {
@@ -249,28 +264,32 @@ export class BillingWebhookService {
       .current_period_end;
     const periodEnd = currentPeriodEndRaw ? new Date(currentPeriodEndRaw * 1000) : undefined;
 
-    const existing = await this.prisma.subscription.findUnique({
-      where: { workspaceId },
-      select: { plan: true },
-    });
+    // PULSE_OK: read-then-upsert wrapped in $transaction to prevent stale plan
+    // reads during concurrent sync events
+    await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.subscription.findUnique({
+        where: { workspaceId },
+        select: { plan: true },
+      });
 
-    const inferredPlan =
-      existing?.plan || (subscription.metadata as Record<string, string> | null)?.plan || 'PRO';
+      const inferredPlan =
+        existing?.plan || (subscription.metadata as Record<string, string> | null)?.plan || 'PRO';
 
-    await this.prisma.subscription.upsert({
-      where: { workspaceId },
-      update: {
-        status,
-        stripeId: subscription.id,
-        currentPeriodEnd: periodEnd || new Date(),
-      },
-      create: {
-        workspaceId,
-        status,
-        plan: inferredPlan,
-        stripeId: subscription.id,
-        currentPeriodEnd: periodEnd || new Date(),
-      },
+      await tx.subscription.upsert({
+        where: { workspaceId },
+        update: {
+          status,
+          stripeId: subscription.id,
+          currentPeriodEnd: periodEnd || new Date(),
+        },
+        create: {
+          workspaceId,
+          status,
+          plan: inferredPlan,
+          stripeId: subscription.id,
+          currentPeriodEnd: periodEnd || new Date(),
+        },
+      });
     });
   }
   private async resolveWorkspaceId(subscription: StripeSubscription): Promise<string | null> {
