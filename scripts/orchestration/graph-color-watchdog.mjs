@@ -31,9 +31,10 @@ const GRAPH_SETTINGS_PATH = resolve(
 );
 
 const LENS_SCRIPT = resolve(REPO_ROOT, 'scripts', 'obsidian-graph-lens.mjs');
+const EXTEND_LENS_SCRIPT = resolve(REPO_ROOT, 'scripts', 'orchestration', 'extend-graph-lens.mjs');
 const PID_FILE = '/tmp/kloel-graph-color-watchdog.pid';
 
-const EXPECTED_COLOR_GROUPS = 28;
+const EXPECTED_COLOR_GROUPS = 50;
 const POLL_INTERVAL_MS = 5_000;
 const REAPPLY_BACKOFF_MS = 1_000;
 
@@ -131,26 +132,44 @@ function applyFactoryLens() {
   }
   lastApplyTime = now;
 
-  const child = spawn('node', [LENS_SCRIPT, '--factory'], {
+  const factoryChild = spawn('node', [LENS_SCRIPT, '--factory'], {
     cwd: REPO_ROOT,
     env: { ...process.env },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 
-  let stderr = '';
-  child.stderr.on('data', (chunk) => {
-    stderr += chunk.toString();
+  let factoryStderr = '';
+  factoryChild.stderr.on('data', (chunk) => {
+    factoryStderr += chunk.toString();
   });
 
-  child.on('close', (code) => {
-    if (code !== 0) {
-      log('error', `lens --factory exit ${code}: ${stderr.slice(0, 300)}`);
-    } else {
-      log('applied', 'factory lens');
+  factoryChild.on('close', (factoryCode) => {
+    if (factoryCode !== 0) {
+      log('error', `lens --factory exit ${factoryCode}: ${factoryStderr.slice(0, 300)}`);
+      return;
     }
+    const extendChild = spawn('node', [EXTEND_LENS_SCRIPT], {
+      cwd: REPO_ROOT,
+      env: { ...process.env },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let extendStderr = '';
+    extendChild.stderr.on('data', (chunk) => {
+      extendStderr += chunk.toString();
+    });
+    extendChild.on('close', (extendCode) => {
+      if (extendCode !== 0) {
+        log('error', `extend-graph-lens exit ${extendCode}: ${extendStderr.slice(0, 300)}`);
+      } else {
+        log('applied', 'factory + extend lens');
+      }
+    });
+    extendChild.on('error', (e) => {
+      log('error', `extend-graph-lens spawn: ${e.message}`);
+    });
   });
 
-  child.on('error', (e) => {
+  factoryChild.on('error', (e) => {
     log('error', `lens spawn: ${e.message}`);
   });
 }
