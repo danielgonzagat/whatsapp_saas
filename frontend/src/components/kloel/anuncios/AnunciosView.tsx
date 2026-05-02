@@ -1277,7 +1277,7 @@ function PlatformTab({
       return;
     }
     const newStatus = c.status === 'active' ? 'PAUSED' : 'ACTIVE';
-    await metaAdsApi.updateCampaignStatus(c.id, newStatus, metaAccessToken);
+    await metaAdsApi.updateCampaignStatus(c.id, newStatus);
     CAMPAIGNS = CAMPAIGNS.map((x) =>
       x.id === c.id
         ? { ...x, status: newStatus.toLowerCase() === 'active' ? 'active' : 'paused' }
