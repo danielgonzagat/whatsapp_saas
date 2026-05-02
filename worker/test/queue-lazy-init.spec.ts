@@ -70,8 +70,15 @@ vi.mock('bullmq', () => {
 });
 
 describe('queue lazy init', () => {
+  type MockedQueue = { start: () => Promise<void> };
+
+  async function loadQueue(): Promise<MockedQueue> {
+    const mod = (await import('../queue')) as { queue: MockedQueue };
+    return mod.queue;
+  }
+
   it('calls Redis constructor with the configured URL', async () => {
-    const { queue } = await import('../queue');
+    const queue = await loadQueue();
 
     await queue.start();
 
@@ -81,7 +88,7 @@ describe('queue lazy init', () => {
   });
 
   it('passes connection to bullmq Queue constructor', async () => {
-    const { queue } = await import('../queue');
+    const queue = await loadQueue();
 
     await queue.start();
 
@@ -90,7 +97,7 @@ describe('queue lazy init', () => {
 
   it('can call start multiple times without duplicate Redis', async () => {
     mockRedisCtor.mockClear();
-    const { queue } = await import('../queue');
+    const queue = await loadQueue();
 
     await queue.start();
     await queue.start();
@@ -103,7 +110,7 @@ describe('queue lazy init', () => {
       throw new Error('ECONNREFUSED');
     });
 
-    const { queue } = await vi.importActual<typeof import('../queue')>('../queue');
+    const queue = await loadQueue();
 
     await expect(queue.start()).rejects.toThrow('ECONNREFUSED');
   });
