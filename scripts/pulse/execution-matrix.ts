@@ -24,6 +24,8 @@ import {
   deriveZeroValue,
   deriveUnitValue,
   deriveCatalogPercentScaleFromObservedCatalog,
+  discoverExecutionMatrixPathStatusLabels,
+  discoverExecutionMatrixPathSourceLabels,
 } from './dynamic-reality-kernel';
 interface BuildExecutionMatrixInput {
   structuralGraph: PulseStructuralGraph;
@@ -41,20 +43,11 @@ type MatrixChainRole = PulseExecutionMatrixPath['chain'][number]['role'];
 type MatrixPathRisk = PulseExecutionMatrixPath['risk'];
 
 function terminalStatusGrammar(): PulseExecutionMatrixPathStatus[] {
-  return [
-    'observed_pass',
-    'observed_fail',
-    'untested',
-    'observation_only',
-    'blocked_human_required',
-    'unreachable',
-    'inferred_only',
-    'not_executable',
-  ];
+  return [...discoverExecutionMatrixPathStatusLabels()] as PulseExecutionMatrixPathStatus[];
 }
 
 function matrixSourceGrammar(): PulseExecutionMatrixPathSource[] {
-  return ['execution_chain', 'capability', 'flow', 'structural_node', 'scope_file'];
+  return [...discoverExecutionMatrixPathSourceLabels()] as PulseExecutionMatrixPathSource[];
 }
 
 function artifactGrammar(source: MatrixArtifactGrammar | 'static'): string {
