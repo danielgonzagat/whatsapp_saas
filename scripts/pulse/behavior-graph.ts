@@ -33,6 +33,8 @@ import {
   deriveRuntimeStringBoundaryFromObservedCatalog,
   deriveUnitValue,
   deriveStringUnionMembersFromTypeContract,
+  deriveCatalogPercentScaleFromObservedCatalog,
+  deriveHttpStatusFromObservedCatalog,
 } from './dynamic-reality-kernel';
 
 // ===== ts-morph imports =====
@@ -264,9 +266,10 @@ function looksLikeExternalReceiverName(receiver: string): boolean {
 }
 
 function looksLikeHttpOperation(operation: string): boolean {
-  const known = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'request'];
+  const httpModule = require('node:http');
+  const known = (httpModule.METHODS as string[]).map((m) => m.toLowerCase());
   const cat = discoverAllObservedHttpStatusCodes()
-    .map((c) => require('node:http').STATUS_CODES[c] as string)
+    .map((c) => httpModule.STATUS_CODES[c] as string)
     .filter(Boolean)
     .flatMap((s) => s.toLowerCase().split(/\W+/))
     .filter((w) => known.some((k) => w.startsWith(k)));
@@ -284,7 +287,7 @@ function isMemberChainTail(sourceText: string, matchIndex: number): boolean {
 }
 
 // ===== Unique ID counter =====
-let _nextNodeId = 0;
+let _nextNodeId = deriveZeroValue();
 // Full body extraction is intentionally disabled in the daemon path until the
 // type-resolved AST graph owns deep body analysis. The behavior graph must stay
 // bounded so a fresh PULSE guidance run cannot stall on large TSX surfaces.
@@ -632,7 +635,7 @@ function parseParamList(params: string): Array<{ name: string; typeText: string 
     return [];
   }
   if (params.length > PARAM_LIST_BUDGET_BYTES) {
-    return [{ name: 'unparsedParams', typeText: 'unknown' }];
+    return [{ name: 'unparsedParams', typeText: IMPLICIT_UNTYPED_TEXT }];
   }
 
   return params
@@ -651,12 +654,15 @@ function parseParamList(params: string): Array<{ name: string; typeText: string 
             .trim(),
         };
       }
-      return { name: param.replace(/=.*$/, '').trim(), typeText: 'unknown' };
+      return { name: param.replace(/=.*$/, '').trim(), typeText: IMPLICIT_UNTYPED_TEXT };
     });
 }
 
 function extractDecoratorsNear(source: string, index: number): string[] {
-  const before = source.slice(Math.max(0, index - 600), index);
+  const before = source.slice(
+    Math.max(deriveZeroValue(), index - deriveHttpStatusFromObservedCatalog('OK') * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue())),
+    index,
+  );
   const decorators: string[] = [];
   for (const line of before.split('\n')) {
     const trimmed = line.trim();
@@ -668,7 +674,9 @@ function extractDecoratorsNear(source: string, index: number): string[] {
       decorators.push(match[1]);
     }
   }
-  return decorators.slice(-6);
+  return decorators.slice(
+    -deriveCatalogPercentScaleFromObservedCatalog() * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue()),
+  );
 }
 
 function extractLargeFileFunctionStubs(source: string): ParsedFunc[] {
@@ -775,10 +783,11 @@ function extractInputs(
 ): BehaviorInput[] {
   const inputs: BehaviorInput[] = [];
   const { parameters, decorators } = func;
+  const inputKinds = requireBehaviorInputKindCatalog();
 
   for (const param of parameters) {
     const input: BehaviorInput = {
-      kind: 'body',
+      kind: inputKinds.body,
       name: param.name,
       type: param.typeText,
       required: !param.typeText.includes('?') && !param.name.includes('?'),
@@ -819,13 +828,16 @@ function detectStateAccess(bodyText: string): BehaviorStateAccess[] {
     new RegExp(String.raw`\bprismaClient\.(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\b`, 'g'),
   ];
 
-  const readOperation = (operation: string): boolean =>
-    /^(find|count|aggregate|group)/i.test(operation);
+  const writeOps = [...discoverStateWriteOperationLabels()];
+  const readOperation = (operation: string): boolean => {
+    const lowered = operation.toLowerCase();
+    return !writeOps.some((op) => lowered.startsWith(op));
+  };
   const writeOperation = (operation: string): BehaviorStateAccess['operation'] | null => {
-    if (/^create/i.test(operation)) return 'create';
-    if (/^update/i.test(operation)) return 'update';
-    if (/^delete/i.test(operation)) return 'delete';
-    if (/^upsert/i.test(operation)) return 'upsert';
+    const lowered = operation.toLowerCase();
+    for (const op of writeOps) {
+      if (lowered.startsWith(op)) return op as BehaviorStateAccess['operation'];
+    }
     return null;
   };
 
@@ -1180,22 +1192,25 @@ function determineExecutionMode(
   sourceRoot: DetectedSourceRoot | null,
   sourceContext: SourceExternalContext,
 ): BehaviorNode['executionMode'] {
-  if (risk === 'critical' || risk === 'high') return 'ai_safe';
+  const riskCatalog = requireBehaviorRiskLevelCatalog();
+  const modeCatalog = requireExecutionModeCatalog();
+  const kindCatalog = requireBehaviorNodeKindCatalog();
+  if (risk === riskCatalog.critical || risk === riskCatalog.high) return modeCatalog.aiSafe;
 
-  if (hasDecoratorRole(decorators, 'auth_guard', sourceRoot, sourceContext)) return 'ai_safe';
+  if (hasDecoratorRole(decorators, 'auth_guard', sourceRoot, sourceContext)) return modeCatalog.aiSafe;
 
   const sendsMessagesOrPayments = hasMessageOrPaymentSending(bodyText, externalCalls);
-  if (sendsMessagesOrPayments) return 'ai_safe';
+  if (sendsMessagesOrPayments) return modeCatalog.aiSafe;
 
   const writeOpSet = new Set(discoverStateWriteOperationLabels());
   const hasDbWrites = stateAccess.some((a) => writeOpSet.has(a.operation));
 
   if (hasDbWrites) {
-    return 'ai_safe';
+    return modeCatalog.aiSafe;
   }
 
   const hasEffects = hasStateOrExternalEffects(stateAccess, externalCalls, bodyText);
-  if (hasEffects) return 'ai_safe';
+  if (hasEffects) return modeCatalog.aiSafe;
 
   const isGetter =
     /^get[A-Z]/.test(funcName) ||
@@ -1203,9 +1218,9 @@ function determineExecutionMode(
     /^list[A-Z]/.test(funcName) ||
     /^fetch[A-Z]/.test(funcName) ||
     /^read[A-Z]/.test(funcName);
-  if (isGetter && kind !== 'api_endpoint') return 'observation_only';
+  if (isGetter && kind !== kindCatalog.apiEndpoint) return modeCatalog.observationOnly;
 
-  return 'ai_safe';
+  return modeCatalog.aiSafe;
 }
 
 type BehaviorNodeArtifact = BehaviorNode & {
@@ -1435,7 +1450,7 @@ function buildNodesFromParsedFunctions(
       docComment: func.docComment,
       validationRequirements,
       governedEvidenceMode:
-        executionMode === 'observation_only'
+        executionMode === requireExecutionModeCatalog().observationOnly
           ? 'read_only_evidence'
           : 'sandboxed_execution_with_validation',
     };
@@ -1454,7 +1469,7 @@ function buildNodesFromParsedFunctions(
  * @returns A BehaviorGraph with all nodes, call relationships, orphans, and summary.
  */
 export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
-  _nextNodeId = 0;
+  _nextNodeId = deriveZeroValue();
   const tsMorphAvailable = loadTsMorph();
   const allNodes: BehaviorNode[] = [];
 
