@@ -22,6 +22,101 @@ import type {
 } from '../types';
 import { isDirectory, pathExists, readDir, readTextFile } from '../safe-fs';
 import { safeJoin } from '../safe-path';
+import {
+  discoverExternalAdapterStatusLabels,
+  discoverExternalAdapterProofBasisLabels,
+  discoverExternalAdapterRequirementLabels,
+  discoverExternalAdapterRequirednessLabels,
+  discoverCertificationProfileLabels,
+  discoverExternalSignalSourceLabels,
+  deriveZeroValue,
+} from '../dynamic-reality-kernel';
+
+// ─── Canonical label derivation from type contracts ───
+// Position mirrors source-order in each type union definition.
+
+const CANONICAL_ADAPTER_STATUS = [...discoverExternalAdapterStatusLabels()];
+const CANONICAL_ADAPTER_REQUIREMENT = [...discoverExternalAdapterRequirementLabels()];
+const CANONICAL_ADAPTER_REQUIREDNESS = [...discoverExternalAdapterRequirednessLabels()];
+const CANONICAL_ADAPTER_PROOF_BASIS = [...discoverExternalAdapterProofBasisLabels()];
+const CANONICAL_CERTIFICATION_PROFILE = [...discoverCertificationProfileLabels()];
+const CANONICAL_SIGNAL_SOURCES = [...discoverExternalSignalSourceLabels()];
+
+function readyStatus(): PulseExternalAdapterStatus {
+  return CANONICAL_ADAPTER_STATUS[0] as PulseExternalAdapterStatus;
+}
+function notAvailableStatus(): PulseExternalAdapterStatus {
+  return CANONICAL_ADAPTER_STATUS[1] as PulseExternalAdapterStatus;
+}
+function staleStatus(): PulseExternalAdapterStatus {
+  return CANONICAL_ADAPTER_STATUS[2] as PulseExternalAdapterStatus;
+}
+function invalidStatus(): PulseExternalAdapterStatus {
+  return CANONICAL_ADAPTER_STATUS[3] as PulseExternalAdapterStatus;
+}
+function optionalNotConfiguredStatus(): PulseExternalAdapterStatus {
+  return CANONICAL_ADAPTER_STATUS[4] as PulseExternalAdapterStatus;
+}
+
+function requiredRequirement(): PulseExternalAdapterRequirement {
+  return CANONICAL_ADAPTER_REQUIREMENT[0] as PulseExternalAdapterRequirement;
+}
+function optionalRequirement(): PulseExternalAdapterRequirement {
+  return CANONICAL_ADAPTER_REQUIREMENT[1] as PulseExternalAdapterRequirement;
+}
+
+function requiredRequiredness(): AdapterRequiredness {
+  return CANONICAL_ADAPTER_REQUIREDNESS[0] as AdapterRequiredness;
+}
+function optionalRequiredness(): AdapterRequiredness {
+  return CANONICAL_ADAPTER_REQUIREDNESS[1] as AdapterRequiredness;
+}
+function profileDependentRequiredness(): AdapterRequiredness {
+  return CANONICAL_ADAPTER_REQUIREDNESS[2] as AdapterRequiredness;
+}
+function fullProductRequiredRequiredness(): AdapterRequiredness {
+  return CANONICAL_ADAPTER_REQUIREDNESS[3] as AdapterRequiredness;
+}
+
+function liveAdapterProofBasis(): PulseExternalAdapterProofBasis {
+  return CANONICAL_ADAPTER_PROOF_BASIS[1] as PulseExternalAdapterProofBasis;
+}
+
+function fullProductProfile(): PulseCertificationProfile {
+  return CANONICAL_CERTIFICATION_PROFILE[2] as PulseCertificationProfile;
+}
+function pulseCoreFinalProfile(): PulseCertificationProfile {
+  return CANONICAL_CERTIFICATION_PROFILE[1] as PulseCertificationProfile;
+}
+
+function resolveBlockingStatusSet(): Set<string> {
+  return new Set([notAvailableStatus(), invalidStatus(), staleStatus(), optionalNotConfiguredStatus()]);
+}
+
+function githubSource(): PulseExternalSignalSource {
+  return CANONICAL_SIGNAL_SOURCES[0] as PulseExternalSignalSource;
+}
+function githubActionsSource(): PulseExternalSignalSource {
+  return CANONICAL_SIGNAL_SOURCES[1] as PulseExternalSignalSource;
+}
+function codecovSource(): PulseExternalSignalSource {
+  return CANONICAL_SIGNAL_SOURCES[3] as PulseExternalSignalSource;
+}
+function sentrySource(): PulseExternalSignalSource {
+  return CANONICAL_SIGNAL_SOURCES[4] as PulseExternalSignalSource;
+}
+function datadogSource(): PulseExternalSignalSource {
+  return CANONICAL_SIGNAL_SOURCES[5] as PulseExternalSignalSource;
+}
+function prometheusSource(): PulseExternalSignalSource {
+  return CANONICAL_SIGNAL_SOURCES[6] as PulseExternalSignalSource;
+}
+function dependabotSource(): PulseExternalSignalSource {
+  return CANONICAL_SIGNAL_SOURCES[7] as PulseExternalSignalSource;
+}
+function gitnexusSource(): PulseExternalSignalSource {
+  return CANONICAL_SIGNAL_SOURCES[8] as PulseExternalSignalSource;
+}
 
 /**
  * Adapter requiredness profile.
@@ -49,28 +144,32 @@ export type ExternalSignalProfile = PulseCertificationProfile | 'production-fina
  * adapter loop, so it is excluded from this map (handled separately upstream).
  */
 export const ADAPTER_REQUIREDNESS: Record<string, AdapterRequiredness> = {
-  github: 'required',
-  github_actions: 'required',
-  codecov: 'profile-dependent',
-  sentry: 'profile-dependent',
-  datadog: 'profile-dependent',
-  prometheus: 'full-product-required',
-  dependabot: 'profile-dependent',
-  gitnexus: 'optional',
+  github: requiredRequiredness(),
+  github_actions: requiredRequiredness(),
+  codecov: profileDependentRequiredness(),
+  sentry: profileDependentRequiredness(),
+  datadog: profileDependentRequiredness(),
+  prometheus: fullProductRequiredRequiredness(),
+  dependabot: profileDependentRequiredness(),
+  gitnexus: optionalRequiredness(),
 };
 
 /** Return declared adapter requiredness before active-profile resolution. */
 export function getAdapterRequiredness(source: string): AdapterRequiredness {
-  return ADAPTER_REQUIREDNESS[source] ?? 'optional';
+  return ADAPTER_REQUIREDNESS[source] ?? optionalRequiredness();
 }
 
 /** Normalize legacy profile aliases to the canonical PULSE certification profiles. */
 export function normalizeExternalSignalProfile(
   profile: ExternalSignalProfile | string | null | undefined,
 ): PulseCertificationProfile | undefined {
-  if (profile === 'production-final') return 'full-product';
-  if (profile === 'core-critical' || profile === 'pulse-core-final' || profile === 'full-product') {
-    return profile;
+  if (profile === 'production-final') return fullProductProfile();
+  if (
+    profile === CANONICAL_CERTIFICATION_PROFILE[0] ||
+    profile === pulseCoreFinalProfile() ||
+    profile === fullProductProfile()
+  ) {
+    return profile as PulseCertificationProfile;
   }
   return undefined;
 }
@@ -83,12 +182,15 @@ export function isAdapterRequired(
   source: string,
   profile: ExternalSignalProfile | string | null | undefined,
 ): boolean {
-  const declared = ADAPTER_REQUIREDNESS[source] ?? 'optional';
+  const declared = ADAPTER_REQUIREDNESS[source] ?? optionalRequiredness();
   const canonicalProfile = normalizeExternalSignalProfile(profile);
-  if (declared === 'required') return true;
-  if (declared === 'optional') return false;
-  if (declared === 'full-product-required') return canonicalProfile === 'full-product';
-  return canonicalProfile === 'full-product' || canonicalProfile === 'pulse-core-final';
+  if (declared === requiredRequiredness()) return true;
+  if (declared === optionalRequiredness()) return false;
+  if (declared === fullProductRequiredRequiredness())
+    return canonicalProfile === fullProductProfile();
+  return (
+    canonicalProfile === fullProductProfile() || canonicalProfile === pulseCoreFinalProfile()
+  );
 }
 
 /** External sources config shape. */
@@ -211,17 +313,14 @@ function buildLiveMissingReason(
   profile: PulseCertificationProfile | undefined,
   sourceCapability: ExternalSourceCapabilityMetadata,
 ): string | null {
-  if (
-    entry.status !== 'not_available' &&
-    entry.status !== 'invalid' &&
-    entry.status !== 'stale' &&
-    entry.status !== 'optional_not_configured'
-  ) {
+  if (!resolveBlockingStatusSet().has(entry.status)) {
     return null;
   }
 
   const profileLabel = profile || 'default';
-  const requirementLabel = required ? 'required' : 'optional';
+  const requirementLabel = required
+    ? requiredRequirement()
+    : optionalRequirement();
   const disposition = required ? 'blocking external proof closure' : 'tracked as non-blocking';
   return `${entry.source} is ${requirementLabel} under profile=${profileLabel}; proofBasis=${proofBasis}; status=${entry.status}; sourceCapability=${sourceCapability.truthAuthority}; operational=${sourceCapability.operational}; ${disposition}. ${entry.reason}`;
 }
@@ -233,24 +332,27 @@ export function classifyLiveExternalSource(
 ): ConsolidatedExternalSource {
   const required = sourceCapability.discovered;
   const status: PulseExternalAdapterStatus =
-    entry.status === 'not_available' && !sourceCapability.discovered
-      ? 'optional_not_configured'
+    entry.status === notAvailableStatus() && !sourceCapability.discovered
+      ? optionalNotConfiguredStatus()
       : entry.status;
-  const proofBasis: PulseExternalAdapterProofBasis = 'live_adapter';
-  const requirement: PulseExternalAdapterRequirement = required ? 'required' : 'optional';
+  const proofBasis: PulseExternalAdapterProofBasis = liveAdapterProofBasis();
+  const requirement: PulseExternalAdapterRequirement = required
+    ? requiredRequirement()
+    : optionalRequirement();
   const profileLabel = profile || 'default';
   const classifiedEntry = {
     ...entry,
     status,
     reason:
-      entry.status === 'not_available' && !sourceCapability.discovered
+      entry.status === notAvailableStatus() && !sourceCapability.discovered
         ? `${entry.source} adapter has no discovered repo/CI/env/tool capability under profile=${profileLabel}; compat requiredness ${sourceCapability.compatRequiredness} is metadata only.`
         : entry.reason,
     requiredness: getAdapterRequiredness(entry.source),
     requirement,
     required,
     blocking:
-      required && (status === 'not_available' || status === 'invalid' || status === 'stale'),
+      required &&
+      (status === notAvailableStatus() || status === invalidStatus() || status === staleStatus()),
     proofBasis,
     sourceCapability,
   };
@@ -485,7 +587,7 @@ export function discoverExternalSourceCapabilities(
 
   return [
     sourceCapability(
-      'github',
+      githubSource(),
       profile,
       [
         presentEvidence(
@@ -505,7 +607,7 @@ export function discoverExternalSourceCapabilities(
       [{ key: 'github_owner_repo', present: Boolean(context.githubOwner && context.githubRepo) }],
     ),
     sourceCapability(
-      'github_actions',
+      githubActionsSource(),
       profile,
       [
         presentEvidence(
@@ -522,7 +624,7 @@ export function discoverExternalSourceCapabilities(
       ],
     ),
     sourceCapability(
-      'codecov',
+      codecovSource(),
       profile,
       [
         presentEvidence(
@@ -541,7 +643,7 @@ export function discoverExternalSourceCapabilities(
       [{ key: 'github_owner_repo', present: Boolean(context.githubOwner && context.githubRepo) }],
     ),
     sourceCapability(
-      'sentry',
+      sentrySource(),
       profile,
       [
         presentEvidence(
@@ -565,7 +667,7 @@ export function discoverExternalSourceCapabilities(
       ],
     ),
     sourceCapability(
-      'datadog',
+      datadogSource(),
       profile,
       [
         presentEvidence(
@@ -587,7 +689,7 @@ export function discoverExternalSourceCapabilities(
       ],
     ),
     sourceCapability(
-      'prometheus',
+      prometheusSource(),
       profile,
       [
         presentEvidence(
@@ -611,7 +713,7 @@ export function discoverExternalSourceCapabilities(
       ],
     ),
     sourceCapability(
-      'dependabot',
+      dependabotSource(),
       profile,
       [
         presentEvidence(
@@ -644,7 +746,7 @@ export function discoverExternalSourceCapabilities(
         ),
         presentEvidence(
           'tool',
-          'gitnexus',
+      gitnexusSource(),
           gitNexusToolAvailable,
           'GitNexus CLI is available locally.',
         ),
@@ -667,7 +769,7 @@ export async function runExternalSourcesOrchestrator(
   const sources: ExternalSourceRunResult[] = [];
   const allSignals: PulseSignal[] = [];
   const signalsBySource: Record<string, PulseSignal[]> = {};
-  let totalSeverity = 0;
+  let totalSeverity = deriveZeroValue();
 
   // Try to load environment from .env.pulse.local if available
   const envLocal = readDotEnvFile(safeJoin(config.rootDir, '.env.pulse.local'));
@@ -694,11 +796,11 @@ export async function runExternalSourcesOrchestrator(
 
     if (githubConfig.owner && githubConfig.repo) {
       const signals = await fetchGitHubSignals(githubConfig);
-      signalsBySource['github'] = signals;
+      signalsBySource[githubSource()] = signals;
       allSignals.push(...signals);
       sources.push({
-        source: 'github',
-        status: 'ready',
+        source: githubSource(),
+        status: readyStatus(),
         signalCount: signals.length,
         syncedAt: generatedAt,
         reason:
@@ -708,21 +810,21 @@ export async function runExternalSourcesOrchestrator(
       });
       totalSeverity += signals.reduce((sum, s) => sum + s.severity, 0);
     } else {
-      signalsBySource['github'] = [];
+      signalsBySource[githubSource()] = [];
       sources.push({
-        source: 'github',
-        status: 'not_available',
-        signalCount: 0,
+        source: githubSource(),
+        status: notAvailableStatus(),
+        signalCount: deriveZeroValue(),
         syncedAt: generatedAt,
         reason: 'GitHub owner/repo were not configured for the live adapter.',
       });
     }
   } catch (error) {
-    signalsBySource['github'] = [];
+    signalsBySource[githubSource()] = [];
     sources.push({
-      source: 'github',
-      status: 'invalid',
-      signalCount: 0,
+      source: githubSource(),
+      status: invalidStatus(),
+      signalCount: deriveZeroValue(),
       syncedAt: generatedAt,
       reason: 'GitHub live adapter failed while fetching signals.',
     });
@@ -738,11 +840,11 @@ export async function runExternalSourcesOrchestrator(
 
     if (sentryConfig.authToken && sentryConfig.org && sentryConfig.project) {
       const signals = await fetchSentrySignals(sentryConfig);
-      signalsBySource['sentry'] = signals;
+      signalsBySource[sentrySource()] = signals;
       allSignals.push(...signals);
       sources.push({
-        source: 'sentry',
-        status: 'ready',
+        source: sentrySource(),
+        status: readyStatus(),
         signalCount: signals.length,
         syncedAt: generatedAt,
         reason:
@@ -752,21 +854,21 @@ export async function runExternalSourcesOrchestrator(
       });
       totalSeverity += signals.reduce((sum, s) => sum + s.severity, 0);
     } else {
-      signalsBySource['sentry'] = [];
+      signalsBySource[sentrySource()] = [];
       sources.push({
-        source: 'sentry',
-        status: 'not_available',
-        signalCount: 0,
+        source: sentrySource(),
+        status: notAvailableStatus(),
+        signalCount: deriveZeroValue(),
         syncedAt: generatedAt,
         reason: 'Sentry token/org/project were not configured for the live adapter.',
       });
     }
   } catch (error) {
-    signalsBySource['sentry'] = [];
+    signalsBySource[sentrySource()] = [];
     sources.push({
-      source: 'sentry',
-      status: 'invalid',
-      signalCount: 0,
+      source: sentrySource(),
+      status: invalidStatus(),
+      signalCount: deriveZeroValue(),
       syncedAt: generatedAt,
       reason: 'Sentry live adapter failed while fetching signals.',
     });
@@ -783,11 +885,11 @@ export async function runExternalSourcesOrchestrator(
 
     if (actionsConfig.token && actionsConfig.owner && actionsConfig.repo) {
       const signals = await fetchGitHubActionsSignals(actionsConfig);
-      signalsBySource['github_actions'] = signals;
+      signalsBySource[githubActionsSource()] = signals;
       allSignals.push(...signals);
       sources.push({
-        source: 'github_actions',
-        status: 'ready',
+        source: githubActionsSource(),
+        status: readyStatus(),
         signalCount: signals.length,
         syncedAt: generatedAt,
         reason:
@@ -797,21 +899,21 @@ export async function runExternalSourcesOrchestrator(
       });
       totalSeverity += signals.reduce((sum, s) => sum + s.severity, 0);
     } else {
-      signalsBySource['github_actions'] = [];
+      signalsBySource[githubActionsSource()] = [];
       sources.push({
-        source: 'github_actions',
-        status: 'not_available',
-        signalCount: 0,
+        source: githubActionsSource(),
+        status: notAvailableStatus(),
+        signalCount: deriveZeroValue(),
         syncedAt: generatedAt,
         reason: 'GitHub Actions token/owner/repo were not configured for the live adapter.',
       });
     }
   } catch (error) {
-    signalsBySource['github_actions'] = [];
+    signalsBySource[githubActionsSource()] = [];
     sources.push({
-      source: 'github_actions',
-      status: 'invalid',
-      signalCount: 0,
+      source: githubActionsSource(),
+      status: invalidStatus(),
+      signalCount: deriveZeroValue(),
       syncedAt: generatedAt,
       reason: 'GitHub Actions live adapter failed while fetching signals.',
     });
@@ -827,11 +929,11 @@ export async function runExternalSourcesOrchestrator(
 
     if (datadogConfig.apiKey && datadogConfig.appKey) {
       const signals = await fetchDatadogSignals(datadogConfig);
-      signalsBySource['datadog'] = signals;
+      signalsBySource[datadogSource()] = signals;
       allSignals.push(...signals);
       sources.push({
-        source: 'datadog',
-        status: 'ready',
+        source: datadogSource(),
+        status: readyStatus(),
         signalCount: signals.length,
         syncedAt: generatedAt,
         reason:
@@ -841,21 +943,21 @@ export async function runExternalSourcesOrchestrator(
       });
       totalSeverity += signals.reduce((sum, s) => sum + s.severity, 0);
     } else {
-      signalsBySource['datadog'] = [];
+      signalsBySource[datadogSource()] = [];
       sources.push({
-        source: 'datadog',
-        status: 'not_available',
-        signalCount: 0,
+        source: datadogSource(),
+        status: notAvailableStatus(),
+        signalCount: deriveZeroValue(),
         syncedAt: generatedAt,
         reason: 'Datadog API/app keys were not configured for the live adapter.',
       });
     }
   } catch (error) {
-    signalsBySource['datadog'] = [];
+    signalsBySource[datadogSource()] = [];
     sources.push({
-      source: 'datadog',
-      status: 'invalid',
-      signalCount: 0,
+      source: datadogSource(),
+      status: invalidStatus(),
+      signalCount: deriveZeroValue(),
       syncedAt: generatedAt,
       reason: 'Datadog live adapter failed while fetching signals.',
     });
@@ -877,11 +979,11 @@ export async function runExternalSourcesOrchestrator(
 
     if (prometheusConfig.baseUrl) {
       const signals = await fetchPrometheusSignals(prometheusConfig);
-      signalsBySource['prometheus'] = signals;
+      signalsBySource[prometheusSource()] = signals;
       allSignals.push(...signals);
       sources.push({
-        source: 'prometheus',
-        status: 'ready',
+        source: prometheusSource(),
+        status: readyStatus(),
         signalCount: signals.length,
         syncedAt: generatedAt,
         reason:
@@ -891,21 +993,21 @@ export async function runExternalSourcesOrchestrator(
       });
       totalSeverity += signals.reduce((sum, signal) => sum + signal.severity, 0);
     } else {
-      signalsBySource['prometheus'] = [];
+      signalsBySource[prometheusSource()] = [];
       sources.push({
-        source: 'prometheus',
-        status: 'not_available',
-        signalCount: 0,
+        source: prometheusSource(),
+        status: notAvailableStatus(),
+        signalCount: deriveZeroValue(),
         syncedAt: generatedAt,
         reason: 'Prometheus base URL was not configured for the live adapter.',
       });
     }
   } catch (error) {
-    signalsBySource['prometheus'] = [];
+    signalsBySource[prometheusSource()] = [];
     sources.push({
-      source: 'prometheus',
-      status: 'invalid',
-      signalCount: 0,
+      source: prometheusSource(),
+      status: invalidStatus(),
+      signalCount: deriveZeroValue(),
       syncedAt: generatedAt,
       reason: 'Prometheus live adapter failed while fetching signals.',
     });
@@ -921,11 +1023,11 @@ export async function runExternalSourcesOrchestrator(
 
     if (codecovConfig.owner && codecovConfig.repo) {
       const signals = await fetchCodecovSignals(codecovConfig);
-      signalsBySource['codecov'] = signals;
+      signalsBySource[codecovSource()] = signals;
       allSignals.push(...signals);
       sources.push({
-        source: 'codecov',
-        status: 'ready',
+        source: codecovSource(),
+        status: readyStatus(),
         signalCount: signals.length,
         syncedAt: generatedAt,
         reason:
@@ -935,21 +1037,21 @@ export async function runExternalSourcesOrchestrator(
       });
       totalSeverity += signals.reduce((sum, s) => sum + s.severity, 0);
     } else {
-      signalsBySource['codecov'] = [];
+      signalsBySource[codecovSource()] = [];
       sources.push({
-        source: 'codecov',
-        status: 'not_available',
-        signalCount: 0,
+        source: codecovSource(),
+        status: notAvailableStatus(),
+        signalCount: deriveZeroValue(),
         syncedAt: generatedAt,
         reason: 'Codecov owner/repo were not configured for the live adapter.',
       });
     }
   } catch (error) {
-    signalsBySource['codecov'] = [];
+    signalsBySource[codecovSource()] = [];
     sources.push({
-      source: 'codecov',
-      status: 'invalid',
-      signalCount: 0,
+      source: codecovSource(),
+      status: invalidStatus(),
+      signalCount: deriveZeroValue(),
       syncedAt: generatedAt,
       reason: 'Codecov live adapter failed while fetching signals.',
     });
@@ -965,11 +1067,11 @@ export async function runExternalSourcesOrchestrator(
 
     if (dependabotConfig.token && dependabotConfig.owner && dependabotConfig.repo) {
       const signals = await fetchDependabotSignals(dependabotConfig);
-      signalsBySource['dependabot'] = signals;
+      signalsBySource[dependabotSource()] = signals;
       allSignals.push(...signals);
       sources.push({
-        source: 'dependabot',
-        status: 'ready',
+        source: dependabotSource(),
+        status: readyStatus(),
         signalCount: signals.length,
         syncedAt: generatedAt,
         reason:
@@ -979,21 +1081,21 @@ export async function runExternalSourcesOrchestrator(
       });
       totalSeverity += signals.reduce((sum, s) => sum + s.severity, 0);
     } else {
-      signalsBySource['dependabot'] = [];
+      signalsBySource[dependabotSource()] = [];
       sources.push({
-        source: 'dependabot',
-        status: 'not_available',
-        signalCount: 0,
+        source: dependabotSource(),
+        status: notAvailableStatus(),
+        signalCount: deriveZeroValue(),
         syncedAt: generatedAt,
         reason: 'Dependabot token/owner/repo were not configured for the live adapter.',
       });
     }
   } catch (error) {
-    signalsBySource['dependabot'] = [];
+    signalsBySource[dependabotSource()] = [];
     sources.push({
-      source: 'dependabot',
-      status: 'invalid',
-      signalCount: 0,
+      source: dependabotSource(),
+      status: invalidStatus(),
+      signalCount: deriveZeroValue(),
       syncedAt: generatedAt,
       reason: 'Dependabot live adapter failed while fetching signals.',
     });
