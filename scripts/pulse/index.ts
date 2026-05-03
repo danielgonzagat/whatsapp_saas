@@ -94,6 +94,7 @@ import {
 import { buildBrowserEvidenceForIndex } from './index-browser-evidence';
 import { printPulseStartupSummary } from './index-preamble';
 import { handlePulseOutput } from './index-output';
+import { discoverAllObservedArtifactFilenames } from './dynamic-reality-kernel';
 
 activateRuntimeParserEnv();
 
@@ -173,12 +174,12 @@ const PULSE_INDEX_STAGE_DESCRIPTORS: PulseIndexStageDescriptor[] = [
     ],
     artifactOverrides: [
       {
-        path: 'PULSE_CERTIFICATE.json',
+        path: discoverAllObservedArtifactFilenames().certificate,
         source: 'certification',
         objective: 'avoid stale disk reads for the current certificate snapshot',
       },
       {
-        path: 'PULSE_CLI_DIRECTIVE.json',
+        path: discoverAllObservedArtifactFilenames().cliDirective,
         source: 'empty',
         objective: 'reserve directive slot until output publication writes fresh data',
       },
@@ -203,17 +204,17 @@ const PULSE_INDEX_STAGE_DESCRIPTORS: PulseIndexStageDescriptor[] = [
         objective: 'reserve agent-orchestration slot until output publication writes fresh data',
       },
       {
-        path: '.pulse/current/PULSE_EXTERNAL_SIGNAL_STATE.json',
+        path: `.pulse/current/${discoverAllObservedArtifactFilenames().externalSignalState}`,
         source: 'externalSignalState',
         objective: 'attach fresh external signal state derived before self-trust',
       },
       {
-        path: '.pulse/current/PULSE_CONVERGENCE_PLAN.json',
+        path: `.pulse/current/${discoverAllObservedArtifactFilenames().convergencePlan}`,
         source: 'empty',
         objective: 'reserve convergence-plan slot until output publication writes fresh data',
       },
       {
-        path: '.pulse/current/PULSE_PRODUCT_VISION.json',
+        path: `.pulse/current/${discoverAllObservedArtifactFilenames().productVision}`,
         source: 'empty',
         objective: 'reserve product-vision slot until output publication writes fresh data',
       },

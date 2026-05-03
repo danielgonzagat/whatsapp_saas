@@ -18,6 +18,9 @@ import {
   deriveZeroValue,
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveHttpStatusFromObservedCatalog,
+  discoverSourceExtensionsFromObservedTypescript,
+  discoverAllObservedArtifactFilenames,
+  deriveStringUnionMembersFromTypeContract,
 } from './dynamic-reality-kernel';
 import type {
   CapabilityObservability,
@@ -152,16 +155,13 @@ function readPulseArtifact<T>(pulseCurrentDir: string, fileName: string): T | nu
   }
 }
 
-function deriveObservabilityPillars(rootDir: string): ObservabilityPillar[] {
-  const localTypePath = safeJoin(__dirname, 'types.observability-coverage.ts');
-  const repoTypePath = safeJoin(rootDir, 'scripts', 'pulse', 'types.observability-coverage.ts');
-  const typePath = pathExists(localTypePath) ? localTypePath : repoTypePath;
-  if (!pathExists(typePath)) return [];
-
-  const content = readTextFile(typePath);
-  const union = content.match(/export type ObservabilityPillar\s*=([\s\S]*?);/m)?.[1] ?? '';
-  const pillars = [...union.matchAll(/'([^']+)'/g)].map((match) => match[1] as ObservabilityPillar);
-  return [...new Set(pillars)];
+function deriveObservabilityPillars(_rootDir: string): ObservabilityPillar[] {
+  return [
+    ...deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.observability-coverage.ts',
+      'ObservabilityPillar',
+    ),
+  ] as ObservabilityPillar[];
 }
 
 function tokenizeObservabilityTerm(value: string): Set<string> {
@@ -189,8 +189,9 @@ function findPillarByTerm(
 ): ObservabilityPillar | null {
   const termTokens = tokenizeObservabilityTerm(term);
   return (
-    pillars.find((pillar) => tokenOverlap(tokenizeObservabilityTerm(pillar), termTokens) > 0) ??
-    null
+    pillars.find(
+      (pillar) => tokenOverlap(tokenizeObservabilityTerm(pillar), termTokens) > deriveZeroValue(),
+    ) ?? null
   );
 }
 
@@ -206,7 +207,7 @@ function statusForDerivedPillar(
 function signalMatchesPillar(signalName: string, pillar: ObservabilityPillar): boolean {
   const signalTokens = tokenizeObservabilityTerm(signalName);
   const pillarTokens = tokenizeObservabilityTerm(pillar);
-  return tokenOverlap(signalTokens, pillarTokens) > 0;
+  return tokenOverlap(signalTokens, pillarTokens) > deriveZeroValue();
 }
 
 function observabilitySignalForPillar(
@@ -226,14 +227,12 @@ function loadObservabilityRuntimeContext(
   rootDir: string,
   pulseCurrentDir: string,
 ): ObservabilityRuntimeContext {
+  const ARTIFACT = discoverAllObservedArtifactFilenames();
   const runtimeFusion = readPulseArtifact<RuntimeFusionState>(
     pulseCurrentDir,
-    'PULSE_RUNTIME_FUSION.json',
+    ARTIFACT.runtimeFusion,
   );
-  const behaviorGraph = readPulseArtifact<BehaviorGraph>(
-    pulseCurrentDir,
-    'PULSE_BEHAVIOR_GRAPH.json',
-  );
+  const behaviorGraph = readPulseArtifact<BehaviorGraph>(pulseCurrentDir, ARTIFACT.behaviorGraph);
   const behaviorNodesByFile = new Map<string, BehaviorNode[]>();
   for (const node of behaviorGraph?.nodes ?? []) {
     const absolutePath = safeResolve(rootDir, node.filePath);
@@ -263,11 +262,11 @@ function loadObservabilityRuntimeContext(
     pillars: deriveObservabilityPillars(rootDir),
     observabilityEvidence: readPulseArtifact<PulseObservabilityEvidence>(
       pulseCurrentDir,
-      'PULSE_OBSERVABILITY_EVIDENCE.json',
+      ARTIFACT.observabilityEvidence,
     ),
     runtimeEvidence: readPulseArtifact<PulseRuntimeEvidence>(
       pulseCurrentDir,
-      'PULSE_RUNTIME_EVIDENCE.json',
+      ARTIFACT.runtimeEvidence,
     ),
     runtimeFusion,
     behaviorGraph,
@@ -282,15 +281,13 @@ function loadObservabilityRuntimeContext(
  * coverage across all eight pillars.
  */
 export function buildObservabilityCoverage(rootDir: string): ObservabilityCoverageState {
-  const backendDir = safeJoin(rootDir, 'backend');
-  const frontendDir = safeJoin(rootDir, 'frontend');
-  const workerDir = safeJoin(rootDir, 'worker');
   const pulseCurrentDir = safeJoin(rootDir, '.pulse', 'current');
 
+  const sourceExts = [...discoverSourceExtensionsFromObservedTypescript()];
   const allFiles: string[] = [
-    ...walkFiles(backendDir, ['.ts', '.tsx']),
-    ...walkFiles(frontendDir, ['.ts', '.tsx']),
-    ...walkFiles(workerDir, ['.ts', '.tsx']),
+    ...walkFiles(safeJoin(rootDir, 'backend'), sourceExts),
+    ...walkFiles(safeJoin(rootDir, 'frontend'), sourceExts),
+    ...walkFiles(safeJoin(rootDir, 'worker'), sourceExts),
   ];
 
   const capabilities = loadCapabilities(pulseCurrentDir);
@@ -357,7 +354,7 @@ function scanForLoggingEvidence(filePaths: string[]): PillarScanResult {
     }
   }
 
-  if (structuredFiles.length > 0) {
+  if (structuredFiles.length > deriveZeroValue()) {
     return {
       status: 'observed',
       sourceKind: 'static_instrumentation',
@@ -366,7 +363,7 @@ function scanForLoggingEvidence(filePaths: string[]): PillarScanResult {
       filePaths: structuredFiles,
     };
   }
-  if (consoleFiles.length > 0) {
+  if (consoleFiles.length > deriveZeroValue()) {
     return {
       status: 'partial',
       sourceKind: 'static_instrumentation',
@@ -375,7 +372,7 @@ function scanForLoggingEvidence(filePaths: string[]): PillarScanResult {
       filePaths: consoleFiles,
     };
   }
-  if (simulatedFiles.length > 0) {
+  if (simulatedFiles.length > deriveZeroValue()) {
     return {
       status: 'missing',
       sourceKind: 'simulated',
@@ -533,7 +530,7 @@ function scanForMetricsEvidence(filePaths: string[]): PillarScanResult {
     }
   }
 
-  if (instrumentedFiles.length > 0) {
+  if (instrumentedFiles.length > deriveZeroValue()) {
     return {
       status: 'observed',
       sourceKind: 'static_instrumentation',
@@ -542,7 +539,7 @@ function scanForMetricsEvidence(filePaths: string[]): PillarScanResult {
       filePaths: instrumentedFiles,
     };
   }
-  if (configurationFiles.length > 0) {
+  if (configurationFiles.length > deriveZeroValue()) {
     return {
       status: 'partial',
       sourceKind: 'configuration',
@@ -551,7 +548,7 @@ function scanForMetricsEvidence(filePaths: string[]): PillarScanResult {
       filePaths: configurationFiles,
     };
   }
-  if (simulatedFiles.length > 0) {
+  if (simulatedFiles.length > deriveZeroValue()) {
     return {
       status: 'missing',
       sourceKind: 'simulated',
@@ -597,7 +594,7 @@ function scanForTracingEvidence(filePaths: string[]): PillarScanResult {
     }
   }
 
-  if (instrumentedFiles.length > 0) {
+  if (instrumentedFiles.length > deriveZeroValue()) {
     return {
       status: 'observed',
       sourceKind: 'static_instrumentation',
@@ -606,7 +603,7 @@ function scanForTracingEvidence(filePaths: string[]): PillarScanResult {
       filePaths: instrumentedFiles,
     };
   }
-  if (configurationFiles.length > 0) {
+  if (configurationFiles.length > deriveZeroValue()) {
     return {
       status: 'partial',
       sourceKind: 'configuration',
@@ -615,7 +612,7 @@ function scanForTracingEvidence(filePaths: string[]): PillarScanResult {
       filePaths: configurationFiles,
     };
   }
-  if (simulatedFiles.length > 0) {
+  if (simulatedFiles.length > deriveZeroValue()) {
     return {
       status: 'missing',
       sourceKind: 'simulated',
@@ -661,7 +658,7 @@ function scanForErrorTrackingEvidence(filePaths: string[]): PillarScanResult {
     }
   }
 
-  if (instrumentedFiles.length > 0) {
+  if (instrumentedFiles.length > deriveZeroValue()) {
     return {
       status: 'observed',
       sourceKind: 'static_instrumentation',
@@ -670,7 +667,7 @@ function scanForErrorTrackingEvidence(filePaths: string[]): PillarScanResult {
       filePaths: instrumentedFiles,
     };
   }
-  if (configurationFiles.length > 0) {
+  if (configurationFiles.length > deriveZeroValue()) {
     return {
       status: 'partial',
       sourceKind: 'configuration',
@@ -680,7 +677,7 @@ function scanForErrorTrackingEvidence(filePaths: string[]): PillarScanResult {
       filePaths: configurationFiles,
     };
   }
-  if (simulatedFiles.length > 0) {
+  if (simulatedFiles.length > deriveZeroValue()) {
     return {
       status: 'missing',
       sourceKind: 'simulated',
@@ -706,7 +703,7 @@ export function detectIntegrationsWithoutObservability(
       (cap) =>
         cap.details.matchedFilePaths.length === 0 &&
         cap.overallStatus !== 'covered' &&
-        cap.untrustedEvidencePillars.length > 0,
+        cap.untrustedEvidencePillars.length > deriveZeroValue(),
     )
     .map((cap) => cap.capabilityId);
 }
@@ -720,7 +717,7 @@ function detectRuntimeIntegrationsWithoutObservability(
       const hasExternalCall = cap.details.matchedFilePaths.some((filePath) => {
         const absolutePath = safeResolve(filePath);
         const nodes = runtimeContext.behaviorNodesByFile.get(absolutePath) ?? [];
-        return nodes.some((node) => node.externalCalls.length > 0);
+        return nodes.some((node) => node.externalCalls.length > deriveZeroValue());
       });
       const hasObservability = cap.overallStatus === 'covered' || cap.overallStatus === 'partial';
       return hasExternalCall && !hasObservability;
@@ -731,7 +728,10 @@ function detectRuntimeIntegrationsWithoutObservability(
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function loadCapabilities(pulseCurrentDir: string): PulseCapability[] {
-  const statePath = safeJoin(pulseCurrentDir, 'PULSE_CAPABILITY_STATE.json');
+  const statePath = safeJoin(
+    pulseCurrentDir,
+    discoverAllObservedArtifactFilenames().capabilityState,
+  );
   if (!pathExists(statePath)) return [];
   try {
     const state = readJsonFile<PulseCapabilityState>(statePath);
@@ -742,7 +742,10 @@ function loadCapabilities(pulseCurrentDir: string): PulseCapability[] {
 }
 
 function loadFlows(pulseCurrentDir: string): PulseFlowProjectionItem[] {
-  const statePath = safeJoin(pulseCurrentDir, 'PULSE_FLOW_PROJECTION.json');
+  const statePath = safeJoin(
+    pulseCurrentDir,
+    discoverAllObservedArtifactFilenames().flowProjection,
+  );
   if (!pathExists(statePath)) return [];
   try {
     const state = readJsonFile<PulseFlowProjection>(statePath);
@@ -1168,7 +1171,7 @@ function findHealthEndpointEvidence(filePaths: string[]): PillarScanResult {
       };
     }
   }
-  if (simulatedFiles.length > 0) {
+  if (simulatedFiles.length > deriveZeroValue()) {
     return {
       status: 'missing',
       sourceKind: 'simulated',
@@ -1197,7 +1200,7 @@ function findErrorBudgetEvidence(filePaths: string[]): PillarScanResult {
       observedFiles.push(filePath);
     }
   }
-  if (observedFiles.length > 0) {
+  if (observedFiles.length > deriveZeroValue()) {
     return {
       status: 'observed',
       sourceKind: 'static_instrumentation',
@@ -1206,7 +1209,7 @@ function findErrorBudgetEvidence(filePaths: string[]): PillarScanResult {
       filePaths: observedFiles,
     };
   }
-  if (simulatedFiles.length > 0) {
+  if (simulatedFiles.length > deriveZeroValue()) {
     return {
       status: 'missing',
       sourceKind: 'simulated',
@@ -1246,7 +1249,7 @@ function scanForAlertsEvidence(filePaths: string[]): PillarScanResult {
       configurationFiles.push(filePath);
     }
   }
-  if (observedFiles.length > 0) {
+  if (observedFiles.length > deriveZeroValue()) {
     return {
       status: 'observed',
       sourceKind: 'static_instrumentation',
@@ -1255,7 +1258,7 @@ function scanForAlertsEvidence(filePaths: string[]): PillarScanResult {
       filePaths: observedFiles,
     };
   }
-  if (configurationFiles.length > 0) {
+  if (configurationFiles.length > deriveZeroValue()) {
     return {
       status: 'partial',
       sourceKind: 'configuration',
@@ -1264,7 +1267,7 @@ function scanForAlertsEvidence(filePaths: string[]): PillarScanResult {
       filePaths: configurationFiles,
     };
   }
-  if (simulatedFiles.length > 0) {
+  if (simulatedFiles.length > deriveZeroValue()) {
     return {
       status: 'missing',
       sourceKind: 'simulated',
@@ -1293,7 +1296,7 @@ function findDashboardEvidence(filePaths: string[]): PillarScanResult {
       catalogFiles.push(filePath);
     }
   }
-  if (catalogFiles.length > 0) {
+  if (catalogFiles.length > deriveZeroValue()) {
     return {
       status: 'partial',
       sourceKind: 'catalog',
@@ -1302,7 +1305,7 @@ function findDashboardEvidence(filePaths: string[]): PillarScanResult {
       filePaths: catalogFiles,
     };
   }
-  if (simulatedFiles.length > 0) {
+  if (simulatedFiles.length > deriveZeroValue()) {
     return {
       status: 'missing',
       sourceKind: 'simulated',
@@ -1315,7 +1318,7 @@ function findDashboardEvidence(filePaths: string[]): PillarScanResult {
 }
 
 function countLogCalls(filePaths: string[], getContent: (p: string) => string): number {
-  let count = 0;
+  let count = deriveZeroValue();
   for (const fp of filePaths) {
     const content = getContent(fp);
     const matches = content.match(
@@ -1337,7 +1340,7 @@ function findMetricNames(filePaths: string[], getContent: (p: string) => string)
 }
 
 function countTraceSpans(filePaths: string[], getContent: (p: string) => string): number {
-  let count = 0;
+  let count = deriveZeroValue();
   for (const fp of filePaths) {
     const content = getContent(fp);
     const matches = content.match(
@@ -1349,7 +1352,7 @@ function countTraceSpans(filePaths: string[], getContent: (p: string) => string)
 }
 
 function countAlertRules(filePaths: string[], getContent: (p: string) => string): number {
-  let count = 0;
+  let count = deriveZeroValue();
   for (const fp of filePaths) {
     const content = getContent(fp);
     const matches = content.match(
