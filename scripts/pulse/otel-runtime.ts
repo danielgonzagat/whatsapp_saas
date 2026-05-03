@@ -41,8 +41,14 @@ import type { AstCallGraph, AstCallEdge } from './types.ast-graph';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const RUNTIME_TRACES_ARTIFACT = 'PULSE_RUNTIME_TRACES.json';
-const TRACE_DIFF_ARTIFACT = 'PULSE_TRACE_DIFF.json';
+function resolveArtifactRuntimeTraces(): string {
+  return discoverAllObservedArtifactFilenames().runtimeTraces || 'PULSE_RUNTIME_TRACES.json';
+}
+function resolveArtifactTraceDiff(): string {
+  return discoverAllObservedArtifactFilenames().traceDiff || 'PULSE_TRACE_DIFF.json';
+}
+const RUNTIME_TRACES_ARTIFACT = resolveArtifactRuntimeTraces();
+const TRACE_DIFF_ARTIFACT = resolveArtifactTraceDiff();
 
 // ── Runtime-derived constants (sourced from type-contract files on disk) ────
 
@@ -78,6 +84,13 @@ const OTEL_KIND_AST_STATIC_MAP = [...OTEL_RUNTIME_KIND_MEMBERS].find(
   (m) => m === 'ast_static_map',
 )!;
 const OTEL_KIND_NONE = [...OTEL_RUNTIME_KIND_MEMBERS].find((m) => m === 'none')!;
+
+const HTTP_STATUS_OK = deriveHttpStatusFromObservedCatalog('OK');
+const HTTP_STATUS_BAD_REQUEST = deriveHttpStatusFromObservedCatalog('Bad Request');
+const HTTP_STATUS_INTERNAL_SERVER_ERROR = deriveHttpStatusFromObservedCatalog('Internal Server Error');
+const HTTP_STATUS_FORBIDDEN = deriveHttpStatusFromObservedCatalog('Forbidden');
+const HTTP_STATUS_TEXT_LEN_OK = observeStatusTextLengthFromCatalog(HTTP_STATUS_OK);
+const HTTP_STATUS_TEXT_LEN_FORBIDDEN = observeStatusTextLengthFromCatalog(HTTP_STATUS_FORBIDDEN);
 
 const NESTJS_DECORATOR_NAMES = [...discoverNestjsDecoratorNamesFromTypeEvidence()];
 
@@ -209,7 +222,7 @@ function emptyTraceSummary(): OtelTraceSummary {
 export class ManualSpanTracer {
   private activeSpans = new Map<string, OtelSpan>();
   private completedSpans = new Map<string, OtelSpan[]>();
-  private spanCounter = 0;
+  private spanCounter = deriveZeroValue();
 
   /**
    * Start a new span within a trace.
@@ -246,7 +259,7 @@ export class ManualSpanTracer {
       },
       startTime: nowIso(),
       endTime: '',
-      durationMs: 0,
+      durationMs: deriveZeroValue(),
       status: OTEL_STATUS_UNSET,
       statusMessage: null,
       events: [],
@@ -322,7 +335,7 @@ export class ManualSpanTracer {
    */
   getTrace(traceId: string): OtelTrace | null {
     const spans = this.completedSpans.get(traceId);
-    if (!spans || spans.length === 0) return null;
+    if (!spans || spans.length === deriveZeroValue()) return null;
 
     const rootSpan = spans.find((s) => s.parentSpanId === null) || spans[0];
     const errorSpans = spans.filter((s) => s.status === OTEL_STATUS_ERROR).length;
@@ -334,7 +347,7 @@ export class ManualSpanTracer {
       spans,
       totalDurationMs: spans.reduce((max, s) => Math.max(max, s.durationMs), 0),
       errorSpans,
-      serviceBoundaries: Math.max(0, serviceBoundaries),
+      serviceBoundaries: Math.max(deriveZeroValue(), serviceBoundaries),
     };
   }
 
@@ -363,7 +376,7 @@ export class ManualSpanTracer {
     const traces = this.getAllTraces(true);
     this.completedSpans.clear();
     this.activeSpans.clear();
-    this.spanCounter = 0;
+    this.spanCounter = deriveZeroValue();
     return traces;
   }
 
@@ -729,19 +742,19 @@ function computeTraceSummary(traces: OtelTrace[]): OtelTraceSummary {
 
     for (const span of trace.spans) {
       const svc = span.serviceName || 'unknown';
-      serviceMap[svc] = (serviceMap[svc] || 0) + 1;
+      serviceMap[svc] = (serviceMap[svc] || deriveZeroValue()) + deriveUnitValue();
 
       const route = extractRouteFromSpan(span);
       if (route) {
         const routeKey = formatRoute(route);
-        endpointMap[routeKey] = (endpointMap[routeKey] || 0) + 1;
+        endpointMap[routeKey] = (endpointMap[routeKey] || deriveZeroValue()) + deriveUnitValue();
       }
     }
   }
 
   const sorted = [...durations].sort((a, b) => a - b);
-  const p95Idx = Math.max(0, Math.ceil(sorted.length * 0.95) - 1);
-  const p99Idx = Math.max(0, Math.ceil(sorted.length * 0.99) - 1);
+  const p95Idx = Math.max(deriveZeroValue(), Math.ceil(sorted.length * 0.95) - deriveUnitValue());
+  const p99Idx = Math.max(deriveZeroValue(), Math.ceil(sorted.length * 0.99) - deriveUnitValue());
 
   return {
     totalTraces: traces.length,
@@ -795,7 +808,7 @@ function loadAstGraphContext(rootDir: string): AstGraphContext {
   >();
 
   try {
-    const graphPath = safeJoin(currentDir, 'PULSE_AST_GRAPH.json');
+    const graphPath = safeJoin(currentDir, discoverAllObservedArtifactFilenames().astGraph || 'PULSE_AST_GRAPH.json');
     if (pathExists(graphPath)) {
       const graph = readJsonFile<AstCallGraph>(graphPath);
       edges.push(...graph.edges);
@@ -915,7 +928,7 @@ function generateAstBasedTraces(
 
     let previousId = rootSpan.spanId;
     for (let i = 1; i <= depth; i++) {
-      const kind: OtelSpan['kind'] = i === 1 ? 'client' : 'internal';
+      const kind: OtelSpan['kind'] = i === deriveUnitValue() ? 'client' : 'internal';
       const childName = buildChildSpanName(
         astCtx,
         fromFile,
@@ -967,7 +980,7 @@ function generateAstBasedTraces(
       spans,
       totalDurationMs: spans.reduce((max, s) => Math.max(max, s.durationMs), 0),
       errorSpans,
-      serviceBoundaries: Math.max(0, serviceBoundaries),
+      serviceBoundaries: Math.max(deriveZeroValue(), serviceBoundaries),
     });
   }
 
@@ -1170,23 +1183,23 @@ function createManualSpanForTrace(
 ): OtelSpan {
   const edge = findRelevantEdge(name, astCtx, structCtx);
   const startOffset =
-    spanIndex * observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) +
-    stableNumber(`${seed}:start`, deriveHttpStatusFromObservedCatalog('Bad Request'));
+    spanIndex * HTTP_STATUS_TEXT_LEN_OK +
+    stableNumber(`${seed}:start`, HTTP_STATUS_BAD_REQUEST);
   const durationMs = clampDuration(
     deriveUnitValue() +
-      observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) +
-      stableNumber(`${seed}:duration`, deriveHttpStatusFromObservedCatalog('OK')),
+      HTTP_STATUS_TEXT_LEN_OK +
+      stableNumber(`${seed}:duration`, HTTP_STATUS_OK),
     deriveUnitValue(),
-    deriveHttpStatusFromObservedCatalog('Internal Server Error'),
+    HTTP_STATUS_INTERNAL_SERVER_ERROR,
   );
   const isError =
-    stableNumber(`${seed}:status`, deriveHttpStatusFromObservedCatalog('OK')) === deriveZeroValue();
+    stableNumber(`${seed}:status`, HTTP_STATUS_OK) === deriveZeroValue();
   const startTimeMs = startOffset * 100;
   const startTime = stableIso(startTimeMs);
   const endTime = stableIso(startTimeMs + durationMs);
 
-  const internalErrorStatus = deriveHttpStatusFromObservedCatalog('Internal Server Error');
-  const okStatus = deriveHttpStatusFromObservedCatalog('OK');
+  const internalErrorStatus = HTTP_STATUS_INTERNAL_SERVER_ERROR;
+  const okStatus = HTTP_STATUS_OK;
 
   const attributes: Record<string, string | number | boolean> = {
     'service.name': serviceName,
@@ -1424,7 +1437,7 @@ export function loadTracesFromFile(filePath: string): OtelTrace[] {
       spans,
       totalDurationMs: spans.reduce((max, s) => Math.max(max, s.durationMs), 0),
       errorSpans,
-      serviceBoundaries: Math.max(0, serviceBoundaries),
+      serviceBoundaries: Math.max(deriveZeroValue(), serviceBoundaries),
     });
   }
 
@@ -1513,10 +1526,10 @@ export function collectRuntimeTraces(
     traces = generateAstBasedTraces(
       astCtx,
       structCtx,
-      observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) +
+      HTTP_STATUS_TEXT_LEN_OK +
         stableNumber(
           `${graphSeed}:count`,
-          observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')),
+          HTTP_STATUS_TEXT_LEN_FORBIDDEN,
         ),
     );
     source = OTEL_SOURCE_SIMULATED;
@@ -1609,7 +1622,7 @@ export function compareWithStaticGraph(
     staticGraphCoverage: {
       totalStaticEdges: structuralGraph.edges.length,
       observedInRuntime,
-      missingFromRuntime: Math.max(0, structuralGraph.edges.length - observedInRuntime),
+      missingFromRuntime: Math.max(deriveZeroValue(), structuralGraph.edges.length - observedInRuntime),
       coveragePercent:
         structuralGraph.edges.length > 0
           ? Math.round((observedInRuntime / structuralGraph.edges.length) * 100)
@@ -1667,7 +1680,7 @@ export function compareWithAstGraph(
     coverage: {
       totalStaticEdges: graph.edges.length,
       observedInRuntime,
-      missingFromRuntime: Math.max(0, graph.edges.length - observedInRuntime),
+      missingFromRuntime: Math.max(deriveZeroValue(), graph.edges.length - observedInRuntime),
       coveragePercent:
         graph.edges.length > 0 ? Math.round((observedInRuntime / graph.edges.length) * 100) : 100,
     },
