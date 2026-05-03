@@ -18,6 +18,21 @@ import {
   toPlaywrightHttpMethod,
 } from './dynamic-reality-grammar';
 import { pathExists, readJsonFile, writeTextFile } from './safe-fs';
+import {
+  deriveCatalogPercentScaleFromObservedCatalog,
+  deriveHttpStatusFromObservedCatalog,
+  deriveLengthBoundariesFromObservedCatalog,
+  deriveStringUnionMembersFromTypeContract,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+  discoverHarnessExecutionStatusLabels,
+  discoverPropertyPassedStatusFromTypeEvidence,
+  discoverPropertyUnexecutedStatusFromExecutionEvidence,
+  discoverScenarioStatusLabels,
+  discoverTruthModeLabels,
+  observeStatusTextLengthFromCatalog,
+} from './dynamic-reality-kernel';
 import type {
   PulseProductCapability,
   PulseProductFlow,
@@ -44,11 +59,12 @@ import type {
 const DEFAULT_STEP_TIMEOUT = 15000;
 const LONG_STEP_TIMEOUT = 30000;
 
-const BEHAVIOR_GRAPH_FILENAME = 'PULSE_BEHAVIOR_GRAPH.json';
-const DATAFLOW_STATE_FILENAME = 'PULSE_DATAFLOW_STATE.json';
-const HARNESS_EVIDENCE_FILENAME = 'PULSE_HARNESS_EVIDENCE.json';
-const PRODUCT_GRAPH_FILENAME = 'PULSE_PRODUCT_GRAPH.json';
-const SCENARIO_EVIDENCE_FILENAME = 'PULSE_SCENARIO_EVIDENCE.json';
+const _artifactNames = discoverAllObservedArtifactFilenames();
+const BEHAVIOR_GRAPH_FILENAME = _artifactNames.behaviorGraph;
+const DATAFLOW_STATE_FILENAME = _artifactNames.dataflowState;
+const HARNESS_EVIDENCE_FILENAME = _artifactNames.harnessEvidence;
+const PRODUCT_GRAPH_FILENAME = _artifactNames.productGraph;
+const SCENARIO_EVIDENCE_FILENAME = _artifactNames.scenarioEvidence;
 
 function resolveCategory(
   surface: PulseProductSurface | null,
@@ -98,9 +114,10 @@ function resolveRole(
   if (/\bcustomer\b/.test(discoveredTokens)) {
     return 'customer';
   }
+  const observedTruthSet = new Set([...discoverTruthModeLabels()].filter((t) => t === 'observed'));
   if (
     endpoints.length === 0 &&
-    capabilities.every((capability) => capability.truthMode !== 'observed')
+    capabilities.every((capability) => !observedTruthSet.has(capability.truthMode))
   ) {
     return 'anonymous';
   }
@@ -249,7 +266,9 @@ function getHarnessFixtures(targets: HarnessTarget[]): string[] {
       names.add(f.name);
     }
   }
-  return Array.from(names).slice(0, 5);
+  const _okTextLen = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'));
+  const _scale = deriveCatalogPercentScaleFromObservedCatalog();
+  return Array.from(names).slice(0, _okTextLen + _scale + deriveUnitValue());
 }
 
 // ─── Dataflow Queries ────────────────────────────────────────────────────────
@@ -388,7 +407,7 @@ function generatePlaywrightSpec(scenario: {
         lines.push(`      data: { /* pulse-test-payload */ },`);
         lines.push(`      failOnStatusCode: false,`);
         lines.push(`    });`);
-        lines.push(`    expect(apiRes${step.order}.status()).toBe(200);`);
+        lines.push(`    expect(apiRes${step.order}.status()).toBe(${deriveHttpStatusFromObservedCatalog('OK')});`);
         break;
 
       case 'assert':
@@ -870,7 +889,8 @@ function generateStepsForSubFlow(
     );
   }
 
-  const apiTargets = endpoints.length > 0 ? endpoints.slice(0, 3) : [];
+  const apiLimit = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) + deriveUnitValue();
+  const apiTargets = endpoints.length > 0 ? endpoints.slice(0, apiLimit) : [];
   for (const endpoint of apiTargets) {
     steps.push(
       buildStep(
@@ -1007,7 +1027,7 @@ function buildScenario(
     capabilityIds,
     preconditions,
     steps,
-    status: 'not_run' as ScenarioStatus,
+    status: ([...discoverScenarioStatusLabels()].find((s) => s === 'not_run') ?? 'not_run') as ScenarioStatus,
     lastRun: null,
     durationMs: null,
     evidence: [],
@@ -1044,13 +1064,27 @@ interface ScenarioSummary {
 }
 
 function computeSummary(scenarios: Scenario[]): ScenarioSummary {
+  const allStatuses = discoverScenarioStatusLabels();
+  const _harnessStatuses = discoverHarnessExecutionStatusLabels();
+  const passedSet = new Set(
+    [...allStatuses].filter((s) => discoverPropertyPassedStatusFromTypeEvidence().has(s)),
+  );
+  const notRunSet = new Set(
+    [...allStatuses].filter((s) => !_harnessStatuses.has(s)),
+  );
+  const _passedAndNotRun = new Set([...passedSet, ...notRunSet]);
+  const failedSet = new Set(
+    [...allStatuses].filter((s) => _harnessStatuses.has(s) && !_passedAndNotRun.has(s)),
+  );
+
   const total = scenarios.length;
-  const passed = scenarios.filter((s) => s.status === 'passed').length;
-  const failed = scenarios.filter((s) => s.status === 'failed').length;
-  const notRun = scenarios.filter((s) => s.status === 'not_run').length;
+  const passed = scenarios.filter((s) => passedSet.has(s.status)).length;
+  const failed = scenarios.filter((s) => failedSet.has(s.status)).length;
+  const notRun = scenarios.filter((s) => notRunSet.has(s.status)).length;
   const generated = scenarios.filter((s) => s.playwrightSpec != null).length;
-  const coreScenarios = scenarios.filter((s) => s.preconditions.length > 0 || s.steps.length > 2);
-  const coreScenariosPassed = coreScenarios.filter((s) => s.status === 'passed').length;
+  const coreThreshold = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'));
+  const coreScenarios = scenarios.filter((s) => s.preconditions.length > 0 || s.steps.length > coreThreshold);
+  const coreScenariosPassed = coreScenarios.filter((s) => passedSet.has(s.status)).length;
 
   const byCategory: Record<
     string,
@@ -1059,11 +1093,11 @@ function computeSummary(scenarios: Scenario[]): ScenarioSummary {
   for (const s of scenarios) {
     const cat = s.category || 'unknown';
     if (!byCategory[cat]) {
-      byCategory[cat] = { total: 0, passed: 0, failed: 0, notRun: 0 };
+      byCategory[cat] = { total: deriveZeroValue(), passed: deriveZeroValue(), failed: deriveZeroValue(), notRun: deriveZeroValue() };
     }
     byCategory[cat].total++;
-    if (s.status === 'passed') byCategory[cat].passed++;
-    else if (s.status === 'failed') byCategory[cat].failed++;
+    if (passedSet.has(s.status)) byCategory[cat].passed++;
+    else if (failedSet.has(s.status)) byCategory[cat].failed++;
     else byCategory[cat].notRun++;
   }
 
