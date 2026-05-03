@@ -5,6 +5,7 @@ import { PaymentsModule } from '../payments/payments.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { AppleAuthService } from './apple-auth.service';
 import { EmailService } from './email.service';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
@@ -38,6 +39,7 @@ import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
     GoogleAuthService,
     FacebookAuthService,
     TikTokAuthService,
+    AppleAuthService,
     RateLimitService,
   ],
   exports: [
@@ -47,6 +49,7 @@ import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
     GoogleAuthService,
     FacebookAuthService,
     TikTokAuthService,
+    AppleAuthService,
   ],
 })
 export class AuthModule {}
