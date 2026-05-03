@@ -156,43 +156,43 @@ export class AdminConfigService {
       authMode?: string;
     },
   ): Promise<AdminConfigWorkspaceRow> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: {
-        id: true,
-        name: true,
-        customDomain: true,
-        providerSettings: true,
-        updatedAt: true,
-        _count: { select: { apiKeys: true, webhookSubscriptions: true } },
-      },
-    });
-    if (!workspace) {
-      throw adminErrors.userNotFound();
-    }
-
-    const currentSettings = asProviderSettings(workspace.providerSettings);
-    const currentAutopilot =
-      currentSettings.autopilot && typeof currentSettings.autopilot === 'object'
-        ? (currentSettings.autopilot as Record<string, unknown>)
-        : {};
-
-    const nextSettings = {
-      ...currentSettings,
-      ...(input.guestMode !== undefined ? { guestMode: input.guestMode } : {}),
-      ...(input.authMode !== undefined ? { authMode: input.authMode.trim() || null } : {}),
-      ...(input.autopilotEnabled !== undefined
-        ? {
-            autopilot: {
-              ...currentAutopilot,
-              enabled: input.autopilotEnabled,
-            },
-          }
-        : {}),
-    };
-
     const updated = await this.prisma.$transaction(
       async (tx) => {
+        const workspace = await tx.workspace.findUnique({
+          where: { id: workspaceId },
+          select: {
+            id: true,
+            name: true,
+            customDomain: true,
+            providerSettings: true,
+            updatedAt: true,
+            _count: { select: { apiKeys: true, webhookSubscriptions: true } },
+          },
+        });
+        if (!workspace) {
+          throw adminErrors.userNotFound();
+        }
+
+        const currentSettings = asProviderSettings(workspace.providerSettings);
+        const currentAutopilot =
+          currentSettings.autopilot && typeof currentSettings.autopilot === 'object'
+            ? (currentSettings.autopilot as Record<string, unknown>)
+            : {};
+
+        const nextSettings = {
+          ...currentSettings,
+          ...(input.guestMode !== undefined ? { guestMode: input.guestMode } : {}),
+          ...(input.authMode !== undefined ? { authMode: input.authMode.trim() || null } : {}),
+          ...(input.autopilotEnabled !== undefined
+            ? {
+                autopilot: {
+                  ...currentAutopilot,
+                  enabled: input.autopilotEnabled,
+                },
+              }
+            : {}),
+        };
+
         const result = await tx.workspace.update({
           where: { id: workspaceId },
           data: {
@@ -242,7 +242,7 @@ export class AdminConfigService {
     );
 
     const updatedSettings = asProviderSettings(updated.providerSettings);
-    const updatedAutopilot =
+    const updatedAutopilot1 =
       updatedSettings.autopilot && typeof updatedSettings.autopilot === 'object'
         ? (updatedSettings.autopilot as Record<string, unknown>)
         : {};
@@ -252,7 +252,7 @@ export class AdminConfigService {
       name: updated.name,
       customDomain: updated.customDomain ?? null,
       guestMode: updatedSettings.guestMode === true,
-      autopilotEnabled: updatedAutopilot.enabled === true,
+      autopilotEnabled: updatedAutopilot1.enabled === true,
       authMode: typeof updatedSettings.authMode === 'string' ? updatedSettings.authMode : null,
       apiKeysCount: updated._count.apiKeys,
       webhookSubscriptionsCount: updated._count.webhookSubscriptions,

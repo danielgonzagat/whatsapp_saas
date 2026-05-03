@@ -80,37 +80,37 @@ export class AdminAccountsService {
     action: AdminAccountStateAction,
     input: { reason?: string; frozenBalanceInCents?: number },
   ): Promise<void> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { id: true, name: true, providerSettings: true },
-    });
-    if (!workspace) {
-      throw adminErrors.userNotFound();
-    }
-
-    const currentSettings = asProviderSettings(workspace.providerSettings);
-    const currentAccountState =
-      currentSettings.accountAdmin &&
-      typeof currentSettings.accountAdmin === 'object' &&
-      !Array.isArray(currentSettings.accountAdmin)
-        ? (currentSettings.accountAdmin as Record<string, unknown>)
-        : {};
-
-    const nextAccountState: Record<string, unknown> = {
-      ...currentAccountState,
-      updatedAt: new Date().toISOString(),
-      updatedBy: actorId,
-    };
-
-    this.applyAccountStateAction(nextAccountState, action, input);
-
-    const nextSettings = {
-      ...currentSettings,
-      accountAdmin: nextAccountState,
-    };
-
     await this.prisma.$transaction(
       async (tx) => {
+        const workspace = await tx.workspace.findUnique({
+          where: { id: workspaceId },
+          select: { id: true, name: true, providerSettings: true },
+        });
+        if (!workspace) {
+          throw adminErrors.userNotFound();
+        }
+
+        const currentSettings = asProviderSettings(workspace.providerSettings);
+        const currentAccountState =
+          currentSettings.accountAdmin &&
+          typeof currentSettings.accountAdmin === 'object' &&
+          !Array.isArray(currentSettings.accountAdmin)
+            ? (currentSettings.accountAdmin as Record<string, unknown>)
+            : {};
+
+        const nextAccountState: Record<string, unknown> = {
+          ...currentAccountState,
+          updatedAt: new Date().toISOString(),
+          updatedBy: actorId,
+        };
+
+        this.applyAccountStateAction(nextAccountState, action, input);
+
+        const nextSettings = {
+          ...currentSettings,
+          accountAdmin: nextAccountState,
+        };
+
         await tx.workspace.update({
           where: { id: workspaceId },
           data: {

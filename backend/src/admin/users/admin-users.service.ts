@@ -170,18 +170,18 @@ export class AdminUsersService {
 
   /** Update. */
   async update(id: string, patch: UpdateAdminUserInput) {
-    const current = await this.prisma.adminUser.findUnique({ where: { id } });
-    if (!current) {
-      throw adminErrors.userNotFound();
-    }
-
-    this.assertAdminUpdateAllowed(current, patch);
-
-    const data = this.buildAdminUserUpdateData(patch, current.role);
-    const needsReseed = this.isRoleChange(patch, current.role);
-
     const updated = await this.prisma.$transaction(
       async (tx) => {
+        const current = await tx.adminUser.findUnique({ where: { id } });
+        if (!current) {
+          throw adminErrors.userNotFound();
+        }
+
+        this.assertAdminUpdateAllowed(current, patch);
+
+        const data = this.buildAdminUserUpdateData(patch, current.role);
+        const needsReseed = this.isRoleChange(patch, current.role);
+
         const result = await tx.adminUser.update({ where: { id }, data });
 
         if (needsReseed) {

@@ -49,25 +49,25 @@ export class AdminSessionsService {
 
   /** Revoke. */
   async revoke(sessionId: string, actorId: string, actorRole: AdminRole): Promise<void> {
-    const session = await this.prisma.adminSession.findUnique({
-      where: { id: sessionId },
-    });
-    if (!session) {
-      throw adminErrors.sessionNotFound();
-    }
-
-    const isOwnSession = session.adminUserId === actorId;
-    const isOwner = actorRole === AdminRole.OWNER;
-    if (!isOwnSession && !isOwner) {
-      throw adminErrors.cannotRevokeOther();
-    }
-
-    if (session.revokedAt) {
-      return;
-    }
-
     await this.prisma.$transaction(
       async (tx) => {
+        const session = await tx.adminSession.findUnique({
+          where: { id: sessionId },
+        });
+        if (!session) {
+          throw adminErrors.sessionNotFound();
+        }
+
+        const isOwnSession = session.adminUserId === actorId;
+        const isOwner = actorRole === AdminRole.OWNER;
+        if (!isOwnSession && !isOwner) {
+          throw adminErrors.cannotRevokeOther();
+        }
+
+        if (session.revokedAt) {
+          return;
+        }
+
         await tx.adminSession.update({
           where: { id: sessionId },
           data: { revokedAt: new Date() },
