@@ -82,7 +82,7 @@ function extractModelBlock(
   content: string,
   modelBodyStart: number,
 ): { text: string; endIndex: number } {
-  let depth = 1;
+  let depth = deriveUnitValue();
   let pos = modelBodyStart;
   const startPos = modelBodyStart + 1;
 
@@ -620,7 +620,7 @@ function buildUsageGraph(
               ? 'deletedBy'
               : 'readBy';
       const context = sourceFile.content.slice(
-        Math.max(0, match.index - 600),
+        Math.max(deriveZeroValue(), match.index - 600),
         Math.min(sourceFile.content.length, match.index + 1200),
       );
       collectFieldUsageFromContext(context, fields, usage, bucketName, sourceFile.relativePath);
@@ -922,7 +922,7 @@ function scanBackendOperations(
       const auditModelName = modelByPrismaProperty.get(auditMatch[1]);
       if (!auditModelName || !auditModelNames.has(auditModelName)) continue;
 
-      const beforeCtx = content.slice(Math.max(0, auditMatch.index - 400), auditMatch.index);
+      const beforeCtx = content.slice(Math.max(deriveZeroValue(), auditMatch.index - 400), auditMatch.index);
       const afterCtx = content.slice(auditMatch.index, auditMatch.index + 400);
       const context = `${beforeCtx}\n${afterCtx}`;
       const hasDurableAuditEvidence =
