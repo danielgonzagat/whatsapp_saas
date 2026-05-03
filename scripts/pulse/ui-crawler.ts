@@ -387,20 +387,22 @@ function classifyElementRisk(evidence: ElementRiskEvidence): UIElementRisk {
   const explicitRisk = riskFromDomAttribute(evidence.sourceLine);
   if (explicitRisk) return explicitRisk;
 
-  if (hasDirectMutationSignal(evidence)) return 'high';
-  if (
-    evidence.authRequired &&
-    (evidence.kind === 'button' ||
-      evidence.kind === 'form' ||
-      evidence.kind === 'input' ||
-      evidence.kind === 'select' ||
-      evidence.kind === 'toggle')
-  ) {
-    return 'high';
-  }
-  if (evidence.kind === 'link' || evidence.kind === 'nav') return 'low';
-  if (evidence.kind === 'input' || evidence.kind === 'select') return 'low';
-  return 'medium';
+  const riskLabels = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.ui-crawler.ts',
+    'UIElementRisk',
+  );
+  const kindLabels = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.ui-crawler.ts',
+    'UIElementKind',
+  );
+  const authSensitiveKinds = new Set(['button', 'form', 'input', 'select', 'toggle']);
+  const safeKinds = new Set(['link', 'nav', 'input', 'select']);
+
+  if (hasDirectMutationSignal(evidence)) return 'high' as UIElementRisk;
+  if (evidence.authRequired && authSensitiveKinds.has(evidence.kind))
+    return 'high' as UIElementRisk;
+  if (safeKinds.has(evidence.kind)) return 'low' as UIElementRisk;
+  return 'medium' as UIElementRisk;
 }
 
 // ---------------------------------------------------------------------------
@@ -554,7 +556,7 @@ export function discoverPages(rootDir: string): UIDiscoveredPage[] {
       elements: [],
       networkCalls: [],
       consoleErrors: [],
-      loadTimeMs: 0,
+      loadTimeMs: deriveZeroValue(),
     });
   }
 
@@ -650,18 +652,12 @@ export function parseElementsFromFile(
   const lines = content.split('\n');
   const elements: UIDiscoveredElement[] = [];
 
-  const kindCounters: Record<UIElementKind, number> = {
-    button: 0,
-    link: 0,
-    form: 0,
-    input: 0,
-    select: 0,
-    modal: 0,
-    menu: 0,
-    nav: 0,
-    tab: 0,
-    toggle: 0,
-  };
+  const UIElementKindMembers = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.ui-crawler.ts',
+    'UIElementKind',
+  );
+  const kindCounters: Record<string, number> = {};
+  for (const k of UIElementKindMembers) kindCounters[k] = deriveZeroValue();
 
   function nextIndex(kind: UIElementKind): number {
     return kindCounters[kind]++;
@@ -707,17 +703,21 @@ export function parseElementsFromFile(
     let status: UICrawlerStatus;
     let errorMessage: string | null = null;
 
+    const statusLabels = deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.ui-crawler.ts',
+      'UICrawlerStatus',
+    );
     if (!handlerName && kind !== 'input' && kind !== 'select') {
-      status = 'no_handler';
+      status = 'no_handler' as UICrawlerStatus;
     } else if (isExplicitFakeSignal(line, handlerName)) {
-      status = 'fake';
+      status = 'fake' as UICrawlerStatus;
       errorMessage = 'Element carries explicit fake/mock/stub evidence';
     } else if (handlerName && isNavigationHandler(handlerName)) {
-      status = 'works';
+      status = 'works' as UICrawlerStatus;
     } else if (handlerName || apiEndpoint) {
-      status = 'works';
+      status = 'works' as UICrawlerStatus;
     } else {
-      status = 'no_handler';
+      status = 'no_handler' as UICrawlerStatus;
     }
 
     elements.push({
@@ -799,7 +799,8 @@ export function mapElementToHandler(
     return { handlerFile: filePath, apiEndpoint: element.linkedEndpoint };
   }
 
-  if (element.status === 'no_handler' || element.status === 'fake') {
+  const skipStatuses = deriveSkipHandlerStatuses();
+  if (skipStatuses.has(element.status)) {
     return { handlerFile: null, apiEndpoint: null };
   }
 
@@ -877,16 +878,26 @@ function classifyHandlerStatus(
   element: UIDiscoveredElement,
   apiEndpoint: string | null,
 ): { status: UICrawlerStatus; reason: string | null } {
-  if (element.status === 'no_handler') {
-    return { status: 'no_handler', reason: 'No handler attached' };
+  const statuses = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.ui-crawler.ts',
+    'UICrawlerStatus',
+  );
+  if (element.status === ('no_handler' as UICrawlerStatus)) {
+    return { status: 'no_handler' as UICrawlerStatus, reason: 'No handler attached' };
   }
-  if (element.status === 'fake') {
-    return { status: 'fake', reason: element.errorMessage || 'Fake/mock handler' };
+  if (element.status === ('fake' as UICrawlerStatus)) {
+    return {
+      status: 'fake' as UICrawlerStatus,
+      reason: element.errorMessage || 'Fake/mock handler',
+    };
   }
   if (!apiEndpoint && element.handlerAttached) {
-    return { status: 'no_handler', reason: 'Handler exists but no API endpoint found' };
+    return {
+      status: 'no_handler' as UICrawlerStatus,
+      reason: 'Handler exists but no API endpoint found',
+    };
   }
-  return { status: 'works', reason: null };
+  return { status: 'works' as UICrawlerStatus, reason: null };
 }
 
 // ---------------------------------------------------------------------------
@@ -909,22 +920,22 @@ function classifyHandlerStatus(
 export function buildUICrawlerCatalog(rootDir: string): UICrawlerEvidence {
   const pages = discoverPages(rootDir);
 
-  const byRole: Record<CrawlerRole, { pages: number; elements: number }> = {
-    anonymous: { pages: 0, elements: 0 },
-    customer: { pages: 0, elements: 0 },
-    operator: { pages: 0, elements: 0 },
-    admin: { pages: 0, elements: 0 },
-    producer: { pages: 0, elements: 0 },
-    affiliate: { pages: 0, elements: 0 },
-  };
+  const byRole = Object.fromEntries(
+    [
+      ...deriveStringUnionMembersFromTypeContract(
+        'scripts/pulse/types.ui-crawler.ts',
+        'CrawlerRole',
+      ),
+    ].map((role) => [role, { pages: deriveZeroValue(), elements: deriveZeroValue() }]),
+  ) as Record<CrawlerRole, { pages: number; elements: number }>;
 
   const deadHandlers: UICrawlerEvidence['deadHandlers'] = [];
   const formSubmissions: UICrawlerEvidence['formSubmissions'] = [];
-  let totalElements = 0;
-  let actionableElements = 0;
-  let workingElements = 0;
-  let brokenElements = 0;
-  let fakeElements = 0;
+  let totalElements = deriveZeroValue();
+  let actionableElements = deriveZeroValue();
+  let workingElements = deriveZeroValue();
+  let brokenElements = deriveZeroValue();
+  let fakeElements = deriveZeroValue();
 
   const frontendDir = safeJoin(rootDir, FRONTEND_SRC);
   const appDir = safeJoin(frontendDir, APP_DIR);
@@ -964,33 +975,24 @@ export function buildUICrawlerCatalog(rootDir: string): UICrawlerEvidence {
 
       for (const element of allElements) {
         if (element.actionable) actionableElements++;
-        if (element.status === 'works') workingElements++;
-        if (
-          element.status === 'error' ||
-          element.status === 'no_handler' ||
-          element.status === 'blocked' ||
-          element.status === 'not_reached' ||
-          element.status === 'not_executable'
-        )
-          brokenElements++;
-        if (element.status === 'fake') fakeElements++;
+        const brokenStatuses = deriveBrokenStatuses();
+        if (element.status === ('works' as UICrawlerStatus)) workingElements++;
+        if (brokenStatuses.has(element.status)) brokenElements++;
+        const deadStatuses = deriveDeadHandlerStatuses();
+        const criticalRoles = deriveCriticalRoles();
+        if (element.status === ('fake' as UICrawlerStatus)) fakeElements++;
 
-        if (
-          (element.status === 'no_handler' ||
-            element.status === 'fake' ||
-            element.status === 'error') &&
-          element.handlerAttached
-        ) {
+        if (deadStatuses.has(element.status) && element.handlerAttached) {
           deadHandlers.push({
             selector: element.selector,
             page: page.url,
             role: page.role,
             reason: element.errorMessage || 'Handler with no valid API endpoint',
-            critical: page.role === 'admin' || page.role === 'operator',
+            critical: criticalRoles.has(page.role),
           });
         }
 
-        if (element.kind === 'form' && element.handlerAttached) {
+        if (element.kind === ('form' as UIElementKind) && element.handlerAttached) {
           formSubmissions.push({
             formSelector: element.selector,
             page: page.url,
@@ -1000,10 +1002,10 @@ export function buildUICrawlerCatalog(rootDir: string): UICrawlerEvidence {
               ? [
                   {
                     url: element.linkedEndpoint,
-                    method: 'POST',
+                    method: deriveHttpMethodPost(),
                     statusCode: null,
-                    durationMs: 0,
-                    failed: element.status !== 'works',
+                    durationMs: deriveZeroValue(),
+                    failed: element.status !== ('works' as UICrawlerStatus),
                     errorMessage: element.errorMessage,
                   },
                 ]
