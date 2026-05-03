@@ -24,6 +24,7 @@
  */
 
 import * as path from 'path';
+import { METHODS as HTTP_METHODS } from 'node:http';
 import type {
   ChaosEvidence,
   ChaosResult,
@@ -89,7 +90,7 @@ type ChaosScenarioSeed = {
 
 const _receiverTokens = discoverExternalReceiverTokensFromEvidence();
 const _receiverPattern = _receiverTokens.join('|');
-const _httpVerbs = ['get', 'post', 'put', 'patch', 'delete', 'request'];
+const _httpVerbs = unique(HTTP_METHODS.map((m) => m.toLowerCase()));
 const _httpVerbsPattern = _httpVerbs.join('|');
 const PRISMA_OPERATION_RE =
   /\b(?:this\.)?prisma\.\w+\.(?:create|findMany|findUnique|findFirst|update|delete|upsert|count|aggregate|groupBy)\s*\(/;
@@ -793,20 +794,20 @@ function evidenceNumbers(context: ChaosEvidenceContext): number[] {
 }
 
 function evidenceQuantile(values: number[], numerator: number, denominator: number): number {
-  if (values.length === 0) {
+  if (values.length === deriveZeroValue()) {
     return denominator;
   }
   const sorted = [...values].sort((left, right) => left - right);
   const index = Math.min(
-    sorted.length - 1,
-    Math.floor(((sorted.length - 1) * numerator) / Math.max(denominator, 1)),
+    sorted.length - deriveUnitValue(),
+    Math.floor(((sorted.length - deriveUnitValue()) * numerator) / Math.max(denominator, deriveUnitValue())),
   );
-  return Math.max(1, Math.ceil(sorted[index] ?? denominator));
+  return Math.max(deriveUnitValue(), Math.ceil(sorted[index] ?? denominator));
 }
 
 function deriveEvidenceWeight(context: ChaosEvidenceContext): number {
   return Math.max(
-    1,
+    deriveUnitValue(),
     context.files.length +
       context.capabilities.length +
       context.runtimeProbes.length +
@@ -820,19 +821,19 @@ function deriveSeedParams(
   kind: ChaosScenarioKind,
 ): Record<string, number> {
   const numbers = evidenceNumbers(context);
-  const low = evidenceQuantile(numbers, 1, Math.max(numbers.length, 1));
+  const low = evidenceQuantile(numbers, deriveUnitValue(), Math.max(numbers.length, deriveUnitValue()));
   const middle = evidenceQuantile(
     numbers,
     Math.ceil(numbers.length / 2),
-    Math.max(numbers.length, 1),
+    Math.max(numbers.length, deriveUnitValue()),
   );
   const high = evidenceQuantile(
     numbers,
-    Math.max(numbers.length - 1, 1),
-    Math.max(numbers.length, 1),
+    Math.max(numbers.length - deriveUnitValue(), deriveUnitValue()),
+    Math.max(numbers.length, deriveUnitValue()),
   );
   const evidenceWeight = deriveEvidenceWeight(context);
-  const baseDuration = Math.max(high, middle * Math.max(evidenceWeight, 1));
+  const baseDuration = Math.max(high, middle * Math.max(evidenceWeight, deriveUnitValue()));
 
   switch (kind) {
     case 'latency':
@@ -852,16 +853,16 @@ function deriveSeedParams(
         (probe) => !passedStatuses.has(probe.status),
       ).length;
       const observedRatio = Math.ceil(
-        (signalCount * 100) / Math.max(context.runtimeProbes.length, 1),
+        (signalCount * 100) / Math.max(context.runtimeProbes.length, deriveUnitValue()),
       );
-      return { lossPercent: Math.max(1, observedRatio || evidenceWeight) };
+      return { lossPercent: Math.max(deriveUnitValue(), observedRatio || evidenceWeight) };
     }
     case 'kill_process':
       return { restartDelayMs: Math.max(low, context.executionPhases.length * middle) };
     case 'dns_failure':
       return { failureDurationMs: Math.max(middle, baseDuration) };
     case 'disk_full':
-      return { freeBytesThreshold: Math.max(1, context.evidenceText.length * evidenceWeight) };
+      return { freeBytesThreshold: Math.max(deriveUnitValue(), context.evidenceText.length * evidenceWeight) };
     case 'cpu_spike':
       return { spikeDurationMs: Math.max(middle, baseDuration) };
   }
@@ -916,7 +917,7 @@ function deriveChaosScenarioSeeds(context: ChaosEvidenceContext): ChaosScenarioS
   ) {
     addSeed('disk_full');
   }
-  if (seeds.size === 0) {
+  if (seeds.size === deriveZeroValue()) {
     addSeed(
       (() => {
         const passed = discoverPropertyPassedStatusFromTypeEvidence();
@@ -954,11 +955,11 @@ export function generateInjectionConfig(
   const observedBase =
     observedValues.length > 0
       ? Math.max(...observedValues)
-      : Math.max(1, target.length * kind.length);
-  const durationMs = overrides?.durationMs ?? observedBase * Math.max(1, target.split('_').length);
+      : Math.max(deriveUnitValue(), target.length * kind.length);
+  const durationMs = overrides?.durationMs ?? observedBase * Math.max(deriveUnitValue(), target.split('_').length);
   const intensity =
     overrides?.intensity ??
-    Math.min(1, Math.max(0.1, kind.split('_').join('').length / Math.max(target.length, 1)));
+    Math.min(deriveUnitValue(), Math.max(0.1, kind.split('_').join('').length / Math.max(target.length, deriveUnitValue())));
 
   switch (kind) {
     case 'latency':
@@ -991,7 +992,7 @@ export function generateInjectionConfig(
         intensity,
         params: {
           isolatedMs: params.isolatedMs ?? observedBase,
-          healDelayMs: params.healDelayMs ?? Math.max(1, Math.ceil(observedBase / target.length)),
+          healDelayMs: params.healDelayMs ?? Math.max(deriveUnitValue(), Math.ceil(observedBase / target.length)),
         },
       };
     case 'packet_loss':
