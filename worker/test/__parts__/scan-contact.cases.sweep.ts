@@ -1,14 +1,18 @@
-import { it, expect } from 'vitest';
+import { it, expect, vi } from 'vitest';
 import type { Mock } from 'vitest';
+import type * as QueueModule from '../../queue';
+import type * as RedisClientModule from '../../redis-client';
 import { runSweepUnreadConversations } from '../../processors/autopilot-processor';
 
 type MockPrisma = Record<string, Record<string, Mock>>;
 
 export function addSweepTests(
   mockPrisma: MockPrisma,
-  queueModule: { autopilotQueue: { add: Mock } },
-  redisClient: { redisPub: { publish: Mock } },
+  queueModuleArg: typeof QueueModule,
+  redisClientArg: typeof RedisClientModule,
 ) {
+  const queueModule = { autopilotQueue: { add: vi.mocked(queueModuleArg.autopilotQueue.add) } };
+  const redisClient = { redisPub: { publish: vi.mocked(redisClientArg.redisPub.publish) } };
   it('queues unread conversations for backlog sweep even when the last stored message is outbound', async () => {
     mockPrisma.conversation.findMany.mockResolvedValue([
       {
