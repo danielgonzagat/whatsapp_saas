@@ -46,6 +46,8 @@ describe('KloelService', () => {
             Promise.resolve({ id: `${data.role}-1` }),
           ),
         count: jest.fn().mockResolvedValue(0),
+        update: jest.fn(),
+        deleteMany: jest.fn(),
       },
       kloelMessage: {
         findMany: jest.fn().mockResolvedValue([]),
