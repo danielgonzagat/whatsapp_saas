@@ -137,9 +137,8 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.FAILED,
       },
     });
-    throw new Error('Financial operation failed: checkout_social_lead_enrichment', {
-      cause: error instanceof Error ? error : new Error(String(error)),
-    });
+    const causeMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Financial operation failed: checkout_social_lead_enrichment: ${causeMessage}`);
   }
 }
 
