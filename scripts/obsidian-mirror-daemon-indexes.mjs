@@ -102,13 +102,19 @@ export function writeGeneratedNote(relPath, content) {
 
 export function rewriteMirrorFrontmatterTags(relMirror, tags) {
   const fullPath = join(SOURCE_MIRROR_DIR, relMirror);
-  if (!existsSync(fullPath)) return false;
+  if (!existsSync(fullPath)) {
+    return false;
+  }
 
   const content = readFileSync(fullPath, 'utf8');
-  if (!content.startsWith('---\n')) return false;
+  if (!content.startsWith('---\n')) {
+    return false;
+  }
 
   const end = content.indexOf('\n---\n', 4);
-  if (end === -1) return false;
+  if (end === -1) {
+    return false;
+  }
 
   const frontmatter = content.slice(4, end).split('\n');
   const body = content.slice(end);
@@ -118,7 +124,9 @@ export function rewriteMirrorFrontmatterTags(relMirror, tags) {
   for (let index = 0; index < frontmatter.length; index++) {
     const line = frontmatter[index];
     if (line === 'tags:') {
-      while (frontmatter[index + 1]?.startsWith('  - ')) index++;
+      while (frontmatter[index + 1]?.startsWith('  - ')) {
+        index++;
+      }
       continue;
     }
 
@@ -135,7 +143,9 @@ export function rewriteMirrorFrontmatterTags(relMirror, tags) {
   }
 
   const next = `---\n${nextFrontmatter.join('\n')}${body}`;
-  if (next === content) return false;
+  if (next === content) {
+    return false;
+  }
 
   const tmp = `${fullPath}.tmp`;
   writeFileSync(tmp, next, 'utf8');
@@ -164,10 +174,14 @@ export function applyGraphDerivedTags(manifest) {
     }
 
     const nextTags = [...tags];
-    if (JSON.stringify(nextTags) === JSON.stringify(entry.machine_tags || [])) continue;
+    if (JSON.stringify(nextTags) === JSON.stringify(entry.machine_tags || [])) {
+      continue;
+    }
 
     entry.machine_tags = nextTags;
-    if (rewriteMirrorFrontmatterTags(relMirror, nextTags)) changed++;
+    if (rewriteMirrorFrontmatterTags(relMirror, nextTags)) {
+      changed++;
+    }
   }
 
   if (changed > 0) {
@@ -176,7 +190,9 @@ export function applyGraphDerivedTags(manifest) {
 }
 
 export function listGeneratedMarkdownRelPaths(rootDir, relPrefix) {
-  if (!existsSync(rootDir)) return [];
+  if (!existsSync(rootDir)) {
+    return [];
+  }
   const paths = [];
   const stack = [rootDir];
   while (stack.length > 0) {
@@ -200,7 +216,9 @@ export function listGeneratedMarkdownRelPaths(rootDir, relPrefix) {
 }
 
 export function listAllSourceMirrorMarkdownRelPaths() {
-  if (!existsSync(SOURCE_MIRROR_DIR)) return [];
+  if (!existsSync(SOURCE_MIRROR_DIR)) {
+    return [];
+  }
   const paths = [];
   const stack = [SOURCE_MIRROR_DIR];
   while (stack.length > 0) {

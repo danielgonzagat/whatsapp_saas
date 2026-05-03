@@ -71,11 +71,17 @@ export function readMirrorLock() {
 }
 
 export function isMirrorLockStale(lock) {
-  if (!lock) return true;
+  if (!lock) {
+    return true;
+  }
   const marker = lock.updatedAt || lock.heartbeatAt || lock.startedAt;
-  if (!marker) return false;
+  if (!marker) {
+    return false;
+  }
   const markerTs = new Date(marker).getTime();
-  if (!Number.isFinite(markerTs)) return false;
+  if (!Number.isFinite(markerTs)) {
+    return false;
+  }
   return Date.now() - markerTs > LOCK_STALE_MS;
 }
 
@@ -120,7 +126,9 @@ export function acquireMirrorLock(context) {
 
 export function releaseMirrorLock(token) {
   const current = readMirrorLock();
-  if (!current) return;
+  if (!current) {
+    return;
+  }
   if (current.pid === token.pid && current.startedAt === token.startedAt) {
     try {
       unlinkSync(MIRROR_DAEMON_LOCK_PATH);
@@ -164,7 +172,9 @@ function readNullDelimitedGitOutput(args) {
 }
 
 export function readGitDirtySources(force = false) {
-  if (gitDirtySourcesCache && !force) return gitDirtySourcesCache;
+  if (gitDirtySourcesCache && !force) {
+    return gitDirtySourcesCache;
+  }
 
   const dirty = new Set();
   for (const rel of readNullDelimitedGitOutput(['diff', '--name-only', '-z', 'HEAD', '--'])) {
@@ -184,7 +194,9 @@ export function readGitDirtySources(force = false) {
 }
 
 export function readGitLocalCommitSources(force = false) {
-  if (gitLocalCommitSourcesCache && !force) return gitLocalCommitSourcesCache;
+  if (gitLocalCommitSourcesCache && !force) {
+    return gitLocalCommitSourcesCache;
+  }
 
   const localCommitSources = new Set(
     readNullDelimitedGitOutput(['diff', '--name-only', '-z', '@{upstream}..HEAD', '--']).map(
@@ -223,7 +235,9 @@ export function gitStateForSource(sourcePath) {
 // ── Graph Settings ──────────────────────────────────────────────────────────
 
 export function ensureGraphLensSettings() {
-  if (!existsSync(GRAPH_SETTINGS_PATH)) return false;
+  if (!existsSync(GRAPH_SETTINGS_PATH)) {
+    return false;
+  }
 
   let currentSettings;
   try {
@@ -242,7 +256,9 @@ export function ensureGraphLensSettings() {
   };
   const next = `${JSON.stringify(graphSettings, null, 2)}\n`;
   const current = `${JSON.stringify(currentSettings, null, 2)}\n`;
-  if (current === next) return false;
+  if (current === next) {
+    return false;
+  }
 
   const tmp = `${GRAPH_SETTINGS_PATH}.tmp`;
   writeFileSync(tmp, next, 'utf8');
@@ -266,15 +282,25 @@ export function obsidianLink(targetPath, alias) {
 
 export function detectLanguage(filePath) {
   const name = basename(filePath);
-  if (LANG_BY_FILENAME[name]) return LANG_BY_FILENAME[name];
+  if (LANG_BY_FILENAME[name]) {
+    return LANG_BY_FILENAME[name];
+  }
 
   const ext = extname(name).toLowerCase();
-  if (EXT_TO_LANG[ext]) return EXT_TO_LANG[ext];
+  if (EXT_TO_LANG[ext]) {
+    return EXT_TO_LANG[ext];
+  }
 
   // Multi-extension fallback
-  if (name.endsWith('.d.ts')) return 'typescript';
-  if (name.endsWith('.test.ts') || name.endsWith('.spec.ts')) return 'typescript';
-  if (name.endsWith('.test.tsx') || name.endsWith('.spec.tsx')) return 'typescript tsx';
+  if (name.endsWith('.d.ts')) {
+    return 'typescript';
+  }
+  if (name.endsWith('.test.ts') || name.endsWith('.spec.ts')) {
+    return 'typescript';
+  }
+  if (name.endsWith('.test.tsx') || name.endsWith('.spec.tsx')) {
+    return 'typescript tsx';
+  }
 
   return '';
 }
@@ -284,7 +310,9 @@ export function detectLanguage(filePath) {
 export function shouldSkipDir(dirName, fullPath) {
   const rel = relative(REPO_ROOT, fullPath) || dirName;
   for (const p of SKIP_DIR_PATTERNS) {
-    if (p.test(rel) || p.test(dirName)) return true;
+    if (p.test(rel) || p.test(dirName)) {
+      return true;
+    }
   }
   return false;
 }
@@ -293,7 +321,9 @@ export function shouldSkipFile(fileName, fullPath) {
   const rel = relative(REPO_ROOT, fullPath) || fileName;
 
   for (const p of SKIP_SECRET_PATTERNS) {
-    if (p.test(rel) || p.test(fileName)) return true;
+    if (p.test(rel) || p.test(fileName)) {
+      return true;
+    }
   }
   for (const p of SKIP_FILE_PATTERNS) {
     if (p.test(rel) || p.test(fileName)) return true;
@@ -303,8 +333,12 @@ export function shouldSkipFile(fileName, fullPath) {
 
 export function isCandidateSourcePath(fullPath) {
   const rel = relative(REPO_ROOT, fullPath);
-  if (rel.startsWith('..') || rel === '') return false;
-  if (shouldSkipFile(basename(fullPath), fullPath)) return false;
+  if (rel.startsWith('..') || rel === '') {
+    return false;
+  }
+  if (shouldSkipFile(basename(fullPath), fullPath)) {
+    return false;
+  }
 
   const parts = normalizePath(rel).split('/');
   for (let i = 0; i < parts.length - 1; i += 1) {
@@ -316,7 +350,9 @@ export function isCandidateSourcePath(fullPath) {
 }
 
 export function isMirrorableSourceFile(fullPath) {
-  if (!isCandidateSourcePath(fullPath)) return false;
+  if (!isCandidateSourcePath(fullPath)) {
+    return false;
+  }
   try {
     const st = statSync(fullPath);
     return st.isFile();
@@ -410,10 +446,14 @@ export function scanDirectory(dir, entries) {
     for (const item of items) {
       const full = join(dir, item.name);
       if (item.isDirectory()) {
-        if (shouldSkipDir(item.name, full)) continue;
+        if (shouldSkipDir(item.name, full)) {
+          continue;
+        }
         scanDirectory(full, entries);
       } else if (item.isFile()) {
-        if (shouldSkipFile(item.name, full)) continue;
+        if (shouldSkipFile(item.name, full)) {
+          continue;
+        }
         entries.push(full);
       }
     }

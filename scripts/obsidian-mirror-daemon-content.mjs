@@ -99,8 +99,12 @@ export function candidateSourceFiles(basePath) {
 }
 
 export function resolveImportSpecifier(specifier, sourcePath) {
-  if (!specifier || specifier.startsWith('node:')) return null;
-  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(specifier)) return null;
+  if (!specifier || specifier.startsWith('node:')) {
+    return null;
+  }
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(specifier)) {
+    return null;
+  }
 
   const relSource = normalizePath(relative(REPO_ROOT, sourcePath));
   let basePath = null;
@@ -115,7 +119,9 @@ export function resolveImportSpecifier(specifier, sourcePath) {
     }
   }
 
-  if (!basePath) return null;
+  if (!basePath) {
+    return null;
+  }
 
   for (const candidate of candidateSourceFiles(basePath)) {
     if (existsSync(candidate) && isMirrorableSourceFile(candidate)) {
@@ -147,7 +153,9 @@ export function extractImportSpecifiers(content) {
 
 export function resolveMarkdownTarget(target, sourcePath) {
   const clean = target.split('#')[0].split('|')[0].trim();
-  if (!clean || /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(clean)) return null;
+  if (!clean || /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(clean)) {
+    return null;
+  }
   const base = clean.startsWith('/')
     ? join(REPO_ROOT, clean.slice(1))
     : resolve(dirname(sourcePath), clean);
@@ -182,10 +190,14 @@ export function extractMarkdownTargets(content, sourcePath) {
 let packageNameIndex = null;
 
 export function buildPackageNameIndex() {
-  if (packageNameIndex) return packageNameIndex;
+  if (packageNameIndex) {
+    return packageNameIndex;
+  }
   packageNameIndex = new Map();
   for (const source of collectAllSourceFiles()) {
-    if (basename(source) !== 'package.json') continue;
+    if (basename(source) !== 'package.json') {
+      continue;
+    }
     try {
       const parsed = JSON.parse(readFileSync(source, 'utf8'));
       if (parsed.name) {
@@ -199,7 +211,9 @@ export function buildPackageNameIndex() {
 }
 
 export function extractPackageRelations(content, sourcePath) {
-  if (basename(sourcePath) !== 'package.json') return [];
+  if (basename(sourcePath) !== 'package.json') {
+    return [];
+  }
   let parsed;
   try {
     parsed = JSON.parse(content);
@@ -230,7 +244,9 @@ export function extractPathStringRelations(content, sourcePath) {
     relSource.endsWith('.md') ||
     relSource.endsWith('.yaml') ||
     relSource.endsWith('.yml');
-  if (!isRuntimeArtifact) return relations;
+  if (!isRuntimeArtifact) {
+    return relations;
+  }
 
   const pathPattern =
     /["'`]((?:\.\/|\.\.\/|\/)?(?:[A-Za-z0-9_.@()[\]-]+\/){1,}[A-Za-z0-9_.@()[\]-]+\.[A-Za-z0-9]+)["'`]/g;
@@ -264,7 +280,9 @@ export function resolveRepoPathToken(raw, sourcePath) {
     .trim()
     .replace(/^['"`([{<]+|['"`)\]}>.,;:]+$/g, '')
     .split('#')[0];
-  if (!token || /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(token)) return null;
+  if (!token || /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(token)) {
+    return null;
+  }
 
   const base = token.startsWith('/')
     ? join(REPO_ROOT, token.slice(1))
@@ -312,10 +330,14 @@ export function extractInternalRelations(content, sourcePath) {
 
   for (const specifier of extractImportSpecifiers(content)) {
     const target = resolveImportSpecifier(specifier, sourcePath);
-    if (!target || target === sourcePath) continue;
+    if (!target || target === sourcePath) {
+      continue;
+    }
 
     const relTarget = normalizePath(relative(REPO_ROOT, target));
-    if (seen.has(relTarget)) continue;
+    if (seen.has(relTarget)) {
+      continue;
+    }
     seen.add(relTarget);
     relations.push({
       specifier,
@@ -378,7 +400,9 @@ export function clusterKeyForSource(relPath) {
       return ['frontend', 'components', parts[3] || 'root', parts[4] || 'index'].join('__');
     return ['frontend', parts[2] || 'src', parts[3] || 'index'].join('__');
   }
-  if (parts[0] === 'worker') return ['worker', parts[1] || 'root'].join('__');
+  if (parts[0] === 'worker') {
+    return ['worker', parts[1] || 'root'].join('__');
+  }
   if (parts[0] === 'scripts')
     return ['scripts', parts[1] || 'root', parts[2] || 'index'].join('__');
   if (parts[0] === '.pulse') return ['pulse-artifacts', parts[1] || 'root'].join('__');

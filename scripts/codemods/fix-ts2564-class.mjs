@@ -18,7 +18,9 @@ for (const line of out.split('\n')) {
   const m = line.match(/^(.+?)\((\d+),\d+\): error TS2564: Property '(\w+)'/);
   if (m) {
     const [, file, _line, prop] = m;
-    if (!fileProps[file]) fileProps[file] = new Set();
+    if (!fileProps[file]) {
+      fileProps[file] = new Set();
+    }
     fileProps[file].add(prop);
   }
 }
@@ -50,7 +52,9 @@ for (const [file, props] of Object.entries(fileProps)) {
     const newC = c.replace(re, (match, ws, name, type) => {
       // Verify this is a class property (check previous line for decorator or class context)
       // For safety, DON'T add ! if the type is followed by = (already has initializer)
-      if (match.includes('=')) return match;
+      if (match.includes('=')) {
+        return match;
+      }
       return `${ws}${name}!: ${type};`;
     });
 
