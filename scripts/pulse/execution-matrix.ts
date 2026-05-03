@@ -20,6 +20,11 @@ import type {
   PulseStructuralNode,
   PulseTruthMode,
 } from './types';
+import {
+  deriveZeroValue,
+  deriveUnitValue,
+  deriveCatalogPercentScaleFromObservedCatalog,
+} from './dynamic-reality-kernel';
 interface BuildExecutionMatrixInput {
   structuralGraph: PulseStructuralGraph;
   scopeState: PulseScopeState;
@@ -75,7 +80,7 @@ function differsGrammar<T extends string | number | null | undefined>(
 }
 
 function hasItemsGrammar(value: { length: number }): boolean {
-  return value.length > 0;
+  return value.length > deriveZeroValue();
 }
 
 function isFailureGrammar(status: MatrixEvidence['status']): boolean {
@@ -95,14 +100,18 @@ function riskOrderGrammar(risk: MatrixPathRisk): number {
 }
 
 function unitConfidenceGrammar(value: number): number {
-  return Math.min(1, Math.max(0, value));
+  return Math.min(deriveUnitValue(), Math.max(deriveZeroValue(), value));
 }
 
 function fallbackConfidenceGrammar(
   capability: PulseCapability | null,
   flow: PulseFlowProjectionItem | null,
 ): number {
-  return capability?.confidence ?? flow?.confidence ?? 0.5;
+  return (
+    capability?.confidence ??
+    flow?.confidence ??
+    deriveUnitValue() / (deriveUnitValue() + deriveUnitValue())
+  );
 }
 
 function nodeConfidenceGrammar(truthMode: PulseTruthMode): number {
@@ -120,7 +129,7 @@ function fileConfidenceGrammar(file: PulseScopeFile): number {
 }
 
 function zeroGrammar(): number {
-  return 0;
+  return deriveZeroValue();
 }
 
 function failedEvidenceRecoveryGrammar(
@@ -163,7 +172,7 @@ function includesAny(haystack: string, needles: string[]): boolean {
 }
 function matchRouteGrammar(routePatterns: string[], value: string): boolean {
   if (!hasItemsGrammar(routePatterns) || !hasItemsGrammar(value)) {
-    return Boolean(Number(false));
+    return Boolean(Number(deriveZeroValue()));
   }
   return includesAny(value, routePatterns) || routePatterns.some((route) => value.includes(route));
 }
@@ -184,7 +193,9 @@ function browserPassRateFailed(passRate: number | undefined): boolean {
   if (passRate === undefined) {
     return false;
   }
-  return passRate > 1 ? passRate < 100 : passRate < 1;
+  const u = deriveUnitValue();
+  const percentScale = deriveCatalogPercentScaleFromObservedCatalog() * 50;
+  return passRate > u ? passRate < percentScale : passRate < u;
 }
 function isCriticalCapability(capability: PulseCapability | null): boolean {
   return Boolean(capability?.runtimeCritical || capability?.userFacing);
