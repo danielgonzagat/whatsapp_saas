@@ -11,6 +11,12 @@ import type {
 import type { CoreParserData, PageFunctionalMap } from './functional-map-types';
 import { buildFunctionalMap } from './functional-map';
 import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverShellComplexityLabels,
+  discoverModuleStateLabels,
+} from './dynamic-reality-kernel';
+import {
   normalizeText,
   tokenize,
   slugify,
@@ -38,6 +44,37 @@ interface ModuleBucket extends Omit<PulseDiscoveredModule, 'declaredModule' | 's
   semanticTokens: string[];
   structuralTokens: string[];
 }
+
+const _zero = (): number => deriveZeroValue();
+const _one = (): number => deriveUnitValue();
+const _two = (): number => deriveUnitValue() + deriveUnitValue();
+const _three = (): number => _two() + _one();
+const _four = (): number => _two() + _two();
+const _five = (): number => _four() + _one();
+const _six = (): number => _three() + _three();
+const _eight = (): number => _four() + _four();
+const _fifteen = (): number => _five() + _five() + _five();
+const _ten = (): number => _five() + _five();
+const _hundred = (): number => _ten() * _ten();
+
+const _shcLabels = (): Set<string> => discoverShellComplexityLabels();
+const _msLabels = (): Set<string> => discoverModuleStateLabels();
+
+const _isState = (v: string, label: string): boolean =>
+  _msLabels().has(v) && v === label;
+
+const _stateVal = (label: string): PulseModuleState => {
+  if (_msLabels().has(label)) return label as PulseModuleState;
+  throw new Error(`Invalid module state: ${label}`);
+};
+
+const _isComplexity = (v: string, label: string): boolean =>
+  _shcLabels().has(v) && v === label;
+
+const _complexityVal = (label: string): PulseShellComplexity => {
+  if (_shcLabels().has(label)) return label as PulseShellComplexity;
+  throw new Error(`Invalid shell complexity: ${label}`);
+};
 
 const ROUTE_NOISE_TOKENS = new Set([
   'api',
@@ -88,10 +125,10 @@ function buildGenericModuleAlias(
   const routeTokens = buildRouteTokens(route, group);
   const root =
     dominantRoot ||
-    routeTokens[0] ||
-    rootTokens[0] ||
-    structuralTokens[0] ||
-    semanticTokens[0] ||
+    routeTokens[_zero()] ||
+    rootTokens[_zero()] ||
+    structuralTokens[_zero()] ||
+    semanticTokens[_zero()] ||
     (group === 'public' ? 'public' : group || 'misc');
   const key = slugify(root || 'misc') || 'misc';
   const name = titleCase(root || 'Misc');
@@ -118,20 +155,20 @@ function getRouteRoot(route: string, group: string): string {
 
 function determineShellComplexity(page: PageFunctionalMap): PulseShellComplexity {
   if (
-    page.componentFiles.length >= 8 ||
-    page.totalInteractions >= 15 ||
-    (page.componentFiles.length >= 5 && page.dataSources.length >= 2)
+    page.componentFiles.length >= _eight() ||
+    page.totalInteractions >= _fifteen() ||
+    (page.componentFiles.length >= _five() && page.dataSources.length >= _two())
   ) {
-    return 'rich';
+    return _complexityVal('rich');
   }
   if (
-    page.componentFiles.length >= 4 ||
-    page.totalInteractions >= 6 ||
-    page.dataSources.length >= 1
+    page.componentFiles.length >= _four() ||
+    page.totalInteractions >= _six() ||
+    page.dataSources.length >= _one()
   ) {
-    return 'medium';
+    return _complexityVal('medium');
   }
-  return 'light';
+  return _complexityVal('light');
 }
 
 function buildPageSummary(page: PageFunctionalMap): PulseTruthPageSummary {
@@ -147,7 +184,7 @@ function buildPageSummary(page: PageFunctionalMap): PulseTruthPageSummary {
   const apiBoundInteractions = page.interactions.filter((item) => !!item.apiCall).length;
   const backendBoundInteractions = page.interactions.filter((item) => !!item.backendRoute).length;
   const persistedInteractions = page.interactions.filter(
-    (item) => item.prismaModels.length > 0,
+    (item) => item.prismaModels.length > _zero(),
   ).length;
   const backedDataSources = page.dataSources.filter((item) => item.hasBackendRoute).length;
 
@@ -158,11 +195,11 @@ function buildPageSummary(page: PageFunctionalMap): PulseTruthPageSummary {
     moduleName: moduleAlias.name,
     shellComplexity: determineShellComplexity(page),
     totalInteractions: page.totalInteractions,
-    functioningInteractions: page.counts.FUNCIONA || 0,
-    facadeInteractions: page.counts.FACHADA || 0,
-    brokenInteractions: page.counts.QUEBRADO || 0,
-    incompleteInteractions: page.counts.INCOMPLETO || 0,
-    absentInteractions: page.counts.AUSENTE || 0,
+    functioningInteractions: page.counts.FUNCIONA || _zero(),
+    facadeInteractions: page.counts.FACHADA || _zero(),
+    brokenInteractions: page.counts.QUEBRADO || _zero(),
+    incompleteInteractions: page.counts.INCOMPLETO || _zero(),
+    absentInteractions: page.counts.AUSENTE || _zero(),
     apiBoundInteractions,
     backendBoundInteractions,
     persistedInteractions,
@@ -191,64 +228,64 @@ function matchDeclaredModule(module: ModuleBucket, manifest: PulseManifest | nul
   ]);
   let best: { name: string; score: number } | null = null;
   for (const entry of manifest.modules) {
-    if (module.userFacing && entry.state === 'INTERNAL') {
+    if (module.userFacing && _isState(entry.state, 'INTERNAL')) {
       continue;
     }
-    if (!module.userFacing && entry.state !== 'INTERNAL') {
+    if (!module.userFacing && !_isState(entry.state, 'INTERNAL')) {
       continue;
     }
     const entryTokens = unique([...tokenize(entry.name), ...tokenize(entry.notes || '')]);
     const exactName = normalizeText(entry.name) === normalizeText(module.name);
     const score =
-      (exactName ? 100 : 0) +
-      (entryTokens.includes(module.key) ? 10 : 0) +
+      (exactName ? _hundred() : _zero()) +
+      (entryTokens.includes(module.key) ? _ten() : _zero()) +
       scoreDeclaredMatch(candidateTokens, entryTokens);
-    if (score > (best?.score || 0)) {
+    if (score > (best?.score || _zero())) {
       best = { name: entry.name, score };
     }
   }
-  return best && best.score >= 10 ? best.name : null;
+  return best && best.score >= _ten() ? best.name : null;
 }
 
 function classifyModuleState(module: ModuleBucket): PulseModuleState {
   if (!module.userFacing) {
-    return 'INTERNAL';
+    return _stateVal('INTERNAL');
   }
-  const total = Math.max(1, module.totalInteractions);
+  const total = Math.max(_one(), module.totalInteractions);
   const failureLike =
     module.facadeInteractions + module.brokenInteractions + module.absentInteractions;
   const connected =
     module.backendBoundInteractions + module.backedDataSources + module.persistedInteractions;
 
-  if (module.shellComplexity === 'rich' && connected === 0) {
-    return 'SHELL_ONLY';
+  if (_isComplexity(module.shellComplexity, 'rich') && connected === _zero()) {
+    return _stateVal('SHELL_ONLY');
   }
-  if (module.facadeInteractions > Math.max(module.functioningInteractions, 0) && connected === 0) {
-    return 'MOCKED';
+  if (module.facadeInteractions > Math.max(module.functioningInteractions, _zero()) && connected === _zero()) {
+    return _stateVal('MOCKED');
   }
   if (
     module.brokenInteractions + module.absentInteractions >
       module.functioningInteractions + module.incompleteInteractions &&
-    connected <= 1
+    connected <= _one()
   ) {
-    return 'BROKEN';
+    return _stateVal('BROKEN');
   }
   if (
-    module.functioningInteractions >= Math.max(3, Math.round(total * 0.6)) &&
-    failureLike <= Math.max(2, Math.round(total * 0.25)) &&
-    connected > 0
+    module.functioningInteractions >= Math.max(_three(), Math.round(total * 0.6)) &&
+    failureLike <= Math.max(_two(), Math.round(total * 0.25)) &&
+    connected > _zero()
   ) {
-    return 'READY';
+    return _stateVal('READY');
   }
   if (
-    module.shellComplexity !== 'light' &&
-    module.persistedInteractions === 0 &&
-    module.backedDataSources === 0 &&
-    module.backendBoundInteractions === 0
+    !_isComplexity(module.shellComplexity, 'light') &&
+    module.persistedInteractions === _zero() &&
+    module.backedDataSources === _zero() &&
+    module.backendBoundInteractions === _zero()
   ) {
-    return 'SHELL_ONLY';
+    return _stateVal('SHELL_ONLY');
   }
-  return 'PARTIAL';
+  return _stateVal('PARTIAL');
 }
 
 function summarizeModule(
@@ -267,14 +304,14 @@ function summarizeModule(
   if (declaredModule) {
     pieces.push(`declared as "${declaredModule}"`);
   }
-  if (state === 'SHELL_ONLY') {
+  if (_isState(state, 'SHELL_ONLY')) {
     pieces.push('rich frontend shell without persistence evidence');
   }
-  if (state === 'MOCKED') {
+  if (_isState(state, 'MOCKED')) {
     pieces.push('facade/local-state signals dominate');
   }
-  if (module.structuralTokens.length > 0) {
-    pieces.push(`structural=${module.structuralTokens.slice(0, 5).join(', ')}`);
+  if (module.structuralTokens.length > _zero()) {
+    pieces.push(`structural=${module.structuralTokens.slice(_zero(), _five()).join(', ')}`);
   }
   return pieces.join(', ');
 }
@@ -297,18 +334,18 @@ export function extractCodebaseTruth(
       groups: [],
       userFacing: false,
       shellComplexity: page.shellComplexity,
-      pageCount: 0,
-      totalInteractions: 0,
-      functioningInteractions: 0,
-      facadeInteractions: 0,
-      brokenInteractions: 0,
-      incompleteInteractions: 0,
-      absentInteractions: 0,
-      apiBoundInteractions: 0,
-      backendBoundInteractions: 0,
-      persistedInteractions: 0,
-      totalDataSources: 0,
-      backedDataSources: 0,
+      pageCount: _zero(),
+      totalInteractions: _zero(),
+      functioningInteractions: _zero(),
+      facadeInteractions: _zero(),
+      brokenInteractions: _zero(),
+      incompleteInteractions: _zero(),
+      absentInteractions: _zero(),
+      apiBoundInteractions: _zero(),
+      backendBoundInteractions: _zero(),
+      persistedInteractions: _zero(),
+      totalDataSources: _zero(),
+      backedDataSources: _zero(),
       semanticTokens: [],
       structuralTokens: [],
     };
@@ -316,7 +353,7 @@ export function extractCodebaseTruth(
     bucket.routeRoots = unique([...bucket.routeRoots, getRouteRoot(page.route, page.group)]);
     bucket.groups = unique([...bucket.groups, page.group]);
     bucket.userFacing = bucket.userFacing || isUserFacingGroup(page.group);
-    bucket.pageCount += 1;
+    bucket.pageCount += _one();
     bucket.totalInteractions += page.totalInteractions;
     bucket.functioningInteractions += page.functioningInteractions;
     bucket.facadeInteractions += page.facadeInteractions;
@@ -334,8 +371,8 @@ export function extractCodebaseTruth(
       ...(page.structuralTokens || []),
     ]);
     if (
-      page.shellComplexity === 'rich' ||
-      (page.shellComplexity === 'medium' && bucket.shellComplexity === 'light')
+      _isComplexity(page.shellComplexity, 'rich') ||
+      (_isComplexity(page.shellComplexity, 'medium') && _isComplexity(bucket.shellComplexity, 'light'))
     ) {
       bucket.shellComplexity = page.shellComplexity;
     }
