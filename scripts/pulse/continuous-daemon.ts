@@ -19,6 +19,7 @@ import type {
   ContinuousDaemonState,
   DaemonCycle,
   DaemonCycleResult,
+  DaemonPhase,
 } from './types.continuous-daemon';
 import type { BehaviorGraph, BehaviorNode } from './types.behavior-graph';
 import { evaluateExecutorCycleMateriality } from './autonomous-executor-policy';
@@ -26,6 +27,9 @@ import {
   deriveZeroValue,
   deriveUnitValue,
   discoverAllObservedArtifactFilenames,
+  discoverDaemonStatusLabels,
+  discoverDaemonPhaseLabels,
+  discoverDaemonCycleResultLabels,
 } from './dynamic-reality-kernel';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -42,6 +46,20 @@ let PROBABILISTIC_RISK_ARTIFACT = '.pulse/current/PULSE_PROBABILISTIC_RISK.json'
 // ── Lease constants ───────────────────────────────────────────────────────────
 
 let LEASE_DIR = '.pulse/leases';
+
+// ── Dynamic daemon vocabulary (from type-contract AST) ─────────────────────────
+
+const DAEMON_STATUS = Object.fromEntries(
+  [...discoverDaemonStatusLabels()].map((s) => [s, s]),
+) as Record<string, string>;
+
+const DAEMON_PHASE = Object.fromEntries(
+  [...discoverDaemonPhaseLabels()].map((s) => [s, s]),
+) as Record<string, string>;
+
+const CYCLE_RESULT = Object.fromEntries(
+  [...discoverDaemonCycleResultLabels()].map((s) => [s, s]),
+) as Record<string, string>;
 
 type CalibrationSource =
   | 'artifact'
@@ -446,8 +464,9 @@ function deriveCooldownCycles(
   risk: ProbabilisticRiskArtifact | null,
 ): CalibrationValue {
   let recentFailures =
-    existing?.cycles.filter((cycle) => cycle.result === 'blocked' || cycle.result === 'error') ??
-    [];
+    existing?.cycles.filter(
+      (cycle) => cycle.result === CYCLE_RESULT.blocked || cycle.result === CYCLE_RESULT.error,
+    ) ?? [];
   if (recentFailures.length) {
     let distinctUnits = new Set(recentFailures.map((cycle) => cycle.unitId).filter(Boolean));
     return derived(
@@ -531,8 +550,9 @@ function derivePlanningFailureCeiling(
   risk: ProbabilisticRiskArtifact | null,
 ): CalibrationValue {
   let blockedOrErrorCycles =
-    existing?.cycles.filter((cycle) => cycle.result === 'blocked' || cycle.result === 'error') ??
-    [];
+    existing?.cycles.filter(
+      (cycle) => cycle.result === CYCLE_RESULT.blocked || cycle.result === CYCLE_RESULT.error,
+    ) ?? [];
   if (blockedOrErrorCycles.length) {
     let distinctUnits = new Set(blockedOrErrorCycles.map((cycle) => cycle.unitId).filter(Boolean));
     return derived(
@@ -1054,7 +1074,7 @@ export function startContinuousDaemon(
 
   let state: CalibratedDaemonState;
 
-  if (existing && existing.status === 'running') {
+  if (existing && existing.status === DAEMON_STATUS.running) {
     state = existing;
   } else {
     state = {
@@ -1068,7 +1088,7 @@ export function startContinuousDaemon(
       targetScore: existing?.targetScore ?? Number(),
       milestones: [],
       cycles: [],
-      status: 'running',
+      status: DAEMON_STATUS.running as ContinuousDaemonState['status'],
       eta: null,
     };
   }
@@ -1079,13 +1099,13 @@ export function startContinuousDaemon(
   let behaviorGraph = loadBehaviorGraph(resolvedRoot);
 
   if (!behaviorGraph || !behaviorGraph.nodes.length) {
-    state.status = 'stopped';
+    state.status = DAEMON_STATUS.stopped as ContinuousDaemonState['status']; // no graph
     state.cycles.push({
       iteration: deriveUnitValue(),
-      phase: 'idle',
+      phase: DAEMON_PHASE.idle as DaemonPhase,
       unitId: null,
       agent: 'autonomy-planner',
-      result: 'blocked',
+      result: CYCLE_RESULT.blocked as DaemonCycleResult,
       filesChanged: [],
       scoreBefore: Number(),
       scoreAfter: Number(),
@@ -1109,18 +1129,22 @@ export function startContinuousDaemon(
 
   let consecutiveFailures = deriveZeroValue();
 
-  while (!shutdownRequested && state.status === 'running' && state.totalCycles < maxCycles) {
+  while (
+    !shutdownRequested &&
+    state.status === DAEMON_STATUS.running &&
+    state.totalCycles < maxCycles
+  ) {
     let cycleStartedAt = new Date().toISOString();
 
     // ── Re-read behavior graph each cycle to get fresh state ──
     let freshGraph = loadBehaviorGraph(resolvedRoot);
     if (!freshGraph || !freshGraph.nodes.length) {
-      state.status = 'stopped';
+      state.status = DAEMON_STATUS.stopped as ContinuousDaemonState['status']; // graph disappeared
       let cycle = recordCycle(
         state,
         null,
-        'scanning',
-        'blocked',
+        DAEMON_PHASE.scanning as DaemonPhase,
+        CYCLE_RESULT.blocked as DaemonCycleResult,
         [],
         cycleStartedAt,
         'Behavior graph disappeared — stopping daemon',
@@ -1140,12 +1164,12 @@ export function startContinuousDaemon(
 
     // Check if certified
     if (state.currentScore >= state.targetScore) {
-      state.status = 'certified';
+      state.status = DAEMON_STATUS.certified as ContinuousDaemonState['status'];
       let cycle = recordCycle(
         state,
         null,
-        'idle',
-        'improvement',
+        DAEMON_PHASE.idle as DaemonPhase,
+        CYCLE_RESULT.improvement as DaemonCycleResult,
         [],
         cycleStartedAt,
         `Target score ${state.targetScore} reached (current: ${state.currentScore})`,
@@ -1160,7 +1184,10 @@ export function startContinuousDaemon(
     let recentUnits = new Set<string>();
     let recentCycles = state.cycles.slice(-freshCalibration.cooldownCycles.value);
     for (let cycle of recentCycles) {
-      if (cycle.unitId && (cycle.result === 'error' || cycle.result === 'blocked')) {
+      if (
+        cycle.unitId &&
+        (cycle.result === CYCLE_RESULT.error || cycle.result === CYCLE_RESULT.blocked)
+      ) {
         recentUnits.add(cycle.unitId);
       }
     }
@@ -1170,12 +1197,12 @@ export function startContinuousDaemon(
 
     if (!planned) {
       if (consecutiveFailures >= freshCalibration.planningFailureCeiling.value) {
-        state.status = 'stopped';
+        state.status = DAEMON_STATUS.stopped as ContinuousDaemonState['status']; // planning ceiling
         let cycle = recordCycle(
           state,
           null,
-          'planning',
-          'blocked',
+          DAEMON_PHASE.planning as DaemonPhase,
+          CYCLE_RESULT.blocked as DaemonCycleResult,
           [],
           cycleStartedAt,
           `No ai_safe units available after ${freshCalibration.planningFailureCeiling.value} dynamically calibrated attempts`,
@@ -1190,8 +1217,8 @@ export function startContinuousDaemon(
       let cycle = recordCycle(
         state,
         null,
-        'planning',
-        'blocked',
+        DAEMON_PHASE.planning as DaemonPhase,
+        CYCLE_RESULT.blocked as DaemonCycleResult,
         [],
         cycleStartedAt,
         'No eligible ai_safe unit found',
@@ -1215,8 +1242,8 @@ export function startContinuousDaemon(
       let cycle = recordCycle(
         state,
         planned.unitId,
-        'planning',
-        'blocked',
+        DAEMON_PHASE.planning as DaemonPhase,
+        CYCLE_RESULT.blocked as DaemonCycleResult,
         [],
         cycleStartedAt,
         `File lease conflict for ${planned.filePath} — another agent holds the lock`,
@@ -1245,14 +1272,16 @@ export function startContinuousDaemon(
         validationResult: null,
         beforeAfterMetric: null,
       });
-      cycleResult = materiality.acceptedMaterial ? 'improvement' : 'no_change';
+      cycleResult = materiality.acceptedMaterial
+        ? CYCLE_RESULT.improvement
+        : (CYCLE_RESULT.no_change as DaemonCycleResult);
       cycleSummary = `Planned only: ${planned.name} — ${materiality.reason}; priority=${planned.priority}; calibration=${planned.prioritySource}`;
       if (materiality.acceptedMaterial) {
         state.improvements++;
       }
       consecutiveFailures = deriveZeroValue();
     } else {
-      cycleResult = 'error';
+      cycleResult = CYCLE_RESULT.error as DaemonCycleResult;
       cycleSummary = `Planning failed for ${planned.name} — incomplete strategy`;
       consecutiveFailures++;
     }
@@ -1263,7 +1292,7 @@ export function startContinuousDaemon(
     let cycle = recordCycle(
       state,
       planned.unitId,
-      'validating',
+      DAEMON_PHASE.validating as DaemonPhase,
       cycleResult,
       [planned.filePath],
       cycleStartedAt,
@@ -1287,13 +1316,13 @@ export function startContinuousDaemon(
 
   // Final state
   if (shutdownRequested) {
-    state.status = 'stopped';
+    state.status = DAEMON_STATUS.stopped as ContinuousDaemonState['status'];
     state.cycles.push({
       iteration: nextCycleIteration(state),
-      phase: 'idle',
+      phase: DAEMON_PHASE.idle as DaemonPhase,
       unitId: null,
       agent: 'autonomy-planner',
-      result: 'blocked',
+      result: CYCLE_RESULT.blocked as DaemonCycleResult,
       filesChanged: [],
       scoreBefore: state.currentScore,
       scoreAfter: state.currentScore,
@@ -1350,7 +1379,7 @@ function planSummary(planned: PlannedUnit): string {
  * improvement cycles available.
  */
 function computeETA(state: ContinuousDaemonState): string | null {
-  let improvementCycles = state.cycles.filter((c) => c.result === 'improvement');
+  let improvementCycles = state.cycles.filter((c) => c.result === CYCLE_RESULT.improvement);
   if (improvementCycles.length < deriveUnitValue() + deriveUnitValue()) return null;
 
   let totalImprovement = improvementCycles.reduce(
