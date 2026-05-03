@@ -26,28 +26,22 @@ import type { PulseStructuralGraph } from './types';
 import { ensureDir, pathExists, readDir, readTextFile } from './safe-fs';
 import { safeJoin } from './lib/safe-path';
 import { walkFiles } from './parsers/utils';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverDirectorySkipHintsFromEvidence,
+  deriveStringUnionMembersFromTypeContract,
+} from './dynamic-reality-kernel';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const CANONICAL_ARTIFACT_FILENAME = 'PULSE_CONTRACT_EVIDENCE.json';
+const CONTRACT_EVIDENCE_FILENAME =
+  discoverAllObservedArtifactFilenames().contractEvidence ?? 'PULSE_CONTRACT_EVIDENCE.json';
 
 const MIGRATIONS_DIRS = ['backend/prisma/migrations', 'prisma/migrations'];
 
 const HTTP_METHOD_PATTERN = /\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/;
-
-const IGNORE_DIRS = new Set([
-  'node_modules',
-  '.next',
-  'dist',
-  '.git',
-  'coverage',
-  '__tests__',
-  '__mocks__',
-  '.turbo',
-  '.vercel',
-]);
 
 // ---------------------------------------------------------------------------
 // SQL parsing matchers for destructive migration operations
@@ -109,7 +103,7 @@ export function buildContractTestEvidence(rootDir: string): ContractTestEvidence
   };
 
   const evidenceDir = safeJoin(rootDir, '.pulse', 'current');
-  const artifactPath = safeJoin(evidenceDir, CANONICAL_ARTIFACT_FILENAME);
+  const artifactPath = safeJoin(evidenceDir, CONTRACT_EVIDENCE_FILENAME);
   ensureDir(evidenceDir, { recursive: true });
   fs.writeFileSync(artifactPath, JSON.stringify(evidence, null, 2));
 
@@ -504,12 +498,13 @@ function isPulseRuntimeArtifactFile(fileName: string): boolean {
   return (
     fileName.startsWith('PULSE_') &&
     fileName.endsWith('.json') &&
-    fileName !== CANONICAL_ARTIFACT_FILENAME
+    fileName !== CONTRACT_EVIDENCE_FILENAME
   );
 }
 
 function discoverContractsFromGraphArtifacts(rootDir: string): ProviderContract[] {
-  const graphFiles = ['PULSE_STRUCTURAL_GRAPH.json', 'PULSE_BEHAVIOR_GRAPH.json'];
+  const artifactNames = discoverAllObservedArtifactFilenames();
+  const graphFiles = [artifactNames.structuralGraph, artifactNames.behaviorGraph].filter(Boolean) as string[];
   const contracts: ProviderContract[] = [];
 
   for (const fileName of graphFiles) {
@@ -1307,7 +1302,7 @@ function readPropertyName(name: ts.PropertyName): string | null {
 }
 
 function loadPreviousContractEvidence(rootDir: string): ContractTestEvidence | null {
-  const evidencePath = safeJoin(rootDir, '.pulse', 'current', CANONICAL_ARTIFACT_FILENAME);
+  const evidencePath = safeJoin(rootDir, '.pulse', 'current', CONTRACT_EVIDENCE_FILENAME);
   if (!pathExists(evidencePath)) return null;
 
   try {
@@ -1351,7 +1346,7 @@ export function checkMigrationSafety(rootDir: string): MigrationSafetyCheck[] {
 
   for (const entry of entries) {
     if (typeof entry === 'string') continue;
-    if (!entry.isDirectory() || IGNORE_DIRS.has(entry.name)) continue;
+    if (!entry.isDirectory() || discoverDirectorySkipHintsFromEvidence().has(entry.name)) continue;
 
     const sqlPath = safeJoin(migrationsDir, entry.name, 'migration.sql');
     if (!pathExists(sqlPath)) continue;
