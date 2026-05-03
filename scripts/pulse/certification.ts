@@ -109,8 +109,9 @@ import {
 } from './no-hardcoded-reality-state';
 import { pathExists, readJsonFile } from './safe-fs';
 import { safeJoin } from './safe-path';
+import { discoverAllObservedArtifactFilenames } from './dynamic-reality-kernel';
 
-const NO_HARDCODED_REALITY_ARTIFACT = 'PULSE_NO_HARDCODED_REALITY.json';
+const NO_HARDCODED_REALITY_ARTIFACT = discoverAllObservedArtifactFilenames().noHardcodedReality;
 
 interface ComputeCertificationInput {
   rootDir: string;
