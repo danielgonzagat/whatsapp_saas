@@ -1,7 +1,7 @@
 import { execFileSync } from 'child_process';
 import type { PulseCertificationProfile, PulseExternalSignalSource } from '../../../types';
-import { isDirectory, pathExists, readDir, readTextFile } from '../../safe-fs';
-import { safeJoin } from '../../safe-path';
+import { isDirectory, pathExists, readDir, readTextFile } from '../../../safe-fs';
+import { safeJoin } from '../../../safe-path';
 import {
   getAdapterRequiredness,
   isAdapterRequired,

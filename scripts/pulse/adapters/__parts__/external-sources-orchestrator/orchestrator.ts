@@ -7,7 +7,7 @@ import { fetchGitHubActionsSignals } from '../../github-actions-adapter';
 import { fetchGitHubSignals } from '../../github-adapter';
 import { fetchPrometheusSignals } from '../../prometheus-adapter';
 import { fetchSentrySignals } from '../../sentry-adapter';
-import { safeJoin } from '../../safe-path';
+import { safeJoin } from '../../../safe-path';
 import { classifyLiveExternalSource } from './classification';
 import {
   discoverExternalSourceCapabilities,

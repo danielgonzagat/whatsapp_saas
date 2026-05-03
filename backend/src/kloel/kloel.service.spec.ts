@@ -50,6 +50,8 @@ describe('KloelService', () => {
       kloelMessage: {
         findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn().mockResolvedValue({}),
+        update: jest.fn().mockResolvedValue({}),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
       product: {
         create: jest.fn(),
