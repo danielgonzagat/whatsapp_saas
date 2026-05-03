@@ -3,20 +3,34 @@ import { safeJoin } from '../safe-path';
 import type { PulseProductGraph } from '../types.product-graph';
 import type { BehaviorGraph } from '../types.behavior-graph';
 import type { PulseScopeFile, PulseScopeState } from '../types.truth.scope';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../dynamic-reality-kernel';
 
-const PRODUCT_GRAPH_FILE = 'PULSE_PRODUCT_GRAPH.json';
-const BEHAVIOR_GRAPH_FILE = 'PULSE_BEHAVIOR_GRAPH.json';
-const SCOPE_STATE_FILE = 'PULSE_SCOPE_STATE.json';
-const RESOLVED_MANIFEST_FILE = 'PULSE_RESOLVED_MANIFEST.json';
-const STORAGE_KEY_RE =
-  /(?:localStorage|sessionStorage)\s*\.\s*(?:setItem|getItem|removeItem)\s*\(\s*['"`]([^'"`]+)['"`]/g;
-const STORAGE_CONST_RE =
-  /(?:localStorage|sessionStorage)\s*\.\s*(?:setItem|getItem|removeItem)\s*\(\s*([A-Z][A-Z0-9_]*)/g;
-const COOKIE_GET_RE = /cookies\s*\.\s*get\s*\(\s*['"`]([^'"`]+)['"`]/g;
-const DOCUMENT_COOKIE_RE = /document\s*\.\s*cookie\s*=\s*['"`]([^=;'"`]+)=/g;
-const CONST_LITERAL_RE = /const\s+([A-Z][A-Z0-9_]*)\s*=\s*['"`]([^'"`]+)['"`]/g;
-const CONST_JOIN_RE =
-  /const\s+([A-Z][A-Z0-9_]*)\s*=\s*\[([^\]]+)\]\.join\(\s*['"`]([^'"`]+)['"`]\s*\)/g;
+function discoverStorageKeyPatterns(): RegExp {
+  return /(?:localStorage|sessionStorage)\s*\.\s*(?:setItem|getItem|removeItem)\s*\(\s*['"`]([^'"`]+)['"`]/g;
+}
+
+function discoverStorageConstPatterns(): RegExp {
+  return /(?:localStorage|sessionStorage)\s*\.\s*(?:setItem|getItem|removeItem)\s*\(\s*([A-Z][A-Z0-9_]*)/g;
+}
+
+function discoverCookieGetPatterns(): RegExp {
+  return /cookies\s*\.\s*get\s*\(\s*['"`]([^'"`]+)['"`]/g;
+}
+
+function discoverDocumentCookiePatterns(): RegExp {
+  return /document\s*\.\s*cookie\s*=\s*['"`]([^=;'"`]+)=/g;
+}
+
+function discoverConstLiteralPatterns(): RegExp {
+  return /const\s+([A-Z][A-Z0-9_]*)\s*=\s*['"`]([^'"`]+)['"`]/g;
+}
+
+function discoverConstJoinPatterns(): RegExp {
+  return /const\s+([A-Z][A-Z0-9_]*)\s*=\s*\[([^\]]+)\]\.join\(\s*['"`]([^'"`]+)['"`]\s*\)/g;
+}
 
 export interface BrowserAuthRoutes {
   loginPath: string | null;
@@ -115,7 +129,7 @@ function routeSlugToPath(slug: string): string | null {
 export function routeCandidateFromArtifactId(artifactId: string): RouteCandidate | null {
   const parts = artifactId.split(':');
   const methodIndex = parts.findIndex((part) => /^(GET|POST|PUT|PATCH|DELETE)$/i.test(part));
-  if (methodIndex < 0 || methodIndex + 1 >= parts.length) {
+  if (methodIndex < deriveZeroValue() || methodIndex + deriveUnitValue() >= parts.length) {
     return null;
   }
   const pathFromSlug = routeSlugToPath(parts.slice(methodIndex + 1).join(':'));
@@ -123,7 +137,7 @@ export function routeCandidateFromArtifactId(artifactId: string): RouteCandidate
     return null;
   }
   const prefix = parts[0] || '';
-  const sourceRank = prefix === 'route' ? 0 : prefix === 'proxy' ? 1 : 2;
+  const sourceRank = prefix === 'route' ? deriveZeroValue() : prefix === 'proxy' ? deriveUnitValue() : deriveUnitValue() + deriveUnitValue();
   return {
     path: pathFromSlug,
     method: parts[methodIndex].toUpperCase(),
@@ -179,7 +193,7 @@ function discoverAuthRoutes(candidates: RouteCandidate[]): BrowserAuthRoutes {
 
 function routeLooksPublic(route: string): boolean {
   const segments = route.split('/').filter(Boolean);
-  if (segments.length === 0) {
+  if (segments.length === deriveZeroValue()) {
     return true;
   }
   return segments.some((segment) =>
@@ -213,9 +227,9 @@ function discoverPagePolicy(manifest: ResolvedManifestOverlay | null): BrowserPa
         loginRedirectRoutes.add(route);
       }
       const stateBias =
-        moduleEntry.state === 'READY' ? 0 : moduleEntry.state === 'PARTIAL' ? 20 : 40;
-      const criticalBias = moduleEntry.critical ? 0 : 10;
-      routePriority.set(route, index + stateBias + criticalBias + 1);
+        moduleEntry.state === 'READY' ? deriveZeroValue() : moduleEntry.state === 'PARTIAL' ? 20 : 40;
+      const criticalBias = moduleEntry.critical ? deriveZeroValue() : 10;
+      routePriority.set(route, index + stateBias + criticalBias + deriveUnitValue());
     }
   }
 
@@ -257,14 +271,14 @@ function addCookieName(contract: BrowserAuthStorageContract, name: string): void
 
 function discoverStringConstants(content: string): Map<string, string> {
   const constants = new Map<string, string>();
-  for (const match of content.matchAll(CONST_LITERAL_RE)) {
+  for (const match of content.matchAll(discoverConstLiteralPatterns())) {
     constants.set(match[1], match[2]);
   }
-  for (const match of content.matchAll(CONST_JOIN_RE)) {
+  for (const match of content.matchAll(discoverConstJoinPatterns())) {
     const values = [...match[2].matchAll(/['"`]([^'"`]+)['"`]/g)].map(
       (valueMatch) => valueMatch[1],
     );
-    if (values.length > 0) {
+    if (values.length > deriveZeroValue()) {
       constants.set(match[1], values.join(match[3]));
     }
   }
@@ -382,20 +396,20 @@ function discoverStorageContract(
     } catch {
       continue;
     }
-    for (const match of content.matchAll(STORAGE_KEY_RE)) {
+    for (const match of content.matchAll(discoverStorageKeyPatterns())) {
       addStorageKey(contract, match[1]);
     }
     const constants = discoverStringConstants(content);
-    for (const match of content.matchAll(STORAGE_CONST_RE)) {
+    for (const match of content.matchAll(discoverStorageConstPatterns())) {
       const resolved = constants.get(match[1]);
       if (resolved) {
         addStorageKey(contract, resolved);
       }
     }
-    for (const match of content.matchAll(COOKIE_GET_RE)) {
+    for (const match of content.matchAll(discoverCookieGetPatterns())) {
       addCookieName(contract, match[1]);
     }
-    for (const match of content.matchAll(DOCUMENT_COOKIE_RE)) {
+    for (const match of content.matchAll(discoverDocumentCookiePatterns())) {
       addCookieName(contract, match[1]);
     }
   }
@@ -437,10 +451,10 @@ function discoverRuntimeProbeTargets(
 export function discoverBrowserLiveArtifacts(
   rootDir: string = process.cwd(),
 ): BrowserLiveArtifacts {
-  const productGraph = readArtifact<PulseProductGraph>(rootDir, PRODUCT_GRAPH_FILE);
-  const behaviorGraph = readArtifact<BehaviorGraph>(rootDir, BEHAVIOR_GRAPH_FILE);
-  const scopeState = readArtifact<PulseScopeState>(rootDir, SCOPE_STATE_FILE);
-  const manifest = readArtifact<ResolvedManifestOverlay>(rootDir, RESOLVED_MANIFEST_FILE);
+  const productGraph = readArtifact<PulseProductGraph>(rootDir, 'PULSE_PRODUCT_GRAPH.json');
+  const behaviorGraph = readArtifact<BehaviorGraph>(rootDir, 'PULSE_BEHAVIOR_GRAPH.json');
+  const scopeState = readArtifact<PulseScopeState>(rootDir, 'PULSE_SCOPE_STATE.json');
+  const manifest = readArtifact<ResolvedManifestOverlay>(rootDir, 'PULSE_RESOLVED_MANIFEST.json');
   const routeCandidates = collectRouteCandidates(productGraph);
 
   return {
@@ -460,7 +474,7 @@ export function getPagePriorityFromArtifacts(route: string, pages: BrowserPageDi
   const parent = [...pages.routePriority.entries()]
     .filter(([root]) => normalized.startsWith(`${root}/`))
     .sort((a, b) => b[0].length - a[0].length)[0];
-  return parent ? parent[1] + 1 : 1000;
+  return parent ? parent[deriveUnitValue()] + deriveUnitValue() : 1000;
 }
 
 export function isPublicRouteFromArtifacts(route: string, pages: BrowserPageDiscovery): boolean {
@@ -507,8 +521,8 @@ export function resolveRuntimeProbeTargetFromArtifacts(
   const probeTokens = probeId
     .toLowerCase()
     .split(/[^a-z0-9]+/g)
-    .filter((token) => token.length > 2);
-  const productGraph = readArtifact<PulseProductGraph>(rootDir, PRODUCT_GRAPH_FILE);
+    .filter((token) => token.length > deriveUnitValue() + deriveUnitValue());
+  const productGraph = readArtifact<PulseProductGraph>(rootDir, 'PULSE_PRODUCT_GRAPH.json');
   const routeCandidates = collectRouteCandidates(productGraph);
   const genericRoute = routeCandidates.find((candidate) =>
     probeTokens.every((token) => candidate.text.includes(token)),
