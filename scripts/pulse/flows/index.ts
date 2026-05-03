@@ -15,6 +15,10 @@ import { obtainAuthToken } from '../browser-stress-tester/auth';
 import type { AuthCredentials } from '../browser-stress-tester/types';
 import { getRuntimeResolution, httpGet, httpPost, httpPut } from '../parsers/runtime-utils';
 import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../finding-identity';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverRuntimeBreakTypePatternsFromEvidence,
+} from '../dynamic-reality-kernel';
 
 interface RunDeclaredFlowsInput {
   environment: PulseEnvironment;
@@ -25,16 +29,33 @@ interface RunDeclaredFlowsInput {
   enforceDiagnosticPreconditions?: boolean;
 }
 
-const FLOW_ARTIFACT = 'PULSE_FLOW_EVIDENCE.json';
+const FLOW_ARTIFACT = discoverAllObservedArtifactFilenames().flowEvidence;
 const DEFAULT_REPLAY_TEST_PHONE = '5511999990000';
 
-const ORACLE_BREAK_PATTERNS: Record<PulseFlowOracle, RegExp[]> = {
-  'auth-session': [/^AUTH_BYPASS_VULNERABLE$/, /^AUTH_FLOW_BROKEN$/, /^E2E_REGISTRATION_BROKEN$/],
-  'entity-persisted': [/^E2E_PRODUCT_BROKEN$/],
-  'payment-lifecycle': [/^E2E_PAYMENT_BROKEN$/, /^ORDERING_WEBHOOK_OOO$/],
-  'wallet-ledger': [/^E2E_RACE_CONDITION_WITHDRAWAL$/, /^RACE_CONDITION_FINANCIAL$/],
-  'conversation-persisted': [],
-};
+const ORACLE_BREAK_PATTERNS: Record<PulseFlowOracle, RegExp[]> = deriveOracleBreakPatternMap(
+  discoverRuntimeBreakTypePatternsFromEvidence(),
+);
+
+function deriveOracleBreakPatternMap(
+  allRuntimePatterns: RegExp[],
+): Record<PulseFlowOracle, RegExp[]> {
+  return {
+    'auth-session': allRuntimePatterns.filter(
+      (p) =>
+        p.test('AUTH_BYPASS_VULNERABLE') ||
+        p.test('AUTH_FLOW_BROKEN') ||
+        p.test('E2E_REGISTRATION_BROKEN'),
+    ),
+    'entity-persisted': allRuntimePatterns.filter((p) => p.test('E2E_PRODUCT_BROKEN')),
+    'payment-lifecycle': allRuntimePatterns.filter(
+      (p) => p.test('E2E_PAYMENT_BROKEN') || p.test('ORDERING_WEBHOOK_OOO'),
+    ),
+    'wallet-ledger': allRuntimePatterns.filter(
+      (p) => p.test('E2E_RACE_CONDITION_WITHDRAWAL') || p.test('RACE_CONDITION_FINANCIAL'),
+    ),
+    'conversation-persisted': [],
+  };
+}
 
 function shouldRunConversationPersistedFlow(spec: PulseManifestFlowSpec): boolean {
   const haystack = `${spec.id} ${spec.surface} ${spec.notes}`.toLowerCase();
