@@ -41,6 +41,13 @@ import type {
 import { walkFiles } from './parsers/utils';
 import { readTextFile, readJsonFile, writeTextFile, ensureDir, pathExists } from './safe-fs';
 import { safeJoin } from './safe-path';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverSourceExtensionsFromObservedTypescript,
+  discoverPropertyPassedStatusFromTypeEvidence,
+  discoverExternalReceiverTokensFromEvidence,
+  deriveHttpStatusFromObservedCatalog,
+} from './dynamic-reality-kernel';
 
 // ── External dependency taxonomy ──────────────────────────────────────────
 
@@ -83,8 +90,11 @@ const QUEUE_OR_CACHE_RE =
   /\b(?:Queue|Worker|QueueEvents|createClient)\b|\.add\s*\(|\.process\s*\(|\.get\s*\(|\.set\s*\(/;
 const EXTERNAL_HTTP_RE =
   /\b(?:fetch|axios|httpService)\.(?:get|post|put|patch|delete|request)\s*\(|\bfetch\s*\(|\b[A-Za-z_$][\w$]*(?:Client|Provider|Gateway|Api|SDK|Sdk|Http)\.(?:get|post|put|patch|delete|request)\s*\(/;
-const WEBHOOK_RECEIVER_RE =
-  /@(Post|All)\s*\([^)]*(callback|webhook|hook|event)[^)]*\)|signature|rawBody|x-[a-z-]*signature/i;
+const _receiverTokens = discoverExternalReceiverTokensFromEvidence().join('|');
+const WEBHOOK_RECEIVER_RE = new RegExp(
+  `@(Post|All)\\s*\\([^)]*(${_receiverTokens.replace(/\\$/g, '\\\\$')}|hook|signature)[^)]*\\)|signature|rawBody|x-[a-z-]*signature`,
+  'i',
+);
 
 const IMPORT_SPECIFIER_RE =
   /\b(?:import\s+(?:type\s+)?(?:[^'"]+\s+from\s+)?|export\s+[^'"]+\s+from\s+|require\s*\(|import\s*\()\s*['"]([^'"]+)['"]/g;
@@ -317,7 +327,8 @@ function addDependenciesFromPulseArtifacts(
   dependencies: Map<ChaosProviderName, string[]>,
   rootDir: string,
 ): void {
-  const behaviorNodes = loadArtifactRecords(rootDir, 'PULSE_BEHAVIOR_GRAPH.json');
+  const artifacts = discoverAllObservedArtifactFilenames();
+  const behaviorNodes = loadArtifactRecords(rootDir, artifacts.behaviorGraph);
   for (const node of behaviorNodes) {
     const filePath = typeof node.filePath === 'string' ? node.filePath : '';
     const externalCalls = Array.isArray(node.externalCalls) ? node.externalCalls : [];
@@ -332,7 +343,7 @@ function addDependenciesFromPulseArtifacts(
     }
   }
 
-  const structuralNodes = loadArtifactRecords(rootDir, 'PULSE_STRUCTURAL_GRAPH.json');
+  const structuralNodes = loadArtifactRecords(rootDir, artifacts.structuralGraph);
   const sideEffectFiles = structuralNodes
     .filter((node) => node.kind === 'side_effect_signal')
     .flatMap((node) => {
@@ -341,7 +352,7 @@ function addDependenciesFromPulseArtifacts(
     });
   addDependenciesFromArtifactFiles(dependencies, rootDir, sideEffectFiles);
 
-  const productCapabilities = loadArtifactRecords(rootDir, 'PULSE_PRODUCT_GRAPH.json');
+  const productCapabilities = loadArtifactRecords(rootDir, artifacts.productGraph);
   for (const capability of productCapabilities) {
     for (const provider of stringArray(capability.providersInvolved)) {
       addDetectedDependency(dependencies, dependencyId('product-graph', provider), '');
@@ -349,8 +360,8 @@ function addDependenciesFromPulseArtifacts(
   }
 
   const signalFiles = [
-    ...loadArtifactRecords(rootDir, 'PULSE_EXTERNAL_SIGNAL_STATE.json'),
-    ...loadArtifactRecords(rootDir, 'PULSE_RUNTIME_FUSION.json'),
+    ...loadArtifactRecords(rootDir, artifacts.externalSignalState),
+    ...loadArtifactRecords(rootDir, artifacts.runtimeFusion),
   ].flatMap((signal) => [
     ...stringArray(signal.relatedFiles),
     ...stringArray(signal.affectedFilePaths),
@@ -373,7 +384,7 @@ export function detectProviders(rootDir: string): Map<ChaosProviderName, string[
   for (const dir of backendDirs) {
     if (pathExists(dir)) {
       allFiles.push(
-        ...walkFiles(dir, ['.ts', '.tsx']).filter(
+        ...walkFiles(dir, [...discoverSourceExtensionsFromObservedTypescript()]).filter(
           (f) => !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f),
         ),
       );
@@ -404,7 +415,7 @@ function detectCodebaseTargets(rootDir: string): Set<ChaosTarget> {
   for (const dir of backendDirs) {
     if (pathExists(dir)) {
       allFiles.push(
-        ...walkFiles(dir, ['.ts', '.tsx']).filter(
+        ...walkFiles(dir, [...discoverSourceExtensionsFromObservedTypescript()]).filter(
           (f) => !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f),
         ),
       );
@@ -442,7 +453,8 @@ export function classifyTargetsFromSource(content: string): Set<ChaosTarget> {
 }
 
 function loadCapabilities(rootDir: string): PulseCapability[] {
-  const capabilityPath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_CAPABILITY_STATE.json');
+  const artifacts = discoverAllObservedArtifactFilenames();
+  const capabilityPath = safeJoin(rootDir, '.pulse', 'current', artifacts.capabilityState);
   if (!pathExists(capabilityPath)) {
     return [];
   }
@@ -455,7 +467,8 @@ function loadCapabilities(rootDir: string): PulseCapability[] {
 }
 
 function loadMatrixPaths(rootDir: string): PulseExecutionMatrix['paths'] {
-  const matrixPath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_EXECUTION_MATRIX.json');
+  const artifacts = discoverAllObservedArtifactFilenames();
+  const matrixPath = safeJoin(rootDir, '.pulse', 'current', artifacts.executionMatrix);
   if (!pathExists(matrixPath)) {
     return [];
   }
@@ -468,7 +481,8 @@ function loadMatrixPaths(rootDir: string): PulseExecutionMatrix['paths'] {
 }
 
 function loadRuntimeEvidence(rootDir: string): PulseRuntimeEvidence | null {
-  const runtimePath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_RUNTIME_EVIDENCE.json');
+  const artifacts = discoverAllObservedArtifactFilenames();
+  const runtimePath = safeJoin(rootDir, '.pulse', 'current', artifacts.runtimeEvidence);
   if (!pathExists(runtimePath)) {
     return null;
   }
@@ -480,7 +494,8 @@ function loadRuntimeEvidence(rootDir: string): PulseRuntimeEvidence | null {
 }
 
 function loadExecutionTrace(rootDir: string): PulseExecutionTrace | null {
-  const tracePath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_EXECUTION_TRACE.json');
+  const artifacts = discoverAllObservedArtifactFilenames();
+  const tracePath = safeJoin(rootDir, '.pulse', 'current', artifacts.executionTrace);
   if (!pathExists(tracePath)) {
     return null;
   }
@@ -492,11 +507,12 @@ function loadExecutionTrace(rootDir: string): PulseExecutionTrace | null {
 }
 
 function loadEffectGraphRecords(rootDir: string): Record<string, unknown>[] {
+  const artifacts = discoverAllObservedArtifactFilenames();
   return [
-    ...loadArtifactRecords(rootDir, 'PULSE_BEHAVIOR_GRAPH.json'),
-    ...loadArtifactRecords(rootDir, 'PULSE_STRUCTURAL_GRAPH.json'),
-    ...loadArtifactRecords(rootDir, 'PULSE_EFFECT_GRAPH.json'),
-    ...loadArtifactRecords(rootDir, 'PULSE_RUNTIME_FUSION.json'),
+    ...loadArtifactRecords(rootDir, artifacts.behaviorGraph),
+    ...loadArtifactRecords(rootDir, artifacts.structuralGraph),
+    ...loadArtifactRecords(rootDir, artifacts.effectGraph),
+    ...loadArtifactRecords(rootDir, artifacts.runtimeFusion),
   ];
 }
 
@@ -562,7 +578,8 @@ function targetForDetectedDependency(
   if (dependency === dependencyId('target', 'redis')) {
     return 'redis';
   }
-  if (dependencyFiles.some((file) => file.includes('webhook'))) {
+  const receiverTokens = discoverExternalReceiverTokensFromEvidence();
+  if (dependencyFiles.some((file) => receiverTokens.some((token) => file.includes(token)))) {
     return 'webhook_receiver';
   }
   return 'external_http';
@@ -844,7 +861,10 @@ function deriveSeedParams(
         healDelayMs: Math.max(low, middle),
       };
     case 'packet_loss': {
-      const signalCount = context.runtimeProbes.filter((probe) => probe.status !== 'passed').length;
+      const passedStatuses = discoverPropertyPassedStatusFromTypeEvidence();
+      const signalCount = context.runtimeProbes.filter(
+        (probe) => !passedStatuses.has(probe.status),
+      ).length;
       const observedRatio = Math.ceil(
         (signalCount * 100) / Math.max(context.runtimeProbes.length, 1),
       );
@@ -912,7 +932,10 @@ function deriveChaosScenarioSeeds(context: ChaosEvidenceContext): ChaosScenarioS
   }
   if (seeds.size === 0) {
     addSeed(
-      context.runtimeProbes.some((probe) => probe.executed && probe.status !== 'passed')
+      (() => {
+        const passed = discoverPropertyPassedStatusFromTypeEvidence();
+        return context.runtimeProbes.some((probe) => probe.executed && !passed.has(probe.status));
+      })()
         ? 'connection_drop'
         : 'latency',
     );
@@ -1072,7 +1095,7 @@ export function buildChaosCatalog(rootDir: string): ChaosEvidence {
   const outputDir = safeJoin(rootDir, '.pulse', 'current');
   ensureDir(outputDir, { recursive: true });
   writeTextFile(
-    safeJoin(outputDir, 'PULSE_CHAOS_EVIDENCE.json'),
+    safeJoin(outputDir, discoverAllObservedArtifactFilenames().chaosEvidence),
     JSON.stringify(evidence, null, 2),
   );
 
@@ -1372,9 +1395,15 @@ function buildExpectedBehavior(
 type LatencyTier = 'low' | 'medium' | 'high' | 'extreme';
 
 function classifyLatencyTier(ms: number): LatencyTier {
-  if (ms <= 100) return 'low';
-  if (ms <= 500) return 'medium';
-  if (ms <= 2000) return 'high';
+  const lowThreshold = deriveHttpStatusFromObservedCatalog('Continue');
+  const mediumThreshold = lowThreshold + deriveHttpStatusFromObservedCatalog('Bad Request');
+  const highThreshold =
+    mediumThreshold +
+    deriveHttpStatusFromObservedCatalog('Internal Server Error') +
+    deriveHttpStatusFromObservedCatalog('OK');
+  if (ms <= lowThreshold) return 'low';
+  if (ms <= mediumThreshold) return 'medium';
+  if (ms <= highThreshold) return 'high';
   return 'extreme';
 }
 
