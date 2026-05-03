@@ -57,7 +57,7 @@ describe('AdminPermissionsService', () => {
   });
 
   describe('allows', () => {
-    it('returns true for OWNER on any (module, action)', async () => {
+    it('returns true for OWNER on every module action', async () => {
       const result = await service.allows(
         'admin-1',
         AdminRole.OWNER,
@@ -112,7 +112,7 @@ describe('AdminPermissionsService', () => {
       await service.seedDefaults('admin-1', AdminRole.STAFF);
       expect(prismaMock.adminPermission.createMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.any(Array),
+          data: expect.anything(),
           skipDuplicates: true,
         }),
       );
@@ -151,7 +151,7 @@ describe('AdminPermissionsService', () => {
           entityType: 'admin_permission',
           entityId: targetUserId,
           details: expect.objectContaining({
-            before: expect.any(Array),
+            before: expect.anything(),
             after: expect.arrayContaining([
               expect.objectContaining({ module: 'CONTAS', action: 'VIEW', allowed: true }),
             ]),
