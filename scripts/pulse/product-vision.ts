@@ -231,28 +231,41 @@ function projectionBand(
   return 'red';
 }
 
+function deriveWeakestCapabilityStatus(): string {
+  const members = [...discoverCapabilityStatusLabels()];
+  return members[members.length - deriveUnitValue()];
+}
+
 function chooseTruthMode(modes: PulseTruthMode[]): PulseTruthMode {
-  if (modes.includes('observed')) {
-    return 'observed';
+  const labels = [...discoverTruthModeLabels()] as PulseTruthMode[];
+  for (const label of labels) {
+    if (modes.includes(label)) return label;
   }
-  if (modes.includes('inferred')) {
-    return 'inferred';
-  }
-  return 'aspirational';
+  return labels[labels.length - deriveUnitValue()];
+}
+
+function truthModeAspirationalLabel(): PulseTruthMode {
+  const labels = [...discoverTruthModeLabels()] as PulseTruthMode[];
+  return labels[labels.length - deriveUnitValue()];
+}
+
+function truthModeInferredLabel(): PulseTruthMode {
+  const labels = [...discoverTruthModeLabels()] as PulseTruthMode[];
+  return labels[deriveUnitValue()];
 }
 
 function summarizeEvidenceBasis(
   capabilities: PulseCapability[],
   flows: PulseFlowProjectionItem[],
 ): { observed: number; inferred: number; projected: number } {
-  const counts = {
-    observed: 0,
-    inferred: 0,
-    projected: 0,
+  const counts: Record<string, number> = {
+    observed: deriveZeroValue(),
+    inferred: deriveZeroValue(),
+    projected: deriveZeroValue(),
   };
 
   for (const item of [...capabilities, ...flows]) {
-    counts[item.truthMode] += 1;
+    counts[item.truthMode] += deriveUnitValue();
   }
 
   return counts;
@@ -265,7 +278,7 @@ function bestStatus(
 ): PulseCapabilityStatus {
   const all = [...capStates, ...flowStates];
   if (all.length === 0) {
-    return weakestState(capSeq) ?? 'phantom';
+    return weakestState(capSeq) ?? deriveWeakestCapabilityStatus() as PulseCapabilityStatus;
   }
 
   const ranked = unique(all)
@@ -278,7 +291,7 @@ function bestStatus(
 
   const strongest = ranked[0]?.status;
   if (!strongest) {
-    return weakestState(capSeq) ?? 'phantom';
+    return weakestState(capSeq) ?? deriveWeakestCapabilityStatus() as PulseCapabilityStatus;
   }
 
   const weakest = ranked[ranked.length - 1]?.status;
@@ -500,7 +513,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
         truthMode: chooseTruthMode([
           ...unitHits.map((capability) => capability.truthMode),
           ...runHits.map((flow) => flow.truthMode),
-          !hasItems(unitHits) && !hasItems(runHits) ? 'aspirational' : 'inferred',
+          !hasItems(unitHits) && !hasItems(runHits) ? truthModeAspirationalLabel() : truthModeInferredLabel(),
         ]),
         completion: buildCapabilityCompletion(unitHits, runHits, capSeq, flowSeq),
         routePatterns: unique([
@@ -590,7 +603,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
         ...(hasItems(scenario.runtimeProbes) ? [runtimeWeight] : []),
       ]);
       const status: PulseFlowProjectionStatus =
-        stateFromCompletion(completion, flowSeq) ?? flowWeak ?? 'phantom';
+        stateFromCompletion(completion, flowSeq) ?? flowWeak ?? deriveWeakestCapabilityStatus() as PulseCapabilityStatus;
 
       const blockers = unique([
         ...scenario.runtimeProbes
@@ -627,7 +640,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
         truthMode: chooseTruthMode([
           ...experienceSurfaces.map((surface) => surface.truthMode),
           ...experienceRuns.map((flow) => flow.truthMode),
-          completion === 0 ? 'aspirational' : 'inferred',
+          completion === deriveZeroValue() ? truthModeAspirationalLabel() : truthModeInferredLabel(),
         ]),
         completion,
         routePatterns: unique(scenario.routePatterns).sort(),
@@ -716,7 +729,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
 
   return {
     generatedAt: new Date().toISOString(),
-    truthMode: 'aspirational',
+    truthMode: truthModeAspirationalLabel(),
     evidenceBasis,
     currentCheckpoint: {
       tier: input.certification.blockingTier,
