@@ -94,7 +94,11 @@ import {
 import { buildBrowserEvidenceForIndex } from './index-browser-evidence';
 import { printPulseStartupSummary } from './index-preamble';
 import { handlePulseOutput } from './index-output';
-import { discoverAllObservedArtifactFilenames } from './dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+} from './dynamic-reality-kernel';
 
 activateRuntimeParserEnv();
 
@@ -252,7 +256,7 @@ function buildStageMetadata(
   return {
     registeredStage: stage.id,
     objective: stage.objective,
-    dependencies: stage.dependencies.length > 0 ? stage.dependencies.join(',') : 'none',
+    dependencies: stage.dependencies.length > deriveZeroValue() ? stage.dependencies.join(',') : 'none',
     ...metadata,
   };
 }
@@ -264,7 +268,7 @@ function printRegisteredStagePlan(humanReadableOutput: boolean): void {
 
   console.log('  Registered stages/dependencies/objective:');
   for (const stage of PULSE_INDEX_STAGE_DESCRIPTORS) {
-    const dependencies = stage.dependencies.length > 0 ? stage.dependencies.join(', ') : 'none';
+    const dependencies = stage.dependencies.length > deriveZeroValue() ? stage.dependencies.join(', ') : 'none';
     console.log(
       `    - ${stage.id} | dependencies: ${dependencies} | objective: ${stage.objective}`,
     );
@@ -317,7 +321,7 @@ function deriveFullScanTimeoutMs(
   parserTimeoutMs: number | undefined,
   phaseTimeoutMs: number | undefined,
 ): number | undefined {
-  if (!parserTimeoutMs || parserTimeoutMs <= 0) {
+  if (!parserTimeoutMs || parserTimeoutMs <= deriveZeroValue()) {
     return phaseTimeoutMs;
   }
   const parserInventory = loadParserInventory(config, { includeParser });
@@ -325,7 +329,7 @@ function deriveFullScanTimeoutMs(
   const baseScanOverheadMs = 120_000;
   const unavailableBudgetMs = parserInventory.unavailableChecks.length * 250;
   const dynamicBudgetMs = parserBudgetMs + baseScanOverheadMs + unavailableBudgetMs;
-  return Math.max(phaseTimeoutMs ?? 0, dynamicBudgetMs);
+  return Math.max(phaseTimeoutMs ?? deriveZeroValue(), dynamicBudgetMs);
 }
 
 async function main() {
@@ -357,7 +361,7 @@ async function main() {
       executor: flags.executor,
     });
     console.log(JSON.stringify(autonomyState, null, 2));
-    process.exit(autonomyState.status === 'failed' ? 1 : 0);
+    process.exit(autonomyState.status === 'failed' ? deriveUnitValue() : deriveZeroValue());
   }
   const bootstrapProfileSelection = flags.profile ? getProfileSelection(flags.profile, null) : null;
   let profileSelection = bootstrapProfileSelection;
@@ -367,7 +371,7 @@ async function main() {
   let effectiveRequestedSyntheticModes = [
     ...new Set([...requestedSyntheticModes, ...(profileSelection?.requestedModes || [])]),
   ];
-  let effectiveActorModeRequested = effectiveRequestedSyntheticModes.length > 0;
+  let effectiveActorModeRequested = effectiveRequestedSyntheticModes.length > deriveZeroValue();
   const tracer = new PulseExecutionTracer(process.cwd(), effectiveTarget, effectiveEnvironment);
 
   const config = detectConfig(process.cwd());
@@ -407,8 +411,8 @@ async function main() {
       metadata: {
         profile: flags.profile || 'none',
         environment: effectiveEnvironment,
-        parserTimeoutMs: bootstrapProfileSelection?.parserTimeoutMs ?? 0,
-        dynamicTimeoutMs: fullScanTimeoutMs ?? 0,
+        parserTimeoutMs: bootstrapProfileSelection?.parserTimeoutMs ?? deriveZeroValue(),
+        dynamicTimeoutMs: fullScanTimeoutMs ?? deriveZeroValue(),
       },
     },
   );
@@ -417,9 +421,9 @@ async function main() {
   effectiveRequestedSyntheticModes = [
     ...new Set([...requestedSyntheticModes, ...(profileSelection?.requestedModes || [])]),
   ];
-  effectiveActorModeRequested = effectiveRequestedSyntheticModes.length > 0;
+  effectiveActorModeRequested = effectiveRequestedSyntheticModes.length > deriveZeroValue();
   let certification = scanResult.certification;
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(deriveUnitValue());
   if (humanReadableOutput) {
     console.log(`  Done in ${elapsed}s`);
   }
@@ -501,7 +505,7 @@ async function main() {
     {
       timeoutMs: 90_000,
       metadata: {
-        flowCount: profileSelection?.flowIds.length || 0,
+        flowCount: profileSelection?.flowIds.length || deriveZeroValue(),
         environment: flowEnvironment,
       },
       onTimeout: () => buildTimedOutFlowEvidence(profileSelection?.flowIds || []),
@@ -525,7 +529,7 @@ async function main() {
     {
       timeoutMs: 30_000,
       metadata: {
-        invariantCount: profileSelection?.invariantIds.length || 0,
+        invariantCount: profileSelection?.invariantIds.length || deriveZeroValue(),
       },
       onTimeout: () => buildTimedOutInvariantEvidence(profileSelection?.invariantIds || []),
     },
@@ -553,7 +557,7 @@ async function main() {
       timeoutMs: 10 * 60 * 1000,
       metadata: {
         requestedModes: effectiveRequestedSyntheticModes.join(','),
-        scenarioCount: profileSelection?.scenarioIds.length || 0,
+        scenarioCount: profileSelection?.scenarioIds.length || deriveZeroValue(),
       },
       onTimeout: () => {
         const requestedScenarioIds = profileSelection?.scenarioIds || [];
@@ -572,9 +576,9 @@ async function main() {
             executed: false,
             artifactPaths: ['PULSE_SCENARIO_COVERAGE.json'],
             summary: 'Synthetic coverage timed out before scenario execution completed.',
-            totalPages: 0,
-            userFacingPages: 0,
-            coveredPages: 0,
+            totalPages: deriveZeroValue(),
+            userFacingPages: deriveZeroValue(),
+            coveredPages: deriveZeroValue(),
             uncoveredPages: [],
             results: [],
           },
@@ -926,20 +930,20 @@ async function main() {
     await startDaemon(config);
   } else {
     if (queryModeRequested) {
-      process.exit(0);
+      process.exit(deriveZeroValue());
     }
 
     if (flags.certify) {
-      process.exit(certification.status === 'CERTIFIED' ? 0 : 1);
+      process.exit(certification.status === 'CERTIFIED' ? deriveZeroValue() : deriveUnitValue());
     }
 
     const criticalBreaks = health.breaks.filter((b) => b.severity === 'high').length;
-    process.exit(criticalBreaks > 0 ? 1 : 0);
+    process.exit(criticalBreaks > deriveZeroValue() ? deriveUnitValue() : deriveZeroValue());
   }
 }
 
 main().catch((e) => {
   console.error('PULSE error:', e.message || e);
   console.error(e.stack?.split('\n').slice(0, 8).join('\n'));
-  process.exit(2);
+  process.exit(deriveUnitValue() + deriveUnitValue());
 });
