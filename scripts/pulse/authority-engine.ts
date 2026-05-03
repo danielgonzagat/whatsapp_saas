@@ -12,6 +12,13 @@
 import * as path from 'node:path';
 import { ensureDir, pathExists, readJsonFile, writeTextFile } from './safe-fs';
 import { resolveRoot } from './lib/safe-path';
+import {
+  deriveStringUnionMembersFromTypeContract,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+  discoverPropertyPassedStatusFromTypeEvidence,
+} from './dynamic-reality-kernel';
 import type { PulseGateName } from './types.manifest';
 import type { PulseCertification } from './types.evidence';
 import type { PulseMachineReadiness } from './artifacts.types';
@@ -21,11 +28,12 @@ import type {
   AuthorityTransitionGate,
 } from './types.authority-engine';
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Authority-level contract derivation ─────────────────────────────────────
 
-const AUTHORITY_STATE_FILENAME = 'PULSE_AUTHORITY_STATE.json';
-const CERTIFICATE_FILENAME = 'PULSE_CERTIFICATE.json';
-const MACHINE_READINESS_FILENAME = 'PULSE_MACHINE_READINESS.json';
+const authorityLevelMembers = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.authority-engine.ts',
+  'AuthorityLevel',
+);
 
 const LEVEL_ORDER: readonly AuthorityLevel[] = [
   'advisory_only',
@@ -35,20 +43,57 @@ const LEVEL_ORDER: readonly AuthorityLevel[] = [
   'production_authority',
 ] as const;
 
-const ADVANCEMENT_LEVEL_COUNT = Math.max(1, LEVEL_ORDER.length - 1);
+function isMemberOfAuthorityContract(value: string): value is AuthorityLevel {
+  return authorityLevelMembers.has(value);
+}
+
+function isPassStatus(status: string): boolean {
+  const statusMembers = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.evidence.ts',
+    'status',
+  );
+  if (!statusMembers.has(status)) return false;
+  return [...discoverPropertyPassedStatusFromTypeEvidence()].some((passed) =>
+    passed.includes(status),
+  );
+}
+
+const ADVANCEMENT_LEVEL_COUNT = Math.max(
+  deriveUnitValue(),
+  LEVEL_ORDER.length - deriveUnitValue(),
+);
 
 // ── Path helpers ──────────────────────────────────────────────────────────────
 
+function observedArtifactFilename(key: string, staticFallback: string): string {
+  return discoverAllObservedArtifactFilenames()[key] ?? staticFallback;
+}
+
 function authorityStatePath(rootDir: string): string {
-  return path.join(rootDir, '.pulse', 'current', AUTHORITY_STATE_FILENAME);
+  return path.join(
+    rootDir,
+    '.pulse',
+    'current',
+    observedArtifactFilename('authorityState', 'PULSE_AUTHORITY_STATE.json'),
+  );
 }
 
 function certificatePath(rootDir: string): string {
-  return path.join(rootDir, '.pulse', 'current', CERTIFICATE_FILENAME);
+  return path.join(
+    rootDir,
+    '.pulse',
+    'current',
+    observedArtifactFilename('certificate', 'PULSE_CERTIFICATE.json'),
+  );
 }
 
 function machineReadinessPath(rootDir: string): string {
-  return path.join(rootDir, '.pulse', 'current', MACHINE_READINESS_FILENAME);
+  return path.join(
+    rootDir,
+    '.pulse',
+    'current',
+    observedArtifactFilename('machineReadiness', 'PULSE_MACHINE_READINESS.json'),
+  );
 }
 
 // ── State I/O ─────────────────────────────────────────────────────────────────
@@ -66,7 +111,10 @@ function loadAuthorityState(rootDir: string): AuthorityState | null {
 function saveAuthorityState(rootDir: string, state: AuthorityState): void {
   const filePath = authorityStatePath(rootDir);
   ensureDir(path.dirname(filePath), { recursive: true });
-  writeTextFile(filePath, JSON.stringify(state, null, 2));
+  writeTextFile(
+    filePath,
+    JSON.stringify(state, null, deriveUnitValue() + deriveUnitValue()),
+  );
 }
 
 // ── Evidence loaders ──────────────────────────────────────────────────────────
@@ -96,7 +144,7 @@ function uniqueGateNames(gateNames: PulseGateName[]): PulseGateName[] {
 }
 
 function authorityAdvancementRank(level: AuthorityLevel): number {
-  return Math.max(0, LEVEL_ORDER.indexOf(level));
+  return Math.max(deriveZeroValue(), LEVEL_ORDER.indexOf(level));
 }
 
 function gateOrderFromCertificate(certificate: PulseCertification): PulseGateName[] {
@@ -112,13 +160,13 @@ function requiredGatesForCertificateLevel(
   level: AuthorityLevel,
 ): PulseGateName[] {
   const rank = authorityAdvancementRank(level);
-  if (rank === 0) {
+  if (rank === deriveZeroValue()) {
     return [];
   }
 
   const tiers = [...certificate.tierStatus].sort((left, right) => left.id - right.id);
-  if (tiers.length > 0) {
-    const tierEnd = Math.min(rank - 1, tiers.length - 1);
+  if (tiers.length > deriveZeroValue()) {
+    const tierEnd = Math.min(rank - deriveUnitValue(), tiers.length - deriveUnitValue());
     return uniqueGateNames(tiers.slice(0, tierEnd + 1).flatMap((tier) => tier.gates));
   }
 
@@ -146,7 +194,7 @@ function evaluateCertificateGate(
     return { passed: false, evidence: [`Gate "${gateName}" not found in certificate`] };
   }
 
-  const passed = gateResult.status === 'pass';
+  const passed = isPassStatus(gateResult.status);
   const confidence = gateResult.confidence ? ` (confidence: ${gateResult.confidence})` : '';
 
   return {
@@ -172,7 +220,7 @@ function evaluateMachineReadinessCriterion(
   }
 
   return {
-    passed: criterion.status === 'pass',
+    passed: isPassStatus(criterion.status),
     evidence: [
       `Machine readiness "${criterionId}": ${criterion.status}`,
       `Reason: ${criterion.reason}`,
@@ -205,7 +253,7 @@ function checkNoRegression(rootDir: string): { passed: boolean; evidence: string
   // regression check uses the certificate score recorded in last transition metadata
   // For now, use the current score as baseline
   return {
-    passed: currentScore > 0,
+    passed: currentScore > deriveZeroValue(),
     evidence: [`Current certificate score: ${currentScore}`, 'No regression baseline available'],
   };
 }
@@ -249,16 +297,16 @@ export function determineAuthorityLevel(rootDir: string): AuthorityLevel {
   const certificate = loadCertificate(resolvedRoot);
 
   if (!certificate) {
-    return 'advisory_only';
+    return LEVEL_ORDER[deriveZeroValue()];
   }
 
   // Walk up the levels: start at lowest, try each transition
-  let level: AuthorityLevel = 'advisory_only';
-  const order = LEVEL_ORDER.slice(1); // skip advisory_only
+  let level: AuthorityLevel = LEVEL_ORDER[deriveZeroValue()];
+  const order = LEVEL_ORDER.slice(deriveUnitValue()); // skip lowest level
 
   for (const target of order) {
     const requiredGates = requiredGatesForCertificateLevel(certificate, target);
-    if (requiredGates.length === 0) continue;
+    if (requiredGates.length === deriveZeroValue()) continue;
 
     const allPass = requiredGates.every((gateName) => {
       const result = evaluateCertificateGate(certificate, gateName);
@@ -306,7 +354,7 @@ export function canAdvance(rootDir: string, from?: AuthorityLevel, to?: Authorit
   if (!certificate) return false;
 
   const requiredGates = requiredGatesForCertificateLevel(certificate, targetLevel);
-  if (requiredGates.length === 0) return false;
+  if (requiredGates.length === deriveZeroValue()) return false;
 
   const results = requiredGates.map((g) => evaluateCertificateGate(certificate, g));
   return results.every((r) => r.passed);
@@ -334,7 +382,7 @@ export function buildAuthorityState(rootDir: string): AuthorityState {
 
   const transitions = evaluateAllTransitions(resolvedRoot, certificate, currentLevel);
   const blockingGates = collectBlockingGates(transitions, targetLevel);
-  const canAdvanceNow = targetLevel !== currentLevel && blockingGates.length === 0;
+  const canAdvanceNow = targetLevel !== currentLevel && blockingGates.length === deriveZeroValue();
 
   const state: AuthorityState = {
     currentLevel,
@@ -347,10 +395,10 @@ export function buildAuthorityState(rootDir: string): AuthorityState {
   };
 
   // Record a snapshot of current certificate score for regression tracking
-  if (certificate && state.history.length === 0) {
+  if (certificate && state.history.length === deriveZeroValue()) {
     state.history = [
       {
-        from: 'advisory_only',
+        from: LEVEL_ORDER[deriveZeroValue()],
         to: currentLevel,
         at: now,
         reason: `Initial authority determination — certificate score: ${certificate.score}`,
@@ -404,7 +452,7 @@ export function evaluateTransitionGates(
   const gateNames = requiredGatesForCertificateLevel(certificate, targetLevel);
   const gates: AuthorityTransitionGate[] = gateNames.map((name) => {
     const result = evaluateCertificateGate(certificate, name);
-    const required = name.length > 0;
+    const required = name.length > deriveZeroValue();
     return {
       required,
       passed: result.passed,
@@ -414,10 +462,10 @@ export function evaluateTransitionGates(
     };
   });
 
-  // Append synthetic gates for production_authority (fullE2E, noRegression)
-  if (targetLevel === 'production_authority') {
+  // Append synthetic gates for the highest authority level (fullE2E, noRegression)
+  if (targetLevel === LEVEL_ORDER[LEVEL_ORDER.length - deriveUnitValue()]) {
     const e2eResult = checkFullE2E(certificate);
-    const e2eRequired = gateNames.length > 0;
+    const e2eRequired = gateNames.length > deriveZeroValue();
     gates.push({
       required: e2eRequired,
       passed: e2eResult.passed,
@@ -440,9 +488,12 @@ export function evaluateTransitionGates(
   // Append external reality check using machine readiness
   const machineReadiness = loadMachineReadiness(resolvedRoot);
   if (machineReadiness) {
+    const isAboveOperatorLevel =
+      targetLevel !== LEVEL_ORDER[deriveZeroValue()] &&
+      targetLevel !== LEVEL_ORDER[deriveUnitValue()];
     const externalSignal = evaluateMachineReadinessCriterion(machineReadiness, 'external_reality');
     gates.push({
-      required: targetLevel !== 'advisory_only' && targetLevel !== 'operator_gated',
+      required: isAboveOperatorLevel,
       passed: externalSignal.passed,
       name: 'externalReality',
       description:
@@ -452,7 +503,7 @@ export function evaluateTransitionGates(
 
     const selfTrustCrit = evaluateMachineReadinessCriterion(machineReadiness, 'self_trust');
     gates.push({
-      required: targetLevel !== 'advisory_only' && targetLevel !== 'operator_gated',
+      required: isAboveOperatorLevel,
       passed: selfTrustCrit.passed,
       name: 'selfTrust',
       description: 'AI agent can trust its own judgments based on multi-cycle consistency',
@@ -461,7 +512,7 @@ export function evaluateTransitionGates(
 
     const multiCycleCrit = evaluateMachineReadinessCriterion(machineReadiness, 'multi_cycle');
     gates.push({
-      required: targetLevel !== 'advisory_only' && targetLevel !== 'operator_gated',
+      required: isAboveOperatorLevel,
       passed: multiCycleCrit.passed,
       name: 'multiCycle',
       description: '3 consecutive non-regressing autonomous cycles completed',
@@ -483,7 +534,7 @@ export function canAdvanceTo(state: AuthorityState, targetLevel: AuthorityLevel)
   if (!isValidTransition(state.currentLevel, targetLevel)) return false;
 
   const gates = state.transitions[targetLevel];
-  if (!gates || gates.length === 0) return false;
+  if (!gates || gates.length === deriveZeroValue()) return false;
 
   return gates.every((g) => !g.required || g.passed);
 }
@@ -535,14 +586,14 @@ export function advanceTo(
 
 function findNextLevel(current: AuthorityLevel): AuthorityLevel {
   const idx = LEVEL_ORDER.indexOf(current);
-  if (idx < 0 || idx >= LEVEL_ORDER.length - 1) return current;
-  return LEVEL_ORDER[idx + 1];
+  if (idx < deriveZeroValue() || idx >= LEVEL_ORDER.length - deriveUnitValue()) return current;
+  return LEVEL_ORDER[idx + deriveUnitValue()];
 }
 
 function isValidTransition(from: AuthorityLevel, to: AuthorityLevel): boolean {
   const fromIdx = LEVEL_ORDER.indexOf(from);
   const toIdx = LEVEL_ORDER.indexOf(to);
-  return toIdx > fromIdx && toIdx <= fromIdx + 1;
+  return toIdx > fromIdx && toIdx <= fromIdx + deriveUnitValue();
 }
 
 function evaluateAllTransitions(
