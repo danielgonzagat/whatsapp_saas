@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { readJsonFile } from './safe-fs';
+import { readJsonFile } from '../../safe-fs';
 import type { ReplaySession, ReplaySource } from './types.replay-adapter';
 
 const MIN_ERROR_COUNT_FOR_FAILURE = 1;

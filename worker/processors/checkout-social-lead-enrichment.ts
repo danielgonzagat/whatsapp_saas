@@ -6,6 +6,7 @@ import {
 import { prisma } from '../db';
 import { WorkerLogger } from '../logger';
 import { throwIfRetryable } from '../src/utils/error-handler';
+import { validateUrl } from '../utils/ssrf-protection';
 
 const D_RE = /\D/g;
 
@@ -62,6 +63,18 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
   }
 
   try {
+    const urlValidation = await validateUrl(settings.apiUrl);
+    if (!urlValidation.valid) {
+      log.warn('enrichment_url_rejected', { leadId, error: urlValidation.error });
+      await prisma.checkoutSocialLead.updateMany({
+        where: { id: leadId, workspaceId: lead.workspaceId },
+        data: {
+          enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.FAILED,
+        },
+      });
+      return;
+    }
+
     const response = await fetch(settings.apiUrl, {
       method: 'POST',
       headers: {
