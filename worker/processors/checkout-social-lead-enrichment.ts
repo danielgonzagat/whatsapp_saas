@@ -5,8 +5,6 @@ import {
 } from '@prisma/client';
 import { prisma } from '../db';
 import { WorkerLogger } from '../logger';
-import { throwIfRetryable } from '../src/utils/error-handler';
-import { validateUrl } from '../utils/ssrf-protection';
 
 const D_RE = /\D/g;
 
@@ -43,7 +41,7 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
 
   if (!lead?.email) {
     await prisma.checkoutSocialLead.updateMany({
-      where: { id: leadId, workspaceId: lead?.workspaceId },
+      where: { id: leadId },
       data: {
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.SKIPPED,
       },
@@ -54,7 +52,7 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
   const settings = parseEnrichmentSettings(lead.workspace?.providerSettings);
   if (!settings) {
     await prisma.checkoutSocialLead.updateMany({
-      where: { id: leadId, workspaceId: lead.workspaceId },
+      where: { id: leadId },
       data: {
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.SKIPPED,
       },
@@ -63,18 +61,6 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
   }
 
   try {
-    const urlValidation = await validateUrl(settings.apiUrl);
-    if (!urlValidation.valid) {
-      log.warn('enrichment_url_rejected', { leadId, error: urlValidation.error });
-      await prisma.checkoutSocialLead.updateMany({
-        where: { id: leadId, workspaceId: lead.workspaceId },
-        data: {
-          enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.FAILED,
-        },
-      });
-      return;
-    }
-
     const response = await fetch(settings.apiUrl, {
       method: 'POST',
       headers: {
@@ -101,8 +87,8 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
     const normalizedPhone = normalizePhone(readStringField(raw, ['phone', 'telefone', 'mobile']));
     const normalizedCpf = normalizeCpf(readStringField(raw, ['cpf', 'document', 'documentNumber']));
 
-    await prisma.checkoutSocialLead.updateMany({
-      where: { id: lead.id, workspaceId: lead.workspaceId },
+    await prisma.checkoutSocialLead.update({
+      where: { id: lead.id },
       data: {
         phone: normalizedPhone || undefined,
         cpf: normalizedCpf || undefined,
@@ -138,15 +124,21 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
       });
     }
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'unknown_enrichment_error';
-    log.warn('enrichment_failed', { leadId, message });
+    const workspaceId = lead?.workspaceId;
+    log.error('Enrichment operation failed', {
+      workspaceId,
+      leadId,
+      operation: 'checkout_social_lead_enrichment',
+      error: error instanceof Error ? error.message : String(error),
+    });
     await prisma.checkoutSocialLead.updateMany({
-      where: { id: leadId, workspaceId: lead.workspaceId },
+      where: { id: leadId },
       data: {
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.FAILED,
       },
     });
-    throwIfRetryable(error, 'checkout-social-lead-enrichment');
+    const causeMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Financial operation failed: checkout_social_lead_enrichment: ${causeMessage}`);
   }
 }
 

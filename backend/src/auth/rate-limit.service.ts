@@ -21,9 +21,8 @@ import type { Redis } from 'ioredis';
 export class RateLimitService {
   private logger = new Logger(RateLimitService.name);
 
-  constructor(@Optional() @InjectRedis() private readonly redis?: Redis | null) {}
+  constructor(@Optional() @InjectRedis() private readonly redis: Redis | null = null) {}
 
-  /** Check rate limit. */
   async checkRateLimit(key: string, limit = 5, windowMs = 5 * 60 * 1000) {
     const throwTooMany = () => {
       throw new HttpException(
@@ -66,12 +65,14 @@ export class RateLimitService {
         throwTooMany();
       }
     } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // Distinguish "rate limit exceeded" (rethrow) from Redis errors (fail closed).
       if (err instanceof HttpException) {
         throw err;
       }
       this.logger.error(
-        `Rate limiting Redis failure: ${err instanceof Error ? err.message : 'unknown'}. Rejecting login attempt.`,
+        `Rate limiting Redis failure: ${errInstanceofError?.message || 'unknown'}. Rejecting login attempt.`,
       );
       throw new ServiceUnavailableException(
         'Serviço temporariamente indisponível. Tente novamente em instantes.',
