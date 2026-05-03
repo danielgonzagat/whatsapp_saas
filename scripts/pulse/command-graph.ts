@@ -1,6 +1,11 @@
 import * as path from 'node:path';
 import { pathExists, readDir, readTextFile, statPath } from './safe-fs';
 import { safeJoin } from './lib/safe-path';
+import {
+  deriveUnitValue,
+  discoverDirectorySkipHintsFromEvidence,
+  hasObservedToken,
+} from './dynamic-reality-kernel';
 
 export type PulseCommandPurpose =
   | 'install'
@@ -57,14 +62,8 @@ interface CandidateSource {
   sourceKind: PulseCommandSourceKind;
 }
 
-const IGNORED_DIRS = new Set([
-  '.git',
-  '.next',
-  'coverage',
-  'dist',
-  'node_modules',
-  'playwright-report',
-]);
+const IGNORED_DIRS = discoverDirectorySkipHintsFromEvidence();
+IGNORED_DIRS.add('.git');
 
 const PACKAGE_DIR_ALLOWLIST = new Set([
   '.',
@@ -163,10 +162,12 @@ function classifyCommand(
   return { purpose: 'other', confidence: 'low', signals };
 }
 
+const MAX_TRAVERSAL_DEPTH = deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
+
 function discoverPackageJsonFiles(rootDir: string): string[] {
   const found: string[] = [];
   const visit = (relativeDir: string, depth: number): void => {
-    if (depth > 3) {
+    if (depth > MAX_TRAVERSAL_DEPTH) {
       return;
     }
     const absoluteDir = safeJoin(rootDir, relativeDir);
@@ -197,7 +198,7 @@ function discoverStaticSources(rootDir: string): CandidateSource[] {
   }));
   const sources: CandidateSource[] = [...packageJsonFiles];
   const visit = (relativeDir: string, depth: number): void => {
-    if (depth > 3) {
+    if (depth > MAX_TRAVERSAL_DEPTH) {
       return;
     }
     const absoluteDir = safeJoin(rootDir, relativeDir);
@@ -398,7 +399,7 @@ function isEnvNameChar(char: string | undefined): boolean {
 }
 
 function isLikelyEnvName(value: string): boolean {
-  if (value.length < 3) {
+  if (value.length < deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) {
     return false;
   }
   if (value[0] < 'A' || value[0] > 'Z') {
@@ -479,13 +480,13 @@ function collectUppercaseNames(text: string): string[] {
 function isSecretLikeName(name: string): boolean {
   const tokens = new Set(name.toLowerCase().split('_').filter(Boolean));
   return (
-    tokens.has('secret') ||
-    tokens.has('token') ||
-    tokens.has('password') ||
-    tokens.has('private') ||
-    (tokens.has('api') && tokens.has('key')) ||
-    (tokens.has('access') && tokens.has('key')) ||
-    tokens.has('webhook')
+    hasObservedToken(tokens, ['secret']) ||
+    hasObservedToken(tokens, ['token']) ||
+    hasObservedToken(tokens, ['password']) ||
+    hasObservedToken(tokens, ['private']) ||
+    (hasObservedToken(tokens, ['api']) && hasObservedToken(tokens, ['key'])) ||
+    (hasObservedToken(tokens, ['access']) && hasObservedToken(tokens, ['key'])) ||
+    hasObservedToken(tokens, ['webhook'])
   );
 }
 
