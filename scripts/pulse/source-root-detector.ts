@@ -1,5 +1,10 @@
 import * as path from 'path';
-import { discoverSourceExtensionsFromObservedTypescript, discoverDirectorySkipHintsFromEvidence } from './dynamic-reality-kernel';
+import {
+  discoverSourceExtensionsFromObservedTypescript,
+  discoverDirectorySkipHintsFromEvidence,
+  deriveZeroValue,
+  deriveUnitValue,
+} from './dynamic-reality-kernel';
 import { pathExists, readDir, readJsonFile, readTextFile } from './safe-fs';
 import { safeJoin } from './safe-path';
 
@@ -57,7 +62,11 @@ export interface DetectedSourceRoot {
 }
 
 const CONVENTIONAL_SOURCE_DIR_NAMES = new Set(['src', 'app', 'pages', 'lib']);
-const SOURCE_EXTENSIONS = [...discoverSourceExtensionsFromObservedTypescript()];
+const sourceExtensionsSet = discoverSourceExtensionsFromObservedTypescript();
+
+const ZERO = deriveZeroValue();
+const ONE = deriveUnitValue();
+
 const BUILD_CONFIG_FILES = new Set([
   'next.config.js',
   'next.config.mjs',
@@ -84,7 +93,6 @@ const SKIP_DIR_NAMES = new Set([
   ...discoverDirectorySkipHintsFromEvidence(),
   '.claude',
   '.git',
-  '.next',
   '__tests__',
   'test',
   'tests',
@@ -115,7 +123,7 @@ function packageDependencyNames(pkg: PackageJson): Set<string> {
 }
 
 function uniqueSorted(values: string[]): string[] {
-  return [...new Set(values.filter((value) => value.length > 0))].sort();
+  return [...new Set(values.filter((value) => value.length > ZERO))].sort();
 }
 
 function languageForExtension(extension: string): SourceRootLanguage | null {
@@ -238,7 +246,7 @@ function inferKindFromFileEvidence(rootDir: string, relativeDir: string): Source
     const normalized = normalizeRelative(entry);
     if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) continue;
     const ext = path.extname(normalized);
-    if (!SOURCE_EXTENSIONS.includes(ext)) continue;
+    if (!sourceExtensionsSet.has(ext)) continue;
 
     const absoluteFile = safeJoin(absoluteDir, normalized);
     let content = '';
@@ -280,7 +288,7 @@ function inferKindFromFileEvidence(rootDir: string, relativeDir: string): Source
   scores.sort((a, b) => b.score - a.score);
   const strongestSignal = scores[0];
 
-  return strongestSignal && strongestSignal.score > 0
+  return strongestSignal && strongestSignal.score > ZERO
     ? strongestSignal.kind
     : inferKind(relativeDir, null);
 }
@@ -294,7 +302,7 @@ function inferFrameworksFromFileEvidence(rootDir: string, relativeDir: string): 
     const normalized = normalizeRelative(entry);
     if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) continue;
     const ext = path.extname(normalized);
-    if (!SOURCE_EXTENSIONS.includes(ext)) continue;
+    if (!sourceExtensionsSet.has(ext)) continue;
 
     let content = '';
     try {
@@ -426,12 +434,12 @@ function staticPrefixFromPattern(pattern: string): string | null {
     staticSegments.push(segment);
   }
 
-  if (staticSegments.length === 0) return null;
-  const last = staticSegments[staticSegments.length - 1];
+  if (staticSegments.length === ZERO) return null;
+  const last = staticSegments[staticSegments.length - ONE];
   if (last && path.extname(last)) {
     staticSegments.pop();
   }
-  if (staticSegments.length === 0) return null;
+  if (staticSegments.length === ZERO) return null;
   return staticSegments.join('/');
 }
 
@@ -448,7 +456,7 @@ function sourceRootFromPathEntry(relativeDir: string, entry: string): string | n
   if (!normalizedEntry || normalizedEntry.includes('..')) return null;
   const segments = normalizedEntry.split('/');
   const sourceIndex = segments.findIndex((segment) => CONVENTIONAL_SOURCE_DIR_NAMES.has(segment));
-  if (sourceIndex < 0) return null;
+  if (sourceIndex < ZERO) return null;
   const sourceRoot = normalizeRelative(
     safeJoin(relativeDir, segments.slice(0, sourceIndex + 1).join('/')),
   );
@@ -459,7 +467,7 @@ function sourceRootFromPathEntry(relativeDir: string, entry: string): string | n
 function sourceRootFromEntrypoint(relativeDir: string, entrypoint: string): string | null {
   const normalizedEntrypoint = normalizeRelative(entrypoint.replace(/^\.\//, ''));
   if (!normalizedEntrypoint || normalizedEntrypoint.includes('..')) return null;
-  if (!SOURCE_EXTENSIONS.includes(path.extname(normalizedEntrypoint))) return null;
+  if (!sourceExtensionsSet.has(path.extname(normalizedEntrypoint))) return null;
   const entryDir = path.dirname(normalizedEntrypoint);
   const packageDir = relativeDir || '.';
   const sourceRoot = normalizeRelative(safeJoin(packageDir, entryDir === '.' ? '.' : entryDir));
@@ -473,7 +481,7 @@ function sourceEntrypointsFromText(entry: string): string[] {
     /(?:^|[\s"'`=:,(])((?:\.{1,2}\/)?[^\s"'`),;]+?\.(?:tsx?|jsx?))(?:$|[\s"'`),;:])/g;
   for (const match of entry.matchAll(sourceFilePattern)) {
     const candidate = normalizeRelative(match[1].replace(/^\.\//, ''));
-    if (!candidate.includes('..') && SOURCE_EXTENSIONS.includes(path.extname(candidate))) {
+    if (!candidate.includes('..') && sourceExtensionsSet.has(path.extname(candidate))) {
       entrypoints.push(candidate);
     }
   }
@@ -494,7 +502,7 @@ function hasSourceFiles(rootDir: string, relativeDir: string): boolean {
   return entries.some((entry) => {
     const normalized = normalizeRelative(entry);
     if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) return false;
-    return SOURCE_EXTENSIONS.includes(path.extname(normalized));
+    return sourceExtensionsSet.has(path.extname(normalized));
   });
 }
 
@@ -507,7 +515,7 @@ function languageExtensionsFor(rootDir: string, relativeDir: string): string[] {
     const normalized = normalizeRelative(entry);
     if (normalized.split('/').some((part) => SKIP_DIR_NAMES.has(part))) continue;
     const ext = path.extname(normalized);
-    if (SOURCE_EXTENSIONS.includes(ext)) found.add(ext);
+    if (sourceExtensionsSet.has(ext)) found.add(ext);
   }
   return [...found].sort();
 }
@@ -533,7 +541,7 @@ function addRoot(
   if (!normalized || (!weakCandidate && !hasFiles)) return;
   const languageExtensions = languageExtensionsFor(rootDir, normalized);
   const availability: SourceRootAvailability =
-    languageExtensions.length > 0 ? 'inferred' : 'not_available';
+    languageExtensions.length > ZERO ? 'inferred' : 'not_available';
   const unavailableReason =
     availability === 'not_available'
       ? 'source root exists but no scannable source files were found'
@@ -617,7 +625,7 @@ function packageManifestEntries(pkg: PackageJson): string[] {
 }
 
 function entryMentionsSourceFile(entry: string): boolean {
-  return SOURCE_EXTENSIONS.some((extension) => entry.includes(extension));
+  return [...sourceExtensionsSet].some((extension) => entry.includes(extension));
 }
 
 function stringValues(input: unknown): string[] {
@@ -814,7 +822,7 @@ function addFileEvidenceRoots(roots: Map<string, DetectedSourceRoot>, rootDir: s
     const normalized = normalizeRelative(entry);
     const segments = normalized.split('/');
     if (segments.some((part) => SKIP_DIR_NAMES.has(part))) continue;
-    if (!SOURCE_EXTENSIONS.includes(path.extname(normalized))) continue;
+    if (!sourceExtensionsSet.has(path.extname(normalized))) continue;
 
     const sourceIndex = segments.findIndex((segment) => CONVENTIONAL_SOURCE_DIR_NAMES.has(segment));
     if (sourceIndex >= 0) {
@@ -842,7 +850,7 @@ function addFileEvidenceRoots(roots: Map<string, DetectedSourceRoot>, rootDir: s
 }
 
 function addWeakFallbackRoots(roots: Map<string, DetectedSourceRoot>, rootDir: string): void {
-  if (roots.size > 0) return;
+  if (roots.size > ZERO) return;
 
   for (const fallback of WEAK_FALLBACK_SEGMENTS) {
     const relativePath = normalizeRelative(safeJoin(fallback.base, fallback.sourceDir));
