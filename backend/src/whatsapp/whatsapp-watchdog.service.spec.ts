@@ -4,6 +4,7 @@ import { WhatsAppWatchdogSessionService } from './whatsapp-watchdog-session.serv
 describe('WhatsAppWatchdogService', () => {
   const originalNodeEnv = process.env.NODE_ENV;
   let prisma: {
+    $transaction: jest.Mock;
     workspace: {
       findMany: jest.Mock;
       findUnique: jest.Mock;
@@ -40,6 +41,7 @@ describe('WhatsAppWatchdogService', () => {
     process.env.NODE_ENV = 'test';
     process.env.WAHA_API_URL = 'https://waha.test';
     prisma = {
+      $transaction: jest.fn((callback: any) => callback(prisma)),
       workspace: {
         findMany: jest.fn(),
         findUnique: jest.fn().mockResolvedValue({

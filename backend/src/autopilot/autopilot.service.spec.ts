@@ -35,6 +35,7 @@ describe('AutopilotService', () => {
   let service: AutopilotService;
 
   const mockPrisma: any = {
+    $transaction: jest.fn((callback: any) => callback(mockPrisma)),
     workspace: {
       findUnique: jest.fn(),
       update: jest.fn(),

@@ -31,7 +31,7 @@ export type {
 };
 
 export function makePrismaMock(): PrismaMock {
-  return {
+  const mock: any = {
     workspace: {
       findUnique: jest.fn().mockResolvedValue({
         providerSettings: {
@@ -136,6 +136,8 @@ export function makePrismaMock(): PrismaMock {
       findMany: jest.fn().mockResolvedValue([{ id: 'insight-1', type: 'CIA_MARKET_SIGNAL' }]),
     },
   };
+  mock.$transaction = jest.fn((cb: any) => cb(mock));
+  return mock;
 }
 
 export function makeProviderRegistryMock(): ProviderRegistryMock {
