@@ -1,4 +1,4 @@
-import type { CrawlerRole, UICrawlerEvidence } from '../../types.ui-crawler';
+import type { CrawlerRole, UICrawlerEvidence, UIDiscoveredElement } from '../../types.ui-crawler';
 import { ensureDir, pathExists, writeTextFile } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
 import { FRONTEND_SRC, APP_DIR } from './constants';

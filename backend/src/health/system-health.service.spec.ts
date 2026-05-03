@@ -50,6 +50,9 @@ describe('SystemHealthService', () => {
   let queueHealth: {
     getQueuesStatus: jest.Mock;
   };
+  let stripeService: {
+    healthCheck: jest.Mock;
+  };
 
   beforeEach(() => {
     prisma = {
@@ -111,6 +114,9 @@ describe('SystemHealthService', () => {
     queueHealth = {
       getQueuesStatus: jest.fn().mockResolvedValue([]),
     };
+    stripeService = {
+      healthCheck: jest.fn().mockResolvedValue({ status: 'UP' }),
+    };
   });
 
   afterEach(() => {
@@ -137,6 +143,7 @@ describe('SystemHealthService', () => {
       storageService as never,
       observabilityQueries as never,
       queueHealth as never,
+      stripeService as never,
     );
 
   it('reports meta transport and worker health in the consolidated readiness response', async () => {

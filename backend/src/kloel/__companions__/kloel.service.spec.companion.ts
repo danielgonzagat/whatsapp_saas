@@ -10,6 +10,8 @@ export type KloelPrismaMock = {
     findMany: jest.Mock;
     create: jest.Mock;
     count: jest.Mock;
+    update: jest.Mock;
+    deleteMany: jest.Mock;
   };
   kloelMessage: {
     findMany: jest.Mock;

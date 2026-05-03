@@ -153,8 +153,16 @@ describe('CopilotService', () => {
 
     it('returns parsed suggestions from openai with context detection', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
-        usage: { total_tokens: 200 },
-        choices: [{ message: { content: JSON.stringify({ suggestions: ['A', 'B', 'C'] }) } }],
+        usage: { total_tokens: 200, completion_tokens: 100, prompt_tokens: 100 },
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({ suggestions: ['A', 'B', 'C'] }),
+              refusal: null,
+              role: 'assistant',
+            },
+          },
+        ],
       });
 
       prisma.contact.findFirst.mockResolvedValue({ id: 'c-1' });
@@ -175,8 +183,16 @@ describe('CopilotService', () => {
 
     it('detects compra context from last message', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
-        usage: { total_tokens: 50 },
-        choices: [{ message: { content: JSON.stringify({ suggestions: ['X'] }) } }],
+        usage: { total_tokens: 50, completion_tokens: 25, prompt_tokens: 25 },
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({ suggestions: ['X'] }),
+              refusal: null,
+              role: 'assistant',
+            },
+          },
+        ],
       });
 
       prisma.contact.findFirst.mockResolvedValue({ id: 'c-1' });
@@ -194,8 +210,16 @@ describe('CopilotService', () => {
 
     it('detects dúvida context from last message', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
-        usage: { total_tokens: 50 },
-        choices: [{ message: { content: JSON.stringify({ suggestions: ['X'] }) } }],
+        usage: { total_tokens: 50, completion_tokens: 25, prompt_tokens: 25 },
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({ suggestions: ['X'] }),
+              refusal: null,
+              role: 'assistant',
+            },
+          },
+        ],
       });
 
       prisma.contact.findFirst.mockResolvedValue({ id: 'c-1' });
@@ -213,8 +237,16 @@ describe('CopilotService', () => {
 
     it('defaults context to geral for no keyword match', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
-        usage: { total_tokens: 50 },
-        choices: [{ message: { content: JSON.stringify({ suggestions: ['X'] }) } }],
+        usage: { total_tokens: 50, completion_tokens: 25, prompt_tokens: 25 },
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({ suggestions: ['X'] }),
+              refusal: null,
+              role: 'assistant',
+            },
+          },
+        ],
       });
 
       prisma.contact.findFirst.mockResolvedValue({ id: 'c-1' });
@@ -245,8 +277,16 @@ describe('CopilotService', () => {
 
     it('respects count option in prompt generation', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
-        usage: { total_tokens: 80 },
-        choices: [{ message: { content: JSON.stringify({ suggestions: [1, 2, 3, 4, 5] }) } }],
+        usage: { total_tokens: 80, completion_tokens: 40, prompt_tokens: 40 },
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({ suggestions: [1, 2, 3, 4, 5] }),
+              refusal: null,
+              role: 'assistant',
+            },
+          },
+        ],
       });
 
       prisma.contact.findFirst.mockResolvedValue({ id: 'c-1' });
@@ -262,8 +302,16 @@ describe('CopilotService', () => {
 
     it('includes kbSnippet in prompt when provided', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
-        usage: { total_tokens: 60 },
-        choices: [{ message: { content: JSON.stringify({ suggestions: ['Ok'] }) } }],
+        usage: { total_tokens: 60, completion_tokens: 30, prompt_tokens: 30 },
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({ suggestions: ['Ok'] }),
+              refusal: null,
+              role: 'assistant',
+            },
+          },
+        ],
       });
 
       prisma.contact.findFirst.mockResolvedValue({ id: 'c-1' });
@@ -283,8 +331,8 @@ describe('CopilotService', () => {
 
     it('returns fallback suggestions on invalid json from openai', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
-        usage: { total_tokens: 10 },
-        choices: [{ message: { content: 'invalid json' } }],
+        usage: { total_tokens: 10, completion_tokens: 5, prompt_tokens: 5 },
+        choices: [{ message: { content: 'invalid json', refusal: null, role: 'assistant' } }],
       });
 
       prisma.contact.findFirst.mockResolvedValue({ id: 'c-1' });

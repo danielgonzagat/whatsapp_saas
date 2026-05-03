@@ -359,6 +359,7 @@ describe('TeamService', () => {
     const memberId = 'a-1';
 
     it('deletes agent and logs audit when member belongs to workspace', async () => {
+      prisma.agent.count.mockResolvedValue(1);
       prisma.agent.findUnique.mockResolvedValue({
         id: memberId,
         workspaceId: wsId,

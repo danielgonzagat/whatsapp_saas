@@ -16,14 +16,12 @@ type MockedApiKeyRecord = {
   workspace?: { id: string; name: string };
 };
 
-type MockedDeleteResult = { count: number };
-
 type MockedApiKeyDelegate = {
-  findMany: jest.Mock<() => Promise<MockedApiKeyRecord[]>>;
-  create: jest.Mock<(args: { data: Record<string, unknown> }) => Promise<MockedApiKeyRecord>>;
-  findFirst: jest.Mock<() => Promise<MockedApiKeyRecord | null>>;
-  deleteMany: jest.Mock<() => Promise<MockedDeleteResult>>;
-  update: jest.Mock<() => Promise<Record<string, unknown>>>;
+  findMany: jest.Mock;
+  create: jest.Mock;
+  findFirst: jest.Mock;
+  deleteMany: jest.Mock;
+  update: jest.Mock;
 };
 
 type MockedLogFn = jest.Mock<(args: Record<string, unknown>) => Promise<void>>;
@@ -148,7 +146,7 @@ describe('ApiKeysService', () => {
       mockApiKey.create.mockImplementation((args: { data: Record<string, unknown> }) => {
         storedHashes.push(args.data.key as string);
         const entry = { id: `ak-${storedHashes.length}`, ...args.data };
-        return Promise.resolve(entry) as Promise<MockedApiKeyRecord>;
+        return Promise.resolve(entry);
       });
 
       const result1 = await service.create('ws-1', 'Key A');

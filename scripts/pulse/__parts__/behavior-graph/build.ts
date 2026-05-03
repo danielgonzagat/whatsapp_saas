@@ -7,6 +7,7 @@ import type {
 import type { BehaviorNode } from '../../types.behavior-graph';
 import { readTextFile } from '../../safe-fs';
 import { loadTsMorph, resetNodeIdCounter } from './patterns';
+import type { ParsedFunc } from './types';
 import { extractFunctionsFromSource } from './parser';
 import { extractCalledFunctions } from './builder';
 import { collectSourceFiles, buildNodesFromParsedFunctions, parseFileWithTsMorph } from './builder';

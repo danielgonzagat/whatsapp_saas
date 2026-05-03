@@ -256,11 +256,12 @@ export class ConnectPayoutApprovalService {
     try {
       payoutResult = await this.connectPayoutService.createPayout({
         accountBalanceId: payload.accountBalanceId,
+        workspaceId: approval.workspaceId,
         amountCents: BigInt(payload.amountCents),
         requestId: payload.requestId,
         currency: payload.currency.toLowerCase(),
       });
-    } catch (error) {
+    } catch (error: unknown) {
       this.logger.error(
         {
           workspaceId: payload.workspaceId,
@@ -274,8 +275,8 @@ export class ConnectPayoutApprovalService {
         error,
       );
 
-      await this.prisma.approvalRequest.update({
-        where: { id: approval.id },
+      await this.prisma.approvalRequest.updateMany({
+        where: { id: approval.id, workspaceId: approval.workspaceId },
         data: {
           state: 'FAILED',
           respondedAt: new Date(),
@@ -322,8 +323,8 @@ export class ConnectPayoutApprovalService {
       throw error;
     }
 
-    await this.prisma.approvalRequest.update({
-      where: { id: approval.id },
+    await this.prisma.approvalRequest.updateMany({
+      where: { id: approval.id, workspaceId: approval.workspaceId },
       data: {
         state: 'APPROVED',
         respondedAt: new Date(),
@@ -399,8 +400,8 @@ export class ConnectPayoutApprovalService {
 
     const payload = this.parseApprovalPayload(approval.payload);
 
-    await this.prisma.approvalRequest.update({
-      where: { id: approval.id },
+    await this.prisma.approvalRequest.updateMany({
+      where: { id: approval.id, workspaceId: approval.workspaceId },
       data: {
         state: 'REJECTED',
         respondedAt: new Date(),
@@ -451,15 +452,18 @@ export class ConnectPayoutApprovalService {
     const skip = Math.max(0, input.skip ?? 0);
     const take = Math.min(200, Math.max(1, input.take ?? 50));
 
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.approvalRequest.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take,
-      }),
-      this.prisma.approvalRequest.count({ where }),
-    ]);
+    const [items, total] = await this.prisma.$transaction(
+      [
+        this.prisma.approvalRequest.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip,
+          take,
+        }),
+        this.prisma.approvalRequest.count({ where }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return {
       items: items.map((item) => this.mapApprovalSummary(item)),
@@ -570,7 +574,7 @@ export class ConnectPayoutApprovalService {
           details: input.details as Prisma.InputJsonValue,
         },
       });
-    } catch {
+    } catch (_error: unknown) {
       // Audit append must not block payout lifecycle transitions.
     }
   }

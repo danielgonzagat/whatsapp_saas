@@ -11,7 +11,11 @@
 export {
   buildPathCoverageState,
   classifyPath,
-  generateTestForPath,
   isSafeToExecute,
   computeCoveragePercent,
 } from './__parts__/path-coverage-engine/core';
+
+export {
+  generateTestForPath,
+  canGenerateProbeBlueprint,
+} from './__parts__/path-coverage-engine/probe';

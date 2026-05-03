@@ -1,9 +1,10 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
+import { WelcomeAndOnboardingEmailService } from '../notifications/welcome-onboarding-email.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
@@ -55,6 +56,9 @@ export class AuthService {
     private readonly rateLimitService: RateLimitService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly auditService?: AuditService,
+    @Optional()
+    @Inject(forwardRef(() => WelcomeAndOnboardingEmailService))
+    private readonly welcomeEmailService?: WelcomeAndOnboardingEmailService,
   ) {}
 
   private buildDeps(): AuthPartsDeps {
@@ -90,7 +94,14 @@ export class AuthService {
     affiliateInviteToken?: string;
     ip?: string;
   }) {
-    return register(this.buildDeps(), data);
+    const result = await register(this.buildDeps(), data);
+    this.triggerWelcomeFlow(
+      result?.user?.email ?? data.email,
+      result?.user?.name ?? data.name ?? 'Usuario',
+      result?.workspace?.name ?? data.workspaceName ?? 'Meu Workspace',
+      result?.user?.workspaceId,
+    );
+    return result;
   }
 
   async login(data: { email: string; password: string; ip?: string }) {
@@ -118,19 +129,52 @@ export class AuthService {
   }
 
   async loginWithGoogleCredential(data: { credential: string; ip?: string }) {
-    return loginWithGoogleCredential(this.buildDeps(), data);
+    const result = await loginWithGoogleCredential(this.buildDeps(), data);
+    if (result.isNewUser) {
+      this.triggerWelcomeFlow(
+        result?.user?.email ?? '',
+        result?.user?.name ?? 'Usuario',
+        result?.workspace?.name ?? 'Meu Workspace',
+        result?.user?.workspaceId,
+      );
+    }
+    return result;
   }
 
   async loginWithFacebookAccessToken(data: { accessToken: string; userId?: string; ip?: string }) {
-    return loginWithFacebookAccessToken(this.buildDeps(), data);
+    const result = await loginWithFacebookAccessToken(this.buildDeps(), data);
+    if (result.isNewUser) {
+      this.triggerWelcomeFlow(
+        result?.user?.email ?? '',
+        result?.user?.name ?? 'Usuario',
+        result?.workspace?.name ?? 'Meu Workspace',
+        result?.user?.workspaceId,
+      );
+    }
+    return result;
   }
 
   async loginWithAppleCredential(data: {
     identityToken: string;
+    authorizationCode?: string;
+    redirectUri?: string;
     user?: { name?: { firstName?: string; lastName?: string }; email?: string };
     ip?: string;
   }) {
-    return loginWithAppleCredential(this.buildDeps(), data);
+    const result = await loginWithAppleCredential(this.buildDeps(), {
+      identityToken: data.identityToken,
+      user: data.user,
+      ip: data.ip,
+    });
+    if (result.isNewUser) {
+      this.triggerWelcomeFlow(
+        result?.user?.email ?? '',
+        result?.user?.name ?? 'Usuario',
+        result?.workspace?.name ?? 'Meu Workspace',
+        result?.user?.workspaceId,
+      );
+    }
+    return result;
   }
 
   async loginWithTikTokAuthorizationCode(data: {
@@ -138,7 +182,16 @@ export class AuthService {
     redirectUri?: string;
     ip?: string;
   }) {
-    return loginWithTikTokAuthorizationCode(this.buildDeps(), data);
+    const result = await loginWithTikTokAuthorizationCode(this.buildDeps(), data);
+    if (result.isNewUser) {
+      this.triggerWelcomeFlow(
+        result?.user?.email ?? '',
+        result?.user?.name ?? 'Usuario',
+        result?.workspace?.name ?? 'Meu Workspace',
+        result?.user?.workspaceId,
+      );
+    }
+    return result;
   }
 
   async loginWithTikTokAccessToken(data: {
@@ -148,7 +201,16 @@ export class AuthService {
     expiresInSeconds?: number;
     ip?: string;
   }) {
-    return loginWithTikTokAccessToken(this.buildDeps(), data);
+    const result = await loginWithTikTokAccessToken(this.buildDeps(), data);
+    if (result.isNewUser) {
+      this.triggerWelcomeFlow(
+        result?.user?.email ?? '',
+        result?.user?.name ?? 'Usuario',
+        result?.workspace?.name ?? 'Meu Workspace',
+        result?.user?.workspaceId,
+      );
+    }
+    return result;
   }
 
   async requestMagicLink(data: { email: string; redirectTo?: string; ip?: string }) {
@@ -156,7 +218,16 @@ export class AuthService {
   }
 
   async verifyMagicLink(token: string, ip?: string) {
-    return verifyMagicLink(this.buildDeps(), token, ip);
+    const result = await verifyMagicLink(this.buildDeps(), token, ip);
+    if (result.isNewUser) {
+      this.triggerWelcomeFlow(
+        result?.user?.email ?? '',
+        result?.user?.name ?? 'Usuario',
+        result?.workspace?.name ?? 'Meu Workspace',
+        result?.user?.workspaceId,
+      );
+    }
+    return result;
   }
 
   async sendWhatsAppCode(phone: string, ip?: string) {
@@ -185,5 +256,35 @@ export class AuthService {
 
   async resendVerificationEmail(email: string, ip?: string) {
     return resendVerificationEmail(this.buildDeps(), email, ip);
+  }
+
+  /** Logout — revoke all refresh tokens for the authenticated agent. */
+  async logout(agentId: string, accessTokenJti?: string, accessTokenExp?: number) {
+    await this.prisma.refreshToken.updateMany({
+      where: { agentId, revoked: false },
+      data: { revoked: true },
+    });
+    if (accessTokenJti && accessTokenExp && this.redis) {
+      const ttl = Math.max(1, accessTokenExp - Math.floor(Date.now() / 1000));
+      await this.redis.set(`access-token-revoked:${accessTokenJti}`, '1', 'EX', ttl);
+    }
+    return { success: true };
+  }
+
+  /**
+   * Fire-and-forget welcome email + onboarding sequence scheduling.
+   * Errors are caught and logged — never blocks the auth response.
+   */
+  private triggerWelcomeFlow(
+    email: string,
+    name: string,
+    workspaceName: string,
+    workspaceId?: string,
+  ) {
+    if (!this.welcomeEmailService) {
+      return;
+    }
+    void this.welcomeEmailService.sendWelcomeEmail(email, name, workspaceName, workspaceId);
+    void this.welcomeEmailService.scheduleOnboardingSequence(email, name, workspaceId);
   }
 }
