@@ -208,7 +208,7 @@ function buildOnboardingAccountUpdate(
     payload.metadata = metadata;
   }
 
-  return payload as StripeAccountUpdateParams;
+  return payload;
 }
 
 /**
@@ -237,75 +237,80 @@ export class ConnectService {
    * promote to multi-instance later if the product requires it.
    */
   async createCustomAccount(input: CreateCustomAccountInput): Promise<CreateCustomAccountResult> {
-    const existing = await this.prisma.connectAccountBalance.findFirst({
-      where: { workspaceId: input.workspaceId, accountType: input.accountType },
-    });
-    if (existing) {
-      throw new ConnectAccountAlreadyExistsError(input.workspaceId, input.accountType);
-    }
+    return this.prisma.$transaction(
+      async (tx) => {
+        const existing = await tx.connectAccountBalance.findFirst({
+          where: { workspaceId: input.workspaceId, accountType: input.accountType },
+        });
+        if (existing) {
+          throw new ConnectAccountAlreadyExistsError(input.workspaceId, input.accountType);
+        }
 
-    const country = input.country ?? 'BR';
-    const requestedCapabilities = ['card_payments', 'transfers'];
-    const accountPayload: StripeAccountCreateParams = {
-      type: 'custom',
-      country,
-      email: input.email,
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-      settings: {
-        payouts: {
-          schedule: {
-            interval: 'manual',
+        const country = input.country ?? 'BR';
+        const requestedCapabilities = ['card_payments', 'transfers'];
+        const accountPayload: StripeAccountCreateParams = {
+          type: 'custom',
+          country,
+          email: input.email,
+          capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
           },
-        },
+          settings: {
+            payouts: {
+              schedule: {
+                interval: 'manual',
+              },
+            },
+          },
+          metadata: {
+            workspaceId: input.workspaceId,
+            accountType: input.accountType,
+            ...(input.displayName ? { displayName: input.displayName } : {}),
+          },
+        };
+
+        let account: StripeAccount;
+        try {
+          account = await this.stripeService.stripe.accounts.create(accountPayload);
+        } catch (error) {
+          if (!this.shouldRetryWithoutManualPayoutSchedule(error, country)) {
+            throw error;
+          }
+
+          this.logger.warn(
+            `Stripe rejected manual payout schedule for country=${country}; retrying workspace=${input.workspaceId} type=${input.accountType} without schedule`,
+          );
+
+          const payloadWithoutManualPayoutSchedule: StripeAccountCreateParams = {
+            ...accountPayload,
+            settings: undefined,
+          };
+          account = await this.stripeService.stripe.accounts.create(
+            payloadWithoutManualPayoutSchedule,
+          );
+        }
+
+        const balance = await tx.connectAccountBalance.create({
+          data: {
+            workspaceId: input.workspaceId,
+            stripeAccountId: account.id,
+            accountType: input.accountType,
+          },
+        });
+
+        this.logger.log(
+          `Created Custom Connected Account ${account.id} for workspace=${input.workspaceId} type=${input.accountType}`,
+        );
+
+        return {
+          accountBalanceId: balance.id,
+          stripeAccountId: account.id,
+          requestedCapabilities,
+        };
       },
-      metadata: {
-        workspaceId: input.workspaceId,
-        accountType: input.accountType,
-        ...(input.displayName ? { displayName: input.displayName } : {}),
-      },
-    };
-
-    let account: StripeAccount;
-    try {
-      account = (await this.stripeService.stripe.accounts.create(accountPayload)) as StripeAccount;
-    } catch (error) {
-      if (!this.shouldRetryWithoutManualPayoutSchedule(error, country)) {
-        throw error;
-      }
-
-      this.logger.warn(
-        `Stripe rejected manual payout schedule for country=${country}; retrying workspace=${input.workspaceId} type=${input.accountType} without schedule`,
-      );
-
-      const payloadWithoutManualPayoutSchedule: StripeAccountCreateParams = {
-        ...accountPayload,
-        settings: undefined,
-      };
-      account = (await this.stripeService.stripe.accounts.create(
-        payloadWithoutManualPayoutSchedule,
-      )) as StripeAccount;
-    }
-
-    const balance = await this.prisma.connectAccountBalance.create({
-      data: {
-        workspaceId: input.workspaceId,
-        stripeAccountId: account.id,
-        accountType: input.accountType,
-      },
-    });
-
-    this.logger.log(
-      `Created Custom Connected Account ${account.id} for workspace=${input.workspaceId} type=${input.accountType}`,
+      { isolationLevel: 'ReadCommitted' },
     );
-
-    return {
-      accountBalanceId: balance.id,
-      stripeAccountId: account.id,
-      requestedCapabilities,
-    };
   }
 
   /**

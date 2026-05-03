@@ -32,6 +32,59 @@ function makeStripeStub(): StripeStub {
 function makePrismaStub(initial: ConnectAccountBalance[] = []) {
   const balances = new Map(initial.map((b) => [b.id, b]));
   let nextId = 1;
+
+  function makeBalanceRow(data: {
+    workspaceId: string;
+    stripeAccountId: string;
+    accountType: ConnectAccountType;
+  }): ConnectAccountBalance {
+    return {
+      id: `cab_${nextId++}`,
+      workspaceId: data.workspaceId,
+      stripeAccountId: data.stripeAccountId,
+      accountType: data.accountType,
+      pendingBalanceCents: 0n,
+      availableBalanceCents: 0n,
+      lifetimeReceivedCents: 0n,
+      lifetimePaidOutCents: 0n,
+      lifetimeChargebacksCents: 0n,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+  }
+
+  function makeTxClient() {
+    return {
+      connectAccountBalance: {
+        findFirst: jest.fn(
+          async ({ where }: { where: { workspaceId: string; accountType: ConnectAccountType } }) =>
+            [...balances.values()].find(
+              (b) => b.workspaceId === where.workspaceId && b.accountType === where.accountType,
+            ) ?? null,
+        ),
+        findUnique: jest.fn(
+          async ({ where }: { where: { stripeAccountId: string } }) =>
+            [...balances.values()].find((b) => b.stripeAccountId === where.stripeAccountId) ?? null,
+        ),
+        create: jest.fn(
+          async ({
+            data,
+          }: {
+            data: {
+              workspaceId: string;
+              stripeAccountId: string;
+              accountType: ConnectAccountType;
+            };
+          }) => {
+            const row = makeBalanceRow(data);
+            balances.set(row.id, row);
+            return row;
+          },
+        ),
+      },
+    };
+  }
+
   return {
     balances,
     prisma: {
@@ -56,24 +109,20 @@ function makePrismaStub(initial: ConnectAccountBalance[] = []) {
               accountType: ConnectAccountType;
             };
           }) => {
-            const row: ConnectAccountBalance = {
-              id: `cab_${nextId++}`,
-              workspaceId: data.workspaceId,
-              stripeAccountId: data.stripeAccountId,
-              accountType: data.accountType,
-              pendingBalanceCents: 0n,
-              availableBalanceCents: 0n,
-              lifetimeReceivedCents: 0n,
-              lifetimePaidOutCents: 0n,
-              lifetimeChargebacksCents: 0n,
-              createdAt: new Date(),
-              updatedAt: new Date(),
-            };
+            const row = makeBalanceRow(data);
             balances.set(row.id, row);
             return row;
           },
         ),
       },
+      $transaction: jest.fn(
+        async (
+          callback: (tx: ReturnType<typeof makeTxClient>) => Promise<unknown>,
+          _options?: unknown,
+        ) => {
+          return callback(makeTxClient());
+        },
+      ),
     } as unknown as PrismaService,
   };
 }
