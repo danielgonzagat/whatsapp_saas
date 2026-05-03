@@ -15,63 +15,57 @@ import { buildReport, fingerprint } from './_schema.mjs';
 const REPO_ROOT = resolve(fileURLToPath(import.meta.url), '../../..');
 
 function toolVersion() {
-  const r = spawnSync('npx', ['--no-install', 'markdownlint-cli2', '--version'], {
-    encoding: 'utf-8',
-  });
-  if (r.status === 0 && r.stdout) return `markdownlint-cli2 ${r.stdout.trim()}`;
+  const r = spawnSync('markdownlint-cli2', ['--version'], { encoding: 'utf-8', timeout: 10_000 });
+  if (r.status === 0 && r.stdout) {
+    const m = r.stdout.match(/markdownlint-cli2\s+v?([\d.]+)/);
+    return m ? `markdownlint-cli2 ${m[1]}` : 'markdownlint-cli2 unknown';
+  }
   return 'markdownlint-cli2 unknown';
 }
 
+// Parse v0.22.1 text output format: file:line:column severity rule message
+// Example: .agents/file.md:7:121 error MD013/line-length Line length [Expected: 120; Actual: 192]
 function parseMarkdownlintOutput(stdout) {
   const findings = [];
-  let parsed;
-  try {
-    parsed = JSON.parse(stdout);
-  } catch {
-    return findings;
-  }
-  if (!Array.isArray(parsed)) return findings;
-  for (const result of parsed) {
-    const file = relative(REPO_ROOT, result.fileName).replace(/\\/g, '/');
-    if (!result.violations) continue;
-    for (const v of result.violations) {
-      findings.push({
+  if (!stdout) return findings;
+  const lines = stdout.split('\n');
+  for (const line of lines) {
+    // Skip summary line and empty lines
+    if (!line || line.startsWith('Summary:')) continue;
+    const m = line.match(/^(.+?):(\d+):(\d+)\s+(error|warning|info)\s+([\w/-]+)\s+(.+)$/);
+    if (!m) continue;
+    const [, fileRaw, lineStr, colStr, sevRaw, rule, message] = m;
+    const severity = sevRaw === 'error' ? 'high' : sevRaw === 'warning' ? 'medium' : 'low';
+    const file = relative(REPO_ROOT, resolve(REPO_ROOT, fileRaw)).replace(/\\/g, '/');
+    findings.push({
+      file,
+      line: Number(lineStr),
+      column: Number(colStr),
+      category: 'lint',
+      severity,
+      engine: 'markdownlint',
+      rule,
+      message: message.trim(),
+      fingerprint: fingerprint({
         file,
-        line: v.lineNumber > 0 ? v.lineNumber : undefined,
-        column: v.columnNumber > 0 ? v.columnNumber : undefined,
-        category: 'lint',
-        severity: 'medium',
-        engine: 'markdownlint',
-        rule: (() => {
-          if (!v.ruleNames) return 'markdownlint/unknown';
-          const raw = Array.isArray(v.ruleNames) ? v.ruleNames.join('/') : String(v.ruleNames);
-          return raw || 'markdownlint/unknown';
-        })(),
-        message: v.ruleDescription || v.ruleNames?.toString() || v.ruleName || 'Formatting issue',
-        fingerprint: fingerprint({
-          file,
-          line: v.lineNumber > 0 ? v.lineNumber : undefined,
-          rule: (() => {
-            if (!v.ruleNames) return 'markdownlint/unknown';
-            const raw = Array.isArray(v.ruleNames) ? v.ruleNames.join('/') : String(v.ruleNames);
-            return raw || 'markdownlint/unknown';
-          })(),
-          message: v.ruleDescription || 'Formatting issue',
-        }),
-      });
-    }
+        line: Number(lineStr),
+        rule,
+        message: message.trim(),
+      }),
+    });
   }
   return findings;
 }
 
 const start = Date.now();
 
-// Probe: check if markdownlint-cli2 is available
-const probe = spawnSync('npx', ['--no-install', 'markdownlint-cli2', '--version'], {
-  encoding: 'utf-8',
-  timeout: 10_000,
-});
-if (probe.status !== 0 && probe.error) {
+// Probe: check if markdownlint-cli2 is available via which (avoids ENOBUFS from npx glob)
+function toolExists(cmd) {
+  const r = spawnSync('which', [cmd], { encoding: 'utf-8', timeout: 5_000 });
+  return r.status === 0 && r.stdout.trim().length > 0;
+}
+
+if (!toolExists('markdownlint-cli2')) {
   const report = buildReport('markdownlint', 'unavailable', [], {
     durationMs: Date.now() - start,
     status: 'error',
@@ -89,34 +83,23 @@ const version = toolVersion();
 const allFindings = [];
 
 const r = spawnSync(
-  'npx',
+  'markdownlint-cli2',
   [
-    '--no-install',
-    'markdownlint-cli2',
     '**/*.md',
-    '--json',
+    '#**/node_modules/**',
+    '#**/.git/**',
+    '#**/99 - Espelho do Codigo/**',
+    '#**/dist/**',
+    '#**/build/**',
+    '#**/.next/**',
+    '#**/coverage/**',
     '--no-globs',
-    // Exclude patterns
-    '--ignore',
-    'node_modules',
-    '--ignore',
-    '.git',
-    '--ignore',
-    '99 - Espelho do Codigo',
-    '--ignore',
-    'dist',
-    '--ignore',
-    'build',
-    '--ignore',
-    '.next',
-    '--ignore',
-    'coverage',
   ],
   {
     cwd: REPO_ROOT,
     encoding: 'utf-8',
-    maxBuffer: 32 * 1024 * 1024,
-    timeout: 60_000,
+    maxBuffer: 64 * 1024 * 1024,
+    timeout: 120_000,
   },
 );
 
@@ -124,8 +107,8 @@ if (r.stdout) {
   allFindings.push(...parseMarkdownlintOutput(r.stdout));
 }
 
-// Also check stderr for JSON (some versions output there)
-if (r.stderr && r.stderr.trim().startsWith('[')) {
+// stderr may contain output too (some versions)
+if (r.stderr) {
   allFindings.push(...parseMarkdownlintOutput(r.stderr));
 }
 

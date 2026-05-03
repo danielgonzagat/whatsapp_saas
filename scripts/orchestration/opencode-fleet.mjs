@@ -217,7 +217,7 @@ async function main() {
 
   const opts = {
     dir: manifest.dir || REPO_ROOT,
-    timeoutSec: manifest.timeoutSec || DEFAULT_TIMEOUT_SEC,
+    timeoutSec: manifest.timeoutSec ?? DEFAULT_TIMEOUT_SEC,
     skipPermissions: manifest.skipPermissions !== false,
   };
 

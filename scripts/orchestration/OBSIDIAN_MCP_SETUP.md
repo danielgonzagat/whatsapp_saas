@@ -172,7 +172,7 @@ engraph index "/Users/danielpenin/Documents/Obsidian Vault"
 
 First run downloads embedding model (~334MB, embeddinggemma-300M-Q8_0.gguf) from HuggingFace. Model is stored in `~/.engraph/models/`.
 
-Vault size at index time: **3,928 markdown files**. Index uses Metal GPU acceleration (AGXMetalG16G_B0 on Apple Silicon). Full first index is estimated at ~50-70 minutes on M-series Mac.
+Vault size at index time: **3,934 markdown files**. Index uses Metal GPU acceleration (AGXMetalG16G_B0 on Apple Silicon). Full first index is estimated at ~50-70 minutes on M-series Mac.
 
 Subsequent runs are incremental — only re-embeds changed files.
 
@@ -180,12 +180,13 @@ Subsequent runs are incremental — only re-embeds changed files.
 
 | Metric       | Value                                           |
 | ------------ | ----------------------------------------------- |
-| Files        | 3,928                                           |
-| Chunks       | TBD (in progress)                               |
-| Vectors      | TBD (in progress)                               |
-| Intelligence | disabled (opt-in, +1.3GB models)                |
-| DB size      | ~188 KB (grows as embedding progresses)         |
+| Files        | 3,934                                           |
+| Chunks       | 620,926                                         |
+| Edges        | 22,280 (wikilinks)                              |
+| DB size      | 1.65 GB                                         |
 | Model        | embeddinggemma-300M-Q8_0 (llama.cpp, Metal GPU) |
+| Index time   | ~81 minutes (09:27 → ~10:48)                    |
+| Intelligence | disabled (opt-in, +1.3GB models)                |
 
 To check status: `engraph status --json`
 
