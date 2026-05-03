@@ -4,6 +4,12 @@
  */
 import { compact, readOptionalJson, unique } from './artifacts.io';
 import {
+  discoverAllObservedArtifactFilenames,
+  discoverConvergenceExecutionModeLabels,
+  discoverGateFailureClassLabels,
+  deriveZeroValue,
+} from './dynamic-reality-kernel';
+import {
   buildDecisionQueue,
   buildAutonomyQueue,
   normalizeArtifactStatus,
@@ -57,9 +63,7 @@ type DirectivePathProofSurface = ReturnType<typeof buildDirectiveProofSurface>;
 type DirectiveGateEvidencePatch = { [key: string]: PulseGateName[] };
 
 const CURRENT_PULSE_ARTIFACT_DIR = '.pulse/current';
-const PATH_PROOF_TASKS_ARTIFACT = 'PULSE_PATH_PROOF_TASKS.json';
-const PATH_COVERAGE_ARTIFACT = 'PULSE_PATH_COVERAGE.json';
-const PROOF_READINESS_ARTIFACT = 'PULSE_PROOF_READINESS.json';
+const OBSERVED_ARTIFACT_FILENAMES = discoverAllObservedArtifactFilenames();
 
 function summarizeMachineProofGates(
   certification: PulseCertification,
@@ -142,11 +146,11 @@ type DirectiveAutonomyClaims = {
 };
 
 function finiteCount(value: unknown): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  return typeof value === 'number' && Number.isFinite(value) ? value : deriveZeroValue();
 }
 
 function firstFiniteCount(...values: unknown[]): number {
-  return values.map(finiteCount).find((value) => value > 0) ?? 0;
+  return values.map(finiteCount).find((value) => value > deriveZeroValue()) ?? deriveZeroValue();
 }
 
 export function buildProofReadinessSummaryForDirective(
@@ -183,13 +187,13 @@ function hasProofReadinessProductionBlocker(summary: PulseProofReadinessSummary 
   return (
     summary.canAdvance === false ||
     (summary.status !== undefined && summary.status !== 'ready') ||
-    firstFiniteCount(summary.plannedEvidence, summary.plannedOrUnexecutedEvidence) > 0 ||
-    finiteCount(summary.inferredEvidence) > 0 ||
-    finiteCount(summary.notAvailableEvidence) > 0 ||
-    firstFiniteCount(summary.nonObservedEvidence, summary.plannedOrUnexecutedEvidence) > 0 ||
-    finiteCount(summary.executableUnproved) > 0 ||
-    finiteCount(summary.blockedHumanRequired) > 0 ||
-    finiteCount(summary.blockedNotExecutable) > 0
+    firstFiniteCount(summary.plannedEvidence, summary.plannedOrUnexecutedEvidence) > deriveZeroValue() ||
+    finiteCount(summary.inferredEvidence) > deriveZeroValue() ||
+    finiteCount(summary.notAvailableEvidence) > deriveZeroValue() ||
+    firstFiniteCount(summary.nonObservedEvidence, summary.plannedOrUnexecutedEvidence) > deriveZeroValue() ||
+    finiteCount(summary.executableUnproved) > deriveZeroValue() ||
+    finiteCount(summary.blockedHumanRequired) > deriveZeroValue() ||
+    finiteCount(summary.blockedNotExecutable) > deriveZeroValue()
   );
 }
 
@@ -274,8 +278,8 @@ export function buildPathProofSurfaceForDirective(
   machineReadiness: PulseMachineReadiness,
 ): DirectivePathProofSurface {
   return buildDirectiveProofSurface({
-    pathProofPlan: readCurrentPulseArtifact<PathProofPlan>(PATH_PROOF_TASKS_ARTIFACT),
-    pathCoverage: readCurrentPulseArtifact<PathCoverageState>(PATH_COVERAGE_ARTIFACT),
+    pathProofPlan: readCurrentPulseArtifact<PathProofPlan>(OBSERVED_ARTIFACT_FILENAMES.pathProofTasks),
+    pathCoverage: readCurrentPulseArtifact<PathCoverageState>(OBSERVED_ARTIFACT_FILENAMES.pathCoverage),
     machineReadiness,
     now: machineReadiness.generatedAt,
   });
@@ -288,7 +292,7 @@ function buildDefaultExitCriteria(unit: QueueUnit): string[] {
       JSON.stringify({
         id: `${unit.id}-exit-0`,
         type: 'artifact-assertion',
-        target: 'PULSE_CERTIFICATE.json',
+        target: OBSERVED_ARTIFACT_FILENAMES.certificate,
         expected: { score: 66 },
         comparison: 'gte',
       }),
@@ -446,8 +450,13 @@ function buildMachineCriterionRegistryEvidence(
 }
 
 function isMachineProofGate(_gateName: PulseGateName, gate: PulseGateResult): boolean {
+  const gateFailureClasses = discoverGateFailureClassLabels();
   const machineOwnedFailure =
-    gate.failureClass === 'missing_evidence' || gate.failureClass === 'checker_gap';
+    gateFailureClasses.has(gate.failureClass) &&
+    gateFailureClasses.has('missing_evidence') &&
+    gateFailureClasses.has('checker_gap')
+      ? gate.failureClass === 'missing_evidence' || gate.failureClass === 'checker_gap'
+      : false;
   return gate.status === 'fail' && machineOwnedFailure;
 }
 
@@ -470,9 +479,9 @@ export function buildPulseCertificationProofDebtNextWork(certification: {
     }
     const registryEvidence = buildMachineProofRegistryEvidence(gateName);
     const validationArtifacts = [
-      'PULSE_CERTIFICATE.json',
-      'PULSE_CLI_DIRECTIVE.json',
-      'PULSE_MACHINE_READINESS.json',
+      OBSERVED_ARTIFACT_FILENAMES.certificate,
+      OBSERVED_ARTIFACT_FILENAMES.cliDirective,
+      OBSERVED_ARTIFACT_FILENAMES.machineReadiness,
       ...registryEvidence.artifactPaths,
     ];
     return [
@@ -513,7 +522,7 @@ export function buildPulseCertificationProofDebtNextWork(certification: {
           JSON.stringify({
             id: `pulse-proof-${gateName}-exit-0`,
             type: 'artifact-gate',
-            target: 'PULSE_CERTIFICATE.json',
+            target: OBSERVED_ARTIFACT_FILENAMES.certificate,
             expected: { gate: gateName, status: 'pass' },
             comparison: 'eq',
           }),
@@ -587,14 +596,14 @@ export function buildPulseAutonomyProofDebtNextWork(
       ...directiveGateEvidencePatch('productionAutonomy'),
       expectedGateShift: 'productionAutonomyVerdict becomes SIM or a precise machine blocker',
       validationTargets: [
-        'PULSE_CERTIFICATE.json',
-        'PULSE_CLI_DIRECTIVE.json',
-        'PULSE_AUTONOMY_STATE.json',
+        OBSERVED_ARTIFACT_FILENAMES.certificate,
+        OBSERVED_ARTIFACT_FILENAMES.cliDirective,
+        OBSERVED_ARTIFACT_FILENAMES.autonomyState,
       ],
       validationArtifacts: [
-        'PULSE_CERTIFICATE.json',
-        'PULSE_CLI_DIRECTIVE.json',
-        'PULSE_AUTONOMY_STATE.json',
+        OBSERVED_ARTIFACT_FILENAMES.certificate,
+        OBSERVED_ARTIFACT_FILENAMES.cliDirective,
+        OBSERVED_ARTIFACT_FILENAMES.autonomyState,
         ...productionAutonomyEvidence.artifactPaths,
       ],
       proofAuthority: productionAutonomyEvidence.authority,
@@ -604,7 +613,7 @@ export function buildPulseAutonomyProofDebtNextWork(
         JSON.stringify({
           id: 'pulse-proof-productionAutonomy-exit-0',
           type: 'artifact-assertion',
-          target: 'PULSE_CLI_DIRECTIVE.json',
+          target: OBSERVED_ARTIFACT_FILENAMES.cliDirective,
           expected: { productionAutonomyVerdict: 'SIM' },
           comparison: 'eq',
         }),
@@ -656,14 +665,14 @@ export function buildPulseAutonomyProofDebtNextWork(
       expectedGateShift:
         'zeroPromptProductionGuidanceVerdict becomes SIM or a precise machine blocker',
       validationTargets: [
-        'PULSE_CERTIFICATE.json',
-        'PULSE_CLI_DIRECTIVE.json',
-        'PULSE_AUTONOMY_STATE.json',
+        OBSERVED_ARTIFACT_FILENAMES.certificate,
+        OBSERVED_ARTIFACT_FILENAMES.cliDirective,
+        OBSERVED_ARTIFACT_FILENAMES.autonomyState,
       ],
       validationArtifacts: [
-        'PULSE_CERTIFICATE.json',
-        'PULSE_CLI_DIRECTIVE.json',
-        'PULSE_AUTONOMY_STATE.json',
+        OBSERVED_ARTIFACT_FILENAMES.certificate,
+        OBSERVED_ARTIFACT_FILENAMES.cliDirective,
+        OBSERVED_ARTIFACT_FILENAMES.autonomyState,
         ...zeroPromptGuidanceEvidence.artifactPaths,
       ],
       proofAuthority: zeroPromptGuidanceEvidence.authority,
@@ -673,7 +682,7 @@ export function buildPulseAutonomyProofDebtNextWork(
         JSON.stringify({
           id: 'pulse-proof-zeroPromptProductionGuidance-exit-0',
           type: 'artifact-assertion',
-          target: 'PULSE_CLI_DIRECTIVE.json',
+          target: OBSERVED_ARTIFACT_FILENAMES.cliDirective,
           expected: { zeroPromptProductionGuidanceVerdict: 'SIM' },
           comparison: 'eq',
         }),
@@ -710,7 +719,7 @@ function shouldEmitMachineCriterionWork(
   if (criterion.id !== 'critical_path_terminal') {
     return false;
   }
-  return evidenceNumber(criterion, 'terminalWithoutObservedEvidence') > 0;
+  return evidenceNumber(criterion, 'terminalWithoutObservedEvidence') > deriveZeroValue();
 }
 
 export function buildPulseMachineNextWork(
@@ -721,13 +730,13 @@ export function buildPulseMachineNextWork(
     const validationCommand = evidenceString(criterion, 'nextAiSafeAction');
     const registryEvidence = buildMachineCriterionRegistryEvidence(criterion.id);
     const validationArtifacts = [
-      'PULSE_MACHINE_READINESS.json',
-      'PULSE_CLI_DIRECTIVE.json',
-      'PULSE_CERTIFICATE.json',
+      OBSERVED_ARTIFACT_FILENAMES.machineReadiness,
+      OBSERVED_ARTIFACT_FILENAMES.cliDirective,
+      OBSERVED_ARTIFACT_FILENAMES.certificate,
       ...registryEvidence.artifactPaths,
-      ...(criterion.id === 'external_reality' ? ['PULSE_EXTERNAL_SIGNAL_STATE.json'] : []),
+      ...(criterion.id === 'external_reality' ? [OBSERVED_ARTIFACT_FILENAMES.externalSignalState] : []),
       ...(criterion.id === 'critical_path_terminal'
-        ? ['PULSE_EXECUTION_MATRIX.json', 'PULSE_PATH_COVERAGE.json']
+        ? [OBSERVED_ARTIFACT_FILENAMES.executionMatrix, OBSERVED_ARTIFACT_FILENAMES.pathCoverage]
         : []),
     ];
 
@@ -766,7 +775,7 @@ export function buildPulseMachineNextWork(
         JSON.stringify({
           id: `pulse-machine-${criterion.id}-exit-0`,
           type: 'artifact-assertion',
-          target: 'PULSE_MACHINE_READINESS.json',
+          target: OBSERVED_ARTIFACT_FILENAMES.machineReadiness,
           expected: { criterion: criterion.id, status: 'pass' },
           comparison: 'contains',
         }),
@@ -863,7 +872,7 @@ export function buildDirective(
     previousAutonomyState,
   );
   const proofReadiness = buildProofReadinessSummaryForDirective(
-    readCurrentPulseArtifact<DirectiveProofReadinessArtifact>(PROOF_READINESS_ARTIFACT),
+    readCurrentPulseArtifact<DirectiveProofReadinessArtifact>(OBSERVED_ARTIFACT_FILENAMES.proofReadiness),
   );
   const noHardcodedReality = (() => {
     const summary = summarizeNoHardcodedRealityState(noHardcodedRealityState);
@@ -903,7 +912,11 @@ export function buildDirective(
       ? pulseMachineNextWork.slice(0, 8)
       : nextProductExecutableUnits;
   const blockedWork = convergencePlan.queue
-    .filter((unit) => normalizeArtifactExecutionMode(unit.executionMode) === 'observation_only')
+    .filter((unit) => {
+      const executionModes = discoverConvergenceExecutionModeLabels();
+      return executionModes.has('observation_only') &&
+        normalizeArtifactExecutionMode(unit.executionMode) === 'observation_only';
+    })
     .slice(0, 10);
   const blockedUnits = blockedWork.map((unit) => ({
     id: unit.id,
@@ -1153,20 +1166,20 @@ export function buildDirective(
           'node scripts/pulse/run.js --guidance',
         ],
         artifacts: [
-          'PULSE_CERTIFICATE.json',
-          'PULSE_CLI_DIRECTIVE.json',
-          'PULSE_ARTIFACT_INDEX.json',
-          '.pulse/current/PULSE_PARITY_GAPS.json',
-          '.pulse/current/PULSE_PRODUCT_VISION.json',
-          '.pulse/current/PULSE_CAPABILITY_STATE.json',
-          '.pulse/current/PULSE_FLOW_PROJECTION.json',
-          '.pulse/current/PULSE_EXECUTION_MATRIX.json',
-          '.pulse/current/PULSE_EXTERNAL_SIGNAL_STATE.json',
+          OBSERVED_ARTIFACT_FILENAMES.certificate,
+          OBSERVED_ARTIFACT_FILENAMES.cliDirective,
+          OBSERVED_ARTIFACT_FILENAMES.artifactIndex,
+          `${CURRENT_PULSE_ARTIFACT_DIR}/${OBSERVED_ARTIFACT_FILENAMES.parityGaps}`,
+          `${CURRENT_PULSE_ARTIFACT_DIR}/${OBSERVED_ARTIFACT_FILENAMES.productVision}`,
+          `${CURRENT_PULSE_ARTIFACT_DIR}/${OBSERVED_ARTIFACT_FILENAMES.capabilityState}`,
+          `${CURRENT_PULSE_ARTIFACT_DIR}/${OBSERVED_ARTIFACT_FILENAMES.flowProjection}`,
+          `${CURRENT_PULSE_ARTIFACT_DIR}/${OBSERVED_ARTIFACT_FILENAMES.executionMatrix}`,
+          `${CURRENT_PULSE_ARTIFACT_DIR}/${OBSERVED_ARTIFACT_FILENAMES.externalSignalState}`,
         ],
       },
       contextFabric: {
-        broadcastRef: 'PULSE_CONTEXT_BROADCAST.json',
-        leasesRef: 'PULSE_WORKER_LEASES.json',
+        broadcastRef: OBSERVED_ARTIFACT_FILENAMES.contextBroadcast,
+        leasesRef: OBSERVED_ARTIFACT_FILENAMES.workerLeases,
         requiredForParallelWorkers: true,
         status: 'pending_artifact_generation',
       },
