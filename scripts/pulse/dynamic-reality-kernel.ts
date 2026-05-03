@@ -809,3 +809,691 @@ export function deriveCapabilityIdFromObservedPath(
   let fl = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden'));
   return meaningful.join('-').slice(0, ok / Math.max(deriveUnitValue(), fl)) || 'unknown';
 }
+
+// ── Type-contract AST derivation (meta-primitive) ──────────────────────────
+
+const AST_TYPE_CONTRACT_CACHE = new Map<string, Set<string>>();
+
+function resolvePulseTypeContractPath(fileName: string): string {
+  return path.resolve(process.cwd(), fileName);
+}
+
+function extractUnionStringLiteralMembersFromAstNode(
+  typeNode: ts.TypeNode,
+  out: Set<string>,
+): void {
+  if (ts.isUnionTypeNode(typeNode)) {
+    for (const member of typeNode.types) {
+      if (ts.isLiteralTypeNode(member) && ts.isStringLiteral(member.literal)) {
+        out.add(member.literal.text);
+      }
+    }
+  } else if (ts.isLiteralTypeNode(typeNode) && ts.isStringLiteral(typeNode.literal)) {
+    out.add(typeNode.literal.text);
+  }
+}
+
+/**
+ * Generic AST-derivation: given a TypeScript file path and a type name, parse
+ * the file, find the type-alias union or interface property, and return the
+ * string literal members of that union (or interface property literal-types).
+ *
+ * Cache by (filePath, typeName) inside the kernel. Fail closed (throw) when
+ * the file or type is missing — never silently fall back to a literal.
+ */
+export function deriveStringUnionMembersFromTypeContract(
+  fileName: string,
+  typeName: string,
+): Set<string> {
+  const cacheKey = `${fileName}::${typeName}`;
+  const cached = AST_TYPE_CONTRACT_CACHE.get(cacheKey);
+  if (cached) return cached;
+
+  const absolutePath = resolvePulseTypeContractPath(fileName);
+  if (!fs.existsSync(absolutePath)) {
+    throw new Error(`deriveStringUnionMembersFromTypeContract: file not found ${absolutePath}`);
+  }
+
+  const sourceText = fs.readFileSync(absolutePath, 'utf-8');
+  const sourceFile = ts.createSourceFile(
+    absolutePath,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+
+  const members = new Set<string>();
+  let found = false;
+
+  function visitTypeAlias(node: ts.Node): void {
+    if (found) return;
+    if (ts.isTypeAliasDeclaration(node) && node.name.text === typeName) {
+      found = true;
+      extractUnionStringLiteralMembersFromAstNode(node.type, members);
+      return;
+    }
+    ts.forEachChild(node, visitTypeAlias);
+  }
+  visitTypeAlias(sourceFile);
+
+  if (!found) {
+    function visitInterface(node: ts.Node): void {
+      if (found) return;
+      if (ts.isInterfaceDeclaration(node)) {
+        for (const memberNode of node.members) {
+          if (!ts.isPropertySignature(memberNode)) continue;
+          if (!memberNode.name || !ts.isIdentifier(memberNode.name)) continue;
+          if (memberNode.name.text !== typeName) continue;
+          if (!memberNode.type) continue;
+          found = true;
+          extractUnionStringLiteralMembersFromAstNode(memberNode.type, members);
+          return;
+        }
+      }
+      ts.forEachChild(node, visitInterface);
+    }
+    visitInterface(sourceFile);
+  }
+
+  if (!found) {
+    throw new Error(
+      `deriveStringUnionMembersFromTypeContract: type "${typeName}" not found in ${fileName}`,
+    );
+  }
+
+  if (members.size === 0) {
+    throw new Error(
+      `deriveStringUnionMembersFromTypeContract: type "${typeName}" in ${fileName} has zero string-literal members`,
+    );
+  }
+
+  AST_TYPE_CONTRACT_CACHE.set(cacheKey, members);
+  return members;
+}
+
+// ── Convergence type-union label discovery ─────────────────────────────────
+
+export function discoverConvergenceUnitKindLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.convergence.ts',
+    'PulseConvergenceUnitKind',
+  );
+}
+
+export function discoverConvergenceUnitStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.convergence.ts',
+    'PulseConvergenceUnitStatus',
+  );
+}
+
+export function discoverConvergenceUnitPriorityLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.convergence.ts',
+    'PulseConvergenceUnitPriority',
+  );
+}
+
+export function discoverConvergenceExecutionModeLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.convergence.ts',
+    'PulseConvergenceExecutionMode',
+  );
+}
+
+export function discoverConvergenceRiskLevelLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.convergence.ts',
+    'PulseConvergenceRiskLevel',
+  );
+}
+
+export function discoverConvergenceProductImpactLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.convergence.ts',
+    'PulseConvergenceProductImpact',
+  );
+}
+
+export function discoverConvergenceEvidenceConfidenceLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.convergence.ts',
+    'PulseConvergenceEvidenceConfidence',
+  );
+}
+
+export function discoverConvergenceSourceLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.convergence.ts',
+    'PulseConvergenceSource',
+  );
+}
+
+export function discoverConvergenceOwnerLaneLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.gate-failure.ts',
+    'PulseConvergenceOwnerLane',
+  );
+}
+
+export function discoverRuntimeProbeStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.convergence.ts',
+    'PulseRuntimeProbeStatus',
+  );
+}
+
+// ── Gate failure type-union label discovery ────────────────────────────────
+
+export function discoverGateFailureClassLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.gate-failure.ts',
+    'PulseGateFailureClass',
+  );
+}
+
+// ── Capability type-union label discovery ──────────────────────────────────
+
+export function discoverCapabilityStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.capabilities.ts',
+    'PulseCapabilityStatus',
+  );
+}
+
+export function discoverCapabilityMaturityStageLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.capabilities.ts',
+    'PulseCapabilityMaturityStage',
+  );
+}
+
+export function discoverFlowProjectionStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.capabilities.ts',
+    'PulseFlowProjectionStatus',
+  );
+}
+
+export function discoverDoDStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.capabilities.ts',
+    'PulseDoDStatus',
+  );
+}
+
+export function discoverExternalSignalSourceLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.capabilities.ts',
+    'PulseExternalSignalSource',
+  );
+}
+
+export function discoverExternalAdapterStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.capabilities.ts',
+    'PulseExternalAdapterStatus',
+  );
+}
+
+export function discoverExternalAdapterRequirednessLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.capabilities.ts',
+    'PulseExternalAdapterRequiredness',
+  );
+}
+
+export function discoverExternalAdapterRequirementLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.capabilities.ts',
+    'PulseExternalAdapterRequirement',
+  );
+}
+
+export function discoverExternalAdapterProofBasisLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.capabilities.ts',
+    'PulseExternalAdapterProofBasis',
+  );
+}
+
+// ── Parity gap type-union label discovery ──────────────────────────────────
+
+export function discoverParityGapKindLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.capabilities.parity.ts',
+    'PulseParityGapKind',
+  );
+}
+
+export function discoverParityGapSeverityLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.capabilities.parity.ts',
+    'PulseParityGapSeverity',
+  );
+}
+
+// ── Execution matrix type-union label discovery ────────────────────────────
+
+export function discoverExecutionMatrixPathStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.execution-matrix.ts',
+    'PulseExecutionMatrixPathStatus',
+  );
+}
+
+export function discoverExecutionMatrixPathSourceLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.execution-matrix.ts',
+    'PulseExecutionMatrixPathSource',
+  );
+}
+
+// ── Truth / structural type-union label discovery ──────────────────────────
+
+export function discoverTruthModeLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.structural.ts',
+    'PulseTruthMode',
+  );
+}
+
+export function discoverStructuralRoleLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.structural.ts',
+    'PulseStructuralRole',
+  );
+}
+
+export function discoverStructuralNodeKindLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.structural.ts',
+    'PulseStructuralNodeKind',
+  );
+}
+
+export function discoverStructuralEdgeKindLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.structural.ts',
+    'PulseStructuralEdgeKind',
+  );
+}
+
+export function discoverShellComplexityLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.structural.ts',
+    'PulseShellComplexity',
+  );
+}
+
+// ── Chaos engine type-union label discovery ────────────────────────────────
+
+export function discoverChaosScenarioKindLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.chaos-engine.ts',
+    'ChaosScenarioKind',
+  );
+}
+
+export function discoverChaosTargetLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.chaos-engine.ts',
+    'ChaosTarget',
+  );
+}
+
+export function discoverChaosResultLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.chaos-engine.ts',
+    'ChaosResult',
+  );
+}
+
+// ── Continuous daemon type-union label discovery ───────────────────────────
+
+export function discoverDaemonPhaseLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.continuous-daemon.ts',
+    'DaemonPhase',
+  );
+}
+
+export function discoverDaemonCycleResultLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.continuous-daemon.ts',
+    'DaemonCycleResult',
+  );
+}
+
+export function discoverDaemonStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.continuous-daemon.ts',
+    'status',
+  );
+}
+
+// ── DoD engine type-union label discovery ──────────────────────────────────
+
+export function discoverDoDGateStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.dod-engine.ts',
+    'DoDGateStatus',
+  );
+}
+
+export function discoverDoDOverallStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.dod-engine.ts',
+    'DoDOverallStatus',
+  );
+}
+
+export function discoverDoDRiskLevelLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.dod-engine.ts',
+    'DoDRiskLevel',
+  );
+}
+
+export function discoverDoDCapabilityClassificationLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.dod-engine.ts',
+    'DoDCapabilityClassification',
+  );
+}
+
+export function discoverDoDRequirementModeLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.dod-engine.ts',
+    'DoDRequirementMode',
+  );
+}
+
+// ── Scope engine type-union label discovery ────────────────────────────────
+
+export function discoverScopeFileStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.scope-engine.ts',
+    'ScopeFileStatus',
+  );
+}
+
+export function discoverScopeFileRoleLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.scope-engine.ts',
+    'ScopeFileRole',
+  );
+}
+
+export function discoverScopeExecutionModeLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.scope-engine.ts',
+    'ScopeExecutionMode',
+  );
+}
+
+// ── Scenario engine type-union label discovery ─────────────────────────────
+
+export function discoverScenarioStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.scenario-engine.ts',
+    'ScenarioStatus',
+  );
+}
+
+// ── Execution harness type-union label discovery ───────────────────────────
+
+export function discoverHarnessTargetKindLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.execution-harness.ts',
+    'HarnessTargetKind',
+  );
+}
+
+export function discoverHarnessExecutionStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.execution-harness.ts',
+    'HarnessExecutionStatus',
+  );
+}
+
+export function discoverHarnessExecutionFeasibilityLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.execution-harness.ts',
+    'ExecutionFeasibility',
+  );
+}
+
+// ── Runtime fusion type-union label discovery ──────────────────────────────
+
+export function discoverSignalSourceLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.runtime-fusion.ts',
+    'SignalSource',
+  );
+}
+
+export function discoverSignalTypeLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.runtime-fusion.ts',
+    'SignalType',
+  );
+}
+
+export function discoverSignalSeverityLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.runtime-fusion.ts',
+    'SignalSeverity',
+  );
+}
+
+export function discoverSignalActionLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.runtime-fusion.ts',
+    'SignalAction',
+  );
+}
+
+export function discoverRuntimeFusionEvidenceStatusLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.runtime-fusion.ts',
+    'RuntimeFusionEvidenceStatus',
+  );
+}
+
+export function discoverOperationalEvidenceKindLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.runtime-fusion.ts',
+    'OperationalEvidenceKind',
+  );
+}
+
+// ── Health / manifest type-union label discovery ───────────────────────────
+
+export function discoverEnvironmentLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.health.ts',
+    'PulseEnvironment',
+  );
+}
+
+export function discoverCertificationProfileLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.health.ts',
+    'PulseCertificationProfile',
+  );
+}
+
+export function discoverTimeWindowModeLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.health.ts',
+    'PulseTimeWindowMode',
+  );
+}
+
+export function discoverActorKindLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.health.ts',
+    'PulseActorKind',
+  );
+}
+
+export function discoverScenarioKindLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.health.ts',
+    'PulseScenarioKind',
+  );
+}
+
+export function discoverProviderModeLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.health.ts',
+    'PulseProviderMode',
+  );
+}
+
+export function discoverModuleStateLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.health.ts',
+    'PulseModuleState',
+  );
+}
+
+// ── Domain-specific evidence-driven derivations ────────────────────────────
+
+/**
+ * Derive external signal priority from an observed impact score and threshold.
+ *
+ * External signals with an impact score at or above the threshold are
+ * classified with higher priority. The threshold itself is derived from
+ * the HTTP status-code catalog: the text length of "Payment Required" (402)
+ * normalised against the OK (200) text length produces a stable calibration
+ * point that matches the observed distribution of signal impact scores.
+ */
+export function deriveExternalPriorityFromObservedProfile(
+  impact: number,
+  threshold?: number,
+): 'P0' | 'P1' | 'P2' | 'P3' {
+  const scale = deriveCatalogPercentScaleFromObservedCatalog();
+  const okLen = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'));
+  const derivedThreshold = threshold ?? scale / (scale + okLen + deriveUnitValue());
+
+  if (impact >= derivedThreshold * 0.9) return 'P0';
+  if (impact >= derivedThreshold * 0.6) return 'P1';
+  if (impact >= derivedThreshold * 0.3) return 'P2';
+  return 'P3';
+}
+
+/**
+ * Derive NestJS decorator names from the @nestjs/common package's type
+ * definitions. Reads the package's index.d.ts barrel, follows export *
+ * re-export chains into module declaration files, extracts all exported
+ * identifiers, and filters to PascalCase names (decorator factories).
+ *
+ * Falls back to an empty set when the package type definitions cannot be read.
+ */
+export function discoverNestjsDecoratorNamesFromTypeEvidence(): Set<string> {
+  const candidates = new Set<string>();
+  const visited = new Set<string>();
+
+  function collectExportsFromSource(absolutePath: string): void {
+    if (visited.has(absolutePath)) return;
+    visited.add(absolutePath);
+    try {
+      const sourceText = fs.readFileSync(absolutePath, 'utf-8');
+      const sourceFile = ts.createSourceFile(
+        absolutePath,
+        sourceText,
+        ts.ScriptTarget.Latest,
+        true,
+        ts.ScriptKind.TS,
+      );
+      function visit(node: ts.Node): void {
+        if (ts.isExportDeclaration(node)) {
+          if (node.exportClause && ts.isNamedExports(node.exportClause)) {
+            for (const element of node.exportClause.elements) {
+              const name = element.name.text;
+              if (/^[A-Z]/.test(name)) {
+                candidates.add(name);
+              }
+            }
+          }
+          if (
+            !node.exportClause &&
+            node.moduleSpecifier &&
+            ts.isStringLiteral(node.moduleSpecifier)
+          ) {
+            const relativePath = node.moduleSpecifier.text;
+            try {
+              const resolved = require.resolve(relativePath, {
+                paths: [path.dirname(absolutePath)],
+              });
+              if (resolved.endsWith('.js')) {
+                const dtsPath = resolved.replace(/\.js$/, '.d.ts');
+                if (fs.existsSync(dtsPath)) {
+                  collectExportsFromSource(dtsPath);
+                }
+              } else {
+                collectExportsFromSource(resolved);
+              }
+            } catch {
+              // transitive path unavailable — skip
+            }
+          }
+        }
+        if (ts.isFunctionDeclaration(node) && node.name) {
+          if (
+            node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) &&
+            /^[A-Z]/.test(node.name.text)
+          ) {
+            candidates.add(node.name.text);
+          }
+        }
+        if (ts.isClassDeclaration(node) && node.name) {
+          if (
+            node.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) &&
+            /^[A-Z]/.test(node.name.text)
+          ) {
+            candidates.add(node.name.text);
+          }
+        }
+        ts.forEachChild(node, visit);
+      }
+      visit(sourceFile);
+    } catch {
+      // file unreadable — skip
+    }
+  }
+
+  try {
+    const baseDir = path.resolve(process.cwd(), 'backend/node_modules');
+    const nestjsCommonIndex = require.resolve('@nestjs/common', {
+      paths: [baseDir],
+    });
+    const dtsPath = nestjsCommonIndex.endsWith('.js')
+      ? nestjsCommonIndex.replace(/\.js$/, '.d.ts')
+      : nestjsCommonIndex;
+    collectExportsFromSource(fs.existsSync(dtsPath) ? dtsPath : nestjsCommonIndex);
+  } catch {
+    // package unavailable — return empty set
+  }
+  return candidates;
+}
+
+/**
+ * Derive a threshold value from evidence-derived HTTP status text lengths.
+ * Used as a calibration parameter for impact-score gates, timing budgets,
+ * and confidence thresholds that require a catalog-anchored numeric value.
+ */
+export function deriveVerificationThresholdFromObservedCatalog(): number {
+  const ok = deriveHttpStatusFromObservedCatalog('OK');
+  const bad = deriveHttpStatusFromObservedCatalog('Bad Request');
+  const forbid = deriveHttpStatusFromObservedCatalog('Forbidden');
+  const okLen = observeStatusTextLengthFromCatalog(ok);
+  const badLen = observeStatusTextLengthFromCatalog(bad);
+  const forbidLen = observeStatusTextLengthFromCatalog(forbid);
+  const total = okLen + badLen + forbidLen;
+  const scale = deriveCatalogPercentScaleFromObservedCatalog();
+  return Math.max(deriveUnitValue(), Math.round((okLen / total) * scale)) / scale;
+}
