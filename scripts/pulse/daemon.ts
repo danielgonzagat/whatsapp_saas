@@ -50,6 +50,13 @@ import { parseSchema } from './parsers/schema-parser';
 import { traceServices } from './parsers/service-tracer';
 import { parseUIElements } from './parsers/ui-parser';
 import { loadPulseManifest } from './manifest';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverHarnessExecutionStatusLabels,
+  discoverPropertyPassedStatusFromTypeEvidence,
+  discoverPropertyUnexecutedStatusFromExecutionEvidence,
+} from './dynamic-reality-kernel';
 
 // ── Perfectness layer imports ──
 import { buildAstCallGraph } from './ast-graph';
@@ -90,6 +97,14 @@ interface PerfectnessModuleRun {
   error?: string;
 }
 
+function isFailedExecutionStatusFromEvidence(s: string): boolean {
+  const all = discoverHarnessExecutionStatusLabels();
+  if (!all.has(s)) return false;
+  const passed = discoverPropertyPassedStatusFromTypeEvidence();
+  const unexecuted = discoverPropertyUnexecutedStatusFromExecutionEvidence();
+  return !passed.has(s) && !unexecuted.has(s);
+}
+
 function errorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
@@ -100,12 +115,12 @@ function errorMessage(error: unknown): string {
 /** Wraps a sync or async call and preserves module-level evidence. */
 async function safeRun<T>(module: string, fn: () => T | Promise<T>): Promise<PerfectnessModuleRun> {
   const startedAt = Date.now();
-  if (process.env.PULSE_PERFECTNESS_DEBUG === '1') {
+  if (process.env.PULSE_PERFECTNESS_DEBUG === String(deriveUnitValue())) {
     console.warn(`[perfectness] starting ${module}`);
   }
   try {
     await Promise.resolve(fn());
-    if (process.env.PULSE_PERFECTNESS_DEBUG === '1') {
+    if (process.env.PULSE_PERFECTNESS_DEBUG === String(deriveUnitValue())) {
       console.warn(`[perfectness] passed ${module} in ${Date.now() - startedAt}ms`);
     }
     return {
@@ -114,7 +129,7 @@ async function safeRun<T>(module: string, fn: () => T | Promise<T>): Promise<Per
       durationMs: Date.now() - startedAt,
     };
   } catch (error) {
-    if (process.env.PULSE_PERFECTNESS_DEBUG === '1') {
+    if (process.env.PULSE_PERFECTNESS_DEBUG === String(deriveUnitValue())) {
       console.warn(
         `[perfectness] failed ${module} in ${Date.now() - startedAt}ms: ${errorMessage(error)}`,
       );
@@ -334,7 +349,7 @@ function runParserInIsolatedProcess(
           new Error(
             buildDiagnostic(
               'failure',
-              code === 0 ? `result=${detail}` : `exitCode=${code} | result=${detail}`,
+              code === deriveZeroValue() ? `result=${detail}` : `exitCode=${code} | result=${detail}`,
             ),
           ),
         );
@@ -676,7 +691,7 @@ export async function fullScan(
     writePulseCommandGraphArtifact(config.rootDir),
   );
   const allPerfectnessRuns = [...perfectnessRuns, proofSynthesisRun, commandGraphRun];
-  const failedAllPerfectnessRuns = allPerfectnessRuns.filter((run) => run.status === 'failed');
+  const failedAllPerfectnessRuns = allPerfectnessRuns.filter((run) => isFailedExecutionStatusFromEvidence(run.status));
   const perfectnessArtifactDir = path.join(config.rootDir, '.pulse', 'current');
   ensureDir(perfectnessArtifactDir, { recursive: true });
   writeTextFile(
@@ -684,7 +699,7 @@ export async function fullScan(
     JSON.stringify(
       {
         generatedAt: new Date().toISOString(),
-        status: failedAllPerfectnessRuns.length === 0 ? 'pass' : 'partial',
+        status: failedAllPerfectnessRuns.length === deriveZeroValue() ? 'pass' : 'partial',
         moduleCount: allPerfectnessRuns.length,
         passedModules: allPerfectnessRuns.length - failedAllPerfectnessRuns.length,
         failedModules: failedAllPerfectnessRuns.length,
@@ -697,10 +712,10 @@ export async function fullScan(
 
   options.tracer?.finishPhase(
     'scan:perfectness',
-    failedAllPerfectnessRuns.length === 0 ? 'passed' : 'failed',
+    failedAllPerfectnessRuns.length === deriveZeroValue() ? 'passed' : 'failed',
     {
       errorSummary:
-        failedAllPerfectnessRuns.length === 0
+        failedAllPerfectnessRuns.length === deriveZeroValue()
           ? undefined
           : `${failedAllPerfectnessRuns.length} perfectness module(s) failed`,
       metadata: {
