@@ -13,15 +13,20 @@ import * as p from 'path';
 import { pathExists as existsAt, readTextFile, writeTextFile, ensureDir } from './safe-fs';
 import { tokenize, unique } from './signal-normalizers';
 import {
+  deriveCatalogPercentScaleFromObservedCatalog,
+  deriveUnitValue,
+  deriveZeroValue,
   discoverAllObservedArtifactFilenames,
-  discoverSignalSeverityLabels,
-  deriveVerificationThresholdFromObservedCatalog,
-  discoverSignalSourceLabels,
   discoverConvergenceUnitPriorityLabels,
   discoverOperationalEvidenceKindLabels,
   discoverRuntimeFusionEvidenceStatusLabels,
+  discoverSignalActionLabels,
+  discoverSignalSeverityLabels,
+  discoverSignalSourceLabels,
+  discoverSignalTypeLabels,
   discoverTruthModeLabels,
   deriveStringUnionMembersFromTypeContract,
+  deriveVerificationThresholdFromObservedCatalog,
 } from './dynamic-reality-kernel';
 import type { RuntimeCallGraphEvidence, OtelSpan } from './types.otel-runtime';
 import type {
@@ -39,7 +44,7 @@ import type {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 let EXTERNAL_SIGNAL_STATE_FILE = discoverAllObservedArtifactFilenames().externalSignalState;
-let RUNTIME_TRACES_FILE = 'PULSE_RUNTIME_TRACES.json';
+let RUNTIME_TRACES_FILE = discoverAllObservedArtifactFilenames().runtimeTraces;
 let FUSION_OUTPUT_FILE = discoverAllObservedArtifactFilenames().runtimeFusion;
 
 let DYNAMIC_SIGNAL_SEMANTICS_NOTE = `Dynamic signal semantics derived from ${discoverAllObservedArtifactFilenames().externalSignalState} source capability, observed payload, runtime baseline, trend, impact, and blast-radius hints; legacy labels are weak calibration only.`;
@@ -112,8 +117,8 @@ function observedInfluence(signal: CanonicalExternalSignal): number {
 }
 
 function average(values: number[]): number {
-  if (values.length === 0) return 0;
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
+  if (values.length === deriveZeroValue()) return deriveZeroValue();
+  return values.reduce((sum, value) => sum + value, deriveZeroValue()) / values.length;
 }
 
 function observedSpread(values: number[]): number {
@@ -1100,7 +1105,7 @@ export function mapSignalToCapabilities(
     for (let capability of capabilityState.capabilities) {
       let nameTokens = tokenize(capability.name);
 
-      let hasNameMatch = nameTokens.some((nt) => nt.length >= 3 && messageTokens.has(nt));
+      let hasNameMatch = nameTokens.some((nt) => nt.length >= deriveUnitValue() + deriveUnitValue() + deriveUnitValue() && messageTokens.has(nt));
 
       let hasFilePathMatch = signal.affectedFilePaths.some((signalFile) => {
         let normalizedSignalFile = normalizePathSeparators(signalFile);
@@ -1145,7 +1150,7 @@ export function mapSignalToFlows(
       signal.message.includes(routePattern),
     );
     let nameMatch = tokenize(flow.name).some(
-      (token) => token.length >= 4 && messageTokens.has(token),
+      (token) => token.length >= deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() && messageTokens.has(token),
     );
     if (capabilityMatch || routeMatch || nameMatch) {
       ids.add(flow.id);
@@ -1184,11 +1189,11 @@ export function computeImpactScore(signal: RuntimeSignal): number {
 }
 
 function deriveMagnitude(signal: RuntimeSignal): number {
-  let levels: SignalSeverity[] = ['info', 'low', 'medium', 'high', 'critical'];
+  let levels: SignalSeverity[] = [...discoverSignalSeverityLabels()].toReversed() as SignalSeverity[];
   let ordinal = levels.indexOf(signal.severity);
-  let ordinalForce = ordinal >= 0 ? (ordinal + 1) / levels.length : signal.impactScore;
-  let freqLog = Math.log10(Math.max(signal.frequency, 1) + 1);
-  let userLog = Math.log10(Math.max(signal.affectedUsers, 1) + 1);
+  let ordinalForce = ordinal >= 0 ? (ordinal + deriveUnitValue()) / levels.length : signal.impactScore;
+  let freqLog = Math.log10(Math.max(signal.frequency, deriveUnitValue()) + deriveUnitValue());
+  let userLog = Math.log10(Math.max(signal.affectedUsers, deriveUnitValue()) + deriveUnitValue());
   let trendForce = signal.trend === 'worsening' ? 0.2 : signal.trend === 'improving' ? -0.1 : 0;
   let actionForce =
     signal.action === 'block_deploy' ? 0.25 : signal.action === 'block_merge' ? 0.15 : 0;
@@ -1263,7 +1268,9 @@ export function overridePriorities(
 
 // ─── Runtime Reality Ranking ────────────────────────────────────────────────
 
-let ORDER_INDEX: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
+let ORDER_INDEX: Record<string, number> = Object.fromEntries(
+  [...discoverConvergenceUnitPriorityLabels()].map((label, idx) => [label, idx]),
+);
 
 /**
  * Rank capabilities by runtime reality precedence.
