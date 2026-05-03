@@ -71,6 +71,7 @@ import {
   discoverSourceExtensionsFromObservedTypescript,
   hasObservedToken,
   inferCandidateCategoryFromObservedTokens,
+  inferCoverageFromObservedFileCharacteristics,
   splitIdentifierTokensFromObservedName,
 } from './dynamic-reality-kernel';
 
@@ -291,7 +292,12 @@ export function buildPropertyTestEvidence(
  * @returns        List of endpoint descriptors with method, path, and filePath.
  */
 export function discoverEndpoints(rootDir: string): EndpointDescriptor[] {
-  let structuralPath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_STRUCTURAL_GRAPH.json');
+  let structuralPath = safeJoin(
+    rootDir,
+    '.pulse',
+    'current',
+    discoverAllObservedArtifactFilenames().structuralGraph,
+  );
 
   if (pathExists(structuralPath)) {
     try {
@@ -1172,7 +1178,12 @@ export function computeMutationTargets(rootDir: string): MutationTestResult[] {
     return strykerResults;
   }
 
-  let scopePath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_SCOPE_STATE.json');
+  let scopePath = safeJoin(
+    rootDir,
+    '.pulse',
+    'current',
+    discoverAllObservedArtifactFilenames().scopeState,
+  );
   if (!pathExists(scopePath)) {
     return generateDefaultMutationTargets(rootDir);
   }
