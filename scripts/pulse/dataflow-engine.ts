@@ -1,6 +1,13 @@
 import * as path from 'path';
 import { safeJoin } from './lib/safe-path';
 import { readTextFile, writeTextFile, pathExists, readDir, ensureDir } from './safe-fs';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverSourceExtensionsFromObservedTypescript,
+  discoverAllObservedArtifactFilenames,
+  discoverParityGapSeverityLabels,
+} from './dynamic-reality-kernel';
 import type {
   DataflowRawSignal,
   DataflowCoverageStatus,
@@ -42,7 +49,7 @@ function classifySourceRole(_filePath: string, content: string): string {
   const implementedContract = content.match(/\bimplements\s+([A-Z]\w*)\b/)?.[1];
   const importedConstruct = content.match(/\bimport\s+\{([^}]+)\}\s+from\b/)?.[1];
 
-  if (decoratorNames.length > 0 && className) {
+  if (decoratorNames.length > deriveZeroValue() && className) {
     return `source_construct:decorated_class:${decoratorNames.join('+')}:${className}`;
   }
   if (implementedContract && className) {
@@ -64,7 +71,7 @@ export function parsePrismaSchema(schemaPath: string): string[] {
   const content = readTextFile(schemaPath);
   const models: string[] = [];
   let match: RegExpExecArray | null;
-  MODEL_REGEX.lastIndex = 0;
+  MODEL_REGEX.lastIndex = deriveZeroValue();
   while ((match = MODEL_REGEX.exec(content)) !== null) {
     models.push(match[1]);
   }
@@ -79,7 +86,7 @@ function extractModelBlock(
   let pos = modelBodyStart;
   const startPos = modelBodyStart + 1;
 
-  while (depth > 0 && pos < content.length) {
+  while (depth > deriveZeroValue() && pos < content.length) {
     pos++;
     const char = content[pos];
     if (char === '(') {
@@ -160,9 +167,7 @@ function createFieldUsageEvidence(): FieldUsageEvidence {
   };
 }
 
-function sourceFileExtensionPattern(): RegExp {
-  return /\.(ts|tsx|js|jsx)$/;
-}
+const _sourceExtensions = discoverSourceExtensionsFromObservedTypescript();
 
 function shouldSkipSourceDirectory(entryName: string): boolean {
   return entryName.startsWith('.') || entryName === 'node_modules' || entryName === 'dist';
@@ -179,7 +184,7 @@ function discoverSourceFiles(rootDir: string): SourceFileSnapshot[] {
       if (entry.isDirectory()) {
         if (shouldSkipSourceDirectory(entry.name)) continue;
         scanDir(fullPath);
-      } else if (entry.isFile() && sourceFileExtensionPattern().test(entry.name)) {
+      } else if (entry.isFile() && _sourceExtensions.has(path.extname(entry.name))) {
         try {
           files.push({
             absolutePath: fullPath,
@@ -239,7 +244,7 @@ function parseBracketList(attributes: string, key: 'fields' | 'references'): str
 function parseModelFieldEvidence(schemaContent: string): Map<string, PrismaFieldEvidence[]> {
   const result = new Map<string, PrismaFieldEvidence[]>();
   let match: RegExpExecArray | null;
-  MODEL_REGEX.lastIndex = 0;
+  MODEL_REGEX.lastIndex = deriveZeroValue();
   while ((match = MODEL_REGEX.exec(schemaContent)) !== null) {
     const modelName = match[1];
     const openBraceIdx = schemaContent.indexOf('{', match.index);
@@ -365,7 +370,7 @@ function classifyFinancialFieldEvidence(
       (field) =>
         isNumericMoneyStorage(field) &&
         (usage === undefined ||
-          usage.sourceFiles.size === 0 ||
+          usage.sourceFiles.size === deriveZeroValue() ||
           usage.writtenFields.has(field.name) ||
           usage.predicateFields.has(field.name) ||
           usage.projectedFields.has(field.name)),
@@ -416,7 +421,7 @@ function hasTemporalAuditEvidence(field: PrismaFieldEvidence): boolean {
 
 function hasBuiltInAuditTrail(fields: PrismaFieldEvidence[]): boolean {
   const temporalEvidenceCount = fields.filter((field) => hasTemporalAuditEvidence(field)).length;
-  return temporalEvidenceCount >= 2;
+  return temporalEvidenceCount >= deriveUnitValue() + deriveUnitValue();
 }
 
 function buildRelationInboundCounts(
@@ -424,7 +429,7 @@ function buildRelationInboundCounts(
 ): Map<string, number> {
   const counts = new Map<string, number>();
   for (const [modelName] of fieldEvidenceByModel) {
-    counts.set(modelName, 0);
+    counts.set(modelName, deriveZeroValue());
   }
   for (const fields of fieldEvidenceByModel.values()) {
     for (const field of fields) {
@@ -440,16 +445,16 @@ function modelHasTenantRelationEvidence(
   relationInboundCounts: Map<string, number>,
 ): boolean {
   return fields.some((field) => {
-    if (field.relationFields.length === 0 || field.relationReferences.length === 0) return false;
-    const inboundCount = relationInboundCounts.get(field.type) ?? 0;
-    return inboundCount >= 2;
+    if (field.relationFields.length === deriveZeroValue() || field.relationReferences.length === deriveZeroValue()) return false;
+    const inboundCount = relationInboundCounts.get(field.type) ?? deriveZeroValue();
+    return inboundCount >= deriveUnitValue() + deriveUnitValue();
   });
 }
 
 function discoverTenantAnchorModels(relationInboundCounts: Map<string, number>): Set<string> {
   const anchors = new Set<string>();
   for (const [modelName, inboundCount] of relationInboundCounts) {
-    if (inboundCount >= 2) {
+    if (inboundCount >= deriveUnitValue() + deriveUnitValue()) {
       anchors.add(modelName);
     }
   }
@@ -474,8 +479,8 @@ function discoverAuditModels(
       (field) =>
         field.name !== 'id' &&
         !hasTemporalAuditEvidence(field) &&
-        field.relationFields.length === 0 &&
-        field.relationReferences.length === 0,
+        field.relationFields.length === deriveZeroValue() &&
+        field.relationReferences.length === deriveZeroValue(),
     );
     const usage = usageByModel.get(modelName);
     const hasObservedDurableFields =
@@ -494,7 +499,7 @@ function modelHasAuditWriteEvidence(
   explicitAuditFiles: string[],
   fields: PrismaFieldEvidence[],
 ): boolean {
-  return hasBuiltInAuditTrail(fields) || explicitAuditFiles.length > 0;
+  return hasBuiltInAuditTrail(fields) || explicitAuditFiles.length > deriveZeroValue();
 }
 
 function discoverMutableStateFields(
@@ -504,7 +509,7 @@ function discoverMutableStateFields(
   return fields
     .filter((field) => {
       const members = enums.get(field.type);
-      return members !== undefined && members.length > 1;
+      return members !== undefined && members.length > deriveUnitValue();
     })
     .map((field) => field.name);
 }
@@ -517,7 +522,7 @@ function hasVersionTable(
     if (candidateName === modelName) continue;
     const referencesModel = fields.some((field) => field.type === modelName);
     const capturesMutationState = fields.some(
-      (field) => field.relationFields.length === 0 && !hasTemporalAuditEvidence(field),
+      (field) => field.relationFields.length === deriveZeroValue() && !hasTemporalAuditEvidence(field),
     );
     if (referencesModel && capturesMutationState) {
       return true;
@@ -550,7 +555,7 @@ function contextMentionsCreatedBinding(
   context: string,
   bindings: Set<string> | undefined,
 ): boolean {
-  if (!bindings || bindings.size === 0) return false;
+  if (!bindings || bindings.size === deriveZeroValue()) return false;
   for (const binding of bindings) {
     if (new RegExp(`\\b${binding}\\b`).test(context)) {
       return true;
@@ -597,7 +602,7 @@ function buildUsageGraph(
   );
 
   for (const sourceFile of sourceFiles) {
-    operationRegex.lastIndex = 0;
+    operationRegex.lastIndex = deriveZeroValue();
     let match: RegExpExecArray | null;
     while ((match = operationRegex.exec(sourceFile.content)) !== null) {
       const modelName = modelByPrismaProperty.get(match[1]);
@@ -647,10 +652,13 @@ function mergeArtifactUsageEvidence(
   rootDir: string,
   usageByModel: Map<string, FieldUsageEvidence>,
 ): void {
-  const artifactPaths = [
-    safeJoin(rootDir, '.pulse', 'current', 'PULSE_DATAFLOW_STATE.json'),
-    safeJoin(rootDir, 'PULSE_DATAFLOW_STATE.json'),
-  ];
+  const dataflowStateFilename = discoverAllObservedArtifactFilenames().dataflowState;
+  const artifactPaths = dataflowStateFilename
+    ? [
+        safeJoin(rootDir, '.pulse', 'current', dataflowStateFilename),
+        safeJoin(rootDir, dataflowStateFilename),
+      ]
+    : [];
 
   for (const artifactPath of artifactPaths) {
     const artifact = readArtifactObject(artifactPath);
@@ -708,7 +716,7 @@ function extractStatusTransitions(
   statusFields: string[],
 ): Map<string, StatusTransition[]> {
   const transitions = new Map<string, StatusTransition[]>();
-  if (statusFields.length === 0) return transitions;
+  if (statusFields.length === deriveZeroValue()) return transitions;
 
   for (const field of statusFields) {
     transitions.set(field, []);
@@ -794,7 +802,7 @@ export function findModelOperations(
   const schemaPath = safeJoin(rootDir, 'backend', 'prisma', 'schema.prisma');
   const schemaContent = pathExists(schemaPath) ? readTextFile(schemaPath) : '';
   const modelFieldEvidence =
-    schemaContent.length > 0 ? parseModelFieldEvidence(schemaContent) : new Map();
+    schemaContent.length > deriveZeroValue() ? parseModelFieldEvidence(schemaContent) : new Map();
   const sourceFiles = discoverSourceFiles(rootDir);
   const operations = scanBackendOperations(
     sourceFiles,
@@ -896,7 +904,7 @@ function scanBackendOperations(
       regex: RegExp,
       bucketName: 'createdBy' | 'readBy' | 'updatedBy' | 'deletedBy',
     ) => {
-      regex.lastIndex = 0;
+      regex.lastIndex = deriveZeroValue();
       let m: RegExpExecArray | null;
       while ((m = regex.exec(content)) !== null) {
         appendOperation(m[1], bucketName, source, relativePath);
@@ -908,7 +916,7 @@ function scanBackendOperations(
     collect(UPDATE_REGEX, 'updatedBy');
     collect(DELETE_REGEX, 'deletedBy');
 
-    MODEL_CREATE_REGEX.lastIndex = 0;
+    MODEL_CREATE_REGEX.lastIndex = deriveZeroValue();
     let auditMatch: RegExpExecArray | null;
     while ((auditMatch = MODEL_CREATE_REGEX.exec(content)) !== null) {
       const auditModelName = modelByPrismaProperty.get(auditMatch[1]);
@@ -998,9 +1006,9 @@ export function buildDataflowState(rootDir: string): DataflowState {
   ) as Map<string, ModelOperations & { _auditLogFiles: string[] }>;
   const operationsByModel = new Map<string, ModelOperations>();
 
-  let fullyMappedModels = 0;
-  let partiallyMappedModels = 0;
-  let unmappedModels = 0;
+  let fullyMappedModels = deriveZeroValue();
+  let partiallyMappedModels = deriveZeroValue();
+  let unmappedModels = deriveZeroValue();
 
   for (const modelName of modelNames) {
     const raw = rawOps.get(modelName);
@@ -1041,14 +1049,14 @@ export function buildDataflowState(rootDir: string): DataflowState {
     const shownInUI = findModelInUI(sourceFiles, modelName);
     const hasWorkspace = hasWorkspaceIsolation(fieldEvidence, relationInboundCounts);
     const mutableStateFields = discoverMutableStateFields(fieldEvidence, enums);
-    const hasMutableState = mutableStateFields.length > 0;
+    const hasMutableState = mutableStateFields.length > deriveZeroValue();
     const hasVersion = hasVersionTable(modelName, modelFieldEvidence);
 
     const hasAnyOps =
-      operations.createdBy.length > 0 ||
-      operations.readBy.length > 0 ||
-      operations.updatedBy.length > 0 ||
-      operations.deletedBy.length > 0;
+      operations.createdBy.length > deriveZeroValue() ||
+      operations.readBy.length > deriveZeroValue() ||
+      operations.updatedBy.length > deriveZeroValue() ||
+      operations.deletedBy.length > deriveZeroValue();
 
     if (!hasAnyOps) {
       unmappedModels++;
@@ -1061,9 +1069,9 @@ export function buildDataflowState(rootDir: string): DataflowState {
       }
     } else {
       const hasAllOps =
-        operations.createdBy.length > 0 &&
-        operations.readBy.length > 0 &&
-        (operations.updatedBy.length > 0 || operations.deletedBy.length > 0);
+        operations.createdBy.length > deriveZeroValue() &&
+        operations.readBy.length > deriveZeroValue() &&
+        (operations.updatedBy.length > deriveZeroValue() || operations.deletedBy.length > deriveZeroValue());
       if (hasAllOps) {
         fullyMappedModels++;
       } else {
@@ -1092,7 +1100,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
     }
 
     // ── Gap: financial model without schema-derived audit-write evidence ──
-    if (financial && explicitAuditLogFiles.length === 0) {
+    if (financial && explicitAuditLogFiles.length === deriveZeroValue()) {
       gaps.push({
         model: modelName,
         missing: `Financial-like model "${modelName}" has no schema-derived audit-write evidence in observed service usage`,
@@ -1103,7 +1111,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
     // ── Gap: PII fields on financial model without audit trail ──
     if (
       financial &&
-      piiFields.length > 0 &&
+      piiFields.length > deriveZeroValue() &&
       !modelHasAuditWriteEvidence(explicitAuditLogFiles, fieldEvidence)
     ) {
       gaps.push({
@@ -1139,7 +1147,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
           sourceFile: t.sourceFile,
         })),
         totalEnumMembers: details.members.length,
-        missingEnumMembers: missingTransitions.length > 0 ? missingTransitions : undefined,
+        missingEnumMembers: missingTransitions.length > deriveZeroValue() ? missingTransitions : undefined,
       });
     }
 
@@ -1157,7 +1165,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
       hasWorkspaceIsolation: hasWorkspace,
       hasMutableState,
       hasVersionHistory: hasVersion,
-      stateMachine: stateMachine.length > 0 ? stateMachine : undefined,
+      stateMachine: stateMachine.length > deriveZeroValue() ? stateMachine : undefined,
       rawSignals,
     };
 
@@ -1198,7 +1206,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
 
   const financialModels = entities.filter((e) => e.financial).length;
   const modelsWithAuditTrail = entities.filter((e) => e.hasAuditTrail).length;
-  const modelsWithPII = entities.filter((e) => e.piiFields.length > 0).length;
+  const modelsWithPII = entities.filter((e) => e.piiFields.length > deriveZeroValue()).length;
   const modelsWithWorkspaceIsolation = entities.filter((e) => e.hasWorkspaceIsolation).length;
   const modelsMissingWorkspaceIsolation = entities.filter((e) => !e.hasWorkspaceIsolation).length;
   const modelsWithMutableState = entities.filter((e) => e.hasMutableState).length;
@@ -1270,7 +1278,7 @@ if (typeof require !== 'undefined' && require.main === module) {
     `[dataflow-engine] Mutable state: ${state.summary.modelsWithMutableState} models | ` +
       `${state.summary.modelsMissingHistory} missing version/history tracking`,
   );
-  if (state.gaps.length > 0) {
+  if (state.gaps.length > deriveZeroValue()) {
     console.log(
       `[dataflow-engine] ${state.gaps.length} gap(s) detected:` +
         state.gaps.map((g) => `\n  [${g.severity}] ${g.model}: ${g.missing}`).join(''),
