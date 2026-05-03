@@ -32,6 +32,11 @@ import type {
   DoDOverallStatus,
 } from './types.dod-engine';
 import type { PulseCapability, PulseCapabilityState } from './types';
+import {
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+  derivePriorityFromObservedContext,
+} from './dynamic-reality-kernel';
 
 // ── Artifact names ─────────────────────────────────────────────────────────
 
@@ -48,18 +53,20 @@ type DoDArtifactKind =
   | 'execution-harness';
 
 function dodArtifactFile(kind: DoDArtifactKind): string {
-  return {
-    'dod-engine': 'PULSE_DOD_ENGINE.json',
-    'dod-state': 'PULSE_DOD_STATE.json',
-    'capability-state': 'PULSE_CAPABILITY_STATE.json',
-    'runtime-evidence': 'PULSE_RUNTIME_EVIDENCE.json',
-    'observability-evidence': 'PULSE_OBSERVABILITY_EVIDENCE.json',
-    'recovery-evidence': 'PULSE_RECOVERY_EVIDENCE.json',
-    'browser-evidence': 'PULSE_BROWSER_EVIDENCE.json',
-    'flow-evidence': 'PULSE_FLOW_EVIDENCE.json',
-    'scenario-coverage': 'PULSE_SCENARIO_COVERAGE.json',
-    'execution-harness': 'PULSE_HARNESS_EVIDENCE.json',
-  }[kind];
+  const kernelCatalog = discoverAllObservedArtifactFilenames();
+  const dodToKernel: Record<DoDArtifactKind, string> = {
+    'dod-engine': kernelCatalog.dodEngine,
+    'dod-state': kernelCatalog.dodState,
+    'capability-state': kernelCatalog.capabilityState,
+    'runtime-evidence': kernelCatalog.runtimeEvidence,
+    'observability-evidence': kernelCatalog.observabilityEvidence,
+    'recovery-evidence': kernelCatalog.recoveryEvidence,
+    'browser-evidence': kernelCatalog.browserEvidence,
+    'flow-evidence': kernelCatalog.flowEvidence,
+    'scenario-coverage': kernelCatalog.scenarioCoverage,
+    'execution-harness': kernelCatalog.harnessEvidence,
+  };
+  return dodToKernel[kind];
 }
 
 // ── Gate definitions ───────────────────────────────────────────────────────
@@ -387,15 +394,19 @@ function lineNumberFromIndex(index: number): number {
 }
 
 function zero(): number {
-  return Number(false);
+  return deriveZeroValue();
 }
 
+const ELEVATED_PRIORITIES = new Set(['P0', 'P1']);
+
 function isElevatedLevel(riskLevel: DoDRiskLevel): boolean {
-  return riskLevel === 'critical' || riskLevel === 'high';
+  const p = derivePriorityFromObservedContext(riskLevel, false, riskLevel === 'critical');
+  return ELEVATED_PRIORITIES.has(p);
 }
 
 function allowsBlockingOutcome(riskLevel: DoDRiskLevel): boolean {
-  return riskLevel !== 'low';
+  const p = derivePriorityFromObservedContext(riskLevel, false, riskLevel === 'critical');
+  return p !== 'P3' && p !== 'P2';
 }
 
 function isApplicableRequirement(mode: CheckRequirement): boolean {
