@@ -37,24 +37,41 @@ import {
 } from './dynamic-reality-grammar';
 import {
   deriveHttpStatusFromObservedCatalog as httpStatus,
-  discoverPropertyPassedStatusFromTypeEvidence,
-  discoverPropertyUnexecutedStatusFromExecutionEvidence,
-  discoverBoundaryStrategiesFromTypeEvidence,
-  discoverMutatingEffectsFromTypeEvidence,
-  discoverDestructiveEffectsFromTypeEvidence,
-  discoverPublicExposuresFromTypeEvidence,
-  discoverProtectedExposuresFromTypeEvidence,
+  detectBrlCurrencyFromObservedInput,
+  deriveAdversarialPayloadsFromObservedEvidence,
+  deriveCatalogPercentScaleFromObservedCatalog,
   deriveEndpointRiskFromObservedProfile,
-  deriveStrategyWeightFromObservedProfile,
+  deriveExpectedStatusCodesFromObservedProfile,
   deriveFuzzBudgetFromObservedDimensions,
-  discoverDirectorySkipHintsFromEvidence,
-  discoverSourceExtensionsFromObservedTypescript,
-  discoverAllObservedArtifactFilenames,
-  discoverExternalReceiverTokensFromEvidence,
+  deriveFuzzStrategyFromObservedPropertyShape,
+  deriveIdentifierAlphabetFromObservedSeeds,
+  deriveLengthBoundariesFromObservedCatalog,
+  deriveMoneyProbeStringsFromObservedCatalog,
+  deriveMutantEstimateFromObservedFileEvidence,
+  deriveNumericProbeValuesFromObservedCatalog,
+  derivePropertyKindsFromObservedCategory,
+  deriveRuntimeStringBoundaryFromObservedCatalog,
+  deriveSpecialCharactersFromRuntimeEvidence,
+  deriveStrategyWeightFromObservedProfile,
+  deriveStringIdentitySeedsFromCandidate,
   deriveUnitValue,
   deriveZeroValue,
-  deriveCatalogPercentScaleFromObservedCatalog,
+  discoverAllObservedArtifactFilenames,
+  discoverBoundaryStrategiesFromTypeEvidence,
+  discoverDestructiveEffectsFromTypeEvidence,
+  discoverDirectorySkipHintsFromEvidence,
+  discoverEnumMembersFromCandidateEvidence,
+  discoverExternalReceiverTokensFromEvidence,
+  discoverMutatingEffectsFromTypeEvidence,
+  discoverPropertyPassedStatusFromTypeEvidence,
+  discoverPropertyUnexecutedStatusFromExecutionEvidence,
+  discoverProtectedExposuresFromTypeEvidence,
+  discoverPublicExposuresFromTypeEvidence,
   discoverRouteSeparatorFromRuntime,
+  discoverSourceExtensionsFromObservedTypescript,
+  hasObservedToken,
+  inferCandidateCategoryFromObservedTokens,
+  splitIdentifierTokensFromObservedName,
 } from './dynamic-reality-kernel';
 
 type GeneratedExpectation = GeneratedPropertyTestInput['expected'];
@@ -654,36 +671,14 @@ export function classifyEndpointRisk(endpoint: string | EndpointDescriptor): End
   let proofShape = buildEndpointProofProfile(
     isStringEvidence(endpoint) ? { method: 'GET', path: endpoint, filePath: '' } : endpoint,
   );
-
-  if (discoverDestructiveEffectsFromTypeEvidence().has(proofShape.stateEffect)) return 'high';
-  if (
-    proofShape.hasExternalEffect &&
-    !discoverProtectedExposuresFromTypeEvidence().has(proofShape.runtimeExposure)
-  ) {
-    return 'high';
-  }
-  if (
-    discoverMutatingEffectsFromTypeEvidence().has(proofShape.stateEffect) &&
-    discoverPublicExposuresFromTypeEvidence().has(proofShape.runtimeExposure)
-  ) {
-    return 'high';
-  }
-  if (
-    discoverMutatingEffectsFromTypeEvidence().has(proofShape.stateEffect) &&
-    (proofShape.hasSchema || proofShape.inputTypes.has('path_parameter'))
-  ) {
-    return 'high';
-  }
-  if (
-    discoverMutatingEffectsFromTypeEvidence().has(proofShape.stateEffect) ||
-    proofShape.hasExternalEffect
-  )
-    return 'medium';
-  if (proofShape.inputTypes.has('path_parameter') && proofShape.inputTypes.has('query_parameter')) {
-    return 'medium';
-  }
-
-  return 'low';
+  return deriveEndpointRiskFromObservedProfile(
+    proofShape.stateEffect,
+    proofShape.hasExternalEffect,
+    proofShape.runtimeExposure,
+    proofShape.inputTypes.has('path_parameter'),
+    proofShape.inputTypes.has('query_parameter'),
+    proofShape.hasSchema,
+  );
 }
 
 function buildEndpointProofProfile(endpoint: EndpointDescriptor): EndpointProofProfile {
@@ -693,8 +688,8 @@ function buildEndpointProofProfile(endpoint: EndpointDescriptor): EndpointProofP
   let routeText = `${endpoint.path} ${endpoint.filePath}`;
   let hasSchema = Boolean(endpoint.requestSchema);
   let acceptsBody = observedMethodAcceptsBody(method, hasSchema);
-  let routeTokens = splitIdentifierTokens(routeText);
-  let hasExternalReceiverShape = hasToken(routeTokens, [
+  let routeTokens = splitIdentifierTokensFromObservedName(routeText);
+  let hasExternalReceiverShape = hasObservedToken(routeTokens, [
     'webhook',
     'callback',
     'event',
@@ -882,19 +877,13 @@ function addExpectedStatus(
 }
 
 function strategyWeight(strategy: FuzzStrategy, profile: EndpointProofProfile): number {
-  let surfaceWidth = Math.max(unitValue(), profile.inputTypes.size);
-  let stateWidth = surfaceWidth + unitWhen(profile.stateEffect !== 'read_only');
-  let schemaWidth = stateWidth + unitWhen(profile.hasSchema);
-  let publicWidth = schemaWidth + unitWhen(profile.runtimeExposure === 'public');
-  let observedWeights = new Map<FuzzStrategy, number[]>([
-    ['valid_only', [surfaceWidth, unitValue()]],
-    ['invalid_only', [publicWidth, surfaceWidth]],
-    ['boundary', [schemaWidth, surfaceWidth, stateWidth]],
-    ['random', [publicWidth, schemaWidth, stateWidth, surfaceWidth]],
-    ['both', [schemaWidth, stateWidth]],
-  ]);
-  let selectedWeights = observedWeights.get(strategy) ?? [surfaceWidth];
-  return selectedWeights.reduce((total, value) => total + value, zeroValue());
+  return deriveStrategyWeightFromObservedProfile(
+    strategy,
+    profile.inputTypes.size,
+    profile.stateEffect !== 'read_only',
+    profile.hasSchema,
+    profile.runtimeExposure === 'public',
+  );
 }
 
 function estimateRequestCount(strategy: FuzzStrategy, profile: EndpointProofProfile): number {
@@ -906,55 +895,15 @@ function generateExpectedStatusCodes(
   strategy: FuzzStrategy,
   profile: EndpointProofProfile,
 ): Record<number, number> {
-  let codes: Record<number, number> = {};
-  let method = endpoint.method.toUpperCase();
-  let successCode = isObservedMutatingMethod(method) ? httpStatus('Created') : httpStatus('OK');
-  let surfaceWidth = Math.max(unitValue(), profile.inputTypes.size);
-  let schemaWidth = surfaceWidth + unitWhen(profile.hasSchema);
-
-  switch (strategy) {
-    case 'valid_only':
-      addExpectedStatus(codes, successCode, unitValue());
-      break;
-    case 'invalid_only':
-      addExpectedStatus(codes, httpStatus('Bad Request'), surfaceWidth);
-      addExpectedStatus(codes, httpStatus('Unprocessable Entity'), schemaWidth);
-      if (profile.runtimeExposure === 'protected') {
-        addExpectedStatus(codes, httpStatus('Unauthorized'), unitValue());
-        addExpectedStatus(codes, httpStatus('Forbidden'), unitValue());
-      }
-      break;
-    case 'boundary':
-      addExpectedStatus(codes, successCode, surfaceWidth);
-      addExpectedStatus(codes, httpStatus('Bad Request'), schemaWidth + surfaceWidth);
-      addExpectedStatus(codes, httpStatus('Unprocessable Entity'), schemaWidth);
-      if (profile.inputTypes.has('request_body')) {
-        addExpectedStatus(codes, httpStatus('Payload Too Large'), unitValue());
-      }
-      break;
-    case 'random':
-      addExpectedStatus(codes, successCode, schemaWidth);
-      addExpectedStatus(codes, httpStatus('Bad Request'), schemaWidth);
-      addExpectedStatus(codes, httpStatus('Not Found'), unitValue());
-      addExpectedStatus(codes, httpStatus('Unprocessable Entity'), schemaWidth);
-      if (endpoint.rateLimit !== undefined && endpoint.rateLimit !== null) {
-        addExpectedStatus(codes, httpStatus('Too Many Requests'), unitValue());
-      }
-      if (profile.runtimeExposure === 'protected') {
-        addExpectedStatus(codes, httpStatus('Unauthorized'), surfaceWidth);
-        addExpectedStatus(codes, httpStatus('Forbidden'), unitValue());
-      }
-      break;
-    case 'both':
-      addExpectedStatus(codes, successCode, surfaceWidth);
-      addExpectedStatus(codes, httpStatus('Bad Request'), schemaWidth);
-      addExpectedStatus(codes, httpStatus('Unprocessable Entity'), schemaWidth);
-      break;
-    default:
-      break;
-  }
-
-  return codes;
+  return deriveExpectedStatusCodesFromObservedProfile(
+    endpoint.method,
+    strategy,
+    profile.inputTypes.size,
+    profile.hasSchema,
+    profile.inputTypes.has('request_body'),
+    endpoint.rateLimit !== undefined && endpoint.rateLimit !== null,
+    profile.runtimeExposure === 'protected',
+  );
 }
 
 /**
@@ -1426,23 +1375,11 @@ function hasCorrespondingSpec(filePath: string, rootDir: string): boolean {
 }
 
 function estimateMutants(filePath: string, rootDir: string): number {
-  let absPath = path.join(rootDir, filePath);
-  try {
-    let content = fs.readFileSync(absPath, du8());
-    let lines = content.split('\n').length;
-    let estimate = Math.max(1, Math.round(lines * 0.3));
-    return estimate;
-  } catch {
-    return 5;
-  }
+  return deriveMutantEstimateFromObservedFileEvidence(filePath, rootDir);
 }
 
 function estimateCoverage(filePath: string): number {
-  if (filePath.includes('test') || filePath.includes('spec')) return 90;
-  if (filePath.includes('helper') || filePath.includes('utils')) return 40;
-  if (filePath.includes('service') || filePath.includes('handler')) return 30;
-  if (filePath.includes('controller') || filePath.includes('route')) return 25;
-  return 20;
+  return inferCoverageFromObservedFileCharacteristics(filePath);
 }
 
 /**
@@ -1648,80 +1585,7 @@ function enumMemberName(member: ts.EnumMember): string {
 }
 
 function inferCandidateCategory(functionName: string): CandidateCategory | null {
-  let tokens = splitIdentifierTokens(functionName);
-  if (hasToken(tokens, ['validate', 'valid', 'assert', 'check'])) return 'validation';
-  if (hasToken(tokens, ['parse', 'deserialize', 'decode', 'extract'])) return 'parsing';
-  if (hasToken(tokens, ['currency', 'amount', 'cents', 'money', 'brl'])) return 'money_handler';
-  if (hasToken(tokens, ['format', 'serialize', 'encode', 'stringify', 'normalize'])) {
-    return 'formatting';
-  }
-  if (
-    hasToken(tokens, [
-      'compute',
-      'calculate',
-      'sum',
-      'multiply',
-      'divide',
-      'add',
-      'subtract',
-      'mul',
-      'div',
-    ])
-  ) {
-    return 'numeric';
-  }
-  if (hasToken(tokens, ['transform', 'convert', 'map', 'reduce', 'filter'])) return 'transform';
-  if (
-    hasToken(tokens, [
-      'slugify',
-      'truncate',
-      'truncat',
-      'pad',
-      'sanitize',
-      'escape',
-      'unescape',
-      'camel',
-      'kebab',
-      'pascal',
-    ])
-  ) {
-    return 'string_manipulation';
-  }
-  if (hasToken(tokens, ['enum', 'status', 'state', 'type', 'kind', 'variant', 'mode'])) {
-    return 'enum_handler';
-  }
-  return null;
-}
-
-function hasToken(tokens: Set<string>, values: string[]): boolean {
-  return values.some((value) => tokens.has(value));
-}
-
-function splitIdentifierTokens(value: string): Set<string> {
-  let tokens = new Set<string>();
-  let current = '';
-  for (let char of value) {
-    let isUpper = char >= 'A' && char <= 'Z';
-    let isLower = char >= 'a' && char <= 'z';
-    let isDigit = char >= '0' && char <= '9';
-    if (isUpper && current && current.toLowerCase() === current) {
-      tokens.add(current.toLowerCase());
-      current = '';
-    }
-    if (isUpper || isLower || isDigit) {
-      current += char;
-      continue;
-    }
-    if (current) {
-      tokens.add(current.toLowerCase());
-      current = '';
-    }
-  }
-  if (current) {
-    tokens.add(current.toLowerCase());
-  }
-  tokens.add(value.toLowerCase());
-  return tokens;
+  return inferCandidateCategoryFromObservedTokens(functionName);
 }
 
 /**
@@ -1765,26 +1629,7 @@ export function generatePropertyTestCases(rootDir: string): GeneratedPropertyFun
 }
 
 function getPropertyKindsForCategory(category: PureFunctionCandidate['category']): PropertyKind[] {
-  switch (category) {
-    case 'validation':
-      return ['required_field', 'type_constraint', 'string_id', 'length_boundary', 'injection'];
-    case 'parsing':
-      return ['type_constraint', 'required_field', 'string_id', 'injection'];
-    case 'formatting':
-      return ['idempotency', 'type_constraint', 'required_field'];
-    case 'numeric':
-      return ['non_negative', 'type_constraint', 'required_field'];
-    case 'transform':
-      return ['idempotency', 'type_constraint', 'required_field'];
-    case 'money_handler':
-      return ['non_negative', 'money_precision', 'type_constraint', 'required_field'];
-    case 'string_manipulation':
-      return ['idempotency', 'string_id', 'length_boundary', 'injection'];
-    case 'enum_handler':
-      return ['enum_value', 'type_constraint', 'required_field'];
-    default:
-      return ['general_purity', 'type_constraint', 'required_field'];
-  }
+  return derivePropertyKindsFromObservedCategory(category);
 }
 
 function combinePropertyKinds(kinds: PropertyKind[]): PropertyKind {
@@ -1796,28 +1641,11 @@ function synthesizePropertyStrategy(
   candidate: PureFunctionCandidate,
   propertyKinds: PropertyKind[],
 ): FuzzStrategy {
-  let hasExternalInputShape = propertyKinds.some(
-    (property) =>
-      property === 'injection' ||
-      property === 'required_field' ||
-      property === 'type_constraint' ||
-      property === 'string_id',
+  return deriveFuzzStrategyFromObservedPropertyShape(
+    propertyKinds,
+    candidate.params.length > 0,
+    candidate.hasReturnType,
   );
-  let hasBoundaryShape = propertyKinds.some(
-    (property) =>
-      property === 'length_boundary' ||
-      property === 'money_precision' ||
-      property === 'non_negative',
-  );
-  let hasSchemaLikeContract = candidate.params.length > 0 || candidate.hasReturnType;
-  let isPureTransform = propertyKinds.includes('idempotency') && !hasBoundaryShape;
-
-  if (hasBoundaryShape) return 'boundary';
-  if (hasExternalInputShape && !isPureTransform) return 'invalid_only';
-  if (isPureTransform && hasSchemaLikeContract) return 'valid_only';
-  if (hasSchemaLikeContract) return 'both';
-
-  return 'random';
 }
 
 function generateInputsForProperty(
@@ -1862,25 +1690,11 @@ function inverseCatalogScale(): number {
 }
 
 function fuzzSampleBudget(property: PropertyKind | string, evidenceKey: string): number {
-  return Math.max(
-    STATUS_CODES[httpStatus('OK')]?.length ?? unitValue(),
-    property.length * evidenceKey.length,
-  );
+  return deriveFuzzBudgetFromObservedDimensions(String(property), evidenceKey);
 }
 
 function synthesizeNumericProbeValues(rng: () => number): number[] {
-  let statusCodes = Object.keys(STATUS_CODES)
-    .map(Number)
-    .filter((value) => Number.isFinite(value));
-  let catalogValues = statusCodes.slice(zeroValue(), STATUS_CODES[httpStatus('OK')]?.length);
-  let decimalValues = catalogValues.map((value) => value / catalogPercentScale());
-  let generatedValues = Array.from(
-    { length: STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue() },
-    () => Math.round(rng() * mutationScaleFromCatalog()) / catalogPercentScale(),
-  );
-  return [
-    ...new Set([zeroValue(), unitValue(), ...catalogValues, ...decimalValues, ...generatedValues]),
-  ];
+  return deriveNumericProbeValuesFromObservedCatalog(rng);
 }
 
 function synthesizePresenceProbeValues(present: boolean): Array<{ value: unknown; label: string }> {
@@ -1915,18 +1729,7 @@ function synthesizeRuntimeTypeCategories(): string[] {
 }
 
 function synthesizeStringIdentitySeeds(candidate: PureFunctionCandidate): string[] {
-  let tokens = [...splitIdentifierTokens(candidate.functionName), ...candidate.params];
-  let stableTokens = tokens.filter(Boolean);
-  let primary = stableTokens.join('-') || candidate.functionName;
-  let numericSuffix = hashStringToSeed(primary).toString(catalogPercentScale());
-  let host = new URL('http://pulse.invalid/resource').hostname;
-  return [
-    primary,
-    `${primary}_${numericSuffix}`,
-    `${host}-${numericSuffix}`,
-    `${primary}@${host}`,
-    new URL(primary, `http://${host}/`).toString(),
-  ];
+  return deriveStringIdentitySeedsFromCandidate(candidate.functionName, candidate.params);
 }
 
 function runtimeStringBoundary(candidate: PureFunctionCandidate): number {
@@ -1934,35 +1737,17 @@ function runtimeStringBoundary(candidate: PureFunctionCandidate): number {
 }
 
 function runtimeStringBoundaryFromRouteCatalog(): number {
-  return httpStatus('OK') + httpStatus('Bad Request') + httpStatus('Forbidden');
+  return deriveRuntimeStringBoundaryFromObservedCatalog();
 }
 
 function synthesizeIdentifierAlphabet(candidate: PureFunctionCandidate): string {
-  let observed = synthesizeStringIdentitySeeds(candidate).join('');
-  let alphabet = [...observed.toLowerCase()]
-    .filter((char) => /[a-z0-9_-]/.test(char))
-    .filter((char, index, chars) => chars.indexOf(char) === index)
-    .join('');
-  return alphabet || 'abcdefghijklmnopqrstuvwxyz0123456789_-';
+  return deriveIdentifierAlphabetFromObservedSeeds(
+    deriveStringIdentitySeedsFromCandidate(candidate.functionName, candidate.params),
+  );
 }
 
 function synthesizeLengthBoundaries(): number[] {
-  let unit = unitValue();
-  let routeBoundary = runtimeStringBoundaryFromRouteCatalog();
-  let unicodeBoundary = Math.pow(
-    unit + unit,
-    STATUS_CODES[httpStatus('Not Found')]?.length ?? unit,
-  );
-  return [
-    zeroValue(),
-    unit,
-    routeBoundary - unit,
-    routeBoundary,
-    routeBoundary + unit,
-    unicodeBoundary - unit,
-    unicodeBoundary,
-    unicodeBoundary + unit,
-  ];
+  return deriveLengthBoundariesFromObservedCatalog();
 }
 
 function synthesizeUnicodeProbeValues(candidate: PureFunctionCandidate): string[] {
@@ -1976,14 +1761,7 @@ function synthesizeUnicodeProbeValues(candidate: PureFunctionCandidate): string[
 }
 
 function synthesizeSpecialCharacters(): string[] {
-  return [
-    String.fromCharCode(zeroValue()),
-    ...JSON.stringify({ key: 'value' })
-      .split('')
-      .filter((char) => !/[A-Za-z0-9]/.test(char)),
-    routeSeparator(),
-    path.sep,
-  ].filter((value, index, values) => values.indexOf(value) === index);
+  return deriveSpecialCharactersFromRuntimeEvidence();
 }
 
 function formatDecimalMoney(major: number, minor: number): string {
@@ -1999,35 +1777,7 @@ function synthesizeMoneyProbeStrings(
   rng: () => number,
   valid: boolean,
 ): string[] {
-  let baseMajor =
-    Math.floor(
-      httpStatus('Payment Required') /
-        (STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue()),
-    ) -
-    unitValue() -
-    unitValue();
-  let minor = httpStatus('OK') / (unitValue() + unitValue() + unitValue() + unitValue());
-  let catalogMoney = [
-    formatDecimalMoney(zeroValue(), zeroValue()),
-    formatDecimalMoney(unitValue(), zeroValue()),
-    formatBrlMoney(unitValue(), zeroValue()),
-    formatBrlMoney(baseMajor, minor),
-  ];
-  if (valid) {
-    return catalogMoney.concat(
-      synthesizeNumericProbeValues(rng)
-        .slice(zeroValue(), STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue())
-        .map((value) => formatDecimalMoney(Math.floor(Math.abs(value)), zeroValue())),
-    );
-  }
-
-  let token = candidate.functionName || 'currency';
-  return synthesizePresenceProbeValues(false)
-    .map(({ value }) => safeStringProbeLabel(value))
-    .concat([
-      `-${formatDecimalMoney(unitValue(), zeroValue())}`,
-      `${formatBrlMoney(unitValue(), zeroValue())}${token}`,
-    ]);
+  return deriveMoneyProbeStringsFromObservedCatalog(candidate.functionName, rng, valid);
 }
 
 function safeStringProbeLabel(value: unknown): string {
@@ -2068,7 +1818,7 @@ function synthesizeInvalidEnumProbeValues(
   return synthesizePresenceProbeValues(false)
     .map(({ value }) => value)
     .concat(
-      [...splitIdentifierTokens(candidate.functionName)]
+      [...splitIdentifierTokensFromObservedName(candidate.functionName)]
         .map((token) => token.toLowerCase())
         .filter((token) => !observed.has(token)),
       hashStringToSeed(candidate.functionName),
@@ -2076,26 +1826,7 @@ function synthesizeInvalidEnumProbeValues(
 }
 
 function synthesizeAdversarialStringPayloads(): string[] {
-  let quote = String.fromCharCode(STATUS_CODES[httpStatus('OK')]?.length ?? unitValue());
-  let slash = routeSeparator();
-  let comment = `${slash}${String.fromCharCode(STATUS_CODES[httpStatus('OK')]?.length ?? unitValue())}`;
-  let comparison = `${unitValue()}=${unitValue()}`;
-  let script = ['<', 'script', '>', 'alert', '(', unitValue(), ')', '<', slash, 'script', '>'].join(
-    '',
-  );
-  let objectProbe = JSON.stringify({ [`$${Object.name.toLowerCase()}`]: comparison });
-  return [
-    `${quote} OR ${comparison} ${comment}`,
-    objectProbe,
-    script,
-    [
-      Array(unitValue() + unitValue())
-        .fill('..')
-        .join(slash),
-      'etc',
-      'passwd',
-    ].join(slash),
-  ];
+  return deriveAdversarialPayloadsFromObservedEvidence();
 }
 
 function generateIdempotencyInputs(rng: () => number): GeneratedPropertyTestInput[] {
@@ -2411,19 +2142,11 @@ function generateEnumValueInputs(
 }
 
 function inferEnumMembersFromCandidate(candidate: PureFunctionCandidate): string[] {
-  if (candidate.params.length > 0) {
-    return [...new Set(candidate.params)];
-  }
-
-  let words = [...splitIdentifierTokens(candidate.functionName)]
-    .map((word) => word.toUpperCase())
-    .filter((word) => word.length > 2);
-
-  return words.length > 0 ? [...new Set(words)] : [candidate.functionName.toUpperCase()];
+  return discoverEnumMembersFromCandidateEvidence(candidate.params, candidate.functionName);
 }
 
 function isBrlCurrencyInput(value: string): boolean {
-  return value.includes('R$') || value.includes(',');
+  return detectBrlCurrencyFromObservedInput(value);
 }
 
 function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestInput[] {
