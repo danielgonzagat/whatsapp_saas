@@ -3,6 +3,11 @@
  * These are file-private shapes (not exported from the PULSE type system).
  */
 import type { JsonSchemaDefinition } from '@openai/agents';
+
+export type {
+  PulseAgentOrchestrationBatchRecord,
+  PulseAgentOrchestrationState,
+} from './types.autonomy';
 import type { ExecutorKind } from './executor';
 import type { PulseExecutionMatrixSummary } from './types.execution-matrix';
 

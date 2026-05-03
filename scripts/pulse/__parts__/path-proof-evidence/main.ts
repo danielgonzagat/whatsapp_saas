@@ -2,11 +2,7 @@ import { ensureDir, pathExists, readJsonFile, writeTextFile } from '../../safe-f
 import { safeJoin } from '../../safe-path';
 import type { PathProofExecutionResult } from '../../path-proof-execution-runner';
 import type { PathProofPlan, PathProofTask } from '../../path-proof-runner';
-import {
-  resultByTaskId as _resultByTaskId,
-  buildEvidenceEntry,
-  summarize,
-} from './evidence-builder';
+import { buildEvidenceEntry, summarize } from './evidence-builder';
 
 export const PATH_PROOF_TASKS_ARTIFACT = '.pulse/current/PULSE_PATH_PROOF_TASKS.json';
 export const PATH_PROOF_EVIDENCE_ARTIFACT = '.pulse/current/PULSE_PATH_PROOF_EVIDENCE.json';

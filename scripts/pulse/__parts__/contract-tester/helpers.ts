@@ -320,3 +320,37 @@ export function discoverContractsFromOpenApi(rootDir: string): ProviderContract[
 
   return contracts;
 }
+
+// ---------------------------------------------------------------------------
+// String helpers
+// ---------------------------------------------------------------------------
+
+export function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.filter((value) => value.trim().length > 0))];
+}
+
+export function normalizeEndpoint(raw: string, _provider: ContractProvider): string {
+  let result = raw.replace(/https?:\/\/[^/]+/, '');
+  if (result.startsWith('/')) result = result.slice(1);
+
+  const paths = result.split('/');
+  const normalized = paths
+    .filter((p) => p.length > 0)
+    .map((p) => {
+      if (/^[a-f0-9]{32}$/i.test(p)) return '{id}';
+      if (/^\d{10,20}$/.test(p)) return '{phone_number_id}';
+      if (/^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(p)) return '{uuid}';
+      return p;
+    });
+
+  return '/' + normalized.join('/');
+}
+
+export function surroundingText(content: string, needle: string, radius: number): string {
+  const index = content.indexOf(needle);
+  if (index < 0) return '';
+  return content.slice(
+    Math.max(0, index - radius),
+    Math.min(content.length, index + needle.length + radius),
+  );
+}

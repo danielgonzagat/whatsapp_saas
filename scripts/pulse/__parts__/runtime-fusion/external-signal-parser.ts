@@ -8,7 +8,6 @@ import {
   defaultCertainty,
   positiveSignal,
   trendSignal,
-  observedInfluence,
 } from './math-helpers';
 import { unique } from '../../signal-normalizers';
 import {

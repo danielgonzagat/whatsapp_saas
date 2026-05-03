@@ -65,7 +65,9 @@ export function resultCountsAsObservedPathProof(result: PathProofRunnerResult): 
   );
 }
 
-function resultByTaskId(results: PathProofRunnerResult[]): Map<string, PathProofRunnerResult> {
+export function resultByTaskId(
+  results: PathProofRunnerResult[],
+): Map<string, PathProofRunnerResult> {
   const entries = new Map<string, PathProofRunnerResult>();
   for (const result of results) {
     entries.set(result.taskId, result);

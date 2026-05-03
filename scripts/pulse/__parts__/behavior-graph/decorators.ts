@@ -1,7 +1,6 @@
 import type { DetectedSourceRoot } from '../../source-root-detector';
 import type { BehaviorInputKind } from '../../types.behavior-graph';
 import type { SourceExternalContext } from './types';
-import { identifierTokens } from './patterns';
 
 type BehaviorDecoratorRole =
   | 'http_route'

@@ -1,5 +1,7 @@
 import type { PulseExecutionMatrixSummary } from '../../types.execution-matrix';
 
+export type { RollbackOutcome } from './rollback';
+
 export interface PulseSnapshot {
   score: number;
   blockingTier: number;
