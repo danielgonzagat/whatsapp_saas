@@ -12,7 +12,16 @@
 import * as p from 'path';
 import { pathExists as existsAt, readTextFile, writeTextFile, ensureDir } from './safe-fs';
 import { tokenize, unique } from './signal-normalizers';
-import { discoverAllObservedArtifactFilenames } from './dynamic-reality-kernel';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverSignalSeverityLabels,
+  deriveVerificationThresholdFromObservedCatalog,
+  discoverSignalSourceLabels,
+  discoverConvergenceUnitPriorityLabels,
+  discoverOperationalEvidenceKindLabels,
+  discoverRuntimeFusionEvidenceStatusLabels,
+  discoverTruthModeLabels,
+} from './dynamic-reality-kernel';
 import type { RuntimeCallGraphEvidence, OtelSpan } from './types.otel-runtime';
 import type {
   RuntimeSignal,
