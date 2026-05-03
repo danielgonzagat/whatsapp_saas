@@ -17,6 +17,9 @@
 
 import { execFileSync } from 'child_process';
 
+const ERROR_NO_DATABASE_URL = 'No DATABASE_URL available for PULSE DB queries';
+const ERROR_PG_NOT_INSTALLED = 'pg package not installed. Run: npm install pg';
+
 // ─── Cached Railway vars ────────────────────────────────────────────────────
 
 type RailwayVarsSource = 'env-json' | 'railway-cli-token' | 'railway-cli' | 'none';
@@ -425,7 +428,7 @@ function buildPulseDbSslConfig(): { rejectUnauthorized: true; ca?: string[] } {
 export async function dbQuery(sql: string, params: any[] = []): Promise<any[]> {
   const dbUrl = getDbUrl();
   if (!dbUrl) {
-    throw new Error('No DATABASE_URL available for PULSE DB queries');
+    throw new Error(ERROR_NO_DATABASE_URL);
   }
 
   // Dynamic import pg to avoid requiring it when not in DEEP mode
@@ -433,7 +436,7 @@ export async function dbQuery(sql: string, params: any[] = []): Promise<any[]> {
   try {
     pg = require('pg');
   } catch {
-    throw new Error('pg package not installed. Run: npm install pg');
+    throw new Error(ERROR_PG_NOT_INSTALLED);
   }
 
   const client = new pg.Client({

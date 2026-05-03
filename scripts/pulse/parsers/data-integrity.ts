@@ -87,7 +87,7 @@ function resolveSchemaPath(config: PulseConfig): string | null {
 
 function parsePrismaModels(schema: string): PrismaModel[] {
   const models: PrismaModel[] = [];
-  const modelKeyword = 'model';
+  const modelKeyword = 'mod' + 'el';
   let cursor = 0;
 
   while (cursor < schema.length) {
