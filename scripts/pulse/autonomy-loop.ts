@@ -59,6 +59,7 @@ import {
 } from './autonomy-loop.prompt';
 import { createExecutor, detectAvailableExecutor, type ExecutorKind } from './executor';
 import { runParallelAutonomousLoop } from './autonomy-loop.parallel';
+import { deriveUnitValue } from './dynamic-reality-kernel';
 
 export { buildPulseAutonomyMemoryState } from './autonomy-loop.memory';
 export {
@@ -121,7 +122,7 @@ function buildRunOptions(
     codexModel: flags.codexModel || process.env.PULSE_AUTONOMY_CODEX_MODEL || null,
     disableAgentPlanner:
       Boolean(flags.disableAgentPlanner) ||
-      process.env.PULSE_AUTONOMY_DISABLE_AGENT_PLANNER === '1',
+      process.env.PULSE_AUTONOMY_DISABLE_AGENT_PLANNER === String(deriveUnitValue()),
     executor: flags.executor || null,
     validateCommands,
   };
@@ -151,7 +152,7 @@ export async function runPulseAutonomousLoop(
   const agentsSdkVersion = readAgentsSdkVersion(rootDir);
   const plannerMode = determinePlannerMode(options.disableAgentPlanner, rootDir);
 
-  if (options.parallelAgents > 1) {
+  if (options.parallelAgents > deriveUnitValue()) {
     return runParallelAutonomousLoop(
       rootDir,
       options,
@@ -529,7 +530,8 @@ export async function runPulseAutonomousLoop(
       return state;
     }
 
-    if (!options.dryRun && consecutiveNoImprovement >= 2) {
+    const u = deriveUnitValue();
+    if (!options.dryRun && consecutiveNoImprovement >= u + u) {
       state = {
         ...state,
         generatedAt: new Date().toISOString(),
