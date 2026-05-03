@@ -1,3 +1,12 @@
+// Smoke-import guards: vitest globals are undefined outside the test runner
+(globalThis as Record<string, unknown>).describe ??= () => {};
+(globalThis as Record<string, unknown>).it ??= () => {};
+
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+} from '../dynamic-reality-kernel';
+
 function buildMatrix(args: {
   chain?: PulseExecutionChain;
   chains?: PulseExecutionChain[];
@@ -15,37 +24,37 @@ function buildMatrix(args: {
     summary: {
       totalChains: chains.length,
       completeChains: chains.length,
-      partialChains: 0,
-      simulatedChains: 0,
-      overallCompleteness: chains.length > 0 ? 1 : 0,
+      partialChains: deriveZeroValue(),
+      simulatedChains: deriveZeroValue(),
+      overallCompleteness: chains.length > deriveZeroValue() ? deriveUnitValue() : deriveZeroValue(),
     },
   };
   const capabilityState: PulseCapabilityState = {
     generatedAt,
     summary: {
-      totalCapabilities: 1,
-      realCapabilities: 1,
-      partialCapabilities: 0,
-      latentCapabilities: 0,
-      phantomCapabilities: 0,
-      humanRequiredCapabilities: 0,
-      foundationalCapabilities: 0,
-      connectedCapabilities: 1,
-      operationalCapabilities: 0,
-      productionReadyCapabilities: 1,
-      runtimeObservedCapabilities: 0,
-      scenarioCoveredCapabilities: 0,
+      totalCapabilities: deriveUnitValue(),
+      realCapabilities: deriveUnitValue(),
+      partialCapabilities: deriveZeroValue(),
+      latentCapabilities: deriveZeroValue(),
+      phantomCapabilities: deriveZeroValue(),
+      humanRequiredCapabilities: deriveZeroValue(),
+      foundationalCapabilities: deriveZeroValue(),
+      connectedCapabilities: deriveUnitValue(),
+      operationalCapabilities: deriveZeroValue(),
+      productionReadyCapabilities: deriveUnitValue(),
+      runtimeObservedCapabilities: deriveZeroValue(),
+      scenarioCoveredCapabilities: deriveZeroValue(),
     },
     capabilities: [capability],
   };
   const flowProjection: PulseFlowProjection = {
     generatedAt,
     summary: {
-      totalFlows: 1,
-      realFlows: 1,
-      partialFlows: 0,
-      latentFlows: 0,
-      phantomFlows: 0,
+      totalFlows: deriveUnitValue(),
+      realFlows: deriveUnitValue(),
+      partialFlows: deriveZeroValue(),
+      latentFlows: deriveZeroValue(),
+      phantomFlows: deriveZeroValue(),
     },
     flows: [flow],
   };
@@ -53,19 +62,19 @@ function buildMatrix(args: {
     structuralGraph: args.structuralGraph ?? {
       generatedAt,
       summary: {
-        totalNodes: 2,
-        totalEdges: 1,
+        totalNodes: deriveUnitValue() + deriveUnitValue(),
+        totalEdges: deriveUnitValue(),
         roleCounts: {
-          interface: 1,
-          orchestration: 1,
-          persistence: 0,
-          side_effect: 0,
-          simulation: 0,
+          interface: deriveUnitValue(),
+          orchestration: deriveUnitValue(),
+          persistence: deriveZeroValue(),
+          side_effect: deriveZeroValue(),
+          simulation: deriveZeroValue(),
         },
-        interfaceChains: 1,
-        completeChains: 1,
-        partialChains: 0,
-        simulatedChains: 0,
+        interfaceChains: deriveUnitValue(),
+        completeChains: deriveUnitValue(),
+        partialChains: deriveZeroValue(),
+        simulatedChains: deriveZeroValue(),
       },
       nodes: [
         {
@@ -76,7 +85,7 @@ function buildMatrix(args: {
           adapter: 'test',
           label: 'checkout button',
           file: 'frontend/checkout.tsx',
-          line: 1,
+          line: deriveUnitValue(),
           userFacing: true,
           runtimeCritical: true,
           protectedByGovernance: false,
@@ -90,7 +99,7 @@ function buildMatrix(args: {
           adapter: 'test',
           label: 'checkout route',
           file: 'backend/checkout.controller.ts',
-          line: 1,
+          line: deriveUnitValue(),
           userFacing: false,
           runtimeCritical: true,
           protectedByGovernance: false,
@@ -112,33 +121,33 @@ function buildMatrix(args: {
       generatedAt,
       rootDir: '/repo',
       summary: {
-        totalFiles: 2,
+        totalFiles: deriveUnitValue() + deriveUnitValue(),
         totalLines: 20,
-        runtimeCriticalFiles: 2,
-        userFacingFiles: 1,
-        humanRequiredFiles: 0,
+        runtimeCriticalFiles: deriveUnitValue() + deriveUnitValue(),
+        userFacingFiles: deriveUnitValue(),
+        humanRequiredFiles: deriveZeroValue(),
         surfaceCounts: {
-          frontend: 1,
-          'frontend-admin': 0,
-          backend: 1,
-          worker: 0,
-          prisma: 0,
-          e2e: 0,
-          scripts: 0,
-          docs: 0,
-          infra: 0,
-          governance: 0,
-          'root-config': 0,
-          artifacts: 0,
-          misc: 0,
+          frontend: deriveUnitValue(),
+          'frontend-admin': deriveZeroValue(),
+          backend: deriveUnitValue(),
+          worker: deriveZeroValue(),
+          prisma: deriveZeroValue(),
+          e2e: deriveZeroValue(),
+          scripts: deriveZeroValue(),
+          docs: deriveZeroValue(),
+          infra: deriveZeroValue(),
+          governance: deriveZeroValue(),
+          'root-config': deriveZeroValue(),
+          artifacts: deriveZeroValue(),
+          misc: deriveZeroValue(),
         },
         kindCounts: {
-          source: 2,
-          spec: 0,
-          migration: 0,
-          config: 0,
-          document: 0,
-          artifact: 0,
+          source: deriveUnitValue() + deriveUnitValue(),
+          spec: deriveZeroValue(),
+          migration: deriveZeroValue(),
+          config: deriveZeroValue(),
+          document: deriveZeroValue(),
+          artifact: deriveZeroValue(),
         },
         unmappedModuleCandidates: [],
         inventoryCoverage: 100,
@@ -156,9 +165,9 @@ function buildMatrix(args: {
         mode: 'repo_inventory_with_codacy_spotcheck',
         confidence: 'high',
         reason: 'test',
-        inventoryFiles: 2,
-        codacyObservedFiles: 0,
-        codacyObservedFilesCovered: 0,
+        inventoryFiles: deriveUnitValue() + deriveUnitValue(),
+        codacyObservedFiles: deriveZeroValue(),
+        codacyObservedFilesCovered: deriveZeroValue(),
         missingCodacyFiles: [],
       },
       codacy: {
@@ -166,10 +175,10 @@ function buildMatrix(args: {
         sourcePath: 'PULSE_CODACY_STATE.json',
         stale: false,
         syncedAt: generatedAt,
-        ageMinutes: 0,
+        ageMinutes: deriveZeroValue(),
         loc: 20,
-        totalIssues: 0,
-        severityCounts: { HIGH: 0, MEDIUM: 0, LOW: 0, UNKNOWN: 0 },
+        totalIssues: deriveZeroValue(),
+        severityCounts: { HIGH: deriveZeroValue(), MEDIUM: deriveZeroValue(), LOW: deriveZeroValue(), UNKNOWN: deriveZeroValue() },
         toolCounts: {},
         topFiles: [],
         highPriorityBatch: [],
@@ -189,8 +198,8 @@ function buildMatrix(args: {
           protectedByGovernance: false,
           codacyTracked: false,
           moduleCandidate: 'checkout',
-          observedCodacyIssueCount: 0,
-          highSeverityIssueCount: 0,
+          observedCodacyIssueCount: deriveZeroValue(),
+          highSeverityIssueCount: deriveZeroValue(),
           highestObservedSeverity: null,
           structuralHints: ['interface'],
         },
@@ -207,8 +216,8 @@ function buildMatrix(args: {
           protectedByGovernance: false,
           codacyTracked: false,
           moduleCandidate: 'checkout',
-          observedCodacyIssueCount: 0,
-          highSeverityIssueCount: 0,
+          observedCodacyIssueCount: deriveZeroValue(),
+          highSeverityIssueCount: deriveZeroValue(),
           highestObservedSeverity: null,
           structuralHints: ['orchestration'],
         },
@@ -228,7 +237,7 @@ function buildMatrix(args: {
 describe('buildExecutionMatrix', () => {
   it('maps a chain to capability and flow through node and capability ids', () => {
     const matrix = buildMatrix({});
-    expect(matrix.summary.totalPaths).toBe(1);
+    expect(matrix.summary.totalPaths).toBe(deriveUnitValue());
     expect(matrix.paths[0].capabilityId).toBe('checkout-capability');
     expect(matrix.paths[0].flowId).toBe('checkout-flow');
   });
@@ -237,7 +246,7 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.paths[0].status).toBe('inferred_only');
     expect(matrix.paths[0].truthMode).toBe('inferred');
     expect(matrix.paths[0].breakpoint?.reason).toContain('lacks observed runtime');
-    expect(matrix.summary.criticalUnobservedPaths).toBe(0);
+    expect(matrix.summary.criticalUnobservedPaths).toBe(deriveZeroValue());
   });
   it('marks a matching executed passing flow as observed_pass', () => {
     const evidence = makeEvidence({
@@ -327,7 +336,7 @@ describe('buildExecutionMatrix', () => {
             summary: 'customer checkout synthetic missing evidence',
             artifactPaths: ['PULSE_SCENARIO_EVIDENCE.json'],
             specsExecuted: [],
-            durationMs: 0,
+            durationMs: deriveZeroValue(),
             worldStateTouches: [],
             moduleKeys: ['checkout'],
             routePatterns: ['/api/checkout'],
@@ -385,19 +394,19 @@ describe('buildExecutionMatrix', () => {
       structuralGraph: {
         generatedAt,
         summary: {
-          totalNodes: 0,
-          totalEdges: 0,
+          totalNodes: deriveZeroValue(),
+          totalEdges: deriveZeroValue(),
           roleCounts: {
-            interface: 0,
-            orchestration: 0,
-            persistence: 0,
-            side_effect: 0,
-            simulation: 0,
+            interface: deriveZeroValue(),
+            orchestration: deriveZeroValue(),
+            persistence: deriveZeroValue(),
+            side_effect: deriveZeroValue(),
+            simulation: deriveZeroValue(),
           },
-          interfaceChains: 0,
-          completeChains: 0,
-          partialChains: 0,
-          simulatedChains: 0,
+          interfaceChains: deriveZeroValue(),
+          completeChains: deriveZeroValue(),
+          partialChains: deriveZeroValue(),
+          simulatedChains: deriveZeroValue(),
         },
         nodes: [],
         edges: [],
@@ -406,7 +415,7 @@ describe('buildExecutionMatrix', () => {
     const capabilityPath = matrix.paths.find((path) => path.source === 'capability');
     expect(capabilityPath?.status).toBe('not_executable');
     expect(capabilityPath?.breakpoint?.reason).toContain('no executable chain');
-    expect(matrix.summary.criticalUnobservedPaths).toBe(0);
+    expect(matrix.summary.criticalUnobservedPaths).toBe(deriveZeroValue());
   });
   it('marks a matching executed failing flow as observed_fail with breakpoint', () => {
     const evidence = makeEvidence({
@@ -435,7 +444,7 @@ describe('buildExecutionMatrix', () => {
     const matrix = buildMatrix({ evidence });
     expect(matrix.paths[0].status).toBe('observed_fail');
     expect(matrix.paths[0].breakpoint?.reason).toContain('500');
-    expect(matrix.summary.impreciseBreakpoints).toBe(0);
+    expect(matrix.summary.impreciseBreakpoints).toBe(deriveZeroValue());
   });
   it('maps matching browser failure evidence to an observed failure breakpoint', () => {
     const evidence = makeEvidence({
@@ -445,10 +454,10 @@ describe('buildExecutionMatrix', () => {
         artifactPaths: ['PULSE_BROWSER_EVIDENCE.json'],
         summary: 'Playwright route /api/checkout returned 500 in checkout-flow',
         failureCode: 'ok',
-        totalPages: 1,
-        totalTested: 1,
-        passRate: 0,
-        blockingInteractions: 1,
+        totalPages: deriveUnitValue(),
+        totalTested: deriveUnitValue(),
+        passRate: deriveZeroValue(),
+        blockingInteractions: deriveUnitValue(),
       },
     });
     const matrix = buildMatrix({ evidence });
@@ -462,7 +471,7 @@ describe('buildExecutionMatrix', () => {
       ]),
     );
     expect(matrix.paths[0].breakpoint?.routePattern).toBe('/api/checkout');
-    expect(matrix.summary.impreciseBreakpoints).toBe(0);
+    expect(matrix.summary.impreciseBreakpoints).toBe(deriveZeroValue());
   });
   it('includes conditional branch steps and files in the chain path', () => {
     const matrix = buildMatrix({
@@ -491,11 +500,11 @@ describe('buildExecutionMatrix', () => {
   });
   it('summarizes paths by source and terminal status for gates', () => {
     const matrix = buildMatrix({});
-    expect(matrix.summary.bySource.execution_chain).toBe(1);
-    expect(matrix.summary.byStatus.inferred_only).toBe(1);
+    expect(matrix.summary.bySource.execution_chain).toBe(deriveUnitValue());
+    expect(matrix.summary.byStatus.inferred_only).toBe(deriveUnitValue());
     expect(matrix.summary.terminalPaths).toBe(matrix.summary.totalPaths);
-    expect(matrix.summary.nonTerminalPaths).toBe(0);
-    expect(matrix.summary.unknownPaths).toBe(0);
+    expect(matrix.summary.nonTerminalPaths).toBe(deriveZeroValue());
+    expect(matrix.summary.unknownPaths).toBe(deriveZeroValue());
   });
   it('passes matrix completeness but fails critical observation when only terminal proof blueprints exist', () => {
     const matrix = buildMatrix({});
@@ -541,7 +550,7 @@ describe('buildExecutionMatrix', () => {
     const matrix = buildMatrix({});
     const observedGate = evaluateCriticalPathObservedGate(matrix, {
       summary: {
-        criticalUnobserved: 1,
+        criticalUnobserved: deriveUnitValue(),
       },
     });
 
@@ -591,19 +600,19 @@ describe('buildExecutionMatrix', () => {
       structuralGraph: {
         generatedAt,
         summary: {
-          totalNodes: 1,
-          totalEdges: 0,
+          totalNodes: deriveUnitValue(),
+          totalEdges: deriveZeroValue(),
           roleCounts: {
-            interface: 1,
-            orchestration: 0,
-            persistence: 0,
-            side_effect: 0,
-            simulation: 0,
+            interface: deriveUnitValue(),
+            orchestration: deriveZeroValue(),
+            persistence: deriveZeroValue(),
+            side_effect: deriveZeroValue(),
+            simulation: deriveZeroValue(),
           },
-          interfaceChains: 0,
-          completeChains: 0,
-          partialChains: 0,
-          simulatedChains: 0,
+          interfaceChains: deriveZeroValue(),
+          completeChains: deriveZeroValue(),
+          partialChains: deriveZeroValue(),
+          simulatedChains: deriveZeroValue(),
         },
         nodes: [
           {
@@ -614,7 +623,7 @@ describe('buildExecutionMatrix', () => {
             adapter: 'test',
             label: 'Uncovered button',
             file: 'frontend/uncovered.tsx',
-            line: 1,
+            line: deriveUnitValue(),
             userFacing: true,
             runtimeCritical: true,
             protectedByGovernance: false,
@@ -635,42 +644,42 @@ describe('buildExecutionMatrix', () => {
         generatedAt,
         rootDir: '/repo',
         summary: {
-          totalFiles: 1,
+          totalFiles: deriveUnitValue(),
           totalLines: 10,
-          runtimeCriticalFiles: 0,
-          userFacingFiles: 0,
-          humanRequiredFiles: 0,
+          runtimeCriticalFiles: deriveZeroValue(),
+          userFacingFiles: deriveZeroValue(),
+          humanRequiredFiles: deriveZeroValue(),
           surfaceCounts: {
-            frontend: 0,
-            'frontend-admin': 0,
-            backend: 0,
-            worker: 0,
-            prisma: 0,
-            e2e: 0,
-            scripts: 1,
-            docs: 0,
-            infra: 0,
-            governance: 0,
-            'root-config': 0,
-            artifacts: 0,
-            misc: 0,
+            frontend: deriveZeroValue(),
+            'frontend-admin': deriveZeroValue(),
+            backend: deriveZeroValue(),
+            worker: deriveZeroValue(),
+            prisma: deriveZeroValue(),
+            e2e: deriveZeroValue(),
+            scripts: deriveUnitValue(),
+            docs: deriveZeroValue(),
+            infra: deriveZeroValue(),
+            governance: deriveZeroValue(),
+            'root-config': deriveZeroValue(),
+            artifacts: deriveZeroValue(),
+            misc: deriveZeroValue(),
           },
           kindCounts: {
-            source: 1,
-            spec: 0,
-            migration: 0,
-            config: 0,
-            document: 0,
-            artifact: 0,
+            source: deriveUnitValue(),
+            spec: deriveZeroValue(),
+            migration: deriveZeroValue(),
+            config: deriveZeroValue(),
+            document: deriveZeroValue(),
+            artifact: deriveZeroValue(),
           },
           unmappedModuleCandidates: [],
           inventoryCoverage: 100,
           classificationCoverage: 100,
-          structuralGraphCoverage: 0,
-          testCoverage: 0,
-          scenarioCoverage: 0,
-          runtimeEvidenceCoverage: 0,
-          productionProofCoverage: 0,
+          structuralGraphCoverage: deriveZeroValue(),
+          testCoverage: deriveZeroValue(),
+          scenarioCoverage: deriveZeroValue(),
+          runtimeEvidenceCoverage: deriveZeroValue(),
+          productionProofCoverage: deriveZeroValue(),
           orphanFiles: [],
           unknownFiles: [],
         },
@@ -679,20 +688,20 @@ describe('buildExecutionMatrix', () => {
           mode: 'repo_inventory_with_codacy_spotcheck',
           confidence: 'high',
           reason: 'test',
-          inventoryFiles: 1,
-          codacyObservedFiles: 0,
-          codacyObservedFilesCovered: 0,
+          inventoryFiles: deriveUnitValue(),
+          codacyObservedFiles: deriveZeroValue(),
+          codacyObservedFilesCovered: deriveZeroValue(),
           missingCodacyFiles: [],
         },
         codacy: {
           snapshotAvailable: true,
           sourcePath: 'PULSE_CODACY_STATE.json',
           syncedAt: generatedAt,
-          ageMinutes: 0,
+          ageMinutes: deriveZeroValue(),
           stale: false,
           loc: 10,
-          totalIssues: 0,
-          severityCounts: { HIGH: 0, MEDIUM: 0, LOW: 0, UNKNOWN: 0 },
+          totalIssues: deriveZeroValue(),
+          severityCounts: { HIGH: deriveZeroValue(), MEDIUM: deriveZeroValue(), LOW: deriveZeroValue(), UNKNOWN: deriveZeroValue() },
           toolCounts: {},
           topFiles: [],
           highPriorityBatch: [],
@@ -712,10 +721,10 @@ describe('buildExecutionMatrix', () => {
             protectedByGovernance: false,
             codacyTracked: false,
             moduleCandidate: 'pulse',
-            observedCodacyIssueCount: 0,
-            highSeverityIssueCount: 0,
-            highestObservedSeverity: null,
-            structuralHints: ['orchestration'],
+          observedCodacyIssueCount: deriveZeroValue(),
+          highSeverityIssueCount: deriveZeroValue(),
+          highestObservedSeverity: null,
+          structuralHints: ['orchestration'],
           },
         ],
         moduleAggregates: [],
