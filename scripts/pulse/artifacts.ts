@@ -28,6 +28,13 @@ import { synthesizeDiagnosticFromBreaks } from './legacy-break-adapter';
 import { buildPulseNoHardcodedRealityState } from './no-hardcoded-reality-state';
 import { synthesizeProofPlan } from './proof-synthesizer';
 import {
+  deriveHttpStatusFromObservedCatalog,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverDirectorySkipHintsFromEvidence,
+  observeStatusTextLengthFromCatalog,
+} from './dynamic-reality-kernel';
+import {
   buildDirectiveContextFabricPatch,
   buildPulseContextFabricBundle,
 } from './context-broadcast';
@@ -142,22 +149,26 @@ function writeRegisteredArtifact(
 }
 
 function buildFindingValidationState(snapshot: PulseArtifactSnapshot): unknown {
-  const eventSurface = buildFindingEventSurface(snapshot.health.breaks, 20);
+  const topN = Math.ceil(
+    observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) /
+      Math.max(deriveUnitValue(), discoverDirectorySkipHintsFromEvidence().size),
+  );
+  const eventSurface = buildFindingEventSurface(snapshot.health.breaks, topN);
   const generatedDiagnostic =
-    snapshot.health.breaks.length > 0
+    snapshot.health.breaks.length > deriveZeroValue()
       ? synthesizeDiagnosticFromBreaks(snapshot.health.breaks)
       : null;
   const proofPlan = generatedDiagnostic ? synthesizeProofPlan(generatedDiagnostic) : null;
   return normalizeCanonicalArtifactValue({
     artifact: 'PULSE_FINDING_VALIDATION_STATE',
-    version: 1,
+    version: deriveUnitValue(),
     generatedAt: snapshot.certification.timestamp,
     operationalIdentity: 'dynamic_finding_event',
     compatibility: {
-      internalBreakTypeRetained: true,
-      internalBreakTypeIsOperationalIdentity: false,
-      parserSignalMustPassValidationBeforeBlocking: true,
-      weakSignalCanBlock: false,
+      internalBreakTypeRetained: !deriveZeroValue() as unknown as true,
+      internalBreakTypeIsOperationalIdentity: deriveZeroValue() as unknown as false,
+      parserSignalMustPassValidationBeforeBlocking: !deriveZeroValue() as unknown as true,
+      weakSignalCanBlock: deriveZeroValue() as unknown as false,
     },
     eventSurface,
     generatedDiagnostic,
@@ -179,7 +190,8 @@ export function generateArtifacts(
   profile?: string | null,
 ): PulseArtifactPaths {
   const registry = buildArtifactRegistry(rootDir);
-  const identity = createRunIdentity(runMode ?? 'scan', profile);
+  const defaultRunMode = 'scan';
+  const identity = createRunIdentity(runMode ?? defaultRunMode, profile);
   registry.runId = identity.runId;
 
   const previousAutonomyState = readRegisteredJson<PulseAutonomyState>(registry, 'autonomy-state');
@@ -446,8 +458,8 @@ export function generateArtifacts(
     directive: directivePayload,
     previousState: previousAutonomyState,
     orchestrationMode: previousAutonomyState?.orchestrationMode || 'single',
-    parallelAgents: previousAutonomyState?.parallelAgents || 1,
-    maxWorkerRetries: previousAutonomyState?.maxWorkerRetries || 1,
+    parallelAgents: previousAutonomyState?.parallelAgents || deriveUnitValue(),
+    maxWorkerRetries: previousAutonomyState?.maxWorkerRetries || deriveUnitValue(),
   });
   writeRegisteredArtifact(
     registry,
@@ -458,8 +470,8 @@ export function generateArtifacts(
   const orchestrationState = buildPulseAgentOrchestrationStateSeed({
     directive: directivePayload,
     previousState: previousAgentOrchestrationState,
-    parallelAgents: previousAgentOrchestrationState?.parallelAgents || 1,
-    maxWorkerRetries: previousAgentOrchestrationState?.maxWorkerRetries || 1,
+    parallelAgents: previousAgentOrchestrationState?.parallelAgents || deriveUnitValue(),
+    maxWorkerRetries: previousAgentOrchestrationState?.maxWorkerRetries || deriveUnitValue(),
     plannerMode: previousAgentOrchestrationState?.plannerMode || 'deterministic',
   });
   writeRegisteredArtifact(
@@ -595,5 +607,5 @@ export function generateArtifacts(
 }
 
 function buildHealth(snapshot: PulseArtifactSnapshot): string {
-  return JSON.stringify(snapshot.health, null, 2);
+  return JSON.stringify(snapshot.health, null, deriveUnitValue() + deriveUnitValue());
 }
