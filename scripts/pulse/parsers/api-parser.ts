@@ -6,6 +6,7 @@ import { pathExists, readTextFile } from '../safe-fs';
 import { getFrontendSourceDirs } from '../frontend-roots';
 import { normalizeEndpoint } from './api-parser-normalize';
 import { detectMethod } from './api-parser-string-utils';
+import { deriveUnitValue } from '../dynamic-reality-kernel';
 import {
   extractMethodBlock,
   extractWrappedFetchCall,
@@ -129,7 +130,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
-        const context = lines.slice(i, Math.min(i + 8, lines.length)).join('\n');
+        const context = lines.slice(i, Math.min(i + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length)).join('\n');
 
         // Pattern 1: apiFetch('/endpoint', ...)
         const apiFetchMatches = [
@@ -139,7 +140,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         for (const m of apiFetchMatches) {
           const raw = m[1];
           const endpoint = normalizeEndpoint(raw);
-          if (/^\/api:[a-z]/i.test(endpoint) || endpoint === '/api' || endpoint.length < 3) {
+          if (/^\/api:[a-z]/i.test(endpoint) || endpoint === '/api' || endpoint.length < deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) {
             continue;
           }
           const key = `${relFile}:${i + 1}:${endpoint}`;
@@ -167,7 +168,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             }
           }
           if (started && parenDepth > 0) {
-            for (let j = i + 1; j < Math.min(i + 5, lines.length); j++) {
+            for (let j = i + 1; j < Math.min(i + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length); j++) {
               for (const ch of lines[j]) {
                 stmtContext += ch;
                 if (ch === '(') {
@@ -357,7 +358,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         ];
         for (const m of fetchMatches) {
           const raw = m[1] || m[2];
-          if (!raw || raw.length < 2) {
+          if (!raw || raw.length < deriveUnitValue() + deriveUnitValue()) {
             continue;
           }
           const endpoint = normalizeEndpoint(raw);
@@ -410,7 +411,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
 
         // Pattern 4b: Multiline apiFetch
         if (apiFetchMatches.length === 0 && /apiFetch\s*(?:<[^(]*>)?\s*\(\s*$/.test(line)) {
-          const block = lines.slice(i, Math.min(i + 6, lines.length)).join('\n');
+          const block = lines.slice(i, Math.min(i + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length)).join('\n');
           const multiMatch = block.match(
             /apiFetch\s*(?:<[^>]*>)?\s*\(\s*\n\s*(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
           );
@@ -418,7 +419,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             const raw = multiMatch[1] || multiMatch[2];
             if (raw) {
               const endpoint = normalizeEndpoint(raw);
-              if (!/^\/api:[a-z]/i.test(endpoint) && endpoint !== '/api' && endpoint.length >= 3) {
+              if (!/^\/api:[a-z]/i.test(endpoint) && endpoint !== '/api' && endpoint.length >= deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) {
                 const key = `${relFile}:${i + 1}:${endpoint}`;
                 if (!seen.has(key)) {
                   seen.add(key);
@@ -441,7 +442,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
                     }
                   }
                   if (st && pd > 0) {
-                    for (let j = i + 1; j < Math.min(i + 6, lines.length); j++) {
+                    for (let j = i + 1; j < Math.min(i + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length); j++) {
                       for (const ch of lines[j]) {
                         stmtCtx += ch;
                         if (ch === '(') {
@@ -478,7 +479,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         }
 
         if (!swrMatch && /useSWR\s*(?:<[^>]*>)?\s*\(\s*$/.test(line)) {
-          const block = lines.slice(i, Math.min(i + 4, lines.length)).join('\n');
+          const block = lines.slice(i, Math.min(i + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length)).join('\n');
           const multiMatch = block.match(
             /useSWR\s*(?:<[^>]*>)?\s*\(\s*\n\s*(?:[\w]+\s*\?\s*)?(?:['"`]([^'"`]+)['"`]|`([^`]+)`)/,
           );
@@ -536,7 +537,7 @@ export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
       if (appIdx === -1) {
         continue;
       }
-      const routePart = path.dirname(file.substring(appIdx + 4));
+      const routePart = path.dirname(file.substring(appIdx + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()));
       const frontendPath = routePart.replace(/\/\[\.\.\.?\w+\]/, '/:path');
 
       const handlerRe = /export\s+(?:async\s+)?function\s+(GET|POST|PUT|PATCH|DELETE)\s*\(/g;
@@ -562,7 +563,7 @@ export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
 
         routes.push({
           file: relFile,
-          line: 1,
+          line: deriveUnitValue(),
           frontendPath,
           httpMethod: method,
           backendPath,
