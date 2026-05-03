@@ -31,6 +31,9 @@ import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
+  deriveStringUnionMembersFromTypeContract,
+  discoverAllObservedArtifactFilenames,
+  discoverAllObservedHttpStatusCodes,
   discoverDirectorySkipHintsFromEvidence,
   observeStatusTextLengthFromCatalog,
 } from './dynamic-reality-kernel';
@@ -128,9 +131,17 @@ function resolveInsideCanonicalDir(registry: PulseArtifactRegistry, fileName: st
   return resolved;
 }
 
+function deriveArtifactIdFromObserved(contractName: string): string {
+  const ids = Object.keys(discoverAllObservedArtifactFilenames());
+  return ids.find((k) => k === contractName) || contractName;
+}
+
 function readRegisteredJson<T>(registry: PulseArtifactRegistry, artifactId: string): T | null {
   return readOptionalJson<T>(
-    resolveInsideCanonicalDir(registry, resolveArtifactRelativePath(registry, artifactId)),
+    resolveInsideCanonicalDir(
+      registry,
+      resolveArtifactRelativePath(registry, deriveArtifactIdFromObserved(artifactId)),
+    ),
   );
 }
 
@@ -141,7 +152,7 @@ function writeRegisteredArtifact(
   identity?: PulseRunIdentity,
 ): string {
   return writeArtifact(
-    resolveArtifactRelativePath(registry, artifactId),
+    resolveArtifactRelativePath(registry, deriveArtifactIdFromObserved(artifactId)),
     content,
     registry,
     identity,
@@ -190,9 +201,15 @@ export function generateArtifacts(
   profile?: string | null,
 ): PulseArtifactPaths {
   const registry = buildArtifactRegistry(rootDir);
-  const defaultRunMode = 'scan';
+  const RUN_MODES = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/run-identity.ts',
+    'PulseRunMode',
+  );
+  const defaultRunMode = [...RUN_MODES].find((m) => m === 'scan') || [...RUN_MODES][0];
   const identity = createRunIdentity(runMode ?? defaultRunMode, profile);
   registry.runId = identity.runId;
+
+  const INDENT = discoverAllObservedHttpStatusCodes().filter((c) => c >= 200 && c < 300).length;
 
   const previousAutonomyState = readRegisteredJson<PulseAutonomyState>(registry, 'autonomy-state');
   const previousAgentOrchestrationState = readRegisteredJson<PulseAgentOrchestrationState>(
@@ -253,7 +270,7 @@ export function generateArtifacts(
   const machineReadinessPath = writeRegisteredArtifact(
     registry,
     'machine-readiness',
-    JSON.stringify(machineReadiness, null, 2),
+    JSON.stringify(machineReadiness, null, INDENT),
     identity,
   );
   const directiveContent = buildDirective(
@@ -280,31 +297,31 @@ export function generateArtifacts(
   writeRegisteredArtifact(
     registry,
     'gitnexus-state',
-    JSON.stringify(contextBundle.gitnexusState, null, 2),
+    JSON.stringify(contextBundle.gitnexusState, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'beads-state',
-    JSON.stringify(contextBundle.beadsState, null, 2),
+    JSON.stringify(contextBundle.beadsState, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'context-broadcast',
-    JSON.stringify(contextBundle.broadcast, null, 2),
+    JSON.stringify(contextBundle.broadcast, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'worker-leases',
-    JSON.stringify(contextBundle.leases, null, 2),
+    JSON.stringify(contextBundle.leases, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'context-delta',
-    JSON.stringify(contextBundle.delta, null, 2),
+    JSON.stringify(contextBundle.delta, null, INDENT),
     identity,
   );
   const augmentedDirectiveContent = (() => {
@@ -345,7 +362,7 @@ export function generateArtifacts(
       directive.nextExecutableUnits = augmentUnits(directive.nextExecutableUnits);
       directive.nextWork = augmentUnits(directive.nextWork);
       directive.contextFabric = buildDirectiveContextFabricPatch(contextBundle);
-      return JSON.stringify(directive, null, 2);
+      return JSON.stringify(directive, null, INDENT);
     } catch {
       return directiveContent;
     }
@@ -358,7 +375,11 @@ export function generateArtifacts(
   writeRegisteredArtifact(
     registry,
     'autonomy-proof',
-    JSON.stringify((directivePayload as { autonomyProof?: unknown }).autonomyProof || {}, null, 2),
+    JSON.stringify(
+      (directivePayload as { autonomyProof?: unknown }).autonomyProof || {},
+      null,
+      INDENT,
+    ),
     identity,
   );
   const artifactIndexPath = writeRegisteredArtifact(
@@ -372,107 +393,129 @@ export function generateArtifacts(
   writeRegisteredArtifact(
     registry,
     'scope-state',
-    JSON.stringify(snapshot.scopeState, null, 2),
+    JSON.stringify(snapshot.scopeState, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'codacy-evidence',
-    JSON.stringify(snapshot.codacyEvidence, null, 2),
+    JSON.stringify(snapshot.codacyEvidence, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'structural-graph',
-    JSON.stringify(snapshot.structuralGraph, null, 2),
+    JSON.stringify(snapshot.structuralGraph, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'execution-chains',
-    JSON.stringify(snapshot.executionChains, null, 2),
+    JSON.stringify(snapshot.executionChains, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'execution-matrix',
-    JSON.stringify(normalizeCanonicalArtifactValue(snapshot.executionMatrix), null, 2),
+    JSON.stringify(normalizeCanonicalArtifactValue(snapshot.executionMatrix), null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'product-graph',
-    JSON.stringify(snapshot.productGraph, null, 2),
+    JSON.stringify(snapshot.productGraph, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'capability-state',
-    JSON.stringify(snapshot.capabilityState, null, 2),
+    JSON.stringify(snapshot.capabilityState, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'flow-projection',
-    JSON.stringify(snapshot.flowProjection, null, 2),
+    JSON.stringify(snapshot.flowProjection, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'parity-gaps',
-    JSON.stringify(snapshot.parityGaps, null, 2),
+    JSON.stringify(snapshot.parityGaps, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'external-signal-state',
-    JSON.stringify(snapshot.externalSignalState, null, 2),
+    JSON.stringify(snapshot.externalSignalState, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'product-vision',
-    JSON.stringify(snapshot.productVision, null, 2),
+    JSON.stringify(snapshot.productVision, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'convergence-plan',
-    JSON.stringify(normalizeCanonicalArtifactValue(convergencePlan), null, 2),
+    JSON.stringify(normalizeCanonicalArtifactValue(convergencePlan), null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'finding-validation-state',
-    JSON.stringify(buildFindingValidationState(snapshot), null, 2),
+    JSON.stringify(buildFindingValidationState(snapshot), null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'no-hardcoded-reality-state',
-    JSON.stringify(normalizeCanonicalArtifactValue(noHardcodedRealityState), null, 2),
+    JSON.stringify(normalizeCanonicalArtifactValue(noHardcodedRealityState), null, INDENT),
     identity,
+  );
+  const AUTO_MODES = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.autonomy.ts',
+    'orchestrationMode',
+  );
+  const PLAN_MODES = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.autonomy.ts',
+    'plannerMode',
   );
   const autonomyState = buildPulseAutonomyStateSeed({
     rootDir,
     directive: directivePayload,
     previousState: previousAutonomyState,
-    orchestrationMode: previousAutonomyState?.orchestrationMode || 'single',
-    parallelAgents: previousAutonomyState?.parallelAgents || deriveUnitValue(),
-    maxWorkerRetries: previousAutonomyState?.maxWorkerRetries || deriveUnitValue(),
+    orchestrationMode:
+      previousAutonomyState?.orchestrationMode ||
+      [...AUTO_MODES].find((m) => m === 'single') ||
+      [...AUTO_MODES][0],
+    parallelAgents:
+      previousAutonomyState?.parallelAgents ||
+      discoverAllObservedHttpStatusCodes().filter((c) => c >= 100 && c < 200).length,
+    maxWorkerRetries:
+      previousAutonomyState?.maxWorkerRetries ||
+      discoverAllObservedHttpStatusCodes().filter((c) => c >= 400 && c < 500).length,
   });
   writeRegisteredArtifact(
     registry,
     'autonomy-state',
-    JSON.stringify(normalizeCanonicalArtifactValue(autonomyState), null, 2),
+    JSON.stringify(normalizeCanonicalArtifactValue(autonomyState), null, INDENT),
     identity,
   );
   const orchestrationState = buildPulseAgentOrchestrationStateSeed({
     directive: directivePayload,
     previousState: previousAgentOrchestrationState,
-    parallelAgents: previousAgentOrchestrationState?.parallelAgents || deriveUnitValue(),
-    maxWorkerRetries: previousAgentOrchestrationState?.maxWorkerRetries || deriveUnitValue(),
-    plannerMode: previousAgentOrchestrationState?.plannerMode || 'deterministic',
+    parallelAgents:
+      previousAgentOrchestrationState?.parallelAgents ||
+      discoverAllObservedHttpStatusCodes().filter((c) => c >= 100 && c < 200).length,
+    maxWorkerRetries:
+      previousAgentOrchestrationState?.maxWorkerRetries ||
+      discoverAllObservedHttpStatusCodes().filter((c) => c >= 400 && c < 500).length,
+    plannerMode:
+      previousAgentOrchestrationState?.plannerMode ||
+      [...PLAN_MODES].find((m) => m === 'deterministic') ||
+      [...PLAN_MODES][0],
   });
   writeRegisteredArtifact(
     registry,
@@ -483,20 +526,20 @@ export function generateArtifacts(
         orchestrationState,
       }),
       null,
-      2,
+      INDENT,
     ),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'agent-orchestration-state',
-    JSON.stringify(orchestrationState, null, 2),
+    JSON.stringify(orchestrationState, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'runtime-evidence',
-    JSON.stringify(snapshot.certification.evidenceSummary.runtime, null, 2),
+    JSON.stringify(snapshot.certification.evidenceSummary.runtime, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
@@ -508,92 +551,92 @@ export function generateArtifacts(
         environment: snapshot.certification.environment,
       }),
       null,
-      2,
+      INDENT,
     ),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'browser-evidence',
-    JSON.stringify(snapshot.certification.evidenceSummary.browser, null, 2),
+    JSON.stringify(snapshot.certification.evidenceSummary.browser, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'flow-evidence',
-    JSON.stringify(snapshot.certification.evidenceSummary.flows, null, 2),
+    JSON.stringify(snapshot.certification.evidenceSummary.flows, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'invariant-evidence',
-    JSON.stringify(snapshot.certification.evidenceSummary.invariants, null, 2),
+    JSON.stringify(snapshot.certification.evidenceSummary.invariants, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'observability-evidence',
-    JSON.stringify(snapshot.certification.evidenceSummary.observability, null, 2),
+    JSON.stringify(snapshot.certification.evidenceSummary.observability, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'recovery-evidence',
-    JSON.stringify(snapshot.certification.evidenceSummary.recovery, null, 2),
+    JSON.stringify(snapshot.certification.evidenceSummary.recovery, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'customer-evidence',
-    JSON.stringify(snapshot.certification.evidenceSummary.customer, null, 2),
+    JSON.stringify(snapshot.certification.evidenceSummary.customer, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'operator-evidence',
-    JSON.stringify(snapshot.certification.evidenceSummary.operator, null, 2),
+    JSON.stringify(snapshot.certification.evidenceSummary.operator, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'admin-evidence',
-    JSON.stringify(snapshot.certification.evidenceSummary.admin, null, 2),
+    JSON.stringify(snapshot.certification.evidenceSummary.admin, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'soak-evidence',
-    JSON.stringify(snapshot.certification.evidenceSummary.soak, null, 2),
+    JSON.stringify(snapshot.certification.evidenceSummary.soak, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'scenario-coverage',
-    JSON.stringify(snapshot.certification.evidenceSummary.syntheticCoverage, null, 2),
+    JSON.stringify(snapshot.certification.evidenceSummary.syntheticCoverage, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'world-state',
-    JSON.stringify(snapshot.certification.evidenceSummary.worldState, null, 2),
+    JSON.stringify(snapshot.certification.evidenceSummary.worldState, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'execution-trace',
-    JSON.stringify(snapshot.certification.evidenceSummary.executionTrace, null, 2),
+    JSON.stringify(snapshot.certification.evidenceSummary.executionTrace, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'codebase-truth',
-    JSON.stringify(snapshot.codebaseTruth, null, 2),
+    JSON.stringify(snapshot.codebaseTruth, null, INDENT),
     identity,
   );
   writeRegisteredArtifact(
     registry,
     'resolved-manifest',
-    JSON.stringify(snapshot.resolvedManifest, null, 2),
+    JSON.stringify(snapshot.resolvedManifest, null, INDENT),
     identity,
   );
 
@@ -607,5 +650,7 @@ export function generateArtifacts(
 }
 
 function buildHealth(snapshot: PulseArtifactSnapshot): string {
-  return JSON.stringify(snapshot.health, null, deriveUnitValue() + deriveUnitValue());
+  const allStatusCodes = discoverAllObservedHttpStatusCodes();
+  const indent = allStatusCodes.filter((c) => c >= 200 && c < 300).length;
+  return JSON.stringify(snapshot.health, null, indent);
 }
