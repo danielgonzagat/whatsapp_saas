@@ -91,6 +91,10 @@ function nextNodeId(): string {
   return `bn_${String(++_nextNodeId).padStart(6, '0')}`;
 }
 
+function resetNodeIdCounter(): void {
+  _nextNodeId = 0;
+}
+
 export {
   Project,
   SyntaxKind,
@@ -111,9 +115,9 @@ export {
   looksLikeHttpOperation,
   looksLikeExternalMutationOperation,
   isMemberChainTail,
-  _nextNodeId,
   FULL_BODY_EXTRACTION_BUDGET_BYTES,
   LINE_DECLARATION_BUDGET_BYTES,
   PARAM_LIST_BUDGET_BYTES,
   nextNodeId,
+  resetNodeIdCounter,
 };

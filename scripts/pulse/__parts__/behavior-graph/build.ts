@@ -6,13 +6,13 @@ import type {
 } from '../../types.behavior-graph';
 import type { BehaviorNode } from '../../types.behavior-graph';
 import { readTextFile } from '../../safe-fs';
-import { loadTsMorph, _nextNodeId } from './patterns';
+import { loadTsMorph, resetNodeIdCounter } from './patterns';
 import { extractFunctionsFromSource } from './parser';
 import { extractCalledFunctions } from './builder';
 import { collectSourceFiles, buildNodesFromParsedFunctions, parseFileWithTsMorph } from './builder';
 
 function buildBehaviorGraph(rootDir: string): BehaviorGraph {
-  _nextNodeId = 0;
+  resetNodeIdCounter();
   const tsMorphAvailable = loadTsMorph();
   const allNodes: BehaviorNode[] = [];
 
