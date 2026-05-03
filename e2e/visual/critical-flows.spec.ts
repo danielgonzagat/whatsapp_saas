@@ -474,6 +474,41 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
   });
 
   test.describe('Public routes (no auth required)', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route('**/v1/cookie-consent', async (requestRoute) => {
+        const method = requestRoute.request().method();
+        if (method === 'GET') {
+          await requestRoute.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              success: true,
+              consent: {
+                necessary: true,
+                analytics: false,
+                marketing: false,
+                updatedAt: VISUAL_FIXED_TIME_ISO,
+              },
+            }),
+          });
+        } else {
+          await requestRoute.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              success: true,
+              consent: {
+                necessary: true,
+                analytics: false,
+                marketing: false,
+                updatedAt: VISUAL_FIXED_TIME_ISO,
+              },
+            }),
+          });
+        }
+      });
+    });
+
     for (const route of PUBLIC_ROUTES) {
       for (const viewport of VIEWPORTS) {
         test(`${route.name} @ ${viewport.name}`, async ({ page }) => {
