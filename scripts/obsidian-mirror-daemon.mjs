@@ -56,14 +56,14 @@ import {
   gitDirtySignature,
   gitStateForSource,
   ensureGraphLensSettings,
-} from './obsidian-mirror-daemon-utils.mjs';
+} from './__parts__/obsidian-mirror-daemon-utils.mjs';
 
-import { mirrorFile } from './obsidian-mirror-daemon-content.mjs';
+import { mirrorFile } from './__parts__/obsidian-mirror-daemon-content.mjs';
 
 import {
   persistManifestState,
   cleanupStaleMirrorFiles,
-} from './obsidian-mirror-daemon-indexes.mjs';
+} from './__parts__/obsidian-mirror-daemon-indexes.mjs';
 
 // ── Cleanup Helpers ─────────────────────────────────────────────────────────
 

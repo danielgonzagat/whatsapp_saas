@@ -53,7 +53,7 @@ import {
   CAMERA_DIR,
   VISUAL_FACT_DIR,
   OBRA_DIR,
-} from './obsidian-mirror-daemon-constants.mjs';
+} from '../obsidian-mirror-daemon-constants.mjs';
 
 import {
   log,

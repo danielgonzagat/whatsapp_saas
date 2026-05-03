@@ -31,7 +31,7 @@ import {
   SKIP_SECRET_PATTERNS,
   EXT_TO_LANG,
   LANG_BY_FILENAME,
-} from './obsidian-mirror-daemon-constants.mjs';
+} from '../obsidian-mirror-daemon-constants.mjs';
 
 // ── Module-level state ──────────────────────────────────────────────────────
 

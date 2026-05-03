@@ -51,7 +51,7 @@ import {
   CAMERA_DIR,
   CLUSTER_DIR,
   VISUAL_FACT_DIR,
-} from './obsidian-mirror-daemon-constants.mjs';
+} from '../obsidian-mirror-daemon-constants.mjs';
 
 import {
   log,
