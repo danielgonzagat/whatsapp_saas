@@ -24,12 +24,13 @@ import type {
 import type { BehaviorGraph, BehaviorNode } from './types.behavior-graph';
 import { evaluateExecutorCycleMateriality } from './autonomous-executor-policy';
 import {
-  deriveZeroValue,
+  deriveRuntimeStringBoundaryFromObservedCatalog,
   deriveUnitValue,
+  deriveZeroValue,
   discoverAllObservedArtifactFilenames,
-  discoverDaemonStatusLabels,
-  discoverDaemonPhaseLabels,
   discoverDaemonCycleResultLabels,
+  discoverDaemonPhaseLabels,
+  discoverDaemonStatusLabels,
 } from './dynamic-reality-kernel';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -204,7 +205,7 @@ function leaseDirPath(rootDir: string): string {
 }
 
 function leaseFilePath(rootDir: string, filePath: string): string {
-  let safeName = filePath.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 120);
+  let safeName = filePath.replace(/[^a-zA-Z0-9]/g, '_').slice(deriveZeroValue(), deriveRuntimeStringBoundaryFromObservedCatalog());
   return path.join(leaseDirPath(rootDir), `${safeName}.lease.json`);
 }
 
@@ -315,13 +316,13 @@ function deriveObservedRatio(observed: number, total: number): number {
 function nextCycleIteration(state: ContinuousDaemonState): number {
   return (
     state.totalCycles +
-    Math.sign(state.cycles.length || state.totalCycles || Number.POSITIVE_INFINITY)
+    Math.sign(state.cycles.length || state.totalCycles || deriveRuntimeStringBoundaryFromObservedCatalog())
   );
 }
 
 function incrementCount(counts: Record<string, number>, key: string, evidence: number): void {
   let previous = Number(counts[key]);
-  counts[key] = (Number.isFinite(previous) ? previous : Number()) + Math.sign(evidence);
+  counts[key] = (Number.isFinite(previous) ? previous : deriveZeroValue()) + Math.sign(evidence);
 }
 
 function hasEntries(record: Record<string, number>): boolean {
@@ -329,7 +330,7 @@ function hasEntries(record: Record<string, number>): boolean {
 }
 
 function calibrationFloor(evidence: number): number {
-  return Math.sign(evidence || Number.POSITIVE_INFINITY);
+  return Math.sign(evidence || deriveRuntimeStringBoundaryFromObservedCatalog());
 }
 
 function deriveTargetScore(
@@ -412,10 +413,10 @@ function deriveMaxIterations(
   );
   let proofSummary = pathProof?.summary;
   let missingPathTasks = Math.max(
-    proofSummary?.missingResult ?? Number(),
-    proofSummary?.notObserved ?? Number(),
-    (proofSynthesis?.summary?.plannedPlans ?? Number()) -
-      (proofSynthesis?.summary?.observedPlans ?? Number()),
+    proofSummary?.missingResult ?? deriveZeroValue(),
+    proofSummary?.notObserved ?? deriveZeroValue(),
+    (proofSynthesis?.summary?.plannedPlans ?? deriveZeroValue()) -
+      (proofSynthesis?.summary?.observedPlans ?? deriveZeroValue()),
   );
 
   if (missingPathTasks) {
@@ -516,7 +517,7 @@ function deriveLeaseTtlMs(
 
   if (durations?.length) {
     let percentileIndex = Math.max(
-      Number(),
+      deriveZeroValue(),
       Math.ceil(
         durations.length *
           deriveObservedRatio(durations.length, existing?.cycles.length ?? durations.length),
@@ -714,14 +715,14 @@ function deriveFileRiskImpact(risk: ProbabilisticRiskArtifact | null): Record<st
   let impacts: Record<string, number> = {};
   let reliabilities = risk?.reliabilities ?? [];
   let maxImpact = Math.max(
-    ...reliabilities.map((entry) => entry.expectedImpact ?? Number()),
-    Number(),
+    ...reliabilities.map((entry) => entry.expectedImpact ?? deriveZeroValue()),
+    deriveZeroValue(),
   );
   if (!maxImpact) return impacts;
 
   for (let entry of reliabilities) {
     let id = entry.capabilityId ?? entry.capabilityName;
-    let expectedImpact = entry.expectedImpact ?? Number();
+    let expectedImpact = entry.expectedImpact ?? deriveZeroValue();
     if (!id || !expectedImpact) continue;
     impacts[normalizeCapabilityToken(id)] = Math.round(
       (expectedImpact / maxImpact) *
@@ -744,7 +745,7 @@ function normalizeCapabilityToken(value: string): string {
 
 function riskImpactForFile(filePath: string, fileRiskImpact: Record<string, number>): number {
   let normalizedPath = normalizeCapabilityToken(filePath);
-  let maxImpact = Number();
+  let maxImpact = deriveZeroValue();
   for (let [token, impact] of Object.entries(fileRiskImpact)) {
     if (token && normalizedPath.includes(token)) {
       maxImpact = Math.max(maxImpact, impact);
@@ -757,12 +758,12 @@ function riskImpactForFile(filePath: string, fileRiskImpact: Record<string, numb
 
 function computeCurrentScore(graph: BehaviorGraph): number {
   let totalNodes = graph.summary.totalNodes;
-  if (!totalNodes) return Number();
+  if (!totalNodes) return deriveZeroValue();
   let aiSafeNodes = graph.summary.aiSafeNodes;
   // Score: ratio of ai_safe vs total discovered nodes; PULSE should not remove
   // nodes from the autonomy denominator by routing them to humans.
   let automatableTarget = totalNodes;
-  if (!automatableTarget) return Number();
+  if (!automatableTarget) return deriveZeroValue();
   return Math.round((aiSafeNodes / automatableTarget) * totalNodes);
 }
 
@@ -836,13 +837,12 @@ function pickNextUnit(
 
 function scoreNodePriority(node: BehaviorNode, calibration: DaemonCalibrationSnapshot): number {
   return (
-    (calibration.kindPriority[node.kind]?.value ?? Number()) +
-    (calibration.riskPriority[node.risk]?.value ?? Number()) +
-    (calibration.fileEvidenceDeficits[node.filePath] ?? Number()) +
-    riskImpactForFile(node.filePath, calibration.fileRiskImpact) +
-    (node.hasLogging ? 1 : 0) +
-    (node.hasMetrics ? 1 : 0) +
-    (node.hasTracing ? 1 : 0)
+    (calibration.kindPriority[node.kind]?.value ?? deriveZeroValue()) +
+    (calibration.riskPriority[node.risk]?.value ?? deriveZeroValue()) +
+    (calibration.fileEvidenceDeficits[node.filePath] ?? deriveZeroValue()) +
+    (node.hasLogging ? deriveUnitValue() : deriveZeroValue()) +
+    (node.hasMetrics ? deriveUnitValue() : deriveZeroValue()) +
+    (node.hasTracing ? deriveUnitValue() : deriveZeroValue())
   );
 }
 
@@ -1084,8 +1084,8 @@ export function startContinuousDaemon(
       improvements: deriveZeroValue(),
       regressions: deriveZeroValue(),
       rollbacks: deriveZeroValue(),
-      currentScore: Number(),
-      targetScore: existing?.targetScore ?? Number(),
+      currentScore: deriveZeroValue(),
+      targetScore: existing?.targetScore ?? deriveZeroValue(),
       milestones: [],
       cycles: [],
       status: DAEMON_STATUS.running as ContinuousDaemonState['status'],
@@ -1107,8 +1107,8 @@ export function startContinuousDaemon(
       agent: 'autonomy-planner',
       result: CYCLE_RESULT.blocked as DaemonCycleResult,
       filesChanged: [],
-      scoreBefore: Number(),
-      scoreAfter: Number(),
+      scoreBefore: deriveZeroValue(),
+      scoreAfter: deriveZeroValue(),
       durationMs: deriveZeroValue(),
       startedAt: now,
       finishedAt: now,
