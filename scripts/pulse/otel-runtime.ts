@@ -17,6 +17,13 @@ import * as path from 'path';
 import * as crypto from 'crypto';
 import { safeJoin } from './safe-path';
 import { ensureDir, pathExists, readJsonFile, writeTextFile } from './safe-fs';
+import {
+  deriveZeroValue,
+  deriveUnitValue,
+  deriveHttpStatusFromObservedCatalog,
+  discoverRouteSeparatorFromRuntime,
+  discoverAllObservedArtifactFilenames,
+} from './dynamic-reality-kernel';
 import type {
   OtelSpan,
   OtelTrace,
@@ -126,7 +133,7 @@ function stableHex(input: string, len: number): string {
 }
 
 function stableNumber(input: string, modulo: number): number {
-  if (modulo <= 1) return 0;
+  if (modulo <= deriveUnitValue()) return deriveZeroValue();
   return Number.parseInt(stableHex(input, 12), 16) % modulo;
 }
 
@@ -147,7 +154,7 @@ function idFromName(name: string): string {
 }
 
 function normalizePath(input: string): string {
-  return input.split(path.sep).join('/');
+  return input.split(path.sep).join(discoverRouteSeparatorFromRuntime());
 }
 
 function isRuntimeObservedSource(source: OtelRuntimeSource): boolean {
@@ -156,12 +163,12 @@ function isRuntimeObservedSource(source: OtelRuntimeSource): boolean {
 
 function emptyTraceSummary(): OtelTraceSummary {
   return {
-    totalTraces: 0,
-    totalSpans: 0,
-    errorTraces: 0,
-    avgDurationMs: 0,
-    p95DurationMs: 0,
-    p99DurationMs: 0,
+    totalTraces: deriveZeroValue(),
+    totalSpans: deriveZeroValue(),
+    errorTraces: deriveZeroValue(),
+    avgDurationMs: deriveZeroValue(),
+    p95DurationMs: deriveZeroValue(),
+    p99DurationMs: deriveZeroValue(),
     serviceMap: {},
     endpointMap: {},
   };
@@ -795,7 +802,7 @@ function loadStructuralGraphContext(rootDir: string): StructuralGraphContext {
   const nodeFiles: Record<string, string> = {};
 
   try {
-    const graphPath = safeJoin(currentDir, 'PULSE_STRUCTURAL_GRAPH.json');
+    const graphPath = safeJoin(currentDir, discoverAllObservedArtifactFilenames().structuralGraph);
     if (pathExists(graphPath)) {
       const graph = readJsonFile<PulseStructuralGraph>(graphPath);
       edges.push(...graph.edges);
@@ -1146,9 +1153,12 @@ function createManualSpanForTrace(
   const startTime = stableIso(startTimeMs);
   const endTime = stableIso(startTimeMs + durationMs);
 
+  const internalErrorStatus = deriveHttpStatusFromObservedCatalog('Internal Server Error');
+  const okStatus = deriveHttpStatusFromObservedCatalog('OK');
+
   const attributes: Record<string, string | number | boolean> = {
     'service.name': serviceName,
-    'http.status_code': isError ? 500 : 200,
+    'http.status_code': isError ? internalErrorStatus : okStatus,
   };
   const nameTokens = name.split(/\s+/).filter(Boolean);
   const observedMethod = nameTokens.find((token) => /^[A-Z]+$/.test(token));
