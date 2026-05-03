@@ -100,7 +100,7 @@ function runOne(task, runDir, opts) {
     }
     writeFileSync(promptPath, prompt);
 
-    const args = ['run', '-m', REQUIRED_MODEL, '--format', 'default'];
+    const args = ['run', '-m', REQUIRED_MODEL, '--variant', 'max', '--format', 'default'];
     if (task.title) args.push('--title', task.title);
     if (opts.dir) args.push('--dir', opts.dir);
     if (opts.skipPermissions !== false) args.push('--dangerously-skip-permissions');
