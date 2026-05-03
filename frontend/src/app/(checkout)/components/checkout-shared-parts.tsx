@@ -14,6 +14,7 @@
 
 import { kloelT } from '@/lib/i18n/t';
 import { UI } from '@/lib/ui-tokens';
+import { useId } from 'react';
 import type * as React from 'react';
 import { Bc, Cc, Mn, Pl, Px, Star, Tag as SharedTag, clampQty, fmt } from './checkout-theme-shared';
 import type { CheckoutThemeInputTokens } from './checkout-theme-shared';
@@ -46,12 +47,17 @@ export function CouponRow({
     input: Pick<CheckoutThemeInputTokens, 'background' | 'border' | 'tagStroke'>;
   };
 }) {
+  const couponId = useId();
+
   return (
     <>
       <div style={{ fontSize: 15, fontWeight: 600, color: theme.text, marginBottom: 10 }}>
         {kloelT(`Tem um cupom?`)}
       </div>
       <div style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'center' }}>
+        <label className="sr-only" htmlFor={couponId}>
+          {kloelT('Código do cupom')}
+        </label>
         <div
           style={{
             flex: 1,
@@ -67,6 +73,7 @@ export function CouponRow({
         >
           <SharedTag stroke={theme.input.tagStroke} />
           <input
+            id={couponId}
             value={couponCode}
             onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
             placeholder={kloelT(`Código do cupom`)}

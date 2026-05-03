@@ -142,6 +142,7 @@ export function BlancAddressStep({
               color: BLANC_MUTED,
               padding: 4,
             }}
+            aria-label={kloelT('Editar endereço')}
           >
             <SharedEd stroke={inputTheme.editStroke} />
           </button>

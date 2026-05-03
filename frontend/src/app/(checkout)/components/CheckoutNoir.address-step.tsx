@@ -107,6 +107,7 @@ export function NoirAddressStep({
             type="button"
             onClick={() => setStep(2)}
             style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: 4 }}
+            aria-label={kloelT('Editar endereço')}
           >
             <SharedEd stroke={inputTheme.editStroke} />
           </button>
