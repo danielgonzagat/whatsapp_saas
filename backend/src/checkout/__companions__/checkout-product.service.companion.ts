@@ -1,10 +1,11 @@
 import { NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
 import type { CreateCheckoutInput } from '../checkout-product.types';
 import type { CheckoutPlanLinkManager } from '../checkout-plan-link.manager';
 
 export interface CreateCheckoutDeps {
-  prisma: any;
+  prisma: PrismaService;
   buildDefaultCheckoutConfigInput(brandName: string): Prisma.CheckoutConfigCreateWithoutPlanInput;
   planLinkManager: CheckoutPlanLinkManager;
 }
@@ -30,7 +31,7 @@ export async function createCheckout(
   const referenceCode = await deps.planLinkManager.generatePublicCheckoutCode();
 
   return deps.prisma.$transaction(
-    async (tx: any) => {
+    async (tx: Prisma.TransactionClient) => {
       const checkout = await tx.checkoutProductPlan.create({
         data: {
           productId,

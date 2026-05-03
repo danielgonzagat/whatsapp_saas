@@ -1,6 +1,7 @@
 import type { CheckoutOrderSupport } from '../checkout-order-support';
 import type { CheckoutPaymentService } from '../checkout-payment.service';
 import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../prisma/prisma.service';
 import type { Logger } from '@nestjs/common';
 import { processOrderPostPayment } from '../checkout-order-payment.helpers';
 
@@ -28,7 +29,7 @@ export interface ProcessOrderPostPaymentParams {
 export async function executeProcessOrderPostPayment(
   params: ProcessOrderPostPaymentParams,
   deps: {
-    prisma: any;
+    prisma: PrismaService;
     paymentService: CheckoutPaymentService;
     orderSupport: CheckoutOrderSupport;
     logger: Logger;
