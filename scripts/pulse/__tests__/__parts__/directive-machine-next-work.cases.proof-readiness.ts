@@ -3,7 +3,7 @@ import {
   applyProofReadinessToAutonomyClaims,
   buildProofReadinessSummaryForDirective,
   buildPulseAutonomyProofDebtNextWork,
-} from '../artifacts.directive';
+} from '../../artifacts.directive';
 
 import { buildProofReadinessCompatibleAutonomyReadiness } from './directive-machine-next-work.helpers';
 
