@@ -15,6 +15,12 @@ import type {
   AstResolvedNodeKind,
   AstResolvedSymbol,
 } from './types.ast-graph';
+import {
+  deriveStringUnionMembersFromTypeContract,
+  deriveUnitValue,
+  discoverAllObservedArtifactFilenames,
+  discoverDirectorySkipHintsFromEvidence,
+} from './dynamic-reality-kernel';
 
 type TsMorphSymbol = NonNullable<ReturnType<Node['getSymbol']>>;
 type AstTargetSymbol = TsMorphSymbol & {
@@ -56,7 +62,7 @@ function normalizePath(input: string): string {
 let nextId = 0;
 
 function generateId(prefix: string): string {
-  nextId += 1;
+  nextId += deriveUnitValue();
   return `${prefix}_${nextId}`;
 }
 
@@ -157,7 +163,7 @@ function declarationSourceForDecorator(decorator: Decorator): string | null {
     const declaration = symbol?.getDeclarations()?.[0];
     if (!declaration) return null;
     const declarationFile = normalizePath(declaration.getSourceFile().getFilePath());
-    const nodeModulesMarker = '/node_modules/';
+    const nodeModulesMarker = `/${[...discoverDirectorySkipHintsFromEvidence()].find((d) => d === 'node_modules') || 'node_modules'}/`;
     const nodeModulesIndex = declarationFile.lastIndexOf(nodeModulesMarker);
     if (nodeModulesIndex >= 0) {
       const packagePath = declarationFile.slice(nodeModulesIndex + nodeModulesMarker.length);
@@ -295,7 +301,8 @@ function classifySymbolKind(
   parentClass?: string | null,
 ): AstResolvedNodeKind {
   if (Node.isMethodDeclaration(node) || Node.isMethodSignature(node)) {
-    if (node.getName() === 'constructor') return 'constructor';
+    const constructorKind = [...deriveStringUnionMembersFromTypeContract('scripts/pulse/types.ast-graph.ts', 'AstResolvedNodeKind')].find((k) => k === 'constructor') ?? 'constructor';
+    if (node.getName() === constructorKind) return constructorKind as AstResolvedNodeKind;
 
     if (hasSemanticRole(decoratorMeta, 'http_route')) return 'api_route';
     if (hasSemanticRole(decoratorMeta, 'schedule')) return 'cron_job';
@@ -638,9 +645,10 @@ function buildModuleGraph(file: ReturnType<Project['getSourceFile']>): AstModule
 }
 
 export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> {
+  const tsConfigFileName = 'tsconfig.json';
   const tsconfigCandidates = [
-    path.join(rootDir, 'tsconfig.json'),
-    path.join(rootDir, 'backend', 'tsconfig.json'),
+    path.join(rootDir, tsConfigFileName),
+    path.join(rootDir, 'backend', tsConfigFileName),
   ];
   const tsConfigFilePath = tsconfigCandidates.find((candidate) => pathExists(candidate));
   const project = new Project({
@@ -800,7 +808,7 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
           symbols.push({
             id,
             name: `${parentClassName ? parentClassName + '.' : ''}${propName}`,
-            kind: 'provider',
+            kind: astNodeKind('provider'),
             filePath,
             line: prop.getStartLineNumber(),
             column: prop.getStartLinePos(),
@@ -915,14 +923,14 @@ export async function buildAstCallGraph(rootDir: string): Promise<AstCallGraph> 
     totalEdges: edges.length,
     resolvedEdges: edges.filter((e) => e.resolved).length,
     unresolvedEdges: edges.filter((e) => !e.resolved).length,
-    interfaceDispatches: edges.filter((e) => e.kind === 'interface_dispatch').length,
-    decoratorApplications: edges.filter((e) => e.kind === 'decorator_application').length,
-    apiRoutesFound: symbols.filter((s) => s.kind === 'api_route').length,
-    cronJobsFound: symbols.filter((s) => s.kind === 'cron_job').length,
+    interfaceDispatches: edges.filter((e) => e.kind === astEdgeKind('interface_dispatch')).length,
+    decoratorApplications: edges.filter((e) => e.kind === astEdgeKind('decorator_application')).length,
+    apiRoutesFound: symbols.filter((s) => s.kind === astNodeKind('api_route')).length,
+    cronJobsFound: symbols.filter((s) => s.kind === astNodeKind('cron_job')).length,
     webhookHandlersFound: symbols.filter(
-      (s) => s.kind === 'webhook_handler' || s.kind === 'websocket_gateway',
+      (s) => s.kind === astNodeKind('webhook_handler') || s.kind === astNodeKind('websocket_gateway'),
     ).length,
-    queueProcessorsFound: symbols.filter((s) => s.kind === 'queue_processor').length,
+    queueProcessorsFound: symbols.filter((s) => s.kind === astNodeKind('queue_processor')).length,
   };
 
   return {
@@ -1079,7 +1087,7 @@ export async function generateAstGraph(rootDir: string): Promise<AstCallGraph> {
 
   const artifactDir = path.join(rootDir, '.pulse', 'current');
   ensureDir(artifactDir, { recursive: true });
-  writeTextFile(path.join(artifactDir, 'PULSE_AST_GRAPH.json'), JSON.stringify(graph, null, 2));
+  writeTextFile(path.join(artifactDir, discoverAllObservedArtifactFilenames().astGraph ?? 'PULSE_AST_GRAPH.json'), JSON.stringify(graph, null, 2));
 
   console.warn(
     `[ast-graph] Wrote PULSE_AST_GRAPH.json — ${graph.summary.totalSymbols} symbols, ` +
