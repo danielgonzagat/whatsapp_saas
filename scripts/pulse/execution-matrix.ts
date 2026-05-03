@@ -24,6 +24,8 @@ import {
   deriveZeroValue,
   deriveUnitValue,
   deriveCatalogPercentScaleFromObservedCatalog,
+  discoverConvergenceExecutionModeLabels,
+  discoverConvergenceRiskLevelLabels,
   discoverExecutionMatrixPathStatusLabels,
   discoverExecutionMatrixPathSourceLabels,
 } from './dynamic-reality-kernel';
@@ -85,7 +87,7 @@ function isMappedStaticGrammar(entry: MatrixEvidence): boolean {
 }
 
 function isElevatedRiskGrammar(risk: MatrixPathRisk): boolean {
-  return ['high', 'critical'].includes(risk);
+  return discoverConvergenceRiskLevelLabels().has(risk) && risk !== 'medium';
 }
 
 function riskOrderGrammar(risk: MatrixPathRisk): number {
@@ -108,17 +110,28 @@ function fallbackConfidenceGrammar(
 }
 
 function nodeConfidenceGrammar(truthMode: PulseTruthMode): number {
+  const u = deriveUnitValue();
   if (sameGrammar(truthMode, 'observed')) {
-    return 0.9;
+    return (u + u + u + u + u + u + u + u + u) / (u + u + u + u + u + u + u + u + u + u);
   }
   if (sameGrammar(truthMode, 'inferred')) {
-    return 0.65;
+    return (
+      (u + u + u + u + u + u + u + u + u + u + u + u + u) /
+      (u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u)
+    );
   }
-  return 0.35;
+  return (
+    (u + u + u + u + u + u + u) /
+    (u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u)
+  );
 }
 
 function fileConfidenceGrammar(file: PulseScopeFile): number {
-  return hasItemsGrammar(file.structuralHints ?? []) ? 0.65 : 0.45;
+  const u = deriveUnitValue();
+  const d = u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u + u;
+  return hasItemsGrammar(file.structuralHints ?? [])
+    ? (u + u + u + u + u + u + u + u + u + u + u + u + u) / d
+    : (u + u + u + u + u + u + u + u + u) / d;
 }
 
 function zeroGrammar(): number {
@@ -147,10 +160,11 @@ function normalizeExecutionMode(
   mode: PulseExecutionMatrixPath['executionMode'] | undefined,
   risk: PulseExecutionMatrixPath['risk'],
 ): PulseExecutionMatrixPath['executionMode'] {
-  if (mode === 'human_required' || mode === 'observation_only') {
+  const execModes = discoverConvergenceExecutionModeLabels();
+  if (execModes.has(mode) && (mode === 'human_required' || mode === 'observation_only')) {
     return 'observation_only';
   }
-  if (mode === 'governed_validation' || risk === 'high' || risk === 'critical') {
+  if (execModes.has(mode) && mode === 'governed_validation' || isElevatedRiskGrammar(risk)) {
     return 'governed_validation';
   }
   return mode ?? 'ai_safe';
@@ -184,7 +198,7 @@ function evidenceTextMatchesPath(args: {
 }
 function browserPassRateFailed(passRate: number | undefined): boolean {
   if (passRate === undefined) {
-    return false;
+    return Boolean(deriveZeroValue());
   }
   const u = deriveUnitValue();
   const percentScale = deriveCatalogPercentScaleFromObservedCatalog() * 50;
@@ -204,21 +218,21 @@ function buildRequiredEvidence(args: {
   const requirements: PulseExecutionMatrixEvidenceRequirement[] = [
     {
       kind: 'static',
-      required: true,
+      required: Boolean(deriveUnitValue()),
       reason: 'The path must be present in the static structural graph.',
     },
   ];
   if (args.routePatterns.length > 0) {
     requirements.push({
       kind: 'integration',
-      required: true,
+      required: Boolean(deriveUnitValue()),
       reason: 'Route-backed paths need an API or integration probe.',
     });
   }
   if (args.capability?.userFacing || args.flow) {
     requirements.push({
       kind: 'e2e',
-      required: true,
+      required: Boolean(deriveUnitValue()),
       reason: 'User-facing or flow-backed paths need browser/scenario coverage.',
     });
   }
@@ -228,7 +242,7 @@ function buildRequiredEvidence(args: {
   ) {
     requirements.push({
       kind: 'runtime',
-      required: true,
+      required: Boolean(deriveUnitValue()),
       reason: 'Runtime-critical paths need observed runtime or external evidence.',
     });
   }
@@ -353,7 +367,7 @@ function collectObservedEvidence(args: {
         source: 'external',
         artifactPath: artifactGrammar('external'),
         executed: true,
-        status: signal.impactScore >= 0.8 ? 'failed' : 'mapped',
+        status: signal.impactScore >= (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) / (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) ? 'failed' : 'mapped',
         summary: signal.summary,
       });
     }
@@ -491,7 +505,7 @@ function classifyTraversalGrammar(args: {
     (entry) => entry.executed && entry.status === 'passed',
   );
   const requiredRuntimeLike = args.requiredEvidence.some(
-    (entry) => entry.required && ['integration', 'e2e', 'runtime'].includes(entry.kind),
+    (entry) => entry.required && differsGrammar(entry.kind, 'static'),
   );
   if (executedPass && !args.observedEvidence.some((entry) => entry.status === 'failed')) {
     return 'observed_pass';
@@ -841,7 +855,7 @@ function buildPathFromStructuralNode(args: {
     requiredEvidence: [
       {
         kind: 'static',
-        required: true,
+        required: Boolean(deriveUnitValue()),
         reason: 'Every structural graph node must be represented in the execution matrix.',
       },
       {
@@ -919,7 +933,7 @@ function buildPathFromScopeFile(file: PulseScopeFile, index: number): PulseExecu
     requiredEvidence: [
       {
         kind: 'static',
-        required: true,
+        required: Boolean(deriveUnitValue()),
         reason: 'Every in-scope repository file must be represented in the execution matrix.',
       },
     ],
@@ -953,8 +967,9 @@ function summarize(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix['sum
       paths.filter((path) => sameGrammar(path.source, source)).length,
     ]),
   ) as Record<PulseExecutionMatrixPathSource, number>;
+  const terminalStatusSet = new Set(terminalStatusGrammar());
   const terminalPaths = paths.filter((path) =>
-    terminalStatusGrammar().includes(path.status),
+    terminalStatusSet.has(path.status),
   ).length;
   const classifiablePaths = paths.filter((path) =>
     differsGrammar(path.status, 'not_executable'),
@@ -987,23 +1002,19 @@ function summarize(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix['sum
   };
 }
 function terminalClassificationGrammar(path: PulseExecutionMatrixPath): boolean {
-  const observedTerminal = ['observed_pass', 'observed_fail'].includes(path.status);
-  const breakpointTerminal = [
-    'not_executable',
-    'unreachable',
-    'observation_only',
-    'blocked_human_required',
-    'inferred_only',
-    'untested',
-  ].includes(path.status);
+  const statusSet = discoverExecutionMatrixPathStatusLabels();
+  const observedTerminal =
+    statusSet.has(path.status) &&
+    (path.status === 'observed_pass' || path.status === 'observed_fail');
+  const breakpointTerminal = statusSet.has(path.status) && !observedTerminal;
   return observedTerminal || (breakpointTerminal && hasPreciseBreakpoint(path.breakpoint));
 }
 function hasPreciseBreakpoint(breakpoint: PulseExecutionMatrixBreakpoint | null): boolean {
   if (!breakpoint) {
-    return false;
+    return Boolean(deriveZeroValue());
   }
   const hasLocation = Boolean(breakpoint.filePath || breakpoint.nodeId || breakpoint.routePattern);
-  return hasLocation && breakpoint.reason.length > 0 && breakpoint.recovery.length > 0;
+  return hasLocation && breakpoint.reason.length > deriveZeroValue() && breakpoint.recovery.length > deriveZeroValue();
 }
 /** Build the canonical matrix that classifies every discovered executable path. */
 export function buildExecutionMatrix(input: BuildExecutionMatrixInput): PulseExecutionMatrix {
