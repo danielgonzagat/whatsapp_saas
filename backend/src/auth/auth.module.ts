@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 import { EmailService } from './email.service';
 import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
+import { RateLimitService } from './rate-limit.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
 // NOTA: RedisModule já é configurado globalmente no AppModule com REDIS_URL
@@ -31,7 +32,14 @@ import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, EmailService, GoogleAuthService, FacebookAuthService, TikTokAuthService],
+  providers: [
+    AuthService,
+    EmailService,
+    GoogleAuthService,
+    FacebookAuthService,
+    TikTokAuthService,
+    RateLimitService,
+  ],
   exports: [
     AuthService,
     JwtModule,

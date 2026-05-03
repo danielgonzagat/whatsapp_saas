@@ -44,7 +44,7 @@ function asJsonObject(value: Prisma.JsonValue | null | undefined): Record<string
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {};
   }
-  return value as Record<string, unknown>;
+  return value;
 }
 
 function buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
@@ -58,7 +58,6 @@ function buildAuthLogMessage(event: string, payload: Record<string, unknown>) {
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-  private readonly rateLimitService: RateLimitService;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -69,11 +68,10 @@ export class AuthService {
     private readonly facebookAuthService: FacebookAuthService,
     private readonly tikTokAuthService: TikTokAuthService,
     private readonly connectService: ConnectService,
+    private readonly rateLimitService: RateLimitService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly auditService?: AuditService,
-  ) {
-    this.rateLimitService = new RateLimitService(this.redis || null);
-  }
+  ) {}
 
   private normalizeEmail(email: string) {
     return String(email || '')
