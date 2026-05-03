@@ -18,6 +18,11 @@ import {
   readTextFile,
   writeTextFile,
 } from './safe-fs';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+} from './dynamic-reality-kernel';
 import type { PulseAutonomyState } from './types';
 import type {
   AttemptStatus,
@@ -29,10 +34,14 @@ import type {
   UnitMemoryStatus,
 } from './types.structural-memory';
 
-const ARTIFACT_FILE = 'PULSE_STRUCTURAL_MEMORY.json';
+const _oneMoreThanUnit = deriveUnitValue() + deriveUnitValue();
+const REPEATED_FAILURE_THRESHOLD =
+  deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
+
+const ARTIFACT_FILE =
+  discoverAllObservedArtifactFilenames().structuralMemory ?? 'PULSE_STRUCTURAL_MEMORY.json';
 const AUDIT_LOG_FILENAME = 'structural-memory.audit.jsonl';
 
-const REPEATED_FAILURE_THRESHOLD = 3;
 const REPEATED_FAILURE_STATUS: UnitMemoryStatus = 'escalated_validation';
 
 type StrategyFingerprintFields =
@@ -178,7 +187,7 @@ function recordStrategyFingerprint(unit: ExtendedUnitMemory, strategy: string): 
   unit.strategyFingerprints = [...new Set([...fingerprints, fingerprint])];
   unit.lastStrategyFingerprint = fingerprint;
   unit.repeatedStrategyAttempts = nextCount;
-  unit.avoidStrategyFingerprint = nextCount >= 2 ? fingerprint : null;
+  unit.avoidStrategyFingerprint = nextCount >= _oneMoreThanUnit ? fingerprint : null;
   return fingerprint;
 }
 
@@ -195,7 +204,7 @@ function recordFailedStrategyFingerprint(unit: ExtendedUnitMemory, fingerprint: 
   unit.failedStrategyFingerprints = [...new Set([...fingerprints, fingerprint])];
   unit.lastFailedStrategyFingerprint = fingerprint;
   unit.repeatedFailedStrategyAttempts = nextCount;
-  unit.avoidFailedStrategyFingerprint = nextCount >= 2 ? fingerprint : null;
+  unit.avoidFailedStrategyFingerprint = nextCount >= _oneMoreThanUnit ? fingerprint : null;
   return nextCount;
 }
 
@@ -380,7 +389,7 @@ function recordAttemptInternal(
     unit.repeatedFailures += 1;
     unit.lastFailure = now;
     unit.recommendedStrategy =
-      failedStrategyAttempts >= 2
+      failedStrategyAttempts >= _oneMoreThanUnit
         ? `avoid_strategy_fingerprint:${unit.lastFailedStrategyFingerprint}`
         : null;
     if (unit.repeatedFailures >= REPEATED_FAILURE_THRESHOLD) {
@@ -645,7 +654,7 @@ export function learnPatterns(memory: StructuralMemoryState): LearnedPattern[] {
   for (const [strategy, stats] of strategyStats) {
     if (stats.attempts === 0) continue;
     const successRate = stats.successes / stats.attempts;
-    if (successRate > 0) {
+    if (successRate > deriveZeroValue()) {
       patterns.push({ pattern: strategy, successRate, applicableTo: [...stats.unitIds] });
     }
   }
@@ -661,7 +670,10 @@ export function learnPatterns(memory: StructuralMemoryState): LearnedPattern[] {
       .filter((p) => p.applicableTo.some((id) => id !== unit.unitId && id.startsWith(prefix)))
       .sort((a, b) => b.successRate - a.successRate);
 
-    if (siblingPatterns.length > 0 && siblingPatterns[0].successRate >= 0.5) {
+    if (
+      siblingPatterns.length > deriveZeroValue() &&
+      siblingPatterns[0].successRate >= deriveUnitValue() / _oneMoreThanUnit
+    ) {
       memory.units[i] = {
         ...unit,
         recommendedStrategy: siblingPatterns[0].pattern,
@@ -750,7 +762,7 @@ export function buildStructuralMemory(rootDir: string): StructuralMemoryState {
         existing.repeatedFailures += 1;
         existing.lastFailure = iteration.finishedAt;
         existing.recommendedStrategy =
-          failedStrategyAttempts >= 2
+          failedStrategyAttempts >= _oneMoreThanUnit
             ? `avoid_strategy_fingerprint:${existing.lastFailedStrategyFingerprint}`
             : existing.recommendedStrategy;
         if (existing.repeatedFailures >= REPEATED_FAILURE_THRESHOLD) {
