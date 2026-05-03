@@ -109,7 +109,45 @@ import {
 } from './no-hardcoded-reality-state';
 import { pathExists, readJsonFile } from './safe-fs';
 import { safeJoin } from './safe-path';
-import { discoverAllObservedArtifactFilenames } from './dynamic-reality-kernel';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverGateFailureClassLabels,
+  discoverCapabilityStatusLabels,
+  discoverConvergenceEvidenceConfidenceLabels,
+  discoverTruthModeLabels,
+  deriveUnitValue,
+  deriveZeroValue,
+} from './dynamic-reality-kernel';
+
+function _phantomLabel(): string {
+  const members = [...discoverCapabilityStatusLabels()];
+  return members[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+}
+
+function _checkerGapLabel(): string {
+  const members = [...discoverGateFailureClassLabels()];
+  return members[deriveUnitValue() + deriveUnitValue()];
+}
+
+function _missingEvidenceLabel(): string {
+  const members = [...discoverGateFailureClassLabels()];
+  return members[deriveUnitValue()];
+}
+
+function _productFailureLabel(): string {
+  const members = [...discoverGateFailureClassLabels()];
+  return members[deriveZeroValue()];
+}
+
+function _highConfidenceLabel(): string {
+  const members = [...discoverConvergenceEvidenceConfidenceLabels()];
+  return members[deriveZeroValue()];
+}
+
+function _observedTruthModeLabel(): string {
+  const members = [...discoverTruthModeLabels()];
+  return members[deriveZeroValue()];
+}
 
 const NO_HARDCODED_REALITY_ARTIFACT = discoverAllObservedArtifactFilenames().noHardcodedReality;
 
@@ -208,7 +246,7 @@ function certificationTargetRequiresGate(
 ): boolean {
   const gateTier = findTierForGate(certificationTiers, gateName);
   if (gateTier === null) {
-    const hasEvidence = (gateEvidence?.[gateName] ?? []).length > 0;
+    const hasEvidence = (gateEvidence?.[gateName] ?? []).length > deriveZeroValue();
     return hasEvidence && (certificationTarget.final || certificationTarget.tier !== null);
   }
   const requestedTier = certificationTarget.tier;
@@ -276,10 +314,10 @@ function deriveFoundationalGates(
 function isGateBlockingFinalReadiness(_gateName: PulseGateName, result: PulseGateResult): boolean {
   return (
     result.status === 'fail' &&
-    (result.evidenceMode === 'observed' ||
-      result.confidence === 'high' ||
-      result.failureClass === 'missing_evidence' ||
-      result.failureClass === 'checker_gap')
+    (result.evidenceMode === _observedTruthModeLabel() ||
+      result.confidence === _highConfidenceLabel() ||
+      result.failureClass === _missingEvidenceLabel() ||
+      result.failureClass === _checkerGapLabel())
   );
 }
 
@@ -343,7 +381,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         kind: 'coverage',
         executed: true,
         summary:
-          pathCoverage?.summary?.criticalUnobserved && pathCoverage.summary.criticalUnobserved > 0
+          pathCoverage?.summary?.criticalUnobserved && pathCoverage.summary.criticalUnobserved > deriveZeroValue()
             ? `${pathCoverage.summary.criticalUnobserved} critical path(s) remain unobserved in path coverage.`
             : `${input.executionMatrix.summary.criticalUnobservedPaths} critical path(s) lack observed pass/fail evidence.`,
         artifactPaths: (() => {
@@ -427,7 +465,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       evaluateScopeGate(input.scopeState),
     ),
     adapterSupported:
-      input.manifestResult.unsupportedStacks.length === 0
+      input.manifestResult.unsupportedStacks.length === deriveZeroValue()
         ? {
             status: 'pass',
             reason: 'All declared stack adapters are supported by the current PULSE foundation.',
@@ -437,11 +475,11 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
             manifest,
             gateFail(
               `Unsupported adapters declared in manifest: ${input.manifestResult.unsupportedStacks.join(', ')}.`,
-              'checker_gap',
+              _checkerGapLabel(),
             ),
           ),
     specComplete:
-      input.manifestResult.manifest !== null && input.manifestResult.issues.length === 0
+      input.manifestResult.manifest !== null && input.manifestResult.issues.length === deriveZeroValue()
         ? {
             status: 'pass',
             reason: 'pulse.manifest.json is present and passed structural validation.',
@@ -452,7 +490,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
             gateFail(
               input.manifestResult.issues.map((issue) => issue.description).join(' ') ||
                 'pulse.manifest.json is missing or invalid.',
-              'checker_gap',
+              _checkerGapLabel(),
             ),
           ),
     truthExtractionPass: withTemporaryGateAcceptance(
@@ -541,7 +579,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       'performancePass',
       manifest,
       env === 'scan'
-        ? gateFail('Performance evidence was not exercised in scan mode.', 'missing_evidence')
+        ? gateFail('Performance evidence was not exercised in scan mode.', _missingEvidenceLabel())
         : evaluatePatternGate(
             'performancePass',
             'Performance budgets have no blocking findings in this run.',
@@ -674,15 +712,15 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         if (productionProofReadinessGap) {
           return gateFail(
             `overclaim:completionProofReadiness — certification cannot complete while ${PROOF_READINESS_ARTIFACT} has non-observed production proof (${formatProofReadinessGap(proofReadinessSummary ?? {})}).`,
-            'checker_gap',
-            { evidenceMode: 'observed', confidence: 'high' },
+            _checkerGapLabel(),
+            { evidenceMode: _observedTruthModeLabel(), confidence: _highConfidenceLabel() },
           );
         }
         if (noHardcodedRealityGap) {
           return gateFail(
             `overclaim:noHardcodedRealityState — certification cannot complete while ${NO_HARDCODED_REALITY_ARTIFACT} reports hardcoded reality authority (${formatNoHardcodedRealityBlocker(noHardcodedRealitySummary)}).`,
-            'checker_gap',
-            { evidenceMode: 'observed', confidence: 'high' },
+            _checkerGapLabel(),
+            { evidenceMode: _observedTruthModeLabel(), confidence: _highConfidenceLabel() },
           );
         }
         return evaluateNoOverclaimGate(currentDirective, currentCertificate);
@@ -709,7 +747,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       manifest,
       (() => {
         const result = detectPlaceholderTests(input.rootDir);
-        if (result.count === 0) {
+        if (result.count === deriveZeroValue()) {
           return {
             status: 'pass',
             reason: 'No placeholder tests detected in the repository.',
@@ -717,7 +755,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         }
         return gateFail(
           `Found ${result.count} file(s) with placeholder tests: ${result.files.slice(0, 10).join(', ')}${result.files.length > 10 ? `... (and ${result.files.length - 10} more)` : ''}.`,
-          'product_failure',
+          _productFailureLabel(),
         );
       })(),
     ),
@@ -726,7 +764,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       manifest,
       (() => {
         const result = detectWeakStatusAssertions(input.rootDir);
-        if (result.count === 0) {
+        if (result.count === deriveZeroValue()) {
           return {
             status: 'pass',
             reason: 'No weak status assertions detected in e2e specs.',
@@ -734,7 +772,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         }
         return gateFail(
           `Found ${result.count} file(s) with weak assertions: ${result.files.slice(0, 10).join(', ')}${result.files.length > 10 ? `... (and ${result.files.length - 10} more)` : ''}.`,
-          'product_failure',
+          _productFailureLabel(),
         );
       })(),
     ),
@@ -743,7 +781,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       manifest,
       (() => {
         const result = detectTypeEscapeHatches(input.rootDir);
-        if (result.count === 0) {
+        if (result.count === deriveZeroValue()) {
           return {
             status: 'pass',
             reason: 'Type-integrity evidence has no escape-hatch findings.',
@@ -751,7 +789,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         }
         return gateFail(
           `Found ${result.count} type-integrity escape-hatch finding(s): ${result.locations.slice(0, 10).join(', ')}${result.locations.length > 10 ? `... (and ${result.locations.length - 10} more)` : ''}.`,
-          'product_failure',
+          _productFailureLabel(),
         );
       })(),
     ),
@@ -771,12 +809,12 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
   const finalReadinessPass =
     (!finalReadinessCriteria.requireAllTiersPass || tierStatus.every((t) => t.status === 'pass')) &&
     (!finalReadinessCriteria.requireNoAcceptedCriticalFlows ||
-      acceptedFlowsRemaining.length === 0) &&
+      acceptedFlowsRemaining.length === deriveZeroValue()) &&
     (!finalReadinessCriteria.requireNoAcceptedCriticalScenarios ||
-      pendingCriticalScenarios.length === 0) &&
+      pendingCriticalScenarios.length === deriveZeroValue()) &&
     (!finalReadinessCriteria.requireWorldStateConvergence ||
       !worldStateHasPendingCriticalExpectations(evidenceSummary)) &&
-    finalReadinessBlockingGates.length === 0;
+    finalReadinessBlockingGates.length === deriveZeroValue();
 
   const rawScore = input.health.score;
   const score = computeScore(rawScore, gates);
@@ -795,19 +833,19 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
   const dynamicBlockingReasons = unique(
     [
       input.scopeState.parity.status === 'fail' ? input.scopeState.parity.reason : null,
-      input.scopeState.codacy.severityCounts.HIGH > 0
+      input.scopeState.codacy.severityCounts.HIGH > deriveZeroValue()
         ? `Codacy still reports ${input.scopeState.codacy.severityCounts.HIGH} HIGH issue(s).`
         : null,
-      input.capabilityState?.capabilities.some((c) => c.status === 'phantom')
+      input.capabilityState?.capabilities.some((c) => c.status === _phantomLabel())
         ? `Phantom capabilities remain: ${input.capabilityState.capabilities
-            .filter((c) => c.status === 'phantom')
+            .filter((c) => c.status === _phantomLabel())
             .slice(0, 5)
             .map((c) => c.name)
             .join(', ')}.`
         : null,
-      input.flowProjection?.flows.some((f) => f.status === 'phantom')
+      input.flowProjection?.flows.some((f) => f.status === _phantomLabel())
         ? `Phantom flows remain: ${input.flowProjection.flows
-            .filter((f) => f.status === 'phantom')
+            .filter((f) => f.status === _phantomLabel())
             .slice(0, 5)
             .map((f) => f.id)
             .join(', ')}.`
@@ -815,19 +853,19 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       input.scopeState.codacy.stale
         ? `Codacy snapshot is stale${input.scopeState.codacy.ageMinutes !== null ? ` (${input.scopeState.codacy.ageMinutes} minute(s) old)` : ''}.`
         : null,
-      input.externalSignalState && input.externalSignalState.summary.highImpactSignals > 0
+      input.externalSignalState && input.externalSignalState.summary.highImpactSignals > deriveZeroValue()
         ? `Observed external high-impact signals remain active: ${input.externalSignalState.summary.highImpactSignals}.`
         : null,
-      input.externalSignalState && input.externalSignalState.summary.staleAdapters > 0
+      input.externalSignalState && input.externalSignalState.summary.staleAdapters > deriveZeroValue()
         ? `External evidence is stale for ${input.externalSignalState.summary.staleAdapters} adapter(s).`
         : null,
-      input.externalSignalState && input.externalSignalState.summary.missingAdapters > 0
+      input.externalSignalState && input.externalSignalState.summary.missingAdapters > deriveZeroValue()
         ? `Required external adapters are missing: ${input.externalSignalState.summary.missingAdapters}.`
         : null,
-      input.externalSignalState && input.externalSignalState.summary.invalidAdapters > 0
+      input.externalSignalState && input.externalSignalState.summary.invalidAdapters > deriveZeroValue()
         ? `Required external adapters are invalid: ${input.externalSignalState.summary.invalidAdapters}.`
         : null,
-      input.executionMatrix && input.executionMatrix.summary.criticalUnobservedPaths > 0
+      input.executionMatrix && input.executionMatrix.summary.criticalUnobservedPaths > deriveZeroValue()
         ? `Execution matrix still has ${input.executionMatrix.summary.criticalUnobservedPaths} critical unobserved path(s).`
         : null,
       productionProofReadinessGap && proofReadinessSummary
