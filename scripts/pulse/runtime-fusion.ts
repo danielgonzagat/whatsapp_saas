@@ -12,6 +12,7 @@
 import * as p from 'path';
 import { pathExists as existsAt, readTextFile, writeTextFile, ensureDir } from './safe-fs';
 import { tokenize, unique } from './signal-normalizers';
+import { discoverAllObservedArtifactFilenames } from './dynamic-reality-kernel';
 import type { RuntimeCallGraphEvidence, OtelSpan } from './types.otel-runtime';
 import type {
   RuntimeSignal,
@@ -27,12 +28,11 @@ import type {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-let EXTERNAL_SIGNAL_STATE_FILE = 'PULSE_EXTERNAL_SIGNAL_STATE.json';
+let EXTERNAL_SIGNAL_STATE_FILE = discoverAllObservedArtifactFilenames().externalSignalState;
 let RUNTIME_TRACES_FILE = 'PULSE_RUNTIME_TRACES.json';
-let FUSION_OUTPUT_FILE = 'PULSE_RUNTIME_FUSION.json';
+let FUSION_OUTPUT_FILE = discoverAllObservedArtifactFilenames().runtimeFusion;
 
-let DYNAMIC_SIGNAL_SEMANTICS_NOTE =
-  'Dynamic signal semantics derived from source capability, observed payload, runtime baseline, trend, impact, and blast-radius hints; legacy labels are weak calibration only.';
+let DYNAMIC_SIGNAL_SEMANTICS_NOTE = `Dynamic signal semantics derived from ${discoverAllObservedArtifactFilenames().externalSignalState} source capability, observed payload, runtime baseline, trend, impact, and blast-radius hints; legacy labels are weak calibration only.`;
 
 // ─── Numeric → Categorical Mapping ──────────────────────────────────────────
 
@@ -1416,14 +1416,20 @@ export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
   let allSignals: RuntimeSignal[] = [...externalSignals.signals, ...runtimeTraces.signals];
 
   // Try loading capability state for signal→capability mapping context
-  let capabilityStatePath = p.join(currentDir, 'PULSE_CAPABILITY_STATE.json');
+  let capabilityStatePath = p.join(
+    currentDir,
+    discoverAllObservedArtifactFilenames().capabilityState,
+  );
   let capabilityPayload = safeJsonParseFile(capabilityStatePath);
   let capabilityState = capabilityPayload
     ? (capabilityPayload as unknown as {
         capabilities?: Array<{ id: string; name: string; filePaths?: string[] }>;
       })
     : undefined;
-  let flowProjectionPath = p.join(currentDir, 'PULSE_FLOW_PROJECTION.json');
+  let flowProjectionPath = p.join(
+    currentDir,
+    discoverAllObservedArtifactFilenames().flowProjection,
+  );
   let flowProjectionPayload = safeJsonParseFile(flowProjectionPath);
   let flowProjection = flowProjectionPayload
     ? (flowProjectionPayload as unknown as {
@@ -1457,7 +1463,10 @@ export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
   }
 
   // Load convergence plan for priority context
-  let convergencePlanPath = p.join(currentDir, 'PULSE_CONVERGENCE_PLAN.json');
+  let convergencePlanPath = p.join(
+    currentDir,
+    discoverAllObservedArtifactFilenames().convergencePlan,
+  );
   let convergencePayload = safeJsonParseFile(convergencePlanPath);
   let convergencePlan = convergencePayload
     ? (convergencePayload as unknown as {
