@@ -54,6 +54,7 @@ import {
   deriveSpecialCharactersFromRuntimeEvidence,
   deriveStrategyWeightFromObservedProfile,
   deriveStringIdentitySeedsFromCandidate,
+  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
@@ -86,12 +87,29 @@ function dst(): string {
 }
 
 function dpe(): GeneratedExpectation {
-  let observed = discoverPropertyPassedStatusFromTypeEvidence().values().next().value;
-  return observed === 'passed' ? 'pass' : 'pass';
+  const expectations = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.property-tester.ts',
+    'expected',
+  );
+  const passedStatuses = discoverPropertyPassedStatusFromTypeEvidence();
+  for (const exp of expectations) {
+    for (const status of passedStatuses) {
+      if (status.includes(exp)) return exp as GeneratedExpectation;
+    }
+  }
+  return [...expectations].values().next().value as GeneratedExpectation;
 }
 
 function dfa(): GeneratedExpectation {
-  return dpe() === 'pass' ? 'fail' : 'fail';
+  const passLabel = dpe();
+  const expectations = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.property-tester.ts',
+    'expected',
+  );
+  for (const exp of expectations) {
+    if (exp !== passLabel) return exp as GeneratedExpectation;
+  }
+  return [...expectations].values().next().value as GeneratedExpectation;
 }
 
 function canonicalArtifactFilename(): string {
@@ -204,12 +222,12 @@ export function buildPropertyTestEvidence(
   let totalProperty = allPropertyTests.length;
   let plannedProperty = allPropertyTests.filter((t) => t.status === 'planned').length;
   let notExecutedProperty = allPropertyTests.filter((t) => t.status === 'not_executed').length;
-  let passedProperty = allPropertyTests.filter((t) => t.status === 'passed').length;
+  let passedProperty = allPropertyTests.filter((t) => discoverPropertyPassedStatusFromTypeEvidence().has(t.status)).length;
   let failedProperty = allPropertyTests.filter((t) => t.status === 'failed').length;
   let totalFuzz = fuzzTests.length;
   let plannedFuzz = fuzzTests.filter((t) => t.status === 'planned').length;
   let notExecutedFuzz = fuzzTests.filter((t) => t.status === 'not_executed').length;
-  let passedFuzz = fuzzTests.filter((t) => t.status === 'passed').length;
+  let passedFuzz = fuzzTests.filter((t) => discoverPropertyPassedStatusFromTypeEvidence().has(t.status)).length;
   let failedFuzz = fuzzTests.filter((t) => t.status === 'failed').length;
   let totalMutation = mutationTests.length;
   let plannedMutation = mutationTests.filter((t) => t.status === 'planned').length;
@@ -1263,7 +1281,7 @@ function checkForExistingStrykerResults(rootDir: string): MutationTestResult[] {
 
             return {
               filePath: filePath.replace(rootDir + path.sep, ''),
-              status: 'planned',
+      status: 'planned',
               totalMutants,
               killedMutants,
               survivedMutants,
@@ -1619,8 +1637,10 @@ export function generatePropertyTestCases(rootDir: string): GeneratedPropertyFun
     }
 
     let totalInputs = allInputs.length;
-    let expectedPass = allInputs.filter((i) => i.expected === 'pass').length;
-    let expectedFail = allInputs.filter((i) => i.expected === 'fail').length;
+    const passExpectation = dpe();
+    const failExpectation = dfa();
+    let expectedPass = allInputs.filter((i) => i.expected === passExpectation).length;
+    let expectedFail = allInputs.filter((i) => i.expected === failExpectation).length;
 
     results.push({
       functionName: candidate.functionName,
@@ -1644,8 +1664,9 @@ function getPropertyKindsForCategory(category: PureFunctionCandidate['category']
 }
 
 function combinePropertyKinds(kinds: PropertyKind[]): PropertyKind {
-  if (kinds.length === 1) return kinds[0];
-  return 'general_purity';
+  if (kinds.length === unitValue()) return kinds[zeroValue()];
+  const defaultKinds = derivePropertyKindsFromObservedCategory(null);
+  return defaultKinds[zeroValue()];
 }
 
 function synthesizePropertyStrategy(
