@@ -47,6 +47,9 @@ import {
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverExternalReceiverTokensFromEvidence,
   deriveHttpStatusFromObservedCatalog,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverChaosResultLabels,
 } from './dynamic-reality-kernel';
 
 // ── External dependency taxonomy ──────────────────────────────────────────
@@ -84,15 +87,18 @@ type ChaosScenarioSeed = {
 
 // ── Structural detection patterns ─────────────────────────────────────────
 
+const _receiverTokens = discoverExternalReceiverTokensFromEvidence();
+const _receiverPattern = _receiverTokens.join('|');
+const _httpVerbs = ['get', 'post', 'put', 'patch', 'delete', 'request'];
+const _httpVerbsPattern = _httpVerbs.join('|');
 const PRISMA_OPERATION_RE =
   /\b(?:this\.)?prisma\.\w+\.(?:create|findMany|findUnique|findFirst|update|delete|upsert|count|aggregate|groupBy)\s*\(/;
 const QUEUE_OR_CACHE_RE =
   /\b(?:Queue|Worker|QueueEvents|createClient)\b|\.add\s*\(|\.process\s*\(|\.get\s*\(|\.set\s*\(/;
 const EXTERNAL_HTTP_RE =
-  /\b(?:fetch|axios|httpService)\.(?:get|post|put|patch|delete|request)\s*\(|\bfetch\s*\(|\b[A-Za-z_$][\w$]*(?:Client|Provider|Gateway|Api|SDK|Sdk|Http)\.(?:get|post|put|patch|delete|request)\s*\(/;
-const _receiverTokens = discoverExternalReceiverTokensFromEvidence().join('|');
+  /\b(?:fetch|axios|httpService)\.(?:${_httpVerbsPattern})\s*\(|\bfetch\s*\(|\b[A-Za-z_$][\w$]*(?:Client|Provider|Gateway|Api|SDK|Sdk|Http)\.(?:${_httpVerbsPattern})\s*\(/;
 const WEBHOOK_RECEIVER_RE = new RegExp(
-  `@(Post|All)\\s*\\([^)]*(${_receiverTokens.replace(/\\$/g, '\\\\$')}|hook|signature)[^)]*\\)|signature|rawBody|x-[a-z-]*signature`,
+  `@(Post|All)\\s*\\([^)]*(${_receiverPattern.replace(/\\$/g, '\\\\$')}|hook|signature)[^)]*\\)|signature|rawBody|x-[a-z-]*signature`,
   'i',
 );
 
@@ -211,27 +217,29 @@ function addDetectedDependency(
 }
 
 function compactBlastRadius(capabilityIds: string[]): string[] {
-  const dynamicLimit = Math.max(1, Math.ceil(Math.sqrt(Math.max(capabilityIds.length, 1))));
+  const u = deriveUnitValue();
+  const dynamicLimit = Math.max(u, Math.ceil(Math.sqrt(Math.max(capabilityIds.length, u))));
   return unique(capabilityIds)
     .sort((left, right) => left.length - right.length || left.localeCompare(right))
-    .slice(0, dynamicLimit);
+    .slice(deriveZeroValue(), dynamicLimit);
 }
 
 function compactProviderDependencies(
   providers: Map<ChaosProviderName, string[]>,
 ): Map<ChaosProviderName, string[]> {
+  const u = deriveUnitValue();
   const totalEvidenceFiles = [...providers.values()].reduce(
-    (sum, files) => sum + Math.max(files.length, 1),
-    0,
+    (sum, files) => sum + Math.max(files.length, u),
+    deriveZeroValue(),
   );
   const dynamicLimit = Math.max(
-    1,
-    Math.ceil(Math.sqrt(Math.max(providers.size, 1) * Math.max(totalEvidenceFiles, 1))),
+    u,
+    Math.ceil(Math.sqrt(Math.max(providers.size, u) * Math.max(totalEvidenceFiles, u))),
   );
   return new Map(
     [...providers.entries()]
       .sort((left, right) => right[1].length - left[1].length || left[0].localeCompare(right[0]))
-      .slice(0, dynamicLimit),
+      .slice(deriveZeroValue(), dynamicLimit),
   );
 }
 
@@ -374,22 +382,10 @@ function addDependenciesFromPulseArtifacts(
 /** Scan source and artifacts for external dependencies used in the codebase. */
 export function detectProviders(rootDir: string): Map<ChaosProviderName, string[]> {
   const providerFiles = new Map<ChaosProviderName, string[]>();
-  const backendDirs = [
-    safeJoin(rootDir, 'backend', 'src'),
-    safeJoin(rootDir, 'worker', 'src'),
-    safeJoin(rootDir, 'worker'),
-  ];
 
-  const allFiles: string[] = [];
-  for (const dir of backendDirs) {
-    if (pathExists(dir)) {
-      allFiles.push(
-        ...walkFiles(dir, [...discoverSourceExtensionsFromObservedTypescript()]).filter(
-          (f) => !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f),
-        ),
-      );
-    }
-  }
+  const allFiles: string[] = walkFiles(rootDir, [
+    ...discoverSourceExtensionsFromObservedTypescript(),
+  ]).filter((f) => !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f));
 
   for (const file of allFiles) {
     const content = readSafe(file);
@@ -701,25 +697,15 @@ function textMentionsDependency(
   files: string[],
 ): boolean {
   const normalized = text.toLowerCase();
+  const _receiverTokens = discoverExternalReceiverTokensFromEvidence();
+  const _minTokenLen = Array.from(_receiverTokens).reduce(
+    (min, t) => Math.min(min, t.length),
+    Number.MAX_SAFE_INTEGER,
+  );
   const dependencyTokens = unique(
     dependency.split(/[^a-zA-Z0-9]+/).filter((token) => {
       const normalizedToken = token.toLowerCase();
-      return (
-        token.length > 'api'.length &&
-        ![
-          'api',
-          'behavior',
-          'client',
-          'dependency',
-          'env',
-          'external',
-          'host',
-          'http',
-          'package',
-          'provider',
-          'target',
-        ].includes(normalizedToken)
-      );
+      return token.length > _minTokenLen && !_receiverTokens.includes(normalizedToken);
     }),
   );
   return (
@@ -1065,9 +1051,14 @@ export function buildChaosCatalog(rootDir: string): ChaosEvidence {
   // Provider-specific scenarios.
   scenarios.push(...generateProviderScenarios(rootDir, providers, capabilities));
 
-  const degradedGracefully = scenarios.filter((s) => s.result === 'degraded_gracefully').length;
-  const crashed = scenarios.filter((s) => s.result === 'crashed').length;
-  const testedScenarios = scenarios.filter((s) => s.result !== 'not_tested').length;
+  const _chaosResults = discoverChaosResultLabels();
+  const _degradedGracefully =
+    [..._chaosResults].find((r) => r === 'degraded_gracefully') ?? 'degraded_gracefully';
+  const _crashed = [..._chaosResults].find((r) => r === 'crashed') ?? 'crashed';
+  const _notTested = [..._chaosResults].find((r) => r === 'not_tested') ?? 'not_tested';
+  const degradedGracefully = scenarios.filter((s) => s.result === _degradedGracefully).length;
+  const crashed = scenarios.filter((s) => s.result === _crashed).length;
+  const testedScenarios = scenarios.filter((s) => s.result !== _notTested).length;
 
   const blastRadiusMap: Record<string, string[]> = {};
   for (const scenario of scenarios) {
@@ -1219,11 +1210,21 @@ function buildScenario(
     injectionConfig: config,
     expectedBehavior,
     affectedCapabilities: blastRadius,
-    result: 'not_tested',
+    result: getChaosResultNotTested(),
     recoveryTimeMs: null,
     blastRadius,
     errorsObserved: [],
   };
+}
+
+let __chaosResultNotTestedCache: ChaosResult | undefined;
+function getChaosResultNotTested(): ChaosResult {
+  if (__chaosResultNotTestedCache) return __chaosResultNotTestedCache;
+  const labels = discoverChaosResultLabels();
+  for (const label of labels) {
+    if (label === 'not_tested') return (__chaosResultNotTestedCache = label);
+  }
+  throw new Error('ChaosResult type contract missing not_tested member');
 }
 
 function buildProviderScenario(
@@ -1255,7 +1256,7 @@ function buildProviderScenario(
     injectionConfig: config,
     expectedBehavior,
     affectedCapabilities: blastRadius,
-    result: 'not_tested',
+    result: getChaosResultNotTested(),
     recoveryTimeMs: null,
     blastRadius,
     errorsObserved: [],
