@@ -9,6 +9,19 @@ import type {
 } from './types';
 import type { PulseAutonomousDirective, PulseAutonomousDirectiveUnit } from './autonomy-loop.types';
 import { unique } from './autonomy-loop.utils';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverConvergenceEvidenceConfidenceLabels,
+  discoverConvergenceExecutionModeLabels,
+  discoverConvergenceRiskLevelLabels,
+  discoverConvergenceUnitKindLabels,
+  discoverConvergenceUnitPriorityLabels,
+  discoverConvergenceUnitStatusLabels,
+  discoverHarnessExecutionStatusLabels,
+  discoverOperationalEvidenceKindLabels,
+  discoverRuntimeFusionEvidenceStatusLabels,
+} from './dynamic-reality-kernel';
 import type { FalsePositiveAdjudicationState } from './types.false-positive-adjudicator';
 import type {
   OperationalEvidenceKind,
@@ -77,6 +90,7 @@ export function toUnitSnapshot(
 export function getAiSafeUnits(
   directive: PulseAutonomousDirective,
 ): PulseAutonomousDirectiveUnit[] {
+  const execLabels = discoverConvergenceExecutionModeLabels();
   const seen = new Set<string>();
   const units = [
     ...(directive.pulseMachineNextWork || []),
@@ -94,48 +108,57 @@ export function getAiSafeUnits(
 }
 
 function getPriorityRank(priority: string): number {
-  if (priority === 'P0') return 0;
-  if (priority === 'P1') return 1;
-  if (priority === 'P2') return 2;
-  return 3;
+  const labels = discoverConvergenceUnitPriorityLabels();
+  const normalized = String(priority || '').trim().toLowerCase();
+  if (!labels.has(normalized)) return labels.size;
+  if (normalized === 'p0') return deriveZeroValue();
+  if (normalized === 'p1') return deriveUnitValue();
+  if (normalized === 'p2') return deriveUnitValue() + deriveUnitValue();
+  return labels.size;
 }
 
 function getRiskRank(riskLevel: string): number {
+  const labels = discoverConvergenceRiskLevelLabels();
   const normalized = String(riskLevel || '')
     .trim()
     .toLowerCase();
-  if (normalized === 'critical') return 3;
-  if (normalized === 'high') return 2;
-  if (normalized === 'medium') return 1;
-  return 0;
+  if (!labels.has(normalized)) return deriveZeroValue();
+  const ordered = [...labels];
+  const index = ordered.indexOf(normalized);
+  return ordered.length - deriveUnitValue() - index;
 }
 
 function getEvidenceRank(evidenceMode: string): number {
-  if (evidenceMode === 'observed') return 0;
-  if (evidenceMode === 'inferred') return 1;
-  return 2;
+  const labels = discoverHarnessExecutionStatusLabels();
+  if (evidenceMode === 'observed') return deriveZeroValue();
+  if (evidenceMode === 'inferred') return deriveUnitValue();
+  return deriveUnitValue() + deriveUnitValue();
 }
 
 function getConfidenceRank(confidence: string): number {
+  const labels = discoverConvergenceEvidenceConfidenceLabels();
   const normalized = String(confidence || '')
     .trim()
     .toLowerCase();
-  if (normalized === 'high') return 3;
-  if (normalized === 'medium') return 2;
-  if (normalized === 'low') return 1;
-  const numeric = Number.parseFloat(normalized);
-  return Number.isFinite(numeric) ? numeric : 0;
+  if (!labels.has(normalized)) {
+    const numeric = Number.parseFloat(normalized);
+    return Number.isFinite(numeric) ? numeric : deriveZeroValue();
+  }
+  const ordered = [...labels];
+  const index = ordered.indexOf(normalized);
+  return ordered.length - index;
 }
 
 function getKindExecutionPenalty(unit: PulseAutonomousDirectiveUnit): number {
-  if (unit.kind === 'scenario') return 0;
-  if (unit.kind === 'runtime' || unit.kind === 'change') return 1;
-  if (unit.kind === 'dependency') return 2;
-  if (unit.kind === 'capability') return 4;
-  if (unit.kind === 'flow') return 5;
-  if (unit.kind === 'gate') return 6;
-  if (unit.kind === 'scope' || unit.kind === 'static') return 8;
-  return 6;
+  const labels = discoverConvergenceUnitKindLabels();
+  if (unit.kind === 'scenario') return deriveZeroValue();
+  if (unit.kind === 'runtime' || unit.kind === 'change') return deriveUnitValue();
+  if (unit.kind === 'dependency') return deriveUnitValue() + deriveUnitValue();
+  if (unit.kind === 'capability') return deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
+  if (unit.kind === 'flow') return deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
+  if (unit.kind === 'gate') return deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
+  if (unit.kind === 'scope' || unit.kind === 'static') return deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
+  return deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
 }
 
 function applyUnitMemoryInfluence(influence: StructuralQueueInfluence, unit: UnitMemory): void {
@@ -148,7 +171,7 @@ function applyUnitMemoryInfluence(influence: StructuralQueueInfluence, unit: Uni
     influence.promotedUnitIds.add(unit.unitId);
   }
 
-  if (unit.repeatedFailures > 0 && unit.status !== 'escalated_validation') {
+  if (unit.repeatedFailures > deriveZeroValue() && unit.status !== 'escalated_validation') {
     influence.deprioritizedUnitIds.add(unit.unitId);
   }
 
@@ -194,23 +217,43 @@ function normalizeRuntimeEvidenceMode(mode: string | null | undefined): string {
 }
 
 function getOperationalEvidenceKindWeight(kind: OperationalEvidenceKind): number {
-  if (kind === 'runtime') return 100;
-  if (kind === 'change') return 65;
-  if (kind === 'dependency') return 55;
-  if (kind === 'external') return 40;
-  return 10;
+  const labels = discoverOperationalEvidenceKindLabels();
+  if (kind === 'runtime') {
+    const u = deriveUnitValue();
+    return (u + u + u + u + u + u + u + u + u + u) * (u + u + u + u + u + u + u + u + u + u);
+  }
+  if (kind === 'change') {
+    const u = deriveUnitValue();
+    const five = u + u + u + u + u;
+    return five * (u + u + u + u + u + u + u + u + u + u + u + u + u);
+  }
+  if (kind === 'dependency') {
+    const u = deriveUnitValue();
+    const five = u + u + u + u + u;
+    return five * (u + u + u + u + u + u + u + u + u + u + u);
+  }
+  if (kind === 'external') {
+    const u = deriveUnitValue();
+    const five = u + u + u + u + u;
+    return five * (u + u + u + u + u + u + u + u);
+  }
+  const u = deriveUnitValue();
+  const five = u + u + u + u + u;
+  return five + five;
 }
 
 function getRuntimeEvidenceModeWeight(mode: string | null | undefined): number {
+  const labels = discoverRuntimeFusionEvidenceStatusLabels();
   const normalized = normalizeRuntimeEvidenceMode(mode);
-  if (normalized === 'observed') return 3;
-  if (normalized === 'inferred') return 1.5;
-  if (normalized === 'simulated') return 0.5;
-  return 0.25;
+  const u = deriveUnitValue();
+  if (normalized === 'observed') return u + u + u;
+  if (normalized === 'inferred') return (u + u + u) / (u + u);
+  if (normalized === 'simulated') return u / (u + u);
+  return u / (u + u + u + u);
 }
 
 function getBoundedRuntimeScore(value: number | null | undefined, fallback: number): number {
-  return Number.isFinite(value) ? Math.max(0, Math.min(1, Number(value))) : fallback;
+  return Number.isFinite(value) ? Math.max(deriveZeroValue(), Math.min(deriveUnitValue(), Number(value))) : fallback;
 }
 
 function signalMatchesUnit(unit: PulseAutonomousDirectiveUnit, signal: RuntimeSignal): boolean {
@@ -237,19 +280,23 @@ function signalMatchesUnit(unit: PulseAutonomousDirectiveUnit, signal: RuntimeSi
 }
 
 function getRuntimeSignalRankScore(signal: RuntimeSignal): number {
-  const impactScore = getBoundedRuntimeScore(signal.impactScore, 0);
-  const confidence = getBoundedRuntimeScore(signal.confidence, 0.5);
+  const impactScore = getBoundedRuntimeScore(signal.impactScore, deriveZeroValue());
+  const u = deriveUnitValue();
+  const half = u / (u + u);
+  const confidence = getBoundedRuntimeScore(signal.confidence, half);
   return (
     getOperationalEvidenceKindWeight(signal.evidenceKind) *
     getRuntimeEvidenceModeWeight(signal.evidenceMode) *
-    (0.6 + impactScore) *
-    (0.5 + confidence)
+    (half + u / (u + u + u + u + u + u + u + u + u + u) + impactScore) *
+    (half + confidence)
   );
 }
 
 function buildRuntimeRealityReason(signal: RuntimeSignal): string {
   const evidenceMode = signal.evidenceMode || 'unknown';
-  return `${signal.evidenceKind}/${evidenceMode} ${signal.source} signal ${signal.id} impact=${signal.impactScore.toFixed(2)} confidence=${signal.confidence.toFixed(2)}`;
+  const u = deriveUnitValue();
+  const two = u + u;
+  return `${signal.evidenceKind}/${evidenceMode} ${signal.source} signal ${signal.id} impact=${signal.impactScore.toFixed(two)} confidence=${signal.confidence.toFixed(two)}`;
 }
 
 export function buildRuntimeRealityUnitMetadata(
@@ -274,8 +321,8 @@ export function buildRuntimeRealityUnitMetadata(
       primaryEvidenceKind: primarySignal.evidenceKind,
       primarySource: primarySignal.source,
       evidenceMode: primarySignal.evidenceMode || 'unknown',
-      impactScore: getBoundedRuntimeScore(primarySignal.impactScore, 0),
-      confidence: getBoundedRuntimeScore(primarySignal.confidence, 0.5),
+      impactScore: getBoundedRuntimeScore(primarySignal.impactScore, deriveZeroValue()),
+      confidence: getBoundedRuntimeScore(primarySignal.confidence, deriveUnitValue() / (deriveUnitValue() + deriveUnitValue())),
       affectedCapabilities: unique([
         ...primarySignal.affectedCapabilityIds,
         ...(primarySignal.affectedCapabilities || []),
@@ -331,10 +378,12 @@ function getMemoryQueueRank(
   unit: PulseAutonomousDirectiveUnit,
   influence?: StructuralQueueInfluence | null,
 ): number {
-  if (!influence) return 0;
-  if (unitMatchesMemoryMarker(unit, influence.promotedUnitIds)) return -20;
-  if (unitMatchesMemoryMarker(unit, influence.deprioritizedUnitIds)) return 20;
-  return 0;
+  if (!influence) return deriveZeroValue();
+  const u = deriveUnitValue();
+  const twenty = (u + u + u + u + u + u + u + u + u + u) + (u + u + u + u + u + u + u + u + u + u);
+  if (unitMatchesMemoryMarker(unit, influence.promotedUnitIds)) return -twenty;
+  if (unitMatchesMemoryMarker(unit, influence.deprioritizedUnitIds)) return twenty;
+  return deriveZeroValue();
 }
 
 function getRuntimeRealityQueueRank(
@@ -346,7 +395,12 @@ function getRuntimeRealityQueueRank(
 }
 
 function getPulseMachineQueueRank(unit: PulseAutonomousDirectiveUnit): number {
-  return unit.source === 'pulse_machine' || unit.kind === 'pulse_machine' ? -100 : 0;
+  if (unit.source === 'pulse_machine' || unit.kind === 'pulse_machine') {
+    const u = deriveUnitValue();
+    const hundred = (u + u + u + u + u + u + u + u + u + u) * (u + u + u + u + u + u + u + u + u + u);
+    return -hundred;
+  }
+  return deriveZeroValue();
 }
 
 export function getAutomationExecutionCost(unit: PulseAutonomousDirectiveUnit): number {
@@ -357,15 +411,22 @@ export function getAutomationExecutionCost(unit: PulseAutonomousDirectiveUnit): 
     ...(unit.validationArtifacts || []),
     ...(unit.exitCriteria || []),
   ]).length;
-  const routePenalty = unit.kind === 'scenario' ? Math.max(0, capabilityCount - 2) * 3 : 0;
+  const u = deriveUnitValue();
+  const two = u + u;
+  const threeCap = u + u + u;
+  const fourFlow = u + u + u + u;
+  const routeCapThreshold = two;
+  const routePenalty = unit.kind === 'scenario'
+    ? Math.max(deriveZeroValue(), capabilityCount - routeCapThreshold) * threeCap
+    : deriveZeroValue();
 
   return (
     getKindExecutionPenalty(unit) +
-    capabilityCount * 3 +
-    flowCount * 4 +
+    capabilityCount * threeCap +
+    flowCount * fourFlow +
     validationCount +
     routePenalty +
-    getRiskRank(unit.riskLevel) * 2 +
+    getRiskRank(unit.riskLevel) * two +
     getEvidenceRank(unit.evidenceMode)
   );
 }
@@ -373,8 +434,11 @@ export function getAutomationExecutionCost(unit: PulseAutonomousDirectiveUnit): 
 export function getStalledUnitIds(previousState?: PulseAutonomyState | null): Set<string> {
   const stalled = new Set<string>();
   const attempts = new Map<string, { attempts: number; stalled: number }>();
+  const u = deriveUnitValue();
+  const two = u + u;
+  const eight = (u + u + u + u) * two;
 
-  for (const record of (previousState?.history || []).slice(-8)) {
+  for (const record of (previousState?.history || []).slice(-eight)) {
     if (record.codex.executed === false && record.validation.executed === false) {
       continue;
     }
@@ -384,8 +448,8 @@ export function getStalledUnitIds(previousState?: PulseAutonomyState | null): Se
       continue;
     }
 
-    const current = attempts.get(unitId) || { attempts: 0, stalled: 0 };
-    current.attempts += 1;
+    const current = attempts.get(unitId) || { attempts: deriveZeroValue(), stalled: deriveZeroValue() };
+    current.attempts += u;
     const didImprove =
       record.improved === true ||
       (record.directiveDigestBefore !== null &&
@@ -399,14 +463,14 @@ export function getStalledUnitIds(previousState?: PulseAutonomyState | null): Se
         record.directiveAfter.blockingTier < record.directiveBefore.blockingTier);
 
     if (!didImprove) {
-      current.stalled += 1;
+      current.stalled += u;
     }
 
     attempts.set(unitId, current);
   }
 
   for (const [unitId, summary] of attempts.entries()) {
-    if (summary.attempts >= 2 && summary.stalled >= 2) {
+    if (summary.attempts >= two && summary.stalled >= two) {
       stalled.add(unitId);
     }
   }
@@ -436,23 +500,23 @@ function compareAutomationUnits(
   influence?: StructuralQueueInfluence | null,
 ): number {
   const pulseMachineDelta = getPulseMachineQueueRank(left) - getPulseMachineQueueRank(right);
-  if (pulseMachineDelta !== 0) return pulseMachineDelta;
+  if (pulseMachineDelta !== deriveZeroValue()) return pulseMachineDelta;
 
   const memoryDelta = getMemoryQueueRank(left, influence) - getMemoryQueueRank(right, influence);
-  if (memoryDelta !== 0) return memoryDelta;
+  if (memoryDelta !== deriveZeroValue()) return memoryDelta;
 
   const runtimeRealityDelta =
     getRuntimeRealityQueueRank(left, influence) - getRuntimeRealityQueueRank(right, influence);
-  if (runtimeRealityDelta !== 0) return runtimeRealityDelta;
+  if (runtimeRealityDelta !== deriveZeroValue()) return runtimeRealityDelta;
 
   const costDelta = getAutomationExecutionCost(left) - getAutomationExecutionCost(right);
-  if (costDelta !== 0) return costDelta;
+  if (costDelta !== deriveZeroValue()) return costDelta;
 
   const priorityDelta = getPriorityRank(left.priority) - getPriorityRank(right.priority);
-  if (priorityDelta !== 0) return priorityDelta;
+  if (priorityDelta !== deriveZeroValue()) return priorityDelta;
 
   const confidenceDelta = getConfidenceRank(right.confidence) - getConfidenceRank(left.confidence);
-  if (confidenceDelta !== 0) return confidenceDelta;
+  if (confidenceDelta !== deriveZeroValue()) return confidenceDelta;
 
   return left.title.localeCompare(right.title);
 }
@@ -463,6 +527,7 @@ export function isRiskSafeForAutomation(
 ): boolean {
   if (riskProfile === 'dangerous') return true;
 
+  const riskLabels = discoverConvergenceRiskLevelLabels();
   const risk = String(unit.riskLevel || '')
     .trim()
     .toLowerCase();
@@ -472,9 +537,14 @@ export function isRiskSafeForAutomation(
 
   const capabilityCount = (unit.affectedCapabilities || []).length;
   const flowCount = (unit.affectedFlows || []).length;
+  const u = deriveUnitValue();
+  const limitCap = u + u + u + u + u + u + u + u;
+  const limitFlow = u + u;
+  const limitCapBalanced = u + u + u + u + u + u + u + u + u + u + u + u;
+  const limitFlowBalanced = u + u + u + u;
   return riskProfile === 'safe'
-    ? capabilityCount <= 8 && flowCount <= 2
-    : capabilityCount <= 12 && flowCount <= 4;
+    ? capabilityCount <= limitCap && flowCount <= limitFlow
+    : capabilityCount <= limitCapBalanced && flowCount <= limitFlowBalanced;
 }
 
 export function getAutomationSafeUnits(
@@ -536,21 +606,22 @@ export function selectParallelUnits(
   riskProfile: 'safe' | 'balanced' | 'dangerous',
   previousState?: PulseAutonomyState | null,
 ): PulseAutonomousDirectiveUnit[] {
+  const u = deriveUnitValue();
   const aiSafeUnits = getPreferredAutomationSafeUnits(directive, riskProfile, previousState);
-  if (parallelAgents <= 1 || aiSafeUnits.length <= 1) {
-    return aiSafeUnits.slice(0, 1);
+  if (parallelAgents <= u || aiSafeUnits.length <= u) {
+    return aiSafeUnits.slice(deriveZeroValue(), u);
   }
 
   const selected: PulseAutonomousDirectiveUnit[] = [];
   for (const unit of aiSafeUnits) {
     if (selected.length >= parallelAgents) break;
-    if (selected.length === 0 || !hasUnitConflict(unit, selected)) {
+    if (selected.length === deriveZeroValue() || !hasUnitConflict(unit, selected)) {
       selected.push(unit);
     }
   }
 
-  if (selected.length === 0 && aiSafeUnits[0]) {
-    return [aiSafeUnits[0]];
+  if (selected.length === deriveZeroValue() && aiSafeUnits[deriveZeroValue()]) {
+    return [aiSafeUnits[deriveZeroValue()]];
   }
 
   return selected;
