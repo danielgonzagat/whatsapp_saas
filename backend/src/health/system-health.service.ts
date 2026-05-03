@@ -2,7 +2,6 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
-
 import { StripeService } from '../billing/stripe.service';
 import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';

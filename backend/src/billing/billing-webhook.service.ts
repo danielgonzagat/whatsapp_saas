@@ -240,6 +240,15 @@ export class BillingWebhookService {
           },
         });
         await activatePlanFeatures(tx, workspaceId, plan);
+        await tx.auditLog.create({
+          data: {
+            workspaceId,
+            action: 'subscription.created',
+            resource: 'subscription',
+            resourceId: subscriptionId,
+            details: { plan, mode: 'stripe_checkout' },
+          },
+        });
       },
       { isolationLevel: 'ReadCommitted' },
     );
@@ -332,20 +341,33 @@ export class BillingWebhookService {
     }
 
     if (workspaceId) {
-      try {
-        await this.prisma.subscription.updateMany({
-          where: { stripeId, workspaceId },
-          data: { status: 'CANCELED' },
-        });
-        this.logger.log(`Subscription CANCELED: ${stripeId}`);
-      } catch (error: unknown) {
-        if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')) {
-          throw error;
+      // PULSE_OK: wrapped in $transaction to prevent concurrent status mutations
+      // from interfering with cancel enforcement
+      await this.prisma.$transaction(async (tx) => {
+        try {
+          await tx.subscription.updateMany({
+            where: { stripeId, workspaceId },
+            data: { status: 'CANCELED' },
+          });
+          await tx.auditLog.create({
+            data: {
+              workspaceId,
+              action: 'subscription.cancelled',
+              resource: 'subscription',
+              resourceId: stripeId,
+              details: { mode: 'stripe_webhook', stripeId },
+            },
+          });
+          this.logger.log(`Subscription CANCELED: ${stripeId}`);
+        } catch (error: unknown) {
+          if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')) {
+            throw error;
+          }
+          this.logger.warn(
+            `cancelSubscriptionByStripeId: subscription not found for stripeId ${stripeId}`,
+          );
         }
-        this.logger.warn(
-          `cancelSubscriptionByStripeId: subscription not found for stripeId ${stripeId}`,
-        );
-      }
+      });
       return;
     }
 
@@ -370,6 +392,16 @@ export class BillingWebhookService {
             updatedAt: existing.updatedAt,
           },
           data: { status: 'CANCELED' },
+        });
+
+        await tx.auditLog.create({
+          data: {
+            workspaceId: existing.workspaceId,
+            action: 'subscription.cancelled',
+            resource: 'subscription',
+            resourceId: stripeId,
+            details: { mode: 'stripe_webhook_fallback', stripeId },
+          },
         });
 
         this.logger.log(`Subscription CANCELED: ${stripeId}`);
