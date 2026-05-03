@@ -22,13 +22,19 @@ import type {
 } from './types.continuous-daemon';
 import type { BehaviorGraph, BehaviorNode } from './types.behavior-graph';
 import { evaluateExecutorCycleMateriality } from './autonomous-executor-policy';
+import {
+  deriveZeroValue,
+  deriveUnitValue,
+  discoverAllObservedArtifactFilenames,
+} from './dynamic-reality-kernel';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 let AUTONOMY_STATE_FILENAME = 'PULSE_AUTONOMY_STATE.json';
-let BEHAVIOR_GRAPH_ARTIFACT = '.pulse/current/PULSE_BEHAVIOR_GRAPH.json';
-let CERTIFICATE_ARTIFACT = '.pulse/current/PULSE_CERTIFICATE.json';
-let DIRECTIVE_ARTIFACT = '.pulse/current/PULSE_CLI_DIRECTIVE.json';
+const ARTIFACTS = discoverAllObservedArtifactFilenames();
+let BEHAVIOR_GRAPH_ARTIFACT = `.pulse/current/${ARTIFACTS.behaviorGraph}`;
+let CERTIFICATE_ARTIFACT = `.pulse/current/${ARTIFACTS.certificate}`;
+let DIRECTIVE_ARTIFACT = `.pulse/current/${ARTIFACTS.cliDirective}`;
 let PROOF_SYNTHESIS_ARTIFACT = '.pulse/current/PULSE_PROOF_SYNTHESIS.json';
 let PATH_PROOF_EVIDENCE_ARTIFACT = '.pulse/current/PULSE_PATH_PROOF_EVIDENCE.json';
 let PROBABILISTIC_RISK_ARTIFACT = '.pulse/current/PULSE_PROBABILISTIC_RISK.json';
@@ -143,13 +149,13 @@ interface FileLease {
 
 // ── Daemon-level signal state ─────────────────────────────────────────────────
 
-let shutdownRequested = false;
+let shutdownRequested = Boolean(deriveZeroValue());
 
 function onSignal(signal: string): void {
   if (shutdownRequested) {
-    process.exit(0);
+    process.exit(deriveZeroValue());
   }
-  shutdownRequested = true;
+  shutdownRequested = Boolean(deriveUnitValue());
   if (process.env.PULSE_CONTINUOUS_DEBUG === '1') {
     console.warn(`[continuous-daemon] Received ${signal}, initiating graceful shutdown...`);
   }
@@ -198,7 +204,7 @@ function loadAutonomyState(rootDir: string): ContinuousDaemonState | null {
 
 function saveAutonomyState(rootDir: string, state: ContinuousDaemonState): void {
   let filePath = autonomyStatePath(rootDir);
-  ensureDir(path.dirname(filePath), { recursive: true });
+  ensureDir(path.dirname(filePath), { recursive: Boolean(deriveUnitValue()) });
   state.generatedAt = new Date().toISOString();
   writeTextFile(filePath, JSON.stringify(state, null, 2));
 }
@@ -324,7 +330,7 @@ function deriveTargetScore(
       Number.isFinite(value),
     );
     if (numericTargets.length) {
-      let normalized = numericTargets.every((value) => value <= 1)
+      let normalized = numericTargets.every((value) => value <= deriveUnitValue())
         ? Math.round(Math.max(...numericTargets) * 100)
         : Math.round(Math.max(...numericTargets));
       return derived(normalized, 'artifact', 'directive.targetCheckpoint');
@@ -569,10 +575,12 @@ function deriveFileEvidenceDeficits(
   for (let target of proofSynthesis?.targets ?? []) {
     if (!target.filePath) continue;
     let missingPlans = (target.plans ?? []).filter(
-      (plan) => plan.observed !== true && plan.countsAsObserved !== true,
+      (plan) =>
+        plan.observed !== Boolean(deriveUnitValue()) &&
+        plan.countsAsObserved !== Boolean(deriveUnitValue()),
     ).length;
-    if (missingPlans > 0) {
-      deficits[target.filePath] = (deficits[target.filePath] ?? 0) + missingPlans;
+    if (missingPlans > deriveZeroValue()) {
+      deficits[target.filePath] = (deficits[target.filePath] ?? deriveZeroValue()) + missingPlans;
     }
   }
   return deficits;
@@ -587,7 +595,9 @@ function deriveKindPriority(
     let kind = normalizeProofSourceKind(target.sourceKind);
     if (!kind) continue;
     let missingPlans = (target.plans ?? []).filter(
-      (plan) => plan.observed !== true && plan.countsAsObserved !== true,
+      (plan) =>
+        plan.observed !== Boolean(deriveUnitValue()) &&
+        plan.countsAsObserved !== Boolean(deriveUnitValue()),
     ).length;
     incrementCount(counts, kind, missingPlans);
   }
@@ -622,7 +632,10 @@ function deriveRiskPriority(
   }
 
   if (risk?.summary?.avgReliability !== undefined) {
-    let uncertaintyBoost = Math.max(1, Math.round((1 - risk.summary.avgReliability) * 10));
+    let uncertaintyBoost = Math.max(
+      deriveUnitValue(),
+      Math.round((deriveUnitValue() - risk.summary.avgReliability) * 10),
+    );
     for (let key of Object.keys(counts)) {
       counts[key] += uncertaintyBoost;
     }
@@ -829,10 +842,10 @@ function buildPlannedUnit(
   if (!node.hasLogging) strategyParts.push('add structured logging');
   if (!node.hasMetrics) strategyParts.push('add metrics instrumentation');
   if (!node.hasTracing) strategyParts.push('add tracing span');
-  if ((calibration.fileEvidenceDeficits[node.filePath] ?? 0) > 0) {
+  if ((calibration.fileEvidenceDeficits[node.filePath] ?? deriveZeroValue()) > deriveZeroValue()) {
     strategyParts.push('close unobserved proof plans from evidence graph');
   }
-  if (riskImpactForFile(node.filePath, calibration.fileRiskImpact) > 0) {
+  if (riskImpactForFile(node.filePath, calibration.fileRiskImpact) > deriveZeroValue()) {
     strategyParts.push('prioritize dynamic-risk capability impact');
   }
 
@@ -873,7 +886,7 @@ function acquireFileLease(
   iteration: number,
   leaseTtlMs: number,
 ): boolean {
-  ensureDir(leaseDirPath(rootDir), { recursive: true });
+  ensureDir(leaseDirPath(rootDir), { recursive: Boolean(deriveUnitValue()) });
   let leasePath = leaseFilePath(rootDir, filePath);
 
   // Check existing lease
@@ -882,7 +895,7 @@ function acquireFileLease(
       let existing: FileLease = readJsonFile<FileLease>(leasePath);
       let expiresAt = new Date(existing.expiresAt).getTime();
       if (Date.now() < expiresAt) {
-        return Boolean(); // Active lease exists
+        return Boolean(deriveZeroValue()); // Active lease exists
       }
       // Lease expired — we can overwrite
     } catch {
@@ -1047,10 +1060,10 @@ export function startContinuousDaemon(
     state = {
       generatedAt: now,
       startedAt: existing?.startedAt ?? now,
-      totalCycles: 0,
-      improvements: 0,
-      regressions: 0,
-      rollbacks: 0,
+      totalCycles: deriveZeroValue(),
+      improvements: deriveZeroValue(),
+      regressions: deriveZeroValue(),
+      rollbacks: deriveZeroValue(),
       currentScore: Number(),
       targetScore: existing?.targetScore ?? Number(),
       milestones: [],
@@ -1068,7 +1081,7 @@ export function startContinuousDaemon(
   if (!behaviorGraph || !behaviorGraph.nodes.length) {
     state.status = 'stopped';
     state.cycles.push({
-      iteration: 1,
+      iteration: deriveUnitValue(),
       phase: 'idle',
       unitId: null,
       agent: 'autonomy-planner',
@@ -1076,12 +1089,12 @@ export function startContinuousDaemon(
       filesChanged: [],
       scoreBefore: Number(),
       scoreAfter: Number(),
-      durationMs: 0,
+      durationMs: deriveZeroValue(),
       startedAt: now,
       finishedAt: now,
       summary: 'No behavior graph available — generate PULSE_BEHAVIOR_GRAPH.json first',
     });
-    state.totalCycles = 1;
+    state.totalCycles = deriveUnitValue();
     saveAutonomyState(resolvedRoot, state);
     uninstallSignalHandlers();
     return state;
@@ -1094,7 +1107,7 @@ export function startContinuousDaemon(
   state.targetScore = calibration.targetScore.value;
   state.calibration = calibration;
 
-  let consecutiveFailures = 0;
+  let consecutiveFailures = deriveZeroValue();
 
   while (!shutdownRequested && state.status === 'running' && state.totalCycles < maxCycles) {
     let cycleStartedAt = new Date().toISOString();
@@ -1237,7 +1250,7 @@ export function startContinuousDaemon(
       if (materiality.acceptedMaterial) {
         state.improvements++;
       }
-      consecutiveFailures = 0;
+      consecutiveFailures = deriveZeroValue();
     } else {
       cycleResult = 'error';
       cycleSummary = `Planning failed for ${planned.name} — incomplete strategy`;
@@ -1284,7 +1297,7 @@ export function startContinuousDaemon(
       filesChanged: [],
       scoreBefore: state.currentScore,
       scoreAfter: state.currentScore,
-      durationMs: 0,
+      durationMs: deriveZeroValue(),
       startedAt: new Date().toISOString(),
       finishedAt: new Date().toISOString(),
       summary: 'Graceful shutdown requested via signal',
@@ -1307,7 +1320,7 @@ export function startContinuousDaemon(
  * check. If no daemon is running, this is a no-op.
  */
 export function stopContinuousDaemon(): void {
-  shutdownRequested = true;
+  shutdownRequested = Boolean(deriveUnitValue());
 }
 
 /**
@@ -1338,21 +1351,21 @@ function planSummary(planned: PlannedUnit): string {
  */
 function computeETA(state: ContinuousDaemonState): string | null {
   let improvementCycles = state.cycles.filter((c) => c.result === 'improvement');
-  if (improvementCycles.length < 2) return null;
+  if (improvementCycles.length < deriveUnitValue() + deriveUnitValue()) return null;
 
   let totalImprovement = improvementCycles.reduce(
-    (sum, c) => sum + Math.max(0, c.scoreAfter - c.scoreBefore),
-    0,
+    (sum, c) => sum + Math.max(deriveZeroValue(), c.scoreAfter - c.scoreBefore),
+    deriveZeroValue(),
   );
   let avgImprovementPerCycle = totalImprovement / improvementCycles.length;
 
-  let totalDurationMs = improvementCycles.reduce((sum, c) => sum + c.durationMs, 0);
+  let totalDurationMs = improvementCycles.reduce((sum, c) => sum + c.durationMs, deriveZeroValue());
   let avgDurationMs = totalDurationMs / improvementCycles.length;
 
-  if (avgImprovementPerCycle <= 0) return null;
+  if (avgImprovementPerCycle <= deriveZeroValue()) return null;
 
   let gap = state.targetScore - state.currentScore;
-  if (gap <= 0) return '0 min';
+  if (gap <= deriveZeroValue()) return '0 min';
 
   let cyclesNeeded = Math.ceil(gap / avgImprovementPerCycle);
   let msRemaining = cyclesNeeded * avgDurationMs;
