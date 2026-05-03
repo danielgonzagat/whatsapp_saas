@@ -3,11 +3,39 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 const TOKEN_SEPARATOR = '.';
 const TOKEN_EXPIRY_MS = 48 * 60 * 60 * 1000; // 48 hours
 
+/**
+ * Returns the HMAC signing key for unsubscribe tokens.
+ *
+ * SECURITY MODEL: this is NOT password hashing. The returned key signs short-
+ * lived (48h) opt-out tokens whose payload is a public email + optional
+ * workspace/campaign id. We use HMAC-SHA256 for tamper-evidence (constant-time
+ * verification via timingSafeEqual), not for credential storage. CodeQL's
+ * `js/insufficient-password-hash` rule false-positives here because the rule
+ * cannot tell HMAC-for-token-signing apart from password hashing.
+ *
+ * In production a dedicated EMAIL_UNSUBSCRIBE_SECRET is required. Falls back
+ * to JWT_SECRET in non-prod so dev/test environments share the JWT key. No
+ * hardcoded default in any environment — missing key throws at first use so
+ * misconfiguration surfaces immediately rather than silently issuing tokens
+ * signed with a known string.
+ */
 function getSecret(): string {
-  return (
-    String(process.env.EMAIL_UNSUBSCRIBE_SECRET || process.env.JWT_SECRET || '').trim() ||
-    'kloel-unsubscribe-dev-secret'
-  );
+  const dedicated = String(process.env.EMAIL_UNSUBSCRIBE_SECRET || '').trim();
+  if (dedicated) {
+    return dedicated;
+  }
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'EMAIL_UNSUBSCRIBE_SECRET is required in production. Set it to a 32+ byte random secret.',
+    );
+  }
+  const jwtFallback = String(process.env.JWT_SECRET || '').trim();
+  if (!jwtFallback) {
+    throw new Error(
+      'EMAIL_UNSUBSCRIBE_SECRET (or JWT_SECRET in dev) must be set for unsubscribe-token signing.',
+    );
+  }
+  return jwtFallback;
 }
 
 function base64UrlEncode(buf: Buffer): string {
@@ -18,7 +46,12 @@ function base64UrlDecode(str: string): Buffer {
   return Buffer.from(str, 'base64url');
 }
 
-function hmac(data: string): Buffer {
+/**
+ * HMAC-SHA256 of the token payload for tamper-evidence. NOT a password hash.
+ * The secret rotates with EMAIL_UNSUBSCRIBE_SECRET (or JWT_SECRET in dev);
+ * outstanding tokens become invalid on rotation, which is the desired behavior.
+ */
+function signTokenHmac(data: string): Buffer {
   const secret = getSecret();
   return createHmac('sha256', secret).update(data).digest();
 }
@@ -34,7 +67,7 @@ export function generateUnsubscribeToken(payload: UnsubscribePayload): string {
   const now = Date.now();
   const header = base64UrlEncode(Buffer.from(JSON.stringify({ exp: now + TOKEN_EXPIRY_MS })));
   const body = base64UrlEncode(Buffer.from(JSON.stringify(payload)));
-  const signature = base64UrlEncode(hmac(`${header}${TOKEN_SEPARATOR}${body}`));
+  const signature = base64UrlEncode(signTokenHmac(`${header}${TOKEN_SEPARATOR}${body}`));
   return `${header}${TOKEN_SEPARATOR}${body}${TOKEN_SEPARATOR}${signature}`;
 }
 
@@ -46,7 +79,7 @@ export function verifyUnsubscribeToken(token: string): UnsubscribePayload | null
 
     const [headerB64, bodyB64, signatureB64] = parts;
     const expectedSig = base64UrlDecode(signatureB64);
-    const actualSig = hmac(`${headerB64}${TOKEN_SEPARATOR}${bodyB64}`);
+    const actualSig = signTokenHmac(`${headerB64}${TOKEN_SEPARATOR}${bodyB64}`);
 
     if (expectedSig.length !== actualSig.length || !timingSafeEqual(expectedSig, actualSig)) {
       return null;
