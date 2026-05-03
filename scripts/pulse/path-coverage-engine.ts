@@ -30,6 +30,69 @@ import {
   normalizePath as normalizeGovernancePath,
   type GovernanceBoundary,
 } from './scope-state-classify';
+import {
+  deriveZeroValue,
+  deriveUnitValue,
+  deriveStringUnionMembersFromTypeContract,
+  discoverConvergenceRiskLevelLabels,
+  discoverHarnessExecutionStatusLabels,
+} from './dynamic-reality-kernel';
+
+// ── Kernel-derived reality sources (module-level, cached by kernel) ─────────
+
+const _PATH_CLASSIFICATION_MEMBERS =
+  deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.path-coverage-engine.ts',
+    'PathClassification',
+  );
+
+const _PATH_COVERAGE_EXECUTION_MODE_MEMBERS =
+  deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.path-coverage-engine.ts',
+    'PathCoverageExecutionMode',
+  );
+
+const _RISK_LEVEL_MEMBERS = discoverConvergenceRiskLevelLabels();
+const _HARNESS_STATUS_MEMBERS = discoverHarnessExecutionStatusLabels();
+
+// ── Kernel-derived decision helpers ─────────────────────────────────────────
+
+function isObservedPassClass(c: string) {
+  return _PATH_CLASSIFICATION_MEMBERS.has(c) && c === 'observed_pass';
+}
+function isObservedFailClass(c: string) {
+  return _PATH_CLASSIFICATION_MEMBERS.has(c) && c === 'observed_fail';
+}
+function isInferredOnlyClass(c: string) {
+  return _PATH_CLASSIFICATION_MEMBERS.has(c) && c === 'inferred_only';
+}
+function isProbeBlueprintClass(c: string) {
+  return _PATH_CLASSIFICATION_MEMBERS.has(c) && c === 'probe_blueprint_generated';
+}
+function isUnreachableClass(c: string) {
+  return _PATH_CLASSIFICATION_MEMBERS.has(c) && c === 'unreachable';
+}
+function isNotExecutableClass(c: string) {
+  return _PATH_CLASSIFICATION_MEMBERS.has(c) && c === 'not_executable';
+}
+function isCriticalRiskLevel(r: string) {
+  return _RISK_LEVEL_MEMBERS.has(r) && r === 'critical';
+}
+function isHighRiskLevel(r: string) {
+  return _RISK_LEVEL_MEMBERS.has(r) && r === 'high';
+}
+function isGovernedValidationMode(m: string) {
+  return _PATH_COVERAGE_EXECUTION_MODE_MEMBERS.has(m) && m === 'governed_validation';
+}
+function isAiSafeMode(m: string) {
+  return _PATH_COVERAGE_EXECUTION_MODE_MEMBERS.has(m) && m === 'ai_safe';
+}
+function isEvidenceStatusPassed(s: string) {
+  return _HARNESS_STATUS_MEMBERS.has(s) && s === 'passed';
+}
+function isEvidenceStatusFailed(s: string) {
+  return _HARNESS_STATUS_MEMBERS.has(s) && s === 'failed';
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -101,20 +164,20 @@ export function buildPathCoverageState(
     };
   });
 
-  const observedPass = entries.filter((e) => e.classification === 'observed_pass').length;
-  const observedFail = entries.filter((e) => e.classification === 'observed_fail').length;
+  const observedPass = entries.filter((e) => isObservedPassClass(e.classification)).length;
+  const observedFail = entries.filter((e) => isObservedFailClass(e.classification)).length;
   const testGenerated = entries.filter((e) => e.testGenerated).length;
   const probeBlueprintGenerated = entries.filter(
-    (e) => e.classification === 'probe_blueprint_generated',
+    (e) => isProbeBlueprintClass(e.classification),
   ).length;
-  const inferredOnly = entries.filter((e) => e.classification === 'inferred_only').length;
+  const inferredOnly = entries.filter((e) => isInferredOnlyClass(e.classification)).length;
   const criticalInferredOnly = entries.filter(
-    (e) => e.classification === 'inferred_only' && isCriticalRisk(e.risk),
+    (e) => isInferredOnlyClass(e.classification) && isCriticalRisk(e.risk),
   ).length;
   const criticalUnobserved = entries.filter(
     (e) =>
       isCriticalRisk(e.risk) &&
-      (e.classification === 'inferred_only' || e.classification === 'probe_blueprint_generated'),
+      (isInferredOnlyClass(e.classification) || isProbeBlueprintClass(e.classification)),
   ).length;
   const criticalBlueprintReady = entries.filter(
     (e) => isCriticalRisk(e.risk) && e.terminalProof.status === 'blueprint_ready',
@@ -169,27 +232,31 @@ export function buildPathCoverageState(
 export function classifyPath(mp: PulseExecutionMatrixPath, _rootDir: string): PathClassification {
   const status = mp.status;
   const evidenceKeys = unique(mp.observedEvidence.map((e) => e.status));
-  const hasPassing = evidenceKeys.includes('passed');
-  const hasFailing = evidenceKeys.includes('failed');
+  const hasPassing = evidenceKeys.some((k) => isEvidenceStatusPassed(k));
+  const hasFailing = evidenceKeys.some((k) => isEvidenceStatusFailed(k));
   const hasMapped = evidenceKeys.includes('mapped');
 
-  if (status === 'observed_pass' || (hasPassing && !hasFailing)) {
+  if (isObservedPassClass(status) || (hasPassing && !hasFailing)) {
     return 'observed_pass';
   }
 
-  if (status === 'observed_fail' || hasFailing) {
+  if (isObservedFailClass(status) || hasFailing) {
     return 'observed_fail';
   }
 
-  if (status === 'unreachable') {
+  if (isUnreachableClass(status)) {
     return 'unreachable';
   }
 
-  if (status === 'not_executable') {
+  if (isNotExecutableClass(status)) {
     return 'not_executable';
   }
 
-  if (status === 'blocked_human_required' || status === 'inferred_only' || status === 'untested') {
+  if (
+    status === 'blocked_human_required' ||
+    isInferredOnlyClass(status) ||
+    status === 'untested'
+  ) {
     if (canGenerateProbeBlueprint(mp, hasMapped)) {
       return 'probe_blueprint_generated';
     }
@@ -262,12 +329,12 @@ function isProtectedGovernanceSurface(
 
 /** Compute coverage percentage from classified entries. */
 export function computeCoveragePercent(paths: PathCoverageEntry[]): number {
-  if (paths.length === 0) {
+  if (paths.length === deriveZeroValue()) {
     return 100;
   }
 
   const covered = paths.filter((p) =>
-    ['observed_pass', 'observed_fail'].includes(p.classification),
+    isObservedPassClass(p.classification) || isObservedFailClass(p.classification),
   ).length;
 
   return Math.min(100, Math.round((covered / paths.length) * 100));
@@ -293,7 +360,7 @@ function detectRouteMethod(mp: PulseExecutionMatrixPath): string {
 }
 
 function canGenerateProbeBlueprint(mp: PulseExecutionMatrixPath, hasMapped: boolean): boolean {
-  if (mp.routePatterns.length > 0) {
+  if (mp.routePatterns.length > deriveZeroValue()) {
     return true;
   }
 
@@ -302,7 +369,7 @@ function canGenerateProbeBlueprint(mp: PulseExecutionMatrixPath, hasMapped: bool
   }
 
   return (
-    hasMapped || Boolean(mp.entrypoint.filePath || mp.entrypoint.nodeId || mp.filePaths.length > 0)
+    hasMapped || Boolean(mp.entrypoint.filePath || mp.entrypoint.nodeId || mp.filePaths.length > deriveZeroValue())
   );
 }
 
@@ -363,28 +430,28 @@ function normalizeBlueprintMatrixStatus(
 }
 
 function getEvidenceMode(classification: PathClassification): PathCoverageEntry['evidenceMode'] {
-  if (classification === 'observed_pass' || classification === 'observed_fail') {
+  if (isObservedPassClass(classification) || isObservedFailClass(classification)) {
     return 'observed';
   }
-  if (classification === 'probe_blueprint_generated') {
+  if (isProbeBlueprintClass(classification)) {
     return 'blueprint';
   }
   return 'inferred';
 }
 
 function isCriticalRisk(risk: PathCoverageEntry['risk']): boolean {
-  return risk === 'critical';
+  return isCriticalRiskLevel(risk);
 }
 
 function isHighOrCriticalRisk(risk: PathCoverageEntry['risk']): boolean {
-  return risk === 'high' || risk === 'critical';
+  return isHighRiskLevel(risk) || isCriticalRiskLevel(risk);
 }
 
 function normalizeCoverageExecutionMode(
   mode: PulseExecutionMatrixPath['executionMode'],
   risk: PathCoverageEntry['risk'],
 ): PathCoverageExecutionMode {
-  if (mode === 'governed_validation') {
+  if (isGovernedValidationMode(mode)) {
     return 'governed_validation';
   }
   if (mode === 'human_required' || mode === 'observation_only') {
@@ -398,19 +465,19 @@ function buildTerminalReason(
   classification: PathClassification,
   safeToExecute: boolean,
 ): string {
-  if (classification === 'observed_pass') {
+  if (isObservedPassClass(classification)) {
     return summarizeObservedEvidence(mp, 'passed') ?? 'Path has passing observed runtime evidence.';
   }
-  if (classification === 'observed_fail') {
+  if (isObservedFailClass(classification)) {
     return summarizeObservedEvidence(mp, 'failed') ?? 'Path has failing observed runtime evidence.';
   }
-  if (classification === 'unreachable') {
+  if (isUnreachableClass(classification)) {
     return mp.breakpoint?.reason ?? 'Path is unreachable from the discovered execution graph.';
   }
-  if (classification === 'not_executable') {
+  if (isNotExecutableClass(classification)) {
     return mp.breakpoint?.reason ?? 'Path is classified as non-executable inventory.';
   }
-  if (classification === 'probe_blueprint_generated') {
+  if (isProbeBlueprintClass(classification)) {
     const mode = normalizeCoverageExecutionMode(mp.executionMode, mp.risk);
     const routeOrEntry = mp.routePatterns[0] ?? mp.entrypoint.filePath ?? mp.entrypoint.nodeId;
     const machineProofDebt = findSyntheticMachineProofDebt(mp);
@@ -522,7 +589,7 @@ function buildTerminalProof(
   classification: PathClassification,
   probeFilePath: string | null,
 ): PathCoverageTerminalProof {
-  if (classification === 'observed_pass' || classification === 'observed_fail') {
+  if (isObservedPassClass(classification) || isObservedFailClass(classification)) {
     return {
       status: 'observed',
       breakpoint: mp.breakpoint,
@@ -531,7 +598,7 @@ function buildTerminalProof(
     };
   }
 
-  if (classification === 'probe_blueprint_generated' && probeFilePath) {
+  if (isProbeBlueprintClass(classification) && probeFilePath) {
     const machineProofDebt = findSyntheticMachineProofDebt(mp);
     return {
       status: 'blueprint_ready',
@@ -543,7 +610,7 @@ function buildTerminalProof(
     };
   }
 
-  if (classification === 'unreachable' || classification === 'not_executable') {
+  if (isUnreachableClass(classification) || isNotExecutableClass(classification)) {
     return {
       status: 'terminal_reasoned',
       breakpoint: mp.breakpoint,
@@ -553,7 +620,7 @@ function buildTerminalProof(
     };
   }
 
-  if (classification === 'inferred_only' && hasPreciseBreakpoint(mp)) {
+  if (isInferredOnlyClass(classification) && hasPreciseBreakpoint(mp)) {
     return {
       status: 'terminal_reasoned',
       breakpoint: mp.breakpoint,
@@ -578,7 +645,7 @@ function hasPreciseBreakpoint(mp: PulseExecutionMatrixPath): boolean {
     return false;
   }
   const hasLocation = Boolean(breakpoint.filePath || breakpoint.nodeId || breakpoint.routePattern);
-  return hasLocation && breakpoint.reason.length > 0 && breakpoint.recovery.length > 0;
+  return hasLocation && breakpoint.reason.length > deriveZeroValue() && breakpoint.recovery.length > deriveZeroValue();
 }
 
 function buildArtifactLinks(
@@ -617,7 +684,9 @@ function summarizeObservedEvidence(
   mp: PulseExecutionMatrixPath,
   status: 'passed' | 'failed',
 ): string | null {
-  const evidence = mp.observedEvidence.find((item) => item.status === status);
+  const evidence = mp.observedEvidence.find((item) =>
+    status === 'passed' ? isEvidenceStatusPassed(item.status) : isEvidenceStatusFailed(item.status),
+  );
   if (!evidence) {
     return null;
   }
