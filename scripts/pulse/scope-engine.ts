@@ -18,6 +18,10 @@ import {
   type GovernanceBoundary,
 } from './scope-state-classify';
 import { detectSourceRoots } from './source-root-detector';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverDirectorySkipHintsFromEvidence,
+} from './dynamic-reality-kernel';
 import type {
   ScopeEngineState,
   ScopeEngineSummary,
@@ -341,7 +345,7 @@ function walkFiles(dir: string, files: string[]): void {
       continue;
     }
     if (stats.isDirectory()) {
-      if (!entry.startsWith('.') && entry !== 'node_modules') {
+      if (!entry.startsWith('.') && !discoverDirectorySkipHintsFromEvidence().has(entry)) {
         walkFiles(fullPath, files);
       }
     } else if (stats.isFile()) {
@@ -630,7 +634,7 @@ export function buildScopeEngineState(
 
   const outDir = safeJoin(rootDir, '.pulse', 'current');
   ensureDir(outDir, { recursive: true });
-  const outPath = safeJoin(outDir, 'PULSE_SCOPE_STATE.json');
+  const outPath = safeJoin(outDir, discoverAllObservedArtifactFilenames().scopeState);
   const json = JSON.stringify(state, null, 2);
   writeTextFile(outPath, json);
 
