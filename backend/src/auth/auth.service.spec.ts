@@ -8,6 +8,8 @@ import { FacebookAuthService } from './facebook-auth.service';
 import { GoogleAuthService } from './google-auth.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { TikTokAuthService } from './tiktok-auth.service';
+import { RateLimitService } from './rate-limit.service';
+import type { Redis } from 'ioredis';
 import {
   BadRequestException,
   ConflictException,
@@ -105,6 +107,10 @@ const mockConnectService = {
   }),
 };
 
+const mockRateLimitService = {
+  checkRateLimit: jest.fn().mockResolvedValue(undefined),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: typeof mockPrismaService;
@@ -136,6 +142,7 @@ describe('AuthService', () => {
         { provide: FacebookAuthService, useValue: mockFacebookAuthService },
         { provide: TikTokAuthService, useValue: mockTikTokAuthService },
         { provide: ConnectService, useValue: mockConnectService },
+        { provide: RateLimitService, useValue: mockRateLimitService },
       ],
     }).compile();
 
@@ -415,7 +422,7 @@ describe('AuthService', () => {
           mockFacebookAuthService as unknown as FacebookAuthService,
           mockTikTokAuthService as unknown as TikTokAuthService,
           mockConnectService as unknown as ConnectService,
-          mockRedis,
+          new RateLimitService(mockRedis),
         );
 
         prisma.agent.findFirst.mockResolvedValue(null);
@@ -458,10 +465,10 @@ describe('AuthService', () => {
           mockFacebookAuthService as unknown as FacebookAuthService,
           mockTikTokAuthService as unknown as TikTokAuthService,
           mockConnectService as unknown as ConnectService,
-          {
+          new RateLimitService({
             incr: jest.fn().mockRejectedValue(new Error('redis down')),
             expire: jest.fn(),
-          } as any,
+          } as unknown as Redis),
         );
 
         prisma.agent.findFirst.mockResolvedValue(null);
