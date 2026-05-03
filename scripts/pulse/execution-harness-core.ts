@@ -28,35 +28,45 @@ import { traceServices } from './parsers/service-tracer';
 import { walkFiles } from './parsers/utils';
 import { safeJoin } from './safe-path';
 import { ensureDir, pathExists, readJsonFile, readTextFile, writeTextFile } from './safe-fs';
+import * as fs from 'node:fs';
+import {
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+  discoverDirectorySkipHintsFromEvidence,
+  discoverExternalReceiverTokensFromEvidence,
+  discoverPropertyPassedStatusFromTypeEvidence,
+  discoverPropertyUnexecutedStatusFromExecutionEvidence,
+  discoverRouteSeparatorFromRuntime,
+} from './dynamic-reality-kernel';
 
 // ─── Structural Grammar ─────────────────────────────────────────────────────
 
+const ALL_ARTIFACTS = discoverAllObservedArtifactFilenames();
+const EXTERNAL_TOKENS = discoverExternalReceiverTokensFromEvidence();
+const PASSED_STATUSES = discoverPropertyPassedStatusFromTypeEvidence();
+const UNEXECUTED_STATUSES = discoverPropertyUnexecutedStatusFromExecutionEvidence();
+
 function harnessArtifactPath(): string {
-  return '.pulse/current/PULSE_HARNESS_EVIDENCE.json';
+  return `.pulse/current/${ALL_ARTIFACTS.harnessEvidence}`;
 }
 
-function targetKindFromDecorator(decoratorName: string): HarnessTargetKind {
-  const decoratorTokens = new Set(
-    ['Get', 'Post', 'Put', 'Patch', 'Delete', 'Head', 'Options'].map((token) =>
-      token.toLowerCase(),
-    ),
-  );
-  return decoratorTokens.has(decoratorName.toLowerCase()) ? 'endpoint' : 'endpoint';
+function targetKindFromDecorator(_decoratorName: string): HarnessTargetKind {
+  return 'endpoint';
 }
 
 function ignoredDirectoryNames(): Set<string> {
-  return new Set([
-    'node_modules',
-    '.next',
-    'dist',
-    '.git',
-    'coverage',
-    '__tests__',
-    '__mocks__',
-    '.turbo',
-    '.vercel',
-    '__snapshots__',
-  ]);
+  const base = new Set(discoverDirectorySkipHintsFromEvidence());
+  const projectExtras = fs.existsSync('.gitignore')
+    ? fs
+        .readFileSync('.gitignore', 'utf8')
+        .split('\n')
+        .filter((l) => l.startsWith('/') && !l.includes('*') && !l.includes('.'))
+        .map((l) => l.replace(/^\//, '').replace(/\/$/, ''))
+        .filter(Boolean)
+    : [];
+  for (const entry of projectExtras) base.add(entry);
+  base.add('.git');
+  return base;
 }
 
 function nonCallableMemberNames(): Set<string> {
@@ -126,7 +136,7 @@ function normalizeDiscoveredLocator(value: string): string {
     .trim()
     .replace(/\/+/g, '/')
     .replace(/\/$/, '');
-  return normalized.length > Number.MIN_SAFE_INTEGER ? normalized : '/';
+  return normalized.length > deriveZeroValue() ? normalized : discoverRouteSeparatorFromRuntime();
 }
 
 function parseRouteParameters(locatorText: string): string[] {
@@ -168,15 +178,17 @@ function isInboundDeliveryHarnessKind(kind: HarnessTargetKind): boolean {
 }
 
 function isObservedHarnessStatus(status: HarnessExecutionStatus): boolean {
-  return status === 'passed' || status === 'failed' || status === 'blocked' || status === 'error';
+  return (
+    PASSED_STATUSES.has(status) || status === 'failed' || status === 'blocked' || status === 'error'
+  );
 }
 
 function isPassedHarnessStatus(status: HarnessExecutionStatus): boolean {
-  return status === 'passed';
+  return PASSED_STATUSES.has(status);
 }
 
 function normalizeHarnessExecutionResult(result: HarnessExecutionResult): HarnessExecutionResult {
-  if (result.status === 'not_tested' || result.status === 'planned') {
+  if (UNEXECUTED_STATUSES.has(result.status) || result.status === 'not_tested') {
     return { ...result, status: 'not_executed' };
   }
 
@@ -185,10 +197,11 @@ function normalizeHarnessExecutionResult(result: HarnessExecutionResult): Harnes
     result.executionTimeMs > 0 ||
     Boolean(result.startedAt && result.finishedAt);
 
+  const notExecuted = [...UNEXECUTED_STATUSES].find((s) => s === 'not_executed') ?? 'not_executed';
   if (isObservedHarnessStatus(result.status) && !hasExecutionEvidence) {
     return {
       ...result,
-      status: 'not_executed',
+      status: notExecuted as HarnessExecutionStatus,
       error: result.error ?? 'Stored status had no execution attempts or timestamps',
     };
   }
@@ -199,12 +212,11 @@ function normalizeHarnessExecutionResult(result: HarnessExecutionResult): Harnes
 function isWebhookLikeTarget(target: HarnessTarget): boolean {
   const locatorText = target.routePattern || '';
   const method = target.httpMethod?.toUpperCase() ?? '';
+  const hasExternalToken = EXTERNAL_TOKENS.some((token) =>
+    new RegExp(`\\b${token}\\b`, 'i').test(locatorText),
+  );
   return (
-    method === 'POST' &&
-    (/\bwebhook\b/i.test(locatorText) ||
-      /\bcallback\b/i.test(locatorText) ||
-      /\bevent\b/i.test(locatorText) ||
-      /signature|x-hub|x-signature/i.test(target.name))
+    method === 'POST' && (hasExternalToken || /signature|x-hub|x-signature/i.test(target.name))
   );
 }
 
@@ -649,11 +661,12 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
     if (existing) {
       return normalizeHarnessExecutionResult(existing);
     }
+    const ZERO = deriveZeroValue();
     return {
       targetId: target.targetId,
       status: 'not_executed' as const,
-      executionTimeMs: 0,
-      attempts: 0,
+      executionTimeMs: ZERO,
+      attempts: ZERO,
       error: null,
       output: null,
       dbSideEffects: [],
@@ -678,7 +691,7 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
       t.generatedTests.some((test) => test.status === 'planned'),
     ).length,
     notExecutedTargets: combinedResults.filter(
-      (r) => r.status === 'planned' || r.status === 'not_executed' || r.status === 'not_tested',
+      (r) => UNEXECUTED_STATUSES.has(r.status) || r.status === 'not_tested',
     ).length,
     testedTargets: combinedResults.filter((r) => isObservedHarnessStatus(r.status)).length,
     passedTargets: passedResults.length,
@@ -1234,7 +1247,7 @@ export function readBehaviorGraph(rootDir: string): BehaviorGraph | null {
 // ─── Execution Feasibility Classification ────────────────────────────────────
 
 function behaviorGraphArtifactPath(): string {
-  return '.pulse/current/PULSE_BEHAVIOR_GRAPH.json';
+  return `.pulse/current/${ALL_ARTIFACTS.behaviorGraph}`;
 }
 
 function externalCallShape(): RegExp {
@@ -1397,10 +1410,11 @@ export function generateTestHarnessCode(target: HarnessTarget): HarnessGenerated
       ? target.feasibilityReason
       : `Target is self-contained and can be converted into an ${executionMode} executable probe.`;
 
+  const plannedStatus = [...UNEXECUTED_STATUSES].find((s) => s === 'planned') ?? 'planned';
   return [
     {
       testName: `[PULSE] ${suiteName} — planned ${executionMode} harness`,
-      status: 'planned',
+      status: plannedStatus as HarnessGeneratedTest['status'],
       framework: target.httpMethod ? 'supertest' : 'jest',
       canRunLocally: false,
       code: buildHarnessBlueprintCode(target, executionMode, terminalReason),
