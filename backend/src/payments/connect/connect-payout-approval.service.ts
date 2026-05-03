@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
@@ -97,6 +98,8 @@ export class ConnectPayoutApprovalService {
     private readonly prisma: PrismaService,
     private readonly connectPayoutService: ConnectPayoutService,
   ) {}
+
+  private readonly logger = new Logger(ConnectPayoutApprovalService.name);
 
   /** Create request. */
   async createRequest(
@@ -258,6 +261,19 @@ export class ConnectPayoutApprovalService {
         currency: payload.currency.toLowerCase(),
       });
     } catch (error) {
+      this.logger.error(
+        {
+          workspaceId: payload.workspaceId,
+          externalId: payload.requestId,
+          operation: 'approve_payout',
+          approvalRequestId: approval.id,
+          stripeAccountId: payload.stripeAccountId,
+          amountCents: payload.amountCents,
+        },
+        'Financial operation failed: approve_payout',
+        error,
+      );
+
       await this.prisma.approvalRequest.update({
         where: { id: approval.id },
         data: {
@@ -268,7 +284,7 @@ export class ConnectPayoutApprovalService {
             amountCents: payload.amountCents,
             currency: payload.currency,
             approvedByAdminId: input.adminUserId,
-          } as unknown as Prisma.InputJsonValue,
+          },
         },
       });
 
@@ -317,7 +333,7 @@ export class ConnectPayoutApprovalService {
           status: payoutResult.status,
           amountCents: payoutResult.amountCents.toString(),
           currency: payload.currency,
-        } as unknown as Prisma.InputJsonValue,
+        },
       },
     });
 
@@ -393,7 +409,7 @@ export class ConnectPayoutApprovalService {
           reason: input.reason ?? null,
           amountCents: payload.amountCents,
           currency: payload.currency,
-        } as unknown as Prisma.InputJsonValue,
+        },
       },
     });
 
