@@ -3178,7 +3178,7 @@ function TabChat({
   const { messages: realMsgs, mutate: mutateMsgs } = usePartnerMessages(selectedChat?.id || null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const displayContacts = contacts as PartnerContact[];
+  const displayContacts = contacts as unknown as PartnerContact[];
   const displayMessages: PartnerMessage[] =
     (realMsgs as PartnerMessage[]).length > 0 ? (realMsgs as PartnerMessage[]) : messages;
 
