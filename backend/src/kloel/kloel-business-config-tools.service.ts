@@ -155,13 +155,22 @@ export class KloelBusinessConfigToolsService {
     const updateData: Prisma.WorkspaceUpdateInput = {};
     if (businessName) updateData.name = businessName;
     if (description || segment) {
-      const workspace = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
-      const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
-      updateData.providerSettings = {
-        ...currentSettings,
-        businessDescription: description,
-        businessSegment: segment,
-      };
+      await this.prisma.$transaction(async (tx) => {
+        const workspace = await tx.workspace.findUnique({ where: { id: workspaceId } });
+        const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+        await tx.workspace.update({
+          where: { id: workspaceId },
+          data: {
+            providerSettings: {
+              ...currentSettings,
+              businessDescription: description,
+              businessSegment: segment,
+            },
+            ...(businessName ? { name: businessName } : {}),
+          },
+        });
+      });
+      return { success: true, message: 'Informações do negócio salvas com sucesso.' };
     }
     await this.prisma.workspace.update({ where: { id: workspaceId }, data: updateData });
     return { success: true, message: 'Informações do negócio salvas com sucesso.' };
@@ -171,16 +180,18 @@ export class KloelBusinessConfigToolsService {
     workspaceId: string,
     args: ToolSetBusinessHoursArgs,
   ): Promise<ToolResult> {
-    const workspace = await this.prisma.workspace.findUnique({ where: { id: workspaceId } });
-    const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
     const businessHours = {
       weekday: { start: args.weekdayStart || '09:00', end: args.weekdayEnd || '18:00' },
       saturday: args.saturdayStart ? { start: args.saturdayStart, end: args.saturdayEnd } : null,
       sunday: args.workOnSunday ? { start: '09:00', end: '13:00' } : null,
     };
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: { providerSettings: { ...currentSettings, businessHours } },
+    await this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.findUnique({ where: { id: workspaceId } });
+      const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+      await tx.workspace.update({
+        where: { id: workspaceId },
+        data: { providerSettings: { ...currentSettings, businessHours } },
+      });
     });
     return { success: true, businessHours, message: 'Horário de funcionamento configurado.' };
   }

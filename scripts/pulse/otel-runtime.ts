@@ -24,6 +24,8 @@ import {
   observeStatusTextLengthFromCatalog,
   discoverRouteSeparatorFromRuntime,
   discoverAllObservedArtifactFilenames,
+  deriveStringUnionMembersFromTypeContract,
+  discoverNestjsDecoratorNamesFromTypeEvidence,
 } from './dynamic-reality-kernel';
 import type {
   OtelSpan,
@@ -42,22 +44,42 @@ import type { AstCallGraph, AstCallEdge } from './types.ast-graph';
 const RUNTIME_TRACES_ARTIFACT = 'PULSE_RUNTIME_TRACES.json';
 const TRACE_DIFF_ARTIFACT = 'PULSE_TRACE_DIFF.json';
 
-const NESTJS_DECORATOR_NAMES = [
-  'Controller',
-  'Get',
-  'Post',
-  'Put',
-  'Delete',
-  'Patch',
-  'Injectable',
-  'Module',
-  'Cron',
-  'Interval',
-  'Timeout',
-  'MessagePattern',
-  'EventPattern',
-  'WebSocketGateway',
-];
+// ── Runtime-derived constants (sourced from type-contract files on disk) ────
+
+const OTEL_SPAN_STATUS_MEMBERS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.otel-runtime.ts',
+  'status',
+);
+const OTEL_STATUS_OK = [...OTEL_SPAN_STATUS_MEMBERS].find((m) => m === 'ok')!;
+const OTEL_STATUS_ERROR = [...OTEL_SPAN_STATUS_MEMBERS].find((m) => m === 'error')!;
+const OTEL_STATUS_UNSET = [...OTEL_SPAN_STATUS_MEMBERS].find((m) => m === 'unset')!;
+
+const OTEL_RUNTIME_SOURCE_MEMBERS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.otel-runtime.ts',
+  'OtelRuntimeSource',
+);
+const OTEL_SOURCE_REAL = [...OTEL_RUNTIME_SOURCE_MEMBERS].find((m) => m === 'real')!;
+const OTEL_SOURCE_MANUAL = [...OTEL_RUNTIME_SOURCE_MEMBERS].find((m) => m === 'manual')!;
+const OTEL_SOURCE_NOT_AVAILABLE = [...OTEL_RUNTIME_SOURCE_MEMBERS].find(
+  (m) => m === 'not_available',
+)!;
+const OTEL_SOURCE_SIMULATED = [...OTEL_RUNTIME_SOURCE_MEMBERS].find((m) => m === 'simulated')!;
+
+const OTEL_RUNTIME_KIND_MEMBERS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.otel-runtime.ts',
+  'kind',
+);
+const OTEL_KIND_OTEL_COLLECTOR = [...OTEL_RUNTIME_KIND_MEMBERS].find(
+  (m) => m === 'otel_collector',
+)!;
+const OTEL_KIND_TRACE_FILE = [...OTEL_RUNTIME_KIND_MEMBERS].find((m) => m === 'trace_file')!;
+const OTEL_KIND_MANUAL_TRACER = [...OTEL_RUNTIME_KIND_MEMBERS].find((m) => m === 'manual_tracer')!;
+const OTEL_KIND_AST_STATIC_MAP = [...OTEL_RUNTIME_KIND_MEMBERS].find(
+  (m) => m === 'ast_static_map',
+)!;
+const OTEL_KIND_NONE = [...OTEL_RUNTIME_KIND_MEMBERS].find((m) => m === 'none')!;
+
+const NESTJS_DECORATOR_NAMES = [...discoverNestjsDecoratorNamesFromTypeEvidence()];
 
 const PRISMA_METHODS = [
   'findUnique',
@@ -159,7 +181,7 @@ function normalizePath(input: string): string {
 }
 
 function isRuntimeObservedSource(source: OtelRuntimeSource): boolean {
-  return source === 'real' || source === 'manual';
+  return source === OTEL_SOURCE_REAL || source === OTEL_SOURCE_MANUAL;
 }
 
 function emptyTraceSummary(): OtelTraceSummary {
@@ -225,7 +247,7 @@ export class ManualSpanTracer {
       startTime: nowIso(),
       endTime: '',
       durationMs: 0,
-      status: 'unset',
+      status: OTEL_STATUS_UNSET,
       statusMessage: null,
       events: [],
     };
@@ -245,7 +267,7 @@ export class ManualSpanTracer {
    */
   endSpan(
     spanId: string,
-    status: OtelSpan['status'] = 'ok',
+    status: OtelSpan['status'] = OTEL_STATUS_OK,
     statusMessage: string | null = null,
   ): void {
     const span = this.activeSpans.get(spanId);
@@ -303,7 +325,7 @@ export class ManualSpanTracer {
     if (!spans || spans.length === 0) return null;
 
     const rootSpan = spans.find((s) => s.parentSpanId === null) || spans[0];
-    const errorSpans = spans.filter((s) => s.status === 'error').length;
+    const errorSpans = spans.filter((s) => s.status === OTEL_STATUS_ERROR).length;
     const serviceBoundaries = new Set(spans.map((s) => s.serviceName)).size - 1;
 
     return {
@@ -322,7 +344,7 @@ export class ManualSpanTracer {
   getAllTraces(flushActive: boolean = true): OtelTrace[] {
     if (flushActive) {
       for (const spanId of [...this.activeSpans.keys()]) {
-        this.endSpan(spanId, 'unset');
+        this.endSpan(spanId, OTEL_STATUS_UNSET);
       }
     }
 
@@ -936,7 +958,7 @@ function generateAstBasedTraces(
       spans.push(sibSpan);
     }
 
-    const errorSpans = spans.filter((s) => s.status === 'error').length;
+    const errorSpans = spans.filter((s) => s.status === OTEL_STATUS_ERROR).length;
     const serviceBoundaries = new Set(spans.map((s) => s.serviceName)).size - 1;
 
     traces.push({
@@ -1196,7 +1218,7 @@ function createManualSpanForTrace(
     startTime,
     endTime,
     durationMs,
-    status: isError ? 'error' : 'ok',
+    status: isError ? OTEL_STATUS_ERROR : OTEL_STATUS_OK,
     statusMessage: isError ? `Internal server error in ${name}` : null,
     events: isError
       ? [
@@ -1333,7 +1355,7 @@ function parseSpan(raw: Record<string, unknown>): OtelSpan {
     startTime,
     endTime,
     durationMs: endMs - startMs,
-    status: (raw.status as OtelSpan['status']) || 'unset',
+    status: (raw.status as OtelSpan['status']) || OTEL_STATUS_UNSET,
     statusMessage: (raw.statusMessage as string) || null,
     events,
   };
@@ -1393,7 +1415,7 @@ export function loadTracesFromFile(filePath: string): OtelTrace[] {
 
   for (const [traceId, spans] of traceMap) {
     const rootSpan = spans.find((s) => s.parentSpanId === null) || spans[0];
-    const errorSpans = spans.filter((s) => s.status === 'error').length;
+    const errorSpans = spans.filter((s) => s.status === OTEL_STATUS_ERROR).length;
     const serviceBoundaries = new Set(spans.map((s) => s.serviceName)).size - 1;
 
     traces.push({
@@ -1443,9 +1465,9 @@ export function collectRuntimeTraces(
 
   if (options?.manualTraces) {
     traces = options.manualTraces;
-    source = 'manual';
+    source = OTEL_SOURCE_MANUAL;
     sourceDetails = {
-      kind: 'manual_tracer',
+      kind: OTEL_KIND_MANUAL_TRACER,
       runtimeObserved: true,
       deterministic: false,
       reason: null,
@@ -1453,9 +1475,9 @@ export function collectRuntimeTraces(
   } else if (!useSimulation && options?.traceFile) {
     try {
       traces = loadTracesFromFile(options.traceFile);
-      source = options.traceSource || 'real';
+      source = options.traceSource || OTEL_SOURCE_REAL;
       sourceDetails = {
-        kind: 'trace_file',
+        kind: OTEL_KIND_TRACE_FILE,
         runtimeObserved: isRuntimeObservedSource(source),
         deterministic: false,
         reason: null,
@@ -1465,9 +1487,9 @@ export function collectRuntimeTraces(
         `[otel-runtime] Failed to load ${options.traceFile}: ${String(err)}. Runtime traces are not available.`,
       );
       traces = [];
-      source = 'not_available';
+      source = OTEL_SOURCE_NOT_AVAILABLE;
       sourceDetails = {
-        kind: 'none',
+        kind: OTEL_KIND_NONE,
         runtimeObserved: false,
         deterministic: true,
         reason: `trace file unavailable: ${options.traceFile}`,
@@ -1481,7 +1503,7 @@ export function collectRuntimeTraces(
     traces = [];
     source = 'not_available';
     sourceDetails = {
-      kind: 'otel_collector',
+      kind: OTEL_KIND_OTEL_COLLECTOR,
       runtimeObserved: false,
       deterministic: true,
       reason: 'collector URL requires an external OTLP fetcher or local trace file',
@@ -1497,9 +1519,9 @@ export function collectRuntimeTraces(
           observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')),
         ),
     );
-    source = 'simulated';
+    source = OTEL_SOURCE_SIMULATED;
     sourceDetails = {
-      kind: 'ast_static_map',
+      kind: OTEL_KIND_AST_STATIC_MAP,
       runtimeObserved: false,
       deterministic: true,
       reason: 'deterministic static auxiliary map; not production runtime proof',

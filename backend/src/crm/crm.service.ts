@@ -80,33 +80,35 @@ export class CrmService {
   /** Add tag. */
   // PULSE_OK: workspaceId validated by caller guard
   async addTag(workspaceId: string, phone: string, tagName: string) {
-    const tag = await this.prisma.tag.upsert({
-      where: {
-        workspaceId_name: {
-          workspaceId,
+    return this.prisma.$transaction(async (tx) => {
+      const tag = await tx.tag.upsert({
+        where: {
+          workspaceId_name: {
+            workspaceId,
+            name: tagName,
+          },
+        },
+        update: {},
+        create: {
           name: tagName,
+          workspace: { connect: { id: workspaceId } },
         },
-      },
-      update: {},
-      create: {
-        name: tagName,
-        workspace: { connect: { id: workspaceId } },
-      },
-    });
+      });
 
-    return this.prisma.contact.update({
-      where: {
-        workspaceId_phone: {
-          workspaceId,
-          phone,
+      return tx.contact.update({
+        where: {
+          workspaceId_phone: {
+            workspaceId,
+            phone,
+          },
         },
-      },
-      data: {
-        tags: {
-          connect: { id: tag.id },
+        data: {
+          tags: {
+            connect: { id: tag.id },
+          },
         },
-      },
-      include: { tags: true },
+        include: { tags: true },
+      });
     });
   }
 
