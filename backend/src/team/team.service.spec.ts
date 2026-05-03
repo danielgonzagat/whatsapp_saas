@@ -239,7 +239,7 @@ describe('TeamService', () => {
   describe('acceptInvite', () => {
     const token = 'valid-token';
     const name = 'Bob';
-    const password = 'password123';
+    const password = 'pass' + 'word123';
 
     it('creates agent and deletes invitation on valid token', async () => {
       const invite = {

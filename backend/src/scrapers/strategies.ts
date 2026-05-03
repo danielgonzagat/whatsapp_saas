@@ -1,59 +1,91 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotImplementedException } from '@nestjs/common';
 
-/** Scraper result shape. */
+/** Status de cada fonte de scraping. */
+export type ScraperSourceStatus =
+  | 'available'
+  | 'available_direct'
+  | 'available_worker'
+  | 'unavailable';
+
+/** Descreve o estado real de uma fonte de scraping. */
+export interface ScraperSourceCapability {
+  /** Nome registrado da estrategia. */
+  name: string;
+  /** Se a fonte pode ser usada via esta chamada direta. */
+  status: ScraperSourceStatus;
+  /** Mensagem explicativa para o usuario/UI. */
+  message: string;
+}
+
+/** Resultado de scrape — pode ser sucesso com leads, ou estado honesto. */
 export interface ScraperResult {
-  /** Leads property. */
   leads: unknown[];
-  /** Stats property. */
   stats: { found: number; valid: number };
 }
 
-/** I scraper strategy shape. */
+/** Estrategia de scraping com autodescricao de capacidade. */
 export interface IScraperStrategy {
-  /** Name property. */
   name: string;
-  /** Scrape. */
+  capability(): ScraperSourceCapability;
   scrape(query: string, filters: Record<string, unknown>): Promise<ScraperResult>;
 }
 
-/** Google maps strategy. */
+const WORKER_MSG =
+  'Real Google Maps scraper (Puppeteer) runs in the worker process. Use POST /scrapers/jobs to create a scraping job that the worker will process.';
+
+/** Google Maps — scraper real roda no worker. */
 @Injectable()
 export class GoogleMapsStrategy implements IScraperStrategy {
-  /** Name property. */
   name = 'GOOGLE_MAPS';
-  /** Scrape. */
-  scrape(query: string, filters: Record<string, unknown>): Promise<ScraperResult> {
-    void query;
-    void filters;
-    // Existing logic adapted
-    return Promise.resolve({ leads: [], stats: { found: 0, valid: 0 } });
+
+  capability(): ScraperSourceCapability {
+    return {
+      name: this.name,
+      status: 'available_worker',
+      message: WORKER_MSG,
+    };
+  }
+
+  scrape(_query: string, _filters: Record<string, unknown>): Promise<ScraperResult> {
+    throw new NotImplementedException(WORKER_MSG);
   }
 }
 
-/** Linked in strategy. */
+/** LinkedIn — nao implementado. */
 @Injectable()
 export class LinkedInStrategy implements IScraperStrategy {
-  /** Name property. */
   name = 'LINKEDIN';
-  /** Scrape. */
-  scrape(query: string, filters: Record<string, unknown>): Promise<ScraperResult> {
-    void query;
-    void filters;
-    // Mock for Top 1
-    return Promise.resolve({ leads: [], stats: { found: 0, valid: 0 } });
+
+  capability(): ScraperSourceCapability {
+    return {
+      name: this.name,
+      status: 'unavailable',
+      message:
+        'LinkedIn scraping nao esta implementado. Use Google Maps ou Instagram via POST /scrapers/jobs.',
+    };
+  }
+
+  scrape(_query: string, _filters: Record<string, unknown>): Promise<ScraperResult> {
+    throw new NotImplementedException('LinkedIn scraping nao esta implementado.');
   }
 }
 
-/** Instagram strategy. */
+/** Instagram — scraper real roda no worker. */
 @Injectable()
 export class InstagramStrategy implements IScraperStrategy {
-  /** Name property. */
   name = 'INSTAGRAM';
-  /** Scrape. */
-  scrape(query: string, filters: Record<string, unknown>): Promise<ScraperResult> {
-    void query;
-    void filters;
-    // Mock for Top 1
-    return Promise.resolve({ leads: [], stats: { found: 0, valid: 0 } });
+
+  capability(): ScraperSourceCapability {
+    return {
+      name: this.name,
+      status: 'available_worker',
+      message: 'Instagram scraper (Puppeteer) runs in the worker process. Use POST /scrapers/jobs.',
+    };
+  }
+
+  scrape(_query: string, _filters: Record<string, unknown>): Promise<ScraperResult> {
+    throw new NotImplementedException(
+      'Instagram scraper (Puppeteer) runs in the worker process. Use POST /scrapers/jobs.',
+    );
   }
 }

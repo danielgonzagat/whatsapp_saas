@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { hash as bcryptHash } from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
@@ -156,13 +161,19 @@ export class TeamService {
   }
 
   /** Remove member. */
-  async removeMember(workspaceId: string, memberId: string) {
+  async removeMember(workspaceId: string, memberId: string, callerId?: string) {
+    if (callerId && memberId === callerId) {
+      throw new ForbiddenException('You cannot remove yourself');
+    }
+
     const agent = await this.prisma.agent.findUnique({
       where: { id: memberId },
     });
     if (!agent || agent.workspaceId !== workspaceId) {
       throw new NotFoundException('Member not found');
     }
+
+    await this.ensureLastAdmin(workspaceId, memberId);
 
     await this.auditService.log({
       workspaceId,
@@ -171,8 +182,50 @@ export class TeamService {
       resourceId: memberId,
       details: { deletedBy: 'user', email: agent.email },
     });
-    // Prevent removing self if only admin? Or enforce at least 1 admin?
-    // For now, simple removal.
     return this.prisma.agent.delete({ where: { id: memberId } });
+  }
+
+  /** Update member role. */
+  async updateMemberRole(workspaceId: string, memberId: string, role: string, callerId?: string) {
+    if (callerId && memberId === callerId) {
+      throw new ForbiddenException('You cannot change your own role');
+    }
+
+    const agent = await this.prisma.agent.findUnique({
+      where: { id: memberId },
+    });
+    if (!agent || agent.workspaceId !== workspaceId) {
+      throw new NotFoundException('Member not found');
+    }
+
+    if (agent.role === 'ADMIN' && role !== 'ADMIN') {
+      await this.ensureLastAdmin(workspaceId, memberId);
+    }
+
+    const updated = await this.prisma.agent.update({
+      where: { id: memberId },
+      data: { role },
+      select: { id: true, name: true, email: true, role: true },
+    });
+
+    await this.auditService.log({
+      workspaceId,
+      action: 'UPDATE_RECORD',
+      resource: 'Agent',
+      resourceId: memberId,
+      details: { oldRole: agent.role, newRole: role, changedBy: 'user' },
+    });
+
+    return updated;
+  }
+
+  /** Ensure at least one ADMIN remains after removing/demoting a member. */
+  private async ensureLastAdmin(workspaceId: string, excludeId: string) {
+    const adminCount = await this.prisma.agent.count({
+      where: { workspaceId, role: 'ADMIN', id: { not: excludeId } },
+    });
+    if (adminCount === 0) {
+      throw new ForbiddenException('Cannot remove the last admin of the workspace');
+    }
   }
 }

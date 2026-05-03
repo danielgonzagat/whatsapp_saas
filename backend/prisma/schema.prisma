@@ -1123,6 +1123,7 @@ model AgentQueue {
   updatedAt DateTime @updatedAt
 
   @@unique([agentId, queueId])
+  @@map("RAC_AgentQueue")
 }
 
 model RoutingRule {

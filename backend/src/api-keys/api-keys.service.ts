@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,6 +11,16 @@ export class ApiKeysService {
     private prisma: PrismaService,
     private auditService: AuditService,
   ) {}
+
+  /** Generate raw key. */
+  private generateKey(): string {
+    return `sk_live_${randomBytes(24).toString('hex')}`;
+  }
+
+  /** Hash key for storage. */
+  private hashKey(rawKey: string): string {
+    return createHash('sha256').update(rawKey).digest('hex');
+  }
 
   /** List. */
   async list(workspaceId: string) {
@@ -31,14 +41,38 @@ export class ApiKeysService {
   /** Create. */
   // PULSE_OK: workspaceId validated by caller guard
   async create(workspaceId: string, name: string) {
-    const key = `sk_live_${randomBytes(24).toString('hex')}`;
-    return this.prisma.apiKey.create({
+    const rawKey = this.generateKey();
+    const keyHash = this.hashKey(rawKey);
+    const record = await this.prisma.apiKey.create({
       data: {
         workspaceId,
         name,
-        key,
+        key: keyHash,
       },
     });
+    return { ...record, key: rawKey };
+  }
+
+  /** Rotate. */
+  async rotate(workspaceId: string, id: string) {
+    const existing = await this.prisma.apiKey.findFirst({ where: { id, workspaceId } });
+    if (!existing) {
+      throw new NotFoundException('API Key not found');
+    }
+    const rawKey = this.generateKey();
+    const keyHash = this.hashKey(rawKey);
+    await this.prisma.apiKey.update({
+      where: { id },
+      data: { key: keyHash },
+    });
+    await this.auditService.log({
+      workspaceId,
+      action: 'UPDATE_RECORD',
+      resource: 'ApiKey',
+      resourceId: id,
+      details: { action: 'rotate', name: existing.name },
+    });
+    return { ...existing, key: rawKey };
   }
 
   /** Delete. */
@@ -59,8 +93,9 @@ export class ApiKeysService {
 
   /** Validate key. */
   async validateKey(key: string) {
+    const keyHash = this.hashKey(key);
     const apiKey = await this.prisma.apiKey.findFirst({
-      where: { key, workspaceId: { not: '' } },
+      where: { key: keyHash, workspaceId: { not: '' } },
       include: { workspace: true },
     });
 

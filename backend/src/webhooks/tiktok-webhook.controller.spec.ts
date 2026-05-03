@@ -6,12 +6,16 @@ import { TikTokWebhookController } from './tiktok-webhook.controller';
 
 describe('TikTokWebhookController', () => {
   let controller: TikTokWebhookController;
+  let mockWebhooksService: { logWebhookEvent: jest.Mock };
 
   beforeEach(() => {
+    mockWebhooksService = {
+      logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we_mock' }),
+    };
     const redis = {
       set: jest.fn().mockResolvedValue('OK'),
     };
-    controller = new TikTokWebhookController(redis as never);
+    controller = new TikTokWebhookController(redis as never, mockWebhooksService as never);
     delete process.env.TIKTOK_CLIENT_SECRET;
   });
 
@@ -128,7 +132,8 @@ describe('TikTokWebhookController', () => {
     const redis = {
       set: jest.fn().mockResolvedValue(null),
     };
-    const ctrl = new TikTokWebhookController(redis as never);
+    const wss = { logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we_mock' }) };
+    const ctrl = new TikTokWebhookController(redis as never, wss as never);
 
     const result = await ctrl.handleWebhook(
       { event: 'message' },
@@ -153,7 +158,8 @@ describe('TikTokWebhookController', () => {
     const redis = {
       set: jest.fn().mockResolvedValue('OK'),
     };
-    const ctrl = new TikTokWebhookController(redis as never);
+    const wss = { logWebhookEvent: jest.fn().mockResolvedValue({ id: 'we_mock' }) };
+    const ctrl = new TikTokWebhookController(redis as never, wss as never);
 
     const result = await ctrl.handleWebhook(
       { event: 'message' },

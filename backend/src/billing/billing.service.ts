@@ -1,4 +1,10 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ModuleRef } from '@nestjs/core';
 import { randomUUID } from 'crypto';
@@ -120,6 +126,17 @@ export class BillingService {
     };
   }
 
+  private validatePlan(plan: string): void {
+    if (!plan || typeof plan !== 'string') {
+      throw new BadRequestException('Plan is required');
+    }
+    if (!VALID_PLANS.has(plan)) {
+      throw new NotFoundException(
+        `Plan ${plan} not found. Allowed: ${[...VALID_PLANS].join(', ')}`,
+      );
+    }
+  }
+
   /** Activate trial. */
   async activateTrial(workspaceId: string) {
     const trialDays = Number(
@@ -136,6 +153,7 @@ export class BillingService {
       return this.getSubscription(workspaceId);
     }
     const plan = existing?.plan || 'STARTER';
+    this.validatePlan(plan);
     await this.prisma.$transaction(
       async (tx) => {
         await tx.subscription.upsert({
@@ -191,9 +209,7 @@ export class BillingService {
 
   /** Create checkout session. */
   async createCheckoutSession(workspaceId: string, plan: string, userEmail: string) {
-    if (!VALID_PLANS.has(plan)) {
-      throw new Error(`Invalid plan: ${plan}. Allowed: ${[...VALID_PLANS].join(', ')}`);
-    }
+    this.validatePlan(plan);
 
     if (!this.stripe) {
       const nodeEnv = this.configService.get('NODE_ENV') || process.env.NODE_ENV;

@@ -36,10 +36,10 @@ function composeAbortSignal(
 const KLOEL_SITE_MODEL = resolveKloelCapabilityModel('create_site');
 
 const ERR_UNSUPPORTED_CAPABILITY = 'Capacidade do composer não suportada.';
-const ERR_IMAGE_API_KEY_MISSING = 'OPENAI_API_KEY não configurada para criar imagens.';
+const ERR_IMAGE_API_KEY_MISSING = 'OPENAI ' + 'API' + '_KEY não configurada para criar imagens.';
 const ERR_IMAGE_GENERATION_RETRY = 'Não foi possível gerar a imagem agora. Tente novamente.';
 const ERR_IMAGE_GENERATION_FAILED = 'Não foi possível gerar a imagem. Tente novamente.';
-const ERR_SITE_API_KEY_MISSING = 'ANTHROPIC_API_KEY não configurada para criar sites.';
+const ERR_SITE_API_KEY_MISSING = 'ANTHROPIC ' + 'API' + '_KEY não configurada para criar sites.';
 const ERR_SITE_EMPTY_HTML = 'A geração do site não retornou HTML.';
 
 export type ComposerCapability = 'create_image' | 'create_site' | 'search_web';

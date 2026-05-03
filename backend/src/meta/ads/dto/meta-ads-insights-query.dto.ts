@@ -1,6 +1,6 @@
-import { IsDateString, IsString, MaxLength } from 'class-validator';
+import { IsDateString, IsOptional, IsString, MaxLength } from 'class-validator';
 
-/** Meta ads insights query dto. */
+/** Meta ads insights query dto. Access token resolved from DB, never from client. */
 export class MetaAdsInsightsQueryDto {
   /** Ad account id property. */
   @IsString()
@@ -16,17 +16,13 @@ export class MetaAdsInsightsQueryDto {
   until: string;
 
   /** Level property. */
+  @IsOptional()
   @IsString()
   @MaxLength(50)
-  level: string;
-
-  /** Access token property. */
-  @IsString()
-  @MaxLength(4096)
-  accessToken: string;
+  level?: string;
 }
 
-/** Meta ads daily insights query dto. */
+/** Meta ads daily insights query dto. Access token resolved from DB, never from client. */
 export class MetaAdsDailyInsightsQueryDto {
   /** Campaign id property. */
   @IsString()
@@ -40,9 +36,4 @@ export class MetaAdsDailyInsightsQueryDto {
   /** Until property (ISO 8601 date string). */
   @IsDateString()
   until: string;
-
-  /** Access token property. */
-  @IsString()
-  @MaxLength(4096)
-  accessToken: string;
 }

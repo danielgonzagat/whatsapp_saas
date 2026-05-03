@@ -136,9 +136,15 @@ describe('KloelService', () => {
       buildCapabilityPrompt: jest.fn().mockReturnValue(''),
     };
 
+    const llmBudgetMock = {
+      assertBudget: jest.fn().mockResolvedValue(undefined),
+      recordSpend: jest.fn().mockResolvedValue(undefined),
+    };
+
     thinkerService = new KloelThinkerService(
       prisma as never as ConstructorParameters<typeof KloelThinkerService>[0],
       planLimitsMock as never,
+      llmBudgetMock as never,
       threadService,
       wsContextServiceMock as never,
       composerServiceMock as never,

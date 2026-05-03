@@ -63,7 +63,40 @@ export class UnifiedAgentActionsWorkspaceService {
 
   // PULSE_OK: workspaceId validated by caller guard
   async actionCreateProduct(workspaceId: string, args: ToolArgs) {
-    const productKey = `product_${Date.now()}_${args.name.toLowerCase().replace(WHITESPACE_G_RE, '_')}`;
+    const existingDb = await this.prisma.product.findFirst({
+      where: { workspaceId, name: args.name, active: true },
+      select: { id: true, name: true, price: true },
+    });
+    if (existingDb) {
+      return {
+        success: true,
+        productId: existingDb.id,
+        message: `Produto "${args.name}" já existe (R$ ${existingDb.price}).`,
+        deduplicated: true,
+      };
+    }
+
+    const existingMem = await this.prisma.kloelMemory.findFirst({
+      where: { workspaceId, type: 'product' },
+      orderBy: { createdAt: 'desc' },
+      select: { key: true, value: true },
+    });
+    if (
+      existingMem?.value &&
+      typeof existingMem.value === 'object' &&
+      (existingMem.value as Record<string, unknown>).name === args.name
+    ) {
+      return {
+        success: true,
+        productId: existingMem.key,
+        message: `Produto "${args.name}" já existe em memória.`,
+        deduplicated: true,
+      };
+    }
+
+    const productKey = `product_${Date.now()}_${String(args.name || '')
+      .toLowerCase()
+      .replace(WHITESPACE_G_RE, '_')}`;
     await this.prisma.kloelMemory.create({
       data: {
         workspaceId,
@@ -87,7 +120,7 @@ export class UnifiedAgentActionsWorkspaceService {
       const dbProduct = await this.prisma.product.create({
         data: {
           workspaceId,
-          name: args.name,
+          name: this.str(args.name),
           price: args.price || 0,
           description: args.description || '',
           category: args.category || 'default',

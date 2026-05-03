@@ -54,7 +54,11 @@ export class KloelReplyEngineService {
     private readonly unifiedAgentService: UnifiedAgentService,
     @Optional() private readonly marketingSkillService?: MarketingSkillService,
   ) {
-    this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+      timeout: 60_000,
+      maxRetries: 0,
+    });
     this.toolRouter = new KloelToolRouter(this.logger, unifiedAgentService);
   }
 

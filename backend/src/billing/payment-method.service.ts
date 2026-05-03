@@ -8,6 +8,10 @@ import type { StripeClient, StripeCustomer } from './stripe-types';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // PULSE:OK — cache.invalidate — payment methods are fetched live from Stripe; no Redis cache layer; TTL N/A
 
+const ERROR_WORKSPACE_NOT_FOUND = 'Workspace não encontrado';
+const ERROR_BILLING_UNAVAILABLE = 'Infraestrutura de cobrança indisponível';
+const ERROR_PAYMENT_METHOD_NOT_OWNED = 'Método de pagamento não pertence a este workspace';
+
 /**
  * Payment Method Service
  *
@@ -45,7 +49,7 @@ export class PaymentMethodService {
         });
 
         if (!workspace) {
-          throw new Error('Workspace não encontrado');
+          throw new Error(ERROR_WORKSPACE_NOT_FOUND);
         }
 
         if (workspace.stripeCustomerId) {
@@ -53,7 +57,7 @@ export class PaymentMethodService {
         }
 
         if (!this.stripe) {
-          throw new Error('Infraestrutura de cobrança indisponível');
+          throw new Error(ERROR_BILLING_UNAVAILABLE);
         }
 
         // Criar customer no Stripe
@@ -81,7 +85,7 @@ export class PaymentMethodService {
    */
   async createSetupIntent(workspaceId: string, returnUrl?: string) {
     if (!this.stripe) {
-      throw new Error('Infraestrutura de cobrança indisponível');
+      throw new Error(ERROR_BILLING_UNAVAILABLE);
     }
 
     const customerId = await this.getOrCreateCustomerId(workspaceId);
@@ -143,7 +147,7 @@ export class PaymentMethodService {
    */
   async attachPaymentMethod(workspaceId: string, paymentMethodId: string) {
     if (!this.stripe) {
-      throw new Error('Infraestrutura de cobrança indisponível');
+      throw new Error(ERROR_BILLING_UNAVAILABLE);
     }
 
     const customerId = await this.getOrCreateCustomerId(workspaceId);
@@ -226,7 +230,7 @@ export class PaymentMethodService {
    */
   async setDefaultPaymentMethod(workspaceId: string, paymentMethodId: string) {
     if (!this.stripe) {
-      throw new Error('Infraestrutura de cobrança indisponível');
+      throw new Error(ERROR_BILLING_UNAVAILABLE);
     }
 
     const customerId = await this.getOrCreateCustomerId(workspaceId);
@@ -245,7 +249,7 @@ export class PaymentMethodService {
    */
   async detachPaymentMethod(workspaceId: string, paymentMethodId: string) {
     if (!this.stripe) {
-      throw new Error('Infraestrutura de cobrança indisponível');
+      throw new Error(ERROR_BILLING_UNAVAILABLE);
     }
 
     // Verificar se o método pertence ao workspace
@@ -253,7 +257,7 @@ export class PaymentMethodService {
     const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
 
     if (paymentMethod.customer !== customerId) {
-      throw new Error('Método de pagamento não pertence a este workspace');
+      throw new Error(ERROR_PAYMENT_METHOD_NOT_OWNED);
     }
 
     await this.stripe.paymentMethods.detach(paymentMethodId);

@@ -58,13 +58,16 @@ export async function deleteCheckoutPixel(
   id: string,
   workspaceId?: string,
 ) {
-  const existing = await deps.prisma.checkoutPixel.findUnique({
-    where: { id },
-    select: { id: true },
+  await deps.prisma.$transaction(async (tx: any) => {
+    const existing = await tx.checkoutPixel.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('CheckoutPixel not found');
+    }
+    await tx.checkoutPixel.delete({ where: { id } });
   });
-  if (!existing) {
-    throw new NotFoundException('CheckoutPixel not found');
-  }
   await deps.auditService.log({
     workspaceId: workspaceId || 'unknown',
     action: 'DELETE_RECORD',
@@ -72,7 +75,6 @@ export async function deleteCheckoutPixel(
     resourceId: id,
     details: { deletedBy: 'user' },
   });
-  await deps.prisma.checkoutPixel.delete({ where: { id } });
   return { deleted: true };
 }
 
@@ -84,13 +86,16 @@ export async function deleteCouponHelper(
   if (!workspaceId) {
     throw new BadRequestException('workspaceId is required');
   }
-  const existing = await deps.prisma.checkoutCoupon.findFirst({
-    where: { id, workspaceId },
-    select: { id: true },
+  await deps.prisma.$transaction(async (tx: any) => {
+    const existing = await tx.checkoutCoupon.findFirst({
+      where: { id, workspaceId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('CheckoutCoupon not found');
+    }
+    await tx.checkoutCoupon.deleteMany({ where: { id, workspaceId } });
   });
-  if (!existing) {
-    throw new NotFoundException('CheckoutCoupon not found');
-  }
   await deps.auditService.log({
     workspaceId,
     action: 'DELETE_RECORD',
@@ -98,6 +103,5 @@ export async function deleteCouponHelper(
     resourceId: id,
     details: { deletedBy: 'user' },
   });
-  await deps.prisma.checkoutCoupon.deleteMany({ where: { id, workspaceId } });
   return { deleted: true };
 }

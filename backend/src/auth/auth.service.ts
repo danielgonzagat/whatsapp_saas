@@ -73,6 +73,7 @@ export class AuthService {
       result?.user?.email ?? data.email,
       result?.user?.name ?? data.name ?? 'Usuario',
       result?.workspace?.name ?? data.workspaceName ?? 'Meu Workspace',
+      result?.user?.workspaceId,
     );
     return result;
   }
@@ -262,11 +263,16 @@ export class AuthService {
    * Fire-and-forget welcome email + onboarding sequence scheduling.
    * Errors are caught and logged — never blocks the auth response.
    */
-  private triggerWelcomeFlow(email: string, name: string, workspaceName: string) {
+  private triggerWelcomeFlow(
+    email: string,
+    name: string,
+    workspaceName: string,
+    workspaceId?: string,
+  ) {
     if (!this.welcomeEmailService) {
       return;
     }
-    void this.welcomeEmailService.sendWelcomeEmail(email, name, workspaceName);
-    void this.welcomeEmailService.scheduleOnboardingSequence(email, name);
+    void this.welcomeEmailService.sendWelcomeEmail(email, name, workspaceName, workspaceId);
+    void this.welcomeEmailService.scheduleOnboardingSequence(email, name, workspaceId);
   }
 }

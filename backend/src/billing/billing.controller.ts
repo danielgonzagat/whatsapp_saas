@@ -15,6 +15,7 @@ import { Public } from '../auth/public.decorator';
 import { Roles } from '../auth/roles.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { Idempotent } from '../common/idempotency.guard';
 import { AuthenticatedRequest, RawBodyRequest } from '../common/interfaces';
 import { BillingService } from './billing.service';
 import { BillingCheckoutDto } from './dto/billing-checkout.dto';
@@ -87,6 +88,7 @@ export class BillingController {
   /** Activate trial. */
   @Post('activate-trial')
   @Roles('ADMIN', 'OWNER')
+  @Idempotent()
   @Throttle({ default: { limit: 3, ttl: 60000 } })
   async activateTrial(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
@@ -96,6 +98,7 @@ export class BillingController {
   /** Cancel subscription. */
   @Post('cancel')
   @Roles('ADMIN', 'OWNER')
+  @Idempotent()
   async cancelSubscription(
     @Req() req: AuthenticatedRequest,
     @Query('workspaceId') workspaceId: string,
@@ -107,6 +110,7 @@ export class BillingController {
   /** Create checkout. */
   @Post('checkout')
   @Roles('ADMIN')
+  @Idempotent()
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 checkouts por minuto máximo
   async createCheckout(@Req() req: AuthenticatedRequest, @Body() body: BillingCheckoutDto) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);

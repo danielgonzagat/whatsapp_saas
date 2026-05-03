@@ -1,9 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
-import { AcceptInviteDto, InviteMemberDto } from './dto/invite-member.dto';
+import { Roles } from '../auth/roles.decorator';
+import { AcceptInviteDto, InviteMemberDto, UpdateRoleDto } from './dto/invite-member.dto';
 import { TeamService } from './team.service';
 
 /** Team controller. */
@@ -24,6 +35,7 @@ export class TeamController {
   /** Invite. */
   @Post('invite')
   @UseGuards(JwtAuthGuard)
+  @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Invite a new member' })
   async invite(@Request() req, @Body() body: InviteMemberDto) {
@@ -38,6 +50,7 @@ export class TeamController {
   /** Revoke invite. */
   @Delete('invite/:id')
   @UseGuards(JwtAuthGuard)
+  @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Revoke an invitation' })
   async revokeInvite(@Request() req, @Param('id') id: string) {
@@ -47,10 +60,26 @@ export class TeamController {
   /** Remove member. */
   @Delete('member/:id')
   @UseGuards(JwtAuthGuard)
+  @Roles('ADMIN')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Remove a team member' })
   async removeMember(@Request() req, @Param('id') id: string) {
-    return this.teamService.removeMember(req.user.workspaceId, id);
+    return this.teamService.removeMember(req.user.workspaceId, id, req.user.sub || req.user.id);
+  }
+
+  /** Update member role. */
+  @Patch('member/:id/role')
+  @UseGuards(JwtAuthGuard)
+  @Roles('ADMIN')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update team member role' })
+  async updateRole(@Request() req, @Param('id') id: string, @Body() body: UpdateRoleDto) {
+    return this.teamService.updateMemberRole(
+      req.user.workspaceId,
+      id,
+      body.role,
+      req.user.sub || req.user.id,
+    );
   }
 
   /** Accept invite. */

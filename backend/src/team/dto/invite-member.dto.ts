@@ -12,6 +12,14 @@ export class InviteMemberDto {
   role: string;
 }
 
+/** Update role dto. */
+export class UpdateRoleDto {
+  /** Role property. */
+  @IsString()
+  @IsIn(['ADMIN', 'MEMBER', 'VIEWER'])
+  role: string;
+}
+
 /** Accept invite dto. */
 export class AcceptInviteDto {
   /** Token property. */

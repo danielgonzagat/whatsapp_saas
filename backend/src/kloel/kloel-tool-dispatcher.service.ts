@@ -39,6 +39,26 @@ export class KloelToolDispatcherService {
     userId?: string,
   ): Promise<{ success: boolean; message?: string; error?: string; [key: string]: unknown }> {
     const asToolArgs = <T>(value: UnknownRecord): T => value as T;
+
+    if (!workspaceId || typeof workspaceId !== 'string' || !workspaceId.trim()) {
+      return { success: false, error: 'workspace_id_required' };
+    }
+
+    const workspace = await this.prisma.workspace
+      .findUnique({
+        where: { id: workspaceId },
+        select: { id: true, providerSettings: true },
+      })
+      .catch(() => null);
+
+    if (!workspace) {
+      return { success: false, error: 'workspace_not_found' };
+    }
+
+    const settings = (workspace.providerSettings ?? {}) as Record<string, unknown>;
+    if (settings.billingSuspended === true) {
+      return { success: false, error: 'billing_suspended' };
+    }
     this.logger.log(`Executando ferramenta: ${toolName}`, args);
     try {
       switch (toolName) {

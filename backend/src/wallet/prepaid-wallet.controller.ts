@@ -14,6 +14,7 @@ import * as Sentry from '@sentry/node';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { Idempotent } from '../common/idempotency.guard';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { WalletService } from './wallet.service';
@@ -67,6 +68,7 @@ export class PrepaidWalletController {
 
   // PULSE_OK: internal route, called by worker process for prepaid wallet top-ups
   @Post(':workspaceId/topup')
+  @Idempotent()
   async createTopup(
     @Param('workspaceId') workspaceId: string,
     @Body()
@@ -154,6 +156,7 @@ export class PrepaidWalletController {
 
   // PULSE_OK: internal route, called by worker process for auto-recharge configuration
   @Patch(':workspaceId/auto-recharge')
+  @Idempotent()
   async configureAutoRecharge(
     @Param('workspaceId') workspaceId: string,
     @Body()
@@ -201,6 +204,7 @@ export class PrepaidWalletController {
 
   // PULSE_OK: internal route, called by worker process for prepaid wallet spend operations
   @Post(':workspaceId/spend')
+  @Idempotent()
   async spend(
     @Param('workspaceId') workspaceId: string,
     @Body()

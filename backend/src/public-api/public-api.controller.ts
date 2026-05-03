@@ -1,5 +1,6 @@
 import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { InboxService } from '../inbox/inbox.service';
 import { ApiKeyGuard } from './api-key.guard';
@@ -10,10 +11,19 @@ import { ApiKeyGuard } from './api-key.guard';
 @Public()
 @Controller('api/v1')
 @UseGuards(ApiKeyGuard)
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class PublicApiController {
   constructor(private readonly inbox: InboxService) {}
 
-  /** Send message. */
+  /**
+   * Save an outbound message via InboxService. The message is persisted
+   * with direction OUTBOUND and the workspace is scoped by the API key.
+   *
+   * Note: This endpoint only persists the message to the inbox database.
+   * Actual WhatsApp delivery must be triggered separately (e.g. via the
+   * sendReply flow which invokes WhatsAppService.sendMessage and its
+   * built-in PlanLimitsService.trackMessageSend enforcement).
+   */
   @Post('messages')
   @ApiOperation({ summary: 'Send a message to a contact' })
   @ApiBody({
@@ -26,9 +36,7 @@ export class PublicApiController {
     },
   })
   @ApiResponse({ status: 201, description: 'Message queued for delivery' })
-  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   async sendMessage(@Request() req, @Body() body: { phone: string; message: string }) {
-    // Uses the existing InboxService to send/save
     return this.inbox.saveMessageByPhone({
       workspaceId: req.user.workspaceId,
       phone: body.phone,

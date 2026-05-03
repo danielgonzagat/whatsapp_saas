@@ -17,6 +17,7 @@ import type { Redis } from 'ioredis';
 import { Public } from '../auth/public.decorator';
 import { RawBodyRequest } from '../common/interfaces/authenticated-request.interface';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
+import { WebhooksService } from './webhooks.service';
 
 type TikTokWebhookPayload = Record<string, unknown> | Array<unknown> | string | number | null;
 
@@ -114,7 +115,10 @@ function describeEvent(body: TikTokWebhookPayload): string {
 export class TikTokWebhookController {
   private readonly logger = new Logger(TikTokWebhookController.name);
 
-  constructor(@InjectRedis() private readonly redis: Redis) {}
+  constructor(
+    @InjectRedis() private readonly redis: Redis,
+    private readonly webhooksService: WebhooksService,
+  ) {}
 
   /** Simple health probe for manual verification in a browser/curl. */
   @Public()
@@ -191,6 +195,13 @@ export class TikTokWebhookController {
     if (acquired === null) {
       this.logger.warn(`Duplicate TikTok webhook ignored: ${dedupeKey}`);
       return { received: true, duplicate: true, skipped: true };
+    }
+
+    // Persist to WebhookEvent audit trail for observability (best-effort, non-blocking)
+    if (dedupeKey) {
+      await this.webhooksService
+        .logWebhookEvent('tiktok', describeEvent(body), dedupeKey, body as Record<string, unknown>)
+        .catch(() => {});
     }
 
     this.logger.log(`TikTok webhook acknowledged: event=${describeEvent(body)}`);

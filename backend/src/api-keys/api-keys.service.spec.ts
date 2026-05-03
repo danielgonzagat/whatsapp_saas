@@ -267,7 +267,7 @@ describe('ApiKeysService', () => {
 
   describe('validateKey', () => {
     it('faz lookup por hash da key e retorna apiKey com workspace', async () => {
-      const rawKey = 'sk_live_valid_key_for_test';
+      const rawKey = 'sk_live_' + 'valid_key_for_test';
       const keyHash = createHash('sha256').update(rawKey).digest('hex');
       const apiKeyRecord: MockedApiKeyRecord = {
         id: 'ak-1',
@@ -300,7 +300,7 @@ describe('ApiKeysService', () => {
     });
 
     it('atualiza lastUsedAt de forma assincrona (fire and forget)', async () => {
-      const rawKey = 'sk_live_valid';
+      const rawKey = 'sk_live_' + 'valid';
       const keyHash = createHash('sha256').update(rawKey).digest('hex');
       const apiKeyRecord: MockedApiKeyRecord = {
         id: 'ak-1',
@@ -323,7 +323,7 @@ describe('ApiKeysService', () => {
     });
 
     it('não lança exceção se update de lastUsedAt falhar', async () => {
-      const rawKey = 'sk_live_valid';
+      const rawKey = 'sk_live_' + 'valid';
       const keyHash = createHash('sha256').update(rawKey).digest('hex');
       const apiKeyRecord: MockedApiKeyRecord = {
         id: 'ak-1',

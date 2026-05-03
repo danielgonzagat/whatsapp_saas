@@ -356,23 +356,6 @@ export class WalletService {
       throw err;
     }
 
-    // Audit log write is load-bearing for financial compliance. If it fails,
-    // we must surface the error so ops can investigate — not silently succeed
-    // while leaving a money-moving operation unaudited. Wave 2 I8 extension.
-    await this.prisma.auditLog.create({
-      data: {
-        workspaceId,
-        action: 'withdrawal_request',
-        resource: 'wallet',
-        resourceId: transaction.id,
-        details: {
-          amount,
-          bankInfo: bankInfo as Record<string, string>,
-          status: 'completed',
-        },
-      },
-    });
-
     return {
       success: true,
       message: 'Saque solicitado',

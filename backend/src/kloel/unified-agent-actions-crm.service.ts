@@ -111,6 +111,26 @@ export class UnifiedAgentActionsCrmService {
       const followReason = this.str(args.reason, 'scheduled_by_unified_agent');
       const followFlowId = this.str(args.flowId) || null;
 
+      const existing = await this.prisma.followUp.findFirst({
+        where: {
+          workspaceId,
+          contactId,
+          reason: followReason,
+          status: 'pending',
+          scheduledFor: { gte: new Date(Date.now() - 5 * 60 * 1000) },
+        },
+        select: { id: true, scheduledFor: true },
+      });
+      if (existing) {
+        return {
+          success: true,
+          scheduledFor: existing.scheduledFor.toISOString(),
+          message: followMessage,
+          jobId: `followup_${workspaceId}_${contactId}_${existing.scheduledFor.getTime()}`,
+          deduplicated: true,
+        };
+      }
+
       this.logger.log(`[AGENT] Follow-up agendado para ${_phone} em ${delayHours}h`);
       await this.prisma.followUp.create({
         data: {
@@ -295,18 +315,33 @@ export class UnifiedAgentActionsCrmService {
   async actionConnectWhatsApp(workspaceId: string, _args: ToolArgs) {
     try {
       const provider = 'meta-cloud';
+      const existing = await this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      });
+      const current = (existing?.providerSettings ?? {}) as UnknownRecord;
+      if (current.whatsappProvider === provider && current.connectionStatus === 'connected') {
+        return {
+          success: true,
+          message: 'WhatsApp já está conectado.',
+          sessionId: workspaceId,
+          provider,
+          deduplicated: true,
+        };
+      }
+
       await this.prisma.$transaction(
         async (tx) => {
           const workspace = await tx.workspace.findUnique({
             where: { id: workspaceId },
             select: { providerSettings: true },
           });
-          const current = (workspace?.providerSettings ?? {}) as UnknownRecord;
+          const latest = (workspace?.providerSettings ?? {}) as UnknownRecord;
           await tx.workspace.update({
             where: { id: workspaceId },
             data: {
               providerSettings: {
-                ...current,
+                ...latest,
                 whatsappProvider: provider,
                 connectionStatus: 'connecting',
                 connectionInitiatedAt: new Date().toISOString(),

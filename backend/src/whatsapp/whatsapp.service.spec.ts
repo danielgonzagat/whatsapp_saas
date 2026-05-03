@@ -176,7 +176,11 @@ describe('WhatsappService', () => {
         pendingMessages: 3,
       }),
     );
-    expect(messages.map((m: { id: string }) => m.id)).toEqual(['m-old', 'm-out', 'm-new']);
+    expect((messages as Array<{ id: string }>).map((m) => m.id)).toEqual([
+      'm-old',
+      'm-out',
+      'm-new',
+    ]);
   });
 
   it('builds a WAHA-first operational backlog report with remote/local drift visibility', async () => {

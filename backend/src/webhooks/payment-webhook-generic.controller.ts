@@ -186,13 +186,14 @@ export class PaymentWebhookGenericController {
     const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
     if (!secret) throw new BadRequestException('SHOPIFY_WEBHOOK_SECRET not set');
     const raw: string | Buffer = req?.rawBody || JSON.stringify(body);
+    const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
+    const digest = crypto.createHmac('sha256', secret).update(rawBuffer).digest('base64');
+    if (digest !== hmac) throw new ForbiddenException('invalid_shopify_hmac');
+
     const shopifyDupe = await ensureIdempotent(eventId, req, this.redis, this.logger, (msg, meta) =>
       sendOpsAlert(msg, meta, this.redis),
     );
     if (shopifyDupe) return shopifyDupe;
-    const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
-    const digest = crypto.createHmac('sha256', secret).update(rawBuffer).digest('base64');
-    if (digest !== hmac) throw new ForbiddenException('invalid_shopify_hmac');
 
     const status = (body.financial_status || '').toLowerCase();
     if (status !== 'paid') return { ok: true, ignored: true, reason: 'status_not_paid' };
@@ -287,17 +288,17 @@ export class PaymentWebhookGenericController {
     @Headers('x-event-id') eventId: string | undefined,
     @Body() body: WooCommerceWebhookBody,
   ) {
-    const wooDupe = await ensureIdempotent(eventId, req, this.redis, this.logger, (msg, meta) =>
-      sendOpsAlert(msg, meta, this.redis),
-    );
-    if (wooDupe) return wooDupe;
-
     const secret = process.env.WC_WEBHOOK_SECRET;
     if (!secret) throw new BadRequestException('WC_WEBHOOK_SECRET not set');
     const raw: string | Buffer = req?.rawBody || JSON.stringify(body);
     const rawBuffer = Buffer.isBuffer(raw) ? raw : Buffer.from(raw, 'utf8');
     const digest = crypto.createHmac('sha256', secret).update(rawBuffer).digest('base64');
     if (digest !== signature) throw new ForbiddenException('invalid_wc_signature');
+
+    const wooDupe = await ensureIdempotent(eventId, req, this.redis, this.logger, (msg, meta) =>
+      sendOpsAlert(msg, meta, this.redis),
+    );
+    if (wooDupe) return wooDupe;
 
     const status = (body?.status || '').toLowerCase();
     const isPaid = status === 'completed' || status === 'processing' || status === 'paid';

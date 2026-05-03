@@ -1,6 +1,27 @@
 import { ConfigService } from '@nestjs/config';
 import { SystemHealthService } from './system-health.service';
 
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  readFileSync: jest.fn(),
+}));
+
+import { existsSync, readFileSync } from 'fs';
+
+const mockedExistsSync = existsSync as jest.MockedFunction<typeof existsSync>;
+const mockedReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
+
+function stubBackupManifest() {
+  mockedExistsSync.mockReturnValue(true);
+  mockedReadFileSync.mockReturnValue(
+    JSON.stringify({
+      lastBackup: new Date(Date.now() - 10 * 60_000).toISOString(),
+      lastVerifiedAt: new Date(Date.now() - 10 * 60_000).toISOString(),
+      targetRpoMinutes: 60,
+    }),
+  );
+}
+
 describe('SystemHealthService', () => {
   const originalFetch = global.fetch;
 
@@ -25,6 +46,9 @@ describe('SystemHealthService', () => {
     countConnectedMetaWorkspaces: jest.Mock;
     countAllMessagesSince: jest.Mock;
     countAllAutopilotEventsSince: jest.Mock;
+  };
+  let queueHealth: {
+    getQueuesStatus: jest.Mock;
   };
 
   beforeEach(() => {
@@ -84,6 +108,9 @@ describe('SystemHealthService', () => {
       countAllMessagesSince: jest.fn().mockResolvedValue(0),
       countAllAutopilotEventsSince: jest.fn().mockResolvedValue(0),
     };
+    queueHealth = {
+      getQueuesStatus: jest.fn().mockResolvedValue([]),
+    };
   });
 
   afterEach(() => {
@@ -109,9 +136,11 @@ describe('SystemHealthService', () => {
       whatsappApi as never,
       storageService as never,
       observabilityQueries as never,
+      queueHealth as never,
     );
 
   it('reports meta transport and worker health in the consolidated readiness response', async () => {
+    stubBackupManifest();
     setFetchMock({
       status: 'ok',
       queues: { autopilot: { waiting: 0 } },
@@ -149,6 +178,7 @@ describe('SystemHealthService', () => {
   });
 
   it('marks the system as down when meta critical config is missing', async () => {
+    stubBackupManifest();
     config.get = jest.fn((key: string) => {
       const values: Record<string, string | undefined> = {
         JWT_SECRET: 'secret',

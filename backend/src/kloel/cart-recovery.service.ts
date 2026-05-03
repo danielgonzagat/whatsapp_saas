@@ -3,6 +3,10 @@ import { Cron } from '@nestjs/schedule';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import {
+  buildListUnsubscribeHeader,
+  buildUnsubscribeFooterHtml,
+} from '../common/utils/unsubscribe-footer.util';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 type CartRecoveryMetadata = Record<string, unknown>;
@@ -62,9 +66,18 @@ export class CartRecoveryService {
 
           const emailService = new EmailService();
           const productName = order.plan?.product?.name || 'Seu pedido';
+          const customerEmail = order.customerEmail;
+          const unsubscribeFooter = buildUnsubscribeFooterHtml({
+            email: customerEmail,
+            workspaceId: order.workspaceId ?? undefined,
+          });
+          const listUnsubscribe = buildListUnsubscribeHeader({
+            email: customerEmail,
+            workspaceId: order.workspaceId ?? undefined,
+          });
 
           await emailService.sendEmail({
-            to: order.customerEmail,
+            to: customerEmail,
             subject: `Voce esqueceu algo — ${productName}`,
             html: `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px;">
@@ -83,7 +96,12 @@ export class CartRecoveryService {
                 </div>
               </div>
             </div>
+            ${unsubscribeFooter}
           `,
+            headers: {
+              'List-Unsubscribe': listUnsubscribe,
+              'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+            },
           });
 
           // Mark as sent using metadata field
