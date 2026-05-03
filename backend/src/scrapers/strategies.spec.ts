@@ -26,8 +26,8 @@ describe('strategies', () => {
       expect(cap.message).toContain('worker');
     });
 
-    it('scrape throws NotImplementedException (real scraper in worker)', async () => {
-      await expect(strategy.scrape('restaurants', {})).rejects.toThrow(NotImplementedException);
+    it('scrape throws NotImplementedException (real scraper in worker)', () => {
+      expect(() => strategy.scrape('restaurants', {})).toThrow(NotImplementedException);
     });
   });
 
@@ -49,8 +49,8 @@ describe('strategies', () => {
       expect(cap.message).toContain('worker');
     });
 
-    it('scrape throws NotImplementedException (real scraper in worker)', async () => {
-      await expect(strategy.scrape('fitness', {})).rejects.toThrow(NotImplementedException);
+    it('scrape throws NotImplementedException (real scraper in worker)', () => {
+      expect(() => strategy.scrape('fitness', {})).toThrow(NotImplementedException);
     });
   });
 
@@ -71,8 +71,8 @@ describe('strategies', () => {
       expect(cap.status).toBe('unavailable');
     });
 
-    it('scrape throws NotImplementedException', async () => {
-      await expect(strategy.scrape('engineers', {})).rejects.toThrow(NotImplementedException);
+    it('scrape throws NotImplementedException', () => {
+      expect(() => strategy.scrape('engineers', {})).toThrow(NotImplementedException);
     });
   });
 
