@@ -63,7 +63,10 @@ export class ConnectLedgerMaturationService {
       } catch (error) {
         failed += 1;
         const message = error instanceof Error ? error.message : String(error);
-        this.logger.error(`connect_ledger_maturation_failed entry=${entry.id}: ${message}`);
+        this.logger.error(
+          { entryId: entry.id, operation: 'moveFromPendingToAvailable' },
+          `connect_ledger_maturation_failed entry=${entry.id}: ${message}`,
+        );
         this.financialAlert.reconciliationAlert('connect ledger maturation failed', {
           details: {
             entryId: entry.id,
@@ -83,6 +86,16 @@ export class ConnectLedgerMaturationService {
             },
           })
           .catch(() => undefined);
+        const maturationError = new Error(
+          `connect_ledger_maturation_failed entry=${entry.id}: ${message}`,
+        );
+        Object.defineProperty(maturationError, 'cause', {
+          value: error,
+          configurable: true,
+          enumerable: false,
+          writable: false,
+        });
+        throw maturationError;
       }
     });
 
