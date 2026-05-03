@@ -119,23 +119,25 @@ export class AutopilotService {
     const suspended = (settings?.billingSuspended ?? false) === true;
     if (suspended) {
       try {
-        await this.prisma.autopilotEvent.create({
-          data: {
-            workspaceId,
-            intent: 'BILLING',
-            action: 'SUSPENDED',
-            status: 'skipped',
-            reason: 'billing_suspended',
-            meta: { source: 'autopilot_service' },
-          },
-        });
-        await this.prisma.auditLog.create({
-          data: {
-            workspaceId,
-            action: 'AUTOPILOT_SUSPENDED',
-            resource: 'billing',
-            details: { reason: 'billing_suspended' },
-          },
+        await this.prisma.$transaction(async (tx) => {
+          await tx.autopilotEvent.create({
+            data: {
+              workspaceId,
+              intent: 'BILLING',
+              action: 'SUSPENDED',
+              status: 'skipped',
+              reason: 'billing_suspended',
+              meta: { source: 'autopilot_service' },
+            },
+          });
+          await tx.auditLog.create({
+            data: {
+              workspaceId,
+              action: 'AUTOPILOT_SUSPENDED',
+              resource: 'billing',
+              details: { reason: 'billing_suspended' },
+            },
+          });
         });
       } catch (err: unknown) {
         this.logger.warn(
@@ -184,35 +186,37 @@ export class AutopilotService {
 
   /** Toggle autopilot. */
   async toggleAutopilot(workspaceId: string, enabled: boolean) {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    const settings = this.readRecord(workspace?.providerSettings);
+    await this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      });
+      const s = this.readRecord(workspace?.providerSettings);
 
-    if (enabled) {
-      await this.ensureBillingAllowsAutopilot(workspaceId, settings);
-      this.ensureWhatsAppConnectedOrThrow(settings);
-    }
+      if (enabled) {
+        await this.ensureBillingAllowsAutopilot(workspaceId, s);
+        this.ensureWhatsAppConnectedOrThrow(s);
+      }
 
-    const autopilotCfg = { ...((settings.autopilot as Record<string, unknown>) || {}), enabled };
-    const autonomy = {
-      ...((settings.autonomy as Record<string, unknown>) || {}),
-      mode: enabled ? 'LIVE' : 'OFF',
-      reactiveEnabled: enabled,
-      proactiveEnabled: false,
-      reason: enabled ? 'manual_toggle_on' : 'manual_toggle_off',
-      lastTransitionAt: new Date().toISOString(),
-    };
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        providerSettings: {
-          ...settings,
-          autopilot: autopilotCfg,
-          autonomy,
+      const autopilotCfg = { ...((s.autopilot as Record<string, unknown>) || {}), enabled };
+      const autonomy = {
+        ...((s.autonomy as Record<string, unknown>) || {}),
+        mode: enabled ? 'LIVE' : 'OFF',
+        reactiveEnabled: enabled,
+        proactiveEnabled: false,
+        reason: enabled ? 'manual_toggle_on' : 'manual_toggle_off',
+        lastTransitionAt: new Date().toISOString(),
+      };
+      await tx.workspace.update({
+        where: { id: workspaceId },
+        data: {
+          providerSettings: {
+            ...s,
+            autopilot: autopilotCfg,
+            autonomy,
+          },
         },
-      },
+      });
     });
     return { workspaceId, enabled };
   }
@@ -226,29 +230,32 @@ export class AutopilotService {
       recoveryTemplateName?: string | null;
     },
   ) {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
-    const autopilotCfg = { ...((settings.autopilot as Record<string, unknown>) || {}) };
-    if (payload.conversionFlowId !== undefined) {
-      autopilotCfg.conversionFlowId = payload.conversionFlowId;
-    }
-    if (payload.currencyDefault) {
-      autopilotCfg.currencyDefault = payload.currencyDefault;
-    }
-    if (payload.recoveryTemplateName !== undefined) {
-      autopilotCfg.recoveryTemplateName = payload.recoveryTemplateName;
-    }
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        providerSettings: {
-          ...settings,
-          autopilot: autopilotCfg,
-        } as Prisma.InputJsonValue,
-      },
+    const autopilotCfg = await this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      });
+      const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
+      const cfg = { ...((settings.autopilot as Record<string, unknown>) || {}) };
+      if (payload.conversionFlowId !== undefined) {
+        cfg.conversionFlowId = payload.conversionFlowId;
+      }
+      if (payload.currencyDefault) {
+        cfg.currencyDefault = payload.currencyDefault;
+      }
+      if (payload.recoveryTemplateName !== undefined) {
+        cfg.recoveryTemplateName = payload.recoveryTemplateName;
+      }
+      await tx.workspace.update({
+        where: { id: workspaceId },
+        data: {
+          providerSettings: {
+            ...settings,
+            autopilot: cfg,
+          } as Prisma.InputJsonValue,
+        },
+      });
+      return cfg;
     });
     return { workspaceId, autopilot: autopilotCfg };
   }

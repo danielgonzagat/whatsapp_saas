@@ -162,63 +162,68 @@ export class WhatsAppProviderRegistry {
     workspaceId: string,
     update: Partial<ProviderSessionSnapshot>,
   ) {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    if (!workspace) {
-      return;
-    }
+    await this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      });
+      if (!workspace) {
+        return;
+      }
 
-    const settings = asProviderSettings(workspace.providerSettings);
-    const currentSession = settings.whatsappApiSession || {};
+      const settings = asProviderSettings(workspace.providerSettings);
+      const currentSession = settings.whatsappApiSession || {};
 
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        providerSettings: JSON.parse(
-          JSON.stringify({
-            ...settings,
-            whatsappProvider: this.defaultProvider,
-            connectionStatus: update.status || currentSession.status || 'unknown',
-            whatsappApiSession: {
-              ...currentSession,
-              ...update,
-              provider: this.defaultProvider,
-              lastUpdated: new Date().toISOString(),
-            },
-          }),
-        ) as Prisma.InputJsonObject,
-      },
-    });
-  }
-
-  /** Get provider type. */
-  async getProviderType(workspaceId: string): Promise<WhatsAppProviderType> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    if (!workspace) {
-      throw new Error('workspace_not_found');
-    }
-
-    const settings = asProviderSettings(workspace.providerSettings);
-    const current = String(settings.whatsappProvider || '').trim();
-    if (current !== this.defaultProvider) {
-      await this.prisma.workspace.update({
+      await tx.workspace.update({
         where: { id: workspaceId },
         data: {
           providerSettings: JSON.parse(
             JSON.stringify({
               ...settings,
               whatsappProvider: this.defaultProvider,
+              connectionStatus: update.status || currentSession.status || 'unknown',
+              whatsappApiSession: {
+                ...currentSession,
+                ...update,
+                provider: this.defaultProvider,
+                lastUpdated: new Date().toISOString(),
+              },
             }),
           ) as Prisma.InputJsonObject,
         },
       });
-    }
-    return this.defaultProvider;
+    });
+  }
+
+  /** Get provider type. */
+  async getProviderType(workspaceId: string): Promise<WhatsAppProviderType> {
+    const provider = await this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      });
+      if (!workspace) {
+        throw new Error('workspace_not_found');
+      }
+
+      const settings = asProviderSettings(workspace.providerSettings);
+      const current = String(settings.whatsappProvider || '').trim();
+      if (current !== this.defaultProvider) {
+        await tx.workspace.update({
+          where: { id: workspaceId },
+          data: {
+            providerSettings: JSON.parse(
+              JSON.stringify({
+                ...settings,
+                whatsappProvider: this.defaultProvider,
+              }),
+            ) as Prisma.InputJsonObject,
+          },
+        });
+      }
+      return this.defaultProvider;
+    });
+    return provider;
   }
 
   // ═══════════════════════════════════════════════════

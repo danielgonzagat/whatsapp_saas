@@ -538,24 +538,18 @@ export async function materializeAccountCapabilityGapsExt(deps: AccountDeps, wor
       evidence: toJson(input.evidence),
       metadata: toJson(input.metadata),
     };
-    const existing = await deps.prisma.agentWorkItem.findFirst({
-      where: { id, workspaceId },
-      select: { id: true },
+    await deps.prisma.agentWorkItem.upsert({
+      where: { id },
+      update: upd,
+      create: {
+        id,
+        workspaceId,
+        kind: input.kind,
+        entityType: input.entityType,
+        entityId: input.entityId,
+        ...upd,
+      },
     });
-    if (existing) {
-      await deps.prisma.agentWorkItem.updateMany({ where: { id, workspaceId }, data: upd });
-    } else {
-      await deps.prisma.agentWorkItem.create({
-        data: {
-          id,
-          workspaceId,
-          kind: input.kind,
-          entityType: input.entityType,
-          entityId: input.entityId,
-          ...upd,
-        },
-      });
-    }
     const changed =
       !prev ||
       prev.state !== input.state ||

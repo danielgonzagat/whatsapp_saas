@@ -44,28 +44,30 @@ export class CiaRuntimeStateService {
   ) {}
 
   async persistRuntimeSnapshot(workspaceId: string, update: Record<string, unknown>) {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
+    await this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      });
 
-    if (!workspace) {
-      return;
-    }
+      if (!workspace) {
+        return;
+      }
 
-    const settings = asProviderSettings(workspace.providerSettings);
+      const settings = asProviderSettings(workspace.providerSettings);
 
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        providerSettings: toPrismaJsonValue({
-          ...settings,
-          ciaRuntime: {
-            ...(settings.ciaRuntime || {}),
-            ...update,
-          },
-        }),
-      },
+      await tx.workspace.update({
+        where: { id: workspaceId },
+        data: {
+          providerSettings: toPrismaJsonValue({
+            ...settings,
+            ciaRuntime: {
+              ...(settings.ciaRuntime || {}),
+              ...update,
+            },
+          }),
+        },
+      });
     });
   }
 
@@ -203,50 +205,54 @@ export class CiaRuntimeStateService {
       autonomy?: Record<string, unknown>;
     },
   ) {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
+    await this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      });
 
-    if (!workspace) {
-      return;
-    }
+      if (!workspace) {
+        return;
+      }
 
-    const settings = asProviderSettings(workspace.providerSettings);
-    const autonomy = settings.autonomy || {};
-    const now = new Date().toISOString();
-    const autopilotEnabled = ['LIVE', 'BACKLOG', 'FULL'].includes(input.mode);
+      const settings = asProviderSettings(workspace.providerSettings);
+      const autonomy = settings.autonomy || {};
+      const now = new Date().toISOString();
+      const autopilotEnabled = ['LIVE', 'BACKLOG', 'FULL'].includes(input.mode);
 
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        providerSettings: toPrismaJsonValue({
-          ...settings,
-          autopilot: {
-            ...(settings.autopilot || {}),
-            enabled: autopilotEnabled,
-            ...input.autopilot,
-          },
-          autonomy: {
-            ...autonomy,
-            autoBootstrapOnConnected:
-              input.autonomy?.autoBootstrapOnConnected ?? autonomy.autoBootstrapOnConnected ?? true,
-            reactiveEnabled:
-              input.autonomy?.reactiveEnabled ??
-              (input.mode === 'OFF' || input.mode === 'HUMAN_ONLY' || input.mode === 'SUSPENDED'
-                ? false
-                : true),
-            proactiveEnabled: input.autonomy?.proactiveEnabled ?? input.mode === 'FULL',
-            mode: input.mode,
-            reason: input.reason,
-            lastTransitionAt: now,
-          },
-          ciaRuntime: {
-            ...(settings.ciaRuntime || {}),
-            ...(input.runtime || {}),
-          },
-        }),
-      },
+      await tx.workspace.update({
+        where: { id: workspaceId },
+        data: {
+          providerSettings: toPrismaJsonValue({
+            ...settings,
+            autopilot: {
+              ...(settings.autopilot || {}),
+              enabled: autopilotEnabled,
+              ...input.autopilot,
+            },
+            autonomy: {
+              ...autonomy,
+              autoBootstrapOnConnected:
+                input.autonomy?.autoBootstrapOnConnected ??
+                autonomy.autoBootstrapOnConnected ??
+                true,
+              reactiveEnabled:
+                input.autonomy?.reactiveEnabled ??
+                (input.mode === 'OFF' || input.mode === 'HUMAN_ONLY' || input.mode === 'SUSPENDED'
+                  ? false
+                  : true),
+              proactiveEnabled: input.autonomy?.proactiveEnabled ?? input.mode === 'FULL',
+              mode: input.mode,
+              reason: input.reason,
+              lastTransitionAt: now,
+            },
+            ciaRuntime: {
+              ...(settings.ciaRuntime || {}),
+              ...(input.runtime || {}),
+            },
+          }),
+        },
+      });
     });
   }
 

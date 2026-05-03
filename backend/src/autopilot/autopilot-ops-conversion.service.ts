@@ -97,28 +97,30 @@ export class AutopilotOpsConversionService {
       const delayMs = 30 * 60 * 1000;
       await this.enqueueProcessing({ workspaceId, contactId, delayMs });
       const nextRetry = new Date(now + delayMs).toISOString();
-      await this.prisma.contact.updateMany({
-        where: { id: contactId, workspaceId },
-        data: { customFields: { ...(cf || {}), autopilotNextRetryAt: nextRetry } },
-      });
-      await this.prisma.autopilotEvent.create({
-        data: {
-          workspaceId,
-          contactId,
-          intent: 'RETRY',
-          action: 'SCHEDULED',
-          status: 'scheduled',
+      return this.prisma.$transaction(async (tx) => {
+        await tx.contact.updateMany({
+          where: { id: contactId, workspaceId },
+          data: { customFields: { ...(cf || {}), autopilotNextRetryAt: nextRetry } },
+        });
+        await tx.autopilotEvent.create({
+          data: {
+            workspaceId,
+            contactId,
+            intent: 'RETRY',
+            action: 'SCHEDULED',
+            status: 'scheduled',
+            reason: 'rate_limited_error_1h',
+            meta: { nextRetryAt: nextRetry },
+          },
+        });
+        return {
+          queued: true,
+          scheduled: true,
+          delayMs,
           reason: 'rate_limited_error_1h',
-          meta: { nextRetryAt: nextRetry },
-        },
+          nextRetryAt: nextRetry,
+        };
       });
-      return {
-        queued: true,
-        scheduled: true,
-        delayMs,
-        reason: 'rate_limited_error_1h',
-        nextRetryAt: nextRetry,
-      };
     }
 
     const lastEvent = await this.prisma.autopilotEvent.findFirst({
@@ -132,28 +134,30 @@ export class AutopilotOpsConversionService {
         const delayMs = 5 * 60 * 1000 - sinceLast;
         await this.enqueueProcessing({ workspaceId, contactId, delayMs });
         const nextRetry = new Date(now + delayMs).toISOString();
-        await this.prisma.contact.updateMany({
-          where: { id: contactId, workspaceId },
-          data: { customFields: { ...(cf || {}), autopilotNextRetryAt: nextRetry } },
-        });
-        await this.prisma.autopilotEvent.create({
-          data: {
-            workspaceId,
-            contactId,
-            intent: 'RETRY',
-            action: 'SCHEDULED',
-            status: 'scheduled',
+        return this.prisma.$transaction(async (tx) => {
+          await tx.contact.updateMany({
+            where: { id: contactId, workspaceId },
+            data: { customFields: { ...(cf || {}), autopilotNextRetryAt: nextRetry } },
+          });
+          await tx.autopilotEvent.create({
+            data: {
+              workspaceId,
+              contactId,
+              intent: 'RETRY',
+              action: 'SCHEDULED',
+              status: 'scheduled',
+              reason: 'cooldown_5m',
+              meta: { nextRetryAt: nextRetry },
+            },
+          });
+          return {
+            queued: true,
+            scheduled: true,
+            delayMs,
             reason: 'cooldown_5m',
-            meta: { nextRetryAt: nextRetry },
-          },
+            nextRetryAt: nextRetry,
+          };
         });
-        return {
-          queued: true,
-          scheduled: true,
-          delayMs,
-          reason: 'cooldown_5m',
-          nextRetryAt: nextRetry,
-        };
       }
     }
 

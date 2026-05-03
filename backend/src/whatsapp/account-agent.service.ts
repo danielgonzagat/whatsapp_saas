@@ -671,15 +671,11 @@ export class AccountAgentService {
       entityId: input.entityId || null,
       ...this.buildWorkItemUpdateData(input, undefined),
     };
-    const existing = await this.prisma.agentWorkItem.findFirst({
-      where: { id, workspaceId },
-      select: { id: true },
+    await this.prisma.agentWorkItem.upsert({
+      where: { id },
+      update: updateData,
+      create: createData,
     });
-    if (existing) {
-      await this.prisma.agentWorkItem.updateMany({ where: { id, workspaceId }, data: updateData });
-    } else {
-      await this.prisma.agentWorkItem.create({ data: createData });
-    }
     if (this.isWorkItemChanged(previous, input)) {
       await this.agentEvents.publish({
         type: 'account',
