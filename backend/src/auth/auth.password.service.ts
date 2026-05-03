@@ -61,7 +61,7 @@ export class AuthPasswordService {
     const email = `guest_${uid}@guest.kloel.local`;
     const name = 'Guest';
 
-    let workspace: Workspace;
+    let _workspace: Workspace;
     let agent: Agent;
     try {
       const result = await this.prisma.$transaction(
@@ -96,7 +96,7 @@ export class AuthPasswordService {
         },
         { isolationLevel: 'ReadCommitted' },
       );
-      workspace = result.ws;
+      _workspace = result.ws;
       agent = result.ag;
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'AuthPasswordService');
