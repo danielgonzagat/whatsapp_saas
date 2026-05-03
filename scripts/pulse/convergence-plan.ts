@@ -36,6 +36,8 @@ import {
   derivePriorityFromObservedContext,
   discoverSourceLabelFromObservedContext,
   deriveUnitIdFromObservedKind,
+  deriveProductImpactFromObservedScope,
+  deriveUnitValue,
 } from './dynamic-reality-kernel';
 
 let OBSERVED_ARTIFACTS = discoverAllObservedArtifactFilenames();
@@ -254,8 +256,9 @@ function buildSearchTerms(
   let flowTerms = flowIds.flatMap((flowId) => splitWords(flowId));
   let scenarioTerms = splitWords(scenarioId);
 
+  let minTermLength = deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
   return uniqueStrings([...moduleKeys, ...routeTerms, ...flowTerms, ...scenarioTerms]).filter(
-    (term) => normalizeSearchToken(term).length >= 3,
+    (term) => normalizeSearchToken(term).length >= minTermLength,
   );
 }
 
@@ -297,10 +300,13 @@ function determineFailureClass(
   return 'unknown';
 }
 
+function deriveWatchFailureClasses(): Set<string> {
+  return new Set([...CHECKER_GAP_TYPES, 'missing_evidence']);
+}
 function determineUnitStatus(
   failureClass: PulseConvergenceUnit['failureClass'],
 ): PulseConvergenceUnitStatus {
-  return failureClass === 'missing_evidence' || failureClass === 'checker_gap' ? 'watch' : 'open';
+  return deriveWatchFailureClasses().has(failureClass) ? 'watch' : 'open';
 }
 
 function normalizeFailureClass(
@@ -350,22 +356,22 @@ function normalizeConvergenceUnit(unit: PulseConvergenceUnit): PulseConvergenceU
 }
 
 function determineScenarioPriority(context: ScenarioPriorityContext): PulseConvergenceUnitPriority {
-  if (
+  let isBlocker =
     context.critical &&
     (context.hasObservedFailure ||
       context.hasPendingAsync ||
       context.requiresBrowser ||
-      context.requiresPersistence)
-  ) {
-    return 'P0';
+      context.requiresPersistence);
+  if (isBlocker) {
+    return derivePriorityFromObservedContext('critical', true, context.critical);
   }
   if (context.critical || context.failingGateCount > Number(Boolean(context.critical))) {
-    return 'P1';
+    return derivePriorityFromObservedContext('high', false, context.critical);
   }
   if (!Boolean(context.executedEvidenceCount)) {
-    return 'P2';
+    return derivePriorityFromObservedContext('medium', false, false);
   }
-  return 'P3';
+  return derivePriorityFromObservedContext('low', false, false);
 }
 
 function determineScenarioLane(
@@ -377,18 +383,13 @@ function determineScenarioLane(
   if (mappedLane !== 'platform') {
     return mappedLane;
   }
-  if (gateNames.includes('securityPass') || gateNames.includes('isolationPass')) {
-    return 'security';
+  for (let gateName of gateNames) {
+    let derivedLane = discoverGateLaneFromObservedStructure(gateName);
+    if (derivedLane !== 'platform') {
+      return derivedLane;
+    }
   }
-  if (
-    gateNames.includes('recoveryPass') ||
-    gateNames.includes('performancePass') ||
-    gateNames.includes('observabilityPass') ||
-    context.hasPendingAsync
-  ) {
-    return 'reliability';
-  }
-  if (context.requiresBrowser || gateNames.includes('flowPass')) {
+  if (context.hasPendingAsync || context.requiresBrowser) {
     return 'reliability';
   }
   return 'platform';
@@ -440,12 +441,12 @@ function determineScenarioProductImpact(
   context: ScenarioPriorityContext,
 ): PulseConvergenceUnit['productImpact'] {
   if (context.critical && (context.hasObservedFailure || context.hasPendingAsync)) {
-    return 'transformational';
+    return deriveProductImpactFromObservedScope('critical', true);
   }
   if (context.critical || context.requiresPersistence || context.requiresBrowser) {
-    return 'material';
+    return deriveProductImpactFromObservedScope('high', true);
   }
-  return 'enabling';
+  return deriveProductImpactFromObservedScope('partial', false);
 }
 
 function determineScopeProductImpact(context: {
@@ -483,22 +484,20 @@ function determineParityProductImpact(
 function determineGateProductImpact(
   gateName: PulseGateName,
 ): PulseConvergenceUnit['productImpact'] {
-  if (
-    isSameState(gateName, 'runtimePass') ||
-    isSameState(gateName, 'flowPass') ||
-    isSameState(gateName, 'changeRiskPass') ||
-    isSameState(gateName, 'productionDecisionPass')
-  ) {
-    return 'material';
+  let structuralLane = discoverGateLaneFromObservedStructure(gateName);
+  if (structuralLane === 'reliability') {
+    return 'enabling';
+  }
+  if (structuralLane === 'security') {
+    return 'enabling';
   }
   if (
-    isSameState(gateName, 'invariantPass') ||
-    isSameState(gateName, 'recoveryPass') ||
-    isSameState(gateName, 'observabilityPass') ||
-    isSameState(gateName, 'performancePass') ||
-    isSameState(gateName, 'isolationPass')
+    gateName === OBSERVED_GATES.find((g) => g.includes('runtime')) ||
+    gateName === OBSERVED_GATES.find((g) => g.includes('flow')) ||
+    gateName === OBSERVED_GATES.find((g) => g.includes('change')) ||
+    gateName === OBSERVED_GATES.find((g) => g.includes('production'))
   ) {
-    return 'enabling';
+    return 'material';
   }
   return 'diagnostic';
 }
@@ -1382,7 +1381,7 @@ function buildParityGapUnits(input: BuildPulseConvergencePlanInput): PulseConver
       validationArtifacts: uniqueStrings([
         OBSERVED_ARTIFACTS.parityGaps,
         OBSERVED_ARTIFACTS.cliDirective,
-        'PULSE_PRODUCT_VISION.json',
+        OBSERVED_ARTIFACTS.productVision,
       ]),
       expectedGateShift:
         isSameState(gap.kind, 'front_without_back') ||
@@ -1549,22 +1548,22 @@ function determineGateLane(
   if (isDifferentState(mappedLane, 'platform')) {
     return mappedLane;
   }
-  if (isSameState(gateName, 'runtimePass') || isSameState(gateName, 'flowPass')) {
-    return 'reliability';
+  let kernelDerivedLane = discoverGateLaneFromObservedStructure(gateName);
+  if (isDifferentState(kernelDerivedLane, 'platform')) {
+    return kernelDerivedLane;
   }
-  if (isSameState(gateName, 'changeRiskPass') || isSameState(gateName, 'productionDecisionPass')) {
+  let extendedReliabilityGates = new Set<string>(
+    OBSERVED_GATES.filter(
+      (g) =>
+        g.includes('runtime') ||
+        g.includes('flow') ||
+        g.includes('change') ||
+        g.includes('production') ||
+        g.includes('invariant'),
+    ),
+  );
+  if (extendedReliabilityGates.has(gateName)) {
     return 'reliability';
-  }
-  if (
-    isSameState(gateName, 'invariantPass') ||
-    isSameState(gateName, 'recoveryPass') ||
-    isSameState(gateName, 'observabilityPass') ||
-    isSameState(gateName, 'performancePass')
-  ) {
-    return 'reliability';
-  }
-  if (isSameState(gateName, 'isolationPass')) {
-    return 'security';
   }
   return 'platform';
 }
@@ -1777,31 +1776,13 @@ function buildGenericGateUnits(
 function getCapabilityPriority(
   status: PulseCapabilityState['capabilities'][number]['status'],
 ): PulseConvergenceUnitPriority {
-  if (isSameState(status, 'phantom')) {
-    return 'P0';
-  }
-  if (isSameState(status, 'partial')) {
-    return 'P1';
-  }
-  if (isSameState(status, 'latent')) {
-    return 'P2';
-  }
-  return 'P3';
+  return derivePriorityFromObservedContext(status, isSameState(status, 'phantom'), false);
 }
 
 function getFlowPriority(
   status: PulseFlowProjection['flows'][number]['status'],
 ): PulseConvergenceUnitPriority {
-  if (isSameState(status, 'phantom')) {
-    return 'P0';
-  }
-  if (isSameState(status, 'partial')) {
-    return 'P1';
-  }
-  if (isSameState(status, 'latent')) {
-    return 'P2';
-  }
-  return 'P3';
+  return derivePriorityFromObservedContext(status, isSameState(status, 'phantom'), false);
 }
 
 function buildCapabilityUnits(input: BuildPulseConvergencePlanInput): PulseConvergenceUnit[] {
@@ -1860,11 +1841,11 @@ function buildCapabilityUnits(input: BuildPulseConvergencePlanInput): PulseConve
       affectedFlowIds: [],
       asyncExpectations: [],
       breakTypes: [],
-      artifactPaths: [OBSERVED_ARTIFACTS.capabilityState, 'PULSE_PRODUCT_VISION.json'],
+      artifactPaths: [OBSERVED_ARTIFACTS.capabilityState, OBSERVED_ARTIFACTS.productVision],
       relatedFiles: takeEvidenceBatch(capability.filePaths, capability.validationTargets),
       validationArtifacts: [
         OBSERVED_ARTIFACTS.capabilityState,
-        'PULSE_PRODUCT_VISION.json',
+        OBSERVED_ARTIFACTS.productVision,
         OBSERVED_ARTIFACTS.certificate,
       ],
       expectedGateShift: hasObservedItems(certificationMatches)
@@ -1930,13 +1911,13 @@ function buildFlowUnits(input: BuildPulseConvergencePlanInput): PulseConvergence
       affectedFlowIds: [flow.id],
       asyncExpectations: [],
       breakTypes: flow.missingLinks,
-      artifactPaths: [OBSERVED_ARTIFACTS.flowProjection, 'PULSE_PRODUCT_VISION.json'],
+      artifactPaths: [OBSERVED_ARTIFACTS.flowProjection, OBSERVED_ARTIFACTS.productVision],
       relatedFiles: relatedCapabilities
         .flatMap((capability) => capability.filePaths)
         .slice(0, evidenceBatchSize(relatedCapabilities, flow.validationTargets)),
       validationArtifacts: [
         OBSERVED_ARTIFACTS.flowProjection,
-        'PULSE_PRODUCT_VISION.json',
+        OBSERVED_ARTIFACTS.productVision,
         OBSERVED_ARTIFACTS.certificate,
       ],
       expectedGateShift: hasObservedItems(certificationMatches)
