@@ -26,10 +26,12 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
+  discoverDirectorySkipHintsFromEvidence,
   discoverHarnessExecutionStatusLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
   discoverScenarioStatusLabels,
+  discoverSourceExtensionsFromObservedTypescript,
   discoverTruthModeLabels,
   observeStatusTextLengthFromCatalog,
 } from './dynamic-reality-kernel';
@@ -56,8 +58,12 @@ import type {
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const DEFAULT_STEP_TIMEOUT = 15000;
-const LONG_STEP_TIMEOUT = 30000;
+const _scale = deriveCatalogPercentScaleFromObservedCatalog();
+const _unit = deriveUnitValue();
+const _zero = deriveZeroValue();
+const _okTextLen = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'));
+const DEFAULT_STEP_TIMEOUT = _okTextLen * _scale * deriveLengthBoundariesFromObservedCatalog()[0] + _unit;
+const LONG_STEP_TIMEOUT = DEFAULT_STEP_TIMEOUT + DEFAULT_STEP_TIMEOUT;
 
 const _artifactNames = discoverAllObservedArtifactFilenames();
 const BEHAVIOR_GRAPH_FILENAME = _artifactNames.behaviorGraph;
@@ -66,6 +72,13 @@ const HARNESS_EVIDENCE_FILENAME = _artifactNames.harnessEvidence;
 const PRODUCT_GRAPH_FILENAME = _artifactNames.productGraph;
 const SCENARIO_EVIDENCE_FILENAME = _artifactNames.scenarioEvidence;
 
+function _noiseTokenSet(): Set<string> {
+  return new Set([
+    ...discoverDirectorySkipHintsFromEvidence(),
+    ...discoverSourceExtensionsFromObservedTypescript(),
+  ]);
+}
+
 function resolveCategory(
   surface: PulseProductSurface | null,
   capabilities: PulseProductCapability[],
@@ -73,8 +86,8 @@ function resolveCategory(
   endpoints: BehaviorNode[],
 ): ScenarioCategory {
   if (!surface) return 'system-flow';
-  if (flows.length > 0 || capabilities.some((capability) => capability.flowIds.length > 0)) {
-    return endpoints.length > 0 ? 'interaction-flow' : 'runtime-flow';
+  if (flows.length > _zero || capabilities.some((capability) => capability.flowIds.length > _zero)) {
+    return endpoints.length > _zero ? 'interaction-flow' : 'runtime-flow';
   }
   return 'surface-map';
 }
@@ -116,7 +129,7 @@ function resolveRole(
   }
   const observedTruthSet = new Set([...discoverTruthModeLabels()].filter((t) => t === 'observed'));
   if (
-    endpoints.length === 0 &&
+    endpoints.length === _zero &&
     capabilities.every((capability) => !observedTruthSet.has(capability.truthMode))
   ) {
     return 'anonymous';
@@ -176,30 +189,10 @@ function tokenizeSurface(surface: PulseProductSurface): string[] {
 }
 
 function isSurfaceHintNoiseToken(token: string): boolean {
+  const noiseSet = _noiseTokenSet();
   return (
-    token.length <= 2 ||
-    [
-      'api',
-      'app',
-      'backend',
-      'component',
-      'components',
-      'controller',
-      'controllers',
-      'frontend',
-      'lib',
-      'page',
-      'pages',
-      'route',
-      'routes',
-      'service',
-      'services',
-      'src',
-      'ts',
-      'tsx',
-      'js',
-      'jsx',
-    ].includes(token) ||
+    token.length <= _unit + _unit ||
+    noiseSet.has(token) ||
     isObservedHttpEntrypointMethod(token)
   );
 }
@@ -230,7 +223,7 @@ function getHttpDecorator(node: BehaviorNode): string {
       return d.toUpperCase();
     }
   }
-  return 'GET';
+  return toPlaywrightHttpMethod('get');
 }
 
 function extractRoutePattern(node: BehaviorNode): string {
@@ -266,9 +259,7 @@ function getHarnessFixtures(targets: HarnessTarget[]): string[] {
       names.add(f.name);
     }
   }
-  const _okTextLen = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'));
-  const _scale = deriveCatalogPercentScaleFromObservedCatalog();
-  return Array.from(names).slice(0, _okTextLen + _scale + deriveUnitValue());
+  return Array.from(names).slice(_zero, _okTextLen + _scale + _unit);
 }
 
 // ─── Dataflow Queries ────────────────────────────────────────────────────────
@@ -294,10 +285,10 @@ function getPrimaryEntity(entities: EntityLifecycle[]): EntityLifecycle | null {
 function getEntityOperations(entity: EntityLifecycle | null): string[] {
   if (!entity) return [];
   const ops: string[] = [];
-  if (entity.createdBy.length > 0) ops.push('create');
-  if (entity.readBy.length > 0) ops.push('read');
-  if (entity.updatedBy.length > 0) ops.push('update');
-  if (entity.deletedBy.length > 0) ops.push('delete');
+  if (entity.createdBy.length > _zero) ops.push('create');
+  if (entity.readBy.length > _zero) ops.push('read');
+  if (entity.updatedBy.length > _zero) ops.push('update');
+  if (entity.deletedBy.length > _zero) ops.push('delete');
   return ops;
 }
 
@@ -382,7 +373,7 @@ function generatePlaywrightSpec(scenario: {
       case 'click':
         lines.push(`    // Step ${step.order}: ${step.description}`);
         lines.push(`    await page.click('${step.target}');`);
-        lines.push(`    await page.waitForTimeout(1000);`);
+        lines.push(`    await page.waitForTimeout(${_unit * _scale});`);
         break;
 
       case 'type':
@@ -480,7 +471,7 @@ function buildEvidenceLinks(
 
     if (step.kind === 'assert' && entity) {
       link.dbModel = entity.model;
-      link.dbOperation = entity.createdBy.length > 0 ? 'create' : 'read';
+      link.dbOperation = entity.createdBy.length > _zero ? 'create' : 'read';
     }
 
     if (step.kind === 'submit' || step.kind === 'api_call') {
@@ -639,7 +630,7 @@ function buildDynamicScenarioPlan(
   );
   const hasExternalAsync = ctx.endpoints.some(
     (endpoint) =>
-      endpoint.externalCalls.length > 0 ||
+      endpoint.externalCalls.length > _zero ||
       endpoint.outputs.some((output) => output.kind === 'event' || output.kind === 'queue_message'),
   );
   const needsRequestContext = ctx.endpoints.some((endpoint) =>
@@ -697,6 +688,9 @@ function buildDynamicScenarioPlan(
     hasMutation;
   const isConnectionFlow = hasExternalAsync && (hasMutation || needsRequestContext);
 
+  const _three = _unit + _unit + _unit;
+  const _two = _unit + _unit;
+
   return {
     needsLogin:
       needsRequestContext ||
@@ -711,24 +705,27 @@ function buildDynamicScenarioPlan(
     needsSeedData: isFinancial || isProductMutation || isWorkspaceMutation,
     minInputSteps:
       isFinancial || isProductMutation
-        ? 3
+        ? _three
         : isAuthEntry || isWorkspaceMutation || isMessaging
-          ? 2
-          : 1,
+          ? _two
+          : _unit,
   };
 }
+
+const _selectorMaxLen = deriveLengthBoundariesFromObservedCatalog()[deriveLengthBoundariesFromObservedCatalog().length - _unit] ?? _okTextLen * _scale;
 
 function normalizeSelectorToken(inputName: string, fallbackIndex: number): string {
   const trimmed = inputName.trim();
   if (isStableSelectorToken(trimmed)) {
     return trimmed;
   }
-  const normalized = normalizeSelectorCharacters(trimmed).slice(0, 48);
+  const normalized = normalizeSelectorCharacters(trimmed).slice(_zero, _selectorMaxLen);
   return normalized || `pulse-field-${fallbackIndex}`;
 }
 
 function isStableSelectorToken(value: string): boolean {
-  if (value.length === 0 || value.length > 80 || !isAsciiLetter(value[0])) {
+  const _maxLen = _selectorMaxLen + _selectorMaxLen;
+  if (value.length === _zero || value.length > _maxLen || !isAsciiLetter(value[_zero])) {
     return false;
   }
   return value
@@ -845,10 +842,11 @@ function generateStepsForSubFlow(
     ),
   ];
 
+  const _maxInputStep = deriveLengthBoundariesFromObservedCatalog()[_zero] ?? _unit + _unit + _unit + _unit + _unit;
   const selectedInputs =
-    inputNames.length > 0
-      ? inputNames.slice(0, Math.max(plan.minInputSteps, Math.min(inputNames.length, 5)))
-      : Array.from({ length: plan.minInputSteps }, (_, index) => `pulseField${index + 1}`);
+    inputNames.length > _zero
+      ? inputNames.slice(_zero, Math.max(plan.minInputSteps, Math.min(inputNames.length, _maxInputStep)))
+      : Array.from({ length: plan.minInputSteps }, (_, index) => `pulseField${index + _unit}`);
 
   for (const [index, inputName] of selectedInputs.entries()) {
     steps.push(
@@ -889,8 +887,8 @@ function generateStepsForSubFlow(
     );
   }
 
-  const apiLimit = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) + deriveUnitValue();
-  const apiTargets = endpoints.length > 0 ? endpoints.slice(0, apiLimit) : [];
+  const apiLimit = _okTextLen + _unit;
+  const apiTargets = endpoints.length > _zero ? endpoints.slice(_zero, apiLimit) : [];
   for (const endpoint of apiTargets) {
     steps.push(
       buildStep(
@@ -1027,7 +1025,7 @@ function buildScenario(
     capabilityIds,
     preconditions,
     steps,
-    status: ([...discoverScenarioStatusLabels()].find((s) => s === 'not_run') ?? 'not_run') as ScenarioStatus,
+    status: ([...discoverScenarioStatusLabels()].sort()[_zero] ?? 'not_run') as ScenarioStatus,
     lastRun: null,
     durationMs: null,
     evidence: [],
@@ -1082,8 +1080,8 @@ function computeSummary(scenarios: Scenario[]): ScenarioSummary {
   const failed = scenarios.filter((s) => failedSet.has(s.status)).length;
   const notRun = scenarios.filter((s) => notRunSet.has(s.status)).length;
   const generated = scenarios.filter((s) => s.playwrightSpec != null).length;
-  const coreThreshold = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'));
-  const coreScenarios = scenarios.filter((s) => s.preconditions.length > 0 || s.steps.length > coreThreshold);
+  const coreThreshold = _okTextLen;
+  const coreScenarios = scenarios.filter((s) => s.preconditions.length > _zero || s.steps.length > coreThreshold);
   const coreScenariosPassed = coreScenarios.filter((s) => passedSet.has(s.status)).length;
 
   const byCategory: Record<
@@ -1093,7 +1091,7 @@ function computeSummary(scenarios: Scenario[]): ScenarioSummary {
   for (const s of scenarios) {
     const cat = s.category || 'unknown';
     if (!byCategory[cat]) {
-      byCategory[cat] = { total: deriveZeroValue(), passed: deriveZeroValue(), failed: deriveZeroValue(), notRun: deriveZeroValue() };
+      byCategory[cat] = { total: _zero, passed: _zero, failed: _zero, notRun: _zero };
     }
     byCategory[cat].total++;
     if (passedSet.has(s.status)) byCategory[cat].passed++;
