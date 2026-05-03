@@ -1,5 +1,4 @@
 import * as fs from 'fs';
-import * as os from 'os';
 import * as path from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -14,20 +13,9 @@ import type {
   PulseStructuralGraph,
 } from '../types';
 
-const generatedAt = '2026-04-29T00:00:00.000Z';
-const tempRoots: string[] = [];
+import { cleanupTempRoots, generatedAt, makeTempRoot } from './__parts__/dod-real-status.helpers';
 
-function makeTempRoot(): string {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-dod-real-status-'));
-  tempRoots.push(root);
-  return root;
-}
-
-afterEach(() => {
-  for (const root of tempRoots.splice(0)) {
-    fs.rmSync(root, { recursive: true, force: true });
-  }
-});
+afterEach(cleanupTempRoots);
 
 describe('DoD real-status guardrails', () => {
   it('keeps sparse structural evidence as a raw latent signal instead of a fixed-ratio decision', () => {
