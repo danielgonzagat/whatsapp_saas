@@ -50,5 +50,5 @@ export const webhookWorker = new Worker(
       throwIfRetryable(err, 'webhook');
     }
   },
-  { connection, concurrency: 20 },
+  { connection, concurrency: 20, lockDuration: 60_000 },
 );

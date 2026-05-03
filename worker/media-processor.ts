@@ -73,5 +73,5 @@ export const mediaWorker = new Worker(
       throw err;
     }
   },
-  { connection, concurrency: 5 },
+  { connection, concurrency: 5, lockDuration: 120_000 },
 );

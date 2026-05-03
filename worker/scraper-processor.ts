@@ -130,7 +130,11 @@ async function processScraperJob(job: Job): Promise<void> {
 
   try {
     await job.updateProgress(5);
-    await prisma.scrapingJob.update({ where: { id: jobId }, data: {} });
+    // Mark as running via stats JSON (schema does not have a dedicated status column)
+    await prisma.scrapingJob.update({
+      where: { id: jobId },
+      data: { stats: { status: 'running', found: 0, valid: 0, imported: 0 } },
+    });
 
     await job.updateProgress(20);
     const leads = await scrapeLeadsByType(type, query);
@@ -157,7 +161,12 @@ async function processScraperJob(job: Job): Promise<void> {
     await prisma.scrapingJob.update({
       where: { id: jobId },
       data: {
-        stats: { found: leads.length, valid: savedCount, imported: importedContacts.length },
+        stats: {
+          status: 'completed',
+          found: leads.length,
+          valid: savedCount,
+          imported: importedContacts.length,
+        },
       },
     });
 
@@ -167,7 +176,15 @@ async function processScraperJob(job: Job): Promise<void> {
     console.log(`✅ [SCRAPER] Job ${jobId} finished. Saved ${savedCount} leads.`);
   } catch (err) {
     console.error(`❌ [SCRAPER] Job ${jobId} failed:`, err);
-    await prisma.scrapingJob.update({ where: { id: jobId }, data: {} });
+    await prisma.scrapingJob.update({
+      where: { id: jobId },
+      data: {
+        stats: {
+          status: 'failed',
+          error: err instanceof Error ? err.message : String(err),
+        },
+      },
+    });
 
     if (!isRetryableError(err)) {
       throw new WorkerError(
@@ -185,6 +202,7 @@ async function processScraperJob(job: Job): Promise<void> {
 export const scraperWorker = new Worker('scraper-jobs', processScraperJob, {
   connection,
   concurrency: 1, // Browser scraping is heavy, keep concurrency low
+  lockDuration: 300_000,
   limiter: {
     max: 5,
     duration: 1000,
