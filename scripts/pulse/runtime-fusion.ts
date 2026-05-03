@@ -21,6 +21,7 @@ import {
   discoverOperationalEvidenceKindLabels,
   discoverRuntimeFusionEvidenceStatusLabels,
   discoverTruthModeLabels,
+  deriveStringUnionMembersFromTypeContract,
 } from './dynamic-reality-kernel';
 import type { RuntimeCallGraphEvidence, OtelSpan } from './types.otel-runtime';
 import type {
@@ -202,7 +203,9 @@ function evidenceMass(
 }
 
 function deriveOperationalEvidenceKind(signal: CanonicalExternalSignal): OperationalEvidenceKind {
-  let candidates: OperationalEvidenceKind[] = ['runtime', 'change', 'static', 'dependency'];
+  let candidates = [...discoverOperationalEvidenceKindLabels()].filter(
+    (k) => k !== 'external',
+  ) as OperationalEvidenceKind[];
   let ranked = candidates
     .map((kind) => ({
       kind,
@@ -408,21 +411,7 @@ function syncAffectedAliases(signal: RuntimeSignal): void {
 }
 
 function isSignalSource(value: string): value is SignalSource {
-  switch (value) {
-    case 'github':
-    case 'sentry':
-    case 'datadog':
-    case 'prometheus':
-    case 'github_actions':
-    case 'codacy':
-    case 'codecov':
-    case 'dependabot':
-    case 'gitnexus':
-    case 'otel_runtime':
-      return true;
-    default:
-      return false;
-  }
+  return discoverSignalSourceLabels().has(value);
 }
 
 function isSkippedAdapterState(value: string): boolean {
@@ -445,18 +434,11 @@ function traceSourceLooksObserved(source: string, runtimeObserved: boolean): boo
 }
 
 function emptySourceCounts(): Record<SignalSource, number> {
-  return {
-    github: 0,
-    sentry: 0,
-    datadog: 0,
-    prometheus: 0,
-    github_actions: 0,
-    codacy: 0,
-    codecov: 0,
-    dependabot: 0,
-    gitnexus: 0,
-    otel_runtime: 0,
-  };
+  let counts: Record<string, number> = {};
+  for (let source of discoverSignalSourceLabels()) {
+    counts[source] = 0;
+  }
+  return counts as Record<SignalSource, number>;
 }
 
 interface CanonicalExternalSignal {
@@ -540,9 +522,16 @@ function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal |
   };
 }
 
+let TREND_LABELS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.runtime-fusion.ts',
+  'trend',
+);
+let UNKNOWN_TREND = [...TREND_LABELS].find((l) => l === 'unknown') || 'unknown';
+
 function parseTrend(value: unknown): RuntimeSignal['trend'] {
-  if (value === 'worsening' || value === 'stable' || value === 'improving') return value;
-  return 'unknown';
+  if (typeof value === 'string' && TREND_LABELS.has(value) && value !== UNKNOWN_TREND)
+    return value as RuntimeSignal['trend'];
+  return UNKNOWN_TREND as RuntimeSignal['trend'];
 }
 
 function parseObservedPayload(value: Record<string, unknown>): Record<string, unknown> {
