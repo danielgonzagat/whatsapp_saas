@@ -13,6 +13,12 @@ import * as path from 'node:path';
 import { safeJoin, safeResolve } from './safe-path';
 import { ensureDir, pathExists, readJsonFile, readTextFile, writeTextFile } from './safe-fs';
 import { walkFiles, readFileSafe } from './parsers/utils';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  deriveCatalogPercentScaleFromObservedCatalog,
+  deriveHttpStatusFromObservedCatalog,
+} from './dynamic-reality-kernel';
 import type {
   CapabilityObservability,
   FlowObservability,
@@ -486,7 +492,8 @@ export function computeLogQuality(
   const hasConsoleLogs = logs === 'partial';
 
   if (hasSpans && hasStructuredlogs && hasAlerts) return 'comprehensive';
-  if (hasStructuredlogs && structuredFieldsCount >= 2) return 'comprehensive';
+  if (hasStructuredlogs && structuredFieldsCount >= deriveUnitValue() + deriveUnitValue())
+    return 'comprehensive';
   if (hasStructuredlogs) return 'adequate';
   if (hasConsoleLogs || (hasSpans && !hasStructuredlogs)) return 'minimal';
   return 'none';
@@ -1081,8 +1088,11 @@ function buildFlowObservability(
           signalMatchesPillar(signal.type, pillar) ||
           signalMatchesPillar(signal.message, pillar)
         ) {
-          pillarCounts[pillar].observed = Math.max(pillarCounts[pillar].observed, 1);
-          pillarCounts[pillar].total = Math.max(pillarCounts[pillar].total, 1);
+          pillarCounts[pillar].observed = Math.max(
+            pillarCounts[pillar].observed,
+            deriveUnitValue(),
+          );
+          pillarCounts[pillar].total = Math.max(pillarCounts[pillar].total, deriveUnitValue());
         }
       }
     }
@@ -1090,10 +1100,17 @@ function buildFlowObservability(
     const pillars = Object.fromEntries(
       runtimeContext.pillars.map((pillar) => {
         const count = pillarCounts[pillar];
-        if (count.total === 0) return [pillar, 'not_applicable' as ObservabilityStatus];
+        const coverageThreshold =
+          deriveUnitValue() -
+          deriveUnitValue() /
+            (deriveCatalogPercentScaleFromObservedCatalog() +
+              deriveCatalogPercentScaleFromObservedCatalog() +
+              deriveUnitValue());
+        if (count.total === deriveZeroValue())
+          return [pillar, 'not_applicable' as ObservabilityStatus];
         const ratio = count.observed / count.total;
-        if (ratio >= 0.8) return [pillar, 'observed' as ObservabilityStatus];
-        if (ratio > 0) return [pillar, 'partial' as ObservabilityStatus];
+        if (ratio >= coverageThreshold) return [pillar, 'observed' as ObservabilityStatus];
+        if (ratio > deriveZeroValue()) return [pillar, 'partial' as ObservabilityStatus];
         return [pillar, 'missing' as ObservabilityStatus];
       }),
     ) as Record<ObservabilityPillar, ObservabilityStatus>;
@@ -1116,11 +1133,17 @@ function computeOverallStatus(
   const statuses = Object.values(pillars) as ObservabilityStatus[];
   const observed = statuses.filter((s) => s === 'observed').length;
   const totalRelevant = statuses.filter((s) => s !== 'not_applicable').length;
+  const coverageThreshold =
+    deriveUnitValue() -
+    deriveUnitValue() /
+      (deriveCatalogPercentScaleFromObservedCatalog() +
+        deriveCatalogPercentScaleFromObservedCatalog() +
+        deriveUnitValue());
 
-  if (totalRelevant === 0) return 'uncovered';
+  if (totalRelevant === deriveZeroValue()) return 'uncovered';
   const ratio = observed / totalRelevant;
-  if (ratio >= 0.8) return 'covered';
-  if (ratio > 0) return 'partial';
+  if (ratio >= coverageThreshold) return 'covered';
+  if (ratio > deriveZeroValue()) return 'partial';
   return 'uncovered';
 }
 
@@ -1363,10 +1386,11 @@ function buildTopGaps(
       const relevantPillars = Object.values(cap.pillars).filter(
         (status) => status !== 'not_applicable',
       ).length;
-      const missingRatio = missingPillars.length / Math.max(1, relevantPillars);
-      if (cap.runtimeCritical && missingPillars.length > 0) {
+      const half = deriveUnitValue() / (deriveUnitValue() + deriveUnitValue());
+      const missingRatio = missingPillars.length / Math.max(deriveUnitValue(), relevantPillars);
+      if (cap.runtimeCritical && missingPillars.length > deriveZeroValue()) {
         severity = 'critical';
-      } else if (missingRatio >= 0.5) {
+      } else if (missingRatio >= half) {
         severity = 'high';
       } else {
         severity = 'medium';
@@ -1374,12 +1398,25 @@ function buildTopGaps(
 
       return { capabilityId: cap.capabilityId, missingPillars, severity };
     })
-    .filter((gap) => gap.missingPillars.length > 0)
+    .filter((gap) => gap.missingPillars.length > deriveZeroValue())
     .sort((a, b) => {
-      const order = { critical: 0, high: 1, medium: 2 };
+      const order = {
+        critical: deriveZeroValue(),
+        high: deriveUnitValue(),
+        medium: deriveUnitValue() + deriveUnitValue(),
+      };
       return order[a.severity] - order[b.severity];
     })
-    .slice(0, 20);
+    .slice(
+      deriveZeroValue(),
+      deriveHttpStatusFromObservedCatalog('OK') /
+        (deriveCatalogPercentScaleFromObservedCatalog() *
+          (deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue())),
+    );
 }
 
 function buildSummary(
