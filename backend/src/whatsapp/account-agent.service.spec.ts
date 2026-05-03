@@ -433,8 +433,8 @@ describe('AccountAgentService', () => {
     expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          kind: 'conversation_reply',
-          state: 'OPEN',
+          kind: 'catalog_gap_detected',
+          state: 'WAITING_APPROVAL',
         }),
       }),
     );

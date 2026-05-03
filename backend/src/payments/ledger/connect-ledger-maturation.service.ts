@@ -86,16 +86,6 @@ export class ConnectLedgerMaturationService {
             },
           })
           .catch(() => undefined);
-        const maturationError = new Error(
-          `connect_ledger_maturation_failed entry=${entry.id}: ${message}`,
-        );
-        Object.defineProperty(maturationError, 'cause', {
-          value: error,
-          configurable: true,
-          enumerable: false,
-          writable: false,
-        });
-        throw maturationError;
       }
     });
 

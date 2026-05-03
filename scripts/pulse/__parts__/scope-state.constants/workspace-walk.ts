@@ -177,7 +177,7 @@ function sourceSignalRoot(relPath: string): string {
   const segments = normalized.split('/');
   const srcIndex = segments.indexOf('src');
   if (srcIndex > 0) {
-    return segments.slice(0, srcIndex).join('/');
+    return segments.slice(0, srcIndex + 1).join('/');
   }
   return normalizePath(path.dirname(normalized));
 }
@@ -342,7 +342,7 @@ export function discoverWorkspaceStructure(rootDir: string): WorkspaceStructure 
     infrastructureRoots: new Set<string>(),
     protectedExact: new Set<string>(),
     protectedPrefixes: new Set<string>(),
-    structuralNoiseSegments: new Set([]),
+    structuralNoiseSegments: new Set(['app']),
   };
   if (existsSync(resolvedRoot) && statSync(resolvedRoot).isDirectory()) {
     walkWorkspaceStructure(resolvedRoot, resolvedRoot, 0, structure);

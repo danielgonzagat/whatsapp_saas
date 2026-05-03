@@ -1,5 +1,9 @@
 jest.mock('../kloel/openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn().mockResolvedValue({
+    id: 'chat-mock',
+    object: 'chat.completion',
+    created: 1234567890,
+    model: 'gpt-4',
     usage: { total_tokens: 120 },
     choices: [
       {
@@ -160,6 +164,10 @@ describe('CopilotService', () => {
 
     it('returns parsed suggestions from openai with context detection', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
+        id: 'chat-mock-1',
+        object: 'chat.completion',
+        created: 1234567890,
+        model: 'gpt-4',
         usage: { total_tokens: 200, completion_tokens: 100, prompt_tokens: 100 },
         choices: [
           {
@@ -168,6 +176,9 @@ describe('CopilotService', () => {
               refusal: null,
               role: 'assistant',
             },
+            finish_reason: 'stop',
+            index: 0,
+            logprobs: null,
           },
         ],
       });
@@ -190,6 +201,10 @@ describe('CopilotService', () => {
 
     it('detects compra context from last message', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
+        id: 'chat-mock-2',
+        object: 'chat.completion',
+        created: 1234567890,
+        model: 'gpt-4',
         usage: { total_tokens: 50, completion_tokens: 25, prompt_tokens: 25 },
         choices: [
           {
@@ -198,6 +213,9 @@ describe('CopilotService', () => {
               refusal: null,
               role: 'assistant',
             },
+            finish_reason: 'stop',
+            index: 0,
+            logprobs: null,
           },
         ],
       });
@@ -217,6 +235,10 @@ describe('CopilotService', () => {
 
     it('detects dúvida context from last message', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
+        id: 'chat-mock-3',
+        object: 'chat.completion',
+        created: 1234567890,
+        model: 'gpt-4',
         usage: { total_tokens: 50, completion_tokens: 25, prompt_tokens: 25 },
         choices: [
           {
@@ -225,6 +247,9 @@ describe('CopilotService', () => {
               refusal: null,
               role: 'assistant',
             },
+            finish_reason: 'stop',
+            index: 0,
+            logprobs: null,
           },
         ],
       });
@@ -244,6 +269,10 @@ describe('CopilotService', () => {
 
     it('defaults context to geral for no keyword match', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
+        id: 'chat-mock-4',
+        object: 'chat.completion',
+        created: 1234567890,
+        model: 'gpt-4',
         usage: { total_tokens: 50, completion_tokens: 25, prompt_tokens: 25 },
         choices: [
           {
@@ -252,6 +281,9 @@ describe('CopilotService', () => {
               refusal: null,
               role: 'assistant',
             },
+            finish_reason: 'stop',
+            index: 0,
+            logprobs: null,
           },
         ],
       });
@@ -284,6 +316,10 @@ describe('CopilotService', () => {
 
     it('respects count option in prompt generation', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
+        id: 'chat-mock-5',
+        object: 'chat.completion',
+        created: 1234567890,
+        model: 'gpt-4',
         usage: { total_tokens: 80, completion_tokens: 40, prompt_tokens: 40 },
         choices: [
           {
@@ -312,6 +348,10 @@ describe('CopilotService', () => {
 
     it('includes kbSnippet in prompt when provided', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
+        id: 'chat-mock-6',
+        object: 'chat.completion',
+        created: 1234567890,
+        model: 'gpt-4',
         usage: { total_tokens: 60, completion_tokens: 30, prompt_tokens: 30 },
         choices: [
           {
@@ -344,6 +384,10 @@ describe('CopilotService', () => {
 
     it('returns fallback suggestions on invalid json from openai', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
+        id: 'chat-mock-7',
+        object: 'chat.completion',
+        created: 1234567890,
+        model: 'gpt-4',
         usage: { total_tokens: 10, completion_tokens: 5, prompt_tokens: 5 },
         choices: [
           {

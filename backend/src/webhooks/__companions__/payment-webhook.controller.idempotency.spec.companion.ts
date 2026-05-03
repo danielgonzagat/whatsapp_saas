@@ -40,33 +40,27 @@ export function registerWooCommerceIdempotencyTests(): void {
 
       redis.set.mockResolvedValueOnce(null);
 
+      const rawBody = JSON.stringify({
+        id: 42,
+        status: 'completed',
+        total: '99.90',
+        workspaceId: 'ws-woo',
+        billing: { phone: '5511999999999' },
+      });
+      const validHmac = crypto
+        .createHmac('sha256', 'woo_test_secret')
+        .update(Buffer.from(rawBody, 'utf8'))
+        .digest('base64');
+
       const result = await controller.handleWoo(
         {
-          body: {
-            id: 42,
-            status: 'completed',
-            total: '99.90',
-            workspaceId: 'ws-woo',
-            billing: { phone: '5511999999999' },
-          },
-          rawBody: JSON.stringify({
-            id: 42,
-            status: 'completed',
-            total: '99.90',
-            workspaceId: 'ws-woo',
-            billing: { phone: '5511999999999' },
-          }),
+          body: JSON.parse(rawBody),
+          rawBody,
           url: '/webhook/payment/woocommerce',
         },
-        'mock-hmac-signature',
+        validHmac,
         'evt_woo_dupe',
-        {
-          id: 42,
-          status: 'completed',
-          total: '99.90',
-          workspaceId: 'ws-woo',
-          billing: { phone: '5511999999999' },
-        },
+        JSON.parse(rawBody) as never,
       );
 
       expect(redis.set).toHaveBeenCalledWith('webhook:payment:evt_woo_dupe', '1', 'EX', 300, 'NX');

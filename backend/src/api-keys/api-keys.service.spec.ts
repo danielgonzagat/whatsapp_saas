@@ -17,11 +17,11 @@ type MockedApiKeyRecord = {
 };
 
 type MockedApiKeyDelegate = {
-  findMany: jest.Mock<any, any>;
-  create: jest.Mock<any, any>;
-  findFirst: jest.Mock<any, any>;
-  deleteMany: jest.Mock<any, any>;
-  update: jest.Mock<any, any>;
+  findMany: jest.Mock<any>;
+  create: jest.Mock<any>;
+  findFirst: jest.Mock<any>;
+  deleteMany: jest.Mock<any>;
+  update: jest.Mock<any>;
 };
 
 type MockedLogFn = jest.Mock<(args: Record<string, unknown>) => Promise<void>>;

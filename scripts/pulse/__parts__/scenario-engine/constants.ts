@@ -1,5 +1,5 @@
 import type { PulseProductCapability, PulseProductGraph, PulseProductSurface } from '../../types';
-import type { BehaviorNode } from '../../types.behavior-graph';
+import type { BehaviorGraph, BehaviorNode } from '../../types.behavior-graph';
 import type { DataflowState, EntityLifecycle } from '../../types.dataflow-engine';
 import type { HarnessEvidence, HarnessTarget } from '../../types.execution-harness';
 import type { ScenarioCategory, ScenarioRole } from '../../types.scenario-engine';
@@ -18,7 +18,7 @@ interface ScenarioBuildContext {
   primarySurfaceId: string;
   role: ScenarioRole;
   productGraph: PulseProductGraph | null;
-  behaviorGraph: BehaviorNode | null;
+  behaviorGraph: BehaviorGraph | null;
   harnessEvidence: HarnessEvidence | null;
   dataflowState: DataflowState | null;
   endpoints: BehaviorNode[];

@@ -2,7 +2,7 @@ import { extractRouteFromSurfaceId } from '../../dynamic-reality-grammar';
 import type { BehaviorNode } from '../../types.behavior-graph';
 import type { ScenarioCategory, ScenarioStep } from '../../types.scenario-engine';
 import { DEFAULT_STEP_TIMEOUT, LONG_STEP_TIMEOUT } from './constants';
-import type { ScenarioBuildContext } from './dynamic-plan';
+import type { ScenarioBuildContext } from './constants';
 import { buildDynamicScenarioPlan, buildStep } from './dynamic-plan';
 import { extractRoutePattern, getHttpDecorator } from './surface-queries';
 import { buildInputSelector, normalizeSelectorToken } from './token-selector-utils';

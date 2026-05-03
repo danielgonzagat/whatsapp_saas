@@ -15,6 +15,8 @@ jest.mock('@sentry/node', () => ({
 jest.mock('fs', () => ({
   existsSync: jest.fn(),
   readFileSync: jest.fn(),
+  constants: { O_CREAT: 0, O_WRONLY: 0, O_RDONLY: 0 },
+  promises: { readFile: jest.fn(), writeFile: jest.fn(), mkdir: jest.fn() },
 }));
 
 import { existsSync, readFileSync } from 'fs';

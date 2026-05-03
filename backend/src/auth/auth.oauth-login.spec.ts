@@ -109,6 +109,7 @@ describe('AuthService OAuth login', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: EmailService, useValue: mockEmailService },
+        { provide: ConfigService, useValue: mockConfigService },
         { provide: AuthOAuthService, useValue: mockAuthOAuthService },
         { provide: AuthPartnerService, useValue: mockAuthPartnerService },
         { provide: AuthVerificationService, useValue: mockAuthVerificationService },
