@@ -1,19 +1,35 @@
+import * as p from 'path';
+import { pathExists as existsAt, readTextFile, writeTextFile, ensureDir } from '../safe-fs';
+import { tokenize, unique } from '../signal-normalizers';
+import {
+  discoverSignalSourceLabels,
+  discoverSignalSeverityLabels,
+  discoverConvergenceUnitPriorityLabels,
+  deriveStringUnionMembersFromTypeContract,
+  discoverAllObservedArtifactFilenames,
+  deriveUnitValue,
+  deriveHttpStatusFromObservedCatalog,
+  deriveVerificationThresholdFromObservedCatalog,
+} from '../dynamic-reality-kernel';
+
+let EXTERNAL_SIGNAL_STATE_FILE = discoverAllObservedArtifactFilenames().externalSignalState;
+let RUNTIME_TRACES_FILE = discoverAllObservedArtifactFilenames().runtimeTraces;
+let FUSION_OUTPUT_FILE = discoverAllObservedArtifactFilenames().runtimeFusion;
+let DYNAMIC_SIGNAL_SEMANTICS_NOTE = `Dynamic signal semantics derived from ${discoverAllObservedArtifactFilenames().externalSignalState} source capability, observed payload, runtime baseline, trend, impact, and blast-radius hints; legacy labels are weak calibration only.`;
+
+let SIGNAL_SOURCE_LABELS = discoverSignalSourceLabels();
+let SIGNAL_SEVERITY_LABELS = discoverSignalSeverityLabels();
+let PRIORITY_LABELS = discoverConvergenceUnitPriorityLabels();
+let PRIORITY_ORDER_INDEX = Object.fromEntries([...PRIORITY_LABELS].map((label, idx) => [label, idx]));
+let TREND_LABELS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.runtime-fusion.ts',
+  'trend',
+);
+let UNKNOWN_TREND = [...TREND_LABELS].find((l) => l === 'unknown') || 'unknown';
+let STATUS_500 = deriveHttpStatusFromObservedCatalog('Internal Server Error');
+
 function isSignalSource(value: string): value is SignalSource {
-  switch (value) {
-    case 'github':
-    case 'sentry':
-    case 'datadog':
-    case 'prometheus':
-    case 'github_actions':
-    case 'codacy':
-    case 'codecov':
-    case 'dependabot':
-    case 'gitnexus':
-    case 'otel_runtime':
-      return true;
-    default:
-      return false;
-  }
+  return SIGNAL_SOURCE_LABELS.has(value);
 }
 
 function isSkippedAdapterState(value: string): boolean {
@@ -36,18 +52,11 @@ function traceSourceLooksObserved(source: string, runtimeObserved: boolean): boo
 }
 
 function emptySourceCounts(): Record<SignalSource, number> {
-  return {
-    github: 0,
-    sentry: 0,
-    datadog: 0,
-    prometheus: 0,
-    github_actions: 0,
-    codacy: 0,
-    codecov: 0,
-    dependabot: 0,
-    gitnexus: 0,
-    otel_runtime: 0,
-  };
+  let counts: Record<string, number> = {};
+  for (let source of SIGNAL_SOURCE_LABELS) {
+    counts[source] = 0;
+  }
+  return counts as Record<SignalSource, number>;
 }
 
 export interface CanonicalExternalSignal {
@@ -132,8 +141,9 @@ function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal |
 }
 
 function parseTrend(value: unknown): RuntimeSignal['trend'] {
-  if (value === 'worsening' || value === 'stable' || value === 'improving') return value;
-  return 'unknown';
+  if (typeof value === 'string' && TREND_LABELS.has(value) && value !== UNKNOWN_TREND)
+    return value as RuntimeSignal['trend'];
+  return UNKNOWN_TREND as RuntimeSignal['trend'];
 }
 
 function parseObservedPayload(value: Record<string, unknown>): Record<string, unknown> {
@@ -349,7 +359,7 @@ function otelErrorSpanToSignal(
   ]);
 
   let id = `otel:error:${span.spanId}:${span.serviceName}:${span.name.slice(0, 60)}`;
-  let level = mapSeverity(bound01(httpStatus / Math.max(httpStatus, 500)));
+  let level = mapSeverity(bound01(httpStatus / Math.max(httpStatus, STATUS_500)));
 
   return {
     id,
@@ -438,7 +448,7 @@ function runtimeTraceEvidenceToSignals(evidence: RuntimeCallGraphEvidence): Runt
   let durationFloor = observedMeanOrSelf(durationSignals, 0) + observedSpread(durationSignals);
 
   for (let mapping of evidence.spanToPathMappings) {
-    if (mapping.confidence < 0.5 || mapping.matchedFilePaths.length === 0) continue;
+    if (mapping.confidence < deriveVerificationThresholdFromObservedCatalog() || mapping.matchedFilePaths.length === 0) continue;
     mappedPathsBySpanName.set(
       mapping.spanName,
       unique([...(mappedPathsBySpanName.get(mapping.spanName) ?? []), ...mapping.matchedFilePaths]),
@@ -465,7 +475,7 @@ function runtimeTraceEvidenceToSignals(evidence: RuntimeCallGraphEvidence): Runt
   }
 
   for (let mapping of evidence.spanToPathMappings) {
-    if (mapping.confidence < 0.5) continue;
+    if (mapping.confidence < deriveVerificationThresholdFromObservedCatalog()) continue;
     let filePaths = mapping.matchedFilePaths;
     if (filePaths.length === 0) continue;
 
@@ -702,7 +712,7 @@ export function mapSignalToCapabilities(
     for (let capability of capabilityState.capabilities) {
       let nameTokens = tokenize(capability.name);
 
-      let hasNameMatch = nameTokens.some((nt) => nt.length >= 3 && messageTokens.has(nt));
+      let hasNameMatch = nameTokens.some((nt) => nt.length >= deriveUnitValue() + deriveUnitValue() + deriveUnitValue() && messageTokens.has(nt));
 
       let hasFilePathMatch = signal.affectedFilePaths.some((signalFile) => {
         let normalizedSignalFile = normalizePathSeparators(signalFile);
@@ -747,7 +757,7 @@ export function mapSignalToFlows(
       signal.message.includes(routePattern),
     );
     let nameMatch = tokenize(flow.name).some(
-      (token) => token.length >= 4 && messageTokens.has(token),
+      (token) => token.length >= deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() && messageTokens.has(token),
     );
     if (capabilityMatch || routeMatch || nameMatch) {
       ids.add(flow.id);
@@ -786,7 +796,7 @@ export function computeImpactScore(signal: RuntimeSignal): number {
 }
 
 function deriveMagnitude(signal: RuntimeSignal): number {
-  let levels: SignalSeverity[] = ['info', 'low', 'medium', 'high', 'critical'];
+  let levels: SignalSeverity[] = [...SIGNAL_SEVERITY_LABELS].toReversed() as SignalSeverity[];
   let ordinal = levels.indexOf(signal.severity);
   let ordinalForce = ordinal >= 0 ? (ordinal + 1) / levels.length : signal.impactScore;
   let freqLog = Math.log10(Math.max(signal.frequency, 1) + 1);
@@ -865,7 +875,7 @@ export function overridePriorities(
 
 // ─── Runtime Reality Ranking ────────────────────────────────────────────────
 
-let ORDER_INDEX: Record<string, number> = { P0: 0, P1: 1, P2: 2, P3: 3 };
+let ORDER_INDEX: Record<string, number> = PRIORITY_ORDER_INDEX;
 
 /**
  * Rank capabilities by runtime reality precedence.
