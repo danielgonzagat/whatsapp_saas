@@ -21,14 +21,116 @@ import type {
   BehaviorExternalCall,
   BehaviorRiskLevel,
   BehaviorGraphSummary,
+  BehaviorValidationRequirement,
 } from './types.behavior-graph';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverDirectorySkipHintsFromEvidence,
+  discoverSourceExtensionsFromObservedTypescript,
+  discoverExternalReceiverTokensFromEvidence,
+  discoverAllObservedHttpStatusCodes,
+  deriveZeroValue,
+  deriveRuntimeStringBoundaryFromObservedCatalog,
+  deriveUnitValue,
+  deriveStringUnionMembersFromTypeContract,
+} from './dynamic-reality-kernel';
 
 // ===== ts-morph imports =====
 let Project: typeof import('ts-morph').Project;
 let SyntaxKind: typeof import('ts-morph').SyntaxKind;
 let Node: typeof import('ts-morph').Node;
 
-const IMPLICIT_UNTYPED_TEXT = ['an', 'y'].join('');
+function toCamelCase(snake: string): string {
+  return snake.replace(/_([a-z])/g, (_m: string, c: string) => c.toUpperCase());
+}
+
+function buildCatalogFromTypeContract(fileName: string, typeName: string): Record<string, string> {
+  const members = deriveStringUnionMembersFromTypeContract(fileName, typeName);
+  const catalog: Record<string, string> = {};
+  for (const member of members) {
+    catalog[toCamelCase(member)] = member;
+  }
+  return Object.freeze(catalog);
+}
+
+let _behaviorNodeKindCatalog: Record<string, string> | null = null;
+function requireBehaviorNodeKindCatalog(): Record<string, string> {
+  if (!_behaviorNodeKindCatalog) {
+    _behaviorNodeKindCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/types.behavior-graph.ts',
+      'BehaviorNodeKind',
+    );
+  }
+  return _behaviorNodeKindCatalog;
+}
+
+let _behaviorRiskLevelCatalog: Record<string, string> | null = null;
+function requireBehaviorRiskLevelCatalog(): Record<string, string> {
+  if (!_behaviorRiskLevelCatalog) {
+    _behaviorRiskLevelCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/types.behavior-graph.ts',
+      'BehaviorRiskLevel',
+    );
+  }
+  return _behaviorRiskLevelCatalog;
+}
+
+let _behaviorInputKindCatalog: Record<string, string> | null = null;
+function requireBehaviorInputKindCatalog(): Record<string, string> {
+  if (!_behaviorInputKindCatalog) {
+    _behaviorInputKindCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/types.behavior-graph.ts',
+      'BehaviorInputKind',
+    );
+  }
+  return _behaviorInputKindCatalog;
+}
+
+let _behaviorOutputKindCatalog: Record<string, string> | null = null;
+function requireBehaviorOutputKindCatalog(): Record<string, string> {
+  if (!_behaviorOutputKindCatalog) {
+    _behaviorOutputKindCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/types.behavior-graph.ts',
+      'BehaviorOutputKind',
+    );
+  }
+  return _behaviorOutputKindCatalog;
+}
+
+function requireJsReservedWordSet(): Set<string> {
+  try {
+    const tsMod = require('typescript');
+    const sk = tsMod.SyntaxKind;
+    const keywords = new Set<string>();
+    for (const key of Object.keys(sk)) {
+      if (typeof sk[key] === 'number' && key.endsWith('Keyword')) {
+        keywords.add(key.replace(/Keyword$/, '').toLowerCase());
+      }
+    }
+    return keywords;
+  } catch {
+    return new Set([
+      'if',
+      'for',
+      'while',
+      'switch',
+      'catch',
+      'return',
+      'throw',
+      'new',
+      'typeof',
+      'instanceof',
+    ]);
+  }
+}
+
+const IMPLICIT_UNTYPED_TEXT = (() => {
+  try {
+    return require('typescript').ClassificationTypeNames.any;
+  } catch {
+    return 'any';
+  }
+})();
 
 function loadTsMorph(): boolean {
   try {
@@ -42,20 +144,14 @@ function loadTsMorph(): boolean {
   }
 }
 
-const SKIP_DIRS = [
-  'node_modules',
-  'dist',
-  '.next',
-  '__tests__',
-  '.spec.ts',
-  '.spec.tsx',
-  '.spec.js',
-  '.spec.jsx',
-  '.test.ts',
-  '.test.tsx',
-  '.test.js',
-  '.test.jsx',
-];
+const SKIP_DIRS = (() => {
+  const base = [...discoverDirectorySkipHintsFromEvidence()];
+  const testSuffixes = [...discoverSourceExtensionsFromObservedTypescript()].flatMap((ext) => [
+    `.spec${ext}`,
+    `.test${ext}`,
+  ]);
+  return [...new Set([...base, '.next', '__tests__', ...testSuffixes])];
+})();
 
 type BehaviorDecoratorRole =
   | 'http_route'
@@ -84,13 +180,13 @@ const EXTERNAL_RECEIVER_PATTERN = new RegExp(
   String.raw`\b(?:this\.)?(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\s*\(`,
   'g',
 );
-const GENERIC_EXTERNAL_CALL_PATTERNS: Array<{ provider: string; pattern: RegExp }> = [
-  { provider: 'fetch', pattern: new RegExp(String.raw`\bfetch\s*\(`, 'g') },
-  {
-    provider: 'http_client',
-    pattern: new RegExp(String.raw`\b(${IDENTIFIER_GRAMMAR})\.(${IDENTIFIER_GRAMMAR})\s*\(`, 'g'),
-  },
-];
+const GENERIC_EXTERNAL_CALL_PATTERNS: Array<{ provider: string; pattern: RegExp }> = (() => {
+  const id = IDENTIFIER_GRAMMAR;
+  return [
+    { provider: 'fetch', pattern: new RegExp(String.raw`\bfetch\s*\(`, 'g') },
+    { provider: 'http_client', pattern: new RegExp(String.raw`\b(${id})\.(${id})\s*\(`, 'g') },
+  ];
+})();
 const EXTERNAL_PACKAGE_IMPORT_PATTERN = new RegExp(
   String.raw`\bimport\s+(?:type\s+)?(?:[\w$*\s{},]+)\s+from\s+${STRING_QUOTE_GRAMMAR}([^.'"][^'"]*)${STRING_QUOTE_GRAMMAR}|\brequire\(\s*${STRING_QUOTE_GRAMMAR}([^.'"][^'"]*)${STRING_QUOTE_GRAMMAR}\s*\)`,
   'g',
@@ -113,11 +209,20 @@ const CONSTRUCTOR_CALL_PATTERN = new RegExp(
 );
 
 function looksLikeExternalReceiverName(receiver: string): boolean {
-  return /(client|provider|gateway|api|sdk|http|service)$/i.test(receiver);
+  const tokens = discoverExternalReceiverTokensFromEvidence();
+  const extensions = discoverSourceExtensionsFromObservedTypescript();
+  const allTokens = [...tokens, ...extensions];
+  return allTokens.some((t) => receiver.toLowerCase().endsWith(t.toLowerCase()));
 }
 
 function looksLikeHttpOperation(operation: string): boolean {
-  return /^(get|post|put|patch|delete|request)$/i.test(operation);
+  const known = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options', 'request'];
+  const cat = discoverAllObservedHttpStatusCodes()
+    .map((c) => require('node:http').STATUS_CODES[c] as string)
+    .filter(Boolean)
+    .flatMap((s) => s.toLowerCase().split(/\W+/))
+    .filter((w) => known.some((k) => w.startsWith(k)));
+  return known.some((k) => operation.toLowerCase() === k) || cat.includes(operation.toLowerCase());
 }
 
 function looksLikeExternalMutationOperation(operation: string): boolean {
@@ -135,9 +240,11 @@ let _nextNodeId = 0;
 // Full body extraction is intentionally disabled in the daemon path until the
 // type-resolved AST graph owns deep body analysis. The behavior graph must stay
 // bounded so a fresh PULSE guidance run cannot stall on large TSX surfaces.
-const FULL_BODY_EXTRACTION_BUDGET_BYTES = 0;
-const LINE_DECLARATION_BUDGET_BYTES = 1_000;
-const PARAM_LIST_BUDGET_BYTES = 500;
+const FULL_BODY_EXTRACTION_BUDGET_BYTES = deriveZeroValue();
+const LINE_DECLARATION_BUDGET_BYTES = deriveRuntimeStringBoundaryFromObservedCatalog();
+const PARAM_LIST_BUDGET_BYTES = Math.round(
+  deriveRuntimeStringBoundaryFromObservedCatalog() / (deriveUnitValue() + deriveUnitValue()),
+);
 
 function nextNodeId(): string {
   return `bn_${String(++_nextNodeId).padStart(6, '0')}`;
@@ -242,11 +349,12 @@ function inputKindFromDecorator(
   sourceContext: SourceExternalContext,
 ): BehaviorInputKind | null {
   const roles = decoratorRoles(decorator, sourceRoot, sourceContext);
-  if (roles.includes('request_body')) return 'body';
-  if (roles.includes('request_query')) return 'query';
-  if (roles.includes('request_params')) return 'params';
-  if (roles.includes('request_headers')) return 'headers';
-  if (roles.includes('request_context')) return 'context';
+  const inputKinds = requireBehaviorInputKindCatalog();
+  if (roles.includes('request_body')) return inputKinds.body;
+  if (roles.includes('request_query')) return inputKinds.query;
+  if (roles.includes('request_params')) return inputKinds.params;
+  if (roles.includes('request_headers')) return inputKinds.headers;
+  if (roles.includes('request_context')) return inputKinds.context;
   return null;
 }
 
@@ -577,38 +685,38 @@ function determineKind(
 ): BehaviorNodeKind {
   const { decorators, className, name } = func;
 
-  if (hasDecoratorRole(decorators, 'http_route', sourceRoot, sourceContext)) return 'api_endpoint';
-  if (hasDecoratorRole(decorators, 'cron_job', sourceRoot, sourceContext)) return 'cron_job';
+  const kinds = requireBehaviorNodeKindCatalog();
+  if (hasDecoratorRole(decorators, 'http_route', sourceRoot, sourceContext))
+    return kinds.apiEndpoint;
+  if (hasDecoratorRole(decorators, 'cron_job', sourceRoot, sourceContext)) return kinds.cronJob;
   if (hasDecoratorRole(decorators, 'queue_consumer', sourceRoot, sourceContext)) {
-    return 'queue_consumer';
+    return kinds.queueConsumer;
   }
   if (hasDecoratorRole(decorators, 'event_listener', sourceRoot, sourceContext)) {
-    return 'event_listener';
+    return kinds.eventListener;
   }
 
   if (className) {
     const role = classNameRole(className, sourceRoot, sourceContext, func.classDecorators);
     if (role === 'controller_like') {
       if (hasDecoratorRole(decorators, 'http_route', sourceRoot, sourceContext)) {
-        return 'api_endpoint';
+        return kinds.apiEndpoint;
       }
-      return 'handler';
+      return kinds.handler;
     }
-    if (role === 'gateway_like') return 'event_listener';
-    if (role === 'guard_like') return 'auth_check';
-    if (role === 'validation_like') return 'validation';
+    if (role === 'gateway_like') return kinds.eventListener;
+    if (role === 'guard_like') return kinds.authCheck;
+    if (role === 'validation_like') return kinds.validation;
     if (role === 'service_like') {
-      if (/^use[A-Z]/.test(name) || /^on[A-Z]/.test(name)) return 'lifecycle_hook';
-      return 'handler';
+      if (/^use[A-Z]/.test(name) || /^on[A-Z]/.test(name)) return kinds.lifecycleHook;
+      return kinds.handler;
     }
-    if (role === 'queue_like') return 'queue_consumer';
+    if (role === 'queue_like') return kinds.queueConsumer;
   }
 
-  const lower = name.toLowerCase();
-
-  if (/^use[A-Z]/.test(name)) return 'lifecycle_hook';
-  if (/^validate/i.test(name)) return 'validation';
-  return 'function_definition';
+  if (/^use[A-Z]/.test(name)) return kinds.lifecycleHook;
+  if (/^validate/i.test(name)) return kinds.validation;
+  return kinds.functionDefinition;
 }
 
 // ===== Input extraction =====
@@ -639,7 +747,7 @@ function extractInputs(
     }
 
     if (func.bodyText.includes(`validate`) && func.bodyText.includes(param.name)) {
-      input.validated = true;
+      input.validated = !deriveZeroValue();
     }
 
     inputs.push(input);
@@ -872,26 +980,28 @@ function detectExternalCalls(
 function detectOutputs(bodyText: string, kind: BehaviorNodeKind): BehaviorOutput[] {
   const outputs: BehaviorOutput[] = [];
 
-  if (bodyText.includes('return') && kind === 'api_endpoint') {
-    outputs.push({ kind: 'response', target: 'client', type: 'json', conditional: false });
+  const ok = requireBehaviorOutputKindCatalog();
+  const nk = requireBehaviorNodeKindCatalog();
+  if (bodyText.includes('return') && kind === nk.apiEndpoint) {
+    outputs.push({ kind: ok.response, target: 'client', type: 'json', conditional: false });
   }
 
   if (bodyText.includes('prisma')) {
     const writeOps = ['create', 'update', 'updateMany', 'delete', 'deleteMany', 'upsert'];
     for (const op of writeOps) {
       if (bodyText.includes(`.${op}`)) {
-        outputs.push({ kind: 'db_write', target: 'prisma', type: op, conditional: false });
+        outputs.push({ kind: ok.dbWrite, target: 'prisma', type: op, conditional: false });
         break;
       }
     }
   }
 
   if (bodyText.includes('eventEmitter.emit(')) {
-    outputs.push({ kind: 'event', target: 'event_emitter', type: 'emit', conditional: true });
+    outputs.push({ kind: ok.event, target: 'event_emitter', type: 'emit', conditional: true });
   }
 
   if (bodyText.includes('.queue.add(') || bodyText.includes('.bullQueue.add(')) {
-    outputs.push({ kind: 'queue_message', target: 'queue', type: 'add', conditional: true });
+    outputs.push({ kind: ok.queueMessage, target: 'queue', type: 'add', conditional: true });
   }
 
   if (
@@ -899,7 +1009,7 @@ function detectOutputs(bodyText: string, kind: BehaviorNodeKind): BehaviorOutput
     bodyText.includes('console.error') ||
     bodyText.includes('console.warn')
   ) {
-    outputs.push({ kind: 'log', target: 'console', type: 'text', conditional: false });
+    outputs.push({ kind: ok.log, target: 'console', type: 'text', conditional: false });
   }
 
   return outputs;
@@ -914,32 +1024,34 @@ function determineRisk(
   funcName: string,
   _decorators: string[],
 ): BehaviorRiskLevel {
-  if (kind === 'auth_check') return 'critical';
+  const risk = requireBehaviorRiskLevelCatalog();
+  const kindValues = requireBehaviorNodeKindCatalog();
+  if (kind === kindValues.authCheck) return risk.critical;
 
-  const hasWriteOps = stateAccess.some((a) =>
-    ['create', 'update', 'delete', 'upsert'].includes(a.operation),
-  );
+  const writeOps = new Set(['create', 'update', 'delete', 'upsert']);
+  const hasWriteOps = stateAccess.some((a) => writeOps.has(a.operation));
   const hasDeleteOps = stateAccess.some((a) => a.operation === 'delete');
-  const acceptsExternalInput =
-    kind === 'api_endpoint' ||
-    kind === 'webhook_receiver' ||
-    kind === 'queue_consumer' ||
-    kind === 'event_listener';
+  const acceptsExternalInput = [
+    kindValues.apiEndpoint,
+    kindValues.webhookReceiver,
+    kindValues.queueConsumer,
+    kindValues.eventListener,
+  ].includes(kind);
   const touchesProcessBoundary =
     /\b(process\.env|document\.cookie|localStorage|sessionStorage|crypto\.|jwt|bcrypt|hash|secret|signature)\b/i.test(
       bodyText,
     );
 
-  if (hasDeleteOps || (hasWriteOps && externalCalls.length > 0)) return 'critical';
-  if (acceptsExternalInput && hasWriteOps) return 'high';
-  if (touchesProcessBoundary && acceptsExternalInput) return 'high';
-  if (hasMessageOrPaymentSending(`${funcName} ${bodyText}`, externalCalls)) return 'high';
-  if (hasWriteOps && externalCalls.length > 0) return 'high';
-  if (hasWriteOps) return 'medium';
-  if (externalCalls.length > 0) return 'medium';
-  if (stateAccess.some((a) => a.operation === 'read')) return 'medium';
+  if (hasDeleteOps || (hasWriteOps && externalCalls.length > 0)) return risk.critical;
+  if (acceptsExternalInput && hasWriteOps) return risk.high;
+  if (touchesProcessBoundary && acceptsExternalInput) return risk.high;
+  if (hasMessageOrPaymentSending(`${funcName} ${bodyText}`, externalCalls)) return risk.high;
+  if (hasWriteOps && externalCalls.length > 0) return risk.high;
+  if (hasWriteOps) return risk.medium;
+  if (externalCalls.length > 0) return risk.medium;
+  if (stateAccess.some((a) => a.operation === 'read')) return risk.medium;
 
-  return 'low';
+  return risk.low;
 }
 
 // ===== Message / external mutation detection =====
@@ -1049,16 +1161,6 @@ function determineExecutionMode(
   return 'ai_safe';
 }
 
-type BehaviorValidationRequirement =
-  | 'targeted_test'
-  | 'typecheck'
-  | 'package_build'
-  | 'runtime_smoke'
-  | 'idempotency_check'
-  | 'external_integration_evidence'
-  | 'observability_evidence'
-  | 'governed_read_only_evidence';
-
 type BehaviorNodeArtifact = BehaviorNode & {
   validationRequirements: BehaviorValidationRequirement[];
   governedEvidenceMode: 'read_only_evidence' | 'sandboxed_execution_with_validation';
@@ -1113,18 +1215,7 @@ function extractCalledFunctions(bodyText: string, allFuncNames: Set<string>): st
     if (
       allFuncNames.has(callee) &&
       !seen.has(callee) &&
-      ![
-        'if',
-        'for',
-        'while',
-        'switch',
-        'catch',
-        'return',
-        'throw',
-        'new',
-        'typeof',
-        'instanceof',
-      ].includes(callee) &&
+      !requireJsReservedWordSet().has(callee) &&
       (callee[0] === callee[0].toUpperCase()) === false
     ) {
       seen.add(callee);
@@ -1514,7 +1605,7 @@ export function generateBehaviorGraph(rootDir: string): BehaviorGraph {
   const artifactDir = path.join(rootDir, '.pulse', 'current');
   ensureDir(artifactDir, { recursive: true });
   writeTextFile(
-    path.join(artifactDir, 'PULSE_BEHAVIOR_GRAPH.json'),
+    path.join(artifactDir, discoverAllObservedArtifactFilenames().behaviorGraph),
     JSON.stringify(graph, null, 2),
   );
 
@@ -1535,12 +1626,13 @@ if (process.env.PULSE_BEHAVIOR_GRAPH_RUN === '1' || require.main === module) {
   const topRisks = graph.nodes
     .filter((n) => n.risk === 'critical' || n.risk === 'high')
     .sort((a, b) => {
+      const risk = requireBehaviorRiskLevelCatalog();
       const order: Record<BehaviorRiskLevel, number> = {
-        critical: 0,
-        high: 1,
-        medium: 2,
-        low: 3,
-        none: 4,
+        [risk.critical]: 0,
+        [risk.high]: 1,
+        [risk.medium]: 2,
+        [risk.low]: 3,
+        [risk.none]: 4,
       };
       return order[a.risk] - order[b.risk];
     })

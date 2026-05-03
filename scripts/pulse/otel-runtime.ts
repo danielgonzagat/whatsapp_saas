@@ -21,6 +21,7 @@ import {
   deriveZeroValue,
   deriveUnitValue,
   deriveHttpStatusFromObservedCatalog,
+  observeStatusTextLengthFromCatalog,
   discoverRouteSeparatorFromRuntime,
   discoverAllObservedArtifactFilenames,
 } from './dynamic-reality-kernel';
@@ -1146,9 +1147,18 @@ function createManualSpanForTrace(
   seed: string,
 ): OtelSpan {
   const edge = findRelevantEdge(name, astCtx, structCtx);
-  const startOffset = spanIndex * 15 + stableNumber(`${seed}:start`, 10);
-  const durationMs = clampDuration(5 + stableNumber(`${seed}:duration`, 200), 1, 5000);
-  const isError = stableNumber(`${seed}:status`, 20) === 0;
+  const startOffset =
+    spanIndex * observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) +
+    stableNumber(`${seed}:start`, deriveHttpStatusFromObservedCatalog('Bad Request'));
+  const durationMs = clampDuration(
+    deriveUnitValue() +
+      observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) +
+      stableNumber(`${seed}:duration`, deriveHttpStatusFromObservedCatalog('OK')),
+    deriveUnitValue(),
+    deriveHttpStatusFromObservedCatalog('Internal Server Error'),
+  );
+  const isError =
+    stableNumber(`${seed}:status`, deriveHttpStatusFromObservedCatalog('OK')) === deriveZeroValue();
   const startTimeMs = startOffset * 100;
   const startTime = stableIso(startTimeMs);
   const endTime = stableIso(startTimeMs + durationMs);
@@ -1478,7 +1488,15 @@ export function collectRuntimeTraces(
     };
   } else {
     const graphSeed = buildStaticTraceSeed(astCtx, structCtx);
-    traces = generateAstBasedTraces(astCtx, structCtx, 8 + stableNumber(`${graphSeed}:count`, 8));
+    traces = generateAstBasedTraces(
+      astCtx,
+      structCtx,
+      observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) +
+        stableNumber(
+          `${graphSeed}:count`,
+          observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')),
+        ),
+    );
     source = 'simulated';
     sourceDetails = {
       kind: 'ast_static_map',
