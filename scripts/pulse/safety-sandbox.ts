@@ -12,6 +12,11 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 import { buildPulseCommandGraph, type PulseCommandPurpose } from './command-graph';
+import {
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+  deriveStringUnionMembersFromTypeContract,
+} from './dynamic-reality-kernel';
 import { ensureDir, pathExists, readJsonFile, writeTextFile } from './safe-fs';
 import type {
   DestructiveAction,
@@ -22,7 +27,6 @@ import type {
   SandboxWorkspace,
 } from './types.safety-sandbox';
 
-const ARTIFACT_FILE_NAME = 'PULSE_SANDBOX_STATE.json';
 const PROTECTED_FILES_PATH = 'ops/protected-governance-files.json';
 
 interface ProtectedGovernanceConfig {
@@ -68,23 +72,36 @@ interface FileEffectGraph {
   backupAvailable: boolean;
 }
 
-const RISK_ORDER: SandboxRiskLevel[] = ['safe', 'normal', 'high', 'critical'];
+let _riskOrderCache: SandboxRiskLevel[] | null = null;
+function getRiskOrder(): SandboxRiskLevel[] {
+  if (!_riskOrderCache) {
+    _riskOrderCache = [...deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.safety-sandbox.ts',
+      'SandboxRiskLevel',
+    )] as SandboxRiskLevel[];
+  }
+  return _riskOrderCache;
+}
+
+let _actionKindGrammarCache: DestructiveActionKind[] | null = null;
+function getActionKindGrammar(): DestructiveActionKind[] {
+  if (!_actionKindGrammarCache) {
+    _actionKindGrammarCache = [...deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.safety-sandbox.ts',
+      'DestructiveActionKind',
+    )] as DestructiveActionKind[];
+  }
+  return _actionKindGrammarCache;
+}
 
 // ────────────────────────────────────────────────────────────────────────────
 // Sandbox Isolation Rules
 // ────────────────────────────────────────────────────────────────────────────
 
-const DEFAULT_LOGICAL_SANDBOX_MINUTES = RISK_ORDER.length * RISK_ORDER.length;
-const ACTION_KIND_GRAMMAR: DestructiveActionKind[] = [
-  'migration',
-  'external_state_mutation',
-  'access_boundary_change',
-  'infra_change',
-  'secret_access',
-  'delete_operation',
-  'governance_change',
-  'protected_file_edit',
-];
+function getDefaultLogicalSandboxMinutes(): number {
+  const len = getRiskOrder().length;
+  return len * len;
+}
 
 // ────────────────────────────────────────────────────────────────────────────
 // Effect Graph Detection
@@ -254,12 +271,12 @@ function deriveActionKindsFromEffectGraph(graph: FileEffectGraph): Array<{
 
 function maxRisk(...levels: SandboxRiskLevel[]): SandboxRiskLevel {
   return levels.reduce((max, level) =>
-    RISK_ORDER.indexOf(level) > RISK_ORDER.indexOf(max) ? level : max,
+    getRiskOrder().indexOf(level) > getRiskOrder().indexOf(max) ? level : max,
   );
 }
 
 function hasPatchEffects(graph: FileEffectGraph): boolean {
-  return graph.patchEffects.size > Number.parseInt('0', 10);
+  return graph.patchEffects.size > deriveZeroValue();
 }
 
 function buildEmptyEffectGraph(kind: DestructiveActionKind): FileEffectGraph {
@@ -692,13 +709,13 @@ export function createLogicalSandbox(params: {
   const now = new Date();
   const maxRisk = params.actionKinds.reduce<SandboxRiskLevel>((max, kind) => {
     const risk = deriveRiskLevelFromEffectGraph(kind, null);
-    return RISK_ORDER.indexOf(risk) > RISK_ORDER.indexOf(max) ? risk : max;
+    return getRiskOrder().indexOf(risk) > getRiskOrder().indexOf(max) ? risk : max;
   }, 'safe' as SandboxRiskLevel);
 
   const maxMinutes = params.actionKinds.reduce((max, kind) => {
     const rules = deriveIsolationRules(kind, params.rootDir);
     return Math.max(max, rules.maxActiveMinutes);
-  }, DEFAULT_LOGICAL_SANDBOX_MINUTES);
+  }, getDefaultLogicalSandboxMinutes());
 
   const expiresAt = new Date(now.getTime() + maxMinutes * 60 * 1000);
 
@@ -795,7 +812,7 @@ function deriveMaxActiveMinutes(input: {
   preValidationCommands: string[];
   postValidationCommands: string[];
 }): number {
-  const riskWeight = RISK_ORDER.indexOf(input.riskLevel) + RISK_ORDER.length;
+  const riskWeight = getRiskOrder().indexOf(input.riskLevel) + getRiskOrder().length;
   const proofSteps = [
     input.requirements.requiresDryRun,
     input.requirements.requiresBackup,
@@ -804,7 +821,7 @@ function deriveMaxActiveMinutes(input: {
   ].filter(Boolean).length;
   const validationSteps = input.preValidationCommands.length + input.postValidationCommands.length;
 
-  return DEFAULT_LOGICAL_SANDBOX_MINUTES * (riskWeight + proofSteps + validationSteps);
+  return getDefaultLogicalSandboxMinutes() * (riskWeight + proofSteps + validationSteps);
 }
 
 function deriveIsolationRules(
@@ -848,7 +865,7 @@ export function getIsolationRules(
 }
 
 export function getAllIsolationRules(rootDir: string | null = null): SandboxIsolationRules[] {
-  return ACTION_KIND_GRAMMAR.map((kind) => deriveIsolationRules(kind, rootDir));
+  return getActionKindGrammar().map((kind) => deriveIsolationRules(kind, rootDir));
 }
 
 /**
@@ -892,7 +909,7 @@ export function buildSandboxState(rootDir: string): SandboxState {
     (a) => a.kind.includes('governance') || a.kind.includes('protected'),
   ).length;
 
-  const riskBreakdown = RISK_ORDER.reduce(
+  const riskBreakdown = getRiskOrder().reduce(
     (breakdown, level) => ({
       ...breakdown,
       [level]: destructiveActions.filter((a) => a.riskLevel === level).length,
@@ -921,7 +938,10 @@ export function buildSandboxState(rootDir: string): SandboxState {
 
   const pulseDir = path.join(rootDir, '.pulse', 'current');
   ensureDir(pulseDir, { recursive: true });
-  writeTextFile(path.join(pulseDir, ARTIFACT_FILE_NAME), JSON.stringify(state, null, 2));
+  writeTextFile(
+    path.join(pulseDir, discoverAllObservedArtifactFilenames().sandboxState || 'PULSE_SANDBOX_STATE.json'),
+    JSON.stringify(state, null, 2),
+  );
 
   return state;
 }
