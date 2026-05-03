@@ -9,6 +9,7 @@
  * Artifact stored at: .pulse/current/PULSE_CONTRACT_EVIDENCE.json
  */
 
+import { builtinModules } from 'node:module';
 import * as path from 'path';
 import * as fs from 'node:fs';
 import type { Dirent } from 'fs';
@@ -27,9 +28,10 @@ import { ensureDir, pathExists, readDir, readTextFile } from './safe-fs';
 import { safeJoin } from './lib/safe-path';
 import { walkFiles } from './parsers/utils';
 import {
+  deriveStringUnionMembersFromTypeContract,
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
-  deriveStringUnionMembersFromTypeContract,
+  discoverStructuralNodeKindLabels,
 } from './dynamic-reality-kernel';
 
 // ---------------------------------------------------------------------------
@@ -42,6 +44,41 @@ const CONTRACT_EVIDENCE_FILENAME =
 const MIGRATIONS_DIRS = ['backend/prisma/migrations', 'prisma/migrations'];
 
 const HTTP_METHOD_PATTERN = /\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/;
+
+// ── Kernel-derived type-union catalogs ──────────────────────────────────────
+
+const CONTRACT_STATUS_LABELS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.contract-tester.ts',
+  'ContractStatus',
+);
+
+const DIFF_SEVERITY_LABELS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.contract-tester.ts',
+  'SchemaDiffSeverity',
+);
+
+const AUTH_TYPE_LABELS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.contract-tester.ts',
+  'authType',
+);
+
+const NODE_KIND_LABELS = discoverStructuralNodeKindLabels();
+
+function isContractStatus(s: string, label: string): boolean {
+  return CONTRACT_STATUS_LABELS.has(s) && s === label;
+}
+
+function isDiffSeverity(s: string, label: string): boolean {
+  return DIFF_SEVERITY_LABELS.has(s) && s === label;
+}
+
+function isAuthType(s: string, label: string): boolean {
+  return AUTH_TYPE_LABELS.has(s) && s === label;
+}
+
+function isNodeKind(s: string, label: string): boolean {
+  return NODE_KIND_LABELS.has(s) && s === label;
+}
 
 // ---------------------------------------------------------------------------
 // SQL parsing matchers for destructive migration operations
@@ -79,12 +116,12 @@ export function buildContractTestEvidence(rootDir: string): ContractTestEvidence
   generateContractTestCases(merged);
 
   const totalContracts = merged.length;
-  const validContracts = merged.filter((c) => c.status === 'valid').length;
-  const brokenContracts = merged.filter((c) => c.status === 'broken').length;
+  const validContracts = merged.filter((c) => isContractStatus(c.status, 'valid')).length;
+  const brokenContracts = merged.filter((c) => isContractStatus(c.status, 'broken')).length;
   const untestedContracts = merged.filter(
-    (c) => c.status === 'untested' || c.status === 'unknown',
+    (c) => isContractStatus(c.status, 'untested') || isContractStatus(c.status, 'unknown'),
   ).length;
-  const breakingChanges = schemaDiffs.filter((d) => d.severity === 'breaking').length;
+  const breakingChanges = schemaDiffs.filter((d) => isDiffSeverity(d.severity, 'breaking')).length;
   const destructiveMigrations = migrationChecks.filter((m) => m.destructive).length;
 
   const evidence: ContractTestEvidence = {
@@ -159,7 +196,7 @@ export function mergeContracts(
       result.push({
         ...baseline,
         expectedHeaders: uniqueStrings([...baseline.expectedHeaders, ...dc.expectedHeaders]),
-        authType: baseline.authType === 'none' ? dc.authType : baseline.authType,
+        authType: isAuthType(baseline.authType, 'none') ? dc.authType : baseline.authType,
         status: 'untested',
         lastValidated: null,
         issues: uniqueStrings([
@@ -299,19 +336,7 @@ function looksLikeExternalSdkImport(packageName: string): boolean {
     !packageName.startsWith('@types/') &&
     !packageName.startsWith('@prisma/') &&
     !packageName.startsWith('node:') &&
-    ![
-      'fs',
-      'path',
-      'crypto',
-      'util',
-      'events',
-      'stream',
-      'http',
-      'https',
-      'url',
-      'zlib',
-      'os',
-    ].includes(packageName)
+    !builtinModules.includes(packageName)
   );
 }
 
@@ -706,7 +731,7 @@ function dedupeContracts(contracts: ProviderContract[]): ProviderContract[] {
           ? existing.expectedResponseSchema
           : contract.expectedResponseSchema,
       expectedHeaders: uniqueStrings([...existing.expectedHeaders, ...contract.expectedHeaders]),
-      authType: existing.authType === 'none' ? contract.authType : existing.authType,
+      authType: isAuthType(existing.authType, 'none') ? contract.authType : existing.authType,
       issues: uniqueStrings([...existing.issues, ...contract.issues]),
     });
   }
@@ -735,7 +760,7 @@ export function generateContractTestCases(contracts: ProviderContract[]): number
   let count = 0;
 
   for (const contract of contracts) {
-    if (contract.status === 'generated' || contract.status === 'unknown') {
+    if (isContractStatus(contract.status, 'generated') || isContractStatus(contract.status, 'unknown')) {
       contract.status = 'generated';
       if (!contract.issues.includes('Contract test case generated — awaiting live execution')) {
         contract.issues.push('Contract test case generated — awaiting live execution');
@@ -1184,7 +1209,7 @@ interface EndpointDescriptor {
 }
 
 function loadCurrentEndpoints(rootDir: string): EndpointDescriptor[] {
-  const structuralPath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_STRUCTURAL_GRAPH.json');
+  const structuralPath = safeJoin(rootDir, '.pulse', 'current', discoverAllObservedArtifactFilenames().structuralGraph);
 
   if (pathExists(structuralPath)) {
     try {
@@ -1193,7 +1218,7 @@ function loadCurrentEndpoints(rootDir: string): EndpointDescriptor[] {
       const endpoints: EndpointDescriptor[] = [];
 
       for (const node of graph.nodes) {
-        if (node.kind === 'backend_route' || node.kind === 'proxy_route') {
+        if (isNodeKind(node.kind, 'backend_route') || isNodeKind(node.kind, 'proxy_route')) {
           const method = extractNodeHttpMethod(node);
           const route = extractNodeRoute(node);
           if (method && route) {
