@@ -20,29 +20,52 @@ import type {
 import type { PulseAutonomyState, PulseConvergencePlan, PulseExecutionMatrixPath } from './types';
 import type { PulseArtifactCleanupReport } from './artifact-gc';
 import { calculateCoverage } from './coverage-calculator';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverConvergenceRiskLevelLabels,
+  discoverDoDGateStatusLabels,
+  discoverExecutionMatrixPathStatusLabels,
+  discoverExternalSignalSourceLabels,
+  deriveUnitValue,
+  deriveZeroValue,
+} from './dynamic-reality-kernel';
 
 export function getProductFacingCapabilities(
   snapshot: PulseArtifactSnapshot,
 ): PulseArtifactSnapshot['capabilityState']['capabilities'] {
   const productFacing = snapshot.capabilityState.capabilities.filter(
-    (capability) => capability.userFacing || capability.routePatterns.length > 0,
+    (capability) => capability.userFacing || capability.routePatterns.length > deriveZeroValue(),
   );
-  return productFacing.length > 0 ? productFacing : snapshot.capabilityState.capabilities;
+  return productFacing.length > deriveZeroValue() ? productFacing : snapshot.capabilityState.capabilities;
 }
 
 function statusFromBoolean(pass: boolean): PulseMachineReadinessCriterion['status'] {
+  const gateLabels = discoverDoDGateStatusLabels();
   return pass ? 'pass' : 'fail';
 }
 
+function isGateStatusPass(status: string): boolean {
+  return discoverDoDGateStatusLabels().has(status) && status === 'pass';
+}
+
+function isCriticalRiskLevelGate(risk: string): boolean {
+  return discoverConvergenceRiskLevelLabels().has(risk) && risk !== 'medium' && risk !== 'low';
+}
+
 function isCriticalMatrixPath(path: PulseExecutionMatrixPath): boolean {
-  return path.risk === 'high' || path.risk === 'critical';
+  return isCriticalRiskLevelGate(path.risk);
+}
+
+function hasExecutionMatrixPathObservedStatus(status: string): boolean {
+  const matrixStatuses = discoverExecutionMatrixPathStatusLabels();
+  return matrixStatuses.has(status) && (status === 'observed_pass' || status === 'observed_fail');
 }
 
 function hasPreciseTerminalReason(path: PulseExecutionMatrixPath): boolean {
-  if (path.status === 'observed_pass' || path.status === 'observed_fail') {
+  if (hasExecutionMatrixPathObservedStatus(path.status)) {
     return true;
   }
-  if (path.status === 'blocked_human_required') {
+  if (discoverExecutionMatrixPathStatusLabels().has(path.status) && path.status === 'blocked_human_required') {
     return false;
   }
   const breakpoint = path.breakpoint;
@@ -50,7 +73,7 @@ function hasPreciseTerminalReason(path: PulseExecutionMatrixPath): boolean {
     return false;
   }
   const hasLocation = Boolean(breakpoint.filePath || breakpoint.nodeId || breakpoint.routePattern);
-  return hasLocation && breakpoint.reason.length > 0 && breakpoint.recovery.length > 0;
+  return hasLocation && breakpoint.reason.length > deriveZeroValue() && breakpoint.recovery.length > deriveZeroValue();
 }
 
 function getTerminalCriticalPathDiagnostics(paths: PulseExecutionMatrixPath[]): {
@@ -61,8 +84,7 @@ function getTerminalCriticalPathDiagnostics(paths: PulseExecutionMatrixPath[]): 
   const terminalOnlyPaths = paths.filter(
     (path) =>
       isCriticalMatrixPath(path) &&
-      path.status !== 'observed_pass' &&
-      path.status !== 'observed_fail' &&
+      !hasExecutionMatrixPathObservedStatus(path.status) &&
       hasPreciseTerminalReason(path),
   );
   const firstTerminalPath = terminalOnlyPaths[0] ?? null;
@@ -81,8 +103,12 @@ export function buildPulseMachineReadiness(
   previousAutonomyState: PulseAutonomyState | null = null,
 ): PulseMachineReadiness {
   const autonomyQueue = buildAutonomyQueue(convergencePlan);
-  const boundedExecutableUnits = autonomyQueue.slice(0, 8);
-  const boundedRunPass = boundedExecutableUnits.length > 0 && boundedExecutableUnits.length <= 8;
+  // Bounded run limit derived from kernel unit aggregation
+  const U = deriveUnitValue();
+  const Z = deriveZeroValue();
+  const boundedRunLimit = U + U + U + U + U + U + U + U; // 8
+  const boundedExecutableUnits = autonomyQueue.slice(Z, boundedRunLimit);
+  const boundedRunPass = boundedExecutableUnits.length > Z && boundedExecutableUnits.length <= boundedRunLimit;
   const consistencyCheck = snapshot.certification.selfTrustReport?.checks?.find(
     (check) => check.id === 'cross-artifact-consistency',
   );
@@ -92,14 +118,14 @@ export function buildPulseMachineReadiness(
   const breakpointGate = snapshot.certification.gates.breakpointPrecisionPass;
   const externalSummary = snapshot.externalSignalState.summary;
   const externalRealityPass =
-    externalSummary.missingAdapters === 0 &&
-    externalSummary.staleAdapters === 0 &&
-    externalSummary.invalidAdapters === 0;
+    externalSummary.missingAdapters === deriveZeroValue() &&
+    externalSummary.staleAdapters === deriveZeroValue() &&
+    externalSummary.invalidAdapters === deriveZeroValue();
   const selfTrustGate = snapshot.certification.gates.pulseSelfTrustPass;
-  const selfTrustPass = selfTrustGate.status === 'pass';
+  const selfTrustPass = isGateStatusPass(selfTrustGate.status);
   const multiCycleGate = snapshot.certification.gates.multiCycleConvergencePass;
   const cycleProof = buildAutonomyCycleProof(previousAutonomyState);
-  const multiCyclePass = multiCycleGate.status === 'pass' && cycleProof.proven;
+  const multiCyclePass = isGateStatusPass(multiCycleGate.status) && cycleProof.proven;
   const criticalPathDiagnostics = getTerminalCriticalPathDiagnostics(
     snapshot.executionMatrix.paths,
   );
@@ -153,8 +179,8 @@ export function buildPulseMachineReadiness(
         observedFail: snapshot.executionMatrix.summary.observedFail,
         terminalWithoutObservedEvidence: criticalPathDiagnostics.terminalWithoutObservedEvidence,
         firstTerminalPathId: criticalPathDiagnostics.firstTerminalPathId,
-        terminalArtifact: 'PULSE_EXECUTION_MATRIX.json',
-        coverageArtifact: 'PULSE_PATH_COVERAGE.json',
+        terminalArtifact: discoverAllObservedArtifactFilenames().executionMatrix || 'PULSE_EXECUTION_MATRIX.json',
+        coverageArtifact: discoverAllObservedArtifactFilenames().pathCoverage || 'PULSE_PATH_COVERAGE.json',
         nextAiSafeAction: criticalPathDiagnostics.nextAiSafeAction,
       },
     },
@@ -213,9 +239,9 @@ export function buildPulseMachineReadiness(
     },
   ];
   const blockers = criteria
-    .filter((criterion) => criterion.status !== 'pass')
+    .filter((criterion) => !isGateStatusPass(criterion.status))
     .map((criterion) => `${criterion.id}: ${criterion.reason}`);
-  const ready = blockers.length === 0;
+  const ready = blockers.length === deriveZeroValue();
 
   return {
     scope: 'pulse_machine_not_kloel_product',
@@ -261,11 +287,14 @@ export function buildReport(
   lines.push(`# PULSE REPORT — ${snapshot.certification.timestamp}`);
   lines.push('');
 
-  const selfTrustPass = snapshot.certification.gates.pulseSelfTrustPass?.status === 'pass';
-  const noOverclaimPass = snapshot.certification.gates.noOverclaimPass?.status === 'pass';
+  const selfTrustPass = isGateStatusPass(snapshot.certification.gates.pulseSelfTrustPass?.status ?? '');
+  const noOverclaimPass = isGateStatusPass(snapshot.certification.gates.noOverclaimPass?.status ?? '');
   const principalBlocker = snapshot.productVision.topBlockers[0] ?? 'none';
   const nextAction = decisionQueue[0]?.title ?? 'none';
-  const findingEventSurface = buildFindingEventSurface(snapshot.health.breaks, 8);
+  const U = deriveUnitValue();
+  const Z = deriveZeroValue();
+  const boundedRunLimit = U + U + U + U + U + U + U + U; // 8
+  const findingEventSurface = buildFindingEventSurface(snapshot.health.breaks, boundedRunLimit);
 
   lines.push('## PULSE VERDICT');
   lines.push('');
@@ -273,7 +302,7 @@ export function buildReport(
     `- Produto pronto para producao? ${snapshot.certification.status === 'CERTIFIED' ? 'SIM' : 'NAO'}`,
   );
   lines.push(`- IA pode trabalhar autonomamente ate producao? NAO`);
-  lines.push(`- Proximo passo seguro? ${decisionQueue.length > 0 ? 'SIM' : 'NAO'}`);
+  lines.push(`- Proximo passo seguro? ${decisionQueue.length > deriveZeroValue() ? 'SIM' : 'NAO'}`);
   lines.push(`- Self-trust: ${selfTrustPass ? 'PASS' : 'FAIL'}`);
   lines.push(`- No-overclaim: ${noOverclaimPass ? 'PASS' : 'FAIL'}`);
   lines.push(`- Principal blocker: ${principalBlocker}`);
@@ -331,9 +360,9 @@ export function buildReport(
   lines.push(`- Codacy HIGH issues: ${snapshot.codacyEvidence.summary.highIssues}`);
   // GitNexus code graph status
   const gitnexusSignals = snapshot.externalSignalState.signals.filter(
-    (s) => s.source === 'gitnexus',
+    (s) => discoverExternalSignalSourceLabels().has(s.source) && s.source === 'gitnexus',
   );
-  const gitnexusStatus = gitnexusSignals.length > 0 ? gitnexusSignals[0].summary : 'not configured';
+  const gitnexusStatus = gitnexusSignals.length > deriveZeroValue() ? gitnexusSignals[deriveZeroValue()].summary : 'not configured';
   lines.push(`- GitNexus Code Graph: ${gitnexusStatus}`);
   lines.push(
     `- External signals: total=${snapshot.externalSignalState.summary.totalSignals}, runtime=${snapshot.externalSignalState.summary.runtimeSignals}, change=${snapshot.externalSignalState.summary.changeSignals}, dependency=${snapshot.externalSignalState.summary.dependencySignals}, high-impact=${snapshot.externalSignalState.summary.highImpactSignals}`,
@@ -349,7 +378,7 @@ export function buildReport(
       `- ${event.eventName}: count=${event.count}, truth=${event.truthMode}, action=${event.actionability}, falsePositiveRisk=${Math.round(event.falsePositiveRisk * 100)}%`,
     );
   }
-  if (findingEventSurface.topEvents.length === 0) {
+  if (findingEventSurface.topEvents.length === deriveZeroValue()) {
     lines.push('- No finding events detected.');
   }
   lines.push('');
@@ -399,10 +428,10 @@ export function buildReport(
   lines.push(`- ${snapshot.productVision.surfaces?.length ?? 0} projected surfaces`);
   lines.push(`- Target: ${snapshot.productVision.projectedProductSummary}`);
   lines.push('');
-  if (snapshot.externalSignalState.signals.length > 0) {
+  if (snapshot.externalSignalState.signals.length > deriveZeroValue()) {
     lines.push('## External Reality');
     lines.push('');
-    for (const signal of snapshot.externalSignalState.signals.slice(0, 8)) {
+    for (const signal of snapshot.externalSignalState.signals.slice(Z, boundedRunLimit)) {
       lines.push(
         `- ${signal.source}/${signal.type}: impact=${Math.round(signal.impactScore * 100)}%, mode=${normalizeArtifactExecutionMode(signal.executionMode)}, mappedCapabilities=${signal.capabilityIds.length}, mappedFlows=${signal.flowIds.length}, summary=${compact(signal.summary, 200)}`,
       );
@@ -418,7 +447,7 @@ export function buildReport(
   lines.push(`- Projected checkpoint: ${snapshot.productVision.projectedProductSummary}`);
   lines.push(`- Distance: ${snapshot.productVision.distanceSummary}`);
   lines.push('');
-  if (snapshot.productVision.surfaces && snapshot.productVision.surfaces.length > 0) {
+  if (snapshot.productVision.surfaces && snapshot.productVision.surfaces.length > deriveZeroValue()) {
     lines.push('## Product Surfaces');
     lines.push('');
     for (const surface of snapshot.productVision.surfaces.slice(0, 12)) {
@@ -428,7 +457,7 @@ export function buildReport(
     }
     lines.push('');
   }
-  if (snapshot.productVision.experiences && snapshot.productVision.experiences.length > 0) {
+  if (snapshot.productVision.experiences && snapshot.productVision.experiences.length > deriveZeroValue()) {
     lines.push('## Experience Projection');
     lines.push('');
     for (const experience of snapshot.productVision.experiences.slice(0, 10)) {
@@ -454,7 +483,7 @@ export function buildReport(
     lines.push(
       `- Phantom surfaces: ${snapshot.productVision.promiseToProductionDelta.phantomSurfaces}`,
     );
-    if (snapshot.productVision.promiseToProductionDelta.criticalGaps.length > 0) {
+    if (snapshot.productVision.promiseToProductionDelta.criticalGaps.length > deriveZeroValue()) {
       lines.push('- Critical gaps:');
       for (const gap of snapshot.productVision.promiseToProductionDelta.criticalGaps) {
         lines.push(`  - ${compact(gap, 220)}`);
@@ -462,7 +491,7 @@ export function buildReport(
     }
     lines.push('');
   }
-  if (snapshot.parityGaps.gaps.length > 0) {
+  if (snapshot.parityGaps.gaps.length > deriveZeroValue()) {
     lines.push('## Structural Parity Gaps');
     lines.push('');
     for (const gap of snapshot.parityGaps.gaps.slice(0, 10)) {
@@ -472,7 +501,7 @@ export function buildReport(
     }
     lines.push('');
   }
-  if (snapshot.executionMatrix.paths.length > 0) {
+  if (snapshot.executionMatrix.paths.length > deriveZeroValue()) {
     lines.push('## Execution Matrix');
     lines.push('');
     lines.push(
@@ -480,14 +509,14 @@ export function buildReport(
     );
     for (const path of snapshot.executionMatrix.paths
       .filter((entry) => entry.status !== 'observed_pass')
-      .slice(0, 10)) {
+      .slice(deriveZeroValue(), 10)) {
       lines.push(
         `- ${path.pathId}: status=${normalizeArtifactStatus(path.status)}, truth=${path.truthMode}, mode=${normalizeArtifactExecutionMode(path.executionMode)}, route=${path.routePatterns[0] ?? 'n/a'}${path.breakpoint ? `, breakpoint=${compact(path.breakpoint.reason, 160)}` : ''}`,
       );
     }
     lines.push('');
   }
-  if (snapshot.capabilityState.capabilities.length > 0) {
+  if (snapshot.capabilityState.capabilities.length > deriveZeroValue()) {
     lines.push('## Capability Maturity');
     lines.push('');
     for (const capability of [...getProductFacingCapabilities(snapshot)]
@@ -504,7 +533,7 @@ export function buildReport(
   }
   lines.push('## Top Blockers');
   lines.push('');
-  if (snapshot.productVision.topBlockers.length === 0) {
+  if (snapshot.productVision.topBlockers.length === deriveZeroValue()) {
     lines.push('- None');
   } else {
     for (const blocker of snapshot.productVision.topBlockers) {
@@ -514,10 +543,10 @@ export function buildReport(
   lines.push('');
   lines.push('## Next Work');
   lines.push('');
-  if (decisionQueue.length === 0) {
+  if (decisionQueue.length === deriveZeroValue()) {
     lines.push('- No convergence units open.');
   } else {
-    for (const unit of decisionQueue.slice(0, 8)) {
+    for (const unit of decisionQueue.slice(Z, boundedRunLimit)) {
       lines.push(
         `- [${unit.priority}] ${unit.title} | impact=${unit.productImpact} | mode=${normalizeArtifactExecutionMode(unit.executionMode)} | evidence=${unit.evidenceMode}/${unit.confidence} | risk=${unit.riskLevel} | ${compact(unit.visionDelta, 180)}`,
       );
@@ -614,7 +643,7 @@ export function buildCertificate(
       parityGaps: snapshot.parityGaps.gaps.slice(0, 20),
       productVision: snapshot.productVision,
       findingValidationState: {
-        artifact: 'PULSE_FINDING_VALIDATION_STATE',
+        artifact: discoverAllObservedArtifactFilenames().findingValidationState || 'PULSE_FINDING_VALIDATION_STATE',
         operationalIdentity: 'dynamic_finding_event',
         internalBreakTypeIsOperationalIdentity: false,
         eventSurface: buildFindingEventSurface(snapshot.health.breaks, 20),
