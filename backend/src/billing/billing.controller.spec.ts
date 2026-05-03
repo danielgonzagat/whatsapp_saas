@@ -1,6 +1,18 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test, type TestingModule } from '@nestjs/testing';
 
+jest.mock('@nestjs/throttler', () => {
+  const actual = jest.requireActual<typeof import('@nestjs/throttler')>('@nestjs/throttler');
+  return {
+    ...actual,
+    ThrottlerGuard: class SpecThrottlerGuard {
+      canActivate() {
+        return true;
+      }
+    },
+  };
+});
+
 import { BillingController } from './billing.controller';
 import { BillingService } from './billing.service';
 

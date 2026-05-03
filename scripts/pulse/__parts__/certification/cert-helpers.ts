@@ -28,6 +28,7 @@ import type {
 
 import type { PulseAutonomyStateSnapshot } from '../../cert-gate-multi-cycle';
 import type { PulsePathCoverageGateState } from '../../cert-gate-execution-matrix';
+import type { PulseEnvironment } from '../../types.health';
 
 import { pathExists, readJsonFile } from '../../safe-fs';
 import { safeJoin } from '../../safe-path';
@@ -42,7 +43,7 @@ import type { PulseNoHardcodedRealitySummary } from '../../no-hardcoded-reality-
 export const NO_HARDCODED_REALITY_ARTIFACT = 'PULSE_NO_HARDCODED_REALITY.json';
 
 export interface GateBuildContext {
-  env: string;
+  env: PulseEnvironment;
   manifest: PulseManifest | null;
   certificationTarget: PulseCertificationTarget;
   certificationTiers: PulseManifest['certificationTiers'];

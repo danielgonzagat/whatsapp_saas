@@ -22,6 +22,8 @@ describe('TeamService', () => {
       findUnique: jest.Mock;
       create: jest.Mock;
       delete: jest.Mock;
+      count: jest.Mock;
+      update: jest.Mock;
     };
     invitation: {
       findMany: jest.Mock;
@@ -45,6 +47,8 @@ describe('TeamService', () => {
         findUnique: jest.fn(),
         create: jest.fn(),
         delete: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
+        update: jest.fn(),
       },
       invitation: {
         findMany: jest.fn(),
