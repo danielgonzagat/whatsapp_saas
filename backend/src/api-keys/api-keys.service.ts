@@ -1,4 +1,4 @@
-import { createHash, pbkdf2Sync, randomBytes, timingSafeEqual } from 'node:crypto';
+import { pbkdf2Sync, randomBytes, timingSafeEqual } from 'node:crypto';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -24,24 +24,23 @@ export class ApiKeysService {
     return `${salt.toString('hex')}:${derivedKey.toString('hex')}`;
   }
 
-  /** Verify presented key against stored hash (supports legacy sha256 hashes). */
+  /** Verify presented key against stored PBKDF2 hash. */
   private verifyStoredKey(rawKey: string, storedKey: string): boolean {
     const parts = storedKey.split(':');
-    if (parts.length === 2) {
-      const [saltHex, derivedHex] = parts;
-      const salt = Buffer.from(saltHex, 'hex');
-      const expected = Buffer.from(derivedHex, 'hex');
-      const actual = pbkdf2Sync(rawKey, salt, 210000, expected.length, 'sha256');
-      return expected.length === actual.length && timingSafeEqual(expected, actual);
+    if (parts.length !== 2) {
+      return false;
     }
 
-    // Legacy format compatibility: unsalted sha256 hex
-    const legacyExpected = Buffer.from(storedKey, 'hex');
-    const legacyActual = Buffer.from(createHash('sha256').update(rawKey).digest('hex'), 'hex');
-    return (
-      legacyExpected.length === legacyActual.length &&
-      timingSafeEqual(legacyExpected, legacyActual)
-    );
+    const [saltHex, derivedHex] = parts;
+    const salt = Buffer.from(saltHex, 'hex');
+    const expected = Buffer.from(derivedHex, 'hex');
+
+    if (salt.length === 0 || expected.length === 0) {
+      return false;
+    }
+
+    const actual = pbkdf2Sync(rawKey, salt, 210000, expected.length, 'sha256');
+    return expected.length === actual.length && timingSafeEqual(expected, actual);
   }
 
   /** List. */
