@@ -18,7 +18,7 @@ export function evaluateTruthExtractionGate(
   scopeState: PulseScopeState,
   capabilityState?: PulseCapabilityState,
   flowProjection?: PulseFlowProjection,
-): import('../types').PulseGateResult {
+): import('../../types').PulseGateResult {
   if (codebaseTruth.summary.totalPages === 0 || resolvedManifest.summary.totalModules === 0) {
     return gateFail(
       'Code-derived truth extraction did not discover frontend pages or modules.',
@@ -80,7 +80,7 @@ export function evaluateTruthExtractionGate(
 }
 
 export function evaluatePulseSelfTrustGate(
-  parserInventory: import('../types').PulseParserInventory,
+  parserInventory: import('../../types').PulseParserInventory,
   capabilityState?: PulseCapabilityState,
   flowProjection?: PulseFlowProjection,
   selfTrustReport?: {
@@ -92,8 +92,8 @@ export function evaluatePulseSelfTrustGate(
       severity?: 'critical' | 'high' | 'medium';
     }>;
   } | null,
-  executionTrace?: import('../types').PulseExecutionTrace,
-): import('../types').PulseGateResult {
+  executionTrace?: import('../../types').PulseExecutionTrace,
+): import('../../types').PulseGateResult {
   const passedParserPhases = new Set(
     (executionTrace?.phases ?? [])
       .filter((phase) => phase.phase.startsWith('parser:') && phase.phaseStatus === 'passed')

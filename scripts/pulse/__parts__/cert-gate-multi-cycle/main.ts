@@ -3,7 +3,7 @@ import { gateFail } from '../../cert-gate-evaluators';
 import { analyzeCycle, formatCycleLabel, formatNumericTransition } from './cycle-analysis';
 
 export interface PulseAutonomyStateSnapshot {
-  history?: import('../types').PulseAutonomyIterationRecord[];
+  history?: import('../../types').PulseAutonomyIterationRecord[];
 }
 
 export const REQUIRED_NON_REGRESSING_CYCLES = 3;

@@ -22,7 +22,7 @@ type SourceExternalContext = {
 
 type SourceFileTarget = {
   filePath: string;
-  sourceRoot: import('../source-root-detector').DetectedSourceRoot;
+  sourceRoot: import('../../source-root-detector').DetectedSourceRoot;
 };
 
 type BehaviorValidationRequirement =

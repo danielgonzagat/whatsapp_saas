@@ -122,7 +122,7 @@ function buildSkippedResult(
 }
 
 export async function executePathProofPlan(
-  plan: import('../path-proof-runner').PathProofPlan,
+  plan: import('../../path-proof-runner').PathProofPlan,
   options: ExecutePathProofPlanOptions = {},
 ): Promise<PathProofExecutionRun> {
   const cwd = options.cwd ?? process.cwd();

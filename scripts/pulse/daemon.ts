@@ -4,7 +4,7 @@ export {
   classifyWatchChange,
   getWatchRefreshMode,
   shouldRescanForWatchChange,
-} from './__parts__/daemon/types';
-export type { PulseWatchChangeKind, PulseWatchRefreshMode } from './__parts__/daemon/types';
-export { refreshScanResultForWatchChange, rebuildDerivedScanState } from './__parts__/daemon/types';
-export { startDaemon } from './__parts__/daemon/types';
+} from './daemon-watch-classifier';
+export type { PulseWatchChangeKind, PulseWatchRefreshMode } from './daemon-watch-classifier';
+export { refreshScanResultForWatchChange, rebuildDerivedScanState } from './daemon-watch-state';
+export { startDaemon } from './daemon-watch';

@@ -222,10 +222,10 @@ export function buildEvidenceEntry(
 }
 
 export function summarize(
-  plan: import('../path-proof-runner').PathProofPlan,
+  plan: import('../../path-proof-runner').PathProofPlan,
   runnerResults: PathProofRunnerResult[],
   tasks: PathProofEvidenceEntry[],
-): import('../path-proof-evidence').PathProofEvidenceArtifact['summary'] {
+): import('../../path-proof-evidence').PathProofEvidenceArtifact['summary'] {
   return {
     totalTasks: tasks.length,
     runnerResults: runnerResults.length,

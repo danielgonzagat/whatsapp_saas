@@ -19,7 +19,7 @@ export function evaluateEvidenceFreshGate(
   evidence: PulseExecutionEvidence,
   codacy: PulseCodacySummary,
   externalSignalState?: PulseExternalSignalState,
-): import('../types').PulseGateResult {
+): import('../../types').PulseGateResult {
   if (evidence.executionTrace.phases.length === 0) {
     return gateFail(
       'Execution trace is missing, so the certification run cannot prove which phases actually executed.',
@@ -86,7 +86,9 @@ export function evaluateEvidenceFreshGate(
 
 import type { PulseScopeState } from '../../types';
 
-export function evaluateScopeGate(scopeState: PulseScopeState): import('../types').PulseGateResult {
+export function evaluateScopeGate(
+  scopeState: PulseScopeState,
+): import('../../types').PulseGateResult {
   if (scopeState.parity.status === 'pass') {
     return { status: 'pass', reason: scopeState.parity.reason };
   }
@@ -97,7 +99,7 @@ export function evaluateStaticGate(
   health: PulseHealth,
   manifest: PulseManifest | null,
   codacy: PulseCodacySummary,
-): import('../types').PulseGateResult {
+): import('../../types').PulseGateResult {
   const blockingBreaks = filterBlockingBreaks(health.breaks, undefined, manifest);
   if (blockingBreaks.length === 0 && codacy.severityCounts.HIGH === 0) {
     return {
@@ -115,7 +117,7 @@ export function evaluateRuntimeGate(
   env: PulseEnvironment,
   evidence: PulseExecutionEvidence,
   externalSignalState?: PulseExternalSignalState,
-): import('../types').PulseGateResult {
+): import('../../types').PulseGateResult {
   const runtimeSignals =
     externalSignalState?.signals
       .filter(isRuntimeExternalSignal)
@@ -172,7 +174,7 @@ export function evaluateRuntimeGate(
 
 export function evaluateChangeRiskGate(
   externalSignalState?: PulseExternalSignalState,
-): import('../types').PulseGateResult {
+): import('../../types').PulseGateResult {
   if (!externalSignalState) {
     return { status: 'pass', reason: 'No external change-risk state was attached for this run.' };
   }
