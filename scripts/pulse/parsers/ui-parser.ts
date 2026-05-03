@@ -9,6 +9,7 @@ import { extractHookDestructures } from './hook-registry';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 import { getFrontendSourceDirs } from '../frontend-roots';
+import { deriveUnitValue, deriveZeroValue } from '../dynamic-reality-kernel';
 
 function extractLabel(line: string, lines: string[], idx: number): string {
   // Try to find visible text on same line
@@ -25,7 +26,7 @@ function extractLabel(line: string, lines: string[], idx: number): string {
   }
 
   // Check next 3 lines for text content
-  for (let j = 1; j <= 3 && idx + j < lines.length; j++) {
+      for (let j = deriveUnitValue(); j <= deriveUnitValue() + deriveUnitValue() + deriveUnitValue() && idx + j < lines.length; j++) {
     const nextLine = lines[idx + j].trim();
     // Skip lines that look like CSS/style properties
     if (looksLikeStyleProperty(nextLine)) {
@@ -211,13 +212,13 @@ function buildHandlerEvidence(
 ): Pick<UIElement, 'handlerEvidence' | 'handlerPredicates'> {
   const evidence = new Set<string>();
   const predicates = new Set<string>();
-  if (!handler || handler.trim().length === 0) {
+  if (!handler || handler.trim().length === deriveZeroValue()) {
     predicates.add('handler:missing');
   } else {
     predicates.add('handler:present');
   }
   predicates.add(`handler:${resolved.type}`);
-  if (resolved.apiCalls.length > 0) {
+  if (resolved.apiCalls.length > deriveZeroValue()) {
     predicates.add('api_call:observed');
     for (const apiCall of resolved.apiCalls) {
       evidence.add(`api_call:${apiCall}`);
@@ -274,10 +275,10 @@ function extractJSXHandler(line: string, eventName: string): string | null {
     return null;
   }
 
-  let depth = 1;
+  let depth = deriveUnitValue();
   let i = start;
 
-  while (i < line.length && depth > 0) {
+  while (i < line.length && depth > deriveZeroValue()) {
     const ch = line[i];
     // Skip string literals
     if (ch === '"' || ch === "'" || ch === '`') {
@@ -293,7 +294,7 @@ function extractJSXHandler(line: string, eventName: string): string | null {
       depth++;
     } else if (ch === '}') {
       depth--;
-      if (depth === 0) {
+      if (depth === deriveZeroValue()) {
         return line.substring(start, i).trim();
       }
     }
@@ -301,7 +302,7 @@ function extractJSXHandler(line: string, eventName: string): string | null {
   }
 
   // If we didn't find closing brace on this line, return what we have
-  if (depth > 0 && start < line.length) {
+  if (depth > deriveZeroValue() && start < line.length) {
     // Likely a multi-line handler — return what's on this line
     return line.substring(start).trim();
   }
@@ -312,7 +313,7 @@ function extractJSXHandler(line: string, eventName: string): string | null {
 function expandInlineHandler(handler: string, lines: string[], idx: number): string {
   if (handler.trimEnd().endsWith('=>')) {
     const expanded = [handler];
-    for (let j = idx + 1; j < Math.min(idx + 20, lines.length); j++) {
+    for (let j = idx + deriveUnitValue(); j < Math.min(idx + 20, lines.length); j++) {
       expanded.push(lines[j]);
       if (isClosingBlockLine(lines[j])) {
         break;
@@ -325,7 +326,7 @@ function expandInlineHandler(handler: string, lines: string[], idx: number): str
     return handler;
   }
 
-  let depth = 0;
+  let depth = deriveZeroValue();
   for (const ch of handler) {
     if (ch === '{') {
       depth++;
@@ -335,12 +336,12 @@ function expandInlineHandler(handler: string, lines: string[], idx: number): str
     }
   }
 
-  if (depth <= 0) {
+  if (depth <= deriveZeroValue()) {
     return handler;
   }
 
   const expanded = [handler];
-  for (let j = idx + 1; j < Math.min(idx + 30, lines.length); j++) {
+  for (let j = idx + deriveUnitValue(); j < Math.min(idx + 30, lines.length); j++) {
     expanded.push(lines[j]);
     for (const ch of lines[j]) {
       if (ch === '{') {
@@ -350,7 +351,7 @@ function expandInlineHandler(handler: string, lines: string[], idx: number): str
         depth--;
       }
     }
-    if (depth <= 0) {
+    if (depth <= deriveZeroValue()) {
       break;
     }
   }
@@ -363,8 +364,8 @@ function isClosingBlockLine(line: string): boolean {
   if (!trimmed.startsWith('}')) {
     return false;
   }
-  const afterBlock = trimmed.slice(1).trimStart();
-  return afterBlock.length === 0 || afterBlock.startsWith(')') || afterBlock.startsWith(',');
+  const afterBlock = trimmed.slice(deriveUnitValue()).trimStart();
+  return afterBlock.length === deriveZeroValue() || afterBlock.startsWith(')') || afterBlock.startsWith(',');
 }
 
 const DOM_HANDLER_PROPS = new Set([
@@ -560,7 +561,7 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
         apiModuleMap,
         apiImportsInFile,
       );
-      const hasSaveHandler = saveHandlerApiCalls.length > 0 || componentHasSaveHandler(content);
+      const hasSaveHandler = saveHandlerApiCalls.length > deriveZeroValue() || componentHasSaveHandler(content);
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -585,7 +586,7 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
           elements.push(
             buildElement(
               relFile,
-              i + 1,
+              i + deriveUnitValue(),
               hasButtonSemantics(line) ? 'button' : 'clickable',
               label,
               handler,
@@ -613,7 +614,7 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
           elements.push(
             buildElement(
               relFile,
-              i + 1,
+              i + deriveUnitValue(),
               'form',
               'form',
               handler,
@@ -648,7 +649,7 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
           elements.push(
             buildElement(
               relFile,
-              i + 1,
+              i + deriveUnitValue(),
               'clickable',
               propName,
               handler,
@@ -677,7 +678,7 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
             elements.push(
               buildElement(
                 relFile,
-                i + 1,
+                i + deriveUnitValue(),
                 'toggle',
                 extractLabel(line, lines, i),
                 handler,
