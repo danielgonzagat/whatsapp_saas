@@ -10,7 +10,7 @@ import {
   getPrimaryEntity,
 } from './artifact-queries';
 import { resolveCategory, resolveRole } from './classifiers';
-import type { ScenarioBuildContext } from './dynamic-plan';
+import type { ScenarioBuildContext } from './constants';
 import { buildEvidenceLinks, buildPreconditions } from './evidence-preconditions';
 import { generatePlaywrightSpec } from './spec-generator';
 import { generateStepsForSubFlow } from './step-generator';
