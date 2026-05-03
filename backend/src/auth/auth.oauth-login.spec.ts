@@ -6,6 +6,7 @@ import { AuthOAuthService } from './auth-oauth.service';
 import { AuthPartnerService } from './auth-partner.service';
 import { AuthVerificationService } from './auth-verification.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from './email.service';
 
 const mockPrismaService = {
   agent: {
@@ -81,6 +82,12 @@ const mockAuthVerificationService = {
   resendVerificationEmail: jest.fn(),
 };
 
+const mockEmailService = {
+  sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
+  sendVerificationEmail: jest.fn().mockResolvedValue(true),
+  sendMagicLinkEmail: jest.fn().mockResolvedValue(true),
+};
+
 describe('AuthService OAuth login', () => {
   let service: AuthService;
   let prisma: typeof mockPrismaService;
@@ -101,6 +108,7 @@ describe('AuthService OAuth login', () => {
         AuthService,
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: JwtService, useValue: mockJwtService },
+        { provide: EmailService, useValue: mockEmailService },
         { provide: AuthOAuthService, useValue: mockAuthOAuthService },
         { provide: AuthPartnerService, useValue: mockAuthPartnerService },
         { provide: AuthVerificationService, useValue: mockAuthVerificationService },

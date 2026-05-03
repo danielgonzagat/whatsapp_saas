@@ -1,7 +1,14 @@
 jest.mock('../kloel/openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn().mockResolvedValue({
     usage: { total_tokens: 120 },
-    choices: [{ message: { content: 'Sugestão mockada' } }],
+    choices: [
+      {
+        message: { content: 'Sugestão mockada', refusal: null, role: 'assistant' },
+        finish_reason: 'stop',
+        index: 0,
+        logprobs: null,
+      },
+    ],
   }),
 }));
 
@@ -285,6 +292,9 @@ describe('CopilotService', () => {
               refusal: null,
               role: 'assistant',
             },
+            finish_reason: 'stop',
+            index: 0,
+            logprobs: null,
           },
         ],
       });
@@ -310,6 +320,9 @@ describe('CopilotService', () => {
               refusal: null,
               role: 'assistant',
             },
+            finish_reason: 'stop',
+            index: 0,
+            logprobs: null,
           },
         ],
       });
@@ -332,7 +345,14 @@ describe('CopilotService', () => {
     it('returns fallback suggestions on invalid json from openai', async () => {
       jest.mocked(chatCompletionWithRetry).mockResolvedValue({
         usage: { total_tokens: 10, completion_tokens: 5, prompt_tokens: 5 },
-        choices: [{ message: { content: 'invalid json', refusal: null, role: 'assistant' } }],
+        choices: [
+          {
+            message: { content: 'invalid json', refusal: null, role: 'assistant' },
+            finish_reason: 'stop',
+            index: 0,
+            logprobs: null,
+          },
+        ],
       });
 
       prisma.contact.findFirst.mockResolvedValue({ id: 'c-1' });

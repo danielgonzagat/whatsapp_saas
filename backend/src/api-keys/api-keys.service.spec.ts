@@ -17,11 +17,11 @@ type MockedApiKeyRecord = {
 };
 
 type MockedApiKeyDelegate = {
-  findMany: jest.Mock;
-  create: jest.Mock;
-  findFirst: jest.Mock;
-  deleteMany: jest.Mock;
-  update: jest.Mock;
+  findMany: jest.Mock<any, any>;
+  create: jest.Mock<any, any>;
+  findFirst: jest.Mock<any, any>;
+  deleteMany: jest.Mock<any, any>;
+  update: jest.Mock<any, any>;
 };
 
 type MockedLogFn = jest.Mock<(args: Record<string, unknown>) => Promise<void>>;
@@ -315,7 +315,10 @@ describe('ApiKeysService', () => {
       const result = await service.validateKey(rawKey);
 
       expect(result).toEqual(apiKeyRecord);
-      const callArg = mockApiKey.update.mock.calls[0][0] as { data: { lastUsedAt: Date } };
+      const callArg = mockApiKey.update.mock.calls[0][0] as {
+        where: { id: string };
+        data: { lastUsedAt: Date };
+      };
       expect(callArg.data.lastUsedAt).toBeInstanceOf(Date);
       expect(callArg.where).toEqual({ id: 'ak-1' });
     });
