@@ -53,48 +53,96 @@ function buildCatalogFromTypeContract(fileName: string, typeName: string): Recor
   return Object.freeze(catalog);
 }
 
-let _behaviorNodeKindCatalog: Record<string, string> | null = null;
-function requireBehaviorNodeKindCatalog(): Record<string, string> {
+let _behaviorNodeKindCatalog: Record<string, BehaviorNodeKind> | null = null;
+function requireBehaviorNodeKindCatalog(): Record<string, BehaviorNodeKind> {
   if (!_behaviorNodeKindCatalog) {
     _behaviorNodeKindCatalog = buildCatalogFromTypeContract(
       'scripts/pulse/types.behavior-graph.ts',
       'BehaviorNodeKind',
-    );
+    ) as Record<string, BehaviorNodeKind>;
   }
   return _behaviorNodeKindCatalog;
 }
 
-let _behaviorRiskLevelCatalog: Record<string, string> | null = null;
-function requireBehaviorRiskLevelCatalog(): Record<string, string> {
+let _behaviorRiskLevelCatalog: Record<string, BehaviorRiskLevel> | null = null;
+function requireBehaviorRiskLevelCatalog(): Record<string, BehaviorRiskLevel> {
   if (!_behaviorRiskLevelCatalog) {
     _behaviorRiskLevelCatalog = buildCatalogFromTypeContract(
       'scripts/pulse/types.behavior-graph.ts',
       'BehaviorRiskLevel',
-    );
+    ) as Record<string, BehaviorRiskLevel>;
   }
   return _behaviorRiskLevelCatalog;
 }
 
-let _behaviorInputKindCatalog: Record<string, string> | null = null;
-function requireBehaviorInputKindCatalog(): Record<string, string> {
+let _behaviorInputKindCatalog: Record<string, BehaviorInputKind> | null = null;
+function requireBehaviorInputKindCatalog(): Record<string, BehaviorInputKind> {
   if (!_behaviorInputKindCatalog) {
     _behaviorInputKindCatalog = buildCatalogFromTypeContract(
       'scripts/pulse/types.behavior-graph.ts',
       'BehaviorInputKind',
-    );
+    ) as Record<string, BehaviorInputKind>;
   }
   return _behaviorInputKindCatalog;
 }
 
-let _behaviorOutputKindCatalog: Record<string, string> | null = null;
-function requireBehaviorOutputKindCatalog(): Record<string, string> {
+let _behaviorOutputKindCatalog: Record<string, BehaviorOutputKind> | null = null;
+function requireBehaviorOutputKindCatalog(): Record<string, BehaviorOutputKind> {
   if (!_behaviorOutputKindCatalog) {
     _behaviorOutputKindCatalog = buildCatalogFromTypeContract(
       'scripts/pulse/types.behavior-graph.ts',
       'BehaviorOutputKind',
-    );
+    ) as Record<string, BehaviorOutputKind>;
   }
   return _behaviorOutputKindCatalog;
+}
+
+let _executionModeCatalog: Record<string, string> | null = null;
+function requireExecutionModeCatalog(): Record<string, string> {
+  if (!_executionModeCatalog) {
+    const members = deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.behavior-graph.ts',
+      'executionMode',
+    );
+    const catalog: Record<string, string> = {};
+    for (const member of members) {
+      catalog[toCamelCase(member)] = member;
+    }
+    _executionModeCatalog = Object.freeze(catalog);
+  }
+  return _executionModeCatalog;
+}
+
+function discoverStateWriteOperationLabels(): string[] {
+  const ops = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.behavior-graph.ts',
+    'operation',
+  );
+  return [...ops].filter((op) => op !== 'read');
+}
+
+let _validationRequirementCatalog: Record<string, BehaviorValidationRequirement> | null = null;
+function discoverValidationRequirementLabels(): Record<string, BehaviorValidationRequirement> {
+  if (!_validationRequirementCatalog) {
+    _validationRequirementCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/types.behavior-graph.ts',
+      'BehaviorValidationRequirement',
+    ) as Record<string, BehaviorValidationRequirement>;
+  }
+  return _validationRequirementCatalog;
+}
+
+function deriveRiskLevelOrdinalPositions(): Record<BehaviorRiskLevel, number> {
+  const members = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.behavior-graph.ts',
+    'BehaviorRiskLevel',
+  );
+  const order: Record<BehaviorRiskLevel, number> = {} as Record<BehaviorRiskLevel, number>;
+  let index = 0;
+  for (const member of members) {
+    order[member as BehaviorRiskLevel] = index++;
+  }
+  return order;
 }
 
 function requireJsReservedWordSet(): Set<string> {
@@ -654,7 +702,7 @@ function extractLargeFileFunctionStubs(source: string): ParsedFunc[] {
 
     const name = functionMatch?.[1] ?? arrowMatch?.[1] ?? methodMatch?.[1];
     const params = functionMatch?.[2] ?? arrowMatch?.[2] ?? methodMatch?.[2] ?? '';
-    if (!name || ['if', 'for', 'while', 'switch', 'catch'].includes(name)) {
+    if (!name || requireJsReservedWordSet().has(name) || /^[A-Z]/.test(name)) {
       offset += line.length + 1;
       continue;
     }
@@ -987,7 +1035,7 @@ function detectOutputs(bodyText: string, kind: BehaviorNodeKind): BehaviorOutput
   }
 
   if (bodyText.includes('prisma')) {
-    const writeOps = ['create', 'update', 'updateMany', 'delete', 'deleteMany', 'upsert'];
+    const writeOps = [...discoverStateWriteOperationLabels()];
     for (const op of writeOps) {
       if (bodyText.includes(`.${op}`)) {
         outputs.push({ kind: ok.dbWrite, target: 'prisma', type: op, conditional: false });
@@ -1028,7 +1076,7 @@ function determineRisk(
   const kindValues = requireBehaviorNodeKindCatalog();
   if (kind === kindValues.authCheck) return risk.critical;
 
-  const writeOps = new Set(['create', 'update', 'delete', 'upsert']);
+  const writeOps = new Set(discoverStateWriteOperationLabels());
   const hasWriteOps = stateAccess.some((a) => writeOps.has(a.operation));
   const hasDeleteOps = stateAccess.some((a) => a.operation === 'delete');
   const acceptsExternalInput = [
@@ -1139,9 +1187,8 @@ function determineExecutionMode(
   const sendsMessagesOrPayments = hasMessageOrPaymentSending(bodyText, externalCalls);
   if (sendsMessagesOrPayments) return 'ai_safe';
 
-  const hasDbWrites = stateAccess.some((a) =>
-    ['create', 'update', 'delete', 'upsert'].includes(a.operation),
-  );
+  const writeOpSet = new Set(discoverStateWriteOperationLabels());
+  const hasDbWrites = stateAccess.some((a) => writeOpSet.has(a.operation));
 
   if (hasDbWrites) {
     return 'ai_safe';
@@ -1179,25 +1226,26 @@ function buildValidationRequirements(
   externalCalls: BehaviorExternalCall[],
   bodyText: string,
 ): BehaviorValidationRequirement[] {
-  if (executionMode === 'observation_only') {
-    return ['governed_read_only_evidence'];
+  const vr = discoverValidationRequirementLabels();
+  const risks = requireBehaviorRiskLevelCatalog();
+  const modes = requireExecutionModeCatalog();
+  const writeOps = new Set(discoverStateWriteOperationLabels());
+
+  if (executionMode === modes.observationOnly) {
+    return [vr.governedReadOnlyEvidence];
   }
 
-  const requirements: BehaviorValidationRequirement[] = ['targeted_test', 'typecheck'];
-  if (risk === 'critical' || risk === 'high') {
-    requirements.push('package_build', 'runtime_smoke', 'observability_evidence');
+  const requirements: BehaviorValidationRequirement[] = [vr.targetedTest, vr.typecheck];
+  if (risk === risks.critical || risk === risks.high) {
+    requirements.push(vr.packageBuild, vr.runtimeSmoke, vr.observabilityEvidence);
   }
 
-  if (
-    stateAccess.some((access) =>
-      ['create', 'update', 'delete', 'upsert'].includes(access.operation),
-    )
-  ) {
-    requirements.push('idempotency_check');
+  if (stateAccess.some((access) => writeOps.has(access.operation))) {
+    requirements.push(vr.idempotencyCheck);
   }
 
   if (externalCalls.length > 0 || hasMessageOrPaymentSending(bodyText, externalCalls)) {
-    requirements.push('external_integration_evidence');
+    requirements.push(vr.externalIntegrationEvidence);
   }
 
   return uniqueValidationRequirements(requirements);
@@ -1509,12 +1557,13 @@ export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
     .map((n) => n.id);
 
   const reachable = new Set<string>();
+  const kinds = requireBehaviorNodeKindCatalog();
   const entryNodes = allNodes.filter(
     (n) =>
-      n.kind === 'api_endpoint' ||
-      n.kind === 'cron_job' ||
-      n.kind === 'queue_consumer' ||
-      n.kind === 'webhook_receiver',
+      n.kind === kinds.apiEndpoint ||
+      n.kind === kinds.cronJob ||
+      n.kind === kinds.queueConsumer ||
+      n.kind === kinds.webhookReceiver,
   );
 
   function traverse(nodeId: string) {
@@ -1534,22 +1583,25 @@ export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
   const unreachableNodes = allNodes.filter((n) => !reachable.has(n.id)).map((n) => n.id);
 
   // Build summary
+  const risks = requireBehaviorRiskLevelCatalog();
+  const modes = requireExecutionModeCatalog();
   const summary: BehaviorGraphSummary = {
     totalNodes: allNodes.length,
-    handlerNodes: allNodes.filter((n) => n.kind === 'handler').length,
-    apiEndpointNodes: allNodes.filter((n) => n.kind === 'api_endpoint').length,
-    queueNodes: allNodes.filter((n) => n.kind === 'queue_consumer' || n.kind === 'queue_producer')
-      .length,
-    cronNodes: allNodes.filter((n) => n.kind === 'cron_job').length,
-    webhookNodes: allNodes.filter((n) => n.kind === 'webhook_receiver').length,
-    dbNodes: allNodes.filter((n) => n.kind === 'db_reader' || n.kind === 'db_writer').length,
+    handlerNodes: allNodes.filter((n) => n.kind === kinds.handler).length,
+    apiEndpointNodes: allNodes.filter((n) => n.kind === kinds.apiEndpoint).length,
+    queueNodes: allNodes.filter(
+      (n) => n.kind === kinds.queueConsumer || n.kind === kinds.queueProducer,
+    ).length,
+    cronNodes: allNodes.filter((n) => n.kind === kinds.cronJob).length,
+    webhookNodes: allNodes.filter((n) => n.kind === kinds.webhookReceiver).length,
+    dbNodes: allNodes.filter((n) => n.kind === kinds.dbReader || n.kind === kinds.dbWriter).length,
     externalCallNodes: allNodes.filter((n) => n.externalCalls.length > 0).length,
-    aiSafeNodes: allNodes.filter((n) => n.executionMode === 'ai_safe').length,
+    aiSafeNodes: allNodes.filter((n) => n.executionMode === modes.aiSafe).length,
     humanRequiredNodes: 0,
     nodesWithErrorHandler: allNodes.filter((n) => n.hasErrorHandler).length,
     nodesWithLogging: allNodes.filter((n) => n.hasLogging).length,
     nodesWithMetrics: allNodes.filter((n) => n.hasMetrics).length,
-    criticalRiskNodes: allNodes.filter((n) => n.risk === 'critical').length,
+    criticalRiskNodes: allNodes.filter((n) => n.risk === risks.critical).length,
   };
 
   return {
@@ -1569,8 +1621,9 @@ export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
  * @returns Array of BehaviorNode objects that are high-risk without error handling.
  */
 export function getCriticalPaths(graph: BehaviorGraph): BehaviorNode[] {
+  const risks = requireBehaviorRiskLevelCatalog();
   return graph.nodes.filter(
-    (n) => (n.risk === 'critical' || n.risk === 'high') && !n.hasErrorHandler,
+    (n) => (n.risk === risks.critical || n.risk === risks.high) && !n.hasErrorHandler,
   );
 }
 
@@ -1623,17 +1676,11 @@ if (process.env.PULSE_BEHAVIOR_GRAPH_RUN === '1' || require.main === module) {
   console.warn(`[behavior-graph] Running standalone from ${projectRoot}`);
   const graph = generateBehaviorGraph(projectRoot);
   console.warn(`[behavior-graph] Done. Top 5 nodes by risk:`);
+  const risks = requireBehaviorRiskLevelCatalog();
   const topRisks = graph.nodes
-    .filter((n) => n.risk === 'critical' || n.risk === 'high')
+    .filter((n) => n.risk === risks.critical || n.risk === risks.high)
     .sort((a, b) => {
-      const risk = requireBehaviorRiskLevelCatalog();
-      const order: Record<BehaviorRiskLevel, number> = {
-        [risk.critical]: 0,
-        [risk.high]: 1,
-        [risk.medium]: 2,
-        [risk.low]: 3,
-        [risk.none]: 4,
-      };
+      const order = deriveRiskLevelOrdinalPositions();
       return order[a.risk] - order[b.risk];
     })
     .slice(0, 5);
