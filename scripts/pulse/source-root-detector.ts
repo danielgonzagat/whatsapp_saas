@@ -1,4 +1,5 @@
 import * as path from 'path';
+import { discoverSourceExtensionsFromObservedTypescript, discoverDirectorySkipHintsFromEvidence } from './dynamic-reality-kernel';
 import { pathExists, readDir, readJsonFile, readTextFile } from './safe-fs';
 import { safeJoin } from './safe-path';
 
@@ -56,7 +57,7 @@ export interface DetectedSourceRoot {
 }
 
 const CONVENTIONAL_SOURCE_DIR_NAMES = new Set(['src', 'app', 'pages', 'lib']);
-const SOURCE_EXTENSIONS = ['.ts', '.tsx', '.js', '.jsx'];
+const SOURCE_EXTENSIONS = [...discoverSourceExtensionsFromObservedTypescript()];
 const BUILD_CONFIG_FILES = new Set([
   'next.config.js',
   'next.config.mjs',
@@ -80,13 +81,11 @@ const WEAK_FALLBACK_SEGMENTS: Array<{
   { base: 'worker', sourceDir: 'src', packageName: null },
 ];
 const SKIP_DIR_NAMES = new Set([
+  ...discoverDirectorySkipHintsFromEvidence(),
   '.claude',
   '.git',
   '.next',
   '__tests__',
-  'coverage',
-  'dist',
-  'node_modules',
   'test',
   'tests',
   'tmp',

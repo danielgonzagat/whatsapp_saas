@@ -66,17 +66,24 @@ export class AdminSessionsService {
       return;
     }
 
-    await this.prisma.adminSession.update({
-      where: { id: sessionId },
-      data: { revokedAt: new Date() },
-    });
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.adminSession.update({
+          where: { id: sessionId },
+          data: { revokedAt: new Date() },
+        });
 
-    await this.audit.append({
-      adminUserId: actorId,
-      action: 'admin.sessions.revoked',
-      entityType: 'AdminSession',
-      entityId: sessionId,
-      details: { targetAdminId: session.adminUserId, byOwner: !isOwnSession && isOwner },
-    });
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: actorId,
+            action: 'admin.sessions.revoked',
+            entityType: 'AdminSession',
+            entityId: sessionId,
+            details: { targetAdminId: session.adminUserId, byOwner: !isOwnSession && isOwner },
+          },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 }

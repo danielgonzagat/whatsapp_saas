@@ -109,25 +109,34 @@ export class AdminAccountsService {
       accountAdmin: nextAccountState,
     };
 
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonValue,
-      },
-    });
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.workspace.update({
+          where: { id: workspaceId },
+          data: {
+            providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonValue,
+          },
+        });
 
-    await this.audit.append({
-      adminUserId: actorId,
-      action: `admin.accounts.${action.toLowerCase()}`,
-      entityType: 'Workspace',
-      entityId: workspaceId,
-      details: {
-        workspaceName: workspace.name,
-        action,
-        reason: input.reason ?? null,
-        frozenBalanceInCents: input.frozenBalanceInCents ?? null,
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: actorId ?? null,
+            action: `admin.accounts.${action.toLowerCase()}`,
+            entityType: 'Workspace',
+            entityId: workspaceId,
+            details: {
+              workspaceName: workspace.name,
+              action,
+              reason: input.reason ?? null,
+              frozenBalanceInCents: input.frozenBalanceInCents ?? null,
+            },
+            ip: null,
+            userAgent: null,
+          },
+        });
       },
-    });
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   private applyAccountStateAction(
@@ -210,22 +219,31 @@ export class AdminAccountsService {
       `Kloel${randomInt(1000, 9999)}!${randomUUID().replace(PATTERN_RE, '').slice(0, 8)}`;
 
     const passwordHash = await bcryptHash(nextPassword, BCRYPT_ROUNDS);
-    await this.prisma.agent.updateMany({
-      where: { id: owner.id, workspaceId },
-      data: { password: passwordHash },
-    });
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.agent.updateMany({
+          where: { id: owner.id, workspaceId },
+          data: { password: passwordHash },
+        });
 
-    await this.audit.append({
-      adminUserId: actorId,
-      action: 'admin.accounts.owner_password_reset',
-      entityType: 'Workspace',
-      entityId: workspaceId,
-      details: {
-        workspaceName: workspace.name,
-        ownerAgentId: owner.id,
-        ownerEmail: owner.email,
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: actorId ?? null,
+            action: 'admin.accounts.owner_password_reset',
+            entityType: 'Workspace',
+            entityId: workspaceId,
+            details: {
+              workspaceName: workspace.name,
+              ownerAgentId: owner.id,
+              ownerEmail: owner.email,
+            },
+            ip: null,
+            userAgent: null,
+          },
+        });
       },
-    });
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return {
       ownerAgentId: owner.id,

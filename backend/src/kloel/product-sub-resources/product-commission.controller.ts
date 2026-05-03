@@ -105,19 +105,21 @@ export class ProductCommissionController {
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
-    const commission = await this.prisma.productCommission.findFirst({
-      where: { id: commissionId, productId },
-    });
-    if (!commission) {
-      throw new NotFoundException('Comissão não encontrada');
-    }
+    return this.prisma.$transaction(async (tx) => {
+      const commission = await tx.productCommission.findFirst({
+        where: { id: commissionId, productId },
+      });
+      if (!commission) {
+        throw new NotFoundException('Comissão não encontrada');
+      }
 
-    const payload = buildCommissionPayload(body, commission);
-    await ensureNoDuplicateCommission(this.prisma, productId, payload, commissionId);
+      const payload = buildCommissionPayload(body, commission);
+      await ensureNoDuplicateCommission(this.prisma, productId, payload, commissionId);
 
-    return this.prisma.productCommission.update({
-      where: { id: commissionId },
-      data: payload,
+      return tx.productCommission.update({
+        where: { id: commissionId },
+        data: payload,
+      });
     });
   }
 

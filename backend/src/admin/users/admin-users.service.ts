@@ -5,6 +5,7 @@ import { AdminAuditService } from '../audit/admin-audit.service';
 import { AdminAuthService } from '../auth/admin-auth.service';
 import { adminErrors } from '../common/admin-api-errors';
 import { AdminPermissionsService } from '../permissions/admin-permissions.service';
+import { flattenDefaults } from '../permissions/admin-permissions.defaults';
 
 /** Create admin user input shape. */
 export interface CreateAdminUserInput {
@@ -177,19 +178,42 @@ export class AdminUsersService {
     this.assertAdminUpdateAllowed(current, patch);
 
     const data = this.buildAdminUserUpdateData(patch, current.role);
-    const updated = await this.prisma.adminUser.update({ where: { id }, data });
+    const needsReseed = this.isRoleChange(patch, current.role);
 
-    if (this.isRoleChange(patch, current.role)) {
-      await this.reseedPermissionsForRoleChange(id, updated.role);
-    }
+    const updated = await this.prisma.$transaction(
+      async (tx) => {
+        const result = await tx.adminUser.update({ where: { id }, data });
 
-    await this.audit.append({
-      adminUserId: patch.actorId,
-      action: 'admin.users.updated',
-      entityType: 'AdminUser',
-      entityId: id,
-      details: this.buildUpdateAuditDetails(current, patch),
-    });
+        if (needsReseed) {
+          await tx.adminPermission.deleteMany({ where: { adminUserId: id } });
+          const defaultRows = flattenDefaults(result.role).map((r) => ({
+            adminUserId: id,
+            module: r.module,
+            action: r.action,
+            allowed: r.allowed,
+          }));
+          if (defaultRows.length > 0) {
+            await tx.adminPermission.createMany({
+              data: defaultRows,
+              skipDuplicates: true,
+            });
+          }
+        }
+
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: patch.actorId,
+            action: 'admin.users.updated',
+            entityType: 'AdminUser',
+            entityId: id,
+            details: this.buildUpdateAuditDetails(current, patch),
+          },
+        });
+
+        return result;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return this.serialize(updated);
   }

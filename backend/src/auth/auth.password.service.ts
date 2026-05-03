@@ -62,38 +62,42 @@ export class AuthPasswordService {
     const name = 'Guest';
 
     let workspace: Workspace;
-    try {
-      workspace = await this.prisma.workspace.create({
-        data: {
-          name: 'Guest Workspace',
-          providerSettings: {
-            guestMode: true,
-            authMode: 'anonymous',
-            autopilot: { enabled: false },
-            whatsappLifecycle: {
-              watchdogEnabled: false,
-              catchupEnabled: false,
-              autoReconnect: false,
-            },
-          },
-        },
-      });
-    } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(error, 'AuthPasswordService');
-      DbInitErrorService.throwFriendlyDbInitError(error);
-    }
-
     let agent: Agent;
     try {
-      agent = await this.prisma.agent.create({
-        data: {
-          name,
-          email,
-          password: await bcryptHash(randomUUID(), BCRYPT_ROUNDS),
-          role: 'ADMIN',
-          workspaceId: workspace.id,
+      const result = await this.prisma.$transaction(
+        async (tx) => {
+          const ws = await tx.workspace.create({
+            data: {
+              name: 'Guest Workspace',
+              providerSettings: {
+                guestMode: true,
+                authMode: 'anonymous',
+                autopilot: { enabled: false },
+                whatsappLifecycle: {
+                  watchdogEnabled: false,
+                  catchupEnabled: false,
+                  autoReconnect: false,
+                },
+              },
+            },
+          });
+
+          const ag = await tx.agent.create({
+            data: {
+              name,
+              email,
+              password: await bcryptHash(randomUUID(), BCRYPT_ROUNDS),
+              role: 'ADMIN',
+              workspaceId: ws.id,
+            },
+          });
+
+          return { ws, ag };
         },
-      });
+        { isolationLevel: 'ReadCommitted' },
+      );
+      workspace = result.ws;
+      agent = result.ag;
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'AuthPasswordService');
       DbInitErrorService.throwFriendlyDbInitError(error);

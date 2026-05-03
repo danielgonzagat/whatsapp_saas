@@ -191,45 +191,55 @@ export class AdminConfigService {
         : {}),
     };
 
-    const updated = await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        ...(input.customDomain !== undefined
-          ? { customDomain: input.customDomain.trim() || null }
-          : {}),
-        providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonValue,
-      },
-      select: {
-        id: true,
-        name: true,
-        customDomain: true,
-        providerSettings: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            apiKeys: true,
-            webhookSubscriptions: true,
+    const updated = await this.prisma.$transaction(
+      async (tx) => {
+        const result = await tx.workspace.update({
+          where: { id: workspaceId },
+          data: {
+            ...(input.customDomain !== undefined
+              ? { customDomain: input.customDomain.trim() || null }
+              : {}),
+            providerSettings: JSON.parse(JSON.stringify(nextSettings)) as Prisma.InputJsonValue,
           },
-        },
-      },
-    });
+          select: {
+            id: true,
+            name: true,
+            customDomain: true,
+            providerSettings: true,
+            updatedAt: true,
+            _count: {
+              select: {
+                apiKeys: true,
+                webhookSubscriptions: true,
+              },
+            },
+          },
+        });
 
-    await this.audit.append({
-      adminUserId: actorId,
-      action: 'admin.config.workspace_updated',
-      entityType: 'Workspace',
-      entityId: workspaceId,
-      details: {
-        workspaceName: workspace.name,
-        before: {
-          customDomain: workspace.customDomain,
-          guestMode: currentSettings.guestMode === true,
-          autopilotEnabled: currentAutopilot.enabled === true,
-          authMode: typeof currentSettings.authMode === 'string' ? currentSettings.authMode : null,
-        },
-        after: input,
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: actorId,
+            action: 'admin.config.workspace_updated',
+            entityType: 'Workspace',
+            entityId: workspaceId,
+            details: {
+              workspaceName: workspace.name,
+              before: {
+                customDomain: workspace.customDomain,
+                guestMode: currentSettings.guestMode === true,
+                autopilotEnabled: currentAutopilot.enabled === true,
+                authMode:
+                  typeof currentSettings.authMode === 'string' ? currentSettings.authMode : null,
+              },
+              after: input,
+            },
+          },
+        });
+
+        return result;
       },
-    });
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     const updatedSettings = asProviderSettings(updated.providerSettings);
     const updatedAutopilot =

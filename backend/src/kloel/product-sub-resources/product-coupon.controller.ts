@@ -98,19 +98,20 @@ export class ProductCouponController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
+    const workspaceId = getWorkspaceId(req);
+    await ensureWorkspaceProductAccess(this.prisma, productId, workspaceId);
 
-    const coupon = await this.prisma.productCoupon.findFirst({
+    const couponSnapshot = await this.prisma.productCoupon.findFirst({
       where: { id: couponId, productId },
     });
-    if (!coupon) {
+    if (!couponSnapshot) {
       throw new NotFoundException('Cupom não encontrado');
     }
 
-    const payload = buildCouponData({ ...coupon, ...body });
+    const payload = buildCouponData({ ...couponSnapshot, ...body });
     const conflict = await findConflictingProductCouponInWorkspace(
       this.prisma,
-      getWorkspaceId(req),
+      workspaceId,
       payload.code,
       couponId,
     );
@@ -120,25 +121,28 @@ export class ProductCouponController {
       );
     }
 
-    const updated = await this.prisma.productCoupon.update({
-      where: { id: couponId },
-      data: payload as Prisma.ProductCouponUncheckedUpdateInput,
-    });
+    const prevCode = couponSnapshot.code;
 
-    if (coupon.code !== updated.code) {
-      await syncWorkspaceCheckoutCouponForProduct(
-        this.prisma,
-        getWorkspaceId(req),
-        productId,
-        coupon.code,
-      );
-    }
-    await syncWorkspaceCheckoutCouponForProduct(
-      this.prisma,
-      getWorkspaceId(req),
-      productId,
-      updated.code,
-    );
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const coupon = await tx.productCoupon.findFirst({
+        where: { id: couponId, productId },
+      });
+      if (!coupon) {
+        throw new NotFoundException('Cupom não encontrado');
+      }
+
+      const result = await tx.productCoupon.update({
+        where: { id: couponId },
+        data: payload as Prisma.ProductCouponUncheckedUpdateInput,
+      });
+
+      if (prevCode !== result.code) {
+        await syncWorkspaceCheckoutCouponForProduct(this.prisma, workspaceId, productId, prevCode);
+      }
+      await syncWorkspaceCheckoutCouponForProduct(this.prisma, workspaceId, productId, result.code);
+
+      return result;
+    });
 
     return serializeCoupon(updated);
   }

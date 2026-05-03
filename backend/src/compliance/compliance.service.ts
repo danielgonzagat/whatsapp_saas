@@ -136,23 +136,28 @@ export class ComplianceService {
 
     for (const [eventType, eventPayload] of events) {
       const subject = this.extractSubject(payload, eventPayload);
-      const eventRecord = await this.prisma.riscEvent.create({
-        data: {
-          subject,
-          eventType,
-          rawJwt,
-        },
-      });
+      await this.prisma.$transaction(
+        async (tx) => {
+          const eventRecord = await tx.riscEvent.create({
+            data: {
+              subject,
+              eventType,
+              rawJwt,
+            },
+          });
 
-      await this.routeRiscEvent(eventType, subject);
+          await this.routeRiscEvent(eventType, subject);
 
-      await this.prisma.riscEvent.update({
-        where: { id: eventRecord.id },
-        data: {
-          processed: true,
-          processedAt: new Date(),
+          await tx.riscEvent.update({
+            where: { id: eventRecord.id },
+            data: {
+              processed: true,
+              processedAt: new Date(),
+            },
+          });
         },
-      });
+        { isolationLevel: 'ReadCommitted' },
+      );
     }
 
     return { accepted: true };
@@ -450,55 +455,62 @@ export class ComplianceService {
   private async softDeleteAgent(agentId: string, requestId?: string) {
     const deletedEmail = `deleted-${agentId}@removed.local`;
     const deletedName = 'Deleted User';
-    const deletedAgent = await this.prisma.agent.update({
-      where: { id: agentId },
-      data: {
-        name: deletedName,
-        email: deletedEmail,
-        phone: null,
-        avatarUrl: null,
-        provider: null,
-        providerId: null,
-        emailVerified: false,
-        disabledAt: new Date(),
-        deletedAt: new Date(),
-      },
-      select: {
-        id: true,
-        email: true,
-        workspaceId: true,
-      },
-    });
+    const deletedAgent = await this.prisma.$transaction(
+      async (tx) => {
+        const agent = await tx.agent.update({
+          where: { id: agentId },
+          data: {
+            name: deletedName,
+            email: deletedEmail,
+            phone: null,
+            avatarUrl: null,
+            provider: null,
+            providerId: null,
+            emailVerified: false,
+            disabledAt: new Date(),
+            deletedAt: new Date(),
+          },
+          select: {
+            id: true,
+            email: true,
+            workspaceId: true,
+          },
+        });
 
-    await Promise.all([
-      this.prisma.refreshToken.updateMany({
-        where: { agentId, revoked: false },
-        data: { revoked: true },
-      }),
-      this.prisma.socialAccount.updateMany({
-        where: { agentId },
-        data: {
-          revokedAt: new Date(),
-          accessToken: null,
-          refreshToken: null,
-          tokenExpiresAt: null,
-        },
-      }),
-      this.prisma.magicLinkToken.updateMany({
-        where: { agentId, usedAt: null },
-        data: { usedAt: new Date() },
-      }),
-      requestId
-        ? this.prisma.dataDeletionRequest.update({
-            where: { id: requestId },
+        await Promise.all([
+          tx.refreshToken.updateMany({
+            where: { agentId, revoked: false },
+            data: { revoked: true },
+          }),
+          tx.socialAccount.updateMany({
+            where: { agentId },
             data: {
-              userId: agentId,
-              status: 'completed',
-              completedAt: new Date(),
+              revokedAt: new Date(),
+              accessToken: null,
+              refreshToken: null,
+              tokenExpiresAt: null,
             },
-          })
-        : Promise.resolve(null),
-    ]);
+          }),
+          tx.magicLinkToken.updateMany({
+            where: { agentId, usedAt: null },
+            data: { usedAt: new Date() },
+          }),
+          requestId
+            ? tx.dataDeletionRequest.update({
+                where: { id: requestId },
+                data: {
+                  userId: agentId,
+                  status: 'completed',
+                  completedAt: new Date(),
+                },
+              })
+            : Promise.resolve(null),
+        ]);
+
+        return agent;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return deletedAgent;
   }

@@ -26,6 +26,12 @@ describe('ComplianceController', () => {
   let app: INestApplication;
 
   const prismaMock = {
+    $transaction: jest.fn((arg: unknown, _opts?: unknown) => {
+      if (typeof arg === 'function') {
+        return (arg as (tx: typeof prismaMock) => unknown)(prismaMock);
+      }
+      return Promise.all(arg as Promise<unknown>[]);
+    }),
     dataDeletionRequest: {
       create: jest.fn(),
       update: jest.fn(),

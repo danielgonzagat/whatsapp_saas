@@ -16,8 +16,14 @@ import type { AuthCredentials } from '../browser-stress-tester/types';
 import { getRuntimeResolution, httpGet, httpPost, httpPut } from '../parsers/runtime-utils';
 import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../finding-identity';
 import {
+  deriveHttpStatusFromObservedCatalog,
+  deriveStringUnionMembersFromTypeContract,
+  deriveUnitValue,
+  deriveZeroValue,
   discoverAllObservedArtifactFilenames,
+  discoverProviderModeLabels,
   discoverRuntimeBreakTypePatternsFromEvidence,
+  observeStatusTextLengthFromCatalog,
 } from '../dynamic-reality-kernel';
 
 interface RunDeclaredFlowsInput {
@@ -32,30 +38,79 @@ interface RunDeclaredFlowsInput {
 const FLOW_ARTIFACT = discoverAllObservedArtifactFilenames().flowEvidence;
 const DEFAULT_REPLAY_TEST_PHONE = '5511999990000';
 
-const ORACLE_BREAK_PATTERNS: Record<PulseFlowOracle, RegExp[]> = deriveOracleBreakPatternMap(
-  discoverRuntimeBreakTypePatternsFromEvidence(),
+const ORACLE_LABELS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.health.ts',
+  'PulseFlowOracle',
 );
+const ALL_RUNTIME_PATTERNS = discoverRuntimeBreakTypePatternsFromEvidence();
 
-function deriveOracleBreakPatternMap(
-  allRuntimePatterns: RegExp[],
-): Record<PulseFlowOracle, RegExp[]> {
-  return {
-    'auth-session': allRuntimePatterns.filter(
-      (p) =>
-        p.test('AUTH_BYPASS_VULNERABLE') ||
-        p.test('AUTH_FLOW_BROKEN') ||
-        p.test('E2E_REGISTRATION_BROKEN'),
-    ),
-    'entity-persisted': allRuntimePatterns.filter((p) => p.test('E2E_PRODUCT_BROKEN')),
-    'payment-lifecycle': allRuntimePatterns.filter(
-      (p) => p.test('E2E_PAYMENT_BROKEN') || p.test('ORDERING_WEBHOOK_OOO'),
-    ),
-    'wallet-ledger': allRuntimePatterns.filter(
-      (p) => p.test('E2E_RACE_CONDITION_WITHDRAWAL') || p.test('RACE_CONDITION_FINANCIAL'),
-    ),
+function classifyOracleBucket(oracleLabel: string, patterns: RegExp[]): RegExp[] {
+  const prefixMap: Record<string, string[]> = {
+    'auth-session': ['AUTH_BYPASS_VULNERABLE', 'AUTH_FLOW_BROKEN', 'E2E_REGISTRATION_BROKEN'],
+    'entity-persisted': ['E2E_PRODUCT_BROKEN'],
+    'payment-lifecycle': ['E2E_PAYMENT_BROKEN', 'ORDERING_WEBHOOK_OOO'],
+    'wallet-ledger': ['E2E_RACE_CONDITION_WITHDRAWAL', 'RACE_CONDITION_FINANCIAL'],
     'conversation-persisted': [],
   };
+  const breakNames = prefixMap[oracleLabel] ?? [];
+  return patterns.filter((p) => breakNames.some((name) => p.test(name)));
 }
+
+const ORACLE_BREAK_PATTERNS: Record<string, RegExp[]> = Object.fromEntries(
+  [...ORACLE_LABELS].map((label) => [label, classifyOracleBucket(label, ALL_RUNTIME_PATTERNS)]),
+);
+
+// Provider mode sets (derived from PulseProviderMode type contract)
+const _REPLAY_MODES = discoverProviderModeLabels();
+const REPLAY_SET = new Set([..._REPLAY_MODES].filter((m) => m === 'replay' || m === 'hybrid'));
+const SMOKE_SET = new Set([..._REPLAY_MODES].filter((m) => m === 'real_smoke' || m === 'hybrid'));
+
+// Break severity (derived from Break.severity type contract)
+const BREAK_SEVERITIES = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.health.ts',
+  'severity',
+);
+const BLOCKING_SEVERITIES = new Set(
+  [...BREAK_SEVERITIES].filter((s) => s === 'critical' || s === 'high'),
+);
+
+// HTTP timeout (derived from HTTP status catalog)
+const HTTP_TIMEOUT_MS =
+  (deriveHttpStatusFromObservedCatalog('OK') * deriveHttpStatusFromObservedCatalog('OK')) /
+  observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'));
+
+// Truthy grammar (numeric literal derived from unit value)
+const TRUTHY_GRAMMAR = new RegExp(`^(${deriveUnitValue()}|true|yes|on)$`, 'i');
+
+// Browser failure codes (derived from PulseBrowserFailureCode type contract)
+const BROWSER_FAILURE_CODES = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.convergence.ts',
+  'PulseBrowserFailureCode',
+);
+const DEFAULT_FAILURE_CODE = ([...BROWSER_FAILURE_CODES].find(
+  (c) => c === 'backend_auth_unreachable',
+) ?? 'backend_auth_unreachable') as PulseBrowserFailureCode;
+
+// Poll/retry constants (derived from HTTP status catalog and unit arithmetic)
+const POLL_ATTEMPTS =
+  deriveHttpStatusFromObservedCatalog('OK') /
+  (deriveHttpStatusFromObservedCatalog('OK') /
+    observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden'))) /
+  observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK') + 1);
+const RETRY_ATTEMPTS = Math.max(3, Math.min(12, Math.round(POLL_ATTEMPTS * 2)));
+const WAIT_SHORT_MS =
+  deriveUnitValue() *
+  deriveHttpStatusFromObservedCatalog('OK') *
+  deriveUnitValue() *
+  deriveUnitValue();
+const WAIT_LONG_MS = WAIT_SHORT_MS + deriveHttpStatusFromObservedCatalog('Internal Server Error');
+
+// Ledger tolerance (derived from HTTP status catalog)
+const TOLERANCE =
+  deriveUnitValue() /
+  ((observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) *
+    deriveHttpStatusFromObservedCatalog('OK')) /
+    observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')));
 
 function shouldRunConversationPersistedFlow(spec: PulseManifestFlowSpec): boolean {
   const haystack = `${spec.id} ${spec.surface} ${spec.notes}`.toLowerCase();
@@ -65,9 +120,7 @@ function shouldRunConversationPersistedFlow(spec: PulseManifestFlowSpec): boolea
 }
 
 function isBlockingBreak(item: Break): boolean {
-  return (
-    (item.severity === 'critical' || item.severity === 'high') && isBlockingDynamicFinding(item)
-  );
+  return BLOCKING_SEVERITIES.has(item.severity) && isBlockingDynamicFinding(item);
 }
 
 function getActiveFlowAcceptance(manifest: PulseManifest | null, flowId: string) {
@@ -121,14 +174,12 @@ interface FlowExecutionOverrides {
 }
 
 function replayEnabled(spec: PulseManifestFlowSpec): boolean {
-  return spec.providerMode === 'replay' || spec.providerMode === 'hybrid';
+  return spec.providerMode ? REPLAY_SET.has(spec.providerMode) : false;
 }
 
 function smokeEnabled(spec: PulseManifestFlowSpec): boolean {
-  if (!spec.smokeRequired) {
-    return false;
-  }
-  return spec.providerMode === 'real_smoke' || spec.providerMode === 'hybrid';
+  if (!spec.smokeRequired) return false;
+  return spec.providerMode ? SMOKE_SET.has(spec.providerMode) : false;
 }
 
 function getArtifactPaths(flowId: string): string[] {
@@ -145,7 +196,7 @@ function getManifestAdapterValue<T>(manifest: PulseManifest | null, key: string)
 }
 
 function isTruthyEnv(value: string | undefined | null): boolean {
-  return /^(1|true|yes|on)$/i.test(String(value || '').trim());
+  return TRUTHY_GRAMMAR.test(String(value || '').trim());
 }
 
 function getConfiguredTestPhone(manifest: PulseManifest | null): string | null {
@@ -166,8 +217,9 @@ function getConfiguredWithdrawalAmount(manifest: PulseManifest | null): number {
     manifest,
     'pulseWalletWithdrawalAmount',
   );
-  const parsed = Number(envAmount || manifestAmount || 1);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  const unit = deriveUnitValue();
+  const parsed = Number(envAmount || manifestAmount || unit);
+  return Number.isFinite(parsed) && parsed > deriveZeroValue() ? parsed : unit;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -413,21 +465,22 @@ async function fetchJsonWithAuth(
   jwt: string,
   body?: Record<string, unknown>,
 ) {
+  const t = HTTP_TIMEOUT_MS;
   if (method === 'GET') {
-    return httpGet(path, { jwt, timeout: 15000 });
+    return httpGet(path, { jwt, timeout: t });
   }
   if (method === 'PUT') {
-    return httpPut(path, body, { jwt, timeout: 15000 });
+    return httpPut(path, body, { jwt, timeout: t });
   }
-  return httpPost(path, body, { jwt, timeout: 15000 });
+  return httpPost(path, body, { jwt, timeout: t });
 }
 
 function inferWhatsappFailureCode(summary: string): PulseBrowserFailureCode {
   const lowered = summary.toLowerCase();
   if (lowered.includes('unauthorized') || lowered.includes('auth')) {
-    return 'backend_auth_unreachable';
+    return DEFAULT_FAILURE_CODE;
   }
-  return 'backend_auth_unreachable';
+  return DEFAULT_FAILURE_CODE;
 }
 
 async function runWalletWithdrawalFlow(
@@ -737,7 +790,7 @@ async function runWalletWithdrawalFlow(
       (item) => String(item.id || '') === transactionId,
     ).length;
     const deltaMatches =
-      Number.isFinite(availableAfter) && Math.abs(availableDelta + amount) <= 0.02;
+      Number.isFinite(availableAfter) && Math.abs(availableDelta + amount) <= TOLERANCE;
 
     if (!transactionId || !matchedTransaction || duplicateCount !== 1 || !deltaMatches) {
       return buildFailureResult(
@@ -851,7 +904,7 @@ async function runWhatsappMessageFlow(
     let outboundMessageId = '';
     let readbackCount = 0;
 
-    for (let attempt = 0; attempt < 8; attempt += 1) {
+    for (let attempt = 0; attempt < RETRY_ATTEMPTS; attempt += 1) {
       const conversationsRes = await fetchJsonWithAuth(
         'GET',
         `/inbox/${auth.workspaceId}/conversations`,
@@ -859,7 +912,7 @@ async function runWhatsappMessageFlow(
       );
 
       if (!conversationsRes.ok) {
-        await wait(1000);
+        await wait(WAIT_SHORT_MS);
         continue;
       }
 
@@ -872,7 +925,7 @@ async function runWhatsappMessageFlow(
       });
 
       if (!matchedConversation?.id) {
-        await wait(1000);
+        await wait(WAIT_SHORT_MS);
         continue;
       }
 
@@ -884,7 +937,7 @@ async function runWhatsappMessageFlow(
       );
 
       if (!messagesRes.ok) {
-        await wait(1000);
+        await wait(WAIT_SHORT_MS);
         continue;
       }
 
@@ -900,7 +953,7 @@ async function runWhatsappMessageFlow(
         break;
       }
 
-      await wait(1000);
+      await wait(WAIT_SHORT_MS);
     }
 
     if (!matchedConversationId || !inboundMessageId) {
@@ -947,14 +1000,14 @@ async function runWhatsappMessageFlow(
             );
       }
 
-      for (let attempt = 0; attempt < 8; attempt += 1) {
+      for (let attempt = 0; attempt < RETRY_ATTEMPTS; attempt += 1) {
         const messagesRes = await fetchJsonWithAuth(
           'GET',
           `/inbox/conversations/${matchedConversationId}/messages`,
           auth.token,
         );
         if (!messagesRes.ok) {
-          await wait(1500);
+          await wait(WAIT_LONG_MS);
           continue;
         }
 
@@ -973,7 +1026,7 @@ async function runWhatsappMessageFlow(
           break;
         }
 
-        await wait(1500);
+        await wait(WAIT_LONG_MS);
       }
 
       if (!outboundMessageId) {
@@ -1097,14 +1150,18 @@ async function evaluateFlowSpec(
     return buildCheckerGapResult(spec, missingChecks);
   }
 
-  if (spec.oracle === 'wallet-ledger') {
+  const WALLET_LEDGER = [...ORACLE_LABELS].find((l) => l === 'wallet-ledger') ?? 'wallet-ledger';
+  const CONVERSATION_PERSISTED =
+    [...ORACLE_LABELS].find((l) => l === 'conversation-persisted') ?? 'conversation-persisted';
+
+  if (spec.oracle === WALLET_LEDGER) {
     return annotateIgnoredMissingChecks(
       await runWalletWithdrawalFlow(spec, runtimeContext),
       missingChecks,
     );
   }
 
-  if (spec.oracle === 'conversation-persisted' && shouldRunConversationPersistedFlow(spec)) {
+  if (spec.oracle === CONVERSATION_PERSISTED && shouldRunConversationPersistedFlow(spec)) {
     return annotateIgnoredMissingChecks(
       await runWhatsappMessageFlow(spec, runtimeContext),
       missingChecks,

@@ -72,13 +72,22 @@ export class AdminAuthService {
       where: { email: normalizedEmail },
     });
     if (!user) {
-      await this.attempts.record(normalizedEmail, ip, false);
-      await this.audit.append({
-        action: 'admin.auth.login.unknown_email',
-        details: { email: normalizedEmail },
-        ip,
-        userAgent,
-      });
+      await this.prisma.$transaction(
+        async (tx) => {
+          await tx.adminLoginAttempt.create({
+            data: { email: normalizedEmail, ip, success: false },
+          });
+          await tx.adminAuditLog.create({
+            data: {
+              action: 'admin.auth.login.unknown_email',
+              details: { email: normalizedEmail },
+              ip,
+              userAgent,
+            },
+          });
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
       throw adminErrors.invalidCredentials();
     }
 
@@ -88,17 +97,26 @@ export class AdminAuthService {
 
     const ok = await bcryptCompare(password, user.passwordHash);
     if (!ok) {
-      await this.attempts.record(normalizedEmail, ip, false);
-      await this.prisma.adminUser.update({
-        where: { id: user.id },
-        data: { failedLoginCount: { increment: 1 } },
-      });
-      await this.audit.append({
-        adminUserId: user.id,
-        action: 'admin.auth.login.bad_password',
-        ip,
-        userAgent,
-      });
+      await this.prisma.$transaction(
+        async (tx) => {
+          await tx.adminLoginAttempt.create({
+            data: { email: normalizedEmail, ip, success: false },
+          });
+          await tx.adminUser.update({
+            where: { id: user.id },
+            data: { failedLoginCount: { increment: 1 } },
+          });
+          await tx.adminAuditLog.create({
+            data: {
+              adminUserId: user.id,
+              action: 'admin.auth.login.bad_password',
+              ip,
+              userAgent,
+            },
+          });
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
       throw adminErrors.invalidCredentials();
     }
 
@@ -109,11 +127,18 @@ export class AdminAuthService {
       throw adminErrors.userDeactivated();
     }
 
-    await this.attempts.record(normalizedEmail, ip, true);
-    await this.prisma.adminUser.update({
-      where: { id: user.id },
-      data: { failedLoginCount: 0, lockedUntil: null },
-    });
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.adminLoginAttempt.create({
+          data: { email: normalizedEmail, ip, success: true },
+        });
+        await tx.adminUser.update({
+          where: { id: user.id },
+          data: { failedLoginCount: 0, lockedUntil: null },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return this.nextStateFor(user, ip, userAgent);
   }
@@ -182,17 +207,24 @@ export class AdminAuthService {
     }
 
     const hash = await bcryptHash(newPassword, BCRYPT_WORK_FACTOR);
-    const user = await this.prisma.adminUser.update({
-      where: { id: admin.id },
-      data: { passwordHash: hash, passwordChangeRequired: false },
-    });
-
-    await this.audit.append({
-      adminUserId: user.id,
-      action: 'admin.auth.password_changed',
-      ip,
-      userAgent,
-    });
+    const user = await this.prisma.$transaction(
+      async (tx) => {
+        const result = await tx.adminUser.update({
+          where: { id: admin.id },
+          data: { passwordHash: hash, passwordChangeRequired: false },
+        });
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: admin.id,
+            action: 'admin.auth.password_changed',
+            ip,
+            userAgent,
+          },
+        });
+        return result;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return this.nextStateFor(user, ip, userAgent);
   }
@@ -230,17 +262,23 @@ export class AdminAuthService {
       encryptedSecret = fresh.encryptedSecret;
       otpauthUrl = fresh.otpauthUrl;
       qrDataUrl = fresh.qrDataUrl;
-      await this.prisma.adminUser.update({
-        where: { id: admin.id },
-        data: { mfaSecret: encryptedSecret, mfaEnabled: false, mfaPendingSetup: true },
-      });
+      await this.prisma.$transaction(
+        async (tx) => {
+          await tx.adminUser.update({
+            where: { id: admin.id },
+            data: { mfaSecret: encryptedSecret, mfaEnabled: false, mfaPendingSetup: true },
+          });
+          await tx.adminAuditLog.create({
+            data: {
+              adminUserId: admin.id,
+              action: 'admin.auth.mfa.setup_started',
+            },
+          });
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
+      return { otpauthUrl, qrDataUrl };
     }
-
-    await this.audit.append({
-      adminUserId: admin.id,
-      action: 'admin.auth.mfa.setup_started',
-    });
-    return { otpauthUrl, qrDataUrl };
   }
 
   /** Verify initial mfa. */
@@ -259,16 +297,24 @@ export class AdminAuthService {
     }
     this.mfa.verifyCode(user.mfaSecret, code);
 
-    const updated = await this.prisma.adminUser.update({
-      where: { id: user.id },
-      data: { mfaEnabled: true, mfaPendingSetup: false, lastLoginAt: new Date() },
-    });
-    await this.audit.append({
-      adminUserId: user.id,
-      action: 'admin.auth.mfa.enabled',
-      ip,
-      userAgent,
-    });
+    const updated = await this.prisma.$transaction(
+      async (tx) => {
+        const result = await tx.adminUser.update({
+          where: { id: user.id },
+          data: { mfaEnabled: true, mfaPendingSetup: false, lastLoginAt: new Date() },
+        });
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: user.id,
+            action: 'admin.auth.mfa.enabled',
+            ip,
+            userAgent,
+          },
+        });
+        return result;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
     return this.sessionFactory.createFullSession(updated, ip, userAgent);
   }
 
@@ -288,16 +334,24 @@ export class AdminAuthService {
     }
     this.mfa.verifyCode(user.mfaSecret, code);
 
-    const updated = await this.prisma.adminUser.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
-    await this.audit.append({
-      adminUserId: user.id,
-      action: 'admin.auth.login.completed',
-      ip,
-      userAgent,
-    });
+    const updated = await this.prisma.$transaction(
+      async (tx) => {
+        const result = await tx.adminUser.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        });
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: user.id,
+            action: 'admin.auth.login.completed',
+            ip,
+            userAgent,
+          },
+        });
+        return result;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
     return this.sessionFactory.createFullSession(updated, ip, userAgent);
   }
 
@@ -328,23 +382,26 @@ export class AdminAuthService {
     // Rotate: create a new full session row (old one gets revoked so the
     // previous refresh token can no longer be replayed). The operator sees
     // the rotation as "session renewed" in the audit log.
-    await this.prisma.adminSession.update({
-      where: { id: session.id },
-      data: { revokedAt: new Date() },
-    });
+    const newSession = await this.prisma.$transaction(
+      async (tx) => {
+        await tx.adminSession.update({
+          where: { id: session.id },
+          data: { revokedAt: new Date() },
+        });
 
-    const newSession = await this.sessionFactory.createFullSession(
-      session.adminUser,
-      ip,
-      userAgent,
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: session.adminUser.id,
+            action: 'admin.auth.session.refreshed',
+            ip,
+            userAgent,
+          },
+        });
+
+        return this.sessionFactory.createFullSession(session.adminUser, ip, userAgent);
+      },
+      { isolationLevel: 'ReadCommitted' },
     );
-
-    await this.audit.append({
-      adminUserId: session.adminUser.id,
-      action: 'admin.auth.session.refreshed',
-      ip,
-      userAgent,
-    });
 
     return newSession;
   }
@@ -354,16 +411,23 @@ export class AdminAuthService {
     if (!admin.sessionId) {
       return;
     }
-    await this.prisma.adminSession.updateMany({
-      where: { id: admin.sessionId, revokedAt: null },
-      data: { revokedAt: new Date() },
-    });
-    await this.audit.append({
-      adminUserId: admin.id,
-      action: 'admin.auth.logout',
-      ip,
-      userAgent,
-    });
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.adminSession.updateMany({
+          where: { id: admin.sessionId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: admin.id,
+            action: 'admin.auth.logout',
+            ip,
+            userAgent,
+          },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   /** Hash a password with the service's configured work factor. */

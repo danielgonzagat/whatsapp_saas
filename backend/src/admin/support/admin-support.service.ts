@@ -158,22 +158,29 @@ export class AdminSupportService {
       throw adminErrors.userNotFound();
     }
 
-    await this.prisma.conversation.updateMany({
-      where: { id: conversationId, workspaceId: conversation.workspaceId },
-      data: { status },
-    });
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.conversation.updateMany({
+          where: { id: conversationId, workspaceId: conversation.workspaceId },
+          data: { status },
+        });
 
-    await this.audit.append({
-      adminUserId: actorId,
-      action: 'admin.support.status_updated',
-      entityType: 'Conversation',
-      entityId: conversationId,
-      details: {
-        previousStatus: conversation.status,
-        nextStatus: status,
-        workspaceId: conversation.workspaceId,
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: actorId,
+            action: 'admin.support.status_updated',
+            entityType: 'Conversation',
+            entityId: conversationId,
+            details: {
+              previousStatus: conversation.status,
+              nextStatus: status,
+              workspaceId: conversation.workspaceId,
+            },
+          },
+        });
       },
-    });
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   /** Reply. */
@@ -190,29 +197,36 @@ export class AdminSupportService {
       throw adminErrors.userNotFound();
     }
 
-    await this.prisma.message.create({
-      data: {
-        conversationId,
-        workspaceId: conversation.workspaceId,
-        contactId: conversation.contactId,
-        direction: 'OUTBOUND',
-        type: 'NOTE',
-        content,
-        status: 'SENT',
+    await this.prisma.$transaction(
+      async (tx) => {
+        await tx.message.create({
+          data: {
+            conversationId,
+            workspaceId: conversation.workspaceId,
+            contactId: conversation.contactId,
+            direction: 'OUTBOUND',
+            type: 'NOTE',
+            content,
+            status: 'SENT',
+          },
+        });
+
+        await tx.conversation.updateMany({
+          where: { id: conversationId, workspaceId: conversation.workspaceId },
+          data: { lastMessageAt: new Date(), unreadCount: 0 },
+        });
+
+        await tx.adminAuditLog.create({
+          data: {
+            adminUserId: actorId,
+            action: 'admin.support.replied',
+            entityType: 'Conversation',
+            entityId: conversationId,
+            details: { contentLength: content.length, workspaceId: conversation.workspaceId },
+          },
+        });
       },
-    });
-
-    await this.prisma.conversation.updateMany({
-      where: { id: conversationId, workspaceId: conversation.workspaceId },
-      data: { lastMessageAt: new Date(), unreadCount: 0 },
-    });
-
-    await this.audit.append({
-      adminUserId: actorId,
-      action: 'admin.support.replied',
-      entityType: 'Conversation',
-      entityId: conversationId,
-      details: { contentLength: content.length, workspaceId: conversation.workspaceId },
-    });
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 }
