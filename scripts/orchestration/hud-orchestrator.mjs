@@ -23,7 +23,7 @@ const REFRESH_LOG_PATH = join(REPO_ROOT, 'HUD_LAST_REFRESH.json');
 const PID_FILE = '/tmp/kloel-hud-orchestrator.pid';
 const DEFAULT_WATCH_MINUTES = 5;
 
-const STEP_TIMEOUT_MS = 60_000;
+const STEP_TIMEOUT_MS = 180_000;
 
 const POLL_INTERVAL_MS = 60_000;
 const WATCH_FILE_EXTENSIONS = new Set([

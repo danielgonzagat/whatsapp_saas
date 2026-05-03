@@ -551,9 +551,14 @@ function catE_mcpDoorway() {
   if (existsSync(claudeConfigPath)) {
     try {
       const claudeCfg = JSON.parse(readFileSync(claudeConfigPath, 'utf8'));
-      for (const [project, config] of Object.entries(claudeCfg)) {
-        if (config && typeof config === 'object' && config.mcpServers) {
-          if ('obsidian' in config.mcpServers) {
+      // Check top-level mcpServers.obsidian (fallback)
+      if (claudeCfg.mcpServers?.obsidian) {
+        mcpFound = true;
+      }
+      // Check projects.*.mcpServers.obsidian (primary path)
+      if (!mcpFound && claudeCfg.projects) {
+        for (const proj of Object.values(claudeCfg.projects)) {
+          if (proj?.mcpServers?.obsidian) {
             mcpFound = true;
             break;
           }

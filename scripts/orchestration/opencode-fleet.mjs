@@ -119,15 +119,16 @@ function runOne(task, runDir, opts) {
     child.stdout.pipe(out);
     child.stderr.pipe(err);
 
-    const timeout = setTimeout(
-      () => {
-        child.kill('SIGKILL');
-      },
-      (opts.timeoutSec || DEFAULT_TIMEOUT_SEC) * 1000,
-    );
+    const timeoutSec = opts.timeoutSec === undefined ? DEFAULT_TIMEOUT_SEC : opts.timeoutSec;
+    const timeout =
+      timeoutSec > 0
+        ? setTimeout(() => {
+            child.kill('SIGKILL');
+          }, timeoutSec * 1000)
+        : null;
 
     child.on('exit', (code, signal) => {
-      clearTimeout(timeout);
+      if (timeout) clearTimeout(timeout);
       const durationMs = nowMs() - start;
       writeFileSync(exitPath, String(code ?? -1));
       out.end();
