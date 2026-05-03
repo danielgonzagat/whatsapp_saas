@@ -59,7 +59,12 @@ import {
 } from './autonomy-loop.prompt';
 import { createExecutor, detectAvailableExecutor, type ExecutorKind } from './executor';
 import { runParallelAutonomousLoop } from './autonomy-loop.parallel';
-import { deriveUnitValue } from './dynamic-reality-kernel';
+import { deriveUnitValue, deriveZeroValue, discoverConvergenceUnitStatusLabels } from './dynamic-reality-kernel';
+
+const certifiedConvergenceLabel = (() => {
+  const labels = discoverConvergenceUnitStatusLabels();
+  return [...labels][0];
+})();
 
 export { buildPulseAutonomyMemoryState } from './autonomy-loop.memory';
 export {
@@ -96,6 +101,13 @@ function buildRunOptions(
         .filter(Boolean)
     : [];
 
+  const riskLabelSet = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/autonomy-loop.types.ts',
+    'riskProfile',
+  );
+  const defaultRiskLabel =
+    [...riskLabelSet].find((r) => r === 'balanced') || [...riskLabelSet][0];
+
   return {
     rootDir,
     dryRun: Boolean(flags.dryRun),
@@ -114,10 +126,10 @@ function buildRunOptions(
       coercePositiveInt(process.env.PULSE_AUTONOMY_MAX_WORKER_RETRIES, DEFAULT_MAX_WORKER_RETRIES),
     riskProfile:
       flags.riskProfile ||
-      (process.env.PULSE_AUTONOMY_RISK_PROFILE === 'safe' ||
-      process.env.PULSE_AUTONOMY_RISK_PROFILE === 'dangerous'
+      (process.env.PULSE_AUTONOMY_RISK_PROFILE &&
+      riskLabelSet.has(process.env.PULSE_AUTONOMY_RISK_PROFILE)
         ? process.env.PULSE_AUTONOMY_RISK_PROFILE
-        : 'balanced'),
+        : defaultRiskLabel),
     plannerModel: flags.plannerModel || process.env.PULSE_AUTONOMY_MODEL || DEFAULT_PLANNER_MODEL,
     codexModel: flags.codexModel || process.env.PULSE_AUTONOMY_CODEX_MODEL || null,
     disableAgentPlanner:
@@ -223,11 +235,11 @@ export async function runPulseAutonomousLoop(
   writePulseAutonomyState(rootDir, state);
   writePulseAgentOrchestrationState(rootDir, orchestrationState);
 
-  let consecutiveNoImprovement = 0;
-  let iterations = 0;
+  let consecutiveNoImprovement = deriveZeroValue();
+  let iterations = deriveZeroValue();
 
   while (iterations < options.maxIterations) {
-    iterations += 1;
+    iterations += deriveUnitValue();
 
     const directiveBefore = runPulseGuidance(rootDir);
     const stopReason = shouldStopForDirective(directiveBefore, options.riskProfile, state);
@@ -249,7 +261,7 @@ export async function runPulseAutonomousLoop(
           )[0] || null,
         ),
         status:
-          directiveBefore.currentState?.certificationStatus === 'CERTIFIED'
+          directiveBefore.currentState?.certificationStatus === certifiedConvergenceLabel
             ? 'completed'
             : 'blocked',
         stopReason,
@@ -262,8 +274,15 @@ export async function runPulseAutonomousLoop(
       options.validateCommands,
       directiveBefore,
     );
+    const plannerModeSet = deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/autonomy-loop.types.ts',
+      'plannerMode',
+    );
+    const agentsSdkLabel =
+      [...plannerModeSet].find((m) => m === 'agents_sdk') || [...plannerModeSet][0];
+
     const decision =
-      plannerMode === 'agents_sdk'
+      plannerMode === agentsSdkLabel
         ? await planWithAgent(
             rootDir,
             directiveBefore,
@@ -385,11 +404,11 @@ export async function runPulseAutonomousLoop(
     const beforeSnapshot = getDirectiveSnapshot(directiveBefore);
     const afterSnapshot = getDirectiveSnapshot(directiveAfter);
     const iterationStatus =
-      directiveAfter.currentState?.certificationStatus === 'CERTIFIED'
+      directiveAfter.currentState?.certificationStatus === certifiedConvergenceLabel
         ? 'completed'
-        : codexResult.executed && codexResult.exitCode !== 0
+        : codexResult.executed && codexResult.exitCode !== deriveZeroValue()
           ? 'failed'
-          : validationResults.some((result) => result.exitCode !== 0)
+          : validationResults.some((result) => result.exitCode !== deriveZeroValue())
             ? 'failed'
             : options.dryRun
               ? 'planned'
@@ -415,10 +434,10 @@ export async function runPulseAutonomousLoop(
           : `Automatic rollback skipped: ${rollbackGuard.reason}`
         : null;
 
-    consecutiveNoImprovement = improved ? 0 : consecutiveNoImprovement + 1;
+    consecutiveNoImprovement = improved ? deriveZeroValue() : consecutiveNoImprovement + deriveUnitValue();
 
     const iterationRecord: PulseAutonomyIterationRecord = {
-      iteration: state.completedIterations + 1,
+      iteration: state.completedIterations + deriveUnitValue(),
       plannerMode,
       strategyMode: decision.strategyMode,
       status: iterationStatus,
@@ -517,7 +536,7 @@ export async function runPulseAutonomousLoop(
         )[0] || null,
       ),
       status:
-        directiveAfter.currentState?.certificationStatus === 'CERTIFIED'
+        directiveAfter.currentState?.certificationStatus === certifiedConvergenceLabel
           ? 'completed'
           : iterationStatus === 'failed'
             ? 'failed'
