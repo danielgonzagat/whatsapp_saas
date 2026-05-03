@@ -991,37 +991,39 @@ function catJ_pulseEngines() {
     }
   }
 
-  // 8 engines availability
+  // 8 engines availability — engine-file name → binary detection
+  // Some engines map to non-eponymous binaries (npmaudit→npm subcommand, markdownlint→markdownlint-cli2).
   const engines = [
-    'yamllint',
-    'actionlint',
-    'shellcheck',
-    'hadolint',
-    'gitleaks',
-    'depcheck',
-    'npmaudit',
-    'markdownlint',
+    { name: 'yamllint', binaries: ['yamllint'] },
+    { name: 'actionlint', binaries: ['actionlint'] },
+    { name: 'shellcheck', binaries: ['shellcheck'] },
+    { name: 'hadolint', binaries: ['hadolint'] },
+    { name: 'gitleaks', binaries: ['gitleaks'] },
+    { name: 'depcheck', binaries: ['depcheck'] },
+    { name: 'npmaudit', binaries: ['npm'] }, // npm provides `audit` subcommand
+    { name: 'markdownlint', binaries: ['markdownlint-cli2', 'markdownlint'] },
   ];
 
   for (const engine of engines) {
-    try {
-      execSync(`command -v ${engine}`, {
-        encoding: 'utf8',
-        timeout: 5000,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-      checks.push({
-        label: `engine: ${engine}`,
-        pass: true,
-        detail: 'available',
-      });
-    } catch {
-      checks.push({
-        label: `engine: ${engine}`,
-        pass: false,
-        detail: 'not found in PATH',
-      });
+    let found = false;
+    for (const bin of engine.binaries) {
+      try {
+        execSync(`command -v ${bin}`, {
+          encoding: 'utf8',
+          timeout: 5000,
+          stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        found = true;
+        break;
+      } catch {
+        /* try next */
+      }
     }
+    checks.push({
+      label: `engine: ${engine.name}`,
+      pass: found,
+      detail: found ? 'available' : 'not found in PATH',
+    });
   }
 
   // REQUIREMENTS.md exists in scripts/findings-engines/
