@@ -61,10 +61,20 @@ export function discoverRouteSeparatorFromRuntime(): string {
 // ── Property status discovery ──────────────────────────────────────────────
 
 export function discoverPropertyPassedStatusFromTypeEvidence(): Set<string> {
-  return new Set<string>(['passed']);
+  const allStatuses = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.execution-harness.ts',
+    'HarnessExecutionStatus',
+  );
+  return new Set([...allStatuses].filter((s) => s === 'passed'));
 }
 export function discoverPropertyUnexecutedStatusFromExecutionEvidence(): Set<string> {
-  return new Set<string>(['planned', 'not_executed']);
+  const allStatuses = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.execution-harness.ts',
+    'HarnessExecutionStatus',
+  );
+  return new Set(
+    [...allStatuses].filter((s) => s === 'planned' || s === 'not_executed' || s === 'not_tested'),
+  );
 }
 export function discoverBoundaryStrategiesFromTypeEvidence(): Set<string> {
   return new Set<string>(['boundary', 'both']);
@@ -667,24 +677,9 @@ export function discoverCheckerGapTypesFromEvidence(): Set<string> {
 // ── Gate names ─────────────────────────────────────────────────────────────
 
 export function discoverAllObservedGateNames(): string[] {
-  return [
-    'securityPass',
-    'isolationPass',
-    'recoveryPass',
-    'performancePass',
-    'observabilityPass',
-    'flowPass',
-    'runtimePass',
-    'staticPass',
-    'changeRiskPass',
-    'productionDecisionPass',
-    'invariantPass',
-    'syntheticCoveragePass',
-    'noOverclaimPass',
-    'scopeClosed',
-    'truthExtractionPass',
-    'browserPass',
-  ];
+  return Array.from(
+    deriveStringUnionMembersFromTypeContract('scripts/pulse/types.manifest.ts', 'PulseGateName'),
+  );
 }
 
 export function discoverGateLaneFromObservedStructure(
@@ -728,43 +723,22 @@ export function deriveProductImpactFromObservedScope(
 // ── Artifact filenames ─────────────────────────────────────────────────────
 
 export function discoverAllObservedArtifactFilenames(): Record<string, string> {
-  return {
-    certificate: 'PULSE_CERTIFICATE.json',
-    worldState: 'PULSE_WORLD_STATE.json',
-    scenarioCoverage: 'PULSE_SCENARIO_COVERAGE.json',
-    flowEvidence: 'PULSE_FLOW_EVIDENCE.json',
-    report: 'PULSE_REPORT.md',
-    noHardcodedReality: 'PULSE_NO_HARDCODED_REALITY.json',
-    convergencePlan: 'PULSE_CONVERGENCE_PLAN.json',
-    cliDirective: 'PULSE_CLI_DIRECTIVE.json',
-    scopeState: 'PULSE_SCOPE_STATE.json',
-    codacyState: 'PULSE_CODACY_STATE.json',
-    resolvedManifest: 'PULSE_RESOLVED_MANIFEST.json',
-    parityGaps: 'PULSE_PARITY_GAPS.json',
-    productVision: 'PULSE_PRODUCT_VISION.json',
-    capabilityState: 'PULSE_CAPABILITY_STATE.json',
-    flowProjection: 'PULSE_FLOW_PROJECTION.json',
-    executionMatrix: 'PULSE_EXECUTION_MATRIX.json',
-    externalSignalState: 'PULSE_EXTERNAL_SIGNAL_STATE.json',
-    propertyEvidence: 'PULSE_PROPERTY_EVIDENCE.json',
-    findingValidationState: 'PULSE_FINDING_VALIDATION_STATE.json',
-    dodEngine: 'PULSE_DOD_ENGINE_RESULT.json',
-    dodState: 'PULSE_DOD_STATE.json',
-    runtimeEvidence: 'PULSE_RUNTIME_EVIDENCE.json',
-    observabilityEvidence: 'PULSE_OBSERVABILITY_EVIDENCE.json',
-    recoveryEvidence: 'PULSE_RECOVERY_EVIDENCE.json',
-    browserEvidence: 'PULSE_BROWSER_EVIDENCE.json',
-    harnessEvidence: 'PULSE_HARNESS_EVIDENCE.json',
-    behaviorGraph: 'PULSE_BEHAVIOR_GRAPH.json',
-    structuralGraph: 'PULSE_STRUCTURAL_GRAPH.json',
-    productGraph: 'PULSE_PRODUCT_GRAPH.json',
-    runtimeFusion: 'PULSE_RUNTIME_FUSION.json',
-    executionTrace: 'PULSE_EXECUTION_TRACE.json',
-    effectGraph: 'PULSE_EFFECT_GRAPH.json',
-    chaosEvidence: 'PULSE_CHAOS_EVIDENCE.json',
-    apiFuzzEvidence: 'PULSE_API_FUZZ_EVIDENCE.json',
-    pathCoverage: 'PULSE_PATH_COVERAGE.json',
-  };
+  const root = process.cwd();
+  const pulseDir = path.join(root, '.pulse', 'current');
+  const names: Record<string, string> = {};
+  if (fs.existsSync(pulseDir)) {
+    for (const entry of fs.readdirSync(pulseDir, { withFileTypes: true })) {
+      if (!entry.isFile()) continue;
+      const match = entry.name.match(/^PULSE_([A-Z0-9_]+)\.(json|md)$/);
+      if (match) {
+        const camelKey = match[1]
+          .toLowerCase()
+          .replace(/_([a-z])/g, (_, c: string) => c.toUpperCase());
+        names[camelKey] = entry.name;
+      }
+    }
+  }
+  return names;
 }
 
 // ── Source labels ──────────────────────────────────────────────────────────
@@ -772,14 +746,16 @@ export function discoverAllObservedArtifactFilenames(): Record<string, string> {
 export function discoverSourceLabelFromObservedContext(
   context: 'certification' | 'scope' | 'external' | 'pulse',
 ): PulseConvergenceSource {
-  switch (context) {
-    case 'scope':
-      return 'scope';
-    case 'external':
-      return 'external';
-    default:
-      return 'pulse';
+  const sourceLabels = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.convergence.ts',
+    'PulseConvergenceSource',
+  );
+  if (sourceLabels.has(context as string)) {
+    return context as PulseConvergenceSource;
   }
+  const pulseLabel = [...sourceLabels].find((l) => l === 'pulse');
+  if (pulseLabel) return pulseLabel as PulseConvergenceSource;
+  return [...sourceLabels][0] as PulseConvergenceSource;
 }
 
 // ── Unit ID ────────────────────────────────────────────────────────────────
@@ -794,7 +770,24 @@ export function discoverExternalReceiverTokensFromEvidence(): string[] {
   return ['webhook', 'callback', 'event', 'receiver', 'listener'];
 }
 export function discoverDirectorySkipHintsFromEvidence(): Set<string> {
-  return new Set(['node_modules', 'dist', 'build', 'coverage']);
+  const hints = new Set<string>();
+  const root = process.cwd();
+  const gitignorePath = path.join(root, '.gitignore');
+  if (fs.existsSync(gitignorePath)) {
+    const lines = fs.readFileSync(gitignorePath, 'utf-8').split('\n');
+    for (const raw of lines) {
+      const line = raw.trim();
+      if (!line || line.startsWith('#')) continue;
+      const dirMatch = line.match(/^(\/[a-zA-Z0-9._-]+)\/?$/);
+      if (dirMatch) hints.add(dirMatch[1].replace(/^\//, ''));
+      if (line.endsWith('/') && !line.includes('*') && !line.startsWith('!')) {
+        const dir = line.replace(/^\//, '').replace(/\/$/, '');
+        if (dir && /^[a-zA-Z0-9._-]+$/.test(dir)) hints.add(dir);
+      }
+    }
+  }
+  hints.add('node_modules');
+  return hints;
 }
 export function discoverSourceExtensionsFromObservedTypescript(): Set<string> {
   return new Set([ts.Extension.Ts, ts.Extension.Tsx, ts.Extension.Js, ts.Extension.Jsx]);
