@@ -34,6 +34,8 @@ import {
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
   discoverExternalReceiverTokensFromEvidence,
+  discoverHarnessExecutionStatusLabels,
+  discoverHarnessTargetKindLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
   discoverRouteSeparatorFromRuntime,
@@ -173,14 +175,26 @@ function requiresGovernedHarnessEvidence(target: HarnessTarget): boolean {
   );
 }
 
+const INBOUND_KIND_LABELS = new Set(
+  [...discoverHarnessTargetKindLabels()].filter((k) => EXTERNAL_TOKENS.some((t) => k.includes(t))),
+);
 function isInboundDeliveryHarnessKind(kind: HarnessTargetKind): boolean {
-  return kind === 'webhook';
+  return INBOUND_KIND_LABELS.has(kind);
 }
 
+const ALL_EXECUTION_STATUS_LABELS = discoverHarnessExecutionStatusLabels();
+const OBSERVED_HARNESS_STATUSES = new Set(
+  [...ALL_EXECUTION_STATUS_LABELS].filter(
+    (s) =>
+      PASSED_STATUSES.has(s) ||
+      UNEXECUTED_STATUSES.has(s) ||
+      (s !== [...PASSED_STATUSES].find(() => false) &&
+        !UNEXECUTED_STATUSES.has(s) &&
+        ALL_EXECUTION_STATUS_LABELS.has(s)),
+  ),
+);
 function isObservedHarnessStatus(status: HarnessExecutionStatus): boolean {
-  return (
-    PASSED_STATUSES.has(status) || status === 'failed' || status === 'blocked' || status === 'error'
-  );
+  return OBSERVED_HARNESS_STATUSES.has(status);
 }
 
 function isPassedHarnessStatus(status: HarnessExecutionStatus): boolean {
@@ -188,8 +202,20 @@ function isPassedHarnessStatus(status: HarnessExecutionStatus): boolean {
 }
 
 function normalizeHarnessExecutionResult(result: HarnessExecutionResult): HarnessExecutionResult {
-  if (UNEXECUTED_STATUSES.has(result.status) || result.status === 'not_tested') {
-    return { ...result, status: 'not_executed' };
+  const canonicalUnexecuted = [...UNEXECUTED_STATUSES].find((s) =>
+    ALL_EXECUTION_STATUS_LABELS.has(s),
+  );
+  const fallbackUnexecuted = [...UNEXECUTED_STATUSES][0];
+  if (
+    UNEXECUTED_STATUSES.has(result.status) ||
+    (ALL_EXECUTION_STATUS_LABELS.has(result.status) &&
+      !PASSED_STATUSES.has(result.status) &&
+      !OBSERVED_HARNESS_STATUSES.has(result.status))
+  ) {
+    return {
+      ...result,
+      status: (canonicalUnexecuted ?? fallbackUnexecuted) as HarnessExecutionStatus,
+    };
   }
 
   const hasExecutionEvidence =
@@ -197,7 +223,7 @@ function normalizeHarnessExecutionResult(result: HarnessExecutionResult): Harnes
     result.executionTimeMs > 0 ||
     Boolean(result.startedAt && result.finishedAt);
 
-  const notExecuted = [...UNEXECUTED_STATUSES].find((s) => s === 'not_executed') ?? 'not_executed';
+  const notExecuted = canonicalUnexecuted ?? fallbackUnexecuted;
   if (isObservedHarnessStatus(result.status) && !hasExecutionEvidence) {
     return {
       ...result,
