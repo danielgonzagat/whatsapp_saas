@@ -16,6 +16,7 @@ import {
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
   discoverAllObservedArtifactFilenames,
+  deriveStringUnionMembersFromTypeContract,
 } from './dynamic-reality-kernel';
 import { ensureDir, pathExists, readTextFile, writeTextFile } from './safe-fs';
 import { walkFiles } from './parsers/utils';
@@ -24,6 +25,7 @@ import type {
   APIFuzzEvidence,
   AuthTestCase,
   FuzzTestCaseStatus,
+  IdempotencyResult,
   IdempotencyTestCase,
   RateLimitTestCase,
   SchemaTestCase,
@@ -39,9 +41,46 @@ const UNAUTHORIZED = deriveHttpStatusFromObservedCatalog('Unauthorized');
 const FORBIDDEN = deriveHttpStatusFromObservedCatalog('Forbidden');
 const UNPROCESSABLE = deriveHttpStatusFromObservedCatalog('Unprocessable Entity');
 
-const [PLANNED] = [...discoverPropertyUnexecutedStatusFromExecutionEvidence()];
-const [, NOT_EXECUTED] = [...discoverPropertyUnexecutedStatusFromExecutionEvidence()];
-const [PASSED] = [...discoverPropertyPassedStatusFromTypeEvidence()];
+function toCamelCase(snake: string): string {
+  return snake.replace(/_([a-z])/g, (_m: string, c: string) => c.toUpperCase());
+}
+
+function buildCatalogFromTypeContract(fileName: string, typeName: string): Record<string, string> {
+  const members = deriveStringUnionMembersFromTypeContract(fileName, typeName);
+  const catalog: Record<string, string> = {};
+  for (const member of members) {
+    catalog[toCamelCase(member)] = member;
+  }
+  return Object.freeze(catalog);
+}
+
+let _fuzzTestCaseStatusCatalog: Record<string, FuzzTestCaseStatus> | null = null;
+function requireFuzzTestCaseStatusCatalog(): Record<string, FuzzTestCaseStatus> {
+  if (!_fuzzTestCaseStatusCatalog) {
+    _fuzzTestCaseStatusCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/types.api-fuzzer.ts',
+      'FuzzTestCaseStatus',
+    ) as Record<string, FuzzTestCaseStatus>;
+  }
+  return _fuzzTestCaseStatusCatalog;
+}
+
+let _idempotencyResultCatalog: Record<string, IdempotencyResult> | null = null;
+function requireIdempotencyResultCatalog(): Record<string, IdempotencyResult> {
+  if (!_idempotencyResultCatalog) {
+    _idempotencyResultCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/types.api-fuzzer.ts',
+      'IdempotencyResult',
+    ) as Record<string, IdempotencyResult>;
+  }
+  return _idempotencyResultCatalog;
+}
+
+const STATUS = requireFuzzTestCaseStatusCatalog();
+const IDEM = requireIdempotencyResultCatalog();
+const PLANNED: FuzzTestCaseStatus = STATUS.planned;
+const PASSED: FuzzTestCaseStatus = STATUS.passed;
+const NOT_EXECUTED: FuzzTestCaseStatus = STATUS.not_executed;
 const PASSED_STATUSES = discoverPropertyPassedStatusFromTypeEvidence();
 const UNEXECUTED_STATUSES = discoverPropertyUnexecutedStatusFromExecutionEvidence();
 
@@ -999,7 +1038,7 @@ export function generateIdempotencyTests(endpoint: APIEndpointProbe): Idempotenc
     {
       testId: `${endpoint.endpointId}-idempotency-duplicate`,
       key: `idem-${uniqueId()}`,
-      status: PLANNED,
+      status: IDEM.planned,
       requests: 2,
       uniqueResults: 0,
     },
@@ -1270,7 +1309,7 @@ export function buildAPIFuzzCatalog(rootDir: string): APIFuzzEvidence {
     e.securityTests.some((t) => UNEXECUTED_STATUSES.has(t.status) && t.expectedBlock),
   );
   const endpointsWithIssues = endpoints.filter((e) =>
-    e.securityTests.some((t) => t.status === 'failed' || t.status === 'security_issue'),
+    e.securityTests.some((t) => t.status === STATUS.failed || t.status === STATUS.securityIssue),
   );
   const probedEndpoints = endpoints.filter(endpointHasObservedProbe);
 
@@ -1284,38 +1323,42 @@ export function buildAPIFuzzCatalog(rootDir: string): APIFuzzEvidence {
         e.authTests.some((t) => UNEXECUTED_STATUSES.has(t.status)),
       ).length,
       authTestedEndpoints: endpoints.filter((e) =>
-        e.authTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === 'failed'),
+        e.authTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === STATUS.failed),
       ).length,
       schemaPlannedEndpoints: endpoints.filter((e) =>
         e.schemaTests.some((t) => UNEXECUTED_STATUSES.has(t.status)),
       ).length,
       schemaTestedEndpoints: endpoints.filter((e) =>
-        e.schemaTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === 'failed'),
+        e.schemaTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === STATUS.failed),
       ).length,
       idempotencyPlannedEndpoints: endpoints.filter((e) =>
         e.idempotencyTests.some((t) => UNEXECUTED_STATUSES.has(t.status)),
       ).length,
       idempotencyTestedEndpoints: endpoints.filter((e) =>
-        e.idempotencyTests.some((t) => t.status === 'idempotent' || t.status === 'not_idempotent'),
+        e.idempotencyTests.some(
+          (t) => t.status === IDEM.idempotent || t.status === IDEM.notIdempotent,
+        ),
       ).length,
       rateLimitPlannedEndpoints: endpoints.filter((e) =>
         e.rateLimitTests.some((t) => UNEXECUTED_STATUSES.has(t.status)),
       ).length,
       rateLimitTestedEndpoints: endpoints.filter((e) =>
-        e.rateLimitTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === 'failed'),
+        e.rateLimitTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === STATUS.failed),
       ).length,
       securityPlannedEndpoints: endpoints.filter((e) =>
         e.securityTests.some((t) => UNEXECUTED_STATUSES.has(t.status)),
       ).length,
       securityTestedEndpoints: endpoints.filter((e) =>
-        e.securityTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === 'failed'),
+        e.securityTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === STATUS.failed),
       ).length,
       endpointsWithIssues: endpointsWithIssues.length,
       endpointsWithPlannedSecurityIssues: endpointsWithPlannedSecurityIssues.length,
       criticalSecurityIssues: endpoints.filter(
         (e) =>
           classifyEndpointRisk(e) === 'critical' &&
-          e.securityTests.some((t) => t.status === 'failed' || t.status === 'security_issue'),
+          e.securityTests.some(
+            (t) => t.status === STATUS.failed || t.status === STATUS.securityIssue,
+          ),
       ).length,
       criticalSecurityPlans: endpoints.filter(
         (e) =>
@@ -1338,22 +1381,22 @@ export function buildAPIFuzzCatalog(rootDir: string): APIFuzzEvidence {
 function endpointHasObservedProbe(endpoint: APIEndpointProbe): boolean {
   return (
     endpoint.authTests.some(
-      (test) => PASSED_STATUSES.has(test.status) || test.status === 'failed',
+      (test) => PASSED_STATUSES.has(test.status) || test.status === STATUS.failed,
     ) ||
     endpoint.schemaTests.some(
-      (test) => PASSED_STATUSES.has(test.status) || test.status === 'failed',
+      (test) => PASSED_STATUSES.has(test.status) || test.status === STATUS.failed,
     ) ||
     endpoint.idempotencyTests.some(
-      (test) => test.status === 'idempotent' || test.status === 'not_idempotent',
+      (test) => test.status === IDEM.idempotent || test.status === IDEM.notIdempotent,
     ) ||
     endpoint.rateLimitTests.some(
-      (test) => PASSED_STATUSES.has(test.status) || test.status === 'failed',
+      (test) => PASSED_STATUSES.has(test.status) || test.status === STATUS.failed,
     ) ||
     endpoint.securityTests.some(
       (test) =>
         PASSED_STATUSES.has(test.status) ||
-        test.status === 'failed' ||
-        test.status === 'security_issue',
+        test.status === STATUS.failed ||
+        test.status === STATUS.securityIssue,
     )
   );
 }
@@ -1410,7 +1453,7 @@ function executeLocalFuzzProbes(endpoint: APIEndpointProbe): void {
         test.actuallyBlocked === true
           ? PASSED
           : test.actuallyBlocked === false
-            ? 'security_issue'
+            ? STATUS.securityIssue
             : NOT_EXECUTED;
     }
   }
@@ -1460,7 +1503,7 @@ function executeHttpProbe(args: {
   expectedStatus: number;
   payload?: unknown;
 }): {
-  status: Extract<FuzzTestCaseStatus, 'passed' | 'failed' | 'not_executed'>;
+  status: FuzzTestCaseStatus;
   actualStatus: number | null;
   error: string | null;
 } {
@@ -1497,7 +1540,7 @@ function executeHttpProbe(args: {
     }
 
     return {
-      status: statusMatchesExpectation(actualStatus, args.expectedStatus) ? PASSED : 'failed',
+      status: statusMatchesExpectation(actualStatus, args.expectedStatus) ? PASSED : STATUS.failed,
       actualStatus,
       error: null,
     };
@@ -1526,7 +1569,7 @@ function statusMatchesExpectation(actualStatus: number, expectedStatus: number):
   }
 
   if (
-    expectedStatus === 400 &&
+    expectedStatus === BAD_REQUEST &&
     (actualStatus === UNAUTHORIZED || actualStatus === FORBIDDEN || actualStatus === UNPROCESSABLE)
   ) {
     return true;
