@@ -156,7 +156,9 @@ interface ComputeCertificationInput {
 }
 
 function loadPathCoverageGateState(rootDir: string): PulsePathCoverageGateState | null {
-  const filePath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_PATH_COVERAGE.json');
+  const artifactName = discoverAllObservedArtifactFilenames().pathCoverage;
+  if (!artifactName) return null;
+  const filePath = safeJoin(rootDir, '.pulse', 'current', artifactName);
   if (!pathExists(filePath)) {
     return null;
   }
@@ -326,7 +328,9 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         kind: 'artifact',
         executed: true,
         summary: `Execution matrix classified ${input.executionMatrix.summary.totalPaths} path(s); unknown=${input.executionMatrix.summary.unknownPaths}.`,
-        artifactPaths: ['PULSE_EXECUTION_MATRIX.json'],
+        artifactPaths: discoverAllObservedArtifactFilenames().executionMatrix
+          ? [discoverAllObservedArtifactFilenames().executionMatrix!]
+          : [],
         metrics: {
           totalPaths: input.executionMatrix.summary.totalPaths,
           unknownPaths: input.executionMatrix.summary.unknownPaths,
@@ -342,9 +346,16 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
           pathCoverage?.summary?.criticalUnobserved && pathCoverage.summary.criticalUnobserved > 0
             ? `${pathCoverage.summary.criticalUnobserved} critical path(s) remain unobserved in path coverage.`
             : `${input.executionMatrix.summary.criticalUnobservedPaths} critical path(s) lack observed pass/fail evidence.`,
-        artifactPaths: pathCoverage
-          ? ['PULSE_EXECUTION_MATRIX.json', 'PULSE_PATH_COVERAGE.json']
-          : ['PULSE_EXECUTION_MATRIX.json'],
+        artifactPaths: (() => {
+          const artifacts = discoverAllObservedArtifactFilenames();
+          const em = artifacts.executionMatrix;
+          const pc = artifacts.pathCoverage;
+          return pathCoverage
+            ? [em, pc].filter(Boolean) as string[]
+            : em
+              ? [em]
+              : [];
+        })(),
         metrics: {
           criticalUnobservedPaths: input.executionMatrix.summary.criticalUnobservedPaths,
           criticalInferredOnlyPaths: pathCoverage?.summary?.criticalInferredOnly ?? 0,
@@ -360,7 +371,9 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
         kind: 'artifact',
         executed: true,
         summary: `${input.executionMatrix.summary.impreciseBreakpoints} observed failure(s) lack precise breakpoints.`,
-        artifactPaths: ['PULSE_EXECUTION_MATRIX.json'],
+        artifactPaths: discoverAllObservedArtifactFilenames().executionMatrix
+          ? [discoverAllObservedArtifactFilenames().executionMatrix!]
+          : [],
         metrics: {
           impreciseBreakpoints: input.executionMatrix.summary.impreciseBreakpoints,
         },
