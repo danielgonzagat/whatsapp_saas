@@ -1,52 +1,13 @@
 /**
  * Unit tests for the DefinitionOfDoneEngine (Phase 8)
+ *
+ * Batch test cases are in __parts__/definition-of-done.cases.batch.ts.
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  evaluateDone,
-  evaluateBatch,
-  type CapabilityDoneInput,
-  type CapabilityDoneResult,
-  type CapabilityRoleEvidence,
-  type DoDEvidenceTruthMode,
-} from '../definition-of-done';
-import type { StructuralRole } from '../types.structural-roles';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function makeEvidence(
-  role: StructuralRole,
-  present: boolean,
-  truthMode: DoDEvidenceTruthMode,
-  evidencePath?: string,
-): CapabilityRoleEvidence {
-  return { role, present, truthMode, evidencePath };
-}
-
-function makeInput(overrides: Partial<CapabilityDoneInput> = {}): CapabilityDoneInput {
-  return {
-    id: 'test-capability',
-    kind: 'capability',
-    requiredRoles: ['interface', 'api_surface', 'persistence'],
-    evidence: [
-      makeEvidence('interface', true, 'observed', 'frontend/src/pages/test.tsx'),
-      makeEvidence('api_surface', true, 'observed', 'backend/src/test.controller.ts'),
-      makeEvidence('persistence', true, 'observed', 'backend/src/test.service.ts'),
-    ],
-    codacyHighCount: 0,
-    hasPhantom: false,
-    hasLatentCritical: false,
-    truthModeTarget: 'observed',
-    ...overrides,
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Happy path: all roles present + observed + 0 high issues
-// ---------------------------------------------------------------------------
+import { evaluateDone, type CapabilityDoneResult } from '../definition-of-done';
+import { makeEvidence, makeInput } from './__parts__/definition-of-done.helpers';
+import './__parts__/definition-of-done.cases.batch';
 
 describe('evaluateDone — happy path', () => {
   it('returns done=true when all roles present, observed, 0 high issues, no phantom, no latent', () => {
@@ -92,10 +53,6 @@ describe('evaluateDone — happy path', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Missing one required role
-// ---------------------------------------------------------------------------
-
 describe('evaluateDone — missing role', () => {
   it('returns done=false and lists the missing role when one required role has no evidence', () => {
     const result = evaluateDone(
@@ -103,7 +60,6 @@ describe('evaluateDone — missing role', () => {
         evidence: [
           makeEvidence('interface', true, 'observed'),
           makeEvidence('api_surface', true, 'observed'),
-          // 'persistence' is missing entirely
         ],
       }),
     );
@@ -119,7 +75,7 @@ describe('evaluateDone — missing role', () => {
         evidence: [
           makeEvidence('interface', true, 'observed'),
           makeEvidence('api_surface', true, 'observed'),
-          makeEvidence('persistence', false, 'observed'), // present=false
+          makeEvidence('persistence', false, 'observed'),
         ],
       }),
     );
@@ -131,10 +87,7 @@ describe('evaluateDone — missing role', () => {
   it('lists multiple missing roles', () => {
     const result = evaluateDone(
       makeInput({
-        evidence: [
-          makeEvidence('interface', true, 'observed'),
-          // api_surface and persistence both missing
-        ],
+        evidence: [makeEvidence('interface', true, 'observed')],
       }),
     );
 
@@ -144,10 +97,6 @@ describe('evaluateDone — missing role', () => {
     expect(result.missingRoles).toHaveLength(2);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Latent critical present
-// ---------------------------------------------------------------------------
 
 describe('evaluateDone — latent critical', () => {
   it('returns done=false when hasLatentCritical is true', () => {
@@ -164,10 +113,6 @@ describe('evaluateDone — latent critical', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Phantom present
-// ---------------------------------------------------------------------------
-
 describe('evaluateDone — phantom', () => {
   it('returns done=false when hasPhantom is true', () => {
     const result = evaluateDone(makeInput({ hasPhantom: true }));
@@ -182,10 +127,6 @@ describe('evaluateDone — phantom', () => {
     expect(result.reasons.some((r) => r.includes('unreachable or dead code path'))).toBe(true);
   });
 });
-
-// ---------------------------------------------------------------------------
-// Codacy high issues > 0
-// ---------------------------------------------------------------------------
 
 describe('evaluateDone — codacy high count', () => {
   it('returns done=false when codacyHighCount > 0', () => {
@@ -206,10 +147,6 @@ describe('evaluateDone — codacy high count', () => {
     expect(result.done).toBe(true);
   });
 });
-
-// ---------------------------------------------------------------------------
-// TruthMode mismatch
-// ---------------------------------------------------------------------------
 
 describe('evaluateDone — truth mode mismatch', () => {
   it('returns truthModeMet=false when evidence is aspirational but target is observed', () => {
@@ -251,7 +188,7 @@ describe('evaluateDone — truth mode mismatch', () => {
       makeInput({
         evidence: [
           makeEvidence('interface', true, 'inferred'),
-          makeEvidence('api_surface', true, 'observed'), // upgrades best to observed
+          makeEvidence('api_surface', true, 'observed'),
           makeEvidence('persistence', true, 'inferred'),
         ],
         truthModeTarget: 'inferred',
@@ -299,7 +236,6 @@ describe('evaluateDone — truth mode mismatch', () => {
       }),
     );
 
-    // No present evidence -> bestTruthMode = 'not_available' < 'observed'
     expect(result.truthModeMet).toBe(false);
   });
 
@@ -347,18 +283,11 @@ describe('evaluateDone — governed ai_safe blockers', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// Multiple failures accumulate
-// ---------------------------------------------------------------------------
-
 describe('evaluateDone — multiple simultaneous failures', () => {
   it('collects all failure reasons when multiple conditions fail', () => {
     const result = evaluateDone(
       makeInput({
-        evidence: [
-          makeEvidence('interface', true, 'aspirational'),
-          // api_surface and persistence missing
-        ],
+        evidence: [makeEvidence('interface', true, 'aspirational')],
         codacyHighCount: 2,
         hasPhantom: true,
         hasLatentCritical: true,
@@ -370,46 +299,5 @@ describe('evaluateDone — multiple simultaneous failures', () => {
     expect(result.reasons.length).toBeGreaterThanOrEqual(4);
     expect(result.missingRoles).toContain('api_surface');
     expect(result.missingRoles).toContain('persistence');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// evaluateBatch
-// ---------------------------------------------------------------------------
-
-describe('evaluateBatch', () => {
-  it('returns an array with the same length as inputs', () => {
-    const inputs = [makeInput({ id: 'cap-1' }), makeInput({ id: 'cap-2' })];
-    const results = evaluateBatch(inputs);
-
-    expect(results).toHaveLength(2);
-  });
-
-  it('preserves order of inputs in results', () => {
-    const inputs = [
-      makeInput({ id: 'cap-1' }),
-      makeInput({ id: 'cap-2', hasPhantom: true }),
-      makeInput({ id: 'cap-3' }),
-    ];
-    const results = evaluateBatch(inputs);
-
-    expect(results[0].id).toBe('cap-1');
-    expect(results[1].id).toBe('cap-2');
-    expect(results[2].id).toBe('cap-3');
-  });
-
-  it('correctly evaluates each input independently', () => {
-    const inputs = [
-      makeInput({ id: 'good', codacyHighCount: 0 }),
-      makeInput({ id: 'bad', codacyHighCount: 5 }),
-    ];
-    const results = evaluateBatch(inputs);
-
-    expect(results[0].done).toBe(true);
-    expect(results[1].done).toBe(false);
-  });
-
-  it('returns empty array for empty input', () => {
-    expect(evaluateBatch([])).toEqual([]);
   });
 });
