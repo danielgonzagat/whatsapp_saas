@@ -13,7 +13,7 @@ import {
   slugifyStructural,
   titleCaseStructural,
 } from '../../structural-family';
-import type { ArtifactLayer } from './types';
+import type { ArtifactLayer, CapabilityTruthMode } from './types';
 
 export function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
