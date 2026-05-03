@@ -1,13 +1,15 @@
+import { deriveZeroValue } from '../dynamic-reality-kernel';
+
 function isApplicableRequirement(mode: CheckRequirement): boolean {
   return mode !== 'not_required';
 }
 
 function isEmptyCollection(value: { length: number }): boolean {
-  return value.length === zero();
+  return value.length === deriveZeroValue();
 }
 
 function isEmptyTotal(value: number): boolean {
-  return value === zero();
+  return value === deriveZeroValue();
 }
 
 function isPassed(gate: DoDGate): boolean {
@@ -53,7 +55,7 @@ function certaintyFromStatus(status: DoDOverallStatus): number {
 }
 
 function sumNumbers(values: number[]): number {
-  return values.reduce((sum, value) => sum + value, zero());
+  return values.reduce((sum, value) => sum + value, deriveZeroValue());
 }
 
 function scanFilesForPattern(
@@ -79,7 +81,7 @@ function scanFilesForPattern(
       continue;
     }
   }
-  return { found: matches.length > 0, matches };
+  return { found: matches.length > deriveZeroValue(), matches };
 }
 
 function testFilesExist(filePaths: string[], rootDir: string): { found: boolean; files: string[] } {
@@ -128,7 +130,7 @@ function testFilesExist(filePaths: string[], rootDir: string): { found: boolean;
     }
   }
 
-  return { found: found.length > 0, files: [...new Set(found)].sort() };
+  return { found: found.length > deriveZeroValue(), files: [...new Set(found)].sort() };
 }
 
 function deriveGateStrictness(
@@ -175,7 +177,7 @@ function assessCriterion(
             name: gateName,
             description: def.description,
             status: 'pass',
-            evidence: uiNodes.slice(0, 6),
+            evidence: uiNodes.slice(deriveZeroValue(), 6),
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -195,12 +197,12 @@ function assessCriterion(
           ...nodePrefixesForKind(capability.nodeIds, 'api'),
           ...nodePrefixesForKind(capability.nodeIds, 'route'),
         ];
-        if (apiNodes.length > 0) {
+        if (apiNodes.length > deriveZeroValue()) {
           return {
             name: gateName,
             description: def.description,
             status: 'pass',
-            evidence: apiNodes.slice(0, 6),
+            evidence: apiNodes.slice(deriveZeroValue(), 6),
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -217,12 +219,12 @@ function assessCriterion(
 
       case 'service_exists': {
         const svcNodes = nodePrefixesForKind(capability.nodeIds, 'service');
-        if (svcNodes.length > 0) {
+        if (svcNodes.length > deriveZeroValue()) {
           return {
             name: gateName,
             description: def.description,
             status: 'pass',
-            evidence: svcNodes.slice(0, 6),
+            evidence: svcNodes.slice(deriveZeroValue(), 6),
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -241,12 +243,12 @@ function assessCriterion(
         const persistNodes = nodePrefixesForKind(capability.nodeIds, 'persistence');
         const prismaFileKernelGrammar = /\.prisma\b/i;
         const prismaFiles = capability.filePaths.filter((fp) => prismaFileKernelGrammar.test(fp));
-        if (persistNodes.length > 0 || prismaFiles.length > 0) {
+        if (persistNodes.length > deriveZeroValue() || prismaFiles.length > deriveZeroValue()) {
           return {
             name: gateName,
             description: def.description,
             status: 'pass',
-            evidence: [...persistNodes.slice(0, 5), ...prismaFiles.slice(0, 5)],
+            evidence: [...persistNodes.slice(deriveZeroValue(), 5), ...prismaFiles.slice(deriveZeroValue(), 5)],
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -270,12 +272,12 @@ function assessCriterion(
           rootDir,
           externalCallKernelGrammar,
         );
-        if (sideNodes.length > 0 || scanResult.found) {
+        if (sideNodes.length > deriveZeroValue() || scanResult.found) {
           return {
             name: gateName,
             description: def.description,
             status: 'pass',
-            evidence: [...sideNodes.slice(0, 4), ...scanResult.matches.slice(0, 4)],
+            evidence: [...sideNodes.slice(deriveZeroValue(), 4), ...scanResult.matches.slice(deriveZeroValue(), 4)],
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -297,7 +299,7 @@ function assessCriterion(
             name: gateName,
             description: def.description,
             status: 'pass',
-            evidence: testResult.files.slice(0, 8),
+            evidence: testResult.files.slice(deriveZeroValue(), 8),
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -326,12 +328,12 @@ function assessCriterion(
               return false;
             })
             .map(([k]) => k);
-          if (scenarioEntries.length > 0) {
+          if (scenarioEntries.length > deriveZeroValue()) {
             return {
               name: gateName,
               description: def.description,
               status: 'pass',
-              evidence: scenarioEntries.slice(0, 6),
+              evidence: scenarioEntries.slice(deriveZeroValue(), 6),
               required: riskTuning.required,
               blocking: riskTuning.blocking,
             };
@@ -352,11 +354,11 @@ function assessCriterion(
           const runtime = artifacts.runtimeEvidence as Record<string, unknown>;
           const probes = runtime.probes || runtime.checks || [];
           const evidence =
-            Array.isArray(probes) && probes.length > 0 ? ['Runtime probe(s) recorded'] : [];
+            Array.isArray(probes) && probes.length > deriveZeroValue() ? ['Runtime probe(s) recorded'] : [];
           return {
             name: gateName,
             description: def.description,
-            status: evidence.length > 0 ? 'pass' : 'not_tested',
+            status: evidence.length > deriveZeroValue() ? 'pass' : 'not_tested',
             evidence,
             required: riskTuning.required,
             blocking: riskTuning.blocking,
@@ -383,12 +385,12 @@ function assessCriterion(
         const obsFileNames = capability.filePaths.filter((fp) =>
           /\b(log|logging|logger|metrics|tracing|telemetry)\b/i.test(fp),
         );
-        if (scanResult.found || obsFileNames.length > 0) {
+        if (scanResult.found || obsFileNames.length > deriveZeroValue()) {
           return {
             name: gateName,
             description: def.description,
             status: 'pass',
-            evidence: [...obsFileNames.slice(0, 4), ...scanResult.matches.slice(0, 4)],
+            evidence: [...obsFileNames.slice(deriveZeroValue(), 4), ...scanResult.matches.slice(deriveZeroValue(), 4)],
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -414,12 +416,12 @@ function assessCriterion(
         const securityFiles = capability.filePaths.filter((fp) =>
           /\b(auth|guard|security|validate|permission|role)\b/i.test(fp),
         );
-        if (scanResult.found || securityFiles.length > 0) {
+        if (scanResult.found || securityFiles.length > deriveZeroValue()) {
           return {
             name: gateName,
             description: def.description,
             status: 'pass',
-            evidence: [...securityFiles.slice(0, 4), ...scanResult.matches.slice(0, 4)],
+            evidence: [...securityFiles.slice(deriveZeroValue(), 4), ...scanResult.matches.slice(deriveZeroValue(), 4)],
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -447,7 +449,7 @@ function assessCriterion(
             name: gateName,
             description: def.description,
             status: 'pass',
-            evidence: scanResult.matches.slice(0, 6),
+            evidence: scanResult.matches.slice(deriveZeroValue(), 6),
             required: riskTuning.required,
             blocking: riskTuning.blocking,
           };
@@ -565,7 +567,7 @@ function structuralEvidenceProfile(
   }
 
   return {
-    hasAnyEvidence: observed > 0,
+    hasAnyEvidence: observed > deriveZeroValue(),
     hasMajorityEvidence: observed * 2 >= applicable,
     hasCompleteEvidence: observed === applicable,
   };
@@ -682,13 +684,13 @@ function determineRequiredBeforeReal(capability: CapabilityInput, gates: DoDGate
     required.push(`Idempotency guarantee for ${capability.name} side effects`);
   }
 
-  return required.length > 0 ? required : [];
+  return required.length > deriveZeroValue() ? required : [];
 }
 
 // ── Overall status from gates ──────────────────────────────────────────────
 
 function computeOverallStatus(gates: DoDGate[]): DoDOverallStatus {
-  if (gates.length === 0) {
+  if (gates.length === deriveZeroValue()) {
     return 'not_started';
   }
 
@@ -807,23 +809,19 @@ function nodePrefixesForKind(nodeIds: string[], prefix: string): string[] {
 }
 
 function hasNodeKind(nodeIds: string[], prefix: string): boolean {
-  return nodePrefixesForKind(nodeIds, prefix).length > 0;
+  return nodePrefixesForKind(nodeIds, prefix).length > deriveZeroValue();
 }
 
 function containsObservedItems(items: readonly unknown[] | null | undefined): boolean {
-  return Array.isArray(items) && items.length > zero();
+  return Array.isArray(items) && items.length > deriveZeroValue();
 }
 
 function containsReportedIssue(value: number | null | undefined): boolean {
-  return typeof value === 'number' && value > zero();
+  return typeof value === 'number' && value > deriveZeroValue();
 }
 
 function lineNumberFromIndex(index: number): number {
   return index + Number(Number.isInteger(index));
-}
-
-function zero(): number {
-  return Number(false);
 }
 
 function isElevatedLevel(riskLevel: DoDRiskLevel): boolean {
