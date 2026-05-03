@@ -207,14 +207,6 @@ export class MemberEnrollmentsController {
       throw new NotFoundException('Member area not found');
     }
 
-    const enrollment = await this.prisma.memberEnrollment.findFirst({
-      where: { memberAreaId: areaId, workspaceId, studentEmail },
-    });
-
-    if (!enrollment) {
-      throw new NotFoundException('Student is not enrolled in this area');
-    }
-
     const lesson = await this.prisma.memberLesson.findFirst({
       where: { id: lessonId, module: { memberAreaId: areaId } },
     });
@@ -229,16 +221,31 @@ export class MemberEnrollmentsController {
       return { progress: 0, totalLessons: 0, completed: false };
     }
 
-    const currentProgress = typeof enrollment.progress === 'number' ? enrollment.progress : 0;
     const lessonWeight = 100 / totalLessons;
-    const newProgress = body.completed
-      ? Math.min(100, Math.round((currentProgress + lessonWeight) * 100) / 100)
-      : Math.max(0, Math.round((currentProgress - lessonWeight) * 100) / 100);
+    const { newProgress } = await this.prisma.$transaction(
+      async (tx) => {
+        const enrollment = await tx.memberEnrollment.findFirst({
+          where: { memberAreaId: areaId, workspaceId, studentEmail },
+        });
 
-    await this.prisma.memberEnrollment.update({
-      where: { id: enrollment.id },
-      data: { progress: newProgress },
-    });
+        if (!enrollment) {
+          throw new NotFoundException('Student is not enrolled in this area');
+        }
+
+        const currentProgress = typeof enrollment.progress === 'number' ? enrollment.progress : 0;
+        const computed = body.completed
+          ? Math.min(100, Math.round((currentProgress + lessonWeight) * 100) / 100)
+          : Math.max(0, Math.round((currentProgress - lessonWeight) * 100) / 100);
+
+        await tx.memberEnrollment.update({
+          where: { id: enrollment.id },
+          data: { progress: computed },
+        });
+
+        return { newProgress: computed };
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     await this.stats.recalculate(areaId, workspaceId);
 

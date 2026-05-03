@@ -171,11 +171,26 @@ export class CheckoutSocialRecoveryService {
     name: string | null,
     checkoutSlug: string,
   ) {
-    const lead = await this.prisma.checkoutSocialLead.findFirst({
-      where: { id: leadId, workspaceId },
-      select: { id: true, recoveryEmailSentAt: true },
-    });
-    if (!lead || lead.recoveryEmailSentAt) {
+    const claimed = await this.prisma.$transaction(
+      async (tx) => {
+        const lead = await tx.checkoutSocialLead.findFirst({
+          where: { id: leadId, workspaceId },
+          select: { id: true, recoveryEmailSentAt: true },
+        });
+        if (!lead || lead.recoveryEmailSentAt) {
+          return false;
+        }
+        await tx.checkoutSocialLead.update({
+          where: { id: leadId },
+          data: { recoveryEmailSentAt: new Date() },
+          select: { id: true },
+        });
+        return true;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+
+    if (!claimed) {
       return;
     }
 
@@ -189,12 +204,6 @@ export class CheckoutSocialRecoveryService {
       this.logger.warn(`Falha ao enviar recovery email para lead ${leadId}.`);
       return;
     }
-
-    await this.prisma.checkoutSocialLead.update({
-      where: { id: leadId },
-      data: { recoveryEmailSentAt: new Date() },
-      select: { id: true, workspaceId: true },
-    });
   }
 
   private renderRecoveryEmail(name: string | null, checkoutSlug: string) {

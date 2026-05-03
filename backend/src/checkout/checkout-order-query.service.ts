@@ -120,38 +120,49 @@ export class CheckoutOrderQueryService {
       Object.assign(data, extra);
     }
 
-    const existingOrder = await this.prisma.checkoutOrder.findFirst({
-      where: workspaceId ? { id: orderId, workspaceId } : { id: orderId },
-      select: { workspaceId: true, status: true },
-    });
+    const { auditWorkspaceId, auditPrevStatus } = await this.prisma.$transaction(
+      async (tx) => {
+        const record = await tx.checkoutOrder.findFirst({
+          where: workspaceId ? { id: orderId, workspaceId } : { id: orderId },
+          select: { workspaceId: true, status: true },
+        });
 
-    const prevStatus = existingOrder?.status;
-    if (prevStatus) {
-      const valid = validateOrderTransition(prevStatus, status, {
-        orderId,
-        workspaceId: existingOrder.workspaceId ?? undefined,
-      });
-      if (!valid) {
-        this.logger.error(
-          `Order status transition rejected: ${prevStatus} -> ${status} for order ${orderId}`,
-        );
-        throw new BadRequestException(
-          `Invalid order status transition from ${prevStatus} to ${status}`,
-        );
-      }
-    }
+        const prevStatus = record?.status;
+        if (prevStatus) {
+          const valid = validateOrderTransition(prevStatus, status, {
+            orderId,
+            workspaceId: record.workspaceId ?? undefined,
+          });
+          if (!valid) {
+            this.logger.error(
+              `Order status transition rejected: ${prevStatus} -> ${status} for order ${orderId}`,
+            );
+            throw new BadRequestException(
+              `Invalid order status transition from ${prevStatus} to ${status}`,
+            );
+          }
+        }
 
-    await this.prisma.checkoutOrder.updateMany({
-      where: workspaceId ? { id: orderId, workspaceId } : { id: orderId },
-      data,
-    });
-    if (existingOrder?.workspaceId) {
+        await tx.checkoutOrder.updateMany({
+          where: workspaceId ? { id: orderId, workspaceId } : { id: orderId },
+          data,
+        });
+
+        return {
+          auditWorkspaceId: record?.workspaceId ?? undefined,
+          auditPrevStatus: prevStatus ?? undefined,
+        };
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+
+    if (auditWorkspaceId) {
       await this.auditService.log({
-        workspaceId: existingOrder.workspaceId,
+        workspaceId: auditWorkspaceId,
         action: 'ORDER_STATUS_CHANGED',
         resource: 'CheckoutOrder',
         resourceId: orderId,
-        details: { previousStatus: existingOrder.status, newStatus: status },
+        details: { previousStatus: auditPrevStatus, newStatus: status },
       });
     }
     return this.prisma.checkoutOrder.findFirst({
