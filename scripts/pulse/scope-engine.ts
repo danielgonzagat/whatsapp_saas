@@ -409,7 +409,7 @@ export function detectNewFile(rootDir: string, filePath: string): ScopeFileEntry
     firstSeen: now,
     lastModified: now,
     contentHash,
-    classificationConfidence: role !== 'unknown' ? 85 : 30,
+    classificationConfidence: role !== UNKNOWN_STATUS ? HIGH_CONFIDENCE : LOW_CONFIDENCE,
   };
 }
 
@@ -524,7 +524,7 @@ export function buildScopeEngineState(
       firstSeen: prev?.firstSeen ?? now,
       lastModified: contentHash !== prev?.contentHash ? now : (prev?.lastModified ?? now),
       contentHash,
-      classificationConfidence: role !== 'unknown' ? 85 : 30,
+      classificationConfidence: role !== UNKNOWN_STATUS ? HIGH_CONFIDENCE : LOW_CONFIDENCE,
     });
   }
 
