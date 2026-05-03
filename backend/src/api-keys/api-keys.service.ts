@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, pbkdf2Sync, randomBytes, timingSafeEqual } from 'node:crypto';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -19,7 +19,29 @@ export class ApiKeysService {
 
   /** Hash key for storage. */
   private hashKey(rawKey: string): string {
-    return createHash('sha256').update(rawKey).digest('hex');
+    const salt = randomBytes(16);
+    const derivedKey = pbkdf2Sync(rawKey, salt, 210000, 32, 'sha256');
+    return `${salt.toString('hex')}:${derivedKey.toString('hex')}`;
+  }
+
+  /** Verify presented key against stored hash (supports legacy sha256 hashes). */
+  private verifyStoredKey(rawKey: string, storedKey: string): boolean {
+    const parts = storedKey.split(':');
+    if (parts.length === 2) {
+      const [saltHex, derivedHex] = parts;
+      const salt = Buffer.from(saltHex, 'hex');
+      const expected = Buffer.from(derivedHex, 'hex');
+      const actual = pbkdf2Sync(rawKey, salt, 210000, expected.length, 'sha256');
+      return expected.length === actual.length && timingSafeEqual(expected, actual);
+    }
+
+    // Legacy format compatibility: unsalted sha256 hex
+    const legacyExpected = Buffer.from(storedKey, 'hex');
+    const legacyActual = Buffer.from(createHash('sha256').update(rawKey).digest('hex'), 'hex');
+    return (
+      legacyExpected.length === legacyActual.length &&
+      timingSafeEqual(legacyExpected, legacyActual)
+    );
   }
 
   /** List. */
@@ -93,11 +115,13 @@ export class ApiKeysService {
 
   /** Validate key. */
   async validateKey(key: string) {
-    const keyHash = this.hashKey(key);
-    const apiKey = await this.prisma.apiKey.findFirst({
-      where: { key: keyHash, workspaceId: { not: '' } },
+    const apiKeys = await this.prisma.apiKey.findMany({
+      where: { workspaceId: { not: '' } },
       include: { workspace: true },
+      take: 1000,
     });
+
+    const apiKey = apiKeys.find((record) => this.verifyStoredKey(key, record.key));
 
     if (apiKey) {
       // Async update last used (fire and forget)
@@ -109,6 +133,6 @@ export class ApiKeysService {
         .catch((err) => this.logger.warn('Failed to update apiKey lastUsedAt', err.message));
     }
 
-    return apiKey;
+    return apiKey ?? null;
   }
 }
