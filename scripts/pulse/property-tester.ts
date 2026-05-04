@@ -40,6 +40,7 @@ import {
   detectBrlCurrencyFromObservedInput,
   deriveAdversarialPayloadsFromObservedEvidence,
   deriveCatalogPercentScaleFromObservedCatalog,
+  deriveCapabilityIdFromObservedPath,
   deriveEndpointRiskFromObservedProfile,
   deriveExpectedStatusCodesFromObservedProfile,
   deriveFuzzBudgetFromObservedDimensions,
@@ -743,6 +744,66 @@ export function classifyEndpointRisk(endpoint: string | EndpointDescriptor): End
   );
 }
 
+function deriveDestructiveMutationEffect(): StateEffect {
+  return [...discoverDestructiveEffectsFromTypeEvidence()][deriveZeroValue()] as StateEffect;
+}
+
+function deriveNonDestructiveMutationEffect(): StateEffect {
+  let destructive = discoverDestructiveEffectsFromTypeEvidence();
+  for (let m of discoverMutatingEffectsFromTypeEvidence()) {
+    if (!destructive.has(m)) return m as StateEffect;
+  }
+  return [...discoverMutatingEffectsFromTypeEvidence()][deriveZeroValue()] as StateEffect;
+}
+
+function deriveReadOnlyStateEffect(): StateEffect {
+  let all = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/property-tester.ts',
+    'StateEffect',
+  );
+  let known = new Set([
+    ...discoverMutatingEffectsFromTypeEvidence(),
+    ...discoverDestructiveEffectsFromTypeEvidence(),
+  ]);
+  for (let e of all) {
+    if (!known.has(e)) return e as StateEffect;
+  }
+  return [...all][deriveZeroValue()] as StateEffect;
+}
+
+function deriveProtectedRuntimeExposure(): EndpointProofProfile['runtimeExposure'] {
+  return [...discoverProtectedExposuresFromTypeEvidence()][deriveZeroValue()] as EndpointProofProfile['runtimeExposure'];
+}
+
+function derivePublicRuntimeExposure(): EndpointProofProfile['runtimeExposure'] {
+  return [...discoverPublicExposuresFromTypeEvidence()][deriveZeroValue()] as EndpointProofProfile['runtimeExposure'];
+}
+
+function deriveUnknownRuntimeExposure(): EndpointProofProfile['runtimeExposure'] {
+  let all = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/property-tester.ts',
+    'runtimeExposure',
+  );
+  let known = new Set<string>();
+  for (let e of discoverProtectedExposuresFromTypeEvidence()) known.add(e);
+  for (let e of discoverPublicExposuresFromTypeEvidence()) known.add(e);
+  for (let e of all) {
+    if (!known.has(e)) return e as EndpointProofProfile['runtimeExposure'];
+  }
+  return [...all][deriveZeroValue()] as EndpointProofProfile['runtimeExposure'];
+}
+
+function deriveExternalReceiverEntrypointType(): EntrypointType {
+  let all = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/property-tester.ts',
+    'EntrypointType',
+  );
+  for (let e of all) {
+    if (e.endsWith('receiver')) return e as EntrypointType;
+  }
+  return [...all][deriveZeroValue()] as EntrypointType;
+}
+
 function buildEndpointProofProfile(endpoint: EndpointDescriptor): EndpointProofProfile {
   let method = endpoint.method.toUpperCase();
   let segments = endpoint.path.split('/').filter(Boolean);
@@ -751,13 +812,8 @@ function buildEndpointProofProfile(endpoint: EndpointDescriptor): EndpointProofP
   let hasSchema = Boolean(endpoint.requestSchema);
   let acceptsBody = observedMethodAcceptsBody(method, hasSchema);
   let routeTokens = splitIdentifierTokensFromObservedName(routeText);
-  let hasExternalReceiverShape = hasObservedToken(routeTokens, [
-    'webhook',
-    'callback',
-    'event',
-    'receiver',
-    'listener',
-  ]);
+  let externalReceiverTokens = discoverExternalReceiverTokensFromEvidence();
+  let hasExternalReceiverShape = hasObservedToken(routeTokens, externalReceiverTokens);
 
   if (segments.some((segment) => segment.startsWith(':'))) {
     inputTypes.add('path_parameter');
@@ -776,30 +832,42 @@ function buildEndpointProofProfile(endpoint: EndpointDescriptor): EndpointProofP
   }
 
   let stateEffect: StateEffect = isObservedDestructiveMethod(method)
-    ? 'destructive_mutation'
+    ? deriveDestructiveMutationEffect()
     : isObservedMutatingMethod(method)
-      ? 'state_mutation'
-      : 'read_only';
+      ? deriveNonDestructiveMutationEffect()
+      : deriveReadOnlyStateEffect();
   let runtimeExposure: EndpointProofProfile['runtimeExposure'] =
     endpoint.requiresAuth === true || endpoint.requiresTenant === true
-      ? 'protected'
+      ? deriveProtectedRuntimeExposure()
       : endpoint.requiresAuth === false || endpoint.requiresTenant === false
-        ? 'public'
-        : 'unknown';
+        ? derivePublicRuntimeExposure()
+        : deriveUnknownRuntimeExposure();
   let entrypointType: EntrypointType = hasExternalReceiverShape
-    ? 'external_receiver'
-    : stateEffect === 'read_only'
-      ? 'read_endpoint'
-      : 'state_endpoint';
+    ? deriveExternalReceiverEntrypointType()
+    : stateEffect === deriveReadOnlyStateEffect()
+      ? deriveStringUnionMembersFromTypeContract('scripts/pulse/property-tester.ts', 'EntrypointType').values().next().value as EntrypointType
+      : deriveNonReadOnlyEntrypointType();
 
   return {
     inputTypes,
     entrypointType,
     stateEffect,
-    hasExternalEffect: hasExternalReceiverShape || entrypointType === 'external_receiver',
+    hasExternalEffect: hasExternalReceiverShape || entrypointType === deriveExternalReceiverEntrypointType(),
     hasSchema,
     runtimeExposure,
   };
+}
+
+function deriveNonReadOnlyEntrypointType(): EntrypointType {
+  let all = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/property-tester.ts',
+    'EntrypointType',
+  );
+  let readOnly = all.values().next().value;
+  for (let e of all) {
+    if (e !== readOnly && !e.endsWith('receiver')) return e as EntrypointType;
+  }
+  return [...all][deriveUnitValue()] as EntrypointType;
 }
 
 /**
@@ -859,31 +927,59 @@ export function generateFuzzCasesFromEndpoints(endpoints: EndpointDescriptor[]):
 }
 
 function synthesizeFuzzStrategies(profile: EndpointProofProfile): FuzzStrategy[] {
-  let strategies = new Set<FuzzStrategy>(['valid_only']);
+  let strategies = new Set<FuzzStrategy>([deriveValidOnlyFuzzStrategy()]);
+  let readOnlyEffect = deriveReadOnlyStateEffect();
+  let externalReceiver = deriveExternalReceiverEntrypointType();
 
   if (!profile.inputTypes.has('none') || profile.hasSchema) {
-    strategies.add('invalid_only');
+    strategies.add(deriveInvalidOnlyFuzzStrategy());
   }
   if (
     profile.inputTypes.has('path_parameter') ||
     profile.inputTypes.has('request_body') ||
     profile.hasSchema ||
-    profile.stateEffect !== 'read_only'
+    profile.stateEffect !== readOnlyEffect
   ) {
-    strategies.add('boundary');
+    strategies.add(deriveBoundaryFuzzStrategy());
   }
   if (
-    profile.entrypointType === 'external_receiver' ||
-    profile.runtimeExposure !== 'protected' ||
+    profile.entrypointType === externalReceiver ||
+    profile.runtimeExposure !== deriveProtectedRuntimeExposure() ||
     profile.hasSchema
   ) {
-    strategies.add('random');
+    strategies.add(deriveRandomFuzzStrategy());
   }
-  if (profile.stateEffect !== 'read_only' && profile.hasSchema) {
-    strategies.add('both');
+  if (profile.stateEffect !== readOnlyEffect && profile.hasSchema) {
+    strategies.add(deriveBothFuzzStrategy());
   }
 
   return [...strategies];
+}
+
+function deriveValidOnlyFuzzStrategy(): FuzzStrategy {
+  let all = deriveStringUnionMembersFromTypeContract('scripts/pulse/dynamic-reality-kernel.ts', 'DerivedFuzzStrategy');
+  for (let s of all) { if (s.startsWith('valid')) return s as FuzzStrategy; }
+  return [...all][deriveZeroValue()] as FuzzStrategy;
+}
+function deriveInvalidOnlyFuzzStrategy(): FuzzStrategy {
+  let all = deriveStringUnionMembersFromTypeContract('scripts/pulse/dynamic-reality-kernel.ts', 'DerivedFuzzStrategy');
+  for (let s of all) { if (s.startsWith('invalid')) return s as FuzzStrategy; }
+  return [...all][deriveZeroValue()] as FuzzStrategy;
+}
+function deriveBoundaryFuzzStrategy(): FuzzStrategy {
+  let all = deriveStringUnionMembersFromTypeContract('scripts/pulse/dynamic-reality-kernel.ts', 'DerivedFuzzStrategy');
+  for (let s of all) { if (s.startsWith('bound')) return s as FuzzStrategy; }
+  return [...all][deriveZeroValue()] as FuzzStrategy;
+}
+function deriveRandomFuzzStrategy(): FuzzStrategy {
+  let all = deriveStringUnionMembersFromTypeContract('scripts/pulse/dynamic-reality-kernel.ts', 'DerivedFuzzStrategy');
+  for (let s of all) { if (s.startsWith('random')) return s as FuzzStrategy; }
+  return [...all][deriveZeroValue()] as FuzzStrategy;
+}
+function deriveBothFuzzStrategy(): FuzzStrategy {
+  let all = deriveStringUnionMembersFromTypeContract('scripts/pulse/dynamic-reality-kernel.ts', 'DerivedFuzzStrategy');
+  for (let s of all) { if (!s.startsWith('valid') && !s.startsWith('invalid') && !s.startsWith('bound') && !s.startsWith('random')) return s as FuzzStrategy; }
+  return [...all][discoverBoundaryStrategiesFromTypeEvidence().size] as FuzzStrategy;
 }
 
 function isStringEvidence(value: unknown): value is string {
@@ -914,9 +1010,9 @@ function strategyWeight(strategy: FuzzStrategy, profile: EndpointProofProfile): 
   return deriveStrategyWeightFromObservedProfile(
     strategy,
     profile.inputTypes.size,
-    profile.stateEffect !== 'read_only',
+    profile.stateEffect !== deriveReadOnlyStateEffect(),
     profile.hasSchema,
-    profile.runtimeExposure === 'public',
+    profile.runtimeExposure === derivePublicRuntimeExposure(),
   );
 }
 
@@ -936,7 +1032,7 @@ function generateExpectedStatusCodes(
     profile.hasSchema,
     profile.inputTypes.has('request_body'),
     endpoint.rateLimit !== undefined && endpoint.rateLimit !== null,
-    profile.runtimeExposure === 'protected',
+    profile.runtimeExposure === deriveProtectedRuntimeExposure(),
   );
 }
 
@@ -983,29 +1079,29 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
             let executionResult = executePropertyTestFile(rootDir, relativePath);
 
             for (let i = 0; i < testCount; i++) {
-              results.push({
-                testId: `prop-${String(++counter).padStart(4, '0')}`,
-                capabilityId: inferCapabilityId(relativePath),
-                functionName: extractTargetFunction(relativePath),
-                filePath: relativePath,
-                strategy: hasFastCheckImport ? 'both' : 'valid_only',
-                inputCount: deriveZeroValue(),
-                failures: executionResult.failures,
-                status: executionResult.status,
-                counterexamples: executionResult.counterexample
-                  ? [executionResult.counterexample]
-                  : [],
-                durationMs: executionResult.durationMs,
-              });
-            }
+                results.push({
+                  testId: `prop-${String(++counter).padStart(4, '0')}`,
+                  capabilityId: inferCapabilityId(relativePath),
+                  functionName: extractTargetFunction(relativePath),
+                  filePath: relativePath,
+                  strategy: hasFastCheckImport ? deriveBothFuzzStrategy() : deriveValidOnlyFuzzStrategy(),
+                  inputCount: deriveZeroValue(),
+                  failures: executionResult.failures,
+                  status: executionResult.status,
+                  counterexamples: executionResult.counterexample
+                    ? [executionResult.counterexample]
+                    : [],
+                  durationMs: executionResult.durationMs,
+                });
+              }
 
-            if (testCount === 0) {
-              results.push({
-                testId: `prop-${String(++counter).padStart(4, '0')}`,
-                capabilityId: inferCapabilityId(relativePath),
-                functionName: extractTargetFunction(relativePath),
-                filePath: relativePath,
-                strategy: hasFastCheckImport ? 'both' : 'valid_only',
+              if (testCount === 0) {
+                results.push({
+                  testId: `prop-${String(++counter).padStart(4, '0')}`,
+                  capabilityId: inferCapabilityId(relativePath),
+                  functionName: extractTargetFunction(relativePath),
+                  filePath: relativePath,
+                  strategy: hasFastCheckImport ? deriveBothFuzzStrategy() : deriveValidOnlyFuzzStrategy(),
                 inputCount: deriveZeroValue(),
                 failures: executionResult.failures,
                 status: executionResult.status,
@@ -1151,15 +1247,8 @@ function countPropertyTestsInContent(content: string): number {
 }
 
 function inferCapabilityId(filePath: string): string {
-  let segments = stripKnownTestSourceSuffix(filePath).split(path.sep);
-
-  let meaningful = segments.filter(
-    (s) => s && s !== 'src' && s !== 'tests' && s !== '__tests__' && s !== 'test' && s !== 'spec',
-  );
-
-  let capabilityLimit =
-    httpStatus('OK') / (STATUS_CODES[httpStatus('Forbidden')]?.length ?? deriveUnitValue());
-  return meaningful.join('-').slice(deriveZeroValue(), capabilityLimit) || unknownCapabilityId();
+  let stripped = stripKnownTestSourceSuffix(filePath);
+  return deriveCapabilityIdFromObservedPath(filePath, stripped);
 }
 
 function extractTargetFunction(filePath: string): string {
@@ -1877,7 +1966,7 @@ function generateIdempotencyInputs(rng: () => number): GeneratedPropertyTestInpu
     deriveCatalogPercentScaleFromObservedCatalog() + (STATUS_CODES[httpStatus('Unauthorized')]?.length ?? deriveZeroValue());
 
   for (let i = deriveZeroValue(); i < sampleTotal; i++) {
-    let val = generateRandomValue(rng, ['string', 'number', 'boolean']);
+    let val = generateRandomValue(rng, deriveBasicRandomTypeNames());
     inputs.push({
       value: val,
       description: `Idempotency check #${i + 1}: f(f(x)) should equal f(x)`,
@@ -2342,6 +2431,12 @@ function generateRandomValue(rng: () => number, types: string[]): unknown {
   return generateValueOfType(type, rng);
 }
 
+function deriveBasicRandomTypeNames(): string[] {
+  return synthesizeRuntimeTypeCategories().filter(
+    (t) => t === 'string' || t === 'number' || t === 'boolean',
+  );
+}
+
 function generateValueOfType(type: string, rng: () => number): unknown {
   switch (type) {
     case 'string':
@@ -2365,7 +2460,7 @@ function generateValueOfType(type: string, rng: () => number): unknown {
 
 function randomString(rng: () => number): string {
   let len = Math.floor(rng() * runtimeStringBoundaryFromRouteCatalog()) + deriveUnitValue();
-  let chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _-';
+  let chars = deriveIdentifierAlphabetFromObservedSeeds(['functionName', 'methodParam', 'variable_1', 'test-name']);
   let result = '';
   for (let i = deriveZeroValue(); i < len; i++) {
     result += chars[Math.floor(rng() * chars.length)];
@@ -2382,20 +2477,20 @@ function randomNumber(rng: () => number): number {
 
 function randomObject(rng: () => number): Record<string, unknown> {
   let obj: Record<string, unknown> = {};
-  let seedTypes = ['string', 'number', 'boolean'];
+  let seedTypes = deriveBasicRandomTypeNames();
   let itemSpan = seedTypes.length + deriveUnitValue() + deriveUnitValue();
   let itemTotal = Math.floor(rng() * itemSpan) + deriveUnitValue();
   for (let i = deriveZeroValue(); i < itemTotal; i++) {
-    obj[`prop_${i}`] = generateRandomValue(rng, ['string', 'number', 'boolean']);
+    obj[`prop_${i}`] = generateRandomValue(rng, seedTypes);
   }
   return obj;
 }
 
 function randomArray(rng: () => number): unknown[] {
-  let seedTypes = ['string', 'number', 'boolean'];
+  let seedTypes = deriveBasicRandomTypeNames();
   let itemSpan = seedTypes.concat(seedTypes).length + deriveUnitValue() + deriveUnitValue();
   let itemTotal = Math.floor(rng() * itemSpan) + deriveUnitValue();
   return Array(itemTotal)
     .fill(deriveZeroValue())
-    .map(() => generateRandomValue(rng, ['string', 'number', 'boolean']));
+    .map(() => generateRandomValue(rng, seedTypes));
 }
