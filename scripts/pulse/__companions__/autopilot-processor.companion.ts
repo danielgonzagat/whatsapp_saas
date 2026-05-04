@@ -1076,12 +1076,12 @@ function resolveCatalogChatActivityTimestamp(chat: UnknownRecord): number {
       continue;
     }
     const numeric = Number(candidate);
-    if (Number.isFinite(numeric) && numeric > 0) {
+    if (Number.isFinite(numeric) && numeric > deriveZeroValue()) {
       return numeric > 1e12 ? numeric : numeric * 1000;
     }
 
     const parsed = new Date(String(candidate)).getTime();
-    if (Number.isFinite(parsed) && parsed > 0) {
+    if (Number.isFinite(parsed) && parsed > deriveZeroValue()) {
       return parsed;
     }
   }
@@ -1303,13 +1303,13 @@ function buildConversationLedger(history: ConversationHistoryEntry[]): {
     .join('\n');
 
   const factsText = [
-    informedFacts.size > 0
+    informedFacts.size > deriveZeroValue()
       ? `DADOS JA INFORMADOS:\n- ${Array.from(informedFacts).join('\n- ')}`
       : 'DADOS JA INFORMADOS:\n- nenhum dado estruturado detectado',
-    askedQuestions.size > 0
+    askedQuestions.size > deriveZeroValue()
       ? `PERGUNTAS JA FEITAS PELA CONTA:\n- ${Array.from(askedQuestions).join('\n- ')}`
       : 'PERGUNTAS JA FEITAS PELA CONTA:\n- nenhuma pergunta anterior detectada',
-    coveredTopics.size > 0
+    coveredTopics.size > deriveZeroValue()
       ? `TOPICOS JA COBERTOS:\n- ${Array.from(coveredTopics).join('\n- ')}`
       : 'TOPICOS JA COBERTOS:\n- nenhum topico detectado',
   ].join('\n\n');
@@ -1722,7 +1722,7 @@ async function getRemoteUnreadChatSnapshot(
           selfIdentity,
         }) &&
         isIndividualWahaChatId(item.chatId) &&
-        item.activityTimestamp > 0,
+        item.activityTimestamp > deriveZeroValue(),
     );
 
   const pending = new Map<
@@ -1740,18 +1740,18 @@ async function getRemoteUnreadChatSnapshot(
   >();
 
   for (const item of normalizedChats) {
-    if (item.unreadCount > 0 || item.lastMessageFromMe === false) {
+    if (item.unreadCount > deriveZeroValue() || item.lastMessageFromMe === false) {
       pending.set(item.phone, {
         ...item,
         unreadCount:
-          item.unreadCount > 0 ? item.unreadCount : item.lastMessageFromMe === false ? 1 : 0,
+          item.unreadCount > deriveZeroValue() ? item.unreadCount : item.lastMessageFromMe === false ? deriveUnitValue() : deriveZeroValue(),
       });
     }
   }
 
-  if (pending.size === 0) {
+  if (pending.size === deriveZeroValue()) {
     const probeCandidates = normalizedChats
-      .filter((item) => item.lastMessageFromMe === null && item.activityTimestamp > 0)
+      .filter((item) => item.lastMessageFromMe === null && item.activityTimestamp > deriveZeroValue())
       .sort((left, right) => right.activityTimestamp - left.activityTimestamp)
       .slice(0, CIA_REMOTE_PENDING_PROBE_LIMIT);
 
@@ -1867,7 +1867,7 @@ async function seedRemoteUnreadConversationShells(input: {
     await upsertCatalogConversationShell({
       workspaceId: input.workspaceId,
       contactId: contact.id,
-      lastMessageAt: item.activityTimestamp > 0 ? new Date(item.activityTimestamp) : new Date(),
+      lastMessageAt: item.activityTimestamp > deriveZeroValue() ? new Date(item.activityTimestamp) : new Date(),
       unreadCount: item.unreadCount,
     });
 
@@ -2040,13 +2040,13 @@ async function finalizeBacklogIntoSilentCatalog(input: {
   ).catch(() => []);
   const pending = Math.max(localPending, remoteUnreadChats.length);
 
-  if (pending > 0) {
+  if (pending > deriveZeroValue()) {
     if (remoteUnreadChats.length > deriveZeroValue()) {
       await seedRemoteUnreadConversationShells({
         workspaceId: input.workspaceId,
         selfIdentity,
         chats: remoteUnreadChats,
-      }).catch(() => 0);
+      }).catch(() => deriveZeroValue());
     }
 
     const continuation = await scheduleBacklogContinuation({
@@ -3422,7 +3422,7 @@ async function fetchConversationHistory(
   const messages = await prisma.message.findMany({
     where: { workspaceId, contactId: contact.id },
     orderBy: { createdAt: 'desc' },
-    ...(limit > 0 ? { take: limit } : {}),
+    ...(limit > deriveZeroValue() ? { take: limit } : {}),
     select: { content: true, direction: true, createdAt: true },
   });
   return messages.reverse();
@@ -5811,12 +5811,12 @@ async function checkRateLimits(
   const wsKey = `autopilot:ws:${workspaceId}:day:${day}`;
 
   const contactCount = await connection.incr(contactKey);
-  if (contactCount === 1) {
+  if (contactCount === deriveUnitValue()) {
     await connection.expire(contactKey, 86400);
   }
 
   const wsCount = await connection.incr(wsKey);
-  if (wsCount === 1) {
+  if (wsCount === deriveUnitValue()) {
     await connection.expire(wsKey, 86400);
   }
 
@@ -5984,7 +5984,7 @@ function classifyOpportunityCandidate(input: {
 
   const clientWaiting =
     input.candidate.pending ||
-    input.candidate.unreadCount > 0 ||
+    input.candidate.unreadCount > deriveZeroValue() ||
     input.candidate.cognitiveState.nextBestAction === 'RESPOND';
 
   const askedAndGhosted =
@@ -6267,7 +6267,7 @@ async function maybeScoreContactWithAi(input: {
       parsed.purchaseValue || parsed.amountPaid || parsed.valuePaid || 0,
     );
     const purchaseValue =
-      Number.isFinite(purchaseValueRaw) && purchaseValueRaw > 0
+      Number.isFinite(purchaseValueRaw) && purchaseValueRaw > deriveZeroValue()
         ? Number(purchaseValueRaw.toFixed(2))
         : null;
 
@@ -6378,7 +6378,7 @@ function buildHeuristicCatalogScore(input: {
 
   const boughtByDeal =
     String(input.wonDealTitle || '').trim().length > deriveZeroValue() ||
-    (Number(input.wonDealValue || 0) || 0) > 0;
+    (Number(input.wonDealValue || 0) || 0) > deriveZeroValue();
   const boughtByConversation = PAGAMENTO_APROVADO_PAGA_RE.test(text);
 
   if (boughtByDeal || boughtByConversation) {
@@ -6407,7 +6407,7 @@ function buildHeuristicCatalogScore(input: {
       ],
       buyerStatus: 'BOUGHT' as const,
       purchasedProduct,
-      purchaseValue: purchaseValueRaw > 0 ? Number(purchaseValueRaw.toFixed(2)) : null,
+      purchaseValue: purchaseValueRaw > deriveZeroValue() ? Number(purchaseValueRaw.toFixed(2)) : null,
       purchaseReason,
       notPurchasedReason: null,
       preferences: [],
@@ -6944,7 +6944,7 @@ async function runScoreContact(data: UnknownRecord) {
               : 'INBOUND',
           content: String(message?.body || message?.text?.body || message?.caption || '').trim(),
           createdAt:
-            resolveCatalogChatActivityTimestamp(message) > 0
+            resolveCatalogChatActivityTimestamp(message) > deriveZeroValue()
               ? new Date(resolveCatalogChatActivityTimestamp(message))
               : new Date(),
         }))
@@ -7036,7 +7036,7 @@ async function runScoreContact(data: UnknownRecord) {
         purchasedProduct: score.purchasedProduct || latestWonDeal?.title || null,
         purchaseValue:
           score.purchaseValue ||
-          ((Number(latestWonDeal?.value || 0) || 0) > 0
+          ((Number(latestWonDeal?.value || 0) || 0) > deriveZeroValue()
             ? Number(Number(latestWonDeal?.value || 0).toFixed(2))
             : null),
         purchaseReason: score.purchaseReason,
@@ -7071,7 +7071,7 @@ async function runScoreContact(data: UnknownRecord) {
         purchasedProduct: score.purchasedProduct || latestWonDeal?.title || null,
         purchaseValue:
           score.purchaseValue ||
-          ((Number(latestWonDeal?.value || 0) || 0) > 0
+          ((Number(latestWonDeal?.value || 0) || 0) > deriveZeroValue()
             ? Number(Number(latestWonDeal?.value || 0).toFixed(2))
             : null),
         source: aiScore ? 'ai_catalog_score' : 'heuristic_catalog_score',
@@ -7111,7 +7111,7 @@ async function runScoreContact(data: UnknownRecord) {
         purchasedProduct: score.purchasedProduct || latestWonDeal?.title || null,
         purchaseValue:
           score.purchaseValue ||
-          ((Number(latestWonDeal?.value || 0) || 0) > 0
+          ((Number(latestWonDeal?.value || 0) || 0) > deriveZeroValue()
             ? Number(Number(latestWonDeal?.value || 0).toFixed(2))
             : null),
         source: aiScore ? 'ai_catalog_score' : 'heuristic_catalog_score',
@@ -7701,7 +7701,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: Unknow
   });
 
   const learning = await computeLearningSnapshot(prisma, workspaceId);
-  if (learning.totalLogs > 0) {
+  if (learning.totalLogs > deriveZeroValue()) {
     await persistSystemInsight(prisma, {
       workspaceId,
       type: 'CIA_SELF_IMPROVEMENT',
@@ -7823,7 +7823,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: Unknow
   const accountProofId = accountProof?.id || null;
 
   // Skip noisy proof event when there are zero candidates (nothing to report)
-  if (exhaustionReport.noLegalActions && exhaustionReport.details.candidateCount === 0) {
+  if (exhaustionReport.noLegalActions && exhaustionReport.details.candidateCount === deriveZeroValue()) {
     // No candidates evaluated — suppress repetitive idle proof
   } else {
     await publishAgentEvent({
@@ -8524,8 +8524,8 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: UnknownRe
             unreadCount: { gt: 0 },
           },
         })
-        .catch(() => 0)
-    : 0;
+        .catch(() => deriveZeroValue())
+    : deriveZeroValue();
 
   const cutoff = new Date(Date.now() - SILENCE_HOURS * 3600000);
   const convs = await prisma.conversation.findMany({
@@ -8762,7 +8762,7 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: UnknownRe
   log.info('autopilot_cycle_completed', { workspaceId, processed: limited.length });
   return {
     queued: executed,
-    reason: executed > 0 ? 'executed' : 'no_eligible_conversations',
+    reason: executed > deriveZeroValue() ? 'executed' : 'no_eligible_conversations',
     processed: limited.length,
   };
 }
