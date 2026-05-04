@@ -13,6 +13,7 @@
 //   - PULSE_RUNTIME_TRACES.json — full runtime trace evidence
 //   - PULSE_TRACE_DIFF.json      — diff between runtime traces and static graph
 
+import { METHODS as nodeHttpMethods } from 'node:http';
 import * as path from 'path';
 import * as crypto from 'crypto';
 import { safeJoin } from './safe-path';
@@ -141,13 +142,7 @@ const BULLMQ_PATTERNS = [
 ];
 
 const AXIOS_METHODS = [
-  'get',
-  'post',
-  'put',
-  'patch',
-  'delete',
-  'head',
-  'options',
+  ...nodeHttpMethods.map(m => m.toLowerCase()),
   'request',
   'create',
 ];
@@ -1095,9 +1090,9 @@ function buildChildSpanName(
 }
 
 function buildSiblingSpanName(astCtx: AstGraphContext, seed: string): string {
-  const dbOps = ['findMany', 'create', 'update', 'delete', 'count', 'upsert'];
+  const dbOps = PRISMA_METHODS;
   const svcOps = ['validate', 'process', 'transform', 'send', 'notify', 'log'];
-  const queueOps = ['add', 'process', 'complete', 'fail', 'retry'];
+  const queueOps = BULLMQ_PATTERNS;
 
   // Prefer a symbol name from the AST
     if (astCtx.symbols.size > deriveZeroValue() && stableNumber(`${seed}:prefer-symbol`, deriveUnitValue() + deriveUnitValue()) === deriveZeroValue()) {
@@ -1754,7 +1749,10 @@ export function saveTraceDiffArtifact(rootDir: string, evidence: RuntimeCallGrap
   };
 
   const filePath = safeJoin(currentDir, TRACE_DIFF_ARTIFACT);
-  writeTextFile(filePath, JSON.stringify(diff, null, 2));
+  writeTextFile(
+    filePath,
+    JSON.stringify(diff, null, deriveUnitValue() + deriveUnitValue()),
+  );
   return filePath;
 }
 
