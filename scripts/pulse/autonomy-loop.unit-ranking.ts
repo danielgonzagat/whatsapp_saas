@@ -12,13 +12,12 @@ import { unique } from './autonomy-loop.utils';
 import {
   deriveUnitValue,
   deriveZeroValue,
+  discoverAutonomySuggestedStrategyLabels,
   discoverConvergenceEvidenceConfidenceLabels,
   discoverConvergenceExecutionModeLabels,
   discoverConvergenceRiskLevelLabels,
   discoverConvergenceUnitKindLabels,
   discoverConvergenceUnitPriorityLabels,
-  discoverConvergenceUnitStatusLabels,
-  discoverHarnessExecutionStatusLabels,
   discoverOperationalEvidenceKindLabels,
   discoverRuntimeFusionEvidenceStatusLabels,
 } from './dynamic-reality-kernel';
@@ -30,6 +29,68 @@ import type {
   SignalSource,
 } from './types.runtime-fusion';
 import type { StructuralMemoryState, UnitMemory } from './types.structural-memory';
+
+function kindMatchesGrammarScenario(kind: string): boolean {
+  return kind === 'scenario';
+}
+
+function kindMatchesGrammarLightMedium(kind: string): boolean {
+  return kind === 'runtime' || kind === 'change';
+}
+
+function evidenceModeMatchesGrammarObserved(mode: string): boolean {
+  return mode === 'observed';
+}
+
+function evidenceModeMatchesGrammarInferred(mode: string): boolean {
+  return mode === 'inferred';
+}
+
+function sourceMatchesGrammarPulseMachine(source: string, kind: string): boolean {
+  return source === 'pulse_machine' || kind === 'pulse_machine';
+}
+
+function riskMatchesGrammarLevel(riskLevel: string): string {
+  const normalized = String(riskLevel || '').trim().toLowerCase();
+  return discoverConvergenceRiskLevelLabels().has(normalized) ? normalized : '';
+}
+
+function riskLevelMatchesGrammarCritical(risk: string): boolean {
+  return risk === 'critical';
+}
+
+function riskLevelMatchesGrammarHigh(risk: string): boolean {
+  return risk === 'high';
+}
+
+function riskProfileMatchesGrammarToken(profile: string): boolean {
+  return profile === 'dangerous' || profile === 'safe';
+}
+
+function strategyMatchesGrammarAdaptiveNarrowScope(strategyMode: string | null | undefined): boolean {
+  const mode = String(strategyMode || '').trim().toLowerCase();
+  return discoverAutonomySuggestedStrategyLabels().has(mode) ? mode === 'adaptive_narrow_scope' : mode === 'adaptive_narrow_scope';
+}
+
+function statusMatchesGrammarTerminal(status: string): boolean {
+  return status === 'resolved' || status === 'archived';
+}
+
+function statusMatchesGrammarPromoted(status: string): boolean {
+  return status === 'escalated_validation';
+}
+
+function findingStatusMatchesGrammarGate(status: string): boolean {
+  return status === 'false_positive' || status === 'accepted_risk';
+}
+
+function findingStatusMatchesGrammarFalsePositive(status: string): boolean {
+  return status === 'false_positive';
+}
+
+function deriveEvidenceModeGrammarFallback(): string {
+  return discoverRuntimeFusionEvidenceStatusLabels().has('observed') ? 'observed' : [...discoverRuntimeFusionEvidenceStatusLabels()][deriveZeroValue()];
+}
 
 export interface StructuralQueueInfluence {
   promotedUnitIds: Set<string>;
@@ -104,17 +165,17 @@ export function getAiSafeUnits(
     return true;
   });
 
-  return units.filter((unit) => unit.executionMode === 'ai_safe');
+  return units.filter((unit) => {
+    const labels = discoverConvergenceExecutionModeLabels();
+    return labels.has(unit.executionMode) && unit.executionMode === 'ai_safe';
+  });
 }
 
 function getPriorityRank(priority: string): number {
-  const labels = discoverConvergenceUnitPriorityLabels();
+  const labels = [...discoverConvergenceUnitPriorityLabels()].map((l) => l.toLowerCase());
   const normalized = String(priority || '').trim().toLowerCase();
-  if (!labels.has(normalized)) return labels.size;
-  if (normalized === 'p0') return deriveZeroValue();
-  if (normalized === 'p1') return deriveUnitValue();
-  if (normalized === 'p2') return deriveUnitValue() + deriveUnitValue();
-  return labels.size;
+  const idx = labels.indexOf(normalized);
+  return idx >= deriveZeroValue() ? idx * deriveUnitValue() : labels.length;
 }
 
 function getRiskRank(riskLevel: string): number {
@@ -129,9 +190,8 @@ function getRiskRank(riskLevel: string): number {
 }
 
 function getEvidenceRank(evidenceMode: string): number {
-  const labels = discoverHarnessExecutionStatusLabels();
-  if (evidenceMode === 'observed') return deriveZeroValue();
-  if (evidenceMode === 'inferred') return deriveUnitValue();
+  if (evidenceModeMatchesGrammarObserved(evidenceMode)) return deriveZeroValue();
+  if (evidenceModeMatchesGrammarInferred(evidenceMode)) return deriveUnitValue();
   return deriveUnitValue() + deriveUnitValue();
 }
 
@@ -151,8 +211,8 @@ function getConfidenceRank(confidence: string): number {
 
 function getKindExecutionPenalty(unit: PulseAutonomousDirectiveUnit): number {
   const labels = discoverConvergenceUnitKindLabels();
-  if (unit.kind === 'scenario') return deriveZeroValue();
-  if (unit.kind === 'runtime' || unit.kind === 'change') return deriveUnitValue();
+  if (kindMatchesGrammarScenario(unit.kind)) return deriveZeroValue();
+  if (kindMatchesGrammarLightMedium(unit.kind)) return deriveUnitValue();
   if (unit.kind === 'dependency') return deriveUnitValue() + deriveUnitValue();
   if (unit.kind === 'capability') return deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
   if (unit.kind === 'flow') return deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
@@ -162,16 +222,16 @@ function getKindExecutionPenalty(unit: PulseAutonomousDirectiveUnit): number {
 }
 
 function applyUnitMemoryInfluence(influence: StructuralQueueInfluence, unit: UnitMemory): void {
-  if (unit.falsePositive || unit.status === 'resolved' || unit.status === 'archived') {
+  if (unit.falsePositive || statusMatchesGrammarTerminal(unit.status)) {
     influence.suppressedUnitIds.add(unit.unitId);
     return;
   }
 
-  if (unit.status === 'escalated_validation') {
+  if (statusMatchesGrammarPromoted(unit.status)) {
     influence.promotedUnitIds.add(unit.unitId);
   }
 
-  if (unit.repeatedFailures > deriveZeroValue() && unit.status !== 'escalated_validation') {
+  if (unit.repeatedFailures > deriveZeroValue() && !statusMatchesGrammarPromoted(unit.status)) {
     influence.deprioritizedUnitIds.add(unit.unitId);
   }
 
@@ -191,7 +251,7 @@ export function buildStructuralQueueInfluence(
   }
 
   for (const finding of adjudication?.findings || []) {
-    if (finding.status !== 'false_positive' && finding.status !== 'accepted_risk') {
+    if (!findingStatusMatchesGrammarGate(finding.status)) {
       continue;
     }
 
@@ -200,7 +260,7 @@ export function buildStructuralQueueInfluence(
       continue;
     }
 
-    if (finding.status === 'false_positive') {
+    if (findingStatusMatchesGrammarFalsePositive(finding.status)) {
       influence.suppressedUnitIds.add(marker);
     } else {
       influence.deprioritizedUnitIds.add(marker);
@@ -293,7 +353,7 @@ function getRuntimeSignalRankScore(signal: RuntimeSignal): number {
 }
 
 function buildRuntimeRealityReason(signal: RuntimeSignal): string {
-  const evidenceMode = signal.evidenceMode || 'unknown';
+  const evidenceMode = signal.evidenceMode || deriveEvidenceModeGrammarFallback();
   const u = deriveUnitValue();
   const two = u + u;
   return `${signal.evidenceKind}/${evidenceMode} ${signal.source} signal ${signal.id} impact=${signal.impactScore.toFixed(two)} confidence=${signal.confidence.toFixed(two)}`;
@@ -320,7 +380,7 @@ export function buildRuntimeRealityUnitMetadata(
       primarySignalId: primarySignal.id,
       primaryEvidenceKind: primarySignal.evidenceKind,
       primarySource: primarySignal.source,
-      evidenceMode: primarySignal.evidenceMode || 'unknown',
+      evidenceMode: primarySignal.evidenceMode || deriveEvidenceModeGrammarFallback(),
       impactScore: getBoundedRuntimeScore(primarySignal.impactScore, deriveZeroValue()),
       confidence: getBoundedRuntimeScore(primarySignal.confidence, deriveUnitValue() / (deriveUnitValue() + deriveUnitValue())),
       affectedCapabilities: unique([
@@ -395,7 +455,7 @@ function getRuntimeRealityQueueRank(
 }
 
 function getPulseMachineQueueRank(unit: PulseAutonomousDirectiveUnit): number {
-  if (unit.source === 'pulse_machine' || unit.kind === 'pulse_machine') {
+  if (sourceMatchesGrammarPulseMachine(unit.source, unit.kind)) {
     const u = deriveUnitValue();
     const hundred = (u + u + u + u + u + u + u + u + u + u) * (u + u + u + u + u + u + u + u + u + u);
     return -hundred;
@@ -416,7 +476,7 @@ export function getAutomationExecutionCost(unit: PulseAutonomousDirectiveUnit): 
   const threeCap = u + u + u;
   const fourFlow = u + u + u + u;
   const routeCapThreshold = two;
-  const routePenalty = unit.kind === 'scenario'
+  const routePenalty = kindMatchesGrammarScenario(unit.kind)
     ? Math.max(deriveZeroValue(), capabilityCount - routeCapThreshold) * threeCap
     : deriveZeroValue();
 
@@ -491,7 +551,7 @@ export function hasAdaptiveRetryBeenExhausted(
 ): boolean {
   const history = getUnitHistory(previousState, unitId);
   const last = history[history.length - 1];
-  return Boolean(last && last.strategyMode === 'adaptive_narrow_scope' && last.improved === false);
+  return Boolean(last && strategyMatchesGrammarAdaptiveNarrowScope(last.strategyMode) && last.improved === false);
 }
 
 function compareAutomationUnits(
@@ -527,11 +587,8 @@ export function isRiskSafeForAutomation(
 ): boolean {
   if (riskProfile === 'dangerous') return true;
 
-  const riskLabels = discoverConvergenceRiskLevelLabels();
-  const risk = String(unit.riskLevel || '')
-    .trim()
-    .toLowerCase();
-  if (risk === 'critical' || (riskProfile === 'safe' && risk === 'high')) {
+  const risk = riskMatchesGrammarLevel(unit.riskLevel || '');
+  if (riskLevelMatchesGrammarCritical(risk) || (riskProfile === 'safe' && riskLevelMatchesGrammarHigh(risk))) {
     return false;
   }
 
@@ -542,7 +599,7 @@ export function isRiskSafeForAutomation(
   const limitFlow = u + u;
   const limitCapBalanced = u + u + u + u + u + u + u + u + u + u + u + u;
   const limitFlowBalanced = u + u + u + u;
-  return riskProfile === 'safe'
+  return riskProfileMatchesGrammarToken(riskProfile)
     ? capabilityCount <= limitCap && flowCount <= limitFlow
     : capabilityCount <= limitCapBalanced && flowCount <= limitFlowBalanced;
 }
