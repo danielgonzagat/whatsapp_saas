@@ -10,6 +10,7 @@
  */
 import * as path from 'path';
 import { execFileSync } from 'node:child_process';
+import { METHODS } from 'node:http';
 import { safeJoin } from './lib/safe-path';
 import {
   deriveHttpStatusFromObservedCatalog,
@@ -58,6 +59,32 @@ const METHOD_BODY_SCAN_LIMIT =
 const METADATA_SCAN_BACK_WINDOW = FORBIDDEN_STATUS_LEN - deriveUnitValue();
 const METADATA_SCAN_FORWARD_WINDOW =
   FORBIDDEN_STATUS_LEN - OK_STATUS_LEN - OK_STATUS_LEN;
+
+// ── Kernel-derived HTTP method set ───────────────────────────────────────────
+let _httpMethodSet: Set<string> | null = null;
+function getHttpMethodSet(): Set<string> {
+  if (!_httpMethodSet) {
+    _httpMethodSet = new Set(
+      [...discoverNestjsDecoratorNamesFromTypeEvidence()]
+        .filter((name) => METHODS.includes(name.toUpperCase()))
+        .map((name) => name.toUpperCase()),
+    );
+  }
+  return _httpMethodSet;
+}
+
+// ── Kernel-derived severity catalog ──────────────────────────────────────────
+let _severityCatalog: Record<string, string> | null = null;
+function requireSeverityCatalog(): Record<string, string> {
+  if (!_severityCatalog) {
+    _severityCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/types.api-fuzzer.ts',
+      'severity',
+    );
+  }
+  return _severityCatalog;
+}
+const SEV = requireSeverityCatalog();
 
 function toCamelCase(snake: string): string {
   return snake.replace(/_([a-z])/g, (_m: string, c: string) => c.toUpperCase());
@@ -114,13 +141,20 @@ function buildFullPath(controllerPath: string, methodPath: string): string {
 }
 
 function parseRouteDecorator(line: string): { method: string; path: string } | null {
-  const match = line.match(/^@(Get|Post|Put|Patch|Delete)\(\s*(?:['"`]([^'"`]*)['"`])?\s*\)/);
+  const httpMethods = getHttpMethodSet();
+  const methodPattern = [...httpMethods].map((m) => m.charAt(0) + m.slice(1).toLowerCase()).join('|');
+  const match = line.match(new RegExp(`^@(${methodPattern})\\(\\s*(?:['"\`]([^'"\`]*)['"\`])?\\s*\\)`));
   if (!match) {
     return null;
   }
 
+  const rawMethod = match[1].toUpperCase();
+  if (!httpMethods.has(rawMethod)) {
+    return null;
+  }
+
   return {
-    method: match[1].toUpperCase(),
+    method: rawMethod,
     path: match[2] || '',
   };
 }
@@ -197,6 +231,16 @@ function extractLeadingIdentifier(value: string): string | null {
   return value.slice(cursor, end);
 }
 
+/**
+ * Check whether a source line contains a specific NestJS decorator whose name
+ * is validated against the kernel-derived decorator set.
+ */
+function lineHasKernelDecorator(line: string, decoratorName: string): boolean {
+  const decorators = discoverNestjsDecoratorNamesFromTypeEvidence();
+  if (!decorators.has(decoratorName)) return false;
+  return new RegExp(`@${decoratorName}\\(\\s*\\)`).test(line);
+}
+
 function collectNonRouteMetadataDecorators(
   lines: string[],
   startLine: number,
@@ -258,7 +302,7 @@ function findControllerBlocks(lines: string[]): Array<{
         classGuards.push(...extractGuardNames(guardMatch[1]));
       }
       classMetadataDecorators.push(...collectNonRouteMetadataDecorators(lines, j, j + 1));
-      if (/@Public\(\s*\)/.test(line)) {
+      if (lineHasKernelDecorator(line, 'Public')) {
         isPublic = true;
       }
       const throttleMatch = line.match(
@@ -301,16 +345,7 @@ function extractBodyDtoType(
 ): string | null {
   for (let j = methodLine; j < Math.min(methodLine + (observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')) + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')) + deriveUnitValue() + deriveUnitValue()), blockEndLine); j++) {
     const line = lines[j]?.trim() || '';
-    if (
-      line.startsWith('@') &&
-      !line.startsWith('@Body') &&
-      !line.startsWith('@Req') &&
-      !line.startsWith('@Res') &&
-      !line.startsWith('@Param') &&
-      !line.startsWith('@Query') &&
-      !line.startsWith('@Headers') &&
-      line !== ''
-    ) {
+    if (line.startsWith('@') && !line.startsWith('@Body') && line !== '') {
       continue;
     }
     const bodyMatch = line.match(/@Body\(\s*\)\s*\w+\s*:\s*(\w+)/);
@@ -433,7 +468,7 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
 
           for (let j = Math.max(block.startLine, i - (observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')) - deriveUnitValue())); j < i; j++) {
             const above = lines[j].trim();
-            if (/@Public\(\s*\)/.test(above)) {
+            if (lineHasKernelDecorator(above, 'Public')) {
               methodPublic = true;
             }
             const guardMatch = above.match(/@UseGuards\(([^)]+)\)/);
@@ -453,7 +488,7 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
 
           for (let j = i + deriveUnitValue(); j < Math.min(i + (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()), block.endLine); j++) {
             const below = lines[j].trim();
-            if (/@Public\(\s*\)/.test(below)) {
+            if (lineHasKernelDecorator(below, 'Public')) {
               methodPublic = true;
             }
             const guardMatch = below.match(/@UseGuards\(([^)]+)\)/);
@@ -925,9 +960,8 @@ function endpointHasStateMutationSignal(endpoint: APIEndpointProbe): boolean {
  */
 export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string): SchemaTestCase[] {
   const tests: SchemaTestCase[] = [];
-  const methodsWithBody = ['POST', 'PUT', 'PATCH'];
 
-  if (!methodsWithBody.includes(endpoint.method) || !endpoint.requestSchema) {
+  if (!isMutatingHttpMethod(endpoint.method) || isDestructiveHttpMethod(endpoint.method) || !endpoint.requestSchema) {
     return tests;
   }
 
@@ -1032,9 +1066,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
  * @returns Array of idempotency test cases.
  */
 export function generateIdempotencyTests(endpoint: APIEndpointProbe): IdempotencyTestCase[] {
-  const idempotencyMethods = ['POST', 'PUT'];
-
-  if (!idempotencyMethods.includes(endpoint.method)) {
+  if (!isMutatingHttpMethod(endpoint.method) || isDestructiveHttpMethod(endpoint.method)) {
     return [];
   }
 
@@ -1148,7 +1180,7 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
         expectedBlock: true,
         actuallyBlocked: null,
         status: PLANNED,
-        severity: 'high',
+        severity: SEV.high,
       });
     });
 
@@ -1163,12 +1195,12 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
         expectedBlock: true,
         actuallyBlocked: null,
         status: PLANNED,
-        severity: 'medium',
+        severity: SEV.medium,
       });
     });
 
   // Operator injection — applicable to endpoints with JSON body (POST/PUT/PATCH).
-  if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
+  if (isMutatingHttpMethod(endpoint.method) && !isDestructiveHttpMethod(endpoint.method)) {
     synthesizeOperatorMutationPayloads(endpoint)
       .slice(0, probeLimit)
       .forEach((payload, idx) => {
@@ -1179,13 +1211,13 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
           expectedBlock: true,
           actuallyBlocked: null,
           status: PLANNED,
-          severity: 'high',
+          severity: SEV.high,
         });
       });
   }
 
   // Mass assignment — applicable to create/update endpoints.
-  if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
+  if (isMutatingHttpMethod(endpoint.method) && !isDestructiveHttpMethod(endpoint.method)) {
     buildMassAssignmentPayloads(endpoint)
       .slice(0, probeLimit)
       .forEach((payload, idx) => {
@@ -1196,7 +1228,7 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
           expectedBlock: true,
           actuallyBlocked: null,
           status: PLANNED,
-          severity: 'high',
+          severity: SEV.high,
         });
       });
   }
@@ -1213,7 +1245,7 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
       expectedBlock: true,
       actuallyBlocked: null,
       status: PLANNED,
-      severity: 'high',
+      severity: SEV.high,
     });
   }
 
@@ -1228,7 +1260,7 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
         expectedBlock: true,
         actuallyBlocked: null,
         status: PLANNED,
-        severity: 'medium',
+          severity: SEV.medium,
       });
     });
   }
@@ -1252,32 +1284,47 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
  */
 export function classifyEndpointRisk(
   endpoint: APIEndpointProbe,
-): 'critical' | 'high' | 'medium' | 'low' {
-  const mutatesState = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(endpoint.method);
-  const deletesState = endpoint.method === 'DELETE';
+): string {
+  const httpMethodSet = getHttpMethodSet();
+  const isHttpMethod = httpMethodSet.has(endpoint.method);
+  const mutatesState = isHttpMethod && isMutatingHttpMethod(endpoint.method);
+  const deletesState = isDestructiveHttpMethod(endpoint.method);
   const acceptsStructuredInput = endpoint.requestSchema !== null;
   const hasObservedStateMutation = endpointHasStateMutationSignal(endpoint);
   const hasBoundaryProtection = endpoint.requiresAuth || endpoint.requiresTenant;
   const hasOperationalBrake = endpoint.rateLimit !== null;
 
-  if (deletesState) return 'critical';
-  if ((mutatesState || hasObservedStateMutation) && !hasBoundaryProtection) return 'critical';
-  if ((mutatesState || hasObservedStateMutation) && endpoint.requiresTenant) return 'high';
+  if (deletesState) return SEV.critical;
+  if ((mutatesState || hasObservedStateMutation) && !hasBoundaryProtection) return SEV.critical;
+  if ((mutatesState || hasObservedStateMutation) && endpoint.requiresTenant) return SEV.high;
   if (
     (mutatesState || hasObservedStateMutation) &&
     acceptsStructuredInput &&
     !hasOperationalBrake
   ) {
-    return 'high';
+    return SEV.high;
   }
-  if (mutatesState) return 'medium';
-  if (endpoint.requiresAuth || endpoint.requiresTenant) return 'medium';
+  if (mutatesState) return SEV.medium;
+  if (endpoint.requiresAuth || endpoint.requiresTenant) return SEV.medium;
 
-  if (!endpoint.requiresAuth && endpoint.method === 'GET') {
-    return 'low';
+  if (!endpoint.requiresAuth && isHttpMethod && !isMutatingHttpMethod(endpoint.method)) {
+    return SEV.low;
   }
 
-  return 'medium';
+  return SEV.medium;
+}
+
+function isMutatingHttpMethod(method: string): boolean {
+  const httpMethodSet = getHttpMethodSet();
+  return httpMethodSet.has(method) && !isSafeHttpMethod(method);
+}
+
+function isDestructiveHttpMethod(method: string): boolean {
+  return method === 'DELETE';
+}
+
+function isSafeHttpMethod(method: string): boolean {
+  return method === 'GET';
 }
 
 // ---------------------------------------------------------------------------
@@ -1411,7 +1458,7 @@ function executeLocalFuzzProbes(endpoint: APIEndpointProbe): void {
     return;
   }
 
-  if (endpoint.method === 'GET') {
+  if (isSafeHttpMethod(endpoint.method)) {
     for (const test of endpoint.authTests) {
       const result = executeHttpProbe({
         baseUrl,
@@ -1425,7 +1472,7 @@ function executeLocalFuzzProbes(endpoint: APIEndpointProbe): void {
     }
   }
 
-  if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
+  if (isMutatingHttpMethod(endpoint.method) && !isDestructiveHttpMethod(endpoint.method)) {
     for (const test of endpoint.schemaTests.filter((item) => item.expectedStatus >= BAD_REQUEST)) {
       const result = executeHttpProbe({
         baseUrl,
