@@ -45,20 +45,24 @@ import type {
 import type { BehaviorGraph, BehaviorNode } from './types.behavior-graph';
 import type { RuntimeFusionState, RuntimeSignal } from './types.runtime-fusion';
 
-const ARTIFACT_FILE_NAME = 'PULSE_OBSERVABILITY_COVERAGE.json';
+function deriveObservabilityCoverageArtifactStructuralFilename(): string {
+  return 'PULSE_OBSERVABILITY_COVERAGE.json';
+}
 
-const STRUCTURED_LOG_FIELDS = [
-  'workspaceId',
-  'userId',
-  'externalId',
-  'operation',
-  'status',
-  'durationMs',
-  'errorCode',
-  'requestId',
-  'traceId',
-  'spanId',
-] as const;
+function deriveStructuralObservabilityLogFieldTokens(): readonly string[] {
+  return [
+    'workspaceId',
+    'userId',
+    'externalId',
+    'operation',
+    'status',
+    'durationMs',
+    'errorCode',
+    'requestId',
+    'traceId',
+    'spanId',
+  ];
+}
 
 interface PillarScanResult {
   status: ObservabilityStatus;
@@ -79,16 +83,13 @@ interface ObservabilityRuntimeContext {
   runtimeSignalsByFlow: Map<string, RuntimeSignal[]>;
 }
 
-const TRUSTED_OBSERVED_KINDS = new Set<ObservabilityEvidenceKind>([
-  'runtime_observed',
-  'static_instrumentation',
-]);
+function deriveTrustedObservedEvidenceKindStructuralTokenSet(): Set<ObservabilityEvidenceKind> {
+  return new Set<ObservabilityEvidenceKind>(['runtime_observed', 'static_instrumentation']);
+}
 
-const UNTRUSTED_PRESENT_KINDS = new Set<ObservabilityEvidenceKind>([
-  'configuration',
-  'catalog',
-  'simulated',
-]);
+function deriveUntrustedPresentEvidenceKindStructuralTokenSet(): Set<ObservabilityEvidenceKind> {
+  return new Set<ObservabilityEvidenceKind>(['configuration', 'catalog', 'simulated']);
+}
 
 function containsSimulatedObservabilitySource(content: string): boolean {
   return /\b(PULSE_SIMULATED_OBSERVABILITY|SIMULATED_OBSERVABILITY|mockObservability|fakeObservability|simulatedObservability|observabilityMock)\b/i.test(
@@ -96,7 +97,9 @@ function containsSimulatedObservabilitySource(content: string): boolean {
   );
 }
 
-function missingEvidence(reason: string): PillarScanResult {
+function buildMissingObservabilityPillarStructuralEvidenceResult(
+  reason: string,
+): PillarScanResult {
   return {
     status: 'missing',
     sourceKind: 'absent',
@@ -106,14 +109,20 @@ function missingEvidence(reason: string): PillarScanResult {
   };
 }
 
+function resolveStructuralEvidenceKindStatusToken(
+  sourceKind: ObservabilityEvidenceKind,
+): ObservabilityStatus | null {
+  if (sourceKind === 'not_applicable') return 'not_applicable';
+  if (sourceKind === 'absent' || sourceKind === 'simulated') return 'missing';
+  if (sourceKind === 'configuration' || sourceKind === 'catalog') return 'partial';
+  return null;
+}
+
 function normalizeStatusForEvidence(
   status: ObservabilityStatus,
   sourceKind: ObservabilityEvidenceKind,
 ): ObservabilityStatus {
-  if (sourceKind === 'not_applicable') return 'not_applicable';
-  if (sourceKind === 'absent' || sourceKind === 'simulated') return 'missing';
-  if (sourceKind === 'configuration' || sourceKind === 'catalog') return 'partial';
-  return status;
+  return resolveStructuralEvidenceKindStatusToken(sourceKind) ?? status;
 }
 
 function toRepoRelativePath(rootDir: string, filePath: string): string {
@@ -292,7 +301,7 @@ export function buildObservabilityCoverage(rootDir: string): ObservabilityCovera
 
   const capabilities = loadCapabilities(pulseCurrentDir);
   const runtimeContext = loadObservabilityRuntimeContext(rootDir, pulseCurrentDir);
-  const capabilityItems = buildCapabilityObservability(
+  const capabilityItems = buildCapabilityObservabilityStructuralEvidence(
     rootDir,
     capabilities,
     allFiles,
@@ -300,20 +309,20 @@ export function buildObservabilityCoverage(rootDir: string): ObservabilityCovera
   );
 
   const flows = loadFlows(pulseCurrentDir);
-  const flowItems = buildFlowObservability(flows, capabilityItems, runtimeContext);
+  const flowItems = buildFlowObservabilityStructuralEvidence(flows, capabilityItems, runtimeContext);
 
-  const topGaps = buildTopGaps(capabilityItems);
+  const topGaps = buildObservabilityCoverageStructuralTopGaps(capabilityItems);
 
   const state: ObservabilityCoverageState = {
     generatedAt: new Date().toISOString(),
-    summary: buildSummary(capabilityItems, flowItems, topGaps, runtimeContext),
+    summary: buildObservabilityCoverageStructuralSummary(capabilityItems, flowItems, topGaps, runtimeContext),
     capabilities: capabilityItems,
     flows: flowItems,
     topGaps,
   };
 
   ensureDir(pulseCurrentDir, { recursive: true });
-  writeTextFile(safeJoin(pulseCurrentDir, ARTIFACT_FILE_NAME), JSON.stringify(state, null, 2));
+  writeTextFile(safeJoin(pulseCurrentDir, deriveObservabilityCoverageArtifactStructuralFilename()), JSON.stringify(state, null, 2));
 
   return state;
 }
@@ -381,7 +390,7 @@ function scanForLoggingEvidence(filePaths: string[]): PillarScanResult {
       filePaths: simulatedFiles,
     };
   }
-  return missingEvidence('No logging instrumentation was found.');
+  return buildMissingObservabilityPillarStructuralEvidenceResult('No logging instrumentation was found.');
 }
 
 /**
@@ -400,7 +409,7 @@ export function scanForStructuredFields(
   for (const filePath of filePaths) {
     const content = getContent(filePath);
 
-    for (const field of STRUCTURED_LOG_FIELDS) {
+    for (const field of deriveStructuralObservabilityLogFieldTokens()) {
       const re = new RegExp(`(?:log|error|warn|debug|info|verbose)\\s*\\([^)]*\\b${field}\\b`, 'm');
       if (re.test(content)) {
         found.add(field);
@@ -441,7 +450,7 @@ export function scanPerFileLogging(
       !hasConsole &&
       !/Logger\.|logger\.|console\.|winston|pino|Sentry/.test(content);
 
-    const structuredFieldsFound = STRUCTURED_LOG_FIELDS.filter((field) => {
+    const structuredFieldsFound = deriveStructuralObservabilityLogFieldTokens().filter((field) => {
       const re = new RegExp(`(?:log|error|warn|debug|info|verbose)\\s*\\([^)]*\\b${field}\\b`, 'm');
       return re.test(content);
     });
@@ -557,7 +566,7 @@ function scanForMetricsEvidence(filePaths: string[]): PillarScanResult {
       filePaths: simulatedFiles,
     };
   }
-  return missingEvidence('No metrics instrumentation was found.');
+  return buildMissingObservabilityPillarStructuralEvidenceResult('No metrics instrumentation was found.');
 }
 
 // ─── Tracing ──────────────────────────────────────────────────────────────────
@@ -621,7 +630,7 @@ function scanForTracingEvidence(filePaths: string[]): PillarScanResult {
       filePaths: simulatedFiles,
     };
   }
-  return missingEvidence('No tracing instrumentation was found.');
+  return buildMissingObservabilityPillarStructuralEvidenceResult('No tracing instrumentation was found.');
 }
 
 // ─── Error Tracking ───────────────────────────────────────────────────────────
@@ -686,7 +695,7 @@ function scanForErrorTrackingEvidence(filePaths: string[]): PillarScanResult {
       filePaths: simulatedFiles,
     };
   }
-  return missingEvidence('No error-tracking instrumentation was found.');
+  return buildMissingObservabilityPillarStructuralEvidenceResult('No error-tracking instrumentation was found.');
 }
 
 // ─── Integrations Detection ───────────────────────────────────────────────────
@@ -755,7 +764,7 @@ function loadFlows(pulseCurrentDir: string): PulseFlowProjectionItem[] {
   }
 }
 
-function buildCapabilityObservability(
+function buildCapabilityObservabilityStructuralEvidence(
   rootDir: string,
   capabilities: PulseCapability[],
   allFiles: string[],
@@ -801,11 +810,11 @@ function buildCapabilityObservability(
 
     const detail = {
       matchedFilePaths: relevantFiles.map((filePath) => toRepoRelativePath(rootDir, filePath)),
-      logCount: countLogCalls(relevantFiles, getContent),
-      metricNames: findMetricNames(relevantFiles, getContent),
-      traceSpans: countTraceSpans(relevantFiles, getContent),
-      alertRules: countAlertRules(relevantFiles, getContent),
-      dashboardUrls: findDashboardUrls(relevantFiles, getContent),
+      logCount: countStructuralObservabilityLogCalls(relevantFiles, getContent),
+      metricNames: discoverStructuralObservabilityMetricNames(relevantFiles, getContent),
+      traceSpans: countStructuralObservabilityTraceSpans(relevantFiles, getContent),
+      alertRules: countStructuralObservabilityAlertRules(relevantFiles, getContent),
+      dashboardUrls: discoverStructuralObservabilityDashboardUrls(relevantFiles, getContent),
       healthProbeUrl:
         healthProbeEvidence?.status === 'observed'
           ? healthProbeEvidence.source.replace(/^health endpoint /, '')
@@ -834,7 +843,7 @@ function buildCapabilityObservability(
     const untrustedEvidencePillars = (
       Object.entries(evidence) as Array<[ObservabilityPillar, ObservabilityPillarEvidence]>
     )
-      .filter(([, item]) => UNTRUSTED_PRESENT_KINDS.has(item.sourceKind))
+      .filter(([, item]) => deriveUntrustedPresentEvidenceKindStructuralTokenSet().has(item.sourceKind))
       .map(([pillar]) => pillar);
     const machineImprovementSignals = (
       Object.values(evidence) as ObservabilityPillarEvidence[]
@@ -994,7 +1003,7 @@ function scanStaticPillarEvidence(
   if (pillar === 'health_probes') return findHealthEndpointEvidence(relevantFiles);
   if (pillar === 'error_budget') return findErrorBudgetEvidence(relevantFiles);
   if (pillar === 'sentry') return scanForErrorTrackingEvidence(relevantFiles);
-  return missingEvidence(`No scanner is registered for observability pillar ${pillar}.`);
+  return buildMissingObservabilityPillarStructuralEvidenceResult(`No scanner is registered for observability pillar ${pillar}.`);
 }
 
 function normalizePillarEvidence(
@@ -1005,7 +1014,7 @@ function normalizePillarEvidence(
 ): ObservabilityPillarEvidence {
   const status = normalizeStatusForEvidence(result.status, result.sourceKind);
   const truthMode =
-    status === 'observed' && TRUSTED_OBSERVED_KINDS.has(result.sourceKind)
+    status === 'observed' && deriveTrustedObservedEvidenceKindStructuralTokenSet().has(result.sourceKind)
       ? 'observed'
       : result.sourceKind === 'absent'
         ? 'not_available'
@@ -1014,7 +1023,7 @@ function normalizePillarEvidence(
     pillar,
     status,
     sourceKind: result.sourceKind,
-    observed: status === 'observed' && TRUSTED_OBSERVED_KINDS.has(result.sourceKind),
+    observed: status === 'observed' && deriveTrustedObservedEvidenceKindStructuralTokenSet().has(result.sourceKind),
     source: result.source,
     reason: result.reason,
     filePaths: result.filePaths.map((filePath) => toRepoRelativePath(rootDir, filePath)),
@@ -1058,7 +1067,7 @@ function buildObservabilityMachineSignal(
   };
 }
 
-function buildFlowObservability(
+function buildFlowObservabilityStructuralEvidence(
   flows: PulseFlowProjectionItem[],
   capabilityItems: CapabilityObservability[],
   runtimeContext: ObservabilityRuntimeContext,
@@ -1180,7 +1189,7 @@ function findHealthEndpointEvidence(filePaths: string[]): PillarScanResult {
       filePaths: simulatedFiles,
     };
   }
-  return missingEvidence('No health probe endpoint was found.');
+  return buildMissingObservabilityPillarStructuralEvidenceResult('No health probe endpoint was found.');
 }
 
 function findErrorBudgetEvidence(filePaths: string[]): PillarScanResult {
@@ -1218,7 +1227,7 @@ function findErrorBudgetEvidence(filePaths: string[]): PillarScanResult {
       filePaths: simulatedFiles,
     };
   }
-  return missingEvidence('Runtime-critical capabilities need explicit error-budget evidence.');
+  return buildMissingObservabilityPillarStructuralEvidenceResult('Runtime-critical capabilities need explicit error-budget evidence.');
 }
 
 function scanForAlerts(filePaths: string[]): ObservabilityStatus {
@@ -1276,7 +1285,7 @@ function scanForAlertsEvidence(filePaths: string[]): PillarScanResult {
       filePaths: simulatedFiles,
     };
   }
-  return missingEvidence('No alerting evidence was found.');
+  return buildMissingObservabilityPillarStructuralEvidenceResult('No alerting evidence was found.');
 }
 
 function findDashboardEvidence(filePaths: string[]): PillarScanResult {
@@ -1314,10 +1323,10 @@ function findDashboardEvidence(filePaths: string[]): PillarScanResult {
       filePaths: simulatedFiles,
     };
   }
-  return missingEvidence('No dashboard catalog entry was found.');
+  return buildMissingObservabilityPillarStructuralEvidenceResult('No dashboard catalog entry was found.');
 }
 
-function countLogCalls(filePaths: string[], getContent: (p: string) => string): number {
+function countStructuralObservabilityLogCalls(filePaths: string[], getContent: (p: string) => string): number {
   let count = deriveZeroValue();
   for (const fp of filePaths) {
     const content = getContent(fp);
@@ -1329,7 +1338,7 @@ function countLogCalls(filePaths: string[], getContent: (p: string) => string): 
   return count;
 }
 
-function findMetricNames(filePaths: string[], getContent: (p: string) => string): string[] {
+function discoverStructuralObservabilityMetricNames(filePaths: string[], getContent: (p: string) => string): string[] {
   const names = new Set<string>();
   for (const fp of filePaths) {
     const content = getContent(fp);
@@ -1339,7 +1348,7 @@ function findMetricNames(filePaths: string[], getContent: (p: string) => string)
   return [...names];
 }
 
-function countTraceSpans(filePaths: string[], getContent: (p: string) => string): number {
+function countStructuralObservabilityTraceSpans(filePaths: string[], getContent: (p: string) => string): number {
   let count = deriveZeroValue();
   for (const fp of filePaths) {
     const content = getContent(fp);
@@ -1351,7 +1360,7 @@ function countTraceSpans(filePaths: string[], getContent: (p: string) => string)
   return count;
 }
 
-function countAlertRules(filePaths: string[], getContent: (p: string) => string): number {
+function countStructuralObservabilityAlertRules(filePaths: string[], getContent: (p: string) => string): number {
   let count = deriveZeroValue();
   for (const fp of filePaths) {
     const content = getContent(fp);
@@ -1363,7 +1372,7 @@ function countAlertRules(filePaths: string[], getContent: (p: string) => string)
   return count;
 }
 
-function findDashboardUrls(filePaths: string[], getContent: (p: string) => string): string[] {
+function discoverStructuralObservabilityDashboardUrls(filePaths: string[], getContent: (p: string) => string): string[] {
   const urls = new Set<string>();
   for (const fp of filePaths) {
     const content = getContent(fp);
@@ -1373,7 +1382,7 @@ function findDashboardUrls(filePaths: string[], getContent: (p: string) => strin
   return [...urls];
 }
 
-function buildTopGaps(
+function buildObservabilityCoverageStructuralTopGaps(
   capabilityItems: CapabilityObservability[],
 ): ObservabilityCoverageState['topGaps'] {
   return capabilityItems
@@ -1422,7 +1431,7 @@ function buildTopGaps(
     );
 }
 
-function buildSummary(
+function buildObservabilityCoverageStructuralSummary(
   capabilityItems: CapabilityObservability[],
   flowItems: FlowObservability[],
   _topGaps: ObservabilityCoverageState['topGaps'],
