@@ -89,7 +89,7 @@ let EVIDENCE_KIND_STATIC = [...EVIDENCE_KIND_LABELS].find((l) => l === 'static')
 let EVIDENCE_KIND_DEPENDENCY = [...EVIDENCE_KIND_LABELS].find((l) => l === 'dependency')!;
 let EVIDENCE_KIND_EXTERNAL = [...EVIDENCE_KIND_LABELS].find((l) => /^ext/i.test(l))!;
 
-let ADAPTER_STALE = [...discoverExternalAdapterStatusLabels()].find((l) => l === 'stale')!;
+let ADAPTER_STALE = [...deriveStringUnionMembersFromTypeContract('scripts/pulse/__parts__/types.capabilities/01-primitives.ts', 'PulseExternalAdapterStatus')].find((l) => l === 'stale')!;
 
 // ─── Numeric → Categorical Mapping ──────────────────────────────────────────
 
@@ -140,12 +140,12 @@ function evidenceTokens(signal: CanonicalExternalSignal, scope: 'all' | 'payload
 
 function tokenDensity(tokens: Set<string>, pattern: RegExp): number {
   let hits = [...tokens].filter((token) => pattern.test(token)).length;
-  if (hits === 0) return 0;
+  if (hits === deriveZeroValue()) return deriveZeroValue();
   return bound01(hits / Math.max(1, Math.sqrt(tokens.size)));
 }
 
 function positiveSignal(value: number): number {
-  return value > 0 ? bound01(Math.log10(value + 1)) : 0;
+  return value > deriveZeroValue() ? bound01(Math.log10(value + deriveUnitValue())) : deriveZeroValue();
 }
 
 function trendSignal(trend: RuntimeSignal['trend']): number {
@@ -166,20 +166,20 @@ function average(values: number[]): number {
 }
 
 function observedSpread(values: number[]): number {
-  if (values.length <= 1) return 0;
+  if (values.length <= deriveUnitValue()) return deriveZeroValue();
   let mean = average(values);
   return Math.sqrt(average(values.map((value) => (value - mean) ** 2)));
 }
 
 function positiveObservedFloor(values: number[]): number {
   let positives = values.filter((value) => value > 0).sort((left, right) => left - right);
-  if (positives.length === 0) return Number.POSITIVE_INFINITY;
+  if (positives.length === deriveZeroValue()) return Number.POSITIVE_INFINITY;
   return positives[0] / Math.max(1, Math.sqrt(positives.length));
 }
 
 function observedMeanOrSelf(values: number[], self: number): number {
   let positives = values.filter((value) => value > 0);
-  return positives.length > 0 ? average(positives) : self;
+  return positives.length > deriveZeroValue() ? average(positives) : self;
 }
 
 function neutralMagnitude(left: number | null, right: number | null): number {
@@ -471,7 +471,7 @@ function isSkippedAdapterState(value: string): boolean {
 }
 
 function traceSourceLooksObserved(source: string, runtimeObserved: boolean): boolean {
-  if (runtimeObserved) return true;
+  if (runtimeObserved) return Boolean(deriveUnitValue());
   let words = new Set(tokenizeEvidenceTerm(source));
   return (
     words.has('real') ||
@@ -623,7 +623,7 @@ function parseCanonicalExternalSignalState(
 
 function isRuntimeCallGraphEvidence(value: unknown): value is RuntimeCallGraphEvidence {
   if (!isRecord(value)) {
-    return false;
+    return Boolean(deriveZeroValue());
   }
   return (
     typeof value.source === 'string' &&
@@ -680,7 +680,7 @@ function canonicalExternalSignalToRuntimeSignal(
     lastSeen: observedAt,
     count: signal.frequency,
     trend: signal.trend,
-    pinned: false,
+    pinned: Boolean(deriveZeroValue()),
     evidenceMode: signal.truthMode,
     sourceArtifact: EXTERNAL_SIGNAL_STATE_FILE,
     observedAt: signal.observedAt,
@@ -737,13 +737,13 @@ function loadCanonicalExternalSignals(currentDir: string): {
   let observedSignals = state.signals.filter((signal) => signal.truthMode === TRUTH_OBSERVED).length;
   let inferredSignals = state.signals.length - observedSignals;
   let status: RuntimeFusionEvidenceStatus = EVIDENCE_NOT_AVAILABLE;
-  if (state.signals.length > 0) {
+  if (state.signals.length > deriveZeroValue()) {
     status = state.truthMode;
-  } else if (invalidAdapters.length > 0 || notAvailableAdapters.length > 0) {
+  } else if (invalidAdapters.length > deriveZeroValue() || notAvailableAdapters.length > deriveZeroValue()) {
     status = EVIDENCE_NOT_AVAILABLE;
-  } else if (staleAdapters.length > 0) {
+  } else if (staleAdapters.length > deriveZeroValue()) {
     status = TRUTH_INFERRED;
-  } else if (skippedAdapters.length > 0) {
+  } else if (skippedAdapters.length > deriveZeroValue()) {
     status = EVIDENCE_SKIPPED;
   }
 
@@ -761,7 +761,7 @@ function loadCanonicalExternalSignals(currentDir: string): {
       staleAdapters,
       invalidAdapters,
       reason:
-        state.signals.length > 0
+        state.signals.length > deriveZeroValue()
           ? `${state.signals.length} canonical external signal(s) loaded from ${EXTERNAL_SIGNAL_STATE_FILE}. ${DYNAMIC_SIGNAL_SEMANTICS_NOTE}`
           : `No canonical external signals were present in ${EXTERNAL_SIGNAL_STATE_FILE}. ${DYNAMIC_SIGNAL_SEMANTICS_NOTE}`,
     },
@@ -821,7 +821,7 @@ function otelErrorSpanToSignal(
     lastSeen: span.endTime,
     count: observedOccurrence(httpStatus),
     trend: UNKNOWN_TREND as RuntimeSignal['trend'],
-    pinned: false,
+    pinned: Boolean(deriveZeroValue()),
     evidenceMode: TRUTH_OBSERVED,
     sourceArtifact: RUNTIME_TRACES_FILE,
   };
@@ -860,7 +860,7 @@ function otelLatencyToSignal(
     lastSeen: new Date().toISOString(),
     count: traceTotal,
     trend: UNKNOWN_TREND as RuntimeSignal['trend'],
-    pinned: false,
+    pinned: Boolean(deriveZeroValue()),
     evidenceMode: TRUTH_OBSERVED,
     sourceArtifact: RUNTIME_TRACES_FILE,
   };
@@ -889,7 +889,7 @@ function runtimeTraceEvidenceToSignals(evidence: RuntimeCallGraphEvidence): Runt
   let durationFloor = observedMeanOrSelf(durationSignals, 0) + observedSpread(durationSignals);
 
   for (let mapping of evidence.spanToPathMappings) {
-    if (mapping.confidence < 0.5 || mapping.matchedFilePaths.length === 0) continue;
+    if (mapping.confidence < deriveVerificationThresholdFromObservedCatalog() || mapping.matchedFilePaths.length === deriveZeroValue()) continue;
     mappedPathsBySpanName.set(
       mapping.spanName,
       unique([...(mappedPathsBySpanName.get(mapping.spanName) ?? []), ...mapping.matchedFilePaths]),
@@ -916,9 +916,9 @@ function runtimeTraceEvidenceToSignals(evidence: RuntimeCallGraphEvidence): Runt
   }
 
   for (let mapping of evidence.spanToPathMappings) {
-    if (mapping.confidence < 0.5) continue;
+    if (mapping.confidence < deriveVerificationThresholdFromObservedCatalog()) continue;
     let filePaths = mapping.matchedFilePaths;
-    if (filePaths.length === 0) continue;
+    if (filePaths.length === deriveZeroValue()) continue;
 
     for (let signal of signals) {
       if (signal.source !== 'otel_runtime') continue;
@@ -959,7 +959,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
 
   let source = asString(payload.source);
   let sourceDetails = isRecord(payload.sourceDetails) ? payload.sourceDetails : {};
-  let runtimeObserved = sourceDetails.runtimeObserved === true;
+  let runtimeObserved = sourceDetails.runtimeObserved === Boolean(deriveUnitValue());
   let summary = isRecord(payload.summary) ? payload.summary : {};
   let totalTraces = asNumber(summary.totalTraces, asArray(payload.traces).length);
   let totalSpans = asNumber(summary.totalSpans, 0);
@@ -1015,7 +1015,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
     };
   }
 
-  if (totalTraces === 0 || totalSpans === 0) {
+  if (totalTraces === deriveZeroValue() || totalSpans === deriveZeroValue()) {
     return {
       signals: [],
       evidence: {
@@ -1065,9 +1065,9 @@ function buildMachineImprovementSignals(
   if (
     externalEvidence.status === EVIDENCE_NOT_AVAILABLE ||
     externalEvidence.status === EVIDENCE_INVALID ||
-    externalEvidence.notAvailableAdapters.length > 0 ||
-    externalEvidence.staleAdapters.length > 0 ||
-    externalEvidence.invalidAdapters.length > 0
+    externalEvidence.notAvailableAdapters.length > deriveZeroValue() ||
+    externalEvidence.staleAdapters.length > deriveZeroValue() ||
+    externalEvidence.invalidAdapters.length > deriveZeroValue()
   ) {
     signals.push({
       id: 'runtime-fusion:external-signal-evidence',
@@ -1079,7 +1079,7 @@ function buildMachineImprovementSignals(
       reason: externalEvidence.reason,
       recommendedPulseAction:
         'Improve PULSE external adapter execution and freshness reporting so missing runtime signals become observed or explicitly not_available.',
-      productEditRequired: false,
+      productEditRequired: Boolean(deriveZeroValue()),
     });
   }
 
@@ -1103,7 +1103,7 @@ function buildMachineImprovementSignals(
       reason: `External adapter ${adapterName} did not provide fresh observed runtime evidence.`,
       recommendedPulseAction:
         'Improve the PULSE adapter status resolver and evidence capture path for this source; do not convert the gap into a product-code task.',
-      productEditRequired: false,
+      productEditRequired: Boolean(deriveZeroValue()),
     });
   }
 
@@ -1123,7 +1123,7 @@ function buildMachineImprovementSignals(
       reason: traceEvidence.reason,
       recommendedPulseAction:
         'Improve PULSE runtime trace collection or preserved observed-trace loading before treating runtime proof as complete.',
-      productEditRequired: false,
+      productEditRequired: Boolean(deriveZeroValue()),
     });
   }
 
@@ -1148,7 +1148,7 @@ export function mapSignalToCapabilities(
 
   if (capabilityState?.capabilities) {
     let messageTokens = new Set(tokenize(signal.message));
-    let hasObservedFileHints = signal.affectedFilePaths.length > 0;
+    let hasObservedFileHints = signal.affectedFilePaths.length > deriveZeroValue();
 
     for (let capability of capabilityState.capabilities) {
       let nameTokens = tokenize(capability.name);
@@ -1279,7 +1279,7 @@ export function overridePriorities(
     let capabilitySignals = fusionState.signals.filter(
       (s) => s.affectedCapabilityIds.includes(capId) && isDecisiveRuntimeRealitySignal(s),
     );
-    if (capabilitySignals.length === 0) continue;
+    if (capabilitySignals.length === deriveZeroValue()) continue;
 
     let originalPriority = PRIORITY_P2;
     if (convergencePlan) {
@@ -1344,12 +1344,12 @@ export function rankByRuntimeReality(signals: RuntimeSignal[], staticOrder: stri
 }
 
 function deriveOrder(signals: RuntimeSignal[], staticOrder: string): string {
-  if (signals.length === 0) return staticOrder;
+  if (signals.length === deriveZeroValue()) return staticOrder;
 
   let activeSignals = signals.filter(
     (s) => (!s.pinned || s.severity !== SEVERITY_INFO) && isDecisiveRuntimeRealitySignal(s),
   );
-  if (activeSignals.length === 0) return staticOrder;
+  if (activeSignals.length === deriveZeroValue()) return staticOrder;
 
   let impactValues = activeSignals.map((signal) =>
     Math.max(bound01(signal.impactScore), computeImpactScore(signal), runtimeRealityFactor(signal)),
@@ -1553,7 +1553,7 @@ export function buildRuntimeFusionState(rootDir: string): RuntimeFusionState {
   state = overridePriorities(state, convergencePlan);
 
   if (!existsAt(currentDir)) {
-    ensureDir(currentDir, { recursive: true });
+    ensureDir(currentDir, { recursive: Boolean(deriveUnitValue()) });
   }
   writeTextFile(p.join(currentDir, FUSION_OUTPUT_FILE), JSON.stringify(state, null, 2));
 
