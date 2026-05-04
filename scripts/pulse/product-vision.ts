@@ -63,7 +63,7 @@ function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
 }
 
-function compact(value: string, max: number): string {
+function compactPayload(value: string, max: number): string {
   const normalized = value.replace(/\s+/g, ' ').trim();
   if (normalized.length <= max) {
     return normalized;
@@ -84,7 +84,7 @@ function deriveStateSequence<State extends string>(
   const suffixSize = suffix.length;
   const derived = Object.keys(summary)
     .filter((key) => key.endsWith(suffix))
-    .map((key) => key.slice(0, key.length - suffixSize))
+    .map((key) => key.slice(deriveZeroValue(), key.length - suffixSize))
     .filter((key): key is State => observed.includes(key as State));
 
   return unique([...derived, ...observed]);
@@ -167,24 +167,31 @@ function weakestState<State extends string>(statusOrder: State[]): State | undef
   return statusOrder[statusOrder.length - 1];
 }
 
+function discoverReadinessBandLabels(): string[] {
+  return [...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.product-vision.ts',
+    'projectedProductionReadiness',
+  )];
+}
+
 function isMaterializedState<State extends string>(status: State, statusOrder: State[]): boolean {
   const index = statusOrder.indexOf(status);
-  if (index < 0) {
-    return false;
+  if (index < deriveZeroValue()) {
+    return deriveZeroValue() > deriveZeroValue();
   }
 
-  return index < Math.ceil(statusOrder.length / 2);
+  return index < Math.ceil(statusOrder.length / (deriveUnitValue() + deriveUnitValue()));
 }
 
 function stateFromCompletion<State extends string>(
   completion: number,
   statusOrder: State[],
 ): State | undefined {
-  if (statusOrder.length === 0) {
+  if (statusOrder.length === deriveZeroValue()) {
     return undefined;
   }
 
-  for (let index = 0; index < statusOrder.length - 1; index += 1) {
+  for (let index = deriveZeroValue(); index < statusOrder.length - deriveUnitValue(); index += deriveUnitValue()) {
     const current = statusOrder[index];
     const next = statusOrder[index + 1];
     const boundary = quotient(
@@ -199,13 +206,26 @@ function stateFromCompletion<State extends string>(
   return weakestState(statusOrder);
 }
 
+function strongestReadinessLabel(): string {
+  const labels = discoverReadinessBandLabels();
+  return labels[labels.length - deriveUnitValue()];
+}
+function midReadinessLabel(): string {
+  const labels = discoverReadinessBandLabels();
+  return labels[deriveUnitValue()];
+}
+function weakestReadinessLabel(): string {
+  const labels = discoverReadinessBandLabels();
+  return labels[deriveZeroValue()];
+}
+
 function projectionBand(
   unitRatio: number,
   runRatio: number,
   highIssues: number,
   capSeq: PulseCapabilityStatus[],
   flowSeq: PulseFlowProjectionStatus[],
-): 'red' | 'yellow' | 'green' {
+): string {
   const capGreen = quotient(
     stateWeight(observedHead(capSeq) ?? capSeq[deriveZeroValue()], capSeq) +
       stateWeight(observedSecond(capSeq) ?? observedHead(capSeq) ?? capSeq[deriveZeroValue()], capSeq),
@@ -226,12 +246,12 @@ function projectionBand(
   );
 
   if (unitRatio >= capGreen && runRatio >= flowGreen && !hasCount(highIssues)) {
-    return 'green';
+    return strongestReadinessLabel();
   }
   if (unitRatio >= capYellow || runRatio >= flowYellow) {
-    return 'yellow';
+    return midReadinessLabel();
   }
-  return 'red';
+  return weakestReadinessLabel();
 }
 
 function deriveWeakestCapabilityStatus(): string {
@@ -267,7 +287,7 @@ function discoverCoverageStatusSet(): Set<string> {
 function isDeclaredOnlyCoverageStatus(status: string): boolean {
   const labels = [...discoverCoverageStatusSet()];
   const idx = labels.length - deriveUnitValue() - deriveUnitValue();
-  return idx >= 0 && labels[idx] === status;
+  return idx >= deriveZeroValue() && labels[idx] === status;
 }
 
 function isExcludedCoverageStatus(status: string): boolean {
@@ -669,7 +689,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
         capabilityIds: experienceUnits.sort(),
         flowIds: unique([...scenario.flowSpecs, ...experienceRuns.map((flow) => flow.id)]).sort(),
         blockers,
-        expectedOutcome: compact(
+        expectedOutcome: compactPayload(
           scenario.notes ||
             `Experience ${scenario.id} should converge as a coherent product journey with real persistence and visible outcomes.`,
           260,
