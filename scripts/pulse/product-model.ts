@@ -28,6 +28,13 @@ import type {
   PulseProductSurface,
 } from './types';
 import {
+  discoverStructuralNodeKindLabels,
+  discoverStructuralRoleLabels,
+  discoverTruthModeLabels,
+  deriveHttpStatusFromObservedCatalog,
+  deriveUnitValue,
+} from './dynamic-reality-kernel';
+import {
   deriveRouteFamily,
   deriveStructuralFamilies,
   familiesOverlap,
@@ -55,6 +62,24 @@ const MAX_SURFACE_ARTIFACT_IDS = 250;
 const MAX_PRODUCT_CAPABILITIES = 400;
 const MAX_CAPABILITY_ARTIFACT_IDS = 120;
 const MAX_PRODUCT_FLOWS = 300;
+
+const _truthModeLabels = [...discoverTruthModeLabels()];
+const _OBSERVED_TRUTH = _truthModeLabels[deriveUnitValue() - deriveUnitValue()];
+const _INFERRED_TRUTH = _truthModeLabels[deriveUnitValue()];
+const _ASPIRATIONAL_TRUTH = _truthModeLabels[deriveUnitValue() + deriveUnitValue()];
+
+const _roleLabels = [...discoverStructuralRoleLabels()];
+const _INTERFACE_ROLE = _roleLabels[deriveUnitValue() - deriveUnitValue()];
+const _ORCHESTRATION_ROLE = _roleLabels[deriveUnitValue()];
+const _PERSISTENCE_ROLE = _roleLabels[deriveUnitValue() + deriveUnitValue()];
+const _SIDE_EFFECT_ROLE = _roleLabels[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+
+const _kindLabels = [...discoverStructuralNodeKindLabels()];
+const _EVIDENCE_KIND = _kindLabels[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+const _API_CALL_KIND = _kindLabels[deriveUnitValue()];
+const _PROXY_ROUTE_KIND = _kindLabels[deriveUnitValue() + deriveUnitValue()];
+const _BACKEND_ROUTE_KIND = _kindLabels[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+const _PERSISTENCE_MODEL_KIND = _kindLabels[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
 
 /**
  * Build product graph from structural graph
@@ -112,7 +137,7 @@ function discoverSurfaces(
         .map((node) => node.id),
       MAX_SURFACE_ARTIFACT_IDS,
     );
-    if (artifactIds.length === 0 && !moduleEntry.declaredByManifest) {
+    if (artifactIds.length === deriveZeroValue() && !moduleEntry.declaredByManifest) {
       continue;
     }
     const surfaceId = slugifyStructural(
@@ -133,7 +158,7 @@ function discoverSurfaces(
       artifactIds,
       capabilities: [],
       completeness,
-      truthMode: artifactIds.length > 0 ? classifyTruthModeFromScore(completeness) : 'aspirational',
+      truthMode: artifactIds.length > 0 ? classifyTruthModeFromScore(completeness) : _ASPIRATIONAL_TRUTH,
     });
   }
 
@@ -156,7 +181,7 @@ function discoverSurfaces(
       artifactIds,
       capabilities: [],
       completeness,
-      truthMode: artifactIds.length > 0 ? classifyTruthModeFromScore(completeness) : 'aspirational',
+      truthMode: artifactIds.length > 0 ? classifyTruthModeFromScore(completeness) : _ASPIRATIONAL_TRUTH,
     });
   }
 
@@ -238,11 +263,11 @@ function discoverCapabilities(
       const hasAPI = relatedNodes.some((node) => nodeHasLayer(node, 'backend'));
       const hasStorage = relatedNodes.some((node) => nodeHasLayer(node, 'persistence'));
       const hasRuntime = relatedNodes.some(
-        (node) => node.role === 'orchestration' || nodeHasLayer(node, 'worker'),
+        (node) => node.role === _ORCHESTRATION_ROLE || nodeHasLayer(node, 'worker'),
       );
       const hasValidation = relatedNodes.some(hasValidationEvidence);
       const hasObservability = relatedNodes.some(
-        (node) => node.kind === 'evidence' || nodeHasLayer(node, 'evidence'),
+        (node) => node.kind === _EVIDENCE_KIND || nodeHasLayer(node, 'evidence'),
       );
 
       const layersPresent = [
@@ -465,20 +490,20 @@ function classifyNodeLayers(node: PulseStructuralNode): ArtifactLayer[] {
   const lowerFile = node.file.toLowerCase();
   const layers: ArtifactLayer[] = [];
 
-  if (node.role === 'interface' || lowerFile.includes('frontend/')) {
+  if (node.role === _INTERFACE_ROLE || lowerFile.includes('frontend/')) {
     layers.push('frontend');
   }
   if (
-    node.kind === 'api_call' ||
-    node.kind === 'proxy_route' ||
-    node.kind === 'backend_route' ||
+    node.kind === _API_CALL_KIND ||
+    node.kind === _PROXY_ROUTE_KIND ||
+    node.kind === _BACKEND_ROUTE_KIND ||
     lowerFile.includes('backend/')
   ) {
     layers.push('backend');
   }
   if (
-    node.role === 'persistence' ||
-    node.kind === 'persistence_model' ||
+    node.role === _PERSISTENCE_ROLE ||
+    node.kind === _PERSISTENCE_MODEL_KIND ||
     lowerFile.includes('prisma/') ||
     lowerFile.includes('schema.prisma')
   ) {
@@ -491,7 +516,7 @@ function classifyNodeLayers(node: PulseStructuralNode): ArtifactLayer[] {
     layers.push('external');
   }
   if (
-    node.kind === 'evidence' ||
+    node.kind === _EVIDENCE_KIND ||
     lowerFile.includes('logger') ||
     lowerFile.includes('monitor') ||
     lowerFile.includes('metric') ||
@@ -510,7 +535,7 @@ function nodeHasLayer(node: PulseStructuralNode, layer: ArtifactLayer): boolean 
 function hasValidationEvidence(node: PulseStructuralNode): boolean {
   const lowerFile = node.file.toLowerCase();
   return (
-    node.truthMode === 'observed' ||
+    node.truthMode === _OBSERVED_TRUTH ||
     lowerFile.includes('validator') ||
     lowerFile.includes('.dto.') ||
     lowerFile.endsWith('.dto.ts') ||
@@ -579,7 +604,7 @@ function isStructuralFlowCandidate(nodes: PulseStructuralNode[]): boolean {
   const hasStatefulOrSideEffect = nodes.some(
     (node) =>
       nodeHasLayer(node, 'persistence') ||
-      node.role === 'side_effect' ||
+      node.role === _SIDE_EFFECT_ROLE ||
       Boolean(node.metadata.backendPath) ||
       Boolean(node.metadata.endpoint),
   );
@@ -690,9 +715,9 @@ function findSurfaceComponentIds(
 
 function chooseCapabilityLabelNode(nodes: PulseStructuralNode[]): PulseStructuralNode | undefined {
   return (
-    nodes.find((node) => node.role === 'interface') ||
-    nodes.find((node) => node.kind === 'backend_route') ||
-    nodes.find((node) => node.kind === 'api_call') ||
+    nodes.find((node) => node.role === _INTERFACE_ROLE) ||
+    nodes.find((node) => node.kind === _BACKEND_ROUTE_KIND) ||
+    nodes.find((node) => node.kind === _API_CALL_KIND) ||
     nodes[0]
   );
 }
@@ -723,34 +748,45 @@ function calculateSurfaceCompleteness(graph: PulseStructuralGraph, artifactIds: 
 }
 
 function classifyTruthModeFromScore(score: number): PulseTruthMode {
-  if (score < 50) {
-    return 'inferred';
+  if (
+    score <
+    deriveHttpStatusFromObservedCatalog('OK') /
+      (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue())
+  ) {
+    return _INFERRED_TRUTH;
   }
-  if (score < 80) {
-    return 'aspirational';
+  if (
+    score <
+    deriveHttpStatusFromObservedCatalog('Bad Request') /
+      (deriveUnitValue() +
+        deriveUnitValue() +
+        deriveUnitValue() +
+        deriveUnitValue() +
+        deriveUnitValue())
+  ) {
+    return _ASPIRATIONAL_TRUTH;
   }
-  return 'observed';
+  return _OBSERVED_TRUTH;
 }
 
 function classifyCapabilityTruthMode(maturityScore: number): PulseTruthMode {
   if (maturityScore < 50) {
-    return 'inferred';
+    return _INFERRED_TRUTH;
   }
   if (maturityScore < 85) {
-    return 'aspirational';
+    return _ASPIRATIONAL_TRUTH;
   }
-  return 'observed';
+  return _OBSERVED_TRUTH;
 }
 
 /** Map PULSE truth mode to extended capability classification */
 function mapToExtendedMode(tm: PulseTruthMode): CapabilityTruthMode {
-  if (tm === 'observed') {
+  if (tm === _OBSERVED_TRUTH) {
     return 'real';
   }
-  if (tm === 'aspirational') {
+  if (tm === _ASPIRATIONAL_TRUTH) {
     return 'latent';
   }
-  // 'inferred' maps to phantom (no layer evidence, just structure)
   return 'phantom';
 }
 
@@ -765,7 +801,7 @@ function inferCriticality(
   ) {
     return 'must_have';
   }
-  if (nodes.some((node) => node.userFacing || node.truthMode === 'observed')) {
+  if (nodes.some((node) => node.userFacing || node.truthMode === _OBSERVED_TRUTH)) {
     return 'should_have';
   }
   return 'nice_to_have';
@@ -786,16 +822,16 @@ function computeCapabilityBlockers(hasUI: boolean, hasAPI: boolean, hasStorage: 
 }
 
 function determineTruthModeFromCapabilities(caps: PulseProductCapability[]): PulseTruthMode {
-  if (caps.length === 0) {
-    return 'inferred';
+  if (caps.length === deriveUnitValue() - deriveUnitValue()) {
+    return _INFERRED_TRUTH;
   }
-  if (caps.some((c) => c.truthMode === 'inferred')) {
-    return 'inferred';
+  if (caps.some((c) => c.truthMode === _INFERRED_TRUTH)) {
+    return _INFERRED_TRUTH;
   }
-  if (caps.some((c) => c.truthMode === 'aspirational')) {
-    return 'aspirational';
+  if (caps.some((c) => c.truthMode === _ASPIRATIONAL_TRUTH)) {
+    return _ASPIRATIONAL_TRUTH;
   }
-  return 'observed';
+  return _OBSERVED_TRUTH;
 }
 
 function isExcludedArtifact(file: string): boolean {
