@@ -12,12 +12,15 @@ import {
   shouldTreatAsMissingEvidence,
   compactReason,
 } from './runtime-evidence.db-probe';
+import { METHODS as HTTP_METHODS } from 'node:http';
 import {
+  deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
   discoverGateFailureClassLabels,
+  discoverNestjsDecoratorNamesFromTypeEvidence,
   discoverRuntimeProbeStatusLabels,
   discoverSourceExtensionsFromObservedTypescript,
 } from './dynamic-reality-kernel';
@@ -114,13 +117,15 @@ function parseDecoratorPath(source: string, decoratorName: string): string | nul
 
 function discoverBackendRoutes(rootDir: string = process.cwd()): DiscoveredHttpRoute[] {
   const backendSourceDir = path.join(rootDir, 'backend', 'src');
-  const methodDecorators = new Map([
-    ['Get', 'GET'],
-    ['Post', 'POST'],
-    ['Put', 'PUT'],
-    ['Patch', 'PATCH'],
-    ['Delete', 'DELETE'],
-  ]);
+  const METHOD_SET = new Set<string>(HTTP_METHODS);
+  const nestjsDecorators = discoverNestjsDecoratorNamesFromTypeEvidence();
+  const methodDecorators = new Map<string, string>();
+  for (const name of nestjsDecorators) {
+    const upper = name.toUpperCase();
+    if (METHOD_SET.has(upper)) {
+      methodDecorators.set(name, upper);
+    }
+  }
   const routes: DiscoveredHttpRoute[] = [];
 
   for (const file of listTypeScriptFiles(backendSourceDir)) {
@@ -281,6 +286,8 @@ export async function runAuthProbe(context: RuntimeProbeContext): Promise<PulseR
     }
     let me = null as Awaited<ReturnType<typeof httpGet>> | null;
     let reachedPath = authReadPaths[0];
+    const serverErrorFloor = deriveHttpStatusFromObservedCatalog('Internal Server Error');
+    const serverErrorCeil = serverErrorFloor + deriveHttpStatusFromObservedCatalog('Continue');
     for (const protectedPath of authReadPaths) {
       const firstAttempt = await httpGet(protectedPath, {
         jwt: creds.token,
@@ -291,7 +298,7 @@ export async function runAuthProbe(context: RuntimeProbeContext): Promise<PulseR
         reachedPath = protectedPath;
         break;
       }
-      if (firstAttempt.status >= 500 && firstAttempt.status < 600) {
+      if (firstAttempt.status >= serverErrorFloor && firstAttempt.status < serverErrorCeil) {
         await new Promise((resolve) => setTimeout(resolve, 400));
         const retryAttempt = await httpGet(protectedPath, {
           jwt: creds.token,
@@ -457,10 +464,10 @@ export async function runFrontendProbe(
       target: context.frontendUrl,
       required: context.env === 'total',
       executed: true,
-      status: res.status < 500 ? probeStatusPassed() : probeStatusFailed(),
-      failureClass: res.status < 500 ? undefined : failureClassProductFailure(),
+      status: res.status < deriveHttpStatusFromObservedCatalog('Internal Server Error') ? probeStatusPassed() : probeStatusFailed(),
+      failureClass: res.status < deriveHttpStatusFromObservedCatalog('Internal Server Error') ? undefined : failureClassProductFailure(),
       summary:
-        res.status < 500
+        res.status < deriveHttpStatusFromObservedCatalog('Internal Server Error')
           ? `Frontend responded with HTTP ${res.status}.`
           : `Frontend returned HTTP ${res.status}.`,
       latencyMs: Date.now() - start,
