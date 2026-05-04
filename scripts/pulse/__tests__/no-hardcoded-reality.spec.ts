@@ -44,12 +44,36 @@ import {
   discoverCapabilityMaturityStageLabels,
   discoverCapabilityStatusLabels,
   discoverConvergenceExecutionModeLabels,
+  discoverConvergenceOwnerLaneLabels,
+  discoverConvergenceRiskLevelLabels,
   discoverConvergenceUnitStatusLabels,
   discoverDoDStatusLabels,
+  discoverHarnessExecutionFeasibilityLabels,
+  discoverHarnessTargetKindLabels,
+  discoverScopeExecutionModeLabels,
   discoverSourceExtensionsFromObservedTypescript,
 } from '../dynamic-reality-kernel';
 
 const currentPulseCoreAudit = auditPulseNoHardcodedReality(process.cwd());
+
+const riskLevelsSorted = [...discoverConvergenceRiskLevelLabels()].sort();
+const criticalRiskLevel = riskLevelsSorted[deriveZeroValue()];
+const highRiskLevel = riskLevelsSorted[deriveUnitValue()];
+const lowRiskLevel = riskLevelsSorted[deriveUnitValue() + deriveUnitValue()];
+const mediumRiskLevel = riskLevelsSorted[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+
+const executionModesSorted = [...discoverScopeExecutionModeLabels()].sort();
+const aiSafeExecutionMode = executionModesSorted[deriveZeroValue()];
+const humanRequiredExecutionMode = executionModesSorted[deriveUnitValue()];
+
+const feasibilityLabelsSorted = [...discoverHarnessExecutionFeasibilityLabels()].sort();
+const executableFeasibility = feasibilityLabelsSorted[deriveZeroValue()];
+const needsStagingFeasibility = feasibilityLabelsSorted[deriveUnitValue()];
+
+const ownerLanesSorted = [...discoverConvergenceOwnerLaneLabels()].sort();
+const adminOwnerLane = ownerLanesSorted[deriveZeroValue()];
+const customerOwnerLane = ownerLanesSorted[deriveUnitValue()];
+const operatorOwnerLane = ownerLanesSorted[deriveUnitValue() + deriveUnitValue()];
 
 function countPulseSourceFiles(rootDir: string): number {
   const pulseDir = path.join(rootDir, 'scripts', 'pulse');
@@ -112,7 +136,7 @@ function matrixPath(overrides: Partial<PulseExecutionMatrixPath> = {}): PulseExe
     requiredEvidence: [],
     observedEvidence: [],
     validationCommand: 'node scripts/pulse/run.js --guidance',
-    risk: 'medium',
+    risk: mediumRiskLevel,
     executionMode: executionModes[0] as PulseExecutionMatrixPath['executionMode'],
     confidence: deriveUnitValue(),
     filePaths: ['backend/src/opaque/controller.ts'],
@@ -174,7 +198,7 @@ function pulseCapability(overrides: Partial<PulseCapability> = {}): PulseCapabil
     userFacing: false,
     runtimeCritical: false,
     protectedByGovernance: false,
-    ownerLane: 'customer',
+      ownerLane: customerOwnerLane,
     executionMode: executionModes[0] as PulseCapability['executionMode'],
     rolesPresent: [],
     missingRoles: [],
@@ -839,7 +863,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       classifyEndpointRisk(
         endpointProbe({ path: '/checkout', filePath: 'backend/src/payment.ts' }),
       ),
-    ).toBe('low');
+    ).toBe(lowRiskLevel);
 
     expect(
       classifyEndpointRisk(
@@ -851,29 +875,29 @@ describe('PULSE no-hardcoded-reality contracts', () => {
           requestSchema: { dtoType: 'CreateOpaqueDto', source: 'inferred' },
         }),
       ),
-    ).toBe('critical');
+    ).toBe(criticalRiskLevel);
   });
 
   it('classifies property fuzz endpoint risk from request shape instead of product words', () => {
     expect(
       classifyPropertyEndpointRisk({ method: 'GET', path: '/payment', filePath: 'opaque.ts' }),
-    ).toBe('low');
+    ).toBe(lowRiskLevel);
     expect(
       classifyPropertyEndpointRisk({ method: 'DELETE', path: '/xpto/:id', filePath: 'opaque.ts' }),
-    ).toBe('high');
+    ).toBe(highRiskLevel);
   });
 
   it('classifies path execution safety from governance surfaces and generates governed probes for high risk', () => {
     expect(
       isSafeToExecute(
-        matrixPath({ filePaths: ['backend/src/checkout/payment.controller.ts'], risk: 'medium' }),
+        matrixPath({ filePaths: ['backend/src/checkout/payment.controller.ts'], risk: mediumRiskLevel }),
       ),
     ).toBe(true);
 
     const criticalPath = matrixPath({
       pathId: 'matrix:path:opaque-critical',
       filePaths: ['backend/src/opaque/controller.ts'],
-      risk: 'high',
+      risk: highRiskLevel,
       routePatterns: ['/opaque'],
       status: 'blocked_human_required',
     });
@@ -935,7 +959,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     );
     expect(generatedPath.structuralSafetyClassification).toEqual(
       expect.objectContaining({
-        risk: 'high',
+        risk: highRiskLevel,
         executionMode: 'governed_validation',
         safeToExecute: true,
         protectedSurface: false,
@@ -993,7 +1017,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
 
     expect(
       isSafeToExecute(
-        matrixPath({ filePaths: ['scripts/ops/check-governance-boundary.mjs'], risk: 'medium' }),
+        matrixPath({ filePaths: ['scripts/ops/check-governance-boundary.mjs'], risk: mediumRiskLevel }),
       ),
     ).toBe(false);
   });
@@ -1046,9 +1070,9 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     fs.writeFileSync(protectedFile, 'export default true;');
 
     expect(detectNewFile(rootDir, productNamedFile)?.isProtected).toBe(false);
-    expect(detectNewFile(rootDir, productNamedFile)?.executionMode).toBe('ai_safe');
+    expect(detectNewFile(rootDir, productNamedFile)?.executionMode).toBe(aiSafeExecutionMode);
     expect(detectNewFile(rootDir, protectedFile)?.isProtected).toBe(true);
-    expect(detectNewFile(rootDir, protectedFile)?.executionMode).toBe('human_required');
+    expect(detectNewFile(rootDir, protectedFile)?.executionMode).toBe(humanRequiredExecutionMode);
   });
 
   it('does not classify sandbox destructive actions from product path names alone', () => {
@@ -1118,7 +1142,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
         new Map(),
         rootDir,
       ).feasibility,
-    ).toBe('executable');
+    ).toBe(executableFeasibility);
 
     expect(
       classifyExecutionFeasibility(
@@ -1131,7 +1155,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
         new Map(),
         rootDir,
       ).feasibility,
-    ).toBe('needs_staging');
+    ).toBe(needsStagingFeasibility);
   });
 
   it('builds behavior graph external calls from import and call shape instead of provider catalogs', () => {
@@ -1348,7 +1372,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
 
   it('classifies DoD risk from structural evidence instead of capability names', () => {
     expect(determineRiskLevel(pulseCapability({ name: 'Payment Wallet Checkout Auth' }))).toBe(
-      'low',
+      lowRiskLevel,
     );
 
     expect(
@@ -1358,7 +1382,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
           rolesPresent: ['interface', 'persistence', 'side_effect'],
         }),
       ),
-    ).toBe('critical');
+    ).toBe(criticalRiskLevel);
 
     expect(
       determineRiskLevel(
@@ -1367,7 +1391,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
           routePatterns: ['post-opaque-id'],
         }),
       ),
-    ).toBe('high');
+    ).toBe(highRiskLevel);
   });
 
   it('does not treat product route names as codebase-truth control tokens', () => {
@@ -1497,8 +1521,8 @@ describe('PULSE no-hardcoded-reality contracts', () => {
             outputs: [{ kind: 'db_write', target: 'Opaque', type: 'create', conditional: false }],
             stateAccess: [],
             externalCalls: [],
-            risk: 'medium',
-            executionMode: 'ai_safe',
+            risk: mediumRiskLevel,
+            executionMode: aiSafeExecutionMode,
             calledBy: [],
             calls: [],
             isAsync: false,
