@@ -44,13 +44,14 @@ import { readTextFile, readJsonFile, writeTextFile, ensureDir, pathExists } from
 import { safeJoin } from './safe-path';
 import {
   discoverAllObservedArtifactFilenames,
+  discoverChaosResultLabels,
+  discoverChaosScenarioKindLabels,
   discoverSourceExtensionsFromObservedTypescript,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverExternalReceiverTokensFromEvidence,
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
-  discoverChaosResultLabels,
 } from './dynamic-reality-kernel';
 
 // ── External dependency taxonomy ──────────────────────────────────────────
@@ -140,7 +141,7 @@ function slugDependency(value: string): string | null {
     .replace(/[./]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .toLowerCase();
-  return slug.length > 0 ? slug : null;
+  return slug.length > deriveZeroValue() ? slug : null;
 }
 
 function getNamedImportsFromModule(content: string, moduleName: string): string[] {
@@ -201,7 +202,7 @@ function envDependencyName(name: string): string | null {
     .toLowerCase()
     .split('_')
     .filter((token) => token && !['api', 'key', 'secret', 'token', 'url', 'uri'].includes(token));
-  return tokens.length > 0 ? tokens.join('-') : null;
+  return tokens.length > deriveZeroValue() ? tokens.join('-') : null;
 }
 
 function addDetectedDependency(
@@ -527,10 +528,10 @@ export function computeBlastRadius(target: ChaosTarget, capabilities: PulseCapab
         return roles.has('side_effect') || roles.has('orchestration');
       }
       if (target === 'internal_api') {
-        return roles.has('interface') || cap.routePatterns.length > 0;
+        return roles.has('interface') || cap.routePatterns.length > deriveZeroValue();
       }
       if (target === 'external_http' || target === 'webhook_receiver') {
-        return roles.has('side_effect') || cap.routePatterns.length > 0;
+        return roles.has('side_effect') || cap.routePatterns.length > deriveZeroValue();
       }
       return false;
     })
@@ -780,7 +781,7 @@ function evidenceNumbers(context: ChaosEvidenceContext): number[] {
   const numericValues = [...runtimeNumbers, ...phaseDurations].filter(
     (value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0,
   );
-  if (numericValues.length > 0) {
+  if (numericValues.length > deriveZeroValue()) {
     return numericValues.sort((left, right) => left - right);
   }
   return unique([
@@ -820,6 +821,9 @@ function deriveSeedParams(
   context: ChaosEvidenceContext,
   kind: ChaosScenarioKind,
 ): Record<string, number> {
+  if (!discoverChaosScenarioKindLabels().has(kind)) {
+    throw new Error(`deriveSeedParams: unknown ChaosScenarioKind ${kind}`);
+  }
   const numbers = evidenceNumbers(context);
   const low = evidenceQuantile(numbers, deriveUnitValue(), Math.max(numbers.length, deriveUnitValue()));
   const middle = evidenceQuantile(
@@ -881,9 +885,9 @@ function deriveChaosScenarioSeeds(context: ChaosEvidenceContext): ChaosScenarioS
 
   if (
     context.runtimeProbes.some((probe) => typeof probe.latencyMs === 'number') ||
-    context.files.length > 0 ||
-    context.capabilities.length > 0 ||
-    context.artifactRecords.length > 0
+    context.files.length > deriveZeroValue() ||
+    context.capabilities.length > deriveZeroValue() ||
+    context.artifactRecords.length > deriveZeroValue()
   ) {
     addSeed('latency');
   }
@@ -948,12 +952,15 @@ export function generateInjectionConfig(
   intensity: number;
   params: Record<string, number>;
 } {
+  if (!discoverChaosScenarioKindLabels().has(kind)) {
+    throw new Error(`generateInjectionConfig: unknown ChaosScenarioKind ${kind}`);
+  }
   const params = overrides?.params ?? {};
   const observedValues = Object.values(params).filter(
     (value): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0,
   );
   const observedBase =
-    observedValues.length > 0
+    observedValues.length > deriveZeroValue()
       ? Math.max(...observedValues)
       : Math.max(deriveUnitValue(), target.length * kind.length);
   const durationMs = overrides?.durationMs ?? observedBase * Math.max(deriveUnitValue(), target.split('_').length);
@@ -1053,10 +1060,13 @@ export function buildChaosCatalog(rootDir: string): ChaosEvidence {
   scenarios.push(...generateProviderScenarios(rootDir, providers, capabilities));
 
   const _chaosResults = discoverChaosResultLabels();
-  const _degradedGracefully =
-    [..._chaosResults].find((r) => r === 'degraded_gracefully') ?? 'degraded_gracefully';
-  const _crashed = [..._chaosResults].find((r) => r === 'crashed') ?? 'crashed';
-  const _notTested = [..._chaosResults].find((r) => r === 'not_tested') ?? 'not_tested';
+  const _degradedGracefully = [..._chaosResults].find((r) => r === 'degraded_gracefully');
+  if (!_degradedGracefully)
+    throw new Error('ChaosResult type contract missing degraded_gracefully member');
+  const _crashed = [..._chaosResults].find((r) => r === 'crashed');
+  if (!_crashed) throw new Error('ChaosResult type contract missing crashed member');
+  const _notTested = [..._chaosResults].find((r) => r === 'not_tested');
+  if (!_notTested) throw new Error('ChaosResult type contract missing not_tested member');
   const degradedGracefully = scenarios.filter((s) => s.result === _degradedGracefully).length;
   const crashed = scenarios.filter((s) => s.result === _crashed).length;
   const testedScenarios = scenarios.filter((s) => s.result !== _notTested).length;
