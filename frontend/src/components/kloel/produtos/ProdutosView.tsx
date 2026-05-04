@@ -3300,28 +3300,34 @@ function AreaMembros({
                                       placeholder={kloelT(`YouTube URL`)}
                                       style={{ ...inputStyle, fontSize: 11 }}
                                     />
-                                    {toEmbed(editLessonData.videoUrl) && (
-                                      <div
-                                        style={{
-                                          borderRadius: 6,
-                                          overflow: 'hidden',
-                                          marginTop: 4,
-                                        }}
-                                      >
-                                        <iframe
-                                          src={toEmbed(editLessonData.videoUrl)}
-                                          width="100%"
-                                          height="180"
-                                          allow={kloelT(
-                                            `accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share`,
-                                          )}
-                                          referrerPolicy="strict-origin-when-cross-origin"
-                                          style={{ border: 'none', borderRadius: 6 }}
-                                          allowFullScreen
-                                          title="Preview"
-                                        />
-                                      </div>
-                                    )}
+                                    {(() => {
+                                      const safeEditLessonEmbedUrl =
+                                        toSupportedEmbedUrl(editLessonData.videoUrl) ?? '';
+                                      return (
+                                        safeEditLessonEmbedUrl && (
+                                          <div
+                                            style={{
+                                              borderRadius: 6,
+                                              overflow: 'hidden',
+                                              marginTop: 4,
+                                            }}
+                                          >
+                                            <iframe
+                                              src={safeEditLessonEmbedUrl}
+                                              width="100%"
+                                              height="180"
+                                              allow={kloelT(
+                                                `accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share`,
+                                              )}
+                                              referrerPolicy="strict-origin-when-cross-origin"
+                                              style={{ border: 'none', borderRadius: 6 }}
+                                              allowFullScreen
+                                              title="Preview"
+                                            />
+                                          </div>
+                                        )
+                                      );
+                                    })()}
                                     <div style={{ display: 'flex', gap: 6 }}>
                                       <button
                                         type="button"
