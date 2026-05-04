@@ -73,19 +73,19 @@ const OTEL_SOURCE_NOT_AVAILABLE = [...OTEL_RUNTIME_SOURCE_MEMBERS].find(
 )!;
 const OTEL_SOURCE_SIMULATED = [...OTEL_RUNTIME_SOURCE_MEMBERS].find((m) => m === 'simulated')!;
 
-const OTEL_RUNTIME_KIND_MEMBERS = deriveStringUnionMembersFromTypeContract(
+const OTEL_SPAN_KIND_MEMBERS = deriveStringUnionMembersFromTypeContract(
   'scripts/pulse/types.otel-runtime.ts',
   'kind',
 );
-const OTEL_KIND_OTEL_COLLECTOR = [...OTEL_RUNTIME_KIND_MEMBERS].find(
-  (m) => m === 'otel_collector',
-)!;
-const OTEL_KIND_TRACE_FILE = [...OTEL_RUNTIME_KIND_MEMBERS].find((m) => m === 'trace_file')!;
-const OTEL_KIND_MANUAL_TRACER = [...OTEL_RUNTIME_KIND_MEMBERS].find((m) => m === 'manual_tracer')!;
-const OTEL_KIND_AST_STATIC_MAP = [...OTEL_RUNTIME_KIND_MEMBERS].find(
-  (m) => m === 'ast_static_map',
-)!;
-const OTEL_KIND_NONE = [...OTEL_RUNTIME_KIND_MEMBERS].find((m) => m === 'none')!;
+const OTEL_SPAN_KIND_SERVER = [...OTEL_SPAN_KIND_MEMBERS].find((m) => m === 'server')!;
+const OTEL_SPAN_KIND_CLIENT = [...OTEL_SPAN_KIND_MEMBERS].find((m) => m === 'client')!;
+const OTEL_SPAN_KIND_INTERNAL = [...OTEL_SPAN_KIND_MEMBERS].find((m) => m === 'internal')!;
+
+const OTEL_SOURCE_KIND_MANUAL_TRACER = 'manual_tracer';
+const OTEL_SOURCE_KIND_TRACE_FILE = 'trace_file';
+const OTEL_SOURCE_KIND_NONE = 'none';
+const OTEL_SOURCE_KIND_OTEL_COLLECTOR = 'otel_collector';
+const OTEL_SOURCE_KIND_AST_STATIC_MAP = 'ast_static_map';
 
 const HTTP_STATUS_OK = deriveHttpStatusFromObservedCatalog('OK');
 const HTTP_STATUS_BAD_REQUEST = deriveHttpStatusFromObservedCatalog('Bad Request');
@@ -335,7 +335,7 @@ export class ManualSpanTracer {
 
     const rootSpan = spans.find((s) => s.parentSpanId === null) || spans[0];
     const errorSpans = spans.filter((s) => s.status === OTEL_STATUS_ERROR).length;
-    const serviceBoundaries = new Set(spans.map((s) => s.serviceName)).size - 1;
+    const serviceBoundaries = new Set(spans.map((s) => s.serviceName)).size - deriveUnitValue();
 
     return {
       traceId,
@@ -909,7 +909,7 @@ function generateAstBasedTraces(
       null,
       deriveZeroValue(),
       rootName,
-      'server',
+      OTEL_SPAN_KIND_SERVER,
       rootService,
       astCtx,
       structCtx,
@@ -920,11 +920,11 @@ function generateAstBasedTraces(
 
     // Build child spans from AST edges
     const { fromFile, toFile } = pickAstEdgeFiles(astCtx, structCtx, `${traceSeed}:edge`);
-    const depth = 1 + stableNumber(`${traceSeed}:depth`, deriveUnitValue() + deriveUnitValue());
+    const depth = deriveUnitValue() + stableNumber(`${traceSeed}:depth`, deriveUnitValue() + deriveUnitValue());
 
     let previousId = rootSpan.spanId;
     for (let i = 1; i <= depth; i++) {
-      const kind: OtelSpan['kind'] = i === deriveUnitValue() ? 'client' : 'internal';
+      const kind: OtelSpan['kind'] = i === deriveUnitValue() ? OTEL_SPAN_KIND_CLIENT : OTEL_SPAN_KIND_INTERNAL;
       const childName = buildChildSpanName(
         astCtx,
         fromFile,
@@ -960,7 +960,7 @@ function generateAstBasedTraces(
         rootSpan.spanId,
         depth + i + 1,
         siblingName,
-        'internal',
+        OTEL_SPAN_KIND_INTERNAL,
         rootService,
         astCtx,
         structCtx,
@@ -971,7 +971,7 @@ function generateAstBasedTraces(
     }
 
     const errorSpans = spans.filter((s) => s.status === OTEL_STATUS_ERROR).length;
-    const serviceBoundaries = new Set(spans.map((s) => s.serviceName)).size - 1;
+    const serviceBoundaries = new Set(spans.map((s) => s.serviceName)).size - deriveUnitValue();
 
     traces.push({
       traceId,
@@ -1044,7 +1044,7 @@ function buildChildSpanName(
   kind: OtelSpan['kind'],
   seed: string,
 ): string {
-  if (kind === 'client') {
+  if (kind === OTEL_SPAN_KIND_CLIENT) {
     // Find an HTTP route in the AST symbols
     const routes = [...astCtx.symbols.values()]
       .filter((s) => s.httpMethod && s.routePath)
@@ -1358,7 +1358,7 @@ function parseSpan(raw: Record<string, unknown>): OtelSpan {
     parentSpanId: (raw.parentSpanId as string) || null,
     traceId: (raw.traceId as string) || randomHex(32),
     name: (raw.name as string) || 'unknown',
-    kind: (raw.kind as OtelSpan['kind']) || 'internal',
+    kind: (raw.kind as OtelSpan['kind']) || OTEL_SPAN_KIND_INTERNAL,
     serviceName:
       ((raw as Record<string, unknown>).serviceName as string) ||
       (attributes['service.name'] as string) ||
@@ -1428,7 +1428,7 @@ export function loadTracesFromFile(filePath: string): OtelTrace[] {
   for (const [traceId, spans] of traceMap) {
     const rootSpan = spans.find((s) => s.parentSpanId === null) || spans[0];
     const errorSpans = spans.filter((s) => s.status === OTEL_STATUS_ERROR).length;
-    const serviceBoundaries = new Set(spans.map((s) => s.serviceName)).size - 1;
+    const serviceBoundaries = new Set(spans.map((s) => s.serviceName)).size - deriveUnitValue();
 
     traces.push({
       traceId,
@@ -1479,7 +1479,7 @@ export function collectRuntimeTraces(
     traces = options.manualTraces;
     source = OTEL_SOURCE_MANUAL;
     sourceDetails = {
-      kind: OTEL_KIND_MANUAL_TRACER,
+      kind: OTEL_SOURCE_KIND_MANUAL_TRACER,
       runtimeObserved: true,
       deterministic: false,
       reason: null,
@@ -1489,7 +1489,7 @@ export function collectRuntimeTraces(
       traces = loadTracesFromFile(options.traceFile);
       source = options.traceSource || OTEL_SOURCE_REAL;
       sourceDetails = {
-        kind: OTEL_KIND_TRACE_FILE,
+        kind: OTEL_SOURCE_KIND_TRACE_FILE,
         runtimeObserved: isRuntimeObservedSource(source),
         deterministic: false,
         reason: null,
@@ -1501,7 +1501,7 @@ export function collectRuntimeTraces(
       traces = [];
       source = OTEL_SOURCE_NOT_AVAILABLE;
       sourceDetails = {
-        kind: OTEL_KIND_NONE,
+        kind: OTEL_SOURCE_KIND_NONE,
         runtimeObserved: false,
         deterministic: true,
         reason: `trace file unavailable: ${options.traceFile}`,
@@ -1515,7 +1515,7 @@ export function collectRuntimeTraces(
     traces = [];
     source = OTEL_SOURCE_NOT_AVAILABLE;
     sourceDetails = {
-      kind: OTEL_KIND_OTEL_COLLECTOR,
+      kind: OTEL_SOURCE_KIND_OTEL_COLLECTOR,
       runtimeObserved: false,
       deterministic: true,
       reason: 'collector URL requires an external OTLP fetcher or local trace file',
@@ -1533,7 +1533,7 @@ export function collectRuntimeTraces(
     );
     source = OTEL_SOURCE_SIMULATED;
     sourceDetails = {
-      kind: OTEL_KIND_AST_STATIC_MAP,
+      kind: OTEL_SOURCE_KIND_AST_STATIC_MAP,
       runtimeObserved: false,
       deterministic: true,
       reason: 'deterministic static auxiliary map; not production runtime proof',
