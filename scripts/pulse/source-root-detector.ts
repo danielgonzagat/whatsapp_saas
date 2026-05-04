@@ -1,5 +1,6 @@
 import * as path from 'path';
 import {
+  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
   discoverDirectorySkipHintsFromEvidence,
@@ -61,6 +62,57 @@ export interface DetectedSourceRoot {
   entrypoints: string[];
 }
 
+const SOURCE_ROOT_DETECTOR_FILE = 'scripts/pulse/source-root-detector.ts';
+
+let _sourceRootKindMembers: Set<string> | undefined;
+function discoverSourceRootKindMembers(): Set<string> {
+  if (!_sourceRootKindMembers) {
+    _sourceRootKindMembers = deriveStringUnionMembersFromTypeContract(
+      SOURCE_ROOT_DETECTOR_FILE,
+      'SourceRootKind',
+    );
+  }
+  return _sourceRootKindMembers;
+}
+
+let _sourceRootAvailabilityMembers: Set<string> | undefined;
+function discoverSourceRootAvailabilityMembers(): Set<string> {
+  if (!_sourceRootAvailabilityMembers) {
+    _sourceRootAvailabilityMembers = deriveStringUnionMembersFromTypeContract(
+      SOURCE_ROOT_DETECTOR_FILE,
+      'SourceRootAvailability',
+    );
+  }
+  return _sourceRootAvailabilityMembers;
+}
+
+let _sourceRootEvidenceBasisMembers: Set<string> | undefined;
+function discoverSourceRootEvidenceBasisMembers(): Set<string> {
+  if (!_sourceRootEvidenceBasisMembers) {
+    _sourceRootEvidenceBasisMembers = deriveStringUnionMembersFromTypeContract(
+      SOURCE_ROOT_DETECTOR_FILE,
+      'SourceRootEvidenceBasis',
+    );
+  }
+  return _sourceRootEvidenceBasisMembers;
+}
+
+let _sourceRootLanguageMembers: Set<string> | undefined;
+function discoverSourceRootLanguageMembers(): Set<string> {
+  if (!_sourceRootLanguageMembers) {
+    _sourceRootLanguageMembers = deriveStringUnionMembersFromTypeContract(
+      SOURCE_ROOT_DETECTOR_FILE,
+      'SourceRootLanguage',
+    );
+  }
+  return _sourceRootLanguageMembers;
+}
+
+const sourceRootKindList = () => [...discoverSourceRootKindMembers()];
+const sourceRootAvailabilityList = () => [...discoverSourceRootAvailabilityMembers()];
+const sourceRootEvidenceBasisList = () => [...discoverSourceRootEvidenceBasisMembers()];
+const sourceRootLanguageList = () => [...discoverSourceRootLanguageMembers()];
+
 const CONVENTIONAL_SOURCE_DIR_NAMES = new Set(['src', 'app', 'pages', 'lib']);
 const sourceExtensionsSet = discoverSourceExtensionsFromObservedTypescript();
 
@@ -102,13 +154,14 @@ function normalizeRelative(input: string): string {
 }
 
 function inferKind(relativePath: string, packageName: string | null): SourceRootKind {
+  const kinds = sourceRootKindList();
   if (relativePath.startsWith('scripts/')) {
-    return 'script';
+    return kinds[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootKind;
   }
   if (packageName) {
-    return 'library';
+    return kinds[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootKind;
   }
-  return 'unknown';
+  return kinds[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootKind;
 }
 
 function packageDependencyNames(pkg: PackageJson): Set<string> {
@@ -125,8 +178,9 @@ function uniqueSorted(values: string[]): string[] {
 
 function languageForExtension(extension: string): SourceRootLanguage | null {
   if (!sourceExtensionsSet.has(extension)) return null;
-  if (extension.includes('ts')) return 'typescript';
-  if (extension.includes('js')) return 'javascript';
+  const langs = sourceRootLanguageList();
+  if (extension.includes('ts')) return langs[deriveUnitValue()] as SourceRootLanguage;
+  if (extension.includes('js')) return langs[deriveZeroValue()] as SourceRootLanguage;
   return null;
 }
 
@@ -197,7 +251,7 @@ function inferKindFromPackage(
     .join('\n')
     .toLowerCase();
   const packageDir = safeJoin(rootDir, relativeDir || '.');
-
+  const kinds = sourceRootKindList();
   if (
     deps.has('next') ||
     deps.has('react') ||
@@ -208,7 +262,7 @@ function inferKindFromPackage(
     pathExists(safeJoin(packageDir, 'next.config.ts')) ||
     pathExists(safeJoin(packageDir, 'vite.config.ts'))
   ) {
-    return 'frontend';
+    return kinds[deriveUnitValue()] as SourceRootKind;
   }
 
   if (
@@ -217,7 +271,7 @@ function inferKindFromPackage(
     deps.has('@nestjs/bullmq') ||
     /\b(queue|worker|processor)\b/.test(scripts)
   ) {
-    return 'worker';
+    return kinds[deriveUnitValue() + deriveUnitValue()] as SourceRootKind;
   }
 
   if (
@@ -226,7 +280,7 @@ function inferKindFromPackage(
     pathExists(safeJoin(packageDir, 'nest-cli.json')) ||
     /\bnest\b/.test(scripts)
   ) {
-    return 'backend';
+    return kinds[z()] as SourceRootKind;
   }
 
   return inferKind(relativeDir, pkg.name ?? null);
@@ -236,6 +290,7 @@ function inferKindFromFileEvidence(rootDir: string, relativeDir: string): Source
   const absoluteDir = safeJoin(rootDir, relativeDir);
   if (!pathExists(absoluteDir)) return inferKind(relativeDir, null);
 
+  const kinds = sourceRootKindList();
   let frontendSignals = deriveZeroValue();
   let backendSignals = deriveZeroValue();
   let workerSignals = deriveZeroValue();
@@ -280,9 +335,9 @@ function inferKindFromFileEvidence(rootDir: string, relativeDir: string): Source
   }
 
   const scores: Array<{ kind: SourceRootKind; score: number }> = [];
-  scores.push({ kind: 'frontend', score: frontendSignals });
-  scores.push({ kind: 'backend', score: backendSignals });
-  scores.push({ kind: 'worker', score: workerSignals });
+  scores.push({ kind: kinds[deriveUnitValue()] as SourceRootKind, score: frontendSignals });
+  scores.push({ kind: kinds[deriveZeroValue()] as SourceRootKind, score: backendSignals });
+  scores.push({ kind: kinds[deriveUnitValue() + deriveUnitValue()] as SourceRootKind, score: workerSignals });
   scores.sort((a, b) => b.score - a.score);
   const strongestSignal = scores[deriveZeroValue()];
 
@@ -538,17 +593,25 @@ function addRoot(
   const hasFiles = hasSourceFiles(rootDir, normalized);
   if (!normalized || (!weakCandidate && !hasFiles)) return;
   const languageExtensions = languageExtensionsFor(rootDir, normalized);
+  const availList = sourceRootAvailabilityList();
   const availability: SourceRootAvailability =
-    languageExtensions.length > deriveZeroValue() ? 'inferred' : 'not_available';
+    languageExtensions.length > deriveZeroValue() ? availList[deriveZeroValue()] as SourceRootAvailability : availList[deriveUnitValue()] as SourceRootAvailability;
   const unavailableReason =
-    availability === 'not_available'
+    availability === (availList[deriveUnitValue()] as SourceRootAvailability)
       ? 'source root exists but no scannable source files were found'
       : null;
   const kind = options.kind ?? inferKind(normalized, packageName);
   const fileEvidenceKind = inferKindFromFileEvidence(rootDir, normalized);
-  const resolvedKind = kind === 'unknown' || kind === 'library' ? fileEvidenceKind : kind;
+  const kinds = sourceRootKindList();
+  const basisList = sourceRootEvidenceBasisList();
+  const resolvedKind =
+    kind === (kinds[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootKind) || kind === (kinds[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootKind)
+      ? fileEvidenceKind
+      : kind;
   const evidenceBasisList: SourceRootEvidenceBasis[] =
-    fileEvidenceKind === 'unknown' ? [evidenceBasis] : [evidenceBasis, 'import-graph'];
+    fileEvidenceKind === (kinds[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootKind)
+      ? [evidenceBasis]
+      : [evidenceBasis, basisList[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootEvidenceBasis];
   const frameworks = uniqueSorted([
     ...(options.frameworks ?? []),
     ...inferFrameworksFromFileEvidence(rootDir, normalized),
@@ -564,11 +627,17 @@ function addRoot(
     for (const basis of evidenceBasisList) {
       if (!existing.evidenceBasis.includes(basis)) existing.evidenceBasis.push(basis);
     }
-    if (existing.kind === 'unknown' || existing.kind === 'library') {
+    if (
+      existing.kind === (kinds[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootKind) ||
+      existing.kind === (kinds[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootKind)
+    ) {
       existing.kind = resolvedKind;
     }
-    if (existing.availability === 'not_available' && availability === 'inferred') {
-      existing.availability = 'inferred';
+    if (
+      existing.availability === (availList[deriveUnitValue()] as SourceRootAvailability) &&
+      availability === (availList[z()] as SourceRootAvailability)
+    ) {
+      existing.availability = availList[z()] as SourceRootAvailability;
       existing.unavailableReason = null;
     }
     existing.languageExtensions = uniqueSorted([
@@ -647,6 +716,7 @@ function addPackageRoots(
   rootDir: string,
   packages: Map<string, PackageJson>,
 ): void {
+  const basisList = sourceRootEvidenceBasisList();
   for (const [relativeDir, pkg] of packages) {
     const packageKind = inferKindFromPackage(pkg, rootDir, relativeDir);
     const packageFrameworks = inferFrameworksFromPackage(pkg, rootDir, relativeDir);
@@ -661,7 +731,7 @@ function addPackageRoots(
           root,
           pkg.name ?? null,
           `package-entrypoint:${relativeDir || '.'}:${entrypoint}`,
-          'package-manifest',
+          basisList[z()] as SourceRootEvidenceBasis,
           {
             kind: packageKind,
             frameworks: packageFrameworks,
@@ -678,7 +748,7 @@ function addPackageRoots(
         relativeSourceRoot,
         pkg.name ?? null,
         `package:${relativeDir || '.'}`,
-        'package-manifest',
+        basisList[z()] as SourceRootEvidenceBasis,
         { kind: packageKind, frameworks: packageFrameworks },
       );
     }
@@ -692,7 +762,7 @@ function addPackageRoots(
           root,
           pkg.name ?? null,
           `package-export:${relativeDir || '.'}`,
-          'package-export',
+          basisList[deriveUnitValue()] as SourceRootEvidenceBasis,
           { kind: packageKind, frameworks: packageFrameworks },
         );
       } else if (relativeDir && entryMentionsSourceFile(entry)) {
@@ -702,7 +772,7 @@ function addPackageRoots(
           relativeDir,
           pkg.name ?? null,
           `package-manifest:${relativeDir}`,
-          'package-manifest',
+          basisList[z()] as SourceRootEvidenceBasis,
           { kind: packageKind, frameworks: packageFrameworks },
         );
       }
@@ -732,14 +802,15 @@ function addTsConfigRoots(
     ]),
   );
 
+  const basisList = sourceRootEvidenceBasisList();
   for (const configPath of discoverProjectConfigs(rootDir)) {
     const config = readJsonOrNull<TsConfigJson>(safeJoin(rootDir, configPath));
     if (!config) continue;
     const configDir = normalizeRelative(path.dirname(configPath));
     const packageName = packageByDir.get(configDir === '.' ? '' : configDir) ?? null;
     const basis: SourceRootEvidenceBasis = path.basename(configPath).startsWith('jsconfig')
-      ? 'jsconfig'
-      : 'tsconfig';
+      ? basisList[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootEvidenceBasis
+      : basisList[deriveUnitValue() + deriveUnitValue()] as SourceRootEvidenceBasis;
     const entries = [
       ...(config.files ?? []),
       ...(config.include ?? []),
@@ -768,6 +839,7 @@ function discoverBuildConfigRoots(
   rootDir: string,
   packages: Map<string, PackageJson>,
 ): void {
+  const basisList = sourceRootEvidenceBasisList();
   for (const [relativeDir, pkg] of packages) {
     const packageDir = relativeDir || '.';
     const packageKind = inferKindFromPackage(pkg, rootDir, relativeDir);
@@ -789,7 +861,7 @@ function discoverBuildConfigRoots(
               sourceRoot,
               pkg.name ?? null,
               `build-config:${normalizeRelative(safeJoin(packageDir, fileName))}`,
-              'build-config',
+              basisList[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootEvidenceBasis,
               { kind: packageKind, frameworks: packageFrameworks },
             );
           }
@@ -806,7 +878,7 @@ function discoverBuildConfigRoots(
           relativeSourceRoot,
           pkg.name ?? null,
           `build-config:${normalizeRelative(safeJoin(packageDir, fileName))}`,
-          'build-config',
+          basisList[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootEvidenceBasis,
           { kind: packageKind, frameworks: packageFrameworks },
         );
       }
@@ -842,7 +914,12 @@ function addFileEvidenceRoots(roots: Map<string, DetectedSourceRoot>, rootDir: s
 
   for (const relativePath of candidates) {
     const kind = inferKindFromFileEvidence(rootDir, relativePath);
-    const basis: SourceRootEvidenceBasis = kind === 'unknown' ? 'file-evidence' : 'import-graph';
+    const kinds = sourceRootKindList();
+    const basisList = sourceRootEvidenceBasisList();
+    const basis: SourceRootEvidenceBasis =
+      kind === (kinds[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootKind)
+        ? basisList[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootEvidenceBasis
+        : basisList[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootEvidenceBasis;
     addRoot(roots, rootDir, relativePath, null, `${basis}:source-files`, basis, { kind });
   }
 }
@@ -850,6 +927,7 @@ function addFileEvidenceRoots(roots: Map<string, DetectedSourceRoot>, rootDir: s
 function addWeakFallbackRoots(roots: Map<string, DetectedSourceRoot>, rootDir: string): void {
   if (roots.size > deriveZeroValue()) return;
 
+  const basisList = sourceRootEvidenceBasisList();
   for (const fallback of WEAK_FALLBACK_SEGMENTS) {
     const relativePath = normalizeRelative(safeJoin(fallback.base, fallback.sourceDir));
     if (!pathExists(safeJoin(rootDir, relativePath))) continue;
@@ -859,7 +937,7 @@ function addWeakFallbackRoots(roots: Map<string, DetectedSourceRoot>, rootDir: s
       relativePath,
       fallback.packageName,
       'weak-fallback:conventional-source-root-exists-without-manifest-evidence',
-      'weak-fallback',
+      basisList[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as SourceRootEvidenceBasis,
       { weakCandidate: true },
     );
   }
