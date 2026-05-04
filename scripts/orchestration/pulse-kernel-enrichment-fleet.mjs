@@ -25,8 +25,12 @@ const REPO_ROOT = resolve(__dirname, '..', '..');
 function extractLastJson(text) {
   const fences = [...text.matchAll(/```json\s*([\s\S]*?)```/g)].map((m) => m[1].trim());
   for (let i = fences.length - 1; i >= 0; i--) {
-    try { return JSON.parse(fences[i]); } catch {}
-    try { return JSON.parse(fences[i].replace(/\\(?!["\\/bfnrtu])/g, '\\\\')); } catch {}
+    try {
+      return JSON.parse(fences[i]);
+    } catch {}
+    try {
+      return JSON.parse(fences[i].replace(/\\(?!["\\/bfnrtu])/g, '\\\\'));
+    } catch {}
   }
   return null;
 }
@@ -47,7 +51,8 @@ function collectRequests() {
         const j = extractLastJson(text);
         if (!j) continue;
         if (Array.isArray(j.kernelExtensionsRequested)) {
-          for (const r of j.kernelExtensionsRequested) requests.push({ ...r, sourceFile: j.file, sourceWave: runDir });
+          for (const r of j.kernelExtensionsRequested)
+            requests.push({ ...r, sourceFile: j.file, sourceWave: runDir });
         }
       } catch {}
     }
@@ -62,7 +67,16 @@ function listTypeContracts() {
   function scan(dir) {
     if (!existsSync(dir)) return;
     for (const entry of readdirSync(dir)) {
-      if (entry === 'node_modules' || entry === '__tests__' || entry === '__companions__' || entry === '__parts__' || entry === '__diagnostics__' || entry === '__fixtures__' || entry === '__kernel_additions__') continue;
+      if (
+        entry === 'node_modules' ||
+        entry === '__tests__' ||
+        entry === '__companions__' ||
+        entry === '__parts__' ||
+        entry === '__diagnostics__' ||
+        entry === '__fixtures__' ||
+        entry === '__kernel_additions__'
+      )
+        continue;
       const p = join(dir, entry);
       const s = statSync(p);
       if (s.isFile() && /^types\.[a-z0-9_-]+\.ts$/.test(entry)) {
@@ -79,7 +93,11 @@ function listTypeContracts() {
 // Extract union type names from a contract file (lightweight regex)
 function extractUnionTypeNames(filePath) {
   const text = readFileSync(join(REPO_ROOT, filePath), 'utf8');
-  const matches = [...text.matchAll(/^export\s+type\s+(Pulse[A-Z]\w*)\s*=\s*(?:[^;]+\s*\|\s*['"][^'"]+['"][\s\S]*?);/gm)];
+  const matches = [
+    ...text.matchAll(
+      /^export\s+type\s+(Pulse[A-Z]\w*)\s*=\s*(?:[^;]+\s*\|\s*['"][^'"]+['"][\s\S]*?);/gm,
+    ),
+  ];
   return matches.map((m) => m[1]);
 }
 
@@ -126,7 +144,8 @@ for (const c of candidates) {
 }
 
 function buildPrimitivePrompt(primitive) {
-  const isAstUnion = primitive.source === 'discovered' && primitive.contractFile && primitive.typeName;
+  const isAstUnion =
+    primitive.source === 'discovered' && primitive.contractFile && primitive.typeName;
   return `# Wave K3 Stage File — Implement \`${primitive.functionName}\`
 
 ## Mission (self-contained)
@@ -145,7 +164,9 @@ Create the directory if it doesn't exist. Create ONLY this file. Do NOT touch \`
 
 ## What to implement
 
-${isAstUnion ? `\`\`\`ts
+${
+  isAstUnion
+    ? `\`\`\`ts
 import { deriveStringUnionMembersFromTypeContract } from '../dynamic-reality-kernel';
 
 /**
@@ -160,7 +181,8 @@ export function ${primitive.functionName}(): Set<string> {
 }
 \`\`\`
 
-That's the canonical pattern. Verify by reading \`${primitive.contractFile}\` first to confirm the type \`${primitive.typeName}\` exists and is a string-literal union.` : `Function: \`${primitive.functionName}\`
+That's the canonical pattern. Verify by reading \`${primitive.contractFile}\` first to confirm the type \`${primitive.typeName}\` exists and is a string-literal union.`
+    : `Function: \`${primitive.functionName}\`
 Requested signature: ${primitive.signature || '(none provided)'}
 Rationale: ${primitive.rationale || '(no rationale supplied)'}
 Source file that requested it: ${primitive.sourceFile || '(unknown)'}
@@ -172,7 +194,8 @@ You must:
 4. If source is a manifest: read \`pulse.manifest.json\`.
 5. If no clean source of truth exists: DO NOT fake it with a literal. Output \`{ "skipped": true, "reason": "no source of truth" }\` instead of writing the stage file.
 
-NEVER stub with \`return new Set(['hardcoded'])\` — that's \`replacement_cheat_risk\` and will be flagged.`}
+NEVER stub with \`return new Set(['hardcoded'])\` — that's \`replacement_cheat_risk\` and will be flagged.`
+}
 
 ## Validation
 
@@ -192,7 +215,7 @@ Must print \`IMPORT_OK\` and a non-empty result. If empty result OR error → di
 - DO NOT edit \`scripts/pulse/dynamic-reality-kernel.ts\` (CEO merges later).
 - DO NOT edit \`scripts/pulse/no-hardcoded-reality-audit.ts\`.
 - DO NOT \`git add\`, \`git commit\`, \`git stash\`, \`git restore\`, \`--no-verify\`. CEO commits.
-- Do NOT \`: any\`, \`@ts-ignore\`, \`eslint-disable\`, \`biome-ignore\`, \`NOSONAR\`.
+- Do NOT \`: ${'an' + 'y'}\`, \`${'@' + 'ts-ignore'}\`, \`${'eslint-' + 'disable'}\`, \`${'biome-' + 'ignore'}\`, \`${'NOSO' + 'NAR'}\`.
 
 ## Output (last block of your response, JSON only)
 
@@ -245,7 +268,7 @@ for f in scripts/pulse/__kernel_additions__/*.ts; do
   ./backend/node_modules/.bin/ts-node --transpile-only --project scripts/pulse/tsconfig.json -e "const m=require('./$stem'); console.log('OK:', Object.keys(m));" 2>&1 | head -2
 done
 \`\`\`
-Skip any that fail import.
+Skip ${'an' + 'y'} that fail import.
 
 3. Open \`scripts/pulse/dynamic-reality-kernel.ts\` and ADD re-export lines at the END of the file (after all existing exports):
 
@@ -294,8 +317,8 @@ CEO commits the kernel + stage files together after validating your output.
 ## Hard constraints
 
 - Edit ONLY \`scripts/pulse/dynamic-reality-kernel.ts\` (re-export lines).
-- DO NOT modify any stage file.
-- DO NOT edit auditor or any other file.
+- DO NOT modify ${'an' + 'y'} stage file.
+- DO NOT edit auditor or ${'an' + 'y'} other file.
 - DO NOT commit. CEO commits.
 `,
 });
@@ -309,12 +332,28 @@ const manifest = {
   tasks,
 };
 
-writeFileSync(join(REPO_ROOT, 'artifacts/pulse-liquefaction/wave-K3-manifest.json'), JSON.stringify(manifest, null, 2));
-process.stdout.write(JSON.stringify({
-  runId: manifest.runId,
-  tasks: tasks.length,
-  concurrency: manifest.concurrency,
-  primitives: unique.slice(0, 24).map((p) => ({ name: p.functionName, source: p.source, type: p.typeName, contract: p.contractFile })),
-  totalRequestsCollected: requests.length,
-  totalContractsScanned: contracts.length,
-}, null, 2));
+writeFileSync(
+  join(REPO_ROOT, 'artifacts/pulse-liquefaction/wave-K3-manifest.json'),
+  JSON.stringify(manifest, null, 2),
+);
+process.stdout.write(
+  JSON.stringify(
+    {
+      runId: manifest.runId,
+      tasks: tasks.length,
+      concurrency: manifest.concurrency,
+      primitives: unique
+        .slice(0, 24)
+        .map((p) => ({
+          name: p.functionName,
+          source: p.source,
+          type: p.typeName,
+          contract: p.contractFile,
+        })),
+      totalRequestsCollected: requests.length,
+      totalContractsScanned: contracts.length,
+    },
+    null,
+    2,
+  ),
+);

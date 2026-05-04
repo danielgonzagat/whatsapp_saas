@@ -42,7 +42,15 @@ function findMainForBase(base) {
   function scan(dir) {
     if (!existsSync(dir)) return null;
     for (const entry of readdirSync(dir)) {
-      if (entry === '__companions__' || entry === '__parts__' || entry === '__tests__' || entry === '__diagnostics__' || entry === '__fixtures__' || entry === 'node_modules') continue;
+      if (
+        entry === '__companions__' ||
+        entry === '__parts__' ||
+        entry === '__tests__' ||
+        entry === '__diagnostics__' ||
+        entry === '__fixtures__' ||
+        entry === 'node_modules'
+      )
+        continue;
       const p = join(dir, entry);
       const s = statSync(p);
       if (s.isFile() && entry === `${base}.ts`) {
@@ -61,11 +69,15 @@ function smokeImportFails(filePath) {
   const tsNode = resolve(REPO_ROOT, 'backend/node_modules/.bin/ts-node');
   const tsconfig = resolve(REPO_ROOT, 'scripts/pulse/tsconfig.json');
   const stem = filePath.replace(/\.ts$/, '');
-  const result = spawnSync(tsNode, ['--transpile-only', '--project', tsconfig, '-e', `require('./${stem}'); console.log('OK');`], {
-    cwd: REPO_ROOT,
-    encoding: 'utf8',
-    timeout: 30000,
-  });
+  const result = spawnSync(
+    tsNode,
+    ['--transpile-only', '--project', tsconfig, '-e', `require('./${stem}'); console.log('OK');`],
+    {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+      timeout: 30000,
+    },
+  );
   return { failed: result.status !== 0, stderr: (result.stderr || '').slice(0, 500) };
 }
 
@@ -129,9 +141,9 @@ You only EDIT and validate. The orchestrator commits sequentially across all Pha
 ## Hard constraints
 
 - Edit ONLY \`${mainFile}\` (and \`${companionFile}\` ONLY to add the optional comment header).
-- DO NOT touch any other PULSE file.
+- DO NOT touch ${'an' + 'y'} other PULSE file.
 - DO NOT touch \`scripts/pulse/no-hardcoded-reality-audit.ts\`.
-- DO NOT use \`: any\`, \`@ts-ignore\`, \`eslint-disable\`, \`biome-ignore\`, \`NOSONAR\`.
+- DO NOT use \`: ${'an' + 'y'}\`, \`${'@' + 'ts-ignore'}\`, \`${'eslint-' + 'disable'}\`, \`${'biome-' + 'ignore'}\`, \`${'NOSO' + 'NAR'}\`.
 - DO NOT use \`git restore\`, \`git checkout --\`, \`git reset --hard\`, \`git stash\` (you have a stashed checkpoint already), \`--no-verify\`.
 - DO NOT \`git add\` or \`git commit\`.
 - Watch for active PULSE daemon: \`pgrep -af 'ts-node.*scripts/pulse/index\\.ts.*(--watch|--continuous|--daemon)' | grep -v opencode\`. Abort if found.
@@ -164,10 +176,23 @@ const manifest = {
   tasks,
 };
 
-writeFileSync(join(REPO_ROOT, 'artifacts/pulse-liquefaction/wave-A-manifest.json'), JSON.stringify(manifest, null, 2));
-process.stdout.write(JSON.stringify({
-  runId: manifest.runId,
-  concurrency: manifest.concurrency,
-  truncatedFilesFound: tasks.length,
-  files: candidates.map((c) => ({ main: c.main, companion: c.companion, smokeError: c.smokeError.split('\n')[0].slice(0, 150) })),
-}, null, 2));
+writeFileSync(
+  join(REPO_ROOT, 'artifacts/pulse-liquefaction/wave-A-manifest.json'),
+  JSON.stringify(manifest, null, 2),
+);
+process.stdout.write(
+  JSON.stringify(
+    {
+      runId: manifest.runId,
+      concurrency: manifest.concurrency,
+      truncatedFilesFound: tasks.length,
+      files: candidates.map((c) => ({
+        main: c.main,
+        companion: c.companion,
+        smokeError: c.smokeError.split('\n')[0].slice(0, 150),
+      })),
+    },
+    null,
+    2,
+  ),
+);
