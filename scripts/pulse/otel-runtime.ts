@@ -18,14 +18,15 @@ import * as crypto from 'crypto';
 import { safeJoin } from './safe-path';
 import { ensureDir, pathExists, readJsonFile, writeTextFile } from './safe-fs';
 import {
-  deriveZeroValue,
-  deriveUnitValue,
+  deriveCatalogPercentScaleFromObservedCatalog,
   deriveHttpStatusFromObservedCatalog,
-  observeStatusTextLengthFromCatalog,
-  discoverRouteSeparatorFromRuntime,
-  discoverAllObservedArtifactFilenames,
   deriveStringUnionMembersFromTypeContract,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
   discoverNestjsDecoratorNamesFromTypeEvidence,
+  discoverRouteSeparatorFromRuntime,
+  observeStatusTextLengthFromCatalog,
 } from './dynamic-reality-kernel';
 import type {
   OtelSpan,
@@ -924,7 +925,7 @@ function generateAstBasedTraces(
 
     // Build child spans from AST edges
     const { fromFile, toFile } = pickAstEdgeFiles(astCtx, structCtx, `${traceSeed}:edge`);
-    const depth = 1 + stableNumber(`${traceSeed}:depth`, 2);
+    const depth = 1 + stableNumber(`${traceSeed}:depth`, deriveUnitValue() + deriveUnitValue());
 
     let previousId = rootSpan.spanId;
     for (let i = 1; i <= depth; i++) {
@@ -953,7 +954,10 @@ function generateAstBasedTraces(
     }
 
     // Add sibling spans
-    const siblingCount = stableNumber(`${traceSeed}:sibling-count`, 2);
+    const siblingCount = stableNumber(
+      `${traceSeed}:sibling-count`,
+      deriveUnitValue() + deriveUnitValue(),
+    );
     for (let i = 0; i < siblingCount; i++) {
       const siblingName = buildSiblingSpanName(astCtx, `${traceSeed}:sibling:${i}`);
       const sibSpan = createManualSpanForTrace(
@@ -1096,7 +1100,7 @@ function buildSiblingSpanName(astCtx: AstGraphContext, seed: string): string {
   const queueOps = ['add', 'process', 'complete', 'fail', 'retry'];
 
   // Prefer a symbol name from the AST
-  if (astCtx.symbols.size > 0 && stableNumber(`${seed}:prefer-symbol`, 2) === 0) {
+    if (astCtx.symbols.size > 0 && stableNumber(`${seed}:prefer-symbol`, deriveUnitValue() + deriveUnitValue()) === deriveZeroValue()) {
     const symbols = [...astCtx.symbols.values()].sort((a, b) =>
       `${a.kind}:${a.name}:${a.filePath}`.localeCompare(`${b.kind}:${b.name}:${b.filePath}`),
     );
@@ -1625,8 +1629,11 @@ export function compareWithStaticGraph(
       missingFromRuntime: Math.max(deriveZeroValue(), structuralGraph.edges.length - observedInRuntime),
       coveragePercent:
         structuralGraph.edges.length > 0
-          ? Math.round((observedInRuntime / structuralGraph.edges.length) * 100)
-          : 100,
+          ? Math.round(
+              (observedInRuntime / structuralGraph.edges.length) *
+                deriveCatalogPercentScaleFromObservedCatalog(),
+            )
+          : deriveCatalogPercentScaleFromObservedCatalog(),
     },
     runtimeOnlyEdges,
   };
@@ -1682,7 +1689,12 @@ export function compareWithAstGraph(
       observedInRuntime,
       missingFromRuntime: Math.max(deriveZeroValue(), graph.edges.length - observedInRuntime),
       coveragePercent:
-        graph.edges.length > 0 ? Math.round((observedInRuntime / graph.edges.length) * 100) : 100,
+        graph.edges.length > 0
+          ? Math.round(
+              (observedInRuntime / graph.edges.length) *
+                deriveCatalogPercentScaleFromObservedCatalog(),
+            )
+          : deriveCatalogPercentScaleFromObservedCatalog(),
     },
     runtimeOnlyEdges,
   };
@@ -1691,7 +1703,7 @@ export function compareWithAstGraph(
 // ─── Export ──────────────────────────────────────────────────────────────────
 
 export function exportTraceToJson(evidence: RuntimeCallGraphEvidence): string {
-  return JSON.stringify(evidence, null, 2);
+  return JSON.stringify(evidence, null, deriveUnitValue() + deriveUnitValue());
 }
 
 /**
