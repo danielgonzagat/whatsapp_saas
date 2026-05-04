@@ -95,6 +95,9 @@ const HTTP_STATUS_TEXT_LEN_OK = observeStatusTextLengthFromCatalog(HTTP_STATUS_O
 const HTTP_STATUS_TEXT_LEN_FORBIDDEN = observeStatusTextLengthFromCatalog(HTTP_STATUS_FORBIDDEN);
 
 const NESTJS_DECORATOR_NAMES = [...discoverNestjsDecoratorNamesFromTypeEvidence()];
+const NESTJS_DECORATOR_SET = new Set(NESTJS_DECORATOR_NAMES);
+const HTTP_METHOD_SET = new Set(nodeHttpMethods);
+const ROUTE_SEPARATOR = discoverRouteSeparatorFromRuntime();
 
 const PRISMA_METHODS = [
   'findUnique',
@@ -502,8 +505,9 @@ export function detectBullMQPatterns(astGraph: AstCallGraph): InstrumentationHin
   }
 
   // Also detect via decorator names
+  const queueMessageDecoratorNames = NESTJS_DECORATOR_NAMES.filter((n) => n.toLowerCase().includes('pattern'));
   for (const symbol of astGraph.symbols) {
-    if (symbol.nestjsDecorator === 'MessagePattern' || symbol.nestjsDecorator === 'EventPattern') {
+    if (symbol.nestjsDecorator && queueMessageDecoratorNames.includes(symbol.nestjsDecorator)) {
       hints.push({
         filePath: symbol.filePath,
         framework: 'bullmq',
@@ -646,7 +650,7 @@ function extractRouteFromSpan(span: OtelSpan): { method: string | null; path: st
     const loweredKey = key.toLowerCase();
     return (
       typeof value === 'string' &&
-      value.startsWith('/') &&
+      value.startsWith(ROUTE_SEPARATOR) &&
       (loweredKey.includes('route') || loweredKey.includes('path') || loweredKey.includes('url'))
     );
   })?.[1];
@@ -659,8 +663,8 @@ function extractRouteFromSpan(span: OtelSpan): { method: string | null; path: st
   }
 
   const tokens = span.name.split(/\s+/).filter(Boolean);
-  const observedMethod = tokens.find((token) => /^[A-Z]+$/.test(token)) ?? null;
-  const observedPath = tokens.find((token) => token.startsWith('/'));
+  const observedMethod = tokens.find((token) => HTTP_METHOD_SET.has(token)) ?? null;
+  const observedPath = tokens.find((token) => token.startsWith(ROUTE_SEPARATOR));
   return observedPath ? { method: observedMethod, path: observedPath } : null;
 }
 
@@ -1205,8 +1209,8 @@ function createManualSpanForTrace(
     'http.status_code': isError ? internalErrorStatus : okStatus,
   };
   const nameTokens = name.split(/\s+/).filter(Boolean);
-  const observedMethod = nameTokens.find((token) => /^[A-Z]+$/.test(token));
-  const observedPath = nameTokens.find((token) => token.startsWith('/'));
+  const observedMethod = nameTokens.find((token) => HTTP_METHOD_SET.has(token));
+  const observedPath = nameTokens.find((token) => token.startsWith(ROUTE_SEPARATOR));
   if (observedMethod) {
     attributes['http.method'] = observedMethod;
   }
