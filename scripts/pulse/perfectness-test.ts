@@ -107,8 +107,8 @@ const PERFECTNESS_EVALUATION_KERNEL_GRAMMAR = [
   },
   {
     name: '72h-elapsed',
-    description: 'At least 72 hours of autonomous work completed',
-    target: 'duration >= 72h',
+    description: `At least ${REQUIRED_LONG_RUN_HOURS} hours of autonomous work completed`,
+    target: `duration >= ${REQUIRED_LONG_RUN_HOURS}h`,
     phase: 'verdict' as PerfectnessPhase,
   },
 ] as const;
@@ -902,7 +902,7 @@ export function isAutonomousApproved(verdict: PerfectnessVerdict): boolean {
 // ────────────────────────────────────────────────────────────────────────────
 
 export function hasElapsed72h(startTime: string): boolean {
-  return computeHoursSince(startTime) >= 72;
+  return computeHoursSince(startTime) >= REQUIRED_LONG_RUN_HOURS;
 }
 
 export function evaluateLongRunEvidence(
