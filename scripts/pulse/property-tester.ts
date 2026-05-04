@@ -64,6 +64,7 @@ import {
   discoverEnumMembersFromCandidateEvidence,
   discoverExternalReceiverTokensFromEvidence,
   discoverMutatingEffectsFromTypeEvidence,
+  discoverHarnessExecutionStatusLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
   discoverProtectedExposuresFromTypeEvidence,
@@ -141,6 +142,16 @@ function deriveNotExecutedStatusLabel(): string {
     }
   }
   return label;
+}
+
+function deriveFailedStatusLabel(): string {
+  const all = discoverHarnessExecutionStatusLabels();
+  const passed = discoverPropertyPassedStatusFromTypeEvidence();
+  const unexecuted = discoverPropertyUnexecutedStatusFromExecutionEvidence();
+  for (const s of all) {
+    if (!passed.has(s) && !unexecuted.has(s)) return s;
+  }
+  throw new Error('HarnessExecutionStatus has no non-passed non-unexecuted member');
 }
 
 let PROPERTY_ASSERTION_SENSOR = /\b(?:fc\.)?assert\s*\(\s*(?:fc\.)?property\s*\(/;
@@ -834,7 +845,7 @@ export function generateFuzzCasesFromEndpoints(endpoints: EndpointDescriptor[]):
         endpoint: `${endpoint.method} ${endpoint.path}`,
         method: endpoint.method,
         strategy,
-        status: 'planned',
+        status: derivePlannedStatusLabel(),
         requestCount: estimateRequestCount(strategy, profile),
         statusCodes: expectedStatuses,
         failures: 0,
@@ -1020,7 +1031,7 @@ function executePropertyTestFile(rootDir: string, relativePath: string): Propert
   let runner = resolvePropertyRunner(rootDir, relativePath);
   if (!runner) {
     return {
-      status: 'not_executed',
+      status: deriveNotExecutedStatusLabel(),
       failures: 0,
       durationMs: 0,
       counterexample: null,
@@ -1042,14 +1053,14 @@ function executePropertyTestFile(rootDir: string, relativePath: string): Propert
     });
 
     return {
-      status: 'passed',
+      status: [...discoverPropertyPassedStatusFromTypeEvidence()][0],
       failures: 0,
       durationMs: Date.now() - startedAt,
       counterexample: null,
     };
   } catch (error) {
     return {
-      status: 'failed',
+      status: deriveFailedStatusLabel(),
       failures: 1,
       durationMs: Date.now() - startedAt,
       counterexample: {
@@ -1231,7 +1242,7 @@ export function computeMutationTargets(rootDir: string): MutationTestResult[] {
 
       results.push({
         filePath,
-        status: 'planned',
+        status: derivePlannedStatusLabel(),
         totalMutants,
         killedMutants,
         survivedMutants,
@@ -1280,7 +1291,7 @@ function checkForExistingStrykerResults(rootDir: string): MutationTestResult[] {
 
             return {
               filePath: filePath.replace(rootDir + path.sep, ''),
-      status: 'planned',
+      status: derivePlannedStatusLabel(),
               totalMutants,
               killedMutants,
               survivedMutants,
@@ -1318,7 +1329,7 @@ function generateDefaultMutationTargets(rootDir: string): MutationTestResult[] {
 
     targets.push({
       filePath,
-      status: 'planned',
+      status: derivePlannedStatusLabel(),
       totalMutants,
       killedMutants,
       survivedMutants,
@@ -1651,7 +1662,7 @@ export function generatePropertyTestCases(rootDir: string): GeneratedPropertyFun
       expectedPassCount: expectedPass,
       expectedFailCount: expectedFail,
       generatedInputs: allInputs,
-      status: 'planned',
+      status: derivePlannedStatusLabel(),
     });
   }
 
