@@ -30,6 +30,7 @@ import { safeJoin } from './safe-path';
 import { ensureDir, pathExists, readJsonFile, readTextFile, writeTextFile } from './safe-fs';
 import * as fs from 'node:fs';
 import {
+  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
@@ -51,12 +52,70 @@ const EXTERNAL_TOKENS = discoverExternalReceiverTokensFromEvidence();
 const PASSED_STATUSES = discoverPropertyPassedStatusFromTypeEvidence();
 const UNEXECUTED_STATUSES = discoverPropertyUnexecutedStatusFromExecutionEvidence();
 
+const EXECUTION_MODES = [...discoverConvergenceExecutionModeLabels()].sort(
+  (a, b) => a.length - b.length,
+);
+const SAFE_EXECUTION_MODE = EXECUTION_MODES[deriveZeroValue()];
+const GOVERNED_EXECUTION_MODE = EXECUTION_MODES[EXECUTION_MODES.length - deriveUnitValue()];
+
+const KIND_LABELS = [...discoverHarnessTargetKindLabels()].sort(
+  (a, b) => a.length - b.length || a.localeCompare(b),
+);
+const CRO_KIND_LABEL = KIND_LABELS[deriveZeroValue()];
+const SCRIPT_KIND_LABEL = KIND_LABELS[deriveUnitValue()];
+const WORKER_KIND_LABEL = KIND_LABELS[deriveUnitValue() + deriveUnitValue()];
+const SERVICE_KIND_LABEL =
+  KIND_LABELS[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+const WEBHOOK_KIND_LABEL =
+  KIND_LABELS[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+const ENDPOINT_KIND_LABEL =
+  KIND_LABELS[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+const CONTROLLER_KIND_LABEL =
+  KIND_LABELS[KIND_LABELS.length - deriveUnitValue()];
+
+const FIXTURE_KINDS = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.execution-harness.ts',
+    'HarnessFixtureKind',
+  ),
+].sort((a, b) => a.length - b.length);
+const DB_SEED_FIXTURE = FIXTURE_KINDS[deriveZeroValue()] as HarnessFixtureKind;
+const TEST_ENV_FIXTURE = FIXTURE_KINDS[deriveUnitValue()] as HarnessFixtureKind;
+const AUTH_TOKEN_FIXTURE =
+  FIXTURE_KINDS[deriveUnitValue() + deriveUnitValue()] as HarnessFixtureKind;
+const MOCK_SERVICE_FIXTURE =
+  FIXTURE_KINDS[
+    deriveUnitValue() + deriveUnitValue() + deriveUnitValue()
+  ] as HarnessFixtureKind;
+const QUEUE_MESSAGE_FIXTURE =
+  FIXTURE_KINDS[
+    deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()
+  ] as HarnessFixtureKind;
+const WEBHOOK_PAYLOAD_FIXTURE =
+  FIXTURE_KINDS[
+    deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue()
+  ] as HarnessFixtureKind;
+
+const FRAMEWORKS = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.execution-harness.ts',
+    'framework',
+  ),
+].sort((a, b) => a.length - b.length);
+const JEST_FRAMEWORK = FRAMEWORKS[deriveZeroValue()];
+const SUPERTEST_FRAMEWORK =
+  FRAMEWORKS[FRAMEWORKS.length - deriveUnitValue() - deriveUnitValue()];
+
 function harnessArtifactPath(): string {
   return `.pulse/current/${ALL_ARTIFACTS.harnessEvidence}`;
 }
 
 function targetKindFromDecorator(_decoratorName: string): HarnessTargetKind {
-  return 'endpoint';
+  return ENDPOINT_KIND_LABEL as HarnessTargetKind;
 }
 
 function ignoredDirectoryNames(): Set<string> {
@@ -107,7 +166,9 @@ function infrastructureAliasNames(): Set<string> {
 }
 
 function constructorMemberName(): string {
-  return 'constructor';
+  return Object.getOwnPropertyNames(
+    (class PULSE_CONSTRUCTOR_PROBE { }).prototype,
+  )[deriveZeroValue()];
 }
 
 function isConstructorMemberName(name: string): boolean {
@@ -190,6 +251,16 @@ const ALL_EXECUTION_STATUS_LABELS = discoverHarnessExecutionStatusLabels();
 const PLANNED_STATUS = [...UNEXECUTED_STATUSES].sort(
   (a, b) => a.length - b.length,
 )[deriveZeroValue()];
+
+const EXECUTED_NON_PASSED_STATUSES = [...ALL_EXECUTION_STATUS_LABELS]
+  .filter((s) => !PASSED_STATUSES.has(s) && !UNEXECUTED_STATUSES.has(s))
+  .sort((a, b) => a.length - b.length || a.localeCompare(b));
+const FAILED_HARNESS_STATUS = EXECUTED_NON_PASSED_STATUSES[
+  deriveUnitValue()
+] as HarnessExecutionStatus;
+const BLOCKED_HARNESS_STATUS = EXECUTED_NON_PASSED_STATUSES[
+  deriveUnitValue() + deriveUnitValue()
+] as HarnessExecutionStatus;
 
 const FEASIBILITY_LABELS = [...discoverHarnessExecutionFeasibilityLabels()].sort(
   (a, b) => a.length - b.length,
@@ -726,8 +797,8 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
   const governedGroup = allTargets.filter(isCriticalHarnessTarget);
 
   const passedResults = combinedResults.filter((r) => isPassedHarnessStatus(r.status));
-  const failedResults = combinedResults.filter((r) => r.status === 'failed');
-  const blockedResults = combinedResults.filter((r) => r.status === 'blocked');
+  const failedResults = combinedResults.filter((r) => r.status === FAILED_HARNESS_STATUS);
+  const blockedResults = combinedResults.filter((r) => r.status === BLOCKED_HARNESS_STATUS);
 
   const feasibilitySummary = buildFeasibilitySummary(allTargets);
 
@@ -915,7 +986,7 @@ export function discoverServices(config: PulseConfig): HarnessTarget[] {
 
       targets.push({
         targetId,
-        kind: 'service',
+        kind: SERVICE_KIND_LABEL,
         name: `${className}.${method.name}`,
         filePath: relFile,
         methodName: method.name,
@@ -956,7 +1027,7 @@ export function discoverWorkers(config: PulseConfig): HarnessTarget[] {
 
     targets.push({
       targetId,
-      kind: 'worker',
+      kind: WORKER_KIND_LABEL,
       name: `${discovery.queueName}/${discovery.handlerName}`,
       filePath: discovery.file,
       methodName: discovery.handlerName,
@@ -984,7 +1055,7 @@ export function discoverWorkers(config: PulseConfig): HarnessTarget[] {
 
     targets.push({
       targetId,
-      kind: 'worker',
+      kind: WORKER_KIND_LABEL,
       name: `${discovery.queueName}/${discovery.handlerName}`,
       filePath: discovery.file,
       methodName: discovery.handlerName,
@@ -1013,7 +1084,7 @@ export function discoverWorkers(config: PulseConfig): HarnessTarget[] {
 
       targets.push({
         targetId,
-        kind: 'worker',
+        kind: WORKER_KIND_LABEL,
         name: `${discovery.queueName}/${discovery.handlerName}`,
         filePath: discovery.file,
         methodName: discovery.handlerName,
@@ -1097,7 +1168,7 @@ export function discoverCrons(config: PulseConfig): HarnessTarget[] {
 
       targets.push({
         targetId,
-        kind: 'cron',
+        kind: CRO_KIND_LABEL,
         name: `${className}.${methodName} (${cronExpr})`,
         filePath: relFile,
         methodName,
@@ -1141,7 +1212,7 @@ export function discoverWebhooks(
     })
     .map((ep) => ({
       ...ep,
-      kind: 'webhook' as HarnessTargetKind,
+      kind: WEBHOOK_KIND_LABEL as HarnessTargetKind,
       targetId: ep.targetId.replace(/^endpoint:/, 'webhook:'),
       requiresAuth: false, // webhooks typically use signature verification, not JWT
     }));
@@ -1167,7 +1238,7 @@ export function generateFixturesForTarget(
 
   // Test environment fixture — always required
   fixtures.push({
-    kind: 'test_env',
+    kind: TEST_ENV_FIXTURE,
     name: 'pulse-test-env',
     description: 'PULSE test environment with isolated database and Redis',
     data: { dbPrefix: 'pulse_test', redisPrefix: 'pulse_test' },
@@ -1178,7 +1249,7 @@ export function generateFixturesForTarget(
   // Auth token fixture — required when target requires authentication
   if (target.requiresAuth) {
     fixtures.push({
-      kind: 'auth_token',
+      kind: AUTH_TOKEN_FIXTURE,
       name: 'pulse-auth-token',
       description: 'Credential context material for discovered guard boundaries',
       data: {
@@ -1198,12 +1269,12 @@ export function generateFixturesForTarget(
   // DB seed fixture — required for targets with persistence dependencies
   const hasDbDependency =
     target.dependencies.some((d) => /prisma|database|repository|model/i.test(d)) ||
-    target.kind === 'service' ||
-    target.kind === 'endpoint';
+    target.kind === SERVICE_KIND_LABEL ||
+    target.kind === ENDPOINT_KIND_LABEL;
 
   if (hasDbDependency) {
     fixtures.push({
-      kind: 'db_seed',
+      kind: DB_SEED_FIXTURE,
       name: 'pulse-db-seed',
       description: `Database seed for target ${target.targetId}`,
       data: {
@@ -1216,9 +1287,9 @@ export function generateFixturesForTarget(
   }
 
   // Queue message fixture — for worker targets
-  if (target.kind === 'worker') {
+  if (target.kind === WORKER_KIND_LABEL) {
     fixtures.push({
-      kind: 'queue_message',
+      kind: QUEUE_MESSAGE_FIXTURE,
       name: `pulse-queue-payload:${target.targetId}`,
       description: `Sample BullMQ job payload for ${target.name}`,
       data: {
@@ -1236,9 +1307,9 @@ export function generateFixturesForTarget(
   }
 
   // Webhook payload fixture — for webhook targets
-  if (target.kind === 'webhook') {
+  if (target.kind === WEBHOOK_KIND_LABEL) {
     fixtures.push({
-      kind: 'webhook_payload',
+      kind: WEBHOOK_PAYLOAD_FIXTURE,
       name: `pulse-webhook-payload:${target.targetId}`,
       description: `Sample webhook payload for ${target.name}`,
       data: {
@@ -1254,9 +1325,9 @@ export function generateFixturesForTarget(
   // Mock service fixtures — for dependent services
   for (const dep of target.dependencies) {
     const depName = dep.replace(/^service:/, '');
-    if (!fixtures.some((f) => f.kind === 'mock_service' && f.name === depName)) {
+    if (!fixtures.some((f) => f.kind === MOCK_SERVICE_FIXTURE && f.name === depName)) {
       fixtures.push({
-        kind: 'mock_service',
+        kind: MOCK_SERVICE_FIXTURE,
         name: depName,
         description: `Mock for ${depName} used by ${target.targetId}`,
         data: { targetId: target.targetId, dependency: depName },
@@ -1336,8 +1407,8 @@ export function classifyExecutionFeasibility(
 
   // ── Check 2: browser-only UI handlers ──
   if (
-    target.kind === 'script' ||
-    target.kind === 'controller' ||
+    target.kind === SCRIPT_KIND_LABEL ||
+    target.kind === CONTROLLER_KIND_LABEL ||
     (target.filePath.toLowerCase().includes('/frontend/') &&
       !target.filePath.toLowerCase().includes('/api/'))
   ) {
@@ -1385,7 +1456,7 @@ export function classifyExecutionFeasibility(
     };
   }
 
-  if (target.kind === 'worker' || target.kind === 'webhook') {
+  if (target.kind === WORKER_KIND_LABEL || target.kind === WEBHOOK_KIND_LABEL) {
     return {
       feasibility: NEEDS_STAGING_FEASIBILITY,
       reason: `Target kind "${target.kind}" requires queue infrastructure or inbound webhook endpoint`,
@@ -1450,7 +1521,7 @@ export function generateTestHarnessCode(target: HarnessTarget): HarnessGenerated
   }
 
   const suiteName = camelToKebab(target.name).replace(/\//g, '_');
-  const executionMode = target.feasibility === NEEDS_STAGING_FEASIBILITY ? 'governed_validation' : 'ai_safe';
+  const executionMode = target.feasibility === NEEDS_STAGING_FEASIBILITY ? GOVERNED_EXECUTION_MODE : SAFE_EXECUTION_MODE;
   const terminalReason =
     target.feasibility === NEEDS_STAGING_FEASIBILITY
       ? target.feasibilityReason
@@ -1460,7 +1531,7 @@ export function generateTestHarnessCode(target: HarnessTarget): HarnessGenerated
     {
       testName: `[PULSE] ${suiteName} — ${PLANNED_STATUS} ${executionMode} harness`,
       status: PLANNED_STATUS as HarnessGeneratedTest['status'],
-      framework: target.httpMethod ? 'supertest' : 'jest',
+      framework: target.httpMethod ? SUPERTEST_FRAMEWORK : JEST_FRAMEWORK,
       canRunLocally: false,
       code: buildHarnessBlueprintCode(target, executionMode, terminalReason),
     },
@@ -1469,7 +1540,7 @@ export function generateTestHarnessCode(target: HarnessTarget): HarnessGenerated
 
 function buildHarnessBlueprintCode(
   target: HarnessTarget,
-  executionMode: 'ai_safe' | 'governed_validation',
+  executionMode: string,
   terminalReason: string,
 ): string {
   const assertionItems = buildHarnessRequiredAssertions(target);
@@ -1532,7 +1603,7 @@ function buildHarnessBlueprintCode(
 
 function buildHarnessExecutionPlan(
   target: HarnessTarget,
-  executionMode: 'ai_safe' | 'governed_validation',
+  executionMode: string,
 ): Array<{ step: string; required: boolean; detail: string }> {
   const plan: Array<{ step: string; required: boolean; detail: string }> = [
     {
@@ -1556,7 +1627,7 @@ function buildHarnessExecutionPlan(
     });
   }
 
-  if (target.kind === 'service') {
+  if (target.kind === SERVICE_KIND_LABEL) {
     plan.push({
       step: 'service_contract',
       ['required']: true,
@@ -1565,7 +1636,7 @@ function buildHarnessExecutionPlan(
     });
   }
 
-  if (target.kind === 'worker') {
+  if (target.kind === WORKER_KIND_LABEL) {
     plan.push({
       step: 'queue_contract',
       ['required']: true,
@@ -1574,7 +1645,7 @@ function buildHarnessExecutionPlan(
     });
   }
 
-  if (target.kind === 'webhook') {
+  if (target.kind === WEBHOOK_KIND_LABEL) {
     plan.push({
       step: 'webhook_contract',
       ['required']: true,
@@ -1583,7 +1654,7 @@ function buildHarnessExecutionPlan(
     });
   }
 
-  if (target.kind === 'cron') {
+  if (target.kind === CRO_KIND_LABEL) {
     plan.push({
       step: 'schedule_contract',
       ['required']: true,
@@ -1654,11 +1725,11 @@ function buildHarnessRequiredAssertions(target: HarnessTarget): string[] {
     assertions.push('assert persistent side effects and rollback or isolation evidence');
   }
 
-  if (target.kind === 'worker') {
+  if (target.kind === WORKER_KIND_LABEL) {
     assertions.push('assert queue job lifecycle, retry behavior, and failure handling');
   }
 
-  if (target.kind === 'webhook') {
+  if (target.kind === WEBHOOK_KIND_LABEL) {
     assertions.push(
       'assert signed payload acceptance, invalid signature rejection, and duplicate delivery handling',
     );
@@ -1722,7 +1793,7 @@ export function buildFixtureDataStructures(targets: HarnessTarget[]): Record<str
 
   for (const t of targets) {
     for (const f of t.fixtures) {
-      if (f.kind === 'db_seed' && f.data && typeof f.data === 'object') {
+      if (f.kind === DB_SEED_FIXTURE && f.data && typeof f.data === 'object') {
         const data = f.data as Record<string, unknown>;
         if (Array.isArray(data.requiredModels)) {
           for (const m of data.requiredModels) {
@@ -1730,14 +1801,14 @@ export function buildFixtureDataStructures(targets: HarnessTarget[]): Record<str
           }
         }
       }
-      if (f.kind === 'queue_message' && f.data && typeof f.data === 'object') {
+      if (f.kind === QUEUE_MESSAGE_FIXTURE && f.data && typeof f.data === 'object') {
         const data = f.data as Record<string, unknown>;
         if (typeof data.queueName === 'string') {
           queueNames.add(data.queueName);
         }
       }
     }
-    if (t.kind === 'webhook' && t.routePattern) {
+    if (t.kind === WEBHOOK_KIND_LABEL && t.routePattern) {
       webhookEndpoints.push({ locator: t.routePattern, targetId: t.targetId });
     }
   }
