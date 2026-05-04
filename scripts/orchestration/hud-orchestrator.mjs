@@ -295,7 +295,7 @@ function printStatus(report) {
   process.stdout.write(`|---|------|----------|--------|----------|\n`);
   for (const step of report.steps) {
     const s = step.exitCode === 0 ? 'OK' : step.exitCode === null ? 'SKIP' : 'FAIL';
-    const summary = (step.summary || '').replace(/\|/g, '\\|').slice(0, 80);
+    const summary = (step.summary || '').replace(/\\/g, '\\\\').replace(/\|/g, '\\|').slice(0, 80);
     process.stdout.write(
       `| ${report.steps.indexOf(step) + 1} | ${step.step} | ${formatDuration(step.durationMs)} | ${s} | ${summary} |\n`,
     );
