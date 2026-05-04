@@ -9,7 +9,13 @@ import { extractHookDestructures } from './hook-registry';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 import { getFrontendSourceDirs } from '../frontend-roots';
-import { deriveUnitValue, deriveZeroValue } from '../dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  deriveHttpStatusFromObservedCatalog,
+  discoverSourceExtensionsFromObservedTypescript,
+  observeStatusTextLengthFromCatalog,
+} from '../dynamic-reality-kernel';
 
 function extractLabel(line: string, lines: string[], idx: number): string {
   // Try to find visible text on same line
@@ -56,7 +62,7 @@ function extractLabel(line: string, lines: string[], idx: number): string {
 }
 
 function extractComponent(lines: string[], idx: number): string | null {
-  for (let i = idx; i >= Math.max(0, idx - 200); i--) {
+  for (let i = idx; i >= Math.max(deriveZeroValue(), idx - deriveHttpStatusFromObservedCatalog('OK')); i--) {
     const componentName = readComponentDeclarationName(lines[i]);
     if (componentName && startsWithUppercase(componentName)) {
       return componentName;
@@ -313,7 +319,7 @@ function extractJSXHandler(line: string, eventName: string): string | null {
 function expandInlineHandler(handler: string, lines: string[], idx: number): string {
   if (handler.trimEnd().endsWith('=>')) {
     const expanded = [handler];
-    for (let j = idx + deriveUnitValue(); j < Math.min(idx + 20, lines.length); j++) {
+    for (let j = idx + deriveUnitValue(); j < Math.min(idx + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Payment Required')) + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length); j++) {
       expanded.push(lines[j]);
       if (isClosingBlockLine(lines[j])) {
         break;
@@ -341,7 +347,7 @@ function expandInlineHandler(handler: string, lines: string[], idx: number): str
   }
 
   const expanded = [handler];
-  for (let j = idx + deriveUnitValue(); j < Math.min(idx + 30, lines.length); j++) {
+  for (let j = idx + deriveUnitValue(); j < Math.min(idx + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Payment Required')) + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')) + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length); j++) {
     expanded.push(lines[j]);
     for (const ch of lines[j]) {
       if (ch === '{') {
@@ -535,7 +541,7 @@ function buildElement(
 export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry): UIElement[] {
   const elements: UIElement[] = [];
   const files = getFrontendSourceDirs(config).flatMap((frontendDir) =>
-    walkFiles(frontendDir, ['.tsx', '.jsx']),
+    walkFiles(frontendDir, [...discoverSourceExtensionsFromObservedTypescript()].filter(e => e !== ts.Extension.Ts && e !== ts.Extension.Js)),
   );
   const registry = hookRegistry || new Map();
   const apiModuleMap = buildApiModuleMap(config);
