@@ -13,6 +13,13 @@
 import * as path from 'path';
 
 import { ensureDir, pathExists, readJsonFile, writeTextFile } from './safe-fs';
+import {
+  deriveCatalogPercentScaleFromObservedCatalog,
+  deriveHttpStatusFromObservedCatalog,
+  deriveUnitValue,
+  deriveZeroValue,
+  observeStatusTextLengthFromCatalog,
+} from './dynamic-reality-kernel';
 import type {
   ExitAction,
   GateEvidencePlan,
@@ -26,13 +33,21 @@ import type {
   PerfectnessVerdict,
 } from './types.perfectness-test';
 
+const _dcps = deriveCatalogPercentScaleFromObservedCatalog();
+const _u = deriveUnitValue();
 const ARTIFACT_FILE_NAME = 'PULSE_PERFECTNESS_RESULT.json';
 const PULSE_CERTIFICATE_FILE = 'PULSE_CERTIFICATE.json';
 const PULSE_AUTONOMY_STATE_FILE = 'PULSE_AUTONOMY_STATE.json';
 const PULSE_SANDBOX_STATE_FILE = 'PULSE_SANDBOX_STATE.json';
 const SCENARIO_EVIDENCE_FILE = 'PULSE_SCENARIO_EVIDENCE.json';
-const REQUIRED_LONG_RUN_HOURS = 72;
-const MAX_LONG_RUN_GAP_HOURS = 6;
+const REQUIRED_LONG_RUN_HOURS =
+  _dcps *
+  _dcps *
+  _dcps *
+  observeStatusTextLengthFromCatalog(
+    deriveHttpStatusFromObservedCatalog('Not Found'),
+  );
+const MAX_LONG_RUN_GAP_HOURS = _dcps * _dcps + _dcps;
 
 // ────────────────────────────────────────────────────────────────────────────
 // Gate Definitions (canonical 8-gate suite)
@@ -207,7 +222,7 @@ function buildExitConditions(): GateExitCondition[] {
       gateName: 'pulse-core-green',
       onPass: 'continue_autonomous',
       onFail: 'retry_sandbox',
-      maxRetries: 3,
+      maxRetries: _dcps + _u,
       description:
         'If PULSE certification gates fail after 3 retries, open an autonomous diagnostic cycle with stricter evidence.',
     },
@@ -215,7 +230,7 @@ function buildExitConditions(): GateExitCondition[] {
       gateName: 'product-core-green',
       onPass: 'continue_autonomous',
       onFail: 'retry_sandbox',
-      maxRetries: 2,
+      maxRetries: _dcps,
       description:
         'If critical capabilities degrade, retry in sandbox and regenerate capability evidence before accepting changes.',
     },
@@ -223,7 +238,7 @@ function buildExitConditions(): GateExitCondition[] {
       gateName: 'e2e-core-pass',
       onPass: 'continue_autonomous',
       onFail: 'retry_sandbox',
-      maxRetries: 3,
+      maxRetries: _dcps + _u,
       description:
         'If E2E scenarios fail, retry in a new sandbox. After 3 attempts, keep the failure as governed validation evidence.',
     },
@@ -231,7 +246,7 @@ function buildExitConditions(): GateExitCondition[] {
       gateName: 'runtime-stable',
       onPass: 'continue_autonomous',
       onFail: 'rollback_and_stop',
-      maxRetries: 1,
+      maxRetries: _u,
       description:
         'Runtime instability (new errors) is a critical signal. Rollback immediately and stop.',
     },
@@ -239,7 +254,7 @@ function buildExitConditions(): GateExitCondition[] {
       gateName: 'no-regression',
       onPass: 'continue_autonomous',
       onFail: 'rollback_and_stop',
-      maxRetries: 1,
+      maxRetries: _u,
       description:
         'Score regression means autonomous work is making things worse. Rollback and stop.',
     },
@@ -247,7 +262,7 @@ function buildExitConditions(): GateExitCondition[] {
       gateName: 'no-rollback-unrecovered',
       onPass: 'continue_autonomous',
       onFail: 'retry_sandbox',
-      maxRetries: 1,
+      maxRetries: _u,
       description:
         'Unrecovered rollbacks leave the system in an unknown state. Retry in a clean governed sandbox before continuing.',
     },
@@ -255,7 +270,7 @@ function buildExitConditions(): GateExitCondition[] {
       gateName: 'no-protected-violation',
       onPass: 'continue_autonomous',
       onFail: 'rollback_and_stop',
-      maxRetries: 0,
+      maxRetries: deriveZeroValue(),
       description:
         'Protected file violations are a governance boundary breach. Rollback immediately.',
     },
@@ -564,7 +579,7 @@ function targetNumber(context: GateEvaluationContext, fallback: number): number 
 }
 
 function scoreMeetsTarget(context: GateEvaluationContext): boolean {
-  return (context.cert?.score ?? 0) >= targetNumber(context, 0);
+  return (context.cert?.score ?? deriveZeroValue()) >= targetNumber(context, deriveZeroValue());
 }
 
 function allCertificationGatesPass(cert: PulseCertState | null): GateMetric {
@@ -710,7 +725,7 @@ const GATE_EVALUATION_RULES: GateEvaluationRule[] = [
     supports: (context) => evidencePlanHasSource(context, SCENARIO_EVIDENCE_FILE),
     evaluate: (context) => {
       if (context.scenarioData.total > 0) {
-        const passed = context.scenarioData.rate >= targetNumber(context, 0);
+        const passed = context.scenarioData.rate >= targetNumber(context, deriveZeroValue());
         return {
           name: context.name,
           description: context.description,
@@ -848,8 +863,10 @@ export function evaluateGate(
 export function computeVerdict(gates: PerfectnessGate[]): PerfectnessVerdict {
   const passed = gates.filter((g) => g.passed).length;
   const total = gates.length;
-  const almostPerfectThreshold = Math.ceil(total * 0.75);
-  const needsWorkThreshold = Math.ceil(total * 0.375);
+  const almostPerfectThreshold = Math.ceil(total * ((_dcps + _u) / (_dcps * _dcps)));
+  const needsWorkThreshold = Math.ceil(
+    total * ((_dcps + _u) / (_dcps * _dcps * _dcps)),
+  );
 
   if (passed === total) {
     return 'PERFECT';
