@@ -18,6 +18,7 @@ import {
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
   discoverConvergenceUnitPriorityLabels,
+  discoverExternalAdapterStatusLabels,
   discoverOperationalEvidenceKindLabels,
   discoverRouteSeparatorFromRuntime,
   discoverRuntimeFusionEvidenceStatusLabels,
@@ -80,6 +81,15 @@ let TYPE_TEST_FAILURE = [...TYPE_LABELS].find((l) => /test_fail/i.test(l))!;
 let TYPE_GRAPH_STALENESS = [...TYPE_LABELS].find((l) => /graph_stale/i.test(l))!;
 let TYPE_ERROR = [...TYPE_LABELS].find((l) => l === 'error')!;
 let TYPE_LATENCY = [...TYPE_LABELS].find((l) => l === 'latency')!;
+
+let EVIDENCE_KIND_LABELS = discoverOperationalEvidenceKindLabels();
+let EVIDENCE_KIND_RUNTIME = [...EVIDENCE_KIND_LABELS].find((l) => l === 'runtime')!;
+let EVIDENCE_KIND_CHANGE = [...EVIDENCE_KIND_LABELS].find((l) => l === 'change')!;
+let EVIDENCE_KIND_STATIC = [...EVIDENCE_KIND_LABELS].find((l) => l === 'static')!;
+let EVIDENCE_KIND_DEPENDENCY = [...EVIDENCE_KIND_LABELS].find((l) => l === 'dependency')!;
+let EVIDENCE_KIND_EXTERNAL = [...EVIDENCE_KIND_LABELS].find((l) => /^ext/i.test(l))!;
+
+let ADAPTER_STALE = [...discoverExternalAdapterStatusLabels()].find((l) => l === 'stale')!;
 
 // ─── Numeric → Categorical Mapping ──────────────────────────────────────────
 
@@ -208,22 +218,22 @@ function evidenceMass(
 ): number {
   let tokens = evidenceTokens(signal, scope);
   let lexicalMass =
-    kind === 'runtime'
+    kind === EVIDENCE_KIND_RUNTIME
       ? tokenDensity(
           tokens,
           /^(trace|span|status|exception|error|crash|timeout|duration|latency|runtime|response|p\d+)$/,
         )
-      : kind === 'change'
+      : kind === EVIDENCE_KIND_CHANGE
         ? tokenDensity(
             tokens,
             /^(commit|sha|pull|request|branch|workflow|deployment|deploy|build|diff|changed|coverage|test|regression|flaky)$/,
           )
-        : kind === 'static'
+        : kind === EVIDENCE_KIND_STATIC
           ? tokenDensity(
               tokens,
               /^(rule|finding|complexity|duplication|lint|graph|file|hotspot|quality|smell|stale|index)$/,
             )
-          : kind === 'dependency'
+          : kind === EVIDENCE_KIND_DEPENDENCY
             ? tokenDensity(
                 tokens,
                 /^(package|dependency|version|lockfile|manifest|cve|vulnerability|vuln|advisory|supply)$/,
@@ -231,7 +241,7 @@ function evidenceMass(
             : 0;
   let provenanceMass = scope === 'payload' ? 0 : positiveSignal(signal.relatedFiles.length);
   let runtimeMass =
-    kind === 'runtime'
+    kind === EVIDENCE_KIND_RUNTIME
       ? Math.max(
           signal.baselineValue,
           positiveSignal(signal.affectedUsers),
@@ -277,7 +287,7 @@ function deriveSignalType(
   ]);
   let hasAny = (...keys: string[]): boolean => keys.some((key) => tokens.has(key));
 
-  if (evidenceKind === 'runtime') {
+  if (evidenceKind === EVIDENCE_KIND_RUNTIME) {
     if (hasAny('error', 'exception', 'crash', 'timeout', 'statuscode500', 'statuscode')) {
       return 'error';
     }
@@ -287,13 +297,13 @@ function deriveSignalType(
     return 'runtime';
   }
 
-  if (evidenceKind === 'change') {
+  if (evidenceKind === EVIDENCE_KIND_CHANGE) {
     if (hasAny('deploy', 'deployment', 'ci', 'build', 'workflow')) return 'deploy_failure';
     if (hasAny('test', 'coverage', 'regression', 'flaky')) return 'test_failure';
     return 'change';
   }
 
-  if (evidenceKind === 'static') {
+  if (evidenceKind === EVIDENCE_KIND_STATIC) {
     if (hasAny('stale', 'graph', 'index')) return 'graph_staleness';
     if (hasAny('quality', 'codacy', 'lint', 'complexity', 'duplication', 'smell', 'rule')) {
       return 'code_quality';
@@ -301,7 +311,7 @@ function deriveSignalType(
     return 'static';
   }
 
-  if (evidenceKind === 'dependency') return 'dependency';
+  if (evidenceKind === EVIDENCE_KIND_DEPENDENCY) return 'dependency';
   return 'external';
 }
 
@@ -366,10 +376,10 @@ function normalizeImpactByRuntimeReality(
     Math.max(bound01(candidate.impactScore), computeImpactScore(candidate)),
   );
   let observedPeerCeiling = Math.max(0, ...comparableImpact);
-  if (signal.evidenceMode === TRUTH_OBSERVED && signal.evidenceKind === 'runtime') {
+  if (signal.evidenceMode === TRUTH_OBSERVED && signal.evidenceKind === EVIDENCE_KIND_RUNTIME) {
     return bound01(Math.max(weighted, observedMeanOrSelf(comparableImpact, weighted)));
   }
-  if (signal.evidenceKind === 'static' && observedPeerCeiling > 0) {
+  if (signal.evidenceKind === EVIDENCE_KIND_STATIC && observedPeerCeiling > 0) {
     let staticCeiling =
       observedPeerCeiling * bound01(signal.confidence / Math.max(1, signal.count));
     return Math.min(staticCeiling, weighted);
@@ -380,9 +390,9 @@ function normalizeImpactByRuntimeReality(
 function isDecisiveRuntimeRealitySignal(signal: RuntimeSignal): boolean {
   return (
     signal.evidenceMode === TRUTH_OBSERVED &&
-    (signal.evidenceKind === 'runtime' ||
-      signal.evidenceKind === 'change' ||
-      signal.evidenceKind === 'dependency')
+    (signal.evidenceKind === EVIDENCE_KIND_RUNTIME ||
+      signal.evidenceKind === EVIDENCE_KIND_CHANGE ||
+      signal.evidenceKind === EVIDENCE_KIND_DEPENDENCY)
   );
 }
 
@@ -568,6 +578,8 @@ let TREND_LABELS = deriveStringUnionMembersFromTypeContract(
   'trend',
 );
 let UNKNOWN_TREND = [...TREND_LABELS].find((l) => l === 'unknown') || 'unknown';
+let TREND_WORSENING = [...TREND_LABELS].find((l) => l === 'worsening')!;
+let TREND_IMPROVING = [...TREND_LABELS].find((l) => l === 'improving')!;
 
 function parseTrend(value: unknown): RuntimeSignal['trend'] {
   if (typeof value === 'string' && TREND_LABELS.has(value) && value !== UNKNOWN_TREND)
@@ -717,7 +729,7 @@ function loadCanonicalExternalSignals(currentDir: string): {
   for (let adapter of state.adapters) {
     adapterStatusCounts[adapter.status] = (adapterStatusCounts[adapter.status] ?? 0) + 1;
     if (adapter.status === EVIDENCE_NOT_AVAILABLE) notAvailableAdapters.push(adapter.source);
-    if (adapter.status === 'stale') staleAdapters.push(adapter.source);
+    if (adapter.status === ADAPTER_STALE) staleAdapters.push(adapter.source);
     if (adapter.status === EVIDENCE_INVALID) invalidAdapters.push(adapter.source);
     if (isSkippedAdapterState(adapter.status)) skippedAdapters.push(adapter.source);
   }
@@ -810,7 +822,7 @@ function otelErrorSpanToSignal(
     count: observedOccurrence(httpStatus),
     trend: UNKNOWN_TREND as RuntimeSignal['trend'],
     pinned: false,
-    evidenceMode: 'observed',
+    evidenceMode: TRUTH_OBSERVED,
     sourceArtifact: RUNTIME_TRACES_FILE,
   };
 }
@@ -849,7 +861,7 @@ function otelLatencyToSignal(
     count: traceTotal,
     trend: UNKNOWN_TREND as RuntimeSignal['trend'],
     pinned: false,
-    evidenceMode: 'observed',
+    evidenceMode: TRUTH_OBSERVED,
     sourceArtifact: RUNTIME_TRACES_FILE,
   };
 }
@@ -1076,7 +1088,7 @@ function buildMachineImprovementSignals(
       adapterName,
       status: EVIDENCE_NOT_AVAILABLE as string,
       })),
-      ...externalEvidence.staleAdapters.map((adapterName) => ({ adapterName, status: 'stale' as string })),
+      ...externalEvidence.staleAdapters.map((adapterName) => ({ adapterName, status: ADAPTER_STALE as string })),
       ...externalEvidence.invalidAdapters.map((adapterName) => ({ adapterName, status: EVIDENCE_INVALID as string })),
   ];
 
@@ -1230,9 +1242,11 @@ function deriveMagnitude(signal: RuntimeSignal): number {
   let ordinalForce = ordinal >= 0 ? (ordinal + deriveUnitValue()) / levels.length : signal.impactScore;
   let freqLog = Math.log10(Math.max(signal.frequency, deriveUnitValue()) + deriveUnitValue());
   let userLog = Math.log10(Math.max(signal.affectedUsers, deriveUnitValue()) + deriveUnitValue());
-  let trendForce = signal.trend === 'worsening' ? 0.2 : signal.trend === 'improving' ? -0.1 : 0;
+  let worseningLabel = [...TREND_LABELS].find((l) => l === 'worsening')!;
+  let improvingLabel = [...TREND_LABELS].find((l) => l === 'improving')!;
+  let trendForce = signal.trend === worseningLabel ? 0.2 : signal.trend === improvingLabel ? -0.1 : 0;
   let actionForce =
-    signal.action === 'block_deploy' ? 0.25 : signal.action === 'block_merge' ? 0.15 : 0;
+    signal.action === ACTION_BLOCK_DEPLOY ? 0.25 : signal.action === ACTION_BLOCK_MERGE ? 0.15 : 0;
 
   let observedMagnitude = (freqLog + userLog) / Math.max(freqLog + userLog, 12);
   let raw = observedMagnitude + ordinalForce * 0.2 + trendForce + actionForce;
@@ -1267,7 +1281,7 @@ export function overridePriorities(
     );
     if (capabilitySignals.length === 0) continue;
 
-    let originalPriority = 'P2';
+    let originalPriority = PRIORITY_P2;
     if (convergencePlan) {
       if (convergencePlan.priorities?.[capId]) {
         originalPriority = convergencePlan.priorities[capId];
@@ -1277,7 +1291,7 @@ export function overridePriorities(
       }
     }
 
-    if (originalPriority === 'P0') continue;
+    if (originalPriority === PRIORITY_P0) continue;
     let dynamicPriority = rankByRuntimeReality(capabilitySignals, originalPriority);
     if ((ORDER_INDEX[dynamicPriority] ?? 2) >= (ORDER_INDEX[originalPriority] ?? 2)) continue;
 
@@ -1287,7 +1301,7 @@ export function overridePriorities(
       0,
     );
     let reasons = capabilitySignals
-      .filter((s) => s.impactScore >= impactFloor || s.action === 'block_deploy')
+      .filter((s) => s.impactScore >= impactFloor || s.action === ACTION_BLOCK_DEPLOY)
       .map((s) => `[${s.severity}] ${s.message.slice(0, 100)}`)
       .slice(0, 3);
 
@@ -1307,6 +1321,9 @@ export function overridePriorities(
 let ORDER_INDEX: Record<string, number> = Object.fromEntries(
   [...discoverConvergenceUnitPriorityLabels()].map((label, idx) => [label, idx]),
 );
+let PRIORITY_P0 = [...discoverConvergenceUnitPriorityLabels()].find((l) => l === 'P0')!;
+let PRIORITY_P1 = [...discoverConvergenceUnitPriorityLabels()].find((l) => l === 'P1')!;
+let PRIORITY_P2 = [...discoverConvergenceUnitPriorityLabels()].find((l) => l === 'P2')!;
 
 /**
  * Rank capabilities by runtime reality precedence.
@@ -1330,7 +1347,7 @@ function deriveOrder(signals: RuntimeSignal[], staticOrder: string): string {
   if (signals.length === 0) return staticOrder;
 
   let activeSignals = signals.filter(
-    (s) => (!s.pinned || s.severity !== 'info') && isDecisiveRuntimeRealitySignal(s),
+    (s) => (!s.pinned || s.severity !== SEVERITY_INFO) && isDecisiveRuntimeRealitySignal(s),
   );
   if (activeSignals.length === 0) return staticOrder;
 
@@ -1341,10 +1358,10 @@ function deriveOrder(signals: RuntimeSignal[], staticOrder: string): string {
   let dynamicFloor = observedMeanOrSelf(impactValues, strongestImpact);
   let dynamicSpread = observedSpread(impactValues);
   let deployBlockingMass = activeSignals
-    .filter((signal) => signal.action === 'block_deploy')
+    .filter((signal) => signal.action === ACTION_BLOCK_DEPLOY)
     .map((signal) => signal.impactScore);
   let mergeBlockingMass = activeSignals
-    .filter((signal) => signal.action === 'block_merge')
+    .filter((signal) => signal.action === ACTION_BLOCK_MERGE)
     .map((signal) => signal.impactScore);
 
   let runtimeOrder = staticOrder;
@@ -1352,11 +1369,11 @@ function deriveOrder(signals: RuntimeSignal[], staticOrder: string): string {
     strongestImpact >= dynamicFloor + dynamicSpread ||
     average(deployBlockingMass) >= dynamicFloor
   ) {
-    runtimeOrder = 'P0';
+    runtimeOrder = PRIORITY_P0;
   } else if (strongestImpact >= dynamicFloor || average(mergeBlockingMass) >= dynamicFloor) {
-    runtimeOrder = 'P1';
+    runtimeOrder = PRIORITY_P1;
   } else if (strongestImpact > 0) {
-    runtimeOrder = 'P2';
+    runtimeOrder = PRIORITY_P2;
   }
 
   let runtimeOrdinal = ORDER_INDEX[runtimeOrder] ?? 2;
@@ -1375,9 +1392,9 @@ function buildSummary(
   let criticalSignals = signals.filter(isCriticalSignal).length;
   let highSignals = signals.filter(isHighSignal).length;
   let blockMergeSignals = signals.filter(
-    (s) => s.action === 'block_merge' || s.action === 'block_deploy',
+    (s) => s.action === ACTION_BLOCK_MERGE || s.action === ACTION_BLOCK_DEPLOY,
   ).length;
-  let blockDeploySignals = signals.filter((s) => s.action === 'block_deploy').length;
+  let blockDeploySignals = signals.filter((s) => s.action === ACTION_BLOCK_DEPLOY).length;
 
   let sourceCounts = emptySourceCounts();
   for (let s of signals) {
