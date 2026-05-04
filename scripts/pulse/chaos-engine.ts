@@ -43,16 +43,16 @@ import { walkFiles } from './parsers/utils';
 import { readTextFile, readJsonFile, writeTextFile, ensureDir, pathExists } from './safe-fs';
 import { safeJoin } from './safe-path';
 import {
+  deriveHttpStatusFromObservedCatalog,
+  deriveUnitValue,
+  deriveZeroValue,
   discoverAllObservedArtifactFilenames,
   discoverChaosResultLabels,
   discoverChaosScenarioKindLabels,
   discoverChaosTargetLabels,
-  discoverSourceExtensionsFromObservedTypescript,
-  discoverPropertyPassedStatusFromTypeEvidence,
   discoverExternalReceiverTokensFromEvidence,
-  deriveHttpStatusFromObservedCatalog,
-  deriveUnitValue,
-  deriveZeroValue,
+  discoverPropertyPassedStatusFromTypeEvidence,
+  discoverSourceExtensionsFromObservedTypescript,
 } from './dynamic-reality-kernel';
 
 // ── External dependency taxonomy ──────────────────────────────────────────
@@ -1454,12 +1454,12 @@ function cacheFallbackPrediction(
   tier: LatencyTier,
   operationalConcerns: Set<ChaosOperationalConcern>,
 ): string {
-  if (target === 'postgres') {
+  if (target === lookupChaosTargetEvidence('postgres')) {
     return tier === 'low' || tier === 'medium'
       ? 'No cache fallback needed — DB latency within bounds'
       : 'Cache fallback SHOULD activate — serve stale reads from Redis or in-memory cache';
   }
-  if (target === 'redis') {
+  if (target === lookupChaosTargetEvidence('redis')) {
     return 'Redis unavailable — rate-limits MUST fail-open, session store MUST degrade to DB lookup';
   }
   if (operationalConcerns.has('payment_idempotency')) {
@@ -1485,7 +1485,7 @@ function queueRetryPrediction(
   provider: ChaosProviderName | undefined,
   operationalConcerns: Set<ChaosOperationalConcern>,
 ): string {
-  if (target === 'redis') {
+  if (target === lookupChaosTargetEvidence('redis')) {
     return 'BullMQ jobs MUST retry with exponential backoff — queue processing delayed but preserved';
   }
   if (operationalConcerns.has('whatsapp_queue_retry')) {
