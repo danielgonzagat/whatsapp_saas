@@ -115,12 +115,23 @@ function requireExecutionModeCatalog(): Record<string, string> {
   return _executionModeCatalog;
 }
 
+let _operationCatalog: Record<string, string> | null = null;
+function requireOperationCatalog(): Record<string, string> {
+  if (!_operationCatalog) {
+    _operationCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/types.behavior-graph.ts',
+      'operation',
+    );
+  }
+  return _operationCatalog;
+}
+
 function discoverStateWriteOperationLabels(): string[] {
   const ops = deriveStringUnionMembersFromTypeContract(
     'scripts/pulse/types.behavior-graph.ts',
     'operation',
   );
-  return [...ops].filter((op) => op !== 'read');
+  return [...ops].filter((op) => op !== requireOperationCatalog().read);
 }
 
 let _validationRequirementCatalog: Record<string, BehaviorValidationRequirement> | null = null;
@@ -320,7 +331,7 @@ const PARAM_LIST_BUDGET_BYTES = Math.round(
 );
 
 function nextNodeId(): string {
-  return `bn_${String(++_nextNodeId).padStart(6, '0')}`;
+  return `bn_${String(++_nextNodeId).padStart(6, String(deriveZeroValue()))}`;
 }
 
 // ===== Function name extraction =====
@@ -884,7 +895,7 @@ function detectStateAccess(bodyText: string): BehaviorStateAccess[] {
 
       accesses.push({
         model,
-        operation: writeKind ?? 'read',
+        operation: writeKind ?? requireOperationCatalog().read,
         fieldPaths: [],
         whereClause: bodyText.includes('where') ? 'present' : null,
       });
@@ -1114,7 +1125,7 @@ function determineRisk(
 
   const writeOps = new Set(discoverStateWriteOperationLabels());
   const hasWriteOps = stateAccess.some((a) => writeOps.has(a.operation));
-  const hasDeleteOps = stateAccess.some((a) => a.operation === 'delete');
+  const hasDeleteOps = stateAccess.some((a) => a.operation === requireOperationCatalog().delete);
   const acceptsExternalInput = [
     kindValues.apiEndpoint,
     kindValues.webhookReceiver,
@@ -1133,7 +1144,7 @@ function determineRisk(
   if (hasWriteOps && externalCalls.length > 0) return risk.high;
   if (hasWriteOps) return risk.medium;
   if (externalCalls.length > 0) return risk.medium;
-  if (stateAccess.some((a) => a.operation === 'read')) return risk.medium;
+  if (stateAccess.some((a) => a.operation === requireOperationCatalog().read)) return risk.medium;
 
   return risk.low;
 }
@@ -1542,7 +1553,7 @@ export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
   for (let fileIndex = 0; fileIndex < sourceFiles.length; fileIndex++) {
     const sourceFile = sourceFiles[fileIndex];
     const filePath = sourceFile.filePath;
-    if (process.env.PULSE_BEHAVIOR_DEBUG === '1') {
+    if (process.env.PULSE_BEHAVIOR_DEBUG === String(deriveUnitValue())) {
       console.warn(
         `[behavior-graph] Building nodes ${fileIndex}/${sourceFiles.length}: ${path.relative(rootDir, filePath)}`,
       );
