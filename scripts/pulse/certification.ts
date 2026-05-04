@@ -873,7 +873,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
 
   const dynamicBlockingReasons = unique(
     [
-      input.scopeState.parity.status === 'fail' ? input.scopeState.parity.reason : null,
+      input.scopeState.parity.status === _gateFailLabel() ? input.scopeState.parity.reason : null,
       input.scopeState.codacy.severityCounts.HIGH > deriveZeroValue()
         ? `Codacy still reports ${input.scopeState.codacy.severityCounts.HIGH} HIGH issue(s).`
         : null,
