@@ -1,11 +1,13 @@
 import {
   deriveUnitValue,
   deriveZeroValue,
+  discoverDirectorySkipHintsFromEvidence,
   discoverDoDCapabilityClassificationLabels,
   discoverDoDGateStatusLabels,
   discoverDoDOverallStatusLabels,
   discoverDoDRequirementModeLabels,
   discoverDoDRiskLevelLabels,
+  discoverSourceExtensionsFromObservedTypescript,
   discoverTruthModeLabels,
 } from '../dynamic-reality-kernel';
 
@@ -85,7 +87,7 @@ function isInferredTruthMode(truthMode: string): boolean {
 function certaintyFromStatus(status: DoDOverallStatus): number {
   const _four = _u + _u + _u + _u;
   const _seven = _four + _u + _u + _u;
-  const completeWeight = Number(Boolean(status));
+  const completeWeight = status ? _u : _z;
   const partialWeight = _seven;
   const blockedWeight = _four - completeWeight;
   const denominator = partialWeight + blockedWeight;
@@ -99,7 +101,7 @@ function certaintyFromStatus(status: DoDOverallStatus): number {
   if (isBlockedStatus(status)) {
     return blockedWeight / denominator;
   }
-  return Number(!status);
+  return status ? _z : _u;
 }
 
 function sumNumbers(values: number[]): number {
@@ -133,8 +135,13 @@ function scanFilesForPattern(
 }
 
 function testFilesExist(filePaths: string[], rootDir: string): { found: boolean; files: string[] } {
-  const testPatterns = [/\.spec\.tsx?$/, /\.spec\.jsx?$/, /\.test\.tsx?$/, /\.test\.jsx?$/];
-  const dirPatterns = ['__tests__', 'tests', 'test'];
+  const sourceExExts = [...discoverSourceExtensionsFromObservedTypescript()];
+  const testPatterns = sourceExExts.flatMap((ext) => [
+    new RegExp(`\\.spec\\${ext}$`),
+    new RegExp(`\\.test\\${ext}$`),
+  ]);
+  const skipHints = discoverDirectorySkipHintsFromEvidence();
+  const dirPatterns = ['__tests__', 'tests', 'test'].filter((dp) => !skipHints.has(dp));
   const sourceDirs = new Set<string>();
   const found: string[] = [];
 
@@ -204,13 +211,14 @@ function assessCriterion(
   const gateName = criterionName;
   const def = dodGateKernelGrammar().find((g) => g.name === gateName);
   if (!def) {
+    const gateUnknown = _z > _u;
     return {
       name: gateName,
       description: 'Unknown gate',
       status: _gateNotTested,
       evidence: [],
-      required: false,
-      blocking: false,
+      required: gateUnknown,
+      blocking: gateUnknown,
     };
   }
 
@@ -373,7 +381,7 @@ function assessCriterion(
                 const relatedCaps = obj.relatedCapabilities || obj.capabilityIds || [];
                 return Array.isArray(relatedCaps) && relatedCaps.includes(capId);
               }
-              return false;
+              return _z > _u;
             })
             .map(([k]) => k);
           if (scenarioEntries.length > deriveZeroValue()) {
@@ -430,8 +438,10 @@ function assessCriterion(
           rootDir,
           logEvidenceKernelGrammar,
         );
+        const obsFileKernelGrammar =
+          /\b(log|logging|logger|metrics|tracing|telemetry)\b/i;
         const obsFileNames = capability.filePaths.filter((fp) =>
-          /\b(log|logging|logger|metrics|tracing|telemetry)\b/i.test(fp),
+          obsFileKernelGrammar.test(fp),
         );
         if (scanResult.found || obsFileNames.length > deriveZeroValue()) {
           return {
@@ -461,8 +471,10 @@ function assessCriterion(
           rootDir,
           authEvidenceKernelGrammar,
         );
+        const securityFileKernelGrammar =
+          /\b(auth|guard|security|validate|permission|role)\b/i;
         const securityFiles = capability.filePaths.filter((fp) =>
-          /\b(auth|guard|security|validate|permission|role)\b/i.test(fp),
+          securityFileKernelGrammar.test(fp),
         );
         if (scanResult.found || securityFiles.length > deriveZeroValue()) {
           return {
@@ -550,23 +562,23 @@ function evaluateStructuralChecks(
   for (const check of dodStructuralEvidenceKernelGrammar()) {
     const reqMode = check[riskLevel] as CheckRequirement;
     if (reqMode === _reqNotRequired) {
-      results[check.name] = true; // waived
+      results[check.name] = _u > _z; // waived
       continue;
     }
 
-    let found = false;
+    let found = _z > _u;
 
     if (check.pathKernelGrammar) {
       const hasPathMatch = capability.filePaths.some((fp) => check.pathKernelGrammar!.test(fp));
       if (hasPathMatch) {
-        found = true;
+        found = _u > _z;
       }
     }
 
     if (!found) {
       const scanResult = scanFilesForPattern(capability.filePaths, rootDir, check.kernelGrammar);
       if (scanResult.found) {
-        found = true;
+        found = _u > _z;
       }
     }
 
@@ -607,16 +619,17 @@ function structuralEvidenceProfile(
   const observed = countRequiredStructuralChecks(checks, riskLevel);
 
   if (applicable === _z) {
+    const triviallySatisfied = _u > _z;
     return {
-      hasAnyEvidence: true,
-      hasMajorityEvidence: true,
-      hasCompleteEvidence: true,
+      hasAnyEvidence: triviallySatisfied,
+      hasMajorityEvidence: triviallySatisfied,
+      hasCompleteEvidence: triviallySatisfied,
     };
   }
 
   return {
     hasAnyEvidence: observed > deriveZeroValue(),
-    hasMajorityEvidence: observed * 2 >= applicable,
+    hasMajorityEvidence: observed * (_u + _u) >= applicable,
     hasCompleteEvidence: observed === applicable,
   };
 }
@@ -688,7 +701,7 @@ function computeScore(
   const requiredGateStates = gates.filter((gate) => gate.required);
   const structuralStates = Object.values(structuralChecks);
   const score =
-    requiredGateStates.filter(isPassed).length + structuralStates.filter(Boolean).length;
+    requiredGateStates.filter(isPassed).length + structuralStates.filter((v) => v).length;
   const maxScore = requiredGateStates.length + structuralStates.length;
 
   return { score, maxScore };
@@ -696,8 +709,8 @@ function computeScore(
 
 // ── Required-before-real ───────────────────────────────────────────────────
 
-function findGateStatus(gates: DoDGate[], gateName: string): DoDGate['status'] | null {
-  return gates.find((gate) => gate.name === gateName)?.status ?? null;
+function findGateStatus(gates: DoDGate[], gateName: string): DoDGate['status'] | undefined {
+  return gates.find((gate) => gate.name === gateName)?.status;
 }
 
 function determineRequiredBeforeReal(capability: CapabilityInput, gates: DoDGate[]): string[] {
@@ -869,7 +882,7 @@ function containsReportedIssue(value: number | null | undefined): boolean {
 }
 
 function lineNumberFromIndex(index: number): number {
-  return index + Number(Number.isInteger(index));
+  return index + _u;
 }
 
 function isElevatedLevel(riskLevel: DoDRiskLevel): boolean {
@@ -940,9 +953,9 @@ export function buildDoDEngineState(rootDir: string): DoDEngineState {
   const realEntries = entries.filter((e) => e.classification === _classReal);
   const productionEntries = entries.filter((e) => e.classification === _classProduction);
 
-  const byRiskLevel: Record<DoDRiskLevel, number> = { critical: 0, high: 0, medium: 0, low: 0 };
+  const byRiskLevel: Record<DoDRiskLevel, number> = { critical: _z, high: _z, medium: _z, low: _z };
   for (const e of entries) {
-    byRiskLevel[e.riskLevel] = (byRiskLevel[e.riskLevel] ?? 0) + 1;
+    byRiskLevel[e.riskLevel] = (byRiskLevel[e.riskLevel] ?? _z) + _u;
   }
 
   const overallScore = sumNumbers(entries.map((entry) => entry.score));
