@@ -53,6 +53,7 @@ import { loadPulseManifest } from './manifest';
 import {
   deriveUnitValue,
   deriveZeroValue,
+  discoverDoDStatusLabels,
   discoverHarnessExecutionStatusLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
@@ -90,9 +91,16 @@ import { loadPluginRegistry } from './plugin-system';
 import { buildSandboxState } from './safety-sandbox';
 import { evaluatePerfectness } from './perfectness-test';
 
+const PASSED = discoverPropertyPassedStatusFromTypeEvidence().values().next().value;
+const FAILED = [...discoverHarnessExecutionStatusLabels()].find(
+  (s) =>
+    !discoverPropertyPassedStatusFromTypeEvidence().has(s) &&
+    !discoverPropertyUnexecutedStatusFromExecutionEvidence().has(s),
+)!;
+
 interface PerfectnessModuleRun {
   module: string;
-  status: 'passed' | 'failed';
+  status: string;
   durationMs: number;
   error?: string;
 }
@@ -125,7 +133,7 @@ async function safeRun<T>(module: string, fn: () => T | Promise<T>): Promise<Per
     }
     return {
       module,
-      status: 'passed',
+      status: PASSED,
       durationMs: Date.now() - startedAt,
     };
   } catch (error) {
@@ -136,7 +144,7 @@ async function safeRun<T>(module: string, fn: () => T | Promise<T>): Promise<Per
     }
     return {
       module,
-      status: 'failed',
+      status: FAILED,
       durationMs: Date.now() - startedAt,
       error: errorMessage(error),
     };
@@ -379,7 +387,7 @@ export async function fullScan(
   const hookRegistry = buildHookRegistry(config);
   const uiElements = parseUIElements(config, hookRegistry);
   const facades = detectFacades(config);
-  options.tracer?.finishPhase('scan:core-parsers', 'passed', {
+  options.tracer?.finishPhase('scan:core-parsers', PASSED, {
     metadata: {
       apiCalls: apiCalls.length,
       backendRoutes: backendRoutes.length,
@@ -408,7 +416,7 @@ export async function fullScan(
   const parserInventory = loadParserInventory(config, {
     includeParser: options.includeParser,
   });
-  options.tracer?.finishPhase('scan:extended-parser-inventory', 'passed', {
+  options.tracer?.finishPhase('scan:extended-parser-inventory', PASSED, {
     metadata: {
       discoveredChecks: parserInventory.discoveredChecks.length,
       loadedChecks: parserInventory.loadedChecks.length,
@@ -444,7 +452,7 @@ export async function fullScan(
           source: item.source || parser.name,
         })),
       );
-      options.tracer?.finishPhase(`parser:${parser.name}`, 'passed', {
+      options.tracer?.finishPhase(`parser:${parser.name}`, PASSED, {
         metadata: {
           breakCount: breaks.length,
         },
@@ -467,14 +475,14 @@ export async function fullScan(
       });
       options.tracer?.finishPhase(
         `parser:${parser.name}`,
-        message.includes('timed out after') ? 'timed_out' : 'failed',
+        message.includes('timed out after') ? 'timed_out' : FAILED,
         {
           errorSummary: message,
         },
       );
     }
   }
-  options.tracer?.finishPhase('scan:extended-parsers', 'passed', {
+  options.tracer?.finishPhase('scan:extended-parsers', PASSED, {
     metadata: {
       breakCount: extendedBreaks.length,
       parserCount: parserInventory.loadedChecks.length,
@@ -484,7 +492,7 @@ export async function fullScan(
   options.tracer?.startPhase('scan:manifest');
   const manifestResult = loadPulseManifest(config, coreData);
   extendedBreaks.push(...manifestResult.issues);
-  options.tracer?.finishPhase('scan:manifest', 'passed', {
+  options.tracer?.finishPhase('scan:manifest', PASSED, {
     metadata: {
       issues: manifestResult.issues.length,
       unknownSurfaces: manifestResult.unknownSurfaces.length,
@@ -505,7 +513,7 @@ export async function fullScan(
     config,
     extendedBreaks,
   });
-  options.tracer?.finishPhase('scan:graph', 'passed', {
+  options.tracer?.finishPhase('scan:graph', PASSED, {
     metadata: {
       score: health.score,
       breakCount: health.breaks.length,
@@ -556,7 +564,7 @@ export async function fullScan(
     capabilityState,
     flowProjection,
   });
-  options.tracer?.finishPhase('scan:truth', 'passed', {
+  options.tracer?.finishPhase('scan:truth', PASSED, {
     metadata: {
       pages: codebaseTruth.summary.totalPages,
       modules: resolvedManifest.summary.totalModules,
@@ -625,7 +633,7 @@ export async function fullScan(
     parityGaps,
     externalSignalState,
   });
-  options.tracer?.finishPhase('scan:certification', 'passed', {
+  options.tracer?.finishPhase('scan:certification', PASSED, {
     metadata: {
       status: certification.status,
       score: certification.score,
@@ -712,7 +720,7 @@ export async function fullScan(
 
   options.tracer?.finishPhase(
     'scan:perfectness',
-    failedAllPerfectnessRuns.length === deriveZeroValue() ? 'passed' : 'failed',
+    failedAllPerfectnessRuns.length === deriveZeroValue() ? PASSED : FAILED,
     {
       errorSummary:
         failedAllPerfectnessRuns.length === deriveZeroValue()
