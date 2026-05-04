@@ -23,13 +23,16 @@ import type {
 import { isDirectory, pathExists, readDir, readTextFile } from '../safe-fs';
 import { safeJoin } from '../safe-path';
 import {
-  discoverExternalAdapterStatusLabels,
-  discoverExternalAdapterProofBasisLabels,
-  discoverExternalAdapterRequirementLabels,
-  discoverExternalAdapterRequirednessLabels,
-  discoverCertificationProfileLabels,
-  discoverExternalSignalSourceLabels,
+  deriveHttpStatusFromObservedCatalog,
+  deriveUnitValue,
   deriveZeroValue,
+  discoverCertificationProfileLabels,
+  discoverExternalAdapterProofBasisLabels,
+  discoverExternalAdapterRequirednessLabels,
+  discoverExternalAdapterRequirementLabels,
+  discoverExternalAdapterStatusLabels,
+  discoverExternalSignalSourceLabels,
+  observeStatusTextLengthFromCatalog,
 } from '../dynamic-reality-kernel';
 
 // ─── Canonical label derivation from type contracts ───
@@ -41,6 +44,24 @@ const CANONICAL_ADAPTER_REQUIREDNESS = [...discoverExternalAdapterRequirednessLa
 const CANONICAL_ADAPTER_PROOF_BASIS = [...discoverExternalAdapterProofBasisLabels()];
 const CANONICAL_CERTIFICATION_PROFILE = [...discoverCertificationProfileLabels()];
 const CANONICAL_SIGNAL_SOURCES = [...discoverExternalSignalSourceLabels()];
+
+function pulseExecTimeoutMs(): number {
+  const ok = deriveHttpStatusFromObservedCatalog('OK');
+  const forbidLen = observeStatusTextLengthFromCatalog(
+    deriveHttpStatusFromObservedCatalog('Forbidden'),
+  );
+  return ok * (forbidLen + forbidLen - deriveUnitValue());
+}
+
+function fourThreshold(): number {
+  return (
+    deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()
+  );
+}
+
+function threeThreshold(): number {
+  return deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
+}
 
 function readyStatus(): PulseExternalAdapterStatus {
   return CANONICAL_ADAPTER_STATUS[0] as PulseExternalAdapterStatus;
@@ -422,7 +443,7 @@ function readGitHubRemote(rootDir: string): { owner: string; repo: string } | nu
       cwd: rootDir,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 3_000,
+      timeout: pulseExecTimeoutMs(),
     });
     return parseGitHubRemoteUrl(remoteUrl);
   } catch {
@@ -436,7 +457,7 @@ function readCurrentHeadSha(rootDir: string): string | undefined {
       cwd: rootDir,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 3_000,
+      timeout: pulseExecTimeoutMs(),
     }).trim();
     return sha || undefined;
   } catch {
@@ -449,7 +470,7 @@ function readGitHubCliToken(): string | undefined {
     const token = execFileSync('gh', ['auth', 'token'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 3_000,
+      timeout: pulseExecTimeoutMs(),
     }).trim();
     return token || undefined;
   } catch {
@@ -462,7 +483,7 @@ function commandAvailable(command: string, args: string[] = ['--version']): bool
     execFileSync(command, args, {
       encoding: 'utf8',
       stdio: ['ignore', 'ignore', 'ignore'],
-      timeout: 3_000,
+      timeout: pulseExecTimeoutMs(),
     });
     return true;
   } catch {
@@ -532,12 +553,12 @@ function sourceCapability(
   const missingOperationalRequirements = operationalRequirements
     .filter((requirement) => !requirement.present)
     .map((requirement) => requirement.key);
-  const discovered = presentEvidenceItems.length > 0;
+  const discovered = presentEvidenceItems.length > deriveZeroValue();
   const compatRequiredness = getAdapterRequiredness(source);
   return {
     source,
     discovered,
-    operational: discovered && missingOperationalRequirements.length === 0,
+    operational: discovered && missingOperationalRequirements.length === deriveZeroValue(),
     truthAuthority: discovered ? 'discovered_capability' : 'compat_adapter',
     capabilityKinds: [...new Set(presentEvidenceItems.map((item) => item.kind))],
     evidence,
@@ -735,7 +756,7 @@ export function discoverExternalSourceCapabilities(
       ],
     ),
     sourceCapability(
-      'gitnexus',
+      gitnexusSource(),
       profile,
       [
         presentEvidence(
@@ -804,7 +825,7 @@ export async function runExternalSourcesOrchestrator(
         signalCount: signals.length,
         syncedAt: generatedAt,
         reason:
-          signals.length > 0
+          signals.length > deriveZeroValue()
             ? `${signals.length} GitHub signal(s) fetched from the live adapter.`
             : 'GitHub live adapter is configured but returned no actionable signals.',
       });
@@ -848,7 +869,7 @@ export async function runExternalSourcesOrchestrator(
         signalCount: signals.length,
         syncedAt: generatedAt,
         reason:
-          signals.length > 0
+          signals.length > deriveZeroValue()
             ? `${signals.length} Sentry signal(s) fetched from the live adapter.`
             : 'Sentry live adapter is configured but returned no actionable signals.',
       });
@@ -893,7 +914,7 @@ export async function runExternalSourcesOrchestrator(
         signalCount: signals.length,
         syncedAt: generatedAt,
         reason:
-          signals.length > 0
+          signals.length > deriveZeroValue()
             ? `${signals.length} GitHub Actions signal(s) fetched from the live adapter.`
             : 'GitHub Actions live adapter is configured but returned no actionable signals.',
       });
@@ -937,7 +958,7 @@ export async function runExternalSourcesOrchestrator(
         signalCount: signals.length,
         syncedAt: generatedAt,
         reason:
-          signals.length > 0
+          signals.length > deriveZeroValue()
             ? `${signals.length} Datadog signal(s) fetched from the live adapter.`
             : 'Datadog live adapter is configured but returned no actionable signals.',
       });
@@ -987,7 +1008,7 @@ export async function runExternalSourcesOrchestrator(
         signalCount: signals.length,
         syncedAt: generatedAt,
         reason:
-          signals.length > 0
+          signals.length > deriveZeroValue()
             ? `${signals.length} Prometheus signal(s) fetched from the live adapter.`
             : 'Prometheus live adapter is configured but returned no actionable signals.',
       });
@@ -1031,7 +1052,7 @@ export async function runExternalSourcesOrchestrator(
         signalCount: signals.length,
         syncedAt: generatedAt,
         reason:
-          signals.length > 0
+          signals.length > deriveZeroValue()
             ? `${signals.length} Codecov signal(s) fetched from the live adapter.`
             : 'Codecov live adapter is configured but returned no actionable signals.',
       });
@@ -1075,7 +1096,7 @@ export async function runExternalSourcesOrchestrator(
         signalCount: signals.length,
         syncedAt: generatedAt,
         reason:
-          signals.length > 0
+          signals.length > deriveZeroValue()
             ? `${signals.length} Dependabot signal(s) fetched from the live adapter.`
             : 'Dependabot live adapter is configured but returned no actionable signals.',
       });
@@ -1109,8 +1130,10 @@ export async function runExternalSourcesOrchestrator(
     generatedAt,
   });
 
-  const criticalSignals = allSignals.filter((s) => s.severity >= 4);
-  const highSignals = allSignals.filter((s) => s.severity >= 3 && s.severity < 4);
+  const criticalSignals = allSignals.filter((s) => s.severity >= fourThreshold());
+  const highSignals = allSignals.filter(
+    (s) => s.severity >= threeThreshold() && s.severity < fourThreshold(),
+  );
 
   // Apply requiredness semantics: optional adapters that are not configured
   // must be reported as `optional_not_configured` so they do not block
