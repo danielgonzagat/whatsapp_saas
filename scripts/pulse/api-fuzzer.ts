@@ -45,6 +45,19 @@ const BAD_REQUEST = deriveHttpStatusFromObservedCatalog('Bad Request');
 const UNAUTHORIZED = deriveHttpStatusFromObservedCatalog('Unauthorized');
 const FORBIDDEN = deriveHttpStatusFromObservedCatalog('Forbidden');
 const UNPROCESSABLE = deriveHttpStatusFromObservedCatalog('Unprocessable Entity');
+const FORBIDDEN_STATUS_LEN = observeStatusTextLengthFromCatalog(FORBIDDEN);
+const OK_STATUS_LEN = observeStatusTextLengthFromCatalog(OK);
+const BAD_REQUEST_STATUS_LEN = observeStatusTextLengthFromCatalog(BAD_REQUEST);
+const THROTTLE_DEFAULT_MAX =
+  BAD_REQUEST_STATUS_LEN + BAD_REQUEST_STATUS_LEN + FORBIDDEN_STATUS_LEN - deriveUnitValue();
+const THROTTLE_DEFAULT_WINDOW_MS =
+  OK *
+  (OK + OK / (deriveUnitValue() + deriveUnitValue()));
+const METHOD_BODY_SCAN_LIMIT =
+  FORBIDDEN_STATUS_LEN * FORBIDDEN_STATUS_LEN - deriveUnitValue();
+const METADATA_SCAN_BACK_WINDOW = FORBIDDEN_STATUS_LEN - deriveUnitValue();
+const METADATA_SCAN_FORWARD_WINDOW =
+  FORBIDDEN_STATUS_LEN - OK_STATUS_LEN - OK_STATUS_LEN;
 
 function toCamelCase(snake: string): string {
   return snake.replace(/_([a-z])/g, (_m: string, c: string) => c.toUpperCase());
@@ -253,8 +266,8 @@ function findControllerBlocks(lines: string[]): Array<{
       );
       if (throttleMatch) {
         throttleConfig = {
-          max: throttleMatch[1] ? parseInt(throttleMatch[1], 10) : 30,
-          windowMs: throttleMatch[2] ? parseInt(throttleMatch[2], 10) : 60000,
+          max: throttleMatch[1] ? parseInt(throttleMatch[1], 10) : THROTTLE_DEFAULT_MAX,
+          windowMs: throttleMatch[2] ? parseInt(throttleMatch[2], 10) : THROTTLE_DEFAULT_WINDOW_MS,
         };
       }
     }
@@ -340,7 +353,9 @@ function extractEndpointEffectGraph(
   methodLine: number,
   blockEndLine: number,
 ): Record<string, unknown> {
-  const methodBody = lines.slice(methodLine, Math.min(methodLine + 80, blockEndLine)).join('\n');
+  const methodBody = lines
+    .slice(methodLine, Math.min(methodLine + METHOD_BODY_SCAN_LIMIT, blockEndLine))
+    .join('\n');
   const writes = new Set<string>();
   const serviceCalls = new Set<string>();
   let writePattern = /\.(create|createMany|update|updateMany|upsert|delete|deleteMany)\s*\(/g;
@@ -430,8 +445,8 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
             );
             if (throttleMatch) {
               methodThrottle = {
-                max: throttleMatch[1] ? parseInt(throttleMatch[1], 10) : 30,
-                windowMs: throttleMatch[2] ? parseInt(throttleMatch[2], 10) : 60000,
+                max: throttleMatch[1] ? parseInt(throttleMatch[1], 10) : THROTTLE_DEFAULT_MAX,
+                windowMs: throttleMatch[2] ? parseInt(throttleMatch[2], 10) : THROTTLE_DEFAULT_WINDOW_MS,
               };
             }
           }
@@ -450,8 +465,8 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
             );
             if (throttleMatch) {
               methodThrottle = {
-                max: throttleMatch[1] ? parseInt(throttleMatch[1], 10) : 30,
-                windowMs: throttleMatch[2] ? parseInt(throttleMatch[2], 10) : 60000,
+                max: throttleMatch[1] ? parseInt(throttleMatch[1], 10) : THROTTLE_DEFAULT_MAX,
+                windowMs: throttleMatch[2] ? parseInt(throttleMatch[2], 10) : THROTTLE_DEFAULT_WINDOW_MS,
               };
             }
           }
@@ -462,8 +477,8 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
           const routeParameters = parseRouteParameters(fullPath);
           const methodMetadataDecorators = collectNonRouteMetadataDecorators(
             lines,
-            Math.max(block.startLine, i - 8),
-            Math.min(i + 5, block.endLine),
+            Math.max(block.startLine, i - METADATA_SCAN_BACK_WINDOW),
+            Math.min(i + METADATA_SCAN_FORWARD_WINDOW, block.endLine),
           );
           methodGuards = uniqueStrings(methodGuards);
           const authorizationMetadata = uniqueStrings([
