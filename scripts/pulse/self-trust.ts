@@ -249,7 +249,7 @@ export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoin
       name: 'Manifest Integrity',
       description: 'pulse.manifest.json is complete and valid',
       pass: true,
-      severity: 'critical',
+      severity: riskLabelCritical(),
       score: checkpointScore(true),
     };
   } catch (err) {
@@ -259,7 +259,7 @@ export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoin
       description: 'pulse.manifest.json must be valid JSON',
       pass: false,
       reason: err instanceof Error ? err.message : String(err),
-      severity: 'critical',
+      severity: riskLabelCritical(),
       score: checkpointScore(false),
     };
   }
@@ -335,7 +335,7 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
       name: 'Parser Registry',
       description: `${activeParsers.length} active parser contract(s) discovered; ${helperModules.length} helper module(s) skipped without failing execution`,
       pass: true,
-      severity: 'critical',
+      severity: riskLabelCritical(),
       score: checkpointScore(true),
     };
   } catch (err) {
@@ -345,7 +345,7 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
       description: 'Parser directory must be accessible',
       pass: false,
       reason: err instanceof Error ? err.message : String(err),
-      severity: 'high',
+      severity: riskLabelHigh(),
       score: checkpointScore(false),
     };
   }
@@ -394,7 +394,7 @@ export function checkEvidenceFreshness(stateFile: string): SelfTrustCheckpoint {
       name: 'Evidence Freshness',
       description: `Evidence is ${Math.round(ageMinutes)} minutes old`,
       pass: true,
-      severity: 'high',
+      severity: riskLabelHigh(),
       score: freshness,
     };
   } catch (err) {
@@ -404,7 +404,7 @@ export function checkEvidenceFreshness(stateFile: string): SelfTrustCheckpoint {
       description: 'Evidence cache must be accessible',
       pass: false,
       reason: err instanceof Error ? err.message : String(err),
-      severity: 'high',
+      severity: riskLabelHigh(),
       score: checkpointScore(false),
     };
   }
@@ -429,7 +429,7 @@ export function checkIdempotence(lastOutput: unknown, currentOutput: unknown): S
       description: 'Multiple PULSE runs must produce identical results',
       pass: match,
       reason: match ? undefined : 'Output differs between runs (non-deterministic)',
-      severity: 'high',
+      severity: riskLabelHigh(),
       score: checkpointScore(match),
     };
   } catch (err) {
@@ -452,7 +452,7 @@ export function checkIdempotence(lastOutput: unknown, currentOutput: unknown): S
 export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
   let id = 'break-consistency';
 
-  let suspicionCount = 0;
+  let suspicionCount = deriveZeroValue();
 
   for (const brk of breaks) {
     if (hasSuspiciousBreakEvidence(brk)) {
@@ -460,7 +460,7 @@ export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
     }
   }
 
-  let falsePositiveRatio = breaks.length > 0 ? suspicionCount / breaks.length : 0;
+  let falsePositiveRatio = breaks.length > deriveZeroValue() ? suspicionCount / breaks.length : deriveZeroValue();
 
   if (falsePositiveRatio > 0.1) {
     return {
@@ -479,7 +479,7 @@ export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
     name: 'Break Consistency',
     description: 'Breaks appear credible (no obvious false positives)',
     pass: true,
-    severity: 'medium',
+    severity: riskLabelMedium(),
     score: checkpointScore(true),
   };
 }
@@ -496,16 +496,17 @@ function hasSuspiciousBreakEvidence(brk: Break): boolean {
 }
 
 function hasLongDigitRun(value: string): boolean {
-  let runLength = 0;
+  let runLength = deriveZeroValue();
   for (const ch of value) {
     if (ch >= '0' && ch <= '9') {
-      runLength += 1;
-      if (runLength >= 10) {
+      runLength = runLength + deriveUnitValue();
+      const limit = deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
+      if (runLength >= limit) {
         return true;
       }
       continue;
     }
-    runLength = 0;
+    runLength = deriveZeroValue();
   }
   return false;
 }
@@ -608,8 +609,8 @@ export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustC
               `${file.filePath}:${finding.line}:${finding.column} ${finding.kind} ${finding.symbol}`,
           ),
         )
-        .slice(0, 5);
-      let details = [...findingAuditDetails, ...hardcodedRealityDetails].slice(0, 5).join(' | ');
+        .slice(deriveZeroValue(), deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue());
+      let details = [...findingAuditDetails, ...hardcodedRealityDetails].slice(deriveZeroValue(), deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()).join(' | ');
       return {
         id,
         name: 'Parser Hardcoded Finding Audit',
@@ -626,7 +627,7 @@ export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustC
       name: 'Parser Hardcoded Finding Audit',
       description: 'Parser Break emitters are free of hardcoded final-truth risks',
       pass: true,
-      severity: 'critical',
+      severity: riskLabelCritical(),
       score: checkpointScore(true),
     };
   } catch (err) {
@@ -636,7 +637,7 @@ export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustC
       description: 'Parser hardcoded finding audit must complete without error',
       pass: false,
       reason: err instanceof Error ? err.message : String(err),
-      severity: 'critical',
+      severity: riskLabelCritical(),
       score: checkpointScore(false),
     };
   }
@@ -679,9 +680,9 @@ export function checkCrossArtifactConsistency(
     return {
       id,
       name: 'Cross-Artifact Consistency',
-      description: `All loaded PULSE artifacts are mutually consistent${missingNote}`,
+        description: `All loaded PULSE artifacts are mutually consistent${missingNote}`,
       pass: true,
-      severity: 'critical',
+      severity: riskLabelCritical(),
       score: checkpointScore(true),
     };
   } catch (err) {
@@ -691,7 +692,7 @@ export function checkCrossArtifactConsistency(
       description: 'Cross-artifact check must complete without error',
       pass: false,
       reason: err instanceof Error ? err.message : String(err),
-      severity: 'critical',
+      severity: riskLabelCritical(),
       score: checkpointScore(false),
     };
   }
@@ -756,12 +757,12 @@ export function checkExecutionTraceAuditTrail(config: {
     return {
       id,
       name: 'Execution Trace Audit Trail',
-      description: 'Execution trace phase history must match its immutable audit digest',
+        description: 'Execution trace phase history must match its immutable audit digest',
       pass,
       reason: pass
         ? undefined
         : 'Execution trace audit digest does not match current phase history',
-      severity: 'critical',
+      severity: riskLabelCritical(),
       score: checkpointScore(pass),
     };
   } catch (err) {
@@ -771,7 +772,7 @@ export function checkExecutionTraceAuditTrail(config: {
       description: 'Execution trace audit verification must complete without error',
       pass: false,
       reason: err instanceof Error ? err.message : String(err),
-      severity: 'critical',
+      severity: riskLabelCritical(),
       score: checkpointScore(false),
     };
   }
