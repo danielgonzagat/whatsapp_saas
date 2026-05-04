@@ -23,6 +23,7 @@ import {
 } from './structural-family';
 import {
   deriveHttpStatusFromObservedCatalog,
+  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
   discoverCapabilityStatusLabels,
@@ -40,14 +41,6 @@ interface BuildProductVisionInput {
   externalSignalState?: PulseExternalSignalState;
 }
 
-function zero(): number {
-  return deriveZeroValue();
-}
-
-function one(): number {
-  return deriveUnitValue();
-}
-
 function roundToPercentStep(value: number): number {
   const scale =
     deriveHttpStatusFromObservedCatalog('OK') /
@@ -56,14 +49,14 @@ function roundToPercentStep(value: number): number {
 }
 
 function quotient(numerator: number, denominator: number): number {
-  if (denominator <= zero()) {
-    return zero();
+  if (denominator <= deriveZeroValue()) {
+    return deriveZeroValue();
   }
   return roundToPercentStep(numerator / denominator);
 }
 
 function clamp(value: number): number {
-  return Math.max(zero(), Math.min(one(), roundToPercentStep(value)));
+  return Math.max(deriveZeroValue(), Math.min(deriveUnitValue(), roundToPercentStep(value)));
 }
 
 function unique<T>(values: T[]): T[] {
@@ -75,7 +68,7 @@ function compact(value: string, max: number): string {
   if (normalized.length <= max) {
     return normalized;
   }
-  return `${normalized.slice(zero(), max - '...'.length)}...`;
+  return `${normalized.slice(deriveZeroValue(), max - '...'.length)}...`;
 }
 
 function humanize(value: string): string {
@@ -98,39 +91,39 @@ function deriveStateSequence<State extends string>(
 }
 
 function hasItems<T>(items: T[]): boolean {
-  return items.length > zero();
+  return items.length > deriveZeroValue();
 }
 
 function hasCount(value: number): boolean {
-  return value > zero();
+  return value > deriveZeroValue();
 }
 
 function multiple<T>(items: T[]): boolean {
-  return items.length > one();
+  return items.length > deriveUnitValue();
 }
 
 function observedHead<T>(items: T[]): T | undefined {
-  return items[zero()];
+  return items[deriveZeroValue()];
 }
 
 function observedSecond<T>(items: T[]): T | undefined {
-  return items[one()];
+  return items[deriveUnitValue()];
 }
 
 function observedMiddle<T>(items: T[]): T | undefined {
-  return items[Math.floor(quotient(items.length, one() + one()))];
+  return items[Math.floor(quotient(items.length, deriveUnitValue() + deriveUnitValue()))];
 }
 
 function leadingSpan(...counts: number[]): number {
-  const observedCounts = counts.filter((count) => count > zero());
+  const observedCounts = counts.filter((count) => count > deriveZeroValue());
   if (!hasItems(observedCounts)) {
-    return one();
+    return deriveUnitValue();
   }
   return Math.max(
-    one(),
+    deriveUnitValue(),
     Math.ceil(
       quotient(
-        observedCounts.reduce((sum, count) => sum + count, zero()),
+        observedCounts.reduce((sum, count) => sum + count, deriveZeroValue()),
         observedCounts.length,
       ),
     ),
@@ -139,11 +132,11 @@ function leadingSpan(...counts: number[]): number {
 
 function observedAverage(values: number[]): number {
   if (!hasItems(values)) {
-    return zero();
+    return deriveZeroValue();
   }
   return clamp(
     quotient(
-      values.reduce((sum, value) => sum + value, zero()),
+      values.reduce((sum, value) => sum + value, deriveZeroValue()),
       values.length,
     ),
   );
@@ -158,11 +151,11 @@ function observedRankWeight<State extends string>(
 
 function stateWeight<State extends string>(status: State, statusOrder: State[]): number {
   const index = statusOrder.indexOf(status);
-  if (index < zero()) {
-    return zero();
+  if (index < deriveZeroValue()) {
+    return deriveZeroValue();
   }
 
-  const denominator = Math.max(statusOrder.length - one(), one());
+  const denominator = Math.max(statusOrder.length - deriveUnitValue(), deriveUnitValue());
   return clamp((denominator - index) / denominator);
 }
 
@@ -196,7 +189,7 @@ function stateFromCompletion<State extends string>(
     const next = statusOrder[index + 1];
     const boundary = quotient(
       stateWeight(current, statusOrder) + stateWeight(next, statusOrder),
-      one() + one(),
+      deriveUnitValue() + deriveUnitValue(),
     );
     if (completion >= boundary) {
       return current;
@@ -214,21 +207,21 @@ function projectionBand(
   flowSeq: PulseFlowProjectionStatus[],
 ): 'red' | 'yellow' | 'green' {
   const capGreen = quotient(
-    stateWeight(observedHead(capSeq) ?? capSeq[zero()], capSeq) +
-      stateWeight(observedSecond(capSeq) ?? observedHead(capSeq) ?? capSeq[zero()], capSeq),
-    one() + one(),
+    stateWeight(observedHead(capSeq) ?? capSeq[deriveZeroValue()], capSeq) +
+      stateWeight(observedSecond(capSeq) ?? observedHead(capSeq) ?? capSeq[deriveZeroValue()], capSeq),
+    deriveUnitValue() + deriveUnitValue(),
   );
   const flowGreen = quotient(
-    stateWeight(observedHead(flowSeq) ?? flowSeq[zero()], flowSeq) +
-      stateWeight(observedSecond(flowSeq) ?? observedHead(flowSeq) ?? flowSeq[zero()], flowSeq),
-    one() + one(),
+    stateWeight(observedHead(flowSeq) ?? flowSeq[deriveZeroValue()], flowSeq) +
+      stateWeight(observedSecond(flowSeq) ?? observedHead(flowSeq) ?? flowSeq[deriveZeroValue()], flowSeq),
+    deriveUnitValue() + deriveUnitValue(),
   );
   const capYellow = stateWeight(
-    observedMiddle(capSeq) ?? observedHead(capSeq) ?? capSeq[zero()],
+    observedMiddle(capSeq) ?? observedHead(capSeq) ?? capSeq[deriveZeroValue()],
     capSeq,
   );
   const flowYellow = stateWeight(
-    observedMiddle(flowSeq) ?? observedHead(flowSeq) ?? flowSeq[zero()],
+    observedMiddle(flowSeq) ?? observedHead(flowSeq) ?? flowSeq[deriveZeroValue()],
     flowSeq,
   );
 
@@ -262,6 +255,24 @@ function truthModeAspirationalLabel(): PulseTruthMode {
 function truthModeInferredLabel(): PulseTruthMode {
   const labels = [...discoverTruthModeLabels()] as PulseTruthMode[];
   return labels[deriveUnitValue()];
+}
+
+function discoverCoverageStatusSet(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.resolved-manifest.ts',
+    'PulseResolvedModuleCoverageStatus',
+  );
+}
+
+function isDeclaredOnlyCoverageStatus(status: string): boolean {
+  const labels = [...discoverCoverageStatusSet()];
+  const idx = labels.length - deriveUnitValue() - deriveUnitValue();
+  return idx >= 0 && labels[idx] === status;
+}
+
+function isExcludedCoverageStatus(status: string): boolean {
+  const labels = [...discoverCoverageStatusSet()];
+  return labels[labels.length - deriveUnitValue()] === status;
 }
 
 function summarizeEvidenceBasis(
@@ -309,7 +320,7 @@ function bestStatus(
     weakest &&
     strongest === strongestState(capSeq) &&
     weakest === weakestState(capSeq) &&
-    capSeq.length > 1
+    capSeq.length > deriveUnitValue()
   ) {
     return capSeq[1];
   }
@@ -368,14 +379,15 @@ function mergeModules(
       critical: existing.critical || entry.critical,
       declaredByManifest: existing.declaredByManifest || entry.declaredByManifest,
       protectedByGovernance: existing.protectedByGovernance || entry.protectedByGovernance,
-      coverageStatus:
-        existing.coverageStatus === 'declared_and_discovered' ||
-        entry.coverageStatus === 'declared_and_discovered'
-          ? 'declared_and_discovered'
-          : existing.coverageStatus === 'discovered_only' ||
-              entry.coverageStatus === 'discovered_only'
-            ? 'discovered_only'
-            : existing.coverageStatus,
+      coverageStatus: (() => {
+        const statusPriority = [...discoverCoverageStatusSet()];
+        for (const candidate of statusPriority) {
+          if (existing.coverageStatus === candidate || entry.coverageStatus === candidate) {
+            return candidate;
+          }
+        }
+        return existing.coverageStatus;
+      })(),
       discoveredFileCount: existing.discoveredFileCount + entry.discoveredFileCount,
       codacyIssueCount: existing.codacyIssueCount + entry.codacyIssueCount,
       highSeverityIssueCount: existing.highSeverityIssueCount + entry.highSeverityIssueCount,
@@ -434,12 +446,12 @@ function buildSurfaceBlockers(
     ...runHits
       .filter((flow) => flow.status !== flowBest)
       .map((flow) => flow.blockingReasons[0] || `${flow.name} remains ${flow.status}.`),
-    entry.coverageStatus === 'declared_only'
+    isDeclaredOnlyCoverageStatus(entry.coverageStatus)
       ? `${entry.name} is declared in the promise model but has no discovered implementation yet.`
       : '',
   ])
     .filter(Boolean)
-    .slice(zero(), leadingSpan(unitHits.length, runHits.length, entry.routeRoots.length));
+    .slice(deriveZeroValue(), leadingSpan(unitHits.length, runHits.length, entry.routeRoots.length));
 }
 
 function buildCapabilityCompletion(
@@ -475,8 +487,8 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
     (capability) => capability.userFacing || hasItems(capability.routePatterns),
   );
   const scopedUnits = hasItems(productUnits) ? productUnits : input.capabilityState.capabilities;
-  const totalUnits = Math.max(scopedUnits.length, one());
-  const totalFlows = Math.max(input.flowProjection.summary.totalFlows, one());
+  const totalUnits = Math.max(scopedUnits.length, deriveUnitValue());
+  const totalFlows = Math.max(input.flowProjection.summary.totalFlows, deriveUnitValue());
   const readyUnits = scopedUnits.filter((capability) =>
     isMaterializedState(capability.status, capSeq),
   ).length;
@@ -499,7 +511,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
 
   const mergedEntries = mergeModules(input.resolvedManifest.modules);
   const surfaces = mergedEntries
-    .filter((entry) => entry.userFacing && entry.coverageStatus !== 'excluded')
+    .filter((entry) => entry.userFacing && !isExcludedCoverageStatus(entry.coverageStatus))
     .map((entry) => {
       const unitHits = input.capabilityState.capabilities.filter((capability) =>
         unitHitsModule(capability, entry),
@@ -590,14 +602,14 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
       const executionWeights = scenario.flowSpecs.map((runSpec) => {
         const result = runResults.find((entry) => entry.flowId === runSpec);
         if (!result) {
-          return zero();
+          return deriveZeroValue();
         }
         return observedRankWeight(result.status, runResultStates);
       });
       const runtimeWeight = observedAverage(
         scenario.runtimeProbes.map((probeId) => {
           const probe = runtimeProbes.find((entry) => entry.probeId === probeId);
-          return probe ? observedRankWeight(probe.status, runtimeProbeStates) : zero();
+          return probe ? observedRankWeight(probe.status, runtimeProbeStates) : deriveZeroValue();
         }),
       );
       const surfaceWeight = observedAverage(
@@ -627,7 +639,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
           )
           .map((probe) => probe.summary || `Runtime probe ${probe.probeId} is not passing.`),
         ...experienceSurfaces.flatMap((surface) =>
-          surface.blockers.slice(zero(), Math.max(one(), surface.blockers.length)),
+          surface.blockers.slice(deriveZeroValue(), Math.max(deriveUnitValue(), surface.blockers.length)),
         ),
         ...experienceRuns
           .filter((flow) => flow.status !== flowBest)
@@ -635,7 +647,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
       ])
         .filter(Boolean)
         .slice(
-          zero(),
+          deriveZeroValue(),
           leadingSpan(
             scenario.runtimeProbes.length,
             experienceSurfaces.length,
@@ -670,9 +682,9 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
 
   const promiseToProductionDelta = {
     declaredSurfaces: surfaces.length,
-    realSurfaces: surfaces.filter((surface) => surface.status === capSeq[0]).length,
-    partialSurfaces: surfaces.filter((surface) => surface.status === capSeq[1]).length,
-    latentSurfaces: surfaces.filter((surface) => surface.status === capSeq[2]).length,
+    realSurfaces: surfaces.filter((surface) => surface.status === capBest).length,
+    partialSurfaces: surfaces.filter((surface) => surface.status === observedSecond(capSeq)).length,
+    latentSurfaces: surfaces.filter((surface) => surface.status === observedMiddle(capSeq)).length,
     phantomSurfaces: surfaces.filter((surface) => surface.status === capWeak).length,
     productFacingPhantomCapabilities: productFacingWeakUnits,
     systemPhantomCapabilities: systemWeakUnits,
@@ -682,7 +694,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
           surface.status !== capBest &&
           (surface.declaredByManifest || surface.critical || multiple(surface.routePatterns)),
       )
-      .slice(zero(), leadingSpan(surfaces.length, input.parityGaps.gaps.length))
+      .slice(deriveZeroValue(), leadingSpan(surfaces.length, input.parityGaps.gaps.length))
       .map(
         (surface) =>
           `${surface.name}: ${surface.blockers[0] || `${surface.status} surface with incomplete materialization.`}`,
@@ -700,15 +712,15 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
   const leadingBlockers = unique([
     ...[...externalSignals]
       .sort((left, right) => right.impactScore - left.impactScore)
-      .slice(zero(), blockerSpan)
+      .slice(deriveZeroValue(), blockerSpan)
       .map((signal) => `${signal.source}/${signal.type}: ${signal.summary}`),
     ...promiseToProductionDelta.criticalGaps,
     ...input.parityGaps.gaps
-      .slice(zero(), blockerSpan)
+      .slice(deriveZeroValue(), blockerSpan)
       .map((gap) => `${gap.title}: ${gap.summary}`),
     ...experiences
       .filter((experience) => experience.status !== flowBest)
-      .slice(zero(), blockerSpan)
+      .slice(deriveZeroValue(), blockerSpan)
       .map(
         (experience) =>
           `${experience.name}: ${experience.blockers[0] || `${experience.status} experience.`}`,
@@ -718,19 +730,19 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
         (capability) =>
           capability.status === capWeak || hasCount(capability.highSeverityIssueCount),
       )
-      .slice(zero(), blockerSpan)
+      .slice(deriveZeroValue(), blockerSpan)
       .map((capability) =>
         hasCount(capability.highSeverityIssueCount)
           ? `${capability.name}: ${capability.highSeverityIssueCount} HIGH Codacy issue(s).`
           : `${capability.name}: capability still phantom.`,
       ),
-  ]).slice(zero(), leadingSpan(blockerSpan, promiseToProductionDelta.criticalGaps.length));
+  ]).slice(deriveZeroValue(), leadingSpan(blockerSpan, promiseToProductionDelta.criticalGaps.length));
 
   const evidenceBasis = summarizeEvidenceBasis(scopedUnits, input.flowProjection.flows);
 
   const surfaceNames = surfaces
     .filter((surface) => isMaterializedState(surface.status, capSeq))
-    .slice(zero(), leadingSpan(surfaces.length, experiences.length))
+    .slice(deriveZeroValue(), leadingSpan(surfaces.length, experiences.length))
     .map((surface) => surface.name);
 
   const inferredProductIdentity = hasItems(surfaceNames)
