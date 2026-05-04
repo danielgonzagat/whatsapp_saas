@@ -13,10 +13,15 @@ import { execFileSync } from 'node:child_process';
 import { safeJoin } from './lib/safe-path';
 import {
   deriveHttpStatusFromObservedCatalog,
+  deriveLengthBoundariesFromObservedCatalog,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+  discoverNestjsDecoratorNamesFromTypeEvidence,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
-  discoverAllObservedArtifactFilenames,
   deriveStringUnionMembersFromTypeContract,
+  observeStatusTextLengthFromCatalog,
 } from './dynamic-reality-kernel';
 import { ensureDir, pathExists, readTextFile, writeTextFile } from './safe-fs';
 import { walkFiles } from './parsers/utils';
@@ -184,23 +189,7 @@ function collectNonRouteMetadataDecorators(
   startLine: number,
   endLine: number,
 ): string[] {
-  const infrastructureDecorators = new Set([
-    'Body',
-    'Controller',
-    'Delete',
-    'Get',
-    'Headers',
-    'Param',
-    'Patch',
-    'Post',
-    'Public',
-    'Put',
-    'Query',
-    'Req',
-    'Res',
-    'Throttle',
-    'UseGuards',
-  ]);
+  const infrastructureDecorators = discoverNestjsDecoratorNamesFromTypeEvidence();
   const decorators: string[] = [];
 
   for (let i = startLine; i < endLine; i++) {
@@ -247,8 +236,8 @@ function findControllerBlocks(lines: string[]): Array<{
     let isPublic = false;
     let throttleConfig: { max: number; windowMs: number } | null = null;
 
-    const scanStart = Math.max(0, i - 5);
-    const scanEnd = Math.min(lines.length - 1, i + 5);
+    const scanStart = Math.max(deriveZeroValue(), i - (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()));
+    const scanEnd = Math.min(lines.length - deriveUnitValue(), i + (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()));
     for (let j = scanStart; j <= scanEnd; j++) {
       const line = lines[j];
       const guardMatch = line.match(/@UseGuards\(([^)]+)\)/);
@@ -281,7 +270,7 @@ function findControllerBlocks(lines: string[]): Array<{
     });
   }
 
-  for (let i = 0; i < blocks.length - 1; i++) {
+  for (let i = deriveZeroValue(); i < blocks.length - deriveUnitValue(); i++) {
     blocks[i].endLine = blocks[i + 1].startLine;
   }
 
@@ -297,7 +286,7 @@ function extractBodyDtoType(
   methodLine: number,
   blockEndLine: number,
 ): string | null {
-  for (let j = methodLine; j < Math.min(methodLine + 20, blockEndLine); j++) {
+  for (let j = methodLine; j < Math.min(methodLine + (observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')) + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')) + deriveUnitValue() + deriveUnitValue()), blockEndLine); j++) {
     const line = lines[j]?.trim() || '';
     if (
       line.startsWith('@') &&
@@ -331,7 +320,7 @@ function findMethodName(
   decoratorLine: number,
   blockEndLine: number,
 ): { line: number; name: string } {
-  for (let j = decoratorLine + 1; j < Math.min(decoratorLine + 14, blockEndLine); j++) {
+  for (let j = decoratorLine + deriveUnitValue(); j < Math.min(decoratorLine + deriveLengthBoundariesFromObservedCatalog()[5], blockEndLine); j++) {
     const trimmed = lines[j]?.trim() || '';
     if (!trimmed || trimmed.startsWith('@')) {
       continue;
@@ -427,7 +416,7 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
           let methodGuards = [...block.classGuards];
           let methodThrottle = block.throttleConfig;
 
-          for (let j = Math.max(block.startLine, i - 8); j < i; j++) {
+          for (let j = Math.max(block.startLine, i - (observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')) - deriveUnitValue())); j < i; j++) {
             const above = lines[j].trim();
             if (/@Public\(\s*\)/.test(above)) {
               methodPublic = true;
@@ -447,7 +436,7 @@ export function discoverAPIEndpoints(rootDir: string): APIEndpointProbe[] {
             }
           }
 
-          for (let j = i + 1; j < Math.min(i + 5, block.endLine); j++) {
+          for (let j = i + deriveUnitValue(); j < Math.min(i + (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()), block.endLine); j++) {
             const below = lines[j].trim();
             if (/@Public\(\s*\)/.test(below)) {
               methodPublic = true;
@@ -828,14 +817,14 @@ function wrongTypeValueForFieldType(type: string): unknown {
 function buildMassAssignmentPayloads(endpoint: APIEndpointProbe): unknown[] {
   const schemaFields = schemaFieldsFromEndpoint(endpoint);
   const fieldEntries = Object.entries(schemaFields).slice(
-    0,
-    Math.max(1, Math.min(3, Object.keys(schemaFields).length)),
+     deriveZeroValue(),
+     Math.max(deriveUnitValue(), Math.min(deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), Object.keys(schemaFields).length)),
   );
 
   if (fieldEntries.length === 0) {
     const routeParameters =
       endpoint.authProbeMetadata?.routeParameters ?? parseRouteParameters(endpoint.path);
-    const baseName = routeParameters[0] ?? endpoint.path.replace(/\W+/g, '_') ?? 'payload';
+  const baseName = routeParameters[deriveZeroValue()] ?? endpoint.path.replace(/\W+/g, '_') ?? 'payload';
     return [
       {
         [`${baseName}__unexpected`]: buildSentinel(endpoint, baseName),
@@ -1131,7 +1120,7 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
   const tests: SecurityTestCase[] = [];
 
   const inputSeeds = routeAndSchemaSeeds(endpoint);
-  const probeLimit = Math.max(1, Math.min(3, inputSeeds.length || endpoint.path.length));
+  const probeLimit = Math.max(deriveUnitValue(), Math.min(deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), inputSeeds.length || endpoint.path.length));
 
   // SQL injection — synthesized from route/schema input surfaces.
   synthesizeSqlMutationPayloads(endpoint)
@@ -1435,7 +1424,7 @@ function executeLocalFuzzProbes(endpoint: APIEndpointProbe): void {
       test.status = result.status;
     }
 
-    for (const test of endpoint.securityTests.filter((item) => item.expectedBlock).slice(0, 3)) {
+    for (const test of endpoint.securityTests      .filter((item) => item.expectedBlock).slice(deriveZeroValue(), deriveUnitValue() + deriveUnitValue() + deriveUnitValue())) {
       const result = executeHttpProbe({
         baseUrl,
         method: endpoint.method,
