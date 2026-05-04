@@ -55,14 +55,12 @@ const UNEXECUTED_STATUSES = discoverPropertyUnexecutedStatusFromExecutionEvidenc
 const EXECUTION_MODES = [...discoverConvergenceExecutionModeLabels()].sort(
   (a, b) => a.length - b.length,
 );
-const SAFE_EXECUTION_MODE = EXECUTION_MODES[deriveZeroValue()];
-const GOVERNED_EXECUTION_MODE = EXECUTION_MODES[EXECUTION_MODES.length - deriveUnitValue()];
+
 
 const KIND_LABELS = [...discoverHarnessTargetKindLabels()].sort(
   (a, b) => a.length - b.length || a.localeCompare(b),
 );
 const CRO_KIND_LABEL = KIND_LABELS[deriveZeroValue()];
-const SCRIPT_KIND_LABEL = KIND_LABELS[deriveUnitValue()];
 const WORKER_KIND_LABEL = KIND_LABELS[deriveUnitValue() + deriveUnitValue()];
 const SERVICE_KIND_LABEL =
   KIND_LABELS[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
@@ -70,8 +68,6 @@ const WEBHOOK_KIND_LABEL =
   KIND_LABELS[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
 const ENDPOINT_KIND_LABEL =
   KIND_LABELS[deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
-const CONTROLLER_KIND_LABEL =
-  KIND_LABELS[KIND_LABELS.length - deriveUnitValue()];
 
 const FIXTURE_KINDS = [
   ...deriveStringUnionMembersFromTypeContract(
@@ -80,9 +76,6 @@ const FIXTURE_KINDS = [
   ),
 ].sort((a, b) => a.length - b.length);
 const DB_SEED_FIXTURE = FIXTURE_KINDS[deriveZeroValue()] as HarnessFixtureKind;
-const TEST_ENV_FIXTURE = FIXTURE_KINDS[deriveUnitValue()] as HarnessFixtureKind;
-const AUTH_TOKEN_FIXTURE =
-  FIXTURE_KINDS[deriveUnitValue() + deriveUnitValue()] as HarnessFixtureKind;
 const MOCK_SERVICE_FIXTURE =
   FIXTURE_KINDS[
     deriveUnitValue() + deriveUnitValue() + deriveUnitValue()
@@ -91,14 +84,6 @@ const QUEUE_MESSAGE_FIXTURE =
   FIXTURE_KINDS[
     deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()
   ] as HarnessFixtureKind;
-const WEBHOOK_PAYLOAD_FIXTURE =
-  FIXTURE_KINDS[
-    deriveUnitValue() +
-      deriveUnitValue() +
-      deriveUnitValue() +
-      deriveUnitValue() +
-      deriveUnitValue()
-  ] as HarnessFixtureKind;
 
 const FRAMEWORKS = [
   ...deriveStringUnionMembersFromTypeContract(
@@ -106,9 +91,6 @@ const FRAMEWORKS = [
     'framework',
   ),
 ].sort((a, b) => a.length - b.length);
-const JEST_FRAMEWORK = FRAMEWORKS[deriveZeroValue()];
-const SUPERTEST_FRAMEWORK =
-  FRAMEWORKS[FRAMEWORKS.length - deriveUnitValue() - deriveUnitValue()];
 
 function harnessArtifactPath(): string {
   return `.pulse/current/${ALL_ARTIFACTS.harnessEvidence}`;
@@ -255,12 +237,6 @@ const PLANNED_STATUS = [...UNEXECUTED_STATUSES].sort(
 const EXECUTED_NON_PASSED_STATUSES = [...ALL_EXECUTION_STATUS_LABELS]
   .filter((s) => !PASSED_STATUSES.has(s) && !UNEXECUTED_STATUSES.has(s))
   .sort((a, b) => a.length - b.length || a.localeCompare(b));
-const FAILED_HARNESS_STATUS = EXECUTED_NON_PASSED_STATUSES[
-  deriveUnitValue()
-] as HarnessExecutionStatus;
-const BLOCKED_HARNESS_STATUS = EXECUTED_NON_PASSED_STATUSES[
-  deriveUnitValue() + deriveUnitValue()
-] as HarnessExecutionStatus;
 
 const FEASIBILITY_LABELS = [...discoverHarnessExecutionFeasibilityLabels()].sort(
   (a, b) => a.length - b.length,
@@ -271,16 +247,7 @@ const CANNOT_EXECUTE_FEASIBILITY = FEASIBILITY_LABELS[
   FEASIBILITY_LABELS.length - deriveUnitValue()
 ] as ExecutionFeasibility;
 
-const OBSERVED_HARNESS_STATUSES = new Set(
-  [...ALL_EXECUTION_STATUS_LABELS].filter(
-    (s) =>
-      PASSED_STATUSES.has(s) ||
-      UNEXECUTED_STATUSES.has(s) ||
-      (s !== [...PASSED_STATUSES].find(() => false) &&
-        !UNEXECUTED_STATUSES.has(s) &&
-        ALL_EXECUTION_STATUS_LABELS.has(s)),
-  ),
-);
+const OBSERVED_HARNESS_STATUSES = ALL_EXECUTION_STATUS_LABELS;
 function isObservedHarnessStatus(status: HarnessExecutionStatus): boolean {
   return OBSERVED_HARNESS_STATUSES.has(status);
 }
@@ -307,8 +274,8 @@ function normalizeHarnessExecutionResult(result: HarnessExecutionResult): Harnes
   }
 
   const hasExecutionEvidence =
-    result.attempts > 0 ||
-    result.executionTimeMs > 0 ||
+    result.attempts > deriveZeroValue() ||
+    result.executionTimeMs > deriveZeroValue() ||
     Boolean(result.startedAt && result.finishedAt);
 
   const notExecuted = canonicalUnexecuted ?? fallbackUnexecuted;
@@ -797,8 +764,8 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
   const governedGroup = allTargets.filter(isCriticalHarnessTarget);
 
   const passedResults = combinedResults.filter((r) => isPassedHarnessStatus(r.status));
-  const failedResults = combinedResults.filter((r) => r.status === FAILED_HARNESS_STATUS);
-  const blockedResults = combinedResults.filter((r) => r.status === BLOCKED_HARNESS_STATUS);
+  const failedResults = combinedResults.filter((r) => r.status === EXECUTED_NON_PASSED_STATUSES[deriveUnitValue()] as HarnessExecutionStatus);
+  const blockedResults = combinedResults.filter((r) => r.status === EXECUTED_NON_PASSED_STATUSES[deriveUnitValue() + deriveUnitValue()] as HarnessExecutionStatus);
 
   const feasibilitySummary = buildFeasibilitySummary(allTargets);
 
@@ -1238,7 +1205,7 @@ export function generateFixturesForTarget(
 
   // Test environment fixture — always required
   fixtures.push({
-    kind: TEST_ENV_FIXTURE,
+    kind: FIXTURE_KINDS[deriveUnitValue()] as HarnessFixtureKind,
     name: 'pulse-test-env',
     description: 'PULSE test environment with isolated database and Redis',
     data: { dbPrefix: 'pulse_test', redisPrefix: 'pulse_test' },
@@ -1249,7 +1216,7 @@ export function generateFixturesForTarget(
   // Auth token fixture — required when target requires authentication
   if (target.requiresAuth) {
     fixtures.push({
-      kind: AUTH_TOKEN_FIXTURE,
+      kind: FIXTURE_KINDS[deriveUnitValue() + deriveUnitValue()] as HarnessFixtureKind,
       name: 'pulse-auth-token',
       description: 'Credential context material for discovered guard boundaries',
       data: {
@@ -1309,7 +1276,13 @@ export function generateFixturesForTarget(
   // Webhook payload fixture — for webhook targets
   if (target.kind === WEBHOOK_KIND_LABEL) {
     fixtures.push({
-      kind: WEBHOOK_PAYLOAD_FIXTURE,
+      kind: FIXTURE_KINDS[
+        deriveUnitValue() +
+          deriveUnitValue() +
+          deriveUnitValue() +
+          deriveUnitValue() +
+          deriveUnitValue()
+      ] as HarnessFixtureKind,
       name: `pulse-webhook-payload:${target.targetId}`,
       description: `Sample webhook payload for ${target.name}`,
       data: {
@@ -1407,8 +1380,8 @@ export function classifyExecutionFeasibility(
 
   // ── Check 2: browser-only UI handlers ──
   if (
-    target.kind === SCRIPT_KIND_LABEL ||
-    target.kind === CONTROLLER_KIND_LABEL ||
+    target.kind === KIND_LABELS[deriveUnitValue()] ||
+    target.kind === KIND_LABELS[KIND_LABELS.length - deriveUnitValue()] ||
     (target.filePath.toLowerCase().includes('/frontend/') &&
       !target.filePath.toLowerCase().includes('/api/'))
   ) {
@@ -1521,7 +1494,7 @@ export function generateTestHarnessCode(target: HarnessTarget): HarnessGenerated
   }
 
   const suiteName = camelToKebab(target.name).replace(/\//g, '_');
-  const executionMode = target.feasibility === NEEDS_STAGING_FEASIBILITY ? GOVERNED_EXECUTION_MODE : SAFE_EXECUTION_MODE;
+  const executionMode = target.feasibility === NEEDS_STAGING_FEASIBILITY ? EXECUTION_MODES[EXECUTION_MODES.length - deriveUnitValue()] : EXECUTION_MODES[deriveZeroValue()];
   const terminalReason =
     target.feasibility === NEEDS_STAGING_FEASIBILITY
       ? target.feasibilityReason
@@ -1531,7 +1504,7 @@ export function generateTestHarnessCode(target: HarnessTarget): HarnessGenerated
     {
       testName: `[PULSE] ${suiteName} — ${PLANNED_STATUS} ${executionMode} harness`,
       status: PLANNED_STATUS as HarnessGeneratedTest['status'],
-      framework: target.httpMethod ? SUPERTEST_FRAMEWORK : JEST_FRAMEWORK,
+      framework: target.httpMethod ? FRAMEWORKS[FRAMEWORKS.length - deriveUnitValue() - deriveUnitValue()] : FRAMEWORKS[deriveZeroValue()],
       canRunLocally: false,
       code: buildHarnessBlueprintCode(target, executionMode, terminalReason),
     },
