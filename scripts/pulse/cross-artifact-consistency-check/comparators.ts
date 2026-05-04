@@ -1,7 +1,14 @@
 import * as path from 'path';
 import type { ArtifactDivergence, ConsistencyResult, LoadedArtifact } from './types';
 import { deepGet, MAX_GENERATED_AT_DRIFT_MS } from './loaders';
-import { deriveUnitValue, deriveZeroValue, discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+  discoverConvergenceExecutionModeLabels,
+  discoverGateFailureClassLabels,
+  discoverRouteSeparatorFromRuntime,
+} from '../dynamic-reality-kernel';
 
 interface DirectiveUnitView {
   id?: string;
@@ -58,14 +65,18 @@ function getDirectiveUnitArray(artifact: LoadedArtifact, field: string): Directi
   }));
 }
 
+const _routeSep = discoverRouteSeparatorFromRuntime();
+const _altPathSep = path.sep === _routeSep ? '\\' : _routeSep;
+const _dotSlash = `.${_routeSep}`;
+
 function normalizePathForCheck(filePath: string): string {
-  const normalized = filePath.split('\\').join('/');
-  return normalized.startsWith('./') ? normalized.slice(2) : normalized;
+  const normalized = filePath.split(_altPathSep).join(_routeSep);
+  return normalized.startsWith(_dotSlash) ? normalized.slice(_dotSlash.length) : normalized;
 }
 
 function pathSegments(filePath: string): string[] {
   return normalizePathForCheck(filePath)
-    .split('/')
+    .split(_routeSep)
     .filter((segment) => segment.length > 0);
 }
 
@@ -137,10 +148,12 @@ function isProductPrioritizedUnit(unit: DirectiveUnitView): boolean {
   return getUnitProductFiles(unit).length > 0;
 }
 
+const _convergenceExecutionModes = discoverConvergenceExecutionModeLabels();
+
 function firstExecutableUnit(units: DirectiveUnitView[]): DirectiveUnitView | undefined {
   return units.find((unit) => {
     const mode = String(unit.executionMode || '').toLowerCase();
-    return mode === '' || mode === 'ai_safe' || mode === 'governed_sandbox';
+    return mode === '' || _convergenceExecutionModes.has(mode) || mode === 'governed_sandbox';
   });
 }
 
@@ -150,7 +163,7 @@ function addProofDebtSignal(
   field: string,
   value: unknown,
 ): void {
-  if (value === 'NAO' || value === false || value === 'missing_evidence') {
+  if (value === 'NAO' || value === false || discoverGateFailureClassLabels().has(String(value ?? ''))) {
     signals.push({ source, field, value });
   }
 }
@@ -167,7 +180,7 @@ function collectMissingEvidenceGateSignals(
 
   const status = value.status;
   const failureClass = value.failureClass;
-  if (status === 'fail' && failureClass === 'missing_evidence') {
+  if (status === 'fail' && discoverGateFailureClassLabels().has(String(failureClass ?? ''))) {
     signals.push({ source, field: prefix, value: failureClass });
   }
 
