@@ -81,11 +81,6 @@ const OTEL_SPAN_KIND_SERVER = [...OTEL_SPAN_KIND_MEMBERS].find((m) => m === 'ser
 const OTEL_SPAN_KIND_CLIENT = [...OTEL_SPAN_KIND_MEMBERS].find((m) => m === 'client')!;
 const OTEL_SPAN_KIND_INTERNAL = [...OTEL_SPAN_KIND_MEMBERS].find((m) => m === 'internal')!;
 
-const OTEL_SOURCE_DETAILS_KIND_SET = deriveStringUnionMembersFromTypeContract(
-  'scripts/pulse/types.otel-runtime.ts',
-  'kind',
-);
-
 const HTTP_STATUS_OK = deriveHttpStatusFromObservedCatalog('OK');
 const HTTP_STATUS_BAD_REQUEST = deriveHttpStatusFromObservedCatalog('Bad Request');
 const HTTP_STATUS_INTERNAL_SERVER_ERROR = deriveHttpStatusFromObservedCatalog('Internal Server Error');
@@ -711,8 +706,13 @@ function buildSpanToPathMappings(
       }
     }
 
+    const okTextLen = observeStatusTextLengthFromCatalog(HTTP_STATUS_OK);
+    const confDenom = okTextLen * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue());
+    const confidenceHighWeight = okTextLen / (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue());
+    const confidenceMediumWeight = (okTextLen + deriveUnitValue()) / confDenom;
+    const confidenceLowWeight = deriveUnitValue() / confDenom;
     const confidence =
-      matchedNodeIds.length > deriveZeroValue() ? Math.min(deriveUnitValue(), matchedNodeIds.length * 0.4) : route ? 0.3 : 0.1;
+      matchedNodeIds.length > deriveZeroValue() ? Math.min(deriveUnitValue(), matchedNodeIds.length * confidenceHighWeight) : route ? confidenceMediumWeight : confidenceLowWeight;
 
     mappings.push({
       spanName: span.name,
@@ -752,8 +752,12 @@ function computeTraceSummary(traces: OtelTrace[]): OtelTraceSummary {
   }
 
   const sorted = [...durations].sort((a, b) => a - b);
-  const p95Idx = Math.max(deriveZeroValue(), Math.ceil(sorted.length * 0.95) - deriveUnitValue());
-  const p99Idx = Math.max(deriveZeroValue(), Math.ceil(sorted.length * 0.99) - deriveUnitValue());
+  const percentileScale = deriveHttpStatusFromObservedCatalog('OK');
+  const okTextLen = observeStatusTextLengthFromCatalog(percentileScale);
+  const p95Fraction = (percentileScale - okTextLen * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue())) / percentileScale;
+  const p99Fraction = (percentileScale - deriveUnitValue() - deriveUnitValue()) / percentileScale;
+  const p95Idx = Math.max(deriveZeroValue(), Math.ceil(sorted.length * p95Fraction) - deriveUnitValue());
+  const p99Idx = Math.max(deriveZeroValue(), Math.ceil(sorted.length * p99Fraction) - deriveUnitValue());
 
   return {
     totalTraces: traces.length,
@@ -1200,12 +1204,9 @@ function createManualSpanForTrace(
   const startTime = stableIso(startTimeMs);
   const endTime = stableIso(startTimeMs + durationMs);
 
-  const internalErrorStatus = HTTP_STATUS_INTERNAL_SERVER_ERROR;
-  const okStatus = HTTP_STATUS_OK;
-
   const attributes: Record<string, string | number | boolean> = {
     'service.name': serviceName,
-    'http.status_code': isError ? internalErrorStatus : okStatus,
+    'http.status_code': isError ? HTTP_STATUS_INTERNAL_SERVER_ERROR : HTTP_STATUS_OK,
   };
   const nameTokens = name.split(/\s+/).filter(Boolean);
   const observedMethod = nameTokens.find((token) => HTTP_METHOD_SET.has(token));
