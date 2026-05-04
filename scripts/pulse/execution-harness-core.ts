@@ -1150,7 +1150,7 @@ export function discoverCrons(config: PulseConfig): HarnessTarget[] {
 
       // Find the method name on the next line(s)
       let methodName = 'unknown';
-      for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
+      for (let j = i + 1; j < Math.min(i + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length); j++) {
         const methodLine = lines[j].trim();
         if (methodLine.startsWith('@')) {
           continue;
@@ -1422,7 +1422,7 @@ export function classifyExecutionFeasibility(
   const behaviorNode = behaviorNodes.get(targetLookupId);
 
   // ── Check 3: behavior graph requires governed staging execution ──
-  if (behaviorNode && behaviorNode.executionMode === 'human_required') {
+  if (behaviorNode && behaviorNode.executionMode === EXECUTION_MODES[deriveUnitValue()]) {
     return {
       feasibility: NEEDS_STAGING_FEASIBILITY,
       reason: `Behavior graph requires governed staging execution for "${behaviorNode.name}" before this can become observed proof.`,
@@ -1817,7 +1817,7 @@ export function buildFixtureDataStructures(targets: HarnessTarget[]): Record<str
     dbSeeds: [...dbModels].map((model) => ({
       model,
       table: camelToKebab(model),
-      ['seedRecords']: 5,
+      ['seedRecords']: deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(),
       ['defaultFields']: { id: 'uuid-string', createdAt: 'Date', updatedAt: 'Date' },
     })),
     queueFixtures: [...queueNames].map((name) => ({
@@ -1825,7 +1825,7 @@ export function buildFixtureDataStructures(targets: HarnessTarget[]): Record<str
       sampleJob: {
         id: 'pulse-test-job-id',
         data: { testMode: true, pulseRun: 'harness-discovery' },
-        opts: { attempts: 3, backoff: { type: 'exponential', delay: 1000 } },
+        opts: { attempts: deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), backoff: { type: 'exponential', delay: 1000 } },
       },
     })),
     webhookFixtures: webhookEndpoints.map((w) => ({
