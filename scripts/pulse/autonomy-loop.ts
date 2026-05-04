@@ -59,7 +59,7 @@ import {
 } from './autonomy-loop.prompt';
 import { createExecutor, detectAvailableExecutor, type ExecutorKind } from './executor';
 import { runParallelAutonomousLoop } from './autonomy-loop.parallel';
-import { deriveUnitValue, deriveZeroValue, discoverConvergenceUnitStatusLabels } from './dynamic-reality-kernel';
+import { deriveStringUnionMembersFromTypeContract, deriveUnitValue, deriveZeroValue, discoverConvergenceUnitStatusLabels } from './dynamic-reality-kernel';
 
 const certifiedConvergenceLabel = (() => {
   const labels = discoverConvergenceUnitStatusLabels();
@@ -106,7 +106,7 @@ function buildRunOptions(
     'riskProfile',
   );
   const defaultRiskLabel =
-    [...riskLabelSet].find((r) => r === 'balanced') || [...riskLabelSet][0];
+    [...riskLabelSet][deriveUnitValue()] || [...riskLabelSet][0];
 
   return {
     rootDir,
@@ -278,8 +278,7 @@ export async function runPulseAutonomousLoop(
       'scripts/pulse/autonomy-loop.types.ts',
       'plannerMode',
     );
-    const agentsSdkLabel =
-      [...plannerModeSet].find((m) => m === 'agents_sdk') || [...plannerModeSet][0];
+    const agentsSdkLabel = [...plannerModeSet][0];
 
     const decision =
       plannerMode === agentsSdkLabel
