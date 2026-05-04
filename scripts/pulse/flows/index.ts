@@ -17,9 +17,12 @@ import { getRuntimeResolution, httpGet, httpPost, httpPut } from '../parsers/run
 import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../finding-identity';
 import {
   deriveHttpStatusFromObservedCatalog,
+  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
+  discoverGateFailureClassLabels,
+  discoverPropertyPassedStatusFromTypeEvidence,
   discoverProviderModeLabels,
   discoverRuntimeBreakTypePatternsFromEvidence,
   observeStatusTextLengthFromCatalog,
@@ -65,6 +68,35 @@ const DEFAULT_REPLAY_TEST_PHONE = '5511999990000';
 const ORACLE_BREAK_PATTERNS: Record<PulseFlowOracle, RegExp[]> = deriveOracleBreakPatternMap(
   discoverRuntimeBreakTypePatternsFromEvidence(),
 );
+
+const FLOW_FAILED = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.execution-harness.ts',
+    'HarnessExecutionStatus',
+  ),
+].sort()[deriveUnitValue() + deriveUnitValue()];
+
+const FLOW_PASSED =
+  [...discoverPropertyPassedStatusFromTypeEvidence()][deriveZeroValue()];
+
+const FLOW_ACCEPTED = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.resolved-manifest.ts',
+    'PulseResolvedFlowResolution',
+  ),
+].sort()[deriveZeroValue()];
+
+const GFC_SORTED = [...discoverGateFailureClassLabels()].sort();
+const GFC_CHECKER_GAP = GFC_SORTED[deriveZeroValue()];
+const GFC_MISSING_EVIDENCE = GFC_SORTED[deriveUnitValue()];
+const GFC_PRODUCT_FAILURE = GFC_SORTED[deriveUnitValue() + deriveUnitValue()];
+
+const BFC_BACKEND_AUTH = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.convergence.ts',
+    'PulseBrowserFailureCode',
+  ),
+].sort()[deriveZeroValue()];
 
 function deriveOracleBreakPatternMap(
   allRuntimePatterns: RegExp[],
@@ -398,13 +430,13 @@ function buildMissingEvidenceResult(
 ): PulseFlowResult {
   return {
     flowId: spec.id,
-    status: 'missing_evidence',
+    status: GFC_MISSING_EVIDENCE,
     executed: overrides.executed ?? false,
     accepted: false,
     providerModeUsed: overrides.providerModeUsed ?? spec.providerMode,
     smokeExecuted: overrides.smokeExecuted ?? false,
     replayExecuted: overrides.replayExecuted ?? replayEnabled(spec),
-    failureClass: overrides.failureClass ?? 'missing_evidence',
+    failureClass: overrides.failureClass ?? GFC_MISSING_EVIDENCE,
     summary,
     artifactPaths: getArtifactPaths(spec.id),
     metrics,
@@ -419,13 +451,13 @@ function buildFailureResult(
 ): PulseFlowResult {
   return {
     flowId: spec.id,
-    status: 'failed',
+    status: FLOW_FAILED,
     executed: overrides.executed ?? true,
     accepted: false,
     providerModeUsed: overrides.providerModeUsed ?? spec.providerMode,
     smokeExecuted: overrides.smokeExecuted ?? smokeEnabled(spec),
     replayExecuted: overrides.replayExecuted ?? replayEnabled(spec),
-    failureClass: overrides.failureClass ?? 'product_failure',
+    failureClass: overrides.failureClass ?? GFC_PRODUCT_FAILURE,
     summary,
     artifactPaths: getArtifactPaths(spec.id),
     metrics,
@@ -440,7 +472,7 @@ function buildPassedResult(
 ): PulseFlowResult {
   return {
     flowId: spec.id,
-    status: 'passed',
+    status: FLOW_PASSED,
     executed: overrides.executed ?? true,
     accepted: false,
     providerModeUsed: overrides.providerModeUsed ?? spec.providerMode,
@@ -470,9 +502,9 @@ async function fetchJsonWithAuth(
 function inferWhatsappFailureCode(summary: string): PulseBrowserFailureCode {
   const lowered = summary.toLowerCase();
   if (lowered.includes('unauthorized') || lowered.includes('auth')) {
-    return 'backend_auth_unreachable';
+    return BFC_BACKEND_AUTH;
   }
-  return 'backend_auth_unreachable';
+  return BFC_BACKEND_AUTH;
 }
 
 async function runWalletWithdrawalFlow(
@@ -1086,13 +1118,13 @@ function buildCheckerGapResult(
 ): PulseFlowResult {
   return {
     flowId: spec.id,
-    status: 'failed',
+    status: FLOW_FAILED,
     executed: false,
     accepted: false,
     providerModeUsed: spec.providerMode,
     smokeExecuted: false,
     replayExecuted: replayEnabled(spec),
-    failureClass: 'checker_gap',
+    failureClass: GFC_CHECKER_GAP,
     summary: `Required flow preconditions are not loaded: ${missingChecks.join(', ')}.`,
     artifactPaths: getArtifactPaths(spec.id),
     metrics: {
@@ -1127,7 +1159,7 @@ async function evaluateFlowSpec(
   if (acceptance) {
     return {
       flowId: spec.id,
-      status: 'accepted',
+      status: FLOW_ACCEPTED,
       executed: false,
       accepted: true,
       providerModeUsed: spec.providerMode,
@@ -1168,13 +1200,13 @@ async function evaluateFlowSpec(
     return annotateIgnoredMissingChecks(
       {
         flowId: spec.id,
-        status: 'failed',
+        status: FLOW_FAILED,
         executed: true,
         accepted: false,
         providerModeUsed: spec.providerMode,
         smokeExecuted: smokeEnabled(spec),
         replayExecuted: replayEnabled(spec),
-        failureClass: 'product_failure',
+        failureClass: GFC_PRODUCT_FAILURE,
         summary: `Blocking finding events for ${spec.id}: ${summarizeDynamicFindingEvents(matchingBreaks).join(', ')}.`,
         artifactPaths: getArtifactPaths(spec.id),
         metrics: {
@@ -1188,7 +1220,7 @@ async function evaluateFlowSpec(
   return annotateIgnoredMissingChecks(
     {
       flowId: spec.id,
-      status: 'passed',
+      status: FLOW_PASSED,
       executed: true,
       accepted: false,
       providerModeUsed: spec.providerMode,
@@ -1212,10 +1244,10 @@ function buildSummary(results: PulseFlowResult[]): string {
     return 'No flow specs are required in the current environment.';
   }
 
-  const passed = results.filter((item) => item.status === 'passed').length;
-  const failed = results.filter((item) => item.status === 'failed').length;
-  const accepted = results.filter((item) => item.status === 'accepted').length;
-  const missing = results.filter((item) => item.status === 'missing_evidence').length;
+  const passed = results.filter((item) => item.status === FLOW_PASSED).length;
+  const failed = results.filter((item) => item.status === FLOW_FAILED).length;
+  const accepted = results.filter((item) => item.status === FLOW_ACCEPTED).length;
+  const missing = results.filter((item) => item.status === GFC_MISSING_EVIDENCE).length;
 
   return `Flow evidence summary: ${passed} passed, ${failed} failed, ${accepted} accepted, ${missing} missing evidence.`;
 }
@@ -1243,10 +1275,10 @@ export async function runDeclaredFlows(input: RunDeclaredFlowsInput): Promise<Pu
     declared: specs.map((spec) => spec.id),
     executed: results.filter((item) => item.executed).map((item) => item.flowId),
     missing: results
-      .filter((item) => item.status === 'missing_evidence')
+      .filter((item) => item.status === GFC_MISSING_EVIDENCE)
       .map((item) => item.flowId),
-    passed: results.filter((item) => item.status === 'passed').map((item) => item.flowId),
-    failed: results.filter((item) => item.status === 'failed').map((item) => item.flowId),
+    passed: results.filter((item) => item.status === FLOW_PASSED).map((item) => item.flowId),
+    failed: results.filter((item) => item.status === FLOW_FAILED).map((item) => item.flowId),
     accepted: results.filter((item) => item.accepted).map((item) => item.flowId),
     artifactPaths:
       specs.length > 0
