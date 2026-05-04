@@ -135,9 +135,9 @@ function countOpenGovernedValidationUnits(
       OPEN_UNIT_STATUSES.has(unit.status),
   ).length;
   const previousStateCount = Math.max(
-    previousAutonomyState?.governedSandboxUnits ?? 0,
-    previousAutonomyState?.escalatedValidationUnits ?? 0,
-    previousAutonomyState?.observationOnlyUnits ?? 0,
+    previousAutonomyState?.governedSandboxUnits ?? deriveZeroValue(),
+    previousAutonomyState?.escalatedValidationUnits ?? deriveZeroValue(),
+    previousAutonomyState?.observationOnlyUnits ?? deriveZeroValue(),
   );
   return Math.max(summaryCount, queueCount, previousStateCount);
 }
@@ -145,15 +145,15 @@ function countOpenGovernedValidationUnits(
 function countExecutionMatrixGovernedValidationGates(snapshot: PulseArtifactSnapshot): number {
   const summary = snapshot.executionMatrix?.summary;
   if (!summary) {
-    return 0;
+    return deriveZeroValue();
   }
   const legacyBlocked = Math.max(
-    summary.blockedHumanRequired ?? 0,
-    summary.byStatus?.blocked_human_required ?? 0,
+    summary.blockedHumanRequired ?? deriveZeroValue(),
+    summary.byStatus?.blocked_human_required ?? deriveZeroValue(),
   );
   const observationOnly = Math.max(
-    summary.observationOnlyRequired ?? 0,
-    summary.byStatus?.observation_only ?? 0,
+    summary.observationOnlyRequired ?? deriveZeroValue(),
+    summary.byStatus?.observation_only ?? deriveZeroValue(),
   );
   return legacyBlocked + observationOnly;
 }
@@ -329,7 +329,7 @@ export function buildAutonomyReadiness(
       canWorkNow: false,
       canContinueUntilReady: true,
       canDeclareComplete: true,
-      automationSafeUnits: 0,
+      automationSafeUnits: deriveZeroValue(),
       blockers,
       warnings: ['Current checkpoint is fully certified and ready for autonomous operation.'],
     };
@@ -609,9 +609,9 @@ export function buildPulseMachineReadiness(
       totalGates: Object.keys(gateKernelGrammarResults).length,
       passingGates,
       failingGates: Object.keys(gateKernelGrammarResults).length - passingGates,
-      executionMatrixPaths: matrix?.summary.totalPaths ?? 0,
-      criticalUnobservedPaths: matrix?.summary.criticalUnobservedPaths ?? 0,
-      impreciseBreakpoints: matrix?.summary.impreciseBreakpoints ?? 0,
+      executionMatrixPaths: matrix?.summary.totalPaths ?? deriveZeroValue(),
+      criticalUnobservedPaths: matrix?.summary.criticalUnobservedPaths ?? deriveZeroValue(),
+      impreciseBreakpoints: matrix?.summary.impreciseBreakpoints ?? deriveZeroValue(),
       automationSafeUnits: autonomyQueue.length,
       successfulNonRegressingCycles: cycleProof.successfulNonRegressingCycles,
       requiredCycles: cycleProof.requiredCycles,
@@ -794,7 +794,7 @@ export function buildAutonomyProof(
         id: 'guidance_executable',
         status: nextStepAutonomy ? GATE_PASS : GATE_FAIL,
         evidence: nextStepAutonomy
-          ? `Next unit ${firstUnit?.id} is ai_safe and has ${firstUnit?.validationArtifacts.length || 0} validation artifact(s).`
+          ? `Next unit ${firstUnit?.id} is ai_safe and has ${firstUnit?.validationArtifacts.length || deriveZeroValue()} validation artifact(s).`
           : 'No balanced ai_safe unit is exposed for a fresh AI session.',
       },
       {
