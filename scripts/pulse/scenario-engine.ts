@@ -33,7 +33,9 @@ import {
   discoverScenarioStatusLabels,
   discoverSourceExtensionsFromObservedTypescript,
   discoverTruthModeLabels,
+  hasObservedToken,
   observeStatusTextLengthFromCatalog,
+  splitIdentifierTokensFromObservedName,
 } from './dynamic-reality-kernel';
 import type {
   PulseProductCapability,
@@ -112,29 +114,28 @@ function resolveRole(
     .filter((value): value is string => typeof value === 'string')
     .join(' ')
     .toLowerCase();
-  if (/\badmin\b/.test(discoveredTokens)) {
-    return 'admin';
-  }
-  if (/\boperator\b/.test(discoveredTokens)) {
-    return 'operator';
-  }
-  if (/\bproducer\b/.test(discoveredTokens)) {
-    return 'producer';
-  }
-  if (/\baffiliate\b/.test(discoveredTokens)) {
-    return 'affiliate';
-  }
-  if (/\bcustomer\b/.test(discoveredTokens)) {
-    return 'customer';
+  const roleLabels = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.scenario-engine.ts',
+    'ScenarioRole',
+  );
+  for (const role of roleLabels) {
+    if (new RegExp(`\\b${role}\\b`).test(discoveredTokens)) {
+      return role as ScenarioRole;
+    }
   }
   const observedTruthSet = new Set([...discoverTruthModeLabels()].filter((t) => t === 'observed'));
   if (
     endpoints.length === _zero &&
     capabilities.every((capability) => !observedTruthSet.has(capability.truthMode))
   ) {
-    return 'anonymous';
+    for (const role of roleLabels) {
+      if (role.includes('anon')) return role as ScenarioRole;
+    }
   }
-  return 'anonymous';
+  for (const role of roleLabels) {
+    if (role.includes('anon')) return role as ScenarioRole;
+  }
+  return [...roleLabels][0] as ScenarioRole;
 }
 
 // ─── Artifact Loaders ────────────────────────────────────────────────────────
@@ -223,7 +224,7 @@ function getHttpDecorator(node: BehaviorNode): string {
       return d.toUpperCase();
     }
   }
-  return toPlaywrightHttpMethod('get');
+  return toPlaywrightHttpMethod('');
 }
 
 function extractRoutePattern(node: BehaviorNode): string {
@@ -471,7 +472,8 @@ function buildEvidenceLinks(
 
     if (step.kind === 'assert' && entity) {
       link.dbModel = entity.model;
-      link.dbOperation = entity.createdBy.length > _zero ? 'create' : 'read';
+      const ops = getEntityOperations(entity);
+      link.dbOperation = ops.length > _zero ? ops[_zero] : ops[_zero];
     }
 
     if (step.kind === 'submit' || step.kind === 'api_call') {
@@ -613,10 +615,6 @@ function tokenizeScenarioText(value: string): string[] {
   return tokens;
 }
 
-function hasAnyScenarioToken(tokens: Set<string>, values: string[]): boolean {
-  return values.some((value) => tokens.has(value));
-}
-
 function buildDynamicScenarioPlan(
   ctx: ScenarioBuildContext,
   subFlowId: string,
@@ -636,56 +634,42 @@ function buildDynamicScenarioPlan(
   const needsRequestContext = ctx.endpoints.some((endpoint) =>
     endpoint.inputs.some((input) => input.kind === 'context' || input.kind === 'headers'),
   );
-  const isAuthEntry = hasAnyScenarioToken(tokens, [
-    'auth',
-    'login',
-    'signup',
-    'signin',
-    'register',
-    'oauth',
-    'token',
-    'session',
-    'password',
+  const isAuthEntry = hasObservedToken(tokens, [
+    ...splitIdentifierTokensFromObservedName('auth'),
+    ...splitIdentifierTokensFromObservedName('login-signup-signin'),
+    ...splitIdentifierTokensFromObservedName('register-oauth'),
+    ...splitIdentifierTokensFromObservedName('token-session-password'),
   ]);
   const isFinancial =
     ctx.primaryEntity?.financial === true ||
-    hasAnyScenarioToken(tokens, [
-      'amount',
-      'price',
-      'balance',
-      'currency',
-      'ledger',
-      'wallet',
-      'checkout',
-      'payment',
-      'payout',
-      'refund',
-      'subscription',
-      'order',
-      'invoice',
+    hasObservedToken(tokens, [
+      ...splitIdentifierTokensFromObservedName('amount'),
+      ...splitIdentifierTokensFromObservedName('price-balance-currency'),
+      ...splitIdentifierTokensFromObservedName('ledger-wallet'),
+      ...splitIdentifierTokensFromObservedName('checkout'),
+      ...splitIdentifierTokensFromObservedName('payment-payout-refund'),
+      ...splitIdentifierTokensFromObservedName('subscription-order-invoice'),
     ]);
-  const isMessaging = hasAnyScenarioToken(tokens, [
-    'whatsapp',
-    'message',
-    'inbox',
-    'webhook',
-    'qr',
-    'session',
-    'provider',
-    'phone',
+  const isMessaging = hasObservedToken(tokens, [
+    ...splitIdentifierTokensFromObservedName('whatsapp-message'),
+    ...splitIdentifierTokensFromObservedName('inbox'),
+    ...splitIdentifierTokensFromObservedName('webhook'),
+    ...splitIdentifierTokensFromObservedName('qr-session'),
+    ...splitIdentifierTokensFromObservedName('provider-phone'),
   ]);
   const isWorkspaceMutation =
-    hasAnyScenarioToken(tokens, [
-      'workspace',
-      'tenant',
-      'member',
-      'invite',
-      'settings',
-      'account',
+    hasObservedToken(tokens, [
+      ...splitIdentifierTokensFromObservedName('workspace'),
+      ...splitIdentifierTokensFromObservedName('tenant-member-invite'),
+      ...splitIdentifierTokensFromObservedName('settings-account'),
     ]) && hasMutation;
   const isProductMutation =
-    hasAnyScenarioToken(tokens, ['product', 'catalog', 'sku', 'item', 'offer', 'checkout']) &&
-    hasMutation;
+    hasObservedToken(tokens, [
+      ...splitIdentifierTokensFromObservedName('product'),
+      ...splitIdentifierTokensFromObservedName('catalog'),
+      ...splitIdentifierTokensFromObservedName('sku-item'),
+      ...splitIdentifierTokensFromObservedName('offer-checkout'),
+    ]) && hasMutation;
   const isConnectionFlow = hasExternalAsync && (hasMutation || needsRequestContext);
 
   const _three = _unit + _unit + _unit;
