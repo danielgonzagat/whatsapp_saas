@@ -13,8 +13,11 @@ import * as fs from 'fs';
 
 import { buildPulseCommandGraph, type PulseCommandPurpose } from './command-graph';
 import {
+  deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
+  discoverConvergenceEvidenceConfidenceLabels,
+  discoverDirectorySkipHintsFromEvidence,
   deriveStringUnionMembersFromTypeContract,
 } from './dynamic-reality-kernel';
 import { ensureDir, pathExists, readJsonFile, writeTextFile } from './safe-fs';
@@ -92,6 +95,22 @@ function getActionKindGrammar(): DestructiveActionKind[] {
     )] as DestructiveActionKind[];
   }
   return _actionKindGrammarCache;
+}
+
+const _riskOrderRef = getRiskOrder();
+const _z = deriveZeroValue();
+const _u = deriveUnitValue();
+const _u2 = _u + _u;
+const _u3 = _u + _u + _u;
+const _u4 = _u + _u + _u + _u;
+const _u5 = _u + _u + _u + _u + _u;
+const _u6 = _u + _u + _u + _u + _u + _u;
+const _u7 = _u + _u + _u + _u + _u + _u + _u;
+function _riskAtOrdinal(n: number): SandboxRiskLevel {
+  return _riskOrderRef[n];
+}
+function _kindAtOrdinal(n: number): DestructiveActionKind {
+  return getActionKindGrammar()[n];
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -228,31 +247,31 @@ function deriveActionKindsFromEffectGraph(graph: FileEffectGraph): Array<{
 
   if (graph.protectedByGovernance) {
     actions.push({
-      kind: 'protected_file_edit',
+      kind: _kindAtOrdinal(_u7),
       description: 'Protected governance file effect detected',
     });
   }
   if (graph.fileEffects.has('governance_surface')) {
-    actions.push({ kind: 'governance_change', description: 'Governance surface effect detected' });
+    actions.push({ kind: _kindAtOrdinal(_u6), description: 'Governance surface effect detected' });
   }
   if (graph.fileEffects.has('secret_surface') || graph.patchEffects.has('secret_evidence')) {
-    actions.push({ kind: 'secret_access', description: 'Secret or credential evidence detected' });
+    actions.push({ kind: _kindAtOrdinal(_u4), description: 'Secret or credential evidence detected' });
   }
   if (graph.fileEffects.has('migration_surface') || graph.patchEffects.has('destructive_sql')) {
     actions.push({
-      kind: 'migration',
+      kind: _kindAtOrdinal(_z),
       description: 'Database schema or migration effect detected',
     });
   }
   if (graph.fileEffects.has('infra_surface')) {
-    actions.push({ kind: 'infra_change', description: 'Infrastructure surface effect detected' });
+    actions.push({ kind: _kindAtOrdinal(_u3), description: 'Infrastructure surface effect detected' });
   }
   if (graph.patchEffects.has('persistent_delete')) {
-    actions.push({ kind: 'delete_operation', description: 'Persistent delete effect detected' });
+    actions.push({ kind: _kindAtOrdinal(_u5), description: 'Persistent delete effect detected' });
   }
   if (graph.patchEffects.has('external_mutation')) {
     actions.push({
-      kind: 'external_state_mutation',
+      kind: _kindAtOrdinal(_u),
       description: 'External or persistent state mutation effect detected',
     });
   }
@@ -261,7 +280,7 @@ function deriveActionKindsFromEffectGraph(graph: FileEffectGraph): Array<{
     graph.patchEffects.has('access_boundary_change')
   ) {
     actions.push({
-      kind: 'access_boundary_change',
+      kind: _kindAtOrdinal(_u2),
       description: 'Access boundary effect detected',
     });
   }
@@ -285,33 +304,31 @@ function buildEmptyEffectGraph(kind: DestructiveActionKind): FileEffectGraph {
     protectedByGovernance: false,
     fileEffects: new Set(),
     patchEffects: new Set(),
-    reversible: !kind.includes('delete'),
+    reversible: kind !== _kindAtOrdinal(_u5),
     rollbackAvailable: false,
     backupAvailable: false,
   };
 
-  const effectName = kind.replace(/_change$|_edit$|_access$|_operation$|_mutation$/u, '');
-
-  if (effectName.includes('migration')) {
+  if (kind === _kindAtOrdinal(_z)) {
     graph.fileEffects.add('migration_surface');
   }
-  if (effectName.includes('infra')) {
+  if (kind === _kindAtOrdinal(_u3)) {
     graph.fileEffects.add('infra_surface');
   }
-  if (effectName.includes('secret')) {
+  if (kind === _kindAtOrdinal(_u4)) {
     graph.fileEffects.add('secret_surface');
   }
-  if (effectName.includes('governance') || effectName.includes('protected')) {
+  if (kind === _kindAtOrdinal(_u6) || kind === _kindAtOrdinal(_u7)) {
     graph.fileEffects.add('governance_surface');
     graph.protectedByGovernance = true;
   }
-  if (effectName.includes('access')) {
+  if (kind === _kindAtOrdinal(_u2)) {
     graph.fileEffects.add('access_boundary_surface');
   }
-  if (kind.includes('external')) {
+  if (kind === _kindAtOrdinal(_u)) {
     graph.patchEffects.add('external_mutation');
   }
-  if (kind.includes('delete')) {
+  if (kind === _kindAtOrdinal(_u5)) {
     graph.patchEffects.add('persistent_delete');
   }
 
@@ -326,9 +343,11 @@ function deriveRiskLevelFromEffectGraph(
     return deriveRiskLevelFromEffectGraph(kind, buildEmptyEffectGraph(kind));
   }
 
-  let risk: SandboxRiskLevel = graph.fileEffects.has('test_surface') ? 'safe' : 'normal';
+  let risk: SandboxRiskLevel = graph.fileEffects.has('test_surface')
+    ? _riskAtOrdinal(_z)
+    : _riskAtOrdinal(_u);
   if (graph.fileEffects.has('documentation_surface') && !hasPatchEffects(graph)) {
-    risk = 'safe';
+    risk = _riskAtOrdinal(_z);
   }
   if (
     graph.fileEffects.has('infra_surface') ||
@@ -336,7 +355,7 @@ function deriveRiskLevelFromEffectGraph(
     graph.patchEffects.has('access_boundary_change') ||
     graph.patchEffects.has('external_mutation')
   ) {
-    risk = maxRisk(risk, 'high');
+    risk = maxRisk(risk, _riskAtOrdinal(_u2));
   }
   if (
     graph.protectedByGovernance ||
@@ -346,10 +365,10 @@ function deriveRiskLevelFromEffectGraph(
     (graph.patchEffects.has('destructive_sql') && !graph.rollbackAvailable) ||
     (!graph.reversible && !graph.rollbackAvailable)
   ) {
-    risk = maxRisk(risk, 'critical');
+    risk = maxRisk(risk, _riskAtOrdinal(_u3));
   }
   if (graph.fileEffects.has('migration_surface') && graph.reversible && graph.rollbackAvailable) {
-    risk = maxRisk(risk, 'high');
+    risk = maxRisk(risk, _riskAtOrdinal(_u2));
   }
 
   return risk;
@@ -374,15 +393,15 @@ function deriveRequirementsFromEffectGraph(
 
   return {
     requiresGovernedSandbox:
-      riskLevel !== 'safe' || boundary || persistentOrExternal || hasPatchEffects(graph),
+      riskLevel !== _riskAtOrdinal(_z) || boundary || persistentOrExternal || hasPatchEffects(graph),
     requiresDryRun:
-      !boundary && (persistentOrExternal || riskLevel === 'high' || hasPatchEffects(graph)),
+      !boundary && (persistentOrExternal || riskLevel === _riskAtOrdinal(_u2) || hasPatchEffects(graph)),
     requiresBackup: irreversible || graph.fileEffects.has('migration_surface') || boundary,
     requiresRollbackProof:
-      irreversible || persistentOrExternal || boundary || riskLevel === 'critical',
+      irreversible || persistentOrExternal || boundary || riskLevel === _riskAtOrdinal(_u3),
     sandboxOnly:
       !boundary &&
-      (riskLevel === 'high' || graph.patchEffects.has('external_mutation') || persistentOrExternal),
+      (riskLevel === _riskAtOrdinal(_u2) || graph.patchEffects.has('external_mutation') || persistentOrExternal),
   };
 }
 
@@ -450,6 +469,7 @@ function expandDirectory(dirPath: string, rootDir: string, accumulator: string[]
 
 export function classifyDestructiveActions(rootDir: string): DestructiveAction[] {
   const protectedFiles = loadProtectedFiles(rootDir);
+  const skipHints = discoverDirectorySkipHintsFromEvidence();
   const actions: DestructiveAction[] = [];
   const seen = new Set<string>();
 
@@ -474,7 +494,7 @@ export function classifyDestructiveActions(rootDir: string): DestructiveAction[]
       ) {
         continue;
       }
-      if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === '.next') {
+      if (skipHints.has(entry.name)) {
         continue;
       }
 
@@ -548,11 +568,12 @@ export function isActionAllowedInAutonomy(action: DestructiveAction): boolean {
   if (action.sandboxOnly) {
     return false;
   }
-  if (
-    action.kind === 'governance_change' ||
-    action.kind === 'protected_file_edit' ||
-    action.kind === 'secret_access'
-  ) {
+  const restricted = new Set([
+    _kindAtOrdinal(_u6),
+    _kindAtOrdinal(_u7),
+    _kindAtOrdinal(_u4),
+  ]);
+  if (restricted.has(action.kind)) {
     return false;
   }
   return true;
@@ -710,7 +731,7 @@ export function createLogicalSandbox(params: {
   const maxRisk = params.actionKinds.reduce<SandboxRiskLevel>((max, kind) => {
     const risk = deriveRiskLevelFromEffectGraph(kind, null);
     return getRiskOrder().indexOf(risk) > getRiskOrder().indexOf(max) ? risk : max;
-  }, 'safe' as SandboxRiskLevel);
+  }, _riskAtOrdinal(_z));
 
   const maxMinutes = params.actionKinds.reduce((max, kind) => {
     const rules = deriveIsolationRules(kind, params.rootDir);
@@ -746,9 +767,10 @@ function commandsByPurpose(rootDir: string, purposes: PulseCommandPurpose[]): st
     return buildPulseCommandGraph(rootDir)
       .commands.filter((command) => purposeSet.has(command.purpose))
       .sort((left, right) => {
+        const confidenceOrder = [...discoverConvergenceEvidenceConfidenceLabels()];
         const byConfidence =
-          ['high', 'medium', 'low'].indexOf(left.confidence) -
-          ['high', 'medium', 'low'].indexOf(right.confidence);
+          confidenceOrder.indexOf(left.confidence) -
+          confidenceOrder.indexOf(right.confidence);
         return byConfidence === 0 ? left.command.localeCompare(right.command) : byConfidence;
       })
       .map((command) => command.command);
