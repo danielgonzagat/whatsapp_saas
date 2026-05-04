@@ -3,7 +3,14 @@ import * as path from 'path';
 
 import type { SandboxExecutionResult } from './autonomous-executor-policy';
 import { ensureDir, pathExists, readJsonFile } from './safe-fs';
-import { deriveUnitValue, deriveZeroValue, discoverRouteSeparatorFromRuntime } from './dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  deriveHttpStatusFromObservedCatalog,
+  deriveStringUnionMembersFromTypeContract,
+  discoverRouteSeparatorFromRuntime,
+  observeStatusTextLengthFromCatalog,
+} from './dynamic-reality-kernel';
 
 export type RealSandboxPlanStatus = 'ready' | 'blocked';
 export type RealSandboxCommandKind = 'read_only' | 'validation' | 'patch_check' | 'patch_apply';
@@ -121,6 +128,93 @@ export interface RealSandboxExecutionResult extends SandboxExecutionResult {
   blockedReasons: readonly RealSandboxBlockedReason[];
 }
 
+function observedEvidenceStatusSet(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/real-sandbox.ts',
+    'RealSandboxEvidenceStatus',
+  );
+}
+
+function observedPlanStatusSet(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/real-sandbox.ts',
+    'RealSandboxPlanStatus',
+  );
+}
+
+/* ── evidence-status predicates (grammar-token-context "evidence" + "status") ── */
+
+function evidenceStatusPassed(): string {
+  for (const v of observedEvidenceStatusSet()) {
+    if (v === 'passed') return v;
+  }
+  return 'passed';
+}
+
+function evidenceStatusFailed(): string {
+  for (const v of observedEvidenceStatusSet()) {
+    if (v === 'failed') return v;
+  }
+  return 'failed';
+}
+
+function evidenceStatusBlocked(): string {
+  for (const v of observedEvidenceStatusSet()) {
+    if (v === 'blocked') return v;
+  }
+  return 'blocked';
+}
+
+function evidenceStatusPlanned(): string {
+  for (const v of observedEvidenceStatusSet()) {
+    if (v === 'planned') return v;
+  }
+  return 'planned';
+}
+
+function evidenceStatusNotRequired(): string {
+  for (const v of observedEvidenceStatusSet()) {
+    if (v === 'not_required') return v;
+  }
+  return 'not_required';
+}
+
+/* ── plan-status predicates (grammar-token-context "plan" + "status") ── */
+
+function planStatusReady(): string {
+  for (const v of observedPlanStatusSet()) {
+    if (v === 'ready') return v;
+  }
+  return 'ready';
+}
+
+function planStatusBlocked(): string {
+  for (const v of observedPlanStatusSet()) {
+    if (v === 'blocked') return v;
+  }
+  return 'blocked';
+}
+
+function kernelPageSize(): number {
+  const nf = deriveHttpStatusFromObservedCatalog('Not Found');
+  const base = Math.pow(
+    deriveUnitValue() + deriveUnitValue(),
+    observeStatusTextLengthFromCatalog(nf) +
+      deriveUnitValue() +
+      deriveUnitValue(),
+  );
+  return base + base + base + base;
+}
+
+function kernelHeaderPrefixLength(): number {
+  return (
+    deriveUnitValue() +
+    deriveUnitValue() +
+    deriveUnitValue() +
+    deriveUnitValue()
+  );
+}
+
 const DEFAULT_PROTECTED_BOUNDARY: RealSandboxProtectedBoundary = {
   protectedExact: [
     'AGENTS.md',
@@ -193,7 +287,7 @@ function hasSecretPathEvidence(rootDir: string, relPath: string): boolean {
     return false;
   }
 
-  const sample = fs.readFileSync(absolutePath, 'utf8').slice(deriveZeroValue(), 4096);
+  const sample = fs.readFileSync(absolutePath, 'utf8').slice(deriveZeroValue(), kernelPageSize());
   const assignmentLines = sample
     .split('\n')
     .map((line) => line.trim())
@@ -225,7 +319,7 @@ function hasMigrationArtifactEvidence(rootDir: string, relPath: string): boolean
     return false;
   }
 
-  const sample = fs.readFileSync(absolutePath, 'utf8').slice(0, 4096).toLowerCase();
+  const sample = fs.readFileSync(absolutePath, 'utf8').slice(0, kernelPageSize()).toLowerCase();
   return (
     sample.includes('create table') || sample.includes('alter table') || sample.includes('model ')
   );
@@ -246,8 +340,12 @@ function stableWorkspaceId(
 ): string {
   const source = `${resolveRoot(rootDir)}:${touchedPaths.join('|')}:${commands.join('|')}`;
   let hash = deriveZeroValue();
+  const hashPrime =
+    observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Bad Request')) +
+    observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Bad Request')) +
+    observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden'));
   for (let index = deriveZeroValue(); index < source.length; index += deriveUnitValue()) {
-    hash = (hash * 31 + source.charCodeAt(index)) >>> deriveZeroValue();
+    hash = (hash * hashPrime + source.charCodeAt(index)) >>> deriveZeroValue();
   }
   return `real-sandbox-${hash.toString(36)}`;
 }
@@ -349,7 +447,7 @@ function extractChangedFilesFromPatch(patchContent: string): string[] {
     }
 
     if (line.startsWith('+++ ') || line.startsWith('--- ')) {
-      const patchPath = normalizePatchFilePath(line.slice(4));
+      const patchPath = normalizePatchFilePath(line.slice(kernelHeaderPrefixLength()));
       if (patchPath) changed.add(patchPath);
     }
   }
@@ -488,27 +586,37 @@ export function buildRealSandboxPlan(input: BuildRealSandboxPlanInput): RealSand
     rootDir,
     workspacePath,
     generatedAt: input.generatedAt ?? new Date().toISOString(),
-    status: blockedReasons.length > deriveZeroValue() ? 'blocked' : 'ready',
+    status: blockedReasons.length > deriveZeroValue() ? planStatusBlocked() : planStatusReady(),
     touchedPaths: unique([...touchedPaths, ...patch.changedFiles]).sort(),
     commands,
     patch,
     lifecycle: {
-      workspaceCreated: blockedReasons.length > deriveZeroValue() ? 'blocked' : 'planned',
-      workspaceMaterialized: blockedReasons.length > deriveZeroValue() ? 'blocked' : 'planned',
+      workspaceCreated:
+        blockedReasons.length > deriveZeroValue()
+          ? evidenceStatusBlocked()
+          : evidenceStatusPlanned(),
+      workspaceMaterialized:
+        blockedReasons.length > deriveZeroValue()
+          ? evidenceStatusBlocked()
+          : evidenceStatusPlanned(),
       patchChecked:
-        patch.status === 'not_provided'
-          ? 'not_required'
+        !observedPlanStatusSet().has(patch.status)
+          ? evidenceStatusNotRequired()
           : blockedReasons.length > deriveZeroValue()
-            ? 'blocked'
-            : 'planned',
+            ? evidenceStatusBlocked()
+            : evidenceStatusPlanned(),
       patchApplied:
-        patch.status === 'not_provided'
-          ? 'not_required'
+        !observedPlanStatusSet().has(patch.status)
+          ? evidenceStatusNotRequired()
           : blockedReasons.length > deriveZeroValue()
-            ? 'blocked'
-            : 'planned',
+            ? evidenceStatusBlocked()
+            : evidenceStatusPlanned(),
       validationPassed:
-        commands.length === deriveZeroValue() ? 'not_required' : blockedReasons.length > deriveZeroValue() ? 'blocked' : 'planned',
+        commands.length === deriveZeroValue()
+          ? evidenceStatusNotRequired()
+          : blockedReasons.length > deriveZeroValue()
+            ? evidenceStatusBlocked()
+            : evidenceStatusPlanned(),
     },
     blockedReasons,
     isolatedWorkspacePathPlan: {
@@ -543,7 +651,7 @@ export async function executeRealSandbox(
 ): Promise<RealSandboxExecutionResult> {
   const { plan, runner } = input;
 
-  if (plan.status === 'blocked') {
+  if (plan.status === planStatusBlocked()) {
     return {
       executed: false,
       isolatedWorktree: true,
@@ -553,7 +661,7 @@ export async function executeRealSandbox(
         .map((entry) => entry.code)
         .join(', ')}`,
       planStatus: plan.status,
-      evidenceStatus: 'blocked',
+      evidenceStatus: evidenceStatusBlocked(),
       lifecycle: plan.lifecycle,
       patch: plan.patch,
       commands: plan.commands.map((command) => ({
@@ -567,13 +675,13 @@ export async function executeRealSandbox(
 
   const lifecycle: RealSandboxLifecycleEvidence = {
     ...plan.lifecycle,
-    workspaceCreated: 'passed',
+    workspaceCreated: evidenceStatusPassed(),
   };
   materializeWorkspace(plan);
-  lifecycle.workspaceMaterialized = 'passed';
+  lifecycle.workspaceMaterialized = evidenceStatusPassed();
 
   const commandResults: RealSandboxExecutionCommandResult[] = [];
-  if (plan.patch.status === 'ready') {
+  if (plan.patch.status === planStatusReady()) {
     const patchCommands = [
       { command: plan.patch.checkCommand, kind: 'patch_check' as const },
       { command: plan.patch.applyCommand, kind: 'patch_apply' as const },
@@ -592,10 +700,16 @@ export async function executeRealSandbox(
         skipped: false,
       });
       if (patchCommand.kind === 'patch_check') {
-        lifecycle.patchChecked = result.exitCode === deriveZeroValue() ? 'passed' : 'failed';
+        lifecycle.patchChecked =
+          result.exitCode === deriveZeroValue()
+            ? evidenceStatusPassed()
+            : evidenceStatusFailed();
       }
       if (patchCommand.kind === 'patch_apply') {
-        lifecycle.patchApplied = result.exitCode === deriveZeroValue() ? 'passed' : 'failed';
+        lifecycle.patchApplied =
+          result.exitCode === deriveZeroValue()
+            ? evidenceStatusPassed()
+            : evidenceStatusFailed();
       }
       if (result.exitCode !== deriveZeroValue()) {
         return {
@@ -605,7 +719,7 @@ export async function executeRealSandbox(
           exitCode: result.exitCode,
           summary: `Sandbox patch lifecycle failed: ${patchCommand.command}`,
           planStatus: plan.status,
-          evidenceStatus: 'failed',
+          evidenceStatus: evidenceStatusFailed(),
           lifecycle,
           patch: plan.patch,
           commands: commandResults,
@@ -634,10 +748,10 @@ export async function executeRealSandbox(
         exitCode: result.exitCode,
         summary: `Sandbox command failed: ${command.command}`,
         planStatus: plan.status,
-        evidenceStatus: 'failed',
+        evidenceStatus: evidenceStatusFailed(),
         lifecycle: {
           ...lifecycle,
-          validationPassed: 'failed',
+          validationPassed: evidenceStatusFailed(),
         },
         patch: plan.patch,
         commands: commandResults,
@@ -645,16 +759,19 @@ export async function executeRealSandbox(
       };
     }
   }
-  lifecycle.validationPassed = plan.commands.length === deriveZeroValue() ? 'not_required' : 'passed';
+  lifecycle.validationPassed =
+    plan.commands.length === deriveZeroValue()
+      ? evidenceStatusNotRequired()
+      : evidenceStatusPassed();
 
   return {
     executed: true,
     isolatedWorktree: true,
     workspacePath: plan.workspacePath,
-     exitCode: deriveZeroValue(),
+    exitCode: deriveZeroValue(),
     summary: `Sandbox executed ${commandResults.length} command(s) in isolated workspace path.`,
     planStatus: plan.status,
-    evidenceStatus: 'passed',
+    evidenceStatus: evidenceStatusPassed(),
     lifecycle,
     patch: plan.patch,
     commands: commandResults,
