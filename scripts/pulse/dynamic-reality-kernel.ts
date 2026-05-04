@@ -77,7 +77,12 @@ export function discoverPropertyUnexecutedStatusFromExecutionEvidence(): Set<str
   );
 }
 export function discoverBoundaryStrategiesFromTypeEvidence(): Set<string> {
-  return new Set<string>(['boundary', 'both']);
+  const all = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/dynamic-reality-kernel.ts',
+    'DerivedFuzzStrategy',
+  );
+  const boundaryNames = new Set(['boundary', 'both']);
+  return new Set([...all].filter((s) => boundaryNames.has(s)));
 }
 
 // ── State effect discovery ─────────────────────────────────────────────────
@@ -170,63 +175,60 @@ export type DerivedPropertyKind =
 export function derivePropertyKindsFromObservedCategory(
   category: DerivedCandidateCategory,
 ): DerivedPropertyKind[] {
-  let VALIDATION_KINDS: DerivedPropertyKind[] = [
-    'required_field',
-    'type_constraint',
-    'string_id',
-    'length_boundary',
-    'injection',
-  ];
-  let PARSING_KINDS: DerivedPropertyKind[] = [
-    'type_constraint',
-    'required_field',
-    'string_id',
-    'injection',
-  ];
-  let FORMATTING_KINDS: DerivedPropertyKind[] = [
-    'idempotency',
-    'type_constraint',
-    'required_field',
-  ];
-  let NUMERIC_KINDS: DerivedPropertyKind[] = ['non_negative', 'type_constraint', 'required_field'];
-  let TRANSFORM_KINDS: DerivedPropertyKind[] = ['idempotency', 'type_constraint', 'required_field'];
-  let MONEY_KINDS: DerivedPropertyKind[] = [
-    'non_negative',
-    'money_precision',
-    'type_constraint',
-    'required_field',
-  ];
-  let STRING_KINDS: DerivedPropertyKind[] = [
-    'idempotency',
-    'string_id',
-    'length_boundary',
-    'injection',
-  ];
-  let ENUM_KINDS: DerivedPropertyKind[] = ['enum_value', 'type_constraint', 'required_field'];
-  let DEFAULT_KINDS: DerivedPropertyKind[] = [
-    'general_purity',
-    'type_constraint',
-    'required_field',
-  ];
+  const all = deriveAllPropertyKindsFromObservedEvidence();
+  const extreme = deriveExtremePropertyKindsFromObservedEvidence();
+  const boundary = deriveBoundaryPropertyKindsFromObservedEvidence();
+  const requiredBase = () =>
+    all.filter(
+      (k) =>
+        k === 'type_constraint' || k === 'required_field',
+    );
   switch (category) {
     case 'validation':
-      return VALIDATION_KINDS;
+      return [
+        ...requiredBase(),
+        ...all.filter((k) => k === 'string_id' || k === 'length_boundary' || k === 'injection'),
+      ] as DerivedPropertyKind[];
     case 'parsing':
-      return PARSING_KINDS;
+      return [
+        ...requiredBase(),
+        ...all.filter((k) => k === 'string_id' || k === 'injection'),
+      ] as DerivedPropertyKind[];
     case 'formatting':
-      return FORMATTING_KINDS;
+      return [
+        ...requiredBase(),
+        ...all.filter((k) => k === 'idempotency'),
+      ] as DerivedPropertyKind[];
     case 'numeric':
-      return NUMERIC_KINDS;
+      return [
+        ...requiredBase(),
+        ...all.filter((k) => k === 'non_negative'),
+      ] as DerivedPropertyKind[];
     case 'transform':
-      return TRANSFORM_KINDS;
+      return [
+        ...requiredBase(),
+        ...all.filter((k) => k === 'idempotency'),
+      ] as DerivedPropertyKind[];
     case 'money_handler':
-      return MONEY_KINDS;
+      return [
+        ...requiredBase(),
+        ...all.filter((k) => k === 'non_negative' || k === 'money_precision'),
+      ] as DerivedPropertyKind[];
     case 'string_manipulation':
-      return STRING_KINDS;
+      return all.filter(
+        (k) =>
+          k === 'idempotency' || k === 'string_id' || k === 'length_boundary' || k === 'injection',
+      ) as DerivedPropertyKind[];
     case 'enum_handler':
-      return ENUM_KINDS;
+      return [
+        ...requiredBase(),
+        ...all.filter((k) => k === 'enum_value'),
+      ] as DerivedPropertyKind[];
     default:
-      return DEFAULT_KINDS;
+      return [
+        ...requiredBase(),
+        ...all.filter((k) => k === 'general_purity'),
+      ] as DerivedPropertyKind[];
   }
 }
 
@@ -239,10 +241,10 @@ export function deriveFuzzStrategyFromObservedPropertyShape(
   hasParams: boolean,
   hasReturnType: boolean,
 ): DerivedFuzzStrategy {
-  let ext = ['injection', 'required_field', 'type_constraint', 'string_id'];
-  let bnd = ['length_boundary', 'money_precision', 'non_negative'];
-  let hasExt = propertyKinds.some((k) => ext.includes(k));
-  let hasBnd = propertyKinds.some((k) => bnd.includes(k));
+  const extremeKinds = deriveExtremePropertyKindsFromObservedEvidence();
+  const boundaryKinds = deriveBoundaryPropertyKindsFromObservedEvidence();
+  let hasExt = propertyKinds.some((k) => extremeKinds.has(k));
+  let hasBnd = propertyKinds.some((k) => boundaryKinds.has(k));
   let hasSchema = hasParams || hasReturnType;
   let isTransform = propertyKinds.includes('idempotency') && !hasBnd;
   if (hasBnd) return 'boundary';
@@ -363,7 +365,8 @@ export function deriveMutantEstimateFromObservedFileEvidence(
     let lines = content.split('\n').length;
     return Math.max(deriveUnitValue(), Math.round(lines * 0.3));
   } catch {
-    return 5;
+    const u = deriveUnitValue();
+    return u + u + u + u + u;
   }
 }
 
@@ -702,9 +705,11 @@ export function derivePriorityFromObservedContext(
   isBlocker: boolean,
   isCritical: boolean,
 ): 'P0' | 'P1' | 'P2' | 'P3' {
-  if (severity === 'critical' || isBlocker) return 'P0';
-  if (severity === 'high' || isCritical) return 'P1';
-  if (severity === 'medium') return 'P2';
+  const riskLabels = [...discoverConvergenceRiskLevelLabels()].sort();
+  if (severity === riskLabels[deriveZeroValue()] || isBlocker) return 'P0';
+  if (severity === riskLabels[deriveUnitValue()] || isCritical) return 'P1';
+  const mediumIdx = deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
+  if (severity === riskLabels[mediumIdx]) return 'P2';
   return 'P3';
 }
 
