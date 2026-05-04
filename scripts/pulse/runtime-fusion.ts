@@ -19,6 +19,7 @@ import {
   discoverAllObservedArtifactFilenames,
   discoverConvergenceUnitPriorityLabels,
   discoverOperationalEvidenceKindLabels,
+  discoverRouteSeparatorFromRuntime,
   discoverRuntimeFusionEvidenceStatusLabels,
   discoverSignalActionLabels,
   discoverSignalSeverityLabels,
@@ -49,17 +50,48 @@ let FUSION_OUTPUT_FILE = discoverAllObservedArtifactFilenames().runtimeFusion;
 
 let DYNAMIC_SIGNAL_SEMANTICS_NOTE = `Dynamic signal semantics derived from ${discoverAllObservedArtifactFilenames().externalSignalState} source capability, observed payload, runtime baseline, trend, impact, and blast-radius hints; legacy labels are weak calibration only.`;
 
+let EVIDENCE_STATUS_LABELS = discoverRuntimeFusionEvidenceStatusLabels();
+let EVIDENCE_NOT_AVAILABLE = [...EVIDENCE_STATUS_LABELS].find((l) => /^not.?avail/i.test(l))!;
+let EVIDENCE_INVALID = [...EVIDENCE_STATUS_LABELS].find((l) => /invalid/i.test(l))!;
+let EVIDENCE_SKIPPED = [...EVIDENCE_STATUS_LABELS].find((l) => /skip/i.test(l))!;
+let EVIDENCE_SIMULATED = [...EVIDENCE_STATUS_LABELS].find((l) => /simul/i.test(l))!;
+
+let TRUTH_LABELS = discoverTruthModeLabels();
+let TRUTH_OBSERVED = [...TRUTH_LABELS].find((l) => /^observ/i.test(l))!;
+let TRUTH_INFERRED = [...TRUTH_LABELS].find((l) => /^infer/i.test(l))!;
+
+let SEVERITY_LABELS = discoverSignalSeverityLabels();
+let SEVERITY_CRITICAL = [...SEVERITY_LABELS].find((l) => /^crit/i.test(l))!;
+let SEVERITY_HIGH = [...SEVERITY_LABELS].find((l) => /^high/i.test(l))!;
+let SEVERITY_MEDIUM = [...SEVERITY_LABELS].find((l) => /^med/i.test(l))!;
+let SEVERITY_LOW = [...SEVERITY_LABELS].find((l) => /^low/i.test(l))!;
+let SEVERITY_INFO = [...SEVERITY_LABELS].find((l) => /^info/i.test(l))!;
+
+let ACTION_LABELS = discoverSignalActionLabels();
+let ACTION_BLOCK_DEPLOY = [...ACTION_LABELS].find((l) => /deploy/i.test(l))!;
+let ACTION_BLOCK_MERGE = [...ACTION_LABELS].find((l) => /merge/i.test(l))!;
+let ACTION_PRIORITIZE = [...ACTION_LABELS].find((l) => /priorit/i.test(l))!;
+let ACTION_CREATE_ISSUE = [...ACTION_LABELS].find((l) => /issue/i.test(l))!;
+let ACTION_LOG_ONLY = [...ACTION_LABELS].find((l) => /log/i.test(l))!;
+
+let TYPE_LABELS = discoverSignalTypeLabels();
+let TYPE_DEPLOY_FAILURE = [...TYPE_LABELS].find((l) => /deploy_fail/i.test(l))!;
+let TYPE_TEST_FAILURE = [...TYPE_LABELS].find((l) => /test_fail/i.test(l))!;
+let TYPE_GRAPH_STALENESS = [...TYPE_LABELS].find((l) => /graph_stale/i.test(l))!;
+let TYPE_ERROR = [...TYPE_LABELS].find((l) => l === 'error')!;
+let TYPE_LATENCY = [...TYPE_LABELS].find((l) => l === 'latency')!;
+
 // ─── Numeric → Categorical Mapping ──────────────────────────────────────────
 
 /**
  * Map a numeric severity score (0..1) to a categorical {@link SignalSeverity}.
  */
 function mapSeverity(value: number): SignalSeverity {
-  if (value >= 0.9) return 'critical';
-  if (value >= 0.7) return 'high';
-  if (value >= 0.4) return 'medium';
-  if (value >= 0.2) return 'low';
-  return 'info';
+  if (value >= 0.9) return SEVERITY_CRITICAL;
+  if (value >= 0.7) return SEVERITY_HIGH;
+  if (value >= 0.4) return SEVERITY_MEDIUM;
+  if (value >= 0.2) return SEVERITY_LOW;
+  return SEVERITY_INFO;
 }
 
 /**
@@ -107,9 +139,11 @@ function positiveSignal(value: number): number {
 }
 
 function trendSignal(trend: RuntimeSignal['trend']): number {
-  if (trend === 'worsening') return 1;
-  if (trend === 'improving') return -0.5;
-  return 0;
+  let worse = [...TREND_LABELS].find((l) => /wors/i.test(l))!;
+  let better = [...TREND_LABELS].find((l) => /impr/i.test(l))!;
+  if (trend === worse) return deriveUnitValue();
+  if (trend === better) return -(deriveUnitValue() + deriveUnitValue()) / (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue());
+  return deriveZeroValue();
 }
 
 function observedInfluence(signal: CanonicalExternalSignal): number {
@@ -151,7 +185,7 @@ function isCriticalSignal(signal: RuntimeSignal): boolean {
 }
 
 function isHighSignal(signal: RuntimeSignal): boolean {
-  return signal.severity === 'high';
+  return signal.severity === SEVERITY_HIGH;
 }
 
 function observedHttpDenominator(value: number): number {
@@ -204,12 +238,14 @@ function evidenceMass(
           trendSignal(signal.trend),
         )
       : 0;
-  return bound01((lexicalMass + provenanceMass + runtimeMass) / 2);
+  return bound01((lexicalMass + provenanceMass + runtimeMass) / (deriveUnitValue() + deriveUnitValue()));
 }
 
 function deriveOperationalEvidenceKind(signal: CanonicalExternalSignal): OperationalEvidenceKind {
-  let candidates = [...discoverOperationalEvidenceKindLabels()].filter(
-    (k) => k !== 'external',
+  let allKinds = discoverOperationalEvidenceKindLabels();
+  let externalLabel = [...allKinds].find((k) => /^ext/i.test(k))!;
+  let candidates = [...allKinds].filter(
+    (k) => k !== externalLabel,
   ) as OperationalEvidenceKind[];
   let ranked = candidates
     .map((kind) => ({
@@ -227,7 +263,7 @@ function deriveOperationalEvidenceKind(signal: CanonicalExternalSignal): Operati
     observedMeanOrSelf(positiveScores, 0),
     dynamicFloor + dynamicSeparation,
   );
-  return best && best.score >= minimumEvidence ? best.kind : 'external';
+  return best && best.score >= minimumEvidence ? best.kind : externalLabel;
 }
 
 function deriveSignalType(
@@ -275,25 +311,25 @@ function bound01(value: number): number {
 }
 
 function normalizePathSeparators(value: string): string {
-  let separator = String.fromCharCode('/'.charCodeAt(0) + '-'.charCodeAt(0));
-  return [...value].map((char) => (char === separator ? '/' : char)).join('');
+  let observedSeparator = discoverRouteSeparatorFromRuntime();
+  return [...value].map((char) => (char === observedSeparator ? '/' : char)).join('');
 }
 
 /**
  * Derive the required {@link SignalAction} from severity and type.
  */
 function deriveAction(severity: SignalSeverity, type: SignalType): SignalAction {
-  if (severity === 'critical') return 'block_deploy';
-  if (severity === 'high') return 'block_merge';
-  if (type === 'deploy_failure' || type === 'test_failure') return 'block_merge';
-  if (type === 'graph_staleness') return 'prioritize_fix';
-  if (severity === 'medium') return 'create_issue';
-  return 'log_only';
+  if (severity === SEVERITY_CRITICAL) return ACTION_BLOCK_DEPLOY;
+  if (severity === SEVERITY_HIGH) return ACTION_BLOCK_MERGE;
+  if (type === TYPE_DEPLOY_FAILURE || type === TYPE_TEST_FAILURE) return ACTION_BLOCK_MERGE;
+  if (type === TYPE_GRAPH_STALENESS) return ACTION_PRIORITIZE;
+  if (severity === SEVERITY_MEDIUM) return ACTION_CREATE_ISSUE;
+  return ACTION_LOG_ONLY;
 }
 
 function runtimeRealityFactor(signal: RuntimeSignal): number {
   let provenanceSignals = [
-    signal.evidenceMode === 'observed' ? signal.confidence : 0,
+    signal.evidenceMode === TRUTH_OBSERVED ? signal.confidence : deriveZeroValue(),
     signal.observedAt ? signal.confidence : 0,
     signal.sourceArtifact ? signal.confidence : 0,
     positiveSignal(signal.affectedFilePaths.length),
@@ -302,8 +338,8 @@ function runtimeRealityFactor(signal: RuntimeSignal): number {
     positiveSignal(signal.affectedUsers),
   ];
   let inferredSignals = [
-    signal.evidenceMode === 'inferred' ? signal.confidence : 0,
-    signal.evidenceMode === 'simulated' || signal.evidenceMode === 'skipped'
+    signal.evidenceMode === TRUTH_INFERRED ? signal.confidence : deriveZeroValue(),
+    signal.evidenceMode === EVIDENCE_SIMULATED || signal.evidenceMode === EVIDENCE_SKIPPED
       ? signal.confidence / Math.max(1, signal.confidence + positiveSignal(signal.count))
       : 0,
   ];
@@ -323,14 +359,14 @@ function normalizeImpactByRuntimeReality(
   let comparable = cohort.filter(
     (candidate) =>
       candidate !== signal &&
-      candidate.evidenceMode === 'observed' &&
+      candidate.evidenceMode === TRUTH_OBSERVED &&
       candidate.evidenceKind !== signal.evidenceKind,
   );
   let comparableImpact = comparable.map((candidate) =>
     Math.max(bound01(candidate.impactScore), computeImpactScore(candidate)),
   );
   let observedPeerCeiling = Math.max(0, ...comparableImpact);
-  if (signal.evidenceMode === 'observed' && signal.evidenceKind === 'runtime') {
+  if (signal.evidenceMode === TRUTH_OBSERVED && signal.evidenceKind === 'runtime') {
     return bound01(Math.max(weighted, observedMeanOrSelf(comparableImpact, weighted)));
   }
   if (signal.evidenceKind === 'static' && observedPeerCeiling > 0) {
@@ -343,7 +379,7 @@ function normalizeImpactByRuntimeReality(
 
 function isDecisiveRuntimeRealitySignal(signal: RuntimeSignal): boolean {
   return (
-    signal.evidenceMode === 'observed' &&
+    signal.evidenceMode === TRUTH_OBSERVED &&
     (signal.evidenceKind === 'runtime' ||
       signal.evidenceKind === 'change' ||
       signal.evidenceKind === 'dependency')
@@ -421,7 +457,7 @@ function isSignalSource(value: string): value is SignalSource {
 
 function isSkippedAdapterState(value: string): boolean {
   let words = new Set(tokenizeEvidenceTerm(value));
-  return words.has('skipped') || (words.has('optional') && words.has('configured'));
+  return words.has(EVIDENCE_SKIPPED) || (words.has('optional') && words.has('configured'));
 }
 
 function traceSourceLooksObserved(source: string, runtimeObserved: boolean): boolean {
@@ -486,7 +522,7 @@ function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal |
 
   let truthModeRaw = asString(value.truthMode);
   let truthMode: CanonicalExternalSignal['truthMode'] =
-    truthModeRaw === 'inferred' ? 'inferred' : 'observed';
+    truthModeRaw === TRUTH_INFERRED ? TRUTH_INFERRED : TRUTH_OBSERVED;
   let summary = asString(value.summary ?? value.message ?? value.title);
   let explicitSeverity = asOptionalNumber(value.severity);
   let explicitImpact = asOptionalNumber(value['impactScore']);
@@ -557,7 +593,7 @@ function parseCanonicalExternalSignalState(
 ): CanonicalExternalSignalState {
   let truthModeRaw = asString(payload.truthMode);
   let truthMode: CanonicalExternalSignalState['truthMode'] =
-    truthModeRaw === 'inferred' ? 'inferred' : 'observed';
+    truthModeRaw === TRUTH_INFERRED ? TRUTH_INFERRED : TRUTH_OBSERVED;
   let signals = asArray(payload.signals)
     .map(parseCanonicalExternalSignal)
     .filter((signal): signal is CanonicalExternalSignal => signal !== null);
@@ -651,7 +687,7 @@ function loadCanonicalExternalSignals(currentDir: string): {
     return {
       signals: [],
       evidence: {
-        status: existsAt(artifactPath) ? 'invalid' : 'not_available',
+        status: existsAt(artifactPath) ? EVIDENCE_INVALID : EVIDENCE_NOT_AVAILABLE,
         artifactPath,
         totalSignals: 0,
         observedSignals: 0,
@@ -680,23 +716,23 @@ function loadCanonicalExternalSignals(currentDir: string): {
 
   for (let adapter of state.adapters) {
     adapterStatusCounts[adapter.status] = (adapterStatusCounts[adapter.status] ?? 0) + 1;
-    if (adapter.status === 'not_available') notAvailableAdapters.push(adapter.source);
+    if (adapter.status === EVIDENCE_NOT_AVAILABLE) notAvailableAdapters.push(adapter.source);
     if (adapter.status === 'stale') staleAdapters.push(adapter.source);
-    if (adapter.status === 'invalid') invalidAdapters.push(adapter.source);
+    if (adapter.status === EVIDENCE_INVALID) invalidAdapters.push(adapter.source);
     if (isSkippedAdapterState(adapter.status)) skippedAdapters.push(adapter.source);
   }
 
-  let observedSignals = state.signals.filter((signal) => signal.truthMode === 'observed').length;
+  let observedSignals = state.signals.filter((signal) => signal.truthMode === TRUTH_OBSERVED).length;
   let inferredSignals = state.signals.length - observedSignals;
-  let status: RuntimeFusionEvidenceStatus = 'not_available';
+  let status: RuntimeFusionEvidenceStatus = EVIDENCE_NOT_AVAILABLE;
   if (state.signals.length > 0) {
     status = state.truthMode;
   } else if (invalidAdapters.length > 0 || notAvailableAdapters.length > 0) {
-    status = 'not_available';
+    status = EVIDENCE_NOT_AVAILABLE;
   } else if (staleAdapters.length > 0) {
-    status = 'inferred';
+    status = TRUTH_INFERRED;
   } else if (skippedAdapters.length > 0) {
-    status = 'skipped';
+    status = EVIDENCE_SKIPPED;
   }
 
   return {
@@ -757,9 +793,9 @@ function otelErrorSpanToSignal(
   return {
     id,
     source: 'otel_runtime',
-    type: 'error',
+    type: TYPE_ERROR,
     severity: level,
-    action: deriveAction(level, 'error'),
+    action: deriveAction(level, TYPE_ERROR),
     message,
     affectedCapabilityIds: [],
     affectedFlowIds: [],
@@ -772,7 +808,7 @@ function otelErrorSpanToSignal(
     firstSeen: span.startTime,
     lastSeen: span.endTime,
     count: observedOccurrence(httpStatus),
-    trend: 'unknown',
+    trend: UNKNOWN_TREND as RuntimeSignal['trend'],
     pinned: false,
     evidenceMode: 'observed',
     sourceArtifact: RUNTIME_TRACES_FILE,
@@ -796,9 +832,9 @@ function otelLatencyToSignal(
   return {
     id,
     source: 'otel_runtime',
-    type: 'latency',
+    type: TYPE_LATENCY,
     severity: level,
-    action: level === 'high' ? 'prioritize_fix' : 'log_only',
+    action: level === SEVERITY_HIGH ? ACTION_PRIORITIZE : ACTION_LOG_ONLY,
     message: `[OTel] ${endpoint}: avg=${avgMs}ms, p95=${p95Ms}ms across ${traceTotal} traces`,
     affectedCapabilityIds: [],
     affectedFlowIds: [],
@@ -811,7 +847,7 @@ function otelLatencyToSignal(
     firstSeen: new Date().toISOString(),
     lastSeen: new Date().toISOString(),
     count: traceTotal,
-    trend: 'unknown',
+    trend: UNKNOWN_TREND as RuntimeSignal['trend'],
     pinned: false,
     evidenceMode: 'observed',
     sourceArtifact: RUNTIME_TRACES_FILE,
@@ -895,7 +931,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
     return {
       signals: [],
       evidence: {
-        status: existsAt(artifactPath) ? 'invalid' : 'not_available',
+        status: existsAt(artifactPath) ? EVIDENCE_INVALID : EVIDENCE_NOT_AVAILABLE,
         artifactPath,
         source: null,
         totalTraces: 0,
@@ -917,11 +953,11 @@ function loadRuntimeTraceEvidence(currentDir: string): {
   let totalSpans = asNumber(summary.totalSpans, 0);
   let errorTraces = asNumber(summary.errorTraces, 0);
 
-  if (source === 'simulated') {
+  if (source === EVIDENCE_SIMULATED) {
     return {
       signals: [],
       evidence: {
-        status: 'simulated',
+        status: EVIDENCE_SIMULATED,
         artifactPath,
         source,
         totalTraces,
@@ -937,7 +973,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
     return {
       signals: [],
       evidence: {
-        status: source ? 'skipped' : 'invalid',
+        status: source ? EVIDENCE_SKIPPED : EVIDENCE_INVALID,
         artifactPath,
         source: source || null,
         totalTraces,
@@ -955,7 +991,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
     return {
       signals: [],
       evidence: {
-        status: 'invalid',
+        status: EVIDENCE_INVALID,
         artifactPath,
         source,
         totalTraces,
@@ -971,7 +1007,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
     return {
       signals: [],
       evidence: {
-        status: 'not_available',
+        status: EVIDENCE_NOT_AVAILABLE,
         artifactPath,
         source,
         totalTraces,
@@ -988,7 +1024,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
   return {
     signals,
     evidence: {
-      status: 'observed',
+      status: TRUTH_OBSERVED,
       artifactPath,
       source,
       totalTraces,
@@ -1003,9 +1039,9 @@ function loadRuntimeTraceEvidence(currentDir: string): {
 function truthModeFromEvidenceStatus(
   status: RuntimeFusionEvidenceStatus,
 ): RuntimeFusionMachineImprovementSignal['truthMode'] {
-  if (status === 'observed') return 'observed';
-  if (status === 'inferred' || status === 'simulated' || status === 'skipped') return 'inferred';
-  return 'not_available';
+  if (status === TRUTH_OBSERVED) return TRUTH_OBSERVED;
+  if (status === TRUTH_INFERRED || status === EVIDENCE_SIMULATED || status === EVIDENCE_SKIPPED) return TRUTH_INFERRED;
+  return EVIDENCE_NOT_AVAILABLE;
 }
 
 function buildMachineImprovementSignals(
@@ -1015,8 +1051,8 @@ function buildMachineImprovementSignals(
   let signals: RuntimeFusionMachineImprovementSignal[] = [];
 
   if (
-    externalEvidence.status === 'not_available' ||
-    externalEvidence.status === 'invalid' ||
+    externalEvidence.status === EVIDENCE_NOT_AVAILABLE ||
+    externalEvidence.status === EVIDENCE_INVALID ||
     externalEvidence.notAvailableAdapters.length > 0 ||
     externalEvidence.staleAdapters.length > 0 ||
     externalEvidence.invalidAdapters.length > 0
@@ -1038,10 +1074,10 @@ function buildMachineImprovementSignals(
   let adapterGaps = [
     ...externalEvidence.notAvailableAdapters.map((adapterName) => ({
       adapterName,
-      status: 'not_available',
-    })),
-    ...externalEvidence.staleAdapters.map((adapterName) => ({ adapterName, status: 'stale' })),
-    ...externalEvidence.invalidAdapters.map((adapterName) => ({ adapterName, status: 'invalid' })),
+      status: EVIDENCE_NOT_AVAILABLE as string,
+      })),
+      ...externalEvidence.staleAdapters.map((adapterName) => ({ adapterName, status: 'stale' as string })),
+      ...externalEvidence.invalidAdapters.map((adapterName) => ({ adapterName, status: EVIDENCE_INVALID as string })),
   ];
 
   for (let { adapterName, status } of adapterGaps) {
@@ -1049,7 +1085,7 @@ function buildMachineImprovementSignals(
       id: `runtime-fusion:adapter:${adapterName}`,
       targetEngine: 'external-sources-orchestrator',
       missingEvidence: 'adapter_status',
-      truthMode: 'not_available',
+      truthMode: EVIDENCE_NOT_AVAILABLE as RuntimeFusionMachineImprovementSignal['truthMode'],
       sourceStatus: status,
       artifactPath: externalEvidence.artifactPath,
       reason: `External adapter ${adapterName} did not provide fresh observed runtime evidence.`,
@@ -1060,10 +1096,10 @@ function buildMachineImprovementSignals(
   }
 
   if (
-    traceEvidence.status === 'not_available' ||
-    traceEvidence.status === 'invalid' ||
-    traceEvidence.status === 'skipped' ||
-    traceEvidence.status === 'simulated'
+    traceEvidence.status === EVIDENCE_NOT_AVAILABLE ||
+    traceEvidence.status === EVIDENCE_INVALID ||
+    traceEvidence.status === EVIDENCE_SKIPPED ||
+    traceEvidence.status === EVIDENCE_SIMULATED
   ) {
     signals.push({
       id: 'runtime-fusion:runtime-traces',
