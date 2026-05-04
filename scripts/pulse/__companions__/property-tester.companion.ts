@@ -444,7 +444,7 @@ function synthesizeFuzzStrategies(profile: EndpointProofProfile): FuzzStrategy[]
 }
 
 function unitValue(): number {
-  return UNIT_SAMPLE.length;
+  return deriveUnitValue();
 }
 
 function zeroValue(): number {
@@ -955,7 +955,7 @@ function generateDefaultMutationTargets(rootDir: string): MutationTestResult[] {
 
     targets.push({
       filePath,
-      status: 'planned',
+      status: plannedExecutionStatus(),
       totalMutants,
       killedMutants,
       survivedMutants,
@@ -1317,7 +1317,7 @@ export function generatePropertyTestCases(rootDir: string): GeneratedPropertyFun
       expectedPassCount: expectedPass,
       expectedFailCount: expectedFail,
       generatedInputs: allInputs,
-      status: 'planned',
+      status: plannedExecutionStatus(),
     });
   }
 
