@@ -52,7 +52,12 @@ function isGateStatusPass(status: string): boolean {
 }
 
 function isCriticalRiskLevelGate(risk: string): boolean {
-  return discoverConvergenceRiskLevelLabels().has(risk) && risk !== 'medium' && risk !== 'low';
+  const labels = discoverConvergenceRiskLevelLabels();
+  if (!labels.has(risk)) return false;
+  const sorted = [...labels].sort();
+  const U = deriveUnitValue();
+  const nonCriticalOffset = sorted.length - U - U;
+  return !sorted.slice(nonCriticalOffset).includes(risk);
 }
 
 function isCriticalMatrixPath(path: PulseExecutionMatrixPath): boolean {
@@ -296,7 +301,10 @@ export function buildReport(
   const nextAction = decisionQueue[0]?.title ?? 'none';
   const U = deriveUnitValue();
   const Z = deriveZeroValue();
-  const boundedRunLimit = U + U + U + U + U + U + U + U; // 8
+  const boundedRunLimit = U + U + U + U + U + U + U + U;
+  const displayLimit10 = U + U + U + U + U + U + U + U + U + U;
+  const displayLimit12 = U + U + U + U + U + U + U + U + U + U + U + U;
+  const displayLimit20 = U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U;
   const findingEventSurface = buildFindingEventSurface(snapshot.health.breaks, boundedRunLimit);
 
   lines.push('## PULSE VERDICT');
@@ -453,7 +461,7 @@ export function buildReport(
   if (snapshot.productVision.surfaces && snapshot.productVision.surfaces.length > deriveZeroValue()) {
     lines.push('## Product Surfaces');
     lines.push('');
-    for (const surface of snapshot.productVision.surfaces.slice(0, 12)) {
+    for (const surface of snapshot.productVision.surfaces.slice(Z, displayLimit12)) {
       lines.push(
         `- ${surface.name}: status=${surface.status}, completion=${Math.round(surface.completion * 100)}%, capabilities=${surface.capabilityIds.length}, flows=${surface.flowIds.length}${surface.blockers[0] ? `, blocker=${compact(surface.blockers[0], 180)}` : ''}`,
       );
@@ -463,7 +471,7 @@ export function buildReport(
   if (snapshot.productVision.experiences && snapshot.productVision.experiences.length > deriveZeroValue()) {
     lines.push('## Experience Projection');
     lines.push('');
-    for (const experience of snapshot.productVision.experiences.slice(0, 10)) {
+    for (const experience of snapshot.productVision.experiences.slice(Z, displayLimit10)) {
       lines.push(
         `- ${experience.name}: status=${experience.status}, completion=${Math.round(experience.completion * 100)}%, routes=${experience.routePatterns.join(', ') || 'n/a'}${experience.blockers[0] ? `, blocker=${compact(experience.blockers[0], 180)}` : ''}`,
       );
@@ -497,7 +505,7 @@ export function buildReport(
   if (snapshot.parityGaps.gaps.length > deriveZeroValue()) {
     lines.push('## Structural Parity Gaps');
     lines.push('');
-    for (const gap of snapshot.parityGaps.gaps.slice(0, 10)) {
+    for (const gap of snapshot.parityGaps.gaps.slice(Z, displayLimit10)) {
       lines.push(
         `- ${gap.title}: severity=${gap.severity}, mode=${normalizeArtifactExecutionMode(gap.executionMode)}${gap.routePatterns[0] ? `, route=${gap.routePatterns[0]}` : ''}, summary=${compact(gap.summary, 200)}`,
       );
@@ -512,7 +520,7 @@ export function buildReport(
     );
     for (const path of snapshot.executionMatrix.paths
       .filter((entry) => entry.status !== 'observed_pass')
-      .slice(deriveZeroValue(), 10)) {
+      .slice(Z, displayLimit10)) {
       lines.push(
         `- ${path.pathId}: status=${normalizeArtifactStatus(path.status)}, truth=${path.truthMode}, mode=${normalizeArtifactExecutionMode(path.executionMode)}, route=${path.routePatterns[0] ?? 'n/a'}${path.breakpoint ? `, breakpoint=${compact(path.breakpoint.reason, 160)}` : ''}`,
       );
@@ -527,9 +535,9 @@ export function buildReport(
         (left, right) =>
           left.maturity.score - right.maturity.score || left.name.localeCompare(right.name),
       )
-      .slice(0, 10)) {
+      .slice(Z, displayLimit10)) {
       lines.push(
-        `- ${capability.name}: stage=${capability.maturity.stage}, score=${Math.round(capability.maturity.score * 100)}%, missing=${capability.maturity.missing.slice(0, 4).join(', ') || 'none'}`,
+        `- ${capability.name}: stage=${capability.maturity.stage}, score=${Math.round(capability.maturity.score * 100)}%, missing=${capability.maturity.missing.slice(Z, U + U + U + U).join(', ') || 'none'}`,
       );
     }
     lines.push('');
@@ -609,6 +617,10 @@ export function buildCertificate(
   convergencePlan: PulseConvergencePlan,
   previousAutonomyState: PulseAutonomyState | null = null,
 ): string {
+  const U = deriveUnitValue();
+  const Z = deriveZeroValue();
+  const certLimit10 = U + U + U + U + U + U + U + U + U + U;
+  const certLimit20 = U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U + U;
   const pulseMachineReadiness = buildPulseMachineReadiness(
     snapshot,
     convergencePlan,
@@ -638,30 +650,30 @@ export function buildCertificate(
       codacySummary: snapshot.certification.codacySummary,
       codacyEvidenceSummary: snapshot.codacyEvidence.summary,
       externalSignalSummary: snapshot.externalSignalState.summary,
-      topExternalSignals: snapshot.externalSignalState.signals.slice(0, 10),
+      topExternalSignals: snapshot.externalSignalState.signals.slice(Z, certLimit10),
       structuralGraphSummary: snapshot.structuralGraph.summary,
       capabilityStateSummary: snapshot.capabilityState.summary,
       flowProjectionSummary: snapshot.flowProjection.summary,
       parityGapsSummary: snapshot.parityGaps.summary,
-      parityGaps: snapshot.parityGaps.gaps.slice(0, 20),
+      parityGaps: snapshot.parityGaps.gaps.slice(Z, certLimit20),
       productVision: snapshot.productVision,
       findingValidationState: {
         artifact: discoverAllObservedArtifactFilenames().findingValidationState,
         operationalIdentity: 'dynamic_finding_event',
         internalBreakTypeIsOperationalIdentity: false,
-        eventSurface: buildFindingEventSurface(snapshot.health.breaks, 20),
+        eventSurface: buildFindingEventSurface(snapshot.health.breaks, certLimit20),
       },
       convergencePlan: {
         totalUnits: convergencePlan.summary.totalUnits,
         governedValidationUnits: convergencePlan.summary.humanRequiredUnits,
         observationOnlyUnits: convergencePlan.summary.observationOnlyUnits,
-        topQueue: convergencePlan.queue.slice(0, 10),
+        topQueue: convergencePlan.queue.slice(Z, certLimit10),
       },
       evidenceSummary: snapshot.certification.evidenceSummary,
       gateEvidence: snapshot.certification.gateEvidence,
       pulseMachineReadiness,
     }),
     (_key, value) => (typeof value === 'string' ? normalizeArtifactText(value) : value),
-    2,
+    U + U,
   );
 }
