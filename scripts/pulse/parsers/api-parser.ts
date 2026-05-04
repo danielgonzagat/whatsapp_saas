@@ -6,7 +6,7 @@ import { pathExists, readTextFile } from '../safe-fs';
 import { getFrontendSourceDirs } from '../frontend-roots';
 import { normalizeEndpoint } from './api-parser-normalize';
 import { detectMethod } from './api-parser-string-utils';
-import { deriveUnitValue } from '../dynamic-reality-kernel';
+import { deriveUnitValue, discoverSourceExtensionsFromObservedTypescript } from '../dynamic-reality-kernel';
 import {
   extractMethodBlock,
   extractWrappedFetchCall,
@@ -38,7 +38,7 @@ export function buildApiModuleMap(
     .map((frontendDir) => safeJoin(frontendDir, 'lib', 'api'))
     .filter((apiDir) => pathExists(apiDir));
 
-  const files = apiDirs.flatMap((apiDir) => walkFiles(apiDir, ['.ts']));
+  const files = apiDirs.flatMap((apiDir) => walkFiles(apiDir, [...discoverSourceExtensionsFromObservedTypescript()]));
   const wrapperPrefixes = buildFetchWrapperPrefixMap(files);
   for (const file of files) {
     const content = readTextFile(file, 'utf8');
@@ -113,7 +113,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
   const calls: APICall[] = [];
   const seen = new Set<string>(); // dedup: file:line:endpoint
   const files = getFrontendSourceDirs(config).flatMap((frontendDir) =>
-    walkFiles(frontendDir, ['.ts', '.tsx']),
+    walkFiles(frontendDir, [...discoverSourceExtensionsFromObservedTypescript()]),
   );
   const wrapperPrefixes = buildFetchWrapperPrefixMap(files);
   const apiModuleMap = buildApiModuleMap(config);
@@ -525,7 +525,7 @@ export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
     .filter((apiDir) => pathExists(apiDir));
 
   const routeFiles = apiDirs
-    .flatMap((apiDir) => walkFiles(apiDir, ['.ts']))
+    .flatMap((apiDir) => walkFiles(apiDir, [...discoverSourceExtensionsFromObservedTypescript()]))
     .filter((filePath) => path.parse(filePath).name === 'route');
 
   for (const file of routeFiles) {
