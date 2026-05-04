@@ -1,9 +1,9 @@
 import * as path from 'path';
 import {
-  discoverSourceExtensionsFromObservedTypescript,
-  discoverDirectorySkipHintsFromEvidence,
-  deriveZeroValue,
   deriveUnitValue,
+  deriveZeroValue,
+  discoverDirectorySkipHintsFromEvidence,
+  discoverSourceExtensionsFromObservedTypescript,
 } from './dynamic-reality-kernel';
 import { pathExists, readDir, readJsonFile, readTextFile } from './safe-fs';
 import { safeJoin } from './safe-path';
@@ -238,9 +238,9 @@ function inferKindFromFileEvidence(rootDir: string, relativeDir: string): Source
   const absoluteDir = safeJoin(rootDir, relativeDir);
   if (!pathExists(absoluteDir)) return inferKind(relativeDir, null);
 
-  let frontendSignals = 0;
-  let backendSignals = 0;
-  let workerSignals = 0;
+  let frontendSignals = ZERO;
+  let backendSignals = ZERO;
+  let workerSignals = ZERO;
 
   for (const entry of readDir(absoluteDir, { recursive: true }) as string[]) {
     const normalized = normalizeRelative(entry);
@@ -286,7 +286,7 @@ function inferKindFromFileEvidence(rootDir: string, relativeDir: string): Source
   scores.push({ kind: 'backend', score: backendSignals });
   scores.push({ kind: 'worker', score: workerSignals });
   scores.sort((a, b) => b.score - a.score);
-  const strongestSignal = scores[0];
+  const strongestSignal = scores[ZERO];
 
   return strongestSignal && strongestSignal.score > ZERO
     ? strongestSignal.kind
@@ -381,7 +381,7 @@ function packageDirsFromWorkspaces(rootDir: string, patterns: string[]): string[
     }
 
     const wildcardIndex = normalized.indexOf('*');
-    const base = normalizeRelative(normalized.slice(0, wildcardIndex));
+    const base = normalizeRelative(normalized.slice(ZERO, wildcardIndex));
     const baseDir = safeJoin(rootDir, base || '.');
     if (!pathExists(baseDir)) continue;
 
@@ -458,7 +458,7 @@ function sourceRootFromPathEntry(relativeDir: string, entry: string): string | n
   const sourceIndex = segments.findIndex((segment) => CONVENTIONAL_SOURCE_DIR_NAMES.has(segment));
   if (sourceIndex < ZERO) return null;
   const sourceRoot = normalizeRelative(
-    safeJoin(relativeDir, segments.slice(0, sourceIndex + 1).join('/')),
+    safeJoin(relativeDir, segments.slice(ZERO, sourceIndex + ONE).join('/')),
   );
   if (hasSkippedSegment(sourceRoot)) return null;
   return sourceRoot;
@@ -825,8 +825,8 @@ function addFileEvidenceRoots(roots: Map<string, DetectedSourceRoot>, rootDir: s
     if (!sourceExtensionsSet.has(path.extname(normalized))) continue;
 
     const sourceIndex = segments.findIndex((segment) => CONVENTIONAL_SOURCE_DIR_NAMES.has(segment));
-    if (sourceIndex >= 0) {
-      candidates.add(segments.slice(0, sourceIndex + 1).join('/'));
+    if (sourceIndex >= ZERO) {
+      candidates.add(segments.slice(ZERO, sourceIndex + ONE).join('/'));
       continue;
     }
 
