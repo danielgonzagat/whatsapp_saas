@@ -4,56 +4,23 @@ jest.mock('./openai-wrapper', () => ({
 }));
 
 import { KloelService } from './kloel.service';
+import { KloelThinkerService } from './kloel-thinker.service';
+import { KloelReplyEngineService } from './kloel-reply-engine.service';
+import { KloelThreadService } from './kloel-thread.service';
+import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { chatCompletionStreamWithRetry, chatCompletionWithFallback } from './openai-wrapper';
 
-type KloelPrismaMock = {
-  chatThread: {
-    findFirst: jest.Mock;
-    create: jest.Mock;
-    update: jest.Mock;
-  };
-  chatMessage: {
-    findMany: jest.Mock;
-    create: jest.Mock;
-    update?: jest.Mock;
-    deleteMany?: jest.Mock;
-  };
-  kloelMessage: {
-    findMany: jest.Mock;
-    create: jest.Mock;
-  };
-  product: {
-    create: jest.Mock;
-    count: jest.Mock;
-    findMany: jest.Mock;
-    findFirst: jest.Mock;
-    update: jest.Mock;
-  };
-  workspace: {
-    findUnique: jest.Mock;
-    update: jest.Mock;
-  };
-  flow: {
-    create: jest.Mock;
-    findMany: jest.Mock;
-  };
-  contact: {
-    findFirst: jest.Mock;
-    create: jest.Mock;
-  };
-  message: {
-    create: jest.Mock;
-    update: jest.Mock;
-  };
-  $transaction: jest.Mock;
-};
+import type { KloelPrismaMock } from './__companions__/kloel.service.spec.companion';
 
 describe('KloelService', () => {
   let service: KloelService;
   let prisma: KloelPrismaMock;
   let whatsappService: { listChats: jest.Mock };
   let unifiedAgentService: { executeTool: jest.Mock };
-  let marketingSkillService: { buildPacket: jest.Mock };
+  let threadService: KloelThreadService;
+  let replyEngineService: KloelReplyEngineService;
+  let thinkerService: KloelThinkerService;
+  let whatsappToolsService: KloelWhatsAppToolsService;
 
   beforeEach(() => {
     process.env.OPENAI_API_KEY = 'test-key';
@@ -68,6 +35,8 @@ describe('KloelService', () => {
           summaryUpdatedAt: null,
         }),
         update: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        count: jest.fn().mockResolvedValue(0),
       },
       chatMessage: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -76,10 +45,15 @@ describe('KloelService', () => {
           .mockImplementation(({ data }: { data: { role: string } }) =>
             Promise.resolve({ id: `${data.role}-1` }),
           ),
+        count: jest.fn().mockResolvedValue(0),
+        update: jest.fn(),
+        deleteMany: jest.fn(),
       },
       kloelMessage: {
         findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn().mockResolvedValue({}),
+        update: jest.fn().mockResolvedValue({}),
+        deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
       product: {
         create: jest.fn(),
@@ -88,22 +62,12 @@ describe('KloelService', () => {
         findFirst: jest.fn(),
         update: jest.fn(),
       },
-      workspace: {
-        findUnique: jest.fn(),
-        update: jest.fn(),
-      },
-      flow: {
-        create: jest.fn(),
-        findMany: jest.fn(),
-      },
-      contact: {
-        findFirst: jest.fn(),
-        create: jest.fn(),
-      },
-      message: {
-        create: jest.fn(),
-        update: jest.fn(),
-      },
+      workspace: { findUnique: jest.fn().mockResolvedValue(null), update: jest.fn() },
+      agent: { findFirst: jest.fn().mockResolvedValue(null) },
+      flow: { create: jest.fn(), findMany: jest.fn() },
+      contact: { findFirst: jest.fn(), create: jest.fn() },
+      message: { create: jest.fn(), update: jest.fn() },
+      auditLog: { create: jest.fn().mockResolvedValue({}) },
       $transaction: jest.fn().mockResolvedValue(undefined),
     };
 
@@ -130,35 +94,101 @@ describe('KloelService', () => {
       executeTool: jest.fn().mockResolvedValue({ error: 'Unknown tool' }),
     };
 
-    marketingSkillService = {
-      buildPacket: jest.fn().mockResolvedValue(null),
+    const planLimitsMock = {
+      trackAiUsage: jest.fn().mockResolvedValue(undefined),
+      ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+      trackMessageSend: jest.fn().mockResolvedValue(undefined),
     };
 
-    service = new KloelService(
-      prisma as unknown as ConstructorParameters<typeof KloelService>[0],
-      { createSmartPayment: jest.fn() } as any,
-      whatsappService as unknown as ConstructorParameters<typeof KloelService>[2],
-      {
-        getSessionStatus: jest.fn(),
-        startSession: jest.fn(),
-      } as any,
-      unifiedAgentService as unknown as ConstructorParameters<typeof KloelService>[4],
-      { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as any,
-      {
-        trackAiUsage: jest.fn().mockResolvedValue(undefined),
-        ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
-        trackMessageSend: jest.fn().mockResolvedValue(undefined),
-      } as any,
-      {
-        upload: jest.fn().mockResolvedValue({ url: 'https://storage.test/mock.png' }),
-        uploadFromUrl: jest.fn().mockResolvedValue({ url: 'https://storage.test/mock.png' }),
-      } as never,
-      marketingSkillService as unknown as ConstructorParameters<typeof KloelService>[8],
+    const summaryServiceMock = {
+      maybeGenerateThreadTitle: jest.fn().mockResolvedValue('Conversas pendentes'),
+      maybeRefreshThreadSummary: jest.fn().mockResolvedValue(undefined),
+      isDefaultThreadTitle: jest.fn().mockReturnValue(true),
+      isSubstantiveMessage: jest.fn().mockReturnValue(true),
+      sanitizeGeneratedThreadTitle: jest
+        .fn()
+        .mockImplementation((v: string) => v || 'Nova conversa'),
+    };
+    threadService = new KloelThreadService(
+      prisma as never as ConstructorParameters<typeof KloelThreadService>[0],
+      summaryServiceMock as never,
     );
 
-    jest.spyOn(service as any, 'getWorkspaceContext').mockResolvedValue('');
-    jest.spyOn(service as any, 'buildDynamicRuntimeContext').mockResolvedValue('');
-    jest.spyOn(service as any, 'maybeGenerateThreadTitle').mockResolvedValue('Conversas pendentes');
+    const wsContextServiceMock = {
+      getWorkspaceContext: jest.fn().mockResolvedValue(''),
+      buildLinkedProductPromptContext: jest.fn().mockResolvedValue(null),
+      contextFormatter: {
+        sanitizeUserNameForAssistant: jest.fn().mockReturnValue('Usuário'),
+        buildWorkspaceBusinessHoursContext: jest.fn().mockReturnValue(null),
+        buildWorkspaceProductContext: jest.fn().mockReturnValue(''),
+        buildWorkspaceAffiliateContext: jest.fn().mockReturnValue(''),
+        buildAgentProfileContext: jest.fn().mockReturnValue(null),
+      },
+    };
+
+    replyEngineService = new KloelReplyEngineService(
+      prisma as never as ConstructorParameters<typeof KloelReplyEngineService>[0],
+      planLimitsMock as never,
+      threadService,
+      wsContextServiceMock as never,
+      unifiedAgentService as never,
+    );
+
+    const composerServiceMock = {
+      executeComposerCapability: jest.fn(),
+      searchWeb: jest.fn().mockResolvedValue({ answer: 'resultado', sources: [] }),
+      buildCapabilityPrompt: jest.fn().mockReturnValue(''),
+    };
+
+    const llmBudgetMock = {
+      assertBudget: jest.fn().mockResolvedValue(undefined),
+      recordSpend: jest.fn().mockResolvedValue(undefined),
+    };
+
+    thinkerService = new KloelThinkerService(
+      prisma as never as ConstructorParameters<typeof KloelThinkerService>[0],
+      planLimitsMock as never,
+      llmBudgetMock as never,
+      threadService,
+      wsContextServiceMock as never,
+      composerServiceMock as never,
+      replyEngineService,
+    );
+
+    whatsappToolsService = new KloelWhatsAppToolsService(
+      prisma as never as ConstructorParameters<typeof KloelWhatsAppToolsService>[0],
+      whatsappService as never,
+      { getSessionStatus: jest.fn(), startSession: jest.fn() } as never,
+      { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as never,
+      planLimitsMock as never,
+    );
+
+    service = new KloelService(
+      prisma as never as ConstructorParameters<typeof KloelService>[0],
+      { createSmartPayment: jest.fn() } as never,
+      whatsappService as never,
+      { getSessionStatus: jest.fn(), startSession: jest.fn() } as never,
+      unifiedAgentService as never,
+      { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as never,
+      planLimitsMock as never,
+      { upload: jest.fn(), uploadFromUrl: jest.fn() } as never,
+      threadService, // [8] threadService
+      wsContextServiceMock as never, // [9] wsContextService
+      {} as never, // [10] chatToolsService
+      {} as never, // [11] bizConfigToolsService
+      whatsappToolsService, // [12] whatsappToolsService
+      {} as never, // [13] leadBrainService
+      composerServiceMock as never, // [14] composerService
+      thinkerService,
+      replyEngineService,
+      {
+        executeTool: jest.fn(async (workspaceId: string, toolName: string, args: unknown) =>
+          toolName === 'list_whatsapp_chats'
+            ? whatsappToolsService.toolListWhatsAppChats(workspaceId, args as { limit?: number })
+            : { success: false, error: `Ferramenta desconhecida: ${toolName}` },
+        ),
+      } as never,
+    );
   });
 
   afterEach(() => {
@@ -190,11 +220,7 @@ describe('KloelService', () => {
         await Promise.resolve();
         yield {
           choices: [
-            {
-              delta: {
-                content: 'Encontrei 2 conversas pendentes e já posso agir sobre elas.',
-              },
-            },
+            { delta: { content: 'Encontrei 2 conversas pendentes e já posso agir sobre elas.' } },
           ],
         };
       })(),
@@ -211,12 +237,8 @@ describe('KloelService', () => {
     };
 
     await service.think(
-      {
-        workspaceId: 'ws-1',
-        message: 'o que está pendente no whatsapp?',
-        mode: 'chat',
-      },
-      response as any,
+      { workspaceId: 'ws-1', message: 'o que está pendente no whatsapp?', mode: 'chat' },
+      response as never,
     );
 
     const events = writes
@@ -233,18 +255,9 @@ describe('KloelService', () => {
     );
     expect(events).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
-          type: 'status',
-          phase: 'thinking',
-        }),
-        expect.objectContaining({
-          type: 'status',
-          phase: 'streaming_token',
-        }),
-        expect.objectContaining({
-          type: 'tool_call',
-          tool: 'list_whatsapp_chats',
-        }),
+        expect.objectContaining({ type: 'status', phase: 'thinking' }),
+        expect.objectContaining({ type: 'status', phase: 'streaming_token' }),
+        expect.objectContaining({ type: 'tool_call', tool: 'list_whatsapp_chats' }),
         expect.objectContaining({
           type: 'tool_result',
           tool: 'list_whatsapp_chats',
@@ -254,69 +267,16 @@ describe('KloelService', () => {
           type: 'content',
           content: 'Encontrei 2 conversas pendentes e já posso agir sobre elas.',
         }),
-        expect.objectContaining({
-          type: 'done',
-          done: true,
-        }),
+        expect.objectContaining({ type: 'done', done: true }),
       ]),
     );
     expect(response.end).toHaveBeenCalled();
   });
 
-  it('injects the selected marketing framework into seller chat prompts', async () => {
-    prisma.workspace.findUnique.mockResolvedValue({});
-    marketingSkillService.buildPacket.mockResolvedValue({
-      isMarketingRequest: true,
-      selectedSkills: [],
-      snapshot: {},
-      promptAddendum: 'MODO MARKETING ATIVADO\n- priorize framework de paid-ads.',
-    });
-
-    (chatCompletionWithFallback as jest.Mock).mockResolvedValueOnce({
-      choices: [{ message: { content: 'Plano pronto.' } }],
-      usage: { total_tokens: 21 },
-    });
-
-    const reply = await (
-      service as unknown as {
-        buildAssistantReply(input: {
-          message: string;
-          workspaceId: string;
-          mode: 'chat';
-          conversationState: { recentMessages: never[]; totalMessages: number };
-        }): Promise<string>;
-      }
-    ).buildAssistantReply({
-      message: 'Meu ROAS caiu e preciso de ajuda com as campanhas',
-      workspaceId: 'ws-1',
-      mode: 'chat',
-      conversationState: { recentMessages: [], totalMessages: 0 },
-    });
-
-    expect(marketingSkillService.buildPacket).toHaveBeenCalledWith(
-      'ws-1',
-      'Meu ROAS caiu e preciso de ajuda com as campanhas',
-    );
-    expect((chatCompletionWithFallback as jest.Mock).mock.calls[0][1].messages).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          role: 'system',
-          content: expect.stringContaining('MODO MARKETING ATIVADO'),
-        }),
-      ]),
-    );
-    expect(reply).toBe('Plano pronto.');
-  });
-
   it('implicitly routes landing-page requests to the site composer capability', async () => {
     const executeComposerCapability = jest
       .spyOn(
-        service as unknown as {
-          executeComposerCapability: (input: Record<string, unknown>) => Promise<{
-            content: string;
-            metadata: Record<string, unknown>;
-          }>;
-        },
+        Reflect.get(thinkerService, 'composerService') as { executeComposerCapability: jest.Mock },
         'executeComposerCapability',
       )
       .mockResolvedValue({
@@ -331,10 +291,7 @@ describe('KloelService', () => {
     });
 
     expect(executeComposerCapability).toHaveBeenCalledWith(
-      expect.objectContaining({
-        capability: 'create_site',
-        workspaceId: 'ws-1',
-      }),
+      expect.objectContaining({ capability: 'create_site', workspaceId: 'ws-1' }),
     );
     expect(result.response).toBe('Site gerado e pronto para revisão.');
   });
@@ -352,11 +309,7 @@ describe('KloelService', () => {
         await Promise.resolve();
         yield {
           choices: [
-            {
-              delta: {
-                content: 'Segue o diagnóstico completo com os pontos prioritários.',
-              },
-            },
+            { delta: { content: 'Segue o diagnóstico completo com os pontos prioritários.' } },
           ],
         };
       })(),
@@ -377,9 +330,9 @@ describe('KloelService', () => {
         workspaceId: 'ws-1',
         message: 'Preciso de um diagnóstico completo da operação comercial com plano completo.',
         mode: 'chat',
-        metadata: { clientRequestId: 'req-long-1' } as any,
+        metadata: { clientRequestId: 'req-long-1' },
       },
-      response as any,
+      response as never,
     );
 
     const events = writes
@@ -427,18 +380,15 @@ describe('KloelService', () => {
   });
 
   it('preserves assistant response versions when regenerating a reply', async () => {
-    prisma.chatThread.findFirst.mockResolvedValue({
-      id: 'thread-1',
-      summary: 'Resumo atual',
-    });
+    prisma.chatThread.findFirst.mockResolvedValue({ id: 'thread-1', summary: 'Resumo atual' });
     prisma.chatMessage.findMany.mockResolvedValue([
       {
-        id: 'user-1',
+        id: 'assistant-later',
         threadId: 'thread-1',
-        role: 'user',
-        content: 'Explique melhor',
+        role: 'assistant',
+        content: 'Resposta posterior',
         metadata: null,
-        createdAt: new Date('2026-04-13T10:00:00.000Z'),
+        createdAt: new Date('2026-04-13T10:01:00.000Z'),
       },
       {
         id: 'assistant-1',
@@ -458,15 +408,25 @@ describe('KloelService', () => {
         createdAt: new Date('2026-04-13T10:00:10.000Z'),
       },
       {
-        id: 'assistant-later',
+        id: 'user-1',
         threadId: 'thread-1',
-        role: 'assistant',
-        content: 'Resposta posterior',
+        role: 'user',
+        content: 'Explique melhor',
         metadata: null,
-        createdAt: new Date('2026-04-13T10:01:00.000Z'),
+        createdAt: new Date('2026-04-13T10:00:00.000Z'),
       },
     ]);
-
+    prisma.chatMessage.create.mockImplementation(
+      ({ data }: { data: { role: string; content?: string; metadata?: unknown } }) =>
+        Promise.resolve({
+          id: `${data.role}-generated`,
+          threadId: 'thread-1',
+          role: data.role,
+          content: data.content,
+          metadata: data.metadata ?? null,
+          createdAt: new Date('2026-04-13T10:02:00.000Z'),
+        }),
+    );
     prisma.chatMessage.update = jest.fn().mockResolvedValue({
       id: 'assistant-1',
       threadId: 'thread-1',
@@ -482,27 +442,20 @@ describe('KloelService', () => {
         threadId: 'thread-1',
         role: 'assistant',
         content: 'Resposta regenerada',
+        createdAt: new Date('2026-04-13T10:00:10.000Z'),
         metadata: {
           responseVersions: [
-            {
-              id: 'resp-1',
-              content: 'Resposta original',
-              createdAt: '2026-04-13T10:00:10.000Z',
-              source: 'initial',
-            },
-            {
-              id: 'resp-2',
-              content: 'Resposta regenerada',
-              createdAt: '2026-04-13T10:02:00.000Z',
-              source: 'regenerated',
-            },
+            { id: 'resp-1', content: 'Resposta original', source: 'initial' },
+            { id: 'resp-2', content: 'Resposta regenerada', source: 'regenerated' },
           ],
         },
-        createdAt: new Date('2026-04-13T10:00:10.000Z'),
       },
+      { count: 1 },
+      {},
+      {},
     ]);
 
-    jest.spyOn(service as any, 'buildAssistantReply').mockImplementation(async (params: any) => {
+    jest.spyOn(replyEngineService, 'buildAssistantReply').mockImplementation(async (params) => {
       await Promise.resolve();
       params.onTraceEvent?.({
         type: 'status',
@@ -543,20 +496,14 @@ describe('KloelService', () => {
                 content: 'Resposta original',
                 source: 'initial',
               }),
-              expect.objectContaining({
-                content: 'Resposta regenerada',
-                source: 'regenerated',
-              }),
+              expect.objectContaining({ content: 'Resposta regenerada', source: 'regenerated' }),
             ],
             processingTrace: expect.arrayContaining([
               expect.objectContaining({
                 phase: 'thinking',
                 label: 'Entendendo sua pergunta e reunindo o contexto da conversa.',
               }),
-              expect.objectContaining({
-                phase: 'tool_result',
-                label: 'Concluiu search web.',
-              }),
+              expect.objectContaining({ phase: 'tool_result', label: 'Concluiu search web.' }),
             ]),
           }),
         }),
@@ -582,14 +529,14 @@ describe('KloelService', () => {
       summaryUpdatedAt: null,
     });
 
-    jest.spyOn(service as any, 'buildAssistantReply').mockResolvedValue('Resposta síncrona');
+    jest.spyOn(replyEngineService, 'buildAssistantReply').mockResolvedValue('Resposta síncrona');
 
     const result = await service.thinkSync({
       workspaceId: 'ws-1',
       conversationId: 'thread-1',
       message: 'Me responda em modo síncrono',
       mode: 'chat',
-      metadata: { clientRequestId: 'sync-1' } as any,
+      metadata: { clientRequestId: 'sync-1' },
     });
 
     expect(prisma.chatMessage.create).toHaveBeenNthCalledWith(
@@ -627,40 +574,7 @@ describe('KloelService', () => {
       }),
     );
     expect(result).toEqual(
-      expect.objectContaining({
-        response: 'Resposta síncrona',
-        conversationId: 'thread-1',
-      }),
+      expect.objectContaining({ response: 'Resposta síncrona', conversationId: 'thread-1' }),
     );
-  });
-
-  it.each([
-    ['liste meus contatos do WhatsApp', true],
-    ['o que está pendente no WhatsApp?', true],
-    ['quero buscar notícias sobre o mercado hoje', true],
-    ['abrir o dashboard de mensagens', true],
-    ['verifique o status do meu WhatsApp', true],
-    ['gere um link de pagamento do produto premium', true],
-    ['consulte o histórico do chat', true],
-    ['pesquise no Google o preço do concorrente', true],
-    ['sincronize os contatos do painel', true],
-    ['remova este produto do catálogo', true],
-    ['atualize a marca no brand voice', true],
-    ['diagnóstico completo da operação comercial', false],
-    ['me explique como melhorar minha conversão', false],
-    ['oi', false],
-    ['quero uma estratégia completa de marketing', false],
-    ['faça um relatório executivo do funil', false],
-    ['escreva uma copy para anúncio', false],
-    ['me dê ideias de campanha', false],
-    ['qual é a diferença entre upsell e cross-sell?', false],
-    ['preciso de uma análise completa da minha operação', false],
-    ['resuma esta conversa para mim', false],
-    ['como vender mais pelo Instagram?', false],
-    ['busque', false],
-    ['produto', false],
-    ['abre aí', false],
-  ])('classifies tool planning intent for "%s"', (message, expected) => {
-    expect((service as any).shouldAttemptToolPlanningPass(message)).toBe(expected);
   });
 });

@@ -50,6 +50,7 @@ function shouldSeedObservedNode(
   return footprintMatchesFamilies(nodeFamilies(node), footprint);
 }
 
+/** Mark observed structural graph. */
 export function markObservedStructuralGraph(input: {
   nodes: PulseStructuralNode[];
   edges: PulseStructuralEdge[];

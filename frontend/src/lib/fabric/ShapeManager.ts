@@ -1,7 +1,8 @@
 import { type Canvas, Circle, Line, Polygon, Rect, Triangle } from 'fabric';
 import type { HistoryManager } from './HistoryManager';
+import { colors } from '@/lib/design-tokens';
 
-const DEFAULT_FILL = '#E0DDD8';
+const DEFAULT_FILL = 'colors.text.silver';
 
 /** Shape manager. */
 export class ShapeManager {

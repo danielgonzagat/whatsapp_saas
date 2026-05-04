@@ -1,6 +1,6 @@
 /**
  * Datadog adapter for PULSE external signals
- * Fetches performance metrics and error rates
+ * Fetches active monitors and error rates from Datadog API
  */
 
 import type { PulseSignal } from '../types';
@@ -10,6 +10,15 @@ interface DatadogAdapterConfig {
   appKey?: string;
   site?: string;
   maxAgeDays?: number;
+}
+
+interface DatadogMonitor {
+  id: number;
+  name: string;
+  status: string;
+  type: string;
+  message?: string;
+  overall_state?: string;
 }
 
 function makeDatadogRequest(url: string, apiKey?: string, appKey?: string): Promise<unknown> {
@@ -47,40 +56,95 @@ function makeDatadogRequest(url: string, apiKey?: string, appKey?: string): Prom
   });
 }
 
+/** Fetch datadog signals. */
 export async function fetchDatadogSignals(config: DatadogAdapterConfig): Promise<PulseSignal[]> {
   const signals: PulseSignal[] = [];
 
-  // If no Datadog config, return empty
   if (!config.apiKey || !config.appKey) {
     return signals;
   }
 
-  try {
-    const site = config.site || 'datadoghq.com';
-    const url =
-      'https://api.' +
-      site +
-      '/api/v1/query?query=avg:system.load{*}&from=' +
-      (Date.now() - 3600000);
-    const result = (await makeDatadogRequest(url, config.apiKey, config.appKey)) as Record<
-      string,
-      unknown
-    >;
+  const site = config.site || 'datadoghq.com';
+  const baseUrl = `https://api.${site}`;
 
-    if (result && typeof result === 'object') {
+  // Fetch triggered monitors (more actionable than raw metric queries)
+  try {
+    const monitorsUrl = `${baseUrl}/api/v1/monitor?monitor_tags=*&with_downtimes=false&group_states=alert,warn,no_data`;
+    const monitorsData = (await makeDatadogRequest(
+      monitorsUrl,
+      config.apiKey,
+      config.appKey,
+    )) as DatadogMonitor[];
+
+    if (Array.isArray(monitorsData) && monitorsData.length > 0) {
+      const alerting = monitorsData.filter((m) =>
+        ['Alert', 'Warn', 'No Data'].includes(m.overall_state || m.status || ''),
+      );
+
+      if (alerting.length > 0) {
+        for (const monitor of alerting.slice(0, 10)) {
+          const state = (monitor.overall_state || monitor.status || '').toLowerCase();
+          const severity = state === 'alert' ? 4 : state === 'warn' ? 3 : 2;
+
+          signals.push({
+            id: `datadog-monitor-${monitor.id}`,
+            type: 'runtime-error',
+            source: 'datadog',
+            truthMode: 'observed',
+            severity,
+            impactScore: severity + 1,
+            confidence: 0.9,
+            summary: `[MONITOR ${state.toUpperCase()}] ${monitor.name}`,
+            observedAt: new Date().toISOString(),
+            relatedFiles: [],
+            routePatterns: [],
+            tags: ['monitor', state, monitor.type || 'metric'],
+            capabilityIds: [],
+            flowIds: [],
+            recentChangeRefs: [],
+            ownerLane: 'reliability',
+            executionMode: 'observation_only',
+            protectedByGovernance: false,
+            validationTargets: [],
+          });
+        }
+      } else {
+        signals.push({
+          id: `datadog-monitors-ok-${Date.now()}`,
+          type: 'performance-metric',
+          source: 'datadog',
+          truthMode: 'observed',
+          severity: 1,
+          impactScore: 1,
+          confidence: 0.95,
+          summary: `All ${monitorsData.length} Datadog monitors OK`,
+          observedAt: new Date().toISOString(),
+          relatedFiles: [],
+          routePatterns: [],
+          tags: ['monitors', 'healthy'],
+          capabilityIds: [],
+          flowIds: [],
+          recentChangeRefs: [],
+          ownerLane: 'reliability',
+          executionMode: 'observation_only',
+          protectedByGovernance: false,
+          validationTargets: [],
+        });
+      }
+    } else if (Array.isArray(monitorsData)) {
       signals.push({
-        id: `datadog-metrics-${Date.now()}`,
-        type: 'performance-metric',
+        id: `datadog-no-monitors-${Date.now()}`,
+        type: 'config-gap',
         source: 'datadog',
         truthMode: 'observed',
         severity: 1,
         impactScore: 2,
-        confidence: 0.85,
-        summary: 'System metrics checked; no critical anomalies detected in last hour',
+        confidence: 0.95,
+        summary: 'No Datadog monitors configured — add monitors for production visibility',
         observedAt: new Date().toISOString(),
         relatedFiles: [],
         routePatterns: [],
-        tags: ['metrics', 'performance'],
+        tags: ['monitors', 'config-gap', 'missing'],
         capabilityIds: [],
         flowIds: [],
         recentChangeRefs: [],
@@ -90,8 +154,28 @@ export async function fetchDatadogSignals(config: DatadogAdapterConfig): Promise
         validationTargets: [],
       });
     }
-  } catch (error) {
-    // Silent fail
+  } catch (err: unknown) {
+    signals.push({
+      id: `datadog-api-error-${Date.now()}`,
+      type: 'config-gap',
+      source: 'datadog',
+      truthMode: 'observed',
+      severity: 2,
+      impactScore: 3,
+      confidence: 0.9,
+      summary: `Datadog API call failed: ${err instanceof Error ? err.message : 'unknown error'}`,
+      observedAt: new Date().toISOString(),
+      relatedFiles: [],
+      routePatterns: [],
+      tags: ['api-error', 'datadog'],
+      capabilityIds: [],
+      flowIds: [],
+      recentChangeRefs: [],
+      ownerLane: 'reliability',
+      executionMode: 'observation_only',
+      protectedByGovernance: false,
+      validationTargets: [],
+    });
   }
 
   return signals;

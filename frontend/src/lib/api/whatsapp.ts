@@ -1,9 +1,20 @@
 // WhatsApp Connection API functions
-import { mutate } from 'swr';
 import { apiFetch } from './core';
-
-const invalidateWhatsApp = () =>
-  mutate((key: string) => typeof key === 'string' && key.startsWith('/api/whatsapp'));
+import {
+  createWhatsAppApiError,
+  extractWhatsAppContactList,
+  invalidateWhatsApp,
+  isConnectedWhatsAppStatus,
+  mapWhatsAppStatusPayload,
+  normalizeWhatsAppStatusLabel,
+  normalizeWsBase,
+  resolveWhatsAppQrConnectedFlag,
+  whatsappApiRequest,
+  whatsappMutatingRequest,
+  type WhatsAppCatalogContact,
+  type WhatsAppQrImageData,
+  type WhatsAppStatusRaw,
+} from './whatsapp-helpers';
 import type {
   WhatsAppConnectResponse,
   WhatsAppConnectionStatus,
@@ -11,91 +22,13 @@ import type {
   WhatsAppScreencastTokenResponse,
 } from './core';
 
-const A_Z_A_Z__A_Z_A_Z_D_RE = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//;
-const PATTERN_RE = /^\/+/;
-const PATTERN_RE_2 = /\/+$/;
-
 export type {
+  WhatsAppCatalogContact,
   WhatsAppConnectionStatus,
   WhatsAppConnectResponse,
   WhatsAppScreencastTokenResponse,
   WhatsAppProofEntry,
 };
-
-interface WhatsAppApiError extends Error {
-  status?: number;
-}
-
-function createWhatsAppApiError(message: string, status = 0): WhatsAppApiError {
-  const error = new Error(message) as WhatsAppApiError;
-  error.status = status;
-  return error;
-}
-
-/**
- * Executes a WhatsApp API call via `apiFetch` and throws a normalized
- * error when the backend responds with a failure. Used by the many
- * small "call this endpoint and return data or throw" helpers below.
- */
-async function whatsappApiRequest<T = unknown>(
-  path: string,
-  options?: Parameters<typeof apiFetch>[1],
-): Promise<T> {
-  const res = await apiFetch<T>(path, options);
-  if (res.error) {
-    throw createWhatsAppApiError(res.error, res.status);
-  }
-  return res.data as T;
-}
-
-/** Runs a mutating WhatsApp request and invalidates cached SWR keys on success. */
-async function whatsappMutatingRequest<T = unknown>(
-  path: string,
-  options?: Parameters<typeof apiFetch>[1],
-): Promise<T> {
-  const data = await whatsappApiRequest<T>(path, options);
-  invalidateWhatsApp();
-  return data;
-}
-
-const CONNECTED_WHATSAPP_STATUS_LABELS = new Set(['CONNECTED', 'WORKING']);
-
-function readWhatsAppStatusLabel(data: Record<string, unknown> | undefined): string {
-  return String(data?.status || '').toUpperCase();
-}
-
-function isConnectedWhatsAppStatus(data: Record<string, unknown> | undefined): boolean {
-  if (data?.connected === true) {
-    return true;
-  }
-  return CONNECTED_WHATSAPP_STATUS_LABELS.has(readWhatsAppStatusLabel(data));
-}
-
-function normalizeWsBase(value: string | undefined): string {
-  const raw = String(value || '').trim();
-  if (!raw) {
-    return '';
-  }
-
-  try {
-    const explicit = A_Z_A_Z__A_Z_A_Z_D_RE.test(raw)
-      ? new URL(raw)
-      : new URL(
-          `${
-            typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-          }//${raw.replace(PATTERN_RE, '')}`,
-        );
-    if (explicit.protocol === 'http:') {
-      explicit.protocol = 'ws:';
-    }
-    if (explicit.protocol === 'https:') {
-      explicit.protocol = 'wss:';
-    }
-    return explicit.toString().replace(PATTERN_RE_2, '');
-  } catch {
-    return '';
-  }
-}
 
 /** Get whats app screencast ws base. */
 export function getWhatsAppScreencastWsBase(): string {
@@ -123,93 +56,9 @@ export function buildWhatsAppScreencastWsUrl(workspaceId: string, token?: string
   )}`;
 }
 
-interface WhatsAppStatusRaw {
-  connected?: boolean;
-  status?: string;
-  phone?: string;
-  phoneNumber?: string;
-  pushName?: string;
-  businessName?: string;
-  authUrl?: string;
-  phoneNumberId?: string;
-  whatsappBusinessId?: string | null;
-  qr?: string;
-  qrCode?: string;
-  qrCodeImage?: string;
-  message?: string;
-  provider?: string;
-  providerType?: string;
-  degradedReason?: string | null;
-  workerAvailable?: boolean;
-  workerHealthy?: boolean;
-  workerError?: string | null;
-  degraded?: boolean;
-  qrAvailable?: boolean;
-  browserSessionStatus?: string;
-  screencastStatus?: string;
-  viewerAvailable?: boolean;
-  takeoverActive?: boolean;
-  agentPaused?: boolean;
-  lastObservationAt?: string | null;
-  lastActionAt?: string | null;
-  observationSummary?: string | null;
-  activeProvider?: string | null;
-  proofCount?: number;
-  viewport?: { width: number; height: number };
-}
-
-function normalizeWhatsAppStatusLabel(rawStatus: string, connected: boolean): string {
-  if (connected) {
-    return 'connected';
-  }
-  if (rawStatus === 'CONNECTION_INCOMPLETE') {
-    return 'connection_incomplete';
-  }
-  return rawStatus ? rawStatus.toLowerCase() : 'disconnected';
-}
-
-function mapWhatsAppStatusPayload(
-  data: WhatsAppStatusRaw | undefined,
-  connected: boolean,
-  normalizedStatus: string,
-): WhatsAppConnectionStatus {
-  return {
-    connected,
-    status: normalizedStatus,
-    phone: data?.phone || data?.phoneNumber || undefined,
-    pushName: data?.pushName || data?.businessName || undefined,
-    authUrl: data?.authUrl || undefined,
-    phoneNumberId: data?.phoneNumberId || undefined,
-    whatsappBusinessId: data?.whatsappBusinessId || null,
-    qrCode: data?.qr || data?.qrCode || data?.qrCodeImage || undefined,
-    message: data?.message,
-    provider: data?.provider || data?.providerType,
-    degradedReason: data?.degradedReason || null,
-    workerAvailable: typeof data?.workerAvailable === 'boolean' ? data.workerAvailable : true,
-    workerHealthy: typeof data?.workerHealthy === 'boolean' ? data.workerHealthy : undefined,
-    workerError: data?.workerError || null,
-    degraded: Boolean(data?.degraded),
-    qrAvailable:
-      typeof data?.qrAvailable === 'boolean'
-        ? data.qrAvailable
-        : Boolean(data?.qr || data?.qrCode || data?.qrCodeImage),
-    browserSessionStatus: data?.browserSessionStatus || undefined,
-    screencastStatus: data?.screencastStatus || undefined,
-    viewerAvailable: Boolean(data?.viewerAvailable),
-    takeoverActive: Boolean(data?.takeoverActive),
-    agentPaused: Boolean(data?.agentPaused),
-    lastObservationAt: data?.lastObservationAt || null,
-    lastActionAt: data?.lastActionAt || null,
-    observationSummary: data?.observationSummary || null,
-    activeProvider: data?.activeProvider || null,
-    proofCount: Number(data?.proofCount || 0) || 0,
-    viewport: data?.viewport,
-  };
-}
-
 /** Get whats app status. */
 export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppConnectionStatus> {
-  const res = await apiFetch<WhatsAppStatusRaw>(`/api/whatsapp-api/session/status`);
+  const res = await apiFetch<WhatsAppStatusRaw>(`/whatsapp-api/session/status`);
   if (res.error) {
     throw createWhatsAppApiError(res.error, res.status);
   }
@@ -226,7 +75,7 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
 export async function initiateWhatsAppConnection(
   _workspaceId: string,
 ): Promise<WhatsAppConnectResponse> {
-  const res = await apiFetch<Record<string, unknown>>(`/api/whatsapp-api/session/start`, {
+  const res = await apiFetch<Record<string, unknown>>(`/whatsapp-api/session/start`, {
     method: 'POST',
   });
   if (res.error) {
@@ -266,7 +115,7 @@ export async function getWhatsAppQR(
 ): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
   const [qrResponse, statusResponse] = await Promise.all([
     getWhatsAppQrImageOnly(_workspaceId),
-    apiFetch<Record<string, unknown>>(`/api/whatsapp-api/session/status`),
+    apiFetch<Record<string, unknown>>(`/whatsapp-api/session/status`),
   ]);
 
   if (statusResponse.error) {
@@ -291,23 +140,11 @@ export async function getWhatsAppQR(
   };
 }
 
-interface WhatsAppQrImageData {
-  status?: string;
-  connected?: boolean;
-  qr?: string;
-  qrCode?: string;
-  message?: string;
-}
-
-function resolveWhatsAppQrConnectedFlag(rawStatus: string, connected?: boolean): boolean {
-  return connected === true || rawStatus === 'connected' || rawStatus === 'working';
-}
-
 /** Get whats app qr image only. */
 export async function getWhatsAppQrImageOnly(
   _workspaceId: string,
 ): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
-  const qrResponse = await apiFetch<Record<string, unknown>>(`/api/whatsapp-api/session/qr`);
+  const qrResponse = await apiFetch<Record<string, unknown>>(`/whatsapp-api/session/qr`);
 
   if (qrResponse.error) {
     throw createWhatsAppApiError(qrResponse.error, qrResponse.status);
@@ -327,12 +164,12 @@ export async function getWhatsAppQrImageOnly(
 
 /** Disconnect whats app. */
 export async function disconnectWhatsApp(_workspaceId: string): Promise<unknown> {
-  return whatsappMutatingRequest(`/api/whatsapp-api/session/disconnect`, { method: 'DELETE' });
+  return whatsappMutatingRequest(`/whatsapp-api/session/disconnect`, { method: 'DELETE' });
 }
 
 /** Logout whats app. */
 export async function logoutWhatsApp(_workspaceId: string): Promise<unknown> {
-  return whatsappMutatingRequest(`/api/whatsapp-api/session/logout`, { method: 'POST' });
+  return whatsappMutatingRequest(`/whatsapp-api/session/logout`, { method: 'POST' });
 }
 
 /** Get whats app viewer. */
@@ -437,22 +274,22 @@ export async function runWhatsAppActionTurn(
 // ============= WHATSAPP SESSION MANAGEMENT (advanced) =============
 
 export async function getWhatsAppSessionDiagnostics(_workspaceId: string): Promise<unknown> {
-  return whatsappApiRequest(`/api/whatsapp-api/session/diagnostics`);
+  return whatsappApiRequest(`/whatsapp-api/session/diagnostics`);
 }
 
 /** Force whats app session check. */
 export async function forceWhatsAppSessionCheck(_workspaceId: string): Promise<unknown> {
-  return whatsappMutatingRequest(`/api/whatsapp-api/session/force-check`, { method: 'POST' });
+  return whatsappMutatingRequest(`/whatsapp-api/session/force-check`, { method: 'POST' });
 }
 
 /** Force whats app reconnect. */
 export async function forceWhatsAppReconnect(_workspaceId: string): Promise<unknown> {
-  return whatsappMutatingRequest(`/api/whatsapp-api/session/force-reconnect`, { method: 'POST' });
+  return whatsappMutatingRequest(`/whatsapp-api/session/force-reconnect`, { method: 'POST' });
 }
 
 /** Repair whats app session config. */
 export async function repairWhatsAppSessionConfig(_workspaceId: string): Promise<unknown> {
-  return whatsappMutatingRequest(`/api/whatsapp-api/session/repair-config`, { method: 'POST' });
+  return whatsappMutatingRequest(`/whatsapp-api/session/repair-config`, { method: 'POST' });
 }
 
 /** Link whats app session. */
@@ -460,7 +297,7 @@ export async function linkWhatsAppSession(
   _workspaceId: string,
   sessionName: string,
 ): Promise<unknown> {
-  return whatsappMutatingRequest(`/api/whatsapp-api/session/link`, {
+  return whatsappMutatingRequest(`/whatsapp-api/session/link`, {
     method: 'POST',
     body: { sessionName },
   });
@@ -468,14 +305,14 @@ export async function linkWhatsAppSession(
 
 /** Recreate whats app session if invalid. */
 export async function recreateWhatsAppSessionIfInvalid(_workspaceId: string): Promise<unknown> {
-  return whatsappMutatingRequest(`/api/whatsapp-api/session/recreate-if-invalid`, {
+  return whatsappMutatingRequest(`/whatsapp-api/session/recreate-if-invalid`, {
     method: 'POST',
   });
 }
 
 /** Get whats app provider status. */
 export async function getWhatsAppProviderStatus(_workspaceId: string): Promise<unknown> {
-  return whatsappApiRequest(`/api/whatsapp-api/provider-status`);
+  return whatsappApiRequest(`/whatsapp-api/provider-status`);
 }
 
 /** Check whats app phone. */
@@ -484,39 +321,11 @@ export async function checkWhatsAppPhone(
   phone: string,
 ): Promise<{ phone: string; registered: boolean }> {
   return whatsappApiRequest<{ phone: string; registered: boolean }>(
-    `/api/whatsapp-api/check/${encodeURIComponent(phone)}`,
+    `/whatsapp-api/check/${encodeURIComponent(phone)}`,
   );
 }
 
 // ============= WHATSAPP CATALOG =============
-
-export interface WhatsAppCatalogContact {
-  /** Contact id property. */
-  contactId: string;
-  /** Name property. */
-  name?: string | null;
-  /** Phone property. */
-  phone?: string | null;
-  /** Lead score property. */
-  leadScore?: number;
-  /** Purchase probability score property. */
-  purchaseProbabilityScore?: number;
-  /** Last message at property. */
-  lastMessageAt?: string | null;
-  /** Cataloged at property. */
-  catalogedAt?: string | null;
-  [key: string]: unknown;
-}
-
-function extractWhatsAppContactList(data: Record<string, unknown> | undefined): {
-  contacts: WhatsAppCatalogContact[];
-  total: number;
-} {
-  return {
-    contacts: Array.isArray(data?.contacts) ? (data.contacts as WhatsAppCatalogContact[]) : [],
-    total: Number(data?.total || 0),
-  };
-}
 
 /** Get whats app catalog contacts. */
 export async function getWhatsAppCatalogContacts(
@@ -538,7 +347,7 @@ export async function getWhatsAppCatalogContacts(
   }
   const query = qs.toString();
   const data = await whatsappApiRequest<Record<string, unknown>>(
-    `/api/whatsapp-api/catalog/contacts${query ? `?${query}` : ''}`,
+    `/whatsapp-api/catalog/contacts${query ? `?${query}` : ''}`,
   );
   return extractWhatsAppContactList(data);
 }
@@ -563,7 +372,7 @@ export async function getWhatsAppCatalogRanking(
   }
   const query = qs.toString();
   const data = await whatsappApiRequest<Record<string, unknown>>(
-    `/api/whatsapp-api/catalog/ranking${query}`,
+    `/whatsapp-api/catalog/ranking${query}`,
   );
   return extractWhatsAppContactList(data);
 }
@@ -573,7 +382,7 @@ export async function refreshWhatsAppCatalog(
   _workspaceId: string,
   params?: { days?: number; reason?: string },
 ): Promise<unknown> {
-  return whatsappMutatingRequest(`/api/whatsapp-api/catalog/refresh`, {
+  return whatsappMutatingRequest(`/whatsapp-api/catalog/refresh`, {
     method: 'POST',
     body: { days: params?.days, reason: params?.reason },
   });
@@ -584,7 +393,7 @@ export async function scoreWhatsAppCatalog(
   _workspaceId: string,
   params?: { contactId?: string; days?: number; limit?: number; reason?: string },
 ): Promise<unknown> {
-  return whatsappMutatingRequest(`/api/whatsapp-api/catalog/score`, {
+  return whatsappMutatingRequest(`/whatsapp-api/catalog/score`, {
     method: 'POST',
     body: params,
   });
@@ -604,8 +413,7 @@ export interface WhatsappTemplate {
 
 /** Connect whatsapp. */
 export async function connectWhatsapp(_workspaceId: string): Promise<unknown> {
-  // Uses existing session/status endpoint via proxy
-  const res = await apiFetch<unknown>(`/api/whatsapp-api/session/status`);
+  const res = await apiFetch<unknown>(`/whatsapp-api/session/status`);
   if (res.error) {
     throw new Error('Failed to connect WhatsApp');
   }
@@ -640,8 +448,6 @@ export async function sendWhatsappTemplate(params: {
   language: string;
   components?: Array<Record<string, unknown>>;
 }): Promise<unknown> {
-  // Templates require WhatsApp Business API (not available with Puppeteer/web provider)
-  // When Business API is configured, this will call the actual endpoint
   const { workspaceId, ...body } = params;
   const res = await apiFetch<unknown>(`/whatsapp/${workspaceId}/send`, {
     method: 'POST',
@@ -655,8 +461,6 @@ export async function sendWhatsappTemplate(params: {
 
 /** List whatsapp templates. */
 export async function listWhatsappTemplates(_workspaceId: string): Promise<WhatsappTemplate[]> {
-  // Templates are a WhatsApp Business API feature — not available with web provider
-  // Returns empty array with graceful degradation
   return [];
 }
 

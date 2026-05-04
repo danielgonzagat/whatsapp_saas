@@ -7,13 +7,21 @@ import type {
 } from './types';
 import { deriveStructuralFamilies, familiesOverlap } from './structural-family';
 
+/** Pulse observation footprint shape. */
 export interface PulseObservationFootprint {
+  /** Route patterns property. */
   routePatterns: string[];
+  /** Route families property. */
   routeFamilies: string[];
+  /** Module keys property. */
   moduleKeys: string[];
+  /** Module families property. */
   moduleFamilies: string[];
+  /** Flow ids property. */
   flowIds: string[];
+  /** Scenario ids property. */
   scenarioIds: string[];
+  /** Probe ids property. */
   probeIds: string[];
 }
 
@@ -27,19 +35,35 @@ function executedFlowResults(evidence?: Partial<PulseExecutionEvidence>): PulseF
   );
 }
 
-function actorResults(evidence?: Partial<PulseExecutionEvidence>) {
-  return [
-    ...(evidence?.customer?.results || []),
-    ...(evidence?.operator?.results || []),
-    ...(evidence?.admin?.results || []),
-    ...(evidence?.soak?.results || []),
-  ];
+type PulseScenarioResultItem = PulseActorEvidence['results'][number];
+
+function hasScenarioResults(value: unknown): value is { results: PulseScenarioResultItem[] } {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    'results' in value &&
+    Array.isArray(value.results)
+  );
+}
+
+function scenarioResults(evidence?: Partial<PulseExecutionEvidence>): PulseScenarioResultItem[] {
+  if (!evidence) {
+    return [];
+  }
+  return Object.values(evidence).flatMap((evidenceBlock) =>
+    hasScenarioResults(evidenceBlock) ? evidenceBlock.results : [],
+  );
 }
 
 function executedScenarioResults(
   evidence?: Partial<PulseExecutionEvidence>,
 ): Array<PulseActorEvidence['results'][number]> {
-  return actorResults(evidence).filter((result) => result.executed || result.status === 'failed');
+  return scenarioResults(evidence).filter(
+    (result) =>
+      result.executed &&
+      (result.status === 'passed' || result.status === 'failed') &&
+      result.truthMode !== 'inferred',
+  );
 }
 
 function observedProbes(evidence?: Partial<PulseExecutionEvidence>): PulseRuntimeProbe[] {
@@ -86,6 +110,7 @@ function probeRoutePatterns(probe: PulseRuntimeProbe): string[] {
   return [...inferred];
 }
 
+/** Build observation footprint. */
 export function buildObservationFootprint(
   resolvedManifest: PulseResolvedManifest,
   executionEvidence?: Partial<PulseExecutionEvidence>,
@@ -118,6 +143,7 @@ export function buildObservationFootprint(
   };
 }
 
+/** Footprint matches families. */
 export function footprintMatchesFamilies(
   families: string[],
   footprint: PulseObservationFootprint,

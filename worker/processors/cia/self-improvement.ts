@@ -223,7 +223,7 @@ function weightedSamplePick(
 ): MessageVariant | null {
   const weights = ordered.map((variant) => Math.max(0.1, rank(variant)));
   const total = weights.reduce((sum, weight) => sum + weight, 0);
-  let cursor = (randomInt(1_000_000) / 1_000_000) * total;
+  let cursor = secureRandomFraction() * total;
   for (let index = 0; index < ordered.length; index += 1) {
     cursor -= weights[index];
     if (cursor <= 0) {
@@ -257,7 +257,7 @@ export async function pickVariant(
     return a.uses - b.uses;
   });
 
-  if (ordered.length > 1 && randomInt(1_000_000) / 1_000_000 < epsilon) {
+  if (ordered.length > 1 && secureRandomFraction() < epsilon) {
     const sampled = weightedSamplePick(ordered, rank);
     if (sampled) {
       return sampled;
@@ -265,6 +265,10 @@ export async function pickVariant(
   }
 
   return ordered[0];
+}
+
+function secureRandomFraction(): number {
+  return randomInt(0, 1_000_000_000) / 1_000_000_000;
 }
 
 interface DecisionLogInput {
@@ -372,7 +376,7 @@ export async function updateVariantOutcome(
       },
     },
     update: {
-      value: next as unknown as Prisma.InputJsonObject,
+      value: next as object as Prisma.InputJsonObject,
       content: next.text,
       metadata: {
         outcome: input.outcome,
@@ -382,7 +386,7 @@ export async function updateVariantOutcome(
     create: {
       workspaceId: input.workspaceId,
       key,
-      value: next as unknown as Prisma.InputJsonObject,
+      value: next as object as Prisma.InputJsonObject,
       category: 'cia_variant',
       type: input.family,
       content: next.text,

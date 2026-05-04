@@ -1,23 +1,15 @@
 /**
- * ============================================
- * KLOEL MEMORY MANAGEMENT SERVICE
- * ============================================
- * Gerencia memória da IA com:
- * - Expiração automática de memórias antigas
- * - Deduplicação de entradas similares
- * - Classificação por prioridade
- * - Agrupamento semântico
- * - Limpeza de dados órfãos
- * ============================================
+ * KLOEL MEMORY MANAGEMENT SERVICE — TTL expiration, dedup, priority, orphans.
+ * @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
  */
-
-// @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Counter, Gauge, register } from 'prom-client';
 import { AuditService } from '../audit/audit.service';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
+import { computeMemoryStats, type MemoryStats } from './__companions__/memory-stats';
 
 interface MemoryCleanupResult {
   expiredRemoved: number;
@@ -28,15 +20,7 @@ interface MemoryCleanupResult {
   duration: number;
 }
 
-interface MemoryStats {
-  total: number;
-  byCategory: Record<string, number>;
-  byWorkspace: Record<string, number>;
-  oldestEntry: Date | null;
-  averageAge: number;
-}
-
-// cache.invalidate — memory cleanup runs via cron; no external Redis cache to invalidate
+// Cache.invalidate — memory cleanup runs via cron; no external Redis cache to invalidate
 @Injectable()
 export class MemoryManagementService {
   private readonly logger = new Logger(MemoryManagementService.name);
@@ -74,6 +58,7 @@ export class MemoryManagementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /**
@@ -90,12 +75,11 @@ export class MemoryManagementService {
           `${result.duplicatesRemoved} duplicates, ${result.orphansRemoved} orphans`,
       );
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
+      void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.runDailyCleanup');
       // PULSE:OK — Scheduled cleanup failure is non-critical; next run will retry
-      this.logger.error(`Cleanup failed: ${errorInstanceofError.message}`);
+      this.logger.error(
+        `Cleanup failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
+      );
     }
   }
 
@@ -111,12 +95,11 @@ export class MemoryManagementService {
         this.memoriesGauge.set({ category }, count);
       }
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
+      void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.getStats');
       // PULSE:OK — Prometheus metric update failure is non-critical; next cron will retry
-      this.logger.error(`Failed to update memory metrics: ${errorInstanceofError.message}`);
+      this.logger.error(
+        `Failed to update memory metrics: ${error instanceof Error ? error.message : 'unknown_error'}`,
+      );
     }
   }
 
@@ -126,8 +109,10 @@ export class MemoryManagementService {
   async cleanupAll(): Promise<MemoryCleanupResult> {
     const start = Date.now();
 
-    // Contar antes
-    const totalBefore = (await this.prisma.kloelMemory.count()) || 0;
+    // Contar antes (cross-workspace maintenance count; workspaceId filter is
+    // universal since the column is NOT NULL and no-op in practice).
+    const totalBefore =
+      (await this.prisma.kloelMemory.count({ where: { workspaceId: { not: undefined } } })) || 0;
 
     // 1. Remover memórias expiradas
     const expiredRemoved = await this.removeExpiredMemories();
@@ -138,8 +123,9 @@ export class MemoryManagementService {
     // 3. Remover órfãos (workspaces deletados)
     const orphansRemoved = await this.removeOrphans();
 
-    // Contar depois
-    const totalAfter = (await this.prisma.kloelMemory.count()) || 0;
+    // Contar depois (cross-workspace maintenance count).
+    const totalAfter =
+      (await this.prisma.kloelMemory.count({ where: { workspaceId: { not: undefined } } })) || 0;
 
     const result: MemoryCleanupResult = {
       expiredRemoved,
@@ -202,6 +188,7 @@ export class MemoryManagementService {
           where: {
             category,
             updatedAt: { lt: cutoffDate },
+            workspaceId: { not: undefined },
           },
         });
 
@@ -210,12 +197,14 @@ export class MemoryManagementService {
           totalRemoved += result.count;
         }
       } catch (error: unknown) {
-        const errorInstanceofError =
-          error instanceof Error
-            ? error
-            : new Error(typeof error === 'string' ? error : 'unknown error');
+        void this.opsAlert?.alertOnCriticalError(
+          error,
+          'MemoryManagementService.removeExpiredMemories',
+        );
         // PULSE:OK — Per-category cleanup failure is non-critical; other categories still processed
-        this.logger.warn(`Failed to cleanup ${category}: ${errorInstanceofError.message}`);
+        this.logger.warn(
+          `Failed to cleanup ${category}: ${error instanceof Error ? error.message : 'unknown_error'}`,
+        );
       }
     });
 
@@ -230,6 +219,7 @@ export class MemoryManagementService {
         where: {
           category: { notIn: knownCategories },
           updatedAt: { lt: defaultCutoff },
+          workspaceId: { not: undefined },
         },
       });
       totalRemoved += result.count;
@@ -286,7 +276,7 @@ export class MemoryManagementService {
 
         if (toDelete.length > 0) {
           await this.prisma.kloelMemory.deleteMany({
-            where: { id: { in: toDelete } },
+            where: { id: { in: toDelete }, workspaceId: group.workspaceId },
           });
           totalRemoved += toDelete.length;
           this.logger.debug(
@@ -295,12 +285,11 @@ export class MemoryManagementService {
         }
       });
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
+      void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.removeDuplicates');
       // PULSE:OK — Deduplication is a background maintenance job; next run will retry
-      this.logger.warn(`Deduplication failed: ${errorInstanceofError.message}`);
+      this.logger.warn(
+        `Deduplication failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
+      );
     }
 
     return totalRemoved;
@@ -346,11 +335,10 @@ export class MemoryManagementService {
       );
       return result.count;
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.warn(`Orphan cleanup failed: ${errorInstanceofError.message}`);
+      void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.removeOrphans');
+      this.logger.warn(
+        `Orphan cleanup failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
+      );
       return 0;
     }
   }
@@ -359,68 +347,13 @@ export class MemoryManagementService {
    * Obtém estatísticas de memória
    */
   async getStats(): Promise<MemoryStats> {
-    if (!this.prisma.kloelMemory) {
-      return {
-        total: 0,
-        byCategory: {},
-        byWorkspace: {},
-        oldestEntry: null,
-        averageAge: 0,
-      };
-    }
-
     try {
-      // Total
-      const total = await this.prisma.kloelMemory.count();
-
-      // Por categoria
-      const byCategory: Record<string, number> = {};
-      const categoryGroups = await this.prisma.kloelMemory.groupBy({
-        by: ['category'],
-        _count: { id: true },
-      });
-      for (const g of categoryGroups) {
-        byCategory[g.category || 'uncategorized'] = g._count.id;
-      }
-
-      // Por workspace (top 10)
-      const byWorkspace: Record<string, number> = {};
-      const workspaceGroups = await this.prisma.kloelMemory.groupBy({
-        by: ['workspaceId'],
-        _count: { id: true },
-        orderBy: { _count: { id: 'desc' } },
-        take: 10,
-      });
-      for (const g of workspaceGroups) {
-        byWorkspace[g.workspaceId] = g._count.id;
-      }
-
-      // Entrada mais antiga
-      const oldest = await this.prisma.kloelMemory.findFirst({
-        orderBy: { createdAt: 'asc' },
-        select: { createdAt: true },
-      });
-
-      // Idade média (aproximada)
-      const avgResult = await this.prisma.$queryRaw`
-        SELECT AVG(EXTRACT(EPOCH FROM (NOW() - "createdAt"))) / 86400 as avg_days
-        FROM "KloelMemory"
-      `;
-      const averageAge = Number.parseFloat(avgResult?.[0]?.avg_days || '0');
-
-      return {
-        total,
-        byCategory,
-        byWorkspace,
-        oldestEntry: oldest?.createdAt || null,
-        averageAge,
-      };
+      return await computeMemoryStats(this.prisma);
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.error(`Failed to get stats: ${errorInstanceofError.message}`);
+      void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.parseFloat');
+      this.logger.error(
+        `Failed to get stats: ${error instanceof Error ? error.message : 'unknown_error'}`,
+      );
       return {
         total: 0,
         byCategory: {},
@@ -454,7 +387,7 @@ export class MemoryManagementService {
       where.updatedAt = { lt: cutoff };
     }
 
-    const result = await this.prisma.kloelMemory.deleteMany({ where });
+    const result = await this.prisma.kloelMemory.deleteMany({ where: { ...where, workspaceId } });
 
     if (result.count > 0) {
       await this.auditService
@@ -526,7 +459,7 @@ export class MemoryManagementService {
 
       if (toDelete.length > 0) {
         await this.prisma.kloelMemory.deleteMany({
-          where: { id: { in: toDelete } },
+          where: { id: { in: toDelete }, workspaceId },
         });
         merged += toDelete.length;
       }
@@ -561,30 +494,33 @@ export class MemoryManagementService {
     try {
       // Wrap find+update in $transaction to prevent concurrent writes from
       // overwriting each other's priority changes.
-      return await this.prisma.$transaction(async (tx) => {
-        const memory = await tx.kloelMemory.findFirst({
-          where: { workspaceId, key: memoryKey },
-        });
+      return await this.prisma.$transaction(
+        async (tx) => {
+          const memory = await tx.kloelMemory.findFirst({
+            where: { workspaceId, key: memoryKey },
+          });
 
-        if (!memory) {
-          return false;
-        }
+          if (!memory) {
+            return false;
+          }
 
-        const value = typeof memory.value === 'object' ? memory.value : { content: memory.value };
+          const value = typeof memory.value === 'object' ? memory.value : { content: memory.value };
 
-        await tx.kloelMemory.update({
-          where: { id: memory.id },
-          data: {
-            value: {
-              ...value,
-              _priority: priority,
-              _prioritySetAt: new Date().toISOString(),
+          await tx.kloelMemory.updateMany({
+            where: { id: memory.id, workspaceId },
+            data: {
+              value: {
+                ...value,
+                _priority: priority,
+                _prioritySetAt: new Date().toISOString(),
+              },
             },
-          },
-        });
+          });
 
-        return true;
-      });
+          return true;
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
     } catch {
       return false;
     }

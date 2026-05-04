@@ -185,6 +185,12 @@ export interface PublicCheckoutConfig {
   timerExpiredMessage?: string;
   /** Timer position property. */
   timerPosition?: string;
+  /** Show stock counter property. */
+  showStockCounter?: boolean;
+  /** Stock message property. */
+  stockMessage?: string;
+  /** Fake stock count property. */
+  fakeStockCount?: number;
   /** Shipping mode property. */
   shippingMode?: 'FREE' | 'FIXED' | 'VARIABLE';
   /** Shipping origin zip property. */

@@ -60,9 +60,9 @@ export function getRedisUrl(): string {
  * test bugs where the production code path was never actually
  * exercised.
  */
-export function createRedisClient(options?: RedisOptions): Redis | null {
+export function createRedisClient(options?: RedisOptions): Redis {
   if (process.env.JEST_WORKER_ID) {
-    return new RedisMock() as unknown as Redis;
+    return new RedisMock();
   }
 
   const url = getRedisUrl();

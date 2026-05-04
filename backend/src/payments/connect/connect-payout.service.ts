@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
 
 import { StripeService } from '../../billing/stripe.service';
 import type { StripeAccount } from '../../billing/stripe-types';
@@ -14,6 +15,8 @@ import { LedgerService } from '../ledger/ledger.service';
 export interface CreateConnectPayoutInput {
   /** Account balance id property. */
   accountBalanceId: string;
+  /** Workspace id property. */
+  workspaceId: string;
   /** Amount cents property. */
   amountCents: bigint;
   /** Request id property. */
@@ -72,6 +75,8 @@ export class ConnectPayoutsNotEnabledError extends Error {
  */
 @Injectable()
 export class ConnectPayoutService {
+  private readonly logger = new Logger(ConnectPayoutService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly stripeService: StripeService,
@@ -80,26 +85,30 @@ export class ConnectPayoutService {
   ) {}
 
   /** Create payout. */
+  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async createPayout(input: CreateConnectPayoutInput): Promise<CreateConnectPayoutResult> {
     // Wrap read-check in transaction to prevent TOCTOU race condition
-    const balance = await this.prisma.$transaction(async (tx) => {
-      const bal = await tx.connectAccountBalance.findUnique({
-        where: { id: input.accountBalanceId },
-      });
-      if (!bal) {
-        throw new AccountBalanceNotFoundError(input.accountBalanceId);
-      }
+    const balance = await this.prisma.$transaction(
+      async (tx) => {
+        const bal = await tx.connectAccountBalance.findFirst({
+          where: { id: input.accountBalanceId, workspaceId: input.workspaceId },
+        });
+        if (!bal) {
+          throw new AccountBalanceNotFoundError(input.accountBalanceId);
+        }
 
-      if (bal.availableBalanceCents < input.amountCents) {
-        throw new InsufficientAvailableBalanceError(
-          bal.id,
-          input.amountCents,
-          bal.availableBalanceCents,
-        );
-      }
+        if (bal.availableBalanceCents < input.amountCents) {
+          throw new InsufficientAvailableBalanceError(
+            bal.id,
+            input.amountCents,
+            bal.availableBalanceCents,
+          );
+        }
 
-      return bal;
-    });
+        return bal;
+      },
+      { isolationLevel: 'Serializable' },
+    );
 
     const account = (await this.stripeService.stripe.accounts.retrieve(
       balance.stripeAccountId,
@@ -123,6 +132,15 @@ export class ConnectPayoutService {
       },
     });
 
+    this.logger.log('connect payout initiated', {
+      workspaceId: balance.workspaceId,
+      accountBalanceId: balance.id,
+      stripeAccountId: balance.stripeAccountId,
+      amountCents: Number(input.amountCents),
+      currency: input.currency ?? 'brl',
+      requestId: input.requestId,
+    });
+
     let payout;
     try {
       payout = await this.stripeService.stripe.payouts.create(
@@ -139,7 +157,27 @@ export class ConnectPayoutService {
           idempotencyKey: input.requestId,
         },
       );
-    } catch (error) {
+    } catch (error: unknown) {
+      this.logger.error('connect payout failed', (error as Error).stack, {
+        workspaceId: balance.workspaceId,
+        accountBalanceId: balance.id,
+        stripeAccountId: balance.stripeAccountId,
+        amountCents: Number(input.amountCents),
+        requestId: input.requestId,
+        error: (error as Error).message,
+      });
+      Sentry.captureException(error, {
+        tags: { type: 'financial_alert', operation: 'connect_payout' },
+        extra: {
+          workspaceId: balance.workspaceId,
+          accountBalanceId: balance.id,
+          stripeAccountId: balance.stripeAccountId,
+          amountCents: Number(input.amountCents),
+          requestId: input.requestId,
+        },
+        level: 'fatal',
+      });
+
       await this.ledgerService.creditAvailableByAdjustment({
         accountBalanceId: balance.id,
         amountCents: input.amountCents,
@@ -159,6 +197,16 @@ export class ConnectPayoutService {
       throw error;
     }
 
+    this.logger.log('connect payout completed', {
+      workspaceId: balance.workspaceId,
+      accountBalanceId: balance.id,
+      stripeAccountId: balance.stripeAccountId,
+      payoutId: payout.id,
+      status: String(payout.status ?? 'pending'),
+      amountCents: Number(input.amountCents),
+      requestId: input.requestId,
+    });
+
     return {
       payoutId: payout.id,
       status: String(payout.status ?? 'pending'),
@@ -169,7 +217,22 @@ export class ConnectPayoutService {
   }
 
   /** Handle failed payout. */
+  // PULSE_OK: rate-limited by PaymentWebhookStripeController
   async handleFailedPayout(input: HandleFailedConnectPayoutInput): Promise<void> {
+    const balance = await this.prisma.connectAccountBalance.findUnique({
+      where: { id: input.accountBalanceId },
+      select: { workspaceId: true, stripeAccountId: true },
+    });
+
+    this.logger.error('handling failed connect payout', undefined, {
+      payoutId: input.payoutId,
+      accountBalanceId: input.accountBalanceId,
+      amountCents: Number(input.amountCents),
+      requestId: input.requestId,
+      workspaceId: balance?.workspaceId,
+      stripeAccountId: balance?.stripeAccountId,
+    });
+
     await this.ledgerService.creditAvailableByAdjustment({
       accountBalanceId: input.accountBalanceId,
       amountCents: input.amountCents,
@@ -178,10 +241,6 @@ export class ConnectPayoutService {
         requestId: input.requestId,
         stripePayoutId: input.payoutId,
       },
-    });
-    const balance = await this.prisma.connectAccountBalance.findUnique({
-      where: { id: input.accountBalanceId },
-      select: { workspaceId: true },
     });
     this.financialAlert.withdrawalFailed(
       new Error(`Stripe payout.failed webhook ${input.payoutId}`),

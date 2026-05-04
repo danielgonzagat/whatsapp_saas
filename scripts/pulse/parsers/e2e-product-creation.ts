@@ -27,8 +27,7 @@
  * - Valid test JWT with OWNER role (PULSE_TEST_JWT)
  * - Test workspace (PULSE_TEST_WORKSPACE_ID)
  *
- * BREAK TYPES:
- * - E2E_PRODUCT_BROKEN (critical) — any step in product→plan→checkout config fails
+ * Emits E2E flow evidence failures; diagnostic identity is synthesized downstream.
  */
 
 import type { Break, PulseConfig } from '../types';
@@ -41,6 +40,101 @@ import {
   isDeepMode,
   getBackendUrl,
 } from './runtime-utils';
+import {
+  parsePrismaModels,
+  readFile,
+  resolveSchemaPath,
+  type PrismaField,
+  type PrismaModel,
+} from './structural-evidence';
+
+function productE2eFinding(input: {
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+}): Break {
+  return {
+    type: 'e2e-flow-evidence-failure',
+    severity: 'critical',
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: 'runtime:e2e:product-creation',
+    surface: 'product-flow',
+  };
+}
+
+function quoteIdent(identifier: string): string {
+  return `"${identifier.replace(/"/g, '""')}"`;
+}
+
+function modelHasFields(model: PrismaModel, fieldNames: readonly string[]): boolean {
+  const fields = new Set(model.fields.map((field) => field.name));
+  return fieldNames.every((fieldName) => fields.has(fieldName));
+}
+
+function discoverWorkspaceActorModel(models: readonly PrismaModel[]): PrismaModel | null {
+  return (
+    models.find(
+      (model) =>
+        modelHasFields(model, ['id', 'email', 'workspaceId']) &&
+        model.fields.some((field) => /kyc.*status|status.*kyc/i.test(field.name)),
+    ) ??
+    models.find((model) => modelHasFields(model, ['id', 'email', 'workspaceId'])) ??
+    null
+  );
+}
+
+function discoverProductPersistenceModel(
+  models: readonly PrismaModel[],
+  responseKeys: readonly string[],
+): PrismaModel | null {
+  const responseKeySet = new Set(responseKeys);
+  const candidates = models
+    .filter((model) => modelHasFields(model, ['id', 'name']))
+    .map((model) => ({
+      model,
+      score: model.fields.filter((field) => responseKeySet.has(field.name)).length,
+    }))
+    .sort((left, right) => right.score - left.score);
+
+  return candidates[0]?.model ?? null;
+}
+
+function discoverKycStatusField(model: PrismaModel): PrismaField | null {
+  return model.fields.find((field) => /kyc.*status|status.*kyc/i.test(field.name)) ?? null;
+}
+
+function buildWorkspaceActorQuery(actorModel: PrismaModel): string {
+  const kycStatusField = discoverKycStatusField(actorModel);
+  const selectedColumns = ['id', 'workspaceId', 'email'];
+  const whereClauses = [
+    `${quoteIdent('workspaceId')} IS NOT NULL`,
+    `${quoteIdent('email')} IS NOT NULL`,
+  ];
+
+  if (kycStatusField) {
+    whereClauses.push(`${quoteIdent(kycStatusField.name)} IS NOT NULL`);
+  }
+
+  return [
+    `SELECT ${selectedColumns.map(quoteIdent).join(', ')}`,
+    `  FROM ${quoteIdent(actorModel.tableName)}`,
+    ` WHERE ${whereClauses.join(' AND ')}`,
+    ` LIMIT 5`,
+  ].join('\n');
+}
+
+function buildCreatedEntityReadbackQuery(model: PrismaModel): string {
+  return [
+    `SELECT ${['id', 'name'].map(quoteIdent).join(', ')}`,
+    `  FROM ${quoteIdent(model.tableName)}`,
+    ` WHERE ${quoteIdent('id')} = $1`,
+    ` LIMIT 1`,
+  ].join('\n');
+}
 
 /** Check e2e product creation. */
 export async function checkE2eProductCreation(config: PulseConfig): Promise<Break[]> {
@@ -52,19 +146,18 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
   const breaks: Break[] = [];
   let productId: string | null = null;
   let jwt: string | null = null;
+  const schemaPath = resolveSchemaPath(config);
+  const models = parsePrismaModels(schemaPath ? readFile(schemaPath) : '');
+  const actorModel = discoverWorkspaceActorModel(models);
 
-  // ── Find a real workspace with KYC-approved agent ────────────────────────
-  // POST /products requires KycApprovedGuard, so we need a real approved user in DB
+  // ── Find a real workspace actor from discovered schema shape ─────────────
   try {
-    const approvedAgents = await dbQuery(
-      `SELECT a.id, a."workspaceId", a.email FROM "Agent" a
-       WHERE a."kycStatus" = 'approved' AND a."workspaceId" IS NOT NULL
-       LIMIT 1`,
-    );
+    if (!actorModel) {
+      return breaks;
+    }
+    const approvedAgents = await dbQuery(buildWorkspaceActorQuery(actorModel));
 
     if (approvedAgents.length === 0) {
-      // No KYC-approved agent exists — can't test product creation
-      // This is informational, not a break in the product flow itself
       return breaks;
     }
 
@@ -97,14 +190,14 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
     );
 
     if (!createRes.ok || (createRes.status !== 201 && createRes.status !== 200)) {
-      breaks.push({
-        type: 'E2E_PRODUCT_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/kloel/product.controller.ts',
-        line: 164,
-        description: `POST /products returned ${createRes.status} — product creation broken`,
-        detail: `Body: ${JSON.stringify(createRes.body).slice(0, 300)}`,
-      });
+      breaks.push(
+        productE2eFinding({
+          file: 'backend/src/kloel/product.controller.ts',
+          line: 164,
+          description: `POST /products returned ${createRes.status} — product creation broken`,
+          detail: `Body: ${JSON.stringify(createRes.body).slice(0, 300)}`,
+        }),
+      );
       return breaks; // Can't test further without a product
     }
 
@@ -113,39 +206,39 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
     productId = product?.id || null;
 
     if (!productId) {
-      breaks.push({
-        type: 'E2E_PRODUCT_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/kloel/product.controller.ts',
-        line: 201,
-        description: 'POST /products response missing product.id',
-        detail: `Response: ${JSON.stringify(body).slice(0, 300)}`,
-      });
+      breaks.push(
+        productE2eFinding({
+          file: 'backend/src/kloel/product.controller.ts',
+          line: 201,
+          description: 'POST /products response missing product.id',
+          detail: `Response: ${JSON.stringify(body).slice(0, 300)}`,
+        }),
+      );
       return breaks;
     }
 
     // ── Step 2: GET /products/:id — verify data matches ──────────────────
     const getRes = await httpGet(`/products/${productId}`, { jwt });
     if (!getRes.ok) {
-      breaks.push({
-        type: 'E2E_PRODUCT_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/kloel/product.controller.ts',
-        line: 146,
-        description: `GET /products/${productId} returned ${getRes.status} after creation`,
-        detail: `Body: ${JSON.stringify(getRes.body).slice(0, 200)}`,
-      });
+      breaks.push(
+        productE2eFinding({
+          file: 'backend/src/kloel/product.controller.ts',
+          line: 146,
+          description: `GET /products/${productId} returned ${getRes.status} after creation`,
+          detail: `Body: ${JSON.stringify(getRes.body).slice(0, 200)}`,
+        }),
+      );
     } else {
       const fetchedProduct = getRes.body?.product || getRes.body;
       if (fetchedProduct?.name !== '__pulse_test__product') {
-        breaks.push({
-          type: 'E2E_PRODUCT_BROKEN',
-          severity: 'critical',
-          file: 'backend/src/kloel/product.controller.ts',
-          line: 150,
-          description: 'GET /products/:id returned product with wrong name — data mismatch',
-          detail: `Expected: __pulse_test__product, Got: ${fetchedProduct?.name}`,
-        });
+        breaks.push(
+          productE2eFinding({
+            file: 'backend/src/kloel/product.controller.ts',
+            line: 150,
+            description: 'GET /products/:id returned product with wrong name — data mismatch',
+            detail: `Expected: __pulse_test__product, Got: ${fetchedProduct?.name}`,
+          }),
+        );
       }
     }
 
@@ -155,44 +248,45 @@ export async function checkE2eProductCreation(config: PulseConfig): Promise<Brea
       const products: any[] = listRes.body?.products || listRes.body || [];
       const found = Array.isArray(products) ? products.some((p: any) => p.id === productId) : false;
       if (!found) {
-        breaks.push({
-          type: 'E2E_PRODUCT_BROKEN',
-          severity: 'critical',
-          file: 'backend/src/kloel/product.controller.ts',
-          line: 86,
-          description: 'Newly created product not found in GET /products list',
-          detail: `productId: ${productId}, list count: ${Array.isArray(products) ? products.length : 'N/A'}`,
-        });
+        breaks.push(
+          productE2eFinding({
+            file: 'backend/src/kloel/product.controller.ts',
+            line: 86,
+            description: 'Newly created product not found in GET /products list',
+            detail: `productId: ${productId}, list count: ${Array.isArray(products) ? products.length : 'N/A'}`,
+          }),
+        );
       }
     }
 
     // ── Step 4: Verify product in DB ─────────────────────────────────────
     try {
-      const dbRows = await dbQuery(`SELECT id, name, format FROM "Product" WHERE id = $1 LIMIT 1`, [
-        productId,
-      ]);
+      const persistenceModel = discoverProductPersistenceModel(models, Object.keys(product));
+      const dbRows = persistenceModel
+        ? await dbQuery(buildCreatedEntityReadbackQuery(persistenceModel), [productId])
+        : [];
       if (dbRows.length === 0) {
-        breaks.push({
-          type: 'E2E_PRODUCT_BROKEN',
-          severity: 'critical',
-          file: 'backend/src/kloel/product.controller.ts',
-          line: 170,
-          description: 'Product not found in DB after creation — possible fake save',
-          detail: `productId: ${productId}`,
-        });
+        breaks.push(
+          productE2eFinding({
+            file: 'backend/src/kloel/product.controller.ts',
+            line: 170,
+            description: 'Product not found in DB after creation — possible fake save',
+            detail: `productId: ${productId}`,
+          }),
+        );
       }
     } catch {
       // DB not available — skip DB verification
     }
   } catch (err: any) {
-    breaks.push({
-      type: 'E2E_PRODUCT_BROKEN',
-      severity: 'critical',
-      file: 'backend/src/kloel/product.controller.ts',
-      line: 164,
-      description: 'E2E product creation test threw an unexpected error',
-      detail: err?.message || String(err),
-    });
+    breaks.push(
+      productE2eFinding({
+        file: 'backend/src/kloel/product.controller.ts',
+        line: 164,
+        description: 'E2E product creation test threw an unexpected error',
+        detail: err?.message || String(err),
+      }),
+    );
   } finally {
     // ── Cleanup: DELETE /products/:id ─────────────────────────────────────
     if (productId && jwt) {

@@ -13,6 +13,7 @@ const oneDecimalPercentFormatter = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 1,
 });
 
+/** Sanitize html. */
 export function sanitizeHtml(html: string): string {
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: ['b', 'i', 'u', 'a', 'br', 'p', 'span'],
@@ -44,16 +45,19 @@ export function clampIntegerValue(value: unknown, fallback: number, min: number,
   return Number.isFinite(parsed) ? clampNumber(parsed, min, max) : fallback;
 }
 
+/** Format brl amount. */
 export function formatBrlAmount(value: unknown) {
   const parsed = Number(value);
   return brlAmountFormatter.format(Number.isFinite(parsed) ? parsed : 0);
 }
 
+/** Format one decimal percent. */
 export function formatOneDecimalPercent(value: unknown) {
   const parsed = Number(value);
   return `${oneDecimalPercentFormatter.format(Number.isFinite(parsed) ? parsed : 0)}%`;
 }
 
+/** Normalize link url. */
 export function normalizeLinkUrl(value: string) {
   const trimmed = value.trim();
   if (!trimmed) {
@@ -68,6 +72,7 @@ export function normalizeLinkUrl(value: string) {
   }
 }
 
+/** Read editable html. */
 export function readEditableHtml(
   source: Pick<HTMLDivElement, 'innerHTML'> | null | undefined,
   fallback: string,
@@ -75,13 +80,29 @@ export function readEditableHtml(
   return sanitizeHtml(source?.innerHTML || fallback);
 }
 
+/**
+ * Replace `target` children with the parsed, DOMPurify-sanitised version of
+ * `html`. We hand the sanitised string to `DOMParser`, then `replaceChildren`
+ * the parsed body nodes onto the target. This avoids the `.innerHTML =` sink
+ * shape entirely while preserving the rich-text editor contract (DOMPurify
+ * already strips anything outside the b/i/u/a/br/p/span allow-list, and the
+ * DOMParser pass cannot reintroduce script execution because parsed
+ * `<script>` tags do not run).
+ */
 export function syncEditableHtml(target: HTMLDivElement | null, html: string) {
   if (!target) {
     return;
   }
 
   const nextHtml = sanitizeHtml(html);
-  if (target.innerHTML !== nextHtml) {
-    target.innerHTML = nextHtml;
+  if (target.innerHTML === nextHtml) {
+    return;
   }
+
+  if (typeof DOMParser === 'undefined') {
+    return;
+  }
+
+  const parsed = new DOMParser().parseFromString(nextHtml, 'text/html');
+  target.replaceChildren(...Array.from(parsed.body.childNodes));
 }

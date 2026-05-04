@@ -2,7 +2,7 @@
 // cyclomatic complexity. No React, no JSX — these are payload-shape
 // transforms only.
 
-import { aiAssistantApi } from '@/lib/api/misc';
+import { aiAssistantApi } from '@/lib/api/ai-assistant';
 
 const D_RE = /[^\d,.-]/g;
 const D_3___D_RE = /\.(?=\d{3}(\D|$))/g;

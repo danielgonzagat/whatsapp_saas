@@ -28,7 +28,7 @@ import {
   updateAutopilotConfig,
   workspaceApi,
 } from '@/lib/api';
-import { uploadKnowledgeBase } from '@/lib/api/misc';
+import { uploadKnowledgeBase } from '@/lib/api/ai-assistant';
 import {
   type AiToolData,
   type AiToolKind,
@@ -70,6 +70,7 @@ import { EmergencyModeCard } from './emergency-mode-card';
 import { KloelStatusCard } from './kloel-status-card';
 import { MissingStepsCard } from './missing-steps-card';
 import { OpeningMessageCard } from './opening-message-card';
+import { colors } from '@/lib/design-tokens';
 
 interface AccordionSectionProps {
   icon: React.ElementType;
@@ -87,7 +88,7 @@ function AccordionSection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
-    <div className="rounded-md border border-[#222226] bg-[#111113] shadow-sm">
+    <div className="rounded-md border border-[colors.border.space] bg-[colors.background.surface] shadow-sm">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -96,16 +97,16 @@ function AccordionSection({
         className="flex w-full items-center justify-between p-5"
       >
         <div className="flex items-center gap-3">
-          <Icon className="h-5 w-5 text-[#6E6E73]" />
-          <span className="font-semibold text-[#E0DDD8]">{title}</span>
+          <Icon className="h-5 w-5 text-[colors.text.muted]" />
+          <span className="font-semibold text-[colors.text.silver]">{title}</span>
         </div>
         {isOpen ? (
-          <ChevronUp className="h-5 w-5 text-[#6E6E73]" aria-hidden="true" />
+          <ChevronUp className="h-5 w-5 text-[colors.text.muted]" aria-hidden="true" />
         ) : (
-          <ChevronDown className="h-5 w-5 text-[#6E6E73]" aria-hidden="true" />
+          <ChevronDown className="h-5 w-5 text-[colors.text.muted]" aria-hidden="true" />
         )}
       </button>
-      {isOpen && <div className="border-t border-[#222226] p-5">{children}</div>}
+      {isOpen && <div className="border-t border-[colors.border.space] p-5">{children}</div>}
     </div>
   );
 }
@@ -694,7 +695,7 @@ export function BrainSettingsSection() {
           className={`rounded-md border px-4 py-3 text-sm ${
             profileError
               ? 'border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]'
-              : 'border-[#222226] bg-[#111113] text-[#E0DDD8]'
+              : 'border-[colors.border.space] bg-[colors.background.surface] text-[colors.text.silver]'
           }`}
         >
           {profileError || profileSuccess}
@@ -828,7 +829,7 @@ export function BrainSettingsSection() {
           <Button
             onClick={() => void saveKloelProfile('Identidade da empresa salva.')}
             disabled={!workspaceId || profileSaving}
-            className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+            className="w-full rounded-xl bg-[colors.text.silver] text-[colors.background.void] hover:bg-[colors.text.silver]"
           >
             {kloelT(`Salvar identidade`)}
           </Button>
@@ -900,7 +901,7 @@ export function BrainSettingsSection() {
                     </div>
                   </div>
                   {editingProductId === product.id && (
-                    <div className="rounded-xl border border-[#E0DDD8]/40 bg-white p-4">
+                    <div className="rounded-xl border border-[colors.text.silver]/40 bg-white p-4">
                       <div className="grid gap-3 md:grid-cols-4">
                         {[
                           { label: 'Checkouts ativos', value: product.activePlansCount },
@@ -923,7 +924,7 @@ export function BrainSettingsSection() {
                         ))}
                       </div>
 
-                      <div className="mt-4 rounded-xl border border-dashed border-[#E0DDD8]/50 bg-[#FCFBF9] px-4 py-3 text-sm text-gray-600">
+                      <div className="mt-4 rounded-xl border border-dashed border-[colors.text.silver]/50 bg-[#FCFBF9] px-4 py-3 text-sm text-gray-600">
                         {product.activePlansCount > 0
                           ? 'Este produto ja possui checkout operando dentro do Kloel.'
                           : 'Os checkouts deste produto sao criados e operados internamente pelo Kloel na tela de editar produto.'}
@@ -932,7 +933,7 @@ export function BrainSettingsSection() {
                       <div className="mt-4 flex flex-wrap gap-2">
                         <Button
                           onClick={() => router.push(`/products/${product.id}`)}
-                          className="rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+                          className="rounded-xl bg-[colors.text.silver] text-[colors.background.void] hover:bg-[colors.text.silver]"
                         >
                           {kloelT(`Abrir produto`)}
                         </Button>
@@ -984,7 +985,7 @@ export function BrainSettingsSection() {
                   </Button>
                   <Button
                     onClick={() => void handleAddProduct()}
-                    className="flex-1 rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+                    className="flex-1 rounded-xl bg-[colors.text.silver] text-[colors.background.void] hover:bg-[colors.text.silver]"
                   >
                     {kloelT(`Salvar`)}
                   </Button>
@@ -994,7 +995,7 @@ export function BrainSettingsSection() {
           ) : (
             <Button
               onClick={() => setShowAddProduct(true)}
-              className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+              className="w-full rounded-xl bg-[colors.text.silver] text-[colors.background.void] hover:bg-[colors.text.silver]"
               disabled={!workspaceId}
             >
               <Plus className="mr-2 h-4 w-4" aria-hidden="true" /> {kloelT(`Adicionar produto`)}
@@ -1044,7 +1045,7 @@ export function BrainSettingsSection() {
           <Button
             onClick={() => void saveKloelProfile('Personas salvas.')}
             disabled={!workspaceId || profileSaving}
-            className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+            className="w-full rounded-xl bg-[colors.text.silver] text-[colors.background.void] hover:bg-[colors.text.silver]"
           >
             {kloelT(`Salvar personas`)}
           </Button>
@@ -1112,7 +1113,7 @@ export function BrainSettingsSection() {
           <Button
             onClick={() => void saveKloelProfile('Tom de voz salvo.')}
             disabled={!workspaceId || profileSaving}
-            className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+            className="w-full rounded-xl bg-[colors.text.silver] text-[colors.background.void] hover:bg-[colors.text.silver]"
           >
             {kloelT(`Salvar tom de voz`)}
           </Button>
@@ -1161,7 +1162,7 @@ export function BrainSettingsSection() {
           <Button
             onClick={() => void saveKloelProfile('Regras de atendimento salvas.')}
             disabled={!workspaceId || profileSaving}
-            className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+            className="w-full rounded-xl bg-[colors.text.silver] text-[colors.background.void] hover:bg-[colors.text.silver]"
           >
             {kloelT(`Salvar regras`)}
           </Button>
@@ -1218,7 +1219,7 @@ export function BrainSettingsSection() {
                   </Button>
                   <Button
                     onClick={handleAddFaq}
-                    className="flex-1 rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+                    className="flex-1 rounded-xl bg-[colors.text.silver] text-[colors.background.void] hover:bg-[colors.text.silver]"
                   >
                     {kloelT(`Salvar`)}
                   </Button>
@@ -1228,7 +1229,7 @@ export function BrainSettingsSection() {
           ) : (
             <Button
               onClick={() => setShowAddFaq(true)}
-              className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+              className="w-full rounded-xl bg-[colors.text.silver] text-[colors.background.void] hover:bg-[colors.text.silver]"
             >
               <Plus className="mr-2 h-4 w-4" aria-hidden="true" /> {kloelT(`Adicionar pergunta`)}
             </Button>
@@ -1268,7 +1269,7 @@ export function BrainSettingsSection() {
             <Button
               onClick={() => void handleCreateKnowledgeBase()}
               disabled={!workspaceId || knowledgeLoading || !newKnowledgeBaseName.trim()}
-              className="rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+              className="rounded-xl bg-[colors.text.silver] text-[colors.background.void] hover:bg-[colors.text.silver]"
             >
               <Plus className="mr-2 h-4 w-4" aria-hidden="true" /> {kloelT(`Criar base`)}
             </Button>
@@ -1343,7 +1344,7 @@ export function BrainSettingsSection() {
                     knowledgeLoading ||
                     !knowledgeSourceContent.trim()
                   }
-                  className="rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+                  className="rounded-xl bg-[colors.text.silver] text-[colors.background.void] hover:bg-[colors.text.silver]"
                 >
                   <Upload className="mr-2 h-4 w-4" aria-hidden="true" /> {kloelT(`Ingerir fonte`)}
                 </Button>
@@ -1409,7 +1410,7 @@ export function BrainSettingsSection() {
               onDragLeave={() => setKbDragOver(false)}
               onDrop={handleKbDrop}
               aria-label="Selecionar arquivo para base de conhecimento"
-              className={`rounded-xl border-2 border-dashed cursor-pointer transition-colors p-6 text-center ${kbDragOver ? 'border-[#E85D30] bg-[#E85D30]/5' : 'border-gray-200 hover:border-gray-300'}`}
+              className={`rounded-xl border-2 border-dashed cursor-pointer transition-colors p-6 text-center ${kbDragOver ? 'border-[colors.ember.primary] bg-[colors.ember.primary]/5' : 'border-gray-200 hover:border-gray-300'}`}
             >
               <Upload className="mx-auto mb-2 h-6 w-6 text-gray-400" aria-hidden="true" />
               <p className="text-sm text-gray-600">
@@ -1435,7 +1436,7 @@ export function BrainSettingsSection() {
               <Button
                 onClick={() => void handleKbFileUpload(kbUploadFile)}
                 disabled={kbUploading || !selectedKnowledgeBaseId}
-                className="w-full rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]/90"
+                className="w-full rounded-xl bg-[colors.ember.primary] text-white hover:bg-[colors.ember.primary]/90"
               >
                 {kbUploading ? (
                   <PulseLoader width={88} height={18} />
@@ -1531,7 +1532,7 @@ export function BrainSettingsSection() {
           <Button
             onClick={() => void handleSaveAutopilotConfig()}
             disabled={!workspaceId || autopilotSaving}
-            className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+            className="w-full rounded-xl bg-[colors.text.silver] text-[colors.background.void] hover:bg-[colors.text.silver]"
           >
             {kloelT(`Salvar configuracao operacional`)}
           </Button>
@@ -1568,7 +1569,7 @@ export function BrainSettingsSection() {
                 onClick={() => void runAiTool(key, label)}
                 disabled={aiToolLoading || !aiToolInput.trim()}
                 variant="outline"
-                className="rounded-xl border-gray-200 bg-transparent text-sm hover:border-[#E85D30]/50 hover:text-[#E85D30]"
+                className="rounded-xl border-gray-200 bg-transparent text-sm hover:border-[colors.ember.primary]/50 hover:text-[colors.ember.primary]"
               >
                 {aiToolLoading ? '...' : label}
               </Button>

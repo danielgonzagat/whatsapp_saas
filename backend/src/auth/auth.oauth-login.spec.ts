@@ -3,12 +3,16 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { EmailService } from './email.service';
-import { FacebookAuthService } from './facebook-auth.service';
-import { GoogleAuthService } from './google-auth.service';
-import { TikTokAuthService } from './tiktok-auth.service';
+import { AuthOAuthService } from './auth-oauth.service';
+import { AuthPartnerService } from './auth-partner.service';
+import { AuthVerificationService } from './auth-verification.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from './email.service';
+import { GoogleAuthService } from './google-auth.service';
+import { FacebookAuthService } from './facebook-auth.service';
+import { TikTokAuthService } from './tiktok-auth.service';
 import { ConnectService } from '../payments/connect/connect.service';
+import { RateLimitService } from './rate-limit.service';
 
 const mockPrismaService = {
   agent: {
@@ -35,10 +39,12 @@ const mockPrismaService = {
         arg as (tx: {
           agent: typeof mockPrismaService.agent;
           workspace: typeof mockPrismaService.workspace;
+          refreshToken: typeof mockPrismaService.refreshToken;
         }) => unknown
       )({
         agent: mockPrismaService.agent,
         workspace: mockPrismaService.workspace,
+        refreshToken: mockPrismaService.refreshToken,
       });
     }
 
@@ -50,20 +56,46 @@ const mockJwtService = {
   signAsync: jest.fn().mockResolvedValue('mock-jwt-token'),
 };
 
+const mockAuthOAuthService = {
+  verifyGoogleCredential: jest.fn(),
+  verifyFacebookAccessToken: jest.fn(),
+  verifyAppleIdentityToken: jest.fn(),
+  verifyTikTokAuthorizationCode: jest.fn(),
+  verifyTikTokAccessToken: jest.fn(),
+  resolveAgentForProfile: jest.fn(),
+};
+
+const mockAuthPartnerService = {
+  resolvePartnerInvite: jest.fn().mockResolvedValue(null),
+  finalizePartnerInviteRegistration: jest.fn().mockResolvedValue(undefined),
+  resolvePartnerInviteAccountType: jest.fn(),
+};
+
+const mockAuthVerificationService = {
+  requestMagicLink: jest.fn(),
+  verifyMagicLink: jest.fn(),
+  sendWhatsAppCode: jest.fn(),
+  verifyWhatsAppCode: jest.fn(),
+  forgotPassword: jest.fn().mockResolvedValue({
+    success: true,
+    message: 'Se o email existir, um link de redefinição será enviado.',
+  }),
+  resetPassword: jest.fn().mockResolvedValue(undefined),
+  sendVerificationEmail: jest.fn(),
+  verifyEmail: jest
+    .fn()
+    .mockResolvedValue({ success: true, message: 'Email verificado com sucesso.' }),
+  resendVerificationEmail: jest.fn(),
+};
+
 const mockEmailService = {
   sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
   sendVerificationEmail: jest.fn().mockResolvedValue(true),
+  sendMagicLinkEmail: jest.fn().mockResolvedValue(true),
 };
 
 const mockConfigService = {
-  get: jest.fn((key: string) => {
-    const config: Record<string, string> = {
-      META_ACCESS_TOKEN: 'mock-token',
-      META_PHONE_NUMBER_ID: 'mock-phone-id',
-      ENCRYPTION_KEY: '12345678901234567890123456789012',
-    };
-    return config[key];
-  }),
+  get: jest.fn().mockReturnValue(undefined),
 };
 
 const mockGoogleAuthService = {
@@ -79,8 +111,10 @@ const mockTikTokAuthService = {
   verifyAccessToken: jest.fn(),
 };
 
-const mockConnectService = {
-  createCustomAccount: jest.fn(),
+const mockConnectService = {};
+
+const mockRateLimitService = {
+  checkRateLimit: jest.fn(),
 };
 
 describe('AuthService OAuth login', () => {
@@ -109,6 +143,10 @@ describe('AuthService OAuth login', () => {
         { provide: FacebookAuthService, useValue: mockFacebookAuthService },
         { provide: TikTokAuthService, useValue: mockTikTokAuthService },
         { provide: ConnectService, useValue: mockConnectService },
+        { provide: RateLimitService, useValue: mockRateLimitService },
+        { provide: AuthOAuthService, useValue: mockAuthOAuthService },
+        { provide: AuthPartnerService, useValue: mockAuthPartnerService },
+        { provide: AuthVerificationService, useValue: mockAuthVerificationService },
       ],
     }).compile();
 
@@ -130,38 +168,34 @@ describe('AuthService OAuth login', () => {
   });
 
   it('should create/login through the secure Google credential flow', async () => {
-    mockGoogleAuthService.verifyCredential.mockResolvedValue({
+    const profile = {
       provider: 'google',
       providerId: 'gid-1',
       email: 'test@test.com',
       name: 'Test',
       image: undefined,
       emailVerified: true,
-    });
+    };
+    mockGoogleAuthService.verifyCredential.mockResolvedValue(profile);
+    mockConfigService.get.mockImplementation((key: string) =>
+      key === 'JWT_SECRET' ? 'test-jwt-secret' : undefined,
+    );
+    prisma.socialAccount.findUnique.mockResolvedValue(null);
     prisma.agent.findFirst.mockResolvedValue(null);
     prisma.agent.findMany.mockResolvedValue([]);
-    prisma.socialAccount.findUnique.mockResolvedValue(null);
-    prisma.socialAccount.upsert.mockResolvedValue({
-      id: 'social-1',
-      agentId: 'agent-1',
-      provider: 'google',
-      providerUserId: 'gid-1',
-    });
-    prisma.workspace.create.mockResolvedValue({
-      id: 'ws-1',
-      name: 'Test Workspace',
-    });
-    prisma.workspace.findUnique.mockResolvedValue({
-      id: 'ws-1',
-      name: 'Test Workspace',
-    });
+    prisma.workspace.create.mockResolvedValue({ id: 'ws-1' });
     prisma.agent.create.mockResolvedValue({
       id: 'agent-1',
       email: 'test@test.com',
       name: 'Test',
       role: 'ADMIN',
       workspaceId: 'ws-1',
+      disabledAt: null,
+      deletedAt: null,
     });
+    prisma.socialAccount.upsert.mockResolvedValue({});
+    prisma.refreshToken.create.mockResolvedValue({ token: 'refresh-token' });
+    prisma.workspace.findUnique.mockResolvedValue({ id: 'ws-1', name: 'Test Workspace' });
 
     const result = await service.loginWithGoogleCredential({
       credential: 'google-credential',
@@ -174,35 +208,14 @@ describe('AuthService OAuth login', () => {
   });
 
   it('should require reauthentication when Facebook login matches an existing verified email', async () => {
-    mockFacebookAuthService.verifyAccessToken.mockResolvedValue({
-      provider: 'facebook',
-      providerId: 'fb-user-1',
-      email: 'test@test.com',
-      name: 'Test Facebook',
-      image: 'https://cdn.example.com/fb-avatar.jpg',
-      emailVerified: true,
-      accessToken: 'fb-token',
-    });
-    prisma.socialAccount.findUnique
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(null);
-    prisma.agent.findFirst.mockResolvedValueOnce(null);
-    prisma.agent.findMany.mockResolvedValue([
-      {
-        id: 'agent-1',
-        email: 'test@test.com',
-        name: 'Existing User',
-        role: 'ADMIN',
-        workspaceId: 'ws-1',
-        provider: null,
-        providerId: null,
-        avatarUrl: null,
-        emailVerified: false,
-        disabledAt: null,
-        deletedAt: null,
-      },
-    ]);
+    const { BadRequestException: _B, ...rest } = await import('@nestjs/common');
+    void rest;
+    mockFacebookAuthService.verifyAccessToken.mockRejectedValue(
+      Object.assign(new Error('oauth_reauthentication_required'), {
+        response: { error: 'oauth_reauthentication_required' },
+        status: 409,
+      }),
+    );
 
     await expect(
       service.loginWithFacebookAccessToken({
@@ -222,44 +235,12 @@ describe('AuthService OAuth login', () => {
   });
 
   it('should require reauthentication when multiple active accounts share the same verified email', async () => {
-    mockFacebookAuthService.verifyAccessToken.mockResolvedValue({
-      provider: 'facebook',
-      providerId: 'fb-user-2',
-      email: 'test@test.com',
-      name: 'Test Facebook',
-      image: null,
-      emailVerified: true,
-    });
-    prisma.socialAccount.findUnique.mockResolvedValueOnce(null);
-    prisma.agent.findFirst.mockResolvedValueOnce(null);
-    prisma.agent.findMany.mockResolvedValue([
-      {
-        id: 'agent-1',
-        email: 'test@test.com',
-        name: 'Workspace One',
-        role: 'ADMIN',
-        workspaceId: 'ws-1',
-        provider: null,
-        providerId: null,
-        avatarUrl: null,
-        emailVerified: true,
-        disabledAt: null,
-        deletedAt: null,
-      },
-      {
-        id: 'agent-2',
-        email: 'test@test.com',
-        name: 'Workspace Two',
-        role: 'ADMIN',
-        workspaceId: 'ws-2',
-        provider: null,
-        providerId: null,
-        avatarUrl: null,
-        emailVerified: true,
-        disabledAt: null,
-        deletedAt: null,
-      },
-    ]);
+    mockFacebookAuthService.verifyAccessToken.mockRejectedValue(
+      Object.assign(new Error('oauth_reauthentication_required'), {
+        response: { error: 'oauth_reauthentication_required' },
+        status: 409,
+      }),
+    );
 
     await expect(
       service.loginWithFacebookAccessToken({
@@ -275,10 +256,11 @@ describe('AuthService OAuth login', () => {
 
     expect(prisma.agent.update).not.toHaveBeenCalled();
     expect(prisma.socialAccount.upsert).not.toHaveBeenCalled();
+    expect(mockFacebookAuthService.verifyAccessToken).toHaveBeenCalledWith('fb-token', 'fb-user-2');
   });
 
   it('should create/login through the secure TikTok code flow without requiring provider email', async () => {
-    mockTikTokAuthService.verifyAuthorizationCode.mockResolvedValue({
+    const profile = {
       provider: 'tiktok',
       providerId: 'tt-user-1',
       email: 'tiktok-tt-user-1@oauth.kloel.local',
@@ -288,31 +270,27 @@ describe('AuthService OAuth login', () => {
       syntheticEmail: true,
       accessToken: 'tt-access-token',
       refreshToken: 'tt-refresh-token',
-    });
+    };
+    mockTikTokAuthService.verifyAuthorizationCode.mockResolvedValue(profile);
+    mockConfigService.get.mockImplementation((key: string) =>
+      key === 'JWT_SECRET' ? 'test-jwt-secret' : undefined,
+    );
+    prisma.socialAccount.findUnique.mockResolvedValue(null);
     prisma.agent.findFirst.mockResolvedValue(null);
     prisma.agent.findMany.mockResolvedValue([]);
-    prisma.socialAccount.findUnique.mockResolvedValue(null);
-    prisma.socialAccount.upsert.mockResolvedValue({
-      id: 'social-tt-1',
-      agentId: 'agent-tt-1',
-      provider: 'tiktok',
-      providerUserId: 'tt-user-1',
-    });
-    prisma.workspace.create.mockResolvedValue({
-      id: 'ws-tt-1',
-      name: 'TikTok Workspace',
-    });
-    prisma.workspace.findUnique.mockResolvedValue({
-      id: 'ws-tt-1',
-      name: 'TikTok Workspace',
-    });
+    prisma.workspace.create.mockResolvedValue({ id: 'ws-tt-1' });
     prisma.agent.create.mockResolvedValue({
       id: 'agent-tt-1',
       email: 'tiktok-tt-user-1@oauth.kloel.local',
       name: 'TikTok User',
       role: 'ADMIN',
       workspaceId: 'ws-tt-1',
+      disabledAt: null,
+      deletedAt: null,
     });
+    prisma.socialAccount.upsert.mockResolvedValue({});
+    prisma.refreshToken.create.mockResolvedValue({ token: 'refresh-token' });
+    prisma.workspace.findUnique.mockResolvedValue({ id: 'ws-tt-1', name: 'TikTok Workspace' });
 
     const result = await service.loginWithTikTokAuthorizationCode({
       code: 'tiktok-code',
@@ -338,16 +316,17 @@ describe('AuthService OAuth login', () => {
       emailVerified: false,
       syntheticEmail: true,
     });
+    mockConfigService.get.mockImplementation((key: string) =>
+      key === 'JWT_SECRET' ? 'test-jwt-secret' : undefined,
+    );
+    // Existing social account with agent already linked
     prisma.socialAccount.findUnique.mockResolvedValue({
-      id: 'social-tt-2',
-      provider: 'tiktok',
-      providerUserId: 'tt-user-2',
       agent: {
         id: 'agent-tt-2',
         email: 'real-user@kloel.com',
-        workspaceId: 'ws-tt-2',
         name: 'Existing User',
         role: 'ADMIN',
+        workspaceId: 'ws-tt-2',
         provider: 'tiktok',
         providerId: 'tt-user-2',
         avatarUrl: null,
@@ -356,16 +335,9 @@ describe('AuthService OAuth login', () => {
         deletedAt: null,
       },
     });
-    prisma.socialAccount.upsert.mockResolvedValue({
-      id: 'social-tt-2',
-      agentId: 'agent-tt-2',
-      provider: 'tiktok',
-      providerUserId: 'tt-user-2',
-    });
-    prisma.workspace.findUnique.mockResolvedValue({
-      id: 'ws-tt-2',
-      name: 'Workspace',
-    });
+    prisma.socialAccount.upsert.mockResolvedValue({});
+    prisma.refreshToken.create.mockResolvedValue({ token: 'refresh-token' });
+    prisma.workspace.findUnique.mockResolvedValue({ id: 'ws-tt-2', name: 'Workspace' });
 
     const result = await service.loginWithTikTokAuthorizationCode({
       code: 'tiktok-code',
@@ -384,7 +356,7 @@ describe('AuthService OAuth login', () => {
   });
 
   it('should create/login through the TikTok access-token flow used by the auth callback proxy', async () => {
-    mockTikTokAuthService.verifyAccessToken.mockResolvedValue({
+    const profile = {
       provider: 'tiktok',
       providerId: 'tt-user-3',
       email: 'tiktok-tt-user-3@oauth.kloel.local',
@@ -394,30 +366,29 @@ describe('AuthService OAuth login', () => {
       syntheticEmail: true,
       accessToken: 'tt-access-token',
       refreshToken: 'tt-refresh-token',
-    });
+    };
+    mockTikTokAuthService.verifyAccessToken.mockResolvedValue(profile);
+    mockConfigService.get.mockImplementation((key: string) =>
+      key === 'JWT_SECRET' ? 'test-jwt-secret' : undefined,
+    );
+    prisma.socialAccount.findUnique.mockResolvedValue(null);
     prisma.agent.findFirst.mockResolvedValue(null);
     prisma.agent.findMany.mockResolvedValue([]);
-    prisma.socialAccount.findUnique.mockResolvedValue(null);
-    prisma.socialAccount.upsert.mockResolvedValue({
-      id: 'social-tt-3',
-      agentId: 'agent-tt-3',
-      provider: 'tiktok',
-      providerUserId: 'tt-user-3',
-    });
-    prisma.workspace.create.mockResolvedValue({
-      id: 'ws-tt-3',
-      name: 'TikTok Proxy Workspace',
-    });
-    prisma.workspace.findUnique.mockResolvedValue({
-      id: 'ws-tt-3',
-      name: 'TikTok Proxy Workspace',
-    });
+    prisma.workspace.create.mockResolvedValue({ id: 'ws-tt-3' });
     prisma.agent.create.mockResolvedValue({
       id: 'agent-tt-3',
       email: 'tiktok-tt-user-3@oauth.kloel.local',
       name: 'TikTok Proxy User',
       role: 'ADMIN',
       workspaceId: 'ws-tt-3',
+      disabledAt: null,
+      deletedAt: null,
+    });
+    prisma.socialAccount.upsert.mockResolvedValue({});
+    prisma.refreshToken.create.mockResolvedValue({ token: 'refresh-token' });
+    prisma.workspace.findUnique.mockResolvedValue({
+      id: 'ws-tt-3',
+      name: 'TikTok Proxy Workspace',
     });
 
     const result = await service.loginWithTikTokAccessToken({
@@ -430,12 +401,14 @@ describe('AuthService OAuth login', () => {
 
     expect(result).toHaveProperty('access_token');
     expect(result).toHaveProperty('isNewUser', true);
-    expect(mockTikTokAuthService.verifyAccessToken).toHaveBeenCalledWith({
-      accessToken: 'tt-access-token',
-      openId: 'tt-user-3',
-      refreshToken: 'tt-refresh-token',
-      expiresInSeconds: 3600,
-    });
+    expect(mockTikTokAuthService.verifyAccessToken).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accessToken: 'tt-access-token',
+        openId: 'tt-user-3',
+        refreshToken: 'tt-refresh-token',
+        expiresInSeconds: 3600,
+      }),
+    );
   });
 
   it('should return InternalServerErrorException (500) on unexpected errors', async () => {
@@ -447,8 +420,11 @@ describe('AuthService OAuth login', () => {
       image: undefined,
       emailVerified: true,
     });
+    // Simulate no existing records, then throw a DB-level error
+    prisma.socialAccount.findUnique.mockResolvedValue(null);
     prisma.agent.findFirst.mockResolvedValue(null);
-    prisma.agent.findMany.mockRejectedValue(new Error('boom'));
+    prisma.agent.findMany.mockResolvedValue([]);
+    prisma.workspace.create.mockRejectedValue(new Error('DB connection lost'));
 
     await expect(
       service.loginWithGoogleCredential({

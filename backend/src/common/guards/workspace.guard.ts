@@ -18,10 +18,13 @@ function resolveRequestedWorkspaceId(req: RequestLike): string | string[] | unde
   );
 }
 
-function propagateWorkspaceIdToBody(req: RequestLike, workspaceId: string): void {
-  if (req.body && typeof req.body === 'object' && !req.body.workspaceId) {
-    req.body.workspaceId = workspaceId;
-  }
+function propagateWorkspaceIdToBody(_req: RequestLike, _workspaceId: string): void {
+  // Intencional no-op: o ValidationPipe global usa `forbidNonWhitelisted: true`,
+  // o que rejeita corpos com `workspaceId` quando o DTO não declara essa
+  // propriedade. O workspaceId canônico vem do JWT (`req.user.workspaceId`) e
+  // já é exposto a controllers via `req.workspaceId`. Mutar `req.body` aqui
+  // produzia 400 "property workspaceId should not exist" em rotas autenticadas
+  // (checkout/products/plans, KYC, etc).
 }
 
 /**

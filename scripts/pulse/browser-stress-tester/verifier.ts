@@ -3,6 +3,29 @@
 import type { Page } from 'playwright';
 import type { BrowserTestStatus, ObservedApiCall } from './types';
 import type { InteractionChain } from '../functional-map-types';
+import { discoverBrowserLiveArtifacts, isLoginRedirectFromArtifacts } from './live-artifacts';
+
+function getRuntimeErrorConstructorNames(): string[] {
+  return Object.getOwnPropertyNames(globalThis).filter((name) => {
+    const value = (globalThis as Record<string, unknown>)[name];
+    return (
+      typeof value === 'function' &&
+      name.endsWith('Error') &&
+      (value === Error || value.prototype instanceof Error)
+    );
+  });
+}
+
+function hasCriticalConsoleErrorEvidence(message: string): boolean {
+  const lowered = message.toLowerCase();
+  const runtimeErrorName = getRuntimeErrorConstructorNames().some((name) => message.includes(name));
+  const runtimeExceptionSignal =
+    lowered.includes('uncaught') ||
+    lowered.includes('unhandled') ||
+    lowered.includes('cannot read') ||
+    lowered.includes('cannot access');
+  return runtimeErrorName || runtimeExceptionSignal;
+}
 
 /** Classify result. */
 export function classifyResult(observations: {
@@ -32,9 +55,7 @@ export function classifyResult(observations: {
   }
 
   // Check for uncaught exceptions in console
-  const criticalErrors = consoleErrors.filter((e) =>
-    /uncaught|TypeError|ReferenceError|RangeError|SyntaxError|Cannot read/i.test(e),
-  );
+  const criticalErrors = consoleErrors.filter((e) => hasCriticalConsoleErrorEvidence(e));
   if (criticalErrors.length > 0) {
     return { status: 'QUEBRADO', reason: `Console error: ${criticalErrors[0].slice(0, 150)}` };
   }
@@ -89,9 +110,8 @@ export async function verifyPersistence(
     await page.reload({ waitUntil: 'domcontentloaded', timeout: 15000 });
     await page.waitForTimeout(2000);
 
-    // Check we're still on the same route (not redirected)
     const currentUrl = page.url();
-    if (currentUrl.includes('/login')) {
+    if (isLoginRedirectFromArtifacts(currentUrl, discoverBrowserLiveArtifacts().pages)) {
       return false;
     }
 

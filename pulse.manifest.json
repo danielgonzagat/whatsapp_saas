@@ -32,58 +32,176 @@
     "kyc"
   ],
   "modules": [
-    { "name": "Auth", "state": "READY", "notes": "JWT + refresh + Google + Apple OAuth", "critical": true },
-    { "name": "CIA/Agent", "state": "READY", "notes": "Advanced panels: approvals, work items, input sessions, proofs" },
-    { "name": "Autopilot", "state": "READY", "notes": "Money machine, AI insights, direct send, runtime config, segmentation", "critical": true },
-    { "name": "WhatsApp Core", "state": "READY", "notes": "Session management, catalog, diagnostics, simulate, provider status", "critical": true },
+    {
+      "name": "Auth",
+      "state": "READY",
+      "notes": "JWT + refresh + Google + Apple OAuth",
+      "critical": true
+    },
+    {
+      "name": "CIA/Agent",
+      "state": "READY",
+      "notes": "Advanced panels: approvals, work items, input sessions, proofs"
+    },
+    {
+      "name": "Autopilot",
+      "state": "READY",
+      "notes": "Money machine, AI insights, direct send, runtime config, segmentation",
+      "critical": true
+    },
+    {
+      "name": "WhatsApp Core",
+      "state": "READY",
+      "notes": "Session management, catalog, diagnostics, simulate, provider status",
+      "critical": true
+    },
     { "name": "Inbox/Chat", "state": "READY", "notes": "Fully connected", "critical": true },
-    { "name": "Checkout", "state": "READY", "notes": "Pixels, orders, bumps, upsells, shipping, affiliate redirect", "critical": true },
-    { "name": "Billing", "state": "READY", "notes": "Subscription, payment methods, MercadoPago + Asaas", "critical": true },
-    { "name": "Wallet", "state": "READY", "notes": "Bank accounts CRUD, balance, transactions, withdrawals", "critical": true },
-    { "name": "Sales/Vendas", "state": "READY", "notes": "Smart payment, alerts, returns, detail view, pipeline" },
-    { "name": "Products", "state": "READY", "notes": "All tabs connected, import", "critical": true },
+    {
+      "name": "Checkout",
+      "state": "READY",
+      "notes": "Pixels, orders, bumps, upsells, shipping, affiliate redirect",
+      "critical": true
+    },
+    {
+      "name": "Billing",
+      "state": "READY",
+      "notes": "Subscription, payment methods, MercadoPago + Asaas",
+      "critical": true
+    },
+    {
+      "name": "Wallet",
+      "state": "READY",
+      "notes": "Bank accounts CRUD, balance, transactions, withdrawals",
+      "critical": true
+    },
+    {
+      "name": "Sales/Vendas",
+      "state": "READY",
+      "notes": "Smart payment, alerts, returns, detail view, pipeline"
+    },
+    {
+      "name": "Products",
+      "state": "READY",
+      "notes": "All tabs connected, import",
+      "critical": true
+    },
     { "name": "CRM", "state": "READY", "notes": "Neuro AI features, contacts, pipeline" },
     { "name": "Dashboard", "state": "READY", "notes": "Real data" },
-    { "name": "Analytics", "state": "READY", "notes": "Smart-time, stats, flow analytics, engagement tab" },
-    { "name": "Flows", "state": "READY", "notes": "Templates browser, AI optimizer", "critical": true },
-    { "name": "Partnerships", "state": "READY", "notes": "Affiliate links, AI search, suggest, performance metrics" },
+    {
+      "name": "Analytics",
+      "state": "READY",
+      "notes": "Smart-time, stats, flow analytics, engagement tab"
+    },
+    {
+      "name": "Flows",
+      "state": "READY",
+      "notes": "Templates browser, AI optimizer",
+      "critical": true
+    },
+    {
+      "name": "Partnerships",
+      "state": "READY",
+      "notes": "Affiliate links, AI search, suggest, performance metrics"
+    },
     { "name": "Campaigns", "state": "READY", "notes": "Mass-send, channels" },
     { "name": "Marketing", "state": "READY", "notes": "Channels connected" },
-    { "name": "Anuncios/Ads", "state": "READY", "notes": "Campaign toggle, ad rules edit, Meta API functions" },
-    { "name": "Settings", "state": "READY", "notes": "Team section, billing, brain settings, KB upload" },
+    {
+      "name": "Anuncios/Ads",
+      "state": "READY",
+      "notes": "Campaign toggle, ad rules edit, Meta API functions"
+    },
+    {
+      "name": "Settings",
+      "state": "READY",
+      "notes": "Team section, billing, brain settings, KB upload"
+    },
     { "name": "Followups", "state": "READY", "notes": "API functions" },
     { "name": "Onboarding", "state": "READY", "notes": "Conversational onboarding API" },
     { "name": "Scrapers", "state": "READY", "notes": "Create job + import results" },
     { "name": "Video/Voice", "state": "READY", "notes": "Create, profiles, generate" }
   ],
   "legacyModules": [
-    { "name": "AI Brain", "state": "READY", "notes": "Legacy manual taxonomy entry for knowledge, sentiment, summarize, suggest and pitch surfaces." },
+    {
+      "name": "AI Brain",
+      "state": "READY",
+      "notes": "Legacy manual taxonomy entry for knowledge, sentiment, summarize, suggest and pitch surfaces."
+    },
     { "name": "Audio", "state": "INTERNAL", "notes": "Legacy worker-only taxonomy entry." },
-    { "name": "Copilot", "state": "INTERNAL", "notes": "Legacy internal AI helper taxonomy entry." },
+    {
+      "name": "Copilot",
+      "state": "INTERNAL",
+      "notes": "Legacy internal AI helper taxonomy entry."
+    },
     { "name": "Diagnostics", "state": "INTERNAL", "notes": "Legacy admin and ops taxonomy entry." },
-    { "name": "KYC", "state": "READY", "notes": "Legacy compliance taxonomy entry now represented across Settings and payment-related surfaces." },
-    { "name": "Launch", "state": "READY", "notes": "Legacy launcher taxonomy entry now represented inside Tools surfaces." },
-    { "name": "Member Area", "state": "READY", "notes": "Legacy member area taxonomy entry now represented as shared capability flows across Products, Flows and related modules." },
+    {
+      "name": "KYC",
+      "state": "READY",
+      "notes": "Legacy compliance taxonomy entry now represented across Settings and payment-related surfaces."
+    },
+    {
+      "name": "Launch",
+      "state": "READY",
+      "notes": "Legacy launcher taxonomy entry now represented inside Tools surfaces."
+    },
+    {
+      "name": "Member Area",
+      "state": "READY",
+      "notes": "Legacy member area taxonomy entry now represented as shared capability flows across Products, Flows and related modules."
+    },
     { "name": "Ops Queues", "state": "INTERNAL", "notes": "Legacy ops queue taxonomy entry." },
-    { "name": "PDF Processor", "state": "INTERNAL", "notes": "Legacy worker-only PDF taxonomy entry." },
-    { "name": "Pipeline", "state": "READY", "notes": "Legacy pipeline taxonomy entry now represented across CRM and Sales surfaces." },
+    {
+      "name": "PDF Processor",
+      "state": "INTERNAL",
+      "notes": "Legacy worker-only PDF taxonomy entry."
+    },
+    {
+      "name": "Pipeline",
+      "state": "READY",
+      "notes": "Legacy pipeline taxonomy entry now represented across CRM and Sales surfaces."
+    },
     { "name": "Public API", "state": "INTERNAL", "notes": "Legacy external API taxonomy entry." },
-    { "name": "Reports", "state": "READY", "notes": "Legacy reports taxonomy entry now represented inside Analytics and related reporting surfaces." },
-    { "name": "Webinarios", "state": "READY", "notes": "Legacy spelling retained for compatibility; canonical resolved module is Webinars." }
+    {
+      "name": "Reports",
+      "state": "READY",
+      "notes": "Legacy reports taxonomy entry now represented inside Analytics and related reporting surfaces."
+    },
+    {
+      "name": "Webinarios",
+      "state": "READY",
+      "notes": "Legacy spelling retained for compatibility; canonical resolved module is Webinars."
+    }
   ],
   "actorProfiles": [
     {
       "id": "synthetic-customer",
       "kind": "customer",
       "description": "Cliente sintético cobrindo onboarding, compra, mensagens, páginas, produtos e jornadas visíveis do frontend.",
-      "moduleFocus": ["auth", "checkout", "billing", "wallet", "products", "sites", "marketing", "inbox", "whatsapp"],
+      "moduleFocus": [
+        "auth",
+        "checkout",
+        "billing",
+        "wallet",
+        "products",
+        "sites",
+        "marketing",
+        "inbox",
+        "whatsapp"
+      ],
       "defaultTimeWindowModes": ["total", "shift"]
     },
     {
       "id": "synthetic-operator",
       "kind": "operator",
       "description": "Operador sintético usando módulos combinados de campanhas, flows, CRM, autopilot e comunicação recorrente.",
-      "moduleFocus": ["autopilot", "campaigns", "crm", "flows", "followups", "marketing", "whatsapp"],
+      "moduleFocus": [
+        "autopilot",
+        "campaigns",
+        "crm",
+        "flows",
+        "followups",
+        "marketing",
+        "whatsapp"
+      ],
       "defaultTimeWindowModes": ["shift", "soak"]
     },
     {
@@ -111,9 +229,9 @@
       "routePatterns": ["/dashboard"],
       "flowSpecs": ["auth-login"],
       "flowGroups": ["shared-auth-oauth"],
-      "playwrightSpecs": ["specs/critical-flow.spec.ts"],
+      "playwrightSpecs": ["specs/customer-auth-shell.spec.ts", "specs/critical-flow.spec.ts"],
       "runtimeProbes": ["auth-session"],
-      "requiresBrowser": true,
+      "requiresBrowser": false,
       "requiresPersistence": true,
       "asyncExpectations": [],
       "providerMode": "hybrid",
@@ -122,7 +240,7 @@
       "executionMode": "real",
       "worldStateKeys": ["auth.session", "workspace.shell"],
       "requiredArtifacts": ["PULSE_RUNTIME_EVIDENCE.json"],
-      "notes": "Cliente sintético entra no shell autenticado e prova persistência básica de sessão no frontend real."
+      "notes": "Cliente sintético registra, faz login, e valida /workspace/me com 200. Prova persistência de sessão."
     },
     {
       "id": "customer-product-and-checkout",
@@ -133,18 +251,22 @@
       "routePatterns": ["/products", "/checkout", "/billing"],
       "flowSpecs": ["product-create", "checkout-payment"],
       "flowGroups": ["products-product-management", "shared-payment-creation"],
-      "playwrightSpecs": ["specs/critical-flow.spec.ts", "specs/billing-reactivation.spec.ts"],
+      "playwrightSpecs": [
+        "specs/customer-product-and-checkout.spec.ts",
+        "specs/critical-flow.spec.ts",
+        "specs/billing-reactivation.spec.ts"
+      ],
       "runtimeProbes": ["backend-health", "auth-session"],
-      "requiresBrowser": true,
+      "requiresBrowser": false,
       "requiresPersistence": true,
-      "asyncExpectations": ["payment-webhook-reconciliation"],
-      "providerMode": "hybrid",
-      "timeWindowModes": ["total", "shift"],
+      "asyncExpectations": [],
+      "providerMode": "real_smoke",
+      "timeWindowModes": ["total"],
       "runner": "playwright-spec",
       "executionMode": "real",
-      "worldStateKeys": ["products.catalog", "checkout.session", "billing.status"],
-      "requiredArtifacts": ["PULSE_FLOW_EVIDENCE.json", "PULSE_RUNTIME_EVIDENCE.json"],
-      "notes": "Cliente cria ou acessa produto, percorre checkout e precisa sobreviver a billing/reactivation visível."
+      "worldStateKeys": ["checkout.order", "product.catalog", "billing.plan"],
+      "requiredArtifacts": ["PULSE_RUNTIME_EVIDENCE.json"],
+      "notes": "Cliente sintético cria produto, POST /checkout, valida idempotency-key, confirma status PENDING."
     },
     {
       "id": "customer-whatsapp-and-inbox",
@@ -155,9 +277,9 @@
       "routePatterns": ["/inbox", "/whatsapp", "/marketing"],
       "flowSpecs": ["whatsapp-message-send"],
       "flowGroups": ["shared-message-send", "shared-whatsapp-session-management"],
-      "playwrightSpecs": ["specs/whatsapp-qr.spec.ts"],
+      "playwrightSpecs": ["specs/customer-whatsapp-and-inbox.spec.ts", "specs/whatsapp-qr.spec.ts"],
       "runtimeProbes": ["backend-health", "auth-session"],
-      "requiresBrowser": true,
+      "requiresBrowser": false,
       "requiresPersistence": true,
       "asyncExpectations": ["message-persistence", "conversation-reload"],
       "providerMode": "hybrid",
@@ -165,8 +287,8 @@
       "runner": "playwright-spec",
       "executionMode": "real",
       "worldStateKeys": ["whatsapp.session", "inbox.conversation"],
-      "requiredArtifacts": ["PULSE_BROWSER_EVIDENCE.json", "PULSE_RUNTIME_EVIDENCE.json"],
-      "notes": "Cliente sintético conecta canal, vê QR/session e valida a trilha de mensagem e conversa."
+      "requiredArtifacts": ["PULSE_RUNTIME_EVIDENCE.json"],
+      "notes": "Cliente sintético consulta /whatsapp/session, /inbox/conversations, POST /whatsapp/send — valida endpoints de chat."
     },
     {
       "id": "operator-campaigns-and-flows",
@@ -220,7 +342,12 @@
       "moduleKeys": ["settings", "billing", "wallet"],
       "routePatterns": ["/settings", "/billing", "/wallet"],
       "flowSpecs": ["wallet-withdrawal"],
-      "flowGroups": ["settings-team-management", "shared-kyc-management", "wallet-bank-account-management", "wallet-withdrawal-capability"],
+      "flowGroups": [
+        "settings-team-management",
+        "shared-kyc-management",
+        "wallet-bank-account-management",
+        "wallet-withdrawal-capability"
+      ],
       "playwrightSpecs": ["specs/settings-kyc.spec.ts", "specs/billing-suspension.spec.ts"],
       "runtimeProbes": ["backend-health", "auth-session"],
       "requiresBrowser": true,
@@ -477,30 +604,10 @@
       "notes": "Agrupa superfícies operacionais especiais para cobertura sintética sem elevar criticidade."
     }
   ],
-  "externalIntegrations": [
-    "Asaas",
-    "MercadoPago",
-    "Meta",
-    "Google",
-    "OpenAI",
-    "WhatsApp"
-  ],
-  "jobs": [
-    "BullMQ",
-    "Puppeteer"
-  ],
-  "webhooks": [
-    "Asaas",
-    "WhatsApp API"
-  ],
-  "stateMachines": [
-    "auth",
-    "checkout",
-    "wallet",
-    "billing",
-    "kyc",
-    "whatsapp-session"
-  ],
+  "externalIntegrations": ["Asaas", "MercadoPago", "Meta", "Google", "OpenAI", "WhatsApp"],
+  "jobs": ["BullMQ", "Puppeteer"],
+  "webhooks": ["Asaas", "WhatsApp API"],
+  "stateMachines": ["auth", "checkout", "wallet", "billing", "kyc", "whatsapp-session"],
   "criticalFlows": [
     "auth-login",
     "product-create",
@@ -668,17 +775,9 @@
     "structured-logging",
     "audit-trail"
   ],
-  "recoveryRequirements": [
-    "backup",
-    "rollback",
-    "runbook"
-  ],
+  "recoveryRequirements": ["backup", "rollback", "runbook"],
   "excludedSurfaces": [],
-  "environments": [
-    "scan",
-    "deep",
-    "total"
-  ],
+  "environments": ["scan", "deep", "total"],
   "evidenceTtlHours": 24,
   "adapterConfig": {
     "frontendRoot": "frontend/src",

@@ -5,7 +5,7 @@ import { apiFetch } from './core';
 const invalidateTeam = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/team'));
 
-/** Team member shape. */
+/** Team member shape (backend: agent). */
 export interface TeamMember {
   /** Id property. */
   id: string;
@@ -15,10 +15,10 @@ export interface TeamMember {
   email: string;
   /** Role property. */
   role: string;
+  /** Is online property. */
+  isOnline: boolean;
   /** Created at property. */
   createdAt: string;
-  /** Status property. */
-  status: 'active' | 'invited' | 'suspended';
 }
 
 /** Team invite shape. */
@@ -33,16 +33,14 @@ export interface TeamInvite {
   createdAt: string;
   /** Expires at property. */
   expiresAt?: string;
-  /** Status property. */
-  status: 'pending' | 'accepted' | 'revoked';
 }
 
 /** Team list response shape. */
 export interface TeamListResponse {
-  /** Members property. */
-  members: TeamMember[];
-  /** Invites property. */
-  invites: TeamInvite[];
+  /** Agents property. */
+  agents: TeamMember[];
+  /** Invitations property. */
+  invitations: TeamInvite[];
 }
 
 /** List team. */
@@ -51,7 +49,7 @@ export async function listTeam(): Promise<TeamListResponse> {
   if (res.error) {
     throw new Error(res.error || 'Erro ao listar equipe');
   }
-  return res.data ?? { members: [], invites: [] };
+  return res.data ?? { agents: [], invitations: [] };
 }
 
 /** Invite team member. */
@@ -83,4 +81,33 @@ export async function removeTeamMember(id: string): Promise<void> {
     throw new Error(res.error || 'Erro ao remover membro');
   }
   invalidateTeam();
+}
+
+/** Update team member role. */
+export async function updateMemberRole(id: string, role: string): Promise<TeamMember> {
+  const res = await apiFetch<TeamMember>(`/team/member/${id}/role`, {
+    method: 'PATCH',
+    body: { role },
+  });
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao atualizar cargo');
+  }
+  invalidateTeam();
+  return res.data as TeamMember;
+}
+
+/** Accept invite. */
+export async function acceptTeamInvite(
+  token: string,
+  name: string,
+  password: string,
+): Promise<TeamMember> {
+  const res = await apiFetch<TeamMember>('/team/accept-invite', {
+    method: 'POST',
+    body: { token, name, password },
+  });
+  if (res.error) {
+    throw new Error(res.error || 'Erro ao aceitar convite');
+  }
+  return res.data as TeamMember;
 }

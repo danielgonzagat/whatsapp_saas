@@ -3,6 +3,10 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 
 /**
  * Check if middleware.ts covers the (main) group — i.e., all pages under app/(main)/.
@@ -30,6 +34,55 @@ const PUBLIC_PREFIXES = [
   '/favicon',
   '/icon',
 ];
+
+function severityFromRisk(riskScore: number, fallback: Break['severity']): Break['severity'] {
+  if (riskScore >= 0.9) return 'critical';
+  if (riskScore >= 0.7) return 'high';
+  if (riskScore >= 0.4) return 'medium';
+  return fallback;
+}
+
+function synthesizeFrontendRouteBreak(
+  signal: PulseSignalEvidence,
+  fallback: Break['severity'],
+): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const risk = calculateDynamicRisk({ predicateGraph });
+  const diagnostic = synthesizeDiagnostic(signalGraph, predicateGraph, risk);
+
+  return {
+    type: diagnostic.id,
+    severity: severityFromRisk(risk.score, fallback),
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}; signal=${signal.detail ?? signal.summary}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode};proofMode=${diagnostic.proofMode}`,
+  };
+}
+
+function buildRouteProtectionBreak(input: {
+  file: string;
+  line: number;
+  summary: string;
+  detail: string;
+}): Break {
+  return synthesizeFrontendRouteBreak(
+    {
+      source: 'static-nextjs-route-protection',
+      detector: 'frontend-route-protection',
+      truthMode: 'confirmed_static',
+      summary: input.summary,
+      detail: input.detail,
+      location: {
+        file: input.file,
+        line: input.line,
+      },
+    },
+    'high',
+  );
+}
 
 function deriveUrlPath(filePath: string, appDir: string): string {
   // filePath: /abs/path/to/frontend/src/app/(main)/dashboard/page.tsx
@@ -107,14 +160,15 @@ export function checkFrontendRouteProtection(config: PulseConfig): Break[] {
       if (isPublicPath(urlPath)) {
         continue;
       }
-      breaks.push({
-        type: 'FRONTEND_ROUTE_UNPROTECTED',
-        severity: 'high',
-        file: path.relative(config.rootDir, file),
-        line: 1,
-        description: `Page '${urlPath}' has no middleware protection (middleware.ts missing)`,
-        detail: `Create src/middleware.ts with an auth guard redirecting unauthenticated users to /login.`,
-      });
+      breaks.push(
+        buildRouteProtectionBreak({
+          file: path.relative(config.rootDir, file),
+          line: 1,
+          summary: `Next.js page ${urlPath} has no middleware protection evidence`,
+          detail:
+            'src/middleware.ts is missing; auth redirect evidence is absent for protected route.',
+        }),
+      );
     }
     return breaks;
   }
@@ -143,14 +197,15 @@ export function checkFrontendRouteProtection(config: PulseConfig): Break[] {
       if (isPublicPath(urlPath)) {
         continue;
       }
-      breaks.push({
-        type: 'FRONTEND_ROUTE_UNPROTECTED',
-        severity: 'high',
-        file: path.relative(config.rootDir, file),
-        line: 1,
-        description: `Page '${urlPath}' may not be protected — middleware.ts has no apparent auth logic`,
-        detail: `Ensure middleware.ts redirects unauthenticated users to /login for protected routes.`,
-      });
+      breaks.push(
+        buildRouteProtectionBreak({
+          file: path.relative(config.rootDir, file),
+          line: 1,
+          summary: `Next.js page ${urlPath} lacks discovered auth guard predicates`,
+          detail:
+            'middleware.ts exists, but cookie/session/token redirect predicates were not observed.',
+        }),
+      );
     }
   }
 

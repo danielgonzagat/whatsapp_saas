@@ -1,3 +1,4 @@
+import * as path from 'path';
 import type {
   PulseCapabilityState,
   PulseCodebaseTruth,
@@ -5,10 +6,12 @@ import type {
   PulseFlowProjection,
   PulseFlowProjectionItem,
   PulseResolvedManifest,
+  PulseScopeState,
   PulseStructuralGraph,
   PulseStructuralRole,
   PulseTruthMode,
 } from './types';
+import type { PulseActorEvidence } from './types.evidence';
 import {
   deriveRouteFamily,
   deriveStructuralFamilies,
@@ -17,14 +20,99 @@ import {
   titleCaseStructural,
 } from './structural-family';
 import { buildObservationFootprint, footprintMatchesFamilies } from './execution-observation';
+import { normalizePath } from './scope-state.codacy';
+import { readTextFile } from './safe-fs';
+import { safeJoin } from './lib/safe-path';
+import type { PulseCapabilityDoD, PulseDoDStatus } from './types.capabilities';
+import {
+  evaluateDone,
+  type CapabilityRoleEvidence,
+  type StructuralRole as DoDStructuralRole,
+} from './definition-of-done';
+
+/** Required DoD roles for a runtime-critical user flow. */
+const FLOW_REQUIRED_DOD_ROLES: DoDStructuralRole[] = [
+  'interface',
+  'orchestration',
+  'persistence',
+  'side_effect',
+  'scenario_coverage',
+];
+
+/** Translate flow status to DoD status enum. */
+function flowToDoDStatus(args: {
+  done: boolean;
+  pulseStatus: 'real' | 'partial' | 'latent' | 'phantom';
+}): PulseDoDStatus {
+  if (args.done) {
+    return 'done';
+  }
+  if (args.pulseStatus === 'phantom') {
+    return 'phantom';
+  }
+  if (args.pulseStatus === 'latent') {
+    return 'latent';
+  }
+  return 'partial';
+}
+
+/** Build DoD evidence for a flow projection item. */
+function buildFlowDoDEvidence(args: {
+  rolesPresent: PulseStructuralRole[];
+  hasRuntimeEvidence: boolean;
+  hasScenarioCoverage: boolean;
+  hasStaticValidation: boolean;
+  truthMode: PulseTruthMode;
+}): CapabilityRoleEvidence[] {
+  const tm = args.truthMode;
+  const includes = (role: PulseStructuralRole): boolean => args.rolesPresent.includes(role);
+  return [
+    { role: 'interface', present: includes('interface'), truthMode: tm },
+    { role: 'api_surface', present: includes('interface'), truthMode: tm },
+    { role: 'orchestration', present: includes('orchestration'), truthMode: tm },
+    { role: 'persistence', present: includes('persistence'), truthMode: tm },
+    { role: 'side_effect', present: includes('side_effect'), truthMode: tm },
+    {
+      role: 'runtime_evidence',
+      present: args.hasRuntimeEvidence,
+      truthMode: args.hasRuntimeEvidence ? 'observed' : 'aspirational',
+    },
+    {
+      role: 'validation',
+      present: args.hasStaticValidation || includes('orchestration'),
+      truthMode: args.hasStaticValidation ? 'observed' : tm,
+    },
+    {
+      role: 'scenario_coverage',
+      present: args.hasScenarioCoverage || args.hasStaticValidation,
+      truthMode: args.hasScenarioCoverage ? 'observed' : 'aspirational',
+    },
+    {
+      role: 'observability',
+      present: args.hasRuntimeEvidence,
+      truthMode: args.hasRuntimeEvidence ? 'inferred' : 'aspirational',
+    },
+    { role: 'codacy_hygiene', present: true, truthMode: 'inferred' },
+  ];
+}
 
 interface BuildFlowProjectionInput {
   structuralGraph: PulseStructuralGraph;
   capabilityState: PulseCapabilityState;
   codebaseTruth: PulseCodebaseTruth;
   resolvedManifest: PulseResolvedManifest;
+  scopeState?: PulseScopeState;
   executionEvidence?: Partial<PulseExecutionEvidence>;
 }
+
+interface StaticValidationSource {
+  filePath: string;
+  normalizedText: string;
+  compactText: string;
+  families: string[];
+}
+
+type PulseScenarioResultItem = PulseActorEvidence['results'][number];
 
 function unique<T>(values: T[]): T[] {
   return [...new Set(values)];
@@ -34,12 +122,172 @@ function clamp(value: number): number {
   return Math.max(0, Math.min(1, value));
 }
 
+function hasScenarioResults(value: unknown): value is { results: PulseScenarioResultItem[] } {
+  return (
+    Boolean(value) &&
+    typeof value === 'object' &&
+    'results' in value &&
+    Array.isArray(value.results)
+  );
+}
+
+function collectScenarioResults(
+  executionEvidence: Partial<PulseExecutionEvidence> | undefined,
+): PulseScenarioResultItem[] {
+  if (!executionEvidence) {
+    return [];
+  }
+
+  return Object.values(executionEvidence).flatMap((evidenceBlock) =>
+    hasScenarioResults(evidenceBlock) ? evidenceBlock.results : [],
+  );
+}
+
 function compactWords(value: string): string {
   return value
     .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
     .replace(/[^a-zA-Z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .toLowerCase();
+}
+
+function splitValidationTokens(value: string): string[] {
+  const ignored = new Set([
+    'api',
+    'app',
+    'backend',
+    'frontend',
+    'post',
+    'get',
+    'put',
+    'patch',
+    'delete',
+    'route',
+    'routes',
+    'src',
+    'test',
+    'spec',
+    'tsx',
+    'ts',
+    'v1',
+    'v2',
+  ]);
+  return unique(
+    String(value || '')
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/[^a-zA-Z0-9]+/g, ' ')
+      .toLowerCase()
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter((token) => token.length >= 3 && /[a-z]/.test(token))
+      .filter((token) => !ignored.has(token)),
+  );
+}
+
+function normalizeForValidation(value: string): string {
+  return String(value || '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[^a-zA-Z0-9/:-]+/g, ' ')
+    .toLowerCase();
+}
+
+function compactForValidation(value: string): string {
+  return normalizeForValidation(value).replace(/[^a-z0-9]+/g, '');
+}
+
+function routeValidationVariants(routePatterns: string[]): string[] {
+  return unique(
+    routePatterns
+      .flatMap((routePattern) => {
+        const raw = String(routePattern || '')
+          .replace(/:[^/]+/g, '')
+          .replace(/\[[^\]]+\]/g, '')
+          .replace(/\/+/g, '/')
+          .replace(/\/$/g, '')
+          .toLowerCase();
+        const withoutLeadingSlash = raw.replace(/^\/+/, '');
+        return [raw, withoutLeadingSlash].filter((value) => value.length >= 5);
+      })
+      .filter(Boolean),
+  );
+}
+
+function buildStaticValidationSources(
+  scopeState: PulseScopeState | undefined,
+): StaticValidationSource[] {
+  if (!scopeState) {
+    return [];
+  }
+
+  return scopeState.files
+    .filter((file) => {
+      const filePath = normalizePath(file.path);
+      const isSourceLikeTest = /\.[jt]sx?$/.test(filePath);
+      return (
+        isSourceLikeTest &&
+        (file.kind === 'spec' ||
+          /\.(?:spec|test)\.[jt]sx?$/.test(filePath) ||
+          /^e2e\/(?:specs|visual|tests)\//.test(filePath) ||
+          filePath.includes('/test/'))
+      );
+    })
+    .map((file) => {
+      const filePath = normalizePath(file.path);
+      try {
+        const source = readTextFile(safeJoin(scopeState.rootDir, filePath)).slice(0, 500_000);
+        return {
+          filePath,
+          normalizedText: normalizeForValidation(source),
+          compactText: compactForValidation(source),
+          families: deriveStructuralFamilies([filePath]),
+        };
+      } catch {
+        return null;
+      }
+    })
+    .filter((value): value is StaticValidationSource => Boolean(value));
+}
+
+function findStaticValidationMatches(input: {
+  candidate: BuildFlowProjectionInput['codebaseTruth']['discoveredFlows'][number];
+  routePatterns: string[];
+  flowFamilies: string[];
+  sources: StaticValidationSource[];
+}): StaticValidationSource[] {
+  const tokens = splitValidationTokens(
+    [
+      input.candidate.id,
+      input.candidate.moduleKey,
+      input.candidate.moduleName,
+      input.candidate.pageRoute,
+      input.candidate.elementLabel,
+      input.candidate.endpoint,
+      input.candidate.backendRoute || '',
+      ...(input.candidate.semanticTokens || []),
+    ].join(' '),
+  );
+  const routeTokens = splitValidationTokens(input.routePatterns.join(' '));
+  const requiredRouteTokenHits = Math.min(routeTokens.length, 3);
+  const terminalRouteToken = routeTokens[routeTokens.length - 1] || null;
+  const routeVariants = routeValidationVariants(input.routePatterns);
+
+  return input.sources.filter((source) => {
+    const routeMatched = routeVariants.some(
+      (variant) => source.normalizedText.includes(variant) || source.compactText.includes(variant),
+    );
+    const tokenHits = tokens.filter((token) => source.compactText.includes(token));
+    const routeTokenHits = routeTokens.filter((token) => source.compactText.includes(token));
+    const familyMatched = familiesOverlap(input.flowFamilies, source.families);
+    const routeTokenCoverage =
+      requiredRouteTokenHits > 0 &&
+      routeTokenHits.length >= requiredRouteTokenHits &&
+      (!terminalRouteToken || routeTokenHits.includes(terminalRouteToken));
+
+    return (
+      (routeMatched && tokenHits.length >= 2) ||
+      (familyMatched && routeTokenCoverage && tokenHits.length >= 3)
+    );
+  });
 }
 
 function chooseTruthMode(observed: boolean, projected: boolean): PulseTruthMode {
@@ -102,16 +350,12 @@ function findFlowStatus(
 /** Build flow projection from discovered flow candidates and capability graph. */
 export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowProjection {
   const executionResults = input.executionEvidence?.flows?.results || [];
-  const scenarioResults = [
-    ...(input.executionEvidence?.customer?.results || []),
-    ...(input.executionEvidence?.operator?.results || []),
-    ...(input.executionEvidence?.admin?.results || []),
-    ...(input.executionEvidence?.soak?.results || []),
-  ];
+  const scenarioResults = collectScenarioResults(input.executionEvidence);
   const observationFootprint = buildObservationFootprint(
     input.resolvedManifest,
     input.executionEvidence,
   );
+  const staticValidationSources = buildStaticValidationSources(input.scopeState);
   const capabilities = input.capabilityState.capabilities;
   const flows = input.codebaseTruth.discoveredFlows.map((candidate) => {
     const routePatterns = unique(
@@ -164,6 +408,12 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
           ]),
         ),
     );
+    const staticValidationMatches = findStaticValidationMatches({
+      candidate,
+      routePatterns,
+      flowFamilies,
+      sources: staticValidationSources,
+    });
     const facadeEvidence = relatedNodes.some((item) => item.role === 'simulation');
     const runtimeObserved = footprintMatchesFamilies(flowFamilies, observationFootprint);
     const status = findFlowStatus(
@@ -182,23 +432,61 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
     const truthMode = chooseTruthMode(
       Boolean(executedResult && (executedResult.executed || executedResult.status === 'failed')) ||
         scenarioCoverageMatches.length > 0 ||
-        runtimeObserved,
+        runtimeObserved ||
+        staticValidationMatches.length > 0,
       status === 'latent',
     );
     const confidence = clamp(
       rolesPresent.length / 4 +
         (executedResult?.executed ? 0.25 : 0) +
         (scenarioCoverageMatches.length > 0 ? 0.15 : 0) +
+        (staticValidationMatches.length > 0 ? 0.12 : 0) +
         (runtimeObserved ? 0.05 : 0) +
         (executedResult?.status === 'failed' ? -0.15 : 0) +
         (candidate.connected ? 0.1 : 0),
+    );
+
+    const flowDoDEvidence = buildFlowDoDEvidence({
+      rolesPresent,
+      hasRuntimeEvidence: runtimeObserved || Boolean(executedResult && executedResult.executed),
+      hasScenarioCoverage: scenarioCoverageMatches.length > 0,
+      hasStaticValidation: staticValidationMatches.length > 0,
+      truthMode,
+    });
+    const flowDoDResult = evaluateDone({
+      id: candidate.id,
+      kind: 'flow',
+      requiredRoles: FLOW_REQUIRED_DOD_ROLES,
+      evidence: flowDoDEvidence,
+      codacyHighCount: 0,
+      hasPhantom: status === 'phantom',
+      hasLatentCritical: status === 'latent',
+      truthModeTarget: 'observed',
+    });
+    const flowDoD: PulseCapabilityDoD = {
+      status: flowToDoDStatus({
+        done: flowDoDResult.done,
+        pulseStatus: status === 'real' && !flowDoDResult.done ? 'partial' : status,
+      }),
+      missingRoles: flowDoDResult.missingRoles.slice(),
+      blockers: flowDoDResult.reasons.slice(),
+      truthModeMet: flowDoDResult.truthModeMet,
+      governedBlockers: flowDoDResult.governedBlockers.slice(),
+    };
+    const visibleStatus = status === 'real' && !flowDoDResult.done ? 'partial' : status;
+    const governedValidationTargets = flowDoDResult.governedBlockers.map(
+      (blocker) => `Governed ai_safe validation: ${blocker.expectedValidation}`,
+    );
+    const governedBlockingReasons = flowDoDResult.governedBlockers.map(
+      (blocker) =>
+        `Governed ai_safe blocker for ${blocker.role}: ${blocker.reason} Expected validation: ${blocker.expectedValidation}`,
     );
 
     return {
       id: candidate.id,
       name: chooseFlowName(candidate),
       truthMode,
-      status,
+      status: visibleStatus,
       confidence,
       startNodeIds: relatedNodes.filter((item) => item.role === 'interface').map((item) => item.id),
       endNodeIds: relatedNodes
@@ -211,13 +499,15 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
       distanceToReal:
         missingLinks.length +
         (executedResult?.status === 'failed' ? 1 : 0) +
-        (status === 'phantom' ? 1 : 0),
+        (status === 'phantom' ? 1 : 0) +
+        (visibleStatus !== status ? 1 : 0),
       evidenceSources: unique([
         candidate.declaredFlow ? 'declared-flow' : '',
         candidate.connected ? 'connected-chain' : '',
         candidate.persistent ? 'persistent-chain' : '',
         executedResult ? 'execution-flow-evidence' : '',
         scenarioCoverageMatches.length > 0 ? 'scenario-coverage' : '',
+        staticValidationMatches.length > 0 ? 'static-test-coverage' : '',
         runtimeObserved ? 'runtime-observation' : '',
       ]).filter(Boolean),
       blockingReasons: unique([
@@ -226,11 +516,20 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
           : '',
         missingLinks.length > 0 ? `Missing structural links: ${missingLinks.join(', ')}.` : '',
         executedResult?.status === 'failed' ? executedResult.summary : '',
+        ...governedBlockingReasons,
       ]).filter(Boolean),
       validationTargets: unique([
         candidate.backendRoute ? `Validate backend chain for ${candidate.backendRoute}.` : '',
         executedResult ? 'Re-run declared flow evidence for this flow.' : '',
+        staticValidationMatches.length > 0
+          ? `Static test coverage detected in ${staticValidationMatches
+              .slice(0, 3)
+              .map((source) => source.filePath)
+              .join(', ')}.`
+          : '',
+        ...governedValidationTargets,
       ]).filter(Boolean),
+      dod: flowDoD,
     } satisfies PulseFlowProjectionItem;
   });
 

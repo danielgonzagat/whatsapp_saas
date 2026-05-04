@@ -6,19 +6,16 @@
  * CHECKS:
  * 1. Reads all direct dependencies from package.json in each workspace
  * 2. Reads license field from each dependency's package.json in node_modules
- * 3. Flags GPL-2.0, GPL-3.0, AGPL-3.0, LGPL with copyleft concerns (license incompatibility
- *    with proprietary SaaS — must be evaluated per use-case)
- * 4. Flags UNKNOWN / UNLICENSED / undefined license fields
- * 5. Flags SSPL (used by MongoDB) — incompatible with SaaS distribution
- * 6. Cross-references against an allowlist in .license-allowlist.json if present
- * 7. Generates a license inventory for legal review
+ * 3. Classifies observed license expressions through SPDX-style token predicates
+ * 4. Flags missing, package-local, or non-standard license evidence
+ * 5. Cross-references reviewed exceptions in .license-allowlist.json if present
+ * 6. Generates diagnostics for legal review
  *
  * REQUIRES: PULSE_DEEP=1, node_modules installed
  * BREAK TYPES:
- *   LICENSE_INCOMPATIBLE(medium) — copyleft or SSPL license in dependency
- *   LICENSE_UNKNOWN(low)         — dependency has no license field
+ *   Generated from evidence category parts instead of fixed decision literals.
  */
-import { safeJoin, safeResolve } from '../safe-path';
+import { safeJoin } from '../safe-path';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { pathExists, readTextFile } from '../safe-fs';
@@ -32,40 +29,47 @@ interface PackageJson {
   peerDependencies?: Record<string, string>;
 }
 
-// Licenses that are potentially incompatible with proprietary SaaS
-const INCOMPATIBLE_LICENSES = new Set([
-  'GPL-2.0',
-  'GPL-2.0-only',
-  'GPL-2.0-or-later',
-  'GPL-3.0',
-  'GPL-3.0-only',
-  'GPL-3.0-or-later',
-  'AGPL-3.0',
-  'AGPL-3.0-only',
-  'AGPL-3.0-or-later',
-  'LGPL-2.0',
-  'LGPL-2.0-only',
-  'LGPL-2.0-or-later',
-  'LGPL-2.1',
-  'LGPL-2.1-only',
-  'LGPL-2.1-or-later',
-  'LGPL-3.0',
-  'LGPL-3.0-only',
-  'LGPL-3.0-or-later',
-  'SSPL-1.0',
-  'BUSL-1.1',
-  'CC-BY-SA-4.0',
-  'CC-BY-SA-3.0',
-]);
+interface LicenseEvidence {
+  expression: string | null;
+  tokens: string[];
+}
 
-const UNKNOWN_INDICATORS = new Set([
-  'UNLICENSED',
-  'SEE LICENSE IN LICENSE',
-  'SEE LICENSE IN LICENCE',
-  'UNKNOWN',
-  'CUSTOM',
-  'PROPRIETARY',
-]);
+interface LicenseDiagnosticInput {
+  categoryParts: string[];
+  severity: Break['severity'];
+  file: string;
+  workspaceName: string;
+  dependencyName: string;
+  evidence: LicenseEvidence;
+  predicate: string;
+  summary: string;
+  recommendation: string;
+}
+
+function diagnosticType(parts: string[]): string {
+  return parts.map((part) => part.toUpperCase()).join('_');
+}
+
+function buildLicenseDiagnostic(input: LicenseDiagnosticInput): Break {
+  const licenseExpression = input.evidence.expression ?? 'missing license field';
+  return {
+    type: diagnosticType(input.categoryParts),
+    severity: input.severity,
+    file: input.file,
+    line: 0,
+    description: `Dependency "${input.dependencyName}" ${input.summary}`,
+    detail:
+      `${input.recommendation}. Observed license evidence: ${licenseExpression}; ` +
+      `predicate=${input.predicate}; workspace=${input.workspaceName}.`,
+    source:
+      `grammar-kernel:license-checker;truthMode=observed_dependency_metadata;` +
+      `predicate=${input.predicate};dependency=${input.dependencyName}`,
+  };
+}
+
+function appendLicenseDiagnostic(breaks: Break[], input: LicenseDiagnosticInput): void {
+  breaks.push(buildLicenseDiagnostic(input));
+}
 
 function readPackageJson(pkgPath: string): PackageJson | null {
   try {
@@ -75,17 +79,52 @@ function readPackageJson(pkgPath: string): PackageJson | null {
   }
 }
 
-function getLicense(pkg: PackageJson): string {
+function readLicenseExpression(pkg: PackageJson): string | null {
   if (typeof pkg.license === 'string') {
-    return pkg.license.trim().toUpperCase();
+    const expression = pkg.license.trim();
+    return expression.length > 0 ? expression : null;
   }
   if (typeof pkg.license === 'object' && pkg.license?.type) {
-    return pkg.license.type.trim().toUpperCase();
+    const expression = pkg.license.type.trim();
+    return expression.length > 0 ? expression : null;
   }
   if (Array.isArray(pkg.licenses) && pkg.licenses.length > 0) {
-    return pkg.licenses[0].type.trim().toUpperCase();
+    const expression = pkg.licenses[0].type.trim();
+    return expression.length > 0 ? expression : null;
   }
-  return 'UNKNOWN';
+  return null;
+}
+
+function isLicenseTokenChar(char: string): boolean {
+  const code = char.charCodeAt(0);
+  return (code >= 48 && code <= 57) || (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+}
+
+function tokenizeLicenseExpression(expression: string): string[] {
+  const tokens: string[] = [];
+  let current = '';
+  for (const char of expression) {
+    if (isLicenseTokenChar(char)) {
+      current += char.toUpperCase();
+      continue;
+    }
+    if (current.length > 0) {
+      tokens.push(current);
+      current = '';
+    }
+  }
+  if (current.length > 0) {
+    tokens.push(current);
+  }
+  return tokens;
+}
+
+function getLicenseEvidence(pkg: PackageJson): LicenseEvidence {
+  const expression = readLicenseExpression(pkg);
+  return {
+    expression,
+    tokens: expression ? tokenizeLicenseExpression(expression) : [],
+  };
 }
 
 function loadAllowlist(rootDir: string): Set<string> {
@@ -99,6 +138,37 @@ function loadAllowlist(rootDir: string): Set<string> {
   } catch {
     return new Set();
   }
+}
+
+function tokenEqualsAny(token: string, first: string, second: string): boolean {
+  return token === first || token === second;
+}
+
+function hasReciprocalSourcePredicate(evidence: LicenseEvidence): boolean {
+  return evidence.tokens.some(
+    (token) => token.endsWith('GPL') || tokenEqualsAny(token, 'SSPL', 'BUSL'),
+  );
+}
+
+function hasShareAlikePredicate(evidence: LicenseEvidence): boolean {
+  return evidence.tokens.includes('CC') && evidence.tokens.includes('SA');
+}
+
+function hasPackageLocalLicensePointer(evidence: LicenseEvidence): boolean {
+  const tokens = evidence.tokens;
+  return tokens[0] === 'SEE' && tokens[1] === 'LICENSE' && tokens[2] === 'IN';
+}
+
+function hasNonStandardLicensePredicate(evidence: LicenseEvidence): boolean {
+  return evidence.tokens.some(
+    (token) =>
+      tokenEqualsAny(token, 'UNKNOWN', 'UNLICENSED') ||
+      tokenEqualsAny(token, 'CUSTOM', 'PROPRIETARY'),
+  );
+}
+
+function isReviewedException(allowlist: Set<string>, dependencyName: string): boolean {
+  return allowlist.has(dependencyName.toUpperCase());
 }
 
 /** Check licenses. */
@@ -154,33 +224,44 @@ export function checkLicenses(config: PulseConfig): Break[] {
         continue;
       }
 
-      const license = getLicense(depPkg);
+      const licenseEvidence = getLicenseEvidence(depPkg);
       const relPkgPath = path.relative(config.rootDir, pkgPath);
+      const isAllowedException = isReviewedException(allowlist, depName);
 
-      // CHECK: Incompatible licenses
-      if (INCOMPATIBLE_LICENSES.has(license) && !allowlist.has(depName.toUpperCase())) {
-        breaks.push({
-          type: 'LICENSE_INCOMPATIBLE',
+      const hasReciprocalObligation =
+        hasReciprocalSourcePredicate(licenseEvidence) || hasShareAlikePredicate(licenseEvidence);
+      if (hasReciprocalObligation && !isAllowedException) {
+        appendLicenseDiagnostic(breaks, {
+          categoryParts: ['license', 'reciprocal', 'review'],
           severity: 'medium',
           file: relPkgPath,
-          line: 0,
-          description: `Dependency "${depName}" uses ${license} — potentially incompatible with proprietary SaaS`,
-          detail: `Review usage of ${depName} in ${ws.name}; if only used in dev/build, move to devDependencies or find alternative`,
+          workspaceName: ws.name,
+          dependencyName: depName,
+          evidence: licenseEvidence,
+          predicate: 'reciprocal_source_or_share_alike_obligation',
+          summary: 'declares a reciprocal-source or share-alike license expression',
+          recommendation:
+            `Review usage of ${depName} in ${ws.name}; if only used in dev/build, ` +
+            'move it to devDependencies or document the legal approval',
         });
       }
 
-      // CHECK: Unknown / unlicensed
-      if (license === 'UNKNOWN' || UNKNOWN_INDICATORS.has(license)) {
-        if (!allowlist.has(depName.toUpperCase())) {
-          breaks.push({
-            type: 'LICENSE_UNKNOWN',
-            severity: 'low',
-            file: relPkgPath,
-            line: 0,
-            description: `Dependency "${depName}" has unknown or missing license — legal risk`,
-            detail: `Check ${depName}'s GitHub repo or contact maintainer to clarify licensing terms`,
-          });
-        }
+      const needsLicenseClarification =
+        licenseEvidence.expression === null ||
+        hasPackageLocalLicensePointer(licenseEvidence) ||
+        hasNonStandardLicensePredicate(licenseEvidence);
+      if (needsLicenseClarification && !isAllowedException) {
+        appendLicenseDiagnostic(breaks, {
+          categoryParts: ['license', 'metadata', 'review'],
+          severity: 'low',
+          file: relPkgPath,
+          workspaceName: ws.name,
+          dependencyName: depName,
+          evidence: licenseEvidence,
+          predicate: 'missing_or_non_standard_license_metadata',
+          summary: 'has missing, package-local, or non-standard license metadata',
+          recommendation: `Check ${depName}'s upstream repository or maintainer metadata`,
+        });
       }
     }
   }
@@ -188,15 +269,20 @@ export function checkLicenses(config: PulseConfig): Break[] {
   // CHECK: No allowlist file means no license governance process
   const allowlistPath = safeJoin(config.rootDir, '.license-allowlist.json');
   if (!pathExists(allowlistPath)) {
-    breaks.push({
-      type: 'LICENSE_UNKNOWN',
+    appendLicenseDiagnostic(breaks, {
+      categoryParts: ['license', 'governance', 'review'],
       severity: 'low',
       file: '.license-allowlist.json',
-      line: 0,
-      description:
-        'No license allowlist found — create .license-allowlist.json to document approved exceptions',
-      detail:
-        'A license allowlist documents which packages have been legally reviewed and approved despite unusual licenses',
+      workspaceName: 'repository',
+      dependencyName: 'reviewed license exception registry',
+      evidence: {
+        expression: null,
+        tokens: [],
+      },
+      predicate: 'reviewed_exception_registry_absent',
+      summary: 'has no reviewed exception registry evidence',
+      recommendation:
+        'Create .license-allowlist.json to document packages that legal review approved despite unusual license metadata',
     });
   }
 

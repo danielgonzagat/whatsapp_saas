@@ -1,28 +1,11 @@
 import * as path from 'path';
+import * as ts from 'typescript';
 import type { ServiceTrace, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
-// Matches ALL Prisma access patterns:
-// 1. this.prisma.modelName.operation()
-// 2. this.prismaAny.modelName.operation()
-// 3. (this.prisma as any).modelName.operation()
-// 4. prismaAny.modelName.operation() (local alias)
-// 5. tx.modelName.operation() (inside $transaction callbacks)
-// 6. prisma.modelName.operation() (parameter in functions)
-const PRISMA_OPS =
-  'create|findMany|findUnique|findFirst|update|updateMany|upsert|delete|deleteMany|count|aggregate|groupBy|createMany';
-const PRISMA_ACCESS_PATTERNS = [
-  new RegExp(`this\\.(?:prisma|prismaAny)\\.([a-z]\\w+)\\.\\s*(?:${PRISMA_OPS})\\s*\\(`, 'g'),
-  new RegExp(`\\(this\\.prisma\\s+as\\s+any\\)\\.([a-z]\\w+)\\.\\s*(?:${PRISMA_OPS})\\s*\\(`, 'g'),
-  new RegExp(`(?:prismaAny|prismaExt|prisma)\\.([a-z]\\w+)\\.\\s*(?:${PRISMA_OPS})\\s*\\(`, 'g'),
-  new RegExp(`\\btx\\.([a-z]\\w+)\\.\\s*(?:${PRISMA_OPS})\\s*\\(`, 'g'),
-];
-
 const NON_METHOD_NAMES = new Set([
   'constructor',
-  'onModuleInit',
-  'onModuleDestroy',
   'if',
   'for',
   'while',
@@ -36,6 +19,48 @@ const NON_METHOD_NAMES = new Set([
   'await',
   'super',
 ]);
+
+const SERVICE_ALIAS_IGNORE = new Set([
+  'ConfigService',
+  'EventEmitter2',
+  'HttpService',
+  'Logger',
+  'ModuleRef',
+  'PrismaService',
+  'Reflector',
+  'Request',
+]);
+
+function extractConstructorAliases(content: string): Map<string, string> {
+  const aliases = new Map<string, string>();
+  const ctorMatch = content.match(/constructor\s*\(([\s\S]*?)\)\s*\{/);
+  if (!ctorMatch) {
+    return aliases;
+  }
+
+  const paramRe =
+    /(?:@(?:Inject|InjectRedis|Optional)\([^)]*\)\s*)?(?:private|public|protected)?\s*(?:readonly\s+)?(\w+)\??\s*:\s*([A-Z][A-Za-z0-9_]+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = paramRe.exec(ctorMatch[1])) !== null) {
+    if (!SERVICE_ALIAS_IGNORE.has(match[2])) {
+      aliases.set(match[1], match[2]);
+    }
+  }
+
+  return aliases;
+}
+
+function extractAssignedServiceAliases(content: string): Map<string, string> {
+  const aliases = new Map<string, string>();
+  const assignmentRe = /\bthis\.([A-Za-z_]\w*)\s*=\s*new\s+([A-Z][A-Za-z0-9_]+)\s*\(/g;
+  let match: RegExpExecArray | null;
+  while ((match = assignmentRe.exec(content)) !== null) {
+    if (!SERVICE_ALIAS_IGNORE.has(match[2])) {
+      aliases.set(match[1], match[2]);
+    }
+  }
+  return aliases;
+}
 
 function getClassMethodDeclarationName(trimmedLine: string): string | null {
   const methodMatch = trimmedLine.match(
@@ -65,16 +90,227 @@ function countParenDelta(value: string): number {
   return delta;
 }
 
-function collectPrismaModelsFromText(text: string): Set<string> {
-  const models = new Set<string>();
-  for (const pattern of PRISMA_ACCESS_PATTERNS) {
-    pattern.lastIndex = 0;
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(text)) !== null) {
-      models.add(match[1]);
+function identifierTokens(value: string): Set<string> {
+  return new Set(
+    value
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/[^A-Za-z0-9]+/g, ' ')
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean),
+  );
+}
+
+function hasIdentifierToken(value: string, token: string): boolean {
+  return identifierTokens(value).has(token);
+}
+
+function unwrapExpression(expression: ts.Expression): ts.Expression {
+  let current = expression;
+  while (
+    ts.isParenthesizedExpression(current) ||
+    ts.isAsExpression(current) ||
+    ts.isTypeAssertionExpression(current) ||
+    ts.isNonNullExpression(current)
+  ) {
+    current = current.expression;
+  }
+  return current;
+}
+
+function expressionParts(expression: ts.Expression): string[] {
+  const current = unwrapExpression(expression);
+  if (ts.isIdentifier(current)) {
+    return [current.text];
+  }
+  if (current.kind === ts.SyntaxKind.ThisKeyword) {
+    return ['this'];
+  }
+  if (ts.isPropertyAccessExpression(current)) {
+    return [...expressionParts(current.expression), current.name.text];
+  }
+  if (ts.isElementAccessExpression(current) && ts.isStringLiteralLike(current.argumentExpression)) {
+    return [...expressionParts(current.expression), current.argumentExpression.text];
+  }
+  return [];
+}
+
+function collectPrismaReceiverNames(sourceFile: ts.SourceFile): Set<string> {
+  const receivers = new Set<string>();
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isIdentifier(node) && hasIdentifierToken(node.text, 'prisma')) {
+      receivers.add(node.text);
+    }
+
+    if (ts.isCallExpression(node)) {
+      const expression = unwrapExpression(node.expression);
+      if (ts.isPropertyAccessExpression(expression)) {
+        const callParts = expressionParts(expression);
+        const callsTransaction = callParts.some((part) => hasIdentifierToken(part, 'transaction'));
+        const usesPrismaReceiver = callParts.some((part) => hasIdentifierToken(part, 'prisma'));
+        if (callsTransaction && usesPrismaReceiver) {
+          for (const argument of node.arguments) {
+            if (ts.isArrowFunction(argument) || ts.isFunctionExpression(argument)) {
+              for (const parameter of argument.parameters) {
+                if (ts.isIdentifier(parameter.name)) {
+                  receivers.add(parameter.name.text);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return receivers;
+}
+
+function modelFromCallParts(parts: string[], prismaReceivers: Set<string>): string | null {
+  for (let index = 0; index < parts.length; index++) {
+    const part = parts[index];
+    const isPrismaToken = hasIdentifierToken(part, 'prisma');
+    const isKnownReceiver = prismaReceivers.has(part);
+    const modelIndex = index + 1;
+    const operationIndex = index + 2;
+    if ((isPrismaToken || isKnownReceiver) && operationIndex < parts.length) {
+      const modelName = parts[modelIndex];
+      if (modelName && !modelName.startsWith('$')) {
+        return modelName;
+      }
     }
   }
+  return null;
+}
+
+function sourceFilesForTraceText(fileName: string, text: string): ts.SourceFile[] {
+  return [
+    ts.createSourceFile(fileName, text, ts.ScriptTarget.Latest, true),
+    ts.createSourceFile(
+      fileName,
+      `class ServiceTraceSlice {\n${text}\n}`,
+      ts.ScriptTarget.Latest,
+      true,
+    ),
+  ];
+}
+
+function collectPrismaModelsFromText(text: string): Set<string> {
+  const models = new Set<string>();
+
+  for (const sourceFile of sourceFilesForTraceText('service-trace-slice.ts', text)) {
+    const prismaReceivers = collectPrismaReceiverNames(sourceFile);
+
+    const visit = (node: ts.Node): void => {
+      if (ts.isCallExpression(node)) {
+        const parts = expressionParts(node.expression);
+        const modelName = modelFromCallParts(parts, prismaReceivers);
+        if (modelName) {
+          models.add(modelName);
+        }
+      }
+
+      ts.forEachChild(node, visit);
+    };
+
+    visit(sourceFile);
+  }
   return models;
+}
+
+function collectHelperModelsFromText(
+  text: string,
+  helperModelMap: Map<string, string[]>,
+): Set<string> {
+  const models = new Set<string>();
+
+  for (const sourceFile of sourceFilesForTraceText('service-helper-slice.ts', text)) {
+    const visit = (node: ts.Node): void => {
+      if (ts.isCallExpression(node)) {
+        const expression = unwrapExpression(node.expression);
+        if (ts.isIdentifier(expression)) {
+          const hasPrismaArgument = node.arguments.some((argument) =>
+            expressionParts(argument).some((part) => hasIdentifierToken(part, 'prisma')),
+          );
+          if (hasPrismaArgument) {
+            for (const modelName of helperModelMap.get(expression.text) || []) {
+              models.add(modelName);
+            }
+          }
+        }
+      }
+
+      ts.forEachChild(node, visit);
+    };
+
+    visit(sourceFile);
+  }
+  return models;
+}
+
+function collectServiceCallsFromText(
+  text: string,
+  serviceAliases: Map<string, string>,
+  className: string,
+): Set<string> {
+  const calls = new Set<string>();
+  const callRe = /\bthis\.([A-Za-z_]\w*)\.([A-Za-z_]\w*)\s*\(/g;
+  let match: RegExpExecArray | null;
+  while ((match = callRe.exec(text)) !== null) {
+    const serviceName = serviceAliases.get(match[1]);
+    if (!serviceName) {
+      continue;
+    }
+    calls.add(`${serviceName}.${match[2]}`);
+  }
+  const selfCallRe = /\bthis\.([A-Za-z_]\w*)\s*\(/g;
+  while ((match = selfCallRe.exec(text)) !== null) {
+    if (!NON_METHOD_NAMES.has(match[1])) {
+      calls.add(`${className}.${match[1]}`);
+    }
+  }
+  return calls;
+}
+
+function collectTriggersFromDecorators(decorators: string[], methodName: string): string[] {
+  const decoratorTriggers = decorators
+    .map((decorator) => {
+      const cronMatch = decorator.match(/@Cron\(\s*([^)]*)\)/);
+      if (cronMatch) {
+        return `cron:${cronMatch[1].replace(/\s+/g, ' ').trim()}`;
+      }
+
+      const intervalMatch = decorator.match(/@Interval\(\s*([^)]*)\)/);
+      if (intervalMatch) {
+        return `interval:${intervalMatch[1].replace(/\s+/g, ' ').trim()}`;
+      }
+
+      const timeoutMatch = decorator.match(/@Timeout\(\s*([^)]*)\)/);
+      if (timeoutMatch) {
+        return `timeout:${timeoutMatch[1].replace(/\s+/g, ' ').trim()}`;
+      }
+
+      const eventMatch = decorator.match(/@OnEvent\(\s*([^)]*)\)/);
+      if (eventMatch) {
+        return `event:${eventMatch[1].replace(/\s+/g, ' ').trim()}`;
+      }
+
+      const processMatch = decorator.match(/@Process\(\s*([^)]*)\)/);
+      if (processMatch) {
+        return `queue:${processMatch[1].replace(/\s+/g, ' ').trim()}`;
+      }
+
+      return '';
+    })
+    .filter(Boolean);
+  const lifecycleTriggers = ['onModuleInit'].includes(methodName)
+    ? [`lifecycle:${methodName}`]
+    : [];
+  return [...decoratorTriggers, ...lifecycleTriggers];
 }
 
 function extractDeclarationBody(lines: string[], startIndex: number, maxLines = 260): string {
@@ -155,7 +391,13 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
   const helperModelMap = buildPrismaHelperModelMap(backendFiles);
   // Scan BOTH services AND controllers for Prisma model access
   const files = backendFiles.filter(
-    (f) => f.endsWith('.service.ts') || f.endsWith('.controller.ts') || f.endsWith('.engine.ts'),
+    (f) =>
+      f.endsWith('.service.ts') ||
+      f.endsWith('.controller.ts') ||
+      f.endsWith('.engine.ts') ||
+      f.endsWith('.guard.ts') ||
+      f.endsWith('.interceptor.ts') ||
+      f.endsWith('.middleware.ts'),
   );
 
   for (const file of files) {
@@ -163,10 +405,14 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
       const content = readTextFile(file, 'utf8');
       const lines = content.split('\n');
       const relFile = path.relative(config.rootDir, file);
+      const serviceAliases = new Map([
+        ...extractConstructorAliases(content),
+        ...extractAssignedServiceAliases(content),
+      ]);
 
       // Check if file uses Prisma in any form
       const hasPrisma = /prisma|PrismaService/i.test(content);
-      if (!hasPrisma) {
+      if (!hasPrisma && serviceAliases.size === 0) {
         continue;
       }
 
@@ -183,10 +429,19 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
       let inMethod = false;
       let pendingMethod: { name: string; line: number; parenDepth: number } | null = null;
       const currentModels = new Set<string>();
+      const currentServiceCalls = new Set<string>();
+      const currentMethodLines: string[] = [];
+      let pendingDecorators: string[] = [];
+      let currentTriggers: string[] = [];
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const trimmed = line.trim();
+
+        if (!inMethod && !pendingMethod && trimmed.startsWith('@')) {
+          pendingDecorators.push(trimmed);
+          continue;
+        }
 
         // Detect class method declarations only. Prisma calls such as
         // `this.prisma.product.findFirst({` must not become fake method names.
@@ -194,6 +449,8 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
           const methodName = getClassMethodDeclarationName(trimmed);
           if (methodName) {
             pendingMethod = { name: methodName, line: i + 1, parenDepth: 0 };
+          } else if (trimmed && !trimmed.startsWith('@')) {
+            pendingDecorators = [];
           }
         }
 
@@ -210,9 +467,15 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
           inMethod = true;
           pendingMethod = null;
           currentModels.clear();
+          currentServiceCalls.clear();
+          currentMethodLines.length = 0;
+          currentTriggers = collectTriggersFromDecorators(pendingDecorators, currentMethod);
+          pendingDecorators = [];
         }
 
         if (inMethod) {
+          currentMethodLines.push(line);
+
           // Track braces
           const braceScanText =
             i === methodBodyStartLine ? line.slice(methodBodyStartColumn) : line;
@@ -225,34 +488,34 @@ export function traceServices(config: PulseConfig): ServiceTrace[] {
             }
           }
 
-          // Find prisma model accesses using ALL patterns
-          for (const modelName of collectPrismaModelsFromText(line)) {
-            currentModels.add(modelName);
-          }
-
-          const helperCallRe =
-            /\b([A-Za-z_]\w*)\s*\(\s*(?:this\.)?(?:prisma|prismaAny|prismaExt)\b/g;
-          let helperCallMatch: RegExpExecArray | null;
-          while ((helperCallMatch = helperCallRe.exec(line)) !== null) {
-            const helperModels = helperModelMap.get(helperCallMatch[1]) || [];
-            for (const modelName of helperModels) {
-              currentModels.add(modelName);
-            }
+          for (const serviceCall of collectServiceCallsFromText(line, serviceAliases, className)) {
+            currentServiceCalls.add(serviceCall);
           }
 
           // Method ended
           if (braceDepth === 0 && currentMethod) {
-            if (currentModels.size > 0) {
+            const methodText = currentMethodLines.join('\n');
+            for (const modelName of collectPrismaModelsFromText(methodText)) {
+              currentModels.add(modelName);
+            }
+            for (const modelName of collectHelperModelsFromText(methodText, helperModelMap)) {
+              currentModels.add(modelName);
+            }
+
+            if (currentModels.size > 0 || currentServiceCalls.size > 0) {
               traces.push({
                 file: relFile,
                 serviceName: className,
                 methodName: currentMethod,
                 line: methodLine,
                 prismaModels: [...currentModels],
+                serviceCalls: [...currentServiceCalls],
+                triggers: currentTriggers,
               });
             }
             currentMethod = null;
             inMethod = false;
+            currentTriggers = [];
           }
         }
       }

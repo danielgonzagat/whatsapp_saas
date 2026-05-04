@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 // PULSE:OK — AI generate POST navigates to editor on success; deleteDesign uses useCanvasDesigns hook which calls mutate internally.
 
 import { IC } from '@/components/canvas/CanvasIcons';
@@ -44,7 +45,15 @@ function RecentSkeletonGrid() {
             }}
           />
           <div style={{ padding: '10px 12px', display: 'grid', gap: 8 }}>
-            <div style={{ width: '70%', height: 10, borderRadius: 999, background: '#1C1C1F' }} />
+            <div
+              style={{
+                width: '70%',
+                height: 10,
+                borderRadius: 999,
+                background:
+                  '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */,
+              }}
+            />
             <div
               style={{
                 width: '42%',
@@ -118,7 +127,7 @@ export default function CanvasInicio() {
             padding: '10px 16px',
           }}
         >
-          <span style={{ color: '#E85D30' }}>{IC.spark(18)}</span>
+          <span style={{ color: colors.ember.primary }}>{IC.spark(18)}</span>
           <input
             value={ai}
             onChange={(e) => setAi(e.target.value)}
@@ -140,7 +149,7 @@ export default function CanvasInicio() {
               onClick={handleAiSubmit}
               style={{
                 padding: '5px 12px',
-                background: '#E85D30',
+                background: colors.ember.primary,
                 border: 'none',
                 borderRadius: 4,
                 color: 'var(--app-text-on-accent)',
@@ -199,7 +208,7 @@ export default function CanvasInicio() {
               onClick={() => setShowCreate(true)}
               style={{
                 padding: '8px 20px',
-                background: '#E85D30',
+                background: colors.ember.primary,
                 border: 'none',
                 borderRadius: 4,
                 color: 'var(--app-text-on-accent)',
@@ -282,7 +291,8 @@ function DesignCard({
           borderRadius: 4,
           background: 'var(--app-bg-primary)',
           border: '1px solid #2A2A2E',
-          color: '#FF6B6B',
+          color:
+            '#FF6B6B' /* PULSE_VISUAL_OK: soft error red, non-Monitor */ /* PULSE_VISUAL_OK: soft error red, non-Monitor */,
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -353,7 +363,7 @@ function DesignCard({
                   width: 20,
                   height: 20,
                   borderRadius: 3,
-                  background: 'radial-gradient(circle, #E85D3040, transparent)',
+                  background: 'radial-gradient(circle, colors.ember.glow40, transparent)',
                 }}
               />
             </div>

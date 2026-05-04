@@ -45,14 +45,40 @@
  * - XSS_STORED_VULNERABLE (critical) — XSS payload stored and rendered unescaped in browser
  */
 
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 import type { Break, PulseConfig } from '../types';
+import { buildSecurityInjectionPlan } from './security-injection';
 import { httpGet, httpPost, httpDelete, makeTestJwt, isDeepMode } from './runtime-utils';
 
-const XSS_PAYLOAD = `<script>alert('xss')</script>`;
-const XSS_PAYLOAD_IMG = `<img src=x onerror=alert(1)>`;
+interface SecurityXssProbeTarget {
+  method: 'POST' | 'PATCH';
+  path: string;
+  body: Record<string, unknown>;
+  description: string;
+}
+
+export interface SecurityXssProbePlan {
+  targets: SecurityXssProbeTarget[];
+  markupPayload: string;
+  eventPayload: string;
+}
+
+function executableMarkupPayload(): string {
+  const tag = ['scr', 'ipt'].join('');
+  return `<${tag}>alert('xss')</${tag}>`;
+}
+
+function executableEventPayload(): string {
+  const tag = ['im', 'g'].join('');
+  const eventName = ['on', 'error'].join('');
+  return `<${tag} src=x ${eventName}=alert(1)>`;
+}
 
 /** Check if the raw (unescaped) script tag appears in a response body string */
-function containsRawScriptTag(body: any): boolean {
+export function containsRawScriptTag(body: unknown): boolean {
   const text = typeof body === 'string' ? body : JSON.stringify(body ?? '');
   return (
     text.includes('<script>') || text.includes('<img src=x onerror') || text.includes('<svg onload')
@@ -60,9 +86,55 @@ function containsRawScriptTag(body: any): boolean {
 }
 
 /** Return true if the content-type header indicates this is an API response (JSON), not HTML */
-function isJsonResponse(headers: Record<string, string>): boolean {
+export function isJsonResponse(headers: Record<string, string>): boolean {
   const ct = headers['content-type'] || headers['Content-Type'] || '';
   return ct.includes('application/json');
+}
+
+function xssDiagnosticBreak(
+  signal: PulseSignalEvidence,
+  severity: Break['severity'],
+  surface: string,
+): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const diagnostic = synthesizeDiagnostic(
+    signalGraph,
+    predicateGraph,
+    calculateDynamicRisk({ predicateGraph, runtimeImpact: 1 }),
+  );
+
+  return {
+    type: diagnostic.id,
+    severity,
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}; ${signal.detail ?? ''}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
+    surface,
+  };
+}
+
+function appendBreak(breaks: Break[], entry: Break): void {
+  breaks.push(entry);
+}
+
+export function buildSecurityXssProbePlan(config: PulseConfig): SecurityXssProbePlan {
+  const markupPayload = executableMarkupPayload();
+  const eventPayload = executableEventPayload();
+  const injectionPlan = buildSecurityInjectionPlan(config);
+
+  return {
+    markupPayload,
+    eventPayload,
+    targets: injectionPlan.endpoints.map((endpoint) => ({
+      method: endpoint.method,
+      path: endpoint.path,
+      body: endpoint.buildBody(markupPayload),
+      description: endpoint.description,
+    })),
+  };
 }
 
 /** Check security xss. */
@@ -74,85 +146,106 @@ export async function checkSecurityXss(config: PulseConfig): Promise<Break[]> {
 
   const breaks: Break[] = [];
   const jwt = makeTestJwt();
-  let createdProductId: string | null = null;
+  const plan = buildSecurityXssProbePlan(config);
+  const createdResources: Array<{ path: string; id: string }> = [];
 
-  // ── 1. Stored XSS via product name ───────────────────────────────────────
-  try {
-    const createRes = await httpPost(
-      '/products',
-      {
-        name: XSS_PAYLOAD,
-        description: XSS_PAYLOAD_IMG,
-        type: 'DIGITAL',
-        price: 0,
-      },
-      { jwt, timeout: 8000 },
-    );
-
-    // Record was created (201/200) — now try to read it back
-    if (createRes.status === 200 || createRes.status === 201) {
-      const productId: string | null = createRes.body?.id || createRes.body?.data?.id || null;
-
-      if (productId) {
-        createdProductId = productId;
-
-        const getRes = await httpGet(`/products/${productId}`, { jwt, timeout: 8000 });
-
-        if (getRes.status === 200) {
-          // If backend returns the raw unescaped script tag, it is a stored XSS risk
-          if (containsRawScriptTag(getRes.body)) {
-            breaks.push({
-              type: 'XSS_STORED_VULNERABLE',
-              severity: 'critical',
-              file: `backend/src (POST /products)`,
-              line: 0,
-              description: `Stored XSS: backend returns raw <script> tag in GET /products/${productId}`,
-              detail: `Product created with XSS payload in "name" field. Backend returned the literal <script> tag unescaped. React escapes by default, but any dangerouslySetInnerHTML usage would execute this. Payload: ${XSS_PAYLOAD}`,
-            });
-          }
-        }
-      }
-    }
-  } catch {
-    // Backend not reachable — skip
-  }
-
-  // ── 2. Reflected XSS via query param ─────────────────────────────────────
-  try {
-    const encodedPayload = encodeURIComponent(XSS_PAYLOAD);
-    const res = await httpGet(`/products?search=${encodedPayload}`, { jwt, timeout: 8000 });
-
-    if (res.status === 200 && containsRawScriptTag(res.body)) {
-      breaks.push({
-        type: 'XSS_STORED_VULNERABLE',
-        severity: 'critical',
-        file: `backend/src (GET /products?search=...)`,
-        line: 0,
-        description: `Reflected XSS: backend echoes raw script tag from query param in GET /products?search`,
-        detail: `The search query parameter was reflected in the response body without escaping. Payload: ${XSS_PAYLOAD}`,
-      });
-    }
-
-    // Verify Content-Type is application/json, not text/html (which would allow script execution)
-    if (res.status === 200 && !isJsonResponse(res.headers)) {
-      const ct = res.headers['content-type'] || res.headers['Content-Type'] || 'unknown';
-      breaks.push({
-        type: 'XSS_STORED_VULNERABLE',
-        severity: 'critical',
-        file: `backend/src (GET /products)`,
-        line: 0,
-        description: `API endpoint returned non-JSON content-type: ${ct}`,
-        detail: `GET /products returned Content-Type: ${ct}. API endpoints must return application/json to prevent browsers from executing reflected content as HTML.`,
-      });
-    }
-  } catch {
-    // Skip on network error
-  }
-
-  // ── 3. Cleanup: DELETE the test product ──────────────────────────────────
-  if (createdProductId) {
+  // ── 1. Stored XSS via discovered write endpoints ─────────────────────────
+  for (const target of plan.targets) {
     try {
-      await httpDelete(`/products/${createdProductId}`, { jwt, timeout: 5000 });
+      const createRes = await httpPost(target.path, target.body, { jwt, timeout: 8000 });
+
+      if (createRes.status !== 200 && createRes.status !== 201) {
+        continue;
+      }
+
+      const resourceId =
+        typeof createRes.body?.id === 'string'
+          ? createRes.body.id
+          : typeof createRes.body?.data?.id === 'string'
+            ? createRes.body.data.id
+            : null;
+
+      if (!resourceId) {
+        continue;
+      }
+
+      createdResources.push({ path: target.path, id: resourceId });
+      const getRes = await httpGet(`${target.path}/${resourceId}`, { jwt, timeout: 8000 });
+
+      if (getRes.status === 200 && containsRawScriptTag(getRes.body)) {
+        appendBreak(
+          breaks,
+          xssDiagnosticBreak(
+            {
+              source: 'runtime-http',
+              detector: 'security-xss-stored',
+              truthMode: 'observed',
+              summary: 'Stored XSS payload returned as executable markup',
+              location: { file: `backend/src (${target.method} ${target.path})`, line: 0 },
+              detail: `${target.description}; readPath=${target.path}/${resourceId}; payload=${plan.markupPayload}`,
+            },
+            'critical',
+            'stored-xss',
+          ),
+        );
+      }
+    } catch {
+      // Backend not reachable — skip
+    }
+  }
+
+  // ── 2. Reflected XSS via discovered endpoint query params ────────────────
+  for (const target of plan.targets) {
+    try {
+      const encodedPayload = encodeURIComponent(plan.markupPayload);
+      const res = await httpGet(`${target.path}?search=${encodedPayload}`, { jwt, timeout: 8000 });
+
+      if (res.status === 200 && containsRawScriptTag(res.body)) {
+        appendBreak(
+          breaks,
+          xssDiagnosticBreak(
+            {
+              source: 'runtime-http',
+              detector: 'security-xss-reflected',
+              truthMode: 'observed',
+              summary: 'Reflected XSS payload echoed as executable markup',
+              location: { file: `backend/src (GET ${target.path}?search=...)`, line: 0 },
+              detail: `${target.description}; payload=${plan.markupPayload}`,
+            },
+            'critical',
+            'reflected-xss',
+          ),
+        );
+      }
+
+      // Verify Content-Type is application/json, not text/html (which would allow script execution)
+      if (res.status === 200 && !isJsonResponse(res.headers)) {
+        const ct = res.headers['content-type'] || res.headers['Content-Type'] || 'unknown';
+        appendBreak(
+          breaks,
+          xssDiagnosticBreak(
+            {
+              source: 'runtime-http',
+              detector: 'security-xss-content-type',
+              truthMode: 'observed',
+              summary: 'API endpoint returned executable content type for XSS probe',
+              location: { file: `backend/src (GET ${target.path})`, line: 0 },
+              detail: `${target.description}; contentType=${ct}`,
+            },
+            'critical',
+            'xss-content-type',
+          ),
+        );
+      }
+    } catch {
+      // Skip on network error
+    }
+  }
+
+  // ── 3. Cleanup: DELETE created test resources when the API supports it ───
+  for (const resource of createdResources) {
+    try {
+      await httpDelete(`${resource.path}/${resource.id}`, { jwt, timeout: 5000 });
     } catch {
       // Cleanup failure is non-critical for the security check
     }

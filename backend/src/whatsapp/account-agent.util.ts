@@ -1,119 +1,10 @@
-const U0300__U036F_RE = /[\u0300-\u036f]/g;
-const A_Z0_9_S_RE = /[^a-z0-9\s-]/g;
-const S_RE = /\s+/g;
-const PATTERN_RE = /-+/g;
-const A_ZA_Z___0_9_RE = /[A-Za-zÀ-ÿ0-9-]+/g;
-const HTTPS_________S_RE = /https?:\/\/[^\s)]+/gi;
-const R___S____D_1_3_RE = /(?:R\$\s*)?\d{1,3}(?:\.\d{3})*(?:,\d{2})|(?:R\$\s*)?\d+(?:,\d{2})?/g;
-const R___S_RE = /R\$\s*/gi;
-const PATTERN_RE_2 = /\./g;
-const B__D_1_2__________D_RE = /\b(\d{1,2})(?:[.,]\d+)?\s*%/g;
-const D_RE = /[^\d.,]/g;
-const B__D_1_2___S_X_B_RE = /\b(\d{1,2})\s*x\b/gi;
-const D_RE_2 = /[^\d]/g;
-const A_Z0_9___3_RE = /^[A-Z0-9-]{3,}$/;
-const R__N_RE = /\r?\n+/;
-const BUYING_SIGNALS = [
-  'preco',
-  'preço',
-  'valor',
-  'quanto',
-  'quero',
-  'queria',
-  'gostaria',
-  'comprar',
-  'fechar',
-  'parcelado',
-  'parcelar',
-  'pix',
-  'boleto',
-  'cartao',
-  'cartão',
-  'link',
-  'pagamento',
-  'pagar',
-  'tem',
-  'vende',
-  'trabalha',
-  'sobre',
-];
-
-const PRODUCT_CUE_WORDS = new Set([
-  'quero',
-  'queria',
-  'gostaria',
-  'comprar',
-  'sobre',
-  'tem',
-  'vende',
-  'trabalha',
-  'oferece',
-  'produto',
-  'tratamento',
-  'procedimento',
-  'solucao',
-  'solução',
-  'kit',
-  'combo',
-]);
-
-const STOPWORDS = new Set([
-  'o',
-  'a',
-  'os',
-  'as',
-  'de',
-  'do',
-  'da',
-  'dos',
-  'das',
-  'um',
-  'uma',
-  'uns',
-  'umas',
-  'e',
-  'ou',
-  'pra',
-  'para',
-  'com',
-  'sem',
-  'me',
-  'te',
-  'sobre',
-  'isso',
-  'esse',
-  'essa',
-  'qual',
-  'quais',
-  'quanto',
-  'quero',
-  'queria',
-  'gostaria',
-  'comprar',
-  'tem',
-  'vende',
-  'trabalha',
-  'oferece',
-  'preco',
-  'preço',
-  'valor',
-  'pix',
-  'boleto',
-  'cartao',
-  'cartão',
-  'link',
-  'pagamento',
-  'pagar',
-  'parcelado',
-  'parcelar',
-  'mais',
-  'melhor',
-  'funciona',
-  'como',
-  'quiser',
-  'aqui',
-  'agora',
-]);
+import {
+  ACCOUNT_AGENT_REGEX,
+  BUYING_SIGNALS,
+  PRODUCT_CUE_WORDS,
+  STOPWORDS,
+} from './account-agent.util.helpers';
+import { formatBrlAmount } from '../kloel/money-format.util';
 
 /** Catalog gap detection shape. */
 export interface CatalogGapDetection {
@@ -137,23 +28,35 @@ export interface ParsedOfferLine {
   url: string | null;
 }
 
-/** Normalize catalog text. */
+/**
+ * Lower-cases the supplied text and strips diacritics, punctuation and extra whitespace.
+ * Used as the canonical normalization step before keyword/product comparisons.
+ */
 export function normalizeCatalogText(value: string): string {
   return String(value || '')
     .toLowerCase()
     .normalize('NFD')
-    .replace(U0300__U036F_RE, '')
-    .replace(A_Z0_9_S_RE, ' ')
-    .replace(S_RE, ' ')
+    .replace(ACCOUNT_AGENT_REGEX.diacritics, '')
+    .replace(ACCOUNT_AGENT_REGEX.nonAlphaNumWhitespaceHyphen, ' ')
+    .replace(ACCOUNT_AGENT_REGEX.whitespaceRun, ' ')
     .trim();
 }
 
-/** Slugify catalog key. */
+/**
+ * Produces a URL-safe slug (max 80 chars) from the supplied catalog string.
+ * Whitespace and hyphen runs are collapsed into single hyphens.
+ */
 export function slugifyCatalogKey(value: string): string {
-  return normalizeCatalogText(value).replace(S_RE, '-').replace(PATTERN_RE, '-').slice(0, 80);
+  return normalizeCatalogText(value)
+    .replace(ACCOUNT_AGENT_REGEX.whitespaceRun, '-')
+    .replace(ACCOUNT_AGENT_REGEX.hyphenRun, '-')
+    .slice(0, 80);
 }
 
-/** Find product matches. */
+/**
+ * Returns the unique product names whose normalized form is contained in the message.
+ * Names shorter than 2 normalized characters are skipped to avoid trivial matches.
+ */
 export function findProductMatches(messageContent: string, productNames: string[]): string[] {
   const normalizedMessage = normalizeCatalogText(messageContent);
   if (!normalizedMessage) {
@@ -170,15 +73,26 @@ export function findProductMatches(messageContent: string, productNames: string[
   );
 }
 
+/**
+ * Returns the first uppercase SKU-like token (e.g. `KIT-3`) found in the input,
+ * skipping tokens that normalize into stopwords. Returns null when none qualify.
+ */
 function findUppercaseProductToken(rawTokens: readonly string[]): string | null {
   for (const token of rawTokens) {
-    if (A_Z0_9___3_RE.test(token) && !STOPWORDS.has(normalizeCatalogText(token))) {
+    if (
+      ACCOUNT_AGENT_REGEX.uppercaseSku.test(token) &&
+      !STOPWORDS.has(normalizeCatalogText(token))
+    ) {
       return token.toUpperCase();
     }
   }
   return null;
 }
 
+/**
+ * Collects up to three meaningful tokens after a cue-word boundary, stopping when a
+ * stopword is encountered after at least one candidate has been gathered.
+ */
 function collectCandidateAfterCueWord(rawTokens: readonly string[], startIndex: number): string[] {
   const candidate: string[] = [];
   for (let cursor = startIndex; cursor < rawTokens.length; cursor += 1) {
@@ -198,6 +112,10 @@ function collectCandidateAfterCueWord(rawTokens: readonly string[], startIndex: 
   return candidate;
 }
 
+/**
+ * Walks the token list looking for a known cue word (PRODUCT_CUE_WORDS) and
+ * returns the joined window of tokens that follow it.
+ */
 function findCandidateFromCueWord(rawTokens: readonly string[]): string | null {
   const normalizedTokens = rawTokens.map((token) => normalizeCatalogText(token));
   for (let index = 0; index < normalizedTokens.length; index += 1) {
@@ -212,6 +130,10 @@ function findCandidateFromCueWord(rawTokens: readonly string[]): string | null {
   return null;
 }
 
+/**
+ * Last-resort candidate extractor: keeps the first three non-stopword tokens.
+ * Returns null if every token is a stopword.
+ */
 function fallbackFromRawTokens(rawTokens: readonly string[]): string | null {
   const fallback = rawTokens
     .filter((token) => !STOPWORDS.has(normalizeCatalogText(token)))
@@ -221,36 +143,42 @@ function fallbackFromRawTokens(rawTokens: readonly string[]): string | null {
   return fallback || null;
 }
 
+/**
+ * Tokenizes the message into accent-aware alphanumeric runs.
+ * Always returns an array — empty when nothing matches.
+ */
 function tokenizeCandidateMessage(messageContent: string): string[] {
   const raw = String(messageContent ?? '');
-  const matches = raw.match(A_ZA_Z___0_9_RE);
+  const matches = raw.match(ACCOUNT_AGENT_REGEX.alphaNumericWord);
   if (!matches) {
     return [];
   }
   return matches.filter(Boolean);
 }
 
-/** Extract missing product candidate. */
+/**
+ * Best-effort extraction of a product name candidate when the catalog has no
+ * explicit match. Tries uppercase SKU detection, cue-word capture, then a
+ * generic non-stopword fallback.
+ */
 export function extractMissingProductCandidate(messageContent: string): string | null {
   const rawTokens = tokenizeCandidateMessage(messageContent);
   if (!rawTokens.length) {
     return null;
   }
 
-  const upperHit = findUppercaseProductToken(rawTokens);
-  if (upperHit) {
-    return upperHit;
-  }
-
-  const cueHit = findCandidateFromCueWord(rawTokens);
-  if (cueHit) {
-    return cueHit;
-  }
-
-  return fallbackFromRawTokens(rawTokens);
+  return (
+    findUppercaseProductToken(rawTokens) ??
+    findCandidateFromCueWord(rawTokens) ??
+    fallbackFromRawTokens(rawTokens)
+  );
 }
 
-/** Detect catalog gap. */
+/**
+ * Detects buying intent and either returns the catalog products mentioned in the
+ * message or, when buying intent exists without a match, a candidate name to flag
+ * the gap.
+ */
 export function detectCatalogGap(params: {
   messageContent: string;
   productNames: string[];
@@ -259,59 +187,71 @@ export function detectCatalogGap(params: {
   const normalizedMessage = normalizeCatalogText(messageContent);
   const matchedProducts = findProductMatches(messageContent, params.productNames);
   const buyingIntent = BUYING_SIGNALS.some((keyword) => normalizedMessage.includes(keyword));
+  const missingProductName =
+    matchedProducts.length === 0 && buyingIntent
+      ? extractMissingProductCandidate(messageContent)
+      : null;
 
   return {
     buyingIntent,
     matchedProducts,
-    missingProductName:
-      matchedProducts.length === 0 && buyingIntent
-        ? extractMissingProductCandidate(messageContent)
-        : null,
+    missingProductName,
   };
 }
 
-/** Extract urls. */
+/** Returns the unique HTTP/HTTPS URLs found in the supplied text. */
 export function extractUrls(value: string): string[] {
-  return Array.from(new Set(String(value || '').match(HTTPS_________S_RE) || []));
+  return Array.from(new Set(String(value || '').match(ACCOUNT_AGENT_REGEX.url) || []));
 }
 
-/** Extract money values. */
+/** Returns positive monetary values (BR-format) parsed from the supplied text. */
 export function extractMoneyValues(value: string): number[] {
-  const matches = String(value || '').match(R___S____D_1_3_RE) || [];
+  const matches = String(value || '').match(ACCOUNT_AGENT_REGEX.monetary) || [];
 
   return matches
-    .map((match) => Number(match.replace(R___S_RE, '').replace(PATTERN_RE_2, '').replace(',', '.')))
-    .filter((value) => Number.isFinite(value) && value > 0);
+    .map((match) =>
+      Number(
+        match
+          .replace(ACCOUNT_AGENT_REGEX.currencyPrefix, '')
+          .replace(ACCOUNT_AGENT_REGEX.dot, '')
+          .replace(',', '.'),
+      ),
+    )
+    .filter((money) => Number.isFinite(money) && money > 0);
 }
 
-/** Extract percentages. */
+/** Returns non-negative percentages parsed from the supplied text. */
 export function extractPercentages(value: string): number[] {
-  const matches = String(value || '').match(B__D_1_2__________D_RE) || [];
+  const matches = String(value || '').match(ACCOUNT_AGENT_REGEX.percentage) || [];
   return matches
-    .map((match) => Number(match.replace(D_RE, '').replace(',', '.')))
-    .filter((value) => Number.isFinite(value) && value >= 0);
+    .map((match) => Number(match.replace(ACCOUNT_AGENT_REGEX.nonNumeric, '').replace(',', '.')))
+    .filter((percent) => Number.isFinite(percent) && percent >= 0);
 }
 
-/** Extract max installments. */
+/** Returns the highest installment count (e.g. `12x`) declared in the supplied text. */
 export function extractMaxInstallments(value: string): number | null {
-  const matches = String(value || '').match(B__D_1_2___S_X_B_RE) || [];
+  const matches = String(value || '').match(ACCOUNT_AGENT_REGEX.installment) || [];
   const numbers = matches
-    .map((match) => Number(match.replace(D_RE_2, '')))
-    .filter((value) => Number.isFinite(value) && value > 0);
+    .map((match) => Number(match.replace(ACCOUNT_AGENT_REGEX.nonDigit, '')))
+    .filter((count) => Number.isFinite(count) && count > 0);
   return numbers.length > 0 ? Math.max(...numbers) : null;
 }
 
-/** Parse offer lines. */
+/**
+ * Splits the supplied multi-line text into structured offer lines, extracting the
+ * first URL and price from each line. Empty lines are dropped; remaining lines
+ * receive a synthetic title (`Plano N`) when only a URL was present.
+ */
 export function parseOfferLines(value: string): ParsedOfferLine[] {
   const lines = String(value || '')
-    .split(R__N_RE)
+    .split(ACCOUNT_AGENT_REGEX.lineBreak)
     .map((line) => line.trim())
     .filter(Boolean);
 
   return lines.map((line, index) => {
     const urls = extractUrls(line);
     const prices = extractMoneyValues(line);
-    const title = line.replace(HTTPS_________S_RE, '').trim() || `Plano ${index + 1}`;
+    const title = line.replace(ACCOUNT_AGENT_REGEX.url, '').trim() || `Plano ${index + 1}`;
     return {
       raw: line,
       title,
@@ -321,7 +261,26 @@ export function parseOfferLines(value: string): ParsedOfferLine[] {
   });
 }
 
-/** Build product description. */
+/**
+ * Builds an offer-summary fragment such as
+ * `Opções comerciais registradas: Plano 1 por R$ 99.00; Plano 2.`
+ */
+function buildOfferSummary(offers: ParsedOfferLine[]): string {
+  if (offers.length === 0) {
+    return '';
+  }
+  const parts = offers
+    .map((offer) =>
+      offer.price ? `${offer.title} por ${formatBrlAmount(offer.price)}` : offer.title,
+    )
+    .join('; ');
+  return ` Opções comerciais registradas: ${parts}.`;
+}
+
+/**
+ * Composes the canonical product description used by the account agent registry.
+ * Combines the product name, free-form description, offer summary and company context.
+ */
 export function buildProductDescription(params: {
   productName: string;
   descriptionAnswer: string;
@@ -329,28 +288,46 @@ export function buildProductDescription(params: {
   companyAnswer: string;
 }): string {
   const detail = String(params.descriptionAnswer || '').trim();
-  const offerSummary =
-    params.offers.length > 0
-      ? ` Opções comerciais registradas: ${params.offers
-          .map((offer) =>
-            offer.price ? `${offer.title} por R$ ${offer.price.toFixed(2)}` : offer.title,
-          )
-          .join('; ')}.`
-      : '';
+  const offerSummary = buildOfferSummary(params.offers);
   const companySummary = String(params.companyAnswer || '').trim();
+  const companyFragment = companySummary
+    ? `Contexto da empresa responsável: ${companySummary}`
+    : '';
 
   return [
     `${params.productName} é uma oferta ativa da conta e deve ser tratada como prioridade comercial.`,
     detail,
     offerSummary,
-    companySummary ? `Contexto da empresa responsável: ${companySummary}` : '',
+    companyFragment,
   ]
     .filter(Boolean)
     .join(' ')
     .trim();
 }
 
-/** Build product faq. */
+/** Builds the negotiation-limits FAQ answer based on offer prices and installments. */
+function buildNegotiationLimitsAnswer(prices: number[], installments: number | null): string {
+  const priceFragment =
+    prices.length > 0
+      ? `Valores identificados: ${prices.map((value) => formatBrlAmount(value)).join(', ')}`
+      : '';
+  const installmentFragment = installments
+    ? `Parcelamento máximo identificado: ${installments}x.`
+    : '';
+  return [priceFragment, installmentFragment].filter(Boolean).join(' ');
+}
+
+/** Builds the purchase-instructions FAQ answer based on extracted URLs. */
+function buildPurchaseAnswer(urls: string[]): string {
+  return urls.length > 0
+    ? `Links disponíveis: ${urls.join(' | ')}`
+    : 'A venda pode ser concluída pelo fluxo comercial da conta.';
+}
+
+/**
+ * Builds the canonical product FAQ used by the account agent registry.
+ * Items with empty answers are dropped so the registry never persists blanks.
+ */
 export function buildProductFaq(params: {
   productName: string;
   descriptionAnswer: string;
@@ -372,21 +349,11 @@ export function buildProductFaq(params: {
     },
     {
       question: 'Como faço para comprar?',
-      answer:
-        urls.length > 0
-          ? `Links disponíveis: ${urls.join(' | ')}`
-          : 'A venda pode ser concluída pelo fluxo comercial da conta.',
+      answer: buildPurchaseAnswer(urls),
     },
     {
       question: 'Quais limites de negociação eu posso usar?',
-      answer: [
-        prices.length > 0
-          ? `Valores identificados: ${prices.map((value) => `R$ ${value.toFixed(2)}`).join(', ')}`
-          : '',
-        installments ? `Parcelamento máximo identificado: ${installments}x.` : '',
-      ]
-        .filter(Boolean)
-        .join(' '),
+      answer: buildNegotiationLimitsAnswer(prices, installments),
     },
     {
       question: 'Quem é a empresa responsável por essa oferta?',

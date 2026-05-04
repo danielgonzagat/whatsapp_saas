@@ -33,20 +33,35 @@ export interface PlanShippingSetters {
   setFaqAnswers: (value: Record<number, string>) => void;
 }
 
+/** Plan shipping body input shape. */
 export interface PlanShippingBodyInput {
+  /** Package type property. */
   packageType: string;
+  /** Width property. */
   width: string;
+  /** Height property. */
   height: string;
+  /** Length property. */
   length: string;
+  /** Weight property. */
   weight: string;
+  /** Who ships property. */
   whoShips: string;
+  /** Ship from property. */
   shipFrom: string;
+  /** Dispatch time property. */
   dispatchTime: string;
+  /** Selected carriers property. */
   selectedCarriers: string[];
+  /** Freight type property. */
   freightType: string;
+  /** Fixed freight property. */
   fixedFreight: string;
+  /** Region prazos property. */
   regionPrazos: Record<string, { prazo: string; obs: string }>;
+  /** Has tracking property. */
   hasTracking: string;
+  /** Faq answers property. */
   faqAnswers: Record<number, string>;
 }
 
@@ -67,12 +82,14 @@ const asStringArray = (raw: unknown) => raw as string[];
 const asRegionMap = (raw: unknown) => raw as Record<string, { prazo: string; obs: string }>;
 const asFaqMap = (raw: unknown) => raw as Record<number, string>;
 
+/** Create initial region prazos. */
 export function createInitialRegionPrazos(regions: string[]) {
   return Object.fromEntries(
     regions.map((region) => [region, { prazo: '5-7 dias', obs: 'Entrega normal' }]),
   );
 }
 
+/** Create initial faq answers. */
 export function createInitialFaqAnswers(
   questions: string[],
   answers: Record<number, string[]>,
@@ -80,6 +97,7 @@ export function createInitialFaqAnswers(
   return Object.fromEntries(questions.map((_, index) => [index, answers[index]?.[0] || '']));
 }
 
+/** Toggle selected carrier. */
 export function toggleSelectedCarrier(
   selectedCarriers: string[],
   carrier: string,
@@ -90,6 +108,7 @@ export function toggleSelectedCarrier(
     : selectedCarriers.filter((currentCarrier) => currentCarrier !== carrier);
 }
 
+/** Build plan shipping body. */
 export function buildPlanShippingBody(input: PlanShippingBodyInput) {
   return {
     packageType: input.packageType,

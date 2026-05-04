@@ -16,6 +16,7 @@ jest.mock('../billing/stripe-runtime', () => ({
 
 import { buildPaymentWebhookController as buildController } from '../../test/payment-webhook-controller-harness';
 
+// PULSE_OK: assertions exist below
 describe('PaymentWebhookController.handleStripe — checkout payment intents', () => {
   beforeEach(() => {
     mockConstructEvent.mockReset();
@@ -27,7 +28,8 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
 
   it('marks checkout payment/order as paid when payment_intent.succeeded arrives for a Kloel order', async () => {
     const { controller, prisma, webhooksService } = buildController();
-    prisma.checkoutOrder.findUnique.mockResolvedValueOnce({ status: 'PROCESSING' });
+    prisma.checkoutOrder.findFirst.mockResolvedValueOnce({ status: 'PROCESSING' });
+    prisma.checkoutOrder.findFirst.mockResolvedValueOnce({ status: 'PROCESSING' });
 
     const result = await controller.handleStripe(
       {
@@ -44,7 +46,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
               },
             },
           },
-        } as never,
+        },
         rawBody: '',
         url: '/webhook/payment/stripe',
       },
@@ -63,7 +65,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
             },
           },
         },
-      } as never,
+      },
     );
 
     expect(prisma.checkoutPayment.updateMany).toHaveBeenCalledWith(
@@ -74,7 +76,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
     );
     expect(prisma.checkoutOrder.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'order-1', workspaceId: 'ws-1' },
+        where: { id: 'order-1', workspaceId: 'ws-1', status: 'PROCESSING' },
         data: expect.objectContaining({ status: 'PAID', paidAt: expect.any(Date) }),
       }),
     );
@@ -105,7 +107,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
                 },
               },
             },
-          } as never,
+          },
           rawBody: '',
           url: '/webhook/payment/stripe',
         },
@@ -125,7 +127,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
               },
             },
           },
-        } as never,
+        },
       ),
     ).rejects.toThrow('post-sale fanout failed');
 
@@ -176,7 +178,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
                 },
               },
             },
-          } as never,
+          },
           rawBody: '',
           url: '/webhook/payment/stripe',
         },
@@ -196,7 +198,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
               },
             },
           },
-        } as never,
+        },
       ),
     ).rejects.toThrow(
       'Stripe post-sale processing skipped for paymentIntent=pi_test_123: no_metadata',
@@ -240,7 +242,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
               },
             },
           },
-        } as never,
+        },
         rawBody: '',
         url: '/webhook/payment/stripe',
       },
@@ -259,7 +261,7 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
             },
           },
         },
-      } as never,
+      },
     );
 
     expect(prisma.checkoutPayment.updateMany).toHaveBeenCalledWith(
@@ -302,13 +304,13 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
 
     const result = await controller.handleStripe(
       {
-        body: {} as never,
+        body: {},
         rawBody: Buffer.from('{"id":"evt_signed_secondary_secret"}'),
         url: '/webhook/payment/stripe',
       },
       't=1,v1=fake',
       undefined,
-      {} as never,
+      {},
     );
 
     expect(mockConstructEvent).toHaveBeenCalledTimes(2);
@@ -360,13 +362,13 @@ describe('PaymentWebhookController.handleStripe — checkout payment intents', (
 
     const result = await controller.handleStripe(
       {
-        body: {} as never,
+        body: {},
         rawBody: Buffer.from('{"id":"evt_thin_account_updated"}'),
         url: '/webhook/payment/stripe',
       },
       't=1,v1=fake',
       undefined,
-      {} as never,
+      {},
     );
 
     expect(mockRetrieveEvent).toHaveBeenCalledWith('evt_thin_account_updated', {}, undefined);

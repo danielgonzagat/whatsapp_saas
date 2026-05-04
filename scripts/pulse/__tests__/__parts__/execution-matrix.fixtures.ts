@@ -1,0 +1,247 @@
+import type {
+  PulseActorEvidence,
+  PulseCapability,
+  PulseExecutionChain,
+  PulseExecutionEvidence,
+  PulseFlowProjectionItem,
+} from '../../types';
+
+export const generatedAt = '2026-04-28T00:00:00.000Z';
+
+export function makeCapability(overrides: Partial<PulseCapability> = {}): PulseCapability {
+  return {
+    id: 'checkout-capability',
+    name: 'Checkout Capability',
+    truthMode: 'inferred',
+    status: 'real',
+    confidence: 0.8,
+    userFacing: true,
+    runtimeCritical: true,
+    protectedByGovernance: false,
+    ownerLane: 'customer',
+    executionMode: 'ai_safe',
+    rolesPresent: ['interface', 'orchestration', 'persistence'],
+    missingRoles: [],
+    filePaths: ['frontend/checkout.tsx', 'backend/checkout.controller.ts'],
+    nodeIds: ['ui:checkout', 'api:checkout'],
+    routePatterns: ['/api/checkout'],
+    evidenceSources: ['structural_graph'],
+    codacyIssueCount: 0,
+    highSeverityIssueCount: 0,
+    blockingReasons: [],
+    validationTargets: ['PULSE_EXECUTION_MATRIX.json'],
+    maturity: {
+      stage: 'production_ready',
+      score: 0.9,
+      dimensions: {
+        interfacePresent: true,
+        apiSurfacePresent: true,
+        orchestrationPresent: true,
+        persistencePresent: true,
+        sideEffectPresent: false,
+        runtimeEvidencePresent: false,
+        validationPresent: true,
+        scenarioCoveragePresent: false,
+        codacyHealthy: true,
+        simulationOnly: false,
+      },
+      missing: [],
+    },
+    dod: {
+      status: 'partial',
+      missingRoles: [],
+      blockers: [],
+      truthModeMet: false,
+    },
+    ...overrides,
+  };
+}
+
+export function makeFlow(
+  overrides: Partial<PulseFlowProjectionItem> = {},
+): PulseFlowProjectionItem {
+  return {
+    id: 'checkout-flow',
+    name: 'Checkout Flow',
+    truthMode: 'inferred',
+    status: 'real',
+    confidence: 0.8,
+    startNodeIds: ['ui:checkout'],
+    endNodeIds: ['db:order'],
+    routePatterns: ['/api/checkout'],
+    capabilityIds: ['checkout-capability'],
+    rolesPresent: ['interface', 'orchestration', 'persistence'],
+    missingLinks: [],
+    distanceToReal: 0,
+    evidenceSources: ['structural_graph'],
+    blockingReasons: [],
+    validationTargets: ['PULSE_EXECUTION_MATRIX.json'],
+    dod: {
+      status: 'partial',
+      missingRoles: [],
+      blockers: [],
+      truthModeMet: false,
+    },
+    ...overrides,
+  };
+}
+
+export function makeChain(overrides: Partial<PulseExecutionChain> = {}): PulseExecutionChain {
+  return {
+    id: 'chain:checkout',
+    description: 'checkout chain',
+    entrypoint: {
+      id: 'ui:checkout:step0',
+      role: 'trigger',
+      nodeId: 'ui:checkout',
+      description: 'checkout button',
+      truthMode: 'inferred',
+      filesInvolved: ['frontend/checkout.tsx'],
+      modelsInvolved: [],
+      providersInvolved: [],
+    },
+    steps: [
+      {
+        id: 'api:checkout:step1',
+        role: 'controller',
+        nodeId: 'api:checkout',
+        description: 'checkout route',
+        truthMode: 'inferred',
+        filesInvolved: ['backend/checkout.controller.ts'],
+        modelsInvolved: ['Order'],
+        providersInvolved: [],
+      },
+    ],
+    conditionalBranches: [],
+    requiredState: [],
+    sideEffects: [],
+    completeness: { expectedSteps: 2, foundSteps: 2, score: 1 },
+    failurePoints: [],
+    completionProof: {
+      indicator: 'checkout route',
+      verification: 'final step: api:checkout',
+      truthMode: 'inferred',
+    },
+    truthMode: 'inferred',
+    confidence: { score: 0.9, evidenceBasis: ['test'], truthMode: 'inferred' },
+    ...overrides,
+  };
+}
+
+export function makeActorEvidence(actorKind: PulseActorEvidence['actorKind']): PulseActorEvidence {
+  return {
+    actorKind,
+    declared: [],
+    executed: [],
+    missing: [],
+    passed: [],
+    failed: [],
+    artifactPaths: [],
+    summary: `${actorKind} not executed`,
+    results: [],
+  };
+}
+
+export function makeEvidence(
+  overrides: Partial<PulseExecutionEvidence> = {},
+): PulseExecutionEvidence {
+  return {
+    runtime: {
+      executed: false,
+      executedChecks: [],
+      blockingBreakTypes: [],
+      artifactPaths: [],
+      summary: 'runtime not executed',
+      probes: [],
+    },
+    browser: {
+      attempted: false,
+      executed: false,
+      artifactPaths: [],
+      summary: 'browser not executed',
+    },
+    flows: {
+      declared: [],
+      executed: [],
+      missing: [],
+      passed: [],
+      failed: [],
+      accepted: [],
+      artifactPaths: [],
+      summary: 'flows not executed',
+      results: [],
+    },
+    invariants: {
+      declared: [],
+      evaluated: [],
+      missing: [],
+      passed: [],
+      failed: [],
+      accepted: [],
+      artifactPaths: [],
+      summary: 'invariants not executed',
+      results: [],
+    },
+    observability: {
+      executed: false,
+      summary: 'observability not executed',
+      artifactPaths: [],
+      signals: {
+        tracingHeadersDetected: false,
+        requestIdMiddlewareDetected: false,
+        structuredLoggingDetected: false,
+        sentryDetected: false,
+        alertingIntegrationDetected: false,
+        healthEndpointsDetected: false,
+        auditTrailDetected: false,
+      },
+    },
+    recovery: {
+      executed: false,
+      summary: 'recovery not executed',
+      artifactPaths: [],
+      signals: {
+        backupManifestPresent: false,
+        backupPolicyPresent: false,
+        backupValidationPresent: false,
+        restoreRunbookPresent: false,
+        disasterRecoveryRunbookPresent: false,
+        disasterRecoveryTestPresent: false,
+        seedScriptPresent: false,
+      },
+    },
+    customer: makeActorEvidence('customer'),
+    operator: makeActorEvidence('operator'),
+    admin: makeActorEvidence('admin'),
+    soak: makeActorEvidence('soak'),
+    syntheticCoverage: {
+      executed: false,
+      artifactPaths: [],
+      summary: 'coverage not executed',
+      totalPages: 0,
+      userFacingPages: 0,
+      coveredPages: 0,
+      uncoveredPages: [],
+      results: [],
+    },
+    worldState: {
+      generatedAt,
+      actorProfiles: [],
+      executedScenarios: [],
+      pendingAsyncExpectations: [],
+      entities: {},
+      asyncExpectationsStatus: [],
+      artifactsByScenario: {},
+      sessions: [],
+    },
+    executionTrace: {
+      runId: 'test',
+      generatedAt,
+      updatedAt: generatedAt,
+      phases: [],
+      summary: 'test trace',
+      artifactPaths: [],
+    },
+    ...overrides,
+  };
+}

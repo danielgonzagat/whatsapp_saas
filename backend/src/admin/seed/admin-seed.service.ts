@@ -1,6 +1,7 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { AdminRole } from '@prisma/client';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { AdminAuthService } from '../auth/admin-auth.service';
@@ -26,6 +27,7 @@ export class AdminSeedService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly audit: AdminAuditService,
     private readonly config: ConfigService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** On module init. */
@@ -38,12 +40,13 @@ export class AdminSeedService implements OnModuleInit {
 
     try {
       await this.seedOwner();
-    } catch (error) {
+    } catch (error: unknown) {
       // Never crash boot on seed failure — the admin module still boots and
       // the error is recorded.
       this.logger.error(
         `Owner seed failed: ${error instanceof Error ? error.message : String(error)}`,
       );
+      void this.opsAlert?.alertOnCriticalError(error, 'AdminSeedService.seedOwner');
     }
   }
 

@@ -1,6 +1,7 @@
 'use client';
 // PULSE:OK — frontend heartbeat is best-effort telemetry only; it does not mutate cached user-facing data or require SWR invalidation.
 
+import { API_BASE } from '@/lib/http';
 import { useWorkspace } from '@/hooks/useWorkspaceId';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useRef } from 'react';
@@ -61,7 +62,7 @@ export function PulseFrontendHeartbeat() {
         .connection;
 
       inFlightRef.current = true;
-      void fetch('/api/pulse/live/heartbeat', {
+      void fetch(`${API_BASE}/pulse/live/heartbeat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

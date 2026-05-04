@@ -168,6 +168,32 @@ export async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
     return;
   }
 
+  if (route.name === 'products-list') {
+    // Lock the products list to a deterministic empty workspace so the visual
+    // baseline (which captured the empty state) is stable regardless of whether
+    // earlier specs in the e2e job leaked test products into the shared
+    // workspace. Without this mock the page falls through to the real backend
+    // and bleeds `E2E Test Product …` rows into the screenshot.
+    await page.route('**/products**', async (requestRoute) => {
+      if (
+        requestRoute.request().isNavigationRequest() ||
+        requestRoute.request().method() !== 'GET'
+      ) {
+        return requestRoute.fallback();
+      }
+      const pathname = new URL(requestRoute.request().url()).pathname;
+      if (!pathname.endsWith('/products')) {
+        return requestRoute.fallback();
+      }
+      await requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: jsonBody({ products: [], count: 0 }),
+      });
+    });
+    return;
+  }
+
   if (route.name !== 'products-edit') {
     return;
   }

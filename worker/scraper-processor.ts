@@ -2,6 +2,7 @@ import { type Job, Worker } from 'bullmq';
 import type { Prisma } from '@prisma/client';
 import { prisma } from './db';
 import { connection } from './queue';
+import { isRetryableError, WorkerError } from './src/utils/error-handler';
 import { triggerFlowForScrapedLeads } from './scrapers/auto-trigger';
 import { scrapeGoogleMaps } from './scrapers/google-maps';
 import { forEachSequential } from './utils/async-sequence';
@@ -23,11 +24,7 @@ interface ScrapedLeadNormalized {
   metadata: Prisma.InputJsonObject;
 }
 
-async function scrapeLeadsByType(
-  type: string,
-  query: string,
-  targetUrl: string | undefined,
-): Promise<ScrapedLeadNormalized[]> {
+async function scrapeLeadsByType(type: string, query: string): Promise<ScrapedLeadNormalized[]> {
   if (type === 'MAPS') {
     console.log(`[SCRAPER] Launching Real Browser for Maps query: "${query}"`);
     const rawLeads = await scrapeGoogleMaps(query, 20);
@@ -52,10 +49,13 @@ async function scrapeLeadsByType(
     }));
   }
   if (type === 'GROUP') {
-    console.log(`[SCRAPER] Group scraping not yet implemented for: "${query || targetUrl}"`);
-    return [];
+    throw new WorkerError(
+      'WhatsApp Group scraping is not yet implemented.',
+      'SCRAPER_NOT_IMPLEMENTED',
+      false,
+    );
   }
-  return [];
+  throw new WorkerError(`Unknown scraper type: ${type}`, 'SCRAPER_INVALID_TYPE', false);
 }
 
 async function ensureDefaultPipeline(workspaceId: string) {
@@ -129,35 +129,71 @@ async function processScraperJob(job: Job): Promise<void> {
   const { jobId, query, type, workspaceId } = job.data;
 
   try {
-    await prisma.scrapingJob.update({ where: { id: jobId }, data: {} });
+    await job.updateProgress(5);
+    // Mark as running via stats JSON (schema does not have a dedicated status column)
+    await prisma.scrapingJob.update({
+      where: { id: jobId },
+      data: { stats: { status: 'running', found: 0, valid: 0, imported: 0 } },
+    });
 
-    const leads = await scrapeLeadsByType(type, query, job.data.targetUrl);
+    await job.updateProgress(20);
+    const leads = await scrapeLeadsByType(type, query);
 
+    await job.updateProgress(40);
     const pipeline = await ensureDefaultPipeline(workspaceId);
     const stage = await ensureFirstStage(pipeline.id);
     const firstStageId = stage.id;
 
     const importedContacts: string[] = [];
     let savedCount = 0;
-    await forEachSequential(leads, async (lead) => {
+    await job.updateProgress(50);
+    await forEachSequential(leads, async (lead, index) => {
       const contactId = await persistLeadWithCrm(lead, { jobId, workspaceId, firstStageId });
       importedContacts.push(contactId);
       savedCount++;
+      if (leads.length > 0 && index % Math.max(1, Math.floor(leads.length / 10)) === 0) {
+        await job.updateProgress(50 + Math.floor((40 * (index + 1)) / leads.length));
+      }
     });
+
+    await job.updateProgress(95);
 
     await prisma.scrapingJob.update({
       where: { id: jobId },
       data: {
-        stats: { found: leads.length, valid: savedCount, imported: importedContacts.length },
+        stats: {
+          status: 'completed',
+          found: leads.length,
+          valid: savedCount,
+          imported: importedContacts.length,
+        },
       },
     });
 
     await triggerFlowForScrapedLeads(workspaceId, importedContacts);
 
+    await job.updateProgress(100);
     console.log(`✅ [SCRAPER] Job ${jobId} finished. Saved ${savedCount} leads.`);
   } catch (err) {
     console.error(`❌ [SCRAPER] Job ${jobId} failed:`, err);
-    await prisma.scrapingJob.update({ where: { id: jobId }, data: {} });
+    await prisma.scrapingJob.update({
+      where: { id: jobId },
+      data: {
+        stats: {
+          status: 'failed',
+          error: err instanceof Error ? err.message : String(err),
+        },
+      },
+    });
+
+    if (!isRetryableError(err)) {
+      throw new WorkerError(
+        err instanceof Error ? err.message : String(err),
+        'SCRAPER_PERMANENT',
+        false,
+      );
+    }
+
     throw err;
   }
 }
@@ -166,6 +202,7 @@ async function processScraperJob(job: Job): Promise<void> {
 export const scraperWorker = new Worker('scraper-jobs', processScraperJob, {
   connection,
   concurrency: 1, // Browser scraping is heavy, keep concurrency low
+  lockDuration: 300_000,
   limiter: {
     max: 5,
     duration: 1000,

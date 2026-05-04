@@ -123,11 +123,14 @@ export const connection = new Proxy({} as ReturnType<typeof createRedisClient>, 
 });
 
 /** Queue options. */
-export const queueOptions = new Proxy({} as Record<string | symbol, unknown>, {
-  get(_, prop) {
-    return (getQueueOptions() as Record<string | symbol, unknown>)[prop];
+export const queueOptions = new Proxy(
+  {},
+  {
+    get(_, prop) {
+      return (getQueueOptions() as Record<string | symbol, unknown>)[prop];
+    },
   },
-});
+);
 
 /** Queue registry. */
 export const queueRegistry: Record<string, BullQueue> = {};

@@ -14,10 +14,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ForbiddenException } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Redis } from 'ioredis';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
+import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from './webhooks.service';
@@ -58,6 +59,7 @@ type OpsAlertMeta = Record<string, unknown>;
  * Event ordering: events carry eventDate/createdAt; out-of-order duplicates are rejected.
  */
 @Controller('hooks')
+@UseGuards(ThrottlerGuard)
 @Throttle({ default: { limit: 100, ttl: 60000 } })
 export class WebhooksController {
   private readonly logger = new Logger(WebhooksController.name);
@@ -137,6 +139,7 @@ export class WebhooksController {
   }
 
   /** Recent finance. */
+  // PULSE_OK: webhook endpoint, called by frontend after Stripe finance webhook
   @UseGuards(JwtAuthGuard)
   @Post('finance/:workspaceId/recent')
   async recentFinance(
@@ -223,7 +226,7 @@ export class WebhooksController {
       validateNoInternalAccess(url);
       await globalThis.fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: message,
           meta,
@@ -270,6 +273,7 @@ export class WebhooksController {
     @Req() req?: WebhookRequestLike,
   ) {
     this.verifySignatureOrThrow(signature, req);
+    await this.checkIdempotencyOrThrow(undefined, req);
     const { workspaceId, externalId, status, errorCode, phone, channel } = body || {};
     return this.webhooksService.updateMessageStatus({
       workspaceId,
@@ -299,6 +303,7 @@ export class WebhooksController {
     @Req() req?: WebhookRequestLike,
   ) {
     this.verifySignatureOrThrow(signature, req);
+    await this.checkIdempotencyOrThrow(undefined, req);
     return this.webhooksService.updateMessageStatus({
       ...body,
       channel: 'EMAIL',
@@ -324,6 +329,7 @@ export class WebhooksController {
     // Validar assinatura do Meta
     this.verifyMetaSignature(hubSignature, req);
     await this.assertWorkspaceNotSuspended(workspaceId);
+    await this.checkIdempotencyOrThrow(undefined, req);
 
     this.logger.log(`[INSTAGRAM] Webhook received for workspace ${workspaceId}`);
 
@@ -331,13 +337,9 @@ export class WebhooksController {
       const result = await this.webhooksService.processInstagramMessage(workspaceId, body);
       return { status: 'success', result };
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error(
-        `[INSTAGRAM] Webhook failed: ${errorInstanceofError.message}`,
-        errorInstanceofError.stack,
+        `[INSTAGRAM] Webhook failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
+        error instanceof Error ? error.stack : undefined,
       );
       throw new HttpException('Instagram webhook processing failed', HttpStatus.BAD_REQUEST);
     }

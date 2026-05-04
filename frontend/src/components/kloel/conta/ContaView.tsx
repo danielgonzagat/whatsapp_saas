@@ -40,6 +40,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState, useId } from 'react';
 import { mutate as globalMutate } from 'swr'; // PULSE:OK — globalMutate used after Meta disconnect; SWR mutate() used in TeamSection for invite/revoke/remove
 import useSWR from 'swr';
+import { colors } from '@/lib/design-tokens';
 
 const D_RE = /\D/g;
 const U0300__U036F_RE = /[\u0300-\u036f]/g;
@@ -186,7 +187,7 @@ function cleanPayload<T extends Record<string, unknown>>(obj: T): Partial<T> {
 
 const SORA = "'Sora', sans-serif";
 const MONO = "'JetBrains Mono', monospace";
-const EMBER = '#E85D30';
+const EMBER = 'colors.ember.primary';
 
 // ═══ ICONS ═══
 

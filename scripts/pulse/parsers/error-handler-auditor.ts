@@ -1,18 +1,79 @@
 import * as path from 'path';
+import * as ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 
-// Financial file path patterns
-const FINANCIAL_PATH = /checkout|wallet|payment|billing/i;
-// Webhook controllers handle errors by design — catch + log + continue is correct
-const WEBHOOK_CONTROLLER = /webhook/i;
+interface EffectSurfaceEvidence {
+  dataProviderCalls: number;
+  outboundBoundaryCalls: number;
+}
+
+function calleeText(node: ts.Expression): string {
+  if (ts.isIdentifier(node)) {
+    return node.text;
+  }
+  if (ts.isPropertyAccessExpression(node)) {
+    return `${calleeText(node.expression)}.${node.name.text}`;
+  }
+  if (ts.isElementAccessExpression(node)) {
+    return calleeText(node.expression);
+  }
+  return '';
+}
+
+function hasRuntimeUrlArgument(node: ts.CallExpression): boolean {
+  return node.arguments.some((argument) => {
+    if (!ts.isStringLiteralLike(argument)) {
+      return false;
+    }
+    try {
+      const url = new URL(argument.text);
+      return Boolean(url.protocol && url.host);
+    } catch {
+      return false;
+    }
+  });
+}
+
+function collectEffectSurfaceEvidence(content: string): EffectSurfaceEvidence {
+  const sourceFile = ts.createSourceFile('error-surface.ts', content, ts.ScriptTarget.Latest, true);
+  const evidence: EffectSurfaceEvidence = {
+    dataProviderCalls: 0,
+    outboundBoundaryCalls: 0,
+  };
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node)) {
+      const callee = calleeText(node.expression);
+      const segments = callee.split('.').filter(Boolean);
+      if (segments.length >= 3 && segments.includes('prisma')) {
+        evidence.dataProviderCalls++;
+      }
+      if (hasRuntimeUrlArgument(node)) {
+        evidence.outboundBoundaryCalls++;
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return evidence;
+}
+
+function isHighRiskErrorSurface(evidence: EffectSurfaceEvidence): boolean {
+  return evidence.dataProviderCalls > 0 || evidence.outboundBoundaryCalls > 0;
+}
 
 /**
  * Extract the body of a catch block starting at line `catchLineIdx`.
  * Returns up to `maxLines` lines after the `} catch (...) {` opener.
  */
-function extractCatchBody(lines: string[], catchLineIdx: number, maxLines = 20): string[] {
+function extractCatchBody(lines: string[], catchLineIdx: number, maxLines = 80): string[] {
   // Find the opening `{` of the catch body
   let braceFound = false;
   let startBody = catchLineIdx;
@@ -106,6 +167,64 @@ function catchBodyRethrows(bodyLines: string[]): boolean {
   return bodyLines.some((l) => /\bthrow\b/.test(l.trim()));
 }
 
+function catchBodyReportsOrCompensates(bodyLines: string[]): boolean {
+  const body = bodyLines.join('\n');
+  return /alert|Sentry|captureException|captureMessage|Failed|notifyOps|appendAudit|adminAuditLog|auditLog|deadLetter|dlq|reasons\.push|state\s*:\s*['"`]FAILED|status\s*:\s*[A-Za-z0-9_.]*FAILED|enrichmentStatus\s*:/i.test(
+    body,
+  );
+}
+
+function synthesizeErrorHandlerBreak(
+  signal: PulseSignalEvidence,
+  severity: Break['severity'],
+  surface: string,
+): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const diagnostic = synthesizeDiagnostic(
+    signalGraph,
+    predicateGraph,
+    calculateDynamicRisk({ predicateGraph }),
+  );
+
+  return {
+    type: diagnostic.id,
+    severity,
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
+    surface,
+  };
+}
+
+function buildErrorHandlerBreak(input: {
+  detector: string;
+  summary: string;
+  detail: string;
+  file: string;
+  line: number;
+  severity: Break['severity'];
+  surface: string;
+}): Break {
+  return synthesizeErrorHandlerBreak(
+    {
+      source: 'static:error-handler-auditor',
+      detector: input.detector,
+      truthMode: 'confirmed_static',
+      summary: input.summary,
+      detail: input.detail,
+      location: {
+        file: input.file,
+        line: input.line,
+      },
+    },
+    input.severity,
+    input.surface,
+  );
+}
+
 /** Check error handlers. */
 export function checkErrorHandlers(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
@@ -134,8 +253,8 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
 
       const lines = content.split('\n');
       const relFile = path.relative(config.rootDir, file);
-      const isFinancial = FINANCIAL_PATH.test(file);
-      const isWebhookController = WEBHOOK_CONTROLLER.test(file) && file.endsWith('.controller.ts');
+      const effectSurfaceEvidence = collectEffectSurfaceEvidence(content);
+      const isEffectfulSurface = isHighRiskErrorSurface(effectSurfaceEvidence);
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -161,85 +280,108 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
           if (bodyLines.some((l) => /PULSE:OK/.test(l))) {
             continue;
           }
+          const hasReportedOrCompensatedEffectError =
+            isEffectfulSurface && catchBodyReportsOrCompensates(bodyLines);
 
           if (isCatchBodyEmpty(bodyLines)) {
             // Empty catch — swallows error completely
-            if (isFinancial && !isWebhookController) {
-              breaks.push({
-                type: 'FINANCIAL_ERROR_SWALLOWED',
-                severity: 'critical',
-                file: relFile,
-                line: i + 1,
-                description: 'Empty catch block in financial code — error silently swallowed',
-                detail: trimmed.slice(0, 120),
-              });
+            if (isEffectfulSurface) {
+              breaks.push(
+                buildErrorHandlerBreak({
+                  detector: 'empty-catch-high-risk-effect-evidence',
+                  severity: 'critical',
+                  file: relFile,
+                  line: i + 1,
+                  summary: 'Empty catch block observed on high-risk mutating effect path',
+                  detail: trimmed.slice(0, 120),
+                  surface: 'error-handling-effect',
+                }),
+              );
             } else {
-              breaks.push({
-                type: 'EMPTY_CATCH',
-                severity: 'medium',
-                file: relFile,
-                line: i + 1,
-                description: 'Empty catch block — error silently swallowed',
-                detail: trimmed.slice(0, 120),
-              });
+              breaks.push(
+                buildErrorHandlerBreak({
+                  detector: 'empty-catch-evidence',
+                  severity: 'medium',
+                  file: relFile,
+                  line: i + 1,
+                  summary: 'Empty catch block observed without recovery evidence',
+                  detail: trimmed.slice(0, 120),
+                  surface: 'error-handling',
+                }),
+              );
             }
-          } else if (isCatchBodyLogOnly(bodyLines)) {
+          } else if (isCatchBodyLogOnly(bodyLines) && !hasReportedOrCompensatedEffectError) {
             // Logs but doesn't rethrow/return
-            if (isFinancial && !isWebhookController) {
-              breaks.push({
-                type: 'FINANCIAL_ERROR_SWALLOWED',
-                severity: 'critical',
-                file: relFile,
-                line: i + 1,
-                description:
-                  'catch block in financial code only logs — error swallowed without throw',
-                detail: trimmed.slice(0, 120),
-              });
+            if (isEffectfulSurface) {
+              breaks.push(
+                buildErrorHandlerBreak({
+                  detector: 'log-only-catch-high-risk-effect-evidence',
+                  severity: 'critical',
+                  file: relFile,
+                  line: i + 1,
+                  summary:
+                    'Catch block on high-risk mutating effect path only logs without propagation evidence',
+                  detail: trimmed.slice(0, 120),
+                  surface: 'error-handling-effect',
+                }),
+              );
             } else {
-              breaks.push({
-                type: 'EMPTY_CATCH',
-                severity: 'medium',
-                file: relFile,
-                line: i + 1,
-                description:
-                  'catch block only logs without throw/return — error effectively swallowed',
-                detail: trimmed.slice(0, 120),
-              });
+              breaks.push(
+                buildErrorHandlerBreak({
+                  detector: 'log-only-catch-evidence',
+                  severity: 'medium',
+                  file: relFile,
+                  line: i + 1,
+                  summary: 'Catch block only logs without propagation evidence',
+                  detail: trimmed.slice(0, 120),
+                  surface: 'error-handling',
+                }),
+              );
             }
-          } else if (isFinancial && !isWebhookController && !catchBodyRethrows(bodyLines)) {
-            // Financial catch that does something but doesn't rethrow
+          } else if (
+            isEffectfulSurface &&
+            !catchBodyRethrows(bodyLines) &&
+            !hasReportedOrCompensatedEffectError
+          ) {
+            // Effectful catch that does something but doesn't rethrow
             // Downgrade to high if catch has a return (intentional error handling)
             // or calls an error reporting function
             const meaningful = bodyLines.filter((l) => l.trim() && !l.trim().startsWith('//'));
             const hasReturn = meaningful.some((l) => /\breturn\b/.test(l));
             const hasErrorReport = meaningful.some((l) =>
-              /\b(report|sentry|notify|alert|emit|dispatch|rollback)\b/i.test(l),
+              /report|sentry|notify|alert|emit|dispatch|rollback/i.test(l),
             );
             const hasNullReturn = meaningful.some((l) =>
               /return\s*(null|undefined|false|\[\]|\{\}|0|''|"")\s*;?/.test(l),
             );
             if (hasReturn || hasErrorReport) {
               // Intentional error handling — not swallowed, downgrade
-              breaks.push({
-                type: 'FINANCIAL_ERROR_SWALLOWED',
-                severity: 'high',
-                file: relFile,
-                line: i + 1,
-                description: hasNullReturn
-                  ? 'catch in financial code returns null/default — caller may not detect failure'
-                  : 'catch in financial code handles error without rethrow',
-                detail: trimmed.slice(0, 120),
-              });
+              breaks.push(
+                buildErrorHandlerBreak({
+                  detector: 'handled-catch-high-risk-effect-evidence',
+                  severity: 'high',
+                  file: relFile,
+                  line: i + 1,
+                  summary: hasNullReturn
+                    ? 'Catch block on high-risk mutating effect path returns default without failure propagation evidence'
+                    : 'Catch block on high-risk mutating effect path handles error without rethrow evidence',
+                  detail: trimmed.slice(0, 120),
+                  surface: 'error-handling-effect',
+                }),
+              );
             } else {
-              breaks.push({
-                type: 'FINANCIAL_ERROR_SWALLOWED',
-                severity: 'critical',
-                file: relFile,
-                line: i + 1,
-                description:
-                  'catch block in financial code does not rethrow — caller unaware of failure',
-                detail: trimmed.slice(0, 120),
-              });
+              breaks.push(
+                buildErrorHandlerBreak({
+                  detector: 'non-propagating-catch-high-risk-effect-evidence',
+                  severity: 'critical',
+                  file: relFile,
+                  line: i + 1,
+                  summary:
+                    'Catch block on high-risk mutating effect path lacks propagation or compensation evidence',
+                  detail: trimmed.slice(0, 120),
+                  surface: 'error-handling-effect',
+                }),
+              );
             }
           }
         }
@@ -266,14 +408,17 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
               continue;
             }
 
-            breaks.push({
-              type: 'UNHANDLED_PROMISE',
-              severity: 'medium',
-              file: relFile,
-              line: i + 1,
-              description: '.then() without .catch() — unhandled promise rejection',
-              detail: trimmed.slice(0, 120),
-            });
+            breaks.push(
+              buildErrorHandlerBreak({
+                detector: 'promise-chain-rejection-handler-evidence',
+                severity: 'medium',
+                file: relFile,
+                line: i + 1,
+                summary: 'Promise chain observed without rejection handler evidence',
+                detail: trimmed.slice(0, 120),
+                surface: 'error-handling-promise',
+              }),
+            );
           }
         }
       }

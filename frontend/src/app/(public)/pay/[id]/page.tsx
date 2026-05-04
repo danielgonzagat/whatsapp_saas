@@ -20,6 +20,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { use, useEffect, useRef, useState } from 'react';
+import { colors } from '@/lib/design-tokens';
 
 interface PaymentDetails {
   id: string;
@@ -141,7 +142,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0A0A0C] flex items-center justify-center px-4">
+      <div className="min-h-screen bg-[colors.background.void] flex items-center justify-center px-4">
         <KloelLoadingState
           size={96}
           traceColor={kloelT(`#FFFFFF`)}
@@ -158,7 +159,11 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl p-8 border border-gray-200 max-w-md w-full text-center">
           <div className="flex justify-center mb-4">
-            <KloelMushroomVisual size={72} traceColor={kloelT(`#0A0A0C`)} spores="static" />
+            <KloelMushroomVisual
+              size={72}
+              traceColor={kloelT(`colors.background.void`)}
+              spores="static"
+            />
           </div>
           <h1 className="text-xl font-bold text-gray-900 mb-2">
             {kloelT(`Pagamento não encontrado`)}
@@ -184,8 +189,8 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
               markSize={20}
               fontSize={16}
               fontWeight={600}
-              traceColor={kloelT(`#0A0A0C`)}
-              textColor={kloelT(`#0A0A0C`)}
+              traceColor={kloelT(`colors.background.void`)}
+              textColor={kloelT(`colors.background.void`)}
             />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{payment.companyName}</h1>

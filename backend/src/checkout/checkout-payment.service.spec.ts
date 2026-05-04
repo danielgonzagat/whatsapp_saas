@@ -9,106 +9,16 @@ import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { CheckoutPaymentService } from './checkout-payment.service';
+import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
-
-type CheckoutPaymentCreateArgs = {
-  data: Record<string, unknown>;
-};
-
-type CheckoutPaymentTxClient = {
-  checkoutPayment: {
-    create: jest.Mock<Promise<Record<string, unknown>>, [CheckoutPaymentCreateArgs]>;
-  };
-  checkoutOrder: {
-    findFirst: jest.Mock;
-    updateMany: jest.Mock;
-  };
-};
-
-type CheckoutPaymentTxCallback = (tx: CheckoutPaymentTxClient) => Promise<unknown>;
-
-type CheckoutPaymentPrismaMock = {
-  checkoutOrder: {
-    findFirst: jest.Mock;
-  };
-  checkoutPayment: {
-    create: jest.Mock;
-  };
-  connectAccountBalance: {
-    findFirst: jest.Mock;
-  };
-  workspace: {
-    findUnique: jest.Mock;
-  };
-  $transaction: jest.Mock;
-};
-
-function makeOrder(overrides: Record<string, unknown> = {}) {
-  return {
-    id: 'order-1',
-    orderNumber: 'KLOEL-001',
-    workspaceId: 'ws-1',
-    status: 'PENDING',
-    totalInCents: 10_000,
-    metadata: {
-      baseTotalInCents: 10_000,
-      chargedTotalInCents: 13_990,
-      marketplaceRetainedInCents: 4_980,
-      marketplaceFeeInCents: 990,
-      installmentInterestInCents: 3_990,
-    },
-    shippingAddress: {
-      cep: '01310-100',
-      street: 'Av Paulista',
-      number: '1000',
-      neighborhood: 'Bela Vista',
-      city: 'São Paulo',
-      state: 'SP',
-    },
-    shippingPrice: 0,
-    ipAddress: '127.0.0.1',
-    plan: {
-      id: 'plan-1',
-      name: 'Plano Principal',
-      product: {
-        id: 'prod-1',
-        name: 'Produto X',
-        description: 'Descrição X',
-        imageUrl: null,
-        images: [],
-      },
-    },
-    ...overrides,
-  };
-}
-
-function makeChargeResult(overrides: Record<string, unknown> = {}) {
-  return {
-    paymentIntentId: 'pi_test_123',
-    clientSecret: 'pi_test_123_secret',
-    stripePaymentIntent: {
-      id: 'pi_test_123',
-      status: 'requires_payment_method',
-      next_action: null,
-    },
-    amountCents: 13_990n,
-    marketplaceRetainedCents: 4_980n,
-    transferGroup: 'sale:order-1',
-    split: {
-      kloelTotalCents: 4_980n,
-      residueCents: 9_010n,
-      splits: [{ role: 'seller', accountId: 'acct_seller_1', amountCents: 9_010n }],
-    },
-    splitInput: {
-      buyerPaidCents: 13_990n,
-      saleValueCents: 10_000n,
-      interestCents: 3_990n,
-      marketplaceFeeCents: 990n,
-      seller: { accountId: 'acct_seller_1' },
-    },
-    ...overrides,
-  };
-}
+import {
+  makeOrder,
+  makeChargeResult,
+  type CheckoutPaymentCreateArgs,
+  type CheckoutPaymentTxClient,
+  type CheckoutPaymentTxCallback,
+  type CheckoutPaymentPrismaMock,
+} from './checkout-payment.service.fixtures';
 
 describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
   let service: CheckoutPaymentService;
@@ -119,6 +29,10 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
   let financialAlert: { paymentFailed: jest.Mock };
   let auditService: { log: jest.Mock; logWithTx: jest.Mock };
   let socialLeadService: { markConvertedFromOrder: jest.Mock };
+  let postPaymentEffects: {
+    markLeadConverted: jest.Mock;
+    sendPurchaseSignals: jest.Mock;
+  };
 
   beforeEach(async () => {
     prisma = {
@@ -169,6 +83,10 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
       logWithTx: jest.fn().mockResolvedValue(undefined),
     };
     socialLeadService = { markConvertedFromOrder: jest.fn().mockResolvedValue(null) };
+    postPaymentEffects = {
+      markLeadConverted: jest.fn().mockResolvedValue(undefined),
+      sendPurchaseSignals: jest.fn().mockResolvedValue(undefined),
+    };
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       providers: [
@@ -180,6 +98,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
         { provide: FinancialAlertService, useValue: financialAlert },
         { provide: AuditService, useValue: auditService },
         { provide: CheckoutSocialLeadService, useValue: socialLeadService },
+        { provide: CheckoutPostPaymentEffectsService, useValue: postPaymentEffects },
       ],
     }).compile();
 
@@ -218,6 +137,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
     const txCalls: string[] = [];
     const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(async (args: CheckoutPaymentCreateArgs) => {
           txCalls.push('payment.create');
           return { id: 'pay_card_1', ...args.data };
@@ -278,6 +198,8 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
       paymentIntentId: 'pi_test_123',
       type: 'CREDIT_CARD',
     });
+    expect(postPaymentEffects.markLeadConverted).not.toHaveBeenCalled();
+    expect(postPaymentEffects.sendPurchaseSignals).not.toHaveBeenCalled();
     expect(fraudEngine.evaluate).toHaveBeenCalledWith({
       workspaceId: 'ws-1',
       buyerEmail: 'cliente@example.com',
@@ -315,6 +237,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
 
     const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(async (args: CheckoutPaymentCreateArgs) => ({
           id: 'pay_pix_1',
           ...args.data,
@@ -373,6 +296,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
     prisma.connectAccountBalance.findFirst.mockResolvedValueOnce(null);
     const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(async (args: CheckoutPaymentCreateArgs) => ({
           id: 'pay_card_2',
           ...args.data,
@@ -404,6 +328,51 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
       expect.objectContaining({
         sellerStripeAccountId: 'acct_seller_created',
       }),
+    );
+  });
+
+  it('runs post-payment effects when the payment is approved', async () => {
+    stripeCharge.createSaleCharge.mockResolvedValueOnce(
+      makeChargeResult({
+        stripePaymentIntent: {
+          id: 'pi_approved_1',
+          status: 'succeeded',
+          next_action: null,
+        },
+      }),
+    );
+    const tx: CheckoutPaymentTxClient = {
+      checkoutPayment: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn(async (args: CheckoutPaymentCreateArgs) => ({
+          id: 'pay_approved_1',
+          ...args.data,
+        })),
+      },
+      checkoutOrder: {
+        findFirst: jest.fn(async () => ({ status: 'PENDING' })),
+        updateMany: jest.fn(async () => ({ count: 1 })),
+      },
+    };
+    prisma.$transaction.mockImplementation(async (cb: CheckoutPaymentTxCallback) => cb(tx));
+
+    const result = await service.processPayment({
+      orderId: 'order-1',
+      workspaceId: 'ws-1',
+      customerName: 'Cliente Aprovado',
+      customerEmail: 'approved@example.com',
+      paymentMethod: 'CREDIT_CARD',
+      totalInCents: 10_000,
+    });
+
+    expect(result.approved).toBe(true);
+    expect(postPaymentEffects.markLeadConverted).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'order-1' }),
+      'ws-1',
+    );
+    expect(postPaymentEffects.sendPurchaseSignals).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'order-1' }),
+      139.9,
     );
   });
 
@@ -513,6 +482,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
   it('forces 3DS on card payments when the antifraud engine returns require_3ds', async () => {
     const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
+        findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn(async (args: CheckoutPaymentCreateArgs) => ({
           id: 'pay_3ds_1',
           ...args.data,

@@ -31,24 +31,27 @@ export class AdminKycService {
       throw adminErrors.userNotFound();
     }
 
-    await this.prisma.$transaction([
-      this.prisma.agent.update({
-        where: { id: agentId },
-        data: {
-          kycStatus: 'approved',
-          kycApprovedAt: new Date(),
-          kycRejectedReason: null,
-        },
-      }),
-      this.prisma.kycDocument.updateMany({
-        where: { agentId, status: 'pending' },
-        data: {
-          status: 'approved',
-          reviewedAt: new Date(),
-          rejectedReason: null,
-        },
-      }),
-    ]);
+    await this.prisma.$transaction(
+      [
+        this.prisma.agent.updateMany({
+          where: { id: agentId, workspaceId: agent.workspaceId },
+          data: {
+            kycStatus: 'approved',
+            kycApprovedAt: new Date(),
+            kycRejectedReason: null,
+          },
+        }),
+        this.prisma.kycDocument.updateMany({
+          where: { agentId, workspaceId: agent.workspaceId, status: 'pending' },
+          data: {
+            status: 'approved',
+            reviewedAt: new Date(),
+            rejectedReason: null,
+          },
+        }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     await this.audit.append({
       adminUserId: actorId,
@@ -73,24 +76,27 @@ export class AdminKycService {
       throw adminErrors.userNotFound();
     }
 
-    await this.prisma.$transaction([
-      this.prisma.agent.update({
-        where: { id: agentId },
-        data: {
-          kycStatus: 'rejected',
-          kycRejectedReason: reason,
-          kycApprovedAt: null,
-        },
-      }),
-      this.prisma.kycDocument.updateMany({
-        where: { agentId, status: 'pending' },
-        data: {
-          status: 'rejected',
-          reviewedAt: new Date(),
-          rejectedReason: reason,
-        },
-      }),
-    ]);
+    await this.prisma.$transaction(
+      [
+        this.prisma.agent.updateMany({
+          where: { id: agentId, workspaceId: agent.workspaceId },
+          data: {
+            kycStatus: 'rejected',
+            kycRejectedReason: reason,
+            kycApprovedAt: null,
+          },
+        }),
+        this.prisma.kycDocument.updateMany({
+          where: { agentId, workspaceId: agent.workspaceId, status: 'pending' },
+          data: {
+            status: 'rejected',
+            reviewedAt: new Date(),
+            rejectedReason: reason,
+          },
+        }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     await this.audit.append({
       adminUserId: actorId,
@@ -115,8 +121,8 @@ export class AdminKycService {
       throw adminErrors.userNotFound();
     }
 
-    await this.prisma.agent.update({
-      where: { id: agentId },
+    await this.prisma.agent.updateMany({
+      where: { id: agentId, workspaceId: agent.workspaceId },
       data: {
         kycStatus: 'pending',
         kycSubmittedAt: null,

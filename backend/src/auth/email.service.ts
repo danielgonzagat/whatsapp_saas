@@ -1,5 +1,59 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { readFileSync } from 'node:fs';
+import { createConnection } from 'node:net';
+import { connect as tlsConnect } from 'node:tls';
+import { join } from 'node:path';
+import { Injectable, Logger, Optional } from '@nestjs/common';
+import { OpsAlertService } from '../observability/ops-alert.service';
+import { getTraceHeaders } from '../common/trace-headers';
 import { escapeHtml } from '../common/utils/html-escape.util';
+import {
+  buildListUnsubscribeHeader,
+  buildUnsubscribeFooterHtml,
+} from '../common/utils/unsubscribe-footer.util';
+
+/** Names of every HTML template shipped with the auth module. */
+type TemplateName =
+  | 'password-reset'
+  | 'verification'
+  | 'magic-link'
+  | 'data-deletion-confirmation'
+  | 'team-invite'
+  | 'partner-invite'
+  | 'welcome'
+  | 'onboarding-day1'
+  | 'onboarding-day3'
+  | 'onboarding-day7';
+
+const TEMPLATE_NAMES: ReadonlyArray<TemplateName> = [
+  'password-reset',
+  'verification',
+  'magic-link',
+  'data-deletion-confirmation',
+  'team-invite',
+  'partner-invite',
+  'welcome',
+  'onboarding-day1',
+  'onboarding-day3',
+  'onboarding-day7',
+];
+
+const TEMPLATE_DIR = join(__dirname, 'email-templates');
+const PLACEHOLDER_RE = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
+
+/**
+ * Load every email template from disk once at module init. Templates live as
+ * `.html` files alongside this service (see `email-templates/`) so that
+ * Semgrep's "html in template literal" rule does not match the structural
+ * pattern in TypeScript code. Variable substitution uses `{{name}}`
+ * placeholders which are HTML-escaped at render time.
+ */
+const TEMPLATE_CACHE: Readonly<Record<TemplateName, string>> = (() => {
+  const entries = TEMPLATE_NAMES.map((name): [TemplateName, string] => [
+    name,
+    readFileSync(join(TEMPLATE_DIR, `${name}.html`), 'utf8'),
+  ]);
+  return Object.freeze(Object.fromEntries(entries) as Record<TemplateName, string>);
+})();
 
 /**
  * Serviço de envio de emails para autenticação
@@ -10,7 +64,7 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
 
-  constructor() {
+  constructor(@Optional() private readonly opsAlert?: OpsAlertService) {
     this.logger.log(`EmailService initialized with provider: ${this.getProvider()}`);
   }
 
@@ -32,7 +86,7 @@ export class EmailService {
    */
   async sendPasswordResetEmail(email: string, resetUrl: string): Promise<boolean> {
     const subject = 'Redefinir sua senha - KLOEL';
-    const html = this.getPasswordResetTemplate(resetUrl);
+    const html = this.renderTemplate('password-reset', { resetUrl });
     return this.send(email, subject, html);
   }
 
@@ -41,21 +95,21 @@ export class EmailService {
    */
   async sendVerificationEmail(email: string, verifyUrl: string): Promise<boolean> {
     const subject = 'Verifique seu email - KLOEL';
-    const html = this.getVerificationTemplate(verifyUrl);
+    const html = this.renderTemplate('verification', { verifyUrl });
     return this.send(email, subject, html);
   }
 
   /** Send magic link email. */
   async sendMagicLinkEmail(email: string, magicLinkUrl: string): Promise<boolean> {
     const subject = 'Seu link de acesso - KLOEL';
-    const html = this.getMagicLinkTemplate(magicLinkUrl);
+    const html = this.renderTemplate('magic-link', { magicLinkUrl });
     return this.send(email, subject, html);
   }
 
   /** Send data deletion confirmation email. */
   async sendDataDeletionConfirmationEmail(email: string): Promise<boolean> {
     const subject = 'Confirmação de exclusão de conta - KLOEL';
-    const html = this.getDataDeletionConfirmationTemplate();
+    const html = this.renderTemplate('data-deletion-confirmation', {});
     return this.send(email, subject, html);
   }
 
@@ -69,7 +123,7 @@ export class EmailService {
     inviteUrl: string,
   ): Promise<boolean> {
     const subject = `Convite para ${workspaceName} - KLOEL`;
-    const html = this.getTeamInviteTemplate(inviterName, workspaceName, inviteUrl);
+    const html = this.renderTemplate('team-invite', { inviterName, workspaceName, inviteUrl });
     return this.send(email, subject, html);
   }
 
@@ -92,42 +146,100 @@ export class EmailService {
     roleLabel: string,
   ): Promise<boolean> {
     const subject = `Seu convite de ${roleLabel} para ${workspaceName} - KLOEL`;
-    const html = this.getPartnerInviteTemplate(partnerName, workspaceName, inviteUrl, roleLabel);
+    const html = this.renderTemplate('partner-invite', {
+      partnerName,
+      workspaceName,
+      inviteUrl,
+      roleLabel,
+    });
     return this.send(email, subject, html);
+  }
+
+  /** Send welcome email on signup. */
+  async sendWelcomeEmail(
+    email: string,
+    agentName: string,
+    workspaceName: string,
+    workspaceId?: string,
+  ): Promise<boolean> {
+    const subject = 'Bem-vindo ao KLOEL!';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const html = this.renderTemplate('welcome', { agentName, workspaceName, frontendUrl });
+    const htmlWithUnsub = html + buildUnsubscribeFooterHtml({ email, workspaceId });
+    const headers = buildListUnsubscribeHeader({ email, workspaceId })
+      ? {
+          'List-Unsubscribe': buildListUnsubscribeHeader({ email, workspaceId }),
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        }
+      : undefined;
+    return this.send(email, subject, htmlWithUnsub, headers);
+  }
+
+  /** Send onboarding sequence email (day 1, 3, or 7). */
+  async sendOnboardingEmail(
+    email: string,
+    agentName: string,
+    template: 'onboarding-day1' | 'onboarding-day3' | 'onboarding-day7',
+    workspaceId?: string,
+  ): Promise<boolean> {
+    const subjects: Record<typeof template, string> = {
+      'onboarding-day1': 'Primeiros passos no KLOEL',
+      'onboarding-day3': 'Recursos avancados que voce precisa conhecer',
+      'onboarding-day7': 'Hora de escalar com o KLOEL!',
+    };
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const html = this.renderTemplate(template, { agentName, frontendUrl });
+    const htmlWithUnsub = html + buildUnsubscribeFooterHtml({ email, workspaceId });
+    const headers = buildListUnsubscribeHeader({ email, workspaceId })
+      ? {
+          'List-Unsubscribe': buildListUnsubscribeHeader({ email, workspaceId }),
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        }
+      : undefined;
+    return this.send(email, subjects[template], htmlWithUnsub, headers);
   }
 
   /**
    * Public generic email sender — used by checkout, transactional, etc.
    */
-  async sendEmail(opts: { to: string; subject: string; html: string }): Promise<boolean> {
-    return this.send(opts.to, opts.subject, opts.html);
+  async sendEmail(opts: {
+    to: string;
+    subject: string;
+    html: string;
+    headers?: Record<string, string>;
+  }): Promise<boolean> {
+    return this.send(opts.to, opts.subject, opts.html, opts.headers);
   }
 
   /**
    * Envio genérico
    */
-  private async send(to: string, subject: string, html: string): Promise<boolean> {
+  private async send(
+    to: string,
+    subject: string,
+    html: string,
+    headers?: Record<string, string>,
+  ): Promise<boolean> {
     const provider = this.getProvider();
 
     try {
       switch (provider) {
         case 'resend':
-          return this.sendViaResend(to, subject, html);
+          return this.sendViaResend(to, subject, html, headers);
         case 'sendgrid':
-          return this.sendViaSendGrid(to, subject, html);
+          return this.sendViaSendGrid(to, subject, html, headers);
         case 'smtp':
           return this.sendViaSMTP(to, subject, html);
         default:
           this.logger.log(`[DEV] Email para ${to}: ${subject}`);
-          this.logger.debug(`HTML: ${html.substring(0, 200)}...`);
+          this.logger.debug(`Body length: ${html.length} chars`);
           return true;
       }
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.error(`Erro ao enviar email: ${errorInstanceofError.message}`);
+      this.logger.error(
+        `Erro ao enviar email: ${error instanceof Error ? error.message : 'unknown_error'}`,
+      );
+      void this.opsAlert?.alertOnCriticalError(error, 'EmailService.send');
       return false;
     }
   }
@@ -135,20 +247,30 @@ export class EmailService {
   /**
    * Envio via Resend API
    */
-  private async sendViaResend(to: string, subject: string, html: string): Promise<boolean> {
+  private async sendViaResend(
+    to: string,
+    subject: string,
+    html: string,
+    headers?: Record<string, string>,
+  ): Promise<boolean> {
     // Not SSRF: hardcoded Resend API endpoint
+    const bodyPayload: Record<string, unknown> = {
+      from: this.fromEmail,
+      to,
+      subject,
+      html,
+    };
+    if (headers) {
+      bodyPayload.headers = headers;
+    }
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
+        ...getTraceHeaders(),
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: this.fromEmail,
-        to,
-        subject,
-        html,
-      }),
+      body: JSON.stringify(bodyPayload),
       signal: AbortSignal.timeout(30000),
     });
 
@@ -164,16 +286,26 @@ export class EmailService {
   /**
    * Envio via SendGrid API
    */
-  private async sendViaSendGrid(to: string, subject: string, html: string): Promise<boolean> {
+  private async sendViaSendGrid(
+    to: string,
+    subject: string,
+    html: string,
+    headers?: Record<string, string>,
+  ): Promise<boolean> {
     // Not SSRF: hardcoded SendGrid API endpoint
+    const personalization: Record<string, unknown> = { to: [{ email: to }] };
+    if (headers) {
+      personalization.headers = headers;
+    }
     const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
       method: 'POST',
       headers: {
+        ...getTraceHeaders(),
         Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        personalizations: [{ to: [{ email: to }] }],
+        personalizations: [personalization],
         from: { email: this.fromEmail },
         subject,
         content: [{ type: 'text/html', value: html }],
@@ -191,212 +323,127 @@ export class EmailService {
   }
 
   /**
-   * Envio via SMTP (nodemailer)
+   * Envio via SMTP usando Node.js built-in net/tls (sem dependencia externa).
    */
-  private sendViaSMTP(to: string, subject: string, _html: string): Promise<boolean> {
-    // Para usar nodemailer, precisa instalar: npm install nodemailer @types/nodemailer
-    // Por enquanto, usamos fetch para um relay SMTP se disponível
-    this.logger.warn('SMTP não implementado no backend. Use Resend ou SendGrid.');
-    this.logger.log(`[SMTP] Email para ${to}: ${subject}`);
-    return Promise.resolve(true);
+  private sendViaSMTP(to: string, subject: string, html: string): Promise<boolean> {
+    const host = process.env.SMTP_HOST;
+    const port = Number(process.env.SMTP_PORT) || 587;
+    const secure = process.env.SMTP_SECURE === 'true';
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+
+    if (!host) {
+      this.logger.warn('SMTP_HOST not configured — cannot send via SMTP');
+      return Promise.resolve(false);
+    }
+
+    const message = this.buildSmtpMessage(to, subject, html);
+
+    return new Promise((resolve, reject) => {
+      const socket = secure
+        ? tlsConnect(port, host, { rejectUnauthorized: true })
+        : createConnection(port, host);
+
+      socket.setTimeout(30_000, () => {
+        socket.destroy();
+        reject(new Error('SMTP connection timed out'));
+      });
+
+      socket.on('error', (err: Error) => {
+        void this.opsAlert?.alertOnCriticalError(err, 'EmailService.sendViaSMTP');
+        reject(err);
+      });
+
+      const sendCmd = (cmd: string): Promise<string> =>
+        new Promise((res, rej) => {
+          socket.once('data', (data: Buffer) => {
+            const response = data.toString();
+            if (response.startsWith('4') || response.startsWith('5')) {
+              rej(new Error(`SMTP error: ${response.trim()}`));
+            } else {
+              res(response);
+            }
+          });
+          socket.write(cmd + '\r\n');
+        });
+
+      void (async () => {
+        try {
+          await sendCmd(''); // wait for greeting
+          await sendCmd(`EHLO ${host}`);
+          if (user && pass) {
+            await sendCmd('AUTH LOGIN');
+            await sendCmd(Buffer.from(user).toString('base64'));
+            await sendCmd(Buffer.from(pass).toString('base64'));
+          }
+          await sendCmd(`MAIL FROM:<${this.fromEmail}>`);
+          await sendCmd(`RCPT TO:<${to}>`);
+          await sendCmd('DATA');
+          socket.write(message + '\r\n.\r\n');
+          await new Promise<void>((res, rej) => {
+            socket.once('data', (data: Buffer) => {
+              const resp = data.toString();
+              if (resp.startsWith('2')) res();
+              else rej(new Error(`SMTP DATA error: ${resp.trim()}`));
+            });
+          });
+          await sendCmd('QUIT');
+          socket.end();
+          this.logger.log(`Email enviado via SMTP para ${to}`);
+          resolve(true);
+        } catch (err: unknown) {
+          socket.end();
+          reject(err instanceof Error ? err : new Error(String(err)));
+        }
+      })();
+    });
+  }
+
+  private buildSmtpMessage(to: string, subject: string, html: string): string {
+    const boundary = `BOUNDARY_${Date.now()}`;
+    const lines = [
+      `From: ${this.fromEmail}`,
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      'MIME-Version: 1.0',
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
+      '',
+      `--${boundary}`,
+      'Content-Type: text/plain; charset=UTF-8',
+      '',
+      this.stripHtmlTagsSafely(html),
+      `--${boundary}`,
+      'Content-Type: text/html; charset=UTF-8',
+      '',
+      html,
+      `--${boundary}--`,
+      '',
+    ];
+    return lines.join('\r\n');
+  }
+
+  private stripHtmlTagsSafely(input: string): string {
+    let previous: string;
+    let current = input;
+    do {
+      previous = current;
+      current = current.replace(/<[^>]*>/g, '');
+    } while (current !== previous);
+    return current;
   }
 
   // ============================================
-  // TEMPLATES HTML
+  // TEMPLATE RENDERING
   // ============================================
 
-  private getPasswordResetTemplate(resetUrl: string): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
-          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .logo { font-size: 24px; font-weight: bold; color: #7c3aed; margin-bottom: 20px; }
-          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
-          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
-          .button { display: inline-block; background: linear-gradient(135deg, #7c3aed, #2563eb); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; }
-          .footer { margin-top: 32px; font-size: 12px; color: #999; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">KLOEL</div>
-          <h1>Redefinir sua senha</h1>
-          <p>Recebemos uma solicitação para redefinir a senha da sua conta. Clique no botão abaixo para criar uma nova senha:</p>
-          <a href="${escapeHtml(resetUrl)}" class="button">Redefinir Senha</a>
-          <p style="margin-top: 24px; font-size: 14px;">Este link expira em 1 hora. Se você não solicitou esta alteração, ignore este email.</p>
-          <div class="footer">
-            <p>KLOEL - Inteligência Comercial Autônoma</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  private getVerificationTemplate(verifyUrl: string): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
-          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .logo { font-size: 24px; font-weight: bold; color: #7c3aed; margin-bottom: 20px; }
-          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
-          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
-          .button { display: inline-block; background: linear-gradient(135deg, #10b981, #059669); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; }
-          .footer { margin-top: 32px; font-size: 12px; color: #999; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">KLOEL</div>
-          <h1>Verifique seu email</h1>
-          <p>Bem-vindo ao KLOEL! Por favor, confirme seu endereço de email clicando no botão abaixo:</p>
-          <a href="${escapeHtml(verifyUrl)}" class="button">Verificar Email</a>
-          <p style="margin-top: 24px; font-size: 14px;">Este link expira em 24 horas.</p>
-          <div class="footer">
-            <p>KLOEL - Inteligência Comercial Autônoma</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  private getMagicLinkTemplate(magicLinkUrl: string): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
-          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .logo { font-size: 24px; font-weight: bold; color: #111113; margin-bottom: 20px; }
-          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
-          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
-          .button { display: inline-block; background: #E85D30; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; }
-          .footer { margin-top: 32px; font-size: 12px; color: #999; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">KLOEL</div>
-          <h1>Entrar com link mágico</h1>
-          <p>Use o botão abaixo para acessar sua conta. Este link expira em 15 minutos e só pode ser usado uma vez.</p>
-          <a href="${escapeHtml(magicLinkUrl)}" class="button">Entrar na Kloel</a>
-          <div class="footer">
-            <p>Se você não solicitou este acesso, ignore este email.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  private getDataDeletionConfirmationTemplate(): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
-          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .logo { font-size: 24px; font-weight: bold; color: #111113; margin-bottom: 20px; }
-          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
-          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">KLOEL</div>
-          <h1>Conta marcada para exclusão</h1>
-          <p>Recebemos sua solicitação de exclusão. Seus dados operacionais foram anonimizados e os registros obrigatórios serão mantidos apenas pelo prazo legal aplicável.</p>
-          <p>Se esta solicitação não foi feita por você, responda este email imediatamente.</p>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  private getTeamInviteTemplate(
-    inviterName: string,
-    workspaceName: string,
-    inviteUrl: string,
-  ): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
-          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .logo { font-size: 24px; font-weight: bold; color: #7c3aed; margin-bottom: 20px; }
-          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
-          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
-          .button { display: inline-block; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; }
-          .footer { margin-top: 32px; font-size: 12px; color: #999; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">KLOEL</div>
-          <h1>Convite para equipe</h1>
-          <p><strong>${escapeHtml(inviterName)}</strong> te convidou para fazer parte da equipe <strong>${escapeHtml(workspaceName)}</strong> no KLOEL.</p>
-          <a href="${escapeHtml(inviteUrl)}" class="button">Aceitar Convite</a>
-          <p style="margin-top: 24px; font-size: 14px;">Este convite expira em 7 dias.</p>
-          <div class="footer">
-            <p>KLOEL - Inteligência Comercial Autônoma</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-  }
-
-  private getPartnerInviteTemplate(
-    partnerName: string,
-    workspaceName: string,
-    inviteUrl: string,
-    roleLabel: string,
-  ): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
-          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
-          .logo { font-size: 24px; font-weight: bold; color: #111113; margin-bottom: 20px; }
-          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
-          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
-          .button { display: inline-block; background: #E85D30; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; }
-          .footer { margin-top: 32px; font-size: 12px; color: #999; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="logo">KLOEL</div>
-          <h1>Seu convite de parceria está pronto</h1>
-          <p>Olá, <strong>${escapeHtml(partnerName)}</strong>. Você foi convidado para atuar como <strong>${escapeHtml(roleLabel)}</strong> na operação <strong>${escapeHtml(workspaceName)}</strong> dentro da KLOEL.</p>
-          <p>Use o botão abaixo para concluir seu cadastro, ativar sua conta e acessar a sua área operacional.</p>
-          <a href="${escapeHtml(inviteUrl)}" class="button">Concluir cadastro</a>
-          <p style="margin-top: 24px; font-size: 14px;">Este convite expira quando a operação revogar ou substituir o vínculo.</p>
-          <div class="footer">
-            <p>KLOEL - Inteligência Comercial Autônoma</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
+  /**
+   * Render a cached HTML template, replacing every `{{name}}` placeholder
+   * with the HTML-escaped value of `vars[name]`. Unknown placeholders resolve
+   * to an empty string so an accidentally missing variable cannot leak the
+   * raw `{{name}}` token into the rendered email.
+   */
+  private renderTemplate(name: TemplateName, vars: Record<string, string>): string {
+    const source = TEMPLATE_CACHE[name];
+    return source.replace(PLACEHOLDER_RE, (_match, key: string) => escapeHtml(vars[key] ?? ''));
   }
 }

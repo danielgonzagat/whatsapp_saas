@@ -1,4 +1,9 @@
 import * as path from 'path';
+import * as ts from 'typescript';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
@@ -6,95 +11,142 @@ import { readTextFile } from '../safe-fs';
 interface ModuleNode {
   file: string;
   name: string;
+  line: number;
   /** Names of modules that appear in this module's imports[] array (excluding forwardRef). */
   imports: string[];
 }
 
-/**
- * Extract module names from the `imports: [...]` array of a @Module decorator.
- * Skips `forwardRef(() => SomeModule)` entries — those are NestJS's own cycle-breaker.
- */
-function extractModuleImports(content: string): string[] {
-  const imports: string[] = [];
+interface ModuleCycleEvidence {
+  closing: ModuleNode;
+  cyclePath: string[];
+  relativeFile: string;
+}
 
-  // Find the imports: [ ... ] block inside @Module
-  const moduleStart = content.indexOf('@Module(');
-  if (moduleStart === -1) {
-    return imports;
+function propertyNameText(name: ts.PropertyName): string | null {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+    return name.text;
   }
+  return null;
+}
 
-  // Collect the full @Module(...) call body
-  let depth = 0;
-  let inModule = false;
-  let moduleBody = '';
-  for (let i = moduleStart; i < content.length; i++) {
-    const ch = content[i];
-    if (ch === '(') {
-      depth++;
-      inModule = true;
+function isIdentifierNamed(node: ts.Node, expectedName: string): boolean {
+  return ts.isIdentifier(node) && node.text === expectedName;
+}
+
+function isForwardRefExpression(expression: ts.Expression): boolean {
+  return ts.isCallExpression(expression) && isIdentifierNamed(expression.expression, 'forwardRef');
+}
+
+function isModuleIdentifier(expression: ts.Expression): expression is ts.Identifier {
+  return ts.isIdentifier(expression) && expression.text.endsWith('Module');
+}
+
+function moduleDecoratorObject(node: ts.ClassDeclaration): ts.ObjectLiteralExpression | null {
+  const decorators = ts.canHaveDecorators(node) ? (ts.getDecorators(node) ?? []) : [];
+  for (const decorator of decorators) {
+    const expression = decorator.expression;
+    if (!ts.isCallExpression(expression) || !isIdentifierNamed(expression.expression, 'Module')) {
+      continue;
     }
-    if (inModule && ch === ')') {
-      depth--;
-      if (depth === 0) {
-        moduleBody = content.slice(moduleStart, i + 1);
-        break;
+    const [firstArgument] = expression.arguments;
+    if (firstArgument && ts.isObjectLiteralExpression(firstArgument)) {
+      return firstArgument;
+    }
+  }
+  return null;
+}
+
+function extractModuleImportsFromDecorator(decoratorObject: ts.ObjectLiteralExpression): string[] {
+  const imports = new Set<string>();
+  for (const property of decoratorObject.properties) {
+    if (!ts.isPropertyAssignment(property) || propertyNameText(property.name) !== 'imports') {
+      continue;
+    }
+    if (!ts.isArrayLiteralExpression(property.initializer)) {
+      continue;
+    }
+    for (const element of property.initializer.elements) {
+      if (isForwardRefExpression(element)) {
+        continue;
+      }
+      if (isModuleIdentifier(element)) {
+        imports.add(element.text);
       }
     }
   }
+  return [...imports];
+}
 
-  if (!moduleBody) {
-    return imports;
-  }
+function collectModuleNode(file: string, content: string): ModuleNode | null {
+  const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+  let moduleNode: ModuleNode | null = null;
 
-  // Find `imports:` key within moduleBody
-  const importKeyIdx = moduleBody.indexOf('imports:');
-  if (importKeyIdx === -1) {
-    return imports;
-  }
-
-  // Collect the array after `imports:`
-  let arrStart = -1;
-  let arrDepth = 0;
-  let arrBody = '';
-  for (let i = importKeyIdx; i < moduleBody.length; i++) {
-    if (moduleBody[i] === '[') {
-      if (arrDepth === 0) {
-        arrStart = i;
-      }
-      arrDepth++;
-    } else if (moduleBody[i] === ']') {
-      arrDepth--;
-      if (arrDepth === 0 && arrStart !== -1) {
-        arrBody = moduleBody.slice(arrStart, i + 1);
-        break;
-      }
+  for (const statement of sourceFile.statements) {
+    if (!ts.isClassDeclaration(statement) || !statement.name) {
+      continue;
     }
+    if (!statement.name.text.endsWith('Module')) {
+      continue;
+    }
+    const decoratorObject = moduleDecoratorObject(statement);
+    if (!decoratorObject) {
+      continue;
+    }
+    const position = sourceFile.getLineAndCharacterOfPosition(statement.name.getStart(sourceFile));
+    moduleNode = {
+      file,
+      name: statement.name.text,
+      line: position.line + 1,
+      imports: extractModuleImportsFromDecorator(decoratorObject),
+    };
+    break;
   }
 
-  if (!arrBody) {
-    return imports;
-  }
+  return moduleNode;
+}
 
-  // Remove forwardRef(…) entries entirely so we don't process them
-  const noForwardRef = arrBody.replace(/forwardRef\s*\(\s*\(\s*\)\s*=>\s*\w+\s*\)/g, '');
+function cycleDiagnosticBreak(evidence: ModuleCycleEvidence): Break {
+  const uniqueModuleCount = new Set(evidence.cyclePath).size;
+  const signal: PulseSignalEvidence = {
+    source: 'circular-import-checker',
+    detector: 'nestjs-module-cycle',
+    truthMode: 'confirmed_static',
+    summary: `${evidence.closing.name} closes a NestJS module dependency cycle`,
+    location: { file: evidence.relativeFile, line: evidence.closing.line },
+    detail: `Cycle: ${evidence.cyclePath.join(' -> ')}`,
+  };
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const diagnostic = synthesizeDiagnostic(
+    signalGraph,
+    predicateGraph,
+    calculateDynamicRisk({
+      predicateGraph,
+      runtimeImpact: uniqueModuleCount / Math.max(uniqueModuleCount, evidence.cyclePath.length),
+    }),
+  );
 
-  // Extract PascalCase identifiers that end with "Module"
-  const tokenRe = /\b([A-Z][A-Za-z0-9_]*Module)\b/g;
-  let m: RegExpExecArray | null;
-  while ((m = tokenRe.exec(noForwardRef)) !== null) {
-    imports.push(m[1]);
-  }
+  return {
+    type: diagnostic.id,
+    severity: 'high',
+    file: evidence.relativeFile,
+    line: evidence.closing.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
+    surface: evidence.cyclePath.join(' -> '),
+  };
+}
 
-  return imports;
+function appendBreak(breaks: Break[], entry: Break): void {
+  breaks.push(entry);
 }
 
 /** Check circular imports. */
 export function checkCircularImports(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
-  const moduleFiles = walkFiles(config.backendDir, ['.ts']).filter(
-    (f) => f.endsWith('.module.ts') && !/\.(spec|test)\.ts$/.test(f),
-  );
+  const moduleFiles = walkFiles(config.backendDir, ['.ts']);
 
   const nodes: ModuleNode[] = [];
   const nameToNode = new Map<string, ModuleNode>();
@@ -107,16 +159,12 @@ export function checkCircularImports(config: PulseConfig): Break[] {
       continue;
     }
 
-    const nameMatch = content.match(/export\s+class\s+([A-Z][A-Za-z0-9_]*Module)\b/);
-    if (!nameMatch) {
+    const node = collectModuleNode(mf, content);
+    if (!node) {
       continue;
     }
-
-    const name = nameMatch[1];
-    const imports = extractModuleImports(content);
-    const node: ModuleNode = { file: mf, name, imports };
     nodes.push(node);
-    nameToNode.set(name, node);
+    nameToNode.set(node.name, node);
   }
 
   // DFS cycle detection
@@ -151,16 +199,15 @@ export function checkCircularImports(config: PulseConfig): Break[] {
 
           // Find the cycle path for detail message
           const cycleStart = stack.indexOf(importedName);
-          const cyclePath = [...stack.slice(cycleStart), importedName].join(' → ');
-
-          breaks.push({
-            type: 'CIRCULAR_MODULE_DEPENDENCY',
-            severity: 'high',
-            file: relFile,
-            line: 1,
-            description: `Circular module dependency detected: "${current.name}" closes a cycle`,
-            detail: `Cycle: ${cyclePath}. Use forwardRef(() => ModuleX) in one of the involved modules to break the cycle.`,
-          });
+          const cyclePath = [...stack.slice(cycleStart), importedName];
+          appendBreak(
+            breaks,
+            cycleDiagnosticBreak({
+              closing: current,
+              cyclePath,
+              relativeFile: relFile,
+            }),
+          );
         }
       } else if (c === WHITE) {
         dfs(imported, stack);

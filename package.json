@@ -4,6 +4,15 @@
   },
   "scripts": {
     "prepare": "husky",
+    "findings:run": "node scripts/ops/aggregate-findings.mjs",
+    "findings:dry": "node scripts/ops/aggregate-findings.mjs --dry",
+    "findings:emit": "node scripts/ops/emit-findings-sidecars.mjs",
+    "findings:full": "node scripts/ops/aggregate-findings.mjs && node scripts/ops/emit-findings-sidecars.mjs",
+    "findings:watch": "node scripts/orchestration/findings-watch.mjs --start",
+    "findings:once": "node scripts/orchestration/findings-watch.mjs --once",
+    "severity:emit": "node scripts/orchestration/severity-tags-emitter.mjs",
+    "severity:dry": "node scripts/orchestration/severity-tags-emitter.mjs --dry",
+    "colors:apply": "node scripts/obsidian-graph-lens.mjs --factory && node scripts/orchestration/extend-graph-lens.mjs",
     "railway:backend:build": "npm --prefix backend ci --include=dev && npm --prefix backend run prisma:generate && npm --prefix backend run build",
     "railway:backend:start": "npm --prefix backend run start:prod",
     "railway:oauth:login": "node scripts/ops/railway-oauth-native.mjs login",
@@ -93,7 +102,28 @@
     "prepush:scoped": "node scripts/ops/run-scoped-pre-push.mjs",
     "sync:install": "/bin/zsh ./scripts/ops/install-auto-sync-launchagent.sh \"$PWD\"",
     "sync:run": "/bin/zsh ./scripts/ops/auto-sync-main.sh \"$PWD\"",
-    "sync:status": "/bin/zsh ./scripts/ops/print-auto-sync-status.sh"
+    "sync:status": "/bin/zsh ./scripts/ops/print-auto-sync-status.sh",
+    "agent:hermes": "node scripts/agent-orchestrator.js --agent hermes --risk-profile safe --dry-run",
+    "agent:openhands": "node scripts/agent-orchestrator.js --agent openhands --parallel-agents 2",
+    "agent:claude": "node scripts/agent-orchestrator.js --agent claude-code",
+    "agent:multi": "node scripts/agent-orchestrator.js --agents claude-code,openhands --parallel-agents 4",
+    "agent:full-crew": "node scripts/agent-orchestrator.js --agents claude-code,hermes,openhands --parallel-agents 4 --continuous",
+    "gitnexus:help": "npx -y gitnexus@latest --help",
+    "gitnexus:status": "npx -y gitnexus@latest status",
+    "gitnexus:index": "npx gitnexus analyze --skip-agents-md",
+    "gitnexus:index:force": "npx gitnexus analyze --skip-agents-md --force",
+    "gitnexus:list": "npx -y gitnexus@latest list",
+    "gitnexus:mcp": "npx gitnexus mcp",
+    "pulse:gitnexus": "node scripts/pulse/run.js gitnexus",
+    "pulse:gitnexus:status": "node scripts/pulse/run.js gitnexus --status",
+    "pulse:gitnexus:index": "node scripts/pulse/run.js gitnexus --index",
+    "pulse:gitnexus:impact": "node scripts/pulse/run.js gitnexus --impact",
+    "pulse:gitnexus:report": "node scripts/pulse/run.js gitnexus --report",
+    "gitnexus:index:embeddings": "npx gitnexus analyze --skip-agents-md --embeddings",
+    "gitnexus:serve": "npx gitnexus serve",
+    "gitnexus:check": "npx gitnexus status",
+    "gitnexus:impact": "npx gitnexus impact",
+    "ops:verify-backup": "node scripts/ops/verify-backup.mjs"
   },
   "lint-staged": {
     "*.{json,md,yml,yaml}": [
@@ -123,13 +153,8 @@
     "qs": ">=6.14.2"
   },
   "dependencies": {
-    "@nestjs/event-emitter": "^3.1.0",
-    "@nestjs/schedule": "^6.1.3",
-    "lucide-react": "^0.577.0",
-    "pg": "^8.20.0",
-    "qrcode": "^1.5.4",
-    "react": "^19.2.5",
-    "zustand": "^5.0.12"
+    "@opencode-ai/sdk": "^1.14.31",
+    "pg": "^8.20.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
@@ -144,5 +169,7 @@
     "playwright": "^1.59.1",
     "prettier": "^3.8.3",
     "ts-morph": "^28.0.0"
-  }
+  },
+  "name": "whatsapp-saas",
+  "private": true
 }

@@ -1,0 +1,31 @@
+
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; padding: 20px; }
+          .container { max-width: 500px; margin: 0 auto; background: white; border-radius: 12px; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+          .logo { font-size: 24px; font-weight: bold; color: #7c3aed; margin-bottom: 20px; }
+          h1 { font-size: 22px; color: #1a1a1a; margin-bottom: 16px; }
+          p { color: #666; line-height: 1.6; margin-bottom: 24px; }
+          .button { display: inline-block; background: linear-gradient(135deg, #7c3aed, #6366f1); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; }
+          .footer { margin-top: 32px; font-size: 12px; color: #999; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="logo">KLOEL</div>
+          <h1>Ola {{agentName}}! Como esta sendo sua experiencia?</h1>
+          <p>O KLOEL tem recursos avancados que podem transformar seu negocio:</p>
+          <p><strong>Kanban CRM</strong> — Gerencie leads como cards. Arraste entre etapas e veja seu pipeline de vendas em tempo real.</p>
+          <p><strong>Campanhas Darwinianas</strong> — Crie variacoes A/B e deixe a IA escolher a melhor abordagem para cada lead.</p>
+          <p><strong>Scraping Inteligente</strong> — Encontre leads no Google Maps, Instagram e OLX automaticamente.</p>
+          <a href="{{frontendUrl}}/dashboard" class="button">Explorar Recursos</a>
+          <div class="footer">
+            <p>KLOEL - Inteligencia Comercial Autonoma</p>
+            <p>Nao quer mais receber estes emails? <a href="{{frontendUrl}}/settings/notifications">Gerencie notificacoes</a>.</p>
+          </div>
+        </div>
+      </body>
+      </html>

@@ -8,23 +8,81 @@ import type { Break, PulseConfig } from '../types';
 
 interface ProjectTarget {
   dir: string;
-  breakType: 'BUILD_FRONTEND_FAILS' | 'BUILD_BACKEND_FAILS' | 'BUILD_WORKER_FAILS';
+  categoryParts: string[];
   label: string;
 }
 
-// TypeScript error line pattern: filename(line,col): error TSdddd: message
-// Also handles: filename:line:col - error TSdddd: message (alt format)
-const TS_ERROR_RE = /^(.+?)\((\d+),\d+\): error (TS\d+): (.+)$/;
-const TS_ERROR_ALT_RE = /^(.+?):(\d+):\d+\s+-\s+error (TS\d+): (.+)$/;
+interface TscDiagnosticEvidence {
+  filePath: string;
+  lineNumber: number;
+  code: string;
+  message: string;
+}
+
+interface BuildDiagnosticInput {
+  categoryParts: string[];
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+  predicates: readonly string[];
+}
+
+// Grammar for TypeScript diagnostics emitted by `tsc --noEmit`.
+const tscDiagnosticGrammarPatterns = [
+  /^(.+?)\((\d+),\d+\): error (TS\d+): (.+)$/,
+  /^(.+?):(\d+):\d+\s+-\s+error (TS\d+): (.+)$/,
+];
 
 const MAX_ERRORS_PER_PROJECT = 20;
 const TSC_TIMEOUT_MS = 60_000;
+
+function diagnosticType(parts: string[]): string {
+  return parts.map((part) => part.toUpperCase()).join('_');
+}
+
+function buildDiagnostic(input: BuildDiagnosticInput): Break {
+  const predicateEvidence = input.predicates.join(',');
+  return {
+    type: diagnosticType(input.categoryParts),
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: `${input.detail} Evidence predicates: ${predicateEvidence}.`,
+    source: `grammar-kernel:build-checker;truthMode=observed_tsc_output;predicates=${predicateEvidence}`,
+  };
+}
+
+function appendBuildDiagnostic(breaks: Break[], input: BuildDiagnosticInput): void {
+  breaks.push(buildDiagnostic(input));
+}
+
+function parseTscDiagnosticLine(line: string): TscDiagnosticEvidence | null {
+  for (const pattern of tscDiagnosticGrammarPatterns) {
+    const match = pattern.exec(line);
+    if (!match) {
+      continue;
+    }
+
+    const [, filePath, lineNum, code, message] = match;
+    return {
+      filePath,
+      lineNumber: parseInt(lineNum, 10) || 1,
+      code,
+      message: message.trim(),
+    };
+  }
+
+  return null;
+}
 
 function parseTscOutput(
   stderr: string,
   projectDir: string,
   rootDir: string,
-  breakType: 'BUILD_FRONTEND_FAILS' | 'BUILD_BACKEND_FAILS' | 'BUILD_WORKER_FAILS',
+  categoryParts: string[],
   label: string,
 ): Break[] {
   const breaks: Break[] = [];
@@ -40,24 +98,25 @@ function parseTscOutput(
       continue;
     }
 
-    let match = TS_ERROR_RE.exec(line) || TS_ERROR_ALT_RE.exec(line);
-    if (!match) {
+    const evidence = parseTscDiagnosticLine(line);
+    if (!evidence) {
       continue;
     }
 
-    const [, filePath, lineNum, code, message] = match;
-
     // Resolve file path relative to root
-    const absFile = path.isAbsolute(filePath) ? filePath : safeResolve(projectDir, filePath);
+    const absFile = path.isAbsolute(evidence.filePath)
+      ? evidence.filePath
+      : safeResolve(projectDir, evidence.filePath);
     const relFile = path.relative(rootDir, absFile);
 
-    breaks.push({
-      type: breakType,
+    appendBuildDiagnostic(breaks, {
+      categoryParts,
       severity: 'critical',
       file: relFile,
-      line: parseInt(lineNum, 10) || 1,
-      description: `${label} TypeScript compile error: ${code}`,
-      detail: message.trim().slice(0, 200),
+      line: evidence.lineNumber,
+      description: `${label} TypeScript compile error: ${evidence.code}`,
+      detail: evidence.message.slice(0, 200),
+      predicates: ['tsc_process_failed', 'tsc_diagnostic_line_parsed'],
     });
   }
 
@@ -67,7 +126,7 @@ function parseTscOutput(
 function runTsc(
   projectDir: string,
   rootDir: string,
-  breakType: 'BUILD_FRONTEND_FAILS' | 'BUILD_BACKEND_FAILS' | 'BUILD_WORKER_FAILS',
+  categoryParts: string[],
   label: string,
 ): Break[] {
   try {
@@ -89,20 +148,21 @@ function runTsc(
       return [];
     }
 
-    const parsed = parseTscOutput(output, projectDir, rootDir, breakType, label);
+    const parsed = parseTscOutput(output, projectDir, rootDir, categoryParts, label);
 
     // If we couldn't parse individual errors but tsc failed, emit one generic break
     if (parsed.length === 0) {
-      return [
-        {
-          type: breakType,
-          severity: 'critical',
-          file: path.relative(rootDir, projectDir),
-          line: 1,
-          description: `${label} TypeScript compilation failed`,
-          detail: output.split('\n').filter(Boolean).slice(0, 3).join(' | ').slice(0, 200),
-        },
-      ];
+      const breaks: Break[] = [];
+      appendBuildDiagnostic(breaks, {
+        categoryParts,
+        severity: 'critical',
+        file: path.relative(rootDir, projectDir),
+        line: 1,
+        description: `${label} TypeScript compilation failed`,
+        detail: output.split('\n').filter(Boolean).slice(0, 3).join(' | ').slice(0, 200),
+        predicates: ['tsc_process_failed', 'tsc_output_unparsed'],
+      });
+      return breaks;
     }
 
     return parsed;
@@ -118,17 +178,17 @@ export function checkBuilds(config: PulseConfig): Break[] {
   const targets: ProjectTarget[] = [
     {
       dir: path.dirname(config.frontendDir), // frontend/ (not frontend/src)
-      breakType: 'BUILD_FRONTEND_FAILS',
+      categoryParts: ['build', 'frontend', 'fails'],
       label: 'Frontend',
     },
     {
       dir: path.dirname(config.backendDir), // backend/ (not backend/src)
-      breakType: 'BUILD_BACKEND_FAILS',
+      categoryParts: ['build', 'backend', 'fails'],
       label: 'Backend',
     },
     {
       dir: config.workerDir,
-      breakType: 'BUILD_WORKER_FAILS',
+      categoryParts: ['build', 'worker', 'fails'],
       label: 'Worker',
     },
   ];
@@ -136,7 +196,7 @@ export function checkBuilds(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   for (const target of targets) {
-    const result = runTsc(target.dir, config.rootDir, target.breakType, target.label);
+    const result = runTsc(target.dir, config.rootDir, target.categoryParts, target.label);
     breaks.push(...result);
   }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { checkoutPublicApi } from '@/lib/api/misc';
+import { checkoutPublicApi } from '@/lib/api/checkout-public';
 import { useEffect, type Dispatch, type MutableRefObject, type SetStateAction } from 'react';
 import type { CheckoutExperienceForm } from './checkout-experience-social-helpers';
 import type { CheckoutSocialIdentitySnapshot } from './useCheckoutSocialIdentity';

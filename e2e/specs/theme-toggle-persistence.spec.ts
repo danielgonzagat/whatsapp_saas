@@ -4,6 +4,10 @@ import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2
 const THEME_STORAGE_SLOT = 'kloel-app-theme';
 
 test.describe('theme toggle persistence', () => {
+  // Cold-start auth + dual viewport navigation + page.reload exceed 30s on
+  // CI workers; widen to match the rest of the e2e auth-heavy specs.
+  test.describe.configure({ timeout: 90_000 });
+
   test('defaults to light and persists dark mode after toggle', async ({ page, request }) => {
     const auth = await ensureE2EAdmin(request);
     const { appUrl } = getE2EBaseUrls();
@@ -24,7 +28,13 @@ test.describe('theme toggle persistence', () => {
       )
       .toBe('light');
 
-    const userMenuTrigger = page.getByRole('button', { name: /dg|daniel gonzaga/i }).first();
+    // The trigger renders the authenticated user's initials. In CI this is
+    // the seeded E2E admin ("EA"); locally it is the developer's account
+    // (e.g. "DG", "Daniel Gonzaga"). Match either initials or any
+    // capitalised account label so the test stays portable.
+    const userMenuTrigger = page
+      .getByRole('button', { name: /^(ea|dg|daniel gonzaga|e2e admin)$/i })
+      .first();
     await expect(userMenuTrigger).toBeVisible({ timeout: 15000 });
     await userMenuTrigger.click();
 

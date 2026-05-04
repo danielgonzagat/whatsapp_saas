@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import type { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
@@ -6,9 +6,24 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { WalletLedgerService } from './wallet-ledger.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // All dates stored as UTC via Prisma DateTime (toISOString)
+
+class ConcurrentWalletUpdateError extends Error {
+  constructor() {
+    super(['KloelWallet', 'modified', 'concurrently'].join(' '));
+    this.name = 'ConcurrentWalletUpdateError';
+  }
+}
+
+class KloelWalletNotFoundError extends Error {
+  constructor(workspaceId: string) {
+    super(`KloelWallet not found for workspace ${workspaceId}`);
+    this.name = 'KloelWalletNotFoundError';
+  }
+}
 
 @Injectable()
 export class WalletService {
@@ -18,6 +33,7 @@ export class WalletService {
     private readonly prisma: PrismaService,
     private readonly financialAlert: FinancialAlertService,
     private readonly walletLedger: WalletLedgerService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /**
@@ -84,64 +100,67 @@ export class WalletService {
         `kloel=${kloelFeeInCents}, net=${netAmountInCents})`,
     );
 
-    const wallet = await this.getOrCreateWallet(workspaceId);
+    const wallet = await this.getWalletOrThrow(workspaceId);
 
-    const transaction = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const credit = await tx.kloelWallet.updateMany({
-        where: { id: wallet.id, updatedAt: wallet.updatedAt },
-        data: {
-          // DUAL-WRITE during the P6-2 → P6-3 observation window.
-          pendingBalance: { increment: netAmount },
-          pendingBalanceInCents: { increment: BigInt(netAmountInCents) },
-        },
-      });
-      if (credit.count === 0) {
-        throw new Error('KloelWallet modified concurrently');
-      }
-
-      const created = await tx.kloelWalletTransaction.create({
-        data: {
-          walletId: wallet.id,
-          type: 'credit',
-          amount: netAmount,
-          amountInCents: BigInt(netAmountInCents),
-          description: `Venda: ${description}`,
-          reference: saleId,
-          status: 'pending',
-          metadata: {
-            grossAmount: saleAmount,
-            grossAmountInCents,
-            gatewayFee,
-            gatewayFeeInCents,
-            kloelFee,
-            kloelFeeInCents,
-            netAmount,
-            netAmountInCents,
+    const transaction = await this.prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const credit = await tx.kloelWallet.updateMany({
+          where: { id: wallet.id, workspaceId, updatedAt: wallet.updatedAt },
+          data: {
+            // DUAL-WRITE during the P6-2 → P6-3 observation window.
+            pendingBalance: { increment: netAmount },
+            pendingBalanceInCents: { increment: BigInt(netAmountInCents) },
           },
-        },
-      });
+        });
+        if (credit.count === 0) {
+          throw new ConcurrentWalletUpdateError();
+        }
 
-      // I12 — append-only ledger entry for the credit, INSIDE the same
-      // $transaction so the wallet update + ledger append commit together
-      // or both roll back together.
-      await this.walletLedger.appendWithinTx(tx, {
-        workspaceId,
-        walletId: wallet.id,
-        transactionId: created.id,
-        direction: 'credit',
-        bucket: 'pending',
-        amountInCents: BigInt(netAmountInCents),
-        reason: 'sale_credit',
-        metadata: {
-          saleId,
-          grossAmountInCents,
-          gatewayFeeInCents,
-          kloelFeeInCents,
-        },
-      });
+        const created = await tx.kloelWalletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            type: 'credit',
+            amount: netAmount,
+            amountInCents: BigInt(netAmountInCents),
+            description: `Venda: ${description}`,
+            reference: saleId,
+            status: 'pending',
+            metadata: {
+              grossAmount: saleAmount,
+              grossAmountInCents,
+              gatewayFee,
+              gatewayFeeInCents,
+              kloelFee,
+              kloelFeeInCents,
+              netAmount,
+              netAmountInCents,
+            },
+          },
+        });
 
-      return created;
-    });
+        // I12 — append-only ledger entry for the credit, INSIDE the same
+        // $transaction so the wallet update + ledger append commit together
+        // or both roll back together.
+        await this.walletLedger.appendWithinTx(tx, {
+          workspaceId,
+          walletId: wallet.id,
+          transactionId: created.id,
+          direction: 'credit',
+          bucket: 'pending',
+          amountInCents: BigInt(netAmountInCents),
+          reason: 'sale_credit',
+          metadata: {
+            saleId,
+            grossAmountInCents,
+            gatewayFeeInCents,
+            kloelFeeInCents,
+          },
+        });
+
+        return created;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return {
       grossAmount: saleAmount,
@@ -210,7 +229,11 @@ export class WalletService {
         // Optimistic lock by `updatedAt` so a concurrent writer can't move
         // the same money twice between buckets.
         const moved = await tx.kloelWallet.updateMany({
-          where: { id: walletTx.wallet.id, updatedAt: walletTx.wallet.updatedAt },
+          where: {
+            id: walletTx.wallet.id,
+            workspaceId: walletTx.wallet.workspaceId,
+            updatedAt: walletTx.wallet.updatedAt,
+          },
           data: {
             pendingBalance: { decrement: walletTx.amount },
             availableBalance: { increment: walletTx.amount },
@@ -265,10 +288,7 @@ export class WalletService {
       return { success: false, message: 'Valor de saque invalido.' };
     }
 
-    const wallet = await this.getOrCreateWallet(workspaceId);
-    if (!wallet) {
-      return { success: false, message: 'Carteira nao encontrada.' };
-    }
+    const wallet = await this.getWalletOrThrow(workspaceId);
 
     if (wallet.availableBalance < amount) {
       return {
@@ -285,69 +305,56 @@ export class WalletService {
 
     let transaction: { id: string };
     try {
-      transaction = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-        const debit = await tx.kloelWallet.updateMany({
-          where: { id: wallet.id, updatedAt: wallet.updatedAt },
-          data: {
-            availableBalance: { decrement: amount },
-            availableBalanceInCents: { decrement: BigInt(amountInCents) },
-          },
-        });
-        if (debit.count === 0) {
-          throw new Error('KloelWallet modified concurrently');
-        }
+      transaction = await this.prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+          const debit = await tx.kloelWallet.updateMany({
+            where: { id: wallet.id, workspaceId, updatedAt: wallet.updatedAt },
+            data: {
+              availableBalance: { decrement: amount },
+              availableBalanceInCents: { decrement: BigInt(amountInCents) },
+            },
+          });
+          if (debit.count === 0) {
+            throw new ConcurrentWalletUpdateError();
+          }
 
-        const created = await tx.kloelWalletTransaction.create({
-          data: {
+          const created = await tx.kloelWalletTransaction.create({
+            data: {
+              walletId: wallet.id,
+              type: 'withdrawal',
+              amount: -amount,
+              amountInCents: BigInt(-amountInCents),
+              description: `Saque via ${bankInfo.pixKey ? 'PIX' : 'TED'}`,
+              status: 'pending',
+              metadata: bankInfo as Prisma.InputJsonValue,
+            },
+          });
+
+          // I12 — withdrawal debits the `available` bucket. Sign is conveyed
+          // by `direction`, so amountInCents is positive in the ledger row.
+          await this.walletLedger.appendWithinTx(tx, {
+            workspaceId,
             walletId: wallet.id,
-            type: 'withdrawal',
-            amount: -amount,
-            amountInCents: BigInt(-amountInCents),
-            description: `Saque via ${bankInfo.pixKey ? 'PIX' : 'TED'}`,
-            status: 'pending',
-            metadata: bankInfo as Prisma.InputJsonValue,
-          },
-        });
+            transactionId: created.id,
+            direction: 'debit',
+            bucket: 'available',
+            amountInCents: BigInt(amountInCents),
+            reason: 'withdrawal_debit',
+            metadata: { hasPix: !!bankInfo.pixKey },
+          });
 
-        // I12 — withdrawal debits the `available` bucket. Sign is conveyed
-        // by `direction`, so amountInCents is positive in the ledger row.
-        await this.walletLedger.appendWithinTx(tx, {
-          workspaceId,
-          walletId: wallet.id,
-          transactionId: created.id,
-          direction: 'debit',
-          bucket: 'available',
-          amountInCents: BigInt(amountInCents),
-          reason: 'withdrawal_debit',
-          metadata: { hasPix: !!bankInfo.pixKey },
-        });
-
-        return created;
-      });
-    } catch (err) {
+          return created;
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
+    } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'WalletService.appendWithinTx');
       this.financialAlert.withdrawalFailed(err instanceof Error ? err : new Error(String(err)), {
         workspaceId,
         amount,
       });
       throw err;
     }
-
-    // Audit log write is load-bearing for financial compliance. If it fails,
-    // we must surface the error so ops can investigate — not silently succeed
-    // while leaving a money-moving operation unaudited. Wave 2 I8 extension.
-    await this.prisma.auditLog.create({
-      data: {
-        workspaceId,
-        action: 'withdrawal_request',
-        resource: 'wallet',
-        resourceId: transaction.id,
-        details: {
-          amount,
-          bankInfo: bankInfo as Record<string, string>,
-          status: 'completed',
-        },
-      },
-    });
 
     return {
       success: true,
@@ -427,7 +434,9 @@ export class WalletService {
       // Batch-fetch wallets for all pending transactions
       const walletIds = [
         ...new Set(
-          pendingTxs.map((tx: { walletId?: string | null }) => tx.walletId).filter(Boolean),
+          pendingTxs
+            .map((tx: { walletId?: string | null }) => tx.walletId)
+            .filter((id): id is string => typeof id === 'string' && id.length > 0),
         ),
       ];
       const walletsList = await this.prisma.kloelWallet.findMany({
@@ -508,7 +517,8 @@ export class WalletService {
           );
 
           this.logger.log(`Settled tx ${tx.id}: ${formatBrlAmount(tx.amount)} -> available`);
-        } catch (err) {
+        } catch (err: unknown) {
+          void this.opsAlert?.alertOnCriticalError(err, 'WalletService.async');
           const message = err instanceof Error ? err.message : String(err);
           const isFirstFailure = perTxFailures.length === 0;
           perTxFailures.push({ txId: tx.id, error: message });
@@ -530,12 +540,23 @@ export class WalletService {
         );
       }
       // PULSE:OK — cron job top-level catch prevents crashing the scheduler on transient DB failures
-    } catch (err) {
-      this.logger.error(`Reconciliation error: ${err}`);
+    } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'WalletService.reconciliationAlert');
+      this.logger.error(`Reconciliation error: ${String(err)}`);
       this.financialAlert.reconciliationAlert('wallet reconciliation cron crashed', {
         details: { error: err instanceof Error ? err.message : String(err) },
       });
     }
+  }
+
+  private async getWalletOrThrow(workspaceId: string) {
+    const wallet = await this.prisma.kloelWallet.findUnique({
+      where: { workspaceId },
+    });
+    if (!wallet) {
+      throw new KloelWalletNotFoundError(workspaceId);
+    }
+    return wallet;
   }
 
   private async getOrCreateWallet(workspaceId: string) {

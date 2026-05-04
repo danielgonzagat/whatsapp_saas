@@ -2,6 +2,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { buildPayUrl, isValidCheckoutCode } from '@/lib/subdomains';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { colors } from '@/lib/design-tokens';
 
 interface Props {
   isOpen: boolean;
@@ -67,12 +68,12 @@ function CloseIcon() {
   );
 }
 
-const VOID = 'var(--bg-void, #0A0A0C)';
-const SURFACE = 'var(--bg-space, #111113)';
-const ELEVATED = 'var(--bg-nebula, #19191C)';
-const BORDER = 'var(--border-space, #222226)';
-const TEXT = 'var(--text-starlight, #E0DDD8)';
-const SECONDARY = 'var(--text-moonlight, #6E6E73)';
+const VOID = 'var(--bg-void, colors.background.void)';
+const SURFACE = 'var(--bg-space, colors.background.surface)';
+const ELEVATED = 'var(--bg-nebula, colors.background.elevated)';
+const BORDER = 'var(--border-space, colors.border.space)';
+const TEXT = 'var(--text-starlight, colors.text.silver)';
+const SECONDARY = 'var(--text-moonlight, colors.text.muted)';
 const OVERLAY = 'var(--cookie-overlay, rgba(0,0,0,0.6))';
 const SHADOW = 'var(--cookie-shadow, 0 20px 60px rgba(0,0,0,0.5))';
 
@@ -209,7 +210,7 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
             marginBottom: 20,
           }}
         >
-          {kloelT(`Plano:`)} <span style={{ color: '#E85D30' }}>{planName}</span>
+          {kloelT(`Plano:`)} <span style={{ color: 'colors.ember.primary' }}>{planName}</span>
         </div>
 
         {/* URL rows */}

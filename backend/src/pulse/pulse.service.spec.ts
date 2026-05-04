@@ -10,6 +10,16 @@ import {
   setInternalValue,
   spyOnRunBackgroundTask,
 } from '../../test/pulse/pulse.service-test-helpers';
+import {
+  testStaleOrganismState,
+  testMissingCanonicalArtifacts,
+} from './__companions__/pulse.spec-companions';
+
+function buildExpectedIntervalHandlerError() {
+  const error = new Error();
+  error.message = 'Expected callback interval handler';
+  return error;
+}
 
 describe('PulseService', () => {
   const realNodeEnv = process.env.NODE_ENV;
@@ -40,41 +50,11 @@ describe('PulseService', () => {
   });
 
   it('returns a stale organism state when no live nodes are registered', async () => {
-    const { service } = createService();
-
-    await expect(service.getOrganismState()).resolves.toMatchObject({
-      status: 'STALE',
-      authorityMode: 'advisory-only',
-      circulation: {
-        registeredNodes: 0,
-        freshNodes: 0,
-        staleNodes: 0,
-      },
-      advice: {
-        level: 'watch',
-      },
-    });
+    await testStaleOrganismState(artifactRootDir);
   });
 
   it('returns missing canonical artifacts when no pulse production snapshot exists yet', () => {
-    const { service } = createService({
-      configGet: jest.fn((key: string) => (key === 'PULSE_ARTIFACT_ROOT' ? artifactRootDir : '')),
-    });
-
-    expect(service.getProductionSnapshot()).toMatchObject({
-      status: 'empty',
-      authorityMode: 'advisory-only',
-      missingArtifacts: expect.arrayContaining([
-        'PULSE_CLI_DIRECTIVE.json',
-        'PULSE_CERTIFICATE.json',
-        'PULSE_PRODUCT_VISION.json',
-        'PULSE_PARITY_GAPS.json',
-        'PULSE_EXTERNAL_SIGNAL_STATE.json',
-        'PULSE_AUTONOMY_STATE.json',
-        'PULSE_AGENT_ORCHESTRATION_STATE.json',
-        'PULSE_CONVERGENCE_PLAN.json',
-      ]),
-    });
+    testMissingCanonicalArtifacts(artifactRootDir);
   });
 
   it('reads canonical pulse artifacts for production runtime consumers', async () => {
@@ -87,6 +67,30 @@ describe('PulseService', () => {
       JSON.stringify(
         {
           generatedAt,
+          authorityMode: 'autonomous-execution',
+          advisoryOnly: false,
+          automationEligible: true,
+          autonomyVerdict: 'SIM',
+          autonomousNextStepVerdict: 'SIM',
+          productionAutonomyVerdict: 'NAO',
+          zeroPromptProductionGuidanceVerdict: 'NAO',
+          canWorkUntilProductionReady: false,
+          autonomyReadiness: {
+            verdict: 'SIM',
+            canWorkNow: true,
+            canDeclareComplete: false,
+            warnings: ['1 human-required unit remains.'],
+          },
+          autonomyProof: {
+            authorityMode: 'autonomous-execution',
+            blockersBeforeProductionSim: ['Codacy HIGH issues remain.'],
+            verdicts: {
+              nextStepAutonomy: 'SIM',
+              productionAutonomy: 'NAO',
+              zeroPromptProductionGuidance: 'NAO',
+              canDeclareComplete: false,
+            },
+          },
           currentCheckpoint: { tier: 0, status: 'NOT_CERTIFIED', score: 38 },
           nextWork: [
             { id: 'scenario-auth', title: 'Recover Auth', productImpact: 'transformational' },
@@ -98,7 +102,16 @@ describe('PulseService', () => {
     );
     fs.writeFileSync(
       path.join(canonicalDir, 'PULSE_CERTIFICATE.json'),
-      JSON.stringify({ timestamp: generatedAt, status: 'NOT_CERTIFIED', score: 38 }, null, 2),
+      JSON.stringify(
+        {
+          timestamp: generatedAt,
+          status: 'NOT_CERTIFIED',
+          humanReplacementStatus: 'NOT_READY',
+          score: 38,
+        },
+        null,
+        2,
+      ),
     );
     fs.writeFileSync(
       path.join(canonicalDir, 'PULSE_PRODUCT_VISION.json'),
@@ -131,6 +144,17 @@ describe('PulseService', () => {
     fs.writeFileSync(
       path.join(canonicalDir, 'PULSE_FLOW_PROJECTION.json'),
       JSON.stringify({ generatedAt, summary: { totalFlows: 5, realFlows: 3 } }, null, 2),
+    );
+    fs.writeFileSync(
+      path.join(canonicalDir, 'PULSE_EXECUTION_MATRIX.json'),
+      JSON.stringify(
+        {
+          generatedAt,
+          summary: { totalPaths: 7, observedPass: 3, observedFail: 1, unknownPaths: 0 },
+        },
+        null,
+        2,
+      ),
     );
     fs.writeFileSync(
       path.join(canonicalDir, 'PULSE_EXTERNAL_SIGNAL_STATE.json'),
@@ -203,9 +227,31 @@ describe('PulseService', () => {
 
     expect(service.getProductionSnapshot()).toMatchObject({
       status: 'ready',
+      authorityMode: 'autonomous-execution',
       canonicalDir,
       missingArtifacts: [],
       staleArtifacts: [],
+      machineReadiness: {
+        status: 'ready',
+        authorityMode: 'autonomous-execution',
+        advisoryOnly: false,
+        automationEligible: true,
+        autonomyVerdict: 'SIM',
+        autonomousNextStepVerdict: 'SIM',
+        productionAutonomyVerdict: 'NAO',
+        zeroPromptProductionGuidanceVerdict: 'NAO',
+        canWorkNow: true,
+        canDeclareComplete: false,
+        canWorkUntilProductionReady: false,
+        score: 38,
+        certificationStatus: 'NOT_CERTIFIED',
+        humanReplacementStatus: 'NOT_READY',
+        blockers: ['Codacy HIGH issues remain.'],
+        warnings: ['1 human-required unit remains.'],
+        executionMatrixSummary: {
+          totalPaths: 7,
+        },
+      },
       directive: {
         freshness: 'fresh',
         data: {
@@ -264,6 +310,14 @@ describe('PulseService', () => {
           },
         },
       },
+      executionMatrix: {
+        freshness: 'fresh',
+        data: {
+          summary: {
+            totalPaths: 7,
+          },
+        },
+      },
       externalSignalState: {
         freshness: 'fresh',
         data: {
@@ -302,6 +356,10 @@ describe('PulseService', () => {
     await expect(service.getOrganismState()).resolves.toMatchObject({
       productionSnapshot: {
         status: 'ready',
+        machineReadiness: {
+          status: 'ready',
+          authorityMode: 'autonomous-execution',
+        },
         convergenceGeneratedAt: generatedAt,
         topActions: [{ id: 'scenario-auth' }],
       },
@@ -345,16 +403,13 @@ describe('PulseService', () => {
   it('records frontend heartbeats into the live registry and organism state', async () => {
     const { service, redis } = createService();
 
-    await service.recordFrontendHeartbeat(
-      { workspaceId: 'ws_123' } as never,
-      {
-        sessionId: 'session_1',
-        route: '/dashboard',
-        visible: true,
-        online: true,
-        viewport: { width: 1440, height: 900 },
-      } as never,
-    );
+    await service.recordFrontendHeartbeat({ workspaceId: 'ws_123' } as never, {
+      sessionId: 'session_1',
+      route: '/dashboard',
+      visible: true,
+      online: true,
+      viewport: { width: 1440, height: 900 },
+    });
 
     const registry = await redis.hgetall('pulse:organism:registry');
     const frontendRegistry = await redis.hgetall('pulse:organism:registry:frontend');
@@ -451,7 +506,7 @@ describe('PulseService', () => {
     const { service } = createService();
     const runBackgroundTask = getInternalTaskRunner(service);
     const warn = jest.fn();
-    Object.defineProperty(service as object, 'logger', {
+    Object.defineProperty(service, 'logger', {
       value: { warn, error: jest.fn() },
       configurable: true,
     });
@@ -469,7 +524,7 @@ describe('PulseService', () => {
 
   it('schedules and dispatches pulse background tasks on module init outside tests', async () => {
     const { service } = createService();
-    const fakeTimers = [{ id: 'heartbeat' }, { id: 'stale' }, { id: 'frontend-prune' }];
+    const fakeTimers: object[] = [{ id: 'heartbeat' }, { id: 'stale' }, { id: 'frontend-prune' }];
     const scheduled: Array<{ callback: () => void; delay: number }> = [];
     const captureBackendHeartbeat = jest
       .spyOn(service, 'captureBackendHeartbeat')
@@ -489,18 +544,17 @@ describe('PulseService', () => {
     setInternalValue(service, 'pruneExpiredFrontendNodes', pruneExpiredFrontendNodes);
     const runBackgroundTask = spyOnRunBackgroundTask(service);
 
-    jest.spyOn(global, 'setInterval').mockImplementation(((
-      callback: TimerHandler,
-      delay?: number,
-    ) => {
-      if (typeof callback !== 'function') {
-        throw new Error('Expected callback interval handler');
-      }
-      scheduled.push({ callback: () => callback(), delay: Number(delay) });
-      const timer = fakeTimers[timerIndex];
-      timerIndex += 1;
-      return timer as unknown as ReturnType<typeof setInterval>;
-    }) as typeof setInterval);
+    jest
+      .spyOn(global, 'setInterval')
+      .mockImplementation((callback: TimerHandler, delay?: number) => {
+        if (typeof callback !== 'function') {
+          throw buildExpectedIntervalHandlerError();
+        }
+        scheduled.push({ callback: () => callback(), delay: Number(delay) });
+        const timer = fakeTimers[timerIndex];
+        timerIndex += 1;
+        return timer as ReturnType<typeof setInterval>;
+      });
 
     service.onModuleInit();
     await flushMicrotasks();

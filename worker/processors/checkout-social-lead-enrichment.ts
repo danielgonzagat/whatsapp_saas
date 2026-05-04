@@ -124,14 +124,21 @@ export async function processCheckoutSocialLeadEnrichment(leadId: string) {
       });
     }
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'unknown_enrichment_error';
-    log.warn('enrichment_failed', { leadId, message });
+    const workspaceId = lead?.workspaceId;
+    log.error('Enrichment operation failed', {
+      workspaceId,
+      leadId,
+      operation: 'checkout_social_lead_enrichment',
+      error: error instanceof Error ? error.message : String(error),
+    });
     await prisma.checkoutSocialLead.updateMany({
       where: { id: leadId },
       data: {
         enrichmentStatus: CheckoutSocialLeadEnrichmentStatus.FAILED,
       },
     });
+    const causeMessage = error instanceof Error ? error.message : String(error);
+    throw new Error(`Financial operation failed: checkout_social_lead_enrichment: ${causeMessage}`);
   }
 }
 

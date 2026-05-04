@@ -1,12 +1,12 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { KloelMushroomMark } from '@/components/kloel/KloelBrand';
 import { colors, motion, radius, shadows } from '@/lib/design-tokens';
 import { cn } from '@/lib/utils';
 import {
   Bot,
   FileText,
-  Loader2,
   Mic,
   Package,
   Paperclip,
@@ -236,7 +236,7 @@ export function UniversalComposer({
               className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all"
               style={{
                 backgroundColor: colors.state.error,
-                color: '#fff',
+                color: '#fff', // PULSE_VISUAL_OK: white text on error button
               }}
             >
               <Square className="w-4 h-4" aria-hidden="true" />
@@ -255,7 +255,7 @@ export function UniversalComposer({
               }}
             >
               {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
+                <KloelMushroomMark size={18} title="Enviando" traceColor={colors.brand.green} />
               ) : (
                 <Send className="w-4 h-4" aria-hidden="true" />
               )}

@@ -1,5 +1,5 @@
-import { Logger, OnModuleInit } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { Logger, OnModuleInit, Optional } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
 import {
   OnGatewayConnection,
   OnGatewayDisconnect,
@@ -9,6 +9,7 @@ import {
 import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
 import { createRedisClient } from '../common/redis/redis.util';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /** Flows gateway. */
 @WebSocketGateway({
@@ -26,7 +27,10 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
 
   private readonly sub: Redis;
 
-  constructor(private readonly jwtService: JwtService) {
+  constructor(
+    private readonly jwtService: JwtService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {
     // Dedicated subscriber to avoid putting the shared client in subscriber mode
     this.sub = createRedisClient();
   }
@@ -83,8 +87,11 @@ export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, O
       }
       void client.join(`workspace:${workspaceId}`);
       this.logger.log(`Client connected: ${client.id} to workspace:${workspaceId}`);
-    } catch (err) {
-      this.logger.warn(`Client ${client.id} disconnected: invalid token (${err?.message || err})`);
+    } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'FlowsGateway.handleConnection');
+      this.logger.warn(
+        `Client ${client.id} disconnected: invalid token (${(err instanceof Error ? err.message : 'unknown') || String(err)})`,
+      );
       client.disconnect(true);
     }
   }

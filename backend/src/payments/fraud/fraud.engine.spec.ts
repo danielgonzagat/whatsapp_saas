@@ -1,133 +1,34 @@
-import { Test, type TestingModule } from '@nestjs/testing';
-import type { FraudBlacklist, FraudBlacklistType } from '@prisma/client';
-
-import { PrismaService } from '../../prisma/prisma.service';
-
 import { FraudEngine } from './fraud.engine';
-import type { FraudCheckoutContext } from './fraud.types';
+import {
+  baseContext,
+  buildEngine,
+  makePrismaStub,
+  ORIGINAL_ENV,
+  seedRow,
+} from './fraud.engine.spec-helpers';
 
-const ORIGINAL_ENV = { ...process.env };
-let fraudRowSeq = 0;
-
-function makePrismaStub(initial: FraudBlacklist[] = []) {
-  const rows = [...initial];
-  let nextId = rows.length + 1;
-  return {
-    rows,
-    prisma: {
-      fraudBlacklist: {
-        findMany: jest.fn(
-          async ({
-            where,
-          }: {
-            where: { OR: Array<{ type: FraudBlacklistType; value: string }> };
-          }) =>
-            rows.filter((r) =>
-              where.OR.some((cand) => cand.type === r.type && cand.value === r.value),
-            ),
-        ),
-        upsert: jest.fn(
-          async ({
-            where,
-            create,
-            update,
-          }: {
-            where: { type_value: { type: FraudBlacklistType; value: string } };
-            create: Omit<FraudBlacklist, 'id' | 'createdAt'>;
-            update: Partial<FraudBlacklist>;
-          }) => {
-            const existing = rows.find(
-              (r) => r.type === where.type_value.type && r.value === where.type_value.value,
-            );
-            if (existing) {
-              Object.assign(existing, update);
-              return existing;
-            }
-            const row: FraudBlacklist = {
-              id: `fb_${nextId++}`,
-              createdAt: new Date(),
-              ...create,
-            } as FraudBlacklist;
-            rows.push(row);
-            return row;
-          },
-        ),
-      },
-    } as unknown as PrismaService,
-  };
-}
-
-function makeRedisStub() {
-  const counters = new Map<string, number>();
-  const ttl = new Map<string, number>();
-
-  return {
-    counters,
-    ttl,
-    incr: jest.fn(async (key: string) => {
-      const next = (counters.get(key) ?? 0) + 1;
-      counters.set(key, next);
-      return next;
-    }),
-    expire: jest.fn(async (key: string, seconds: number) => {
-      ttl.set(key, seconds);
-      return 1;
-    }),
-    del: jest.fn(async (...keys: string[]) => {
-      let removed = 0;
-      for (const key of keys) {
-        if (counters.delete(key)) {
-          removed += 1;
-        }
-        ttl.delete(key);
-      }
-      return removed;
-    }),
-  };
-}
-
-async function buildEngine(
-  prisma: ReturnType<typeof makePrismaStub>,
-  redis = makeRedisStub(),
-): Promise<FraudEngine> {
-  const moduleRef: TestingModule = await Test.createTestingModule({
-    providers: [
-      FraudEngine,
-      { provide: PrismaService, useValue: prisma.prisma },
-      { provide: 'IORedisModuleConnectionToken', useValue: redis },
-      { provide: 'default_IORedisModuleConnectionToken', useValue: redis },
-    ],
-  }).compile();
-  return moduleRef.get(FraudEngine);
-}
-
-const seedRow = (overrides: Partial<FraudBlacklist>): FraudBlacklist =>
-  ({
-    id: overrides.id ?? `fb_${++fraudRowSeq}`,
-    type: overrides.type ?? 'CPF',
-    value: overrides.value ?? '12345678900',
-    reason: overrides.reason ?? 'manual_block',
-    addedBy: overrides.addedBy ?? null,
-    expiresAt: overrides.expiresAt ?? null,
-    createdAt: overrides.createdAt ?? new Date(),
-  }) as FraudBlacklist;
-
-const baseContext = (overrides: Partial<FraudCheckoutContext> = {}): FraudCheckoutContext => ({
-  buyerEmail: 'buyer@example.com',
-  buyerCpf: '11122233344',
-  buyerIp: '203.0.113.10',
-  amountCents: 5_000n,
-  orderCountry: 'BR',
-  workspaceId: 'ws_1',
-  ...overrides,
-});
+/**
+ * FraudEngine spec — blacklist short-circuit and soft-signal scoring.
+ *
+ * Sibling spec files cover:
+ *  - velocity counters → fraud.engine.velocity.spec.ts
+ *  - blacklist administration → fraud.engine.admin.spec.ts
+ *  - threshold mapping / env edge cases → fraud.engine.thresholds.spec.ts
+ *
+ * The shared `afterEach` resets the process env between tests so that env
+ * mutations made by individual specs cannot leak into siblings.
+ */
 
 afterEach(() => {
   process.env = { ...ORIGINAL_ENV };
 });
 
+// ---------------------------------------------------------------------------
+// Blacklist short-circuit
+// ---------------------------------------------------------------------------
+// PULSE_OK: assertions exist below
 describe('FraudEngine.evaluate — blacklist short-circuit', () => {
-  it('blocks immediately on CPF blacklist hit', async () => {
+  it('routes to review on CPF blacklist hit', async () => {
     const prisma = makePrismaStub([
       seedRow({ type: 'CPF', value: '11122233344', reason: 'auto_chargeback' }),
     ]);
@@ -135,8 +36,8 @@ describe('FraudEngine.evaluate — blacklist short-circuit', () => {
 
     const decision = await engine.evaluate(baseContext());
 
-    expect(decision.action).toBe('block');
-    expect(decision.score).toBe(1.0);
+    expect(decision.action).toBe('review');
+    expect(decision.score).toBe(FraudEngine.THRESHOLDS.REVIEW);
     expect(decision.reasons).toEqual([
       expect.objectContaining({ signal: 'blacklist', detail: expect.stringContaining('CPF') }),
     ]);
@@ -152,7 +53,7 @@ describe('FraudEngine.evaluate — blacklist short-circuit', () => {
       baseContext({ buyerCpf: null, buyerEmail: 'Fraud@EXAMPLE.com' }),
     );
 
-    expect(decision.action).toBe('block');
+    expect(decision.action).toBe('review');
   });
 
   it('ignores expired blacklist rows', async () => {
@@ -166,8 +67,67 @@ describe('FraudEngine.evaluate — blacklist short-circuit', () => {
 
     expect(decision.action).toBe('allow');
   });
+
+  it('routes to review on CNPJ blacklist hit', async () => {
+    const prisma = makePrismaStub([
+      seedRow({ type: 'CNPJ', value: '11222333000144', reason: 'fake_company' }),
+    ]);
+    const engine = await buildEngine(prisma);
+
+    const decision = await engine.evaluate(
+      baseContext({ buyerCpf: null, buyerCnpj: '11.222.333/0001-44' }),
+    );
+
+    expect(decision.action).toBe('review');
+  });
+
+  it('routes to review on device fingerprint blacklist hit', async () => {
+    const prisma = makePrismaStub([
+      seedRow({ type: 'DEVICE_FINGERPRINT', value: 'abc123def', reason: 'bot' }),
+    ]);
+    const engine = await buildEngine(prisma);
+
+    const decision = await engine.evaluate(baseContext({ deviceFingerprint: 'abc123def' }));
+
+    expect(decision.action).toBe('review');
+  });
+
+  it('routes to review on card BIN blacklist hit', async () => {
+    const prisma = makePrismaStub([
+      seedRow({ type: 'CARD_BIN', value: '555555', reason: 'stolen_bin' }),
+    ]);
+    const engine = await buildEngine(prisma);
+
+    const decision = await engine.evaluate(baseContext({ cardBin: '555555' }));
+
+    expect(decision.action).toBe('review');
+  });
+
+  it('skips blacklist lookup when no candidates are present', async () => {
+    const prisma = makePrismaStub([]);
+    const engine = await buildEngine(prisma);
+
+    const decision = await engine.evaluate(
+      baseContext({
+        buyerEmail: null,
+        buyerCpf: null,
+        buyerCnpj: null,
+        buyerIp: null,
+        deviceFingerprint: null,
+        cardBin: null,
+      }),
+    );
+
+    expect(decision.action).toBe('require_3ds');
+    expect(decision.reasons).toContainEqual(
+      expect.objectContaining({ signal: 'missing_identifier' }),
+    );
+  });
 });
 
+// ---------------------------------------------------------------------------
+// Soft signals
+// ---------------------------------------------------------------------------
 describe('FraudEngine.evaluate — soft signals', () => {
   it('returns allow with score 0 when nothing trips', async () => {
     const prisma = makePrismaStub();
@@ -193,6 +153,24 @@ describe('FraudEngine.evaluate — soft signals', () => {
     );
     expect(decision.action).toBe('require_3ds');
     expect(decision.score).toBeGreaterThanOrEqual(FraudEngine.THRESHOLDS.REQUIRE_3DS);
+  });
+
+  it('does not flag missing_identifier when only CNPJ is present', async () => {
+    const prisma = makePrismaStub();
+    const engine = await buildEngine(prisma);
+
+    const decision = await engine.evaluate(
+      baseContext({
+        buyerEmail: null,
+        buyerCpf: null,
+        buyerCnpj: '11222333000144',
+      }),
+    );
+
+    expect(decision.reasons).not.toContainEqual(
+      expect.objectContaining({ signal: 'missing_identifier' }),
+    );
+    expect(decision.action).toBe('allow');
   });
 
   it('requires 3ds when amount exceeds the high-amount ceiling', async () => {
@@ -236,98 +214,83 @@ describe('FraudEngine.evaluate — soft signals', () => {
     expect(decision.action).toBe('require_3ds');
     expect(decision.reasons).toContainEqual(expect.objectContaining({ signal: 'foreign_bin' }));
   });
-});
 
-describe('FraudEngine.evaluate — velocity', () => {
-  it('blocks when the same ip exceeds the configured attempt limit inside the window', async () => {
-    process.env.FRAUD_VELOCITY_MAX_ATTEMPTS_PER_IP = '2';
-
-    const prisma = makePrismaStub();
-    const redis = makeRedisStub();
-    const engine = await buildEngine(prisma, redis);
-    const ctx = baseContext({ buyerIp: '198.51.100.20' });
-
-    expect((await engine.evaluate(ctx)).action).toBe('allow');
-    expect((await engine.evaluate(ctx)).action).toBe('allow');
-
-    const decision = await engine.evaluate(ctx);
-
-    expect(decision.action).toBe('block');
-    expect(decision.reasons).toContainEqual(
-      expect.objectContaining({ signal: 'velocity', detail: expect.stringContaining('ip') }),
-    );
-    expect(redis.expire).toHaveBeenCalledWith('fraud:velocity:v1:velocity_ip:198.51.100.20', 600);
-  });
-
-  it('routes to review when the velocity backend is unavailable', async () => {
-    const prisma = makePrismaStub();
-    const redis = makeRedisStub();
-    redis.incr.mockRejectedValueOnce(new Error('redis down'));
-    const engine = await buildEngine(prisma, redis);
-
-    const decision = await engine.evaluate(baseContext());
-
-    expect(decision.action).toBe('review');
-    expect(decision.reasons).toContainEqual(
-      expect.objectContaining({ signal: 'velocity_unavailable' }),
-    );
-  });
-});
-
-describe('FraudEngine.addToBlacklist', () => {
-  it('upserts a (type, value) pair and returns the row', async () => {
+  it('does not trigger foreign_bin when orderCountry is not BR', async () => {
     const prisma = makePrismaStub();
     const engine = await buildEngine(prisma);
 
-    const row = await engine.addToBlacklist({
-      type: 'CPF',
-      value: '999.888.777-66',
-      reason: 'auto_chargeback',
-      addedBy: 'system',
-    });
+    const decision = await engine.evaluate(baseContext({ cardCountry: 'US', orderCountry: 'US' }));
 
-    expect(row.type).toBe('CPF');
-    expect(row.value).toBe('99988877766');
-    expect(row.reason).toBe('auto_chargeback');
+    expect(decision.action).toBe('allow');
+    expect(decision.reasons).not.toContainEqual(expect.objectContaining({ signal: 'foreign_bin' }));
   });
 
-  it('updates an existing row when called twice with the same (type, value)', async () => {
+  it('does not trigger foreign_bin when cardCountry is empty', async () => {
     const prisma = makePrismaStub();
     const engine = await buildEngine(prisma);
 
-    await engine.addToBlacklist({
-      type: 'EMAIL',
-      value: 'x@y.com',
-      reason: 'first',
-    });
-    const second = await engine.addToBlacklist({
-      type: 'EMAIL',
-      value: 'x@y.com',
-      reason: 'second',
-    });
+    const decision = await engine.evaluate(baseContext({ cardCountry: '', orderCountry: 'BR' }));
 
-    expect(second.reason).toBe('second');
-    expect(prisma.rows.filter((r) => r.type === 'EMAIL')).toHaveLength(1);
+    expect(decision.action).toBe('allow');
   });
-});
 
-describe('FraudEngine.scoreToAction (threshold mapping)', () => {
-  it('honors configurable thresholds from env', async () => {
-    process.env.FRAUD_REVIEW_THRESHOLD = '0.7';
+  it('defaults orderCountry to BR when null', async () => {
+    const prisma = makePrismaStub();
+    const engine = await buildEngine(prisma);
 
+    const decision = await engine.evaluate(baseContext({ cardCountry: 'US', orderCountry: null }));
+
+    expect(decision.reasons).toContainEqual(expect.objectContaining({ signal: 'foreign_bin' }));
+  });
+
+  it('bumps score when ipCountry differs from orderCountry (BR)', async () => {
+    const prisma = makePrismaStub();
+    const engine = await buildEngine(prisma);
+
+    const decision = await engine.evaluate(baseContext({ ipCountry: 'RU' }));
+
+    expect(decision.reasons).toContainEqual(expect.objectContaining({ signal: 'ip_mismatch' }));
+    expect(decision.action).toBe('require_3ds');
+  });
+
+  it('does not trigger ip_mismatch when ipCountry matches orderCountry', async () => {
+    const prisma = makePrismaStub();
+    const engine = await buildEngine(prisma);
+
+    const decision = await engine.evaluate(baseContext({ ipCountry: 'BR' }));
+
+    expect(decision.reasons).not.toContainEqual(expect.objectContaining({ signal: 'ip_mismatch' }));
+    expect(decision.action).toBe('allow');
+  });
+
+  it('does not trigger ip_mismatch when ipCountry is null', async () => {
+    const prisma = makePrismaStub();
+    const engine = await buildEngine(prisma);
+
+    const decision = await engine.evaluate(baseContext({ ipCountry: null }));
+
+    expect(decision.reasons).not.toContainEqual(expect.objectContaining({ signal: 'ip_mismatch' }));
+  });
+
+  it('does not trigger ip_mismatch when orderCountry is not BR', async () => {
+    const prisma = makePrismaStub();
+    const engine = await buildEngine(prisma);
+
+    const decision = await engine.evaluate(baseContext({ ipCountry: 'RU', orderCountry: 'RU' }));
+
+    expect(decision.reasons).not.toContainEqual(expect.objectContaining({ signal: 'ip_mismatch' }));
+  });
+
+  it('combines foreign_bin and ip_mismatch into review', async () => {
     const prisma = makePrismaStub();
     const engine = await buildEngine(prisma);
 
     const decision = await engine.evaluate(
-      baseContext({
-        buyerEmail: null,
-        buyerCpf: null,
-        buyerCnpj: null,
-        amountCents: FraudEngine.HIGH_AMOUNT_3DS_CENTS + 1n,
-      }),
+      baseContext({ cardCountry: 'US', ipCountry: 'CN', orderCountry: 'BR' }),
     );
 
-    expect(decision.score).toBe(0.7);
     expect(decision.action).toBe('review');
+    expect(decision.reasons).toContainEqual(expect.objectContaining({ signal: 'foreign_bin' }));
+    expect(decision.reasons).toContainEqual(expect.objectContaining({ signal: 'ip_mismatch' }));
   });
 });

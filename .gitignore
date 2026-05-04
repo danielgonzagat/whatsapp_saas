@@ -1,6 +1,7 @@
 # Logs
 *.log
 !.dr-test.log
+!.backup-validation.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -47,11 +48,11 @@ screenshots/
 PULSE_EXECUTION_TRACE.json
 .pulse/
 PULSE_*.json
-PULSE_REPORT.md
-PULSE_CONVERGENCE_PLAN.md
-AUDIT_FEATURE_MATRIX.md
-KLOEL_PRODUCT_MAP.md
 !PULSE_CODACY_STATE.json
+!PULSE_WORLD_STATE.json
+!PULSE_HEALTH.json
+!PULSE_CLI_DIRECTIVE.json
+!PULSE_CERTIFICATE.json
 
 .claude/worktrees/
 .railway/
@@ -61,3 +62,21 @@ KLOEL_PRODUCT_MAP.md
 .agents/
 
 .agents/
+
+# Kilo Code IDE local config (may contain MCP server secrets)
+.kilo/
+.gitnexus/
+.gitnexus-*/
+GITNEXUS_*.json
+PULSE_GITNEXUS_*.json
+PULSE_GITNEXUS_*.md
+
+# Local Obsidian vault
+Obsidian/
+
+# Findings engines (Phase 1 mirror expansion)
+FINDINGS_AGGREGATE.json
+HUD_LAST_REFRESH.json
+artifacts/opencode-fleet/
+.opencode-archive/
+BLOCKER_RANK.json

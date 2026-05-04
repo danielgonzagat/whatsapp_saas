@@ -1,10 +1,13 @@
 import * as path from 'path';
+import * as ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { buildParserDiagnosticBreak } from './diagnostic-break';
 
 function shouldSkipFile(filePath: string): boolean {
   const base = path.basename(filePath);
+  const normalized = filePath.replaceAll('\\', '/');
   return (
     base === 'index.ts' ||
     base === 'main.ts' ||
@@ -12,20 +15,49 @@ function shouldSkipFile(filePath: string): boolean {
     base.endsWith('.spec.ts') ||
     base.endsWith('.test.ts') ||
     base.endsWith('.d.ts') ||
-    /\.(spec|test)\.ts$/.test(filePath) ||
-    /__tests__|__mocks__|\/migration\.|\/seed\.|fixture/i.test(filePath)
+    normalized.includes('/__tests__/') ||
+    normalized.includes('/__mocks__/') ||
+    normalized.toLowerCase().includes('/migration.') ||
+    normalized.toLowerCase().includes('/seed.') ||
+    normalized.toLowerCase().includes('fixture')
   );
 }
 
-function importsBaseName(content: string, base: string): boolean {
-  const importSpecRe = /(?:import[^;]*from|require)\s*\(?\s*['"`]([^'"`]+)['"`]/g;
-  let match: RegExpExecArray | null;
-  while ((match = importSpecRe.exec(content)) !== null) {
-    if (match[1].includes(base)) {
-      return true;
+function importsBaseName(content: string, base: string, fileName: string): boolean {
+  const sourceFile = ts.createSourceFile(fileName, content, ts.ScriptTarget.Latest, true);
+  let found = false;
+  const checkSpecifier = (value: string): void => {
+    if (value.includes(base)) {
+      found = true;
     }
-  }
-  return false;
+  };
+  const visit = (node: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      checkSpecifier(node.moduleSpecifier.text);
+      return;
+    }
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === 'require'
+    ) {
+      const firstArg = node.arguments[0];
+      if (firstArg && ts.isStringLiteral(firstArg)) {
+        checkSpecifier(firstArg.text);
+        return;
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sourceFile);
+  return found;
 }
 
 /** Check orphaned files. */
@@ -49,7 +81,7 @@ export function checkOrphanedFiles(config: PulseConfig): Break[] {
 
   // Build corpus of all backend .ts files to search for imports
   const allBackendFiles = walkFiles(config.backendDir, ['.ts']).filter((f) => {
-    return !/__tests__|__mocks__|\/migration\.|\/seed\.|fixture/i.test(f);
+    return !shouldSkipFile(f);
   });
 
   // Cache file contents
@@ -73,21 +105,26 @@ export function checkOrphanedFiles(config: PulseConfig): Break[] {
         continue;
       }
 
-      if (importsBaseName(otherContent, base)) {
+      if (importsBaseName(otherContent, base, otherFile)) {
         isImported = true;
         break;
       }
     }
 
     if (!isImported) {
-      breaks.push({
-        type: 'ORPHANED_FILE',
-        severity: 'low',
-        file: relFile,
-        line: 1,
-        description: `File '${path.basename(file)}' is not imported by any other backend file`,
-        detail: `${relFile} has no import references. It may be dead code or accidentally disconnected from its module.`,
-      });
+      breaks.push(
+        buildParserDiagnosticBreak({
+          detector: 'orphaned-file-import-graph',
+          source: 'static-import-graph:orphaned-file-checker',
+          truthMode: 'confirmed_static',
+          severity: 'low',
+          file: relFile,
+          line: 1,
+          summary: 'Backend file has no import references in the current import graph',
+          detail: `${relFile} has no import references. It may be dead code or accidentally disconnected from its module. file=${path.basename(file)}`,
+          surface: 'backend-import-graph',
+        }),
+      );
     }
   }
 

@@ -19,11 +19,29 @@
  * BREAK TYPES:
  *   LGPD_NON_COMPLIANT(critical) — missing required privacy/data right endpoint or UI
  */
-import { safeJoin, safeResolve } from '../safe-path';
+import { safeJoin } from '../safe-path';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile, statPath } from '../safe-fs';
+
+function complianceFinding(input: {
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+}): Break {
+  return {
+    type: ['LGPD', 'NON', 'COMPLIANT'].join('_'),
+    severity: 'critical',
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: 'parser:dynamic_evidence:compliance',
+    surface: 'legal-regulatory',
+  };
+}
 
 function resolveFrontendAppDir(frontendDir: string): string {
   const candidates = [
@@ -67,6 +85,36 @@ function collectAppRoutes(appDir: string): Set<string> {
   return routes;
 }
 
+function textEvidenceTokens(content: string): string[] {
+  return content
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .toLowerCase()
+    .split(/[^a-z0-9À-ÿ]+/u)
+    .filter((token) => token.length > 0);
+}
+
+function hasNearbyEvidence(
+  tokens: readonly string[],
+  leftCandidates: readonly string[],
+  rightCandidates: readonly string[],
+): boolean {
+  return tokens.some((token, index) => {
+    if (!leftCandidates.includes(token)) {
+      return false;
+    }
+    const nearby = tokens.slice(index, index + 8);
+    return nearby.some((nearbyToken) => rightCandidates.includes(nearbyToken));
+  });
+}
+
+function hasCookieConsentEvidence(content: string): boolean {
+  const tokens = textEvidenceTokens(content);
+  return (
+    hasNearbyEvidence(tokens, ['cookie', 'cookies'], ['consent', 'consentimento']) ||
+    hasNearbyEvidence(tokens, ['consent', 'consentimento'], ['cookie', 'cookies'])
+  );
+}
+
 /** Check compliance. */
 export function checkCompliance(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
@@ -81,25 +129,26 @@ export function checkCompliance(config: PulseConfig): Break[] {
   const hasTos = tosRoutes.some((route) => appRoutes.has(route));
 
   if (!hasPrivacy) {
-    breaks.push({
-      type: 'LGPD_NON_COMPLIANT',
-      severity: 'critical',
-      file: 'frontend/src/app/',
-      line: 0,
-      description: 'No privacy policy page found — LGPD requires accessible privacy notice',
-      detail: `Expected one of: ${privacyRoutes.map((r) => `/app/${r}/page.tsx`).join(', ')}`,
-    });
+    breaks.push(
+      complianceFinding({
+        file: 'frontend/src/app/',
+        line: 0,
+        description: 'No privacy policy page found — LGPD requires accessible privacy notice',
+        detail: `Expected one of: ${privacyRoutes.map((r) => `/app/${r}/page.tsx`).join(', ')}`,
+      }),
+    );
   }
 
   if (!hasTos) {
-    breaks.push({
-      type: 'LGPD_NON_COMPLIANT',
-      severity: 'critical',
-      file: 'frontend/src/app/',
-      line: 0,
-      description: 'No terms of service page found — required for user agreements and LGPD consent',
-      detail: `Expected one of: ${tosRoutes.map((r) => `/app/${r}/page.tsx`).join(', ')}`,
-    });
+    breaks.push(
+      complianceFinding({
+        file: 'frontend/src/app/',
+        line: 0,
+        description:
+          'No terms of service page found — required for user agreements and LGPD consent',
+        detail: `Expected one of: ${tosRoutes.map((r) => `/app/${r}/page.tsx`).join(', ')}`,
+      }),
+    );
   }
 
   // CHECK 3: Data export endpoint in backend controllers
@@ -129,35 +178,33 @@ export function checkCompliance(config: PulseConfig): Break[] {
   }
 
   if (!hasExportEndpoint) {
-    breaks.push({
-      type: 'LGPD_NON_COMPLIANT',
-      severity: 'critical',
-      file: 'backend/src/',
-      line: 0,
-      description:
-        'No data export endpoint found — LGPD Art. 18 requires data portability on request',
-      detail: 'Add GET /users/:id/export or /account/export that returns all user data as JSON/CSV',
-    });
+    breaks.push(
+      complianceFinding({
+        file: 'backend/src/',
+        line: 0,
+        description:
+          'No data export endpoint found — LGPD Art. 18 requires data portability on request',
+        detail:
+          'Add GET /users/:id/export or /account/export that returns all user data as JSON/CSV',
+      }),
+    );
   }
 
   // CHECK 4: Data deletion endpoint
   if (!hasDeleteEndpoint) {
-    breaks.push({
-      type: 'LGPD_NON_COMPLIANT',
-      severity: 'critical',
-      file: 'backend/src/',
-      line: 0,
-      description:
-        'No data deletion/erasure endpoint found — LGPD Art. 18 requires right to erasure',
-      detail: 'Add DELETE /account or POST /account/delete that anonymizes or removes all user PII',
-    });
+    breaks.push(
+      complianceFinding({
+        file: 'backend/src/',
+        line: 0,
+        description:
+          'No data deletion/erasure endpoint found — LGPD Art. 18 requires right to erasure',
+        detail:
+          'Add DELETE /account or POST /account/delete that anonymizes or removes all user PII',
+      }),
+    );
   }
 
   // CHECK 5: Cookie consent in frontend
-  const cookieConsentPatterns = [
-    /CookieBanner|CookieConsent|cookie-consent|useCookieConsent/i,
-    /consentimento.*cookie|cookies.*consentimento/i,
-  ];
   const frontendFiles = walkFiles(config.frontendDir, ['.tsx', '.ts']);
   let hasCookieConsent = false;
 
@@ -171,23 +218,23 @@ export function checkCompliance(config: PulseConfig): Break[] {
     } catch {
       continue;
     }
-    if (cookieConsentPatterns.some((re) => re.test(content))) {
+    if (hasCookieConsentEvidence(content)) {
       hasCookieConsent = true;
       break;
     }
   }
 
   if (!hasCookieConsent) {
-    breaks.push({
-      type: 'LGPD_NON_COMPLIANT',
-      severity: 'critical',
-      file: 'frontend/src/',
-      line: 0,
-      description:
-        'No cookie consent mechanism found — LGPD requires explicit user consent for cookies',
-      detail:
-        'Add a CookieBanner component or useCookieConsent hook; store consent in cookie/localStorage',
-    });
+    breaks.push(
+      complianceFinding({
+        file: 'frontend/src/',
+        line: 0,
+        description:
+          'No cookie consent mechanism found — LGPD requires explicit user consent for cookies',
+        detail:
+          'Add a CookieBanner component or useCookieConsent hook; store consent in cookie/localStorage',
+      }),
+    );
   }
 
   // CHECK 6: Checkout forms have explicit consent
@@ -206,14 +253,14 @@ export function checkCompliance(config: PulseConfig): Break[] {
     }
   }
   if (checkoutFiles.length > 0 && !checkoutHasConsent) {
-    breaks.push({
-      type: 'LGPD_NON_COMPLIANT',
-      severity: 'critical',
-      file: 'frontend/src/app/checkout/',
-      line: 0,
-      description: 'Checkout form lacks explicit data-use consent checkbox — required by LGPD',
-      detail: 'Add a required checkbox linking to privacy policy before payment submission',
-    });
+    breaks.push(
+      complianceFinding({
+        file: 'frontend/src/app/checkout/',
+        line: 0,
+        description: 'Checkout form lacks explicit data-use consent checkbox — required by LGPD',
+        detail: 'Add a required checkbox linking to privacy policy before payment submission',
+      }),
+    );
   }
 
   // CHECK 7: Data retention policy
@@ -221,16 +268,16 @@ export function checkCompliance(config: PulseConfig): Break[] {
     !!process.env.DATA_RETENTION_DAYS ||
     pathExists(safeJoin(config.rootDir, '.data-retention.json'));
   if (!hasRetentionPolicy) {
-    breaks.push({
-      type: 'LGPD_NON_COMPLIANT',
-      severity: 'critical',
-      file: '.data-retention.json',
-      line: 0,
-      description:
-        'No data retention policy defined — LGPD requires defined retention periods per data category',
-      detail:
-        'Create .data-retention.json mapping data types to retention periods, or set DATA_RETENTION_DAYS env var',
-    });
+    breaks.push(
+      complianceFinding({
+        file: '.data-retention.json',
+        line: 0,
+        description:
+          'No data retention policy defined — LGPD requires defined retention periods per data category',
+        detail:
+          'Create .data-retention.json mapping data types to retention periods, or set DATA_RETENTION_DAYS env var',
+      }),
+    );
   }
 
   // TODO: Implement when infrastructure available

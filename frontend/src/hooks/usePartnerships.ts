@@ -31,12 +31,30 @@ interface AffiliateDetailResponse {
   affiliate?: unknown;
 }
 
-interface PartnerContactsResponse {
-  contacts?: unknown[];
+function normalizeContact(raw: Record<string, unknown>): Record<string, unknown> {
+  return {
+    ...raw,
+    time: raw.lastMessageTime
+      ? new Date(raw.lastMessageTime as string).toLocaleTimeString('pt-BR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : '',
+  };
 }
 
-interface PartnerMessagesResponse {
-  messages?: unknown[];
+function normalizeMessage(raw: Record<string, unknown>): Record<string, unknown> {
+  const createdAt = raw.createdAt as string | undefined;
+  return {
+    id: raw.id,
+    sender: (raw.senderName as string) || '',
+    content: (raw.content as string) || '',
+    time: createdAt
+      ? new Date(createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      : '',
+    isMe: (raw.senderType as string) === 'OWNER',
+    createdAt,
+  };
 }
 
 interface RawAffiliateRecord {
@@ -170,8 +188,12 @@ export function usePartnerChatContacts() {
   const { data, isLoading, mutate } = useSWR('/partnerships/chat/contacts', swrFetcher, {
     refreshInterval: 15000,
   });
-  const d = data as PartnerContactsResponse | undefined;
-  return { contacts: d?.contacts || [], isLoading, mutate };
+  const contacts = Array.isArray((data as Record<string, unknown> | undefined)?.contacts)
+    ? ((data as Record<string, unknown>).contacts as Record<string, unknown>[]).map(
+        normalizeContact,
+      )
+    : [];
+  return { contacts, isLoading, mutate };
 }
 
 /** Use partner messages. */
@@ -181,8 +203,12 @@ export function usePartnerMessages(partnerId: string | null) {
     swrFetcher,
     { refreshInterval: 15000 },
   );
-  const d = data as PartnerMessagesResponse | undefined;
-  return { messages: d?.messages || [], isLoading, mutate };
+  const messages = Array.isArray((data as Record<string, unknown> | undefined)?.messages)
+    ? ((data as Record<string, unknown>).messages as Record<string, unknown>[]).map(
+        normalizeMessage,
+      )
+    : [];
+  return { messages, isLoading, mutate };
 }
 
 const invalidateCollaborators = () =>

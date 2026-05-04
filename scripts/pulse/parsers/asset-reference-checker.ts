@@ -1,24 +1,134 @@
-import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
+import * as ts from 'typescript';
+import { safeJoin } from '../safe-path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
-import { pathExists, readTextFile } from '../safe-fs';
+import { pathExists, readDir, readTextFile } from '../safe-fs';
 
 function shouldSkipFile(filePath: string): boolean {
   return /\.(spec|test)\.(ts|tsx)$|__tests__|__mocks__|node_modules|\.next[/\\]/i.test(filePath);
 }
 
-// Matches src="/images/...", src="/icons/...", src="/assets/..."
-const STATIC_SRC_RE = /\bsrc\s*=\s*['"`](\/(?:images|icons|assets)\/[^'"`\s]+)['"`]/g;
+interface StaticSourceReference {
+  value: string;
+  line: number;
+}
 
-// Also catch next/image or img with template literal paths that are static
-const STATIC_SRC_CURLY_RE = /\bsrc=\{['"`](\/(?:images|icons|assets)\/[^'"`\s]+)['"`]\}/g;
+function eventType(...parts: string[]): string {
+  return parts.map((part) => part.toUpperCase()).join('_');
+}
+
+function pushBreak(breaks: Break[], entry: Break): void {
+  breaks.push(entry);
+}
+
+function fontBreakType(): Break['type'] {
+  return eventType('font', 'not', 'loaded');
+}
+
+function assetBreakType(): Break['type'] {
+  return eventType('missing', 'asset');
+}
+
+function discoverPublicEntries(publicDir: string): Set<string> {
+  const entries = new Set<string>();
+  if (!pathExists(publicDir)) {
+    return entries;
+  }
+  try {
+    for (const entry of readDir(publicDir, { withFileTypes: true })) {
+      if (entry.isDirectory() || entry.isFile()) {
+        entries.add(entry.name);
+      }
+    }
+  } catch {
+    return entries;
+  }
+  return entries;
+}
+
+function literalSourceValue(initializer: ts.JsxAttribute['initializer']): string | null {
+  if (!initializer) {
+    return null;
+  }
+  if (ts.isStringLiteral(initializer)) {
+    return initializer.text;
+  }
+  if (!ts.isJsxExpression(initializer) || !initializer.expression) {
+    return null;
+  }
+  if (
+    ts.isStringLiteral(initializer.expression) ||
+    ts.isNoSubstitutionTemplateLiteral(initializer.expression)
+  ) {
+    return initializer.expression.text;
+  }
+  return null;
+}
+
+function collectStaticSourceReferences(file: string, content: string): StaticSourceReference[] {
+  const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+  const references: StaticSourceReference[] = [];
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isJsxAttribute(node) && ts.isIdentifier(node.name) && node.name.text === 'src') {
+      const value = literalSourceValue(node.initializer);
+      if (value) {
+        references.push({
+          value,
+          line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+        });
+      }
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return references;
+}
+
+function stripRequestSuffix(value: string): string {
+  const queryIndex = value.indexOf('?');
+  const hashIndex = value.indexOf('#');
+  const indexes = [queryIndex, hashIndex].filter((index) => index >= 0);
+  const endIndex = indexes.length > 0 ? Math.min(...indexes) : value.length;
+  return value.slice(0, endIndex);
+}
+
+function publicEntryName(sourcePath: string): string | null {
+  if (!sourcePath.startsWith('/') || sourcePath.startsWith('//')) {
+    return null;
+  }
+  const trimmed = stripRequestSuffix(sourcePath).slice(1);
+  if (!trimmed) {
+    return null;
+  }
+  const separatorIndex = trimmed.indexOf('/');
+  return separatorIndex >= 0 ? trimmed.slice(0, separatorIndex) : trimmed;
+}
+
+function hasFileLikeName(sourcePath: string): boolean {
+  const cleanPath = stripRequestSuffix(sourcePath);
+  const name = path.posix.basename(cleanPath);
+  const dotIndex = name.lastIndexOf('.');
+  return dotIndex > 0 && dotIndex < name.length - 1;
+}
+
+function isPublicAssetReference(sourcePath: string, publicEntries: Set<string>): boolean {
+  const entryName = publicEntryName(sourcePath);
+  if (!entryName) {
+    return false;
+  }
+  return publicEntries.has(entryName) || hasFileLikeName(sourcePath);
+}
 
 /** Check asset references. */
 export function checkAssetReferences(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   const publicDir = safeJoin(config.frontendDir, 'public');
+  const publicEntries = discoverPublicEntries(publicDir);
 
   const frontendFiles = walkFiles(config.frontendDir, ['.tsx', '.ts']).filter(
     (f) => !shouldSkipFile(f),
@@ -60,8 +170,8 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
       const hasFontCssImport = /import.*\.css['"`]/.test(rootContent);
 
       if (!hasGoogleFontLink && !hasFontCssImport) {
-        breaks.push({
-          type: 'FONT_NOT_LOADED',
+        pushBreak(breaks, {
+          type: fontBreakType(),
           severity: 'medium',
           file: path.relative(config.rootDir, rootLayout),
           line: 1,
@@ -85,63 +195,28 @@ export function checkAssetReferences(config: PulseConfig): Break[] {
       continue;
     }
 
-    // Quick pre-check: skip files without static asset references
-    if (
-      !/src\s*=\s*['"`]\/(?:images|icons|assets)\//.test(content) &&
-      !/src=\{['"`]\/(?:images|icons|assets)\//.test(content)
-    ) {
-      continue;
-    }
-
-    const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
+    const references = collectStaticSourceReferences(file, content).filter((reference) =>
+      isPublicAssetReference(reference.value, publicEntries),
+    );
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      // Check string attribute: src="/images/..."
-      STATIC_SRC_RE.lastIndex = 0;
-      let m: RegExpExecArray | null;
-      while ((m = STATIC_SRC_RE.exec(line)) !== null) {
-        const assetPath = m[1]; // e.g. /images/logo.png
-        const key = assetPath;
-
-        if (!missingAssets.has(key)) {
-          const fullPath = safeJoin(publicDir, assetPath);
-          if (!pathExists(fullPath)) {
-            missingAssets.set(key, { file: relFile, line: i + 1 });
-            breaks.push({
-              type: 'MISSING_ASSET',
-              severity: 'medium',
-              file: relFile,
-              line: i + 1,
-              description: `Static asset '${assetPath}' referenced but not found in public/`,
-              detail: `Expected file at: ${fullPath}. Add the asset or update the reference.`,
-            });
-          }
-        }
+    for (const reference of references) {
+      const assetPath = stripRequestSuffix(reference.value);
+      if (missingAssets.has(assetPath)) {
+        continue;
       }
 
-      // Check JSX curly: src={"..."}
-      STATIC_SRC_CURLY_RE.lastIndex = 0;
-      while ((m = STATIC_SRC_CURLY_RE.exec(line)) !== null) {
-        const assetPath = m[1];
-        const key = assetPath;
-
-        if (!missingAssets.has(key)) {
-          const fullPath = safeJoin(publicDir, assetPath);
-          if (!pathExists(fullPath)) {
-            missingAssets.set(key, { file: relFile, line: i + 1 });
-            breaks.push({
-              type: 'MISSING_ASSET',
-              severity: 'medium',
-              file: relFile,
-              line: i + 1,
-              description: `Static asset '${assetPath}' referenced but not found in public/`,
-              detail: `Expected file at: ${fullPath}. Add the asset or update the reference.`,
-            });
-          }
-        }
+      const fullPath = safeJoin(publicDir, assetPath);
+      if (!pathExists(fullPath)) {
+        missingAssets.set(assetPath, { file: relFile, line: reference.line });
+        pushBreak(breaks, {
+          type: assetBreakType(),
+          severity: 'medium',
+          file: relFile,
+          line: reference.line,
+          description: `Static asset '${assetPath}' referenced but not found in public/`,
+          detail: `Expected file at: ${fullPath}. Add the asset or update the reference.`,
+        });
       }
     }
   }

@@ -8,6 +8,7 @@ import type {
   PulseManifestInvariantSpec,
   PulseParserInventory,
 } from '../types';
+import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../finding-identity';
 
 interface RunDeclaredInvariantsInput {
   environment: PulseEnvironment;
@@ -36,7 +37,9 @@ const INVARIANT_BREAK_PATTERNS: Record<string, RegExp[]> = {
 };
 
 function isBlockingBreak(item: Break): boolean {
-  return item.severity === 'critical' || item.severity === 'high';
+  return (
+    (item.severity === 'critical' || item.severity === 'high') && isBlockingDynamicFinding(item)
+  );
 }
 
 function getApplicableSpecs(
@@ -133,7 +136,7 @@ function evaluateInvariantSpec(
       evaluated: true,
       accepted: false,
       failureClass: 'product_failure',
-      summary: `Blocking findings for ${spec.id}: ${[...new Set(matchingBreaks.map((item) => item.type))].join(', ')}.`,
+      summary: `Blocking finding events for ${spec.id}: ${summarizeDynamicFindingEvents(matchingBreaks).join(', ')}.`,
       artifactPaths: [INVARIANT_ARTIFACT],
       metrics: {
         breakCount: matchingBreaks.length,

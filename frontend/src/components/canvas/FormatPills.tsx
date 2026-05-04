@@ -2,6 +2,7 @@
 
 import { HOME_PILLS } from '@/lib/canvas-formats';
 import { useState } from 'react';
+import { colors } from '@/lib/design-tokens';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 
@@ -49,7 +50,10 @@ export function FormatPills({ onPillClick }: FormatPillsProps) {
               width: 38,
               height: 38,
               borderRadius: 6,
-              background: hp === p.id ? `linear-gradient(135deg,${p.c[0]},${p.c[1]})` : '#111113',
+              background:
+                hp === p.id
+                  ? `linear-gradient(135deg,${p.c[0]},${p.c[1]})`
+                  : 'colors.background.surface',
               border: `1px solid ${hp === p.id ? `${p.c[0]}50` : '#1C1C1F'}`,
               transition: 'all 0.3s',
               display: 'flex',
@@ -75,7 +79,7 @@ export function FormatPills({ onPillClick }: FormatPillsProps) {
             style={{
               fontSize: 9,
               fontWeight: 500,
-              color: hp === p.id ? '#E0DDD8' : '#6E6E73',
+              color: hp === p.id ? 'colors.text.silver' : 'colors.text.muted',
               fontFamily: S,
               transition: 'color 0.15s',
             }}

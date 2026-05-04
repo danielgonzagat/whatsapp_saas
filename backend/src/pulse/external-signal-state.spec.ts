@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { pathToFileURL } from 'url';
 import { buildConvergencePlan } from '../../../scripts/pulse/convergence-plan';
 import { buildExternalSignalState } from '../../../scripts/pulse/external-signals';
 import type {
@@ -13,9 +14,19 @@ import type {
   PulseScopeState,
 } from '../../../scripts/pulse/types';
 
-function writeJson(filePath: string, value: unknown) {
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, JSON.stringify(value, null, 2));
+type ExternalSignalSnapshot = 'github' | 'sentry';
+
+function writeJsonSnapshot(rootDir: string, snapshot: ExternalSignalSnapshot, value: unknown) {
+  const rootUrl = pathToFileURL(`${rootDir}${path.sep}`);
+  const payload = JSON.stringify(value, null, 2);
+  switch (snapshot) {
+    case 'github':
+      fs.writeFileSync(new URL('PULSE_GITHUB_STATE.json', rootUrl), payload);
+      return;
+    case 'sentry':
+      fs.writeFileSync(new URL('PULSE_SENTRY_STATE.json', rootUrl), payload);
+      return;
+  }
 }
 
 function createScopeState(rootDir: string): PulseScopeState {
@@ -52,6 +63,15 @@ function createScopeState(rootDir: string): PulseScopeState {
         artifact: 0,
       },
       unmappedModuleCandidates: [],
+      inventoryCoverage: 100,
+      classificationCoverage: 100,
+      structuralGraphCoverage: 100,
+      testCoverage: 0,
+      scenarioCoverage: 0,
+      runtimeEvidenceCoverage: 0,
+      productionProofCoverage: 0,
+      orphanFiles: [],
+      unknownFiles: [],
     },
     parity: {
       status: 'pass',
@@ -120,6 +140,10 @@ function createScopeState(rootDir: string): PulseScopeState {
       },
     ],
     moduleAggregates: [],
+    excludedFiles: [],
+    scopeSource: 'repo_filesystem',
+    manifestBoundary: false,
+    manifestRole: 'semantic_overlay',
   };
 }
 
@@ -179,6 +203,12 @@ function createCapabilityState(): PulseCapabilityState {
           },
           missing: ['sideEffectPresent', 'validationPresent', 'scenarioCoveragePresent'],
         },
+        dod: {
+          status: 'partial',
+          missingRoles: ['side_effect'],
+          blockers: ['Checkout still lacks stable runtime confirmation.'],
+          truthModeMet: true,
+        },
       },
     ],
   };
@@ -211,6 +241,12 @@ function createFlowProjection(): PulseFlowProjection {
         evidenceSources: ['routes'],
         blockingReasons: ['Checkout has not closed its live runtime loop yet.'],
         validationTargets: ['PULSE_FLOW_PROJECTION.json'],
+        dod: {
+          status: 'partial',
+          missingRoles: ['side_effect'],
+          blockers: ['Checkout has not closed its live runtime loop yet.'],
+          truthModeMet: true,
+        },
       },
     ],
   };
@@ -244,7 +280,7 @@ describe('buildExternalSignalState', () => {
   });
 
   it('normalizes snapshot-first signals and maps them to capabilities and flows', () => {
-    writeJson(path.join(rootDir, 'PULSE_GITHUB_STATE.json'), {
+    writeJsonSnapshot(rootDir, 'github', {
       commits: [
         {
           sha: 'abc123',
@@ -254,7 +290,7 @@ describe('buildExternalSignalState', () => {
         },
       ],
     });
-    writeJson(path.join(rootDir, 'PULSE_SENTRY_STATE.json'), {
+    writeJsonSnapshot(rootDir, 'sentry', {
       issues: [
         {
           id: 'issue-1',
@@ -289,7 +325,7 @@ describe('buildExternalSignalState', () => {
   });
 
   it('pushes observed runtime signals to the top of the convergence queue', () => {
-    writeJson(path.join(rootDir, 'PULSE_GITHUB_STATE.json'), {
+    writeJsonSnapshot(rootDir, 'github', {
       commits: [
         {
           sha: 'abc123',
@@ -299,7 +335,7 @@ describe('buildExternalSignalState', () => {
         },
       ],
     });
-    writeJson(path.join(rootDir, 'PULSE_SENTRY_STATE.json'), {
+    writeJsonSnapshot(rootDir, 'sentry', {
       issues: [
         {
           id: 'issue-1',
@@ -340,7 +376,7 @@ describe('buildExternalSignalState', () => {
         soak: { results: [] },
         worldState: { asyncExpectationsStatus: [] },
       },
-    } as unknown as PulseCertification;
+    } as never as PulseCertification;
     const resolvedManifest = {
       scenarioSpecs: [],
       flowSpecs: [],
@@ -381,10 +417,10 @@ describe('buildExternalSignalState', () => {
         warningCount: 0,
       },
       temporaryAcceptances: [],
-    } as unknown as PulseResolvedManifest;
+    } as never as PulseResolvedManifest;
 
     const plan = buildConvergencePlan({
-      health: { breaks: [] } as { breaks: [] },
+      health: { breaks: [] },
       resolvedManifest,
       scopeState: createScopeState(rootDir),
       certification,

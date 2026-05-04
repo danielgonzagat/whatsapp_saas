@@ -100,8 +100,8 @@ export function generateFunctionalMapReport(result: FunctionalMapResult, rootDir
   }
   lines.push('');
 
-  // Per-page tables — organized by group
-  for (const group of ['main', 'public', 'checkout', 'e2e', 'other']) {
+  // Per-page tables — organized by groups discovered from the scan summary.
+  for (const group of groups) {
     const groupPages = pages.filter((p) => p.group === group);
     if (groupPages.length === 0) {
       continue;

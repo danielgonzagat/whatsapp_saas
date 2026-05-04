@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
 import {
   ConnectedSocket,
   MessageBody,
@@ -48,8 +48,10 @@ export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       void client.join(`workspace:${workspaceId}`);
       this.logger.log(`Client connected: ${client.id} to workspace:${workspaceId}`);
-    } catch (err) {
-      this.logger.warn(`Client ${client.id} disconnected: invalid token (${err?.message || err})`);
+    } catch (err: unknown) {
+      this.logger.warn(
+        `Client ${client.id} disconnected: invalid token (${(err instanceof Error ? err.message : 'unknown') || String(err)})`,
+      );
       client.disconnect(true);
     }
   }

@@ -69,11 +69,7 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/plain' });
       res.end(data);
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      sendJson(res, 500, { error: errorInstanceofError?.message || 'metrics_failed' });
+      sendJson(res, 500, { error: error instanceof Error ? error.message : 'metrics_failed' });
     }
     return;
   }

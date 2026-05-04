@@ -1,8 +1,10 @@
 import { Body, Controller, Get, HttpException, Post, Query, Req, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Request, Response } from 'express';
+import * as Sentry from '@sentry/node';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { AuthService } from './auth.service';
+import { getJwtCookieMaxAgeMs } from './jwt-config';
 import { AppleOAuthDto } from './dto/apple-oauth.dto';
 import { CheckEmailDto } from './dto/check-email.dto';
 import { FacebookOAuthDto } from './dto/facebook-oauth.dto';
@@ -60,12 +62,20 @@ export class AuthController {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'lax',
-          maxAge: 24 * 60 * 60 * 1000, // 24h
+          maxAge: getJwtCookieMaxAgeMs(),
           path: '/',
         });
       }
       return result;
     } catch (err: unknown) {
+      Sentry.captureException(err, {
+        tags: { type: 'auth_alert', operation: 'register' },
+        extra: {
+          email: (body.email ?? '').substring(0, 3) + '***',
+          hasReferral: Boolean((body as unknown as Record<string, unknown>).referralCode),
+        },
+        level: 'error',
+      });
       if ((err as { status?: number } | null)?.status === 409) {
         throw new HttpException({ error: 'Email já em uso' }, 409);
       }
@@ -76,7 +86,7 @@ export class AuthController {
   /** Login. */
   @Public()
   @Post('login')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async login(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -84,11 +94,16 @@ export class AuthController {
   ) {
     const result = await this.auth.login({ ...body, ip: req.ip });
     if (result?.access_token) {
+      Sentry.addBreadcrumb({
+        message: `login: user authenticated`,
+        category: 'auth',
+        level: 'info',
+      });
       res.cookie('kloel_token', result.access_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: 24 * 60 * 60 * 1000,
+        maxAge: getJwtCookieMaxAgeMs(),
         path: '/',
       });
     }
@@ -154,6 +169,8 @@ export class AuthController {
   async appleOAuthLogin(@Req() req: Request, @Body() body: AppleOAuthDto) {
     return this.auth.loginWithAppleCredential({
       identityToken: body.identityToken,
+      authorizationCode: body.authorizationCode,
+      redirectUri: body.redirectUri,
       user: body.user,
       ip: req.ip,
     });
@@ -291,5 +308,15 @@ export class AuthController {
       throw new Error('Usuário não autenticado');
     }
     return this.auth.sendVerificationEmail(agentId);
+  }
+
+  /** Logout — revoke all refresh tokens for the authenticated agent. */
+  @Post('logout')
+  async logout(@Req() req: AuthenticatedRequest) {
+    const agentId = req.user?.sub;
+    if (!agentId) {
+      throw new Error('Usuário não autenticado');
+    }
+    return this.auth.logout(agentId, req.user?.jti, req.user?.exp);
   }
 }

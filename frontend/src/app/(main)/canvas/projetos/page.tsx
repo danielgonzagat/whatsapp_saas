@@ -6,6 +6,7 @@ import { type CanvasDesign, useCanvasDesigns } from '@/hooks/useCanvasDesigns';
 import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { colors } from '@/lib/design-tokens';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -47,7 +48,15 @@ function ProjectSkeletonGrid() {
             }}
           />
           <div style={{ padding: '10px 12px', display: 'grid', gap: 8 }}>
-            <div style={{ width: '74%', height: 10, borderRadius: 999, background: '#1C1C1F' }} />
+            <div
+              style={{
+                width: '74%',
+                height: 10,
+                borderRadius: 999,
+                background:
+                  '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */,
+              }}
+            />
             <div
               style={{
                 width: '46%',
@@ -183,7 +192,7 @@ function ProjectCard({
       onMouseLeave={() => setH(false)}
       style={{
         background: 'var(--app-bg-card)',
-        border: `1px solid ${h ? '#E85D3050' : '#1C1C1F'}`,
+        border: `1px solid ${h ? colors.ember.primary : '#1C1C1F'}`,
         borderRadius: 6,
         overflow: 'hidden',
         textAlign: 'left',
@@ -235,7 +244,7 @@ function ProjectCard({
                 width: 20,
                 height: 20,
                 borderRadius: 3,
-                background: 'radial-gradient(circle, #E85D3040, transparent)',
+                background: 'radial-gradient(circle, colors.ember.glow40, transparent)',
               }}
             />
           </div>

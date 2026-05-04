@@ -12,10 +12,12 @@ import type { CheckoutVisualTheme } from './checkout-theme-tokens';
 type Props = {
   theme: CheckoutVisualTheme;
   facebookAvailable: boolean;
+  appleAvailable: boolean;
   facebookSdkReady: boolean;
   googleAvailable: boolean;
   googleButtonRef: RefObject<HTMLDivElement | null>;
   onFacebookClick: () => Promise<void>;
+  onAppleClick: () => void;
   socialIdentity: CheckoutSocialIdentitySnapshot | null;
   loadingProvider: CheckoutSocialProvider | null;
   error?: string;
@@ -25,10 +27,12 @@ type Props = {
 export function CheckoutSocialIdentitySection({
   theme,
   facebookAvailable,
+  appleAvailable,
   facebookSdkReady,
   googleAvailable,
   googleButtonRef,
   onFacebookClick,
+  onAppleClick,
   socialIdentity: _socialIdentity,
   loadingProvider,
   error,
@@ -57,10 +61,12 @@ export function CheckoutSocialIdentitySection({
             loading={loadingProvider === 'facebook'}
             onClick={onFacebookClick}
           />
-          <StaticSocialButton
+          <ActionSocialButton
             icon={<AppleIcon color={theme.socialApple} />}
-            label={kloelT(`Apple em breve`)}
+            label={appleAvailable ? 'Continuar com Apple' : 'Apple indisponível'}
+            available={appleAvailable}
             loading={loadingProvider === 'apple'}
+            onClick={onAppleClick}
           />
         </div>
         <div style={{ flex: 1, height: 1, background: theme.socialDivider }} />
@@ -142,61 +148,6 @@ function GoogleIconButton({
   );
 }
 
-function StaticSocialButton({
-  icon,
-  label,
-  loading,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  loading: boolean;
-}) {
-  const [hovered, setHovered] = useState(false);
-  const state = useMemo(
-    () => ({
-      opacity: hovered ? 0.55 : 0.35,
-      transform: hovered ? 'scale(1.06)' : 'scale(1)',
-    }),
-    [hovered],
-  );
-
-  return (
-    <button
-      type="button"
-      disabled
-      aria-disabled="true"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      title={label}
-      style={{
-        width: 48,
-        height: 48,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'transparent',
-        border: 'none',
-        cursor: 'not-allowed',
-        padding: 0,
-      }}
-    >
-      {loading ? (
-        <Spinner color="rgba(58, 58, 63, 0.52)" trackColor={kloelT(`rgba(58, 58, 63, 0.12)`)} />
-      ) : (
-        <div
-          style={{
-            opacity: state.opacity,
-            transform: state.transform,
-            transition: 'transform 0.2s ease, opacity 0.2s ease',
-          }}
-        >
-          {icon}
-        </div>
-      )}
-    </button>
-  );
-}
-
 function ActionSocialButton({
   icon,
   label,
@@ -208,7 +159,7 @@ function ActionSocialButton({
   label: string;
   loading: boolean;
   available: boolean;
-  onClick: () => Promise<void>;
+  onClick: () => Promise<void> | void;
 }) {
   const [hovered, setHovered] = useState(false);
   const state = useMemo(

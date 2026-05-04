@@ -17,6 +17,9 @@
 
 import { execFileSync } from 'child_process';
 
+const ERROR_NO_DATABASE_URL = 'No DATABASE_URL available for PULSE DB queries';
+const ERROR_PG_NOT_INSTALLED = 'pg package not installed. Run: npm install pg';
+
 // ─── Cached Railway vars ────────────────────────────────────────────────────
 
 type RailwayVarsSource = 'env-json' | 'railway-cli-token' | 'railway-cli' | 'none';
@@ -310,37 +313,37 @@ interface HttpOptions {
 }
 
 /** Http get. */
-export async function httpGet(path: string, opts: HttpOptions = {}): Promise<HttpResponse> {
+export function httpGet(path: string, opts: HttpOptions = {}): Promise<HttpResponse> {
   return httpRequest('GET', path, undefined, opts);
 }
 
 /** Http post. */
-export async function httpPost(
+export function httpPost(
   path: string,
-  body?: any,
+  body?: unknown,
   opts: HttpOptions = {},
 ): Promise<HttpResponse> {
   return httpRequest('POST', path, body, opts);
 }
 
 /** Http put. */
-export async function httpPut(
+export function httpPut(
   path: string,
-  body?: any,
+  body?: unknown,
   opts: HttpOptions = {},
 ): Promise<HttpResponse> {
   return httpRequest('PUT', path, body, opts);
 }
 
 /** Http delete. */
-export async function httpDelete(path: string, opts: HttpOptions = {}): Promise<HttpResponse> {
+export function httpDelete(path: string, opts: HttpOptions = {}): Promise<HttpResponse> {
   return httpRequest('DELETE', path, undefined, opts);
 }
 
 async function httpRequest(
   method: string,
   path: string,
-  body?: any,
+  body?: unknown,
   opts: HttpOptions = {},
 ): Promise<HttpResponse> {
   const url = `${getBackendUrl()}${path}`;
@@ -391,10 +394,41 @@ async function httpRequest(
 
 // ─── Database Queries ───────────────────────────────────────────────────────
 
+/**
+ * Build the TLS configuration used by PULSE diagnostic DB queries.
+ *
+ * Certificate-pinned validation is always enforced. Operators provide one or
+ * more PEM-encoded CA certificate paths via PULSE_DIAG_PINNED_CA_PATHS
+ * (comma-separated). The pg client trusts those CAs in addition to the
+ * platform default trust store and ALWAYS verifies the server certificate
+ * (`rejectUnauthorized: true`).
+ *
+ * No bypass switch is exposed — `rejectUnauthorized: false` is unreachable
+ * from this code path. If a managed PostgreSQL provider exposes a custom
+ * root CA (Railway / Supabase / Neon etc.), the operator must point
+ * PULSE_DIAG_PINNED_CA_PATHS at the PEM bundle before running PULSE in
+ * DEEP/TOTAL modes.
+ */
+function buildPulseDbSslConfig(): { rejectUnauthorized: true; ca?: string[] } {
+  const pinnedPaths = (process.env.PULSE_DIAG_PINNED_CA_PATHS || '')
+    .split(',')
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  if (pinnedPaths.length === 0) {
+    return { rejectUnauthorized: true };
+  }
+
+  // Lazy-load fs to avoid the cost when no pinning is configured.
+  const fs = require('node:fs') as typeof import('node:fs');
+  const pinnedCas = pinnedPaths.map((pemPath) => fs.readFileSync(pemPath, 'utf8'));
+  return { rejectUnauthorized: true, ca: pinnedCas };
+}
+
 export async function dbQuery(sql: string, params: any[] = []): Promise<any[]> {
   const dbUrl = getDbUrl();
   if (!dbUrl) {
-    throw new Error('No DATABASE_URL available for PULSE DB queries');
+    throw new Error(ERROR_NO_DATABASE_URL);
   }
 
   // Dynamic import pg to avoid requiring it when not in DEEP mode
@@ -402,12 +436,12 @@ export async function dbQuery(sql: string, params: any[] = []): Promise<any[]> {
   try {
     pg = require('pg');
   } catch {
-    throw new Error('pg package not installed. Run: npm install pg');
+    throw new Error(ERROR_PG_NOT_INSTALLED);
   }
 
   const client = new pg.Client({
     connectionString: dbUrl,
-    ssl: { rejectUnauthorized: false },
+    ssl: buildPulseDbSslConfig(),
     connectionTimeoutMillis: 10_000,
   });
   let queryTimeout: NodeJS.Timeout | null = null;

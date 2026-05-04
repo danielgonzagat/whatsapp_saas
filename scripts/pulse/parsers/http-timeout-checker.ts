@@ -2,12 +2,66 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 
 // Wrappers that handle timeouts internally — skip these
 const INTERNAL_FETCH_WRAPPERS = /swrFetcher|apiFetch|this\.httpService|this\.http\./;
 
 // How many lines forward to scan for timeout signals after a fetch() call
 const FETCH_WINDOW_LINES = 35;
+
+function severityFromRisk(riskScore: number, fallback: Break['severity']): Break['severity'] {
+  if (riskScore >= 0.9) return 'critical';
+  if (riskScore >= 0.7) return 'high';
+  if (riskScore >= 0.4) return 'medium';
+  return fallback;
+}
+
+function synthesizeTimeoutDiagnosticBreak(
+  signal: PulseSignalEvidence,
+  fallback: Break['severity'],
+): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const risk = calculateDynamicRisk({ predicateGraph });
+  const diagnostic = synthesizeDiagnostic(signalGraph, predicateGraph, risk);
+
+  return {
+    type: diagnostic.id,
+    severity: severityFromRisk(risk.score, fallback),
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}; signal=${signal.detail ?? signal.summary}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode};proofMode=${diagnostic.proofMode}`,
+  };
+}
+
+function buildTimeoutBreak(input: {
+  file: string;
+  line: number;
+  summary: string;
+  detail: string;
+  fallbackSeverity: Break['severity'];
+}): Break {
+  return synthesizeTimeoutDiagnosticBreak(
+    {
+      source: 'http-timeout-weak-sensor',
+      detector: 'http-timeout-checker',
+      truthMode: 'weak_signal',
+      summary: input.summary,
+      detail: input.detail,
+      location: {
+        file: input.file,
+        line: input.line,
+      },
+    },
+    input.fallbackSeverity,
+  );
+}
 
 function isFetchWrapperDefinition(lines: string[], lineIdx: number): boolean {
   // Check if we're inside the definition of a known wrapper function
@@ -83,14 +137,15 @@ export function checkHttpTimeouts(config: PulseConfig): Break[] {
             /AbortController|AbortSignal|signal\s*:/.test(backwardWindow);
 
           if (!hasTimeout) {
-            breaks.push({
-              type: 'FETCH_NO_TIMEOUT',
-              severity: 'high',
-              file: relFile,
-              line: i + 1,
-              description: 'fetch() call without AbortController/signal timeout',
-              detail: `${trimmed.slice(0, 120)} — wrap with AbortController and setTimeout to avoid hanging requests`,
-            });
+            breaks.push(
+              buildTimeoutBreak({
+                file: relFile,
+                line: i + 1,
+                fallbackSeverity: 'high',
+                summary: 'fetch call has no adjacent timeout control evidence',
+                detail: `${trimmed.slice(0, 120)}; regex sensor needs runtime or AST confirmation before blocking.`,
+              }),
+            );
           }
         }
 
@@ -118,15 +173,15 @@ export function checkHttpTimeouts(config: PulseConfig): Break[] {
               continue;
             }
 
-            breaks.push({
-              type: 'AXIOS_NO_TIMEOUT',
-              severity: 'medium',
-              file: relFile,
-              line: i + 1,
-              description: 'axios call without explicit timeout option',
-              detail:
-                trimmed.slice(0, 120) + ' — add { timeout: 10000 } to prevent hanging requests',
-            });
+            breaks.push(
+              buildTimeoutBreak({
+                file: relFile,
+                line: i + 1,
+                fallbackSeverity: 'medium',
+                summary: 'axios call has no adjacent timeout option evidence',
+                detail: `${trimmed.slice(0, 120)}; regex sensor needs runtime or AST confirmation before blocking.`,
+              }),
+            );
           }
         }
       }

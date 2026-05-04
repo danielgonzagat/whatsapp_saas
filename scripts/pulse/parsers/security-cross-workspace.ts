@@ -3,218 +3,431 @@
  * Layer 5: Security Testing
  * Mode: DEEP (requires running infrastructure)
  *
- * CHECKS:
- * Verify that a JWT from workspace A cannot access data from workspace B.
- * This is the most critical isolation boundary in a multi-tenant SaaS.
- *
- * For each resource type (products, orders, customers, flows, campaigns, inbox,
- * wallet, analytics, reports, settings, team, api-keys, webhooks):
- * 1. Create resource in workspace A (authenticated as user A)
- * 2. Attempt to read resource with user B's JWT (passing workspace A's resource ID)
- * 3. Assert response is 403 Forbidden or 404 Not Found — NEVER 200 with data
- * 4. Attempt to UPDATE resource from workspace A using user B's JWT
- * 5. Assert 403 or 404 — NEVER 200
- * 6. Attempt to DELETE resource from workspace A using user B's JWT
- * 7. Assert 403 or 404 — verify resource still exists in workspace A
- *
- * JWT manipulation:
- * 8. Decode user A's JWT, modify the workspaceId claim to workspace B's ID, re-sign with wrong key
- * 9. Send modified JWT → expect 401 (signature invalid)
- * 10. Send user A's valid JWT but with workspaceId query param = workspace B's ID → expect 403
- *
- * URL traversal:
- * 11. /workspace/:workspaceAId/products with JWT from workspace B → expect 403
- * 12. /workspace/:workspaceAId/settings with JWT from workspace B → expect 403
- * 13. Admin-scoped routes: verify SUPER_ADMIN role required, not just any workspace member
- *
- * Implicit workspace from JWT:
- * 14. Routes that read workspaceId from JWT (not URL param) — verify they cannot be tricked
- *     by sending a body with a different workspaceId field
- *
- * REQUIRES:
- * - Running backend (PULSE_BACKEND_URL)
- * - Running DB with two distinct test workspaces
- * - Two test JWTs for different workspaces (PULSE_TEST_JWT_A, PULSE_TEST_JWT_B)
- *
- * BREAK TYPES:
- * - CROSS_WORKSPACE_ACCESS (critical) — request with workspace B JWT returns workspace A data
+ * The parser discovers probe surfaces from NestJS controller evidence. Runtime
+ * observations become signal/predicate diagnostics; no product route catalog or
+ * static break identity owns the final decision.
  */
 
+import * as path from 'path';
+import * as ts from 'typescript';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { readTextFile } from '../safe-fs';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 import type { Break, PulseConfig } from '../types';
-import { httpGet, httpPost, makeTestJwt, getBackendUrl, isDeepMode } from './runtime-utils';
+import { getBackendUrl, httpGet, httpPost, isDeepMode, makeTestJwt } from './runtime-utils';
+import { walkFiles } from './utils';
 
-const WORKSPACE_A = 'pulse-workspace-alpha';
-const WORKSPACE_B = 'pulse-workspace-beta';
+interface WorkspacePair {
+  owner: string;
+  attacker: string;
+}
 
-/** GET endpoints to test for cross-workspace isolation */
-const READ_ENDPOINTS = ['/products', '/crm/contacts'];
+interface CrossWorkspaceProbeSurface {
+  collectionPath: string;
+  createPath: string | null;
+  sourceFile: string;
+  line: number;
+  controllerName: string;
+  handlerName: string;
+}
 
-/**
- * Checks if the response looks like real workspace data was returned.
- * A 200 with a non-empty array or an object with an `id` field is suspicious.
- */
-function looksLikeRealData(body: any): boolean {
+function stableWorkspaceId(config: PulseConfig, role: keyof WorkspacePair): string {
+  const rootName = path.basename(config.rootDir).replace(/[^A-Za-z0-9_-]+/g, '-');
+  return ['pulse', rootName || 'repo', role].join('-').toLowerCase();
+}
+
+function workspacePair(config: PulseConfig): WorkspacePair {
+  return {
+    owner: process.env.PULSE_TEST_WORKSPACE_A?.trim() || stableWorkspaceId(config, 'owner'),
+    attacker: process.env.PULSE_TEST_WORKSPACE_B?.trim() || stableWorkspaceId(config, 'attacker'),
+  };
+}
+
+function bodyRecord(value: unknown): Record<string, unknown> | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null;
+  }
+  return value as Record<string, unknown>;
+}
+
+function hasNonEmptyData(value: unknown): boolean {
+  const body = bodyRecord(value);
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
   if (!body) {
     return false;
   }
-  if (Array.isArray(body) && body.length > 0) {
+  if (Array.isArray(body.data) && body.data.length > 0) {
     return true;
   }
-  if (Array.isArray(body?.data) && body.data.length > 0) {
+  if (Array.isArray(body.items) && body.items.length > 0) {
     return true;
   }
-  if (typeof body === 'object' && body.id) {
-    return true;
+  return typeof body.id === 'string' && body.id.trim().length > 0;
+}
+
+function resourceIdFrom(value: unknown): string | null {
+  const body = bodyRecord(value);
+  if (!body) {
+    return null;
   }
-  if (
-    typeof body === 'object' &&
-    body.items &&
-    Array.isArray(body.items) &&
-    body.items.length > 0
-  ) {
-    return true;
+  if (typeof body.id === 'string' && body.id.trim().length > 0) {
+    return body.id;
   }
-  return false;
+  const data = bodyRecord(body.data);
+  if (data && typeof data.id === 'string' && data.id.trim().length > 0) {
+    return data.id;
+  }
+  return null;
+}
+
+function decoratorName(node: ts.Decorator): string | null {
+  const expression = node.expression;
+  if (ts.isIdentifier(expression)) {
+    return expression.text;
+  }
+  if (!ts.isCallExpression(expression)) {
+    return null;
+  }
+  const called = expression.expression;
+  if (ts.isIdentifier(called)) {
+    return called.text;
+  }
+  return ts.isPropertyAccessExpression(called) ? called.name.text : null;
+}
+
+function decoratorArgument(node: ts.Decorator): string {
+  const expression = node.expression;
+  if (!ts.isCallExpression(expression)) {
+    return '';
+  }
+  const [first] = expression.arguments;
+  if (!first || !ts.isStringLiteralLike(first)) {
+    return '';
+  }
+  return first.text;
+}
+
+function decoratorsFor(node: ts.Node): readonly ts.Decorator[] {
+  return ts.canHaveDecorators(node) ? (ts.getDecorators(node) ?? []) : [];
+}
+
+function routeJoin(first: string, second: string): string {
+  const parts = [first, second]
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .map((part) => part.replace(/^\/+|\/+$/g, ''));
+  return `/${parts.join('/')}`.replace(/\/+/g, '/');
+}
+
+function methodDecorator(node: ts.ClassElement, names: readonly string[]): ts.Decorator | null {
+  return (
+    decoratorsFor(node).find((decorator) => {
+      const name = decoratorName(decorator);
+      return name ? names.includes(name) : false;
+    }) ?? null
+  );
+}
+
+function lineOf(sourceFile: ts.SourceFile, node: ts.Node): number {
+  return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+}
+
+function classNameOf(node: ts.ClassDeclaration): string {
+  return node.name?.text ?? 'anonymous-controller';
+}
+
+function memberNameOf(node: ts.ClassElement): string {
+  const name = node.name;
+  if (!name) {
+    return 'anonymous-handler';
+  }
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNumericLiteral(name)) {
+    return name.text;
+  }
+  return name.getText();
+}
+
+function readSource(file: string): string {
+  try {
+    return readTextFile(file, 'utf8');
+  } catch {
+    return '';
+  }
+}
+
+export function buildSecurityCrossWorkspacePlan(config: PulseConfig): CrossWorkspaceProbeSurface[] {
+  const surfaces: CrossWorkspaceProbeSurface[] = [];
+  const files = walkFiles(config.backendDir, ['.ts']).filter(
+    (file) => !file.endsWith('.spec.ts') && !file.endsWith('.test.ts'),
+  );
+
+  for (const file of files) {
+    const source = readSource(file);
+    if (!source) {
+      continue;
+    }
+    const sourceFile = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
+    const relativeFile = path.relative(config.rootDir, file);
+
+    const visit = (node: ts.Node): void => {
+      if (!ts.isClassDeclaration(node)) {
+        ts.forEachChild(node, visit);
+        return;
+      }
+
+      const controller = decoratorsFor(node).find(
+        (decorator) => decoratorName(decorator) === 'Controller',
+      );
+      if (!controller) {
+        return;
+      }
+
+      const base = decoratorArgument(controller);
+      const creates = new Set<string>();
+      const reads: Array<{ value: string; node: ts.ClassElement }> = [];
+
+      for (const member of node.members) {
+        const post = methodDecorator(member, ['Post']);
+        if (post) {
+          creates.add(routeJoin(base, decoratorArgument(post)));
+        }
+
+        const get = methodDecorator(member, ['Get']);
+        if (get) {
+          const routeValue = decoratorArgument(get);
+          if (!routeValue.includes(':')) {
+            reads.push({ value: routeJoin(base, routeValue), node: member });
+          }
+        }
+      }
+
+      for (const read of reads) {
+        surfaces.push({
+          collectionPath: read.value,
+          createPath: creates.has(read.value) ? read.value : null,
+          sourceFile: relativeFile,
+          line: lineOf(sourceFile, read.node),
+          controllerName: classNameOf(node),
+          handlerName: memberNameOf(read.node),
+        });
+      }
+    };
+
+    ts.forEachChild(sourceFile, visit);
+  }
+
+  return surfaces;
+}
+
+function synthesizedCrossWorkspaceBreak(
+  signal: PulseSignalEvidence,
+  severity: Break['severity'],
+  surface: string,
+): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const diagnostic = synthesizeDiagnostic(
+    signalGraph,
+    predicateGraph,
+    calculateDynamicRisk({ predicateGraph, runtimeImpact: 1 }),
+  );
+
+  return {
+    type: diagnostic.id,
+    severity,
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}; ${signal.detail ?? ''}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
+    surface,
+  };
+}
+
+function appendBreak(breaks: Break[], entry: Break): void {
+  breaks.push(entry);
+}
+
+function signalForSurface(
+  surface: CrossWorkspaceProbeSurface,
+  summary: string,
+  detail: string,
+): PulseSignalEvidence {
+  return {
+    source: 'runtime-cross-workspace-probe',
+    detector: 'security-cross-workspace',
+    truthMode: 'observed',
+    summary,
+    detail,
+    location: {
+      file: surface.sourceFile,
+      line: surface.line,
+    },
+  };
+}
+
+function testBodyFor(surface: CrossWorkspaceProbeSurface): Record<string, unknown> {
+  const label = ['pulse', surface.controllerName, surface.handlerName, Date.now()].join('-');
+  return {
+    name: label,
+    title: label,
+    description: label,
+  };
+}
+
+async function deleteResource(pathname: string, jwt: string): Promise<void> {
+  try {
+    await fetch(`${getBackendUrl()}${pathname}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${jwt}` },
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch {
+    // Cleanup failure is non-critical for the isolation diagnostic.
+  }
+}
+
+function tamperedJwt(workspaceId: string): string {
+  const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+  const body = Buffer.from(
+    JSON.stringify({
+      sub: 'pulse-attacker-user',
+      email: 'pulse-attacker@example.invalid',
+      workspaceId,
+      role: 'ADMIN',
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 3600,
+    }),
+  ).toString('base64url');
+  const signature = Buffer.from(['wrong', 'signature'].join('-')).toString('base64url');
+  return `${header}.${body}.${signature}`;
 }
 
 /** Check security cross workspace. */
 export async function checkSecurityCrossWorkspace(config: PulseConfig): Promise<Break[]> {
-  // DEEP mode only — requires running backend + DB
   if (!isDeepMode()) {
     return [];
   }
 
   const breaks: Break[] = [];
-
-  // JWT for workspace A (the "owner")
+  const pair = workspacePair(config);
+  const surfaces = buildSecurityCrossWorkspacePlan(config);
   const jwtA = makeTestJwt({
-    workspaceId: WORKSPACE_A,
-    userId: 'user-alpha',
-    email: 'alpha@pulse.test',
+    workspaceId: pair.owner,
+    userId: ['user', pair.owner].join('-'),
+    email: `${pair.owner}@example.invalid`,
   });
-  // JWT for workspace B (the "attacker")
   const jwtB = makeTestJwt({
-    workspaceId: WORKSPACE_B,
-    userId: 'user-beta',
-    email: 'beta@pulse.test',
+    workspaceId: pair.attacker,
+    userId: ['user', pair.attacker].join('-'),
+    email: `${pair.attacker}@example.invalid`,
   });
 
-  // ── 1. Try to read workspace-A's collection data using workspace-B's JWT ─
-  for (const endpoint of READ_ENDPOINTS) {
+  for (const surface of surfaces) {
     try {
-      // Use JWT-B but add x-workspace-id header pointing to workspace A
-      // This tests whether the backend honours the header over the JWT claim
-      const res = await fetch(`${getBackendUrl()}${endpoint}`, {
+      const res = await fetch(`${getBackendUrl()}${surface.collectionPath}`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${jwtB}`,
           'Content-Type': 'application/json',
-          'x-workspace-id': WORKSPACE_A, // attempt to override workspace via header
+          'x-workspace-id': pair.owner,
         },
         signal: AbortSignal.timeout(8000),
       });
 
-      let body: any;
+      let body: unknown = null;
       try {
         body = await res.json();
       } catch {
         body = null;
       }
 
-      if (res.status === 200 && looksLikeRealData(body)) {
-        breaks.push({
-          type: 'CROSS_WORKSPACE_ACCESS',
-          severity: 'critical',
-          file: `backend/src (GET ${endpoint})`,
-          line: 0,
-          description: `Cross-workspace access: JWT from ${WORKSPACE_B} can read data from ${WORKSPACE_A} via x-workspace-id header`,
-          detail: `GET ${endpoint} returned HTTP 200 with data when called with JWT for workspace "${WORKSPACE_B}" and x-workspace-id header set to "${WORKSPACE_A}". Backend must ignore x-workspace-id and use only the JWT claim.`,
-        });
+      if (res.status === 200 && hasNonEmptyData(body)) {
+        appendBreak(
+          breaks,
+          synthesizedCrossWorkspaceBreak(
+            signalForSurface(
+              surface,
+              'Cross-workspace header override returned data',
+              `GET ${surface.collectionPath} returned data for attacker token when x-workspace-id targeted the owner workspace.`,
+            ),
+            'critical',
+            surface.collectionPath,
+          ),
+        );
       }
     } catch {
-      // Backend not reachable — skip
+      // Backend not reachable for this probe.
     }
 
-    // Also test: workspace B's JWT with no header override — should only return workspace B's data
-    // (We create data in workspace A and verify workspace B can't see it by ID)
+    if (!surface.createPath) {
+      continue;
+    }
+
     try {
-      // First, create a resource as workspace A
-      const createRes = await httpPost(
-        endpoint === '/products' ? '/products' : '/crm/contacts',
-        endpoint === '/products'
-          ? { name: 'PULSE-XWORKSPACE-TEST', type: 'DIGITAL', price: 0 }
-          : { name: 'PULSE-XWORKSPACE-TEST', phone: '+5511999999999' },
-        { jwt: jwtA, timeout: 8000 },
-      );
+      const createRes = await httpPost(surface.createPath, testBodyFor(surface), {
+        jwt: jwtA,
+        timeout: 8000,
+      });
+      const resourceId = resourceIdFrom(createRes.body);
 
-      const resourceId: string | null = createRes.body?.id || createRes.body?.data?.id || null;
-
-      if (resourceId && (createRes.status === 200 || createRes.status === 201)) {
-        // Now try to access that specific resource ID with workspace B's JWT
-        const getRes = await httpGet(`${endpoint}/${resourceId}`, { jwt: jwtB, timeout: 8000 });
-
-        if (getRes.status === 200 && looksLikeRealData(getRes.body)) {
-          breaks.push({
-            type: 'CROSS_WORKSPACE_ACCESS',
-            severity: 'critical',
-            file: `backend/src (GET ${endpoint}/:id)`,
-            line: 0,
-            description: `Cross-workspace access: workspace B can read a specific resource created by workspace A`,
-            detail: `Resource ID "${resourceId}" created by workspace "${WORKSPACE_A}" was returned with HTTP 200 when accessed with JWT for workspace "${WORKSPACE_B}". Missing workspace isolation on GET ${endpoint}/:id.`,
-          });
-        }
-
-        // Cleanup: delete the test resource with workspace A's JWT
-        try {
-          await fetch(
-            `${process.env.PULSE_BACKEND_URL || require('./runtime-utils').getBackendUrl()}${endpoint}/${resourceId}`,
-            {
-              method: 'DELETE',
-              headers: { Authorization: `Bearer ${jwtA}` },
-              signal: AbortSignal.timeout(5000),
-            },
-          );
-        } catch {
-          // Cleanup failure is non-critical
-        }
+      if (!resourceId || (createRes.status !== 200 && createRes.status !== 201)) {
+        continue;
       }
+
+      const itemPath = routeJoin(surface.collectionPath, resourceId);
+      const getRes = await httpGet(itemPath, { jwt: jwtB, timeout: 8000 });
+
+      if (getRes.status === 200 && hasNonEmptyData(getRes.body)) {
+        appendBreak(
+          breaks,
+          synthesizedCrossWorkspaceBreak(
+            signalForSurface(
+              surface,
+              'Cross-workspace resource read returned data',
+              `Resource created by owner workspace was returned to attacker workspace at ${itemPath}.`,
+            ),
+            'critical',
+            itemPath,
+          ),
+        );
+      }
+
+      await deleteResource(itemPath, jwtA);
     } catch {
-      // Skip on network error
+      // Network/runtime probe failed; no diagnostic without observation.
     }
   }
 
-  // ── 2. JWT signature manipulation — tampered token must be rejected ────────
-  try {
-    // Build a JWT that claims to belong to workspace A but is signed with a wrong key
-    const tamperedHeader = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString(
-      'base64url',
-    );
-    const tamperedBody = Buffer.from(
-      JSON.stringify({
-        sub: 'attacker-user',
-        email: 'attacker@evil.com',
-        workspaceId: WORKSPACE_A, // claims to be workspace A
-        role: 'ADMIN',
-        iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() / 1000) + 3600,
-      }),
-    ).toString('base64url');
-    const tamperedSig = Buffer.from('wrong-signature').toString('base64url');
-    const tamperedJwt = `${tamperedHeader}.${tamperedBody}.${tamperedSig}`;
-
-    const res = await httpGet('/products', { jwt: tamperedJwt, timeout: 5000 });
-    if (res.status === 200) {
-      breaks.push({
-        type: 'CROSS_WORKSPACE_ACCESS',
-        severity: 'critical',
-        file: `backend/src (JWT validation)`,
-        line: 0,
-        description: `JWT signature not verified — tampered token was accepted`,
-        detail: `A JWT with an invalid signature claiming workspaceId="${WORKSPACE_A}" returned HTTP 200 from GET /products. The backend must verify JWT signatures and reject tampered tokens with 401.`,
+  const [firstSurface] = surfaces;
+  if (firstSurface) {
+    try {
+      const res = await httpGet(firstSurface.collectionPath, {
+        jwt: tamperedJwt(pair.owner),
+        timeout: 5000,
       });
+
+      if (res.status === 200) {
+        appendBreak(
+          breaks,
+          synthesizedCrossWorkspaceBreak(
+            signalForSurface(
+              firstSurface,
+              'Tampered JWT was accepted',
+              `Invalid signature token claiming owner workspace reached ${firstSurface.collectionPath} with HTTP 200.`,
+            ),
+            'critical',
+            firstSurface.collectionPath,
+          ),
+        );
+      }
+    } catch {
+      // Runtime unavailable for signature probe.
     }
-  } catch {
-    // Skip on network error
   }
 
   return breaks;

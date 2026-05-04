@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as Sentry from '@sentry/node';
 import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -199,8 +200,16 @@ export class SmartPaymentService {
           .trackAiUsage(workspaceId, aiResponse?.usage?.total_tokens ?? 500)
           .catch(() => {});
         // PULSE:OK — AI message is optional enrichment; static fallback message is used when AI fails
-      } catch (err) {
-        this.logger.warn('AI message generation failed', err.message);
+      } catch (err: unknown) {
+        this.logger.warn(
+          'AI message generation failed',
+          err instanceof Error ? err.message : String(err),
+        );
+        Sentry.captureException(err, {
+          tags: { type: 'ai_alert', operation: 'smart_payment_message' },
+          extra: { workspaceId, contactId: context.contactId, amount },
+          level: 'warning',
+        });
       }
     }
 
@@ -224,9 +233,15 @@ export class SmartPaymentService {
         billingType: 'PIX',
         suggestedMessage: suggestedMessage || buildPixReadyMessage(customerName, amount),
       };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err);
       this.logger.error(`Stripe payment failed: ${message}`);
+      Sentry.captureException(err, {
+        tags: { type: 'financial_alert', operation: 'smart_payment_create' },
+        extra: { workspaceId, contactId: context.contactId, amount },
+        level: 'fatal',
+      });
       throw err;
     }
   }
@@ -331,8 +346,13 @@ export class SmartPaymentService {
         approved: parsed.approved !== false,
       };
       // PULSE:OK — AI negotiation is an optional enrichment layer; static 5% fallback discount is the safe default when AI is unavailable
-    } catch (err) {
-      this.logger.error('AI negotiation failed', err.message);
+    } catch (err: unknown) {
+      this.logger.error('AI negotiation failed', err instanceof Error ? err.message : String(err));
+      Sentry.captureException(err, {
+        tags: { type: 'ai_alert', operation: 'smart_payment_negotiation' },
+        extra: { workspaceId, contactId, originalAmount },
+        level: 'warning',
+      });
 
       // Fallback: aprovar pequeno desconto
       return {
@@ -407,7 +427,7 @@ export class SmartPaymentService {
         async (tx) => {
           await this.auditService.logWithTx(tx, {
             workspaceId: params.workspaceId,
-            action: 'PAYMENT_CONFIRMED',
+            action: 'payment.status_changed',
             resource: 'SmartPayment',
             resourceId: params.paymentId,
             details: { status, amount, customerId: params.customerId },
@@ -432,6 +452,18 @@ export class SmartPaymentService {
     }
 
     if (status === 'REFUNDED') {
+      await this.prisma.$transaction(
+        async (tx) => {
+          await this.auditService.logWithTx(tx, {
+            workspaceId: params.workspaceId,
+            action: 'refund.processed',
+            resource: 'SmartPayment',
+            resourceId: params.paymentId,
+            details: { status, amount, customerId: params.customerId },
+          });
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
       return {
         sendMessage: true,
         message: 'Seu reembolso foi processado. O valor estará disponível em até 5 dias úteis.',

@@ -39,7 +39,7 @@ console.log('[BOOTSTRAP] Resolving Redis configuration...');
 let resolvedUrl: string | null;
 try {
   resolvedUrl = resolveRedisUrl();
-} catch (err) {
+} catch (err: unknown) {
   if (err instanceof RedisConfigurationError) {
     console.error('[BOOTSTRAP] FATAL: Redis is required but unresolvable.');
     console.error(`   ${err.message}`);

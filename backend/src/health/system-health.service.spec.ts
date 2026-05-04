@@ -1,6 +1,62 @@
 import { ConfigService } from '@nestjs/config';
 import { SystemHealthService } from './system-health.service';
 
+jest.mock('@sentry/node', () => ({
+  captureException: jest.fn(),
+  captureMessage: jest.fn(),
+  init: jest.fn(),
+  setUser: jest.fn(),
+  setContext: jest.fn(),
+  setTag: jest.fn(),
+  setExtra: jest.fn(),
+  withScope: jest.fn((callback) => callback({ setTag: jest.fn(), setExtra: jest.fn() })),
+}));
+
+jest.mock('ioredis', () => {
+  const events = jest.requireActual<typeof import('node:events')>('node:events');
+  class MockRedis extends events.EventEmitter {
+    get = jest.fn();
+    set = jest.fn();
+    del = jest.fn();
+    keys = jest.fn();
+    quit = jest.fn();
+    disconnect = jest.fn();
+    status = 'ready';
+  }
+  return { default: MockRedis, Redis: MockRedis };
+});
+
+jest.mock('fs', () => ({
+  existsSync: jest.fn(),
+  readFileSync: jest.fn(),
+  unlinkSync: jest.fn(),
+  readdirSync: jest.fn().mockReturnValue([]),
+  mkdirSync: jest.fn(),
+  rmdirSync: jest.fn(),
+  statSync: jest.fn().mockReturnValue({ isDirectory: () => false }),
+  writeFileSync: jest.fn(),
+  openSync: jest.fn(),
+  closeSync: jest.fn(),
+  constants: { O_CREAT: 0, O_WRONLY: 0, O_RDONLY: 0 },
+  promises: { readFile: jest.fn(), writeFile: jest.fn(), mkdir: jest.fn() },
+}));
+
+import { existsSync, readFileSync } from 'fs';
+
+const mockedExistsSync = existsSync as jest.MockedFunction<typeof existsSync>;
+const mockedReadFileSync = readFileSync as jest.MockedFunction<typeof readFileSync>;
+
+function stubBackupManifest() {
+  mockedExistsSync.mockReturnValue(true);
+  mockedReadFileSync.mockReturnValue(
+    JSON.stringify({
+      lastBackup: new Date(Date.now() - 10 * 60_000).toISOString(),
+      lastVerifiedAt: new Date(Date.now() - 10 * 60_000).toISOString(),
+      targetRpoMinutes: 60,
+    }),
+  );
+}
+
 describe('SystemHealthService', () => {
   const originalFetch = global.fetch;
 
@@ -19,6 +75,17 @@ describe('SystemHealthService', () => {
     getRuntimeConfigDiagnostics: jest.Mock;
   };
   let storageService: {
+    healthCheck: jest.Mock;
+  };
+  let observabilityQueries: {
+    countConnectedMetaWorkspaces: jest.Mock;
+    countAllMessagesSince: jest.Mock;
+    countAllAutopilotEventsSince: jest.Mock;
+  };
+  let queueHealth: {
+    getQueuesStatus: jest.Mock;
+  };
+  let stripeService: {
     healthCheck: jest.Mock;
   };
 
@@ -74,6 +141,17 @@ describe('SystemHealthService', () => {
         details: { uploadsDir: '/tmp/uploads', writable: true },
       }),
     };
+    observabilityQueries = {
+      countConnectedMetaWorkspaces: jest.fn().mockResolvedValue(0),
+      countAllMessagesSince: jest.fn().mockResolvedValue(0),
+      countAllAutopilotEventsSince: jest.fn().mockResolvedValue(0),
+    };
+    queueHealth = {
+      getQueuesStatus: jest.fn().mockResolvedValue([]),
+    };
+    stripeService = {
+      healthCheck: jest.fn().mockResolvedValue({ status: 'UP' }),
+    };
   });
 
   afterEach(() => {
@@ -93,14 +171,18 @@ describe('SystemHealthService', () => {
 
   const createService = () =>
     new SystemHealthService(
-      prisma as unknown as ConstructorParameters<typeof SystemHealthService>[0],
-      redis as unknown as ConstructorParameters<typeof SystemHealthService>[1],
-      config as unknown as ConstructorParameters<typeof SystemHealthService>[2],
-      whatsappApi as unknown as ConstructorParameters<typeof SystemHealthService>[3],
-      storageService as unknown as ConstructorParameters<typeof SystemHealthService>[4],
+      prisma as never as ConstructorParameters<typeof SystemHealthService>[0],
+      redis as never as ConstructorParameters<typeof SystemHealthService>[1],
+      config as never as ConstructorParameters<typeof SystemHealthService>[2],
+      whatsappApi as never,
+      storageService as never,
+      observabilityQueries as never,
+      queueHealth as never,
+      stripeService as never,
     );
 
   it('reports meta transport and worker health in the consolidated readiness response', async () => {
+    stubBackupManifest();
     setFetchMock({
       status: 'ok',
       queues: { autopilot: { waiting: 0 } },
@@ -129,14 +211,16 @@ describe('SystemHealthService', () => {
       'http://worker:3003/health',
       expect.objectContaining({
         method: 'GET',
-        headers: {
+        headers: expect.objectContaining({
           Authorization: 'Bearer worker-token',
-        },
+          'X-Request-ID': expect.stringMatching(/.+/),
+        }),
       }),
     );
   });
 
   it('marks the system as down when meta critical config is missing', async () => {
+    stubBackupManifest();
     config.get = jest.fn((key: string) => {
       const values: Record<string, string | undefined> = {
         JWT_SECRET: 'secret',

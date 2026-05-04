@@ -1,63 +1,23 @@
 import { ConnectLedgerReconciliationService } from './connect-ledger-reconciliation.service';
+import {
+  makeFinancialAlertStub,
+  makePrisma,
+} from './connect-ledger-reconciliation.service.spec-helpers';
 
-type StubBalance = {
-  id: string;
-  workspaceId: string;
-  stripeAccountId: string;
-  accountType: string;
-  pendingBalanceCents: bigint;
-  availableBalanceCents: bigint;
-  lifetimeReceivedCents: bigint;
-  lifetimePaidOutCents: bigint;
-  lifetimeChargebacksCents: bigint;
-};
+/**
+ * ConnectLedgerReconciliationService — primary lifecycle.
+ *
+ * Covers the cron entrypoint (success + failure) and the two main
+ * reconciliation outcomes: healthy state and drift detection. Replays of
+ * specific entry types and audit failure handling live in sibling spec
+ * files (see connect-ledger-reconciliation.replay.spec.ts and
+ * connect-ledger-reconciliation.audit.spec.ts).
+ */
 
-type StubEntry = {
-  id: string;
-  accountBalanceId: string;
-  type: string;
-  amountCents: bigint;
-  balanceAfterPendingCents: bigint;
-  balanceAfterAvailableCents: bigint;
-  referenceType: string;
-  referenceId: string;
-  matured?: boolean;
-  metadata?: Record<string, unknown> | null;
-  createdAt: Date;
-};
-
-function makePrisma({ balances, entries }: { balances: StubBalance[]; entries: StubEntry[] }) {
-  return {
-    connectAccountBalance: {
-      findMany: jest
-        .fn()
-        .mockImplementation(async ({ where }: { where?: { workspaceId?: string } }) =>
-          where?.workspaceId
-            ? balances.filter((balance) => balance.workspaceId === where.workspaceId)
-            : balances,
-        ),
-    },
-    connectLedgerEntry: {
-      findMany: jest
-        .fn()
-        .mockImplementation(async ({ where }: { where: { accountBalanceId: string } }) =>
-          entries
-            .filter((entry) => entry.accountBalanceId === where.accountBalanceId)
-            .sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime()),
-        ),
-    },
-    adminAuditLog: {
-      create: jest.fn().mockResolvedValue({ id: 'audit_1' }),
-    },
-  };
-}
-
-describe('ConnectLedgerReconciliationService', () => {
+describe('ConnectLedgerReconciliationService — cron + core reconciliation', () => {
   it('runs the connect reconciliation cron without alerting on success', async () => {
     const prisma = makePrisma({ balances: [], entries: [] });
-    const financialAlert = {
-      reconciliationAlert: jest.fn(),
-    };
+    const financialAlert = makeFinancialAlertStub();
     const service = new ConnectLedgerReconciliationService(
       prisma as never,
       financialAlert as never,
@@ -76,9 +36,7 @@ describe('ConnectLedgerReconciliationService', () => {
 
   it('alerts when the connect reconciliation cron itself fails', async () => {
     const prisma = makePrisma({ balances: [], entries: [] });
-    const financialAlert = {
-      reconciliationAlert: jest.fn(),
-    };
+    const financialAlert = makeFinancialAlertStub();
     const service = new ConnectLedgerReconciliationService(
       prisma as never,
       financialAlert as never,
@@ -179,9 +137,7 @@ describe('ConnectLedgerReconciliationService', () => {
         },
       ],
     });
-    const financialAlert = {
-      reconciliationAlert: jest.fn(),
-    };
+    const financialAlert = makeFinancialAlertStub();
 
     const service = new ConnectLedgerReconciliationService(
       prisma as never,
@@ -250,9 +206,7 @@ describe('ConnectLedgerReconciliationService', () => {
         },
       ],
     });
-    const financialAlert = {
-      reconciliationAlert: jest.fn(),
-    };
+    const financialAlert = makeFinancialAlertStub();
 
     const service = new ConnectLedgerReconciliationService(
       prisma as never,
@@ -394,9 +348,7 @@ describe('ConnectLedgerReconciliationService', () => {
         },
       ],
     });
-    const financialAlert = {
-      reconciliationAlert: jest.fn(),
-    };
+    const financialAlert = makeFinancialAlertStub();
 
     const service = new ConnectLedgerReconciliationService(
       prisma as never,
@@ -411,23 +363,5 @@ describe('ConnectLedgerReconciliationService', () => {
       orderBy: [{ workspaceId: 'asc' }, { accountType: 'asc' }, { createdAt: 'asc' }],
       take: 5000,
     });
-  });
-
-  it('returns zero-state when no connect balances exist in scope', async () => {
-    const prisma = makePrisma({ balances: [], entries: [] });
-    const financialAlert = {
-      reconciliationAlert: jest.fn(),
-    };
-
-    const service = new ConnectLedgerReconciliationService(
-      prisma as never,
-      financialAlert as never,
-    );
-    const result = await service.reconcile();
-
-    expect(result.scannedAccounts).toBe(0);
-    expect(result.drifts).toHaveLength(0);
-    expect(financialAlert.reconciliationAlert).not.toHaveBeenCalled();
-    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
   });
 });

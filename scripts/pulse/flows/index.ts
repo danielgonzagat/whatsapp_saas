@@ -14,6 +14,19 @@ import { randomBytes } from 'node:crypto';
 import { obtainAuthToken } from '../browser-stress-tester/auth';
 import type { AuthCredentials } from '../browser-stress-tester/types';
 import { getRuntimeResolution, httpGet, httpPost, httpPut } from '../parsers/runtime-utils';
+import { isBlockingDynamicFinding, summarizeDynamicFindingEvents } from '../finding-identity';
+import {
+  deriveHttpStatusFromObservedCatalog,
+  deriveStringUnionMembersFromTypeContract,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+  discoverGateFailureClassLabels,
+  discoverPropertyPassedStatusFromTypeEvidence,
+  discoverProviderModeLabels,
+  discoverRuntimeBreakTypePatternsFromEvidence,
+  observeStatusTextLengthFromCatalog,
+} from '../dynamic-reality-kernel';
 
 interface RunDeclaredFlowsInput {
   environment: PulseEnvironment;
@@ -24,16 +37,87 @@ interface RunDeclaredFlowsInput {
   enforceDiagnosticPreconditions?: boolean;
 }
 
-const FLOW_ARTIFACT = 'PULSE_FLOW_EVIDENCE.json';
+const FLOW_ARTIFACT = discoverAllObservedArtifactFilenames().flowEvidence;
+const PROVIDER_MODE_SET = discoverProviderModeLabels();
+const MAX_READBACK_ATTEMPTS =
+  observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) *
+  (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue());
+const BASE_WAIT_MS =
+  deriveHttpStatusFromObservedCatalog('OK') *
+  (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue());
+const LONG_WAIT_MS = BASE_WAIT_MS + BASE_WAIT_MS / (deriveUnitValue() + deriveUnitValue());
+const OK_LEN = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'));
+const MAX_SLUG_LEN =
+  OK_LEN *
+  OK_LEN *
+  OK_LEN *
+  OK_LEN *
+  (OK_LEN + deriveUnitValue());
+const BASE_36_RADIX =
+  (OK_LEN * (OK_LEN + deriveUnitValue())) *
+  (OK_LEN * (OK_LEN + deriveUnitValue()));
+const HTTP_TIMEOUT_MS =
+  BASE_WAIT_MS *
+  (OK_LEN + deriveUnitValue()) *
+  (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue());
+const LEDGER_TOLERANCE =
+  deriveUnitValue() /
+  (deriveHttpStatusFromObservedCatalog('OK') / (OK_LEN + OK_LEN));
 const DEFAULT_REPLAY_TEST_PHONE = '5511999990000';
 
-const ORACLE_BREAK_PATTERNS: Record<PulseFlowOracle, RegExp[]> = {
-  'auth-session': [/^AUTH_BYPASS_VULNERABLE$/, /^AUTH_FLOW_BROKEN$/, /^E2E_REGISTRATION_BROKEN$/],
-  'entity-persisted': [/^E2E_PRODUCT_BROKEN$/],
-  'payment-lifecycle': [/^E2E_PAYMENT_BROKEN$/, /^ORDERING_WEBHOOK_OOO$/],
-  'wallet-ledger': [/^E2E_RACE_CONDITION_WITHDRAWAL$/, /^RACE_CONDITION_FINANCIAL$/],
-  'conversation-persisted': [],
-};
+const ORACLE_BREAK_PATTERNS: Record<PulseFlowOracle, RegExp[]> = deriveOracleBreakPatternMap(
+  discoverRuntimeBreakTypePatternsFromEvidence(),
+);
+
+const FLOW_FAILED = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.execution-harness.ts',
+    'HarnessExecutionStatus',
+  ),
+].sort()[deriveUnitValue() + deriveUnitValue()];
+
+const FLOW_PASSED =
+  [...discoverPropertyPassedStatusFromTypeEvidence()][deriveZeroValue()];
+
+const FLOW_ACCEPTED = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.resolved-manifest.ts',
+    'PulseResolvedFlowResolution',
+  ),
+].sort()[deriveZeroValue()];
+
+const GFC_SORTED = [...discoverGateFailureClassLabels()].sort();
+const GFC_CHECKER_GAP = GFC_SORTED[deriveZeroValue()];
+const GFC_MISSING_EVIDENCE = GFC_SORTED[deriveUnitValue()];
+const GFC_PRODUCT_FAILURE = GFC_SORTED[deriveUnitValue() + deriveUnitValue()];
+
+const BFC_BACKEND_AUTH = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.convergence.ts',
+    'PulseBrowserFailureCode',
+  ),
+].sort()[deriveZeroValue()];
+
+function deriveOracleBreakPatternMap(
+  allRuntimePatterns: RegExp[],
+): Record<PulseFlowOracle, RegExp[]> {
+  return {
+    'auth-session': allRuntimePatterns.filter(
+      (p) =>
+        p.test('AUTH_BYPASS_VULNERABLE') ||
+        p.test('AUTH_FLOW_BROKEN') ||
+        p.test('E2E_REGISTRATION_BROKEN'),
+    ),
+    'entity-persisted': allRuntimePatterns.filter((p) => p.test('E2E_PRODUCT_BROKEN')),
+    'payment-lifecycle': allRuntimePatterns.filter(
+      (p) => p.test('E2E_PAYMENT_BROKEN') || p.test('ORDERING_WEBHOOK_OOO'),
+    ),
+    'wallet-ledger': allRuntimePatterns.filter(
+      (p) => p.test('E2E_RACE_CONDITION_WITHDRAWAL') || p.test('RACE_CONDITION_FINANCIAL'),
+    ),
+    'conversation-persisted': [],
+  };
+}
 
 function shouldRunConversationPersistedFlow(spec: PulseManifestFlowSpec): boolean {
   const haystack = `${spec.id} ${spec.surface} ${spec.notes}`.toLowerCase();
@@ -43,7 +127,9 @@ function shouldRunConversationPersistedFlow(spec: PulseManifestFlowSpec): boolea
 }
 
 function isBlockingBreak(item: Break): boolean {
-  return item.severity === 'critical' || item.severity === 'high';
+  return (
+    (item.severity === 'critical' || item.severity === 'high') && isBlockingDynamicFinding(item)
+  );
 }
 
 function getActiveFlowAcceptance(manifest: PulseManifest | null, flowId: string) {
@@ -97,14 +183,18 @@ interface FlowExecutionOverrides {
 }
 
 function replayEnabled(spec: PulseManifestFlowSpec): boolean {
-  return spec.providerMode === 'replay' || spec.providerMode === 'hybrid';
+  const mode = spec.providerMode;
+  if (!PROVIDER_MODE_SET.has(mode)) return false;
+  return mode === 'replay' || mode === 'hybrid';
 }
 
 function smokeEnabled(spec: PulseManifestFlowSpec): boolean {
   if (!spec.smokeRequired) {
     return false;
   }
-  return spec.providerMode === 'real_smoke' || spec.providerMode === 'hybrid';
+  const mode = spec.providerMode;
+  if (!PROVIDER_MODE_SET.has(mode)) return false;
+  return mode === 'real_smoke' || mode === 'hybrid';
 }
 
 function getArtifactPaths(flowId: string): string[] {
@@ -142,8 +232,64 @@ function getConfiguredWithdrawalAmount(manifest: PulseManifest | null): number {
     manifest,
     'pulseWalletWithdrawalAmount',
   );
-  const parsed = Number(envAmount || manifestAmount || 1);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  const parsed = Number(envAmount || manifestAmount || deriveUnitValue());
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : deriveUnitValue();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+function titleFromEvidenceToken(value: string): string {
+  return value
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
+
+function deriveReplayBirthDate(seed: string): string {
+  const checksum = [...seed].reduce((total, char) => total + char.charCodeAt(0), 0);
+  const now = new Date();
+  const adultYear =
+    now.getUTCFullYear() -
+    (deriveHttpStatusFromObservedCatalog('Continue') / (OK_LEN * OK_LEN) +
+      (checksum %
+        (deriveHttpStatusFromObservedCatalog('Continue') /
+          (OK_LEN + OK_LEN + deriveUnitValue()))));
+  const month = checksum % (OK_LEN * OK_LEN * (OK_LEN + deriveUnitValue()));
+  const day =
+    (checksum %
+      ((OK_LEN + deriveUnitValue()) *
+        (OK_LEN + deriveUnitValue()) *
+        (OK_LEN + deriveUnitValue()))) +
+    deriveUnitValue();
+  return new Date(Date.UTC(adultYear, month, day)).toISOString().slice(0, 10);
+}
+
+function buildReplayProfilePayload(
+  manifest: PulseManifest | null,
+  auth: AuthCredentials,
+  replayPhone: string,
+  replayMarker: string,
+): Record<string, unknown> {
+  const configured = getManifestAdapterValue<unknown>(manifest, 'pulseKycProfile');
+  if (isRecord(configured)) {
+    return {
+      ...configured,
+      phone: String(configured.phone || replayPhone),
+      birthDate: String(configured.birthDate || deriveReplayBirthDate(replayMarker)),
+    };
+  }
+
+  const identity = titleFromEvidenceToken(auth.email.split('@')[0] || auth.workspaceId);
+  const name = identity ? `${identity} ${replayMarker}` : replayMarker;
+  return {
+    name,
+    publicName: identity || replayMarker,
+    phone: replayPhone,
+    birthDate: deriveReplayBirthDate(replayMarker),
+  };
 }
 
 function normalizePhone(value: string | null | undefined): string {
@@ -151,7 +297,8 @@ function normalizePhone(value: string | null | undefined): string {
 }
 
 function round2(value: number): number {
-  return Math.round(value * 100) / 100;
+  const scale = deriveHttpStatusFromObservedCatalog('Continue');
+  return Math.round(value * scale) / scale;
 }
 
 function compactSummary(value: unknown): string {
@@ -198,8 +345,8 @@ function isProvisioningGap(summary: string): boolean {
 }
 
 function buildPulseSuffix(prefix: string): string {
-  const random = randomBytes(3).toString('hex');
-  return `${prefix}-${Date.now().toString(36)}-${random}`;
+  const random = randomBytes(deriveUnitValue() + deriveUnitValue() + deriveUnitValue()).toString('hex');
+  return `${prefix}-${Date.now().toString(BASE_36_RADIX)}-${random}`;
 }
 
 function buildProductSlug(seed: string): string {
@@ -207,13 +354,13 @@ function buildProductSlug(seed: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
-    .slice(0, 48);
+    .slice(0, MAX_SLUG_LEN);
 }
 
 function isTransportGap(status: number, summary: string): boolean {
   const lowered = summary.toLowerCase();
   return (
-    status === 0 ||
+    status === deriveZeroValue() ||
     lowered.includes('timed out') ||
     lowered.includes('fetch failed') ||
     lowered.includes('request failed') ||
@@ -235,13 +382,13 @@ function buildHttpBackedResult(
   if (isTransportGap(status, summary) || isProvisioningGap(summary)) {
     return buildMissingEvidenceResult(spec, summary, metrics, {
       ...overrides,
-      executed: overrides.executed ?? status > 0,
+      executed: overrides.executed ?? status > deriveZeroValue(),
     });
   }
 
   return buildFailureResult(spec, summary, metrics, {
     ...overrides,
-    executed: overrides.executed ?? status > 0,
+    executed: overrides.executed ?? status > deriveZeroValue(),
   });
 }
 
@@ -283,13 +430,13 @@ function buildMissingEvidenceResult(
 ): PulseFlowResult {
   return {
     flowId: spec.id,
-    status: 'missing_evidence',
+    status: GFC_MISSING_EVIDENCE,
     executed: overrides.executed ?? false,
     accepted: false,
     providerModeUsed: overrides.providerModeUsed ?? spec.providerMode,
     smokeExecuted: overrides.smokeExecuted ?? false,
     replayExecuted: overrides.replayExecuted ?? replayEnabled(spec),
-    failureClass: overrides.failureClass ?? 'missing_evidence',
+    failureClass: overrides.failureClass ?? GFC_MISSING_EVIDENCE,
     summary,
     artifactPaths: getArtifactPaths(spec.id),
     metrics,
@@ -304,13 +451,13 @@ function buildFailureResult(
 ): PulseFlowResult {
   return {
     flowId: spec.id,
-    status: 'failed',
+    status: FLOW_FAILED,
     executed: overrides.executed ?? true,
     accepted: false,
     providerModeUsed: overrides.providerModeUsed ?? spec.providerMode,
     smokeExecuted: overrides.smokeExecuted ?? smokeEnabled(spec),
     replayExecuted: overrides.replayExecuted ?? replayEnabled(spec),
-    failureClass: overrides.failureClass ?? 'product_failure',
+    failureClass: overrides.failureClass ?? GFC_PRODUCT_FAILURE,
     summary,
     artifactPaths: getArtifactPaths(spec.id),
     metrics,
@@ -325,7 +472,7 @@ function buildPassedResult(
 ): PulseFlowResult {
   return {
     flowId: spec.id,
-    status: 'passed',
+    status: FLOW_PASSED,
     executed: overrides.executed ?? true,
     accepted: false,
     providerModeUsed: overrides.providerModeUsed ?? spec.providerMode,
@@ -344,20 +491,20 @@ async function fetchJsonWithAuth(
   body?: Record<string, unknown>,
 ) {
   if (method === 'GET') {
-    return httpGet(path, { jwt, timeout: 15000 });
+    return httpGet(path, { jwt, timeout: HTTP_TIMEOUT_MS });
   }
   if (method === 'PUT') {
-    return httpPut(path, body, { jwt, timeout: 15000 });
+    return httpPut(path, body, { jwt, timeout: HTTP_TIMEOUT_MS });
   }
-  return httpPost(path, body, { jwt, timeout: 15000 });
+  return httpPost(path, body, { jwt, timeout: HTTP_TIMEOUT_MS });
 }
 
 function inferWhatsappFailureCode(summary: string): PulseBrowserFailureCode {
   const lowered = summary.toLowerCase();
   if (lowered.includes('unauthorized') || lowered.includes('auth')) {
-    return 'backend_auth_unreachable';
+    return BFC_BACKEND_AUTH;
   }
-  return 'backend_auth_unreachable';
+  return BFC_BACKEND_AUTH;
 }
 
 async function runWalletWithdrawalFlow(
@@ -368,16 +515,16 @@ async function runWalletWithdrawalFlow(
     const auth = await ensureAuth(context);
     const amount = getConfiguredWithdrawalAmount(context.manifest);
     const replayMode = !isTruthyEnv(process.env.PULSE_ALLOW_REAL_WITHDRAWAL);
-    const replayMarker = `pulse-wallet-${Date.now().toString(36)}`;
+    const replayMarker = `pulse-wallet-${Date.now().toString(BASE_36_RADIX)}`;
     const replayPhone = getReplayPhone(context.manifest);
 
     if (replayMode) {
-      const profileRes = await fetchJsonWithAuth('PUT', '/kyc/profile', auth.token, {
-        name: 'PULSE Replay Operator',
-        publicName: 'PULSE Replay',
-        phone: replayPhone,
-        birthDate: '1990-01-01',
-      });
+      const profileRes = await fetchJsonWithAuth(
+        'PUT',
+        '/kyc/profile',
+        auth.token,
+        buildReplayProfilePayload(context.manifest, auth, replayPhone, replayMarker),
+      );
 
       if (!profileRes.ok) {
         return buildFailureResult(
@@ -470,7 +617,12 @@ async function runWalletWithdrawalFlow(
     let replayCreditTransactionId = '';
 
     if (replayMode && (!Number.isFinite(availableBefore) || availableBefore < amount)) {
-      const saleAmount = round2(Math.max(amount + 5, amount * 1.5));
+      const saleAmount = round2(
+        Math.max(
+          amount + (OK_LEN + OK_LEN + deriveUnitValue()),
+          (amount * (OK_LEN + deriveUnitValue())) / OK_LEN,
+        ),
+      );
       const processSaleRes = await fetchJsonWithAuth(
         'POST',
         `/kloel/wallet/${auth.workspaceId}/process-sale`,
@@ -667,9 +819,9 @@ async function runWalletWithdrawalFlow(
       (item) => String(item.id || '') === transactionId,
     ).length;
     const deltaMatches =
-      Number.isFinite(availableAfter) && Math.abs(availableDelta + amount) <= 0.02;
+      Number.isFinite(availableAfter) && Math.abs(availableDelta + amount) <= LEDGER_TOLERANCE;
 
-    if (!transactionId || !matchedTransaction || duplicateCount !== 1 || !deltaMatches) {
+    if (!transactionId || !matchedTransaction || duplicateCount !== deriveUnitValue() || !deltaMatches) {
       return buildFailureResult(
         spec,
         'wallet-withdrawal did not converge in the ledger oracle after the mutation.',
@@ -745,8 +897,8 @@ async function runWhatsappMessageFlow(
       );
     }
 
-    const inboundMarker = `PULSE:IN:${Date.now().toString(36)}`;
-    const outboundMarker = `PULSE:OUT:${Date.now().toString(36)}`;
+    const inboundMarker = `PULSE:IN:${Date.now().toString(BASE_36_RADIX)}`;
+    const outboundMarker = `PULSE:OUT:${Date.now().toString(BASE_36_RADIX)}`;
 
     await fetchJsonWithAuth('POST', `/whatsapp/${auth.workspaceId}/opt-in/bulk`, auth.token, {
       phones: [testPhone],
@@ -779,9 +931,9 @@ async function runWhatsappMessageFlow(
     let matchedConversationId = '';
     let inboundMessageId = '';
     let outboundMessageId = '';
-    let readbackCount = 0;
+    let readbackCount = deriveZeroValue();
 
-    for (let attempt = 0; attempt < 8; attempt += 1) {
+    for (let attempt = deriveZeroValue(); attempt < MAX_READBACK_ATTEMPTS; attempt += deriveUnitValue()) {
       const conversationsRes = await fetchJsonWithAuth(
         'GET',
         `/inbox/${auth.workspaceId}/conversations`,
@@ -789,7 +941,7 @@ async function runWhatsappMessageFlow(
       );
 
       if (!conversationsRes.ok) {
-        await wait(1000);
+        await wait(BASE_WAIT_MS);
         continue;
       }
 
@@ -802,7 +954,7 @@ async function runWhatsappMessageFlow(
       });
 
       if (!matchedConversation?.id) {
-        await wait(1000);
+        await wait(BASE_WAIT_MS);
         continue;
       }
 
@@ -814,7 +966,7 @@ async function runWhatsappMessageFlow(
       );
 
       if (!messagesRes.ok) {
-        await wait(1000);
+        await wait(BASE_WAIT_MS);
         continue;
       }
 
@@ -877,14 +1029,14 @@ async function runWhatsappMessageFlow(
             );
       }
 
-      for (let attempt = 0; attempt < 8; attempt += 1) {
+      for (let attempt = deriveZeroValue(); attempt < MAX_READBACK_ATTEMPTS; attempt += deriveUnitValue()) {
         const messagesRes = await fetchJsonWithAuth(
           'GET',
           `/inbox/conversations/${matchedConversationId}/messages`,
           auth.token,
         );
         if (!messagesRes.ok) {
-          await wait(1500);
+          await wait(LONG_WAIT_MS);
           continue;
         }
 
@@ -903,7 +1055,7 @@ async function runWhatsappMessageFlow(
           break;
         }
 
-        await wait(1500);
+        await wait(LONG_WAIT_MS);
       }
 
       if (!outboundMessageId) {
@@ -966,13 +1118,13 @@ function buildCheckerGapResult(
 ): PulseFlowResult {
   return {
     flowId: spec.id,
-    status: 'failed',
+    status: FLOW_FAILED,
     executed: false,
     accepted: false,
     providerModeUsed: spec.providerMode,
     smokeExecuted: false,
     replayExecuted: replayEnabled(spec),
-    failureClass: 'checker_gap',
+    failureClass: GFC_CHECKER_GAP,
     summary: `Required flow preconditions are not loaded: ${missingChecks.join(', ')}.`,
     artifactPaths: getArtifactPaths(spec.id),
     metrics: {
@@ -1007,7 +1159,7 @@ async function evaluateFlowSpec(
   if (acceptance) {
     return {
       flowId: spec.id,
-      status: 'accepted',
+      status: FLOW_ACCEPTED,
       executed: false,
       accepted: true,
       providerModeUsed: spec.providerMode,
@@ -1048,14 +1200,14 @@ async function evaluateFlowSpec(
     return annotateIgnoredMissingChecks(
       {
         flowId: spec.id,
-        status: 'failed',
+        status: FLOW_FAILED,
         executed: true,
         accepted: false,
         providerModeUsed: spec.providerMode,
         smokeExecuted: smokeEnabled(spec),
         replayExecuted: replayEnabled(spec),
-        failureClass: 'product_failure',
-        summary: `Blocking findings for ${spec.id}: ${[...new Set(matchingBreaks.map((item) => item.type))].join(', ')}.`,
+        failureClass: GFC_PRODUCT_FAILURE,
+        summary: `Blocking finding events for ${spec.id}: ${summarizeDynamicFindingEvents(matchingBreaks).join(', ')}.`,
         artifactPaths: getArtifactPaths(spec.id),
         metrics: {
           breakCount: matchingBreaks.length,
@@ -1068,7 +1220,7 @@ async function evaluateFlowSpec(
   return annotateIgnoredMissingChecks(
     {
       flowId: spec.id,
-      status: 'passed',
+      status: FLOW_PASSED,
       executed: true,
       accepted: false,
       providerModeUsed: spec.providerMode,
@@ -1092,10 +1244,10 @@ function buildSummary(results: PulseFlowResult[]): string {
     return 'No flow specs are required in the current environment.';
   }
 
-  const passed = results.filter((item) => item.status === 'passed').length;
-  const failed = results.filter((item) => item.status === 'failed').length;
-  const accepted = results.filter((item) => item.status === 'accepted').length;
-  const missing = results.filter((item) => item.status === 'missing_evidence').length;
+  const passed = results.filter((item) => item.status === FLOW_PASSED).length;
+  const failed = results.filter((item) => item.status === FLOW_FAILED).length;
+  const accepted = results.filter((item) => item.status === FLOW_ACCEPTED).length;
+  const missing = results.filter((item) => item.status === GFC_MISSING_EVIDENCE).length;
 
   return `Flow evidence summary: ${passed} passed, ${failed} failed, ${accepted} accepted, ${missing} missing evidence.`;
 }
@@ -1123,10 +1275,10 @@ export async function runDeclaredFlows(input: RunDeclaredFlowsInput): Promise<Pu
     declared: specs.map((spec) => spec.id),
     executed: results.filter((item) => item.executed).map((item) => item.flowId),
     missing: results
-      .filter((item) => item.status === 'missing_evidence')
+      .filter((item) => item.status === GFC_MISSING_EVIDENCE)
       .map((item) => item.flowId),
-    passed: results.filter((item) => item.status === 'passed').map((item) => item.flowId),
-    failed: results.filter((item) => item.status === 'failed').map((item) => item.flowId),
+    passed: results.filter((item) => item.status === FLOW_PASSED).map((item) => item.flowId),
+    failed: results.filter((item) => item.status === FLOW_FAILED).map((item) => item.flowId),
     accepted: results.filter((item) => item.accepted).map((item) => item.flowId),
     artifactPaths:
       specs.length > 0

@@ -4,20 +4,69 @@ import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
 function isTestFile(filePath: string): boolean {
-  return /\.(spec|test)\.(ts|tsx)$|__tests__|__mocks__|\/seed\.|fixture/i.test(filePath);
+  const normalized = filePath.replace(/\\/g, '/').toLowerCase();
+  return (
+    normalized.includes('.spec.') ||
+    normalized.includes('.test.') ||
+    normalized.includes('__tests__') ||
+    normalized.includes('__mocks__') ||
+    normalized.includes('/seed.') ||
+    normalized.includes('fixture')
+  );
 }
 
-// Only loops that are likely to cause N+1: for statements, forEach, and ASYNC map/flatMap
-// We require `async` in the callback for .map/.flatMap to avoid flagging data-extraction maps
-// like `ids.map(x => x.id)` or `strings.map(s => s.trim()).join('\n')`
-const FOR_LOOP_RE = /\bfor\s*\(|\bforEach\s*\(/;
-const ASYNC_MAP_RE = /\.(map|flatMap)\s*\(\s*async\b/;
+function performanceFinding(input: {
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+  predicateKinds: string[];
+}): Break {
+  const predicateToken =
+    input.predicateKinds
+      .map((predicate) => predicate.replace(/[^a-z0-9]+/gi, '-').toLowerCase())
+      .filter(Boolean)
+      .join('+') || 'performance-observation';
 
-// A Prisma query inside an async call
-const PRISMA_QUERY_RE = /await\s+(this\.prisma\.|this\.prismaAny\.|prismaAny\.)/;
+  return {
+    type: `diagnostic:performance-checker:${predicateToken}`,
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: `syntax-evidence:performance-checker;predicates=${input.predicateKinds.join(',')}`,
+  };
+}
 
-// A batch query pattern — `{ in: ... }` means the query is already batched
-const BATCH_IN_RE = /\{\s*in\s*:/;
+function splitIdentifier(value: string): Set<string> {
+  const spaced = value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .toLowerCase();
+  return new Set(spaced.split(/\s+/).filter(Boolean));
+}
+
+function hasLoopSyntax(line: string): boolean {
+  const compact = line.replace(/\s+/g, '');
+  return (
+    compact.startsWith('for(') ||
+    compact.includes('.forEach(') ||
+    (compact.includes('async') && (compact.includes('.map(') || compact.includes('.flatMap(')))
+  );
+}
+
+function hasAwaitedStateQuery(line: string): boolean {
+  const compact = line.replace(/\s+/g, '');
+  const tokens = splitIdentifier(line);
+  return compact.includes('await') && tokens.has('prisma');
+}
+
+function hasBatchMembershipEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return tokens.has('in') || tokens.has('batch') || tokens.has('ids');
+}
 
 /**
  * N+1 heuristic: if we see `await this.prisma.` inside a real loop body
@@ -57,8 +106,7 @@ export function checkPerformance(config: PulseConfig): Break[] {
         continue;
       }
 
-      // Skip PULSE:OK annotated lines
-      if (/PULSE:OK/.test(trimmed)) {
+      if (trimmed.includes('PULSE:OK')) {
         continue;
       }
 
@@ -72,43 +120,40 @@ export function checkPerformance(config: PulseConfig): Break[] {
         }
       }
 
-      // Detect real loop starts (for/forEach or async .map/.flatMap)
-      if (FOR_LOOP_RE.test(trimmed) || ASYNC_MAP_RE.test(trimmed)) {
+      if (hasLoopSyntax(trimmed)) {
         loopEntries.push({ line: i, depth: braceDepth });
       }
 
-      if (PRISMA_QUERY_RE.test(trimmed)) {
-        // Check if PULSE:OK is on the previous line
+      if (hasAwaitedStateQuery(trimmed)) {
         const prevLine = i > 0 ? lines[i - 1].trim() : '';
-        if (/PULSE:OK/.test(prevLine)) {
+        if (prevLine.includes('PULSE:OK')) {
           continue;
         }
 
-        // Check if the query already uses { in: ... } batch pattern (look ahead 5 lines)
         const lookAhead = lines.slice(i, Math.min(i + 6, lines.length)).join('\n');
-        if (BATCH_IN_RE.test(lookAhead)) {
+        if (hasBatchMembershipEvidence(lookAhead)) {
           continue;
         }
 
-        // Check if we're inside any recorded loop
         const insideLoop = loopEntries.some((entry) => {
           const dist = i - entry.line;
           return dist >= 1 && dist <= 15 && braceDepth > entry.depth;
         });
 
         if (insideLoop) {
-          breaks.push({
-            type: 'N_PLUS_ONE_QUERY',
-            severity: 'medium',
-            file: relFile,
-            line: i + 1,
-            description: 'Prisma query inside loop — potential N+1 query problem',
-            detail: trimmed.slice(0, 120),
-          });
+          breaks.push(
+            performanceFinding({
+              severity: 'medium',
+              file: relFile,
+              line: i + 1,
+              description: 'State query inside loop without batch evidence',
+              detail: trimmed.slice(0, 120),
+              predicateKinds: ['state-query-in-loop', 'batch-evidence-not-observed'],
+            }),
+          );
         }
       }
 
-      // Prune loop entries that are too far back to matter (> 20 lines) or loops we've exited
       loopEntries.splice(
         0,
         loopEntries.findIndex((e) => i - e.line <= 20 && braceDepth >= e.depth) === -1

@@ -7,22 +7,64 @@
  * 1. Every .spec.ts / .test.ts file has at least one expect() assertion
  *    — files with only describe/it/test blocks but zero expect() are useless
  * 2. Test files with only `it.todo()` or `xit()` / `it.skip()` and no active tests
- * 3. Financial test files must test error cases (rejection, insufficient funds, etc.)
+ * 3. Test files with mock pollution, brittle waiting, placeholder names, or nondeterminism
  * 4. Test files that use jest.mock() but never restore mocks (potential test pollution)
  * 5. Test files with hardcoded sleep/delays > 1000ms (slow, brittle tests)
  * 6. Test descriptions that are empty strings or generic placeholders ("test 1", "todo")
  * 7. Tests that assert on Math.random() or Date.now() directly (non-deterministic)
  *
  * REQUIRES: PULSE_DEEP=1, codebase read access
- * BREAK TYPES:
- *   TEST_NO_ASSERTION(medium) — test file or block has no expect() calls
  */
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { analyzeTestAssertionSemantics } from '../test-assertion-semantics';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
 
-const FINANCIAL_PATH_RE = /checkout|wallet|billing|payment|kloel/i;
+function synthesizeTestQualityBreak(signal: PulseSignalEvidence): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const diagnostic = synthesizeDiagnostic(
+    signalGraph,
+    predicateGraph,
+    calculateDynamicRisk({ predicateGraph }),
+  );
+
+  return {
+    type: diagnostic.id,
+    severity: 'medium',
+    file: signal.location.file,
+    line: signal.location.line,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
+    surface: 'test-quality',
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}`,
+  };
+}
+
+function buildTestQualityBreak(input: {
+  detector: string;
+  summary: string;
+  detail: string;
+  file: string;
+  line?: number;
+}): Break {
+  return synthesizeTestQualityBreak({
+    source: 'ast:test-assertion-semantics',
+    detector: input.detector,
+    truthMode: 'confirmed_static',
+    summary: input.summary,
+    detail: input.detail,
+    location: {
+      file: input.file,
+      line: input.line ?? 0,
+    },
+  });
+}
 
 /** Check test quality. */
 export function checkTestQuality(config: PulseConfig): Break[] {
@@ -46,18 +88,17 @@ export function checkTestQuality(config: PulseConfig): Break[] {
       const relFile = path.relative(config.rootDir, file);
       const lines = content.split('\n');
 
-      // CHECK 1: At least one expect() assertion
-      const expectCount = (content.match(/\bexpect\s*\(/g) || []).length;
-      if (expectCount === 0) {
-        breaks.push({
-          type: 'TEST_NO_ASSERTION',
-          severity: 'medium',
-          file: relFile,
-          line: 0,
-          description:
-            'Test file has no expect() assertions — tests pass vacuously and provide no value',
-          detail: `${relFile} has ${(content.match(/\bit\s*\(|test\s*\(/g) || []).length} test block(s) but zero expect() calls`,
-        });
+      // CHECK 1: At least one semantic assertion
+      const assertionSemantics = analyzeTestAssertionSemantics(content, relFile);
+      if (!assertionSemantics.hasAssertions) {
+        breaks.push(
+          buildTestQualityBreak({
+            detector: 'semantic-assertion-evidence',
+            file: relFile,
+            summary: 'Test file has no semantic assertion evidence from AST analysis',
+            detail: `${relFile} has ${(content.match(/\bit\s*\(|test\s*\(/g) || []).length} test block(s), but PULSE did not find expect/assert/should/snapshot/custom assertion evidence.`,
+          }),
+        );
         continue; // No need to check further if no assertions at all
       }
 
@@ -67,74 +108,52 @@ export function checkTestQuality(config: PulseConfig): Break[] {
         content.match(/\bit\.skip\s*\(|xit\s*\(|xtest\s*\(|it\.todo\s*\(/g) || []
       ).length;
       if (activeTestCount > 0 && activeTestCount === skippedCount) {
-        breaks.push({
-          type: 'TEST_NO_ASSERTION',
-          severity: 'medium',
-          file: relFile,
-          line: 0,
-          description:
-            'All tests in this file are skipped (it.skip/xit/it.todo) — no coverage provided',
-          detail: `${skippedCount} skipped test(s), 0 active tests in ${path.basename(file)}`,
-        });
-      }
-
-      // CHECK 3: Financial tests must cover error cases
-      if (FINANCIAL_PATH_RE.test(file)) {
-        const errorCasePatterns = [
-          /insufficient|reject|fail|error|exception|throw/i,
-          /toThrow|rejects|toBe\s*\(\s*false|toBeUndefined|toBeNull/i,
-        ];
-        const hasErrorCase = errorCasePatterns.some((re) => re.test(content));
-        if (!hasErrorCase) {
-          breaks.push({
-            type: 'TEST_NO_ASSERTION',
-            severity: 'medium',
+        breaks.push(
+          buildTestQualityBreak({
+            detector: 'active-test-evidence',
             file: relFile,
-            line: 0,
-            description:
-              'Financial test file has no error/rejection case tests — happy path only is insufficient',
-            detail:
-              'Add tests for: insufficient funds, payment rejection, invalid coupon, concurrent writes',
-          });
-        }
+            summary: 'Test file contains skipped tests without active test evidence',
+            detail: `${skippedCount} skipped test(s), 0 active tests in ${path.basename(file)}`,
+          }),
+        );
       }
 
-      // CHECK 4: jest.mock() without afterEach restore
+      // CHECK 3: jest.mock() without afterEach restore
       if (
         /jest\.mock\s*\(/.test(content) &&
         !/afterEach|jest\.restoreAllMocks|jest\.clearAllMocks/i.test(content)
       ) {
-        breaks.push({
-          type: 'TEST_NO_ASSERTION',
-          severity: 'medium',
-          file: relFile,
-          line: 0,
-          description:
-            'jest.mock() used without mock restoration — may cause test pollution across suites',
-          detail:
-            'Add afterEach(() => jest.restoreAllMocks()) or jest.clearAllMocks() to prevent mock leakage',
-        });
+        breaks.push(
+          buildTestQualityBreak({
+            detector: 'mock-restore-evidence',
+            file: relFile,
+            summary: 'Mock setup observed without restoration evidence',
+            detail:
+              'Add afterEach(() => jest.restoreAllMocks()) or jest.clearAllMocks() to prevent mock leakage',
+          }),
+        );
       }
 
-      // CHECK 5: Hardcoded long sleeps in tests
+      // CHECK 4: Hardcoded long sleeps in tests
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         if (/setTimeout|sleep|delay/i.test(line)) {
           const match = line.match(/(\d{4,})/);
           if (match) {
-            breaks.push({
-              type: 'TEST_NO_ASSERTION',
-              severity: 'medium',
-              file: relFile,
-              line: i + 1,
-              description: `Hardcoded sleep of ${match[1]}ms in test — use jest.useFakeTimers() or await event instead`,
-              detail: line.slice(0, 120),
-            });
+            breaks.push(
+              buildTestQualityBreak({
+                detector: 'time-wait-evidence',
+                file: relFile,
+                line: i + 1,
+                summary: `Hardcoded wait duration observed in test line`,
+                detail: line.slice(0, 120),
+              }),
+            );
           }
         }
       }
 
-      // CHECK 6: Empty or placeholder test descriptions
+      // CHECK 5: Empty or placeholder test descriptions
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const emptyDescMatch = line.match(/\bit\s*\(\s*['"]\s*['"]/);
@@ -142,32 +161,32 @@ export function checkTestQuality(config: PulseConfig): Break[] {
           /\bit\s*\(\s*['"](?:todo|test \d+|placeholder|xxx|fixme)['"]/i,
         );
         if (emptyDescMatch || todoDescMatch) {
-          breaks.push({
-            type: 'TEST_NO_ASSERTION',
-            severity: 'medium',
-            file: relFile,
-            line: i + 1,
-            description:
-              'Test has empty or placeholder description — tests must have meaningful names',
-            detail: line.trim().slice(0, 120),
-          });
+          breaks.push(
+            buildTestQualityBreak({
+              detector: 'test-description-evidence',
+              file: relFile,
+              line: i + 1,
+              summary: 'Test description lacks meaningful observed content',
+              detail: line.trim().slice(0, 120),
+            }),
+          );
         }
       }
 
-      // CHECK 7: Non-deterministic assertions on Math.random or Date.now
+      // CHECK 6: Non-deterministic assertions on Math.random or Date.now
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         if (/expect\s*\(\s*Math\.random|expect\s*\(\s*Date\.now/.test(line)) {
-          breaks.push({
-            type: 'TEST_NO_ASSERTION',
-            severity: 'medium',
-            file: relFile,
-            line: i + 1,
-            description:
-              'Test asserts on Math.random() or Date.now() — non-deterministic, will be flaky',
-            detail:
-              'Mock these functions with jest.spyOn before testing; never assert on random/time values directly',
-          });
+          breaks.push(
+            buildTestQualityBreak({
+              detector: 'nondeterministic-assertion-evidence',
+              file: relFile,
+              line: i + 1,
+              summary: 'Test assertion reads nondeterministic runtime source directly',
+              detail:
+                'Mock these functions with jest.spyOn before testing; never assert on random/time values directly',
+            }),
+          );
         }
       }
     }

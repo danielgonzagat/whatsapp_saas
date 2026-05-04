@@ -1,9 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken } from './meta-token-crypto';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { readRecord, readStrictText, readText } from './__companions__/meta-read-helpers';
 
 const D_RE = /\D/g;
 
@@ -21,6 +23,7 @@ type ResolvedMetaConnection = {
   pageAccessToken: string | null;
   instagramAccountId: string | null;
   instagramUsername: string | null;
+  adAccountId: string | null;
   tokenExpired: boolean;
   persistedConnection: boolean;
 };
@@ -33,29 +36,9 @@ export class MetaWhatsAppService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly metaSdk: MetaSdkService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
-  private readText(value: unknown): string {
-    if (typeof value === 'string') {
-      return value;
-    }
-    if (typeof value === 'number' || typeof value === 'boolean') {
-      return String(value);
-    }
-    return '';
-  }
-
-  private readStrictText(value: unknown): string | undefined {
-    return typeof value === 'string' && value.trim() ? value : undefined;
-  }
-
-  private readRecord(value: unknown): Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : {};
-  }
-
-  /** Build embedded signup url. */
   buildEmbeddedSignupUrl(
     workspaceId: string,
     options?: { channel?: string | null; returnTo?: string | null },
@@ -124,6 +107,7 @@ export class MetaWhatsAppService {
         instagramUsername: true,
         whatsappPhoneNumberId: true,
         whatsappBusinessId: true,
+        adAccountId: true,
       },
     });
 
@@ -150,6 +134,7 @@ export class MetaWhatsAppService {
       pageAccessToken: decryptMetaToken(connection?.pageAccessToken),
       instagramAccountId: connection?.instagramAccountId || null,
       instagramUsername: connection?.instagramUsername || null,
+      adAccountId: connection?.adAccountId || null,
       tokenExpired,
       persistedConnection: Boolean(connection),
     };
@@ -203,12 +188,13 @@ export class MetaWhatsAppService {
         verifiedName: String(firstPhone?.verified_name || '').trim() || null,
       };
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
+      void this.opsAlert?.alertOnDegradation(
+        error instanceof Error ? error.message : 'unknown_error',
+        'MetaWhatsAppService.discoverAssets',
+        { metadata: { hasAccessToken: Boolean(accessToken) } },
+      );
       this.logger.warn(
-        `Meta WhatsApp asset discovery failed: ${errorInstanceofError?.message || 'unknown_error'}`,
+        `Meta WhatsApp asset discovery failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
       );
       return discovered;
     }
@@ -282,9 +268,8 @@ export class MetaWhatsAppService {
         throw new Error(phoneInfo.error.message);
       }
 
-      const displayPhoneNumber = this.readStrictText(phoneInfo?.display_phone_number) ?? null;
-      const verifiedName =
-        this.readStrictText(phoneInfo?.verified_name) || resolved.pageName || null;
+      const displayPhoneNumber = readStrictText(phoneInfo?.display_phone_number) ?? null;
+      const verifiedName = readStrictText(phoneInfo?.verified_name) || resolved.pageName || null;
       const phoneDigits = this.normalizePhone(displayPhoneNumber || '');
 
       return {
@@ -305,10 +290,11 @@ export class MetaWhatsAppService {
         degradedReason: resolved.tokenExpired ? 'meta_token_expired' : null,
       };
     } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
+      void this.opsAlert?.alertOnDegradation(
+        error instanceof Error ? error.message : 'unknown_error',
+        'MetaWhatsAppService.getConnectionStatus',
+        { workspaceId },
+      );
       return {
         connected: false,
         status: 'DEGRADED',
@@ -321,7 +307,7 @@ export class MetaWhatsAppService {
         pageName: resolved.pageName,
         instagramAccountId: resolved.instagramAccountId,
         instagramUsername: resolved.instagramUsername,
-        degradedReason: errorInstanceofError?.message || 'meta_phone_lookup_failed',
+        degradedReason: error instanceof Error ? error.message : 'meta_phone_lookup_failed',
       };
     }
   }
@@ -513,29 +499,32 @@ export class MetaWhatsAppService {
     }
 
     const settings = asProviderSettings(workspace.providerSettings);
-    const currentSession = this.readRecord(settings.whatsappApiSession);
-    const patchRecord = this.readRecord(patch);
-    const persistedStatus = this.readStrictText(currentSession.status);
-    const heartbeatStatus = this.readStrictText(patchRecord.status);
+    const currentSession = readRecord(settings.whatsappApiSession);
+    const patchRecord = readRecord(patch);
+    const persistedStatus = readStrictText(currentSession.status);
+    const heartbeatStatus = readStrictText(patchRecord.status);
     const { status: _ignoredStatus, ...patchWithoutStatus } = patchRecord;
     const nextStatus = heartbeatStatus || persistedStatus || 'connected';
 
+    // Round-trip through JSON to coerce the typed object literal into the
+    // Prisma.InputJsonValue index-signature shape without an unsafe cast.
+    const providerSettingsPayload = JSON.parse(
+      JSON.stringify({
+        ...settings,
+        whatsappProvider: 'meta-cloud',
+        connectionStatus: nextStatus,
+        whatsappApiSession: {
+          ...currentSession,
+          ...patchWithoutStatus,
+          status: nextStatus,
+          provider: 'meta-cloud',
+          lastWebhookAt: new Date().toISOString(),
+        },
+      }),
+    ) as Prisma.InputJsonObject;
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: {
-        providerSettings: {
-          ...settings,
-          whatsappProvider: 'meta-cloud',
-          connectionStatus: nextStatus,
-          whatsappApiSession: {
-            ...currentSession,
-            ...patchWithoutStatus,
-            status: nextStatus,
-            provider: 'meta-cloud',
-            lastWebhookAt: new Date().toISOString(),
-          },
-        } as unknown as Prisma.InputJsonValue,
-      },
+      data: { providerSettings: providerSettingsPayload },
     });
   }
 
@@ -560,7 +549,7 @@ export class MetaWhatsAppService {
   }
 
   private normalizePublicBaseUrl(candidate: unknown): string {
-    const raw = this.readText(candidate).trim().replace(PATTERN_RE, '');
+    const raw = readText(candidate).trim().replace(PATTERN_RE, '');
     if (!raw) {
       return '';
     }

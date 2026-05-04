@@ -10,9 +10,17 @@
  */
 
 import * as path from 'path';
+import * as ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+
+interface HydrationEvidence {
+  node: ts.Node;
+  predicateKinds: string[];
+  description: string;
+  guidance: string;
+}
 
 function readSafe(file: string): string {
   try {
@@ -27,12 +35,195 @@ function isCommentLine(line: string): boolean {
   return t.startsWith('//') || t.startsWith('*') || t.startsWith('/*');
 }
 
+function diagnosticToken(value: string): string {
+  let token = '';
+  for (const char of value) {
+    const lower = char.toLowerCase();
+    const isAlphaNumeric = (lower >= 'a' && lower <= 'z') || (lower >= '0' && lower <= '9');
+    token += isAlphaNumeric ? lower : '-';
+  }
+  return token.split('-').filter(Boolean).join('-');
+}
+
+function buildHydrationDiagnostic(input: {
+  config: PulseConfig;
+  sourceFile: ts.SourceFile;
+  file: string;
+  evidence: HydrationEvidence;
+}): Break {
+  const { line } = input.sourceFile.getLineAndCharacterOfPosition(
+    input.evidence.node.getStart(input.sourceFile),
+  );
+  const sourceLine = input.sourceFile.text.split('\n')[line]?.trim() ?? input.evidence.description;
+  const predicateToken =
+    input.evidence.predicateKinds.map(diagnosticToken).filter(Boolean).join('+') ||
+    'hydration-observation';
+
+  return {
+    type: `diagnostic:hydration-tester:${predicateToken}`,
+    severity: 'medium',
+    file: path.relative(input.config.rootDir, input.file),
+    line: line + 1,
+    description: input.evidence.description,
+    detail: `${sourceLine.slice(0, 120)} — ${input.evidence.guidance}`,
+    source: `syntax-evidence:hydration-tester;predicates=${input.evidence.predicateKinds.join(',')}`,
+    surface: 'frontend-hydration',
+  };
+}
+
+function isSkippableSourceFile(file: string): boolean {
+  const normalized = file.replaceAll('\\', '/');
+  const lowerPath = normalized.toLowerCase();
+  const segments = lowerPath.split('/');
+  const fileName = segments[segments.length - 1] ?? '';
+  return (
+    fileName.endsWith('.spec.ts') ||
+    fileName.endsWith('.spec.tsx') ||
+    fileName.endsWith('.test.ts') ||
+    fileName.endsWith('.test.tsx') ||
+    segments.includes('__tests__') ||
+    segments.includes('__mocks__') ||
+    segments.includes('node_modules') ||
+    segments.includes('.next')
+  );
+}
+
+function hasUseClientDirective(sourceFile: ts.SourceFile): boolean {
+  const [firstStatement] = sourceFile.statements;
+  if (!firstStatement || !ts.isExpressionStatement(firstStatement)) {
+    return false;
+  }
+  return (
+    ts.isStringLiteral(firstStatement.expression) && firstStatement.expression.text === 'use client'
+  );
+}
+
+function isWindowIdentifier(node: ts.Node): boolean {
+  return ts.isIdentifier(node) && node.text === 'window';
+}
+
+function expressionReadsBrowserRuntime(node: ts.Node): boolean {
+  let found = false;
+  const visit = (child: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (
+      (ts.isPropertyAccessExpression(child) &&
+        (isWindowIdentifier(child.expression) ||
+          (ts.isIdentifier(child.expression) && child.expression.text === 'document') ||
+          (ts.isIdentifier(child.expression) && child.expression.text === 'navigator'))) ||
+      (ts.isIdentifier(child) && (child.text === 'localStorage' || child.text === 'sessionStorage'))
+    ) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return found;
+}
+
+function expressionHasWindowTypeofGuard(node: ts.Node): boolean {
+  let found = false;
+  const visit = (child: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (ts.isTypeOfExpression(child) && isWindowIdentifier(child.expression)) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return found;
+}
+
+function isUseStateCall(node: ts.CallExpression): boolean {
+  return ts.isIdentifier(node.expression) && node.expression.text === 'useState';
+}
+
+function nodeContainsJsx(node: ts.Node): boolean {
+  let found = false;
+  const visit = (child: ts.Node): void => {
+    if (found) {
+      return;
+    }
+    if (ts.isJsxElement(child) || ts.isJsxSelfClosingElement(child) || ts.isJsxFragment(child)) {
+      found = true;
+      return;
+    }
+    ts.forEachChild(child, visit);
+  };
+  visit(node);
+  return found;
+}
+
+function attributeNameText(name: ts.JsxAttributeName): string {
+  return ts.isIdentifier(name) ? name.text : name.getText();
+}
+
+function collectHydrationEvidence(sourceFile: ts.SourceFile): HydrationEvidence[] {
+  const evidence: HydrationEvidence[] = [];
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isJsxAttribute(node) && attributeNameText(node.name) === 'suppressHydrationWarning') {
+      evidence.push({
+        node,
+        predicateKinds: ['suppressed hydration warning attribute'],
+        description: 'JSX suppresses hydration warnings from server/client divergence',
+        guidance:
+          'The attribute is evidence of a known mismatch; move browser-only state behind an effect or remove the divergence.',
+      });
+    }
+
+    if (ts.isCallExpression(node) && isUseStateCall(node)) {
+      const [initializer] = node.arguments;
+      if (
+        initializer &&
+        ts.isExpression(initializer) &&
+        expressionReadsBrowserRuntime(initializer) &&
+        !expressionHasWindowTypeofGuard(initializer)
+      ) {
+        evidence.push({
+          node: initializer,
+          predicateKinds: ['state initializer reads browser runtime'],
+          description: 'useState initializer reads browser-only runtime before hydration',
+          guidance:
+            'Initialize with a server-stable value and populate browser runtime data inside useEffect.',
+        });
+      }
+    }
+
+    if (
+      ts.isReturnStatement(node) &&
+      node.expression &&
+      nodeContainsJsx(node.expression) &&
+      expressionHasWindowTypeofGuard(node.expression)
+    ) {
+      evidence.push({
+        node: node.expression,
+        predicateKinds: ['render output branches on browser runtime'],
+        description: 'Render output branches on browser-only runtime evidence',
+        guidance:
+          'Server and client can render different markup; gate the value through effect-backed state or a client-only boundary.',
+      });
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return evidence;
+}
+
 /** Check hydration. */
 export function checkHydration(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   const frontendFiles = walkFiles(config.frontendDir, ['.tsx', '.ts']).filter(
-    (f) => !/\.(spec|test)\.tsx?$|__tests__|__mocks__|node_modules|\.next\//.test(f),
+    (f) => !isSkippableSourceFile(f),
   );
 
   for (const file of frontendFiles) {
@@ -41,138 +232,25 @@ export function checkHydration(config: PulseConfig): Break[] {
       continue;
     }
 
-    // Skip 'use client' files — they only render in the browser, so typeof window is always safe
-    // Check if the first non-empty line is a 'use client' or "use client" directive
-    const firstLine = content.trimStart().split('\n')[0].trim();
-    if (/^['"]use client['"]/.test(firstLine)) {
+    const sourceFile = ts.createSourceFile(
+      file,
+      content,
+      ts.ScriptTarget.Latest,
+      true,
+      ts.ScriptKind.TSX,
+    );
+    if (hasUseClientDirective(sourceFile)) {
       continue;
     }
 
     const lines = content.split('\n');
-    const relFile = path.relative(config.rootDir, file);
+    const diagnostics = collectHydrationEvidence(sourceFile).filter((evidence) => {
+      const { line } = sourceFile.getLineAndCharacterOfPosition(evidence.node.getStart(sourceFile));
+      return !isCommentLine(lines[line] ?? '');
+    });
 
-    // ── CHECK 1: suppressHydrationWarning usage ────────────────────────────────
-    // This prop suppresses the error but signals a known hydration mismatch in the codebase
-    for (let i = 0; i < lines.length; i++) {
-      if (isCommentLine(lines[i])) {
-        continue;
-      }
-      if (/suppressHydrationWarning/.test(lines[i])) {
-        breaks.push({
-          type: 'HYDRATION_MISMATCH',
-          severity: 'medium',
-          file: relFile,
-          line: i + 1,
-          description: 'suppressHydrationWarning detected — indicates a known SSR/client mismatch',
-          detail:
-            `${lines[i].trim().slice(0, 100)} — ` +
-            'suppressHydrationWarning hides the error but does not fix the root cause. ' +
-            'Identify and move server-unsafe code into useEffect.',
-        });
-      }
-    }
-
-    // ── CHECK 2: useState default that reads from window or document ───────────
-    // Pattern: useState(window.X)  — server doesn't have window (dangerous, no guard)
-    // SAFE patterns:
-    //   - useState(() => typeof window !== 'undefined' ? ... : fallback)  — lazy initializer with guard
-    //   - useState(typeof window !== 'undefined' && window.X)  — short-circuit with guard
-    for (let i = 0; i < lines.length; i++) {
-      if (isCommentLine(lines[i])) {
-        continue;
-      }
-      const line = lines[i];
-      if (
-        /useState\s*\(/.test(line) &&
-        /window\.|document\.|localStorage|sessionStorage|navigator\./.test(line)
-      ) {
-        // Skip if there's a typeof window guard on the same line (it's protected)
-        if (/typeof\s+window/.test(line)) {
-          continue;
-        }
-        // Skip lazy initializer pattern: useState(() => ...) — the function runs client-only
-        if (/useState\s*\(\s*\(\s*\)/.test(line)) {
-          continue;
-        }
-        // Check the next 5 lines for a typeof window guard (multi-line lazy initializer)
-        const nextLines = lines.slice(i + 1, Math.min(i + 6, lines.length)).join('\n');
-        if (/typeof\s+window/.test(nextLines)) {
-          continue;
-        }
-
-        breaks.push({
-          type: 'HYDRATION_MISMATCH',
-          severity: 'medium',
-          file: relFile,
-          line: i + 1,
-          description: 'useState default value reads browser-only API — causes SSR/client mismatch',
-          detail:
-            `${line.trim().slice(0, 120)} — ` +
-            'Server does not have window/document/localStorage. ' +
-            'Use useState(null) or useState(undefined) as default, then set value in useEffect.',
-        });
-      }
-    }
-
-    // ── CHECK 3: Conditional render on typeof window (SSR guard in JSX) ────────
-    // Inline `typeof window !== 'undefined'` checks in JSX/render (outside useEffect)
-    // can produce different output server vs client
-    //
-    // SKIP: utility/library files that are not React components (no JSX return)
-    // A file is a React component if it contains `return (` with JSX or `export default function` with JSX.
-    // Utility files (api/*.ts, lib/*.ts, hooks that don't return JSX) are safe to use typeof window.
-    const fileHasJsxReturn =
-      /return\s*\(\s*\n?\s*</.test(content) || /return\s+<[A-Z]/.test(content);
-    const fileIsUtility = /\/lib\/|\/utils\/|\/api\/|\/helpers\/|anonymous-session/.test(relFile);
-    const fileIsHookNoJsx = /use[A-Z][A-Za-z]+\.ts$/.test(relFile) && !fileHasJsxReturn;
-    const skipWindowCheck = fileIsUtility || fileIsHookNoJsx;
-
-    if (!skipWindowCheck) {
-      for (let i = 0; i < lines.length; i++) {
-        if (isCommentLine(lines[i])) {
-          continue;
-        }
-        const line = lines[i];
-        if (
-          /typeof window\s*!==\s*['"]undefined['"]/.test(line) ||
-          /typeof window\s*===\s*['"]undefined['"]/.test(line)
-        ) {
-          // Skip if it's inside a useEffect, event handler, useCallback, useMemo, or useState initializer
-          const contextBefore = lines.slice(Math.max(0, i - 15), i).join('\n');
-          if (
-            /useEffect\s*\(|useCallback\s*\(|useMemo\s*\(|addEventListener|handleClick|onClick|useState\s*\(/.test(
-              contextBefore,
-            )
-          ) {
-            continue;
-          }
-          // Skip if inside a function body that's an event handler or callback (arrow function in JSX)
-          const localContext = lines.slice(Math.max(0, i - 5), i).join('\n');
-          if (
-            /=>\s*\{|function\s+\w+\s*\(|async\s*\(/.test(localContext) &&
-            !/return\s*\(/.test(localContext)
-          ) {
-            continue;
-          }
-          // Skip top-level module variable declarations (const x = typeof window !== 'undefined' ? ...)
-          if (/^(?:const|let|var)\s/.test(line.trim())) {
-            continue;
-          }
-
-          breaks.push({
-            type: 'HYDRATION_MISMATCH',
-            severity: 'medium',
-            file: relFile,
-            line: i + 1,
-            description:
-              'typeof window check in render — may produce different SSR vs client output',
-            detail:
-              `${line.trim().slice(0, 120)} — ` +
-              'This guard renders different content server vs client. ' +
-              'Wrap the component in dynamic(() => import(...), { ssr: false }) or use useEffect.',
-          });
-        }
-      }
+    for (const evidence of diagnostics) {
+      breaks.push(buildHydrationDiagnostic({ config, sourceFile, file, evidence }));
     }
   }
 

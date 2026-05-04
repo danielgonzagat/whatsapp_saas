@@ -20,53 +20,25 @@ import { apiFetch } from '@/lib/api';
 import { usePathname, useRouter } from 'next/navigation';
 import { startTransition, useCallback, useEffect, useState, useId } from 'react';
 import { mutate } from 'swr';
+import { colors } from '@/lib/design-tokens';
+import {
+  buildCsvBlob,
+  Fmt,
+  formatCompactNumber,
+  renderWalletPulseKeyframes,
+  WALLET_SELECTION_STYLE,
+} from './carteira/carteira.helpers';
+import type {
+  AnticipationItem,
+  BalanceData,
+  RawBankAccount,
+  RawTransaction,
+  TransactionItem,
+  WithdrawalItem,
+} from './carteira/carteira.types';
 
-const PATTERN_RE = /"/g;
-const COMPACT_NUMBER_FORMAT = new Intl.NumberFormat('pt-BR', {
-  notation: 'compact',
-  compactDisplay: 'short',
-  maximumFractionDigits: 1,
-});
 const BANK_ACCOUNT_ARIA_LABEL = kloelT(`Conta bancaria`);
 const BANK_ACCOUNT_PLACEHOLDER = kloelT(`12345-6`);
-const WALLET_SELECTION_STYLE =
-  '::selection{background:rgba(232,93,48,0.3)} input::placeholder{color:var(--app-text-placeholder)!important} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:var(--app-border-primary);border-radius:2px}';
-
-function renderWalletPulseKeyframes() {
-  return ['@key', 'frames kloel-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }'].join('');
-}
-
-function escapeCsvCell(value: unknown) {
-  const serialized = String(value ?? '');
-  return `"${serialized.replace(PATTERN_RE, '""')}"`;
-}
-
-function buildCsvBlob(headers: string[], rows: Array<Record<string, unknown>>) {
-  const parts: string[] = [];
-
-  headers.forEach((header, index) => {
-    if (index > 0) {
-      parts.push(';');
-    }
-    parts.push(header);
-  });
-  parts.push('\n');
-
-  rows.forEach((row, rowIndex) => {
-    headers.forEach((header, index) => {
-      if (index > 0) {
-        parts.push(';');
-      }
-      parts.push(escapeCsvCell(row[header]));
-    });
-
-    if (rowIndex < rows.length - 1) {
-      parts.push('\n');
-    }
-  });
-
-  return new Blob(parts, { type: 'text/csv;charset=utf-8;' });
-}
 
 /*
   KLOEL — CARTEIRA
@@ -348,66 +320,6 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
   ),
 };
 
-interface RawBankAccount {
-  id: string;
-  bankName?: string;
-  bank?: string;
-  name?: string;
-  displayAccount?: string;
-  account?: string;
-  pixKey?: string;
-  accountType?: string;
-  bankCode?: string;
-  agency?: string;
-  isDefault?: boolean;
-}
-
-interface WithdrawalItem {
-  id: string;
-  amount: number;
-  status: string;
-  date: string;
-  method?: string;
-  account?: string;
-  bank?: string;
-  description?: string;
-  requested?: string;
-  createdAt?: string;
-  completed?: string;
-  [key: string]: unknown;
-}
-
-interface AnticipationItem {
-  id: string;
-  amount: number;
-  netAmount?: number;
-  net?: number;
-  fee?: number;
-  feeAmount?: number;
-  feePct?: number;
-  feePercent?: number;
-  original?: number;
-  originalAmount?: number;
-  status: string;
-  createdAt?: string;
-  date?: string;
-  method?: string;
-  installments?: number;
-  [key: string]: unknown;
-}
-
-interface RawTransaction {
-  id: string;
-  type?: string;
-  description?: string;
-  desc?: string;
-  amount: number;
-  status?: string;
-  method?: string;
-  createdAt: string;
-  fee?: number;
-}
-
 /* ═══ DEFAULT (EMPTY) DATA ═══ */
 const BALANCE = { available: 0, pending: 0, blocked: 0, total: 0 };
 const TRANSACTIONS: {
@@ -429,14 +341,14 @@ const TYPE_CONFIG: Record<
   string,
   { label: string; color: string; icon: (s: number) => React.ReactElement; sign: string }
 > = {
-  sale: { label: 'Venda', color: '#E85D30', icon: IC.arrowDown, sign: '+' },
+  sale: { label: 'Venda', color: 'colors.ember.primary', icon: IC.arrowDown, sign: '+' },
   commission: { label: 'Comissão', color: '#10B981', icon: IC.arrowDown, sign: '+' },
   withdrawal: { label: 'Saque', color: 'var(--app-text-secondary)', icon: IC.arrowUp, sign: '' },
   refund: { label: 'Reembolso', color: '#EF4444', icon: IC.arrowUp, sign: '' },
   anticipation: { label: 'Antecipação', color: '#3B82F6', icon: IC.spark, sign: '+' },
 };
 const STATUS_COLOR: Record<string, string> = {
-  completed: '#E85D30',
+  completed: 'colors.ember.primary',
   pending: '#F59E0B',
   processing: '#3B82F6',
   failed: '#EF4444',
@@ -448,31 +360,7 @@ const STATUS_LABEL: Record<string, string> = {
   failed: 'Falhou',
 };
 
-function Fmt(v: number) {
-  return Math.abs(v).toLocaleString('pt-BR', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-function formatCompactNumber(value: number) {
-  return COMPACT_NUMBER_FORMAT.format(value);
-}
-
 /* ═══ EXTRACTED COMPONENTS ═══ */
-
-type BalanceData = { available: number; pending: number; blocked: number; total: number };
-type TransactionItem = {
-  id: string;
-  type: string;
-  desc: string;
-  amount: number;
-  status: string;
-  method: string;
-  date: string;
-  time: string;
-  fee: number;
-};
 
 /* --- WithdrawModal --- */
 function WithdrawModal({
@@ -654,7 +542,7 @@ function WithdrawModal({
                 fontFamily: "'JetBrains Mono',monospace",
                 fontSize: 24,
                 fontWeight: 700,
-                color: '#E85D30',
+                color: 'colors.ember.primary',
               }}
             >
               {kloelT(`R$`)} {Fmt(available)}
@@ -765,7 +653,7 @@ function WithdrawModal({
                         width: 16,
                         height: 16,
                         borderRadius: 4,
-                        border: `2px solid ${selectedBank === i ? '#E85D30' : 'var(--app-text-placeholder)'}`,
+                        border: `2px solid ${selectedBank === i ? 'colors.ember.primary' : 'var(--app-text-placeholder)'}`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -773,7 +661,12 @@ function WithdrawModal({
                     >
                       {selectedBank === i && (
                         <div
-                          style={{ width: 8, height: 8, borderRadius: 2, background: '#E85D30' }}
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: 2,
+                            background: 'colors.ember.primary',
+                          }}
                         />
                       )}
                     </div>
@@ -821,7 +714,7 @@ function WithdrawModal({
             style={{
               width: '100%',
               padding: '14px 24px',
-              background: withdrawLoading ? 'var(--app-bg-secondary)' : '#E85D30',
+              background: withdrawLoading ? 'var(--app-bg-secondary)' : 'colors.ember.primary',
               color: withdrawLoading ? 'var(--app-text-secondary)' : 'var(--app-text-on-accent)',
               border: 'none',
               borderRadius: 6,
@@ -1044,7 +937,7 @@ function TabSaldo({
               left: 0,
               right: 0,
               height: 2,
-              background: '#E85D30',
+              background: 'colors.ember.primary',
             }}
           />
           <span
@@ -1065,7 +958,7 @@ function TabSaldo({
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 32,
               fontWeight: 700,
-              color: '#E85D30',
+              color: 'colors.ember.primary',
               display: 'block',
               marginBottom: 4,
             }}
@@ -1082,7 +975,7 @@ function TabSaldo({
               style={{
                 flex: 1,
                 padding: '10px 16px',
-                background: '#E85D30',
+                background: 'colors.ember.primary',
                 color: 'var(--app-text-on-accent)',
                 border: 'none',
                 borderRadius: 6,
@@ -1306,7 +1199,10 @@ function TabSaldo({
                       style={{
                         width: '100%',
                         height: `${(v / max) * 70}px`,
-                        background: i === revenueWeek.length - 1 ? '#E85D30' : '#E85D3040',
+                        background:
+                          i === revenueWeek.length - 1
+                            ? 'colors.ember.primary'
+                            : 'colors.ember.primary40',
                         borderRadius: '3px 3px 0 0',
                       }}
                     />
@@ -1561,10 +1457,10 @@ function TabExtrato({
               onClick={() => onFilterTypeChange(f)}
               style={{
                 padding: '7px 12px',
-                background: filterType === f ? 'var(--app-bg-card)' : '#E85D30',
-                border: '1px solid #E85D30',
+                background: filterType === f ? 'var(--app-bg-card)' : 'colors.ember.primary',
+                border: '1px solid colors.ember.primary',
                 borderRadius: 6,
-                color: filterType === f ? '#E85D30' : 'var(--app-text-on-accent)',
+                color: filterType === f ? 'colors.ember.primary' : 'var(--app-text-on-accent)',
                 fontSize: 10,
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -1835,7 +1731,7 @@ function TabSaques({
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 20,
               fontWeight: 700,
-              color: '#E85D30',
+              color: 'colors.ember.primary',
             }}
           >
             {kloelT(`R$`)} {Fmt(available)}
@@ -1846,7 +1742,7 @@ function TabSaques({
           onClick={onOpenWithdraw}
           style={{
             padding: '10px 24px',
-            background: '#E85D30',
+            background: 'colors.ember.primary',
             color: 'var(--app-text-on-accent)',
             border: 'none',
             borderRadius: 6,
@@ -1892,7 +1788,7 @@ function TabSaques({
               background: showAddAccount ? 'var(--app-bg-secondary)' : 'var(--app-accent-light)',
               border: `1px solid ${showAddAccount ? 'var(--app-border-primary)' : 'var(--app-accent-medium)'}`,
               borderRadius: 6,
-              color: showAddAccount ? 'var(--app-text-secondary)' : '#E85D30',
+              color: showAddAccount ? 'var(--app-text-secondary)' : 'colors.ember.primary',
               fontSize: 11,
               fontWeight: 600,
               cursor: 'pointer',
@@ -2076,7 +1972,7 @@ function TabSaques({
               style={{
                 width: '100%',
                 padding: '10px 16px',
-                background: addLoading ? 'var(--app-bg-secondary)' : '#E85D30',
+                background: addLoading ? 'var(--app-bg-secondary)' : 'colors.ember.primary',
                 color: addLoading ? 'var(--app-text-secondary)' : 'var(--app-text-on-accent)',
                 border: 'none',
                 borderRadius: 6,
@@ -2111,7 +2007,9 @@ function TabSaques({
                   padding: '10px 14px',
                 }}
               >
-                <span style={{ color: '#E85D30', display: 'flex' }}>{IC.bank(16)}</span>
+                <span style={{ color: 'colors.ember.primary', display: 'flex' }}>
+                  {IC.bank(16)}
+                </span>
                 <div style={{ flex: 1 }}>
                   <span
                     style={{
@@ -2138,7 +2036,7 @@ function TabSaques({
                     style={{
                       fontSize: 9,
                       fontWeight: 600,
-                      color: '#E85D30',
+                      color: 'colors.ember.primary',
                       background: 'rgba(232,93,48,0.1)',
                       padding: '2px 6px',
                       borderRadius: 4,
@@ -2324,7 +2222,7 @@ function TabAntecipacoes({
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 20,
               fontWeight: 600,
-              color: '#E85D30',
+              color: 'colors.ember.primary',
             }}
           >
             {kloelT(`R$`)} {Fmt(pending)}
@@ -2411,7 +2309,7 @@ function TabAntecipacoes({
             onClick={onOpenAntecipate}
             style={{
               padding: '10px 24px',
-              background: '#E85D30',
+              background: 'colors.ember.primary',
               color: 'var(--app-text-on-accent)',
               border: 'none',
               borderRadius: 6,
@@ -2508,7 +2406,7 @@ function TabAntecipacoes({
                   fontFamily: "'JetBrains Mono',monospace",
                   fontSize: 13,
                   fontWeight: 600,
-                  color: '#E85D30',
+                  color: 'colors.ember.primary',
                 }}
               >
                 {kloelT(`R$`)} {Fmt(a.net || a.netAmount || 0)}

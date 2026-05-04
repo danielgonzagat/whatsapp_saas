@@ -8,9 +8,18 @@ import {
   useStripe,
 } from '@stripe/react-stripe-js';
 import type { StripeExpressCheckoutElementConfirmEvent } from '@stripe/stripe-js';
-import { useCallback, useMemo, useState, type FormEvent, type ReactElement } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactElement,
+} from 'react';
 
 import { getStripeClient } from '@/lib/stripe-client';
+
+const STRIPE_PAYMENT_DRAFT_STORAGE_NAME = 'kloel:stripe-payment-form:draft';
 
 /**
  * Stripe Payment Element wrapper for the hosted Kloel checkout runtime.
@@ -81,6 +90,38 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
   const [submitting, setSubmitting] = useState(false);
   const [internalError, setInternalError] = useState<string | null>(null);
   const [walletReady, setWalletReady] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const syncNetworkState = () => setIsOnline(window.navigator.onLine);
+    syncNetworkState();
+    window.addEventListener('online', syncNetworkState);
+    window.addEventListener('offline', syncNetworkState);
+    return () => {
+      window.removeEventListener('online', syncNetworkState);
+      window.removeEventListener('offline', syncNetworkState);
+    };
+  }, []);
+
+  const saveStripeDraftMarker = useCallback((state: string) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.setItem(
+      STRIPE_PAYMENT_DRAFT_STORAGE_NAME,
+      JSON.stringify({ state, savedAt: new Date().toISOString() }),
+    );
+  }, []);
+
+  const clearStripeDraftMarker = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.removeItem(STRIPE_PAYMENT_DRAFT_STORAGE_NAME);
+  }, []);
 
   const publishError = useCallback(
     (message: string) => {
@@ -92,6 +133,11 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
 
   const confirmCurrentElements = useCallback(async () => {
     if (!stripe || !elements) {
+      return { ok: false as const };
+    }
+    if (!isOnline) {
+      saveStripeDraftMarker('offline_before_confirm');
+      publishError('Conexao indisponivel. Seus dados do checkout foram preservados para retomar.');
       return { ok: false as const };
     }
 
@@ -113,11 +159,21 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
     }
 
     if (paymentIntent?.status === 'succeeded') {
+      clearStripeDraftMarker();
       onSuccess?.();
     }
 
     return { ok: true as const };
-  }, [elements, onSuccess, publishError, returnUrl, stripe]);
+  }, [
+    clearStripeDraftMarker,
+    elements,
+    isOnline,
+    onSuccess,
+    publishError,
+    returnUrl,
+    saveStripeDraftMarker,
+    stripe,
+  ]);
 
   const handleExpressCheckoutConfirm = useCallback(
     async (event: StripeExpressCheckoutElementConfirmEvent) => {
@@ -141,12 +197,13 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
         return;
       }
 
+      saveStripeDraftMarker('submit_started');
       setSubmitting(true);
       setInternalError(null);
       await confirmCurrentElements();
       setSubmitting(false);
     },
-    [confirmCurrentElements, elements, stripe],
+    [confirmCurrentElements, elements, saveStripeDraftMarker, stripe],
   );
 
   return (
@@ -175,9 +232,14 @@ function PaymentForm({ returnUrl, onSuccess, onError }: PaymentFormProps): React
           {internalError}
         </p>
       ) : null}
+      {!isOnline ? (
+        <p role="status" className="kloel-stripe-payment-form__error">
+          Sem conexao agora. O checkout mantém o rascunho local para voce retomar.
+        </p>
+      ) : null}
       <button
         type="submit"
-        disabled={!stripe || submitting}
+        disabled={!stripe || submitting || !isOnline}
         className="kloel-stripe-payment-form__submit"
       >
         {submitting ? 'Processando…' : 'Pagar agora'}

@@ -1,8 +1,10 @@
 import { createHmac } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import Redis from 'ioredis';
+import { getTraceHeaders } from '../common/trace-headers';
 import { validateExternalUrl } from '../common/utils/url-validator';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { normalizeMetaGraphPath } from './meta-input.util';
 
 /** Graph api response shape. */
@@ -27,7 +29,10 @@ export class MetaSdkService {
     return `https://graph.facebook.com/${this.graphApiVersion}`;
   }
 
-  constructor(@InjectRedis() private readonly redis: Redis) {}
+  constructor(
+    @InjectRedis() private readonly redis: Redis,
+    @Optional() private readonly opsAlert?: OpsAlertService,
+  ) {}
 
   // ─── Graph API helpers ───────────────────────────────────────────
 
@@ -46,6 +51,7 @@ export class MetaSdkService {
       validateExternalUrl(url.toString(), new Set(['graph.facebook.com']));
       const res = await fetch(url.toString(), {
         method: 'GET',
+        headers: getTraceHeaders(),
         signal: AbortSignal.timeout(30000),
       });
       const json = await res.json();
@@ -56,9 +62,10 @@ export class MetaSdkService {
 
       return json as GraphApiResponse;
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.error(`Graph API GET /${endpoint} failed: ${errInstanceofError.message}`);
+      void this.opsAlert?.alertOnCriticalError(err, 'MetaSdkService.graphApiGet');
+      this.logger.error(
+        `Graph API GET /${endpoint} failed: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
       throw err;
     }
   }
@@ -75,7 +82,7 @@ export class MetaSdkService {
       validateExternalUrl(url.toString(), new Set(['graph.facebook.com']));
       const res = await fetch(url.toString(), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, access_token: accessToken }),
         signal: AbortSignal.timeout(30000),
       });
@@ -87,9 +94,10 @@ export class MetaSdkService {
 
       return json as GraphApiResponse;
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.error(`Graph API POST /${endpoint} failed: ${errInstanceofError.message}`);
+      void this.opsAlert?.alertOnCriticalError(err, 'MetaSdkService.graphApiPost');
+      this.logger.error(
+        `Graph API POST /${endpoint} failed: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
       throw err;
     }
   }
@@ -103,6 +111,7 @@ export class MetaSdkService {
       validateExternalUrl(url.toString(), new Set(['graph.facebook.com']));
       const res = await fetch(url.toString(), {
         method: 'DELETE',
+        headers: getTraceHeaders(),
         signal: AbortSignal.timeout(30000),
       });
       const json = await res.json();
@@ -113,9 +122,10 @@ export class MetaSdkService {
 
       return json as GraphApiResponse;
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.error(`Graph API DELETE /${endpoint} failed: ${errInstanceofError.message}`);
+      void this.opsAlert?.alertOnCriticalError(err, 'MetaSdkService.graphApiDelete');
+      this.logger.error(
+        `Graph API DELETE /${endpoint} failed: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
       throw err;
     }
   }
@@ -162,9 +172,10 @@ export class MetaSdkService {
         expires_in: typeof res.expires_in === 'number' ? res.expires_in : undefined,
       };
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.error(`Token exchange failed: ${errInstanceofError.message}`);
+      void this.opsAlert?.alertOnCriticalError(err, 'MetaSdkService.exchangeCodeForToken');
+      this.logger.error(
+        `Token exchange failed: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
       throw err;
     }
   }
@@ -228,10 +239,14 @@ export class MetaSdkService {
 
       return true;
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      void this.opsAlert?.alertOnDegradation(
+        err instanceof Error ? err.message : 'unknown_error',
+        'MetaSdkService.checkRateLimit',
+      );
       // If Redis is unavailable, allow the call (fail open)
-      this.logger.warn(`Rate limit check failed (Redis): ${errInstanceofError.message}`);
+      this.logger.warn(
+        `Rate limit check failed (Redis): ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
       return true;
     }
   }

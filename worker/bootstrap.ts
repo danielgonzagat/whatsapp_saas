@@ -24,13 +24,34 @@
  * dynamically import ./processor which starts the BullMQ worker.
  */
 
-import { init as initSentry } from '@sentry/node';
+import tracer from 'dd-trace';
 
-initSentry({
+const ddEnabled = Boolean(process.env.DD_API_KEY || process.env.DATADOG_API_KEY);
+if (ddEnabled) {
+  tracer.init({
+    service: process.env.DD_SERVICE || 'kloel-worker',
+    env: process.env.DD_ENV || process.env.NODE_ENV || 'development',
+    version: process.env.DD_VERSION || process.env.RAILWAY_GIT_COMMIT_SHA || undefined,
+    logInjection: true,
+    runtimeMetrics: true,
+  });
+}
+
+import * as Sentry from '@sentry/node';
+
+Sentry.init({
   dsn: process.env.SENTRY_DSN,
   tracesSampleRate: 0.1,
   environment: process.env.NODE_ENV || 'development',
   enabled: process.env.NODE_ENV === 'production',
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[WORKER] unhandledRejection:', reason);
+  Sentry.captureException(reason, {
+    tags: { type: 'worker_alert', operation: 'unhandled_rejection' },
+    level: 'fatal',
+  });
 });
 
 import { RedisConfigurationError, maskRedisUrl, resolveRedisUrl } from './resolve-redis-url';

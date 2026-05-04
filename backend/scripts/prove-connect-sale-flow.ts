@@ -327,7 +327,7 @@ async function main() {
   const trigger = resolveTrigger();
   const paymentMethod = resolvePaymentMethod(trigger);
   const refundAmountCents = resolveRefundAmountCents();
-  const config = new ConfigService(process.env as Record<string, string>);
+  const config = new ConfigService(process.env);
   const prisma = new PrismaService();
   const stripeService = new StripeService(config);
   const connectService = new ConnectService(stripeService, prisma);

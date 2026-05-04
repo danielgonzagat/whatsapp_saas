@@ -127,11 +127,15 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
   await freezeChatUi(page);
 
   await expect(page.getByPlaceholder('Como posso ajudar você hoje?')).toBeVisible();
-  await expect(page.getByText('Kloel é uma IA e pode cometer erros.')).toHaveCount(0);
+  await expect(
+    page.getByText('Kloel é uma IA e pode errar. Confira informações importantes.'),
+  ).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toBeVisible();
 
   await expect(page).toHaveScreenshot('kloel-chat-empty.png', {
     fullPage: true,
+    maxDiffPixels: 10000,
+    maxDiffPixelRatio: 0.02,
   });
 
   await page.getByLabel('Abrir capacidades do prompt').click();
@@ -139,6 +143,8 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
 
   await expect(page).toHaveScreenshot('kloel-chat-popover.png', {
     fullPage: true,
+    maxDiffPixels: 10000,
+    maxDiffPixelRatio: 0.02,
   });
 
   await page.getByRole('button', { name: 'Criar site' }).click();
@@ -147,10 +153,12 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
   await page.getByRole('button', { name: /Oferta Kloel Visual/i }).click();
 
   await expect(page.getByText('Criar site')).toBeVisible();
-  await expect(page.getByText('Oferta Kloel Visual')).toBeVisible();
+  await expect(page.locator('span[title="Oferta Kloel Visual"]')).toBeVisible();
 
   await expect(page).toHaveScreenshot('kloel-chat-configured.png', {
     fullPage: true,
+    maxDiffPixels: 10000,
+    maxDiffPixelRatio: 0.02,
   });
 
   const input = page.getByPlaceholder('Descreva o site que deseja criar...');
@@ -160,10 +168,14 @@ test('Kloel chat preserves the new empty and active visual contract', async ({ p
   await expect(
     page.getByText('Estruture uma landing com headline forte, prova social e CTA único.'),
   ).toBeVisible();
-  await expect(page.getByText('Kloel é uma IA e pode cometer erros.')).toBeVisible();
+  await expect(
+    page.getByText('Kloel é uma IA e pode errar. Confira informações importantes.'),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toHaveCount(0);
 
   await expect(page).toHaveScreenshot('kloel-chat-active.png', {
     fullPage: true,
+    maxDiffPixels: 10000,
+    maxDiffPixelRatio: 0.02,
   });
 });

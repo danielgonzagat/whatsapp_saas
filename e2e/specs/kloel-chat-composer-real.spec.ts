@@ -193,6 +193,7 @@ test.describe.serial('Kloel chat real e2e validation', () => {
   const createdProductIds = new Set<string>();
 
   test.beforeAll(async ({ request }) => {
+    test.setTimeout(90_000);
     auth = await createFreshAuth(request);
     expect(auth.token).toBeTruthy();
     expect(auth.workspaceId).toBeTruthy();
@@ -252,7 +253,7 @@ test.describe.serial('Kloel chat real e2e validation', () => {
     await openAuthenticatedChat(page, auth);
     await openComposerPopover(page);
     await page.getByRole('button', { name: 'Vincular Produto' }).hover();
-    await page.getByRole('button', { name: new RegExp(product.name) }).click();
+    await page.getByRole('button', { name: product.name }).click();
 
     await expect(page.getByLabel(`Remover vínculo com ${product.name}`)).toBeVisible();
 
@@ -318,7 +319,7 @@ test.describe.serial('Kloel chat real e2e validation', () => {
     );
 
     expect(assistantMessage.metadata?.webSources).toBeTruthy();
-    await expect(page.getByText('Fontes')).toBeVisible({ timeout: 180_000 });
+    await expect(page.getByText('Fontes', { exact: true })).toBeVisible({ timeout: 180_000 });
     await expect(page.getByRole('link', { name: /OpenAI|openai/i }).first()).toBeVisible();
   });
 
@@ -355,10 +356,16 @@ test.describe.serial('Kloel chat real e2e validation', () => {
     const generatedImage = page.locator('img[alt="Imagem criada pelo Kloel"]').first();
     await expect(generatedImage).toBeVisible({ timeout: 180_000 });
 
-    const [popup] = await Promise.all([page.waitForEvent('popup'), generatedImage.click()]);
-    await popup.waitForLoadState('domcontentloaded');
-    expect(popup.url()).toBeTruthy();
-    await popup.close();
+    const openImageLink = page.getByRole('link', { name: 'Abrir' });
+    await expect(openImageLink).toHaveAttribute('href', generatedImageUrl);
+    await expect(openImageLink).toHaveAttribute('target', '_blank');
+
+    if (!generatedImageUrl.startsWith('data:')) {
+      const [popup] = await Promise.all([page.waitForEvent('popup'), openImageLink.click()]);
+      await popup.waitForLoadState('domcontentloaded');
+      expect(popup.url()).toBe(generatedImageUrl);
+      await popup.close();
+    }
 
     const [download] = await Promise.all([
       page.waitForEvent('download'),

@@ -5,7 +5,9 @@ import { Queue } from 'bullmq';
 import { v4 as uuid } from 'uuid';
 import { createRedisClient } from '../common/redis/redis.util';
 import { StorageService } from '../common/storage/storage.service';
-import { validateNoInternalAccess } from '../common/utils/url-validator';
+import { getTraceHeaders } from '../common/trace-headers';
+import { safeStorageFetch } from '../common/utils/url-safety';
+import { collectAllowedHosts, validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Media service. */
@@ -13,6 +15,8 @@ import { PrismaService } from '../prisma/prisma.service';
 export class MediaService {
   private mediaQueue: Queue;
   private readonly baseUrl: string;
+  private readonly allowedStorageHosts: Set<string>;
+  private readonly allowHttpStorage: boolean;
 
   constructor(
     private prisma: PrismaService,
@@ -23,10 +27,18 @@ export class MediaService {
     this.mediaQueue = new Queue('media-jobs', { connection });
     this.baseUrl =
       this.config.get('MEDIA_BASE_URL') || this.config.get('APP_URL', 'http://localhost:3001');
+    this.allowedStorageHosts = collectAllowedHosts(
+      this.config.get<string>('MEDIA_ALLOWED_STORAGE_HOSTS'),
+      this.config.get<string>('S3_PUBLIC_HOST'),
+      this.config.get<string>('R2_PUBLIC_HOST'),
+    );
+    this.allowHttpStorage = this.config.get<string>('NODE_ENV') !== 'production';
   }
 
   /** Create video job. */
   async createVideoJob(workspaceId: string, data: { imageUrl: string; prompt?: string }) {
+    validateNoInternalAccess(data.imageUrl);
+
     const job = await this.prisma.mediaJob.create({
       data: {
         workspaceId,
@@ -196,8 +208,14 @@ export class MediaService {
     const signedUrl = this.storage.getSignedUrl(doc.filePath, {
       downloadName: doc.fileName,
     });
-    validateNoInternalAccess(signedUrl);
-    const response = await fetch(signedUrl, { signal: AbortSignal.timeout(30000) });
+    const response = await safeStorageFetch(signedUrl, {
+      allowedHosts: this.allowedStorageHosts,
+      allowHttp: this.allowHttpStorage,
+      init: {
+        headers: getTraceHeaders(),
+        signal: AbortSignal.timeout(30000),
+      },
+    });
     if (!response.ok) {
       throw new NotFoundException('Arquivo remoto não encontrado');
     }

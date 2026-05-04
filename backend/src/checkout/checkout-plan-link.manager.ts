@@ -126,6 +126,14 @@ export class CheckoutPlanLinkManager {
   async ensurePlanReferenceCode<T extends { id: string; referenceCode?: string | null }>(
     plan: T,
   ): Promise<T> {
+    const existingPlan = await this.prisma.checkoutProductPlan.findUnique({
+      where: { id: plan.id },
+      select: { id: true },
+    });
+    if (!existingPlan) {
+      return plan;
+    }
+
     const normalizedReferenceCode = normalizePublicCheckoutCode(plan.referenceCode);
 
     if (isValidPublicCheckoutCode(normalizedReferenceCode)) {
@@ -214,80 +222,83 @@ export class CheckoutPlanLinkManager {
       throw new Error('INVALID_PLAN_SELECTION');
     }
 
-    await this.prisma.$transaction(async (tx) => {
-      const existingLinks = await tx.checkoutPlanLink.findMany({
-        where: { checkoutId },
-        select: { id: true, planId: true },
-      });
-
-      const existingPlanIds = new Set(existingLinks.map((link) => link.planId));
-      const desiredPlanSet = new Set(desiredPlanIds);
-
-      const linksToDelete = existingLinks
-        .filter((link) => !desiredPlanSet.has(link.planId))
-        .map((link) => link.id);
-
-      if (linksToDelete.length) {
-        await tx.checkoutPlanLink.deleteMany({
-          where: { id: { in: linksToDelete } },
+    await this.prisma.$transaction(
+      async (tx) => {
+        const existingLinks = await tx.checkoutPlanLink.findMany({
+          where: { checkoutId },
+          select: { id: true, planId: true },
         });
-      }
 
-      await forEachSequential(plans, async (plan) => {
-        if (existingPlanIds.has(plan.id)) {
-          return;
+        const existingPlanIds = new Set(existingLinks.map((link) => link.planId));
+        const desiredPlanSet = new Set(desiredPlanIds);
+
+        const linksToDelete = existingLinks
+          .filter((link) => !desiredPlanSet.has(link.planId))
+          .map((link) => link.id);
+
+        if (linksToDelete.length) {
+          await tx.checkoutPlanLink.deleteMany({
+            where: { id: { in: linksToDelete } },
+          });
         }
 
-        const existingPlanLinkCount = await tx.checkoutPlanLink.count({
-          where: { planId: plan.id },
+        await forEachSequential(plans, async (plan) => {
+          if (existingPlanIds.has(plan.id)) {
+            return;
+          }
+
+          const existingPlanLinkCount = await tx.checkoutPlanLink.count({
+            where: { planId: plan.id },
+          });
+
+          await tx.checkoutPlanLink.create({
+            data: {
+              checkoutId,
+              planId: plan.id,
+              slug: existingPlanLinkCount === 0 ? plan.slug : null,
+              referenceCode: await this.generatePublicCheckoutCode(),
+              isPrimary: existingPlanLinkCount === 0,
+              isActive: plan.isActive,
+            },
+          });
         });
 
-        await tx.checkoutPlanLink.create({
-          data: {
-            checkoutId,
-            planId: plan.id,
-            slug: existingPlanLinkCount === 0 ? plan.slug : null,
-            referenceCode: await this.generatePublicCheckoutCode(),
-            isPrimary: existingPlanLinkCount === 0,
-            isActive: plan.isActive,
-          },
+        const affectedPlanIds = Array.from(
+          new Set([...desiredPlanIds, ...existingLinks.map((link) => link.planId)]),
+        );
+
+        await forEachSequential(affectedPlanIds, async (planId) => {
+          const remainingLinks = await tx.checkoutPlanLink.findMany({
+            where: { planId },
+            orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+            select: { id: true, slug: true, isPrimary: true },
+          });
+
+          if (!remainingLinks.length) {
+            return;
+          }
+
+          const currentPrimary = remainingLinks.find((link) => link.isPrimary);
+          if (currentPrimary) {
+            return;
+          }
+
+          const planRecord = await tx.checkoutProductPlan.findUnique({
+            where: { id: planId },
+            select: { slug: true },
+          });
+
+          await tx.checkoutPlanLink.update({
+            where: { id: remainingLinks[0].id },
+            data: {
+              isPrimary: true,
+              slug: remainingLinks[0].slug || planRecord?.slug || null,
+            },
+          });
         });
-      });
-
-      const affectedPlanIds = Array.from(
-        new Set([...desiredPlanIds, ...existingLinks.map((link) => link.planId)]),
-      );
-
-      await forEachSequential(affectedPlanIds, async (planId) => {
-        const remainingLinks = await tx.checkoutPlanLink.findMany({
-          where: { planId },
-          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
-          select: { id: true, slug: true, isPrimary: true },
-        });
-
-        if (!remainingLinks.length) {
-          return;
-        }
-
-        const currentPrimary = remainingLinks.find((link) => link.isPrimary);
-        if (currentPrimary) {
-          return;
-        }
-
-        const planRecord = await tx.checkoutProductPlan.findUnique({
-          where: { id: planId },
-          select: { slug: true },
-        });
-
-        await tx.checkoutPlanLink.update({
-          where: { id: remainingLinks[0].id },
-          data: {
-            isPrimary: true,
-            slug: remainingLinks[0].slug || planRecord?.slug || null,
-          },
-        });
-      });
-    });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return this.prisma.checkoutPlanLink.findMany({
       where: { checkoutId },

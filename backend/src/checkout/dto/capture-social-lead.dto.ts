@@ -19,11 +19,33 @@ export class CaptureSocialLeadDto {
   @MaxLength(4096)
   credential?: string;
 
+  /** Identity token property. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(4096)
+  identityToken?: string;
+
+  /** Authorization code property. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(4096)
+  authorizationCode?: string;
+
+  /** Redirect uri property. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(2048)
+  redirectUri?: string;
+
   /** Access token property. */
   @ValidateIf((value: CaptureSocialLeadDto) => value.provider === 'facebook')
   @IsString()
   @MaxLength(4096)
   accessToken?: string;
+
+  /** Apple user hint property. */
+  @IsOptional()
+  user?: { name?: { firstName?: string; lastName?: string }; email?: string };
 
   /** User id property. */
   @IsOptional()

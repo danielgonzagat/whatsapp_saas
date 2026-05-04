@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import {
   CATEGORIES,
   FORMAT_DATA,
@@ -74,7 +75,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
         role="dialog"
         aria-modal="true"
         style={{
-          background: '#0A0A0C',
+          background: colors.background.void,
           border: '1px solid #1C1C1F',
           borderRadius: 6,
           width: '92vw',
@@ -101,7 +102,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
             flexShrink: 0,
           }}
         >
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#E0DDD8', fontFamily: S }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: colors.text.silver, fontFamily: S }}>
             {kloelT(`Criar um design`)}
           </h2>
           <div
@@ -112,7 +113,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
               flex: 1,
               maxWidth: 340,
               marginLeft: 20,
-              background: '#111113',
+              background: colors.background.surface,
               border: '1px solid #1C1C1F',
               borderRadius: 4,
               padding: '6px 10px',
@@ -127,7 +128,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
                 background: 'none',
                 border: 'none',
                 outline: 'none',
-                color: '#E0DDD8',
+                color: colors.text.silver,
                 fontSize: 12,
                 fontFamily: S,
               }}
@@ -139,7 +140,7 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
             style={{
               background: 'none',
               border: 'none',
-              color: '#3A3A3F',
+              color: colors.text.dim,
               cursor: 'pointer',
               padding: 6,
               marginLeft: 12,
@@ -171,14 +172,15 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
                 }}
                 onMouseEnter={(e) => {
                   if (cat !== c.id) {
-                    e.currentTarget.style.background = '#151517';
-                    e.currentTarget.style.color = '#E0DDD8';
+                    e.currentTarget.style.background =
+                      '#151517' /* PULSE_VISUAL_OK: intermediate surface tone */;
+                    e.currentTarget.style.color = colors.text.silver;
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (cat !== c.id) {
                     e.currentTarget.style.background = 'none';
-                    e.currentTarget.style.color = '#6E6E73';
+                    e.currentTarget.style.color = colors.text.muted;
                   }
                 }}
                 style={{
@@ -187,14 +189,15 @@ export function CreateModal({ open, onClose }: CreateModalProps) {
                   alignItems: 'center',
                   gap: 9,
                   padding: '8px 14px',
-                  background: cat === c.id ? '#E85D3008' : 'none',
+                  background: cat === c.id ? 'colors.ember.bg' : 'none',
                   border: 'none',
-                  borderLeft: cat === c.id ? '2px solid #E85D30' : '2px solid transparent',
+                  borderLeft:
+                    cat === c.id ? '2px solid colors.ember.primary' : '2px solid transparent',
                   cursor: 'pointer',
                   fontFamily: S,
                   fontSize: 12,
                   fontWeight: cat === c.id ? 600 : 400,
-                  color: cat === c.id ? '#E85D30' : '#6E6E73',
+                  color: cat === c.id ? colors.ember.primary : colors.text.muted,
                   textAlign: 'left',
                   transition: 'all 0.15s',
                 }}
@@ -249,7 +252,13 @@ function CustomSizePanel({
   return (
     <div>
       <h3
-        style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: S, marginBottom: 16 }}
+        style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: colors.text.silver,
+          fontFamily: S,
+          marginBottom: 16,
+        }}
       >
         {kloelT(`Tamanho personalizado`)}
       </h3>
@@ -259,7 +268,7 @@ function CustomSizePanel({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: colors.text.muted,
               fontFamily: S,
               display: 'block',
               marginBottom: 6,
@@ -275,11 +284,11 @@ function CustomSizePanel({
             placeholder="1080"
             style={{
               width: '100%',
-              background: '#111113',
+              background: colors.background.surface,
               border: '1px solid #1C1C1F',
               borderRadius: 4,
               padding: '10px 12px',
-              color: '#E0DDD8',
+              color: colors.text.silver,
               fontSize: 14,
               fontFamily: M,
               outline: 'none',
@@ -287,13 +296,15 @@ function CustomSizePanel({
             id={`${fid}-largura`}
           />
         </div>
-        <span style={{ color: '#3A3A3F', marginTop: 20, fontFamily: M, fontSize: 12 }}>x</span>
+        <span style={{ color: colors.text.dim, marginTop: 20, fontFamily: M, fontSize: 12 }}>
+          x
+        </span>
         <div style={{ flex: 1 }}>
           <label
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: colors.text.muted,
               fontFamily: S,
               display: 'block',
               marginBottom: 6,
@@ -309,11 +320,11 @@ function CustomSizePanel({
             placeholder="1080"
             style={{
               width: '100%',
-              background: '#111113',
+              background: colors.background.surface,
               border: '1px solid #1C1C1F',
               borderRadius: 4,
               padding: '10px 12px',
-              color: '#E0DDD8',
+              color: colors.text.silver,
               fontSize: 14,
               fontFamily: M,
               outline: 'none',
@@ -326,7 +337,7 @@ function CustomSizePanel({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: colors.text.muted,
               fontFamily: S,
               display: 'block',
               marginBottom: 6,
@@ -338,11 +349,11 @@ function CustomSizePanel({
           <select
             style={{
               width: '100%',
-              background: '#111113',
+              background: colors.background.surface,
               border: '1px solid #1C1C1F',
               borderRadius: 4,
               padding: '10px',
-              color: '#E0DDD8',
+              color: colors.text.silver,
               fontSize: 12,
               fontFamily: S,
               outline: 'none',
@@ -362,17 +373,17 @@ function CustomSizePanel({
               l: 'Personalizado',
               w: Number.parseInt(customW, 10) || 1080,
               h: Number.parseInt(customH, 10) || 1080,
-              c: ['#E85D30', '#F2784B'],
+              c: [colors.ember.primary, '#F2784B'],
               m: 'square',
             })
           }
           style={{
             marginTop: 20,
             padding: '10px 18px',
-            background: '#E85D30',
+            background: colors.ember.primary,
             border: 'none',
             borderRadius: 4,
-            color: '#0A0A0C',
+            color: colors.background.void,
             fontSize: 12,
             fontWeight: 700,
             fontFamily: S,
@@ -384,7 +395,13 @@ function CustomSizePanel({
         </button>
       </div>
       <p
-        style={{ fontSize: 11, fontWeight: 600, color: '#6E6E73', fontFamily: S, marginBottom: 10 }}
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: colors.text.muted,
+          fontFamily: S,
+          marginBottom: 10,
+        }}
       >
         {kloelT(`Dimensoes recentes`)}
       </p>
@@ -398,21 +415,22 @@ function CustomSizePanel({
                 l: `${d.w}x${d.h}`,
                 w: d.w,
                 h: d.h,
-                c: ['#6E6E73', '#3A3A3F'],
+                c: [colors.text.muted, colors.text.dim],
                 m: 'square',
               })
             }
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#E85D3040';
+              e.currentTarget.style.borderColor = 'colors.ember.glow40';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#1C1C1F';
+              e.currentTarget.style.borderColor =
+                '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */;
             }}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 10,
-              background: '#111113',
+              background: colors.background.surface,
               border: '1px solid #1C1C1F',
               borderRadius: 4,
               padding: '10px 14px',
@@ -426,13 +444,13 @@ function CustomSizePanel({
               height="20"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#3A3A3F"
+              stroke={colors.text.dim}
               strokeWidth="1.5"
               aria-hidden="true"
             >
               <rect x="3" y="3" width="18" height="18" rx="2" />
             </svg>
-            <span style={{ fontFamily: M, fontSize: 12, color: '#E0DDD8' }}>
+            <span style={{ fontFamily: M, fontSize: 12, color: colors.text.silver }}>
               {d.w} x {d.h} px
             </span>
           </button>
@@ -471,11 +489,11 @@ function UploadPanel() {
           transition: 'all 0.2s',
         }}
       >
-        <div style={{ color: '#E85D30', opacity: 0.5 }}>{IC.upload(40)}</div>
+        <div style={{ color: colors.ember.primary, opacity: 0.5 }}>{IC.upload(40)}</div>
         <p
           style={{
             fontSize: 14,
-            color: '#6E6E73',
+            color: colors.text.muted,
             fontFamily: "var(--font-sora), 'Sora', sans-serif",
           }}
         >
@@ -486,10 +504,10 @@ function UploadPanel() {
             type="button"
             style={{
               padding: '8px 16px',
-              background: '#E85D30',
+              background: colors.ember.primary,
               border: 'none',
               borderRadius: 4,
-              color: '#0A0A0C',
+              color: colors.background.void,
               fontSize: 12,
               fontWeight: 600,
               fontFamily: "var(--font-sora), 'Sora', sans-serif",
@@ -505,10 +523,10 @@ function UploadPanel() {
             type="button"
             style={{
               padding: '8px 16px',
-              background: '#111113',
+              background: colors.background.surface,
               border: '1px solid #1C1C1F',
               borderRadius: 4,
-              color: '#E0DDD8',
+              color: colors.text.silver,
               fontSize: 12,
               fontFamily: "var(--font-sora), 'Sora', sans-serif",
               cursor: 'pointer',
@@ -521,7 +539,7 @@ function UploadPanel() {
       <p
         style={{
           fontSize: 11,
-          color: '#3A3A3F',
+          color: colors.text.dim,
           fontFamily: "var(--font-sora), 'Sora', sans-serif",
         }}
       >
@@ -556,10 +574,10 @@ function FormatGrid({
               onClick={() => setSf(s)}
               style={{
                 padding: '5px 12px',
-                background: sf === s ? '#E85D3010' : 'none',
-                border: `1px solid ${sf === s ? '#E85D3030' : '#1C1C1F'}`,
+                background: sf === s ? 'colors.ember.glow10' : 'none',
+                border: `1px solid ${sf === s ? 'colors.ember.glow30' : '#1C1C1F'}`,
                 borderRadius: 4,
-                color: sf === s ? '#E85D30' : '#6E6E73',
+                color: sf === s ? colors.ember.primary : colors.text.muted,
                 fontSize: 11,
                 fontWeight: sf === s ? 600 : 400,
                 fontFamily: "var(--font-sora), 'Sora', sans-serif",
@@ -578,7 +596,7 @@ function FormatGrid({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: colors.text.muted,
               fontFamily: "var(--font-sora), 'Sora', sans-serif",
               marginBottom: 10,
               textTransform: 'uppercase',
@@ -606,7 +624,8 @@ function FormatGrid({
                   e.currentTarget.style.borderColor = `${a.c[0]}40`;
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = '#1C1C1F';
+                  e.currentTarget.style.borderColor =
+                    '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */;
                 }}
                 style={{
                   display: 'flex',
@@ -614,7 +633,7 @@ function FormatGrid({
                   alignItems: 'center',
                   gap: 6,
                   padding: '10px 12px',
-                  background: '#111113',
+                  background: colors.background.surface,
                   border: '1px solid #1C1C1F',
                   borderRadius: 6,
                   cursor: 'pointer',
@@ -635,7 +654,7 @@ function FormatGrid({
                   style={{
                     fontSize: 9,
                     fontWeight: 500,
-                    color: '#6E6E73',
+                    color: colors.text.muted,
                     fontFamily: "var(--font-sora), 'Sora', sans-serif",
                     textAlign: 'center',
                   }}
@@ -652,7 +671,7 @@ function FormatGrid({
         style={{
           fontSize: 10,
           fontWeight: 600,
-          color: '#6E6E73',
+          color: colors.text.muted,
           fontFamily: "var(--font-sora), 'Sora', sans-serif",
           marginBottom: 12,
           textTransform: 'uppercase',
@@ -684,7 +703,7 @@ function FormatGrid({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: colors.text.muted,
               fontFamily: "var(--font-sora), 'Sora', sans-serif",
               marginBottom: 10,
               textTransform: 'uppercase',
@@ -696,16 +715,17 @@ function FormatGrid({
           <button
             type="button"
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#E85D3040';
+              e.currentTarget.style.borderColor = 'colors.ember.glow40';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = '#1C1C1F';
+              e.currentTarget.style.borderColor =
+                '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */;
             }}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              background: '#111113',
+              background: colors.background.surface,
               border: '1px solid #1C1C1F',
               borderRadius: 6,
               padding: '12px 16px',
@@ -717,20 +737,20 @@ function FormatGrid({
                 width: 34,
                 height: 34,
                 borderRadius: 4,
-                background: 'linear-gradient(135deg,#E85D3020,#E85D3008)',
+                background: 'linear-gradient(135deg,colors.ember.glow10,colors.ember.bg)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <span style={{ color: '#E85D30' }}>{IC.grid(15)}</span>
+              <span style={{ color: colors.ember.primary }}>{IC.grid(15)}</span>
             </div>
             <div style={{ textAlign: 'left' }}>
               <p
                 style={{
                   fontSize: 12,
                   fontWeight: 600,
-                  color: '#E0DDD8',
+                  color: colors.text.silver,
                   fontFamily: "var(--font-sora), 'Sora', sans-serif",
                 }}
               >
@@ -739,7 +759,7 @@ function FormatGrid({
               <p
                 style={{
                   fontSize: 10,
-                  color: '#3A3A3F',
+                  color: colors.text.dim,
                   fontFamily: "var(--font-sora), 'Sora', sans-serif",
                 }}
               >

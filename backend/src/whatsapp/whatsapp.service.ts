@@ -1,82 +1,58 @@
 import { randomInt, randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
-
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { forEachSequential } from '../common/async-sequence';
 import { createRedisClient } from '../common/redis/redis.util';
 import { NeuroCrmService } from '../crm/neuro-crm.service';
 import { InboxService } from '../inbox/inbox.service';
 import { StructuredLogger } from '../logging/structured-logger';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue, flowQueue } from '../queue/queue';
 import { WorkspaceService } from '../workspaces/workspace.service';
 import {
+  buildConversationOperationalState,
   type ConversationOperationalLike,
   type ConversationOperationalState,
-  buildConversationOperationalState,
 } from './agent-conversation-state.util';
+import * as chatHelpers from './whatsapp.service.chats';
+import type { ChatHelperDeps } from './whatsapp.service.chats';
 import { CiaRuntimeService } from './cia-runtime.service';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { WhatsAppProviderRegistry, type SessionStatus } from './providers/provider-registry';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
+import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
 import { WorkerRuntimeService } from './worker-runtime.service';
+import {
+  normalizeJsonObjExt,
+  resolveTimestampExt,
+  toIsoTimestamp,
+  normalizeProbabilityScoreExt,
+  isAutonomousEnabledExt,
+  normalizeHashExt,
+  normalizeContactEntry,
+  normalizeChatEntry,
+  normalizeMessageEntry,
+  collectCatalogContactEntriesExt,
+} from './__companions__/whatsapp.service.companion';
+import type {
+  NormalizedContact,
+  NormalizedChat,
+} from './__companions__/whatsapp.service.companion';
 
 const D_RE = /\D/g;
 const PATTERN_RE = /-/g;
-
-type NormalizedContact = {
-  id: string;
-  phone: string;
-  name: string | null;
-  pushName: string | null;
-  shortName: string | null;
-  email: string | null;
-  localContactId: string | null;
-  source: 'provider' | 'crm' | 'waha+crm';
-  registered: boolean | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-};
-
-type NormalizedChat = {
-  id: string;
-  phone: string;
-  name: string | null;
-  unreadCount: number;
-  pending: boolean;
-  needsReply?: boolean;
-  pendingMessages?: number;
-  owner?: ConversationOperationalState['owner'];
-  blockedReason?: ConversationOperationalState['blockedReason'];
-  lastMessageDirection?: ConversationOperationalState['lastMessageDirection'];
-  timestamp: number;
-  lastMessageAt: string | null;
-  conversationId: string | null;
-  status: string | null;
-  mode?: string | null;
-  assignedAgentId?: string | null;
-  source: 'provider' | 'crm' | 'waha+crm';
-};
-
-type CatalogConversationSummary = {
-  id: string;
-  contactId: string;
-  unreadCount: number | null;
-  status: string | null;
-  mode: string | null;
-  lastMessageAt: Date | null;
-};
-
-/**
- * =====================================================================
- * WHATSAPPSERVICE PRO (UWE-Ω)
- * =====================================================================
- */
 
 @Injectable()
 export class WhatsappService {
@@ -99,572 +75,186 @@ export class WhatsappService {
     private readonly catchupService: WhatsAppCatchupService,
     private readonly ciaRuntime: CiaRuntimeService,
     private readonly workerRuntime: WorkerRuntimeService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
-  private readText(value: unknown): string {
-    if (typeof value === 'string') {
-      return value.trim();
-    }
-    if (typeof value === 'number' || typeof value === 'boolean') {
-      return String(value).trim();
-    }
+  // ═══ UTILITY (thin) ═══
+  private readText(v: unknown): string {
+    if (typeof v === 'string') return v.trim();
+    if (typeof v === 'number' || typeof v === 'boolean') return String(v).trim();
     return '';
   }
-
-  private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
-    return isPlaceholderContactNameValue(value, phone);
+  private isPlaceholderContactName(v: unknown, p?: string | null): boolean {
+    return isPlaceholderName(v, p);
   }
-
   private resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {
-    for (const candidate of candidates) {
-      const normalized = this.readText(candidate);
-      if (normalized && !this.isPlaceholderContactName(normalized, phone)) {
-        return normalized;
-      }
+    for (const c of candidates) {
+      const n = this.readText(c);
+      if (n && !this.isPlaceholderContactName(n, phone)) return n;
     }
-
     return '';
   }
-
-  /** List contacts. */
-  async listContacts(workspaceId: string) {
-    const remoteContacts = this.normalizeContacts(
-      await this.providerRegistry.getContacts(workspaceId),
-    );
-    const localContacts =
-      (await this.prisma.contact.findMany({
-        take: 500,
-        where: { workspaceId },
-        select: {
-          id: true,
-          phone: true,
-          name: true,
-          email: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        orderBy: { updatedAt: 'desc' },
-      })) || [];
-
-    const merged = new Map<string, NormalizedContact>();
-
-    for (const contact of remoteContacts) {
-      merged.set(contact.phone, contact);
-    }
-
-    for (const local of localContacts) {
-      const existing = merged.get(local.phone);
-      merged.set(local.phone, {
-        id: existing?.id || `${local.phone}@c.us`,
-        phone: local.phone,
-        name: this.resolveTrustedContactName(local.phone, existing?.name, local.name) || null,
-        pushName: this.isPlaceholderContactName(existing?.pushName, local.phone)
-          ? this.isPlaceholderContactName(local.name, local.phone)
-            ? null
-            : local.name
-          : existing?.pushName || null,
-        shortName: existing?.shortName || null,
-        email: local.email || existing?.email || null,
-        localContactId: local.id,
-        source: existing ? 'waha+crm' : 'crm',
-        registered: existing?.registered ?? null,
-        createdAt: existing?.createdAt || local.createdAt?.toISOString?.() || null,
-        updatedAt:
-          local.updatedAt?.toISOString?.() ||
-          existing?.updatedAt ||
-          local.createdAt?.toISOString?.() ||
-          null,
-      });
-    }
-
-    return Array.from(merged.values()).sort((a, b) => {
-      const byUpdatedAt = (b.updatedAt || '').localeCompare(a.updatedAt || '');
-      if (byUpdatedAt !== 0) {
-        return byUpdatedAt;
-      }
-      return String(a.name || a.phone).localeCompare(String(b.name || b.phone));
-    });
+  private normalizeNumber(num: string): string {
+    return num.replace(D_RE, '');
+  }
+  private isIndividualChatId(c?: string | null): boolean {
+    const v = String(c || '').trim();
+    return v.endsWith('@c.us') || v.endsWith('@s.whatsapp.net');
+  }
+  private normalizeJsonObject(v: unknown): Record<string, unknown> {
+    return normalizeJsonObjExt(v);
+  }
+  private normalizeDateValue(v: unknown): string | null {
+    const ts = this.resolveTimestamp({ createdAt: v });
+    return toIsoTimestamp(ts);
+  }
+  private normalizeProbabilityScore(s: unknown, b?: string | null): number {
+    return normalizeProbabilityScoreExt(s, b);
+  }
+  private resolveTimestamp(v: unknown): number {
+    return resolveTimestampExt(v);
+  }
+  private toIsoTimestamp(ts: number): string | null {
+    return toIsoTimestamp(ts);
+  }
+  private normalizeChatId(chatId: string): string {
+    return String(chatId || '').includes('@') ? chatId : `${this.normalizeNumber(chatId)}@c.us`;
+  }
+  private normalizeHash(t: string): string {
+    return normalizeHashExt(t);
+  }
+  private isAutonomousEnabled(s: Record<string, unknown>): boolean {
+    return isAutonomousEnabledExt(s);
+  }
+  private sleep(ms: number): Promise<void> {
+    return new Promise((r) => setTimeout(r, ms));
+  }
+  private get providerExtract() {
+    return this.providerRegistry.extractPhoneFromChatId.bind(this.providerRegistry);
   }
 
-  /** Create contact. */
-  async createContact(
-    workspaceId: string,
-    input: { phone: string; name?: string; email?: string },
-  ) {
-    const phone = this.normalizeNumber(input.phone || '');
-    if (!phone) {
-      throw new BadRequestException('phone é obrigatório');
-    }
-
-    const registered = await this.providerRegistry
-      .isRegistered(workspaceId, phone)
-      .catch(() => null);
-
-    const contact = await this.prisma.contact.upsert({
-      where: { workspaceId_phone: { workspaceId, phone } },
-      update: {
-        name: this.resolveTrustedContactName(phone, input.name) || null,
-        email: input.email?.trim() || undefined,
-      },
-      create: {
-        workspaceId,
-        phone,
-        name: this.resolveTrustedContactName(phone, input.name) || null,
-        email: input.email?.trim() || undefined,
-      },
-      select: {
-        id: true,
-        phone: true,
-        name: true,
-        email: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    await this.syncRemoteContactProfile(
-      workspaceId,
-      contact.phone,
-      contact.name || input.name || undefined,
-    ).catch(() => undefined);
-
+  // ═══ CHAT HELPER (thin wrapper) ═══
+  private getChatHelperDeps(): ChatHelperDeps {
     return {
-      id: `${phone}@c.us`,
-      phone: contact.phone,
-      name: contact.name || null,
-      email: contact.email || null,
-      localContactId: contact.id,
-      source: 'crm',
-      registered,
-      createdAt: contact.createdAt.toISOString(),
-      updatedAt: contact.updatedAt.toISOString(),
+      prisma: this.prisma,
+      providerRegistry: this.providerRegistry,
+      normalizeChats: (r) => this.normalizeChats(r),
+      normalizeMessages: (r, fc) => this.normalizeMessages(r, fc),
+      normalizeNumber: (n) => this.normalizeNumber(n),
+      normalizeChatId: (c) => this.normalizeChatId(c),
+      isIndividualChatId: (c) => this.isIndividualChatId(c),
+      toIsoTimestamp: (ts) => this.toIsoTimestamp(ts),
+      resolveTimestamp: (v) => this.resolveTimestamp(v),
+      resolveTrustedContactName: (p, ...cs) => this.resolveTrustedContactName(p, ...cs),
+      listOperationalConversations: (ws, o) => this.listOperationalConversations(ws, o),
     };
   }
-
-  /** Sync remote contact profile. */
-  async syncRemoteContactProfile(
-    workspaceId: string,
-    phone: string,
-    name?: string | null,
-  ): Promise<boolean> {
-    const normalizedPhone = this.normalizeNumber(phone || '');
-    const normalizedName = this.resolveTrustedContactName(phone, name);
-
-    if (!normalizedPhone || !normalizedName) {
-      return false;
-    }
-
-    try {
-      return await this.providerRegistry.upsertContactProfile(workspaceId, {
-        phone: normalizedPhone,
-        name: normalizedName,
-      });
-    } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.logger.warn(
-        `Falha ao sincronizar contato ${normalizedPhone} no provider de WhatsApp: ${String(
-          errorInstanceofError?.message || 'unknown_error',
-        )}`,
-      );
-      return false;
-    }
+  async listChats(ws: string) {
+    return chatHelpers.listChats(this.getChatHelperDeps(), ws);
   }
-
-  /** List chats. */
-  async listChats(workspaceId: string) {
-    const remoteChats = this.normalizeChats(await this.providerRegistry.getChats(workspaceId));
-    const localConversations =
-      (await this.prisma.conversation.findMany({
-        where: { workspaceId },
-        select: {
-          id: true,
-          unreadCount: true,
-          status: true,
-          mode: true,
-          assignedAgentId: true,
-          lastMessageAt: true,
-          contact: {
-            select: {
-              id: true,
-              phone: true,
-              name: true,
-            },
-          },
-          messages: {
-            take: 5,
-            orderBy: { createdAt: 'desc' },
-            select: {
-              id: true,
-              direction: true,
-              createdAt: true,
-              content: true,
-            },
-          },
-        },
-        orderBy: { lastMessageAt: 'desc' },
-        take: 500,
-      })) || [];
-
-    const merged = new Map<string, NormalizedChat>();
-
-    for (const chat of remoteChats) {
-      const existing = merged.get(chat.phone);
-      if (!existing || Number(chat.timestamp || 0) >= Number(existing.timestamp || 0)) {
-        merged.set(chat.phone, {
-          ...existing,
-          ...chat,
-          name: chat.name || existing?.name || chat.phone,
-        });
-      }
-    }
-
-    for (const conversation of localConversations) {
-      const phone = this.normalizeNumber(conversation.contact?.phone || '');
-      if (!phone) {
-        continue;
-      }
-
-      const existing = merged.get(phone);
-      const timestamp = existing?.timestamp || conversation.lastMessageAt?.getTime() || 0;
-      const operational = buildConversationOperationalState(
-        conversation as ConversationOperationalLike,
-      );
-      const unreadCount =
-        typeof existing?.unreadCount === 'number'
-          ? existing.unreadCount
-          : conversation.unreadCount || 0;
-
-      merged.set(phone, {
-        id: existing?.id || `${phone}@c.us`,
-        phone,
-        name: existing?.name || conversation.contact?.name || conversation.contact?.phone || phone,
-        unreadCount,
-        pending: operational.pending,
-        needsReply: operational.needsReply,
-        pendingMessages: operational.pending ? Math.max(1, Number(unreadCount || 0) || 0) : 0,
-        owner: operational.owner,
-        blockedReason: operational.blockedReason,
-        lastMessageDirection: operational.lastMessageDirection,
-        timestamp,
-        lastMessageAt:
-          this.toIsoTimestamp(timestamp) || conversation.lastMessageAt?.toISOString?.() || null,
-        conversationId: conversation.id,
-        status: conversation.status || null,
-        mode: conversation.mode || null,
-        assignedAgentId: conversation.assignedAgentId || null,
-        source: existing ? 'waha+crm' : 'crm',
-      });
-    }
-
-    return Array.from(merged.values()).sort(
-      (a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0),
-    );
-  }
-
-  /** Get chat messages. */
   async getChatMessages(
-    workspaceId: string,
-    chatId: string,
-    options?: { limit?: number; offset?: number; downloadMedia?: boolean },
+    ws: string,
+    cid: string,
+    o?: { limit?: number; offset?: number; downloadMedia?: boolean },
   ) {
-    const normalizedChatId = this.normalizeChatId(chatId);
-    const providerMessages = this.normalizeMessages(
-      await this.providerRegistry.getChatMessages(workspaceId, normalizedChatId, options),
-      normalizedChatId,
-    );
-
-    if (providerMessages.length > 0) {
-      return providerMessages.sort((a, b) => a.timestamp - b.timestamp);
-    }
-
-    const phone = this.normalizeNumber(
-      this.providerRegistry.extractPhoneFromChatId(normalizedChatId),
-    );
-    if (!phone) {
-      return [];
-    }
-
-    const contact = await this.prisma.contact.findUnique({
-      where: { workspaceId_phone: { workspaceId, phone } },
-      select: { id: true },
-    });
-
-    if (!contact) {
-      return [];
-    }
-
-    const localMessages = await this.prisma.message.findMany({
-      take: Math.max(1, Math.min(200, options?.limit || 100)),
-      skip: Math.max(0, options?.offset || 0),
-      where: {
-        workspaceId,
-        contactId: contact.id,
-      },
-      select: {
-        id: true,
-        content: true,
-        direction: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        contactId: true,
-        conversationId: true,
-        mediaUrl: true,
-        externalId: true,
-      },
-      orderBy: { createdAt: 'asc' },
-    });
-
-    return localMessages.map((message) => {
-      const timestamp = message.createdAt?.getTime?.() || 0;
-      return {
-        id: message.id,
-        chatId: normalizedChatId,
-        phone,
-        body: message.content || '',
-        direction: message.direction,
-        fromMe: message.direction === 'OUTBOUND',
-        type: String(message.mediaUrl ? 'MEDIA' : 'TEXT').toLowerCase(),
-        hasMedia: !!message.mediaUrl,
-        mediaUrl: message.mediaUrl || null,
-        mimetype: null,
-        timestamp,
-        isoTimestamp: this.toIsoTimestamp(timestamp),
-        source: 'crm',
-      };
-    });
+    return chatHelpers.getChatMessages(this.getChatHelperDeps(), ws, cid, o);
+  }
+  async getBacklog(ws: string) {
+    return chatHelpers.getBacklog(this.getChatHelperDeps(), ws);
+  }
+  async getOperationalBacklogReport(ws: string, o?: { limit?: number; includeResolved?: boolean }) {
+    return chatHelpers.getOperationalBacklogReport(this.getChatHelperDeps(), ws, o);
   }
 
-  /** Get backlog. */
-  async getBacklog(workspaceId: string) {
-    const status = await this.providerRegistry.getSessionStatus(workspaceId);
-    const chats = await this.listChats(workspaceId);
-    const pendingChats = chats.filter((chat) => chat.pending === true);
-    const pendingMessages = pendingChats.reduce(
-      (sum, chat) => sum + Math.max(1, Number(chat.pendingMessages || chat.unreadCount || 0) || 0),
-      0,
-    );
-
-    return {
-      connected: status.connected,
-      status: status.status,
-      pendingConversations: pendingChats.length,
-      pendingMessages,
-      latestMessageAt: pendingChats[0]?.lastMessageAt || null,
-      chats: pendingChats,
-    };
-  }
-
-  private indexRemoteChatsByPhone(remoteChats: NormalizedChat[]): Map<string, NormalizedChat> {
-    const remoteByPhone = new Map<string, NormalizedChat>();
-    for (const chat of remoteChats) {
-      const existing = remoteByPhone.get(chat.phone);
-      if (!existing || Number(chat.timestamp || 0) >= Number(existing.timestamp || 0)) {
-        remoteByPhone.set(chat.phone, chat);
-      }
-    }
-    return remoteByPhone;
-  }
-
-  private indexLocalConversationsByPhone(
-    localConversations: ConversationOperationalState[],
-  ): Map<string, ConversationOperationalState> {
-    const localByPhone = new Map<string, ConversationOperationalState>();
-    for (const conversation of localConversations) {
-      const phone = this.normalizeNumber(conversation.phone || '');
-      if (!phone) {
-        continue;
-      }
-
-      const existing = localByPhone.get(phone);
-      const currentTimestamp = this.resolveTimestamp({ createdAt: conversation.lastMessageAt });
-      const existingTimestamp = this.resolveTimestamp({ createdAt: existing?.lastMessageAt });
-
-      if (!existing || currentTimestamp >= existingTimestamp) {
-        localByPhone.set(phone, conversation);
-      }
-    }
-    return localByPhone;
-  }
-
-  private compareOperationalBacklogItems(
-    a: ReturnType<WhatsappService['buildOperationalBacklogItem']>,
-    b: ReturnType<WhatsappService['buildOperationalBacklogItem']>,
-  ): number {
-    if (a.pending !== b.pending) {
-      return Number(b.pending) - Number(a.pending);
-    }
-    if (a.lastMessageTimestamp !== b.lastMessageTimestamp) {
-      return b.lastMessageTimestamp - a.lastMessageTimestamp;
-    }
-    if (a.remoteUnreadCount !== b.remoteUnreadCount) {
-      return b.remoteUnreadCount - a.remoteUnreadCount;
-    }
-    return String(a.name || a.phone).localeCompare(String(b.name || b.phone));
-  }
-
-  private buildOperationalBacklogSummary(
-    items: ReturnType<WhatsappService['buildOperationalBacklogItem']>[],
-    pendingItems: ReturnType<WhatsappService['buildOperationalBacklogItem']>[],
-  ) {
-    return {
-      remotePendingConversations: items.filter((item) => item.remotePending).length,
-      remotePendingMessages: items.reduce((sum, item) => sum + item.remoteUnreadCount, 0),
-      localPendingConversations: items.filter((item) => item.localPending).length,
-      localPendingMessages: items.reduce(
-        (sum, item) => sum + (item.localPending ? Math.max(item.localUnreadCount, 1) : 0),
-        0,
-      ),
-      effectivePendingConversations: pendingItems.length,
-      effectivePendingMessages: pendingItems.reduce((sum, item) => sum + item.pendingMessages, 0),
-      remoteOnlyPendingConversations: items.filter((item) => item.remoteOnlyPending).length,
-      localOnlyPendingConversations: items.filter((item) => item.localOnlyPending).length,
-      latestPendingMessageAt: pendingItems[0]?.lastMessageAt || null,
-    };
-  }
-
-  /** Get operational backlog report. */
-  async getOperationalBacklogReport(
-    workspaceId: string,
-    options?: { limit?: number; includeResolved?: boolean },
-  ) {
-    const limit = Math.max(1, Math.min(500, Number(options?.limit || 100) || 100));
-    const includeResolved = options?.includeResolved === true;
-
-    const [status, remoteChatsRaw, localConversations] = await Promise.all([
-      this.providerRegistry.getSessionStatus(workspaceId),
-      this.providerRegistry.getChats(workspaceId),
-      this.listOperationalConversations(workspaceId, {
-        limit: Math.max(limit * 5, 500),
-        pendingOnly: false,
-      }),
-    ]);
-
-    const remoteChats = this.normalizeChats(remoteChatsRaw).filter((chat) =>
-      this.isIndividualChatId(chat.id),
-    );
-
-    const remoteByPhone = this.indexRemoteChatsByPhone(remoteChats);
-    const localByPhone = this.indexLocalConversationsByPhone(localConversations);
-
-    const phoneSet = new Set<string>([
-      ...Array.from(remoteByPhone.keys()),
-      ...Array.from(localByPhone.keys()),
-    ]);
-
-    const items = Array.from(phoneSet)
-      .map((phone) =>
-        this.buildOperationalBacklogItem(phone, remoteByPhone.get(phone), localByPhone.get(phone)),
+  // ═══ NORMALIZE (thin wrappers) ═══
+  private normalizeContacts(raw: unknown): NormalizedContact[] {
+    const r = raw as Record<string, unknown> | undefined;
+    const candidates: unknown[] = Array.isArray(raw)
+      ? raw
+      : Array.isArray(r?.contacts)
+        ? (r.contacts as unknown[])
+        : Array.isArray(r?.items)
+          ? (r.items as unknown[])
+          : Array.isArray(r?.data)
+            ? (r.data as unknown[])
+            : [];
+    return candidates
+      .map((c) =>
+        normalizeContactEntry(c, {
+          isPlaceholder: (v, p) => this.isPlaceholderContactName(v, p),
+          resolveName: (p, ...cs) => this.resolveTrustedContactName(p, ...cs),
+          extractPhone: (id) => this.providerExtract(id),
+        }),
       )
-      .sort((a, b) => this.compareOperationalBacklogItems(a, b));
-
-    const visibleItems = items.filter((item) => includeResolved || item.pending).slice(0, limit);
-    const pendingItems = items.filter((item) => item.pending);
-
-    return {
-      workspaceId,
-      generatedAt: new Date().toISOString(),
-      sourceOfTruth: await this.providerRegistry.getProviderType(workspaceId),
-      connected: status.connected,
-      status: status.status,
-      includeResolved,
-      summary: this.buildOperationalBacklogSummary(items, pendingItems),
-      items: visibleItems,
-    };
+      .filter((c): c is NormalizedContact => c !== null);
+  }
+  private normalizeChats(raw: unknown): NormalizedChat[] {
+    const r = raw as Record<string, unknown> | undefined;
+    const cs: unknown[] = Array.isArray(raw)
+      ? raw
+      : Array.isArray(r?.chats)
+        ? (r.chats as unknown[])
+        : Array.isArray(r?.items)
+          ? (r.items as unknown[])
+          : Array.isArray(r?.data)
+            ? (r.data as unknown[])
+            : [];
+    return cs
+      .map((c) =>
+        normalizeChatEntry(c, {
+          resolveName: (p, ...cs) => this.resolveTrustedContactName(p, ...cs),
+          extractPhone: (id) => this.providerExtract(id),
+          isPlaceholder: (v, p) => this.isPlaceholderContactName(v, p),
+        }),
+      )
+      .filter((c): c is NormalizedChat => c !== null);
+  }
+  private normalizeMessages(raw: unknown, fallbackChatId: string) {
+    const r = raw as Record<string, unknown> | undefined;
+    const cs = Array.isArray(raw)
+      ? raw
+      : Array.isArray(r?.messages)
+        ? (r.messages as unknown[])
+        : Array.isArray(r?.items)
+          ? (r.items as unknown[])
+          : Array.isArray(r?.data)
+            ? (r.data as unknown[])
+            : [];
+    return cs
+      .map((m) =>
+        normalizeMessageEntry(m, fallbackChatId, {
+          extractPhone: (id) => this.providerExtract(id),
+        }),
+      )
+      .filter(Boolean);
   }
 
-  private buildOperationalBacklogItem(
-    phone: string,
-    remote: NormalizedChat | undefined,
-    local: ConversationOperationalState | undefined,
-  ) {
-    const remoteUnreadCount = Math.max(0, Number(remote?.unreadCount || 0) || 0);
-    const localUnreadCount = Math.max(0, Number(local?.unreadCount || 0) || 0);
-    const localPendingMessages = Math.max(0, Number(local?.pendingMessages || 0) || 0);
-    const remotePending = remoteUnreadCount > 0;
-    const localPending = local?.pending === true;
-    const pending = remotePending || localPending;
-    const lastMessageTimestamp = Math.max(
-      this.resolveTimestamp(remote),
-      this.resolveTimestamp({ createdAt: local?.lastMessageAt }),
-    );
-    const pendingMessages = pending
-      ? Math.max(remoteUnreadCount, localPendingMessages, localUnreadCount, 1)
-      : 0;
-    const source = remote && local ? 'waha+crm' : remote ? 'waha' : 'crm';
-    const lastMessageAt =
-      this.toIsoTimestamp(lastMessageTimestamp) ||
-      remote?.lastMessageAt ||
-      local?.lastMessageAt ||
-      null;
-
-    return {
-      phone,
-      chatId: remote?.id || (phone ? `${phone}@c.us` : null),
-      name: this.resolveTrustedContactName(phone, remote?.name, local?.contactName) || null,
-      conversationId: local?.conversationId || null,
-      source,
-      pending,
-      needsReply: remotePending || local?.needsReply === true,
-      remotePending,
-      localPending,
-      remoteUnreadCount,
-      localUnreadCount,
-      pendingMessages,
-      blockedReason: pending ? null : local?.blockedReason || null,
-      owner: local?.owner || 'AGENT',
-      lastMessageDirection: local?.lastMessageDirection || null,
-      lastMessageAt,
-      lastMessageTimestamp,
-      remoteOnlyPending: remotePending && !localPending,
-      localOnlyPending: localPending && !remotePending,
-      conversationStatus: local?.status || null,
-      conversationMode: local?.mode || null,
-      assignedAgentId: local?.assignedAgentId || null,
-    };
-  }
-
-  /** List catalog contacts. */
+  // ═══ LIST CATALOG, PROBABILITY, REFRESH, RESCORE, BACKLOG ═══
   async listCatalogContacts(
-    workspaceId: string,
-    options?: {
-      days?: number;
-      page?: number;
-      limit?: number;
-      onlyCataloged?: boolean;
-    },
+    ws: string,
+    o?: { days?: number; page?: number; limit?: number; onlyCataloged?: boolean },
   ) {
-    const days = Math.max(1, Math.min(365, Number(options?.days || 30) || 30));
-    const page = Math.max(1, Number(options?.page || 1) || 1);
-    const limit = Math.max(1, Math.min(200, Number(options?.limit || 50) || 50));
-    const onlyCataloged = options?.onlyCataloged !== false;
-
-    const entries = await this.collectCatalogContactEntries(workspaceId, {
-      days,
-      onlyCataloged,
-    });
+    const days = Math.max(1, Math.min(365, Number(o?.days || 30) || 30));
+    const page = Math.max(1, Number(o?.page || 1) || 1);
+    const limit = Math.max(1, Math.min(200, Number(o?.limit || 50) || 50));
+    const oc = o?.onlyCataloged !== false;
+    const entries = await this.collectCatalogContactEntries(ws, { days, onlyCataloged: oc });
     const total = entries.length;
     const offset = (page - 1) * limit;
-
     return {
-      workspaceId,
+      workspaceId: ws,
       generatedAt: new Date().toISOString(),
       days,
       page,
       limit,
       total,
-      onlyCataloged,
+      onlyCataloged: oc,
       items: entries.slice(offset, offset + limit),
     };
   }
-
-  /** List purchase probability ranking. */
   async listPurchaseProbabilityRanking(
-    workspaceId: string,
-    options?: {
+    ws: string,
+    o?: {
       days?: number;
       limit?: number;
       minLeadScore?: number;
@@ -673,1294 +263,206 @@ export class WhatsappService {
       excludeBuyers?: boolean;
     },
   ) {
-    const days = Math.max(1, Math.min(365, Number(options?.days || 30) || 30));
-    const limit = Math.max(1, Math.min(200, Number(options?.limit || 50) || 50));
-    const minLeadScore = Math.max(0, Math.min(100, Number(options?.minLeadScore || 0) || 0));
-    const minProbabilityScore = Math.max(
-      0,
-      Math.min(1, Number(options?.minProbabilityScore || 0) || 0),
-    );
-    const onlyCataloged = options?.onlyCataloged !== false;
-    const excludeBuyers = options?.excludeBuyers === true;
-
-    const entries = await this.collectCatalogContactEntries(workspaceId, {
-      days,
-      onlyCataloged,
-    });
-
-    const rankedItems = entries
+    const days = Math.max(1, Math.min(365, Number(o?.days || 30) || 30));
+    const limit = Math.max(1, Math.min(200, Number(o?.limit || 50) || 50));
+    const mls = Math.max(0, Math.min(100, Number(o?.minLeadScore || 0) || 0));
+    const mps = Math.max(0, Math.min(1, Number(o?.minProbabilityScore || 0) || 0));
+    const oc = o?.onlyCataloged !== false;
+    const eb = o?.excludeBuyers === true;
+    const entries = await this.collectCatalogContactEntries(ws, { days, onlyCataloged: oc });
+    const ranked = entries
       .filter(
-        (item) =>
-          (!excludeBuyers || item.buyerStatus !== 'BOUGHT') &&
-          item.leadScore >= minLeadScore &&
-          item.purchaseProbabilityScore >= minProbabilityScore,
+        (e) =>
+          (!eb || e.buyerStatus !== 'BOUGHT') &&
+          e.leadScore >= mls &&
+          e.purchaseProbabilityScore >= mps,
       )
       .sort((a, b) => {
-        if (a.purchaseProbabilityScore !== b.purchaseProbabilityScore) {
+        if (a.purchaseProbabilityScore !== b.purchaseProbabilityScore)
           return b.purchaseProbabilityScore - a.purchaseProbabilityScore;
-        }
-        if (a.leadScore !== b.leadScore) {
-          return b.leadScore - a.leadScore;
-        }
+        if (a.leadScore !== b.leadScore) return b.leadScore - a.leadScore;
         return (
           this.resolveTimestamp({ createdAt: b.lastConversationAt }) -
           this.resolveTimestamp({ createdAt: a.lastConversationAt })
         );
       })
       .slice(0, limit)
-      .map((item, index) => ({
-        rank: index + 1,
-        ...item,
-      }));
-
+      .map((e, i) => ({ rank: i + 1, ...e }));
     return {
-      workspaceId,
+      workspaceId: ws,
       generatedAt: new Date().toISOString(),
       days,
       limit,
-      minLeadScore,
-      minProbabilityScore,
-      onlyCataloged,
-      excludeBuyers,
-      total: rankedItems.length,
-      items: rankedItems,
+      minLeadScore: mls,
+      minProbabilityScore: mps,
+      onlyCataloged: oc,
+      excludeBuyers: eb,
+      total: ranked.length,
+      items: ranked,
     };
   }
-
-  /** Trigger catalog refresh. */
-  async triggerCatalogRefresh(
-    workspaceId: string,
-    options?: {
-      days?: number;
-      reason?: string;
-    },
-  ) {
-    const days = Math.max(1, Math.min(365, Number(options?.days || 30) || 30));
-    const reason = String(options?.reason || 'manual_catalog_refresh').trim();
-    const jobId = buildQueueJobId('catalog-contacts-30d', workspaceId);
-
+  async triggerCatalogRefresh(ws: string, o?: { days?: number; reason?: string }) {
+    const days = Math.max(1, Math.min(365, Number(o?.days || 30) || 30));
+    const reason = String(o?.reason || 'manual_catalog_refresh').trim();
+    const jid = buildQueueJobId('catalog-contacts-30d', ws);
     await autopilotQueue.add(
       'catalog-contacts-30d',
-      {
-        workspaceId,
-        days,
-        reason,
-      },
-      {
-        jobId,
-        removeOnComplete: true,
-      },
+      { workspaceId: ws, days, reason },
+      { jobId: jid, removeOnComplete: true },
     );
-
     return {
       scheduled: true,
-      workspaceId,
+      workspaceId: ws,
       days,
       reason,
       jobName: 'catalog-contacts-30d',
-      jobId,
+      jobId: jid,
     };
   }
-
-  /** Trigger catalog rescore. */
   async triggerCatalogRescore(
-    workspaceId: string,
-    options?: {
-      contactId?: string;
-      days?: number;
-      limit?: number;
-      reason?: string;
-    },
+    ws: string,
+    o?: { contactId?: string; days?: number; limit?: number; reason?: string },
   ) {
-    const reason = String(options?.reason || 'manual_catalog_rescore').trim();
-    const limit = Math.max(1, Math.min(500, Number(options?.limit || 100) || 100));
-
-    let targets: Array<{
-      contactId: string;
-      phone: string;
-      contactName: string | null;
-      chatId?: string | null;
-    }> = [];
-
-    if (options?.contactId) {
-      const contact = await this.prisma.contact.findFirst({
-        where: {
-          id: options.contactId,
-          workspaceId,
-        },
-        select: {
-          id: true,
-          phone: true,
-          name: true,
-          customFields: true,
-        },
+    const reason = String(o?.reason || 'manual_catalog_rescore').trim();
+    const limit = Math.max(1, Math.min(500, Number(o?.limit || 100) || 100));
+    let targets: { contactId: string; phone: string; contactName: string; chatId: string }[] = [];
+    if (o?.contactId) {
+      const c = await this.prisma.contact.findFirst({
+        where: { id: o.contactId, workspaceId: ws },
+        select: { id: true, phone: true, name: true, customFields: true },
       });
-
-      if (!contact) {
-        throw new BadRequestException('contactId inválido para este workspace');
-      }
-
+      if (!c) throw new BadRequestException('contactId inválido');
+      const cf = this.normalizeJsonObject(c.customFields);
       targets = [
         {
-          contactId: contact.id,
-          phone: contact.phone,
-          contactName: contact.name || contact.phone,
+          contactId: c.id,
+          phone: c.phone,
+          contactName: c.name || c.phone,
           chatId:
-            this.readText(this.normalizeJsonObject(contact.customFields).lastRemoteChatId) ||
-            this.readText(this.normalizeJsonObject(contact.customFields).lastResolvedChatId) ||
-            `${contact.phone}@c.us`,
+            this.readText(cf.lastRemoteChatId) ||
+            this.readText(cf.lastResolvedChatId) ||
+            `${c.phone}@c.us`,
         },
       ];
     } else {
-      const entries = await this.collectCatalogContactEntries(workspaceId, {
-        days: options?.days || 30,
+      const entries = await this.collectCatalogContactEntries(ws, {
+        days: o?.days || 30,
         onlyCataloged: false,
       });
-
-      targets = entries.slice(0, limit).map((entry) => ({
-        contactId: entry.id,
-        phone: entry.phone,
-        contactName: entry.name || entry.phone,
-        chatId: entry.lastRemoteChatId || entry.lastResolvedChatId || `${entry.phone}@c.us`,
+      targets = entries.slice(0, limit).map((e) => ({
+        contactId: e.id,
+        phone: e.phone,
+        contactName: e.name || e.phone,
+        chatId: e.lastRemoteChatId || e.lastResolvedChatId || `${e.phone}@c.us`,
       }));
     }
-
-    let scheduled = 0;
-    await forEachSequential(targets, async (target) => {
+    let sched = 0;
+    await forEachSequential(targets, async (t) => {
       await autopilotQueue.add(
         'score-contact',
         {
-          workspaceId,
-          contactId: target.contactId,
-          phone: target.phone,
-          contactName: target.contactName,
-          chatId: target.chatId || `${target.phone}@c.us`,
+          workspaceId: ws,
+          contactId: t.contactId,
+          phone: t.phone,
+          contactName: t.contactName,
+          chatId: t.chatId || `${t.phone}@c.us`,
           reason,
         },
-        {
-          jobId: buildQueueJobId('score-contact', workspaceId, target.contactId),
-          removeOnComplete: true,
-        },
+        { jobId: buildQueueJobId('score-contact', ws, t.contactId), removeOnComplete: true },
       );
-      scheduled += 1;
+      sched += 1;
     });
-
     return {
       scheduled: true,
-      workspaceId,
+      workspaceId: ws,
       reason,
-      count: scheduled,
-      contactId: options?.contactId || null,
-      days: options?.days || 30,
+      count: sched,
+      contactId: o?.contactId || null,
+      days: o?.days || 30,
       limit,
     };
   }
-
-  /** Trigger backlog rebuild. */
-  async triggerBacklogRebuild(workspaceId: string, options?: { limit?: number; reason?: string }) {
-    const reason = String(options?.reason || 'manual_backlog_rebuild').trim();
-    const limit = Math.max(1, Math.min(2000, Number(options?.limit || 500) || 500));
-    const catchup = await this.catchupService
-      .runCatchupNow(workspaceId, reason)
-      .catch((error: unknown) => ({
-        scheduled: false,
-        reason: String(error instanceof Error ? error.message : 'catchup_failed'),
-      }));
-    const run = await this.ciaRuntime.startBacklogRun(
-      workspaceId,
-      'reply_all_recent_first',
-      limit,
-      {
-        autoStarted: true,
-        runtimeState: 'EXECUTING_BACKLOG',
-        triggeredBy: reason,
-      },
-    );
-
-    return {
-      workspaceId,
-      reason,
-      limit,
-      catchup,
-      run,
-    };
+  async triggerBacklogRebuild(ws: string, o?: { limit?: number; reason?: string }) {
+    const reason = String(o?.reason || 'manual_backlog_rebuild').trim();
+    const limit = Math.max(1, Math.min(2000, Number(o?.limit || 500) || 500));
+    const catchup = await this.catchupService.runCatchupNow(ws, reason).catch((e: unknown) => ({
+      scheduled: false,
+      reason: String(e instanceof Error ? e.message : 'catchup_failed'),
+    }));
+    const run = await this.ciaRuntime.startBacklogRun(ws, 'reply_all_recent_first', limit, {
+      autoStarted: true,
+      runtimeState: 'EXECUTING_BACKLOG',
+      triggeredBy: reason,
+    });
+    return { workspaceId: ws, reason, limit, catchup, run };
   }
 
-  /** Recreate session if invalid. */
-  async recreateSessionIfInvalid(workspaceId: string) {
-    await this.providerRegistry.getProviderType(workspaceId);
-    const diagnostics = await this.providerRegistry.getSessionDiagnostics(workspaceId);
-    await this.providerRegistry.getSessionStatus(workspaceId).catch(() => null);
-
-    const sessionInvalid =
-      !diagnostics?.available ||
-      diagnostics?.configMismatch ||
-      diagnostics?.webhookConfigured !== true ||
-      diagnostics?.inboundEventsConfigured !== true ||
-      diagnostics?.storeEnabled !== true;
-
-    if (!sessionInvalid) {
-      return {
-        recreated: false,
-        reason: 'session_config_healthy',
-        diagnostics,
-      };
-    }
-
-    await this.providerRegistry.deleteSession(workspaceId).catch(() => undefined);
-    const start = await this.providerRegistry.startSession(workspaceId);
-
-    return {
-      recreated: start.success === true,
-      reason: start.message,
-      diagnostics,
-    };
-  }
-
-  /** List operational conversations. */
-  async listOperationalConversations(
-    workspaceId: string,
-    options?: { limit?: number; pendingOnly?: boolean },
-  ): Promise<ConversationOperationalState[]> {
-    const conversations =
-      (await this.prisma.conversation.findMany({
-        take: Math.max(1, Math.min(1000, Number(options?.limit || 500) || 500)),
-        where: {
-          workspaceId,
-          status: { not: 'CLOSED' },
-        },
-        select: {
-          id: true,
-          status: true,
-          mode: true,
-          assignedAgentId: true,
-          unreadCount: true,
-          lastMessageAt: true,
-          contact: {
-            select: {
-              id: true,
-              phone: true,
-              name: true,
-            },
-          },
-          messages: {
-            take: 5,
-            orderBy: { createdAt: 'desc' },
-            select: {
-              id: true,
-              direction: true,
-              createdAt: true,
-              content: true,
-            },
-          },
-        },
-        orderBy: { lastMessageAt: 'desc' },
-      })) || [];
-
-    return conversations
-      .map((conversation) =>
-        buildConversationOperationalState(conversation as ConversationOperationalLike),
-      )
-      .filter((conversation) => !options?.pendingOnly || conversation.pending);
-  }
-
-  /** Set presence. */
-  async setPresence(
-    workspaceId: string,
-    chatId: string,
-    presence: 'typing' | 'paused' | 'seen' | 'available' | 'offline',
-  ) {
-    const normalizedChatId = this.normalizeChatId(chatId);
-
-    switch (presence) {
-      case 'available':
-        await this.providerRegistry.setPresence(workspaceId, 'available', normalizedChatId);
-        break;
-      case 'offline':
-        await this.providerRegistry.setPresence(workspaceId, 'offline', normalizedChatId);
-        break;
-      case 'typing':
-        await this.providerRegistry.sendTyping(workspaceId, normalizedChatId);
-        break;
-      case 'paused':
-        await this.providerRegistry.stopTyping(workspaceId, normalizedChatId);
-        break;
-      case 'seen':
-        await this.markChatAsReadBestEffort(workspaceId, normalizedChatId);
-        break;
-      default:
-        throw new BadRequestException('presence inválida');
-    }
-
-    return {
-      ok: true,
-      chatId: normalizedChatId,
-      presence,
-    };
-  }
-
-  /** Trigger sync. */
-  async triggerSync(workspaceId: string, reason = 'manual_sync') {
-    return this.catchupService.triggerCatchup(workspaceId, reason);
-  }
-
-  // ============================================================
-  // Normalize number
-  // ============================================================
-  private normalizeNumber(num: string): string {
-    return num.replace(D_RE, '');
-  }
-
-  private isIndividualChatId(chatId?: string | null) {
-    const value = String(chatId || '').trim();
-    return value.endsWith('@c.us') || value.endsWith('@s.whatsapp.net');
-  }
-
-  private normalizeJsonObject(value: unknown): Record<string, unknown> {
-    if (!value) {
-      return {};
-    }
-    if (typeof value === 'string') {
-      try {
-        const parsed = JSON.parse(value);
-        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-          return parsed as Record<string, unknown>;
-        }
-      } catch {
-        return {};
-      }
-      return {};
-    }
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      return value as Record<string, unknown>;
-    }
-    return {};
-  }
-
-  private normalizeDateValue(value: unknown) {
-    const timestamp = this.resolveTimestamp({ createdAt: value });
-    return this.toIsoTimestamp(timestamp);
-  }
-
-  private normalizeProbabilityScore(score: unknown, bucket?: string | null) {
-    const numeric = Number(score);
-    if (Number.isFinite(numeric)) {
-      return Math.max(0, Math.min(1, Number(numeric.toFixed(3))));
-    }
-
-    switch (
-      String(bucket || '')
-        .trim()
-        .toUpperCase()
-    ) {
-      case 'VERY_HIGH':
-        return 0.95;
-      case 'HIGH':
-        return 0.8;
-      case 'MEDIUM':
-        return 0.5;
-      case 'LOW':
-        return 0.15;
-      default:
-        return 0;
-    }
-  }
-
+  // ═══ CATALOG (thin wrapper to companion) ═══
   private async collectCatalogContactEntries(
-    workspaceId: string,
-    options?: { days?: number; onlyCataloged?: boolean },
+    ws: string,
+    o?: { days?: number; onlyCataloged?: boolean },
   ) {
-    const days = Math.max(1, Math.min(365, Number(options?.days || 30) || 30));
-    const onlyCataloged = options?.onlyCataloged !== false;
-    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-
-    const [contacts, conversations] = await Promise.all([
-      this.prisma.contact.findMany({
-        where: { workspaceId },
-        orderBy: { updatedAt: 'desc' },
-        take: 2000,
-      }),
-      this.prisma.conversation.findMany({
-        where: { workspaceId },
-        select: {
-          id: true,
-          contactId: true,
-          unreadCount: true,
-          status: true,
-          mode: true,
-          lastMessageAt: true,
-        },
-        orderBy: { lastMessageAt: 'desc' },
-        take: 4000,
-      }),
-    ]);
-
-    const conversationsByContact = new Map<string, CatalogConversationSummary[]>();
-    for (const conversation of conversations || []) {
-      const items = conversationsByContact.get(conversation.contactId) || [];
-      items.push(conversation);
-      conversationsByContact.set(conversation.contactId, items);
-    }
-
-    return (contacts || [])
-      .map((contact) => {
-        const customFields = this.normalizeJsonObject(contact.customFields);
-        const relatedConversations = (conversationsByContact.get(contact.id) || [])
-          .slice()
-          .sort(
-            (a, b) =>
-              this.resolveTimestamp({ createdAt: b.lastMessageAt }) -
-              this.resolveTimestamp({ createdAt: a.lastMessageAt }),
-          );
-        const lastConversation = relatedConversations[0] || null;
-        const lastConversationAt = this.normalizeDateValue(lastConversation?.lastMessageAt) || null;
-        const unreadCount = relatedConversations.reduce(
-          (sum, conversation) => sum + Math.max(0, Number(conversation?.unreadCount || 0) || 0),
-          0,
-        );
-        const catalogedAt = this.normalizeDateValue(customFields.catalogedAt);
-        const lastScoredAt = this.normalizeDateValue(customFields.lastScoredAt);
-        const whatsappSavedAt = this.normalizeDateValue(customFields.whatsappSavedAt);
-        const remotePushName =
-          typeof customFields.remotePushName === 'string' ? customFields.remotePushName : null;
-        const lastRemoteChatId =
-          typeof customFields.lastRemoteChatId === 'string' ? customFields.lastRemoteChatId : null;
-        const lastResolvedChatId =
-          typeof customFields.lastResolvedChatId === 'string'
-            ? customFields.lastResolvedChatId
-            : null;
-        const purchaseProbabilityScore = this.normalizeProbabilityScore(
-          customFields.purchaseProbabilityScore,
-          contact.purchaseProbability,
-        );
-        const purchaseProbabilityPercent = Math.max(
-          0,
-          Math.min(
-            100,
-            Math.round(
-              Number(customFields.purchaseProbabilityPercent ?? purchaseProbabilityScore * 100) ||
-                0,
-            ),
-          ),
-        );
-        const probabilityReasons = Array.isArray(customFields.probabilityReasons)
-          ? customFields.probabilityReasons
-              .map((reason: unknown) => (typeof reason === 'string' ? reason : '').trim())
-              .filter(Boolean)
-          : [];
-        const preferences = Array.isArray(customFields.preferences)
-          ? customFields.preferences
-              .map((item: unknown) => (typeof item === 'string' ? item : '').trim())
-              .filter(Boolean)
-          : [];
-        const importantDetails = Array.isArray(customFields.importantDetails)
-          ? customFields.importantDetails
-              .map((item: unknown) => (typeof item === 'string' ? item : '').trim())
-              .filter(Boolean)
-          : [];
-        const demographicsFields = this.normalizeJsonObject(customFields.demographics);
-        const demographics =
-          Object.keys(demographicsFields).length > 0
-            ? {
-                gender:
-                  typeof demographicsFields.gender === 'string'
-                    ? demographicsFields.gender
-                    : 'UNKNOWN',
-                ageRange:
-                  typeof demographicsFields.ageRange === 'string'
-                    ? demographicsFields.ageRange
-                    : 'UNKNOWN',
-                location:
-                  typeof demographicsFields.location === 'string'
-                    ? demographicsFields.location
-                    : 'UNKNOWN',
-                confidence: Math.max(
-                  0,
-                  Math.min(1, Number(demographicsFields.confidence || 0) || 0),
-                ),
-              }
-            : {
-                gender: 'UNKNOWN',
-                ageRange: 'UNKNOWN',
-                location: 'UNKNOWN',
-                confidence: 0,
-              };
-        const rawBuyerStatus =
-          typeof customFields.buyerStatus === 'string'
-            ? customFields.buyerStatus.trim().toUpperCase()
-            : '';
-        const buyerStatus = ['BOUGHT', 'NOT_BOUGHT', 'UNKNOWN'].includes(rawBuyerStatus)
-          ? rawBuyerStatus
-          : 'UNKNOWN';
-        const cataloged =
-          !!catalogedAt ||
-          !!lastScoredAt ||
-          !!whatsappSavedAt ||
-          !!String(contact.aiSummary || '').trim() ||
-          probabilityReasons.length > 0 ||
-          Number.isFinite(Number(customFields.purchaseProbabilityScore));
-
-        const latestRelevantTimestamp = Math.max(
-          this.resolveTimestamp({ createdAt: lastConversationAt }),
-          this.resolveTimestamp({ createdAt: catalogedAt }),
-          this.resolveTimestamp({ createdAt: lastScoredAt }),
-          this.resolveTimestamp({ createdAt: contact.updatedAt }),
-        );
-
-        return {
-          id: contact.id,
-          phone: contact.phone,
-          name: this.resolveTrustedContactName(contact.phone, remotePushName, contact.name) || null,
-          email: contact.email || null,
-          leadScore: Math.max(0, Number(contact.leadScore || 0) || 0),
-          sentiment: contact.sentiment || 'NEUTRAL',
-          purchaseProbability: contact.purchaseProbability || 'LOW',
-          purchaseProbabilityScore,
-          purchaseProbabilityPercent,
-          buyerStatus,
-          purchasedProduct:
-            typeof customFields.purchasedProduct === 'string'
-              ? customFields.purchasedProduct
-              : null,
-          purchaseValue: Number.isFinite(Number(customFields.purchaseValue))
-            ? Number(customFields.purchaseValue)
-            : null,
-          purchaseReason:
-            typeof customFields.purchaseReason === 'string' ? customFields.purchaseReason : null,
-          notPurchasedReason:
-            typeof customFields.notPurchasedReason === 'string'
-              ? customFields.notPurchasedReason
-              : null,
-          nextBestAction: contact.nextBestAction || null,
-          aiSummary: contact.aiSummary || null,
-          fullSummary:
-            typeof customFields.fullSummary === 'string'
-              ? customFields.fullSummary
-              : contact.aiSummary || null,
-          intent: typeof customFields.intent === 'string' ? customFields.intent : null,
-          remotePushName,
-          demographics,
-          preferences,
-          importantDetails,
-          probabilityReasons,
-          cataloged,
-          catalogedAt,
-          lastScoredAt,
-          whatsappSavedAt,
-          lastRemoteChatId,
-          lastResolvedChatId,
-          conversationCount: relatedConversations.length,
-          unreadCount,
-          lastConversationAt,
-          lastConversationStatus: lastConversation?.status || null,
-          lastConversationMode: lastConversation?.mode || null,
-          createdAt: contact.createdAt?.toISOString?.() || null,
-          updatedAt: contact.updatedAt?.toISOString?.() || null,
-          latestRelevantTimestamp,
-        };
-      })
-      .filter((entry) => {
-        if (onlyCataloged && !entry.cataloged) {
-          return false;
-        }
-        return entry.latestRelevantTimestamp >= cutoff;
-      })
-      .sort((a, b) => {
-        const catalogTimestampA = Math.max(
-          this.resolveTimestamp({ createdAt: a.catalogedAt }),
-          this.resolveTimestamp({ createdAt: a.lastScoredAt }),
-        );
-        const catalogTimestampB = Math.max(
-          this.resolveTimestamp({ createdAt: b.catalogedAt }),
-          this.resolveTimestamp({ createdAt: b.lastScoredAt }),
-        );
-        if (catalogTimestampA !== catalogTimestampB) {
-          return catalogTimestampB - catalogTimestampA;
-        }
-        if (a.purchaseProbabilityScore !== b.purchaseProbabilityScore) {
-          return b.purchaseProbabilityScore - a.purchaseProbabilityScore;
-        }
-        return b.latestRelevantTimestamp - a.latestRelevantTimestamp;
-      })
-      .map(({ latestRelevantTimestamp: _latestRelevantTimestamp, ...entry }) => entry);
-  }
-
-  private isAutonomousEnabled(settings: Record<string, unknown>): boolean {
-    const autonomy = this.normalizeJsonObject(settings.autonomy);
-    const autopilot = this.normalizeJsonObject(settings.autopilot);
-    const mode = this.readText(autonomy.mode).toUpperCase();
-    if (mode) {
-      return mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL';
-    }
-    return autopilot.enabled === true;
-  }
-
-  // ============================================================
-  // 1. CREATE SESSION (WAHA)
-  // ============================================================
-  async createSession(workspaceId: string) {
-    this.logger.log(`[SERVICE] createSession → workspace=${workspaceId}`);
-    this.slog.info('createSession', { workspaceId });
-
-    if (!workspaceId) {
-      throw new ForbiddenException('workspaceId é obrigatório para criar sessão.');
-    }
-
-    const result = await this.providerRegistry.startSession(workspaceId);
-    if (!result.success) {
-      return {
-        error: true,
-        message: result.message || 'failed_to_start_session',
-      };
-    }
-
-    const qr = await this.providerRegistry.getQrCode(workspaceId);
-    if (qr.success && qr.qr) {
-      return {
-        status: 'qr_pending',
-        code: qr.qr,
-        qrCode: qr.qr,
-      };
-    }
-
-    const status = await this.providerRegistry.getSessionStatus(workspaceId);
-    return {
-      status: status.connected ? 'already_connected' : status.status,
-      qrCode: status.qrCode,
-    };
-  }
-
-  // ============================================================
-  // 2. SEND MESSAGE (via Worker Engine)
-  // messageLimit: enforced via PlanLimitsService.trackMessageSend
-  // ============================================================
-  async sendMessage(
-    workspaceId: string,
-    to: string,
-    message: string,
-    opts?: {
-      mediaUrl?: string;
-      mediaType?: 'image' | 'video' | 'audio' | 'document';
-      caption?: string;
-      externalId?: string;
-      complianceMode?: 'reactive' | 'proactive';
-      forceDirect?: boolean;
-      quotedMessageId?: string;
-    },
-  ) {
-    this.logger.log(`[SERVICE] sendMessage(workspace=${workspaceId}, to=${to})`);
-    this.slog.info('send_message', { workspaceId, to });
-
-    await this.planLimits.ensureSubscriptionActive(workspaceId);
-
-    const ws = await this.workspaces.getWorkspace(workspaceId);
-    const engineWs = this.workspaces.toEngineWorkspace(ws);
-
-    await this.ensureOptInAllowed(workspaceId, to, opts?.complianceMode || 'proactive');
-
-    // Validação rápida de credenciais do provedor antes de enfileirar
-    const missing = this.validateWorkspaceProvider(engineWs);
-    if (missing.length) {
-      this.slog.warn('send_blocked_missing_provider', { workspaceId, missing });
-      return {
-        error: true,
-        message: `Configuração do provedor incompleta: ${missing.join(', ')}`,
-      };
-    }
-
-    const runtimeReadiness = await this.collectMessagingRuntimeIssues(workspaceId, engineWs, {
-      requireInboundWebhook: false,
-    });
-    if (runtimeReadiness.issues.length) {
-      this.slog.warn('send_blocked_runtime_unavailable', {
-        workspaceId,
-        issues: runtimeReadiness.issues,
-      });
-      return {
-        error: true,
-        message: `Runtime do WhatsApp indisponível: ${runtimeReadiness.issues.join(', ')}`,
-        diagnostics: runtimeReadiness.diagnostics,
-      };
-    }
-
-    //-----------------------------------------------------------
-    // 🔥 Enviar via Worker → FlowEngine → WhatsAppEngine (Meta Cloud)
-    //-----------------------------------------------------------
-
-    if (opts?.forceDirect) {
-      this.logger.log(
-        `[SERVICE] Entrega direta forçada via Meta Cloud (workspace=${workspaceId}, to=${to})`,
-      );
-      const result = await this.sendDirectlyViaProvider(workspaceId, to, message, opts);
-      if (result.ok) {
-        await this.planLimits.trackMessageSend(workspaceId);
-      }
-      return result;
-    }
-
-    const workerAvailable = await this.workerRuntime.isAvailable();
-    if (!workerAvailable) {
-      this.logger.warn(
-        `[SERVICE] Worker indisponível; enviando diretamente via Meta Cloud (workspace=${workspaceId}, to=${to})`,
-      );
-      const result = await this.sendDirectlyViaProvider(workspaceId, to, message, opts);
-      if (result.ok) {
-        await this.planLimits.trackMessageSend(workspaceId);
-      }
-      return result;
-    }
-
-    await flowQueue.add('send-message', {
-      type: 'direct',
-      workspaceId,
-      workspace: engineWs,
-      to,
-      message,
-      user: to,
-      mediaUrl: opts?.mediaUrl,
-      mediaType: opts?.mediaType,
-      caption: opts?.caption,
-      externalId: opts?.externalId,
-      quotedMessageId: opts?.quotedMessageId,
-    });
-
-    await this.planLimits.trackMessageSend(workspaceId);
-
-    return {
-      ok: true,
-      queued: true,
-      delivery: 'queued',
-    };
-  }
-
-  // ============================================================
-  // 2c. LISTAR TEMPLATES
-  // ============================================================
-  listTemplates(workspaceId: string) {
-    this.slog.info('list_templates_unsupported', { workspaceId });
-    return {
-      error: true,
-      message:
-        'Templates legados não são suportados no modo Meta Cloud. Use mensagens diretas ou fluxos do autopilot.',
-      data: [],
-      total: 0,
-    };
-  }
-
-  // ============================================================
-  // 2d. OPT-IN / OPT-OUT (marca contato com tag optin_whatsapp)
-  // ============================================================
-  private async upsertContact(workspaceId: string, phone: string) {
-    return this.prisma.contact.upsert({
-      where: { workspaceId_phone: { workspaceId, phone } },
-      update: {},
-      create: {
-        workspaceId,
-        phone,
-        name: null,
-      },
-    });
-  }
-
-  /** Opt in contact. */
-  async optInContact(workspaceId: string, phone: string) {
-    const contact = await this.upsertContact(workspaceId, phone);
-
-    // Update optIn field directly (LGPD/GDPR compliance)
-    await this.prisma.contact.updateMany({
-      where: { id: contact.id, workspaceId },
-      data: {
-        optIn: true,
-        optedOutAt: null, // Clear opt-out timestamp
-      },
-    });
-
-    // Also connect legacy tag for backwards compatibility
-    const tag = await this.prisma.tag.upsert({
-      where: {
-        workspaceId_name: {
-          workspaceId,
-          name: 'optin_whatsapp',
-        },
-      },
-      update: {},
-      create: {
-        workspaceId,
-        name: 'optin_whatsapp',
-        color: '#16a34a',
-      },
-    });
-
-    await this.prisma.contact.update({
-      where: {
-        workspaceId_phone: {
-          workspaceId,
-          phone,
-        },
-      },
-      data: { tags: { connect: { id: tag.id } } },
-    });
-
-    this.slog.info('contact_opted_in', {
-      workspaceId,
-      phone,
-      contactId: contact.id,
-    });
-
-    return { ok: true };
-  }
-
-  /** Opt out contact. */
-  async optOutContact(workspaceId: string, phone: string) {
-    const contact = await this.prisma.contact.findUnique({
-      where: { workspaceId_phone: { workspaceId, phone } },
-      select: { id: true },
-    });
-    if (!contact) {
-      return { ok: true };
-    }
-
-    // Update optIn field directly (LGPD/GDPR compliance)
-    await this.prisma.contact.updateMany({
-      where: { id: contact.id, workspaceId },
-      data: {
-        optIn: false,
-        optedOutAt: new Date(),
-      },
-    });
-
-    // Also disconnect legacy tag if exists
-    const tag = await this.prisma.tag.findUnique({
-      where: {
-        workspaceId_name: {
-          workspaceId,
-          name: 'optin_whatsapp',
-        },
-      },
-      select: { id: true },
-    });
-
-    if (tag) {
-      await this.prisma.contact.update({
-        where: {
-          workspaceId_phone: {
-            workspaceId,
-            phone,
-          },
-        },
-        data: { tags: { disconnect: { id: tag.id } } },
-      });
-    }
-
-    this.slog.info('contact_opted_out', {
-      workspaceId,
-      phone,
-      contactId: contact.id,
-    });
-
-    return { ok: true };
-  }
-
-  /** Opt in bulk. */
-  async optInBulk(workspaceId: string, phones: string[]) {
-    const unique = Array.from(new Set((phones || []).map((p) => p?.trim()).filter(Boolean)));
-    const results: { phone: string; ok: boolean }[] = [];
-    await forEachSequential(unique, async (phone) => {
-      try {
-        await this.optInContact(workspaceId, phone);
-        results.push({ phone, ok: true });
-      } catch {
-        results.push({ phone, ok: false });
-      }
-    });
-    return { ok: true, processed: results.length, results };
-  }
-
-  /** Opt out bulk. */
-  async optOutBulk(workspaceId: string, phones: string[]) {
-    const unique = Array.from(new Set((phones || []).map((p) => p?.trim()).filter(Boolean)));
-    const results: { phone: string; ok: boolean }[] = [];
-    await forEachSequential(unique, async (phone) => {
-      try {
-        await this.optOutContact(workspaceId, phone);
-        results.push({ phone, ok: true });
-      } catch {
-        results.push({ phone, ok: false });
-      }
-    });
-    return { ok: true, processed: results.length, results };
-  }
-
-  /** Get opt in status. */
-  async getOptInStatus(workspaceId: string, phone: string) {
-    const contact = await this.prisma.contact.findUnique({
-      where: { workspaceId_phone: { workspaceId, phone } },
-      select: { id: true, tags: { select: { name: true } } },
-    });
-    if (!contact) {
-      return { optIn: false, contactExists: false };
-    }
-    const optIn = contact.tags.some((t) => t.name === 'optin_whatsapp');
-    return { optIn, contactExists: true };
-  }
-
-  /**
-   * Verifica opt-in obrigatório antes de enviar mensagens/templates.
-   * If contact has optIn=false, ALWAYS block (LGPD/GDPR compliance).
-   * Se ENFORCE_OPTIN=true e o contato não tiver opt-in, bloqueia envio.
-   */
-  private async ensureOptInAllowed(
-    workspaceId: string,
-    phone: string,
-    complianceMode: 'reactive' | 'proactive' = 'proactive',
-  ) {
-    const enforceOptIn = process.env.ENFORCE_OPTIN === 'true';
-    const enforce24h = (process.env.AUTOPILOT_ENFORCE_24H ?? 'false').toLowerCase() !== 'false';
-
-    const contact = await this.prisma.contact.findUnique({
-      where: { workspaceId_phone: { workspaceId, phone } },
-      select: {
-        id: true,
-        optIn: true,
-        optedOutAt: true,
-        customFields: true,
-        tags: { select: { name: true } },
-      },
-    });
-
-    // CRITICAL: If contact explicitly opted out, ALWAYS block (LGPD/GDPR)
-    if (contact && contact.optIn === false) {
-      this.slog.warn('send_blocked_opted_out', {
-        workspaceId,
-        phone,
-        optedOutAt: contact.optedOutAt,
-      });
-      throw new ForbiddenException('Contato cancelou o recebimento de mensagens (opt-out)');
-    }
-
-    if (complianceMode === 'reactive') {
-      return;
-    }
-
-    if (enforceOptIn) {
-      if (!contact) {
-        throw new ForbiddenException('Contato sem opt-in para WhatsApp');
-      }
-      const cf = (contact.customFields as Record<string, unknown>) || {};
-      const hasOptIn =
-        contact.optIn === true || // New field takes priority
-        contact.tags.some((t) => t.name === 'optin_whatsapp') ||
-        cf.optin === true ||
-        cf.optin_whatsapp === true;
-      if (!hasOptIn) {
-        throw new ForbiddenException('Contato sem opt-in para WhatsApp');
-      }
-    }
-
-    if (enforce24h) {
-      const lastInbound = await this.prisma.message.findFirst({
-        where: {
-          workspaceId,
-          contact: { phone },
-          direction: 'INBOUND',
-        },
-        orderBy: { createdAt: 'desc' },
-        select: { createdAt: true },
-      });
-      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-      if (!lastInbound || lastInbound.createdAt.getTime() < cutoff) {
-        throw new ForbiddenException('Fora da janela de 24h para envio');
-      }
-    }
-  }
-
-  // ============================================================
-  // 2b. SEND TEMPLATE
-  // ============================================================
-  async sendTemplate(
-    workspaceId: string,
-    to: string,
-    template: { name: string; language: string; components?: unknown[] },
-  ) {
-    this.logger.log(
-      `[SERVICE] sendTemplate(workspace=${workspaceId}, to=${to}, template=${template.name})`,
-    );
-    this.slog.info('send_template', {
-      workspaceId,
-      to,
-      template: template.name,
-    });
-
-    await this.planLimits.ensureSubscriptionActive(workspaceId);
-
-    const ws = await this.workspaces.getWorkspace(workspaceId);
-    const engineWs = this.workspaces.toEngineWorkspace(ws);
-
-    await this.ensureOptInAllowed(workspaceId, to);
-
-    const missing = this.validateWorkspaceProvider(engineWs);
-    if (missing.length) {
-      this.slog.warn('send_blocked_missing_provider', { workspaceId, missing });
-      return {
-        error: true,
-        message: `Configuração do provedor incompleta: ${missing.join(', ')}`,
-      };
-    }
-
-    const runtimeReadiness = await this.collectMessagingRuntimeIssues(workspaceId, engineWs, {
-      requireInboundWebhook: false,
-    });
-    if (runtimeReadiness.issues.length) {
-      this.slog.warn('send_template_blocked_runtime_unavailable', {
-        workspaceId,
-        issues: runtimeReadiness.issues,
-      });
-      return {
-        error: true,
-        message: `Runtime do WhatsApp indisponível: ${runtimeReadiness.issues.join(', ')}`,
-        diagnostics: runtimeReadiness.diagnostics,
-      };
-    }
-
-    await flowQueue.add('send-message', {
-      type: 'template',
-      workspaceId,
-      workspace: engineWs,
-      to,
-      template,
-      user: to,
-    });
-
-    await this.planLimits.trackMessageSend(workspaceId);
-
-    return {
-      ok: true,
-      queued: true,
-      delivery: 'queued',
-    };
-  }
-
-  // ============================================================
-  // 3. SEND MESSAGE DIRECTLY USING WAHA (test mode only)
-  // ============================================================
-  async sendDirectMessage(workspaceId: string, to: string, message: string) {
-    const result = await this.sendDirectlyViaProvider(workspaceId, to, message);
-    return result.ok === true
-      ? { success: true, result }
-      : { error: true, message: result.message || 'send_failed' };
-  }
-
-  private async sendDirectlyViaProvider(
-    workspaceId: string,
-    to: string,
-    message: string,
-    opts?: {
-      mediaUrl?: string;
-      mediaType?: 'image' | 'video' | 'audio' | 'document';
-      caption?: string;
-      externalId?: string;
-      complianceMode?: 'reactive' | 'proactive';
-      forceDirect?: boolean;
-      quotedMessageId?: string;
-    },
-  ) {
-    return this.withWorkspaceActionLock(workspaceId, async () => {
-      await this.simulateHumanPresence(workspaceId, to, opts?.caption || message);
-
-      const result = await this.providerRegistry.sendMessage(workspaceId, to, message, {
-        mediaUrl: opts?.mediaUrl,
-        mediaType: opts?.mediaType,
-        caption: opts?.caption,
-        quotedMessageId: opts?.quotedMessageId,
-      });
-
-      if (!result.success) {
-        await this.providerRegistry
-          .setPresence(workspaceId, 'offline', this.normalizeChatId(to))
-          .catch(() => undefined);
-        return {
-          error: true,
-          message: result.error || 'send_failed',
-        };
-      }
-
-      await this.markChatAsReadBestEffort(workspaceId, to);
-      await this.providerRegistry
-        .setPresence(workspaceId, 'offline', this.normalizeChatId(to))
-        .catch(() => undefined);
-
-      await this.persistOutboundMessage(workspaceId, to, message, {
-        ...opts,
-        providerMessageId: result.messageId,
-      });
-
-      return {
-        ok: true,
-        direct: true,
-        delivery: 'sent',
-        messageId: result.messageId,
-      };
-    });
-  }
-
-  private async persistOutboundMessage(
-    workspaceId: string,
-    to: string,
-    message: string,
-    opts?: {
-      mediaUrl?: string;
-      mediaType?: 'image' | 'video' | 'audio' | 'document';
-      caption?: string;
-      externalId?: string;
-      providerMessageId?: string;
-      complianceMode?: 'reactive' | 'proactive';
-      forceDirect?: boolean;
-      quotedMessageId?: string;
-    },
-  ) {
-    await this.inbox.saveMessageByPhone({
-      workspaceId,
-      phone: to,
-      content: opts?.caption || message || opts?.mediaUrl || '',
-      direction: 'OUTBOUND',
-      externalId: opts?.providerMessageId || opts?.externalId,
-      type: opts?.mediaType ? opts.mediaType.toUpperCase() : 'TEXT',
-      mediaUrl: opts?.mediaUrl,
-      status: 'SENT',
-    });
-  }
-
-  private async withWorkspaceActionLock<T>(
-    workspaceId: string,
-    operation: () => Promise<T>,
-  ): Promise<T> {
-    const key = `whatsapp:action-lock:${workspaceId}`;
-    const token = `${Date.now()}:${randomUUID()}`;
-    const ttlMs = Math.max(
-      15_000,
-      Number.parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
-    );
-    const deadline = Date.now() + ttlMs;
-
-    const tryAcquire = async (): Promise<T> => {
-      if (Date.now() >= deadline) {
-        return operation();
-      }
-
-      const acquired = await this.redis.set(key, token, 'PX', ttlMs, 'NX');
-      if (acquired === 'OK') {
-        try {
-          return await operation();
-        } finally {
-          const current = await this.redis.get(key).catch(() => null);
-          if (current === token) {
-            await this.redis.del(key).catch(() => undefined);
-          }
-        }
-      }
-
-      await this.sleep(250 + randomInt(250));
-      return tryAcquire();
-    };
-
-    return tryAcquire();
-  }
-
-  private async simulateHumanPresence(
-    workspaceId: string,
-    chatId: string,
-    message: string,
-  ): Promise<void> {
-    const normalizedChatId = this.normalizeChatId(chatId);
-    const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
-
-    await this.markChatAsReadBestEffort(workspaceId, normalizedChatId);
-    if (isTestEnv) {
-      return;
-    }
-    await this.providerRegistry
-      .setPresence(workspaceId, 'available', normalizedChatId)
-      .catch(() => undefined);
-    await this.sleep(300 + randomInt(500));
-    await this.providerRegistry.sendTyping(workspaceId, normalizedChatId).catch(() => undefined);
-    await this.sleep(this.computeHumanTypingDelay(message));
-    await this.providerRegistry.stopTyping(workspaceId, normalizedChatId).catch(() => undefined);
-  }
-
-  private computeHumanTypingDelay(message: string): number {
-    return Math.max(
-      500,
-      Math.min(3500, 450 + String(message || '').trim().length * 35 + randomInt(450)),
+    return collectCatalogContactEntriesExt(
+      { prisma: this.prisma, resolveName: (p, ...cs) => this.resolveTrustedContactName(p, ...cs) },
+      ws,
+      o,
     );
   }
 
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  // ============================================================
-  // 4. INCOMING MESSAGE (WEBHOOK)
-  // ============================================================
+  // ═══ handleIncoming ═══
   async handleIncoming(workspaceId: string, from: string, message: string) {
-    this.logger.log(`📩 [INCOMING] workspace=${workspaceId}, from=${from}: ${message}`);
     this.slog.info('incoming_webhook', { workspaceId, from, message });
-
-    // Sanitize workspace and ensure it exists
     const ws = await this.workspaces.getWorkspace(workspaceId).catch(() => null);
     if (!ws) {
       this.slog.warn('incoming_invalid_workspace', { workspaceId });
-      throw new Error('Workspace not found for incoming message');
+      throw new Error('Workspace not found');
     }
-
-    // Idempotência básica: evita processar mesma mensagem (hash from+msg) em curto intervalo
     const dedupeKey = `incoming:dedupe:${workspaceId}:${from}:${this.normalizeHash(message)}`;
-    const already = await this.redis.get(dedupeKey);
-    if (already) {
-      this.slog.info('incoming_deduped', { workspaceId, from });
-      return { skipped: true, reason: 'duplicate' };
-    }
-    await this.redis.setex(dedupeKey, 60, '1'); // 60s de janela de dedupe
+    if (await this.redis.get(dedupeKey)) return { skipped: true, reason: 'duplicate' };
+    await this.redis.setex(dedupeKey, 60, '1');
 
-    // Opt-out automático (STOP/SAIR/CANCELAR)
     const lower = (message || '').toLowerCase();
-    const stopKeywords = ['stop', 'sair', 'cancelar', 'cancel', 'parar', 'unsubscribe'];
-    if (stopKeywords.some((kw) => lower.includes(kw))) {
-      try {
-        await this.optOutContact(workspaceId, from.replace(D_RE, ''));
-        this.slog.info('auto_optout', { workspaceId, from });
-      } catch (err: unknown) {
-        const errInstanceofError =
-          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-        // PULSE:OK — Auto opt-out is best-effort; message still processed
-        this.logger.warn(`Opt-out auto falhou: ${errInstanceofError?.message}`);
-      }
-    }
+    if (
+      ['stop', 'sair', 'cancelar', 'cancel', 'parar', 'unsubscribe'].some((k) => lower.includes(k))
+    )
+      await this.optOutContact(workspaceId, from.replace(D_RE, '')).catch(() => {});
 
-    // 1. Persistir no Inbox
     const saved = await this.inbox.saveMessageByPhone({
       workspaceId,
-      phone: from, // Assumindo que venha formatado do webhook
+      phone: from,
       content: message,
       direction: 'INBOUND',
     });
-
-    // 2. Entrega para o FlowEngine (via Redis)
-    await this.deliverToContext(from, message, workspaceId);
-
-    // 3. Enfileira Autopilot (worker) para avaliação/ação assíncrona
+    const nPhone = this.normalizeNumber(from);
+    const ctxKey = `reply:${nPhone}`;
     try {
-      const settings = ws.providerSettings || {};
-      if (this.isAutonomousEnabled(settings) && saved?.contactId) {
-        const scanKey = `autopilot:scan-contact:${workspaceId}:${saved.contactId}`;
-        const reserved = await this.redis.set(
-          scanKey,
-          saved.id,
-          'PX',
-          this.contactDebounceMs,
-          'NX',
-        );
+      await this.redis.rpush(ctxKey, message);
+      await this.redis.expire(ctxKey, 60 * 60 * 24);
+    } catch (_e: unknown) {
+      this.logger.warn(
+        `Redis reply context write failed for ${workspaceId}, trying fallback: ${(_e instanceof Error ? _e : new Error(String(_e))).message}`,
+      );
+      const fc = createRedisClient();
+      if (fc) {
+        try {
+          await fc.rpush(ctxKey, message);
+          await fc.expire(ctxKey, 60 * 60 * 24);
+        } finally {
+          fc.disconnect();
+        }
+      }
+    }
+    await flowQueue.add(
+      'resume-flow',
+      { user: nPhone, message, workspaceId },
+      { removeOnComplete: true },
+    );
 
-        if (reserved === 'OK') {
+    try {
+      const settings = this.normalizeJsonObject(ws.providerSettings);
+      if (this.isAutonomousEnabled(settings) && saved?.contactId) {
+        const sk = `autopilot:scan-contact:${workspaceId}:${saved.contactId}`;
+        if ((await this.redis.set(sk, saved.id, 'PX', this.contactDebounceMs, 'NX')) === 'OK')
           await autopilotQueue.add(
             'scan-contact',
             {
@@ -1980,59 +482,49 @@ export class WhatsappService {
               removeOnComplete: true,
             },
           );
-        }
       }
-
-      // Sinais de compra em tempo real -> dispara flow quente, se configurado
-      const hotFlowId = settings?.autopilot?.hotFlowId;
-      const lower = (message || '').toLowerCase();
-      const buyKeywords = [
-        'preco',
-        'preço',
-        'price',
-        'quanto',
-        'pix',
-        'boleto',
-        'garantia',
-        'comprar',
-        'assinar',
-      ];
-      const hasBuyingSignal = buyKeywords.some((k) => lower.includes(k));
-      if (hotFlowId && hasBuyingSignal) {
+      const apc = this.normalizeJsonObject(settings.autopilot);
+      const hf = typeof apc.hotFlowId === 'string' ? apc.hotFlowId : null;
+      if (
+        hf &&
+        [
+          'preco',
+          'preço',
+          'price',
+          'quanto',
+          'pix',
+          'boleto',
+          'garantia',
+          'comprar',
+          'assinar',
+        ].some((k) => lower.includes(k))
+      )
         await flowQueue.add('run-flow', {
           workspaceId,
-          flowId: hotFlowId,
-          user: from.replace(D_RE, ''),
+          flowId: hf,
+          user: nPhone,
           initialVars: { source: 'hot_signal', lastMessage: message },
         });
-      }
-
-      // Conversão detectada (sinais de pagamento) -> registra evento Autopilot CONVERSION
-      const conversionKeywords = [
-        'paguei',
-        'pago',
-        'pix',
-        'pague',
-        'comprei',
-        'compre',
-        'boleto',
-        'assinatura',
-        'transferi',
-        'transferido',
-      ];
-      const hasConversionSignal = conversionKeywords.some((k) => lower.includes(k));
-      if (hasConversionSignal && saved?.contactId) {
-        // Verifica se houve ação recente do Autopilot (últimas 72h)
-        const lastEvent = await this.prisma.autopilotEvent.findFirst({
-          where: {
-            workspaceId,
-            contactId: saved.contactId,
-          },
+      if (
+        [
+          'paguei',
+          'pago',
+          'pix',
+          'pague',
+          'comprei',
+          'compre',
+          'boleto',
+          'assinatura',
+          'transferi',
+          'transferido',
+        ].some((k) => lower.includes(k)) &&
+        saved?.contactId
+      ) {
+        const le = await this.prisma.autopilotEvent.findFirst({
+          where: { workspaceId, contactId: saved.contactId },
           orderBy: { createdAt: 'desc' },
         });
-        const withinWindow =
-          lastEvent && Date.now() - new Date(lastEvent.createdAt).getTime() <= 72 * 60 * 60 * 1000;
-        if (withinWindow) {
+        if (le && Date.now() - new Date(le.createdAt).getTime() <= 72 * 60 * 60 * 1000) {
           await this.prisma.autopilotEvent.create({
             data: {
               workspaceId,
@@ -2045,29 +537,22 @@ export class WhatsappService {
               meta: { source: 'inbound', keywordHit: true },
             },
           });
-
-          // Sobe probabilidade de compra no contato
           await this.prisma.contact.updateMany({
             where: { id: saved.contactId, workspaceId },
             data: { purchaseProbability: 'HIGH', sentiment: 'POSITIVE' },
           });
         }
       }
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      // PULSE:OK — Autopilot enqueue non-critical; message already persisted to inbox
-      this.logger.warn(`Autopilot enqueue failed: ${errInstanceofError?.message}`);
+    } catch (e: unknown) {
+      this.logger.warn(
+        `Autopilot enqueue failed: ${(e instanceof Error ? e : new Error(String(e))).message}`,
+      );
+      void this.opsAlert?.alertOnCriticalError(e, 'WhatsappService.processInbound.autopilot', {
+        workspaceId,
+      });
     }
-
-    // 4. Pipeline NeuroCRM (análise cognitiva básica)
-    if (saved?.contactId) {
-      this.neuroCrm
-        .analyzeContact(workspaceId, saved.contactId)
-        .catch((err) => this.logger.warn(`NeuroCRM analyze failed: ${err?.message}`));
-    }
-
-    // 5. WebSocket push para Copilot (sugestão em tempo real)
+    if (saved?.contactId)
+      this.neuroCrm.analyzeContact(workspaceId, saved.contactId).catch(() => {});
     try {
       await this.redis.publish(
         `ws:copilot:${workspaceId}`,
@@ -2079,522 +564,703 @@ export class WhatsappService {
           message,
         }),
       );
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      // PULSE:OK — Copilot WebSocket push non-critical; inbox still receives the message
-      this.logger.warn(`Copilot push failed: ${errInstanceofError?.message}`);
+    } catch (e: unknown) {
+      this.logger.warn(
+        `Copilot pub/sub failed for ws=${workspaceId}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
+      );
     }
-
     return { ok: true };
   }
 
-  private normalizeHash(text: string) {
-    return Buffer.from(text || '')
-      .toString('base64')
-      .slice(0, 32);
+  // ═══ CONTACTS ═══
+  async listContacts(ws: string) {
+    const rContacts = this.normalizeContacts(
+      await this.providerRegistry.getContacts(ws).catch((e: unknown) => {
+        this.slog.error('list_contacts_provider_failed', {
+          workspaceId: ws,
+          error: String(e instanceof Error ? e.message : e),
+        });
+        void this.opsAlert?.alertOnCriticalError(e, 'WhatsappService.listContacts', {
+          workspaceId: ws,
+        });
+        return [];
+      }),
+    );
+    const lContacts =
+      (await this.prisma.contact.findMany({
+        take: 500,
+        where: { workspaceId: ws },
+        select: {
+          id: true,
+          phone: true,
+          name: true,
+          email: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: { updatedAt: 'desc' },
+      })) || [];
+    const merged = new Map<string, NormalizedContact>();
+    for (const c of rContacts) merged.set(c.phone, c);
+    for (const l of lContacts) {
+      const e = merged.get(l.phone);
+      merged.set(l.phone, {
+        id: e?.id || `${l.phone}@c.us`,
+        phone: l.phone,
+        name: this.resolveTrustedContactName(l.phone, e?.name, l.name) || null,
+        pushName: this.isPlaceholderContactName(e?.pushName, l.phone)
+          ? this.isPlaceholderContactName(l.name, l.phone)
+            ? null
+            : l.name
+          : e?.pushName || null,
+        shortName: e?.shortName || null,
+        email: l.email || e?.email || null,
+        localContactId: l.id,
+        source: e ? 'waha+crm' : 'crm',
+        registered: e?.registered ?? null,
+        createdAt: e?.createdAt || l.createdAt?.toISOString?.() || null,
+        updatedAt:
+          l.updatedAt?.toISOString?.() || e?.updatedAt || l.createdAt?.toISOString?.() || null,
+      });
+    }
+    return Array.from(merged.values()).sort((a, b) => {
+      const bu = (b.updatedAt || '').localeCompare(a.updatedAt || '');
+      if (bu !== 0) return bu;
+      return String(a.name || a.phone).localeCompare(String(b.name || b.phone));
+    });
   }
-
-  // ============================================================
-  // 5. RETORNAR CLIENTE
-  // ============================================================
-  getSession(workspaceId: string) {
-    return { workspaceId, provider: 'dynamic' };
-  }
-
-  /** Retorna status e telefone da sessão WAHA */
-  async getConnectionStatus(workspaceId: string) {
-    const status = await this.providerRegistry.getSessionStatus(workspaceId);
+  async createContact(ws: string, input: { phone: string; name?: string; email?: string }) {
+    const phone = this.normalizeNumber(input.phone || '');
+    if (!phone) throw new BadRequestException('phone é obrigatório');
+    const registered = await this.providerRegistry.isRegistered(ws, phone).catch(() => null);
+    const contact = await this.prisma.contact.upsert({
+      where: { workspaceId_phone: { workspaceId: ws, phone } },
+      update: {
+        name: this.resolveTrustedContactName(phone, input.name) || null,
+        email: input.email?.trim() || undefined,
+      },
+      create: {
+        workspaceId: ws,
+        phone,
+        name: this.resolveTrustedContactName(phone, input.name) || null,
+        email: input.email?.trim() || undefined,
+      },
+      select: { id: true, phone: true, name: true, email: true, createdAt: true, updatedAt: true },
+    });
+    await this.syncRemoteContactProfile(
+      ws,
+      contact.phone,
+      contact.name || input.name || undefined,
+    ).catch(() => undefined);
     return {
-      status: status.status,
-      phoneNumber: status.phoneNumber,
+      id: `${phone}@c.us`,
+      phone: contact.phone,
+      name: contact.name || null,
+      email: contact.email || null,
+      localContactId: contact.id,
+      source: 'crm',
+      registered,
+      createdAt: contact.createdAt.toISOString(),
+      updatedAt: contact.updatedAt.toISOString(),
+    };
+  }
+  async syncRemoteContactProfile(
+    ws: string,
+    phone: string,
+    name?: string | null,
+  ): Promise<boolean> {
+    const np = this.normalizeNumber(phone || '');
+    const nn = this.resolveTrustedContactName(phone, name);
+    if (!np || !nn) return false;
+    try {
+      return await this.providerRegistry.upsertContactProfile(ws, { phone: np, name: nn });
+    } catch (e: unknown) {
+      this.logger.warn(
+        `Falha ao sincronizar contato ${np}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
+      );
+      void this.opsAlert?.alertOnCriticalError(e, 'WhatsappService.syncRemoteContactProfile', {
+        workspaceId: ws,
+        metadata: { phone: np },
+      });
+      return false;
+    }
+  }
+
+  // ═══ SESSION ═══
+  async createSession(ws: string) {
+    const result = await this.providerRegistry.startSession(ws);
+    if (!result.success)
+      return { error: true, message: result.message || 'failed_to_start_session' };
+    const qr = await this.providerRegistry.getQrCode(ws);
+    if (qr.success && qr.qr) return { status: 'qr_pending', code: qr.qr, qrCode: qr.qr };
+    const status = await this.providerRegistry.getSessionStatus(ws);
+    return {
+      status: status.connected ? 'already_connected' : status.status,
       qrCode: status.qrCode,
     };
   }
-
-  /** Último QR gerado pela sessão WAHA */
-  async getQrCode(workspaceId: string) {
-    const qr = await this.providerRegistry.getQrCode(workspaceId);
-    return qr.success ? qr.qr || null : null;
+  async recreateSessionIfInvalid(ws: string) {
+    await this.providerRegistry.getProviderType(ws);
+    const d = await this.providerRegistry.getSessionDiagnostics(ws);
+    await this.providerRegistry.getSessionStatus(ws).catch(() => null);
+    const invalid =
+      !d?.available ||
+      d?.configMismatch ||
+      d?.webhookConfigured !== true ||
+      d?.inboundEventsConfigured !== true ||
+      d?.storeEnabled !== true;
+    if (!invalid) return { recreated: false, reason: 'session_config_healthy', diagnostics: d };
+    await this.providerRegistry.deleteSession(ws).catch(() => undefined);
+    const start = await this.providerRegistry.startSession(ws);
+    return { recreated: start.success === true, reason: start.message, diagnostics: d };
+  }
+  getSession(ws: string) {
+    return { workspaceId: ws, provider: 'dynamic' };
+  }
+  async getConnectionStatus(ws: string) {
+    const s = await this.providerRegistry.getSessionStatus(ws);
+    return { status: s.status, phoneNumber: s.phoneNumber, qrCode: s.qrCode };
+  }
+  async getQrCode(ws: string) {
+    const q = await this.providerRegistry.getQrCode(ws);
+    return q.success ? q.qr || null : null;
+  }
+  async disconnect(ws: string) {
+    await this.providerRegistry.disconnect(ws);
   }
 
-  /** Desconecta sessão WAHA */
-  async disconnect(workspaceId: string) {
-    await this.providerRegistry.disconnect(workspaceId);
+  // ═══ OPERATIONAL ═══
+  async listOperationalConversations(
+    ws: string,
+    o?: { limit?: number; pendingOnly?: boolean },
+  ): Promise<ConversationOperationalState[]> {
+    const convs =
+      (await this.prisma.conversation.findMany({
+        take: Math.max(1, Math.min(1000, Number(o?.limit || 500) || 500)),
+        where: { workspaceId: ws, status: { not: 'CLOSED' } },
+        select: {
+          id: true,
+          status: true,
+          mode: true,
+          assignedAgentId: true,
+          unreadCount: true,
+          lastMessageAt: true,
+          contact: { select: { id: true, phone: true, name: true } },
+          messages: {
+            take: 5,
+            orderBy: { createdAt: 'desc' },
+            select: { id: true, direction: true, createdAt: true, content: true },
+          },
+        },
+        orderBy: { lastMessageAt: 'desc' },
+      })) || [];
+    return convs
+      .map((c) => buildConversationOperationalState(c as ConversationOperationalLike))
+      .filter((c) => !o?.pendingOnly || c.pending);
   }
-
-  private normalizeContacts(raw: unknown): NormalizedContact[] {
-    const r = raw as Record<string, unknown> | undefined;
-    const candidates: unknown[] = Array.isArray(raw)
-      ? raw
-      : Array.isArray(r?.contacts)
-        ? (r.contacts as unknown[])
-        : Array.isArray(r?.items)
-          ? (r.items as unknown[])
-          : Array.isArray(r?.data)
-            ? (r.data as unknown[])
-            : [];
-
-    return candidates
-      .map((contact: unknown) => this.normalizeContactEntry(contact))
-      .filter((contact): contact is NormalizedContact => contact !== null);
-  }
-
-  private normalizeContactEntry(contact: unknown): NormalizedContact | null {
-    const c = contact as Record<string, unknown>;
-    const cId = c?.id as Record<string, unknown> | string | undefined;
-    const cWid = c?.wid as Record<string, unknown> | string | undefined;
-
-    const rawId = this.readText(
-      [
-        typeof cId === 'object' ? cId?._serialized : undefined,
-        c?.id,
-        typeof cWid === 'object' ? cWid?._serialized : undefined,
-        c?.wid,
-        c?.chatId,
-      ].find((v) => typeof v === 'string' && v.trim()) ?? '',
-    );
-
-    const phoneCandidate = [
-      c?.phone,
-      c?.number,
-      typeof cId === 'object' ? cId?.user : undefined,
-      typeof cWid === 'object' ? cWid?.user : undefined,
-    ].find((v) => typeof v === 'string' && v.trim());
-
-    const phone = this.normalizeNumber(
-      typeof phoneCandidate === 'string'
-        ? phoneCandidate
-        : this.providerRegistry.extractPhoneFromChatId(rawId),
-    );
-
-    if (!phone) {
-      return null;
+  async setPresence(
+    ws: string,
+    chatId: string,
+    presence: 'typing' | 'paused' | 'seen' | 'available' | 'offline',
+  ) {
+    const n = this.normalizeChatId(chatId);
+    switch (presence) {
+      case 'available':
+        await this.providerRegistry.setPresence(ws, 'available', n);
+        break;
+      case 'offline':
+        await this.providerRegistry.setPresence(ws, 'offline', n);
+        break;
+      case 'typing':
+        await this.providerRegistry.sendTyping(ws, n);
+        break;
+      case 'paused':
+        await this.providerRegistry.stopTyping(ws, n);
+        break;
+      case 'seen':
+        await this.markChatAsReadBestEffort(ws, n);
+        break;
+      default:
+        throw new BadRequestException('presence inválida');
     }
+    return { ok: true, chatId: n, presence };
+  }
+  async triggerSync(ws: string, reason = 'manual_sync') {
+    return this.catchupService.triggerCatchup(ws, reason);
+  }
 
-    const pushNameRaw = c?.pushName || c?.pushname;
-    const pushName = typeof pushNameRaw === 'string' && pushNameRaw.trim() ? pushNameRaw : null;
-    const resolvedPushName = this.isPlaceholderContactName(pushName, phone) ? null : pushName;
-    const shortName = typeof c?.shortName === 'string' ? c.shortName : null;
-
+  // ═══ SEND MESSAGE ═══
+  async sendMessage(
+    ws: string,
+    to: string,
+    message: string,
+    opts?: {
+      mediaUrl?: string;
+      mediaType?: 'image' | 'video' | 'audio' | 'document';
+      caption?: string;
+      externalId?: string;
+      complianceMode?: 'reactive' | 'proactive';
+      forceDirect?: boolean;
+      quotedMessageId?: string;
+    },
+  ) {
+    this.slog.info('send_message', { workspaceId: ws, to });
+    await this.planLimits.ensureSubscriptionActive(ws);
+    const w = await this.workspaces.getWorkspace(ws);
+    const ew = this.workspaces.toEngineWorkspace(w);
+    await this.ensureOptInAllowed(ws, to, opts?.complianceMode || 'proactive');
+    const missing = this.validateWorkspaceProvider(ew);
+    if (missing.length)
+      return { error: true, message: `Configuração do provedor incompleta: ${missing.join(', ')}` };
+    const r = await this.collectMessagingRuntimeIssues(ws, ew, { requireInboundWebhook: false });
+    if (r.issues.length)
+      return {
+        error: true,
+        message: `Runtime do WhatsApp indisponível: ${r.issues.join(', ')}`,
+        diagnostics: r.diagnostics,
+      };
+    if (opts?.forceDirect) {
+      const dr = await this.sendDirectlyViaProvider(ws, to, message, opts);
+      if (dr.ok) await this.planLimits.trackMessageSend(ws);
+      return dr;
+    }
+    if (!(await this.workerRuntime.isAvailable())) {
+      const dr = await this.sendDirectlyViaProvider(ws, to, message, opts);
+      if (dr.ok) await this.planLimits.trackMessageSend(ws);
+      return dr;
+    }
+    await flowQueue.add('send-message', {
+      type: 'direct',
+      workspaceId: ws,
+      workspace: ew,
+      to,
+      message,
+      user: to,
+      mediaUrl: opts?.mediaUrl,
+      mediaType: opts?.mediaType,
+      caption: opts?.caption,
+      externalId: opts?.externalId,
+      quotedMessageId: opts?.quotedMessageId,
+    });
+    await this.planLimits.trackMessageSend(ws);
+    return { ok: true, queued: true, delivery: 'queued' };
+  }
+  listTemplates(_ws: string) {
     return {
-      id: rawId || `${phone}@c.us`,
-      phone,
-      name:
-        this.resolveTrustedContactName(phone, c?.pushName, c?.pushname, c?.name, c?.shortName) ||
-        null,
-      pushName: resolvedPushName,
-      shortName,
-      email: null,
-      localContactId: null,
-      source: 'provider',
-      registered: true,
-      createdAt: null,
-      updatedAt: null,
+      error: true,
+      message: 'Templates legados não são suportados no modo Meta Cloud.',
+      data: [],
+      total: 0,
     };
   }
 
-  private normalizeChats(raw: unknown): NormalizedChat[] {
-    const r = raw as Record<string, unknown> | undefined;
-    const candidates: unknown[] = Array.isArray(raw)
-      ? raw
-      : Array.isArray(r?.chats)
-        ? (r.chats as unknown[])
-        : Array.isArray(r?.items)
-          ? (r.items as unknown[])
-          : Array.isArray(r?.data)
-            ? (r.data as unknown[])
-            : [];
-
-    return candidates
-      .map((chatRaw: unknown) => this.normalizeChatEntry(chatRaw))
-      .filter((chat): chat is NormalizedChat => chat !== null);
+  async sendTemplate(
+    ws: string,
+    to: string,
+    template: { name: string; language: string; components?: unknown[] },
+  ) {
+    this.slog.info('send_template', { workspaceId: ws, to, template: template.name });
+    await this.planLimits.ensureSubscriptionActive(ws);
+    const w = await this.workspaces.getWorkspace(ws);
+    const ew = this.workspaces.toEngineWorkspace(w);
+    await this.ensureOptInAllowed(ws, to);
+    const m = this.validateWorkspaceProvider(ew);
+    if (m.length)
+      return { error: true, message: `Configuração do provedor incompleta: ${m.join(', ')}` };
+    const r = await this.collectMessagingRuntimeIssues(ws, ew, { requireInboundWebhook: false });
+    if (r.issues.length)
+      return {
+        error: true,
+        message: `Runtime do WhatsApp indisponível: ${r.issues.join(', ')}`,
+        diagnostics: r.diagnostics,
+      };
+    await flowQueue.add('send-message', {
+      type: 'template',
+      workspaceId: ws,
+      workspace: ew,
+      to,
+      template,
+      user: to,
+    });
+    await this.planLimits.trackMessageSend(ws);
+    return { ok: true, queued: true, delivery: 'queued' };
   }
 
-  private normalizeChatEntry(chatRaw: unknown): NormalizedChat | null {
-    const chat = chatRaw as Record<string, unknown>;
-    const chatId = chat?.id as Record<string, unknown> | string | undefined;
-    const chatContact = chat?.contact as Record<string, unknown> | undefined;
-    const chatLastMessage = chat?.lastMessage as Record<string, unknown> | undefined;
-    const chatLastMessageData = chatLastMessage?._data as Record<string, unknown> | undefined;
-
-    const rawId = this.readText(
-      [
-        typeof chatId === 'object' ? chatId?._serialized : undefined,
-        chat?.id,
-        chat?.chatId,
-        chat?.wid,
-      ].find((v) => typeof v === 'string' && v.trim()) ?? '',
-    );
-    const phone = this.normalizeNumber(
-      typeof chat?.phone === 'string'
-        ? chat.phone
-        : this.providerRegistry.extractPhoneFromChatId(rawId),
-    );
-
-    if (!rawId || !phone) {
-      return null;
-    }
-
-    const timestamp = this.resolveTimestamp(chat);
-    const unreadCount = Number(chat?.unreadCount || chat?.unread || 0) || 0;
-
-    return {
-      id: rawId,
-      phone,
-      name:
-        this.resolveTrustedContactName(
-          phone,
-          chat?.name,
-          chat?.pushName,
-          chatContact?.name,
-          chatContact?.pushName,
-          chatLastMessageData?.verifiedBizName,
-        ) || null,
-      unreadCount,
-      pending: unreadCount > 0 || chatLastMessage?.fromMe === false,
-      timestamp,
-      lastMessageAt: this.toIsoTimestamp(timestamp),
-      conversationId: null,
-      status: null,
-      source: 'provider',
-    };
+  async sendDirectMessage(ws: string, to: string, message: string) {
+    const r = await this.sendDirectlyViaProvider(ws, to, message);
+    return r.ok === true
+      ? { success: true, result: r }
+      : { error: true, message: r.message || 'send_failed' };
   }
 
-  private normalizeMessages(raw: unknown, fallbackChatId: string) {
-    const r = raw as Record<string, unknown> | undefined;
-    const candidates = Array.isArray(raw)
-      ? raw
-      : Array.isArray(r?.messages)
-        ? (r.messages as unknown[])
-        : Array.isArray(r?.items)
-          ? (r.items as unknown[])
-          : Array.isArray(r?.data)
-            ? (r.data as unknown[])
-            : [];
-
-    return candidates
-      .map((msgRaw: unknown) => this.normalizeMessageEntry(msgRaw, fallbackChatId))
-      .filter(Boolean);
-  }
-
-  private normalizeMessageEntry(msgRaw: unknown, fallbackChatId: string) {
-    const message = msgRaw as Record<string, unknown>;
-    const mId = message?.id as Record<string, unknown> | string | undefined;
-    const mKey = message?.key as Record<string, unknown> | undefined;
-    const mText = message?.text as Record<string, unknown> | undefined;
-    const mMedia = message?.media as Record<string, unknown> | undefined;
-
-    const id = this.readText(
-      [
-        typeof mId === 'object' ? (mId?._serialized ?? mId?.id) : undefined,
-        mKey?.id,
-        message?.id,
-      ].find((v) => typeof v === 'string' && v.trim()) ?? '',
+  private async sendDirectlyViaProvider(
+    ws: string,
+    to: string,
+    message: string,
+    opts?: {
+      mediaUrl?: string;
+      mediaType?: 'image' | 'video' | 'audio' | 'document';
+      caption?: string;
+      externalId?: string;
+      complianceMode?: 'reactive' | 'proactive';
+      forceDirect?: boolean;
+      quotedMessageId?: string;
+    },
+  ) {
+    const lockKey = `whatsapp:action-lock:${ws}`;
+    const token = `${Date.now()}:${randomUUID()}`;
+    const ttlMs = Math.max(
+      15_000,
+      Number.parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
     );
-    const chatId = this.readText(
-      [message?.chatId, message?.from, message?.to].find(
-        (v) => typeof v === 'string' && v.trim(),
-      ) ?? fallbackChatId,
-    );
-
-    if (!id || !chatId) {
-      return null;
-    }
-
-    const phone = this.normalizeNumber(
-      typeof message?.phone === 'string'
-        ? message.phone
-        : this.providerRegistry.extractPhoneFromChatId(chatId),
-    );
-    const timestamp = this.resolveTimestamp(message);
-    const fromMe = message?.fromMe === true;
-
-    return {
-      id,
-      chatId,
-      phone,
-      body: message?.body || mText?.body || '',
-      direction: fromMe ? 'OUTBOUND' : 'INBOUND',
-      fromMe,
-      type: (typeof message?.type === 'string' ? message.type : 'chat').toLowerCase(),
-      hasMedia: message?.hasMedia === true,
-      mediaUrl: message?.mediaUrl || mMedia?.url || null,
-      mimetype: message?.mimetype || mMedia?.mimetype || null,
-      timestamp,
-      isoTimestamp: this.toIsoTimestamp(timestamp),
-      source: 'provider',
-    };
-  }
-
-  private resolveTimestamp(value: unknown): number {
-    const v = value as Record<string, unknown> | undefined;
-    const vChat = v?._chat as Record<string, unknown> | undefined;
-    const vLastMessage = v?.lastMessage as Record<string, unknown> | undefined;
-    const vLastMessageData = vLastMessage?._data as Record<string, unknown> | undefined;
-    const candidates = [
-      vChat?.conversationTimestamp,
-      vChat?.lastMessageRecvTimestamp,
-      v?.conversationTimestamp,
-      v?.lastMessageRecvTimestamp,
-      vLastMessage?.timestamp,
-      vLastMessageData?.messageTimestamp,
-      v?.timestamp,
-      v?.t,
-      v?.createdAt,
-      v?.lastMessageTimestamp,
-      v?.last_time,
-    ];
-
-    for (const candidate of candidates) {
-      if (typeof candidate === 'number' && Number.isFinite(candidate)) {
-        return candidate > 1e12 ? candidate : candidate * 1000;
+    const deadline = Date.now() + ttlMs;
+    const tryAcquire = async (): ReturnType<typeof this._sendDirectCore> => {
+      if (Date.now() >= deadline) return this._sendDirectCore(ws, to, message, opts);
+      if ((await this.redis.set(lockKey, token, 'PX', ttlMs, 'NX')) !== 'OK') {
+        await this.sleep(250 + randomInt(250));
+        return tryAcquire();
       }
-      if (typeof candidate === 'string') {
-        const numeric = Number(candidate);
-        if (Number.isFinite(numeric) && numeric > 0) {
-          return numeric > 1e12 ? numeric : numeric * 1000;
-        }
-        const date = new Date(candidate);
-        if (!Number.isNaN(date.getTime())) {
-          return date.getTime();
-        }
+      try {
+        return await this._sendDirectCore(ws, to, message, opts);
+      } finally {
+        const c = await this.redis.get(lockKey).catch(() => null);
+        if (c === token) await this.redis.del(lockKey).catch(() => {});
       }
+    };
+    return tryAcquire();
+  }
+  private async _sendDirectCore(
+    ws: string,
+    to: string,
+    message: string,
+    opts?: {
+      mediaUrl?: string;
+      mediaType?: 'image' | 'video' | 'audio' | 'document';
+      caption?: string;
+      quotedMessageId?: string;
+      externalId?: string;
+    },
+  ) {
+    const n = this.normalizeChatId(to);
+    await this.markChatAsReadBestEffort(ws, n);
+    const isTest = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+    if (!isTest) {
+      await this.providerRegistry.setPresence(ws, 'available', n).catch(() => {});
+      await this.sleep(300 + randomInt(500));
+      await this.providerRegistry.sendTyping(ws, n).catch(() => {});
+      await this.sleep(
+        Math.max(
+          500,
+          Math.min(
+            3500,
+            450 + String(opts?.caption || message || '').trim().length * 35 + randomInt(450),
+          ),
+        ),
+      );
+      await this.providerRegistry.stopTyping(ws, n).catch(() => {});
     }
-
-    return 0;
+    const r = await this.providerRegistry
+      .sendMessage(ws, to, message, {
+        mediaUrl: opts?.mediaUrl,
+        mediaType: opts?.mediaType,
+        caption: opts?.caption,
+        quotedMessageId: opts?.quotedMessageId,
+      })
+      .catch((e: unknown) => {
+        this.slog.error('send_direct_provider_failed', {
+          workspaceId: ws,
+          to,
+          error: String(e instanceof Error ? e.message : e),
+        });
+        void this.opsAlert?.alertOnCriticalError(e, 'WhatsappService._sendDirectCore', {
+          workspaceId: ws,
+          metadata: { to },
+        });
+        return { success: false, error: String(e instanceof Error ? e.message : e) };
+      });
+    if (!r.success) {
+      await this.providerRegistry.setPresence(ws, 'offline', n).catch(() => {});
+      return { error: true, message: r.error || 'send_failed' };
+    }
+    await this.markChatAsReadBestEffort(ws, to);
+    await this.providerRegistry.setPresence(ws, 'offline', n).catch(() => {});
+    await this.inbox.saveMessageByPhone({
+      workspaceId: ws,
+      phone: to,
+      content: opts?.caption || message || opts?.mediaUrl || '',
+      direction: 'OUTBOUND',
+      externalId: 'messageId' in r ? r.messageId : (opts?.externalId ?? null),
+      type: opts?.mediaType ? opts.mediaType.toUpperCase() : 'TEXT',
+      mediaUrl: opts?.mediaUrl,
+      status: 'SENT',
+    });
+    return {
+      ok: true,
+      direct: true,
+      delivery: 'sent',
+      messageId: 'messageId' in r ? r.messageId : null,
+    };
   }
 
-  private toIsoTimestamp(timestamp: number) {
-    if (!timestamp || !Number.isFinite(timestamp)) {
-      return null;
-    }
-    return new Date(timestamp).toISOString();
+  // ═══ OPT-IN / OUT ═══
+  async optInContact(ws: string, phone: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const c = await tx.contact.upsert({
+        where: { workspaceId_phone: { workspaceId: ws, phone } },
+        update: {},
+        create: { workspaceId: ws, phone, name: null },
+      });
+      await tx.contact.updateMany({
+        where: { id: c.id, workspaceId: ws },
+        data: { optIn: true, optedOutAt: null },
+      });
+      const t = await tx.tag.upsert({
+        where: { workspaceId_name: { workspaceId: ws, name: 'optin_whatsapp' } },
+        update: {},
+        create: { workspaceId: ws, name: 'optin_whatsapp', color: '#16a34a' },
+      });
+      await tx.contact.update({
+        where: { workspaceId_phone: { workspaceId: ws, phone } },
+        data: { tags: { connect: { id: t.id } } },
+      });
+      return { ok: true };
+    });
+  }
+  async optOutContact(ws: string, phone: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const c = await tx.contact.findUnique({
+        where: { workspaceId_phone: { workspaceId: ws, phone } },
+        select: { id: true },
+      });
+      if (!c) return { ok: true };
+      await tx.contact.updateMany({
+        where: { id: c.id, workspaceId: ws },
+        data: { optIn: false, optedOutAt: new Date() },
+      });
+      const t = await tx.tag.findUnique({
+        where: { workspaceId_name: { workspaceId: ws, name: 'optin_whatsapp' } },
+        select: { id: true },
+      });
+      if (t)
+        await tx.contact.update({
+          where: { workspaceId_phone: { workspaceId: ws, phone } },
+          data: { tags: { disconnect: { id: t.id } } },
+        });
+      return { ok: true };
+    });
+  }
+  async optInBulk(ws: string, phones: string[]) {
+    const u = Array.from(new Set((phones || []).map((p) => p?.trim()).filter(Boolean)));
+    const r: { phone: string; ok: boolean }[] = [];
+    await forEachSequential(u, async (p) => {
+      try {
+        await this.optInContact(ws, p);
+        r.push({ phone: p, ok: true });
+      } catch (e: unknown) {
+        this.logger.warn(
+          `optInContact failed for ${p} in ws=${ws}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
+        );
+        r.push({ phone: p, ok: false });
+      }
+    });
+    return { ok: true, processed: r.length, results: r };
+  }
+  async optOutBulk(ws: string, phones: string[]) {
+    const u = Array.from(new Set((phones || []).map((p) => p?.trim()).filter(Boolean)));
+    const r: { phone: string; ok: boolean }[] = [];
+    await forEachSequential(u, async (p) => {
+      try {
+        await this.optOutContact(ws, p);
+        r.push({ phone: p, ok: true });
+      } catch (e: unknown) {
+        this.logger.warn(
+          `optOutContact failed for ${p} in ws=${ws}: ${(e instanceof Error ? e : new Error(String(e))).message}`,
+        );
+        r.push({ phone: p, ok: false });
+      }
+    });
+    return { ok: true, processed: r.length, results: r };
+  }
+  async getOptInStatus(ws: string, phone: string) {
+    const c = await this.prisma.contact.findUnique({
+      where: { workspaceId_phone: { workspaceId: ws, phone } },
+      select: { id: true, tags: { select: { name: true } } },
+    });
+    if (!c) return { optIn: false, contactExists: false };
+    return {
+      optIn: c.tags.some((t: { name: string }) => t.name === 'optin_whatsapp'),
+      contactExists: true,
+    };
   }
 
-  private normalizeChatId(chatId: string) {
-    if (String(chatId || '').includes('@')) {
-      return chatId;
+  private async ensureOptInAllowed(
+    ws: string,
+    phone: string,
+    complianceMode: 'reactive' | 'proactive' = 'proactive',
+  ) {
+    const eo = process.env.ENFORCE_OPTIN === 'true';
+    const e24 = (process.env.AUTOPILOT_ENFORCE_24H ?? 'false').toLowerCase() !== 'false';
+    const c = await this.prisma.contact.findUnique({
+      where: { workspaceId_phone: { workspaceId: ws, phone } },
+      select: {
+        id: true,
+        optIn: true,
+        optedOutAt: true,
+        customFields: true,
+        tags: { select: { name: true } },
+      },
+    });
+    if (c && c.optIn === false)
+      throw new ForbiddenException('Contato cancelou o recebimento de mensagens (opt-out)');
+    if (complianceMode === 'reactive') return;
+    if (eo) {
+      if (!c) throw new ForbiddenException('Contato sem opt-in para WhatsApp');
+      const cf = (c.customFields as Record<string, unknown>) || {};
+      const has =
+        c.optIn === true ||
+        c.tags.some((t: { name: string }) => t.name === 'optin_whatsapp') ||
+        cf.optin === true ||
+        cf.optin_whatsapp === true;
+      if (!has) throw new ForbiddenException('Contato sem opt-in para WhatsApp');
     }
-    return `${this.normalizeNumber(chatId)}@c.us`;
+    if (e24) {
+      const li = await this.prisma.message.findFirst({
+        where: { workspaceId: ws, contact: { phone }, direction: 'INBOUND' },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true },
+      });
+      if (!li || li.createdAt.getTime() < Date.now() - 24 * 60 * 60 * 1000)
+        throw new ForbiddenException('Fora da janela de 24h para envio');
+    }
   }
 
-  private async resolveReadChatCandidates(
-    workspaceId: string,
-    chatIdOrPhone: string,
-  ): Promise<string[]> {
-    const normalizedChatId = this.normalizeChatId(chatIdOrPhone);
-    const normalizedPhone = this.normalizeNumber(
-      this.providerRegistry.extractPhoneFromChatId(normalizedChatId),
-    );
-    const contact = normalizedPhone
+  // ═══ INFRA ═══
+  private validateWorkspaceProvider(w: Record<string, unknown>): string[] {
+    const p = w?.whatsappProvider || 'meta-cloud';
+    return p !== 'meta-cloud' ? ['whatsapp_provider'] : [];
+  }
+  private async collectMessagingRuntimeIssues(
+    ws: string,
+    workspace: Record<string, unknown>,
+    o?: { requireInboundWebhook?: boolean },
+  ) {
+    const issues = this.validateWorkspaceProvider(workspace);
+    const pt = await this.providerRegistry.getProviderType(ws);
+    const d: {
+      webhook: ReturnType<typeof this.whatsappApi.getRuntimeConfigDiagnostics>;
+      session: (SessionStatus & { error?: string }) | null;
+    } = {
+      webhook: this.whatsappApi.getRuntimeConfigDiagnostics(),
+      session: null,
+    };
+    if (o?.requireInboundWebhook) {
+      if (!d.webhook.webhookConfigured) issues.push('meta_webhook_missing');
+      else if (!d.webhook.inboundEventsConfigured)
+        issues.push('meta_webhook_events_missing_inbound');
+    }
+    try {
+      d.session = await this.providerRegistry.getSessionStatus(ws);
+      if (!d.session.connected)
+        issues.push(
+          `${pt.replace(PATTERN_RE, '_')}_session_${String(d.session.status || 'unknown').toLowerCase()}`,
+        );
+    } catch (e: unknown) {
+      issues.push(`${pt.replace(PATTERN_RE, '_')}_session_status_unavailable`);
+      d.session = {
+        connected: false,
+        status: 'UNKNOWN',
+        error: e instanceof Error ? e.message : 'unknown_error',
+      };
+      void this.opsAlert?.alertOnCriticalError(e, 'WhatsappService.runDiagnostics.session', {
+        workspaceId: ws,
+      });
+    }
+    return { issues, diagnostics: d };
+  }
+
+  private async resolveReadChatCandidates(ws: string, chatIdOrPhone: string): Promise<string[]> {
+    const nChat = this.normalizeChatId(chatIdOrPhone);
+    const nPhone = this.normalizeNumber(this.providerExtract(nChat));
+    const c = nPhone
       ? await this.prisma.contact
           .findUnique({
-            where: {
-              workspaceId_phone: {
-                workspaceId,
-                phone: normalizedPhone,
-              },
-            },
+            where: { workspaceId_phone: { workspaceId: ws, phone: nPhone } },
             select: { customFields: true },
           })
           .catch(() => null)
       : null;
-    const customFields = this.normalizeJsonObject(contact?.customFields);
-
+    const cf = this.normalizeJsonObject(c?.customFields);
     return Array.from(
       new Set(
         [
-          normalizedChatId,
-          this.readText(customFields.lastRemoteChatId),
-          this.readText(customFields.lastCatalogChatId),
-          this.readText(customFields.lastResolvedChatId),
-          normalizedPhone ? `${normalizedPhone}@c.us` : '',
-          normalizedPhone ? `${normalizedPhone}@s.whatsapp.net` : '',
+          nChat,
+          this.readText(cf.lastRemoteChatId),
+          this.readText(cf.lastCatalogChatId),
+          this.readText(cf.lastResolvedChatId),
+          nPhone ? `${nPhone}@c.us` : '',
+          nPhone ? `${nPhone}@s.whatsapp.net` : '',
         ].filter(Boolean),
       ),
     );
   }
-
-  private async markChatAsReadBestEffort(
-    workspaceId: string,
-    chatIdOrPhone: string,
-  ): Promise<void> {
-    const candidates = await this.resolveReadChatCandidates(workspaceId, chatIdOrPhone);
-
-    await forEachSequential(candidates, async (candidate) => {
-      await this.providerRegistry.readChatMessages(workspaceId, candidate).catch(() => undefined);
+  private async markChatAsReadBestEffort(ws: string, chatIdOrPhone: string): Promise<void> {
+    const cs = await this.resolveReadChatCandidates(ws, chatIdOrPhone);
+    await forEachSequential(cs, async (c) => {
+      await this.providerRegistry.readChatMessages(ws, c).catch(() => {});
     });
   }
 
-  // ============================================================
-  // HELPER: DELIVER TO CONTEXT STORE (REDIS)
-  // ============================================================
-  private async deliverToContext(user: string, message: string, workspaceId?: string) {
-    const normalized = this.normalizeNumber(user);
-    const key = `reply:${normalized}`;
-    this.logger.log(`📨 [CTX] Delivering message from ${normalized} to key ${key}`);
-    try {
-      await this.redis.rpush(key, message);
-      await this.redis.expire(key, 60 * 60 * 24); // 24 hours
-    } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      // Se a conexão principal estiver em modo subscriber, cria uma conexão auxiliar
-      this.logger.warn(
-        `Redis indisponível para deliverToContext, usando client ad-hoc: ${errInstanceofError?.message}`,
-      );
-      const fallback = createRedisClient();
-      try {
-        await fallback.rpush(key, message);
-        await fallback.expire(key, 60 * 60 * 24);
-      } finally {
-        fallback.disconnect();
-      }
-    }
-
-    // Notifica o worker para retomar fluxos que estavam em WAIT
-    await flowQueue.add(
-      'resume-flow',
-      { user: normalized, message, workspaceId },
-      { removeOnComplete: true },
-    );
-  }
-
-  /**
-   * Verifica se o workspace possui credenciais mínimas para o provedor ativo.
-   */
-  private validateWorkspaceProvider(workspace: Record<string, unknown>): string[] {
-    const missing: string[] = [];
-    const provider = workspace?.whatsappProvider || 'meta-cloud';
-
-    if (provider !== 'meta-cloud') {
-      missing.push('whatsapp_provider');
-    }
-
-    return missing;
-  }
-
-  private async collectMessagingRuntimeIssues(
-    workspaceId: string,
-    workspace: Record<string, unknown>,
-    options?: {
-      requireInboundWebhook?: boolean;
-    },
-  ) {
-    const issues = this.validateWorkspaceProvider(workspace);
-    const providerType = await this.providerRegistry.getProviderType(workspaceId);
-    const diagnostics = {
-      webhook: this.whatsappApi.getRuntimeConfigDiagnostics(),
-      session: null as {
-        connected: boolean;
-        status?: string;
-        error?: string;
-      } | null,
-    };
-
-    const requireInboundWebhook = options?.requireInboundWebhook === true;
-
-    if (requireInboundWebhook) {
-      if (!diagnostics.webhook.webhookConfigured) {
-        issues.push('meta_webhook_missing');
-      } else if (!diagnostics.webhook.inboundEventsConfigured) {
-        issues.push('meta_webhook_events_missing_inbound');
-      }
-    }
-
-    try {
-      diagnostics.session = await this.providerRegistry.getSessionStatus(workspaceId);
-      if (!diagnostics.session.connected) {
-        issues.push(
-          `${providerType.replace(PATTERN_RE, '_')}_session_${String(
-            diagnostics.session.status || 'unknown',
-          ).toLowerCase()}`,
-        );
-      }
-    } catch (error: unknown) {
-      issues.push(`${providerType.replace(PATTERN_RE, '_')}_session_status_unavailable`);
-      diagnostics.session = {
-        connected: false,
-        status: 'UNKNOWN',
-        error: error instanceof Error ? error.message : 'unknown_error',
-      };
-    }
-
-    return { issues, diagnostics };
-  }
-
-  // ── Group Management (MonitoredGroup, GroupMember, BannedKeyword) ──
-
-  async listMonitoredGroups(workspaceId: string) {
+  // ═══ GROUP MANAGEMENT ═══
+  async listMonitoredGroups(ws: string) {
     return this.prisma.monitoredGroup.findMany({
-      where: { workspaceId },
-      include: {
-        members: { take: 500 },
-        keywords: { take: 200 },
-      },
+      where: { workspaceId: ws },
+      include: { members: { take: 500 }, keywords: { take: 200 } },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
   }
-
-  /** Add monitored group. */
   async addMonitoredGroup(
-    workspaceId: string,
-    data: { jid: string; name?: string; inviteLink?: string; settings?: Record<string, unknown> },
+    ws: string,
+    d: { jid: string; name?: string; inviteLink?: string; settings?: Record<string, unknown> },
   ) {
     return this.prisma.monitoredGroup.create({
       data: {
-        jid: data.jid,
-        name: data.name,
-        inviteLink: data.inviteLink,
-        settings: (data.settings || {}) as unknown as Prisma.InputJsonValue,
-        workspace: { connect: { id: workspaceId } },
+        jid: d.jid,
+        name: d.name,
+        inviteLink: d.inviteLink,
+        settings: JSON.parse(JSON.stringify(d.settings || {})) as Prisma.InputJsonObject,
+        workspace: { connect: { id: ws } },
       },
     });
   }
-
-  /** List group members. */
-  async listGroupMembers(groupId: string) {
+  async listGroupMembers(gid: string) {
     return this.prisma.groupMember.findMany({
       take: 500,
-      where: { groupId },
-      select: {
-        id: true,
-        groupId: true,
-        phone: true,
-        isAdmin: true,
-        createdAt: true,
-      },
+      where: { groupId: gid },
+      select: { id: true, groupId: true, phone: true, isAdmin: true, createdAt: true },
     });
   }
-
-  /** Add group member. */
-  async addGroupMember(groupId: string, phone: string, isAdmin = false) {
-    return this.prisma.groupMember.create({
-      data: { groupId, phone, isAdmin },
+  async addGroupMember(gid: string, ws: string, phone: string, isAdmin = false) {
+    const g = await this.prisma.monitoredGroup.findFirst({
+      where: { id: gid, workspaceId: ws },
+      select: { id: true },
     });
+    if (!g) throw new NotFoundException('Group not found');
+    return this.prisma.groupMember.create({ data: { groupId: gid, phone, isAdmin } });
   }
-
-  /** List banned keywords. */
-  async listBannedKeywords(groupId: string) {
+  async listBannedKeywords(gid: string) {
     return this.prisma.bannedKeyword.findMany({
       take: 200,
-      where: { groupId },
-      select: {
-        id: true,
-        groupId: true,
-        keyword: true,
-        action: true,
-        createdAt: true,
-      },
+      where: { groupId: gid },
+      select: { id: true, groupId: true, keyword: true, action: true, createdAt: true },
     });
   }
-
-  /** Add banned keyword. */
-  async addBannedKeyword(groupId: string, keyword: string, action: string) {
-    return this.prisma.bannedKeyword.create({
-      data: { groupId, keyword, action },
+  async addBannedKeyword(gid: string, ws: string, keyword: string, action: string) {
+    const g = await this.prisma.monitoredGroup.findFirst({
+      where: { id: gid, workspaceId: ws },
+      select: { id: true },
     });
+    if (!g) throw new NotFoundException('Group not found');
+    return this.prisma.bannedKeyword.create({ data: { groupId: gid, keyword, action } });
   }
 }

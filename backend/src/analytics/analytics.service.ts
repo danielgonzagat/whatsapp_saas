@@ -1,310 +1,134 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { CacheService } from '../common/cache/cache.service';
 import { PrismaService } from '../prisma/prisma.service';
-
-interface ReportSale {
-  amount: number;
-  status: string;
-  paymentMethod?: string | null;
-  productName?: string | null;
-  createdAt: Date;
-}
-
-interface ReportWindow {
-  since: Date;
-  prevSince: Date;
-  days: number;
-}
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function resolvePeriodDays(period: string): number {
-  if (period === '7d') {
-    return 7;
-  }
-  if (period === '90d') {
-    return 90;
-  }
-  if (period === '12m') {
-    return 365;
-  }
-  return 30;
-}
-
-function resolveCustomWindow(startDate: Date, endDate: Date): ReportWindow {
-  const diffMs = endDate.getTime() - startDate.getTime();
-  const days = Math.max(1, Math.ceil(diffMs / DAY_MS));
-  return {
-    since: startDate,
-    prevSince: new Date(startDate.getTime() - diffMs),
-    days,
-  };
-}
-
-function resolveRollingWindow(period: string): ReportWindow {
-  const days = resolvePeriodDays(period);
-  const now = Date.now();
-  return {
-    since: new Date(now - days * DAY_MS),
-    prevSince: new Date(now - days * 2 * DAY_MS),
-    days,
-  };
-}
-
-function resolveReportWindow(period: string, startDate?: Date, endDate?: Date): ReportWindow {
-  if (period === 'custom' && startDate && endDate) {
-    return resolveCustomWindow(startDate, endDate);
-  }
-  return resolveRollingWindow(period);
-}
-
-function computeTrendPct(current: number, previous: number): number {
-  return previous > 0 ? ((current - previous) / previous) * 100 : 0;
-}
-
-function sumBy<T>(items: readonly T[], pick: (item: T) => number): number {
-  return items.reduce((sum, item) => sum + pick(item), 0);
-}
-
-interface SalesSummary {
-  paidSales: ReportSale[];
-  prevPaidSales: ReportSale[];
-  refunds: ReportSale[];
-  totalRevenue: number;
-  prevRevenue: number;
-  revenueTrend: number;
-  totalPending: number;
-  avgTicket: number;
-}
-
-function buildSalesSummary(sales: ReportSale[], prevSales: ReportSale[]): SalesSummary {
-  const paidSales = sales.filter((s) => s.status === 'paid');
-  const prevPaidSales = prevSales.filter((s) => s.status === 'paid');
-  const refunds = sales.filter((s) => s.status === 'refunded');
-  const totalRevenue = sumBy(paidSales, (s) => s.amount);
-  const prevRevenue = sumBy(prevPaidSales, (s) => s.amount);
-  const pendingSales = sales.filter((s) => s.status === 'pending');
-  const totalPending = sumBy(pendingSales, (s) => s.amount);
-  const avgTicket = paidSales.length > 0 ? totalRevenue / paidSales.length : 0;
-  return {
-    paidSales,
-    prevPaidSales,
-    refunds,
-    totalRevenue,
-    prevRevenue,
-    revenueTrend: computeTrendPct(totalRevenue, prevRevenue),
-    totalPending,
-    avgTicket,
-  };
-}
-
-function aggregateTopProducts(paidSales: readonly ReportSale[]) {
-  const productMap: Record<string, { name: string; sales: number; revenue: number }> = {};
-  paidSales.forEach((s) => {
-    const name = s.productName || 'Sem produto';
-    if (!productMap[name]) {
-      productMap[name] = { name, sales: 0, revenue: 0 };
-    }
-    productMap[name].sales++;
-    productMap[name].revenue += s.amount;
-  });
-  return Object.values(productMap)
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 5);
-}
-
-function aggregatePaymentMethods(paidSales: readonly ReportSale[]) {
-  const paymentMap: Record<string, { method: string; count: number; revenue: number }> = {};
-  paidSales.forEach((s) => {
-    const method = s.paymentMethod || 'OUTRO';
-    if (!paymentMap[method]) {
-      paymentMap[method] = { method, count: 0, revenue: 0 };
-    }
-    paymentMap[method].count++;
-    paymentMap[method].revenue += s.amount;
-  });
-  return Object.values(paymentMap);
-}
-
-function aggregateTimePatterns(paidSales: readonly ReportSale[]): {
-  salesByHour: number[];
-  salesByWeekday: number[];
-} {
-  const salesByHour = new Array<number>(24).fill(0);
-  const salesByWeekday = new Array<number>(7).fill(0);
-  paidSales.forEach((s) => {
-    const d = new Date(s.createdAt);
-    salesByHour[d.getHours()]++;
-    salesByWeekday[d.getDay()]++;
-  });
-  return { salesByHour, salesByWeekday };
-}
-
-interface ReportKpiInput {
-  totalRevenue: number;
-  revenueTrend: number;
-  paidSales: readonly ReportSale[];
-  prevPaidSales: readonly ReportSale[];
-  leads: number;
-  leadsTrend: number;
-  conversionRate: number;
-  avgTicket: number;
-  totalPending: number;
-  adSpend: number;
-}
-
-function computeSalesTrend(
-  paidSales: readonly ReportSale[],
-  prevPaidSales: readonly ReportSale[],
-): number {
-  if (prevPaidSales.length === 0) {
-    return 0;
-  }
-  return Math.round(((paidSales.length - prevPaidSales.length) / prevPaidSales.length) * 1000) / 10;
-}
-
-function computeRoas(totalRevenue: number, adSpend: number): number | null {
-  if (totalRevenue <= 0 || adSpend <= 0) {
-    return null;
-  }
-  return Math.round((totalRevenue / adSpend) * 100) / 100;
-}
-
-function buildReportKpi(input: ReportKpiInput) {
-  return {
-    totalRevenue: input.totalRevenue,
-    revenueTrend: Math.round(input.revenueTrend * 10) / 10,
-    totalSales: input.paidSales.length,
-    salesTrend: computeSalesTrend(input.paidSales, input.prevPaidSales),
-    totalLeads: input.leads,
-    leadsTrend: Math.round(input.leadsTrend * 10) / 10,
-    conversionRate: Math.round(input.conversionRate * 10) / 10,
-    avgTicket: Math.round(input.avgTicket * 100) / 100,
-    totalPending: input.totalPending,
-    adSpend: input.adSpend,
-    roas: computeRoas(input.totalRevenue, input.adSpend),
-  };
-}
-
-function buildReportFinancial(
-  wallet: unknown,
-  refunds: readonly ReportSale[],
-): { available: number; pending: number; refunds: number; refundCount: number } {
-  const walletRecord = (wallet as Record<string, unknown> | null) ?? null;
-  return {
-    available: Number(walletRecord?.availableBalance ?? 0) || 0,
-    pending: Number(walletRecord?.pendingBalance ?? 0) || 0,
-    refunds: sumBy(refunds, (s) => s.amount),
-    refundCount: refunds.length,
-  };
-}
+import {
+  DAY_MS,
+  aggregatePaymentMethods,
+  aggregateTimePatterns,
+  aggregateTopProducts,
+  buildReportFinancial,
+  buildReportKpi,
+  buildSalesSummary,
+  computeTrendPct,
+  resolveReportWindow,
+} from './__companions__/analytics.service.companion';
 
 /** Analytics service. */
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly cache: CacheService,
+  ) {}
 
   /** Get dashboard stats. */
   async getDashboardStats(workspaceId: string) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return this.cache.wrap(
+      `cache:analytics:stats:${workspaceId}`,
+      async () => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const [messages, contacts, flowExecs, sentiment, leadScore, outboundStatus] = await Promise.all(
-      [
-        this.prisma.message.count({
-          where: { workspaceId, createdAt: { gte: today } },
-        }),
-        this.prisma.contact.count({ where: { workspaceId } }),
-        this.prisma.flowExecution.groupBy({
-          by: ['status'],
-          where: { workspaceId, createdAt: { gte: sevenDaysAgo } },
-          _count: { status: true },
-        }),
-        // NeuroCRM Sentiment
-        this.prisma.contact.groupBy({
-          by: ['sentiment'],
-          where: { workspaceId },
-          _count: { sentiment: true },
-        }),
-        // NeuroCRM Score buckets (simplified fetch, buckets handled in logic)
-        this.prisma.contact.findMany({
-          where: { workspaceId },
-          select: { leadScore: true },
-          take: 5000,
-        }),
-        this.prisma.message.groupBy({
-          by: ['status'],
-          where: {
-            workspaceId,
-            direction: 'OUTBOUND',
-            createdAt: { gte: today },
-          },
-          _count: { status: true },
-        }),
-      ],
+        const [messages, contacts, flowExecs, sentiment, leadScore, outboundStatus] =
+          await Promise.all([
+            this.prisma.message.count({
+              where: { workspaceId, createdAt: { gte: today } },
+            }),
+            this.prisma.contact.count({ where: { workspaceId } }),
+            this.prisma.flowExecution.groupBy({
+              by: ['status'],
+              where: { workspaceId, createdAt: { gte: sevenDaysAgo } },
+              _count: { status: true },
+            }),
+            // NeuroCRM Sentiment
+            this.prisma.contact.groupBy({
+              by: ['sentiment'],
+              where: { workspaceId },
+              _count: { sentiment: true },
+            }),
+            // NeuroCRM Score buckets (simplified fetch, buckets handled in logic)
+            this.prisma.contact.findMany({
+              where: { workspaceId },
+              select: { leadScore: true },
+              take: 5000,
+            }),
+            this.prisma.message.groupBy({
+              by: ['status'],
+              where: {
+                workspaceId,
+                direction: 'OUTBOUND',
+                createdAt: { gte: today },
+              },
+              _count: { status: true },
+            }),
+          ]);
+
+        // Process Sentiment
+        const sentimentStats = { positive: 0, negative: 0, neutral: 0 };
+        sentiment.forEach((s) => {
+          if (s.sentiment === 'POSITIVE') {
+            sentimentStats.positive = s._count.sentiment;
+          } else if (s.sentiment === 'NEGATIVE') {
+            sentimentStats.negative = s._count.sentiment;
+          } else {
+            sentimentStats.neutral += s._count.sentiment;
+          }
+        });
+
+        // Process Score
+        const scoreStats = { high: 0, medium: 0, low: 0 };
+        leadScore.forEach((c) => {
+          if (c.leadScore > 70) {
+            scoreStats.high++;
+          } else if (c.leadScore > 30) {
+            scoreStats.medium++;
+          } else {
+            scoreStats.low++;
+          }
+        });
+
+        // Process delivery/read/error based on outbound status
+        const statusMap: Record<string, number> = {};
+        outboundStatus.forEach((s) => {
+          statusMap[(s.status || 'UNKNOWN').toUpperCase()] = s._count.status;
+        });
+        // Considera SENT como entregue para não zerar métricas em ambientes sem callbacks
+        const delivered = (statusMap.DELIVERED || 0) + (statusMap.SENT || 0);
+        const read = statusMap.READ || 0;
+        const failed = statusMap.FAILED || 0;
+        const totalOutbound = Object.values(statusMap).reduce((a, b) => a + b, 0);
+        const pct = (val: number) =>
+          totalOutbound > 0 ? Math.round((val / totalOutbound) * 100) : 0;
+        const deliveryRate = pct(delivered);
+        const readRate = pct(read);
+        const errorRate = pct(failed);
+
+        // Flow execution status (últimos 7d)
+        const flowStatsMap: Record<string, number> = {};
+        flowExecs.forEach((f) => {
+          flowStatsMap[f.status || 'UNKNOWN'] = f._count.status;
+        });
+
+        return {
+          messages,
+          contacts,
+          flows: Object.values(flowStatsMap).reduce((a, b) => a + b, 0),
+          flowCompleted: flowStatsMap.COMPLETED || 0,
+          flowFailed: flowStatsMap.FAILED || 0,
+          flowRunning: flowStatsMap.RUNNING || 0,
+          deliveryRate,
+          readRate,
+          errorRate,
+          sentiment: sentimentStats,
+          leadScore: scoreStats,
+        };
+      },
+      { ttl: 120 },
     );
-
-    // Process Sentiment
-    const sentimentStats = { positive: 0, negative: 0, neutral: 0 };
-    sentiment.forEach((s) => {
-      if (s.sentiment === 'POSITIVE') {
-        sentimentStats.positive = s._count.sentiment;
-      } else if (s.sentiment === 'NEGATIVE') {
-        sentimentStats.negative = s._count.sentiment;
-      } else {
-        sentimentStats.neutral += s._count.sentiment;
-      }
-    });
-
-    // Process Score
-    const scoreStats = { high: 0, medium: 0, low: 0 };
-    leadScore.forEach((c) => {
-      if (c.leadScore > 70) {
-        scoreStats.high++;
-      } else if (c.leadScore > 30) {
-        scoreStats.medium++;
-      } else {
-        scoreStats.low++;
-      }
-    });
-
-    // Process delivery/read/error based on outbound status
-    const statusMap: Record<string, number> = {};
-    outboundStatus.forEach((s) => {
-      statusMap[(s.status || 'UNKNOWN').toUpperCase()] = s._count.status;
-    });
-    // Considera SENT como entregue para não zerar métricas em ambientes sem callbacks
-    const delivered = (statusMap.DELIVERED || 0) + (statusMap.SENT || 0);
-    const read = statusMap.READ || 0;
-    const failed = statusMap.FAILED || 0;
-    const totalOutbound = Object.values(statusMap).reduce((a, b) => a + b, 0);
-    const pct = (val: number) => (totalOutbound > 0 ? Math.round((val / totalOutbound) * 100) : 0);
-    const deliveryRate = pct(delivered);
-    const readRate = pct(read);
-    const errorRate = pct(failed);
-
-    // Flow execution status (últimos 7d)
-    const flowStatsMap: Record<string, number> = {};
-    flowExecs.forEach((f) => {
-      flowStatsMap[f.status || 'UNKNOWN'] = f._count.status;
-    });
-
-    return {
-      messages,
-      contacts,
-      flows: Object.values(flowStatsMap).reduce((a, b) => a + b, 0),
-      flowCompleted: flowStatsMap.COMPLETED || 0,
-      flowFailed: flowStatsMap.FAILED || 0,
-      flowRunning: flowStatsMap.RUNNING || 0,
-      deliveryRate,
-      readRate,
-      errorRate,
-      sentiment: sentimentStats,
-      leadScore: scoreStats,
-    };
   }
 
   /** Get daily activity. */
@@ -546,15 +370,45 @@ export class AnalyticsService {
       this.prisma.conversation.count({ where: { workspaceId, status: 'OPEN' } }).catch(() => 0),
       this.prisma.product.count({ where: { workspaceId, active: true } }).catch(() => 0),
     ]);
+
+    // Compute real average response time from recent outbound messages
+    let avgResponseTime: number | null = null;
+    try {
+      const recent = await this.prisma.message.findMany({
+        where: {
+          workspaceId,
+          direction: 'OUTBOUND',
+          createdAt: { gte: new Date(Date.now() - 7 * DAY_MS) },
+        },
+        select: { createdAt: true },
+        take: 500,
+        orderBy: { createdAt: 'desc' },
+      });
+      if (recent.length >= 2) {
+        const sorted = recent.map((m) => m.createdAt.getTime()).sort((a, b) => a - b);
+        const intervals: number[] = [];
+        for (let i = 1; i < sorted.length; i++) {
+          const delta = (sorted[i] - sorted[i - 1]) / 1000;
+          if (delta > 0 && delta < 3600) intervals.push(delta);
+        }
+        if (intervals.length > 0) {
+          const sum = intervals.reduce((a, b) => a + b, 0);
+          avgResponseTime = Math.round((sum / intervals.length) * 10) / 10;
+        }
+      }
+    } catch {
+      this.logger.warn(`Failed to compute avg response time for workspace ${workspaceId}`);
+    }
+
     return {
       messagesProcessed: totalProcessed,
-      avgResponseTime: '2.8s',
+      avgResponseTime: avgResponseTime ?? null,
       activeConversations: activeConvos,
-      resolutionRate: 94,
-      autonomousSales: 0,
-      followupsSent: 0,
-      objectionsHandled: 0,
-      csat: 4.7,
+      resolutionRate: null,
+      autonomousSales: null,
+      followupsSent: null,
+      objectionsHandled: null,
+      csat: null,
       productsLoaded,
     };
   }

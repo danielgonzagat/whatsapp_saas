@@ -13,6 +13,13 @@ import { fullScan } from '../daemon';
 import { buildFunctionalMap } from '../functional-map';
 import { getBackendUrl, getFrontendUrl, getRuntimeResolution } from '../parsers/runtime-utils';
 import { obtainAuthToken, injectAuth, verifyAuth } from './auth';
+import {
+  discoverBrowserLiveArtifacts,
+  getPagePriorityFromArtifacts,
+  hasUnresolvedDynamicSegment,
+  isLoginRedirectFromArtifacts,
+  isPublicRouteFromArtifacts,
+} from './live-artifacts';
 import { testPage } from './page-tester';
 import { generateStressTestReport, renderTerminalSummary } from './reporter';
 import { ensureDir, writeTextFile } from '../safe-fs';
@@ -28,59 +35,7 @@ import type {
   TestDataEntry,
 } from './types';
 
-const PAGE_PRIORITY: Record<string, number> = {
-  '/': 5,
-  '/login': 1,
-  '/register': 2,
-  '/dashboard': 10,
-  '/settings': 15,
-  '/billing': 16,
-  '/products': 20,
-  '/products/new': 21,
-  '/vendas': 30,
-  '/carteira': 31,
-  '/inbox': 40,
-  '/chat': 41,
-  '/whatsapp': 42,
-  '/cia': 43,
-  '/autopilot': 44,
-  '/flow': 50,
-  '/campanhas': 51,
-  '/crm': 55,
-  '/leads': 56,
-  '/analytics': 60,
-  '/anuncios': 61,
-  '/marketing': 62,
-  '/parcerias': 63,
-  '/ferramentas': 70,
-  '/canvas': 71,
-  '/sites': 72,
-  '/webinarios': 73,
-  '/scrapers': 74,
-  '/video': 75,
-  '/pricing': 76,
-  '/metrics': 77,
-  '/payments': 78,
-  '/sales': 79,
-  '/followups': 80,
-  '/funnels': 81,
-  '/tools': 82,
-  '/account': 83,
-};
-
 const BROWSER_EVIDENCE_ARTIFACT = 'PULSE_BROWSER_EVIDENCE.json';
-
-function getPagePriority(route: string): number {
-  if (PAGE_PRIORITY[route] !== undefined) {
-    return PAGE_PRIORITY[route];
-  }
-  for (const [prefix, priority] of Object.entries(PAGE_PRIORITY)) {
-    if (route.startsWith(prefix + '/')) {
-      return priority + 1;
-    }
-  }
-  return 100;
-}
 
 function parseCliArgs(argv: string[]): BrowserStressRunOptions {
   return {
@@ -227,6 +182,7 @@ export async function runBrowserStressTest(
     log('  Building functional map...');
     const scanResult = await fullScan(config);
     const fmapResult = buildFunctionalMap(config, scanResult.coreData);
+    const liveArtifacts = discoverBrowserLiveArtifacts(config.rootDir);
     log(
       `  Functional map: ${fmapResult.summary.totalPages} pages, ${fmapResult.summary.totalInteractions} static interactions`,
     );
@@ -371,16 +327,11 @@ export async function runBrowserStressTest(
         error: `Auth injection failed. Make sure the frontend is running at ${frontendUrl}`,
       });
     }
-    log('  Auth verified — dashboard loaded');
+    log('  Auth verified — authenticated route loaded');
     log('');
 
     let pagesToTest = fmapResult.pages.filter((item) => !item.isRedirect);
-    pagesToTest = pagesToTest.filter((item) => {
-      if (item.route.includes(':') && !item.route.startsWith('/products/')) {
-        return false;
-      }
-      return true;
-    });
+    pagesToTest = pagesToTest.filter((item) => !hasUnresolvedDynamicSegment(item.route));
 
     if (flags.pageFilter) {
       pagesToTest = pagesToTest.filter(
@@ -391,17 +342,11 @@ export async function runBrowserStressTest(
       pagesToTest = pagesToTest.filter((item) => item.group === flags.groupFilter);
     }
 
-    pagesToTest.sort((a, b) => getPagePriority(a.route) - getPagePriority(b.route));
-
-    const publicSkip = new Set([
-      '/',
-      '/login',
-      '/register',
-      '/terms',
-      '/privacy',
-      '/onboarding',
-      '/onboarding-chat',
-    ]);
+    pagesToTest.sort(
+      (a, b) =>
+        getPagePriorityFromArtifacts(a.route, liveArtifacts.pages) -
+        getPagePriorityFromArtifacts(b.route, liveArtifacts.pages),
+    );
     log(`  Testing ${pagesToTest.length} pages...`);
     log(`  ${'─'.repeat(60)}`);
 
@@ -414,7 +359,7 @@ export async function runBrowserStressTest(
       const route = fmapPage.route;
       const progress = `[${index + 1}/${pagesToTest.length}]`;
 
-      if (publicSkip.has(route)) {
+      if (isPublicRouteFromArtifacts(route, liveArtifacts.pages)) {
         log(`  ${progress} ${route} — skipping (public/auth page)`);
         pageResults.push({
           route,
@@ -446,7 +391,10 @@ export async function runBrowserStressTest(
           ` ${result.loadTimeMs}ms | ${result.elementsFound} found | ${ok} ok, ${broken} broken, ${facade} facade`,
         );
 
-        if (result.loadStatus === 'redirect' || page.url().includes('/login')) {
+        if (
+          result.loadStatus === 'redirect' ||
+          isLoginRedirectFromArtifacts(page.url(), liveArtifacts.pages)
+        ) {
           log('  ↳ Re-injecting auth...');
           await injectAuth(page, creds, frontendUrl);
         }

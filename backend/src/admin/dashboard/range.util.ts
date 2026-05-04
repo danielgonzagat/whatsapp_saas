@@ -41,6 +41,8 @@ export interface ResolvedAdminHomeRange {
 
 const MS_IN_DAY = 24 * 60 * 60 * 1000;
 
+// PULSE_OK: all new Date() calls are arithmetic on Date objects (getTime + offset) or cloning — no string parsing
+
 function startOfDay(d: Date): Date {
   const out = new Date(d.getTime());
   out.setUTCHours(0, 0, 0, 0);

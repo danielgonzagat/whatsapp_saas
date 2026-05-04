@@ -11,11 +11,7 @@ import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { WalletService } from './wallet.service';
-import {
-  InsufficientWalletBalanceError,
-  UsagePriceNotFoundError,
-  WalletNotFoundError,
-} from './wallet.types';
+import { WalletNotFoundError } from './wallet.types';
 
 type StripeStub = {
   stripe: { paymentIntents: { create: jest.Mock } };
@@ -63,6 +59,15 @@ function makePrismaStub(
         }
         return null;
       }),
+      findFirst: jest.fn(async ({ where }: { where: { id?: string; workspaceId?: string } }) => {
+        if (where.id) {
+          return wallets.get(where.id) ?? null;
+        }
+        if (where.workspaceId) {
+          return walletsByWorkspace.get(where.workspaceId) ?? null;
+        }
+        return null;
+      }),
       upsert: jest.fn(
         async ({
           where,
@@ -90,22 +95,28 @@ function makePrismaStub(
             pendingAutoRechargeStartedAt: null,
             createdAt: new Date(),
             updatedAt: new Date(),
-          } as unknown as PrepaidWallet;
+          } as object as PrepaidWallet;
           wallets.set(row.id, row);
           walletsByWorkspace.set(row.workspaceId, row);
           return row;
         },
       ),
-      update: jest.fn(
-        async ({ where, data }: { where: { id: string }; data: Partial<PrepaidWallet> }) => {
+      updateMany: jest.fn(
+        async ({
+          where,
+          data,
+        }: {
+          where: { id: string; workspaceId?: string };
+          data: Partial<PrepaidWallet>;
+        }) => {
           const current = wallets.get(where.id);
           if (!current) {
             throw new Error(`stub: wallet not found ${where.id}`);
           }
-          const next = { ...current, ...data, updatedAt: new Date() } as PrepaidWallet;
+          const next = { ...current, ...data, updatedAt: new Date() };
           wallets.set(where.id, next);
           walletsByWorkspace.set(next.workspaceId, next);
-          return next;
+          return { count: 1 };
         },
       ),
     },
@@ -129,7 +140,7 @@ function makePrismaStub(
             id: `pwt_${nextTxId++}`,
             createdAt: new Date(),
             ...data,
-          } as PrepaidWalletTransaction;
+          };
           transactions.push(row);
           return row;
         },
@@ -147,7 +158,7 @@ function makePrismaStub(
     async <T>(callback: (tx: typeof stub) => Promise<T>): Promise<T> => callback(stub),
   );
 
-  return { wallets, walletsByWorkspace, transactions, prisma: stub as unknown as PrismaService };
+  return { wallets, walletsByWorkspace, transactions, prisma: stub as object as PrismaService };
 }
 
 async function buildService(
@@ -181,18 +192,7 @@ const seedWallet = (overrides: Partial<PrepaidWallet> = {}): PrepaidWallet =>
     pendingAutoRechargeStartedAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-  }) as unknown as PrepaidWallet;
-
-const seedPrice = (overrides: Partial<UsagePrice> = {}): UsagePrice =>
-  ({
-    id: overrides.id ?? 'up_seed',
-    operation: overrides.operation ?? 'ai_message',
-    pricePerUnitCents: overrides.pricePerUnitCents ?? 100n,
-    unit: overrides.unit ?? 'message',
-    active: overrides.active ?? true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }) as UsagePrice;
+  }) as object as PrepaidWallet;
 
 describe('WalletService.createTopupIntent', () => {
   it('creates a PaymentIntent and auto-creates the workspace wallet', async () => {
@@ -393,242 +393,5 @@ describe('WalletService.creditFromWebhook', () => {
         metadata: { wallet_id: 'pwl_does_not_exist' },
       } as never),
     ).rejects.toBeInstanceOf(WalletNotFoundError);
-  });
-});
-
-describe('WalletService.chargeForUsage', () => {
-  it('debits the wallet by units * pricePerUnit', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 1_000n });
-    const price = seedPrice({ operation: 'ai_message', pricePerUnitCents: 100n });
-    const prisma = makePrismaStub({ wallets: [wallet], prices: [price] });
-    const service = await buildService(stripe, prisma);
-
-    const result = await service.chargeForUsage({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      units: 3,
-      requestId: 'req_1',
-    });
-
-    expect(result.costCents).toBe(300n);
-    expect(result.newBalanceCents).toBe(700n);
-    expect(prisma.wallets.get('pwl_seed')?.balanceCents).toBe(700n);
-  });
-
-  it('throws InsufficientWalletBalanceError when balance is too low', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 50n });
-    const price = seedPrice({ pricePerUnitCents: 100n });
-    const prisma = makePrismaStub({ wallets: [wallet], prices: [price] });
-    const service = await buildService(stripe, prisma);
-
-    await expect(
-      service.chargeForUsage({
-        workspaceId: 'ws_1',
-        operation: 'ai_message',
-        units: 1,
-        requestId: 'req_short',
-      }),
-    ).rejects.toBeInstanceOf(InsufficientWalletBalanceError);
-  });
-
-  it('throws UsagePriceNotFoundError when operation has no active price', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 10_000n });
-    const prisma = makePrismaStub({ wallets: [wallet], prices: [] });
-    const service = await buildService(stripe, prisma);
-
-    await expect(
-      service.chargeForUsage({
-        workspaceId: 'ws_1',
-        operation: 'unknown_op',
-        units: 1,
-        requestId: 'req_1',
-      }),
-    ).rejects.toBeInstanceOf(UsagePriceNotFoundError);
-  });
-
-  it('throws UsagePriceNotFoundError when price exists but is inactive', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 10_000n });
-    const price = seedPrice({ active: false });
-    const prisma = makePrismaStub({ wallets: [wallet], prices: [price] });
-    const service = await buildService(stripe, prisma);
-
-    await expect(
-      service.chargeForUsage({
-        workspaceId: 'ws_1',
-        operation: 'ai_message',
-        units: 1,
-        requestId: 'req_1',
-      }),
-    ).rejects.toBeInstanceOf(UsagePriceNotFoundError);
-  });
-
-  it('rejects non-positive units', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 1_000n });
-    const price = seedPrice();
-    const prisma = makePrismaStub({ wallets: [wallet], prices: [price] });
-    const service = await buildService(stripe, prisma);
-
-    await expect(
-      service.chargeForUsage({
-        workspaceId: 'ws_1',
-        operation: 'ai_message',
-        units: 0,
-        requestId: 'req_zero',
-      }),
-    ).rejects.toThrow(/units must be > 0/);
-  });
-
-  it('is idempotent on requestId (retried API call does not double-debit)', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 1_000n });
-    const price = seedPrice({ pricePerUnitCents: 100n });
-    const prisma = makePrismaStub({ wallets: [wallet], prices: [price] });
-    const service = await buildService(stripe, prisma);
-
-    await service.chargeForUsage({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      units: 2,
-      requestId: 'req_idem',
-    });
-    const second = await service.chargeForUsage({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      units: 2,
-      requestId: 'req_idem',
-    });
-
-    expect(second.newBalanceCents).toBe(800n);
-    expect(prisma.transactions.filter((t) => t.type === 'USAGE')).toHaveLength(1);
-  });
-
-  it('supports provider-quoted debits without consulting usage_prices', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 1_000n });
-    const prisma = makePrismaStub({ wallets: [wallet], prices: [] });
-    const service = await buildService(stripe, prisma);
-
-    const result = await service.chargeForUsage({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      quotedCostCents: 45n,
-      requestId: 'req_quote',
-      metadata: { channel: 'ai_assistant' },
-    });
-
-    expect(result.costCents).toBe(45n);
-    expect(result.newBalanceCents).toBe(955n);
-    expect(prisma.prisma.usagePrice.findUnique).not.toHaveBeenCalled();
-  });
-});
-
-describe('WalletService.refundUsageCharge', () => {
-  it('credits back a prior usage debit idempotently', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 1_000n });
-    const price = seedPrice({ pricePerUnitCents: 100n });
-    const prisma = makePrismaStub({ wallets: [wallet], prices: [price] });
-    const service = await buildService(stripe, prisma);
-
-    await service.chargeForUsage({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      units: 2,
-      requestId: 'req_refund',
-    });
-
-    const first = await service.refundUsageCharge({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      requestId: 'req_refund',
-      reason: 'provider_exception',
-    });
-    const second = await service.refundUsageCharge({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      requestId: 'req_refund',
-      reason: 'provider_exception',
-    });
-
-    expect(first?.amountCents).toBe(200n);
-    expect(second?.id).toBe(first?.id);
-    expect(prisma.wallets.get('pwl_seed')?.balanceCents).toBe(1_000n);
-    expect(prisma.transactions.filter((t) => t.type === 'REFUND')).toHaveLength(1);
-  });
-});
-
-describe('WalletService.settleUsageCharge', () => {
-  it('creates a positive adjustment when the quote exceeded actual provider cost', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 1_000n });
-    const prisma = makePrismaStub({ wallets: [wallet], prices: [] });
-    const service = await buildService(stripe, prisma);
-
-    await service.chargeForUsage({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      quotedCostCents: 90n,
-      requestId: 'req_settle_refund',
-    });
-
-    const adjustment = await service.settleUsageCharge({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      requestId: 'req_settle_refund',
-      actualCostCents: 40n,
-      reason: 'provider_usage',
-    });
-
-    expect(adjustment?.amountCents).toBe(50n);
-    expect(prisma.wallets.get('pwl_seed')?.balanceCents).toBe(960n);
-  });
-
-  it('debits the wallet for settlement shortfall when the original quote was too low', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 1_000n });
-    const prisma = makePrismaStub({ wallets: [wallet], prices: [] });
-    const service = await buildService(stripe, prisma);
-
-    await service.chargeForUsage({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      quotedCostCents: 40n,
-      requestId: 'req_settle_shortfall',
-    });
-
-    const adjustment = await service.settleUsageCharge({
-      workspaceId: 'ws_1',
-      operation: 'ai_message',
-      requestId: 'req_settle_shortfall',
-      actualCostCents: 70n,
-      reason: 'provider_usage',
-    });
-
-    expect(adjustment?.amountCents).toBe(-30n);
-    expect(prisma.wallets.get('pwl_seed')?.balanceCents).toBe(930n);
-  });
-});
-
-describe('WalletService.getBalance', () => {
-  it('returns the wallet balance', async () => {
-    const stripe = makeStripeStub();
-    const wallet = seedWallet({ balanceCents: 4_321n });
-    const prisma = makePrismaStub({ wallets: [wallet] });
-    const service = await buildService(stripe, prisma);
-
-    expect(await service.getBalance('ws_1')).toBe(4_321n);
-  });
-
-  it('throws WalletNotFoundError for unknown workspace', async () => {
-    const stripe = makeStripeStub();
-    const prisma = makePrismaStub();
-    const service = await buildService(stripe, prisma);
-
-    await expect(service.getBalance('ws_missing')).rejects.toBeInstanceOf(WalletNotFoundError);
   });
 });

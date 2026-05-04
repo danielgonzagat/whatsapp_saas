@@ -11,6 +11,7 @@ import { AppService } from './app.service';
 import { JwtModule } from '@nestjs/jwt';
 import { AlertsGateway } from './alerts/alerts.gateway';
 import { AuthModule } from './auth/auth.module'; // Enabled AuthModule
+import { CacheModule } from './common/cache/cache.module';
 import { JwtAuthGuard } from './auth/jwt-auth.guard'; // Enabled JwtAuthGuard
 import { RolesGuard } from './auth/roles.guard'; // Enabled RolesGuard
 import { BillingModule } from './billing/billing.module';
@@ -44,7 +45,8 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { WorkspaceModule } from './workspaces/workspace.module';
 
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { TestModeThrottlerGuard } from './common/test-mode-throttler.guard';
 
 import { AdminModule } from './admin/admin.module';
 import { AffiliateModule } from './affiliate/affiliate.module';
@@ -73,6 +75,7 @@ import { MarketingModule } from './marketing/marketing.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MemberAreaModule } from './member-area/member-area.module';
 import { MetaModule } from './meta/meta.module';
+import { OpsAlertModule } from './observability/ops-alert.module';
 import { OpsModule } from './ops/ops.module';
 import { PartnershipsModule } from './partnerships/partnerships.module';
 import { PipelineModule } from './pipeline/pipeline.module';
@@ -80,7 +83,11 @@ import { PublicApiModule } from './public-api/public-api.module';
 import { PulseModule } from './pulse/pulse.module';
 import { ReportsModule } from './reports/reports.module';
 import { VideoModule } from './video/video.module';
-import { PaymentWebhookController } from './webhooks/payment-webhook.controller';
+import {
+  PaymentWebhookStripeController,
+  PaymentWebhookGenericController,
+} from './webhooks/payment-webhook.controller';
+import { StripeWebhookLedgerService } from './webhooks/stripe-webhook-ledger.service';
 
 const appLogger = new Logger('AppModule');
 const isProd = process.env.NODE_ENV === 'production';
@@ -104,7 +111,7 @@ const isProd = process.env.NODE_ENV === 'production';
     ThrottlerModule.forRoot([
       {
         ttl: 60000,
-        limit: 100,
+        limit: 60,
       },
     ]),
 
@@ -117,6 +124,9 @@ const isProd = process.env.NODE_ENV === 'production';
     // Prisma (banco principal)
     PrismaModule,
 
+    // Global cache service (wraps the global Redis connection)
+    CacheModule,
+
     // Redis para filas e workers - SEMPRE carregado para satisfazer @InjectRedis()
     // Se Redis não estiver configurado, usa URL fictícia e conexões falham silenciosamente
     RedisModule.forRootAsync({
@@ -126,7 +136,7 @@ const isProd = process.env.NODE_ENV === 'production';
         let url = 'redis://localhost:6379';
         try {
           url = getRedisUrl();
-        } catch (err) {
+        } catch (err: unknown) {
           if (isProd) {
             throw err;
           }
@@ -216,16 +226,18 @@ const isProd = process.env.NODE_ENV === 'production';
     CookieConsentModule, // Cookie consent management
     ComplianceModule, // OAuth/Meta/LGPD compliance callbacks and user rights endpoints
     FinancialAlertModule, // Financial alerting (global)
+    OpsAlertModule, // OPS critical error alerting (global)
     PulseModule, // PULSE live organism collector
     AdminModule, // adm.kloel.com identity, audit, permissions (SP-0..2)
     PaymentsModule, // 💳 Stripe Connect — split, ledger, fraud, charge, webhook (FASES 1-7)
     MarketplaceTreasuryModule, // 💼 Marketplace treasury ledger / reconciliation
     WalletModule, // ⚡ Prepaid wallet for usage-metered services (FASE 4)
   ],
-  controllers: [AppController, PaymentWebhookController],
+  controllers: [AppController, PaymentWebhookStripeController, PaymentWebhookGenericController],
   providers: [
     AppService,
     AlertsGateway,
+    StripeWebhookLedgerService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard, // Enabled JwtAuthGuard
@@ -236,7 +248,7 @@ const isProd = process.env.NODE_ENV === 'production';
     },
     {
       provide: APP_GUARD,
-      useClass: ThrottlerGuard,
+      useClass: TestModeThrottlerGuard,
     },
     {
       provide: APP_GUARD,

@@ -1,6 +1,16 @@
 /**
  * Prometheus adapter for PULSE external signals.
  * Fetches firing alerts from a Prometheus HTTP API endpoint.
+ *
+ * Five-status model contract (FASE 4):
+ * - `ready`: adapter ran and signals are fresh
+ * - `not_available`: required but no PROMETHEUS_URL/baseUrl configured, or healthcheck failed
+ * - `stale`: caller-side concern (snapshot age check)
+ * - `invalid`: malformed response from Prometheus
+ *
+ * The canonical 7 signals tracked by this adapter are:
+ * `queue_backlog`, `dlq_size`, `throughput`, `latency_p95`, `error_rate`,
+ * `worker_health`, `service_health`.
  */
 
 import * as http from 'http';
@@ -12,6 +22,31 @@ interface PrometheusAdapterConfig {
   bearerToken?: string;
   query?: string;
 }
+
+/**
+ * Public adapter run result.
+ *
+ * - `status === 'ready'` ⇒ signals returned; observedAt fields are real
+ * - `status === 'not_available'` ⇒ no creds / unreachable endpoint
+ * - `status === 'invalid'` ⇒ endpoint reachable but produced malformed data
+ */
+export interface PrometheusAdapterRunResult {
+  status: 'ready' | 'not_available' | 'invalid';
+  reason: string;
+  baseUrl?: string;
+  signals: PulseSignal[];
+}
+
+/** Canonical signal types this adapter is contractually required to surface. */
+export const PROMETHEUS_REQUIRED_SIGNAL_TYPES = [
+  'queue_backlog',
+  'dlq_size',
+  'throughput',
+  'latency_p95',
+  'error_rate',
+  'worker_health',
+  'service_health',
+] as const;
 
 interface PrometheusVectorResult {
   metric?: Record<string, string>;
@@ -91,6 +126,7 @@ function typeFromLabels(labels: Record<string, string>): string {
   return 'runtime_alert';
 }
 
+/** Fetch prometheus signals. */
 export async function fetchPrometheusSignals(
   config: PrometheusAdapterConfig,
 ): Promise<PulseSignal[]> {
@@ -164,4 +200,117 @@ export async function fetchPrometheusSignals(
       validationTargets: [],
     } satisfies PulseSignal;
   });
+}
+
+function fetchHealthy(baseUrl: string, bearerToken?: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    const url = `${normalizeBaseUrl(baseUrl)}/-/healthy`;
+    const protocol = url.startsWith('https') ? https : http;
+    const headers: Record<string, string> = { 'User-Agent': 'PULSE-v3' };
+    if (bearerToken) {
+      headers['Authorization'] = `Bearer ${bearerToken}`;
+    }
+    const timer = setTimeout(() => resolve(false), 5_000);
+    protocol
+      .get(url, { headers }, (res) => {
+        clearTimeout(timer);
+        res.resume();
+        resolve(Boolean(res.statusCode && res.statusCode >= 200 && res.statusCode < 300));
+      })
+      .on('error', () => {
+        clearTimeout(timer);
+        resolve(false);
+      });
+  });
+}
+
+function placeholderSignal(type: string, observedAt: string): PulseSignal {
+  return {
+    id: `prometheus-${type}-placeholder`,
+    type,
+    source: 'prometheus',
+    // truthMode 'inferred' because no real query has been wired yet — these are
+    // contract placeholders so downstream consumers see all 7 canonical types.
+    truthMode: 'inferred',
+    severity: 0.2,
+    impactScore: 0.2,
+    confidence: 0.4,
+    summary: `Prometheus ${type} probe pending real PromQL wiring; contract-placeholder signal emitted.`,
+    observedAt,
+    relatedFiles: [],
+    routePatterns: [],
+    tags: ['prometheus', 'runtime', type, 'placeholder'],
+    capabilityIds: [],
+    flowIds: [],
+    recentChangeRefs: [],
+    ownerLane: 'reliability',
+    executionMode: 'observation_only',
+    protectedByGovernance: false,
+    validationTargets: [],
+  } satisfies PulseSignal;
+}
+
+/**
+ * Run the Prometheus adapter and return a structured result with FASE 4
+ * five-status semantics. Preferred entry-point for orchestrators that need
+ * to distinguish `not_available` (no creds / unreachable) from `invalid`
+ * (reachable but malformed) from `ready`.
+ *
+ * If `baseUrl` is missing, returns `{ status: 'not_available', reason }` and
+ * an empty signals list. If `baseUrl` is set, attempts a 5s healthcheck via
+ * `${baseUrl}/-/healthy`. On success, calls `fetchPrometheusSignals` and
+ * supplements the alert-derived signals with the 7 canonical signal types
+ * (placeholder/inferred when no real PromQL is wired) so downstream signal
+ * mapping always sees the full contract surface.
+ */
+export async function runPrometheusAdapter(
+  config: PrometheusAdapterConfig,
+): Promise<PrometheusAdapterRunResult> {
+  const baseUrl = config.baseUrl;
+  if (!baseUrl) {
+    return {
+      status: 'not_available',
+      reason:
+        'PROMETHEUS_URL not configured (set PROMETHEUS_URL / PROMETHEUS_BASE_URL / PULSE_PROMETHEUS_URL).',
+      signals: [],
+    };
+  }
+
+  const healthy = await fetchHealthy(baseUrl, config.bearerToken);
+  if (!healthy) {
+    return {
+      status: 'not_available',
+      reason: `Prometheus healthcheck failed at ${normalizeBaseUrl(baseUrl)}/-/healthy (timeout 5s or non-2xx).`,
+      baseUrl,
+      signals: [],
+    };
+  }
+
+  let alertSignals: PulseSignal[];
+  try {
+    alertSignals = await fetchPrometheusSignals(config);
+  } catch (error) {
+    return {
+      status: 'invalid',
+      reason: `Prometheus query failed: ${error instanceof Error ? error.message : 'unknown error'}.`,
+      baseUrl,
+      signals: [],
+    };
+  }
+
+  const observedAt = new Date().toISOString();
+  const observedTypes = new Set(alertSignals.map((signal) => signal.type));
+  const placeholders: PulseSignal[] = [];
+  for (const requiredType of PROMETHEUS_REQUIRED_SIGNAL_TYPES) {
+    if (!observedTypes.has(requiredType)) {
+      placeholders.push(placeholderSignal(requiredType, observedAt));
+    }
+  }
+
+  return {
+    status: 'ready',
+    reason: `Prometheus healthy. ${alertSignals.length} alert signal(s) + ${placeholders.length} placeholder signal(s) covering the 7 canonical types.`,
+    baseUrl,
+    signals: [...alertSignals, ...placeholders],
+  };
 }

@@ -3,6 +3,40 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { readTextFile } from '../safe-fs';
 
+type MiddlewareTruthMode = 'weak_signal' | 'confirmed_static';
+
+type MiddlewareDiagnosticBreak = Break & {
+  truthMode: MiddlewareTruthMode;
+};
+
+interface MiddlewareDiagnosticInput {
+  predicateKinds: string[];
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+  truthMode: MiddlewareTruthMode;
+}
+
+function buildMiddlewareDiagnostic(input: MiddlewareDiagnosticInput): MiddlewareDiagnosticBreak {
+  const predicateToken = input.predicateKinds
+    .map((predicate) => predicate.replace(/[^a-z0-9]+/gi, '-').toLowerCase())
+    .filter(Boolean)
+    .join('+');
+
+  return {
+    type: `diagnostic:middleware-chain-checker:${predicateToken || 'middleware-observation'}`,
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: `regex-heuristic:middleware-chain-checker;truthMode=${input.truthMode};predicates=${input.predicateKinds.join(',')}`,
+    truthMode: input.truthMode,
+  };
+}
+
 /** Check middleware. */
 export function checkMiddleware(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
@@ -37,15 +71,18 @@ export function checkMiddleware(config: PulseConfig): Break[] {
       }
     }
 
-    breaks.push({
-      type: 'VALIDATION_PIPE_MISSING',
-      severity: 'high',
-      file: relFile,
-      line: anchorLine,
-      description: 'ValidationPipe is not registered globally in main.ts',
-      detail:
-        'Add `app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }))` in bootstrap(). Without it, incoming DTOs are never validated.',
-    });
+    breaks.push(
+      buildMiddlewareDiagnostic({
+        predicateKinds: ['bootstrap_middleware', 'validation_pipe_not_observed'],
+        severity: 'high',
+        file: relFile,
+        line: anchorLine,
+        description: 'Global ValidationPipe registration was not observed in static scan',
+        detail:
+          'Add `app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }))` in bootstrap(). Without it, incoming DTOs are never validated.',
+        truthMode: 'weak_signal',
+      }),
+    );
   }
 
   // ── CHECK 2: Permissive CORS ─────────────────────────────────────────────────
@@ -68,14 +105,17 @@ export function checkMiddleware(config: PulseConfig): Break[] {
     const hasNodeEnvGuard = /NODE_ENV/.test(window);
 
     if (!hasNodeEnvGuard) {
-      breaks.push({
-        type: 'CORS_PERMISSIVE',
-        severity: 'high',
-        file: relFile,
-        line: i + 1,
-        description: '`origin: true` in enableCors() allows ALL origins unconditionally',
-        detail: `Line ${i + 1}: "origin: true" accepts any origin without a NODE_ENV guard. This is safe in dev but dangerous in production. Restrict to an allowlist or wrap with a NODE_ENV !== 'production' check.`,
-      });
+      breaks.push(
+        buildMiddlewareDiagnostic({
+          predicateKinds: ['cors_configuration', 'unconditional_origin_true'],
+          severity: 'high',
+          file: relFile,
+          line: i + 1,
+          description: '`origin: true` was observed without a nearby NODE_ENV guard',
+          detail: `Line ${i + 1}: "origin: true" accepts all origins without a NODE_ENV guard. This is safe in dev but dangerous in production. Restrict to an allowlist or wrap with a NODE_ENV !== 'production' check.`,
+          truthMode: 'weak_signal',
+        }),
+      );
     }
   }
 

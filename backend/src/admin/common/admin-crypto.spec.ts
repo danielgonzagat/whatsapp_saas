@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { createCipheriv, createHash, randomBytes } from 'node:crypto';
 import {
   decryptAdminSecret,
   encryptAdminSecret,
@@ -44,7 +44,7 @@ describe('admin-crypto', () => {
       expect(() => decryptAdminSecret(ct, key2)).toThrow();
     });
 
-    it('accepts non-hex passphrase keys by deriving via sha256', () => {
+    it('accepts non-hex passphrase keys by deriving via PBKDF2', () => {
       // The operator may set a human-friendly passphrase in Railway;
       // the crypto layer should still encrypt/decrypt round-trip.
       const ct = encryptAdminSecret('x', 'my-passphrase-shorter-than-64-chars');
@@ -65,6 +65,18 @@ describe('admin-crypto', () => {
     it('rejects malformed ciphertext', () => {
       const key = randomKeyHex();
       expect(() => decryptAdminSecret('not.enough', key)).toThrow(/malformed/);
+    });
+    it('decrypts legacy SHA-256 ciphertexts (migration path)', () => {
+      const raw = 'old-legacy-passphrase';
+      const legacyKey = createHash('sha256').update(raw, 'utf8').digest();
+      const iv = randomBytes(12);
+      const cipher = createCipheriv('aes-256-gcm', legacyKey, iv);
+      const ct = Buffer.concat([cipher.update('legacy secret', 'utf8'), cipher.final()]);
+      const tag = cipher.getAuthTag();
+      const toBase64Url = (buf: Buffer) =>
+        buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      const legacyCiphertext = [toBase64Url(iv), toBase64Url(tag), toBase64Url(ct)].join('.');
+      expect(decryptAdminSecret(legacyCiphertext, raw)).toBe('legacy secret');
     });
   });
 

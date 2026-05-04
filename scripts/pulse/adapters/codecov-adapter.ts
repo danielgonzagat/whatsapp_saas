@@ -44,6 +44,7 @@ function makeCodecovRequest(url: string, token?: string): Promise<unknown> {
   });
 }
 
+/** Fetch codecov signals. */
 export async function fetchCodecovSignals(config: CodecovAdapterConfig): Promise<PulseSignal[]> {
   const signals: PulseSignal[] = [];
 

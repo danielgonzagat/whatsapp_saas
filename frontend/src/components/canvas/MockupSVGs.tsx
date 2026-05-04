@@ -4,6 +4,7 @@
    ═══════════════════════════════════════════ */
 
 import type React from 'react';
+import { colors } from '@/lib/design-tokens';
 
 interface MockupProps {
   c1: string;
@@ -27,11 +28,11 @@ export const PhoneSVG: React.FC<PhoneProps> = ({ c1, c2, story }) => (
       width="46"
       height="80"
       rx="8"
-      fill="#1A1A1D"
-      stroke="#2A2A2E"
+      fill={colors.background.elevated}
+      stroke={colors.border.space}
       strokeWidth="1"
     />
-    <rect x="15" y="4" width="18" height="3" rx="1.5" fill="#2A2A2E" />
+    <rect x="15" y="4" width="18" height="3" rx="1.5" fill={colors.border.space} />
     <rect x="4" y="10" width="40" height="62" rx="2" fill={`url(#p${c1.slice(1)})`} />
     {!story && (
       <>
@@ -94,11 +95,11 @@ export const DesktopSVG: React.FC<DesktopProps> = ({ c1, c2, chart }) => (
       width="80"
       height="46"
       rx="4"
-      fill="#1A1A1D"
-      stroke="#2A2A2E"
+      fill={colors.background.elevated}
+      stroke={colors.border.space}
       strokeWidth="1"
     />
-    <circle cx="41" cy="5" r="1.2" fill="#2A2A2E" />
+    <circle cx="41" cy="5" r="1.2" fill={colors.border.space} />
     <rect x="4" y="8" width="74" height="34" rx="1" fill={`url(#d${c1.slice(1)})`} />
     <rect x="4" y="8" width="14" height="34" fill="rgba(0,0,0,0.25)" />
     <rect x="6" y="11" width="10" height="1.5" rx="0.75" fill="rgba(255,255,255,0.15)" />
@@ -126,8 +127,8 @@ export const DesktopSVG: React.FC<DesktopProps> = ({ c1, c2, chart }) => (
         <rect x="22" y="33" width="22" height="4" rx="2" fill={c2} opacity="0.3" />
       </>
     )}
-    <rect x="32" y="49" width="18" height="3" rx="1.5" fill="#2A2A2E" />
-    <rect x="37" y="47" width="8" height="3" fill="#2A2A2E" />
+    <rect x="32" y="49" width="18" height="3" rx="1.5" fill={colors.border.space} />
+    <rect x="37" y="47" width="8" height="3" fill={colors.border.space} />
     <defs>
       <linearGradient id={`d${c1.slice(1)}`} x1="0" y1="0" x2="82" y2="54">
         <stop stopColor={c1} stopOpacity="0.85" />
@@ -146,8 +147,8 @@ export const DocSVG: React.FC<MockupProps> = ({ c1, c2 }) => (
       width="42"
       height="58"
       rx="3"
-      fill="#1A1A1D"
-      stroke="#2A2A2E"
+      fill={colors.background.elevated}
+      stroke={colors.border.space}
       strokeWidth="1"
     />
     <rect x="4" y="4" width="36" height="52" rx="1" fill="#FAFAFA" />

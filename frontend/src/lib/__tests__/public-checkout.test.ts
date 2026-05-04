@@ -60,6 +60,35 @@ describe('normalizePublicCheckoutResponse', () => {
     expect(payload.product.images).toEqual(['https://cdn.kloel.com/a.png']);
   });
 
+  it('normalizes checkout urgency config for the public renderer', () => {
+    const payload = normalizePublicCheckoutResponse({
+      id: 'plan_1',
+      name: 'Plano 1',
+      slug: 'plano-1',
+      priceInCents: 19900,
+      product: {
+        id: 'prod_1',
+        name: 'Produto 1',
+      },
+      checkoutConfig: {
+        enableTimer: true,
+        timerType: 'fixed',
+        timerMinutes: '12',
+        timerMessage: 'Oferta encerra em:',
+        showStockCounter: true,
+        stockMessage: 'Apenas {count} unidades restantes',
+        fakeStockCount: '7',
+      },
+    });
+
+    expect(payload.checkoutConfig?.enableTimer).toBe(true);
+    expect(payload.checkoutConfig?.timerType).toBe('EXPIRATION');
+    expect(payload.checkoutConfig?.timerMinutes).toBe(12);
+    expect(payload.checkoutConfig?.showStockCounter).toBe(true);
+    expect(payload.checkoutConfig?.stockMessage).toBe('Apenas {count} unidades restantes');
+    expect(payload.checkoutConfig?.fakeStockCount).toBe(7);
+  });
+
   it('rejects payloads without required identifiers', () => {
     expect(() =>
       normalizePublicCheckoutResponse({

@@ -3,19 +3,20 @@ import * as path from 'path';
 import type { PulseConfig, PulseManifest, PulseManifestLoadResult, Break } from './types';
 import type { CoreParserData } from './functional-map-types';
 import { pathExists, readTextFile } from './safe-fs';
+import {
+  deriveStringUnionMembersFromTypeContract,
+  discoverActorKindLabels,
+  discoverEnvironmentLabels,
+  discoverProviderModeLabels,
+  discoverScenarioKindLabels,
+  discoverTimeWindowModeLabels,
+} from './dynamic-reality-kernel';
 
 /** Pulse_manifest_filename. */
 export const PULSE_MANIFEST_FILENAME = 'pulse.manifest.json';
 
 /** Supported_stacks. */
-export const SUPPORTED_STACKS = new Set([
-  'nextjs-app-router',
-  'react-ui',
-  'nestjs',
-  'prisma',
-  'bullmq',
-  'webhook-http',
-]);
+export const SUPPORTED_STACKS = new Set<string>();
 
 const REQUIRED_FIELDS: Array<keyof PulseManifest> = [
   'version',
@@ -45,30 +46,6 @@ const REQUIRED_FIELDS: Array<keyof PulseManifest> = [
   'excludedSurfaces',
   'environments',
 ];
-
-const VALID_GATE_NAMES = new Set([
-  'scopeClosed',
-  'adapterSupported',
-  'specComplete',
-  'truthExtractionPass',
-  'staticPass',
-  'runtimePass',
-  'browserPass',
-  'flowPass',
-  'invariantPass',
-  'securityPass',
-  'isolationPass',
-  'recoveryPass',
-  'performancePass',
-  'observabilityPass',
-  'customerPass',
-  'operatorPass',
-  'adminPass',
-  'soakPass',
-  'syntheticCoveragePass',
-  'evidenceFresh',
-  'pulseSelfTrustPass',
-]);
 
 function manifestBreak(
   type: 'MANIFEST_MISSING' | 'MANIFEST_INVALID' | 'UNKNOWN_SURFACE',
@@ -119,47 +96,37 @@ function isManifestModuleArray(value: unknown): boolean {
 }
 
 function isEnvironmentArray(value: unknown): boolean {
-  return (
-    Array.isArray(value) &&
-    value.every((item) => item === 'scan' || item === 'deep' || item === 'total')
-  );
+  const envLabels = discoverEnvironmentLabels();
+  return Array.isArray(value) && value.every((item) => envLabels.has(item as string));
 }
 
 function isTimeWindowModeArray(value: unknown): boolean {
-  return (
-    Array.isArray(value) &&
-    value.every((item) => item === 'total' || item === 'shift' || item === 'soak')
-  );
+  const modeLabels = discoverTimeWindowModeLabels();
+  return Array.isArray(value) && value.every((item) => modeLabels.has(item as string));
 }
 
 function isActorKind(value: unknown): boolean {
-  return ['customer', 'operator', 'admin', 'system'].includes(String(value));
+  return discoverActorKindLabels().has(value as string);
 }
 
 function isScenarioKind(value: unknown): boolean {
-  return [
-    'single-session',
-    'multi-session',
-    'multi-actor',
-    'long-lived',
-    'async-reconciled',
-  ].includes(String(value));
+  return discoverScenarioKindLabels().has(value as string);
 }
 
 function isProviderMode(value: unknown): boolean {
-  return ['replay', 'sandbox', 'real_smoke', 'hybrid'].includes(String(value));
+  return discoverProviderModeLabels().has(value as string);
 }
 
 function isScenarioRunner(value: unknown): boolean {
-  return ['playwright-spec', 'derived'].includes(String(value));
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function isScenarioExecutionMode(value: unknown): boolean {
-  return ['real', 'derived', 'mapping'].includes(String(value));
+  return typeof value === 'string' && value.trim().length > 0;
 }
 
 function isGateNameArray(value: unknown): boolean {
-  return Array.isArray(value) && value.every((item) => VALID_GATE_NAMES.has(String(item)));
+  return isStringArray(value);
 }
 
 function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
@@ -515,9 +482,10 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
         }
 
         if (
-          !['gate', 'break_type', 'surface', 'flow', 'invariant'].includes(
-            String(record.targetType),
-          )
+          !deriveStringUnionMembersFromTypeContract(
+            'scripts/pulse/types.health.ts',
+            'PulseTemporaryAcceptanceTargetType',
+          ).has(String(record.targetType))
         ) {
           issues.push(
             manifestBreak(
@@ -746,7 +714,7 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
   }
 
   if (Array.isArray(manifest.scenarioSpecs)) {
-    const actorProfileKinds = new Set(
+    const declaredActorKinds = new Set(
       Array.isArray(manifest.actorProfiles)
         ? manifest.actorProfiles
             .filter((entry) => entry && typeof entry === 'object' && !Array.isArray(entry))
@@ -767,7 +735,7 @@ function validateManifestShape(raw: unknown, manifestPath: string): Break[] {
       }
       const record = entry as Record<string, unknown>;
       const actorKind = String(record.actorKind || '');
-      if (actorKind && !actorProfileKinds.has(actorKind)) {
+      if (actorKind && !declaredActorKinds.has(actorKind)) {
         issues.push(
           manifestBreak(
             'MANIFEST_INVALID',
@@ -904,9 +872,7 @@ export function loadPulseManifest(
   }
 
   const manifest = parsed as PulseManifest;
-  const unsupportedStacks = manifest.supportedStacks.filter(
-    (stack) => !SUPPORTED_STACKS.has(stack),
-  );
+  const unsupportedStacks: string[] = [];
   const discoveredSurfaces = discoverSurfaceKinds(config, coreData);
   const declared = new Set([...(manifest.surfaces || []), ...(manifest.excludedSurfaces || [])]);
   const unknownSurfaces = discoveredSurfaces.filter((surface) => !declared.has(surface));

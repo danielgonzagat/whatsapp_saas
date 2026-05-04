@@ -10,6 +10,7 @@ import {
   createKloelStatusEvent,
 } from './kloel-stream-events';
 import { chatCompletionStreamWithRetry } from './openai-wrapper';
+import { buildKloelLlmTestStubStream, isKloelLlmTestStubEnabled } from './kloel-llm-test-stub';
 
 const U2028_U2029_RE = /[<>&\u2028\u2029]/g;
 type ChatCompletionStream = AsyncIterable<OpenAI.ChatCompletionChunk>;
@@ -196,26 +197,26 @@ export class KloelStreamWriter {
           max_tokens: input.responseMaxTokens,
         },
         { maxRetries: 2, initialDelayMs: 300 },
-        this.options.signal
-          ? ({ signal: this.options.signal } as { signal: AbortSignal })
-          : undefined,
+        this.options.signal ? { signal: this.options.signal } : undefined,
       );
 
     // PULSE:OK — stream object itself is not a new LLM call; it is the handle returned by the
     // already-budgeted chatCompletionStreamWithRetry() invocation above.
     let stream: ChatCompletionStream;
 
-    try {
-      stream = await openWriterStream(resolveBackendOpenAIModel('writer'));
-    } catch (error: unknown) {
-      const errorInstanceofError =
-        error instanceof Error
-          ? error
-          : new Error(typeof error === 'string' ? error : 'unknown error');
-      this.options.logger.warn(
-        `Writer stream fallback para ${resolveBackendOpenAIModel('writer_fallback')}: ${errorInstanceofError?.message || 'unknown_error'}`,
-      );
-      stream = await openWriterStream(resolveBackendOpenAIModel('writer_fallback'));
+    if (isKloelLlmTestStubEnabled()) {
+      // Deterministic e2e/test stub. Production never reaches this branch
+      // (gated by NODE_ENV !== 'production' inside isKloelLlmTestStubEnabled).
+      stream = buildKloelLlmTestStubStream(input.writerMessages);
+    } else {
+      try {
+        stream = await openWriterStream(resolveBackendOpenAIModel('writer'));
+      } catch (error: unknown) {
+        this.options.logger.warn(
+          `Writer stream fallback para ${resolveBackendOpenAIModel('writer_fallback')}: ${error instanceof Error ? error.message : 'unknown_error'}`,
+        );
+        stream = await openWriterStream(resolveBackendOpenAIModel('writer_fallback'));
+      }
     }
 
     let fullResponse = '';

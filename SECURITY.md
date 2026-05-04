@@ -96,12 +96,12 @@ Todas as requisições HTTP em flows passam por validação:
 async function safeRequest(url: string, options: RequestOptions) {
   // Bloqueia IPs internos
   if (isInternalIP(url)) {
-    throw new Error("SSRF blocked: internal IP");
+    throw new Error('SSRF blocked: internal IP');
   }
 
   // Bloqueia protocolos perigosos
-  if (!["http:", "https:"].includes(new URL(url).protocol)) {
-    throw new Error("SSRF blocked: invalid protocol");
+  if (!['http:', 'https:'].includes(new URL(url).protocol)) {
+    throw new Error('SSRF blocked: invalid protocol');
   }
 
   // Timeout curto
@@ -120,9 +120,9 @@ Inputs do usuário são sanitizados antes de ir para LLMs:
 function sanitizeUserInput(input: string): string {
   // Remove tentativas de override de sistema
   return input
-    .replace(/ignore previous instructions/gi, "")
-    .replace(/system:/gi, "")
-    .replace(/\<\|.*?\|\>/g, ""); // Remove tokens especiais
+    .replace(/ignore previous instructions/gi, '')
+    .replace(/system:/gi, '')
+    .replace(/\<\|.*?\|\>/g, ''); // Remove tokens especiais
 }
 ```
 
@@ -177,10 +177,10 @@ Todas as ações críticas são logadas:
 ```typescript
 // AuditService
 await auditService.log({
-  action: "workspace.settings.update",
+  action: 'workspace.settings.update',
   userId: req.user.id,
   workspaceId: req.workspaceId,
-  details: { field: "autopilotEnabled", newValue: true },
+  details: { field: 'autopilotEnabled', newValue: true },
   ip: req.ip,
 });
 ```
@@ -301,3 +301,15 @@ Antes de cada deploy:
 ---
 
 ### Última atualização: Janeiro 2025
+
+---
+
+## PULSE Auditor Immutability
+
+`scripts/pulse/no-hardcoded-reality-audit.ts` is a locked PULSE governance surface.
+
+No AI CLI may edit, weaken, bypass, rename, delete, chmod, unflag, move, or replace this auditor. This prohibition applies to Codex, Claude, OpenCode, and any autonomous or assisted AI agent.
+
+The auditor must keep scanning every source file inside `scripts/pulse/**` and must preserve hardcode debt when hardcode is deleted without a dynamic production replacement, including accumulated Git history debt.
+
+If the auditor itself needs to change, stop. The human owner must perform that change outside autonomous AI execution.

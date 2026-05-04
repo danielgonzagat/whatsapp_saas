@@ -2,6 +2,7 @@ import { createHmac } from 'node:crypto';
 import axios from 'axios';
 import { type Job, Worker } from 'bullmq';
 import { connection } from '../queue';
+import { throwIfRetryable } from '../src/utils/error-handler';
 import { validateUrl } from '../utils/ssrf-protection';
 
 /** Webhook worker. */
@@ -11,14 +12,12 @@ export const webhookWorker = new Worker(
     const { url, payload, secret, event } = job.data;
     const timestamp = Date.now();
 
-    // SSRF protection: validate URL before making the request
     const validation = await validateUrl(url);
     if (!validation.valid) {
       console.warn(`[Webhook] SSRF protection: blocked request to ${url} — ${validation.error}`);
-      return;
+      throw new Error(`SSRF blocked: ${validation.error}`);
     }
 
-    // Sign payload
     const signature = secret
       ? createHmac('sha256', secret)
           .update(`${timestamp}.${JSON.stringify(payload)}`)
@@ -26,6 +25,7 @@ export const webhookWorker = new Worker(
       : '';
 
     try {
+      await job.updateProgress(50);
       await axios.post(
         url,
         {
@@ -39,16 +39,16 @@ export const webhookWorker = new Worker(
             'X-Webhook-Event': event,
             'User-Agent': 'Kloel-Webhook-Dispatcher/1.0',
           },
-          timeout: 10000, // 10s timeout
+          timeout: 10000,
         },
       );
+      await job.updateProgress(100);
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      // BullMQ will handle retries based on queue options
-      console.error(`[Webhook] Failed to send to ${url}: ${errInstanceofError.message}`);
-      throw err;
+      console.error(
+        `[Webhook] Failed to send to ${url}: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
+      throwIfRetryable(err, 'webhook');
     }
   },
-  { connection, concurrency: 20 },
+  { connection, concurrency: 20, lockDuration: 60_000 },
 );

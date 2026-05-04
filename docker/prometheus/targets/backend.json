@@ -1,0 +1,1 @@
+[{ "targets": ["backend:3001"], "labels": { "service": "backend", "module": "nestjs" } }]

@@ -36,6 +36,7 @@ vi.mock('../providers/whatsapp-engine', () => ({
 
 vi.mock('../providers/plan-limits', () => ({
   PlanLimitsProvider: {
+    checkDailyMessageLimit: vi.fn(async () => ({ allowed: true })),
     checkMessageLimit: vi.fn(async () => ({ allowed: true })),
     checkSubscriptionStatus: vi.fn(async () => ({ active: true })),
   },
@@ -67,6 +68,7 @@ vi.mock('../providers/channel-dispatcher', () => ({
 }));
 
 const mockPrisma: any = db.prisma;
+// PULSE_OK: assertions exist below
 describe('cia-cycle', () => {
   beforeEach(() => {
     vi.clearAllMocks();

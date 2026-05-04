@@ -47,7 +47,21 @@ export function collectRedisUrlCandidates(value: Record<string, unknown>): strin
 
 /** Includes railway public proxy. */
 export function includesRailwayPublicProxy(candidate: string): boolean {
-  return candidate.includes('mainline.proxy.rlwy.net') || candidate.includes('.proxy.rlwy.net');
+  try {
+    const parsed = new URL(candidate);
+    return (
+      parsed.hostname === 'mainline.proxy.rlwy.net' || parsed.hostname.endsWith('.proxy.rlwy.net')
+    );
+  } catch {
+    try {
+      const parsed = new URL(`redis://${candidate}`);
+      return (
+        parsed.hostname === 'mainline.proxy.rlwy.net' || parsed.hostname.endsWith('.proxy.rlwy.net')
+      );
+    } catch {
+      return false;
+    }
+  }
 }
 
 /** Assert redis configured. */

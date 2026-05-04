@@ -128,7 +128,9 @@ test.describe('Mobile Surface Audit', () => {
         path: '/marketing',
         slug: 'marketing',
         assert: async () => {
-          await expect(page.getByRole('button', { name: /visao geral/i })).toBeVisible();
+          // MarketingView default tab is "conversas"; assert the tab button is
+          // visible to prove the surface rendered (visual contract preserved).
+          await expect(page.getByRole('button', { name: /conversas/i })).toBeVisible();
         },
       },
       {
@@ -184,7 +186,10 @@ test.describe('Mobile Surface Audit', () => {
         path: '/chat',
         slug: 'conversations',
         assert: async () => {
-          await expect(page.getByRole('heading', { name: /conversas/i })).toBeVisible();
+          // /chat renders KloelDashboard whose root region is aria-labelled
+          // "Área de chat". Asserting on the region avoids depending on the
+          // greeting line text (which is locale + name dependent).
+          await expect(page.getByRole('region', { name: /área de chat/i })).toBeVisible();
         },
       },
     ];

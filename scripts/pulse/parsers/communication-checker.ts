@@ -24,10 +24,7 @@
  * 6. Unsubscribe mechanism in marketing emails (LGPD requirement)
  *
  * REQUIRES: PULSE_DEEP=1
- * BREAK TYPES:
- *   EMAIL_NO_AUTH(high)              — email sent without DKIM/SPF → goes to spam
- *   PUSH_NOT_IMPLEMENTED(medium)     — push notifications not implemented
- *   NOTIFICATION_SALE_MISSING(high)  — workspace owner not notified of sale
+ * Emits communication reliability evidence gaps; diagnostic identity is synthesized downstream.
  */
 import { safeJoin, safeResolve } from '../safe-path';
 import * as path from 'path';
@@ -35,12 +32,102 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
 
-const EMAIL_SEND_RE =
-  /sendMail|sendEmail|transporter\.send|sgMail\.send|resend\.emails|ses\.send|mailer\./i;
-const DKIM_RE = /dkim|DKIM_PRIVATE_KEY|privateKey.*email|email.*privateKey/i;
-const EMAIL_SERVICE_RE = /sendgrid|resend|ses|postmark|mailgun|nodemailer/i;
-const SALE_NOTIFICATION_RE = /orderPaid|paymentConfirmed|saleMade|notifyOwner|ownerNotif/i;
-const PAYMENT_WEBHOOK_RE = /webhook.*payment|payment.*webhook|checkout.*webhook/i;
+function splitIdentifier(value: string): Set<string> {
+  const spaced = value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .toLowerCase();
+  return new Set(spaced.split(/\s+/).filter(Boolean));
+}
+
+function hasTokenPrefix(tokens: Set<string>, prefix: string): boolean {
+  return [...tokens].some((token) => token.startsWith(prefix));
+}
+
+function hasCommunicationSendEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    tokens.has('send') &&
+    (tokens.has('mail') ||
+      tokens.has('email') ||
+      tokens.has('message') ||
+      tokens.has('notification') ||
+      tokens.has('notify'))
+  );
+}
+
+function hasAuthenticationConfigEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return tokens.has('dkim') || (tokens.has('private') && tokens.has('key') && tokens.has('email'));
+}
+
+function hasExternalDeliveryProviderEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    hasCommunicationSendEvidence(value) &&
+    (tokens.has('provider') ||
+      tokens.has('client') ||
+      tokens.has('api') ||
+      tokens.has('transport') ||
+      tokens.has('deliverability') ||
+      tokens.has('bounce'))
+  );
+}
+
+function hasValueEventNotificationEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    (tokens.has('paid') || tokens.has('confirmed') || tokens.has('sale') || tokens.has('order')) &&
+    (tokens.has('notify') || tokens.has('notification') || hasCommunicationSendEvidence(value))
+  );
+}
+
+function hasValueEventWebhookEvidence(value: string): boolean {
+  const tokens = splitIdentifier(value);
+  return (
+    tokens.has('webhook') &&
+    (tokens.has('payment') ||
+      tokens.has('checkout') ||
+      tokens.has('paid') ||
+      tokens.has('confirmed'))
+  );
+}
+
+function hasMeaningEvidence(value: string, meaning: string): boolean {
+  const tokens = splitIdentifier(value);
+  if (meaning === 'welcome') {
+    return tokens.has('welcome') || (tokens.has('onboarding') && tokens.has('email'));
+  }
+  if (meaning === 'credential_recovery') {
+    return tokens.has('reset') && (tokens.has('password') || tokens.has('credential'));
+  }
+  if (meaning === 'order_confirmation') {
+    return tokens.has('order') && hasTokenPrefix(tokens, 'confirm');
+  }
+  if (meaning === 'failure_notice') {
+    return (tokens.has('payment') || tokens.has('charge')) && hasTokenPrefix(tokens, 'fail');
+  }
+  return false;
+}
+
+function communicationFinding(input: {
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+}): Break {
+  return {
+    type: 'communication-evidence-gap',
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: 'parser:weak_signal:communication-reliability',
+    surface: 'notification-reliability',
+  };
+}
 
 /** Check communication. */
 export function checkCommunication(config: PulseConfig): Break[] {
@@ -59,7 +146,8 @@ export function checkCommunication(config: PulseConfig): Break[] {
   let hasPaymentFailEmail = false;
 
   for (const file of backendFiles) {
-    if (/\.spec\.ts$|migration|seed/i.test(file)) {
+    const fileTokens = splitIdentifier(file);
+    if (file.endsWith('.spec.ts') || fileTokens.has('migration') || fileTokens.has('seed')) {
       continue;
     }
 
@@ -70,41 +158,38 @@ export function checkCommunication(config: PulseConfig): Break[] {
       continue;
     }
 
-    if (EMAIL_SEND_RE.test(content)) {
+    if (hasCommunicationSendEvidence(content)) {
       hasEmailSending = true;
     }
-    if (DKIM_RE.test(content)) {
+    if (hasAuthenticationConfigEvidence(content)) {
       hasDKIM = true;
     }
-    if (EMAIL_SERVICE_RE.test(content)) {
+    if (hasExternalDeliveryProviderEvidence(content)) {
       hasEmailService = true;
     }
-    if (SALE_NOTIFICATION_RE.test(content)) {
+    if (hasValueEventNotificationEvidence(content)) {
       hasSaleNotification = true;
     }
-    if (PAYMENT_WEBHOOK_RE.test(content)) {
+    if (hasValueEventWebhookEvidence(content)) {
       hasPaymentWebhookHandler = true;
     }
 
-    if (/welcome|bem.vindo|boas.vindas/i.test(content) && EMAIL_SEND_RE.test(content)) {
+    if (hasMeaningEvidence(content, 'welcome') && hasCommunicationSendEvidence(content)) {
       hasWelcomeEmail = true;
     }
     if (
-      /reset.*password|password.*reset|redefinir.*senha/i.test(content) &&
-      EMAIL_SEND_RE.test(content)
+      hasMeaningEvidence(content, 'credential_recovery') &&
+      hasCommunicationSendEvidence(content)
     ) {
       hasPasswordResetEmail = true;
     }
     if (
-      /order.*confirm|confirm.*order|pedido.*confirm|pagamento.*confirm/i.test(content) &&
-      EMAIL_SEND_RE.test(content)
+      hasMeaningEvidence(content, 'order_confirmation') &&
+      hasCommunicationSendEvidence(content)
     ) {
       hasOrderConfirmEmail = true;
     }
-    if (
-      /payment.*fail|fail.*payment|pagamento.*falhou|cobrança.*falh/i.test(content) &&
-      EMAIL_SEND_RE.test(content)
-    ) {
+    if (hasMeaningEvidence(content, 'failure_notice') && hasCommunicationSendEvidence(content)) {
       hasPaymentFailEmail = true;
     }
   }
@@ -114,84 +199,88 @@ export function checkCommunication(config: PulseConfig): Break[] {
     // Check env var config
     const hasDKIMEnv = !!process.env.DKIM_PRIVATE_KEY || !!process.env.EMAIL_DKIM_PRIVATE_KEY;
     if (!hasDKIM && !hasDKIMEnv) {
-      breaks.push({
-        type: 'EMAIL_NO_AUTH',
-        severity: 'high',
-        file: 'backend/src/',
-        line: 0,
-        description:
-          'Email sent without DKIM configuration — emails will be marked as spam by major providers',
-        detail:
-          'Configure DKIM_PRIVATE_KEY env var and add DKIM signing to email transport; also set SPF and DMARC DNS records',
-      });
+      breaks.push(
+        communicationFinding({
+          severity: 'high',
+          file: 'backend/src/',
+          line: 0,
+          description:
+            'Email sent without DKIM configuration — emails will be marked as spam by major providers',
+          detail:
+            'Configure DKIM_PRIVATE_KEY env var and add DKIM signing to email transport; also set SPF and DMARC DNS records',
+        }),
+      );
     }
 
     // CHECK 1b: Use a proper email service
     if (!hasEmailService) {
-      breaks.push({
-        type: 'EMAIL_NO_AUTH',
+      breaks.push(
+        communicationFinding({
+          severity: 'high',
+          file: 'backend/src/',
+          line: 0,
+          description:
+            'No dedicated email service (SendGrid/Resend/SES) detected — raw SMTP has poor deliverability',
+          detail:
+            'Use Resend or SendGrid for transactional email; they handle DKIM, bounce handling, and deliverability',
+        }),
+      );
+    }
+  } else {
+    // No email sending at all
+    breaks.push(
+      communicationFinding({
         severity: 'high',
         file: 'backend/src/',
         line: 0,
         description:
-          'No dedicated email service (SendGrid/Resend/SES) detected — raw SMTP has poor deliverability',
+          'No email sending found in backend — transactional emails (welcome, reset, receipt) not implemented',
         detail:
-          'Use Resend or SendGrid for transactional email; they handle DKIM, bounce handling, and deliverability',
-      });
-    }
-  } else {
-    // No email sending at all
-    breaks.push({
-      type: 'EMAIL_NO_AUTH',
-      severity: 'high',
-      file: 'backend/src/',
-      line: 0,
-      description:
-        'No email sending found in backend — transactional emails (welcome, reset, receipt) not implemented',
-      detail:
-        'Add email sending for: welcome, password reset, order confirmation, payment failure, trial expiry',
-    });
+          'Add email sending for: welcome, password reset, order confirmation, payment failure, trial expiry',
+      }),
+    );
   }
 
   // CHECK 2: Push notifications
   const hasPWAManifest =
     pathExists(safeJoin(config.frontendDir, 'public', 'manifest.json')) ||
     pathExists(safeJoin(config.frontendDir, 'public', 'manifest.webmanifest'));
-  const hasPushImpl = /FCM|fcm|webPush|pushNotif|service.worker|serviceWorker/i.test(
-    walkFiles(config.backendDir, ['.ts']).reduce((acc, f) => {
-      try {
-        return acc + readTextFile(f, 'utf8');
-      } catch {
-        return acc;
-      }
-    }, ''),
-  );
+  const hasPushImpl = walkFiles(config.backendDir, ['.ts']).some((f) => {
+    try {
+      const tokens = splitIdentifier(`${f} ${readTextFile(f, 'utf8')}`);
+      return tokens.has('push') && (tokens.has('notification') || tokens.has('worker'));
+    } catch {
+      return false;
+    }
+  });
 
   if (hasPWAManifest && !hasPushImpl) {
-    breaks.push({
-      type: 'PUSH_NOT_IMPLEMENTED',
-      severity: 'medium',
-      file: 'frontend/public/manifest.json',
-      line: 0,
-      description:
-        'PWA manifest exists but push notifications are not implemented — key retention feature missing',
-      detail:
-        'Implement Web Push (FCM) for sale alerts, message notifications, and trial reminders',
-    });
+    breaks.push(
+      communicationFinding({
+        severity: 'medium',
+        file: 'frontend/public/manifest.json',
+        line: 0,
+        description:
+          'PWA manifest exists but push notifications are not implemented — key retention feature missing',
+        detail:
+          'Implement Web Push (FCM) for sale alerts, message notifications, and trial reminders',
+      }),
+    );
   }
 
   // CHECK 3: Sale notification
   if (hasPaymentWebhookHandler && !hasSaleNotification) {
-    breaks.push({
-      type: 'NOTIFICATION_SALE_MISSING',
-      severity: 'high',
-      file: 'backend/src/',
-      line: 0,
-      description:
-        'Payment webhook processed without notifying workspace owner of sale — seller does not know when they earn money',
-      detail:
-        'After PAYMENT_CONFIRMED webhook, send email + WhatsApp notification to workspace owner with sale details',
-    });
+    breaks.push(
+      communicationFinding({
+        severity: 'high',
+        file: 'backend/src/',
+        line: 0,
+        description:
+          'Payment webhook processed without notifying workspace owner of sale — seller does not know when they earn money',
+        detail:
+          'After PAYMENT_CONFIRMED webhook, send email + WhatsApp notification to workspace owner with sale details',
+      }),
+    );
   }
 
   // CHECK 4: Transactional email coverage
@@ -210,19 +299,23 @@ export function checkCommunication(config: PulseConfig): Break[] {
   }
 
   if (hasEmailSending && missingEmails.length > 0) {
-    breaks.push({
-      type: 'NOTIFICATION_SALE_MISSING',
-      severity: 'high',
-      file: 'backend/src/',
-      line: 0,
-      description: `Missing transactional emails: ${missingEmails.join(', ')}`,
-      detail:
-        'Implement the missing email templates; each is critical for user experience and trust',
-    });
+    breaks.push(
+      communicationFinding({
+        severity: 'high',
+        file: 'backend/src/',
+        line: 0,
+        description: `Missing transactional emails: ${missingEmails.join(', ')}`,
+        detail:
+          'Implement the missing email templates; each is critical for user experience and trust',
+      }),
+    );
   }
 
   // CHECK 6: Unsubscribe in marketing emails
-  const marketingEmailFiles = backendFiles.filter((f) => /campaign|marketing|broadcast/i.test(f));
+  const marketingEmailFiles = backendFiles.filter((f) => {
+    const tokens = splitIdentifier(f);
+    return tokens.has('campaign') || tokens.has('marketing') || tokens.has('broadcast');
+  });
   for (const file of marketingEmailFiles) {
     let content: string;
     try {
@@ -232,16 +325,22 @@ export function checkCommunication(config: PulseConfig): Break[] {
     }
     const relFile = path.relative(config.rootDir, file);
 
-    if (EMAIL_SEND_RE.test(content) && !/unsubscribe|descadastrar|optOut|opt.out/i.test(content)) {
-      breaks.push({
-        type: 'EMAIL_NO_AUTH',
-        severity: 'high',
-        file: relFile,
-        line: 0,
-        description: 'Marketing email sent without unsubscribe link — violates LGPD and CAN-SPAM',
-        detail:
-          'Add unsubscribe link to all marketing emails; track opt-outs in DB and honor them immediately',
-      });
+    const tokens = splitIdentifier(content);
+    const hasOptOutEvidence =
+      tokens.has('unsubscribe') ||
+      tokens.has('descadastrar') ||
+      (tokens.has('opt') && tokens.has('out'));
+    if (hasCommunicationSendEvidence(content) && !hasOptOutEvidence) {
+      breaks.push(
+        communicationFinding({
+          severity: 'high',
+          file: relFile,
+          line: 0,
+          description: 'Marketing email sent without unsubscribe link — violates LGPD and CAN-SPAM',
+          detail:
+            'Add unsubscribe link to all marketing emails; track opt-outs in DB and honor them immediately',
+        }),
+      );
     }
   }
 

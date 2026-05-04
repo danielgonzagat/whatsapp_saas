@@ -4,32 +4,84 @@
  * Mode: DEEP (requires codebase scan + optional runtime validation)
  *
  * CHECKS:
- * 1. Pagination edge cases: page=0, page=-1, limit=0, limit=99999, missing params
- *    — verifies backend clamps/defaults and frontend handles empty/overflow pages
- * 2. String edge cases: empty string, whitespace-only, very long string (>1000 chars),
- *    SQL injection fragments, null bytes, HTML in text fields
- * 3. Number edge cases: 0, -1, NaN, Infinity, very large numbers (overflow),
- *    numbers as strings, decimal precision loss
- * 4. Date edge cases: invalid date strings, dates far in future/past, null dates,
- *    DST transition dates, Feb 29 on non-leap years
- * 5. File upload edge cases: empty file, file > size limit, wrong MIME type,
- *    filename with special characters, no extension
- * 6. Array edge cases: empty array, single element, very large array (>10k elements),
- *    duplicate values, null/undefined elements
+ * 1. Input-shape signals that imply missing boundary synthesis.
+ * 2. Raw regex/decorator matches are weak evidence only; visible names come from
+ *    the observed input token, property, or call shape.
  *
  * REQUIRES: PULSE_DEEP=1
  * BREAK TYPES:
- *   EDGE_CASE_PAGINATION(high) — pagination has no bounds checking
- *   EDGE_CASE_STRING(high)     — string inputs not validated for length/content
- *   EDGE_CASE_NUMBER(high)     — numeric inputs not validated for NaN/Infinity/range
- *   EDGE_CASE_DATE(medium)     — date inputs not validated
- *   EDGE_CASE_FILE(high)       — file uploads missing size/type validation
- *   EDGE_CASE_ARRAY(medium)    — array inputs not bounded
+ *   input-boundary-evidence-gap is a compatibility label only.
+ *   The diagnostic text is synthesized from the input shape evidence instead of
+ *   treating date/string/number/file/array/pagination buckets as final truth.
  */
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+
+const WEAK_INPUT_SHAPE_SOURCE = 'input-shape-boundary-synthesis:weak-regex';
+
+interface BoundarySignal {
+  type: Break['type'];
+  severity: Break['severity'];
+  observedName: string;
+  observedShape: string;
+  missingBoundary: string;
+  rawEvidence: string;
+  recommendation: string;
+  lineText: string;
+}
+
+function cleanObservedName(value: string | undefined, fallback: string): string {
+  if (!value) return fallback;
+  const cleaned = value
+    .replace(/['"`{}()[\];,]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned || fallback;
+}
+
+function inferDecoratedProperty(context: string, fallback: string): string {
+  const propertyMatch = context.match(/^\s*(?:readonly\s+)?([A-Za-z_$][\w$]*)[!?]?\s*:/m);
+  return cleanObservedName(propertyMatch?.[1], fallback);
+}
+
+function inferFunctionArgument(line: string, functionName: string, fallback: string): string {
+  const escapedFunctionName = functionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = line.match(new RegExp(`${escapedFunctionName}\\s*\\(\\s*([^,)]+)`));
+  return cleanObservedName(match?.[1], fallback);
+}
+
+function inferNumericParseInput(line: string): string {
+  const numberArgument = line.match(/Number\s*\(\s*([A-Za-z_$][\w$]*)\s*\)/)?.[1];
+  if (numberArgument) return cleanObservedName(numberArgument, 'parsed numeric input');
+
+  const parseArgument = line.match(/parseInt\s*\(\s*([A-Za-z_$][\w$]*)\s*(?:,|\))/)?.[1];
+  if (parseArgument) return cleanObservedName(parseArgument, 'parsed numeric input');
+
+  const unaryArgument = line.match(/\+\s*([A-Za-z_$][\w$]*)/)?.[1];
+  if (unaryArgument) return cleanObservedName(unaryArgument, 'parsed numeric input');
+
+  return cleanObservedName(line.match(/\b(page|limit|skip|take)\b/i)?.[1], 'parsed list cursor');
+}
+
+function buildBoundaryBreak(file: string, line: number, signal: BoundarySignal): Break {
+  return {
+    type: signal.type,
+    severity: signal.severity,
+    file,
+    line,
+    description: `Input boundary candidate "${signal.observedName}" lacks synthesized constraints from observed ${signal.observedShape}`,
+    detail: [
+      `rawWeakEvidence=${signal.rawEvidence}`,
+      `missingBoundary=${signal.missingBoundary}`,
+      `sample=${signal.lineText.slice(0, 120)}`,
+      `suggestion=${signal.recommendation}`,
+    ].join(' | '),
+    source: WEAK_INPUT_SHAPE_SOURCE,
+    surface: signal.observedShape,
+  };
+}
 
 /** Check edge cases. */
 export function checkEdgeCases(config: PulseConfig): Break[] {
@@ -38,7 +90,7 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
   const backendFiles = walkFiles(config.backendDir, ['.ts']);
 
   for (const file of backendFiles) {
-    if (/\.spec\.ts$|migration|seed/i.test(file)) {
+    if (/\.spec\.ts$|\.test\.ts$|\.spec-helpers\.ts$|\.fixtures\.ts$|migration|seed/i.test(file)) {
       continue;
     }
 
@@ -49,6 +101,8 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
       continue;
     }
 
+    const usesDateLibrary = /from\s+['"](date-fns|luxon|moment-timezone|dayjs)['"]/.test(content);
+
     const relFile = path.relative(config.rootDir, file);
     const lines = content.split('\n');
 
@@ -58,139 +112,172 @@ export function checkEdgeCases(config: PulseConfig): Break[] {
         continue;
       }
 
-      // CHECK 1: Pagination without bounds
-      if (/page|limit|skip|take/i.test(line) && /parseInt|Number\s*\(|\+\w/i.test(line)) {
-        // Look for clamping in context
+      if (/\b(page|limit|skip|take)\b/i.test(line) && /parseInt|Number\s*\(|\+\w/i.test(line)) {
         const context = lines.slice(Math.max(0, i - 3), i + 3).join('\n');
         const hasClamping = /Math\.max|Math\.min|\|\|\s*\d|\?\?\s*\d|isNaN|isFinite/i.test(context);
         if (!hasClamping) {
-          breaks.push({
-            type: 'EDGE_CASE_PAGINATION',
-            severity: 'high',
-            file: relFile,
-            line: i + 1,
-            description:
-              'Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed',
-            detail: `${line.slice(0, 120)} — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)`,
-          });
+          breaks.push(
+            buildBoundaryBreak(relFile, i + 1, {
+              type: 'input-boundary-evidence-gap',
+              severity: 'high',
+              observedName: inferNumericParseInput(line),
+              observedShape: 'numeric request cursor',
+              missingBoundary: 'lower/upper bound clamp',
+              rawEvidence: 'numeric parse near cursor token',
+              lineText: line,
+              recommendation: 'derive min/max/default constraints before using the cursor',
+            }),
+          );
         }
       }
 
-      // CHECK 2: String inputs without MaxLength decorator or length check
       if (/@IsString\(\)|IsString\s*\(\)/.test(line)) {
-        // Look for @MaxLength or @Length in next 5 lines
         const context = lines.slice(i, Math.min(lines.length, i + 6)).join('\n');
-        if (!/@MaxLength|@Length|@IsNotEmpty|maxLength|minLength/i.test(context)) {
-          breaks.push({
-            type: 'EDGE_CASE_STRING',
-            severity: 'high',
-            file: relFile,
-            line: i + 1,
-            description:
-              '@IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB',
-            detail:
-              'Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings',
-          });
+        if (
+          !/@MaxLength\b|@Length\b|@IsNotEmpty\b|@IsIn\b|@IsEnum\b|@Matches\b|maxLength|minLength/i.test(
+            context,
+          )
+        ) {
+          breaks.push(
+            buildBoundaryBreak(relFile, i + 1, {
+              type: 'input-boundary-evidence-gap',
+              severity: 'high',
+              observedName: inferDecoratedProperty(context, 'decorated text input'),
+              observedShape: 'decorated scalar input',
+              missingBoundary: 'length, membership, or content constraint',
+              rawEvidence: '@IsString decorator without nearby constraining decorator',
+              lineText: line,
+              recommendation: 'derive explicit length/content constraints from the DTO contract',
+            }),
+          );
         }
       }
 
-      // CHECK 3: Number inputs without IsInt/IsNumber + Min/Max
       if (/@IsNumber\(\)|@IsInt\(\)|IsNumber\s*\(\)|IsInt\s*\(\)/.test(line)) {
         const context = lines.slice(i, Math.min(lines.length, i + 6)).join('\n');
         if (!/@Min\(|@Max\(|@IsPositive\(\)|@IsNegative\(\)/i.test(context)) {
-          breaks.push({
-            type: 'EDGE_CASE_NUMBER',
-            severity: 'high',
-            file: relFile,
-            line: i + 1,
-            description:
-              '@IsNumber/@IsInt without @Min/@Max — allows 0, -1, Infinity; financial fields need range validation',
-            detail:
-              'Add @Min(0) for prices/quantities; @Max() for rate limits; @IsPositive() for amounts',
-          });
+          breaks.push(
+            buildBoundaryBreak(relFile, i + 1, {
+              type: 'input-boundary-evidence-gap',
+              severity: 'high',
+              observedName: inferDecoratedProperty(context, 'decorated numeric input'),
+              observedShape: 'decorated scalar input',
+              missingBoundary: 'range or sign constraint',
+              rawEvidence: '@IsNumber/@IsInt decorator without nearby range decorator',
+              lineText: line,
+              recommendation: 'derive explicit min/max/sign constraints from domain usage',
+            }),
+          );
         }
       }
 
-      // CHECK 4: Date parsing without validation
-      if (
-        /new Date\s*\(\s*(?!Date\.now|'|"|\d)/.test(line) &&
-        !/isValid|isNaN|instanceof Date/i.test(line)
-      ) {
-        const context = lines.slice(Math.max(0, i - 2), i + 3).join('\n');
-        if (!/isValid|isNaN|isFinite|dayjs|moment/i.test(context)) {
-          breaks.push({
-            type: 'EDGE_CASE_DATE',
-            severity: 'medium',
-            file: relFile,
-            line: i + 1,
-            description:
-              'new Date() from user input without validation — invalid dates produce Invalid Date silently',
-            detail: `${line.slice(0, 120)} — validate with: if (isNaN(date.getTime())) throw new BadRequestException('Invalid date')`,
-          });
+      if (!usesDateLibrary) {
+        if (
+          /new Date\s*\(\s*(?!Date\.now|'|"|\d)/.test(line) &&
+          !/isValid|isNaN|instanceof Date/i.test(line)
+        ) {
+          // .toISOString() on the same line = UTC conversion is present
+          if (/\.toISOString\(\)/.test(line)) {
+            continue;
+          }
+          // new Date() with no arguments = creating current timestamp, not parsing user input
+          if (/new Date\s*\(\s*\)/.test(line)) {
+            continue;
+          }
+          const context = lines.slice(Math.max(0, i - 2), i + 3).join('\n');
+          if (!/isValid|isNaN|isFinite|dayjs|moment/i.test(context)) {
+            breaks.push(
+              buildBoundaryBreak(relFile, i + 1, {
+                type: 'input-boundary-evidence-gap',
+                severity: 'medium',
+                observedName: inferFunctionArgument(line, 'new Date', 'parsed temporal input'),
+                observedShape: 'runtime parsed scalar input',
+                missingBoundary: 'validity check after parse',
+                rawEvidence: 'new Date call with non-literal argument',
+                lineText: line,
+                recommendation: 'derive a validity guard before using the parsed value',
+              }),
+            );
+          }
         }
       }
 
-      // CHECK 5: File upload without size/type validation
       if (/multer|@UploadedFile|FileInterceptor|diskStorage|memoryStorage/i.test(line)) {
-        const context = lines.slice(Math.max(0, i - 10), i + 20).join('\n');
-        const hasSizeLimit = /fileSize|limits.*size|maxSize/i.test(context);
-        const hasMimeCheck = /mimetype|fileFilter|allowedMimeTypes|mime/i.test(context);
+        if (/^import\b/.test(line) || /^[A-Z]\w+,$/.test(line)) {
+          continue;
+        }
+        if (/FileInterceptor/i.test(line) && !/FileInterceptor\s*\(/.test(line)) {
+          continue;
+        }
+
+        const context = lines.slice(Math.max(0, i - 30), i + 30).join('\n');
+        const hasSizeLimit = /fileSize|limits.*size|maxSize|MaxFileSizeValidator/i.test(context);
+        const hasMimeCheck =
+          /mimetype|fileFilter|allowedMimeTypes|mime|FileTypeValidator|fileType/i.test(context);
 
         if (!hasSizeLimit) {
-          breaks.push({
-            type: 'EDGE_CASE_FILE',
-            severity: 'high',
-            file: relFile,
-            line: i + 1,
-            description:
-              'File upload without size limit — large files may exhaust memory or storage',
-            detail: 'Add limits: { fileSize: 5 * 1024 * 1024 } to multer options (5MB example)',
-          });
+          breaks.push(
+            buildBoundaryBreak(relFile, i + 1, {
+              type: 'input-boundary-evidence-gap',
+              severity: 'high',
+              observedName: inferFunctionArgument(line, 'FileInterceptor', 'uploaded payload'),
+              observedShape: 'binary multipart boundary',
+              missingBoundary: 'byte-size constraint',
+              rawEvidence: 'upload interceptor/storage shape without nearby size limit',
+              lineText: line,
+              recommendation: 'derive a max byte limit from the accepted upload contract',
+            }),
+          );
         }
         if (!hasMimeCheck) {
-          breaks.push({
-            type: 'EDGE_CASE_FILE',
-            severity: 'high',
-            file: relFile,
-            line: i + 1,
-            description: 'File upload without MIME type validation — any file type accepted',
-            detail:
-              'Add fileFilter to reject non-image/non-document files; check mimetype whitelist',
-          });
+          breaks.push(
+            buildBoundaryBreak(relFile, i + 1, {
+              type: 'input-boundary-evidence-gap',
+              severity: 'high',
+              observedName: inferFunctionArgument(line, 'FileInterceptor', 'uploaded payload'),
+              observedShape: 'binary multipart boundary',
+              missingBoundary: 'accepted media signature/type constraint',
+              rawEvidence: 'upload interceptor/storage shape without nearby type filter',
+              lineText: line,
+              recommendation: 'derive accepted media constraints from the route contract',
+            }),
+          );
         }
       }
 
-      // CHECK 6: Array inputs without max length
       if (/@IsArray\(\)|IsArray\s*\(\)/.test(line)) {
         const context = lines.slice(i, Math.min(lines.length, i + 6)).join('\n');
         if (!/@ArrayMaxSize|@ArrayMinSize|maxLength|MaxLength/i.test(context)) {
-          breaks.push({
-            type: 'EDGE_CASE_ARRAY',
-            severity: 'medium',
-            file: relFile,
-            line: i + 1,
-            description:
-              '@IsArray() without @ArrayMaxSize — user can send array with 10k+ elements',
-            detail:
-              'Add @ArrayMaxSize(100) or appropriate limit to prevent DoS via large array payloads',
-          });
+          breaks.push(
+            buildBoundaryBreak(relFile, i + 1, {
+              type: 'input-boundary-evidence-gap',
+              severity: 'medium',
+              observedName: inferDecoratedProperty(context, 'decorated collection input'),
+              observedShape: 'decorated collection input',
+              missingBoundary: 'collection cardinality constraint',
+              rawEvidence: '@IsArray decorator without nearby cardinality decorator',
+              lineText: line,
+              recommendation: 'derive max/min collection size from downstream usage',
+            }),
+          );
         }
       }
     }
 
-    // CHECK: findMany without pagination in financial/reporting contexts
     if (/report|analytics|dashboard|export/i.test(file)) {
       if (/\.findMany\s*\(\s*\{/.test(content) && !/take:|skip:|cursor:/i.test(content)) {
-        breaks.push({
-          type: 'EDGE_CASE_PAGINATION',
-          severity: 'high',
-          file: relFile,
-          line: 0,
-          description:
-            'findMany() in reporting context without take/skip — may return all records and exhaust memory',
-          detail:
-            'Add take: and skip: to all findMany() calls; provide pagination for large datasets',
-        });
+        breaks.push(
+          buildBoundaryBreak(relFile, 0, {
+            type: 'input-boundary-evidence-gap',
+            severity: 'high',
+            observedName: `${path.basename(file)} findMany result`,
+            observedShape: 'unbounded collection read',
+            missingBoundary: 'result window constraint',
+            rawEvidence: 'findMany call in aggregate/reporting path without take/skip/cursor',
+            lineText: '.findMany({',
+            recommendation: 'derive a bounded result window from caller contract or route input',
+          }),
+        );
       }
     }
   }

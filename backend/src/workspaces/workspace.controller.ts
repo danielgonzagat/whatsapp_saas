@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -167,5 +167,14 @@ export class WorkspaceController {
   ) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.updateAccountSettings(workspaceId, body || {});
+  }
+
+  // Deletar workspace
+  @Delete(':id')
+  @Roles('ADMIN')
+  async delete(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    const workspaceId = resolveWorkspaceId(req, id);
+    await this.service.deleteWorkspace(workspaceId);
+    return { ok: true, deleted: workspaceId };
   }
 }

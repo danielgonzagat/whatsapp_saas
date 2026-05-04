@@ -20,27 +20,137 @@
  * 7. Viewport meta tag present in layout
  *
  * REQUIRES: PULSE_DEEP=1
- * BREAK TYPES:
- *   BROWSER_INCOMPATIBLE(medium)       — CSS/JS feature without cross-browser fallback
- *   NETWORK_SLOW_UNUSABLE(medium)      — page has no loading state for slow network
- *   NETWORK_OFFLINE_DATA_LOST(high)    — form data lost on offline/connection drop
+ * Emits browser/network evidence gaps; diagnostic identity is synthesized downstream.
  */
-import { safeJoin, safeResolve } from '../safe-path';
+import { safeJoin } from '../safe-path';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
 
-// CSS features with limited browser support (especially Safari)
-const COMPAT_RISK_RE = /grid-template-subgrid|:has\s*\(|@container|layer\s*\(/i;
+function splitIdentifierTokens(value: string): Set<string> {
+  const tokens = new Set<string>();
+  let current = '';
+  for (const char of value) {
+    const isAlphaNumeric =
+      (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9');
+    if (!isAlphaNumeric) {
+      if (current) {
+        tokens.add(current.toLowerCase());
+        current = '';
+      }
+      continue;
+    }
+    if (current && current[current.length - 1] >= 'a' && current[current.length - 1] <= 'z') {
+      if (char >= 'A' && char <= 'Z') {
+        tokens.add(current.toLowerCase());
+        current = char;
+        continue;
+      }
+    }
+    current += char;
+  }
+  if (current) {
+    tokens.add(current.toLowerCase());
+  }
+  return tokens;
+}
 
-// Patterns indicating loading states exist
-const LOADING_STATE_RE = /skeleton|Skeleton|isLoading|loading.*true|Spinner|Loading|shimmer/i;
+function hasTokenPrefix(tokens: Set<string>, prefix: string): boolean {
+  return [...tokens].some((token) => token.startsWith(prefix));
+}
 
-// Patterns for offline protection
-const OFFLINE_PROTECTION_RE =
-  /localStorage\s*\.\s*setItem.*form|draft|autosave|formPersist|offlineQueue/i;
-const FORM_BACKUP_RE = /saveFormState|persistForm|formDraft|savedDraft/i;
+function hasCompatibilityRiskEvidence(line: string): boolean {
+  const tokens = splitIdentifierTokens(line);
+  const normalized = line.toLowerCase();
+  const trimmed = line.trim();
+  return (
+    tokens.has('subgrid') ||
+    normalized.includes(':has(') ||
+    (trimmed.startsWith('@') && tokens.has('container')) ||
+    (trimmed.startsWith('@') && tokens.has('layer'))
+  );
+}
+
+function hasCompatibilityFallbackEvidence(context: string): boolean {
+  const tokens = splitIdentifierTokens(context);
+  return (
+    tokens.has('supports') ||
+    tokens.has('webkit') ||
+    tokens.has('moz') ||
+    hasTokenPrefix(tokens, 'fallback')
+  );
+}
+
+function hasAsyncDataFetchEvidence(content: string): boolean {
+  const tokens = splitIdentifierTokens(content);
+  return (
+    (tokens.has('use') && tokens.has('swr')) ||
+    (tokens.has('use') && tokens.has('effect') && tokens.has('fetch')) ||
+    (tokens.has('api') && tokens.has('fetch')) ||
+    (tokens.has('use') && tokens.has('query'))
+  );
+}
+
+function hasLoadingStateEvidence(content: string): boolean {
+  const tokens = splitIdentifierTokens(content);
+  return (
+    hasTokenPrefix(tokens, 'skeleton') ||
+    hasTokenPrefix(tokens, 'loading') ||
+    tokens.has('spinner') ||
+    tokens.has('shimmer') ||
+    (tokens.has('is') && tokens.has('loading'))
+  );
+}
+
+function hasOfflineProtectionEvidence(content: string): boolean {
+  const tokens = splitIdentifierTokens(content);
+  return (
+    (tokens.has('local') && tokens.has('storage') && tokens.has('set') && tokens.has('form')) ||
+    tokens.has('draft') ||
+    tokens.has('autosave') ||
+    (tokens.has('form') && tokens.has('persist')) ||
+    (tokens.has('offline') && tokens.has('queue')) ||
+    (tokens.has('save') && tokens.has('form') && tokens.has('state')) ||
+    (tokens.has('saved') && tokens.has('draft'))
+  );
+}
+
+function hasValueBearingFormState(content: string): boolean {
+  const tokens = splitIdentifierTokens(content);
+  return (
+    hasTokenPrefix(tokens, 'amount') ||
+    tokens.has('total') ||
+    tokens.has('subtotal') ||
+    hasTokenPrefix(tokens, 'price') ||
+    tokens.has('currency') ||
+    tokens.has('balance') ||
+    (tokens.has('billing') && tokens.has('address')) ||
+    (tokens.has('tax') && tokens.has('id'))
+  );
+}
+
+function browserNetworkFinding(input: {
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+  observed?: boolean;
+}): Break {
+  return {
+    type: 'browser-network-evidence-gap',
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: input.observed
+      ? 'parser:confirmed_static:browser-network'
+      : 'parser:weak_signal:browser-network',
+    surface: 'client-resilience',
+  };
+}
 
 /** Check browser network. */
 export function checkBrowserNetwork(config: PulseConfig): Break[] {
@@ -73,19 +183,21 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
         continue;
       }
 
-      if (COMPAT_RISK_RE.test(line)) {
+      if (hasCompatibilityRiskEvidence(line)) {
         // Check for fallback (@supports or vendor prefix) in context
         const context = lines.slice(Math.max(0, i - 5), i + 5).join('\n');
-        const hasFallback = /@supports|@-webkit|webkit-|moz-|fallback/i.test(context);
+        const hasFallback = hasCompatibilityFallbackEvidence(context);
         if (!hasFallback) {
-          breaks.push({
-            type: 'BROWSER_INCOMPATIBLE',
-            severity: 'medium',
-            file: relFile,
-            line: i + 1,
-            description: 'CSS feature with limited browser support used without @supports fallback',
-            detail: `${line.slice(0, 120)} — Safari/Firefox may not support this; add @supports() fallback`,
-          });
+          breaks.push(
+            browserNetworkFinding({
+              severity: 'medium',
+              file: relFile,
+              line: i + 1,
+              description:
+                'CSS feature with limited browser support used without @supports fallback',
+              detail: `${line.slice(0, 120)} — Safari/Firefox may not support this; add @supports() fallback`,
+            }),
+          );
         }
       }
     }
@@ -107,26 +219,37 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
     const relFile = path.relative(config.rootDir, file);
 
     // Pages that fetch data but have no loading indicators
-    const fetchesData = /useSWR|useEffect.*fetch|apiFetch|useQuery/i.test(content);
-    const hasLoadingState = LOADING_STATE_RE.test(content);
+    const fetchesData = hasAsyncDataFetchEvidence(content);
+    const hasLoadingState = hasLoadingStateEvidence(content);
 
     if (fetchesData && !hasLoadingState) {
-      breaks.push({
-        type: 'NETWORK_SLOW_UNUSABLE',
-        severity: 'medium',
-        file: relFile,
-        line: 0,
-        description:
-          'Page fetches async data but has no loading state — blank/broken UI on slow network',
-        detail: 'Add skeleton loader, spinner, or loading placeholder while data is being fetched',
-      });
+      breaks.push(
+        browserNetworkFinding({
+          severity: 'medium',
+          file: relFile,
+          line: 0,
+          description:
+            'Page fetches async data but has no loading state — blank/broken UI on slow network',
+          detail:
+            'Add skeleton loader, spinner, or loading placeholder while data is being fetched',
+        }),
+      );
     }
   }
 
   // CHECK 3: Offline data loss in forms
-  const formFiles = frontendFiles.filter(
-    (f) => /checkout|form|payment|register|signup/i.test(f) && !/node_modules|\.next/.test(f),
-  );
+  const formFiles = frontendFiles.filter((f) => !/node_modules|\.next/.test(f));
+  const hasDraftPersistence = frontendFiles.some((f) => {
+    if (/node_modules|\.next/.test(f)) {
+      return false;
+    }
+    try {
+      const content = readTextFile(f, 'utf8');
+      return hasOfflineProtectionEvidence(content);
+    } catch {
+      return false;
+    }
+  });
 
   for (const file of formFiles) {
     let content: string;
@@ -140,21 +263,29 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
 
     // Long multi-field forms without persistence
     const hasForm = /<form|useForm|handleSubmit/i.test(content);
-    const hasOfflineProtection =
-      OFFLINE_PROTECTION_RE.test(content) || FORM_BACKUP_RE.test(content);
+    const hasOfflineProtection = hasOfflineProtectionEvidence(content);
+    const isControlledFormChild =
+      /updateField|form:\s*[A-Za-z_$]\w+|form=\{[A-Za-z_$][\w$.]*\.form\}/i.test(content) &&
+      hasDraftPersistence;
 
-    // Only flag checkout/payment forms (high-stakes)
-    if (hasForm && !hasOfflineProtection && /checkout|payment|pagamento/i.test(file)) {
-      breaks.push({
-        type: 'NETWORK_OFFLINE_DATA_LOST',
-        severity: 'high',
-        file: relFile,
-        line: 0,
-        description:
-          'Payment/checkout form has no offline protection — user loses entered data on connection drop',
-        detail:
-          'Save form progress to localStorage on every field change; restore on mount; show offline indicator',
-      });
+    // Only flag high-stakes money-like forms.
+    if (
+      hasForm &&
+      !hasOfflineProtection &&
+      !isControlledFormChild &&
+      hasValueBearingFormState(content)
+    ) {
+      breaks.push(
+        browserNetworkFinding({
+          severity: 'high',
+          file: relFile,
+          line: 0,
+          description:
+            'Money-like form has no offline protection — user loses entered data on connection drop',
+          detail:
+            'Save form progress to localStorage on every field change; restore on mount; show offline indicator',
+        }),
+      );
     }
   }
 
@@ -183,14 +314,16 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
       /service.?worker|sw\.ts|sw\.js/i.test(path.basename(f)),
     );
     if (!hasServiceWorker) {
-      breaks.push({
-        type: 'BROWSER_INCOMPATIBLE',
-        severity: 'medium',
-        file: relManifest,
-        line: 0,
-        description: 'PWA manifest exists but no service worker found — app is not installable',
-        detail: 'Add a service worker (sw.js) that handles offline caching and install prompt',
-      });
+      breaks.push(
+        browserNetworkFinding({
+          severity: 'medium',
+          file: relManifest,
+          line: 0,
+          description: 'PWA manifest exists but no service worker found — app is not installable',
+          detail: 'Add a service worker (sw.js) that handles offline caching and install prompt',
+          observed: true,
+        }),
+      );
     }
 
     // Check icon sizes
@@ -198,14 +331,16 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
     const has192 = icons.some((i) => /192/.test(i.sizes || ''));
     const has512 = icons.some((i) => /512/.test(i.sizes || ''));
     if (!has192 || !has512) {
-      breaks.push({
-        type: 'BROWSER_INCOMPATIBLE',
-        severity: 'medium',
-        file: relManifest,
-        line: 0,
-        description: `PWA manifest missing required icon sizes (need 192x192 and 512x512) — ${!has192 ? '192 missing' : '512 missing'}`,
-        detail: 'Add icons array with 192x192 and 512x512 PNG icons to manifest.json',
-      });
+      breaks.push(
+        browserNetworkFinding({
+          severity: 'medium',
+          file: relManifest,
+          line: 0,
+          description: `PWA manifest missing required icon sizes (need 192x192 and 512x512) — ${!has192 ? '192 missing' : '512 missing'}`,
+          detail: 'Add icons array with 192x192 and 512x512 PNG icons to manifest.json',
+          observed: true,
+        }),
+      );
     }
   }
 
@@ -230,16 +365,18 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
         content,
       )
     ) {
-      breaks.push({
-        type: 'NETWORK_SLOW_UNUSABLE',
-        severity: 'medium',
-        file: path.relative(config.rootDir, nextConfigFile),
-        line: 0,
-        description:
-          'No bundle size budget or analyzer configured — bundle may grow without notice',
-        detail:
-          'Add @next/bundle-analyzer or bundlemon to track bundle size; set size budgets in CI',
-      });
+      breaks.push(
+        browserNetworkFinding({
+          severity: 'medium',
+          file: path.relative(config.rootDir, nextConfigFile),
+          line: 0,
+          description:
+            'No bundle size budget or analyzer configured — bundle may grow without notice',
+          detail:
+            'Add @next/bundle-analyzer or bundlemon to track bundle size; set size budgets in CI',
+          observed: true,
+        }),
+      );
     }
   }
 
@@ -255,15 +392,18 @@ export function checkBrowserNetwork(config: PulseConfig): Break[] {
       continue;
     }
     if (!/viewport|initial-scale|width=device-width/i.test(content)) {
-      breaks.push({
-        type: 'BROWSER_INCOMPATIBLE',
-        severity: 'medium',
-        file: path.relative(config.rootDir, file),
-        line: 0,
-        description: 'Root layout missing viewport meta tag — mobile users see desktop-scaled view',
-        detail:
-          'Add: export const viewport = { width: "device-width", initialScale: 1 } to layout.tsx',
-      });
+      breaks.push(
+        browserNetworkFinding({
+          severity: 'medium',
+          file: path.relative(config.rootDir, file),
+          line: 0,
+          description:
+            'Root layout missing viewport meta tag — mobile users see desktop-scaled view',
+          detail:
+            'Add: export const viewport = { width: "device-width", initialScale: 1 } to layout.tsx',
+          observed: true,
+        }),
+      );
       break; // One report for root layout
     }
   }

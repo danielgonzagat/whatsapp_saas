@@ -66,11 +66,7 @@ function hasAttr(element, name) {
 }
 
 function hasSpreadAttr(element) {
-  const attributes = element.getAttributes();
-  for (const attr of attributes) {
-    if (attr.getKind() === SyntaxKind.JsxSpreadAttribute) return true;
-  }
-  return false;
+  return element.getAttributes().some((attr) => attr.getKind() === SyntaxKind.JsxSpreadAttribute);
 }
 
 function getTagName(element) {
@@ -78,74 +74,63 @@ function getTagName(element) {
   return tagNameNode ? tagNameNode.getText() : null;
 }
 
-function processElement(element) {
-  const tag = getTagName(element);
-  if (!tag || !TARGET_TAGS.has(tag)) return false;
-
-  if (!hasAttr(element, 'onClick')) {
-    return false;
-  }
-
-  if (hasSpreadAttr(element)) {
-    skipReasons.hasSpread += 1;
-    return false;
-  }
-
-  // Skip <a> with href (already focusable)
-  if (tag === 'a' && hasAttr(element, 'href')) {
-    skipReasons.anchorHasHref += 1;
-    return false;
-  }
-
-  const hasRole = hasAttr(element, 'role');
-  const hasTabIndex = hasAttr(element, 'tabIndex');
-
-  if (hasRole) {
-    skipReasons.roleAlreadySet += 1;
-    return false;
-  }
-
-  if (hasRole && hasTabIndex) {
-    skipReasons.bothAlreadyPresent += 1;
-    return false;
-  }
-
-  let added = false;
-  if (!hasRole) {
-    element.addAttribute({
-      name: 'role',
-      initializer: '"button"',
-    });
-    added = true;
-  }
-  if (!hasTabIndex) {
-    element.addAttribute({
-      name: 'tabIndex',
-      initializer: '{0}',
-    });
-    added = true;
-  }
-
-  if (added) {
-    patchedByTag[tag] += 1;
-    return true;
-  }
-  return false;
+function isUnsupportedClickableTag(element, tag) {
+  return !tag || !TARGET_TAGS.has(tag) || !hasAttr(element, 'onClick');
 }
 
-for (const sourceFile of sourceFiles) {
-  let changed = 0;
+function classifyAttrSkip(element, tag) {
+  return (
+    (hasSpreadAttr(element) && 'hasSpread') ||
+    (tag === 'a' && hasAttr(element, 'href') && 'anchorHasHref') ||
+    (hasAttr(element, 'role') && 'roleAlreadySet') ||
+    null
+  );
+}
 
-  const openings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxOpeningElement);
-  for (const el of openings) {
-    if (processElement(el)) changed += 1;
+function recordSkip(reason) {
+  skipReasons[reason] += 1;
+  return true;
+}
+
+function shouldSkipElement(element, tag) {
+  if (isUnsupportedClickableTag(element, tag)) {
+    return true;
   }
+  const skipReason = classifyAttrSkip(element, tag);
+  return skipReason ? recordSkip(skipReason) : false;
+}
 
-  const selfClosings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement);
-  for (const el of selfClosings) {
-    if (processElement(el)) changed += 1;
+function applyRoleAndTabIndex(element) {
+  element.addAttribute({ name: 'role', initializer: '"button"' });
+  if (!hasAttr(element, 'tabIndex')) {
+    element.addAttribute({ name: 'tabIndex', initializer: '{0}' });
   }
+}
 
+function processElement(element) {
+  const tag = getTagName(element);
+  if (shouldSkipElement(element, tag)) {
+    return false;
+  }
+  applyRoleAndTabIndex(element);
+  patchedByTag[tag] += 1;
+  return true;
+}
+
+function tallyChangedElements(sourceFile, kind) {
+  let count = 0;
+  for (const el of sourceFile.getDescendantsOfKind(kind)) {
+    if (processElement(el)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function processSourceFile(sourceFile) {
+  const changed =
+    tallyChangedElements(sourceFile, SyntaxKind.JsxOpeningElement) +
+    tallyChangedElements(sourceFile, SyntaxKind.JsxSelfClosingElement);
   if (changed > 0) {
     sourceFile.saveSync();
     filesModified += 1;
@@ -154,16 +139,22 @@ for (const sourceFile of sourceFiles) {
   }
 }
 
+for (const sourceFile of sourceFiles) {
+  processSourceFile(sourceFile);
+}
+
 const totalPatched = patchedByTag.div + patchedByTag.span + patchedByTag.li + patchedByTag.a;
+
+const reportLine = (label, value) => `${label.padEnd(40, ' ')}${value}`;
 
 console.log('');
 console.log('=== Summary ===');
-console.log(`Files modified:                         ${filesModified}`);
-console.log(`Total elements patched:                 ${totalPatched}`);
-console.log(`  <div>  patched:                       ${patchedByTag.div}`);
-console.log(`  <span> patched:                       ${patchedByTag.span}`);
-console.log(`  <li>   patched:                       ${patchedByTag.li}`);
-console.log(`  <a>    patched:                       ${patchedByTag.a}`);
-console.log(`Skip: has JsxSpreadAttribute:           ${skipReasons.hasSpread}`);
-console.log(`Skip: role already set:                 ${skipReasons.roleAlreadySet}`);
-console.log(`Skip: <a> already has href:             ${skipReasons.anchorHasHref}`);
+console.log(reportLine('Files modified:', filesModified));
+console.log(reportLine('Total elements patched:', totalPatched));
+console.log(reportLine('  div    patched:', patchedByTag.div));
+console.log(reportLine('  span   patched:', patchedByTag.span));
+console.log(reportLine('  li     patched:', patchedByTag.li));
+console.log(reportLine('  a      patched:', patchedByTag.a));
+console.log(reportLine('Skip: has JsxSpreadAttribute:', skipReasons.hasSpread));
+console.log(reportLine('Skip: role already set:', skipReasons.roleAlreadySet));
+console.log(reportLine('Skip: a already has href:', skipReasons.anchorHasHref));

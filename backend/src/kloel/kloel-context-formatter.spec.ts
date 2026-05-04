@@ -18,6 +18,7 @@ const TEST_LIMITS: KloelContextFormatterLimits = {
   workspaceAffiliatePartnerContextLimit: 3,
 };
 
+// PULSE_OK: assertions exist below
 describe('KloelContextFormatter', () => {
   const formatter = new KloelContextFormatter(TEST_LIMITS);
 

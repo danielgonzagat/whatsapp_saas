@@ -38,7 +38,10 @@ export default function OnboardingPage() {
       return;
     }
     setLoading(true);
-    router.push('/');
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('kloel_onboarding_role', selected);
+    }
+    router.push(`/onboarding-chat?role=${encodeURIComponent(selected)}`);
   };
 
   return (

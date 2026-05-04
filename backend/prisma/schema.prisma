@@ -1,11 +1,11 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
   previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
   extensions = [vector]
 }
 
@@ -70,86 +70,86 @@ model Workspace {
   providerSettings Json @default("{}")
 
   // White Label / Reseller
-  customDomain   String?  @unique
-  branding       Json?    // { logoUrl: "...", primaryColor: "..." }
+  customDomain String? @unique
+  branding     Json? // { logoUrl: "...", primaryColor: "..." }
 
   // Billing
   stripeCustomerId String?
 
   // Relations
-  contacts       Contact[]
-  flows          Flow[]
-  flowExecutions FlowExecution[]
-  tags           Tag[]
-  campaigns      Campaign[]
-  variables      Variable[]
-  conversations  Conversation[]
-  agents         Agent[]
-  messages       Message[]
-  scrapingJobs   ScrapingJob[]
-  voiceJobs      VoiceJob[]
+  contacts        Contact[]
+  flows           Flow[]
+  flowExecutions  FlowExecution[]
+  tags            Tag[]
+  campaigns       Campaign[]
+  variables       Variable[]
+  conversations   Conversation[]
+  agents          Agent[]
+  messages        Message[]
+  scrapingJobs    ScrapingJob[]
+  voiceJobs       VoiceJob[]
   monitoredGroups MonitoredGroup[]
-  
+
   // Omnichannel & Routing
-  queues         Queue[]
-  routingRules   RoutingRule[]
+  queues       Queue[]
+  routingRules RoutingRule[]
 
   // New God Mode Relations
   knowledgeBases KnowledgeBase[]
   pipelines      Pipeline[]
   integrations   Integration[]
   personas       Persona[]
-  
+
   // Billing
-  subscription   Subscription?
-  invoices       Invoice[]
+  subscription         Subscription?
+  invoices             Invoice[]
   externalPaymentLinks ExternalPaymentLink[]
-  payments       Payment[]
+  payments             Payment[]
 
   // Launchpad
-  launchers      GroupLauncher[]
-  
+  launchers GroupLauncher[]
+
   // Dynamic Video
-  mediaJobs      MediaJob[]
-  
+  mediaJobs MediaJob[]
+
   // Phase 10 & 11
-  voiceProfiles  VoiceProfile[]
-  
-  auditLogs      AuditLog[]
-  autopilotEvents AutopilotEvent[]
-  autonomyRuns   AutonomyRun[]
-  autonomyExecutions AutonomyExecution[]
-  agentWorkItems AgentWorkItem[]
-  approvalRequests ApprovalRequest[]
-  inputCollectionSessions InputCollectionSession[]
-  accountProofSnapshots AccountProofSnapshot[]
+  voiceProfiles VoiceProfile[]
+
+  auditLogs                  AuditLog[]
+  autopilotEvents            AutopilotEvent[]
+  autonomyRuns               AutonomyRun[]
+  autonomyExecutions         AutonomyExecution[]
+  agentWorkItems             AgentWorkItem[]
+  approvalRequests           ApprovalRequest[]
+  inputCollectionSessions    InputCollectionSession[]
+  accountProofSnapshots      AccountProofSnapshot[]
   conversationProofSnapshots ConversationProofSnapshot[]
-  
+
   // Outgoing Webhooks
   webhookSubscriptions WebhookSubscription[]
-  
+
   // API Keys
   apiKeys        ApiKey[]
   systemInsights SystemInsight[]
-  
-  flowVersions   FlowVersion[] @relation("WorkspaceFlowVersions")
-  invitations    Invitation[]
+
+  flowVersions        FlowVersion[]        @relation("WorkspaceFlowVersions")
+  invitations         Invitation[]
   collaboratorInvites CollaboratorInvite[]
   affiliatePartners   AffiliatePartner[]
 
   // Kloel & Commerce Relations
-  documents           Document[]
-  followUps           FollowUp[]
-  kloelMessages       KloelMessage[]
-  kloelMemories       KloelMemory[]
-  kloelLeads          KloelLead[]
-  kloelSales          KloelSale[]
-  kloelWallets        KloelWallet[]
-  kloelSites          KloelSite[]
-  kloelDesigns        KloelDesign[]
-  checkoutSocialLeads CheckoutSocialLead[]
+  documents             Document[]
+  followUps             FollowUp[]
+  kloelMessages         KloelMessage[]
+  kloelMemories         KloelMemory[]
+  kloelLeads            KloelLead[]
+  kloelSales            KloelSale[]
+  kloelWallets          KloelWallet[]
+  kloelSites            KloelSite[]
+  kloelDesigns          KloelDesign[]
+  checkoutSocialLeads   CheckoutSocialLead[]
   customerSubscriptions CustomerSubscription[]
-  physicalOrders      PhysicalOrder[]
+  physicalOrders        PhysicalOrder[]
 
   // Bank Accounts & Wallet Anticipations
   bankAccounts        BankAccount[]
@@ -158,97 +158,101 @@ model Workspace {
   // Checkout System (PhysicalProduct removed — uses Product)
 
   // KYC
-  fiscalData    FiscalData?
-  kycDocuments  KycDocument[]
+  fiscalData   FiscalData?
+  kycDocuments KycDocument[]
 
   // Order Alerts
-  orderAlerts   OrderAlert[]
+  orderAlerts OrderAlert[]
 
   // Ad Spend Tracking (ROAS)
-  adSpends      AdSpend[]
+  adSpends AdSpend[]
 
   // Webinars
-  webinars      Webinar[]
+  webinars Webinar[]
 
   // Meta Platform Connection
   metaConnection MetaConnection?
+
+  @@map("RAC_Workspace")
 }
 
 model FlowTemplate {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
   description String?
-  category    String   // SALES, SUPPORT, MARKETING
+  category    String // SALES, SUPPORT, MARKETING
   nodes       Json
   edges       Json
-  
-  isPublic    Boolean  @default(false)
-  downloads   Int      @default(0)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  isPublic  Boolean @default(false)
+  downloads Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("RAC_FlowTemplate")
 }
 
 model Agent {
-  id          String   @id @default(uuid())
-  name        String
-  email       String
-  password    String   // Hashed (empty for OAuth/WhatsApp users)
-  role        String   // ADMIN, AGENT
-  isOnline    Boolean  @default(false)
-  
+  id       String  @id @default(uuid())
+  name     String
+  email    String
+  password String // Hashed (empty for OAuth/WhatsApp users)
+  role     String // ADMIN, AGENT
+  isOnline Boolean @default(false)
+
   // Email Verification
   emailVerified           Boolean   @default(false)
   emailVerificationToken  String?   @unique
   emailVerificationExpiry DateTime?
-  
+
   // OAuth / WhatsApp Auth
-  provider    String?  // google, apple, whatsapp
-  providerId  String?  // Provider-specific user ID
-  phone       String?  // Phone number for WhatsApp auth
-  avatarUrl   String?  // Profile picture URL
-  disabledAt  DateTime?
-  deletedAt   DateTime?
+  provider   String? // google, apple, whatsapp
+  providerId String? // Provider-specific user ID
+  phone      String? // Phone number for WhatsApp auth
+  avatarUrl  String? // Profile picture URL
+  disabledAt DateTime?
+  deletedAt  DateTime?
 
   // KYC Profile
-  birthDate               DateTime?
-  documentType            String?    // CPF, CNPJ
-  documentNumber          String?
-  kycStatus               String     @default("pending") // pending, submitted, approved, rejected
-  kycSubmittedAt          DateTime?
-  kycApprovedAt           DateTime?
-  kycRejectedReason       String?
-  publicName              String?
-  bio                     String?    @db.Text
-  website                 String?
-  instagram               String?
+  birthDate         DateTime?
+  documentType      String? // CPF, CNPJ
+  documentNumber    String?
+  kycStatus         String    @default("pending") // pending, submitted, approved, rejected
+  kycSubmittedAt    DateTime?
+  kycApprovedAt     DateTime?
+  kycRejectedReason String?
+  publicName        String?
+  bio               String?   @db.Text
+  website           String?
+  instagram         String?
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   // Password Reset
-  passwordResetTokens PasswordResetToken[]
-  magicLinkTokens     MagicLinkToken[]
-  socialAccounts      SocialAccount[]
+  passwordResetTokens  PasswordResetToken[]
+  magicLinkTokens      MagicLinkToken[]
+  socialAccounts       SocialAccount[]
   dataDeletionRequests DataDeletionRequest[]
-  
+
   assignedConversations Conversation[]
   messages              Message[]
   refreshTokens         RefreshToken[]
   deviceTokens          DeviceToken[]
-  flowVersionsCreated   FlowVersion[] @relation("AgentFlowVersions")
+  flowVersionsCreated   FlowVersion[]  @relation("AgentFlowVersions")
   auditLogs             AuditLog[]
   kycDocuments          KycDocument[]
   cookieConsent         CookieConsent?
 
-  queues                AgentQueue[]
-  
+  queues AgentQueue[]
+
   // RBAC
-  permissions           Json?    // ["FLOW_EDIT", "CONTACT_VIEW"]
+  permissions Json? // ["FLOW_EDIT", "CONTACT_VIEW"]
 
   // Persona Clone
-  personaId   String?
-  persona     Persona? @relation(fields: [personaId], references: [id], onDelete: SetNull)
+  personaId String?
+  persona   Persona? @relation(fields: [personaId], references: [id], onDelete: SetNull)
 
   displayRole String @default("MEMBER")
 
@@ -256,44 +260,47 @@ model Agent {
   updatedAt DateTime @updatedAt
 
   @@unique([workspaceId, email])
+  @@map("RAC_Agent")
 }
 
 model CookieConsent {
-  id         String   @id @default(cuid())
-  agentId    String   @unique
-  necessary  Boolean  @default(true)
-  analytics  Boolean  @default(false)
-  marketing  Boolean  @default(false)
-  updatedAt  DateTime @updatedAt
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  agentId   String   @unique
+  necessary Boolean  @default(true)
+  analytics Boolean  @default(false)
+  marketing Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
 
-  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agent Agent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@map("RAC_CookieConsent")
 }
 
 model Contact {
-  id          String   @id @default(uuid())
-  phone       String // E.164 format
-  name        String?
-  email       String?
-  avatarUrl   String?
-  
-  // Consent / Opt-in/Out (LGPD/GDPR compliance)
-  optIn       Boolean  @default(true)
-  optedOutAt  DateTime?
-  
-  // Tags as relation for better analytics
-  tags        Tag[]
+  id        String  @id @default(uuid())
+  phone     String // E.164 format
+  name      String?
+  email     String?
+  avatarUrl String?
 
-  customFields Json?    @default("{}")
+  // Consent / Opt-in/Out (LGPD/GDPR compliance)
+  optIn      Boolean   @default(true)
+  optedOutAt DateTime?
+
+  // Tags as relation for better analytics
+  tags Tag[]
+
+  customFields Json? @default("{}")
 
   // --- NEURO CRM FIELDS ---
-  leadScore           Int       @default(0)   // 0-100 based on interactions
-  sentiment           String    @default("NEUTRAL") // POSITIVE, NEGATIVE, NEUTRAL
-  purchaseProbability String    @default("LOW")     // LOW, MEDIUM, HIGH
-  nextBestAction      String?   // "Send Offer", "Wait 2 days"
-  aiSummary           String?   // Auto-generated summary
-  
-  insights            ContactInsight[]
+  leadScore           Int     @default(0) // 0-100 based on interactions
+  sentiment           String  @default("NEUTRAL") // POSITIVE, NEGATIVE, NEUTRAL
+  purchaseProbability String  @default("LOW") // LOW, MEDIUM, HIGH
+  nextBestAction      String? // "Send Offer", "Wait 2 days"
+  aiSummary           String? // Auto-generated summary
+
+  insights ContactInsight[]
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -301,65 +308,71 @@ model Contact {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  executions    FlowExecution[]
-  conversations Conversation[]
-  messages      Message[]
-  deals         Deal[]
-  autopilotEvents AutopilotEvent[]
-  followUps     FollowUp[]
+  executions          FlowExecution[]
+  conversations       Conversation[]
+  messages            Message[]
+  deals               Deal[]
+  autopilotEvents     AutopilotEvent[]
+  followUps           FollowUp[]
   checkoutSocialLeads CheckoutSocialLead[]
 
   @@unique([workspaceId, phone])
+  @@map("RAC_Contact")
 }
 
 model ContactInsight {
-  id          String   @id @default(uuid())
-  type        String   // SENTIMENT_CHANGE, URGENCY_DETECTED, OBJECTION_RAISED
+  id          String @id @default(uuid())
+  type        String // SENTIMENT_CHANGE, URGENCY_DETECTED, OBJECTION_RAISED
   description String
-  scoreChange Int      @default(0)
-  
-  contactId   String
-  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  scoreChange Int    @default(0)
 
-  createdAt   DateTime @default(now())
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("RAC_ContactInsight")
 }
 
 model SystemInsight {
-  id          String   @id @default(uuid())
-  type        String   // "CAMPAIGN_PERFORMANCE", "FLOW_BOTTLENECK", "AUDIENCE_TREND"
+  id          String @id @default(uuid())
+  type        String // "CAMPAIGN_PERFORMANCE", "FLOW_BOTTLENECK", "AUDIENCE_TREND"
   title       String
   description String
-  severity    String   // "INFO", "WARNING", "CRITICAL"
+  severity    String // "INFO", "WARNING", "CRITICAL"
   metadata    Json?
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@map("RAC_SystemInsight")
 }
 
 model Tag {
-  id          String   @id @default(uuid())
-  name        String
-  color       String?  @default("#000000")
-  
+  id    String  @id @default(uuid())
+  name  String
+  color String? @default("#000000")
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  contacts    Contact[]
+  contacts Contact[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([workspaceId, name])
+  @@map("RAC_Tag")
 }
 
 model Variable {
-  id          String   @id @default(uuid())
-  key         String
-  value       String   // Default value
-  type        String   // STRING, NUMBER, BOOLEAN, DATE
-  
+  id    String @id @default(uuid())
+  key   String
+  value String // Default value
+  type  String // STRING, NUMBER, BOOLEAN, DATE
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -367,21 +380,22 @@ model Variable {
   updatedAt DateTime @updatedAt
 
   @@unique([workspaceId, key])
+  @@map("RAC_Variable")
 }
 
 model Flow {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  nodes       Json     // Stores the flow nodes configuration
-  edges       Json     // Stores the flow connections
-  isActive    Boolean  @default(true)
-  triggerType String   @default("KEYWORD") // KEYWORD, EVENT, MANUAL
+  id               String  @id @default(uuid())
+  name             String
+  description      String?
+  nodes            Json // Stores the flow nodes configuration
+  edges            Json // Stores the flow connections
+  isActive         Boolean @default(true)
+  triggerType      String  @default("KEYWORD") // KEYWORD, EVENT, MANUAL
   triggerCondition String? // e.g. "hello", "buy"
-  
+
   // Flow AI Designer
-  aiOptimization Boolean  @default(false)
-  performance    Json?    // { conversionRate: 0.5, dropoffNode: "node_1" }
+  aiOptimization Boolean @default(false)
+  performance    Json? // { conversionRate: 0.5, dropoffNode: "node_1" }
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -392,104 +406,114 @@ model Flow {
   executions FlowExecution[]
   versions   FlowVersion[]
   followUps  FollowUp[]
+
+  @@index([workspaceId])
+  @@map("RAC_Flow")
 }
 
 model FlowVersion {
-  id          String   @id @default(uuid())
-  label       String?
-  nodes       Json
-  edges       Json
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  label     String?
+  nodes     Json
+  edges     Json
+  createdAt DateTime @default(now())
 
-  flowId      String
-  flow        Flow      @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  flowId String
+  flow   Flow   @relation(fields: [flowId], references: [id], onDelete: Cascade)
 
   workspaceId String
   workspace   Workspace @relation("WorkspaceFlowVersions", fields: [workspaceId], references: [id], onDelete: Cascade)
 
   createdById String?
-  createdBy   Agent?    @relation("AgentFlowVersions", fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy   Agent?  @relation("AgentFlowVersions", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([flowId, createdAt])
   @@index([workspaceId, createdAt])
+  @@map("RAC_FlowVersion")
 }
 
 model FlowExecution {
-  id        String   @id @default(uuid())
-  status    FlowExecutionStatus @default(PENDING)
+  id            String              @id @default(uuid())
+  status        FlowExecutionStatus @default(PENDING)
   currentNodeId String?
-  state     Json?    // Variables collected during execution
-  logs      Json?    // Execution logs
+  state         Json? // Variables collected during execution
+  logs          Json? // Execution logs
 
   contactId String
   contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
-  flowId    String
-  flow      Flow    @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  flowId String
+  flow   Flow   @relation(fields: [flowId], references: [id], onDelete: Cascade)
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([contactId])
+  @@index([flowId])
+  @@index([workspaceId])
+  @@map("RAC_FlowExecution")
 }
 
 model Campaign {
-  id          String   @id @default(uuid())
+  id          String         @id @default(uuid())
   name        String
   status      CampaignStatus @default(DRAFT)
   scheduledAt DateTime?
-  
-  messageTemplate String // Or reference to a Flow
-  
-  // Audience filters
-  filters     Json?    // { tags: ["vip"], lastActive: "30d" }
 
-  stats       Json?    // { sent: 100, delivered: 90, read: 80 }
-  
+  messageTemplate String // Or reference to a Flow
+
+  // Audience filters
+  filters Json? // { tags: ["vip"], lastActive: "30d" }
+
+  stats Json? // { sent: 100, delivered: 90, read: 80 }
+
   // Darwinian Campaigns
-  parentId    String?  // For A/B variants
-  parent      Campaign? @relation("CampaignVariants", fields: [parentId], references: [id], onDelete: SetNull)
-  variants    Campaign[] @relation("CampaignVariants")
-  
-  aiStrategy  String?  // "AGGRESSIVE", "BALANCED", "SOFT"
+  parentId String? // For A/B variants
+  parent   Campaign?  @relation("CampaignVariants", fields: [parentId], references: [id], onDelete: SetNull)
+  variants Campaign[] @relation("CampaignVariants")
+
+  aiStrategy String? // "AGGRESSIVE", "BALANCED", "SOFT"
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([parentId])
+  @@map("RAC_Campaign")
 }
 
 model Conversation {
-  id          String   @id @default(uuid())
-  status      String   // OPEN, CLOSED, PENDING, SNOOZED
-  priority    String   // LOW, MEDIUM, HIGH
-  channel     String   // WHATSAPP, INSTAGRAM, FACEBOOK, WEB
-  mode        String   @default("AI") // AI, HUMAN, PAUSED - controls auto-response behavior
-  
-  unreadCount Int      @default(0)
+  id       String @id @default(uuid())
+  status   String // OPEN, CLOSED, PENDING, SNOOZED
+  priority String // LOW, MEDIUM, HIGH
+  channel  String // WHATSAPP, INSTAGRAM, FACEBOOK, WEB
+  mode     String @default("AI") // AI, HUMAN, PAUSED - controls auto-response behavior
+
+  unreadCount   Int      @default(0)
   lastMessageAt DateTime @default(now())
 
-  contactId   String
-  contact     Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   assignedAgentId String?
-  assignedAgent   Agent? @relation(fields: [assignedAgentId], references: [id], onDelete: SetNull)
+  assignedAgent   Agent?  @relation(fields: [assignedAgentId], references: [id], onDelete: SetNull)
 
-  queueId       String?
-  queue         Queue?   @relation(fields: [queueId], references: [id], onDelete: SetNull)
+  queueId String?
+  queue   Queue?  @relation(fields: [queueId], references: [id], onDelete: SetNull)
 
-  messages    Message[]
+  messages Message[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  @@index([workspaceId, status])
-  @@index([workspaceId, lastMessageAt])
   // Wave 2 P6-6 / I14 — partial unique index enforcing singleton-open
   // conversation per (workspaceId, contactId, channel). Declared as raw
   // SQL in migrations/20260408200000_conversation_partial_unique_open
@@ -497,31 +521,35 @@ model Conversation {
   //   CREATE UNIQUE INDEX conversation_one_open_per_workspace_contact_channel
   //     ON "Conversation" ("workspaceId", "contactId", "channel")
   //     WHERE "status" != 'CLOSED';
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, lastMessageAt])
+  @@map("RAC_Conversation")
 }
 
 model Message {
-  id          String   @id @default(uuid())
-  externalId  String?  // ID from Provider (Meta/WPP)
-  direction   String   // INBOUND, OUTBOUND
-  type        String   // TEXT, IMAGE, VIDEO, AUDIO, DOCUMENT, TEMPLATE, NOTE, VOICENOTE_CLONED
-  content     String   // Text content or caption
-  mediaUrl    String?
-  
-  status      String   // SENT, DELIVERED, READ, FAILED
-  errorCode   String?
-  
+  id         String  @id @default(uuid())
+  externalId String? // ID from Provider (Meta/WPP)
+  direction  String // INBOUND, OUTBOUND
+  type       String // TEXT, IMAGE, VIDEO, AUDIO, DOCUMENT, TEMPLATE, NOTE, VOICENOTE_CLONED
+  content    String // Text content or caption
+  mediaUrl   String?
+
+  status    String // SENT, DELIVERED, READ, FAILED
+  errorCode String?
+
   conversationId String?
   conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
 
-  contactId   String
-  contact     Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   // If sent by an agent
-  agentId     String?
-  agent       Agent? @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  agentId String?
+  agent   Agent?  @relation(fields: [agentId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -530,43 +558,48 @@ model Message {
   // Garante que a mesma mensagem do provedor não seja duplicada
   @@unique([workspaceId, externalId])
   @@index([workspaceId, createdAt])
+  @@map("RAC_Message")
 }
 
 model ScrapingJob {
-  id          String   @id @default(uuid())
+  id        String  @id @default(uuid())
   // OmniScraper 2.0
-  type        String   // "GOOGLE_MAPS", "INSTAGRAM", "LINKEDIN", "OLX"
-  query       String?  // Search term for Maps
-  targetUrl   String?  // Group Link or Profile URL
-  
-  filters     Json?    // { region: "SP", category: "Dentist" }
-  stats       Json?    // { found: 100, valid: 80, imported: 50 }
+  type      String // "GOOGLE_MAPS", "INSTAGRAM", "LINKEDIN", "OLX"
+  query     String? // Search term for Maps
+  targetUrl String? // Group Link or Profile URL
+
+  filters Json? // { region: "SP", category: "Dentist" }
+  stats   Json? // { found: 100, valid: 80, imported: 50 }
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  leads       ScrapedLead[]
+  leads ScrapedLead[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("RAC_ScrapingJob")
 }
 
 model ScrapedLead {
-  id          String   @id @default(uuid())
-  phone       String
-  name        String?
-  category    String?
-  address     String?
-  metadata    Json?    // Raw data from scraper
-  
-  isValid     Boolean  @default(false)
-  isImported  Boolean  @default(false) // Converted to Contact?
+  id       String  @id @default(uuid())
+  phone    String
+  name     String?
+  category String?
+  address  String?
+  metadata Json? // Raw data from scraper
 
-  jobId       String
-  job         ScrapingJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  isValid    Boolean @default(false)
+  isImported Boolean @default(false) // Converted to Contact?
+
+  jobId String
+  job   ScrapingJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("RAC_ScrapedLead")
 }
 
 // =========================================
@@ -575,45 +608,52 @@ model ScrapedLead {
 
 // --- AI NEURAL BRAIN ---
 model KnowledgeBase {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
   description String?
-  
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  sources     KnowledgeSource[]
-  personas    Persona[]
+  sources  KnowledgeSource[]
+  personas Persona[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@map("RAC_KnowledgeBase")
 }
 
 model KnowledgeSource {
-  id          String   @id @default(uuid())
-  type        String   // TEXT, PDF, URL, YOUTUBE
-  content     String   // Text content or URL
-  status      String   // PENDING, INDEXED, FAILED
-  
+  id      String @id @default(uuid())
+  type    String // TEXT, PDF, URL, YOUTUBE
+  content String // Text content or URL
+  status  String // PENDING, INDEXED, FAILED
+
   knowledgeBaseId String
   knowledgeBase   KnowledgeBase @relation(fields: [knowledgeBaseId], references: [id], onDelete: Cascade)
 
-  vectors     Vector[] // Reference to embeddings (if stored in DB, otherwise use Vector DB)
+  vectors Vector[] // Reference to embeddings (if stored in DB, otherwise use Vector DB)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("RAC_KnowledgeSource")
 }
 
 // NOTE: pgvector extension used for semantic search.
 // The `embedding` field uses Unsupported() because Prisma doesn't natively support vector types.
 // All vector queries MUST use $queryRaw with proper SQL (see knowledge-base.service.ts).
 model Vector {
-  id        String   @id @default(uuid())
-  content   String   // Chunk text
+  id        String                       @id @default(uuid())
+  content   String // Chunk text
   embedding Unsupported("vector(1536)")? // OpenAI Ada-002 dimensions
-  
-  sourceId  String
-  source    KnowledgeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  sourceId String
+  source   KnowledgeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@map("RAC_Vector")
 }
 
 // --- CRM & KANBAN ---
@@ -621,88 +661,99 @@ model Vector {
 
 // --- OMNICHANNEL INTEGRATIONS ---
 model Integration {
-  id          String   @id @default(uuid())
-  type        String   // INSTAGRAM, STRIPE, GOOGLE_CALENDAR
+  id          String  @id @default(uuid())
+  type        String // INSTAGRAM, STRIPE, GOOGLE_CALENDAR
   name        String
-  credentials Json     // Encrypted keys
-  isActive    Boolean  @default(true)
-  
+  credentials Json // Encrypted keys
+  isActive    Boolean @default(true)
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("RAC_Integration")
 }
 
 // --- GROUP MANAGEMENT (GOD MODE) ---
 model MonitoredGroup {
-  id          String   @id @default(uuid())
-  jid         String   // Group JID (e.g., 123456789@g.us)
-  name        String?
-  inviteLink  String?
-  
-  settings    Json?    // { autoBan: true, spyMode: false }
-  
+  id         String  @id @default(uuid())
+  jid        String // Group JID (e.g., 123456789@g.us)
+  name       String?
+  inviteLink String?
+
+  settings Json? // { autoBan: true, spyMode: false }
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  members     GroupMember[]
-  keywords    BannedKeyword[]
+  members  GroupMember[]
+  keywords BannedKeyword[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   @@unique([workspaceId, jid])
+  @@map("RAC_MonitoredGroup")
 }
 
 model GroupMember {
-  id          String   @id @default(uuid())
-  phone       String   // Member phone
-  isAdmin     Boolean  @default(false)
-  
-  groupId     String
-  group       MonitoredGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  id      String  @id @default(uuid())
+  phone   String // Member phone
+  isAdmin Boolean @default(false)
+
+  groupId String
+  group   MonitoredGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("RAC_GroupMember")
 }
 
 model BannedKeyword {
-  id          String   @id @default(uuid())
-  keyword     String
-  action      String   // DELETE_MESSAGE, BAN_USER, NOTIFY_ADMIN
-  
-  groupId     String
-  group       MonitoredGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  id      String @id @default(uuid())
+  keyword String
+  action  String // DELETE_MESSAGE, BAN_USER, NOTIFY_ADMIN
+
+  groupId String
+  group   MonitoredGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+
+  @@map("RAC_BannedKeyword")
 }
 
 model Subscription {
-  id                  String   @id @default(uuid())
-  stripeId            String?  // Stripe Subscription ID
-  status              String   // ACTIVE, CANCELED, PAST_DUE, TRIALING
-  plan                String   // STARTER, PRO, ENTERPRISE or Stripe Price ID
-  currentPeriodEnd    DateTime
-  cancelAtPeriodEnd   Boolean  @default(false)
-  
-  workspaceId    String   @unique
-  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  id                String   @id @default(uuid())
+  stripeId          String? // Stripe Subscription ID
+  status            String // ACTIVE, CANCELED, PAST_DUE, TRIALING
+  plan              String // STARTER, PRO, ENTERPRISE or Stripe Price ID
+  currentPeriodEnd  DateTime
+  cancelAtPeriodEnd Boolean  @default(false)
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("RAC_Subscription")
 }
 
 model Invoice {
-  id             String   @id @default(uuid())
-  amount         Int      // In cents
-  status         String   // PAID, OPEN, VOID, UNCOLLECTIBLE
-  url            String?  // Hosted Invoice URL
-  
-  workspaceId    String
-  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  id     String  @id @default(uuid())
+  amount Int // In cents
+  status String // PAID, OPEN, VOID, UNCOLLECTIBLE
+  url    String? // Hosted Invoice URL
 
-  createdAt      DateTime @default(now())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("RAC_Invoice")
 }
 
 // =========================================
@@ -710,29 +761,30 @@ model Invoice {
 // =========================================
 
 model ExternalPaymentLink {
-  id             String   @id @default(uuid())
-  workspaceId    String
-  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  platform       String   // hotmart, kiwify, eduzz, monetizze, braip, other
-  productName    String
-  price          Float
-  paymentUrl     String
-  checkoutUrl    String?
-  affiliateUrl   String?
-  isActive       Boolean  @default(true)
-  
+  platform     String // hotmart, kiwify, eduzz, monetizze, braip, other
+  productName  String
+  price        Float
+  paymentUrl   String
+  checkoutUrl  String?
+  affiliateUrl String?
+  isActive     Boolean @default(true)
+
   // Webhook tracking
-  totalSales     Int      @default(0)
-  totalRevenue   Float    @default(0)
-  lastSaleAt     DateTime?
-  
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  
+  totalSales   Int       @default(0)
+  totalRevenue Float     @default(0)
+  lastSaleAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([workspaceId])
   @@index([workspaceId, platform])
   @@index([workspaceId, productName])
+  @@map("RAC_ExternalPaymentLink")
 }
 
 // =========================================
@@ -740,36 +792,40 @@ model ExternalPaymentLink {
 // =========================================
 
 model GroupLauncher {
-  id          String   @id @default(uuid())
-  name        String
-  slug        String   @unique // e.g. "black-friday"
-  status      String   // ACTIVE, PAUSED, FINISHED
-  
-  clicks      Int      @default(0)
-  joins       Int      @default(0)
-  
-  groups      LaunchGroup[]
-  
+  id     String @id @default(uuid())
+  name   String
+  slug   String @unique // e.g. "black-friday"
+  status String // ACTIVE, PAUSED, FINISHED
+
+  clicks Int @default(0)
+  joins  Int @default(0)
+
+  groups LaunchGroup[]
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("RAC_GroupLauncher")
 }
 
 model LaunchGroup {
-  id          String   @id @default(uuid())
-  name        String
-  inviteLink  String
-  capacity    Int      @default(1024)
-  current     Int      @default(0)
-  isActive    Boolean  @default(true)
-  
-  launcherId  String
-  launcher    GroupLauncher @relation(fields: [launcherId], references: [id], onDelete: Cascade)
+  id         String  @id @default(uuid())
+  name       String
+  inviteLink String
+  capacity   Int     @default(1024)
+  current    Int     @default(0)
+  isActive   Boolean @default(true)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  launcherId String
+  launcher   GroupLauncher @relation(fields: [launcherId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("RAC_LaunchGroup")
 }
 
 // =========================================
@@ -777,71 +833,81 @@ model LaunchGroup {
 // =========================================
 
 model MediaJob {
-  id          String   @id @default(uuid())
-  status      String   // PENDING, PROCESSING, COMPLETED, FAILED
-  type        String   // VIDEO_GENERATION, IMAGE_ENHANCE
-  
-  inputUrl    String   // Product Image
-  prompt      String?  // "Show this sneaker running on mars"
-  outputUrl   String?  // Generated Video
-  
+  id     String @id @default(uuid())
+  status String // PENDING, PROCESSING, COMPLETED, FAILED
+  type   String // VIDEO_GENERATION, IMAGE_ENHANCE
+
+  inputUrl  String // Product Image
+  prompt    String? // "Show this sneaker running on mars"
+  outputUrl String? // Generated Video
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("RAC_MediaJob")
 }
+
 // =========================================
 // PHASE 10: KANBAN CRM (Visual Sales Pipeline)
 // =========================================
 
 model Pipeline {
-  id          String   @id @default(uuid())
-  name        String
-  isDefault   Boolean  @default(false)
-  
-  stages      Stage[]
-  
+  id        String  @id @default(uuid())
+  name      String
+  isDefault Boolean @default(false)
+
+  stages Stage[]
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@map("RAC_Pipeline")
 }
 
 model Stage {
-  id          String   @id @default(uuid())
-  name        String
-  color       String   @default("#E5E7EB")
-  order       Int      @default(0)
-  
-  pipelineId  String
-  pipeline    Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
-  
-  deals       Deal[]
+  id    String @id @default(uuid())
+  name  String
+  color String @default("#E5E7EB")
+  order Int    @default(0)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  pipelineId String
+  pipeline   Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+
+  deals Deal[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pipelineId])
+  @@map("RAC_Stage")
 }
 
 model Deal {
-  id          String   @id @default(uuid())
-  title       String
-  value       Float    @default(0)
-  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH
-  status      DealStatus @default(OPEN)
+  id               String     @id @default(uuid())
+  title            String
+  value            Float      @default(0)
+  priority         String     @default("MEDIUM") // LOW, MEDIUM, HIGH
+  status           DealStatus @default(OPEN)
   sourceCampaignId String?
-  
-  contactId   String
-  contact     Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
-  stageId     String
-  stage       Stage    @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  contactId String
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  stageId String
+  stage   Stage  @relation(fields: [stageId], references: [id], onDelete: Restrict)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([sourceCampaignId])
+  @@map("RAC_Deal")
 }
 
 // =========================================
@@ -849,96 +915,109 @@ model Deal {
 // =========================================
 
 model VoiceProfile {
-  id          String   @id @default(uuid())
-  name        String
-  provider    String   // OPENAI
-  voiceId     String   // External ID
-  sampleUrl   String?
-  
+  id        String  @id @default(uuid())
+  name      String
+  provider  String // OPENAI
+  voiceId   String // External ID
+  sampleUrl String?
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  jobs        VoiceJob[]
+  jobs VoiceJob[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("RAC_VoiceProfile")
 }
 
 model VoiceJob {
-  id          String   @id @default(uuid())
-  status      String   // PENDING, PROCESSING, COMPLETED, FAILED
-  text        String
-  outputUrl   String?
-  duration    Int?     // Seconds
-  
-  profileId   String
-  profile     VoiceProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  id        String  @id @default(uuid())
+  status    String // PENDING, PROCESSING, COMPLETED, FAILED
+  text      String
+  outputUrl String?
+  duration  Int? // Seconds
+
+  profileId String
+  profile   VoiceProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([profileId])
+  @@index([workspaceId])
+  @@map("RAC_VoiceJob")
 }
 
 // =========================================
 // AUTH TOKENS
 // =========================================
 model RefreshToken {
-  id         String   @id @default(uuid())
-  token      String   @unique
-  revoked    Boolean  @default(false)
-  expiresAt  DateTime
+  id        String   @id @default(uuid())
+  token     String   @unique
+  revoked   Boolean  @default(false)
+  expiresAt DateTime
 
-  agentId    String
-  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("RAC_RefreshToken")
 }
 
 model DeviceToken {
-  id         String   @id @default(uuid())
-  token      String   @unique
-  platform   String   // IOS, ANDROID, WEB
-  
-  agentId    String
-  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  id       String @id @default(uuid())
+  token    String @unique
+  platform String // IOS, ANDROID, WEB
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("RAC_DeviceToken")
 }
 
 model PasswordResetToken {
-  id         String   @id @default(uuid())
-  token      String   @unique
-  expiresAt  DateTime
-  used       Boolean  @default(false)
-  
-  agentId    String
-  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
 
-  createdAt  DateTime @default(now())
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@map("RAC_PasswordResetToken")
 }
 
 model MagicLinkToken {
-  id          String   @id @default(cuid())
-  email       String
-  tokenHash   String   @unique
-  redirectTo  String?
-  expiresAt   DateTime
-  usedAt      DateTime?
+  id         String    @id @default(cuid())
+  email      String
+  tokenHash  String    @unique
+  redirectTo String?
+  expiresAt  DateTime
+  usedAt     DateTime?
 
-  agentId     String?
-  agent       Agent?   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId String?
+  agent   Agent?  @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([email, expiresAt])
+  @@map("RAC_MagicLinkToken")
 }
 
 model SocialAccount {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   provider       String
   providerUserId String
   email          String?
@@ -949,15 +1028,16 @@ model SocialAccount {
   lastUsedAt     DateTime?
   revokedAt      DateTime?
 
-  agentId        String
-  agent          Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([provider, providerUserId])
   @@unique([agentId, provider])
   @@index([email])
+  @@map("RAC_SocialAccount")
 }
 
 model DataDeletionRequest {
@@ -974,33 +1054,36 @@ model DataDeletionRequest {
 
   @@index([confirmationCode])
   @@index([providerUserId, provider])
+  @@map("RAC_DataDeletionRequest")
 }
 
 model RiscEvent {
-  id           String   @id @default(cuid())
-  subject      String
-  eventType    String
-  rawJwt       String   @db.Text
-  processed    Boolean  @default(false)
-  processedAt  DateTime?
-  receivedAt   DateTime @default(now())
+  id          String    @id @default(cuid())
+  subject     String
+  eventType   String
+  rawJwt      String    @db.Text
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+  receivedAt  DateTime  @default(now())
 
   @@index([subject, eventType])
+  @@map("RAC_RiscEvent")
 }
 
 model Invitation {
-  id          String   @id @default(uuid())
-  email       String
-  role        String   // ADMIN, AGENT
-  token       String   @unique
-  expiresAt   DateTime
-  
+  id        String   @id @default(uuid())
+  email     String
+  role      String // ADMIN, AGENT
+  token     String   @unique
+  expiresAt DateTime
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([workspaceId, email])
+  @@map("RAC_Invitation")
 }
 
 // =========================================
@@ -1008,115 +1091,124 @@ model Invitation {
 // =========================================
 
 model Queue {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
   description String?
-  priority    Int      @default(0)
-  
+  priority    Int     @default(0)
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  agents      AgentQueue[]
+  agents        AgentQueue[]
   conversations Conversation[]
-  routingRules   RoutingRule[]
+  routingRules  RoutingRule[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("RAC_Queue")
 }
-  
-  model AgentQueue {
-    id          String   @id @default(uuid())
-    agentId     String
-    agent       Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
-    queueId     String
-    queue       Queue    @relation(fields: [queueId], references: [id], onDelete: Cascade)
-    
-    priority    Int      @default(1) // Higher gets more chats
-    
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-  
-    @@unique([agentId, queueId])
-  }
-  
-  model RoutingRule {
-    id          String   @id @default(uuid())
-    name        String
-    isActive    Boolean  @default(true)
-    
-    // Conditions
-    channel     String?  // WHATSAPP, INSTAGRAM, etc.
-    keyword     String?  // If message contains
-    tagId       String?  // If contact has tag
-    
-    // Action
-    actionType  String   // ASSIGN_TO_QUEUE, ASSIGN_TO_AGENT, BOT_HANDOFF
-    targetId    String   // QueueID or AgentID
-    
-    queueId     String?
-    queue       Queue?   @relation(fields: [queueId], references: [id], onDelete: SetNull)
+model AgentQueue {
+  id      String @id @default(uuid())
+  agentId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
 
-    workspaceId String
-    workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  queueId String
+  queue   Queue  @relation(fields: [queueId], references: [id], onDelete: Cascade)
 
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
-  }
+  priority Int @default(1) // Higher gets more chats
 
-  // =========================================
-  // PHASE 13: SECURITY & AUDIT (GLOBAL TOP 1)
-  // =========================================
-  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([agentId, queueId])
+  @@map("RAC_AgentQueue")
+}
+
+model RoutingRule {
+  id       String  @id @default(uuid())
+  name     String
+  isActive Boolean @default(true)
+
+  // Conditions
+  channel String? // WHATSAPP, INSTAGRAM, etc.
+  keyword String? // If message contains
+  tagId   String? // If contact has tag
+
+  // Action
+  actionType String // ASSIGN_TO_QUEUE, ASSIGN_TO_AGENT, BOT_HANDOFF
+  targetId   String // QueueID or AgentID
+
+  queueId String?
+  queue   Queue?  @relation(fields: [queueId], references: [id], onDelete: SetNull)
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([queueId])
+  @@index([workspaceId])
+  @@map("RAC_RoutingRule")
+}
+
+// =========================================
+// PHASE 13: SECURITY & AUDIT (GLOBAL TOP 1)
+// =========================================
+
 model AuditLog {
-  id          String   @id @default(uuid())
-  action      String   // LOGIN, CREATE_FLOW, EXPORT_CONTACTS
-  resource    String   // Flow, Contact, Agent
-  resourceId  String?  // ID of the affected resource
-    details     Json?    // { diff: ..., ip: ... }
-    
-    ipAddress   String?
-    userAgent   String?
-  
-    agentId     String?
-    agent       Agent?   @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  id         String  @id @default(uuid())
+  action     String // LOGIN, CREATE_FLOW, EXPORT_CONTACTS
+  resource   String // Flow, Contact, Agent
+  resourceId String? // ID of the affected resource
+  details    Json? // { diff: ..., ip: ... }
 
-    workspaceId String
-    workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  ipAddress String?
+  userAgent String?
 
-    createdAt   DateTime @default(now())
-  
+  agentId String?
+  agent   Agent?  @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
   @@index([workspaceId, createdAt])
   @@index([workspaceId, action])
+  @@map("RAC_AuditLog")
 }
 
 // =========================================
 // AUTOPILOT EVENTS (dedicated tracking)
 // =========================================
 model AutopilotEvent {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  contactId   String?
-  contact     Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  contactId String?
+  contact   Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
 
-  intent      String
-  action      String
-  status      String    // executed | error | skipped
-  reason      String?
+  intent String
+  action String
+  status String // executed | error | skipped
+  reason String?
 
-  messageSent String?
+  messageSent  String?
   responseText String?
   latencyMs    Int?
   meta         Json?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([workspaceId, createdAt])
   @@index([workspaceId, status])
   @@index([workspaceId, intent])
   @@index([workspaceId, action])
+  @@map("RAC_AutopilotEvent")
 }
 
 model AutonomyRun {
@@ -1131,6 +1223,7 @@ model AutonomyRun {
 
   @@index([workspaceId, startedAt])
   @@index([workspaceId, status])
+  @@map("RAC_AutonomyRun")
 }
 
 model AutonomyExecution {
@@ -1155,6 +1248,7 @@ model AutonomyExecution {
   @@unique([workspaceId, idempotencyKey])
   @@index([workspaceId, contactId, createdAt])
   @@index([workspaceId, conversationId, createdAt])
+  @@map("RAC_AutonomyExecution")
 }
 
 model AgentWorkItem {
@@ -1186,6 +1280,7 @@ model AgentWorkItem {
 
   @@index([workspaceId, kind, state])
   @@index([workspaceId, state, eligibleAt])
+  @@map("RAC_AgentWorkItem")
 }
 
 model ApprovalRequest {
@@ -1207,6 +1302,7 @@ model ApprovalRequest {
 
   @@index([workspaceId, kind, state])
   @@index([workspaceId, state, createdAt])
+  @@map("RAC_ApprovalRequest")
 }
 
 model InputCollectionSession {
@@ -1226,122 +1322,148 @@ model InputCollectionSession {
 
   @@index([workspaceId, kind, state])
   @@index([workspaceId, state, updatedAt])
+  @@map("RAC_InputCollectionSession")
 }
 
 model AccountProofSnapshot {
-  id                  String    @id @default(uuid())
-  workspaceId         String
-  workspace           Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  proofType           String
-  status              String
-  cycleProofId        String?
-  noLegalActions      Boolean   @default(false)
-  candidateCount      Int       @default(0)
-  eligibleActionCount Int       @default(0)
-  blockedActionCount  Int       @default(0)
-  deferredActionCount Int       @default(0)
-  waitingApprovalCount Int      @default(0)
-  waitingInputCount   Int       @default(0)
-  silentRemainderCount Int      @default(0)
-  workItemUniverse    Json?
-  actionUniverse      Json?
-  executedActions     Json?
-  blockedActions      Json?
-  deferredActions     Json?
-  metadata            Json?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                   String    @id @default(uuid())
+  workspaceId          String
+  workspace            Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  proofType            String
+  status               String
+  cycleProofId         String?
+  noLegalActions       Boolean   @default(false)
+  candidateCount       Int       @default(0)
+  eligibleActionCount  Int       @default(0)
+  blockedActionCount   Int       @default(0)
+  deferredActionCount  Int       @default(0)
+  waitingApprovalCount Int       @default(0)
+  waitingInputCount    Int       @default(0)
+  silentRemainderCount Int       @default(0)
+  workItemUniverse     Json?
+  actionUniverse       Json?
+  executedActions      Json?
+  blockedActions       Json?
+  deferredActions      Json?
+  metadata             Json?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
   @@index([workspaceId, createdAt])
   @@index([workspaceId, status, createdAt])
+  @@map("RAC_AccountProofSnapshot")
 }
 
 model ConversationProofSnapshot {
-  id                  String    @id @default(uuid())
-  workspaceId         String
-  workspace           Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  conversationId      String
-  contactId           String?
-  phone               String?
-  status              String
-  cycleProofId        String?
-  accountProofId      String?
-  selectedActionType  String
-  selectedTactic      String?
-  governor            String?
-  renderedMessage     String?
-  outcome             String?
-  actionUniverse      Json?
-  tacticUniverse      Json?
-  selectedAction      Json?
-  selectedTacticData  Json?
-  metadata            Json?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  id                 String    @id @default(uuid())
+  workspaceId        String
+  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  conversationId     String
+  contactId          String?
+  phone              String?
+  status             String
+  cycleProofId       String?
+  accountProofId     String?
+  selectedActionType String
+  selectedTactic     String?
+  governor           String?
+  renderedMessage    String?
+  outcome            String?
+  actionUniverse     Json?
+  tacticUniverse     Json?
+  selectedAction     Json?
+  selectedTacticData Json?
+  metadata           Json?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@index([workspaceId, conversationId, createdAt])
   @@index([workspaceId, status, createdAt])
+  @@map("RAC_ConversationProofSnapshot")
 }
 
 model WebhookSubscription {
-  id          String   @id @default(uuid())
-  url         String
-  events      String[] // ["message.received", "deal.updated"]
-  secret      String?  // For signature verification
-  isActive    Boolean  @default(true)
-  
+  id       String   @id @default(uuid())
+  url      String
+  events   String[] // ["message.received", "deal.updated"]
+  secret   String? // For signature verification
+  isActive Boolean  @default(true)
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("RAC_WebhookSubscription")
+}
+
+model OpsEvent {
+  id          String   @id @default(uuid())
+  type        String // "critical_error", "degradation", "recovery"
+  service     String
+  error       String
+  stack       String?
+  workspaceId String?
+  metadata    Json?    @default("{}")
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  @@index([type, createdAt])
+  @@index([service, createdAt])
+  @@index([workspaceId, createdAt])
+  @@map("RAC_OpsEvent")
 }
 
 model WebhookEvent {
-  id          String   @id @default(uuid())
-  provider    String   // stripe, checkout
+  id          String    @id @default(uuid())
+  provider    String // stripe, checkout
   eventType   String
   externalId  String
   payload     Json
-  status      String   @default("received") // received, processed, failed
+  status      String    @default("received") // received, processed, failed
   error       String?
-  receivedAt  DateTime @default(now())
+  receivedAt  DateTime  @default(now())
   processedAt DateTime?
 
   @@unique([provider, externalId])
   @@index([status])
+  @@map("RAC_WebhookEvent")
 }
 
 model ApiKey {
-  id          String   @id @default(uuid())
-  name        String   // e.g. "Production Key"
-  key         String   @unique // "sk_live_..."
-  lastUsedAt  DateTime?
-  
+  id         String    @id @default(uuid())
+  name       String // e.g. "Production Key"
+  key        String    @unique // "sk_live_..."
+  lastUsedAt DateTime?
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("RAC_ApiKey")
 }
 
 model Persona {
-  id          String   @id @default(uuid())
-  name        String
-  role        String   // "SALES", "SUPPORT", "COPYWRITER"
-  basePrompt  String   // "You are Daniel Penin..."
-  voiceId     String?  // Link to VoiceProfile
-  
+  id         String  @id @default(uuid())
+  name       String
+  role       String // "SALES", "SUPPORT", "COPYWRITER"
+  basePrompt String // "You are Daniel Penin..."
+  voiceId    String? // Link to VoiceProfile
+
   knowledgeBaseId String?
   knowledgeBase   KnowledgeBase? @relation(fields: [knowledgeBaseId], references: [id], onDelete: SetNull)
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  
-  agents      Agent[] // Agents can "adopt" a persona or be bots
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  agents Agent[] // Agents can "adopt" a persona or be bots
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("RAC_Persona")
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1349,86 +1471,88 @@ model Persona {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 model KloelMessage {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  role        String   // "user" | "assistant" | "system"
+  role        String // "user" | "assistant" | "system"
   content     String
-  metadata    Json?    // Dados extras (intenção, sentimento, etc)
+  metadata    Json? // Dados extras (intenção, sentimento, etc)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([workspaceId, createdAt])
+  @@map("RAC_KloelMessage")
 }
 
 model KloelMemory {
-  id          String   @id @default(uuid())
+  id          String                       @id @default(uuid())
   workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  key         String   // Chave única para busca
-  value       Json     // Valor armazenado (pode ser qualquer estrutura)
-  category    String   @default("general") // "business", "system", "preferences", "catalog"
-  type        String?  // "product", "company_info", "persona", "objection", "script", "pdf_analysis"
+  workspace   Workspace                    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  key         String // Chave única para busca
+  value       Json // Valor armazenado (pode ser qualquer estrutura)
+  category    String                       @default("general") // "business", "system", "preferences", "catalog"
+  type        String? // "product", "company_info", "persona", "objection", "script", "pdf_analysis"
   content     String?
-  metadata    Json?    // Dados estruturados extras
+  metadata    Json? // Dados estruturados extras
   embedding   Unsupported("vector(1536)")? // Para busca semântica
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([workspaceId, key])
   @@index([workspaceId, category])
+  @@map("RAC_KloelMemory")
 }
 
 // ============================================
 // PRODUCT CATALOG
 // ============================================
 model Product {
-  id          String   @id @default(uuid())
+  id          String @id @default(uuid())
   workspaceId String
 
   name        String
   description String?
   price       Float
-  currency    String   @default("BRL")
+  currency    String  @default("BRL")
 
   // Categorization
-  category    String?
-  sku         String?  // Stock Keeping Unit
-  tags        String[] @default([])
-  format      String   @default("PHYSICAL") // PHYSICAL, DIGITAL, HYBRID
+  category String?
+  sku      String? // Stock Keeping Unit
+  tags     String[] @default([])
+  format   String   @default("PHYSICAL") // PHYSICAL, DIGITAL, HYBRID
 
   // Media
-  imageUrl    String?
-  images      Json?    // Array of image URLs
+  imageUrl String?
+  images   Json? // Array of image URLs
 
   // Payment Integration
-  paymentLink String?  // Asaas, Stripe, etc
+  paymentLink String? // Asaas, Stripe, etc
 
   // Status
-  active      Boolean  @default(true)
-  featured    Boolean  @default(false)
-  status      String   @default("DRAFT") // DRAFT, PENDING, APPROVED, REJECTED
+  active   Boolean @default(true)
+  featured Boolean @default(false)
+  status   String  @default("DRAFT") // DRAFT, PENDING, APPROVED, REJECTED
 
   // Stock (optional)
   stockQuantity Int?
   trackStock    Boolean @default(false)
 
   // URLs
-  salesPageUrl     String?
-  thankyouUrl      String?
+  salesPageUrl      String?
+  thankyouUrl       String?
   thankyouBoletoUrl String?
-  thankyouPixUrl   String?
-  reclameAquiUrl   String?
-  supportEmail     String?
+  thankyouPixUrl    String?
+  reclameAquiUrl    String?
+  supportEmail      String?
 
   // Shipping (physical products)
-  warrantyDays     Int?
-  isSample         Boolean @default(false)
-  shippingType     String? // VARIABLE, FIXED, FREE, NONE
-  shippingValue    Float?
-  originCep        String?
+  warrantyDays  Int?
+  isSample      Boolean @default(false)
+  shippingType  String? // VARIABLE, FIXED, FREE, NONE
+  shippingValue Float?
+  originCep     String?
 
   // Affiliate Program
   affiliateEnabled          Boolean @default(false)
@@ -1439,106 +1563,110 @@ model Product {
   affiliateFirstInstallment Boolean @default(false)
 
   // Commission
-  commissionType                 String  @default("last_click")
-  commissionCookieDays           Int     @default(180)
-  commissionPercent              Float   @default(30.0)
-  commissionLastClickPercent     Float?
-  commissionOtherClicksPercent   Float?
+  commissionType               String @default("last_click")
+  commissionCookieDays         Int    @default(180)
+  commissionPercent            Float  @default(30.0)
+  commissionLastClickPercent   Float?
+  commissionOtherClicksPercent Float?
 
   // Affiliate Content
-  merchandContent        String?  @db.Text
-  affiliateTerms         String?  @db.Text
+  merchandContent String? @db.Text
+  affiliateTerms  String? @db.Text
 
   // After Pay
-  afterPayDuplicateAddress  Boolean @default(false)
-  afterPayAffiliateCharge   Boolean @default(false)
-  afterPayChargeValue       Float?
-  afterPayShippingProvider  String?
+  afterPayDuplicateAddress Boolean @default(false)
+  afterPayAffiliateCharge  Boolean @default(false)
+  afterPayChargeValue      Float?
+  afterPayShippingProvider String?
 
   // SEO/Display
-  slug        String?
+  slug String?
 
   // Metadata
-  metadata    Json?
+  metadata Json?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  plans       ProductPlan[]
-  checkouts   ProductCheckout[]
-  coupons     ProductCoupon[]
-  reviews     ProductReview[]
-  commissions ProductCommission[]
-  urls        ProductUrl[]
-  aiConfig       ProductAIConfig?
-  checkoutPlans  CheckoutProductPlan[]
+  plans               ProductPlan[]
+  checkouts           ProductCheckout[]
+  coupons             ProductCoupon[]
+  reviews             ProductReview[]
+  commissions         ProductCommission[]
+  urls                ProductUrl[]
+  aiConfig            ProductAIConfig?
+  checkoutPlans       CheckoutProductPlan[]
   checkoutSocialLeads CheckoutSocialLead[]
-  campaigns      ProductCampaign[]
+  campaigns           ProductCampaign[]
 
   @@unique([workspaceId, sku])
   @@index([workspaceId, active])
   @@index([workspaceId, category])
   @@index([workspaceId, status])
+  @@map("RAC_Product")
 }
 
 model KloelLead {
-  id           String   @id @default(uuid())
-  workspaceId  String
-  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  phone        String
-  name         String?
-  email        String?
-  status       String   @default("new") // "new", "hot", "warm", "cold", "converted", "lost"
-  stage        String   @default("new") // "new", "interested", "negotiation", "objection", "closed"
-  score        Int      @default(0)     // Lead score (0-100)
-  lastMessage  String?                  // Última mensagem recebida
-  lastIntent   String?                  // Última intenção detectada
-  totalMessages Int     @default(0)
-  metadata     Json?    // Histórico de interações, preferências, etc
-  
+  id            String    @id @default(uuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  phone         String
+  name          String?
+  email         String?
+  status        String    @default("new") // "new", "hot", "warm", "cold", "converted", "lost"
+  stage         String    @default("new") // "new", "interested", "negotiation", "objection", "closed"
+  score         Int       @default(0) // Lead score (0-100)
+  lastMessage   String? // Última mensagem recebida
+  lastIntent    String? // Última intenção detectada
+  totalMessages Int       @default(0)
+  metadata      Json? // Histórico de interações, preferências, etc
+
   // Relações
   conversations KloelConversation[]
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([workspaceId, phone])
   @@index([workspaceId, status])
   @@index([workspaceId, stage])
+  @@map("RAC_KloelLead")
 }
 
 // Histórico de conversa por lead (para KLOEL manter contexto)
 model KloelConversation {
-  id          String   @id @default(uuid())
-  leadId      String
-  role        String   // "user" | "assistant"
-  content     String
-  intent      String?  // Intenção detectada na mensagem
-  sentiment   String?  // Sentimento (positive, negative, neutral)
-  metadata    Json?
-  
-  lead        KloelLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime @default(now())
-  
+  id        String  @id @default(uuid())
+  leadId    String
+  role      String // "user" | "assistant"
+  content   String
+  intent    String? // Intenção detectada na mensagem
+  sentiment String? // Sentimento (positive, negative, neutral)
+  metadata  Json?
+
+  lead KloelLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
   @@index([leadId, createdAt])
+  @@map("RAC_KloelConversation")
 }
 
 // ============================================
 // CHAT THREADS (dashboard chat persistence)
 // ============================================
 model ChatThread {
-  id          String        @id @default(uuid())
-  workspaceId String
-  title       String        @default("Nova conversa")
-  summary     String?       @db.Text
+  id               String        @id @default(uuid())
+  workspaceId      String
+  title            String        @default("Nova conversa")
+  summary          String?       @db.Text
   summaryUpdatedAt DateTime?
-  messages    ChatMessage[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  messages         ChatMessage[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   @@index([workspaceId, updatedAt])
+  @@map("RAC_ChatThread")
 }
 
 model ChatMessage {
@@ -1551,28 +1679,30 @@ model ChatMessage {
   createdAt DateTime   @default(now())
 
   @@index([threadId, createdAt])
+  @@map("RAC_ChatMessage")
 }
 
 model KloelSale {
-  id                String   @id @default(uuid())
+  id                String    @id @default(uuid())
   workspaceId       String
   workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   leadId            String?
   leadPhone         String?
   productName       String?
   amount            Float
-  status            String   @default("pending") // "pending", "paid", "cancelled", "refunded", "overdue"
-  paymentMethod     String?  // "PIX", "CREDIT_CARD", "BOLETO"
+  status            String    @default("pending") // "pending", "paid", "cancelled", "refunded", "overdue"
+  paymentMethod     String? // "PIX", "CREDIT_CARD", "BOLETO"
   paymentLink       String?
-  externalPaymentId String?  @unique // ID do pagamento no gateway (Asaas, Stripe, etc)
-  externalId        String?  // Legacy
+  externalPaymentId String?   @unique // ID do pagamento no gateway (Asaas, Stripe, etc)
+  externalId        String? // Legacy
   paidAt            DateTime?
   metadata          Json?
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([workspaceId, status])
+  @@map("RAC_KloelSale")
 }
 
 // Carteira virtual do usuário (para split de pagamentos)
@@ -1585,39 +1715,42 @@ model KloelSale {
 // reconciliation job verifies drift. Read from the Float columns is
 // DEPRECATED — use `*InCents / 100` at the DTO boundary.
 model KloelWallet {
-  id                      String   @id @default(uuid())
-  workspaceId             String   @unique
+  id                      String    @id @default(uuid())
+  workspaceId             String    @unique
   workspace               Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  availableBalance        Float    @default(0) // DEPRECATED — drop in P6-3
-  pendingBalance          Float    @default(0) // DEPRECATED — drop in P6-3
-  blockedBalance          Float    @default(0) // DEPRECATED — drop in P6-3
-  availableBalanceInCents BigInt   @default(0)
-  pendingBalanceInCents   BigInt   @default(0)
-  blockedBalanceInCents   BigInt   @default(0)
+  availableBalance        Float     @default(0) // DEPRECATED — drop in P6-3
+  pendingBalance          Float     @default(0) // DEPRECATED — drop in P6-3
+  blockedBalance          Float     @default(0) // DEPRECATED — drop in P6-3
+  availableBalanceInCents BigInt    @default(0)
+  pendingBalanceInCents   BigInt    @default(0)
+  blockedBalanceInCents   BigInt    @default(0)
 
-  transactions     KloelWalletTransaction[]
-  ledgerEntries    KloelWalletLedger[]
+  transactions  KloelWalletTransaction[]
+  ledgerEntries KloelWalletLedger[]
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("RAC_KloelWallet")
 }
 
 model KloelWalletTransaction {
-  id            String   @id @default(uuid())
+  id            String  @id @default(uuid())
   walletId      String
   type          String
-  amount        Float    // DEPRECATED — drop in P6-3; use amountInCents
-  amountInCents BigInt   @default(0)
+  amount        Float // DEPRECATED — drop in P6-3; use amountInCents
+  amountInCents BigInt  @default(0)
   description   String
-  status        String   @default("pending")
+  status        String  @default("pending")
   reference     String?
   metadata      Json?
 
-  wallet        KloelWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  wallet KloelWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([walletId, createdAt])
+  @@map("RAC_KloelWalletTransaction")
 }
 
 // Wave 2 P6-4 / I12 — KloelWalletLedger.
@@ -1639,71 +1772,74 @@ model KloelWalletTransaction {
 //     INSIDE the same Prisma $transaction. WalletLedgerService exposes
 //     a tx-scoped append() that callers must use.
 model KloelWalletLedger {
-  id            String   @id @default(uuid())
+  id            String      @id @default(uuid())
   workspaceId   String
   walletId      String
   wallet        KloelWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
   // Reference to the originating KloelWalletTransaction (nullable for
   // adjustments / corrections that are not tied to a transaction row).
   transactionId String?
-  direction     String   // 'credit' | 'debit'
-  bucket        String   // 'available' | 'pending' | 'blocked'
+  direction     String // 'credit' | 'debit'
+  bucket        String // 'available' | 'pending' | 'blocked'
   amountInCents BigInt
-  reason        String   // 'sale_credit' | 'confirm_payment_credit' | 'confirm_payment_debit' | 'withdrawal_debit' | 'reconcile_settle_credit' | 'reconcile_settle_debit'
+  reason        String // 'sale_credit' | 'confirm_payment_credit' | 'confirm_payment_debit' | 'withdrawal_debit' | 'reconcile_settle_credit' | 'reconcile_settle_debit'
   metadata      Json?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime    @default(now())
 
   @@index([workspaceId, walletId, createdAt])
   @@index([workspaceId, transactionId])
+  @@map("RAC_KloelWalletLedger")
 }
 
 // Documentos/Catálogos enviáveis via WhatsApp
 model Document {
-  id           String   @id @default(uuid())
-  workspaceId  String
-  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  name         String   // Nome amigável do documento (ex: "Catálogo Verão 2025")
-  fileName     String   // Nome do arquivo original
-  filePath     String   // Caminho relativo no storage (uploads/)
-  mimeType     String   // Ex: application/pdf, image/jpeg
-  fileSize     Int      // Tamanho em bytes
-  description  String?  // Descrição opcional
-  category     String?  // Categoria (catalogo, contrato, proposta, etc)
-  isActive     Boolean  @default(true)
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String // Nome amigável do documento (ex: "Catálogo Verão 2025")
+  fileName    String // Nome do arquivo original
+  filePath    String // Caminho relativo no storage (uploads/)
+  mimeType    String // Ex: application/pdf, image/jpeg
+  fileSize    Int // Tamanho em bytes
+  description String? // Descrição opcional
+  category    String? // Categoria (catalogo, contrato, proposta, etc)
+  isActive    Boolean   @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([workspaceId, isActive])
   @@index([workspaceId, category])
+  @@map("RAC_Document")
 }
 
 // =========================================
 // FOLLOW-UP SCHEDULING
 // =========================================
 model FollowUp {
-  id           String   @id @default(uuid())
-  workspaceId  String
-  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  contactId    String
-  contact      Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  contactId   String
+  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   scheduledFor DateTime
-  message      String?  // Mensagem customizada (opcional)
-  
-  status       String   @default("pending") // pending, sent, cancelled
-  sentAt       DateTime?
-  
-  // Metadata
-  reason       String?  // Motivo do follow-up (ex: "sem resposta 24h", "carrinho abandonado")
-  flowId       String?  // Flow a disparar (opcional)
-  flow         Flow?    @relation(fields: [flowId], references: [id], onDelete: SetNull)
+  message      String? // Mensagem customizada (opcional)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
+  status String    @default("pending") // pending, sent, cancelled
+  sentAt DateTime?
+
+  // Metadata
+  reason String? // Motivo do follow-up (ex: "sem resposta 24h", "carrinho abandonado")
+  flowId String? // Flow a disparar (opcional)
+  flow   Flow?   @relation(fields: [flowId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([workspaceId, status, scheduledFor])
   @@index([workspaceId, contactId])
+  @@map("RAC_FollowUp")
 }
 
 // ============================================
@@ -1711,24 +1847,24 @@ model FollowUp {
 // ============================================
 
 model ProductPlan {
-  id            String   @id @default(uuid())
-  productId     String
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  name          String
-  price         Float
-  currency      String   @default("BRL")
-  billingType   String   @default("ONE_TIME") // ONE_TIME, RECURRING, FREE
-  itemsPerPlan  Int      @default(1)
+  name         String
+  price        Float
+  currency     String @default("BRL")
+  billingType  String @default("ONE_TIME") // ONE_TIME, RECURRING, FREE
+  itemsPerPlan Int    @default(1)
 
   // Payment config
-  maxInstallments    Int?
-  maxNoInterest      Int?
-  discountByPayment  Boolean @default(false)
-  recurringInterval  String? // WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL
-  trialEnabled       Boolean @default(false)
-  trialDays          Int?
-  trialPrice         Float?
+  maxInstallments   Int?
+  maxNoInterest     Int?
+  discountByPayment Boolean @default(false)
+  recurringInterval String? // WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, SEMIANNUAL, ANNUAL
+  trialEnabled      Boolean @default(false)
+  trialDays         Int?
+  trialPrice        Float?
 
   // Display
   visibleToAffiliates Boolean @default(true)
@@ -1736,180 +1872,190 @@ model ProductPlan {
   salesCount          Int     @default(0)
 
   // Shipping & Delivery
-  packagingConfig  Json?
-  shippingConfig   Json?
-  deliveryFiles    Json?
+  packagingConfig Json?
+  shippingConfig  Json?
+  deliveryFiles   Json?
 
   // Order Bump
-  orderBumpPlanId  String?
-  orderBumpText    String?
+  orderBumpPlanId String?
+  orderBumpText   String?
 
   // Terms
-  termsUrl         String?
+  termsUrl String?
 
   // Checkout customization
-  checkoutImages   Json?
+  checkoutImages Json?
 
   // Thank you URLs (plan-level override)
-  thankyouUrl      String?
+  thankyouUrl       String?
   thankyouBoletoUrl String?
-  thankyouPixUrl   String?
+  thankyouPixUrl    String?
 
   // AI Configuration (the secret weapon — Marketing Artificial)
-  aiConfig         Json?
+  aiConfig Json?
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([productId, active])
+  @@map("RAC_ProductPlan")
 }
 
 model ProductCheckout {
-  id            String   @id @default(uuid())
-  productId     String
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  name          String
-  code          String   @unique @default(uuid())
-  config        Json     @default("{}") // All 14 configuration sections as JSON
+  name   String
+  code   String @unique @default(uuid())
+  config Json   @default("{}") // All 14 configuration sections as JSON
 
   // Metrics
-  uniqueVisits   Int    @default(0)
-  totalVisits    Int    @default(0)
-  abandonRate    Float  @default(0)
-  cancelRate     Float  @default(0)
-  conversionRate Float  @default(0)
+  uniqueVisits   Int   @default(0)
+  totalVisits    Int   @default(0)
+  abandonRate    Float @default(0)
+  cancelRate     Float @default(0)
+  conversionRate Float @default(0)
 
-  active        Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([productId])
+  @@map("RAC_ProductCheckout")
 }
 
 model ProductCoupon {
-  id            String   @id @default(uuid())
-  productId     String
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   code          String
-  discountType  String   // PERCENT, FIXED
+  discountType  String // PERCENT, FIXED
   discountValue Float
   maxUses       Int?
-  usedCount     Int      @default(0)
+  usedCount     Int       @default(0)
   expiresAt     DateTime?
-  active        Boolean  @default(true)
+  active        Boolean   @default(true)
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([productId, code])
+  @@map("RAC_ProductCoupon")
 }
 
 model ProductReview {
-  id            String   @id @default(uuid())
-  productId     String
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  rating        Int      // 1-5
-  comment       String?
-  authorName    String?
-  verified      Boolean  @default(false)
+  rating     Int // 1-5
+  comment    String?
+  authorName String?
+  verified   Boolean @default(false)
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([productId])
+  @@map("RAC_ProductReview")
 }
 
 model ProductCommission {
-  id            String   @id @default(uuid())
-  productId     String
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  role          String   // COPRODUCER, MANAGER, AFFILIATE
-  percentage    Float
-  agentName     String?
-  agentEmail    String?
+  role       String // COPRODUCER, MANAGER, AFFILIATE
+  percentage Float
+  agentName  String?
+  agentEmail String?
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([productId])
+  @@map("RAC_ProductCommission")
 }
 
 model ProductUrl {
-  id            String   @id @default(uuid())
-  productId     String
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  description   String
-  url           String
-  isPrivate     Boolean  @default(false)
-  active        Boolean  @default(true)
+  description String
+  url         String
+  isPrivate   Boolean @default(false)
+  active      Boolean @default(true)
 
   // AI Learning
-  aiLearning    Boolean  @default(false)
-  aiTopics      Json?    // What Kloel should learn from this URL
-  aiLearnFreq   String?  // weekly, biweekly, monthly, manual
-  aiLearnStatus String?  // pending, learning, learned, error
+  aiLearning    Boolean @default(false)
+  aiTopics      Json? // What Kloel should learn from this URL
+  aiLearnFreq   String? // weekly, biweekly, monthly, manual
+  aiLearnStatus String? // pending, learning, learned, error
 
   // Chat Widget
-  chatEnabled   Boolean  @default(false)
-  chatConfig    Json?    // position, color, welcome message, delay, discount
+  chatEnabled Boolean @default(false)
+  chatConfig  Json? // position, color, welcome message, delay, discount
 
   // Metrics
-  salesFromUrl  Int      @default(0)
+  salesFromUrl Int @default(0)
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([productId, active])
+  @@map("RAC_ProductUrl")
 }
 
 model ProductCampaign {
-  id            String   @id @default(cuid())
-  productId     String
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  code          String   @default(cuid())
-  name          String
-  pixelId       String?
-  salesCount    Int      @default(0)
-  paidCount     Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  code       String   @default(cuid())
+  name       String
+  pixelId    String?
+  salesCount Int      @default(0)
+  paidCount  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
   @@index([productId])
+  @@map("RAC_ProductCampaign")
 }
 
 model ProductAIConfig {
-  id            String   @id @default(uuid())
-  productId     String   @unique
-  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id        String  @id @default(uuid())
+  productId String  @unique
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   // Customer Ideal Profile
   customerProfile Json?
 
   // Plan Positioning
-  positioning     Json?
+  positioning Json?
 
   // Objections & Responses
-  objections      Json?
+  objections Json?
 
   // Sales Arguments
-  salesArguments  Json?
+  salesArguments Json?
 
   // Upsell/Downsell
-  upsellConfig    Json?
-  downsellConfig  Json?
+  upsellConfig   Json?
+  downsellConfig Json?
 
   // AI Behavior
-  tone            String?  @default("CONSULTIVE")
+  tone             String? @default("CONSULTIVE")
   persistenceLevel Int?    @default(3)
-  messageLimit    Int?     @default(10)
-  followUpConfig  Json?
+  messageLimit     Int?    @default(10)
+  followUpConfig   Json?
 
   // Technical Info
-  technicalInfo   Json?
+  technicalInfo Json?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("RAC_ProductAIConfig")
 }
 
 // ============================================
@@ -1917,38 +2063,40 @@ model ProductAIConfig {
 // ============================================
 
 model MemberArea {
-  id            String   @id @default(uuid())
+  id            String             @id @default(uuid())
   workspaceId   String
   productId     String?
   name          String
   slug          String
   description   String?
-  type          String   @default("COURSE")
-  template      String   @default("academy")
+  type          String             @default("COURSE")
+  template      String             @default("academy")
   logoUrl       String?
   coverUrl      String?
-  primaryColor  String?  @default("#E85D30")
+  primaryColor  String?            @default("#E85D30")
   customDomain  String?
-  certificates    Boolean @default(true)
-  quizzes         Boolean @default(true)
-  community       Boolean @default(true)
-  gamification    Boolean @default(true)
-  progressTrack   Boolean @default(true)
-  downloads       Boolean @default(true)
-  comments        Boolean @default(true)
-  totalStudents   Int     @default(0)
-  totalModules    Int     @default(0)
-  totalLessons    Int     @default(0)
-  avgCompletion   Float   @default(0)
-  avgRating       Float   @default(0)
-  aiGenerated     Boolean @default(false)
-  active          Boolean @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  modules         MemberModule[]
-  enrollments     MemberEnrollment[]
+  certificates  Boolean            @default(true)
+  quizzes       Boolean            @default(true)
+  community     Boolean            @default(true)
+  gamification  Boolean            @default(true)
+  progressTrack Boolean            @default(true)
+  downloads     Boolean            @default(true)
+  comments      Boolean            @default(true)
+  totalStudents Int                @default(0)
+  totalModules  Int                @default(0)
+  totalLessons  Int                @default(0)
+  avgCompletion Float              @default(0)
+  avgRating     Float              @default(0)
+  aiGenerated   Boolean            @default(false)
+  active        Boolean            @default(true)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  modules       MemberModule[]
+  enrollments   MemberEnrollment[]
+
   @@unique([workspaceId, slug])
   @@index([workspaceId, active])
+  @@map("RAC_MemberArea")
 }
 
 model MemberEnrollment {
@@ -1968,44 +2116,49 @@ model MemberEnrollment {
   @@index([workspaceId])
   @@index([memberAreaId])
   @@index([studentEmail])
+  @@map("RAC_MemberEnrollment")
 }
 
 model MemberModule {
-  id            String   @id @default(uuid())
-  memberAreaId  String
-  memberArea    MemberArea @relation(fields: [memberAreaId], references: [id], onDelete: Cascade)
-  name          String
-  description   String?
-  position      Int      @default(0)
-  releaseType   String   @default("IMMEDIATE")
-  releaseDate   DateTime?
-  releaseDays   Int?
-  active        Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  lessons       MemberLesson[]
+  id           String         @id @default(uuid())
+  memberAreaId String
+  memberArea   MemberArea     @relation(fields: [memberAreaId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  position     Int            @default(0)
+  releaseType  String         @default("IMMEDIATE")
+  releaseDate  DateTime?
+  releaseDays  Int?
+  active       Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  lessons      MemberLesson[]
+
   @@index([memberAreaId, position])
+  @@map("RAC_MemberModule")
 }
 
 model MemberLesson {
-  id            String   @id @default(uuid())
+  id            String       @id @default(uuid())
   moduleId      String
   module        MemberModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   name          String
   description   String?
-  type          String   @default("VIDEO")
-  position      Int      @default(0)
+  type          String       @default("VIDEO")
+  position      Int          @default(0)
   videoUrl      String?
-  textContent   String?  @db.Text
+  textContent   String?      @db.Text
   downloadUrl   String?
   quizData      Json?
   durationMin   Int?
-  transcription String?  @db.Text
+  transcription String?      @db.Text
   aiSummary     String?
-  active        Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  active        Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
   @@index([moduleId, position])
+  @@map("RAC_MemberLesson")
 }
 
 // ============================================
@@ -2013,135 +2166,147 @@ model MemberLesson {
 // ============================================
 
 model AffiliateProduct {
-  id            String   @id @default(uuid())
-  productId     String   @unique
-  listed        Boolean  @default(true)
-  category      String?
-  tags          String[] @default([])
-  commissionPct Float    @default(30)
-  commissionType String  @default("PERCENTAGE")
+  id              String             @id @default(uuid())
+  productId       String             @unique
+  listed          Boolean            @default(true)
+  category        String?
+  tags            String[]           @default([])
+  commissionPct   Float              @default(30)
+  commissionType  String             @default("PERCENTAGE")
   commissionFixed Float?
-  cookieDays    Int      @default(30)
-  approvalMode  String   @default("AUTO")
-  totalAffiliates Int    @default(0)
-  totalSales      Int    @default(0)
-  totalRevenue    Float  @default(0)
-  temperature     Int    @default(50)
-  thumbnailUrl  String?
-  promoMaterials Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  requests      AffiliateRequest[]
-  links         AffiliateLink[]
+  cookieDays      Int                @default(30)
+  approvalMode    String             @default("AUTO")
+  totalAffiliates Int                @default(0)
+  totalSales      Int                @default(0)
+  totalRevenue    Float              @default(0)
+  temperature     Int                @default(50)
+  thumbnailUrl    String?
+  promoMaterials  Json?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  requests        AffiliateRequest[]
+  links           AffiliateLink[]
+
   @@index([listed, category])
   @@index([temperature])
+  @@map("RAC_AffiliateProduct")
 }
 
 model AffiliateRequest {
-  id            String   @id @default(uuid())
-  affiliateProductId String
-  affiliateProduct   AffiliateProduct @relation(fields: [affiliateProductId], references: [id], onDelete: Cascade)
+  id                   String           @id @default(uuid())
+  affiliateProductId   String
+  affiliateProduct     AffiliateProduct @relation(fields: [affiliateProductId], references: [id], onDelete: Cascade)
   affiliateWorkspaceId String
   affiliateName        String?
   affiliateEmail       String?
-  status        String   @default("PENDING")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  status               String           @default("PENDING")
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
   @@unique([affiliateProductId, affiliateWorkspaceId])
   @@index([status])
+  @@map("RAC_AffiliateRequest")
 }
 
 model AffiliateLink {
-  id            String   @id @default(uuid())
-  affiliateProductId String
-  affiliateProduct   AffiliateProduct @relation(fields: [affiliateProductId], references: [id], onDelete: Cascade)
+  id                   String           @id @default(uuid())
+  affiliateProductId   String
+  affiliateProduct     AffiliateProduct @relation(fields: [affiliateProductId], references: [id], onDelete: Cascade)
   affiliateWorkspaceId String
-  code          String   @unique @default(uuid())
-  clicks        Int      @default(0)
-  sales         Int      @default(0)
-  revenue       Float    @default(0)
-  commissionEarned Float @default(0)
-  active        Boolean  @default(true)
-  createdAt     DateTime @default(now())
+  code                 String           @unique @default(uuid())
+  clicks               Int              @default(0)
+  sales                Int              @default(0)
+  revenue              Float            @default(0)
+  commissionEarned     Float            @default(0)
+  active               Boolean          @default(true)
+  createdAt            DateTime         @default(now())
+
   @@index([affiliateWorkspaceId])
   @@index([code])
+  @@map("RAC_AffiliateLink")
 }
 
 // ============================================
 // KLOEL SITE BUILDER
 // ============================================
 model KloelSite {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  name        String   @default("Site sem titulo")
-  slug        String?  @unique
-  htmlContent String   @db.Text
-  published   Boolean  @default(false)
+  name        String    @default("Site sem titulo")
+  slug        String?   @unique
+  htmlContent String    @db.Text
+  published   Boolean   @default(false)
   productId   String?
-  visits      Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  visits      Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
   @@index([workspaceId])
   @@index([slug])
+  @@map("RAC_KloelSite")
 }
 
 // ============================================
 // KLOEL CANVAS — Design Editor
 // ============================================
 model KloelDesign {
-  id           String   @id @default(uuid())
+  id           String    @id @default(uuid())
   workspaceId  String
   workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  name         String   @default("Design sem titulo")
-  format       String   @default("post-ig")
-  width        Int      @default(1080)
-  height       Int      @default(1080)
+  name         String    @default("Design sem titulo")
+  format       String    @default("post-ig")
+  width        Int       @default(1080)
+  height       Int       @default(1080)
   productId    String?
-  elements     Json     @default("[]")
-  background   String   @default("#0A0A0C")
+  elements     Json      @default("[]")
+  background   String    @default("#0A0A0C")
   thumbnailUrl String?
-  status       String   @default("DRAFT")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  status       String    @default("DRAFT")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
   @@index([workspaceId])
   @@index([workspaceId, productId])
+  @@map("RAC_KloelDesign")
 }
 
 // ============================================
 // CUSTOMER SUBSCRIPTIONS (assinaturas de clientes)
 // ============================================
 model CustomerSubscription {
-  id              String   @id @default(uuid())
-  workspaceId     String
-  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  customerName    String
-  customerEmail   String
-  customerPhone   String?
-  productId       String?
-  planName        String
-  amount          Float
-  currency        String   @default("BRL")
-  interval        String   @default("MONTHLY")
-  status          String   @default("ACTIVE")
-  startedAt       DateTime @default(now())
-  nextBillingAt   DateTime?
-  cancelledAt     DateTime?
-  pausedAt        DateTime?
-  trialEndsAt     DateTime?
-  totalPaid       Float    @default(0)
-  paymentsCount   Int      @default(0)
-  failedPayments  Int      @default(0)
-  externalId      String?
-  paymentMethod   String?
-  planId          String?
-  planChangedAt   DateTime?
-  previousPlanId  String?
-  metadata        Json?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String    @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  customerName   String
+  customerEmail  String
+  customerPhone  String?
+  productId      String?
+  planName       String
+  amount         Float
+  currency       String    @default("BRL")
+  interval       String    @default("MONTHLY")
+  status         String    @default("ACTIVE")
+  startedAt      DateTime  @default(now())
+  nextBillingAt  DateTime?
+  cancelledAt    DateTime?
+  pausedAt       DateTime?
+  trialEndsAt    DateTime?
+  totalPaid      Float     @default(0)
+  paymentsCount  Int       @default(0)
+  failedPayments Int       @default(0)
+  externalId     String?
+  paymentMethod  String?
+  planId         String?
+  planChangedAt  DateTime?
+  previousPlanId String?
+  metadata       Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
   @@index([workspaceId, status])
   @@index([workspaceId, nextBillingAt])
+  @@map("RAC_CustomerSubscription")
 }
 
 // ============================================
@@ -2162,13 +2327,14 @@ model AdRule {
   updatedAt   DateTime  @updatedAt
 
   @@index([workspaceId])
+  @@map("RAC_AdRule")
 }
 
 // ============================================
 // PHYSICAL ORDERS (pedidos de produtos fisicos)
 // ============================================
 model PhysicalOrder {
-  id                String   @id @default(uuid())
+  id                String    @id @default(uuid())
   workspaceId       String
   workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   customerName      String
@@ -2176,9 +2342,9 @@ model PhysicalOrder {
   customerPhone     String?
   productId         String?
   productName       String
-  quantity          Int      @default(1)
+  quantity          Int       @default(1)
   amount            Float
-  status            String   @default("PROCESSING")
+  status            String    @default("PROCESSING")
   trackingCode      String?
   trackingUrl       String?
   shippingMethod    String?
@@ -2187,96 +2353,101 @@ model PhysicalOrder {
   addressCity       String?
   addressState      String?
   addressZip        String?
-  addressCountry    String   @default("BR")
+  addressCountry    String    @default("BR")
   weight            Float?
   shippedAt         DateTime?
   deliveredAt       DateTime?
   estimatedDelivery DateTime?
   paymentMethod     String?
-  paymentStatus     String   @default("PAID")
+  paymentStatus     String    @default("PAID")
   saleId            String?
   metadata          Json?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
   @@index([workspaceId, status])
   @@index([workspaceId, createdAt])
   @@index([trackingCode])
+  @@map("RAC_PhysicalOrder")
 }
 
 model Payment {
-  id             String    @id @default(uuid())
-  workspaceId    String
-  workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  externalId     String
-  provider       String    // "stripe", etc.
-  status         String    @default("PENDING") // PENDING, CONFIRMED, RECEIVED, REFUNDED, CANCELLED
-  amount         Float
-  currency       String    @default("BRL")
-  method         String?   // "PIX", "CREDIT_CARD", "BOLETO"
-  customerEmail  String?
-  customerPhone  String?
-  metadata       Json?
-  paidAt         DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String    @id @default(uuid())
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  externalId    String
+  provider      String // "stripe", etc.
+  status        String    @default("PENDING") // PENDING, CONFIRMED, RECEIVED, REFUNDED, CANCELLED
+  amount        Float
+  currency      String    @default("BRL")
+  method        String? // "PIX", "CREDIT_CARD", "BOLETO"
+  customerEmail String?
+  customerPhone String?
+  metadata      Json?
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@unique([workspaceId, externalId])
   @@index([workspaceId])
   @@index([externalId])
   @@index([status])
+  @@map("RAC_Payment")
 }
 
 model CollaboratorInvite {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   email       String
   role        String
-  status      String   @default("PENDING")
+  status      String    @default("PENDING")
   invitedBy   String
-  token       String   @unique @default(uuid())
+  token       String    @unique @default(uuid())
   expiresAt   DateTime
   acceptedAt  DateTime?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   @@index([workspaceId])
   @@index([email])
   @@index([token])
+  @@map("RAC_CollaboratorInvite")
 }
 
 model AffiliatePartner {
-  id                 String   @id @default(uuid())
+  id                 String           @id @default(uuid())
   workspaceId        String
-  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspace          Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   partnerName        String
   partnerEmail       String
   partnerPhone       String?
   partnerWorkspaceId String?
   type               String
-  commissionRate     Float    @default(30)
-  commissionType     String   @default("PERCENTAGE")
-  status             String   @default("PENDING")
-  totalSales         Int      @default(0)
-  totalRevenue       Float    @default(0)
-  totalCommission    Float    @default(0)
-  temperature        Int      @default(0)
+  commissionRate     Float            @default(30)
+  commissionType     String           @default("PERCENTAGE")
+  status             String           @default("PENDING")
+  totalSales         Int              @default(0)
+  totalRevenue       Float            @default(0)
+  totalCommission    Float            @default(0)
+  temperature        Int              @default(0)
   affiliateLink      String?
-  affiliateCode      String?  @unique
-  productIds         Json     @default("[]")
+  affiliateCode      String?          @unique
+  productIds         Json             @default("[]")
   metadata           Json?
   approvedAt         DateTime?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
   messages           PartnerMessage[]
 
   @@unique([workspaceId, partnerEmail])
   @@index([workspaceId, status])
   @@index([workspaceId, type])
   @@index([affiliateCode])
+  @@map("RAC_AffiliatePartner")
 }
 
 model PartnerMessage {
-  id         String   @id @default(uuid())
+  id         String           @id @default(uuid())
   partnerId  String
   senderId   String
   senderType String
@@ -2284,44 +2455,49 @@ model PartnerMessage {
   content    String
   readAt     DateTime?
   partner    AffiliatePartner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
+  createdAt  DateTime         @default(now())
 
   @@index([partnerId, createdAt])
+  @@map("RAC_PartnerMessage")
 }
 
 model BankAccount {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   workspaceId    String
   workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   bankName       String
   bankCode       String?
   agency         String?
   account        String?
-  accountType    String   @default("CHECKING")
+  accountType    String    @default("CHECKING")
   pixKey         String?
   pixKeyType     String?
   holderName     String?
   holderDocument String?
-  isDefault      Boolean  @default(false)
+  isDefault      Boolean   @default(false)
   displayAccount String?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
+
   @@index([workspaceId])
+  @@map("RAC_BankAccount")
 }
 
 model WalletAnticipation {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   workspaceId    String
   workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   originalAmount Float
-  feePercent     Float    @default(3.0)
+  feePercent     Float     @default(3.0)
   feeAmount      Float
   netAmount      Float
   installments   Int?
-  status         String   @default("COMPLETED")
+  status         String    @default("COMPLETED")
   transactionId  String?
   metadata       Json?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
+
   @@index([workspaceId, createdAt])
+  @@map("RAC_WalletAnticipation")
 }
 
 // ─── Checkout System ───────────────────────────────────────────────────────────
@@ -2421,36 +2597,38 @@ enum PaymentStatus {
 // Checkout plans now reference Product directly
 
 model CheckoutProductPlan {
-  id                    String    @id @default(cuid())
+  id                    String               @id @default(cuid())
   productId             String
-  product               Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product               Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
   kind                  CheckoutResourceKind @default(PLAN)
-  legacyCheckoutEnabled Boolean   @default(true)
+  legacyCheckoutEnabled Boolean              @default(true)
   name                  String
-  slug                  String    @unique
-  referenceCode         String    @unique @default(cuid())
+  slug                  String               @unique
+  referenceCode         String               @unique @default(cuid())
   priceInCents          Int
   compareAtPrice        Int?
-  currency              String    @default("BRL")
-  maxInstallments       Int       @default(12)
-  installmentsFee       Boolean   @default(false)
-  quantity              Int       @default(1)
-  freeShipping          Boolean   @default(false)
+  currency              String               @default("BRL")
+  maxInstallments       Int                  @default(12)
+  installmentsFee       Boolean              @default(false)
+  quantity              Int                  @default(1)
+  freeShipping          Boolean              @default(false)
   shippingPrice         Int?
-  isActive              Boolean   @default(true)
+  isActive              Boolean              @default(true)
   checkoutConfig        CheckoutConfig?
   orders                CheckoutOrder[]
   socialLeads           CheckoutSocialLead[]
   orderBumps            OrderBump[]
   upsells               Upsell[]
-  checkoutLinks         CheckoutPlanLink[] @relation("CheckoutLinksByCheckout")
-  planLinks             CheckoutPlanLink[] @relation("CheckoutLinksByPlan")
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  checkoutLinks         CheckoutPlanLink[]   @relation("CheckoutLinksByCheckout")
+  planLinks             CheckoutPlanLink[]   @relation("CheckoutLinksByPlan")
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+
   @@index([productId])
   @@index([productId, kind])
   @@index([slug])
   @@index([referenceCode])
+  @@map("RAC_CheckoutProductPlan")
 }
 
 model CheckoutPlanLink {
@@ -2470,288 +2648,301 @@ model CheckoutPlanLink {
   @@index([checkoutId])
   @@index([planId])
   @@index([referenceCode])
+  @@map("RAC_CheckoutPlanLink")
 }
 
 model CheckoutConfig {
-  id                    String        @id @default(cuid())
-  planId                String        @unique
-  plan                  CheckoutProductPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  theme                 CheckoutTheme @default(BLANC)
-  accentColor           String?
-  accentColor2          String?
-  backgroundColor       String?
-  cardColor             String?
-  textColor             String?
-  mutedTextColor        String?
-  fontBody              String?
-  fontDisplay           String?
-  brandName             String
-  brandLogo             String?
-  headerMessage         String?
-  headerSubMessage      String?
-  productImage          String?
-  productDisplayName    String?
-  btnStep1Text          String        @default("Ir para Entrega")
-  btnStep2Text          String        @default("Ir para Pagamento")
-  btnFinalizeText       String        @default("Finalizar compra")
-  btnFinalizeIcon       String        @default("lock")
-  requireCPF            Boolean       @default(true)
-  requirePhone          Boolean       @default(true)
-  phoneLabel            String        @default("Celular / WhatsApp")
-  enableCreditCard      Boolean       @default(true)
-  enablePix             Boolean       @default(true)
-  enableBoleto          Boolean       @default(false)
-  enableCoupon          Boolean       @default(true)
-  showCouponPopup       Boolean       @default(true)
-  couponPopupDelay      Int           @default(2400)
-  couponPopupTitle      String        @default("Presente especial para voce")
-  couponPopupDesc       String        @default("Um desconto exclusivo para sua primeira compra.")
-  couponPopupBtnText    String        @default("Aplicar desconto")
-  couponPopupDismiss    String        @default("Nao, obrigado")
-  autoCouponCode        String?
-  enableTimer           Boolean       @default(false)
-  timerType             TimerType?
-  timerMinutes          Int?
-  timerMessage          String?
-  timerExpiredMessage    String?
-  timerPosition         String        @default("top")
-  showStockCounter      Boolean       @default(false)
-  stockMessage          String?
-  fakeStockCount        Int?
-  shippingMode          String?
-  shippingOriginZip     String?
-  shippingVariableMinInCents Int?
-  shippingVariableMaxInCents Int?
-  shippingUseKloelCalculator Boolean   @default(false)
-  affiliateCustomCommissionEnabled Boolean @default(false)
-  affiliateCustomCommissionType String?
+  id                                     String              @id @default(cuid())
+  planId                                 String              @unique
+  plan                                   CheckoutProductPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  theme                                  CheckoutTheme       @default(BLANC)
+  accentColor                            String?
+  accentColor2                           String?
+  backgroundColor                        String?
+  cardColor                              String?
+  textColor                              String?
+  mutedTextColor                         String?
+  fontBody                               String?
+  fontDisplay                            String?
+  brandName                              String
+  brandLogo                              String?
+  headerMessage                          String?
+  headerSubMessage                       String?
+  productImage                           String?
+  productDisplayName                     String?
+  btnStep1Text                           String              @default("Ir para Entrega")
+  btnStep2Text                           String              @default("Ir para Pagamento")
+  btnFinalizeText                        String              @default("Finalizar compra")
+  btnFinalizeIcon                        String              @default("lock")
+  requireCPF                             Boolean             @default(true)
+  requirePhone                           Boolean             @default(true)
+  phoneLabel                             String              @default("Celular / WhatsApp")
+  enableCreditCard                       Boolean             @default(true)
+  enablePix                              Boolean             @default(true)
+  enableBoleto                           Boolean             @default(false)
+  enableCoupon                           Boolean             @default(true)
+  showCouponPopup                        Boolean             @default(true)
+  couponPopupDelay                       Int                 @default(2400)
+  couponPopupTitle                       String              @default("Presente especial para voce")
+  couponPopupDesc                        String              @default("Um desconto exclusivo para sua primeira compra.")
+  couponPopupBtnText                     String              @default("Aplicar desconto")
+  couponPopupDismiss                     String              @default("Nao, obrigado")
+  autoCouponCode                         String?
+  enableTimer                            Boolean             @default(false)
+  timerType                              TimerType?
+  timerMinutes                           Int?
+  timerMessage                           String?
+  timerExpiredMessage                    String?
+  timerPosition                          String              @default("top")
+  showStockCounter                       Boolean             @default(false)
+  stockMessage                           String?
+  fakeStockCount                         Int?
+  shippingMode                           String?
+  shippingOriginZip                      String?
+  shippingVariableMinInCents             Int?
+  shippingVariableMaxInCents             Int?
+  shippingUseKloelCalculator             Boolean             @default(false)
+  affiliateCustomCommissionEnabled       Boolean             @default(false)
+  affiliateCustomCommissionType          String?
   affiliateCustomCommissionAmountInCents Int?
-  affiliateCustomCommissionPercent Float?
-  enableTestimonials    Boolean       @default(true)
-  testimonials          Json          @default("[]")
-  enableGuarantee       Boolean       @default(true)
-  guaranteeTitle        String        @default("Garantia de 30 dias")
-  guaranteeText         String        @default("Nao gostou? Devolvemos 100% do seu dinheiro.")
-  guaranteeDays         Int           @default(30)
-  enableTrustBadges     Boolean       @default(true)
-  trustBadges           Json          @default("[\"Compra protegida\",\"Dados criptografados\"]")
-  footerText            String        @default("Checkout seguro por Kloel")
-  showPaymentIcons      Boolean       @default(true)
-  metaTitle             String?
-  metaDescription       String?
-  metaImage             String?
-  favicon               String?
-  customCSS             String?       @db.Text
-  enableExitIntent      Boolean       @default(false)
-  exitIntentTitle       String?
-  exitIntentDescription String?
-  exitIntentCouponCode  String?
-  enableFloatingBar     Boolean       @default(false)
-  floatingBarMessage    String?
+  affiliateCustomCommissionPercent       Float?
+  enableTestimonials                     Boolean             @default(true)
+  testimonials                           Json                @default("[]")
+  enableGuarantee                        Boolean             @default(true)
+  guaranteeTitle                         String              @default("Garantia de 30 dias")
+  guaranteeText                          String              @default("Nao gostou? Devolvemos 100% do seu dinheiro.")
+  guaranteeDays                          Int                 @default(30)
+  enableTrustBadges                      Boolean             @default(true)
+  trustBadges                            Json                @default("[\"Compra protegida\",\"Dados criptografados\"]")
+  footerText                             String              @default("Checkout seguro por Kloel")
+  showPaymentIcons                       Boolean             @default(true)
+  metaTitle                              String?
+  metaDescription                        String?
+  metaImage                              String?
+  favicon                                String?
+  customCSS                              String?             @db.Text
+  enableExitIntent                       Boolean             @default(false)
+  exitIntentTitle                        String?
+  exitIntentDescription                  String?
+  exitIntentCouponCode                   String?
+  enableFloatingBar                      Boolean             @default(false)
+  floatingBarMessage                     String?
 
   // Chat Kloel no checkout
-  chatEnabled           Boolean       @default(false)
-  chatWelcomeMessage    String?       @default("Oi! Tem alguma duvida? Estou aqui pra ajudar")
-  chatDelay             Int?          @default(3000)
-  chatPosition          String?       @default("bottom-right")
-  chatColor             String?
-  chatOfferDiscount     Boolean       @default(false)
-  chatDiscountCode      String?
-  chatSupportPhone      String?
+  chatEnabled        Boolean @default(false)
+  chatWelcomeMessage String? @default("Oi! Tem alguma duvida? Estou aqui pra ajudar")
+  chatDelay          Int?    @default(3000)
+  chatPosition       String? @default("bottom-right")
+  chatColor          String?
+  chatOfferDiscount  Boolean @default(false)
+  chatDiscountCode   String?
+  chatSupportPhone   String?
 
   // Social Proof
-  socialProofEnabled    Boolean       @default(false)
-  socialProofAlerts     Json?         @default("[]")
-  socialProofCustomNames String?      @db.Text
+  socialProofEnabled     Boolean @default(false)
+  socialProofAlerts      Json?   @default("[]")
+  socialProofCustomNames String? @db.Text
 
   // Etapas
-  enableSteps           Boolean       @default(true)
+  enableSteps Boolean @default(true)
 
   // Imagens basicas
-  coverImage            String?
-  secondaryImage        String?
-  sideImage             String?
+  coverImage     String?
+  secondaryImage String?
+  sideImage      String?
 
-  pixels                CheckoutPixel[]
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  pixels    CheckoutPixel[]
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@map("RAC_CheckoutConfig")
 }
 
 model OrderBump {
-  id              String   @id @default(cuid())
-  planId          String
-  plan            CheckoutProductPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  title           String
-  description     String   @db.Text
-  productName     String
-  image           String?
-  priceInCents    Int
-  compareAtPrice  Int?
-  highlightColor  String?
-  checkboxLabel   String   @default("Sim, eu quero!")
-  position        String   @default("before_payment")
-  isActive        Boolean  @default(true)
-  sortOrder       Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String              @id @default(cuid())
+  planId         String
+  plan           CheckoutProductPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  title          String
+  description    String              @db.Text
+  productName    String
+  image          String?
+  priceInCents   Int
+  compareAtPrice Int?
+  highlightColor String?
+  checkboxLabel  String              @default("Sim, eu quero!")
+  position       String              @default("before_payment")
+  isActive       Boolean             @default(true)
+  sortOrder      Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
   @@index([planId])
+  @@map("RAC_OrderBump")
 }
 
 model Upsell {
-  id              String          @id @default(cuid())
-  planId          String
-  plan            CheckoutProductPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
-  title           String
-  headline        String          @db.Text
-  description     String          @db.Text
-  productName     String
-  image           String?
-  priceInCents    Int
-  compareAtPrice  Int?
-  acceptBtnText   String          @default("Sim, quero essa oferta!")
-  declineBtnText  String          @default("Nao, obrigado")
-  timerSeconds    Int?
-  chargeType      UpsellChargeType @default(ONE_CLICK)
-  isActive        Boolean         @default(true)
-  sortOrder       Int             @default(0)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  id             String              @id @default(cuid())
+  planId         String
+  plan           CheckoutProductPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  title          String
+  headline       String              @db.Text
+  description    String              @db.Text
+  productName    String
+  image          String?
+  priceInCents   Int
+  compareAtPrice Int?
+  acceptBtnText  String              @default("Sim, quero essa oferta!")
+  declineBtnText String              @default("Nao, obrigado")
+  timerSeconds   Int?
+  chargeType     UpsellChargeType    @default(ONE_CLICK)
+  isActive       Boolean             @default(true)
+  sortOrder      Int                 @default(0)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
   @@index([planId])
+  @@map("RAC_Upsell")
 }
 
 model CheckoutCoupon {
-  id              String       @id @default(cuid())
-  workspaceId     String
-  code            String
-  discountType    DiscountType
-  discountValue   Int
-  minOrderValue   Int?
-  maxUses         Int?
-  usedCount       Int          @default(0)
-  maxUsesPerUser  Int?
-  startsAt        DateTime?
-  expiresAt       DateTime?
-  appliesTo       Json         @default("[]")
-  isActive        Boolean      @default(true)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id             String       @id @default(cuid())
+  workspaceId    String
+  code           String
+  discountType   DiscountType
+  discountValue  Int
+  minOrderValue  Int?
+  maxUses        Int?
+  usedCount      Int          @default(0)
+  maxUsesPerUser Int?
+  startsAt       DateTime?
+  expiresAt      DateTime?
+  appliesTo      Json         @default("[]")
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
   @@unique([workspaceId, code])
   @@index([workspaceId])
   @@index([code])
+  @@map("RAC_CheckoutCoupon")
 }
 
 model CheckoutPixel {
-  id                    String      @id @default(cuid())
+  id                    String         @id @default(cuid())
   checkoutConfigId      String
   checkoutConfig        CheckoutConfig @relation(fields: [checkoutConfigId], references: [id], onDelete: Cascade)
   type                  PixelType
   pixelId               String
   accessToken           String?
-  trackPageView         Boolean     @default(true)
-  trackInitiateCheckout Boolean     @default(true)
-  trackAddPaymentInfo   Boolean     @default(true)
-  trackPurchase         Boolean     @default(true)
-  isActive              Boolean     @default(true)
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+  trackPageView         Boolean        @default(true)
+  trackInitiateCheckout Boolean        @default(true)
+  trackAddPaymentInfo   Boolean        @default(true)
+  trackPurchase         Boolean        @default(true)
+  isActive              Boolean        @default(true)
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
   @@index([checkoutConfigId])
+  @@map("RAC_CheckoutPixel")
 }
 
 model CheckoutOrder {
-  id                String        @id @default(cuid())
-  planId            String
-  plan              CheckoutProductPlan @relation(fields: [planId], references: [id], onDelete: Restrict)
-  workspaceId       String
-  orderNumber       String        @unique
-  customerName      String
-  customerEmail     String
-  customerCPF       String?
-  customerPhone     String?
-  shippingAddress   Json
-  shippingMethod    String?
-  shippingPrice     Int           @default(0)
-  subtotalInCents   Int
-  discountInCents   Int           @default(0)
-  bumpTotalInCents  Int           @default(0)
-  totalInCents      Int
-  couponCode        String?
-  couponDiscount    Int?
-  acceptedBumps     Json          @default("[]")
-  paymentMethod     PaymentMethod
-  installments      Int           @default(1)
-  status            OrderStatus   @default(PENDING)
-  affiliateId       String?
-  utmSource         String?
-  utmMedium         String?
-  utmCampaign       String?
-  utmContent        String?
-  utmTerm           String?
-  ipAddress         String?
-  userAgent         String?
-  payment           CheckoutPayment?
-  upsellOrders      UpsellOrder[]
-  trackingCode      String?
-  trackingUrl       String?
-  paidAt            DateTime?
-  shippedAt         DateTime?
-  deliveredAt       DateTime?
-  canceledAt        DateTime?
-  refundedAt        DateTime?
-  metadata          Json?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  id                   String               @id @default(cuid())
+  planId               String
+  plan                 CheckoutProductPlan  @relation(fields: [planId], references: [id], onDelete: Restrict)
+  workspaceId          String
+  orderNumber          String               @unique
+  customerName         String
+  customerEmail        String
+  customerCPF          String?
+  customerPhone        String?
+  shippingAddress      Json
+  shippingMethod       String?
+  shippingPrice        Int                  @default(0)
+  subtotalInCents      Int
+  discountInCents      Int                  @default(0)
+  bumpTotalInCents     Int                  @default(0)
+  totalInCents         Int
+  couponCode           String?
+  couponDiscount       Int?
+  acceptedBumps        Json                 @default("[]")
+  paymentMethod        PaymentMethod
+  installments         Int                  @default(1)
+  status               OrderStatus          @default(PENDING)
+  affiliateId          String?
+  utmSource            String?
+  utmMedium            String?
+  utmCampaign          String?
+  utmContent           String?
+  utmTerm              String?
+  ipAddress            String?
+  userAgent            String?
+  payment              CheckoutPayment?
+  upsellOrders         UpsellOrder[]
+  trackingCode         String?
+  trackingUrl          String?
+  paidAt               DateTime?
+  shippedAt            DateTime?
+  deliveredAt          DateTime?
+  canceledAt           DateTime?
+  refundedAt           DateTime?
+  metadata             Json?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
   socialLeadsConverted CheckoutSocialLead[]
+
   @@index([workspaceId])
   @@index([planId])
   @@index([customerEmail])
   @@index([orderNumber])
   @@index([status])
+  @@map("RAC_CheckoutOrder")
 }
 
 model CheckoutSocialLead {
-  id                       String                           @id @default(cuid())
-  workspaceId              String
-  workspace                Workspace                        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  planId                   String
-  plan                     CheckoutProductPlan              @relation(fields: [planId], references: [id], onDelete: Cascade)
-  productId                String
-  product                  Product                          @relation(fields: [productId], references: [id], onDelete: Cascade)
-  checkoutSlug             String
-  checkoutCode             String?
-  provider                 CheckoutSocialProvider
-  providerId               String?
-  providerEmailVerified    Boolean                          @default(false)
-  name                     String?
-  email                    String?
-  avatarUrl                String?
-  phone                    String?
-  cpf                      String?
-  status                   CheckoutSocialLeadStatus        @default(CAPTURED)
-  stepReached              Int                              @default(1)
-  sourceUrl                String?
-  refererUrl               String?
-  utmSource                String?
-  utmMedium                String?
-  utmCampaign              String?
-  utmContent               String?
-  utmTerm                  String?
-  fbclid                   String?
-  gclid                    String?
-  deviceFingerprint        String?
-  providerPayload          Json?
-  enrichmentData           Json?
-  enrichmentStatus         CheckoutSocialLeadEnrichmentStatus @default(PENDING)
-  enrichedAt               DateTime?
-  abandonedAt              DateTime?
-  convertedAt              DateTime?
-  recoveryWhatsAppSentAt   DateTime?
-  recoveryEmailSentAt      DateTime?
-  convertedOrderId         String?
-  convertedOrder           CheckoutOrder?                  @relation(fields: [convertedOrderId], references: [id], onDelete: SetNull)
-  contactId                String?
-  contact                  Contact?                        @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  createdAt                DateTime                        @default(now())
-  updatedAt                DateTime                        @updatedAt
+  id                     String                             @id @default(cuid())
+  workspaceId            String
+  workspace              Workspace                          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  planId                 String
+  plan                   CheckoutProductPlan                @relation(fields: [planId], references: [id], onDelete: Cascade)
+  productId              String
+  product                Product                            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  checkoutSlug           String
+  checkoutCode           String?
+  provider               CheckoutSocialProvider
+  providerId             String?
+  providerEmailVerified  Boolean                            @default(false)
+  name                   String?
+  email                  String?
+  avatarUrl              String?
+  phone                  String?
+  cpf                    String?
+  status                 CheckoutSocialLeadStatus           @default(CAPTURED)
+  stepReached            Int                                @default(1)
+  sourceUrl              String?
+  refererUrl             String?
+  utmSource              String?
+  utmMedium              String?
+  utmCampaign            String?
+  utmContent             String?
+  utmTerm                String?
+  fbclid                 String?
+  gclid                  String?
+  deviceFingerprint      String?
+  providerPayload        Json?
+  enrichmentData         Json?
+  enrichmentStatus       CheckoutSocialLeadEnrichmentStatus @default(PENDING)
+  enrichedAt             DateTime?
+  abandonedAt            DateTime?
+  convertedAt            DateTime?
+  recoveryWhatsAppSentAt DateTime?
+  recoveryEmailSentAt    DateTime?
+  convertedOrderId       String?
+  convertedOrder         CheckoutOrder?                     @relation(fields: [convertedOrderId], references: [id], onDelete: SetNull)
+  contactId              String?
+  contact                Contact?                           @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  createdAt              DateTime                           @default(now())
+  updatedAt              DateTime                           @updatedAt
 
   @@index([workspaceId, createdAt])
   @@index([workspaceId, status, createdAt])
@@ -2760,6 +2951,7 @@ model CheckoutSocialLead {
   @@index([workspaceId, deviceFingerprint])
   @@index([planId, createdAt])
   @@index([productId, createdAt])
+  @@map("RAC_CheckoutSocialLead")
 }
 
 model CheckoutPayment {
@@ -2780,96 +2972,106 @@ model CheckoutPayment {
   webhookData     Json?         @db.JsonB
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+
   @@index([externalId])
+  @@map("RAC_CheckoutPayment")
 }
 
 model UpsellOrder {
-  id              String      @id @default(cuid())
-  orderId         String
-  order           CheckoutOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  upsellId        String
-  productName     String
-  priceInCents    Int
-  status          OrderStatus @default(PENDING)
-  createdAt       DateTime    @default(now())
+  id           String        @id @default(cuid())
+  orderId      String
+  order        CheckoutOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  upsellId     String
+  productName  String
+  priceInCents Int
+  status       OrderStatus   @default(PENDING)
+  createdAt    DateTime      @default(now())
+
   @@index([orderId])
+  @@map("RAC_UpsellOrder")
 }
 
 model KycDocument {
-  id             String   @id @default(uuid())
+  id             String    @id @default(uuid())
   workspaceId    String
   workspace      Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   agentId        String
-  agent          Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  type           String   // DOCUMENT_FRONT, DOCUMENT_BACK, PROOF_OF_ADDRESS, COMPANY_DOCUMENT
+  agent          Agent     @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  type           String // DOCUMENT_FRONT, DOCUMENT_BACK, PROOF_OF_ADDRESS, COMPANY_DOCUMENT
   fileUrl        String
   fileName       String
   fileSize       Int
   mimeType       String
-  status         String   @default("pending")
+  status         String    @default("pending")
   rejectedReason String?
   reviewedAt     DateTime?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime  @default(now())
+
   @@index([workspaceId])
   @@index([agentId])
+  @@map("RAC_KycDocument")
 }
 
 model FiscalData {
-  id                   String   @id @default(uuid())
-  workspaceId          String   @unique
-  workspace            Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  type                 String   // PF, PJ
-  cpf                  String?
-  fullName             String?
-  cnpj                 String?
-  razaoSocial          String?
-  nomeFantasia         String?
-  inscricaoEstadual    String?
-  inscricaoMunicipal   String?
-  responsavelCpf       String?
-  responsavelNome      String?
-  cep                  String?
-  street               String?
-  number               String?
-  complement           String?
-  neighborhood         String?
-  city                 String?
-  state                String?
-  status               String   @default("pending")
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                 String    @id @default(uuid())
+  workspaceId        String    @unique
+  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  type               String // PF, PJ
+  cpf                String?
+  fullName           String?
+  cnpj               String?
+  razaoSocial        String?
+  nomeFantasia       String?
+  inscricaoEstadual  String?
+  inscricaoMunicipal String?
+  responsavelCpf     String?
+  responsavelNome    String?
+  cep                String?
+  street             String?
+  number             String?
+  complement         String?
+  neighborhood       String?
+  city               String?
+  state              String?
+  status             String    @default("pending")
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
   @@index([workspaceId])
+  @@map("RAC_FiscalData")
 }
 
 model OrderAlert {
   id          String    @id @default(cuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  type        String    // MISSING_TRACKING, CHARGEBACK, REFUND_REQUEST, POSSIBLE_LOSS, LATE_PAYMENT
+  type        String // MISSING_TRACKING, CHARGEBACK, REFUND_REQUEST, POSSIBLE_LOSS, LATE_PAYMENT
   title       String
   description String
   orderId     String?
-  severity    String    // WARNING, CRITICAL
+  severity    String // WARNING, CRITICAL
   resolved    Boolean   @default(false)
   resolvedAt  DateTime?
   createdAt   DateTime  @default(now())
 
   @@index([workspaceId, resolved, createdAt])
   @@index([workspaceId, type])
+  @@map("RAC_OrderAlert")
 }
 
 model AdSpend {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  amount      Int      // centavos
-  platform    String   // "meta", "google", "tiktok", "other"
+  amount      Int // centavos
+  platform    String // "meta", "google", "tiktok", "other"
   date        DateTime
   campaign    String?
   description String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 
   @@index([workspaceId, date])
+  @@map("RAC_AdSpend")
 }
 
 model Webinar {
@@ -2878,13 +3080,15 @@ model Webinar {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   title       String
   description String?
-  url         String    // YouTube Live, Google Meet, etc
+  url         String // YouTube Live, Google Meet, etc
   date        DateTime
   productId   String?
   status      String    @default("SCHEDULED") // SCHEDULED, LIVE, COMPLETED
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
   @@index([workspaceId, date])
+  @@map("RAC_Webinar")
 }
 
 model MetaConnection {
@@ -2897,7 +3101,7 @@ model MetaConnection {
   pageName              String?
   pageAccessToken       String?
   instagramAccountId    String?
-  instagramUsername      String?
+  instagramUsername     String?
   whatsappPhoneNumberId String?
   whatsappBusinessId    String?
   adAccountId           String?
@@ -2906,6 +3110,8 @@ model MetaConnection {
   status                String    @default("connected")
   connectedAt           DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
+
+  @@map("RAC_MetaConnection")
 }
 
 // ============================================================================
@@ -2961,14 +3167,14 @@ model AdminUser {
   status                 AdminUserStatus   @default(ACTIVE)
   mfaSecret              String?           @map("mfa_secret")
   mfaEnabled             Boolean           @default(false) @map("mfa_enabled")
-  mfaPendingSetup        Boolean           @default(true)  @map("mfa_pending_setup")
-  passwordChangeRequired Boolean           @default(true)  @map("password_change_required")
+  mfaPendingSetup        Boolean           @default(true) @map("mfa_pending_setup")
+  passwordChangeRequired Boolean           @default(true) @map("password_change_required")
   allowedIps             Json?             @map("allowed_ips")
   lastLoginAt            DateTime?         @map("last_login_at")
-  failedLoginCount       Int               @default(0)     @map("failed_login_count")
+  failedLoginCount       Int               @default(0) @map("failed_login_count")
   lockedUntil            DateTime?         @map("locked_until")
   createdAt              DateTime          @default(now()) @map("created_at")
-  updatedAt              DateTime          @updatedAt      @map("updated_at")
+  updatedAt              DateTime          @updatedAt @map("updated_at")
   createdById            String?           @map("created_by_id")
   createdBy              AdminUser?        @relation("AdminUserCreatedBy", fields: [createdById], references: [id])
   createdAdmins          AdminUser[]       @relation("AdminUserCreatedBy")
@@ -3158,19 +3364,19 @@ model MarketplaceTreasury {
 }
 
 model MarketplaceTreasuryLedger {
-  id            String               @id @default(cuid())
-  walletId      String               @map("wallet_id")
-  wallet        MarketplaceTreasury  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  id            String                        @id @default(cuid())
+  walletId      String                        @map("wallet_id")
+  wallet        MarketplaceTreasury           @relation(fields: [walletId], references: [id], onDelete: Cascade)
   currency      String
   direction     String // 'credit' | 'debit'
   bucket        MarketplaceTreasuryBucket
-  amountInCents BigInt               @map("amount_in_cents")
+  amountInCents BigInt                        @map("amount_in_cents")
   kind          MarketplaceTreasuryLedgerKind
-  orderId       String?              @map("order_id")
-  feeSnapshotId String?              @map("fee_snapshot_id")
+  orderId       String?                       @map("order_id")
+  feeSnapshotId String?                       @map("fee_snapshot_id")
   reason        String
   metadata      Json?
-  createdAt     DateTime             @default(now()) @map("created_at")
+  createdAt     DateTime                      @default(now()) @map("created_at")
 
   @@index([walletId, createdAt])
   @@index([kind, createdAt])
@@ -3282,17 +3488,17 @@ enum ConnectLedgerEntryType {
 }
 
 model ConnectAccountBalance {
-  id                       String              @id @default(cuid())
-  workspaceId              String              @map("workspace_id")
-  stripeAccountId          String              @unique @map("stripe_account_id")
-  accountType              ConnectAccountType  @map("account_type")
-  pendingBalanceCents      BigInt              @default(0) @map("pending_balance_cents")
-  availableBalanceCents    BigInt              @default(0) @map("available_balance_cents")
-  lifetimeReceivedCents    BigInt              @default(0) @map("lifetime_received_cents")
-  lifetimePaidOutCents     BigInt              @default(0) @map("lifetime_paid_out_cents")
-  lifetimeChargebacksCents BigInt              @default(0) @map("lifetime_chargebacks_cents")
-  createdAt                DateTime            @default(now()) @map("created_at")
-  updatedAt                DateTime            @updatedAt @map("updated_at")
+  id                       String             @id @default(cuid())
+  workspaceId              String             @map("workspace_id")
+  stripeAccountId          String             @unique @map("stripe_account_id")
+  accountType              ConnectAccountType @map("account_type")
+  pendingBalanceCents      BigInt             @default(0) @map("pending_balance_cents")
+  availableBalanceCents    BigInt             @default(0) @map("available_balance_cents")
+  lifetimeReceivedCents    BigInt             @default(0) @map("lifetime_received_cents")
+  lifetimePaidOutCents     BigInt             @default(0) @map("lifetime_paid_out_cents")
+  lifetimeChargebacksCents BigInt             @default(0) @map("lifetime_chargebacks_cents")
+  createdAt                DateTime           @default(now()) @map("created_at")
+  updatedAt                DateTime           @updatedAt @map("updated_at")
 
   ledger ConnectLedgerEntry[]
 
@@ -3316,23 +3522,23 @@ model ConnectLedgerEntry {
   metadata                   Json?                  @db.JsonB
   createdAt                  DateTime               @default(now()) @map("created_at")
 
+  @@unique([referenceType, referenceId, type])
   @@index([accountBalanceId, createdAt])
   @@index([scheduledFor, matured])
-  @@unique([referenceType, referenceId, type])
   @@map("connect_ledger_entries")
 }
 
 model ConnectMaturationRule {
-  id          String              @id @default(cuid())
-  productId   String?             @map("product_id")
-  accountType ConnectAccountType  @map("account_type")
-  delayDays   Int                 @map("delay_days")
-  active      Boolean             @default(true)
-  createdAt   DateTime            @default(now()) @map("created_at")
-  updatedAt   DateTime            @updatedAt @map("updated_at")
+  id          String             @id @default(cuid())
+  productId   String?            @map("product_id")
+  accountType ConnectAccountType @map("account_type")
+  delayDays   Int                @map("delay_days")
+  active      Boolean            @default(true)
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
 
-  @@index([productId, accountType])
   @@unique([productId, accountType])
+  @@index([productId, accountType])
   @@map("connect_maturation_rules")
 }
 
@@ -3386,19 +3592,19 @@ model PrepaidWalletTransaction {
   metadata          Json?               @db.JsonB
   createdAt         DateTime            @default(now()) @map("created_at")
 
-  @@index([walletId, createdAt])
   @@unique([referenceType, referenceId, type])
+  @@index([walletId, createdAt])
   @@map("prepaid_wallet_transactions")
 }
 
 model UsagePrice {
-  id                  String   @id @default(cuid())
-  operation           String   @unique
-  pricePerUnitCents   BigInt   @map("price_per_unit_cents")
-  unit                String
-  active              Boolean  @default(true)
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
+  id                String   @id @default(cuid())
+  operation         String   @unique
+  pricePerUnitCents BigInt   @map("price_per_unit_cents")
+  unit              String
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   @@index([active])
   @@map("usage_prices")
@@ -3424,15 +3630,42 @@ enum FraudBlacklistType {
 }
 
 model FraudBlacklist {
-  id        String              @id @default(cuid())
+  id        String             @id @default(cuid())
   type      FraudBlacklistType
   value     String
   reason    String
-  addedBy   String?             @map("added_by")
-  expiresAt DateTime?           @map("expires_at")
-  createdAt DateTime            @default(now()) @map("created_at")
+  addedBy   String?            @map("added_by")
+  expiresAt DateTime?          @map("expires_at")
+  createdAt DateTime           @default(now()) @map("created_at")
 
   @@unique([type, value])
   @@index([expiresAt])
   @@map("fraud_blacklist")
+}
+
+// ============================================================================
+// DailyMessageCounter — per-workspace daily WhatsApp message quota.
+//
+// Each row tracks the number of outbound WhatsApp messages a workspace has
+// sent on a given UTC date. The counter is atomically upserted before every
+// send via INSERT ... ON CONFLICT ... DO UPDATE RETURNING (PostgreSQL).
+// PlanLimitsService.ensureDailyMessageQuota() reads the plan-based limit
+// from the subscription and compares against the running count.
+//
+// Invariants:
+//   * (workspaceId, date) is unique — one row per workspace per day.
+//   * The count is monotonically increasing; it is NEVER decremented.
+//   * Enterprise plans (messagesPerDay = null) skip the counter entirely.
+// ============================================================================
+model DailyMessageCounter {
+  id          String   @id @default(uuid())
+  workspaceId String
+  date        DateTime @db.Date
+  count       Int      @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([workspaceId, date])
+  @@index([workspaceId, date])
+  @@map("RAC_DailyMessageCounter")
 }

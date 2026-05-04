@@ -137,11 +137,9 @@ export class KloelToolRouter {
           }),
         );
       } catch (error: unknown) {
-        const errorInstanceofError =
-          error instanceof Error
-            ? error
-            : new Error(typeof error === 'string' ? error : 'unknown error');
-        this.logger.warn(`UnifiedAgent tool ${toolName} falhou: ${errorInstanceofError?.message}`);
+        this.logger.warn(
+          `UnifiedAgent tool ${toolName} falhou: ${error instanceof Error ? error.message : 'unknown_error'}`,
+        );
       }
 
       if (!result || result?.error === 'Unknown tool') {
@@ -178,7 +176,7 @@ export class KloelToolRouter {
         tool_call_id: callId,
         name: toolName,
         content: JSON.stringify(result ?? null),
-      } as ToolMessage);
+      });
 
       input.safeWrite?.(
         createKloelStatusEvent(

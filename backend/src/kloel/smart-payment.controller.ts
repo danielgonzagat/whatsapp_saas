@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import * as Sentry from '@sentry/node';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
@@ -53,7 +54,14 @@ export class SmartPaymentController {
           },
         },
       })
-      .catch(() => null);
+      .catch((error) => {
+        Sentry.captureException(error, {
+          tags: { type: 'financial_alert', operation: 'smart_payment_public_lookup' },
+          extra: { paymentId },
+          level: 'error',
+        });
+        return null;
+      });
 
     if (!sale) {
       throw new NotFoundException('Pagamento não encontrado');
@@ -152,6 +160,7 @@ export class SmartPaymentController {
   }
 
   /** Analyze recovery. */
+  // PULSE_TODO: verify if still needed, no caller detected
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get(':workspaceId/recovery/:paymentId')
   @ApiOperation({

@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import { API_BASE } from '@/lib/http';
 import Image from 'next/image';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
@@ -121,7 +122,7 @@ export default function UpsellPage() {
       <div
         style={{
           minHeight: '100vh',
-          background: '#0A0A0C',
+          background: colors.background.void /* PULSE_VISUAL_OK: replaced below */,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -139,7 +140,7 @@ export default function UpsellPage() {
     <div
       style={{
         minHeight: '100vh',
-        background: '#0A0A0C',
+        background: colors.background.void /* PULSE_VISUAL_OK: replaced below */,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',

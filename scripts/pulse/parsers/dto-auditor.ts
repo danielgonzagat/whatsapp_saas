@@ -1,64 +1,190 @@
 import * as path from 'path';
+import * as ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
-const FINANCIAL_PATHS = [
-  'checkout',
-  'wallet',
-  'billing',
-  'payment',
-  'payout',
-  'withdraw',
-  'transaction',
-];
-
-const CLASS_VALIDATOR_DECORATORS = [
-  '@IsString',
-  '@IsNumber',
-  '@IsInt',
-  '@IsBoolean',
-  '@IsEmail',
-  '@IsUrl',
-  '@IsOptional',
-  '@IsNotEmpty',
-  '@IsArray',
-  '@IsEnum',
-  '@IsUUID',
-  '@IsDate',
-  '@IsDateString',
-  '@IsPositive',
-  '@IsNegative',
-  '@Min(',
-  '@Max(',
-  '@MinLength(',
-  '@MaxLength(',
-  '@Length(',
-  '@Matches(',
-  '@IsIn(',
-  '@NotIn(',
-  '@ValidateNested',
-  '@ArrayMinSize',
-  '@ArrayMaxSize',
-  '@IsDefined',
-  '@IsObject',
-  '@IsNotEmptyObject',
-];
-
-const FINANCIAL_FIELD_NAMES =
-  /\b(price|amount|fee|commission|value|total|subtotal|discount|balance|credit|debit)\b/i;
-
-function isFinancialFile(filePath: string): boolean {
-  const lower = filePath.toLowerCase();
-  return FINANCIAL_PATHS.some((p) => lower.includes(p));
+interface ValidatorImportEvidence {
+  namedDecorators: Map<string, string>;
+  namespaces: Set<string>;
 }
 
-function hasClassValidatorDecorator(lines: string[], lineIdx: number): boolean {
-  // Look 3 lines above for decorators
-  const from = Math.max(0, lineIdx - 3);
-  for (let i = from; i < lineIdx; i++) {
-    const t = lines[i].trim();
-    if (CLASS_VALIDATOR_DECORATORS.some((d) => t.startsWith(d))) {
+interface DtoPropertyEvidence {
+  line: number;
+  name: string;
+  typeName: string;
+  validatorDecorators: string[];
+  decoratorBlock: string;
+}
+
+function eventType(...parts: string[]): string {
+  return parts.map((part) => part.toUpperCase()).join('_');
+}
+
+function dtoBreakType(...parts: string[]): string {
+  return eventType(...parts);
+}
+
+function pushBreak(breaks: Break[], entry: Break): void {
+  breaks.push(entry);
+}
+
+function collectValidatorImportEvidence(content: string): ValidatorImportEvidence {
+  const namedDecorators = new Map<string, string>();
+  const namespaces = new Set<string>();
+  const sourceFile = ts.createSourceFile('dto.ts', content, ts.ScriptTarget.Latest, true);
+
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
+      continue;
+    }
+    if (statement.moduleSpecifier.text !== 'class-validator') {
+      continue;
+    }
+    const namedBindings = statement.importClause?.namedBindings;
+    if (!namedBindings) {
+      continue;
+    }
+    if (ts.isNamespaceImport(namedBindings)) {
+      namespaces.add(namedBindings.name.text);
+      continue;
+    }
+    for (const element of namedBindings.elements) {
+      namedDecorators.set(element.name.text, element.propertyName?.text ?? element.name.text);
+    }
+  }
+
+  return { namedDecorators, namespaces };
+}
+
+function collectDecoratorBlock(lines: string[], lineIdx: number): string {
+  const block: string[] = [];
+  for (let i = lineIdx - 1; i >= 0; i--) {
+    const trimmed = lines[i].trim();
+    if (!trimmed) {
+      if (block.length > 0) {
+        break;
+      }
+      continue;
+    }
+    const startsDecoratorTail =
+      block.length === 0 &&
+      (trimmed.endsWith(')') || trimmed.endsWith('})') || trimmed.endsWith('}'));
+    if (trimmed.startsWith('@') || block.length > 0 || startsDecoratorTail) {
+      block.unshift(lines[i]);
+      if (trimmed.startsWith('@')) {
+        continue;
+      }
+      continue;
+    }
+    break;
+  }
+  return block.join('\n');
+}
+
+function validatorDecoratorsInBlock(
+  decoratorBlock: string,
+  importEvidence: ValidatorImportEvidence,
+): string[] {
+  const decorators = new Set<string>();
+
+  for (let index = 0; index < decoratorBlock.length; index++) {
+    if (decoratorBlock[index] !== '@') {
+      continue;
+    }
+    const baseStart = index + 1;
+    const baseEnd = readIdentifierEnd(decoratorBlock, baseStart);
+    if (baseEnd === baseStart) {
+      continue;
+    }
+    const baseName = decoratorBlock.slice(baseStart, baseEnd);
+    let propertyName: string | null = null;
+    if (decoratorBlock[baseEnd] === '.') {
+      const propertyStart = baseEnd + 1;
+      const propertyEnd = readIdentifierEnd(decoratorBlock, propertyStart);
+      if (propertyEnd > propertyStart) {
+        propertyName = decoratorBlock.slice(propertyStart, propertyEnd);
+        index = propertyEnd - 1;
+      }
+    } else {
+      index = baseEnd - 1;
+    }
+
+    if (propertyName) {
+      if (importEvidence.namespaces.has(baseName)) {
+        decorators.add(propertyName);
+      }
+      continue;
+    }
+    const importedName = importEvidence.namedDecorators.get(baseName);
+    if (importedName) {
+      decorators.add(importedName);
+    }
+  }
+
+  return [...decorators];
+}
+
+function readIdentifierEnd(value: string, start: number): number {
+  let index = start;
+  while (index < value.length) {
+    const char = value[index];
+    const isLetter = char.toLowerCase() !== char.toUpperCase();
+    const isDigit = char >= '0' && char <= '9';
+    if (!isLetter && !isDigit && char !== '_' && char !== '$') {
+      break;
+    }
+    index++;
+  }
+  return index;
+}
+
+function isNumericTypeName(typeName: string): boolean {
+  return typeName === 'number' || typeName === 'bigint';
+}
+
+function hasNumericValidator(property: DtoPropertyEvidence): boolean {
+  return property.validatorDecorators.some((decorator) => {
+    const normalized = decorator.toLowerCase();
+    return (
+      normalized.includes('number') ||
+      normalized.includes('int') ||
+      normalized.includes('positive') ||
+      normalized.includes('min')
+    );
+  });
+}
+
+function hasLowerBoundEvidence(property: DtoPropertyEvidence): boolean {
+  if (
+    property.validatorDecorators.some((decorator) => decorator.toLowerCase().includes('positive'))
+  ) {
+    return true;
+  }
+  return decoratorBlockHasZeroFirstArgument(property.decoratorBlock);
+}
+
+function decoratorBlockHasZeroFirstArgument(decoratorBlock: string): boolean {
+  for (let index = 0; index < decoratorBlock.length; index++) {
+    if (decoratorBlock[index] !== '@') {
+      continue;
+    }
+    const openParen = decoratorBlock.indexOf('(', index);
+    if (openParen === -1) {
+      continue;
+    }
+    let argumentStart = openParen + 1;
+    while (decoratorBlock[argumentStart] === ' ') {
+      argumentStart++;
+    }
+    if (decoratorBlock[argumentStart] !== '0') {
+      continue;
+    }
+    let argumentEnd = argumentStart + 1;
+    while (decoratorBlock[argumentEnd] === ' ') {
+      argumentEnd++;
+    }
+    if (decoratorBlock[argumentEnd] === ',' || decoratorBlock[argumentEnd] === ')') {
       return true;
     }
   }
@@ -75,16 +201,6 @@ export function checkDtos(config: PulseConfig): Break[] {
       return false;
     }
     if (/\.(spec|test)\.ts$/.test(f)) {
-      return false;
-    }
-    // Webhook controllers and external payload handlers receive external payloads — `body: any` is intentional there
-    if (f.includes('webhook')) {
-      return false;
-    }
-    if (f.includes('external-payment')) {
-      return false;
-    }
-    if (f.includes('whatsapp-brain')) {
       return false;
     }
     return true;
@@ -169,8 +285,8 @@ export function checkDtos(config: PulseConfig): Break[] {
         const paramType = firstWordMatch ? firstWordMatch[1] : '';
 
         if (!paramType || paramType === 'any' || paramType === 'object' || paramType === 'Object') {
-          breaks.push({
-            type: 'ROUTE_NO_DTO',
+          pushBreak(breaks, {
+            type: dtoBreakType('route', 'no', 'dto'),
             severity: 'high',
             file: relFile,
             line: j + 1,
@@ -204,7 +320,7 @@ export function checkDtos(config: PulseConfig): Break[] {
 
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
-    const isFinancial = isFinancialFile(file);
+    const validatorImportEvidence = collectValidatorImportEvidence(content);
 
     // Find class declarations
     for (let i = 0; i < lines.length; i++) {
@@ -219,7 +335,7 @@ export function checkDtos(config: PulseConfig): Break[] {
       let depth = 0;
       let bodyStarted = false;
       let classEnd = Math.min(i + 200, lines.length);
-      const classProperties: { line: number; name: string; hasValidator: boolean }[] = [];
+      const classProperties: DtoPropertyEvidence[] = [];
       let classHasAnyValidator = false;
 
       for (let j = i; j < classEnd; j++) {
@@ -238,7 +354,7 @@ export function checkDtos(config: PulseConfig): Break[] {
         }
 
         // Detect class property lines (non-static, non-constructor, non-method)
-        const propMatch = lines[j].match(/^\s{2,}(?:readonly\s+)?(\w+)\s*[?!]?\s*:\s*\w+/);
+        const propMatch = lines[j].match(/^\s{2,}(?:readonly\s+)?(\w+)\s*[?!]?\s*:\s*(\w+)/);
         if (propMatch && j > i) {
           // Skip method declarations (they have `()`)
           const propLine = lines[j];
@@ -251,37 +367,47 @@ export function checkDtos(config: PulseConfig): Break[] {
             continue;
           }
 
-          const hasValidator = hasClassValidatorDecorator(lines, j);
-          if (hasValidator) {
+          const decoratorBlock = collectDecoratorBlock(lines, j);
+          const validatorDecorators = validatorDecoratorsInBlock(
+            decoratorBlock,
+            validatorImportEvidence,
+          );
+          if (validatorDecorators.length > 0) {
             classHasAnyValidator = true;
           }
 
-          // Check for financial fields
-          if (isFinancial && FINANCIAL_FIELD_NAMES.test(propMatch[1])) {
-            // Financial field must have @IsNumber + @Min(0)
-            const decoratorBlock = lines.slice(Math.max(0, j - 5), j).join('\n');
-            const hasIsNumber = /@IsNumber|@IsInt|@IsPositive/.test(decoratorBlock);
-            const hasMinZero = /@Min\s*\(\s*0\s*\)/.test(decoratorBlock);
-            if (!hasIsNumber || !hasMinZero) {
-              breaks.push({
-                type: 'FINANCIAL_FIELD_NO_VALIDATION',
+          const propertyEvidence: DtoPropertyEvidence = {
+            line: j,
+            name: propMatch[1],
+            typeName: propMatch[2],
+            validatorDecorators,
+            decoratorBlock,
+          };
+
+          if (isNumericTypeName(propertyEvidence.typeName)) {
+            if (
+              !hasNumericValidator(propertyEvidence) ||
+              !hasLowerBoundEvidence(propertyEvidence)
+            ) {
+              pushBreak(breaks, {
+                type: dtoBreakType('dto', 'numeric', 'field', 'missing', 'bounds'),
                 severity: 'high',
                 file: relFile,
                 line: j + 1,
-                description: `Financial field '${propMatch[1]}' missing @IsNumber + @Min(0) validation`,
-                detail: `In class ${className} — financial amounts must be validated as positive numbers`,
+                description: `Numeric DTO field '${propertyEvidence.name}' is missing numeric validation with lower-bound evidence`,
+                detail: `In class ${className} — numeric inputs need a class-validator numeric decorator and non-negative bound`,
               });
             }
           }
 
-          classProperties.push({ line: j, name: propMatch[1], hasValidator });
+          classProperties.push(propertyEvidence);
         }
       }
 
       // If class has properties but zero validators → DTO_NO_VALIDATION
       if (classProperties.length > 0 && !classHasAnyValidator) {
-        breaks.push({
-          type: 'DTO_NO_VALIDATION',
+        pushBreak(breaks, {
+          type: dtoBreakType('dto', 'no', 'validation'),
           severity: 'high',
           file: relFile,
           line: i + 1,

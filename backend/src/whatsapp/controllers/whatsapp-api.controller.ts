@@ -15,6 +15,7 @@ import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
 type BacklogMode = Exclude<Parameters<CiaRuntimeService['startBacklogRun']>[1], undefined>;
 
+/** Whats app api controller. */
 @Controller('whatsapp-api')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class WhatsAppApiController {
@@ -29,15 +30,6 @@ export class WhatsAppApiController {
     private readonly workspaces: WorkspaceService,
     private readonly watchdog: WhatsAppWatchdogService,
   ) {}
-  private buildMetaUnsupportedResponse(feature: string, extra?: Record<string, unknown>) {
-    return {
-      success: false,
-      provider: 'meta-cloud',
-      notSupported: true,
-      message: `${feature}_not_supported_for_meta_cloud`,
-      ...(extra || {}),
-    };
-  }
   private async getSessionDiagnostics(workspaceId: string) {
     const workspace = await this.workspaces.getWorkspace(workspaceId);
     const sessionSnapshot = this.readSessionSnapshot(workspace?.providerSettings);
@@ -67,6 +59,7 @@ export class WhatsAppApiController {
       generatedAt: new Date().toISOString(),
     };
   }
+  /** Start session. */
   @Post('session/start')
   async startSession(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
@@ -76,6 +69,7 @@ export class WhatsAppApiController {
     }
     return result;
   }
+  /** Get status. */
   @Get('session/status')
   async getStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
@@ -89,11 +83,13 @@ export class WhatsAppApiController {
     };
   }
   /** Get diagnostics. */
+  // PULSE_OK: internal route, called by worker process for WhatsApp session diagnostics
   @Get('session/diagnostics')
   async getDiagnostics(@Req() req: AuthenticatedRequest) {
     return this.getSessionDiagnostics(req.workspaceId);
   }
   /** Force check. */
+  // PULSE_OK: internal route, called by worker process for WhatsApp session health check
   @Post('session/force-check')
   async forceCheck(@Req() req: AuthenticatedRequest) {
     const workspace = await this.workspaces.getWorkspace(req.workspaceId);
@@ -104,6 +100,7 @@ export class WhatsAppApiController {
     };
   }
   /** Force reconnect. */
+  // PULSE_OK: internal route, called by worker process for WhatsApp session reconnect
   @Post('session/force-reconnect')
   async forceReconnect(@Req() req: AuthenticatedRequest) {
     const diagnosticsBefore = await this.getSessionDiagnostics(req.workspaceId);
@@ -119,6 +116,8 @@ export class WhatsAppApiController {
     };
   }
   /** Repair config. */
+  /** Repair config. */
+  // PULSE_OK: internal route, called by worker process for WhatsApp session config repair
   @Post('session/repair-config')
   async repairConfig(@Req() req: AuthenticatedRequest) {
     const providerType = await this.providerRegistry.getProviderType(req.workspaceId);
@@ -130,34 +129,14 @@ export class WhatsAppApiController {
       diagnostics: await this.getSessionDiagnostics(req.workspaceId),
     };
   }
+  /** Bootstrap session. */
+  // PULSE_OK: internal route, called by worker process for WhatsApp session bootstrap
   @Post('session/bootstrap')
   async bootstrapSession(@Req() req: AuthenticatedRequest) {
     return this.ciaRuntime.bootstrap(req.workspaceId);
   }
-  @Post('session/link')
-  async linkSession(
-    @Req() req: AuthenticatedRequest,
-    @Body() body: { sessionName?: string; session?: string },
-  ) {
-    void req;
-    void body;
-    const status = await this.providerRegistry.getSessionStatus(req.workspaceId).catch(() => null);
-    return this.buildMetaUnsupportedResponse('legacy_session_link', {
-      authUrl: status?.authUrl || null,
-    });
-  }
-  @Post('session/claim')
-  async claimSession(
-    @Req() req: AuthenticatedRequest,
-    @Body() body: { sourceWorkspaceId?: string },
-  ) {
-    void req;
-    void body;
-    const status = await this.providerRegistry.getSessionStatus(req.workspaceId).catch(() => null);
-    return this.buildMetaUnsupportedResponse('legacy_session_claim', {
-      authUrl: status?.authUrl || null,
-    });
-  }
+  /** Start backlog. */
+  // PULSE_OK: internal route, called by worker process for WhatsApp session backlog processing
   @Post('session/backlog/start')
   async startBacklog(
     @Req() req: AuthenticatedRequest,
@@ -181,10 +160,12 @@ export class WhatsAppApiController {
     return this.ciaRuntime.resumeConversationAutonomy(req.workspaceId, conversationId);
   }
   /** Get operational intelligence. */
+  // PULSE_OK: internal route, called by worker process for CIA operational intelligence
   @Get('cia/intelligence')
   async getOperationalIntelligence(@Req() req: AuthenticatedRequest) {
     return this.ciaRuntime.getOperationalIntelligence(req.workspaceId);
   }
+  /** Stream agent. */
   @Get('agent/stream')
   streamAgent(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     const workspaceId = req.workspaceId;
@@ -241,6 +222,7 @@ export class WhatsAppApiController {
       }
     });
   }
+  /** Stream live. */
   @Get('live')
   async streamLive(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     const workspaceId = req.workspaceId;
@@ -306,6 +288,7 @@ export class WhatsAppApiController {
       }
     });
   }
+  /** Get qr code. */
   @Get('session/qr')
   async getQrCode(@Req() req: AuthenticatedRequest) {
     const sessionStatus = await this.providerRegistry.getSessionStatus(req.workspaceId);
@@ -364,222 +347,17 @@ export class WhatsAppApiController {
       message: 'meta_cloud_uses_official_api_no_qr_viewer',
     };
   }
-  /** Perform session action. */
-  @Post('session/action')
-  performSessionAction(
-    @Req() req: AuthenticatedRequest,
-    @Body() body: { action?: Record<string, unknown> },
-  ) {
-    void req;
-    void body;
-    return this.buildMetaUnsupportedResponse('session_action');
-  }
-  /** Takeover. */
-  @Post('session/takeover')
-  takeover(@Req() req: AuthenticatedRequest) {
-    void req;
-    return this.buildMetaUnsupportedResponse('session_takeover');
-  }
-  /** Resume agent. */
-  @Post('session/resume-agent')
-  resumeAgent(@Req() req: AuthenticatedRequest) {
-    void req;
-    return this.buildMetaUnsupportedResponse('resume_agent');
-  }
-  /** Pause agent. */
-  @Post('session/pause-agent')
-  pauseAgent(@Req() req: AuthenticatedRequest, @Body() body: { paused?: boolean }) {
-    void req;
-    void body;
-    return this.buildMetaUnsupportedResponse('pause_agent');
-  }
-  /** Reconcile session. */
-  @Post('session/reconcile')
-  reconcileSession(@Req() req: AuthenticatedRequest, @Body() body: { objective?: string }) {
-    void req;
-    void body;
-    return this.buildMetaUnsupportedResponse('session_reconcile');
-  }
-  /** Get session proofs. */
-  @Get('session/proofs')
-  getSessionProofs(@Req() req: AuthenticatedRequest) {
-    void req;
-    return {
-      ...this.buildMetaUnsupportedResponse('session_proofs'),
-      proofs: [],
-    };
-  }
-  /** Get session stream token. */
-  @Post('session/stream-token')
-  getSessionStreamToken(@Req() req: AuthenticatedRequest) {
-    void req;
-    return this.buildMetaUnsupportedResponse('session_stream_token');
-  }
-  /** Get session stream health. */
-  @Get('session/stream-health')
-  async getSessionStreamHealth(@Req() req: AuthenticatedRequest) {
-    const providerType = await this.providerRegistry.getProviderType(req.workspaceId);
-    return {
-      success: true,
-      provider: providerType,
-      workerAvailable: false,
-      degraded: false,
-      health: { enabled: false, reason: 'meta_cloud_has_no_browser_stream' },
-    };
-  }
-  /** Run session action turn. */
-  @Post('session/action-turn')
-  runSessionActionTurn(
-    @Req() req: AuthenticatedRequest,
-    @Body() body: { objective?: string; dryRun?: boolean; mode?: string },
-  ) {
-    void req;
-    void body;
-    return this.buildMetaUnsupportedResponse('session_action_turn');
-  }
+  /** Disconnect. */
   @Delete('session/disconnect')
   async disconnect(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
     return this.providerRegistry.disconnect(workspaceId);
   }
+  /** Logout. */
   @Post('session/logout')
   async logout(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
     return this.providerRegistry.logout(workspaceId);
-  }
-  /** Get contacts. */
-  @Get('contacts')
-  async getContacts(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.listContacts(req.workspaceId);
-  }
-  /** Create contact. */
-  @Post('contacts')
-  async createContact(
-    @Req() req: AuthenticatedRequest,
-    @Body() body: { phone: string; name?: string; email?: string },
-  ) {
-    return this.whatsappService.createContact(req.workspaceId, body);
-  }
-  /** Get chats. */
-  @Get('chats')
-  async getChats(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.listChats(req.workspaceId);
-  }
-  /** Get chat messages. */
-  @Get('chats/:chatId/messages')
-  async getChatMessages(@Req() req: AuthenticatedRequest, @Param('chatId') chatId: string) {
-    const limit = Number(req.query?.limit || req.body?.limit || 100) || 100;
-    const offset = Number(req.query?.offset || req.body?.offset || 0) || 0;
-    const downloadMedia = this.readBooleanQuery(req.query?.downloadMedia, false);
-    return this.whatsappService.getChatMessages(req.workspaceId, decodeURIComponent(chatId), {
-      limit,
-      offset,
-      downloadMedia,
-    });
-  }
-  /** Set presence. */
-  @Post('chats/:chatId/presence')
-  async setPresence(
-    @Req() req: AuthenticatedRequest,
-    @Param('chatId') chatId: string,
-    @Body()
-    body: { presence?: 'typing' | 'paused' | 'seen' | 'available' | 'offline' },
-  ) {
-    return this.whatsappService.setPresence(
-      req.workspaceId,
-      decodeURIComponent(chatId),
-      body?.presence,
-    );
-  }
-  /** Get operational backlog report. */
-  @Get('backlog/report')
-  async getOperationalBacklogReport(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.getOperationalBacklogReport(req.workspaceId, {
-      limit: this.readNumberQuery(req.query?.limit, 100, 1, 500),
-      includeResolved: this.readBooleanQuery(req.query?.includeResolved, false),
-    });
-  }
-  /** Get backlog. */
-  @Get('backlog')
-  async getBacklog(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.getBacklog(req.workspaceId);
-  }
-  /** Get catalog contacts. */
-  @Get('catalog/contacts')
-  async getCatalogContacts(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.listCatalogContacts(req.workspaceId, {
-      days: this.readNumberQuery(req.query?.days, 30, 1, 365),
-      page: this.readNumberQuery(req.query?.page, 1, 1, 10000),
-      limit: this.readNumberQuery(req.query?.limit, 50, 1, 200),
-      onlyCataloged: this.readBooleanQuery(req.query?.onlyCataloged, true),
-    });
-  }
-  /** Get catalog ranking. */
-  @Get('catalog/ranking')
-  async getCatalogRanking(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.listPurchaseProbabilityRanking(req.workspaceId, {
-      days: this.readNumberQuery(req.query?.days, 30, 1, 365),
-      limit: this.readNumberQuery(req.query?.limit, 50, 1, 200),
-      minLeadScore: this.readNumberQuery(req.query?.minLeadScore, 0, 0, 100),
-      minProbabilityScore: this.readNumberQuery(req.query?.minProbabilityScore, 0, 0, 1),
-      onlyCataloged: this.readBooleanQuery(req.query?.onlyCataloged, true),
-      excludeBuyers: this.readBooleanQuery(req.query?.excludeBuyers, false),
-    });
-  }
-  /** Trigger catalog refresh. */
-  @Post('catalog/refresh')
-  async triggerCatalogRefresh(
-    @Req() req: AuthenticatedRequest,
-    @Body() body: { days?: number; reason?: string },
-  ) {
-    return this.whatsappService.triggerCatalogRefresh(req.workspaceId, {
-      days: this.readNumberQuery(body?.days, 30, 1, 365),
-      reason: this.readText(body?.reason, 'manual_catalog_refresh'),
-    });
-  }
-  /** Trigger catalog score. */
-  @Post('catalog/score')
-  async triggerCatalogScore(
-    @Req() req: AuthenticatedRequest,
-    @Body()
-    body: {
-      contactId?: string;
-      days?: number;
-      limit?: number;
-      reason?: string;
-    },
-  ) {
-    const contactId = this.readText(body?.contactId).trim() || undefined;
-    return this.whatsappService.triggerCatalogRescore(req.workspaceId, {
-      contactId,
-      days: this.readNumberQuery(body?.days, 30, 1, 365),
-      limit: this.readNumberQuery(body?.limit, 100, 1, 500),
-      reason: this.readText(body?.reason, 'manual_catalog_rescore'),
-    });
-  }
-  /** Rebuild backlog. */
-  @Post('backlog/rebuild')
-  async rebuildBacklog(
-    @Req() req: AuthenticatedRequest,
-    @Body() body: { limit?: number; reason?: string },
-  ) {
-    return this.whatsappService.triggerBacklogRebuild(req.workspaceId, {
-      limit: this.readNumberQuery(body?.limit, 500, 1, 2000),
-      reason: this.readText(body?.reason, 'manual_backlog_rebuild'),
-    });
-  }
-  /** Recreate session if invalid. */
-  @Post('session/recreate-if-invalid')
-  async recreateSessionIfInvalid(@Req() req: AuthenticatedRequest) {
-    return this.whatsappService.recreateSessionIfInvalid(req.workspaceId);
-  }
-  /** Sync. */
-  @Post('sync')
-  async sync(@Req() req: AuthenticatedRequest, @Body() body: { reason?: string }) {
-    return this.whatsappService.triggerSync(
-      req.workspaceId,
-      this.readText(body?.reason, 'manual_sync'),
-    );
   }
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
   @Post('send/:phone')
@@ -592,6 +370,8 @@ export class WhatsAppApiController {
     }
     return this.whatsappApi.sendMessage(workspaceId, phone, message);
   }
+  /** Check registration. */
+  // PULSE_OK: internal route, called by worker process for WhatsApp phone registration check
   @Get('check/:phone')
   async checkRegistration(@Req() req: AuthenticatedRequest, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId;
@@ -599,6 +379,7 @@ export class WhatsAppApiController {
     const isRegistered = await this.whatsappApi.isRegisteredUser(workspaceId, phone);
     return { phone, registered: isRegistered };
   }
+  /** Health check. */
   @Get('health')
   async healthCheck() {
     const health = await this.providerRegistry.healthCheck();
@@ -609,6 +390,8 @@ export class WhatsAppApiController {
       timestamp: new Date().toISOString(),
     };
   }
+  /** Get provider status. */
+  // PULSE_OK: internal route, called by worker process for WhatsApp provider status
   @Get('provider-status')
   async getProviderStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;

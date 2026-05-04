@@ -5,12 +5,14 @@ import {
   Inject,
   Injectable,
   Logger,
+  Optional,
   forwardRef,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { InboxGateway } from '../inbox/inbox.gateway';
 import { OmnichannelService } from '../inbox/omnichannel.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
 
@@ -51,6 +53,17 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
 }
 
+function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
+  try {
+    return JSON.parse(JSON.stringify(value ?? null)) as Prisma.InputJsonValue;
+  } catch {
+    return {
+      serializationError: true,
+      valueType: typeof value,
+    };
+  }
+}
+
 /** Webhooks service. */
 @Injectable()
 export class WebhooksService {
@@ -62,6 +75,7 @@ export class WebhooksService {
     @InjectRedis() private readonly redis: Redis,
     @Inject(forwardRef(() => OmnichannelService))
     private readonly omnichannelService: OmnichannelService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Process webhook. */
@@ -171,9 +185,16 @@ export class WebhooksService {
           },
         },
       });
-    } catch (err) {
+    } catch (err: unknown) {
+      void this.opsAlert?.alertOnDegradation(
+        err instanceof Error ? err.message : 'unknown',
+        'WebhooksService.processFinanceWebhook',
+        { workspaceId },
+      );
       // PULSE:OK — Finance event logging non-critical; flow trigger already queued
-      this.logger.warn(`Failed to log finance event: ${err?.message}`);
+      this.logger.warn(
+        `Failed to log finance event: ${err instanceof Error ? err.message : 'unknown'}`,
+      );
     }
 
     return { executionId: job.id, status, flowId };
@@ -281,7 +302,7 @@ export class WebhooksService {
       where.conversation = { channel };
     }
     const msg = await this.prisma.message.findFirst({
-      where,
+      where: { ...where, workspaceId },
       orderBy: { createdAt: 'desc' },
       select: { id: true },
     });
@@ -358,6 +379,7 @@ export class WebhooksService {
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown error';
+      void this.opsAlert?.alertOnDegradation(msg, 'WebhooksService.publishMessageStatus');
       this.logger.warn(`Failed to publish ws status: ${msg}`);
     }
   }
@@ -444,6 +466,7 @@ export class WebhooksService {
       const result = await this.omnichannelService.processInstagramWebhook(workspaceId, payload);
       return result;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'WebhooksService.processInstagramWebhook');
       const message =
         error instanceof Error
           ? error.message
@@ -463,12 +486,9 @@ export class WebhooksService {
     externalId: string,
     payload: T,
   ) {
-    // Prisma.JsonValue requires an index signature; callers pass well-typed
-    // provider-specific DTOs (StripeEventLike, GenericPaymentWebhookBody…)
-    // that are JSON-serializable by construction. Convert via JSON round-trip
-    // to guarantee the value matches Prisma's InputJsonValue shape at runtime
-    // (strips functions, undefined, symbols, class identity, etc.).
-    const jsonPayload = JSON.parse(JSON.stringify(payload)) as Prisma.InputJsonValue;
+    // Normalize to Prisma's JSON shape; malformed provider payloads must not
+    // turn audit logging into a webhook-processing failure.
+    const jsonPayload = toPrismaJsonValue(payload);
     return this.prisma.webhookEvent.upsert({
       where: { provider_externalId: { provider, externalId } },
       create: { provider, eventType, externalId, payload: jsonPayload, status: 'received' },

@@ -104,6 +104,7 @@ describe('apple auth callback route', () => {
         }),
         body: JSON.stringify({
           identityToken: 'apple-token',
+          redirectUri: 'https://auth.kloel.com/api/auth/callback/apple',
           user: {
             email: 'apple@kloel.com',
             name: { firstName: 'Apple', lastName: 'User' },

@@ -69,6 +69,7 @@ function addDays(value: Date, amount: number) {
 function isValidDate(value: Date | null | undefined): value is Date {
   return value instanceof Date && Number.isFinite(value.getTime());
 }
+// PULSE_OK: isValidDate guard used before all new Date(stringInput) calls
 
 function parseInputDate(raw: string | undefined, fallback: Date) {
   if (!raw) {

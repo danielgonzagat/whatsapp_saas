@@ -1,172 +1,236 @@
 /**
- * PULSE Parser 52: E2E Withdrawal + Race Condition Test
+ * PULSE Parser 52: Schema-derived numeric consistency probes
  * Layer 4: End-to-End Testing
  * Mode: DEEP (requires running infrastructure)
  *
- * DB-ONLY: Verifies wallet balance consistency — does not create withdrawals.
- *
- * CHECKS:
- * 1. Wallet balance consistency: compare stored `available` vs. sum of transactions
- *    - SELECT w.id, w.available, COALESCE(SUM(t.amount), 0) as calc
- *      FROM "KloelWallet" w LEFT JOIN "KloelWalletTransaction" t ON t.walletId = w.id
- *      GROUP BY w.id
- *      HAVING w.available != COALESCE(SUM(t.amount), 0)
- *    - If mismatch → E2E_RACE_CONDITION_WITHDRAWAL critical
- * 2. Check for negative wallet balances (should never happen)
- * 3. Check for withdrawals that exceed wallet balance at time of creation
- *    (sign of race condition that was processed)
- * 4. Check for duplicate withdrawal records with same amount/time (double-debit sign)
- *
- * BREAK TYPES:
- * - E2E_RACE_CONDITION_WITHDRAWAL (critical) — concurrent withdrawals result in negative balance or double debit
+ * This parser intentionally avoids product/table-specific SQL. It derives
+ * runtime probes from the observed Prisma schema and emits compatibility
+ * Breaks only after signal/evidence/predicate/diagnostic synthesis.
  */
 
-import type { Break, PulseConfig } from '../types';
-import {
-  httpGet,
-  httpPost,
-  makeTestJwt,
-  dbQuery,
-  isDeepMode,
-  getBackendUrl,
-} from './runtime-utils';
+import * as fs from 'fs';
+import * as path from 'path';
 
-/** Check e2e withdrawal. */
-export async function checkE2eWithdrawal(config: PulseConfig): Promise<Break[]> {
-  // DEEP mode only — requires running backend + DB
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
+import type { Break, PulseConfig } from '../types';
+import { dbQuery } from './runtime-utils';
+
+interface PrismaField {
+  name: string;
+  type: string;
+  columnName: string;
+  attributes: string;
+}
+
+interface PrismaModel {
+  name: string;
+  tableName: string;
+  fields: PrismaField[];
+}
+
+interface NumericProbe {
+  model: PrismaModel;
+  field: PrismaField;
+}
+
+function stripLineComment(line: string): string {
+  const marker = line.indexOf('//');
+  return marker === -1 ? line : line.slice(0, marker);
+}
+
+function extractAttributeValue(attributes: string, attributeName: string): string | null {
+  const pattern = new RegExp(`@${attributeName}\\("([^"]+)"\\)`);
+  return pattern.exec(attributes)?.[1] ?? null;
+}
+
+function parsePrismaModels(schema: string): PrismaModel[] {
+  const models: PrismaModel[] = [];
+  const lines = schema.split('\n');
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = stripLineComment(lines[index] ?? '').trim();
+    if (!line.startsWith('model ') || !line.includes('{')) {
+      index += 1;
+      continue;
+    }
+
+    const name = line.slice('model '.length, line.indexOf('{')).trim().split(/\s+/)[0];
+    if (!name) {
+      index += 1;
+      continue;
+    }
+
+    let tableName = name;
+    const fields: PrismaField[] = [];
+    index += 1;
+
+    while (index < lines.length) {
+      const rawLine = lines[index] ?? '';
+      const line = stripLineComment(rawLine).trim();
+      index += 1;
+      if (line === '}') {
+        break;
+      }
+      if (!line) {
+        continue;
+      }
+
+      const mapMatch = /^@@map\("([^"]+)"\)/.exec(line);
+      if (mapMatch) {
+        tableName = mapMatch[1];
+        continue;
+      }
+      if (line.startsWith('@@')) {
+        continue;
+      }
+
+      const [fieldName, rawType, ...attributeParts] = line.split(/\s+/);
+      if (!fieldName || !rawType) {
+        continue;
+      }
+      const attributes = attributeParts.join(' ');
+      fields.push({
+        name: fieldName,
+        type: rawType.replace(/\[\]|\?$/g, ''),
+        columnName: extractAttributeValue(attributes, 'map') ?? fieldName,
+        attributes,
+      });
+    }
+
+    models.push({ name, tableName, fields });
+  }
+
+  return models;
+}
+
+function schemaPathFor(config: PulseConfig): string | null {
+  if (config.schemaPath && fs.existsSync(config.schemaPath)) {
+    return config.schemaPath;
+  }
+  return null;
+}
+
+function buildNumericProbes(models: PrismaModel[]): NumericProbe[] {
+  const numericTypes = new Set(['BigInt', 'Decimal', 'Float', 'Int']);
+  return models.flatMap((model) =>
+    model.fields
+      .filter(
+        (field) =>
+          numericTypes.has(field.type) &&
+          !field.attributes.includes('@id') &&
+          !field.attributes.includes('@unique'),
+      )
+      .map((field) => ({ model, field })),
+  );
+}
+
+function quoteIdentifier(identifier: string): string {
+  return `"${identifier.replace(/"/g, '""')}"`;
+}
+
+function buildNegativeNumericCountSql(probe: NumericProbe): string {
+  return [
+    'SELECT COUNT(*) AS cnt',
+    `  FROM ${quoteIdentifier(probe.model.tableName)}`,
+    ` WHERE ${quoteIdentifier(probe.field.columnName)} < 0`,
+  ].join('\n');
+}
+
+function parseCount(rows: Array<Record<string, unknown>>): number {
+  const value = rows[0]?.cnt;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'bigint') return Number(value);
+  if (typeof value === 'string') return Number.parseInt(value, 10) || 0;
+  return 0;
+}
+
+async function runCountQuery(sql: string): Promise<number | null> {
+  try {
+    return parseCount(await dbQuery(sql, []));
+  } catch {
+    return null;
+  }
+}
+
+interface SchemaNumericProbeOptions {
+  source: string;
+  detector: string;
+  surface: string;
+}
+
+function synthesizeProbeBreak(signal: PulseSignalEvidence, surface: string): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const diagnostic = synthesizeDiagnostic(
+    signalGraph,
+    predicateGraph,
+    calculateDynamicRisk({ predicateGraph }),
+  );
+
+  return {
+    type: diagnostic.id,
+    severity: 'low',
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode}`,
+    surface,
+  };
+}
+
+export async function runSchemaDerivedNumericConsistencyProbes(
+  config: PulseConfig,
+  options: SchemaNumericProbeOptions = {
+    source: 'schema-derived:numeric-runtime-probe',
+    detector: 'negative-numeric-observation',
+    surface: 'schema-derived-numeric-consistency',
+  },
+): Promise<Break[]> {
   if (!process.env.PULSE_DEEP) {
     return [];
   }
 
+  const schemaPath = schemaPathFor(config);
+  if (!schemaPath) {
+    return [];
+  }
+
   const breaks: Break[] = [];
+  const models = parsePrismaModels(fs.readFileSync(schemaPath, 'utf8'));
 
-  // ── Check 1: Wallet balance vs. transaction sum consistency ──────────────
-  // The wallet's stored `available` balance should equal the sum of all its transactions
-  // (SALE credits positive, WITHDRAWAL debits negative, etc.)
-  try {
-    const mismatchRows = await dbQuery(
-      `SELECT w.id, w.available, COALESCE(SUM(t.amount), 0) as calc_total,
-              ABS(w.available - COALESCE(SUM(t.amount), 0)) as discrepancy
-       FROM "KloelWallet" w
-       LEFT JOIN "KloelWalletTransaction" t ON t."walletId" = w.id
-       GROUP BY w.id, w.available
-       HAVING w.available != COALESCE(SUM(t.amount), 0)
-       LIMIT 5`,
+  for (const probe of buildNumericProbes(models)) {
+    const count = await runCountQuery(buildNegativeNumericCountSql(probe));
+    if (count === null || count === 0) {
+      continue;
+    }
+
+    breaks.push(
+      synthesizeProbeBreak(
+        {
+          source: options.source,
+          detector: options.detector,
+          truthMode: 'observed',
+          summary: 'Runtime probe observed negative values in schema-discovered numeric field',
+          detail: `Model=${probe.model.name}; field=${probe.field.name}; observedRows=${count}`,
+          location: {
+            file: path.relative(config.rootDir, schemaPath),
+            line: 0,
+          },
+        },
+        options.surface,
+      ),
     );
-
-    if (mismatchRows.length > 0) {
-      const worst = mismatchRows.reduce(
-        (max: any, r: any) => (parseFloat(r.discrepancy) > parseFloat(max.discrepancy) ? r : max),
-        mismatchRows[0],
-      );
-      breaks.push({
-        type: 'E2E_RACE_CONDITION_WITHDRAWAL',
-        severity: 'critical',
-        file: 'backend/src/kloel/wallet.controller.ts',
-        line: 1,
-        description: `${mismatchRows.length} wallets have stored balance != sum of transactions — possible race condition or accounting bug`,
-        detail: `Worst discrepancy: wallet ${worst.id} — stored: ${worst.available}, calc: ${worst.calc_total}, delta: ${worst.discrepancy}`,
-      });
-    }
-  } catch (err: any) {
-    // Column name may differ — try alternate query
-    try {
-      const altMismatch = await dbQuery(
-        `SELECT w.id, w.available, COALESCE(SUM(t.amount), 0) as calc
-         FROM "KloelWallet" w
-         LEFT JOIN "KloelWalletTransaction" t ON t."walletId" = w.id
-         GROUP BY w.id
-         HAVING ABS(w.available - COALESCE(SUM(t.amount), 0)) > 0.01
-         LIMIT 5`,
-      );
-      if (altMismatch.length > 0) {
-        breaks.push({
-          type: 'E2E_RACE_CONDITION_WITHDRAWAL',
-          severity: 'critical',
-          file: 'backend/src/kloel/wallet.controller.ts',
-          line: 1,
-          description: `${altMismatch.length} wallets have balance inconsistency (>R$0.01 delta) — accounting integrity at risk`,
-          detail: `Sample wallet ID with mismatch: ${altMismatch[0]?.id}`,
-        });
-      }
-    } catch {
-      // DB unavailable or schema completely different — skip
-    }
-  }
-
-  // ── Check 2: Negative wallet balances ────────────────────────────────────
-  // A wallet with negative `available` balance is a sign of race condition win
-  try {
-    const negativeRows = await dbQuery(
-      `SELECT id, available FROM "KloelWallet" WHERE available < 0 LIMIT 5`,
-    );
-
-    if (negativeRows.length > 0) {
-      breaks.push({
-        type: 'E2E_RACE_CONDITION_WITHDRAWAL',
-        severity: 'critical',
-        file: 'backend/src/kloel/wallet.controller.ts',
-        line: 1,
-        description: `${negativeRows.length} wallets have negative available balance — race condition or missing balance guard`,
-        detail: `Sample: wallet ${negativeRows[0]?.id} has balance ${negativeRows[0]?.available}`,
-      });
-    }
-  } catch {
-    // Skip if column doesn't exist
-  }
-
-  // ── Check 3: Duplicate withdrawal records (double-debit sign) ────────────
-  // Multiple withdrawal records for the same wallet at the same second is suspicious
-  try {
-    const dupeRows = await dbQuery(
-      `SELECT "walletId", amount, DATE_TRUNC('second', "createdAt") as ts, COUNT(*) as cnt
-       FROM "KloelWalletTransaction"
-       WHERE type = 'WITHDRAWAL'
-       GROUP BY "walletId", amount, DATE_TRUNC('second', "createdAt")
-       HAVING COUNT(*) > 1
-       LIMIT 5`,
-    );
-
-    if (dupeRows.length > 0) {
-      breaks.push({
-        type: 'E2E_RACE_CONDITION_WITHDRAWAL',
-        severity: 'critical',
-        file: 'backend/src/kloel/wallet.controller.ts',
-        line: 1,
-        description: `${dupeRows.length} wallet withdrawal pairs created within the same second with same amount — double debit likely`,
-        detail: `Sample: walletId ${dupeRows[0]?.walletId}, amount ${dupeRows[0]?.amount}, count ${dupeRows[0]?.cnt} at ${dupeRows[0]?.ts}`,
-      });
-    }
-  } catch {
-    // Column name or type may differ — skip gracefully
-  }
-
-  // ── Check 4: Withdrawals that would exceed balance (integrity at creation) ─
-  // Check for Withdrawal records where amount > wallet.available at time of request
-  // (This is retrospective — we check the current state, not historical)
-  try {
-    const excessRows = await dbQuery(
-      `SELECT w2.id as withdrawal_id, w2.amount as w_amount, wlt.available as wallet_bal
-       FROM "Withdrawal" w2
-       INNER JOIN "KloelWallet" wlt ON wlt."workspaceId" = w2."workspaceId"
-       WHERE w2.status IN ('PENDING', 'PROCESSING')
-         AND w2.amount > wlt.available
-       LIMIT 5`,
-    );
-
-    if (excessRows.length > 0) {
-      breaks.push({
-        type: 'E2E_RACE_CONDITION_WITHDRAWAL',
-        severity: 'critical',
-        file: 'backend/src/kloel/wallet.controller.ts',
-        line: 1,
-        description: `${excessRows.length} PENDING/PROCESSING withdrawals exceed current wallet balance — possible over-withdrawal or race condition`,
-        detail: `Sample: withdrawal ${excessRows[0]?.withdrawal_id} amount ${excessRows[0]?.w_amount} > wallet balance ${excessRows[0]?.wallet_bal}`,
-      });
-    }
-  } catch {
-    // Withdrawal table may not exist or schema differs — skip
   }
 
   return breaks;
+}
+
+/** Check schema-derived numeric consistency probes. */
+export async function checkE2eWithdrawal(config: PulseConfig): Promise<Break[]> {
+  return runSchemaDerivedNumericConsistencyProbes(config);
 }

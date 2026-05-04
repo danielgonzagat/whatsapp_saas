@@ -2,7 +2,13 @@
   "$schema": "./node_modules/knip/schema.json",
   "include": ["files", "dependencies", "unlisted", "unresolved", "exports", "types"],
   "ignore": ["frontend-admin/**"],
-  "ignoreDependencies": ["@playwright/test", "@types/node", "prettier", "typescript"],
+  "ignoreDependencies": [
+    "@playwright/test",
+    "@types/node",
+    "@jest/globals",
+    "prettier",
+    "typescript"
+  ],
   "prisma": false,
   "ignoreWorkspaces": ["dist", "node_modules"],
   "workspaces": {

@@ -3,8 +3,101 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
+type NextJSPredicateKind =
+  | 'browser-global-access'
+  | 'client-render-boundary-missing'
+  | 'file-upload-input'
+  | 'image-literal-element'
+  | 'missing-observed-validation'
+  | 'optimization-bypass-evidence'
+  | 'ssr-execution-surface';
+
+interface NextJSFindingInput {
+  readonly predicateKinds: readonly NextJSPredicateKind[];
+  readonly severity: Break['severity'];
+  readonly file: string;
+  readonly line: number;
+  readonly description: string;
+  readonly detail: string;
+}
+
 function isTestFile(filePath: string): boolean {
-  return /\.(spec|test)\.(ts|tsx)$|__tests__|__mocks__|fixture/i.test(filePath);
+  const normalized = filePath.replace(/\\/g, '/').toLowerCase();
+  return (
+    normalized.includes('.spec.') ||
+    normalized.includes('.test.') ||
+    normalized.includes('__tests__') ||
+    normalized.includes('__mocks__') ||
+    normalized.includes('fixture')
+  );
+}
+
+function nextJSFinding(input: NextJSFindingInput): Break {
+  const predicateId = input.predicateKinds.join('+');
+  return {
+    type: `diagnostic:nextjs-checker:${predicateId}`,
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: `syntax-evidence:nextjs-checker;predicates=${predicateId}`,
+  };
+}
+
+function isWordCharacter(ch: string | undefined): boolean {
+  return (
+    ch !== undefined &&
+    ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch === '_')
+  );
+}
+
+function findLiteralImgStarts(line: string): number[] {
+  const matches: number[] = [];
+  let cursor = 0;
+  while (cursor < line.length) {
+    const index = line.indexOf('<img', cursor);
+    if (index === -1) {
+      break;
+    }
+    const next = line[index + '<img'.length];
+    if (next === undefined || next === '>' || /\s/.test(next)) {
+      matches.push(index);
+    }
+    cursor = index + '<img'.length;
+  }
+  return matches;
+}
+
+function findBrowserGlobalAccesses(
+  line: string,
+): Array<{ name: 'document' | 'window'; index: number }> {
+  const matches: Array<{ name: 'document' | 'window'; index: number }> = [];
+  for (const name of ['window', 'document'] as const) {
+    let cursor = 0;
+    const access = `${name}.`;
+    while (cursor < line.length) {
+      const index = line.indexOf(access, cursor);
+      if (index === -1) {
+        break;
+      }
+      const previous = line[index - 1];
+      if (!isWordCharacter(previous)) {
+        matches.push({ name, index });
+      }
+      cursor = index + access.length;
+    }
+  }
+  return matches.sort((a, b) => a.index - b.index);
+}
+
+function hasUploadFileDecorator(line: string): boolean {
+  return line.includes('@UploadedFile') && line.includes('(') && line.includes(')');
+}
+
+function hasFileValidationEvidence(methodContext: string): boolean {
+  const validationTokens = ['ParseFilePipe', 'MaxFileSizeValidator', 'FileTypeValidator'];
+  return validationTokens.some((token) => methodContext.includes(token));
 }
 
 // Whether the line is inside a string literal or a comment (very rough heuristic)
@@ -122,23 +215,22 @@ export function checkNextJSPatterns(config: PulseConfig): Break[] {
         continue;
       }
 
-      // Find <img (not <Image, not <imgSomething)
-      const imgRe = /<img\s/g;
-      let m: RegExpExecArray | null;
-      while ((m = imgRe.exec(line)) !== null) {
+      for (const matchIndex of findLiteralImgStarts(line)) {
         // Skip if it's inside a string or comment
-        if (isInStringOrComment(line, m.index)) {
+        if (isInStringOrComment(line, matchIndex)) {
           continue;
         }
 
-        breaks.push({
-          type: 'NEXTJS_NO_IMAGE_COMPONENT',
-          severity: 'medium',
-          file: relFile,
-          line: i + 1,
-          description: '`<img>` used instead of Next.js `<Image>` — missing optimization',
-          detail: trimmed.slice(0, 120),
-        });
+        breaks.push(
+          nextJSFinding({
+            predicateKinds: ['image-literal-element', 'optimization-bypass-evidence'],
+            severity: 'medium',
+            file: relFile,
+            line: i + 1,
+            description: '`<img>` used instead of Next.js `<Image>` — missing optimization',
+            detail: trimmed.slice(0, 120),
+          }),
+        );
       }
     }
   }
@@ -160,8 +252,6 @@ export function checkNextJSPatterns(config: PulseConfig): Break[] {
     return true;
   });
 
-  const WIN_DOC_RE = /\b(window|document)\./g;
-
   for (const file of allFrontendFiles) {
     let content: string;
     try {
@@ -181,10 +271,8 @@ export function checkNextJSPatterns(config: PulseConfig): Break[] {
         continue;
       }
 
-      WIN_DOC_RE.lastIndex = 0;
-      let m: RegExpExecArray | null;
-      while ((m = WIN_DOC_RE.exec(line)) !== null) {
-        if (isInStringOrComment(line, m.index)) {
+      for (const browserGlobalAccess of findBrowserGlobalAccesses(line)) {
+        if (isInStringOrComment(line, browserGlobalAccess.index)) {
           continue;
         }
 
@@ -198,14 +286,20 @@ export function checkNextJSPatterns(config: PulseConfig): Break[] {
           continue;
         }
 
-        breaks.push({
-          type: 'SSR_UNSAFE_ACCESS',
-          severity: 'high',
-          file: relFile,
-          line: i + 1,
-          description: `\`${m[1]}\` accessed at module scope — crashes during SSR`,
-          detail: trimmed.slice(0, 120),
-        });
+        breaks.push(
+          nextJSFinding({
+            predicateKinds: [
+              'browser-global-access',
+              'ssr-execution-surface',
+              'client-render-boundary-missing',
+            ],
+            severity: 'high',
+            file: relFile,
+            line: i + 1,
+            description: `\`${browserGlobalAccess.name}\` accessed at module scope — crashes during SSR`,
+            detail: trimmed.slice(0, 120),
+          }),
+        );
         break; // One break per line is enough
       }
     }
@@ -229,7 +323,7 @@ export function checkNextJSPatterns(config: PulseConfig): Break[] {
 
     // Find each method that uses @UploadedFile()
     for (let i = 0; i < lines.length; i++) {
-      if (!/@UploadedFile\(\)/.test(lines[i])) {
+      if (!hasUploadFileDecorator(lines[i])) {
         continue;
       }
 
@@ -238,21 +332,18 @@ export function checkNextJSPatterns(config: PulseConfig): Break[] {
       const end = Math.min(lines.length, i + 20);
       const methodContext = lines.slice(start, end).join('\n');
 
-      const hasValidation =
-        /ParseFilePipe/.test(methodContext) ||
-        /MaxFileSizeValidator/.test(methodContext) ||
-        /FileTypeValidator/.test(methodContext);
-
-      if (!hasValidation) {
-        breaks.push({
-          type: 'UPLOAD_NO_VALIDATION',
-          severity: 'high',
-          file: relFile,
-          line: i + 1,
-          description:
-            '@UploadedFile() used without ParseFilePipe/MaxFileSizeValidator/FileTypeValidator',
-          detail: lines[i].trim().slice(0, 120),
-        });
+      if (!hasFileValidationEvidence(methodContext)) {
+        breaks.push(
+          nextJSFinding({
+            predicateKinds: ['file-upload-input', 'missing-observed-validation'],
+            severity: 'high',
+            file: relFile,
+            line: i + 1,
+            description:
+              '@UploadedFile() used without ParseFilePipe/MaxFileSizeValidator/FileTypeValidator',
+            detail: lines[i].trim().slice(0, 120),
+          }),
+        );
       }
     }
   }

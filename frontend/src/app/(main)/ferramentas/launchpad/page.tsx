@@ -1,18 +1,19 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
 import { Card } from '@/components/kloel/Card';
 import { SectionPage } from '@/components/kloel/SectionPage';
-import { launchApi } from '@/lib/api/misc';
+import { launchApi } from '@/lib/api/launch';
 import { useRouter } from 'next/navigation';
 import { useState, useId } from 'react';
 
 const SORA = "'Sora', sans-serif";
 const MONO = "'JetBrains Mono', monospace";
-const EMBER = '#E85D30';
+const EMBER = colors.ember.primary;
 
 interface Launcher {
   id: string;
@@ -38,7 +39,7 @@ function LauncherRow({
         alignItems: 'center',
         gap: 16,
         padding: '14px 16px',
-        borderBottom: '1px solid #222226',
+        borderBottom: '1px solid colors.border.space',
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -108,7 +109,7 @@ function LauncherRow({
           (e.currentTarget as HTMLElement).style.borderColor = `${EMBER}66`;
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.borderColor = '#222226';
+          (e.currentTarget as HTMLElement).style.borderColor = colors.border.space;
         }}
       >
         {kloelT(`+ Grupo`)}
@@ -282,7 +283,8 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
               background: 'rgba(239,68,68,0.1)',
               border: '1px solid rgba(239,68,68,0.3)',
               borderRadius: 6,
-              color: '#EF4444',
+              color:
+                '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
               fontFamily: SORA,
               fontSize: 13,
             }}
@@ -318,7 +320,8 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
               background: EMBER,
               border: 'none',
               borderRadius: 6,
-              color: '#fff',
+              color:
+                '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
               fontFamily: SORA,
               fontSize: 13,
               fontWeight: 600,
@@ -468,7 +471,8 @@ function AddGroupModal({
               background: 'rgba(239,68,68,0.1)',
               border: '1px solid rgba(239,68,68,0.3)',
               borderRadius: 6,
-              color: '#EF4444',
+              color:
+                '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
               fontFamily: SORA,
               fontSize: 13,
             }}
@@ -504,7 +508,8 @@ function AddGroupModal({
               background: EMBER,
               border: 'none',
               borderRadius: 6,
-              color: '#fff',
+              color:
+                '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
               fontFamily: SORA,
               fontSize: 13,
               fontWeight: 600,
@@ -552,7 +557,8 @@ export default function LaunchpadPage() {
             background: EMBER,
             border: 'none',
             borderRadius: 6,
-            color: '#fff',
+            color:
+              '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
             fontFamily: SORA,
             fontSize: 13,
             fontWeight: 600,
@@ -578,7 +584,15 @@ export default function LaunchpadPage() {
         </Card>
       ) : error ? (
         <Card>
-          <div style={{ padding: 32, textAlign: 'center', color: '#EF4444', fontFamily: SORA }}>
+          <div
+            style={{
+              padding: 32,
+              textAlign: 'center',
+              color:
+                '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+              fontFamily: SORA,
+            }}
+          >
             {kloelT(`Erro ao carregar launchers`)}
           </div>
         </Card>

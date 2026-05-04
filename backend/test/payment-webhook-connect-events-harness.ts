@@ -1,4 +1,5 @@
-import { PaymentWebhookController } from '../src/webhooks/payment-webhook.controller';
+import { PaymentWebhookStripeController as PaymentWebhookController } from '../src/webhooks/payment-webhook-stripe.controller';
+import { StripeWebhookLedgerService } from '../src/webhooks/stripe-webhook-ledger.service';
 
 export type ConnectEventsWebhookPrismaMock = {
   workspace: {
@@ -12,6 +13,8 @@ export type ConnectEventsWebhookPrismaMock = {
     updateMany: jest.Mock;
   };
   checkoutOrder: {
+    findFirst: jest.Mock;
+    findUnique: jest.Mock;
     updateMany: jest.Mock;
   };
   connectMaturationRule: {
@@ -102,6 +105,8 @@ export function buildConnectEventsWebhookController() {
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     checkoutOrder: {
+      findFirst: jest.fn().mockResolvedValue({ status: 'PAID' }),
+      findUnique: jest.fn().mockResolvedValue(null),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
     connectMaturationRule: {
@@ -133,6 +138,12 @@ export function buildConnectEventsWebhookController() {
     markWebhookProcessed: jest.fn().mockResolvedValue(undefined),
   };
 
+  const ledger = new StripeWebhookLedgerService(
+    prisma as never,
+    marketplaceTreasury as never,
+    adminAudit as never,
+  );
+
   const controller = new PaymentWebhookController(
     autopilot as never,
     whatsapp as never,
@@ -142,10 +153,10 @@ export function buildConnectEventsWebhookController() {
     stripeWebhookProcessor as never,
     connectReversalService as never,
     connectPayoutService as never,
-    marketplaceTreasury as never,
     marketplaceTreasuryPayoutService as never,
     adminAudit as never,
     financialAlert as never,
+    ledger,
   );
 
   return {

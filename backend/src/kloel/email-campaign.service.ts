@@ -1,5 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { forEachSequential } from '../common/async-sequence';
+import { getTraceHeaders } from '../common/trace-headers';
+import { OpsAlertService } from '../observability/ops-alert.service';
+import {
+  buildListUnsubscribeHeader,
+  buildUnsubscribeFooterHtml,
+} from '../common/utils/unsubscribe-footer.util';
 
 const NAME_RE = /\{\{name\}\}/g;
 const EMAIL_RE = /\{\{email\}\}/g;
@@ -14,7 +20,7 @@ export class EmailCampaignService {
   private readonly fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
   private readonly fromName = process.env.EMAIL_FROM_NAME || 'KLOEL';
 
-  constructor() {}
+  constructor(@Optional() private readonly opsAlert?: OpsAlertService) {}
 
   private getProvider(): 'resend' | 'sendgrid' | 'smtp' | 'log' {
     if (process.env.RESEND_API_KEY) {
@@ -54,11 +60,21 @@ export class EmailCampaignService {
           .replace(NAME_RE, recipient.name || 'Cliente')
           .replace(EMAIL_RE, recipient.email);
 
-        // unsubscribe: link included in email footer
-        const unsubscribeUrl = `${process.env.FRONTEND_URL || 'https://kloel.com'}/unsubscribe?email=${encodeURIComponent(recipient.email)}`;
-        const htmlWithUnsub = `${personalizedHtml}<br/><hr style="margin:24px 0;border:none;border-top:1px solid #ddd"/><p style="font-size:11px;color:#888;text-align:center"><a href="${unsubscribeUrl}" style="color:#888">Cancelar inscricao</a></p>`;
+        const footerHtml = buildUnsubscribeFooterHtml({
+          email: recipient.email,
+          workspaceId: _workspaceId,
+        });
+        const htmlWithUnsub = `${personalizedHtml}${footerHtml}`;
 
-        const success = await this.sendEmail(recipient.email, subject, htmlWithUnsub);
+        const listUnsubscribe = buildListUnsubscribeHeader({
+          email: recipient.email,
+          workspaceId: _workspaceId,
+        });
+
+        const success = await this.sendEmail(recipient.email, subject, htmlWithUnsub, {
+          'List-Unsubscribe': listUnsubscribe,
+          'List-Unsubscribe-Post': `List-Unsubscribe=One-Click`,
+        });
         if (success) {
           sent++;
         } else {
@@ -71,10 +87,9 @@ export class EmailCampaignService {
           await new Promise((resolve) => setTimeout(resolve, 100));
         }
       } catch (err: unknown) {
-        const errInstanceofError =
-          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+        void this.opsAlert?.alertOnCriticalError(err, 'EmailCampaignService.push');
         failed++;
-        errors.push(`${recipient.email}: ${errInstanceofError.message}`);
+        errors.push(`${recipient.email}: ${err instanceof Error ? err.message : 'unknown_error'}`);
       }
     });
 
@@ -84,28 +99,38 @@ export class EmailCampaignService {
 
   /** Send single email. */
   async sendSingleEmail(to: string, subject: string, html: string): Promise<boolean> {
-    return this.sendEmail(to, subject, html);
+    return this.sendEmail(to, subject, html, undefined);
   }
 
-  private async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  private async sendEmail(
+    to: string,
+    subject: string,
+    html: string,
+    headers?: Record<string, string>,
+  ): Promise<boolean> {
     const provider = this.getProvider();
 
     try {
       switch (provider) {
         case 'resend': {
           // Not SSRF: hardcoded Resend API endpoint
+          const bodyPayload: Record<string, unknown> = {
+            from: `${this.fromName} <${this.fromEmail}>`,
+            to,
+            subject,
+            html,
+          };
+          if (headers) {
+            bodyPayload.headers = headers;
+          }
           const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
+              ...getTraceHeaders(),
               Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              from: `${this.fromName} <${this.fromEmail}>`,
-              to,
-              subject,
-              html,
-            }),
+            body: JSON.stringify(bodyPayload),
             signal: AbortSignal.timeout(30000),
           });
           if (!res.ok) {
@@ -115,14 +140,19 @@ export class EmailCampaignService {
         }
         case 'sendgrid': {
           // Not SSRF: hardcoded SendGrid API endpoint
+          const personalization: Record<string, unknown> = { to: [{ email: to }] };
+          if (headers) {
+            personalization.headers = headers;
+          }
           const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
             method: 'POST',
             headers: {
+              ...getTraceHeaders(),
               Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              personalizations: [{ to: [{ email: to }] }],
+              personalizations: [personalization],
               from: { email: this.fromEmail, name: this.fromName },
               subject,
               content: [{ type: 'text/html', value: html }],
@@ -142,9 +172,10 @@ export class EmailCampaignService {
           return true;
       }
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.error(`Email send error: ${errInstanceofError.message}`);
+      void this.opsAlert?.alertOnCriticalError(err, 'EmailCampaignService.sendEmail');
+      this.logger.error(
+        `Email send error: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
       return false;
     }
   }

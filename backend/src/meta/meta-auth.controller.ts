@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   Logger,
+  Optional,
   Post,
   Query,
   Req,
@@ -15,10 +16,12 @@ import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { getTraceHeaders } from '../common/trace-headers';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken, encryptMetaToken } from './meta-token-crypto';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /**
  * Meta Platform OAuth controller.
@@ -42,6 +45,7 @@ export class MetaAuthController {
     private readonly metaSdk: MetaSdkService,
     private readonly metaWhatsApp: MetaWhatsAppService,
     private readonly prisma: PrismaService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private parseState(rawState: string): {
@@ -174,6 +178,7 @@ export class MetaAuthController {
 
       // Not SSRF: tokenUrl built from hardcoded graph.facebook.com base + server env vars
       const tokenRes = await fetch(tokenUrl.toString(), {
+        headers: getTraceHeaders(),
         signal: AbortSignal.timeout(30000),
       });
       const tokenData = await tokenRes.json();
@@ -294,9 +299,10 @@ export class MetaAuthController {
         }),
       );
     } catch (err: unknown) {
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.error(`Meta OAuth callback failed: ${errInstanceofError.message}`);
+      void this.opsAlert?.alertOnCriticalError(err, 'MetaAuthController.callback');
+      this.logger.error(
+        `Meta OAuth callback failed: ${err instanceof Error ? err.message : 'unknown_error'}`,
+      );
       return res.redirect(
         this.buildFrontendRedirect(returnTo, parsedState.channel, {
           meta: 'error',

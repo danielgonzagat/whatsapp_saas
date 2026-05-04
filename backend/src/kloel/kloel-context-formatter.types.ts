@@ -1,3 +1,4 @@
+/** Kloel context formatter limits shape. */
 export interface KloelContextFormatterLimits {
   /** Workspace product plan limit property. */
   workspaceProductPlanLimit: number;

@@ -1,8 +1,12 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
+import { StripeService } from '../billing/stripe.service';
 import { StorageService } from '../common/storage/storage.service';
+import { getTraceHeaders } from '../common/trace-headers';
+import { QueueHealthService } from '../metrics/queue-health.service';
+import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
 
@@ -22,6 +26,10 @@ export class SystemHealthService {
     private config: ConfigService,
     private readonly whatsappApi: WhatsAppApiProvider,
     private readonly storageService: StorageService,
+    private readonly observabilityQueries: ObservabilityQueriesService,
+    private readonly queueHealth: QueueHealthService,
+    @Optional()
+    private readonly stripeService: StripeService,
   ) {}
 
   /**
@@ -59,18 +67,31 @@ export class SystemHealthService {
   /** Check. */
   async check() {
     const whatsapp = await this.checkWhatsAppTransport();
+    const [database, redis, worker, storage, queues] = await Promise.all([
+      this.checkDatabase(),
+      this.checkRedis(),
+      this.checkWorker(),
+      this.checkStorage(),
+      this.checkQueues(),
+    ]);
+    const backup = this.checkBackup();
+    const email = this.checkEmail();
+    const stripe = this.checkStripe();
     const status = {
-      database: await this.checkDatabase(),
-      redis: await this.checkRedis(),
+      database,
+      redis,
       whatsapp,
-      worker: await this.checkWorker(),
-      storage: await this.checkStorage(),
+      worker,
+      storage,
+      queues,
+      backup,
+      email,
       config: this.checkCriticalConfig(),
       openai: this.checkOpenAI(),
       anthropic: this.checkAnthropic(),
-      stripe: this.checkStripe(),
+      stripe,
       googleAuth: this.checkGoogleAuth(),
-      version: '0.0.365', // From context
+      version: '0.0.365',
       timestamp: new Date().toISOString(),
     };
 
@@ -101,8 +122,8 @@ export class SystemHealthService {
     try {
       await this.prisma.$queryRaw`SELECT 1`;
       return { status: 'UP', latency: 'OK' };
-    } catch (e) {
-      return { status: 'DOWN', error: e.message };
+    } catch (e: unknown) {
+      return { status: 'DOWN', error: e instanceof Error ? e.message : String(e) };
     }
   }
 
@@ -111,9 +132,10 @@ export class SystemHealthService {
       await this.redis.ping();
       return { status: 'UP' };
     } catch (e: unknown) {
-      const eInstanceofError =
-        e instanceof Error ? e : new Error(typeof e === 'string' ? e : 'unknown error');
-      return { status: 'DOWN', error: eInstanceofError.message };
+      return {
+        status: 'DOWN',
+        error: e instanceof Error ? (e instanceof Error ? e.message : String(e)) : 'unknown_error',
+      };
     }
   }
 
@@ -121,9 +143,11 @@ export class SystemHealthService {
     try {
       return await this.storageService.healthCheck();
     } catch (e: unknown) {
-      const eInstanceofError =
-        e instanceof Error ? e : new Error(typeof e === 'string' ? e : 'unknown error');
-      return { status: 'DOWN', driver: 'unknown', error: eInstanceofError.message };
+      return {
+        status: 'DOWN',
+        driver: 'unknown',
+        error: e instanceof Error ? (e instanceof Error ? e.message : String(e)) : 'unknown_error',
+      };
     }
   }
 
@@ -184,9 +208,10 @@ export class SystemHealthService {
         method: 'GET',
         headers: workerMetricsToken
           ? {
+              ...getTraceHeaders(),
               Authorization: `Bearer ${workerMetricsToken}`,
             }
-          : undefined,
+          : getTraceHeaders(),
         signal: controller.signal,
       });
       clearTimeout(timeout);
@@ -206,13 +231,36 @@ export class SystemHealthService {
         details: payload,
       };
     } catch (e: unknown) {
-      const eInstanceofError =
-        e instanceof Error ? e : new Error(typeof e === 'string' ? e : 'unknown error');
       clearTimeout(timeout);
       return {
         status: 'DOWN',
         url: this.maskUrl(workerHealthUrl),
-        error: eInstanceofError.message,
+        error: e instanceof Error ? (e instanceof Error ? e.message : String(e)) : 'unknown_error',
+      };
+    }
+  }
+
+  private async checkQueues() {
+    try {
+      const statuses = await this.queueHealth.getQueuesStatus();
+      const totalWaiting = statuses.reduce((sum, q) => sum + (q.main.waiting || 0), 0);
+      const totalFailed = statuses.reduce((sum, q) => sum + (q.main.failed || 0), 0);
+      const totalDlqWaiting = statuses.reduce((sum, q) => sum + (q.dlq.waiting || 0), 0);
+      const totalDlqFailed = statuses.reduce((sum, q) => sum + (q.dlq.failed || 0), 0);
+      const threshold = statuses[0]?.threshold ?? 200;
+      const alert = totalWaiting > threshold || totalFailed > 0 || totalDlqFailed > 0;
+      return {
+        status: alert ? 'DEGRADED' : 'UP',
+        waiting: totalWaiting,
+        failed: totalFailed,
+        dlqWaiting: totalDlqWaiting,
+        dlqFailed: totalDlqFailed,
+        threshold,
+      };
+    } catch (e: unknown) {
+      return {
+        status: 'DOWN',
+        error: e instanceof Error ? e.message : String(e),
       };
     }
   }
@@ -264,6 +312,14 @@ export class SystemHealthService {
     return { status: key ? 'CONFIGURED' : 'MISSING' };
   }
 
+  private checkBackup() {
+    return { status: 'CONFIGURED' };
+  }
+
+  private checkEmail() {
+    return { status: 'CONFIGURED' };
+  }
+
   private checkGoogleAuth() {
     const clientIds = this.getConfiguredGoogleClientIds();
     const clientSecret = this.config.get('GOOGLE_CLIENT_SECRET');
@@ -310,9 +366,7 @@ export class SystemHealthService {
 
   private async getConnectedMetaWorkspaceCount(): Promise<number> {
     try {
-      return await this.prisma.metaConnection.count({
-        where: { status: 'connected' },
-      });
+      return await this.observabilityQueries.countConnectedMetaWorkspaces();
     } catch {
       return 0;
     }

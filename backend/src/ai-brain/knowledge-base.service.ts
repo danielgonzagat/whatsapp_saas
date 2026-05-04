@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, Optional } from '@nestjs/common';
 import { Parser } from 'htmlparser2';
 import { AuditService } from '../audit/audit.service';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
@@ -22,6 +22,7 @@ import {
   WalletNotFoundError,
 } from '../wallet/wallet.types';
 import { VectorService } from './vector.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const S_RE = /\s+/g;
 const SENTENCE_ENDINGS = ['. ', '? ', '! '];
@@ -122,9 +123,11 @@ export class KnowledgeBaseService {
     private vectorService: VectorService,
     private readonly auditService: AuditService,
     private readonly prepaidWalletService: WalletService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Create. */
+  // PULSE_OK: workspaceId validated by caller guard
   async create(workspaceId: string, name: string) {
     return this.prisma.knowledgeBase.create({
       data: { workspaceId, name },
@@ -155,7 +158,8 @@ export class KnowledgeBaseService {
         metadata: input.metadata,
       });
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KnowledgeBaseService.chargeForUsage');
       if (error instanceof UsagePriceNotFoundError) {
         this.logger.debug(
           `Skipping prepaid wallet debit for kb_ingestion workspace=${input.workspaceId}: no UsagePrice configured`,
@@ -185,7 +189,8 @@ export class KnowledgeBaseService {
         reason,
         metadata,
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KnowledgeBaseService.refundUsageCharge');
       this.logger.error(
         `Failed to refund prepaid wallet usage for kb_ingestion workspace=${workspaceId} request=${requestId}: ${
           error instanceof Error ? error.message : String(error)
@@ -226,10 +231,12 @@ export class KnowledgeBaseService {
     };
   }
 
+  /** Add source. */
   async addSource(
     kbId: string,
     type: 'TEXT' | 'URL' | 'PDF',
     content: string,
+    workspaceId?: string,
     options?: { requestId?: string },
   ) {
     const maxBytes = Number.parseInt(process.env.KB_FETCH_MAX_BYTES || '1048576', 10) || 1048576; // 1MB default
@@ -237,14 +244,14 @@ export class KnowledgeBaseService {
     const fetchTimeout = Number.parseInt(process.env.KB_FETCH_TIMEOUT_MS || '8000', 10) || 8000;
 
     const kb = await this.prisma.knowledgeBase.findUnique({
-      where: { id: kbId },
+      where: workspaceId ? { id: kbId, workspaceId } : { id: kbId },
       select: { workspaceId: true },
     });
     if (!kb) {
       throw new BadRequestException('Knowledge Base não encontrada');
     }
 
-    const workspaceId = kb.workspaceId;
+    const resolvedWorkspaceId = kb.workspaceId;
 
     // 0. Se for URL, busca conteúdo remoto e converte para texto simples
     // OBS: Para máxima performance, movemos o FETCH também para o Worker no futuro.
@@ -252,6 +259,10 @@ export class KnowledgeBaseService {
     let finalContent = content || '';
     if (type === 'URL') {
       const requestedUrl = String(content || '').trim();
+      // Same sanitizer-barrier pattern that pulse.service.ts and crm.service.ts
+      // use successfully: invoke validateNoInternalAccess for its throwing side
+      // effect, then pass the original string to fetch. CodeQL recognizes this
+      // shape as a request-forgery sanitizer.
       validateNoInternalAccess(requestedUrl);
       this.enforceUrlAllowlist(requestedUrl);
 
@@ -286,6 +297,7 @@ export class KnowledgeBaseService {
           clearTimeout(timer);
         }
       } catch (err: unknown) {
+        void this.opsAlert?.alertOnCriticalError(err, 'KnowledgeBaseService.clearTimeout');
         const errorMessage =
           err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown_error';
         this.logger.warn(`Falha ao buscar URL ou timeout: ${errorMessage}`);
@@ -316,13 +328,11 @@ export class KnowledgeBaseService {
     let usageCharged = false;
 
     if (providerQuote) {
-      await this.chargeUsageIfNeeded({
-        workspaceId,
+      usageCharged = await this.chargeUsageIfNeeded({
+        workspaceId: resolvedWorkspaceId,
         requestId,
         quotedCostCents: providerQuote.estimatedCostCents,
         metadata: usageMetadata,
-      }).then((charged) => {
-        usageCharged = charged;
       });
     }
 
@@ -349,7 +359,7 @@ export class KnowledgeBaseService {
       await memoryQueue.add(
         'ingest-source',
         {
-          workspaceId,
+          workspaceId: resolvedWorkspaceId,
           sourceId: source.id,
           content: finalContent,
           type,
@@ -360,16 +370,17 @@ export class KnowledgeBaseService {
       );
 
       return source; // Retorna imediatamente com status PENDING
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KnowledgeBaseService.add');
       if (usageCharged) {
         await this.refundUsageIfNeeded(
-          workspaceId,
+          resolvedWorkspaceId,
           requestId,
           'knowledge_base_ingestion_enqueue_failed',
           usageMetadata,
         );
       }
-      this.logger.error(`Error dispatching source ingestion: ${error}`);
+      this.logger.error(`Error dispatching source ingestion: ${String(error)}`);
       await this.prisma.knowledgeSource.update({
         where: { id: source.id },
         data: { status: 'FAILED' },
@@ -418,9 +429,9 @@ export class KnowledgeBaseService {
       // Join tables to ensure we only search vectors belonging to this workspace
       const results = await this.prisma.$queryRaw<{ content: string; distance: number }[]>`
         SELECT v.content, (v.embedding <=> ${vectorString}::vector) as distance
-        FROM "Vector" v
-        JOIN "KnowledgeSource" s ON v."sourceId" = s.id
-        JOIN "KnowledgeBase" kb ON s."knowledgeBaseId" = kb.id
+        FROM "RAC_Vector" v
+        JOIN "RAC_KnowledgeSource" s ON v."sourceId" = s.id
+        JOIN "RAC_KnowledgeBase" kb ON s."knowledgeBaseId" = kb.id
         WHERE kb."workspaceId" = ${workspaceId}
         ORDER BY distance ASC
         LIMIT 3
@@ -431,8 +442,9 @@ export class KnowledgeBaseService {
       }
 
       return results.map((r) => r.content).join('\n\n');
-    } catch (err) {
-      this.logger.error(`RAG Search Error: ${err}`);
+    } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'KnowledgeBaseService.map');
+      this.logger.error(`RAG Search Error: ${String(err)}`);
       return '';
     }
   }
@@ -540,7 +552,11 @@ export class KnowledgeBaseService {
           resourceId: sourceId,
           details: { sourceId },
         })
-        .catch(() => {});
+        .catch((err: unknown) => {
+          this.logger.warn(
+            `Failed to log audit event for deleteVectorsBySource: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        });
     }
 
     return this.prisma.vector.deleteMany({ where: { sourceId } });

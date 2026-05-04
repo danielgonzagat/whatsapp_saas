@@ -9,7 +9,7 @@
  *
  * Workflow file existence:
  * 1. Check for .github/workflows/*.yml or .github/workflows/*.yaml
- * 2. If no workflow files found → CICD_INCOMPLETE (no CI at all)
+ * 2. If no workflow files found → CI/CD evidence gap (no CI at all)
  * 3. Check for Railway-specific deploy config (railway.toml or railway.json)
  * 4. Check for Vercel deploy config (vercel.json or .vercel/)
  *
@@ -42,9 +42,10 @@
  * - Filesystem access to .github/ directory (config.rootDir)
  * - No running infrastructure needed
  *
- * BREAK TYPES:
- * - CICD_INCOMPLETE (high) — no CI/CD workflow exists, or workflow missing lint/build/test/deploy gates,
- *   or deploy step runs before quality gates, or Prisma migrations not automated
+ * DIAGNOSTICS:
+ *   Emits CI/CD evidence gaps with source/truth-mode metadata. Regex/list
+ *   matches are weak sensors that request stronger confirmation; they are not
+ *   authority by themselves.
  */
 
 import { safeJoin, safeResolve } from '../safe-path';
@@ -54,6 +55,39 @@ import type { Break, PulseConfig } from '../types';
 import { pathExists, readTextFile } from '../safe-fs';
 
 type WorkflowKind = 'primary' | 'auxiliary';
+type CicdTruthMode = 'weak_signal' | 'confirmed_static';
+
+type CicdDiagnosticBreak = Break & {
+  truthMode: CicdTruthMode;
+};
+
+interface CicdDiagnosticInput {
+  predicateKinds: string[];
+  truthMode: CicdTruthMode;
+  file: string;
+  line?: number;
+  description: string;
+  detail: string;
+}
+
+function cicdDiagnostic(input: CicdDiagnosticInput): CicdDiagnosticBreak {
+  const predicateToken =
+    input.predicateKinds
+      .map((predicate) => predicate.replace(/[^a-z0-9]+/gi, '-').toLowerCase())
+      .filter(Boolean)
+      .join('+') || 'cicd-evidence-gap';
+
+  return {
+    type: `diagnostic:cicd-checker:${predicateToken}`,
+    severity: input.truthMode === 'confirmed_static' ? 'high' : 'medium',
+    file: input.file,
+    line: input.line ?? 0,
+    description: input.description,
+    detail: input.detail,
+    source: `cicd-checker;truthMode=${input.truthMode};predicates=${input.predicateKinds.join(',')}`,
+    truthMode: input.truthMode,
+  };
+}
 
 function classifyWorkflow(file: string, content: string): WorkflowKind {
   const basename = path.basename(file).toLowerCase();
@@ -87,34 +121,36 @@ function classifyWorkflow(file: string, content: string): WorkflowKind {
 
 /** Check cicd. */
 export function checkCicd(config: PulseConfig): Break[] {
-  const breaks: Break[] = [];
+  const breaks: CicdDiagnosticBreak[] = [];
   const workflowsDir = safeJoin(config.rootDir, '.github', 'workflows');
 
   // Check 1: workflows directory exists
   if (!pathExists(workflowsDir)) {
-    breaks.push({
-      type: 'CICD_INCOMPLETE',
-      severity: 'high',
-      file: safeJoin(config.rootDir, '.github'),
-      line: 0,
-      description: 'No CI/CD workflow found',
-      detail:
-        '.github/workflows/ directory does not exist. No automated quality gates before deployment.',
-    });
+    breaks.push(
+      cicdDiagnostic({
+        predicateKinds: ['workflow_directory_missing'],
+        truthMode: 'confirmed_static',
+        file: safeJoin(config.rootDir, '.github'),
+        description: 'No CI/CD workflow found',
+        detail:
+          '.github/workflows/ directory does not exist. No automated quality gates before deployment.',
+      }),
+    );
     return breaks;
   }
 
   // Collect all workflow YAML files
   const yamlFiles = walkFiles(workflowsDir, ['.yml', '.yaml']);
   if (yamlFiles.length === 0) {
-    breaks.push({
-      type: 'CICD_INCOMPLETE',
-      severity: 'high',
-      file: workflowsDir,
-      line: 0,
-      description: 'No CI/CD workflow files found',
-      detail: '.github/workflows/ directory exists but contains no .yml/.yaml files.',
-    });
+    breaks.push(
+      cicdDiagnostic({
+        predicateKinds: ['workflow_yaml_missing'],
+        truthMode: 'confirmed_static',
+        file: workflowsDir,
+        description: 'No CI/CD workflow files found',
+        detail: '.github/workflows/ directory exists but contains no .yml/.yaml files.',
+      }),
+    );
     return breaks;
   }
 
@@ -139,14 +175,15 @@ export function checkCicd(config: PulseConfig): Break[] {
   }
 
   if (activeWorkflows.length === 0) {
-    breaks.push({
-      type: 'CICD_INCOMPLETE',
-      severity: 'high',
-      file: workflowsDir,
-      line: 0,
-      description: 'All CI/CD workflows are disabled',
-      detail: `Found ${yamlFiles.length} workflow file(s) but all are disabled or only trigger on workflow_dispatch.`,
-    });
+    breaks.push(
+      cicdDiagnostic({
+        predicateKinds: ['all_workflows_disabled'],
+        truthMode: 'weak_signal',
+        file: workflowsDir,
+        description: 'All CI/CD workflows are disabled',
+        detail: `Found ${yamlFiles.length} workflow file(s) but all are disabled or only trigger on workflow_dispatch.`,
+      }),
+    );
     return breaks;
   }
 
@@ -155,15 +192,16 @@ export function checkCicd(config: PulseConfig): Break[] {
   );
 
   if (primaryWorkflows.length === 0) {
-    breaks.push({
-      type: 'CICD_INCOMPLETE',
-      severity: 'high',
-      file: workflowsDir,
-      line: 0,
-      description: 'No primary CI workflow found',
-      detail:
-        'Found workflow files, but none were classified as a primary CI pipeline that owns lint/build/test/migration gates.',
-    });
+    breaks.push(
+      cicdDiagnostic({
+        predicateKinds: ['primary_workflow_not_classified'],
+        truthMode: 'weak_signal',
+        file: workflowsDir,
+        description: 'No primary CI workflow found',
+        detail:
+          'Found workflow files, but none were classified as a primary CI pipeline that owns lint/build/test/migration gates.',
+      }),
+    );
     return breaks;
   }
 
@@ -174,40 +212,43 @@ export function checkCicd(config: PulseConfig): Break[] {
     // Check for lint gate
     const hasLint = /npm run lint|yarn lint|pnpm lint/i.test(content);
     if (!hasLint) {
-      breaks.push({
-        type: 'CICD_INCOMPLETE',
-        severity: 'high',
-        file,
-        line: 0,
-        description: 'CI workflow missing lint gate',
-        detail: `${relFile}: No lint step found (npm run lint). Code quality not enforced in CI.`,
-      });
+      breaks.push(
+        cicdDiagnostic({
+          predicateKinds: ['lint_gate_not_observed'],
+          truthMode: 'weak_signal',
+          file,
+          description: 'CI workflow missing lint gate',
+          detail: `${relFile}: No lint step found (npm run lint). Code quality not enforced in CI.`,
+        }),
+      );
     }
 
     // Check for build gate
     const hasBuild = /npm run build|yarn build|pnpm build/i.test(content);
     if (!hasBuild) {
-      breaks.push({
-        type: 'CICD_INCOMPLETE',
-        severity: 'high',
-        file,
-        line: 0,
-        description: 'CI workflow missing build gate',
-        detail: `${relFile}: No build step found (npm run build). Build failures not caught before deploy.`,
-      });
+      breaks.push(
+        cicdDiagnostic({
+          predicateKinds: ['build_gate_not_observed'],
+          truthMode: 'weak_signal',
+          file,
+          description: 'CI workflow missing build gate',
+          detail: `${relFile}: No build step found (npm run build). Build failures not caught before deploy.`,
+        }),
+      );
     }
 
     // Check for test gate
     const hasTest = /npm (run )?test|yarn test|pnpm test/i.test(content);
     if (!hasTest) {
-      breaks.push({
-        type: 'CICD_INCOMPLETE',
-        severity: 'high',
-        file,
-        line: 0,
-        description: 'CI workflow missing test gate',
-        detail: `${relFile}: No test step found (npm test). Tests not run before deployment.`,
-      });
+      breaks.push(
+        cicdDiagnostic({
+          predicateKinds: ['test_gate_not_observed'],
+          truthMode: 'weak_signal',
+          file,
+          description: 'CI workflow missing test gate',
+          detail: `${relFile}: No test step found (npm test). Tests not run before deployment.`,
+        }),
+      );
     }
 
     // Check for push to main AND pull_request triggers
@@ -216,27 +257,29 @@ export function checkCicd(config: PulseConfig): Break[] {
       /on:\s*\[.*push.*\]/m.test(content);
     const hasPullRequest = /pull_request/i.test(content);
     if (!hasPushToMain || !hasPullRequest) {
-      breaks.push({
-        type: 'CICD_INCOMPLETE',
-        severity: 'high',
-        file,
-        line: 0,
-        description: 'CI workflow does not run on both push and pull_request',
-        detail: `${relFile}: push=${hasPushToMain}, pull_request=${hasPullRequest}. PRs or pushes not fully covered.`,
-      });
+      breaks.push(
+        cicdDiagnostic({
+          predicateKinds: ['push_or_pull_request_trigger_not_observed'],
+          truthMode: 'weak_signal',
+          file,
+          description: 'CI workflow does not run on both push and pull_request',
+          detail: `${relFile}: push=${hasPushToMain}, pull_request=${hasPullRequest}. PRs or pushes not fully covered.`,
+        }),
+      );
     }
 
     // Check for Prisma migration step (critical for backend deployments)
     const hasPrismaStep = /prisma migrate deploy|prisma db push/i.test(content);
     if (!hasPrismaStep) {
-      breaks.push({
-        type: 'CICD_INCOMPLETE',
-        severity: 'high',
-        file,
-        line: 0,
-        description: 'CI workflow does not run Prisma migrations',
-        detail: `${relFile}: No "prisma migrate deploy" step found. Schema changes may not be applied before deployment.`,
-      });
+      breaks.push(
+        cicdDiagnostic({
+          predicateKinds: ['prisma_migration_gate_not_observed'],
+          truthMode: 'weak_signal',
+          file,
+          description: 'CI workflow does not run Prisma migrations',
+          detail: `${relFile}: No "prisma migrate deploy" step found. Schema changes may not be applied before deployment.`,
+        }),
+      );
     }
 
     // Check for hardcoded secrets (tokens/passwords literally in workflow YAML, not via secrets)
@@ -259,27 +302,29 @@ export function checkCicd(config: PulseConfig): Break[] {
       return /[A-Z_]{6,}:\s+(?!\$\{\{)[A-Za-z0-9+/=]{40,}/.test(line);
     });
     if (secretLines.length > 0) {
-      breaks.push({
-        type: 'CICD_INCOMPLETE',
-        severity: 'high',
-        file,
-        line: 0,
-        description: 'Possible hardcoded secret in CI workflow',
-        detail: `${relFile}: Found ${secretLines.length} line(s) with potential hardcoded token(s). Use \${{ secrets.VAR }} instead.`,
-      });
+      breaks.push(
+        cicdDiagnostic({
+          predicateKinds: ['possible_hardcoded_secret'],
+          truthMode: 'weak_signal',
+          file,
+          description: 'Possible hardcoded secret in CI workflow',
+          detail: `${relFile}: Found ${secretLines.length} line(s) with potential hardcoded token(s). Use \${{ secrets.VAR }} instead.`,
+        }),
+      );
     }
 
     // Check for dependency caching
     const hasCaching = /actions\/cache|cache-dependency-path|cache:\s*['"]?npm/i.test(content);
     if (!hasCaching) {
-      breaks.push({
-        type: 'CICD_INCOMPLETE',
-        severity: 'high',
-        file,
-        line: 0,
-        description: 'CI workflow does not cache dependencies',
-        detail: `${relFile}: No dependency caching found. CI will reinstall node_modules on every run (slow).`,
-      });
+      breaks.push(
+        cicdDiagnostic({
+          predicateKinds: ['dependency_cache_not_observed'],
+          truthMode: 'weak_signal',
+          file,
+          description: 'CI workflow does not cache dependencies',
+          detail: `${relFile}: No dependency caching found. CI will reinstall node_modules on every run (slow).`,
+        }),
+      );
     }
   }
 
@@ -294,15 +339,16 @@ export function checkCicd(config: PulseConfig): Break[] {
   const hasVercel = pathExists(vercelJson) || pathExists(vercelDir);
 
   if (!hasRailway && !hasVercel) {
-    breaks.push({
-      type: 'CICD_INCOMPLETE',
-      severity: 'high',
-      file: config.rootDir,
-      line: 0,
-      description: 'No deployment configuration found',
-      detail:
-        'Neither railway.toml/railway.json nor vercel.json/.vercel found. Deployment target is not declared.',
-    });
+    breaks.push(
+      cicdDiagnostic({
+        predicateKinds: ['deployment_config_not_observed'],
+        truthMode: 'confirmed_static',
+        file: config.rootDir,
+        description: 'No deployment configuration found',
+        detail:
+          'Neither railway.toml/railway.json nor vercel.json/.vercel found. Deployment target is not declared.',
+      }),
+    );
   }
 
   return breaks;

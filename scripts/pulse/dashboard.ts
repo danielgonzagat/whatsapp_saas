@@ -1,4 +1,5 @@
 import type { PulseHealth, PulseCertification } from './types';
+import { deriveDynamicFindingIdentity, isBlockingDynamicFinding } from './finding-identity';
 
 const RESET = '\x1b[0m';
 const BOLD = '\x1b[1m';
@@ -39,54 +40,17 @@ function healthBar(score: number, width: number = 30): string {
   return `${color}${'█'.repeat(filled)}${DIM}${'░'.repeat(empty)}${RESET}`;
 }
 
-function breakIcon(type: string): string {
-  // Cross-layer
-  if (type === 'API_NO_ROUTE') {
-    return `${RED}[API→X]${RESET}`;
+function findingEventIcon(identity: ReturnType<typeof deriveDynamicFindingIdentity>): string {
+  if (identity.truthMode === 'observed') {
+    return `${RED}[OBS]${RESET}`;
   }
-  if (type === 'ROUTE_NO_CALLER') {
-    return `${DIM}[X←API]${RESET}`;
+  if (identity.truthMode === 'confirmed_static') {
+    return `${YELLOW}[AST]${RESET}`;
   }
-  if (type === 'ROUTE_EMPTY') {
-    return `${YELLOW}[BE→∅]${RESET}`;
+  if (identity.truthMode === 'weak_signal') {
+    return `${DIM}[SIG]${RESET}`;
   }
-  if (type === 'MODEL_ORPHAN') {
-    return `${YELLOW}[DB→∅]${RESET}`;
-  }
-  if (type === 'UI_DEAD_HANDLER') {
-    return `${RED}[UI→∅]${RESET}`;
-  }
-  if (type === 'FACADE') {
-    return `${RED}[FAKE]${RESET}`;
-  }
-  if (type === 'PROXY_NO_UPSTREAM') {
-    return `${YELLOW}[PXY→X]${RESET}`;
-  }
-  // Security
-  if (/ROUTE_NO_AUTH|HARDCODED_SECRET|SQL_INJECTION|CSRF|XSS|EVAL|COOKIE|SENSITIVE/.test(type)) {
-    return `${RED}[SEC]${RESET}`;
-  }
-  // Financial
-  if (/FINANCIAL|TOFIX|DIVISION_BY_ZERO|CURRENCY|TRANSACTION/.test(type)) {
-    return `${RED}[FIN]${RESET}`;
-  }
-  // Quality
-  if (/DEAD_|UNUSED_|ORPHANED_|CONSOLE_|TODO/.test(type)) {
-    return `${DIM}[CLN]${RESET}`;
-  }
-  // Integration
-  if (/GATEWAY|QUEUE|DUPLICATE|CIRCULAR|SERVICE_NOT|CONTROLLER_NOT/.test(type)) {
-    return `${YELLOW}[INT]${RESET}`;
-  }
-  // Safety
-  if (/JSON_PARSE|FETCH_NO_TIMEOUT|EMPTY_CATCH|MISSING_AWAIT|PUPPETEER/.test(type)) {
-    return `${YELLOW}[SAF]${RESET}`;
-  }
-  // Platform
-  if (/SSR_|NEXTJS_|INTERVAL_|HARDCODED_|DOCKER_/.test(type)) {
-    return `${MAGENTA}[PLT]${RESET}`;
-  }
-  return `${DIM}[---]${RESET}`;
+  return `${MAGENTA}[INF]${RESET}`;
 }
 
 /** Render dashboard. */
@@ -176,27 +140,28 @@ export function renderDashboard(
   // Breaks
   const displayBreaks = opts.verbose
     ? health.breaks
-    : health.breaks.filter((b) => b.severity === 'critical' || b.severity === 'high');
+    : health.breaks.filter((b) => isBlockingDynamicFinding(b));
 
   if (displayBreaks.length === 0 && health.breaks.length === 0) {
     console.log(`  ${GREEN}${BOLD}✓ ALL CONNECTIONS HEALTHY${RESET}`);
   } else if (displayBreaks.length === 0) {
     console.log(
-      `  ${GREEN}${BOLD}✓ No critical/high breaks${RESET}  ${DIM}(${health.breaks.length} medium/low — use --verbose)${RESET}`,
+      `  ${GREEN}${BOLD}✓ No blocking finding events${RESET}  ${DIM}(${health.breaks.length} non-blocking signal(s) — use --verbose)${RESET}`,
     );
   } else {
     console.log(
-      `  ${DIM}── BREAKS (${displayBreaks.length} critical/high, ${health.breaks.length} total) ${'─'.repeat(Math.max(0, w - 55))}${RESET}`,
+      `  ${DIM}── FINDING EVENTS (${displayBreaks.length} blocking, ${health.breaks.length} total signals) ${'─'.repeat(Math.max(0, w - 70))}${RESET}`,
     );
     console.log('');
 
     const maxDisplay = opts.verbose ? displayBreaks.length : Math.min(displayBreaks.length, 40);
     for (let i = 0; i < maxDisplay; i++) {
       const b = displayBreaks[i];
+      const identity = deriveDynamicFindingIdentity(b);
       console.log(
-        `  ${breakIcon(b.type)} ${severityLabel(b.severity)} ${DIM}${b.file}:${b.line}${RESET}`,
+        `  ${findingEventIcon(identity)} ${severityLabel(b.severity)} ${DIM}${b.file}:${b.line}${RESET}`,
       );
-      console.log(`    ${b.description}`);
+      console.log(`    ${identity.eventName}`);
       if (b.detail && opts.verbose) {
         console.log(`    ${DIM}${b.detail.slice(0, 100)}${RESET}`);
       }

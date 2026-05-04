@@ -10,6 +10,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AdminAction, AdminModule } from '@prisma/client';
 import { Public } from '../../auth/public.decorator';
 import { CurrentAdmin } from '../auth/decorators/current-admin.decorator';
@@ -31,6 +32,7 @@ export class AdminTransactionsController {
 
   /** List. */
   @Get()
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
   @NoAudit()
   @RequireAdminPermission(AdminModule.VENDAS, AdminAction.VIEW)
   async list(@Query() query: ListTransactionsQueryDto) {
@@ -49,6 +51,7 @@ export class AdminTransactionsController {
 
   /** Operate. */
   @Post(':orderId/operate')
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @RequireAdminPermission(AdminModule.VENDAS, AdminAction.EDIT)
   @HttpCode(HttpStatus.NO_CONTENT)
   async operate(

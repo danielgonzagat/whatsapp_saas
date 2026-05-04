@@ -1,5 +1,8 @@
 name: Nightly Ops Audit
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 permissions:
   contents: write
 
@@ -25,7 +28,7 @@ jobs:
         image: pgvector/pgvector:pg15
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
+          POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || 'postgres' }}
           POSTGRES_DB: whatsapp_saas_test
         ports:
           - 5432:5432
@@ -36,19 +39,19 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
-      JWT_SECRET: test_secret
+      DATABASE_URL: postgresql://postgres:${{ secrets.TEST_DB_PASSWORD || 'postgres' }}@localhost:5432/whatsapp_saas_test
+      JWT_SECRET: ${{ secrets.TEST_JWT_SECRET || 'test-secret-for-ci-only' }}
       REDIS_URL: redis://localhost:6379
-      OPENAI_API_KEY: e2e-dummy-key
+      OPENAI_API_KEY: ${{ secrets.TEST_OPENAI_API_KEY || 'e2e-dummy-key' }}
       NEXT_PUBLIC_API_URL: http://localhost:3001
       BACKEND_URL: http://localhost:3001
       SERVICE_BASE_URL: http://localhost:3001
       NEXT_PUBLIC_SERVICE_BASE_URL: http://localhost:3001
       NEXTAUTH_URL: http://localhost:3000
-      NEXTAUTH_SECRET: test_secret
-      METRICS_TOKEN: test-metrics-token
-      DIAG_TOKEN: test-diag-token
-      ASAAS_WEBHOOK_TOKEN: test-asaas-token
+      NEXTAUTH_SECRET: ${{ secrets.TEST_NEXTAUTH_SECRET || 'test-secret-for-ci-only' }}
+      METRICS_TOKEN: ${{ secrets.TEST_METRICS_TOKEN || 'ci-dummy-token' }}
+      DIAG_TOKEN: ${{ secrets.TEST_DIAG_TOKEN || 'ci-dummy-token' }}
+      ASAAS_WEBHOOK_TOKEN: ${{ secrets.TEST_ASAAS_WEBHOOK_TOKEN || 'ci-placeholder' }}
       OPS_WEBHOOK_URL: https://example.com/ops-webhook
       DLQ_WEBHOOK_URL: https://example.com/dlq-webhook
       NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.FRONTEND_SENTRY_DSN }}

@@ -52,6 +52,7 @@ function makeDependabotRequest(url: string, token?: string): Promise<unknown> {
   });
 }
 
+/** Fetch dependabot signals. */
 export async function fetchDependabotSignals(
   config: DependabotAdapterConfig,
 ): Promise<PulseSignal[]> {

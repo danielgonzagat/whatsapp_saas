@@ -4,6 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { apiFetch } from '@/lib/api';
 import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
+import { colors } from '@/lib/design-tokens';
 import {
   createDefaultAIConfig,
   type AIConfig,
@@ -17,14 +18,14 @@ import {
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const V = {
-  s: 'var(--bg-space, #111113)',
-  e: 'var(--bg-nebula, #19191C)',
-  b: 'var(--border-space, #222226)',
-  em: '#E85D30',
-  t: 'var(--text-starlight, #E0DDD8)',
-  t2: 'var(--text-moonlight, #6E6E73)',
-  t3: 'var(--text-dust, #3A3A3F)',
-  ta: 'var(--app-text-on-accent, #0A0A0C)',
+  s: 'var(--bg-space, colors.background.surface)',
+  e: 'var(--bg-nebula, colors.background.elevated)',
+  b: 'var(--border-space, colors.border.space)',
+  em: 'colors.ember.primary',
+  t: 'var(--text-starlight, colors.text.silver)',
+  t2: 'var(--text-moonlight, colors.text.muted)',
+  t3: 'var(--text-dust, colors.text.dim)',
+  ta: 'var(--app-text-on-accent, colors.background.void)',
   g2: '#10B981',
   r: '#EF4444',
 };

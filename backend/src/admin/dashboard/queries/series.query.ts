@@ -40,7 +40,7 @@ export async function queryGmvDailySeries(
       date_trunc('day', "paidAt") AS day,
       SUM("totalInCents")::bigint AS gmv,
       COUNT(*)::bigint AS count
-    FROM "CheckoutOrder"
+    FROM "RAC_CheckoutOrder"
     WHERE "status" = ANY (${[
       OrderStatus.PAID,
       OrderStatus.SHIPPED,

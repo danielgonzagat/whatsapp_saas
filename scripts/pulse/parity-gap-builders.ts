@@ -1,18 +1,19 @@
 import type {
   PulseCapability,
-  PulseConvergenceExecutionMode,
   PulseFlowProjectionItem,
   PulseParityGap,
   PulseParityGapKind,
   PulseParityGapsArtifact,
   PulseParityGapSeverity,
   PulseResolvedManifest,
+  PulseScopeExecutionMode,
   PulseTruthMode,
 } from './types';
 import { deriveStructuralFamilies, slugifyStructural } from './structural-family';
 import { isInterfaceOnlyWithoutRoutes } from './parity-capability-classifiers';
 import { unique } from './parity-utils';
 
+/** Capability families. */
 export function capabilityFamilies(capability: PulseCapability): string[] {
   return deriveStructuralFamilies([
     capability.id,
@@ -22,10 +23,12 @@ export function capabilityFamilies(capability: PulseCapability): string[] {
   ]);
 }
 
+/** Flow families. */
 export function flowFamilies(flow: PulseFlowProjectionItem): string[] {
   return deriveStructuralFamilies([flow.id, flow.name, ...flow.routePatterns]);
 }
 
+/** Module families. */
 export function moduleFamilies(moduleEntry: PulseResolvedManifest['modules'][number]): string[] {
   return deriveStructuralFamilies([
     moduleEntry.key,
@@ -36,6 +39,7 @@ export function moduleFamilies(moduleEntry: PulseResolvedManifest['modules'][num
   ]);
 }
 
+/** Text families. */
 export function textFamilies(value: string): string[] {
   const routePrefix = value.startsWith('/') ? value.split(/\s+/)[0] || value : value;
   return deriveStructuralFamilies([value, routePrefix]);
@@ -50,13 +54,16 @@ function compact(value: string, max: number = 280): string {
 }
 
 function pickExecutionMode(
-  values: Array<PulseConvergenceExecutionMode | undefined>,
-): PulseConvergenceExecutionMode {
+  values: Array<PulseScopeExecutionMode | undefined>,
+): PulseScopeExecutionMode {
+  if (values.includes('observation_only')) {
+    return 'observation_only';
+  }
   if (values.includes('human_required')) {
     return 'human_required';
   }
-  if (values.includes('observation_only')) {
-    return 'observation_only';
+  if (values.includes('governed_validation')) {
+    return 'governed_validation';
   }
   return 'ai_safe';
 }
@@ -82,22 +89,41 @@ function chooseTruthMode(
   return fallback;
 }
 
+function someCapabilityMatches(
+  capabilities: PulseCapability[],
+  predicate: (c: PulseCapability) => boolean,
+): boolean {
+  return capabilities.some(predicate);
+}
+
+function everyCapabilityMatches(
+  capabilities: PulseCapability[],
+  predicate: (c: PulseCapability) => boolean,
+): boolean {
+  return capabilities.length > 0 && capabilities.every(predicate);
+}
+
 function chooseSeverity(
   kind: PulseParityGapKind,
   capabilities: PulseCapability[],
   flows: PulseFlowProjectionItem[],
 ): PulseParityGapSeverity {
-  const runtimeCritical = capabilities.some((item) => item.runtimeCritical);
-  const userFacing = capabilities.some((item) => item.userFacing);
-  const reliabilityOnly =
-    capabilities.length > 0 && capabilities.every((item) => item.ownerLane === 'reliability');
-  const operatorOrSecurity = capabilities.some((item) =>
-    ['operator-admin', 'security'].includes(item.ownerLane),
+  const runtimeCritical = someCapabilityMatches(capabilities, (c) => c.runtimeCritical);
+  const userFacing = someCapabilityMatches(capabilities, (c) => c.userFacing);
+  const reliabilityOnly = everyCapabilityMatches(
+    capabilities,
+    (c) => !c.userFacing && c.maturity.dimensions.runtimeEvidencePresent,
   );
-  const interfaceOnlyWithoutRoutes =
-    capabilities.length > 0 && capabilities.every(isInterfaceOnlyWithoutRoutes);
+  const governedOrCritical = someCapabilityMatches(
+    capabilities,
+    (c) => c.protectedByGovernance || c.runtimeCritical,
+  );
+  const interfaceOnlyWithoutRoutes = everyCapabilityMatches(
+    capabilities,
+    isInterfaceOnlyWithoutRoutes,
+  );
   const hasPhantom =
-    capabilities.some((item) => item.status === 'phantom') ||
+    someCapabilityMatches(capabilities, (c) => c.status === 'phantom') ||
     flows.some((item) => item.status === 'phantom');
 
   if (kind === 'integration_without_observability') {
@@ -110,7 +136,7 @@ function chooseSeverity(
     return runtimeCritical || userFacing ? 'high' : 'medium';
   }
   if (kind === 'front_without_back' || kind === 'ui_without_persistence') {
-    if (interfaceOnlyWithoutRoutes && !operatorOrSecurity && !hasPhantom) {
+    if (interfaceOnlyWithoutRoutes && !governedOrCritical && !hasPhantom) {
       return 'medium';
     }
     return runtimeCritical || hasPhantom ? 'high' : 'medium';
@@ -127,6 +153,7 @@ function chooseSeverity(
   return hasPhantom ? 'high' : 'medium';
 }
 
+/** Build gap. */
 export function buildGap(
   kind: PulseParityGapKind,
   title: string,
@@ -153,6 +180,7 @@ export function buildGap(
   };
 }
 
+/** Build summary. */
 export function buildSummary(gaps: PulseParityGap[]): PulseParityGapsArtifact['summary'] {
   const byKind = {
     front_without_back: 0,

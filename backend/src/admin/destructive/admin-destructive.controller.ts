@@ -12,6 +12,7 @@ import {
 import { AdminAction, AdminModule } from '@prisma/client';
 import type { Request } from 'express';
 import { Public } from '../../auth/public.decorator';
+import { Idempotent } from '../../common/idempotency.guard';
 import { CurrentAdmin } from '../auth/decorators/current-admin.decorator';
 import { RequireAdminPermission } from '../auth/decorators/admin-permission.decorator';
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
@@ -46,6 +47,7 @@ export class AdminDestructiveController {
 
   /** Create. */
   @Post()
+  @Idempotent()
   @RequireAdminPermission(AdminModule.AUDIT_LOG, AdminAction.VIEW)
   @HttpCode(HttpStatus.CREATED)
   async create(

@@ -150,14 +150,14 @@ export WORKSPACE_ID=seu-workspace-id
 
 ```typescript
 // backend/src/autopilot/autopilot.service.spec.ts
-describe("AutopilotService", () => {
-  it("should detect buy signal intent", async () => {
-    const result = await service.analyzeIntent("Quero comprar");
-    expect(result.intent).toBe("BUY_SIGNAL");
+describe('AutopilotService', () => {
+  it('should detect buy signal intent', async () => {
+    const result = await service.analyzeIntent('Quero comprar');
+    expect(result.intent).toBe('BUY_SIGNAL');
   });
 
-  it("should respect daily limits", async () => {
-    const result = await service.checkContactDailyLimit("ws-1", "contact-1");
+  it('should respect daily limits', async () => {
+    const result = await service.checkContactDailyLimit('ws-1', 'contact-1');
     expect(result.limitReached).toBe(false);
   });
 });
@@ -167,19 +167,19 @@ describe("AutopilotService", () => {
 
 ```typescript
 // backend/src/kloel/skill-engine.service.spec.ts
-describe("SkillEngineService", () => {
-  it("should check real availability", async () => {
-    const result = await service.executeSkill("ws-1", "check_availability", {
-      date: "2025-01-20",
+describe('SkillEngineService', () => {
+  it('should check real availability', async () => {
+    const result = await service.executeSkill('ws-1', 'check_availability', {
+      date: '2025-01-20',
     });
     expect(result.data.availableSlots).toBeDefined();
   });
 
-  it("should create appointment", async () => {
-    const result = await service.executeSkill("ws-1", "create_appointment", {
-      datetime: "2025-01-20T10:00:00",
-      customerPhone: "5511999999999",
-      service: "Consulta",
+  it('should create appointment', async () => {
+    const result = await service.executeSkill('ws-1', 'create_appointment', {
+      datetime: '2025-01-20T10:00:00',
+      customerPhone: '5511999999999',
+      service: 'Consulta',
     });
     expect(result.success).toBe(true);
   });
@@ -190,10 +190,10 @@ describe("SkillEngineService", () => {
 
 ```typescript
 // backend/src/common/guards/workspace.guard.spec.ts
-describe("WorkspaceGuard", () => {
-  it("should block access to other workspace", async () => {
+describe('WorkspaceGuard', () => {
+  it('should block access to other workspace', async () => {
     // User member of ws-1, trying to access ws-2
-    const result = await guard.canActivate(contextWithWorkspaceId("ws-2"));
+    const result = await guard.canActivate(contextWithWorkspaceId('ws-2'));
     expect(result).toBe(false);
   });
 });
@@ -203,14 +203,14 @@ describe("WorkspaceGuard", () => {
 
 ```typescript
 // backend/src/flows/flows.service.spec.ts
-describe("FlowsService", () => {
-  it("should create flow with versioning", async () => {
-    const flow = await service.create({ name: "Test", nodes: [] });
+describe('FlowsService', () => {
+  it('should create flow with versioning', async () => {
+    const flow = await service.create({ name: 'Test', nodes: [] });
     expect(flow.version).toBe(1);
   });
 
-  it("should execute flow via queue", async () => {
-    await service.execute("flow-1", "ws-1", { contactId: "c-1" });
+  it('should execute flow via queue', async () => {
+    await service.execute('flow-1', 'ws-1', { contactId: 'c-1' });
     expect(mockQueue.add).toHaveBeenCalled();
   });
 });
@@ -235,15 +235,15 @@ describe("FlowsService", () => {
 ```javascript
 // backend/jest.config.js
 module.exports = {
-  moduleFileExtensions: ["js", "json", "ts"],
-  rootDir: "src",
-  testRegex: ".*\\.spec\\.ts$",
-  transform: { "^.+\\.(t|j)s$": "ts-jest" },
-  collectCoverageFrom: ["**/*.(t|j)s"],
-  coverageDirectory: "../coverage",
-  testEnvironment: "node",
+  moduleFileExtensions: ['js', 'json', 'ts'],
+  rootDir: 'src',
+  testRegex: '.*\\.spec\\.ts$',
+  transform: { '^.+\\.(t|j)s$': 'ts-jest' },
+  collectCoverageFrom: ['**/*.(t|j)s'],
+  coverageDirectory: '../coverage',
+  testEnvironment: 'node',
   moduleNameMapper: {
-    "^@/(.*)$": "<rootDir>/$1",
+    '^@/(.*)$': '<rootDir>/$1',
   },
 };
 ```
@@ -271,8 +271,8 @@ Adicione ao `.vscode/launch.json`:
 ### Console Logs
 
 ```typescript
-it("should debug something", async () => {
-  console.log("Debug:", JSON.stringify(result, null, 2));
+it('should debug something', async () => {
+  console.log('Debug:', JSON.stringify(result, null, 2));
   expect(result).toBeDefined();
 });
 ```
@@ -343,12 +343,12 @@ jobs:
 
 ```typescript
 // Nomes descritivos
-it("should return 403 when user is not workspace member", async () => {});
+it('should return 403 when user is not workspace member', async () => {});
 
 // Arrange-Act-Assert
-it("should create flow", async () => {
+it('should create flow', async () => {
   // Arrange
-  const data = { name: "Test" };
+  const data = { name: 'Test' };
 
   // Act
   const result = await service.create(data);
@@ -358,20 +358,20 @@ it("should create flow", async () => {
 });
 
 // Testar edge cases
-it("should handle empty input gracefully", async () => {});
+it('should handle empty input gracefully', async () => {});
 ```
 
 ### Don'ts ❌
 
 ```typescript
 // Testes vagos
-it("should work", async () => {}); // ❌
+it('should work', async () => {}); // ❌
 
 // Múltiplas coisas num teste
-it("should create, update, and delete", async () => {}); // ❌
+it('should create, update, and delete', async () => {}); // ❌
 
 // Depender de estado externo
-it("should read from production DB", async () => {}); // ❌
+it('should read from production DB', async () => {}); // ❌
 ```
 
 ---
@@ -395,9 +395,21 @@ function createMockPrisma() {
 }
 
 // Spy em métodos existentes
-jest.spyOn(service, "sendEmail").mockResolvedValue(true);
+jest.spyOn(service, 'sendEmail').mockResolvedValue(true);
 ```
 
 ---
 
 ### Última atualização: Janeiro 2025
+
+---
+
+## PULSE Auditor Immutability
+
+`scripts/pulse/no-hardcoded-reality-audit.ts` is a locked PULSE governance surface.
+
+No AI CLI may edit, weaken, bypass, rename, delete, chmod, unflag, move, or replace this auditor. This prohibition applies to Codex, Claude, OpenCode, and any autonomous or assisted AI agent.
+
+The auditor must keep scanning every source file inside `scripts/pulse/**` and must preserve hardcode debt when hardcode is deleted without a dynamic production replacement, including accumulated Git history debt.
+
+If the auditor itself needs to change, stop. The human owner must perform that change outside autonomous AI execution.

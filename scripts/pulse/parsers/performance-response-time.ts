@@ -7,17 +7,13 @@
  * Measure actual HTTP response time for a sample of GET endpoints.
  * Takes median of 3 consecutive requests to discard cold-start outliers.
  *
- * Thresholds:
- * - > 2000ms → VERY_SLOW_ENDPOINT high
- * - > 500ms  → SLOW_ENDPOINT medium
- *
- * BREAK TYPES:
- * - SLOW_ENDPOINT (medium) — median response time 500ms–2000ms
- * - VERY_SLOW_ENDPOINT (high) — median response time > 2000ms
+ * Emits observed HTTP latency evidence. Diagnostic identity is synthesized
+ * downstream from runtime signals and predicates.
  */
 
 import type { Break, PulseConfig } from '../types';
 import { httpGet, makeTestJwt } from './runtime-utils';
+import { buildParserDiagnosticBreak } from './diagnostic-break';
 
 const ENDPOINTS_TO_MEASURE = [
   '/products',
@@ -79,23 +75,35 @@ export async function checkPerformanceResponseTime(config: PulseConfig): Promise
     const medianMs = median(timings);
 
     if (medianMs > VERY_SLOW_THRESHOLD_MS) {
-      breaks.push({
-        type: 'VERY_SLOW_ENDPOINT',
-        severity: 'high',
-        file: baseFile,
-        line: 0,
-        description: `GET ${endpoint} is very slow (median ${medianMs}ms)`,
-        detail: `Median of 3 requests: ${medianMs}ms. Individual timings: ${timings.join('ms, ')}ms. Threshold: ${VERY_SLOW_THRESHOLD_MS}ms`,
-      });
+      breaks.push(
+        buildParserDiagnosticBreak({
+          detector: 'http-response-time-probe',
+          source: 'runtime-http-probe:performance-response-time',
+          truthMode: 'observed',
+          severity: 'high',
+          file: baseFile,
+          line: 0,
+          summary: 'Runtime HTTP probe observed endpoint latency above the severe threshold',
+          detail: `GET ${endpoint}; median of 3 requests: ${medianMs}ms. Individual timings: ${timings.join('ms, ')}ms. Threshold: ${VERY_SLOW_THRESHOLD_MS}ms`,
+          surface: 'runtime-http-latency',
+          runtimeImpact: 1,
+        }),
+      );
     } else if (medianMs > SLOW_THRESHOLD_MS) {
-      breaks.push({
-        type: 'SLOW_ENDPOINT',
-        severity: 'medium',
-        file: baseFile,
-        line: 0,
-        description: `GET ${endpoint} is slow (median ${medianMs}ms)`,
-        detail: `Median of 3 requests: ${medianMs}ms. Individual timings: ${timings.join('ms, ')}ms. Threshold: ${SLOW_THRESHOLD_MS}ms`,
-      });
+      breaks.push(
+        buildParserDiagnosticBreak({
+          detector: 'http-response-time-probe',
+          source: 'runtime-http-probe:performance-response-time',
+          truthMode: 'observed',
+          severity: 'medium',
+          file: baseFile,
+          line: 0,
+          summary: 'Runtime HTTP probe observed endpoint latency above the warning threshold',
+          detail: `GET ${endpoint}; median of 3 requests: ${medianMs}ms. Individual timings: ${timings.join('ms, ')}ms. Threshold: ${SLOW_THRESHOLD_MS}ms`,
+          surface: 'runtime-http-latency',
+          runtimeImpact: 0.6,
+        }),
+      );
     }
   }
 

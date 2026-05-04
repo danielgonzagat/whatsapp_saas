@@ -1,0 +1,332 @@
+import * as os from 'os';
+import * as path from 'path';
+import { ensureDir, writeFile } from '../../../scripts/pulse/safe-fs';
+import { assertWithinRoot } from '../../../scripts/pulse/lib/safe-path';
+import type {
+  PulseCertification,
+  PulseCodebaseTruth,
+  PulseResolvedManifest,
+} from '../../../scripts/pulse/types';
+
+/**
+ * Resolve `filePath` to an absolute path and assert it lives under the OS
+ * temporary directory. Every spec that uses these helpers writes inside
+ * `os.tmpdir()`, so any escape attempt indicates a wiring bug and throws
+ * before fs.* sees the path.
+ */
+function safeFixturePath(filePath: string): string {
+  return assertWithinRoot(filePath, os.tmpdir());
+}
+
+export function writeJson(filePath: string, value: unknown) {
+  const safePath = safeFixturePath(filePath);
+  ensureDir(path.dirname(safePath), { recursive: true });
+  writeFile(safePath, JSON.stringify(value, null, 2));
+}
+
+export function writeText(filePath: string, value: string) {
+  const safePath = safeFixturePath(filePath);
+  ensureDir(path.dirname(safePath), { recursive: true });
+  writeFile(safePath, value);
+}
+
+export function createResolvedManifest(): PulseResolvedManifest {
+  return {
+    generatedAt: new Date().toISOString(),
+    sourceManifestPath: null,
+    projectId: 'pulse-test',
+    projectName: 'Pulse Test',
+    systemType: 'monorepo',
+    supportedStacks: [],
+    surfaces: [],
+    criticalDomains: [],
+    modules: [],
+    flowGroups: [],
+    actorProfiles: [],
+    scenarioSpecs: [],
+    flowSpecs: [],
+    invariantSpecs: [],
+    temporaryAcceptances: [],
+    certificationTiers: [],
+    finalReadinessCriteria: {
+      requireAllTiersPass: true,
+      requireNoAcceptedCriticalFlows: true,
+      requireNoAcceptedCriticalScenarios: true,
+      requireWorldStateConvergence: true,
+    },
+    securityRequirements: [],
+    recoveryRequirements: [],
+    slos: {},
+    summary: {
+      totalModules: 0,
+      resolvedModules: 0,
+      unresolvedModules: 0,
+      scopeOnlyModuleCandidates: 0,
+      humanRequiredModules: 0,
+      totalFlowGroups: 0,
+      resolvedFlowGroups: 0,
+      unresolvedFlowGroups: 0,
+      orphanManualModules: 0,
+      orphanFlowSpecs: 0,
+      excludedModules: 0,
+      excludedFlowGroups: 0,
+      groupedFlowGroups: 0,
+      sharedCapabilityGroups: 0,
+      opsInternalFlowGroups: 0,
+      legacyNoiseFlowGroups: 0,
+      legacyManualModules: 0,
+    },
+    diagnostics: {
+      unresolvedModules: [],
+      orphanManualModules: [],
+      scopeOnlyModuleCandidates: [],
+      humanRequiredModules: [],
+      unresolvedFlowGroups: [],
+      orphanFlowSpecs: [],
+      excludedModules: [],
+      excludedFlowGroups: [],
+      legacyManualModules: [],
+      groupedFlowGroups: [],
+      sharedCapabilityGroups: [],
+      opsInternalFlowGroups: [],
+      legacyNoiseFlowGroups: [],
+      blockerCount: 0,
+      warningCount: 0,
+    },
+  };
+}
+
+export function createCodebaseTruth(): PulseCodebaseTruth {
+  return {
+    generatedAt: new Date().toISOString(),
+    summary: {
+      totalPages: 2,
+      userFacingPages: 2,
+      discoveredModules: 0,
+      discoveredFlows: 1,
+      blockerCount: 0,
+      warningCount: 0,
+    },
+    pages: [],
+    discoveredModules: [],
+    discoveredFlows: [
+      {
+        id: 'widget-save-flow',
+        moduleKey: 'derived',
+        moduleName: 'Derived',
+        pageRoute: '/widgets',
+        elementLabel: 'Salvar',
+        httpMethod: 'POST',
+        endpoint: '/api/widgets',
+        backendRoute: '/api/widgets',
+        connected: true,
+        persistent: true,
+        declaredFlow: 'widget-save-flow',
+      },
+    ],
+    divergence: {
+      declaredNotDiscovered: [],
+      discoveredNotDeclared: [],
+      declaredButInternal: [],
+      frontendSurfaceWithoutBackendSupport: [],
+      backendCapabilityWithoutFrontendSurface: [],
+      shellWithoutPersistence: [],
+      flowCandidatesWithoutOracle: [],
+      blockerCount: 0,
+      warningCount: 0,
+    },
+  };
+}
+
+export function createCertification(): PulseCertification {
+  return {
+    version: 'test',
+    status: 'PARTIAL',
+    humanReplacementStatus: 'NOT_READY',
+    rawScore: 70,
+    score: 68,
+    commitSha: 'test',
+    environment: 'scan',
+    timestamp: new Date().toISOString(),
+    manifestPath: null,
+    unknownSurfaces: [],
+    unavailableChecks: [],
+    unsupportedStacks: [],
+    criticalFailures: [],
+    gates: {} as PulseCertification['gates'],
+    truthSummary: {
+      totalPages: 2,
+      userFacingPages: 2,
+      discoveredModules: 0,
+      discoveredFlows: 1,
+      blockerCount: 0,
+      warningCount: 0,
+    },
+    truthDivergence: {
+      declaredNotDiscovered: [],
+      discoveredNotDeclared: [],
+      declaredButInternal: [],
+      frontendSurfaceWithoutBackendSupport: [],
+      backendCapabilityWithoutFrontendSurface: [],
+      shellWithoutPersistence: [],
+      flowCandidatesWithoutOracle: [],
+      blockerCount: 0,
+      warningCount: 0,
+    },
+    scopeStateSummary: null,
+    codacySummary: null,
+    codacyEvidenceSummary: null,
+    resolvedManifestSummary: createResolvedManifest().summary,
+    structuralGraphSummary: null,
+    capabilityStateSummary: null,
+    flowProjectionSummary: null,
+    unresolvedModules: [],
+    unresolvedFlows: [],
+    certificationTarget: { tier: null, final: false, profile: null },
+    tierStatus: [],
+    blockingTier: 2,
+    acceptedFlowsRemaining: [],
+    pendingCriticalScenarios: [],
+    finalReadinessCriteria: null,
+    evidenceSummary: {
+      runtime: {
+        executed: false,
+        executedChecks: [],
+        blockingBreakTypes: [],
+        artifactPaths: [],
+        summary: '',
+        probes: [],
+      },
+      browser: {
+        attempted: false,
+        executed: false,
+        artifactPaths: [],
+        summary: '',
+      },
+      flows: {
+        declared: ['widget-save-flow'],
+        executed: [],
+        missing: [],
+        passed: [],
+        failed: [],
+        accepted: [],
+        artifactPaths: [],
+        summary: '',
+        results: [],
+      },
+      invariants: {
+        declared: [],
+        evaluated: [],
+        missing: [],
+        passed: [],
+        failed: [],
+        accepted: [],
+        artifactPaths: [],
+        summary: '',
+        results: [],
+      },
+      observability: {
+        executed: false,
+        artifactPaths: [],
+        summary: '',
+        signals: {
+          tracingHeadersDetected: false,
+          requestIdMiddlewareDetected: false,
+          structuredLoggingDetected: false,
+          sentryDetected: false,
+          alertingIntegrationDetected: false,
+          healthEndpointsDetected: false,
+          auditTrailDetected: false,
+        },
+      },
+      recovery: {
+        executed: false,
+        artifactPaths: [],
+        summary: '',
+        signals: {
+          backupManifestPresent: false,
+          backupPolicyPresent: false,
+          backupValidationPresent: false,
+          restoreRunbookPresent: false,
+          disasterRecoveryRunbookPresent: false,
+          disasterRecoveryTestPresent: false,
+          seedScriptPresent: false,
+        },
+      },
+      customer: {
+        actorKind: 'customer',
+        declared: [],
+        executed: [],
+        missing: [],
+        passed: [],
+        failed: [],
+        artifactPaths: [],
+        summary: '',
+        results: [],
+      },
+      operator: {
+        actorKind: 'operator',
+        declared: [],
+        executed: [],
+        missing: [],
+        passed: [],
+        failed: [],
+        artifactPaths: [],
+        summary: '',
+        results: [],
+      },
+      admin: {
+        actorKind: 'admin',
+        declared: [],
+        executed: [],
+        missing: [],
+        passed: [],
+        failed: [],
+        artifactPaths: [],
+        summary: '',
+        results: [],
+      },
+      soak: {
+        actorKind: 'soak',
+        declared: [],
+        executed: [],
+        missing: [],
+        passed: [],
+        failed: [],
+        artifactPaths: [],
+        summary: '',
+        results: [],
+      },
+      syntheticCoverage: {
+        executed: false,
+        artifactPaths: [],
+        summary: '',
+        totalPages: 0,
+        userFacingPages: 0,
+        coveredPages: 0,
+        uncoveredPages: [],
+        results: [],
+      },
+      worldState: {
+        generatedAt: new Date().toISOString(),
+        actorProfiles: [],
+        executedScenarios: [],
+        pendingAsyncExpectations: [],
+        entities: {},
+        asyncExpectationsStatus: [],
+        artifactsByScenario: {},
+        sessions: [],
+      },
+      executionTrace: {
+        runId: 'test',
+        generatedAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        phases: [],
+        summary: '',
+        artifactPaths: [],
+      },
+    },
+    gateEvidence: {},
+    dynamicBlockingReasons: [],
+  };
+}

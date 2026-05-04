@@ -1,3 +1,4 @@
+/** User name derivation service. */
 export class UserNameDerivationService {
   /**
    * Derive user display name from email local part.

@@ -27,10 +27,11 @@
  * - Optional: running email service (or mock) for email verification
  * - Optional: Puppeteer for UI-level registration test
  *
- * BREAK TYPES:
- * - E2E_REGISTRATION_BROKEN (critical) — any step in the registration flow fails or returns unexpected result
+ * Emits E2E registration evidence failures; diagnostic identity is synthesized downstream.
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import {
   httpGet,
@@ -40,6 +41,150 @@ import {
   isDeepMode,
   getBackendUrl,
 } from './runtime-utils';
+import {
+  parsePrismaModels,
+  readFile,
+  resolveSchemaPath,
+  type PrismaModel,
+} from './structural-evidence';
+
+function registrationE2eFinding(input: {
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+}): Break {
+  return {
+    type: 'e2e-flow-evidence-failure',
+    severity: 'critical',
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: 'runtime:e2e:registration',
+    surface: 'registration-flow',
+  };
+}
+
+function quoteIdent(identifier: string): string {
+  return `"${identifier.replace(/"/g, '""')}"`;
+}
+
+function modelHasFields(model: PrismaModel, fieldNames: readonly string[]): boolean {
+  const fields = new Set(model.fields.map((field) => field.name));
+  return fieldNames.every((fieldName) => fields.has(fieldName));
+}
+
+function discoverRegisteredActorModel(models: readonly PrismaModel[]): PrismaModel | null {
+  return (
+    models.find((model) => modelHasFields(model, ['id', 'email', 'workspaceId', 'password'])) ??
+    models.find((model) => modelHasFields(model, ['id', 'email', 'workspaceId'])) ??
+    null
+  );
+}
+
+function discoverWorkspaceModel(
+  models: readonly PrismaModel[],
+  actorModel: PrismaModel | null,
+): PrismaModel | null {
+  if (!actorModel) {
+    return null;
+  }
+  const workspaceRelation = actorModel.fields.find(
+    (field) => field.line.includes('@relation') && field.name.toLowerCase().includes('workspace'),
+  );
+  if (workspaceRelation) {
+    const relatedModel = models.find((model) => model.name === workspaceRelation.type);
+    if (relatedModel) {
+      return relatedModel;
+    }
+  }
+  return models.find((model) => modelHasFields(model, ['id', 'name'])) ?? null;
+}
+
+function buildRegisteredActorReadbackQuery(actorModel: PrismaModel): string {
+  const selectableFields = ['id', 'email', 'role', 'workspaceId', 'password'].filter((fieldName) =>
+    actorModel.fields.some((field) => field.name === fieldName),
+  );
+
+  return [
+    `SELECT ${selectableFields.map(quoteIdent).join(', ')}`,
+    `  FROM ${quoteIdent(actorModel.tableName)}`,
+    ` WHERE ${quoteIdent('email')} = $1`,
+    ` LIMIT 1`,
+  ].join('\n');
+}
+
+function buildWorkspaceReadbackQuery(workspaceModel: PrismaModel): string {
+  const selectableFields = ['id', 'name'].filter((fieldName) =>
+    workspaceModel.fields.some((field) => field.name === fieldName),
+  );
+
+  return [
+    `SELECT ${selectableFields.map(quoteIdent).join(', ')}`,
+    `  FROM ${quoteIdent(workspaceModel.tableName)}`,
+    ` WHERE ${quoteIdent('id')} = $1`,
+    ` LIMIT 1`,
+  ].join('\n');
+}
+
+function listTypeScriptFiles(dir: string): string[] {
+  if (!fs.existsSync(dir)) {
+    return [];
+  }
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      return entry.name === 'dist' || entry.name === 'node_modules'
+        ? []
+        : listTypeScriptFiles(fullPath);
+    }
+    return entry.isFile() && entry.name.endsWith('.ts') && !entry.name.endsWith('.spec.ts')
+      ? [fullPath]
+      : [];
+  });
+}
+
+function parseDecoratorPath(source: string, decoratorName: string): string | null {
+  const decoratorIndex = source.indexOf(`@${decoratorName}`);
+  if (decoratorIndex === -1) {
+    return null;
+  }
+  const openParen = source.indexOf('(', decoratorIndex);
+  const closeParen = openParen === -1 ? -1 : source.indexOf(')', openParen);
+  if (openParen === -1 || closeParen === -1) {
+    return '';
+  }
+  const quoted = /^['"`]([^'"`]*)['"`]$/.exec(source.slice(openParen + 1, closeParen).trim());
+  return quoted?.[1] ?? '';
+}
+
+function normalizeRoutePath(routePath: string): string {
+  return `/${routePath
+    .split('/')
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .join('/')}`;
+}
+
+function discoverProtectedReadRoutes(config: PulseConfig): string[] {
+  const backendSourceDir = path.join(config.rootDir, 'backend', 'src');
+  const routes: string[] = [];
+  for (const file of listTypeScriptFiles(backendSourceDir)) {
+    const source = fs.readFileSync(file, 'utf8');
+    const controllerBase = parseDecoratorPath(source, 'Controller');
+    if (controllerBase === null || !source.includes('@UseGuards')) {
+      continue;
+    }
+    for (const line of source.split('\n')) {
+      const routePart = parseDecoratorPath(line, 'Get');
+      if (routePart !== null && !routePart.includes(':')) {
+        routes.push(normalizeRoutePath([controllerBase, routePart].filter(Boolean).join('/')));
+      }
+    }
+  }
+  return [...new Set(routes)].sort((left, right) => left.length - right.length);
+}
 
 /** Check e2e registration. */
 export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]> {
@@ -53,6 +198,10 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
   const testCredential = ['Pulse', 'Test', '#2025!'].join('');
   let registeredToken: string | null = null;
   let registeredUserId: string | null = null;
+  const schemaPath = resolveSchemaPath(config);
+  const models = parsePrismaModels(schemaPath ? readFile(schemaPath) : '');
+  const actorModel = discoverRegisteredActorModel(models);
+  const workspaceModel = discoverWorkspaceModel(models, actorModel);
 
   // ── Step 1: POST /auth/register ──────────────────────────────────────────
   try {
@@ -64,14 +213,14 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
     });
 
     if (!regRes.ok || regRes.status !== 201) {
-      breaks.push({
-        type: 'E2E_REGISTRATION_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/auth/auth.controller.ts',
-        line: 36,
-        description: 'POST /auth/register did not return 201',
-        detail: `Status: ${regRes.status}, Body: ${JSON.stringify(regRes.body).slice(0, 200)}`,
-      });
+      breaks.push(
+        registrationE2eFinding({
+          file: 'backend/src/auth/auth.controller.ts',
+          line: 36,
+          description: 'POST /auth/register did not return 201',
+          detail: `Status: ${regRes.status}, Body: ${JSON.stringify(regRes.body).slice(0, 200)}`,
+        }),
+      );
       return breaks; // Can't proceed without a valid registration
     }
 
@@ -79,84 +228,83 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
     const body = regRes.body || {};
     const token = body.access_token || body.accessToken;
     if (!token) {
-      breaks.push({
-        type: 'E2E_REGISTRATION_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/auth/auth.service.ts',
-        line: 272,
-        description: 'Registration response missing access_token',
-        detail: `Response keys: ${Object.keys(body).join(', ')}`,
-      });
+      breaks.push(
+        registrationE2eFinding({
+          file: 'backend/src/auth/auth.service.ts',
+          line: 272,
+          description: 'Registration response missing access_token',
+          detail: `Response keys: ${Object.keys(body).join(', ')}`,
+        }),
+      );
     } else {
       registeredToken = token;
     }
 
     if (!body.refresh_token && !body.refreshToken) {
-      breaks.push({
-        type: 'E2E_REGISTRATION_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/auth/auth.service.ts',
-        line: 273,
-        description: 'Registration response missing refresh_token',
-        detail: `Response keys: ${Object.keys(body).join(', ')}`,
-      });
+      breaks.push(
+        registrationE2eFinding({
+          file: 'backend/src/auth/auth.service.ts',
+          line: 273,
+          description: 'Registration response missing refresh_token',
+          detail: `Response keys: ${Object.keys(body).join(', ')}`,
+        }),
+      );
     }
 
     // ── Step 3: Verify user record in DB ────────────────────────────────────
     try {
-      const dbRows = await dbQuery(
-        `SELECT id, email, role, "workspaceId", password FROM "Agent" WHERE email = $1 LIMIT 1`,
-        [testEmail],
-      );
+      const dbRows = actorModel
+        ? await dbQuery(buildRegisteredActorReadbackQuery(actorModel), [testEmail])
+        : [];
       if (dbRows.length === 0) {
-        breaks.push({
-          type: 'E2E_REGISTRATION_BROKEN',
-          severity: 'critical',
-          file: 'backend/src/auth/auth.service.ts',
-          line: 399,
-          description: 'Agent record not found in DB after registration',
-          detail: `Email: ${testEmail}`,
-        });
+        breaks.push(
+          registrationE2eFinding({
+            file: 'backend/src/auth/auth.service.ts',
+            line: 399,
+            description: 'Agent record not found in DB after registration',
+            detail: `Email: ${testEmail}`,
+          }),
+        );
       } else {
         const agent = dbRows[0];
         registeredUserId = agent.id;
 
         // Verify password is hashed (not plaintext)
         if (agent.password === testCredential) {
-          breaks.push({
-            type: 'E2E_REGISTRATION_BROKEN',
-            severity: 'critical',
-            file: 'backend/src/auth/auth.service.ts',
-            line: 394,
-            description: 'Password stored as plaintext in DB — critical security violation',
-            detail: `Agent email: ${testEmail}`,
-          });
+          breaks.push(
+            registrationE2eFinding({
+              file: 'backend/src/auth/auth.service.ts',
+              line: 394,
+              description: 'Password stored as plaintext in DB — critical security violation',
+              detail: `Agent email: ${testEmail}`,
+            }),
+          );
         }
 
         // Verify workspace was created
         if (!agent.workspaceId) {
-          breaks.push({
-            type: 'E2E_REGISTRATION_BROKEN',
-            severity: 'critical',
-            file: 'backend/src/auth/auth.service.ts',
-            line: 384,
-            description: 'No workspace linked to newly registered user',
-            detail: `Agent id: ${agent.id}`,
-          });
-        } else {
-          // Verify workspace actually exists
-          const wsRows = await dbQuery(`SELECT id, name FROM "Workspace" WHERE id = $1 LIMIT 1`, [
-            agent.workspaceId,
-          ]);
-          if (wsRows.length === 0) {
-            breaks.push({
-              type: 'E2E_REGISTRATION_BROKEN',
-              severity: 'critical',
+          breaks.push(
+            registrationE2eFinding({
               file: 'backend/src/auth/auth.service.ts',
               line: 384,
-              description: 'Workspace record missing after registration — DB inconsistency',
-              detail: `workspaceId: ${agent.workspaceId}`,
-            });
+              description: 'No workspace linked to newly registered user',
+              detail: `Agent id: ${agent.id}`,
+            }),
+          );
+        } else {
+          // Verify workspace actually exists
+          const wsRows = workspaceModel
+            ? await dbQuery(buildWorkspaceReadbackQuery(workspaceModel), [agent.workspaceId])
+            : [];
+          if (wsRows.length === 0) {
+            breaks.push(
+              registrationE2eFinding({
+                file: 'backend/src/auth/auth.service.ts',
+                line: 384,
+                description: 'Workspace record missing after registration — DB inconsistency',
+                detail: `workspaceId: ${agent.workspaceId}`,
+              }),
+            );
           }
         }
       }
@@ -166,30 +314,19 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
 
     // ── Step 4: Use access_token to call a protected route ──────────────────
     if (registeredToken) {
-      const profileRes = await httpGet('/auth/me', { jwt: registeredToken });
-      // /auth/me may not exist; try /workspace or /kloel/agent/status
-      if (profileRes.status === 404) {
-        // Route may not exist, try /workspace
-        const wsRes = await httpGet('/workspace', { jwt: registeredToken });
-        if (!wsRes.ok && wsRes.status !== 404) {
-          breaks.push({
-            type: 'E2E_REGISTRATION_BROKEN',
-            severity: 'critical',
-            file: 'backend/src/auth/auth.controller.ts',
-            line: 36,
-            description: 'Registered JWT does not grant access to protected routes',
-            detail: `GET /workspace status: ${wsRes.status}`,
-          });
-        }
-      } else if (profileRes.status === 401) {
-        breaks.push({
-          type: 'E2E_REGISTRATION_BROKEN',
-          severity: 'critical',
-          file: 'backend/src/auth/auth.service.ts',
-          line: 251,
-          description: 'Freshly issued access_token rejected by backend as 401',
-          detail: `Token starts with: ${registeredToken.slice(0, 20)}...`,
-        });
+      const protectedRoute = discoverProtectedReadRoutes(config)[0];
+      const profileRes = protectedRoute
+        ? await httpGet(protectedRoute, { jwt: registeredToken })
+        : null;
+      if (profileRes?.status === 401) {
+        breaks.push(
+          registrationE2eFinding({
+            file: 'backend/src/auth/auth.service.ts',
+            line: 251,
+            description: 'Freshly issued access_token rejected by backend as 401',
+            detail: `Token starts with: ${registeredToken.slice(0, 20)}...`,
+          }),
+        );
       }
     }
 
@@ -199,14 +336,14 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
       password: testCredential,
     });
     if (dupeRes.status !== 409 && dupeRes.status !== 400) {
-      breaks.push({
-        type: 'E2E_REGISTRATION_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/auth/auth.service.ts',
-        line: 378,
-        description: `Duplicate email registration returned ${dupeRes.status} instead of 409`,
-        detail: `Body: ${JSON.stringify(dupeRes.body).slice(0, 200)}`,
-      });
+      breaks.push(
+        registrationE2eFinding({
+          file: 'backend/src/auth/auth.service.ts',
+          line: 378,
+          description: `Duplicate email registration returned ${dupeRes.status} instead of 409`,
+          detail: `Body: ${JSON.stringify(dupeRes.body).slice(0, 200)}`,
+        }),
+      );
     }
 
     // ── Step 6: Weak password → expect 400 ──────────────────────────────────
@@ -215,14 +352,14 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
       password: '123',
     });
     if (weakPwdRes.status === 201) {
-      breaks.push({
-        type: 'E2E_REGISTRATION_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/auth/auth.controller.ts',
-        line: 36,
-        description: 'Weak password (3 chars) accepted during registration — validation missing',
-        detail: `Password "123" returned 201`,
-      });
+      breaks.push(
+        registrationE2eFinding({
+          file: 'backend/src/auth/auth.controller.ts',
+          line: 36,
+          description: 'Weak password (3 chars) accepted during registration — validation missing',
+          detail: `Password "123" returned 201`,
+        }),
+      );
     }
 
     // ── Step 7: Invalid email → expect 400 ──────────────────────────────────
@@ -231,24 +368,24 @@ export async function checkE2eRegistration(config: PulseConfig): Promise<Break[]
       password: testCredential,
     });
     if (badEmailRes.status === 201) {
-      breaks.push({
-        type: 'E2E_REGISTRATION_BROKEN',
-        severity: 'critical',
-        file: 'backend/src/auth/auth.controller.ts',
-        line: 36,
-        description: 'Invalid email format accepted during registration — DTO validation missing',
-        detail: `Email "notanemail" returned 201`,
-      });
+      breaks.push(
+        registrationE2eFinding({
+          file: 'backend/src/auth/auth.controller.ts',
+          line: 36,
+          description: 'Invalid email format accepted during registration — DTO validation missing',
+          detail: `Email "notanemail" returned 201`,
+        }),
+      );
     }
   } catch (err: any) {
-    breaks.push({
-      type: 'E2E_REGISTRATION_BROKEN',
-      severity: 'critical',
-      file: 'backend/src/auth/auth.controller.ts',
-      line: 36,
-      description: 'E2E registration test threw an unexpected error',
-      detail: err?.message || String(err),
-    });
+    breaks.push(
+      registrationE2eFinding({
+        file: 'backend/src/auth/auth.controller.ts',
+        line: 36,
+        description: 'E2E registration test threw an unexpected error',
+        detail: err?.message || String(err),
+      }),
+    );
   }
 
   // Cleanup note: test user exists in DB with obviously fake pulse-test-*@test.kloel.com email

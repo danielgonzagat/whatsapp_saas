@@ -1,5 +1,6 @@
 import type { WorkspaceConnectAccount } from '@/hooks/useConnectAccounts';
 
+/** Seller connect state type. */
 export type SellerConnectState =
   | 'not_started'
   | 'action_required'
@@ -7,11 +8,17 @@ export type SellerConnectState =
   | 'restricted'
   | 'active';
 
+/** Seller connect summary shape. */
 export interface SellerConnectSummary {
+  /** State property. */
   state: SellerConnectState;
+  /** Label property. */
   label: string;
+  /** Description property. */
   description: string;
+  /** Requirements property. */
   requirements: string[];
+  /** Disabled reason property. */
   disabledReason: string | null;
 }
 
@@ -27,6 +34,7 @@ function dedupe(items: string[]): string[] {
   return Array.from(new Set(items.filter(Boolean)));
 }
 
+/** Humanize connect requirement. */
 export function humanizeConnectRequirement(code: string): string {
   const normalized = String(code || '').trim();
   if (!normalized) {
@@ -112,6 +120,7 @@ export function humanizeConnectRequirement(code: string): string {
   return startCase(normalized.replaceAll('.', ' ').replaceAll('_', ' '));
 }
 
+/** Humanize connect disabled reason. */
 export function humanizeConnectDisabledReason(reason: string | null | undefined): string | null {
   const normalized = String(reason || '').trim();
   if (!normalized) {
@@ -129,6 +138,7 @@ export function humanizeConnectDisabledReason(reason: string | null | undefined)
   return reasonMap[normalized] || 'Existe uma restrição temporária na conta de recebimento.';
 }
 
+/** Summarize seller connect account. */
 export function summarizeSellerConnectAccount(
   account: WorkspaceConnectAccount | null | undefined,
 ): SellerConnectSummary {

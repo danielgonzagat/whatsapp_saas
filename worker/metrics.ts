@@ -105,9 +105,7 @@ export async function getHealth() {
       },
     };
   } catch (err: unknown) {
-    const errInstanceofError =
-      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-    return { status: 'down', error: errInstanceofError?.message };
+    return { status: 'down', error: err instanceof Error ? err.message : 'unknown_error' };
   }
 }
 

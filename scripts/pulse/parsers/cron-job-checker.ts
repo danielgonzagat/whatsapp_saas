@@ -3,6 +3,40 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
 
+type ParserTruthMode = 'weak_signal' | 'confirmed_static';
+
+type ParserDiagnosticBreak = Break & {
+  truthMode: ParserTruthMode;
+};
+
+interface CronDiagnosticInput {
+  predicateKinds: string[];
+  severity: Break['severity'];
+  file: string;
+  line: number;
+  description: string;
+  detail: string;
+  truthMode: ParserTruthMode;
+}
+
+function buildCronDiagnostic(input: CronDiagnosticInput): ParserDiagnosticBreak {
+  const predicateToken = input.predicateKinds
+    .map((predicate) => predicate.replace(/[^a-z0-9]+/gi, '-').toLowerCase())
+    .filter(Boolean)
+    .join('+');
+
+  return {
+    type: `diagnostic:cron-job-checker:${predicateToken || 'scheduled-method-observation'}`,
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: `regex-heuristic:cron-job-checker;truthMode=${input.truthMode};predicates=${input.predicateKinds.join(',')}`,
+    truthMode: input.truthMode,
+  };
+}
+
 function shouldSkipFile(filePath: string): boolean {
   return /\.(spec|test|d)\.ts$|__tests__|__mocks__|\/seed\.|\/migration\.|fixture/i.test(filePath);
 }
@@ -97,28 +131,33 @@ export function checkCronJobs(config: PulseConfig): Break[] {
 
       // Check 1: empty method body
       if (!hasMeaningfulStatement(bodyLines)) {
-        breaks.push({
-          type: 'CRON_NO_HANDLER',
-          severity: 'medium',
-          file: relFile,
-          line: decoratorLine,
-          description: 'Cron/Interval decorated method has an empty or comment-only body',
-          detail: `${trimmed.slice(0, 120)} — the scheduled method appears to have no implementation.`,
-        });
+        breaks.push(
+          buildCronDiagnostic({
+            predicateKinds: ['scheduled_method', 'no_meaningful_statement'],
+            severity: 'medium',
+            file: relFile,
+            line: decoratorLine,
+            description: 'Scheduled method body has no meaningful statement in static scan',
+            detail: `${trimmed.slice(0, 120)} — the scheduled method appears to have no implementation.`,
+            truthMode: 'weak_signal',
+          }),
+        );
         // Still check for try/catch below
       }
 
       // Check 2: no try/catch error handling
       if (hasMeaningfulStatement(bodyLines) && !hasTryCatch(bodyLines)) {
-        breaks.push({
-          type: 'CRON_NO_ERROR_HANDLING',
-          severity: 'medium',
-          file: relFile,
-          line: decoratorLine,
-          description:
-            'Cron/Interval method has no try/catch — unhandled errors will crash the job silently',
-          detail: `${trimmed.slice(0, 120)} — wrap the method body in try/catch and log failures.`,
-        });
+        breaks.push(
+          buildCronDiagnostic({
+            predicateKinds: ['scheduled_method', 'no_local_try_catch'],
+            severity: 'medium',
+            file: relFile,
+            line: decoratorLine,
+            description: 'Scheduled method body has no local try/catch in static scan',
+            detail: `${trimmed.slice(0, 120)} — wrap the method body in try/catch and log failures.`,
+            truthMode: 'weak_signal',
+          }),
+        );
       }
     }
   }

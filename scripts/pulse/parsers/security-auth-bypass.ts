@@ -9,12 +9,13 @@
  * - Call with expired JWT → must return 401 (not 200 or 500)
  * - Call with alg=none JWT → must return 401 (prevents algorithm confusion attack)
  *
- * BREAK TYPES:
- * - AUTH_BYPASS_VULNERABLE (critical) — protected endpoint accessible without valid JWT
+ * Emits auth-probe evidence. Diagnostic identity is synthesized downstream
+ * from runtime signals and predicates.
  */
 
 import type { Break, PulseConfig } from '../types';
 import { httpGet, makeTestJwt } from './runtime-utils';
+import { buildParserDiagnosticBreak } from './diagnostic-break';
 
 const PROTECTED_ENDPOINTS = [
   '/products',
@@ -104,26 +105,39 @@ export async function checkSecurityAuthBypass(config: PulseConfig): Promise<Brea
       } // network error
 
       if (res.status === 200) {
-        breaks.push({
-          type: 'AUTH_BYPASS_VULNERABLE',
-          severity: 'critical',
-          file: baseFile,
-          line: 0,
-          description: `${endpoint} returned 200 with ${tc.label}`,
-          detail: `${tc.detail}. This endpoint is accessible without valid authentication.`,
-        });
+        breaks.push(
+          buildParserDiagnosticBreak({
+            detector: 'auth-bypass-runtime-probe',
+            source: 'runtime-auth-probe:security-auth-bypass',
+            truthMode: 'observed',
+            severity: 'critical',
+            file: baseFile,
+            line: 0,
+            summary:
+              'Runtime auth probe observed protected endpoint access without valid credentials',
+            detail: `${endpoint} returned 200 with ${tc.label}. ${tc.detail}.`,
+            surface: 'auth-protected-endpoint',
+            runtimeImpact: 1,
+          }),
+        );
       }
 
       // 500 with expired/malformed token is also suspicious (should be 401)
       if (res.status >= 500 && tc.label !== 'no JWT') {
-        breaks.push({
-          type: 'AUTH_BYPASS_VULNERABLE',
-          severity: 'high',
-          file: baseFile,
-          line: 0,
-          description: `${endpoint} returned ${res.status} with ${tc.label} (expected 401)`,
-          detail: `${tc.detail}. Server crashed instead of rejecting invalid credentials. Body: ${JSON.stringify(res.body).slice(0, 200)}`,
-        });
+        breaks.push(
+          buildParserDiagnosticBreak({
+            detector: 'auth-invalid-token-runtime-probe',
+            source: 'runtime-auth-probe:security-auth-bypass',
+            truthMode: 'observed',
+            severity: 'high',
+            file: baseFile,
+            line: 0,
+            summary: 'Runtime auth probe observed invalid credentials causing server error',
+            detail: `${endpoint} returned ${res.status} with ${tc.label}; expected rejection. ${tc.detail}. Body: ${JSON.stringify(res.body).slice(0, 200)}`,
+            surface: 'auth-invalid-token-handling',
+            runtimeImpact: 0.8,
+          }),
+        );
       }
     }
   }

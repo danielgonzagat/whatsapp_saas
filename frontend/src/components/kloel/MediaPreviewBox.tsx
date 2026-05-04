@@ -1,6 +1,7 @@
 'use client';
 
 import { PulseLoader } from '@/components/kloel/PulseLoader';
+import { colors } from '@/lib/design-tokens';
 import { Upload, X } from 'lucide-react';
 import Image from 'next/image';
 import { type CSSProperties, type ReactNode, useId, useRef, useState } from 'react';
@@ -44,12 +45,12 @@ interface MediaPreviewBoxProps {
 }
 
 const defaultTheme: Required<Theme> = {
-  accentColor: '#E85D30',
-  borderColor: '#222226',
-  frameBackground: 'rgba(255,255,255,0.04)',
-  labelColor: '#6E6E73',
-  mutedColor: '#3A3A3F',
-  textColor: '#E0DDD8',
+  accentColor: colors.ember.primary,
+  borderColor: colors.border.space,
+  frameBackground: 'rgba(255,255,255,0.04)', // PULSE_VISUAL_OK: translucent overlay
+  labelColor: colors.text.muted,
+  mutedColor: colors.text.dim,
+  textColor: colors.text.silver,
 };
 
 const defaultLayout: Required<Layout> = {

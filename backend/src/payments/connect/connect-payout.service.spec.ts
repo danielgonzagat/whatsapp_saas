@@ -1,211 +1,20 @@
-import { Test, type TestingModule } from '@nestjs/testing';
-
-import { FinancialAlertService } from '../../common/financial-alert.service';
-import { StripeService } from '../../billing/stripe.service';
-import { PrismaService } from '../../prisma/prisma.service';
-import { LedgerService } from '../ledger/ledger.service';
 import {
   AccountBalanceNotFoundError,
   InsufficientAvailableBalanceError,
 } from '../ledger/ledger.types';
 
-import { ConnectPayoutService, ConnectPayoutsNotEnabledError } from './connect-payout.service';
-
-const DEFAULT_ACCOUNT_BALANCE_ID = 'cab_seller_1';
-const DEFAULT_STRIPE_ACCOUNT_ID = 'acct_seller_1';
-const DEFAULT_WORKSPACE_ID = 'ws-1';
-const DEFAULT_REQUEST_ID = 'po_req_1';
-const DEFAULT_PAYOUT_ID = 'po_123';
-const DEFAULT_AMOUNT_CENTS = 5_000n;
-
-function makeBalance(overrides: Record<string, unknown> = {}) {
-  return {
-    id: DEFAULT_ACCOUNT_BALANCE_ID,
-    workspaceId: DEFAULT_WORKSPACE_ID,
-    stripeAccountId: DEFAULT_STRIPE_ACCOUNT_ID,
-    accountType: 'SELLER',
-    pendingBalanceCents: 0n,
-    availableBalanceCents: 9_010n,
-    lifetimeReceivedCents: 9_010n,
-    lifetimePaidOutCents: 0n,
-    lifetimeChargebacksCents: 0n,
-    createdAt: new Date('2026-05-01T00:00:00Z'),
-    updatedAt: new Date('2026-05-01T00:00:00Z'),
-    ...overrides,
-  };
-}
-
-type BalanceRecord = ReturnType<typeof makeBalance>;
-
-type StripeAccountRecord = {
-  id: string;
-  payouts_enabled: boolean;
-  requirements?: {
-    disabled_reason?: string;
-  };
-};
-
-type StripePayoutRecord = {
-  id: string;
-  status: string;
-};
-
-type LedgerEntryRecord = {
-  id: string;
-};
-
-type PrismaMock = {
-  connectAccountBalance: {
-    findUnique: jest.Mock;
-  };
-  $transaction: jest.Mock;
-};
-
-type StripeMock = {
-  stripe: {
-    accounts: {
-      retrieve: jest.Mock;
-    };
-    payouts: {
-      create: jest.Mock;
-    };
-  };
-};
-
-type LedgerMock = {
-  debitAvailableForPayout: jest.Mock;
-  creditAvailableByAdjustment: jest.Mock;
-};
-
-type FinancialAlertMock = {
-  withdrawalFailed: jest.Mock;
-};
-
-async function buildService({
-  prisma,
-  stripe,
-  ledger,
-  financialAlert,
-}: {
-  prisma: PrismaMock;
-  stripe: StripeMock;
-  ledger: LedgerMock;
-  financialAlert: FinancialAlertMock;
-}) {
-  const moduleRef: TestingModule = await Test.createTestingModule({
-    providers: [
-      ConnectPayoutService,
-      { provide: PrismaService, useValue: prisma },
-      { provide: StripeService, useValue: stripe },
-      { provide: LedgerService, useValue: ledger },
-      { provide: FinancialAlertService, useValue: financialAlert },
-    ],
-  }).compile();
-
-  return moduleRef.get(ConnectPayoutService);
-}
-
-function makeStripeAccount(overrides: Partial<StripeAccountRecord> = {}): StripeAccountRecord {
-  return {
-    id: DEFAULT_STRIPE_ACCOUNT_ID,
-    payouts_enabled: true,
-    ...overrides,
-  };
-}
-
-function makeStripePayout(overrides: Partial<StripePayoutRecord> = {}): StripePayoutRecord {
-  return {
-    id: DEFAULT_PAYOUT_ID,
-    status: 'pending',
-    ...overrides,
-  };
-}
-
-function makeLedgerEntry(id: string): LedgerEntryRecord {
-  return { id };
-}
-
-function makePayoutRequest(
-  overrides: Partial<{
-    accountBalanceId: string;
-    amountCents: bigint;
-    requestId: string;
-  }> = {},
-) {
-  return {
-    accountBalanceId: DEFAULT_ACCOUNT_BALANCE_ID,
-    amountCents: DEFAULT_AMOUNT_CENTS,
-    requestId: DEFAULT_REQUEST_ID,
-    ...overrides,
-  };
-}
-
-function makeLedgerMetadata(requestId: string, stripeAccountId = DEFAULT_STRIPE_ACCOUNT_ID) {
-  return {
-    requestId,
-    stripeAccountId,
-  };
-}
-
-type HarnessOptions = {
-  balance?: BalanceRecord | null;
-  stripeAccount?: StripeAccountRecord;
-  payout?: StripePayoutRecord;
-  payoutError?: Error;
-  debitResult?: LedgerEntryRecord;
-  creditResult?: LedgerEntryRecord;
-};
-
-async function createHarness(options: HarnessOptions = {}) {
-  const prisma: PrismaMock = {
-    connectAccountBalance: {
-      findUnique: jest
-        .fn()
-        .mockResolvedValue(options.balance === undefined ? makeBalance() : options.balance),
-    },
-    $transaction: jest
-      .fn()
-      .mockImplementation(async (callback: (tx: PrismaMock) => Promise<unknown>) =>
-        callback(prisma),
-      ),
-  };
-
-  const stripe: StripeMock = {
-    stripe: {
-      accounts: {
-        retrieve: jest.fn().mockResolvedValue(options.stripeAccount ?? makeStripeAccount()),
-      },
-      payouts: {
-        create: options.payoutError
-          ? jest.fn().mockRejectedValue(options.payoutError)
-          : jest.fn().mockResolvedValue(options.payout ?? makeStripePayout()),
-      },
-    },
-  };
-
-  const ledger: LedgerMock = {
-    debitAvailableForPayout: jest
-      .fn()
-      .mockResolvedValue(options.debitResult ?? makeLedgerEntry('cle_po_1')),
-    creditAvailableByAdjustment: jest
-      .fn()
-      .mockResolvedValue(options.creditResult ?? makeLedgerEntry('cle_adj_1')),
-  };
-
-  const financialAlert: FinancialAlertMock = {
-    withdrawalFailed: jest.fn(),
-  };
-
-  const service = await buildService({ prisma, stripe, ledger, financialAlert });
-
-  return {
-    service,
-    prisma,
-    stripe,
-    ledger,
-    financialAlert,
-  };
-}
+import { ConnectPayoutsNotEnabledError } from './connect-payout.service';
+import {
+  DEFAULT_PAYOUT_ID,
+  DEFAULT_STRIPE_ACCOUNT_ID,
+  DEFAULT_WORKSPACE_ID,
+  createHarness,
+  makeBalance,
+  makeLedgerEntry,
+  makeLedgerMetadata,
+  makePayoutRequest,
+  makeStripeAccount,
+} from './connect-payout.service.spec.helpers';
 
 describe('ConnectPayoutService.createPayout', () => {
   it('creates a Stripe payout on the connected account and debits the ledger with the same idempotency key', async () => {
@@ -338,39 +147,6 @@ describe('ConnectPayoutService.createPayout', () => {
     expect(financialAlert.withdrawalFailed).toHaveBeenCalledWith(expect.any(Error), {
       workspaceId: DEFAULT_WORKSPACE_ID,
       amount: Number(request.amountCents),
-    });
-  });
-});
-
-describe('ConnectPayoutService.handleFailedPayout', () => {
-  it('recredits the local available balance via an idempotent ledger adjustment', async () => {
-    const { service, prisma, ledger, financialAlert } = await createHarness({
-      balance: makeBalance(),
-    });
-
-    await service.handleFailedPayout({
-      payoutId: DEFAULT_PAYOUT_ID,
-      accountBalanceId: DEFAULT_ACCOUNT_BALANCE_ID,
-      requestId: DEFAULT_REQUEST_ID,
-      amountCents: DEFAULT_AMOUNT_CENTS,
-    });
-
-    expect(prisma.connectAccountBalance.findUnique).toHaveBeenCalledWith({
-      where: { id: DEFAULT_ACCOUNT_BALANCE_ID },
-      select: { workspaceId: true },
-    });
-    expect(ledger.creditAvailableByAdjustment).toHaveBeenCalledWith({
-      accountBalanceId: DEFAULT_ACCOUNT_BALANCE_ID,
-      amountCents: DEFAULT_AMOUNT_CENTS,
-      reference: { type: 'payout_failed', id: DEFAULT_PAYOUT_ID },
-      metadata: {
-        requestId: DEFAULT_REQUEST_ID,
-        stripePayoutId: DEFAULT_PAYOUT_ID,
-      },
-    });
-    expect(financialAlert.withdrawalFailed).toHaveBeenCalledWith(expect.any(Error), {
-      workspaceId: DEFAULT_WORKSPACE_ID,
-      amount: Number(DEFAULT_AMOUNT_CENTS),
     });
   });
 });

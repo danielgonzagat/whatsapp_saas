@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as db from '../db';
-import { runScanContact, runSweepUnreadConversations } from '../processors/autopilot-processor';
+import { runScanContact } from '../processors/autopilot-processor';
 import * as unifiedAgentIntegrator from '../providers/unified-agent-integrator';
+import * as queueModule from '../queue';
+import * as redisClientModule from '../redis-client';
+import { setMockContact, setupDefaultMocks } from './__parts__/scan-contact.setup';
+import { addSweepTests } from './__parts__/scan-contact.cases.sweep';
 
 const {
   mockDispatchOutbound,
@@ -59,6 +63,7 @@ vi.mock('../providers/outbound-dispatcher', () => ({
 
 vi.mock('../providers/plan-limits', () => ({
   PlanLimitsProvider: {
+    checkDailyMessageLimit: vi.fn(async () => ({ allowed: true })),
     checkMessageLimit: vi.fn(async () => ({ allowed: true })),
     checkSubscriptionStatus: vi.fn(async () => ({ active: true })),
   },
@@ -98,80 +103,17 @@ vi.mock('../providers/unified-agent-integrator', () => ({
 
 const mockPrisma: any = db.prisma;
 
-function setMockContact(value: Record<string, unknown> | null) {
-  mockPrisma.contact.findUnique.mockResolvedValue(value);
-  mockPrisma.contact.findFirst.mockResolvedValue(value);
-}
-
 describe('scan-contact job', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.AUTOPILOT_ENFORCE_24H = 'false';
 
-    mockPrisma.workspace.findUnique.mockResolvedValue({
-      id: 'ws-1',
-      providerSettings: {
-        autopilot: { enabled: true },
-        whatsappApiSession: {
-          status: 'connected',
-          phoneNumber: '5511000000000',
-        },
-      },
-    });
-    setMockContact({
-      id: 'contact-1',
-      phone: '5511999999999',
-      leadScore: 82,
-      customFields: {},
-      tags: [],
-    });
-    mockPrisma.message.findFirst.mockResolvedValue(null);
-    mockPrisma.message.findMany.mockResolvedValue([
-      { id: 'msg-1', content: 'Oi', createdAt: new Date('2026-03-19T10:00:00.000Z') },
-      {
-        id: 'msg-2',
-        content: 'Quero saber mais sobre o serum',
-        createdAt: new Date('2026-03-19T10:01:00.000Z'),
-      },
-    ]);
-    mockPrisma.product.findMany.mockResolvedValue([
-      { name: 'Test Product', description: 'serum regenerador para pele' },
-    ]);
-    mockPrisma.kloelMemory.findMany.mockResolvedValue([]);
-    mockPrisma.kloelMemory.findFirst.mockResolvedValue(null);
-    mockPrisma.kloelMemory.findUnique.mockResolvedValue(null);
-    mockPrisma.kloelMemory.upsert.mockResolvedValue({});
-    mockPrisma.kloelMemory.create.mockResolvedValue({});
-    mockPrisma.autopilotEvent.create.mockResolvedValue({});
-    mockPrisma.autonomyExecution.create.mockResolvedValue({ id: 'exec-1', status: 'PENDING' });
-    mockPrisma.autonomyExecution.findFirst.mockResolvedValue(null);
-    mockPrisma.autonomyExecution.update.mockResolvedValue({});
-    mockPrisma.auditLog.create.mockResolvedValue({});
-    mockPrisma.systemInsight.findFirst.mockResolvedValue(null);
-    mockPrisma.systemInsight.create.mockResolvedValue({});
-    mockPrisma.conversation.findFirst.mockResolvedValue(null);
-    mockPrisma.conversation.update.mockResolvedValue({});
-    mockPrisma.conversation.updateMany.mockResolvedValue({ count: 1 });
-    mockPrisma.conversation.count.mockResolvedValue(0);
-    mockPrisma.contact.update.mockResolvedValue({});
-    mockPrisma.contact.updateMany.mockResolvedValue({ count: 1 });
-
-    mockShouldUseUnifiedAgent.mockReturnValue(false);
-    mockProcessWithUnifiedAgent.mockResolvedValue({
-      response:
-        'Claro. O serum ajuda a regenerar a pele e posso te explicar aplicação, preço e próximos passos.',
-      actions: [],
-      model: 'gpt-5.4',
-    });
-    mockMapUnifiedActions.mockReturnValue({
-      intent: 'BUYING',
-      action: 'NONE',
-      reason: 'unified_agent:no_tool_needed',
-      confidence: 0.94,
-      alreadyExecuted: false,
-    });
-    mockExtractTextResponse.mockReturnValue(
-      'Claro. O serum ajuda a regenerar a pele e posso te explicar aplicação, preço e próximos passos.',
+    setupDefaultMocks(
+      mockPrisma,
+      mockProcessWithUnifiedAgent,
+      mockShouldUseUnifiedAgent,
+      mockMapUnifiedActions,
+      mockExtractTextResponse,
     );
   });
 
@@ -254,7 +196,7 @@ describe('scan-contact job', () => {
         },
       },
     });
-    setMockContact({
+    setMockContact(mockPrisma, {
       id: 'contact-2',
       phone: '5511888888888',
       leadScore: 20,
@@ -338,7 +280,7 @@ describe('scan-contact job', () => {
         whatsappApiSession: { status: 'connected' },
       },
     });
-    setMockContact({
+    setMockContact(mockPrisma, {
       id: 'contact-3',
       phone: '5511777777777',
       leadScore: 15,
@@ -385,7 +327,7 @@ describe('scan-contact job', () => {
         whatsappApiSession: { status: 'connected' },
       },
     });
-    setMockContact({
+    setMockContact(mockPrisma, {
       id: 'contact-4',
       phone: '5511666666666',
       leadScore: 45,
@@ -433,7 +375,7 @@ describe('scan-contact job', () => {
         whatsappApiSession: { status: 'connected' },
       },
     });
-    setMockContact({
+    setMockContact(mockPrisma, {
       id: 'contact-5',
       phone: '5511555555555',
       leadScore: 45,
@@ -521,7 +463,7 @@ describe('scan-contact job', () => {
   });
 
   it('blocks reactive replies when the contact explicitly opted out', async () => {
-    setMockContact({
+    setMockContact(mockPrisma, {
       id: 'contact-optout',
       phone: '5511555555555',
       leadScore: 12,
@@ -593,236 +535,5 @@ describe('scan-contact job', () => {
     expect(mockPrisma.autopilotEvent.create).not.toHaveBeenCalled();
   });
 
-  it('queues unread conversations for backlog sweep even when the last stored message is outbound', async () => {
-    const queueModule = await import('../queue');
-    const redisClient = await import('../redis-client');
-
-    mockPrisma.conversation.findMany.mockResolvedValue([
-      {
-        id: 'conv-2',
-        contactId: 'contact-2',
-        status: 'OPEN',
-        mode: 'AI',
-        assignedAgentId: null,
-        unreadCount: 1,
-        lastMessageAt: new Date('2026-03-19T10:02:00.000Z'),
-        messages: [
-          {
-            direction: 'INBOUND',
-            createdAt: new Date('2026-03-19T10:02:00.000Z'),
-          },
-        ],
-        contact: {
-          id: 'contact-2',
-          name: 'Marcos',
-          phone: '5511888888888',
-        },
-      },
-      {
-        id: 'conv-1',
-        contactId: 'contact-1',
-        status: 'OPEN',
-        mode: 'AI',
-        assignedAgentId: null,
-        unreadCount: 3,
-        lastMessageAt: new Date('2026-03-19T10:01:00.000Z'),
-        messages: [
-          {
-            direction: 'INBOUND',
-            createdAt: new Date('2026-03-19T10:01:00.000Z'),
-          },
-        ],
-        contact: {
-          id: 'contact-1',
-          name: 'Luiz',
-          phone: '5511999999999',
-        },
-      },
-      {
-        id: 'conv-outbound',
-        contactId: 'contact-3',
-        status: 'OPEN',
-        mode: 'AI',
-        assignedAgentId: null,
-        unreadCount: 8,
-        lastMessageAt: new Date('2026-03-19T10:03:00.000Z'),
-        messages: [
-          {
-            direction: 'OUTBOUND',
-            createdAt: new Date('2026-03-19T10:03:00.000Z'),
-          },
-        ],
-        contact: {
-          id: 'contact-3',
-          name: 'Ainda Pendente',
-          phone: '5511777777777',
-        },
-      },
-      {
-        id: 'conv-human-owner',
-        contactId: 'contact-4',
-        status: 'OPEN',
-        mode: 'AI',
-        assignedAgentId: 'operator-9',
-        unreadCount: 6,
-        lastMessageAt: new Date('2026-03-19T10:04:00.000Z'),
-        messages: [
-          {
-            direction: 'INBOUND',
-            createdAt: new Date('2026-03-19T10:04:00.000Z'),
-          },
-        ],
-        contact: {
-          id: 'contact-4',
-          name: 'Com Humano',
-          phone: '5511666666666',
-        },
-      },
-    ]);
-
-    await runSweepUnreadConversations({
-      workspaceId: 'ws-1',
-      runId: 'run-123',
-      mode: 'reply_all_recent_first',
-      limit: 10,
-    });
-
-    expect(mockPrisma.conversation.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          workspaceId: 'ws-1',
-          status: { not: 'CLOSED' },
-        }),
-        orderBy: [{ lastMessageAt: 'desc' }],
-        take: 50,
-      }),
-    );
-    expect(queueModule.autopilotQueue.add).toHaveBeenNthCalledWith(
-      1,
-      'scan-contact',
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        runId: 'run-123',
-        deliveryMode: 'reactive',
-        contactId: 'contact-3',
-        contactName: 'Ainda Pendente',
-        backlogIndex: 1,
-        backlogTotal: 3,
-      }),
-      expect.objectContaining({
-        jobId: 'scan-contact__ws-1__contact-3__run__run-123',
-      }),
-    );
-    expect(queueModule.autopilotQueue.add).toHaveBeenNthCalledWith(
-      2,
-      'scan-contact',
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        runId: 'run-123',
-        deliveryMode: 'reactive',
-        contactId: 'contact-2',
-        contactName: 'Marcos',
-        backlogIndex: 2,
-        backlogTotal: 3,
-      }),
-      expect.objectContaining({
-        jobId: 'scan-contact__ws-1__contact-2__run__run-123',
-      }),
-    );
-    expect(queueModule.autopilotQueue.add).toHaveBeenNthCalledWith(
-      3,
-      'scan-contact',
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        runId: 'run-123',
-        deliveryMode: 'reactive',
-        contactId: 'contact-1',
-        contactName: 'Luiz',
-        backlogIndex: 3,
-        backlogTotal: 3,
-      }),
-      expect.objectContaining({
-        jobId: 'scan-contact__ws-1__contact-1__run__run-123',
-      }),
-    );
-    expect(redisClient.redisPub.publish).toHaveBeenCalledWith(
-      'ws:agent',
-      expect.stringContaining('"phase":"queue_start"'),
-    );
-  });
-
-  it('filters the workspace own phone out of the backlog queue', async () => {
-    const queueModule = await import('../queue');
-
-    mockPrisma.workspace.findUnique.mockResolvedValue({
-      id: 'ws-1',
-      providerSettings: {
-        whatsappApiSession: {
-          status: 'connected',
-          phoneNumber: '5511777777777',
-        },
-      },
-    });
-    mockPrisma.conversation.findMany.mockResolvedValue([
-      {
-        id: 'conv-self',
-        contactId: 'contact-self',
-        status: 'OPEN',
-        mode: 'AI',
-        assignedAgentId: null,
-        unreadCount: 7,
-        lastMessageAt: new Date('2026-03-19T10:05:00.000Z'),
-        messages: [
-          {
-            direction: 'INBOUND',
-            createdAt: new Date('2026-03-19T10:05:00.000Z'),
-          },
-        ],
-        contact: {
-          id: 'contact-self',
-          name: 'Eu Mesmo',
-          phone: '5511777777777',
-          customFields: {},
-        },
-      },
-      {
-        id: 'conv-customer',
-        contactId: 'contact-customer',
-        status: 'OPEN',
-        mode: 'AI',
-        assignedAgentId: null,
-        unreadCount: 2,
-        lastMessageAt: new Date('2026-03-19T10:04:00.000Z'),
-        messages: [
-          {
-            direction: 'INBOUND',
-            createdAt: new Date('2026-03-19T10:04:00.000Z'),
-          },
-        ],
-        contact: {
-          id: 'contact-customer',
-          name: 'Cliente',
-          phone: '5511666666666',
-          customFields: {},
-        },
-      },
-    ]);
-
-    await runSweepUnreadConversations({
-      workspaceId: 'ws-1',
-      runId: 'run-self-filter',
-      mode: 'reply_all_recent_first',
-      limit: 10,
-    });
-
-    expect(queueModule.autopilotQueue.add).toHaveBeenCalledTimes(1);
-    expect(queueModule.autopilotQueue.add).toHaveBeenCalledWith(
-      'scan-contact',
-      expect.objectContaining({
-        contactId: 'contact-customer',
-        phone: '5511666666666',
-      }),
-      expect.anything(),
-    );
-  });
+  addSweepTests(mockPrisma, queueModule, redisClientModule);
 });

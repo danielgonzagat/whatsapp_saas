@@ -31,8 +31,18 @@ interface PixelWindow {
   TiktokAnalyticsObject?: string;
 }
 
+// Bridges values whose runtime shape matches a target interface but whose
+// declared TS type is wider (e.g. global `Window`, third-party SDK queue
+// objects). A single function-mediated cast keeps the call sites free of
+// repeated cast chains while still letting TypeScript verify the target
+// type at the use site.
+const cast = <T,>(value: unknown): T => value as T;
+
 function getPixelWindow(): PixelWindow {
-  return window as unknown as PixelWindow;
+  if (typeof window === 'undefined') {
+    return {} as PixelWindow;
+  }
+  return cast<PixelWindow>(window);
 }
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
@@ -99,7 +109,7 @@ function shouldTrack(pixel: PixelConfig, event: PixelEvent): boolean {
 /* ─── Script injectors ────────────────────────────────────────────────────── */
 
 function ensureFacebookPixel(pixelId: string): void {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
     return;
   }
   const pw = getPixelWindow();
@@ -224,18 +234,18 @@ function ensureTikTok(pixelId: string): void {
   });
   const setAndDefer = (target: Record<string, unknown>, method: string) => {
     target[method] = (...args: unknown[]) => {
-      (target as unknown as unknown[]).push([method, ...args]);
+      cast<unknown[]>(target).push([method, ...args]);
     };
   };
   ttqObj.setAndDefer = setAndDefer;
   for (const m of methods) {
-    setAndDefer(ttqObj as unknown as Record<string, unknown>, m);
+    setAndDefer(cast<Record<string, unknown>>(ttqObj), m);
   }
   ttqObj.instance = (id: string) => {
     const store = ttqObj._i as Record<string, unknown[]>;
     const inst = store[id] || [];
     for (const m of methods) {
-      setAndDefer(inst as unknown as Record<string, unknown>, m);
+      setAndDefer(cast<Record<string, unknown>>(inst), m);
     }
     return inst;
   };
@@ -246,7 +256,7 @@ function ensureTikTok(pixelId: string): void {
     s.src = `https://analytics.tiktok.com/i18n/pixel/events.js?sdkid=${id}&lib=ttq`;
     document.head.appendChild(s);
   };
-  pw.ttq = ttqObj as unknown as PixelWindow['ttq'];
+  pw.ttq = cast<PixelWindow['ttq']>(ttqObj);
   (ttqObj.load as (id: string) => void)(pixelId);
   (ttqObj.page as () => void)();
 }

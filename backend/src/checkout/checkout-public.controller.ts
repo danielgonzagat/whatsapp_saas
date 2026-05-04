@@ -1,19 +1,33 @@
 import { randomUUID } from 'node:crypto';
-import { Body, Controller, Get, Headers, Ip, Param, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Ip,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { Idempotent } from '../common/idempotency.guard';
+import { CalculateShippingDto } from './dto/calculate-shipping.dto';
 import { CaptureSocialLeadDto } from './dto/capture-social-lead.dto';
 import { CheckoutService } from './checkout.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { GooglePeopleProfileDto } from './dto/google-people-profile.dto';
 import { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
+import { ValidateCouponDto } from './dto/validate-coupon.dto';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 
 /** Checkout public controller. */
 @Controller('checkout/public')
 @Public()
+@UseGuards(ThrottlerGuard)
 @Throttle({ default: { limit: 30, ttl: 60000 } })
 export class CheckoutPublicController {
   constructor(
@@ -99,25 +113,19 @@ export class CheckoutPublicController {
   }
 
   /** Validate coupon. */
+  // PULSE_OK: called from frontend/src/app/(checkout)/hooks/useCheckout.ts (/n/ prefix proxy)
   @Post('validate-coupon')
-  validateCoupon(
-    @Body()
-    body: {
-      workspaceId: string;
-      code: string;
-      planId: string;
-      orderValue: number;
-    },
-  ) {
+  validateCoupon(@Body() dto: ValidateCouponDto) {
     return this.checkoutService.validateCoupon(
-      body.workspaceId,
-      body.code,
-      body.planId,
-      body.orderValue,
+      dto.workspaceId,
+      dto.code,
+      dto.planId,
+      dto.orderValue,
     );
   }
 
   /** Create order. */
+  // PULSE_OK: called from frontend/src/app/(checkout)/hooks/useCheckout.ts (/n/ prefix proxy)
   @Post('order')
   @Idempotent()
   @Throttle({ default: { limit: 10, ttl: 60000 } })
@@ -144,21 +152,26 @@ export class CheckoutPublicController {
   }
 
   /** Accept upsell. */
+  // PULSE_OK: called from frontend/src/app/(checkout)/hooks/useCheckout.ts (/n/ prefix proxy)
   @Post('upsell/:orderId/accept/:upsellId')
+  @Idempotent()
   acceptUpsell(@Param('orderId') orderId: string, @Param('upsellId') upsellId: string) {
     return this.checkoutService.acceptUpsell(orderId, upsellId);
   }
 
   /** Decline upsell. */
+  // PULSE_OK: called from frontend/src/app/(checkout)/hooks/useCheckout.ts (/n/ prefix proxy)
   @Post('upsell/:orderId/decline/:upsellId')
+  @Idempotent()
   declineUpsell(@Param('orderId') orderId: string, @Param('upsellId') upsellId: string) {
     return this.checkoutService.declineUpsell(orderId, upsellId);
   }
 
   /** Calculate shipping. */
+  // PULSE_OK: called from frontend/src/lib/api/misc.ts (/n/ prefix proxy)
   @Post('shipping')
-  async calculateShipping(@Body() body: { slug: string; cep: string }) {
-    return this.checkoutService.calculateShipping(body.slug, body.cep);
+  async calculateShipping(@Body() dto: CalculateShippingDto) {
+    return this.checkoutService.calculateShipping(dto.slug, dto.cep);
   }
 
   /** Capture social lead. */
@@ -176,6 +189,7 @@ export class CheckoutPublicController {
   }
 
   /** Hydrate google people profile. */
+  // PULSE_OK: called from frontend/src/app/(checkout)/hooks/useCheckoutSocialIdentity.ts (/n/ prefix proxy)
   @Post('social-capture/:leadId/google-profile')
   @Throttle({ default: { limit: 8, ttl: 60000 } })
   hydrateGooglePeopleProfile(@Param('leadId') leadId: string, @Body() dto: GooglePeopleProfileDto) {

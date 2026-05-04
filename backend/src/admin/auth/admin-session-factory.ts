@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService } from '@nestjs/jwt'; // PULSE_OK: reasonable expiry (30m)
 import type { AdminUser } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { generateRawRefreshToken, sha256Hex } from '../common/admin-crypto';

@@ -9,9 +9,82 @@ interface GatewayEvent {
   eventName: string;
 }
 
+type WebSocketPredicateKind =
+  | 'backend-event-surface'
+  | 'frontend-event-surface'
+  | 'missing-backend-handler-evidence'
+  | 'missing-frontend-consumer-evidence';
+
+interface WebSocketFindingInput {
+  readonly predicateKinds: readonly WebSocketPredicateKind[];
+  readonly severity: Break['severity'];
+  readonly file: string;
+  readonly line: number;
+  readonly description: string;
+  readonly detail: string;
+}
+
 function extractQuotedString(s: string): string | null {
-  const m = s.match(/['"`]([^'"`]+)['"`]/);
-  return m ? m[1] : null;
+  for (const quote of ['"', "'", '`']) {
+    const start = s.indexOf(quote);
+    if (start === -1) {
+      continue;
+    }
+    const end = s.indexOf(quote, start + 1);
+    if (end > start + 1) {
+      return s.slice(start + 1, end);
+    }
+  }
+  return null;
+}
+
+function isTestLikeSource(filePath: string): boolean {
+  const normalized = filePath.replace(/\\/g, '/').toLowerCase();
+  return (
+    normalized.includes('.spec.') || normalized.includes('.test.') || normalized.includes('.d.ts')
+  );
+}
+
+function webSocketFinding(input: WebSocketFindingInput): Break {
+  const predicateId = input.predicateKinds.join('+');
+  return {
+    type: `diagnostic:websocket-parser:${predicateId}`,
+    severity: input.severity,
+    file: input.file,
+    line: input.line,
+    description: input.description,
+    detail: input.detail,
+    source: `syntax-evidence:websocket-parser;predicates=${predicateId}`,
+  };
+}
+
+function extractEventNameFromInvocation(
+  line: string,
+  invocationNames: readonly string[],
+): string | null {
+  for (const invocationName of invocationNames) {
+    let cursor = 0;
+    while (cursor < line.length) {
+      const index = line.indexOf(invocationName, cursor);
+      if (index === -1) {
+        break;
+      }
+      const eventName = extractQuotedString(line.slice(index + invocationName.length));
+      if (eventName) {
+        return eventName;
+      }
+      cursor = index + invocationName.length;
+    }
+  }
+  return null;
+}
+
+function hasSubscribeMessageDecorator(line: string): boolean {
+  return line.includes('@SubscribeMessage') && line.includes('(');
+}
+
+function isImportLine(line: string): boolean {
+  return line.startsWith('import ');
 }
 
 /** Check web sockets. */
@@ -25,7 +98,7 @@ export function checkWebSockets(config: PulseConfig): Break[] {
     if (!f.endsWith('.gateway.ts')) {
       return false;
     }
-    if (/\.(spec|test)\.ts$/.test(f)) {
+    if (isTestLikeSource(f)) {
       return false;
     }
     return true;
@@ -43,7 +116,7 @@ export function checkWebSockets(config: PulseConfig): Break[] {
 
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i].trim();
-      if (!/@SubscribeMessage\s*\(/.test(trimmed)) {
+      if (!hasSubscribeMessageDecorator(trimmed)) {
         continue;
       }
 
@@ -65,22 +138,14 @@ export function checkWebSockets(config: PulseConfig): Break[] {
   const frontendEvents: FrontendEvent[] = [];
 
   const frontendFiles = walkFiles(config.frontendDir, ['.ts', '.tsx']).filter((f) => {
-    if (/\.(spec|test|d)\.ts$/.test(f)) {
+    if (isTestLikeSource(f)) {
       return false;
     }
-    if (/node_modules/.test(f)) {
+    if (f.includes('node_modules')) {
       return false;
     }
     return true;
   });
-
-  // Patterns to detect socket events in frontend:
-  // socket.emit('eventName', ...) | socket.on('eventName', ...) | emit('eventName', ...) | .on('eventName', ...)
-  const emitPattern = /(?:socket|io|ws|client)\s*\.\s*emit\s*\(\s*['"`]([^'"`]+)['"`]/;
-  const onPattern = /(?:socket|io|ws|client)\s*\.\s*on\s*\(\s*['"`]([^'"`]+)['"`]/;
-  // Also catch bare emit() / .on() from hook destructuring
-  const bareEmitPattern = /\bemit\s*\(\s*['"`]([^'"`]+)['"`]/;
-  const bareOnPattern = /\.on\s*\(\s*['"`]([^'"`]+)['"`]/;
 
   for (const file of frontendFiles) {
     let content: string;
@@ -100,46 +165,19 @@ export function checkWebSockets(config: PulseConfig): Break[] {
         continue;
       }
       // Skip imports
-      if (/^import\s/.test(trimmed)) {
+      if (isImportLine(trimmed)) {
         continue;
       }
 
-      let m: RegExpMatchArray | null;
-
-      m = trimmed.match(emitPattern);
-      if (m) {
-        frontendEvents.push({ file, line: i + 1, eventName: m[1], kind: 'emit' });
+      const emittedEventName = extractEventNameFromInvocation(trimmed, ['.emit(', 'emit(']);
+      if (emittedEventName) {
+        frontendEvents.push({ file, line: i + 1, eventName: emittedEventName, kind: 'emit' });
         continue;
       }
 
-      m = trimmed.match(onPattern);
-      if (m) {
-        frontendEvents.push({ file, line: i + 1, eventName: m[1], kind: 'on' });
-        continue;
-      }
-
-      m = trimmed.match(bareEmitPattern);
-      if (m) {
-        frontendEvents.push({ file, line: i + 1, eventName: m[1], kind: 'emit' });
-        continue;
-      }
-
-      m = trimmed.match(bareOnPattern);
-      if (m) {
-        // Exclude common non-socket .on() patterns: EventEmitter in node, DOM events
-        const eventName = m[1];
-        if (
-          /^(?:click|change|input|submit|focus|blur|keydown|keyup|keypress|resize|scroll|load|error|message|open|close|connect|disconnect)$/.test(
-            eventName,
-          )
-        ) {
-          // These are likely DOM or socket lifecycle events — still record disconnect/connect/error
-          if (/^(?:connect|disconnect|error|reconnect)$/.test(eventName)) {
-            frontendEvents.push({ file, line: i + 1, eventName, kind: 'on' });
-          }
-          continue;
-        }
-        frontendEvents.push({ file, line: i + 1, eventName: m[1], kind: 'on' });
+      const observedEventName = extractEventNameFromInvocation(trimmed, ['.on(', 'on(']);
+      if (observedEventName) {
+        frontendEvents.push({ file, line: i + 1, eventName: observedEventName, kind: 'on' });
       }
     }
   }
@@ -148,30 +186,22 @@ export function checkWebSockets(config: PulseConfig): Break[] {
   const backendEventNames = new Set(backendEvents.map((e) => e.eventName));
   const frontendEventNames = new Set(frontendEvents.map((e) => e.eventName));
 
-  // Lifecycle events that don't need @SubscribeMessage on backend
-  const lifecycleEvents = new Set([
-    'connect',
-    'disconnect',
-    'error',
-    'reconnect',
-    'reconnect_error',
-    'reconnect_attempt',
-  ]);
-
   // Backend events with no frontend consumer
   for (const evt of backendEvents) {
     if (frontendEventNames.has(evt.eventName)) {
       continue;
     }
     const relFile = path.relative(config.rootDir, evt.file);
-    breaks.push({
-      type: 'GATEWAY_NO_CONSUMER',
-      severity: 'medium',
-      file: relFile,
-      line: evt.line,
-      description: `Backend gateway event '${evt.eventName}' has no frontend consumer`,
-      detail: `No socket.on('${evt.eventName}') or socket.emit('${evt.eventName}') found in frontend — event may be dead`,
-    });
+    breaks.push(
+      webSocketFinding({
+        predicateKinds: ['backend-event-surface', 'missing-frontend-consumer-evidence'],
+        severity: 'medium',
+        file: relFile,
+        line: evt.line,
+        description: `Backend gateway event '${evt.eventName}' has no frontend consumer`,
+        detail: `No socket.on('${evt.eventName}') or socket.emit('${evt.eventName}') found in frontend — event may be dead`,
+      }),
+    );
   }
 
   // Frontend emits with no backend handler
@@ -179,21 +209,20 @@ export function checkWebSockets(config: PulseConfig): Break[] {
     if (evt.kind !== 'emit') {
       continue;
     }
-    if (lifecycleEvents.has(evt.eventName)) {
-      continue;
-    }
     if (backendEventNames.has(evt.eventName)) {
       continue;
     }
     const relFile = path.relative(config.rootDir, evt.file);
-    breaks.push({
-      type: 'EMIT_NO_HANDLER',
-      severity: 'medium',
-      file: relFile,
-      line: evt.line,
-      description: `Frontend emits '${evt.eventName}' but no backend @SubscribeMessage handler found`,
-      detail: `socket.emit('${evt.eventName}') in frontend has no matching @SubscribeMessage('${evt.eventName}') in any .gateway.ts`,
-    });
+    breaks.push(
+      webSocketFinding({
+        predicateKinds: ['frontend-event-surface', 'missing-backend-handler-evidence'],
+        severity: 'medium',
+        file: relFile,
+        line: evt.line,
+        description: `Frontend emits '${evt.eventName}' but no backend @SubscribeMessage handler found`,
+        detail: `socket.emit('${evt.eventName}') in frontend has no matching @SubscribeMessage('${evt.eventName}') in a .gateway.ts`,
+      }),
+    );
   }
 
   return breaks;

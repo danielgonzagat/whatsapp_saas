@@ -20,36 +20,70 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { mockRedisCtor, mockBullQueueCtor, mockQueueEventsCtor } = vi.hoisted(() => ({
-  mockRedisCtor: vi.fn(),
-  mockBullQueueCtor: vi.fn(),
-  mockQueueEventsCtor: vi.fn(),
-}));
+const { mockRedisCtor, mockBullQueueCtor, mockQueueEventsCtor, mockWorkerClose } = vi.hoisted(
+  () => ({
+    mockRedisCtor: vi.fn(),
+    mockBullQueueCtor: vi.fn(),
+    mockQueueEventsCtor: vi.fn(),
+    mockWorkerClose: vi.fn().mockResolvedValue(undefined),
+  }),
+);
+
+interface MockedRedisInstance {
+  on: ReturnType<typeof vi.fn>;
+  quit: ReturnType<typeof vi.fn>;
+}
+
+interface MockedQueueInstance {
+  name: string;
+  add: ReturnType<typeof vi.fn>;
+  getJob: ReturnType<typeof vi.fn>;
+  close: ReturnType<typeof vi.fn>;
+}
+
+interface MockedQueueEventsInstance {
+  on: ReturnType<typeof vi.fn>;
+  close: ReturnType<typeof vi.fn>;
+}
+
+interface MockedWorkerInstance {
+  close: ReturnType<typeof vi.fn>;
+}
 
 vi.mock('ioredis', () => {
   // Default export: a class-like function that records construction.
-  const RedisClass = function (this: any, ...args: any[]) {
+  const RedisClass = function (this: MockedRedisInstance, ...args: unknown[]) {
     mockRedisCtor(...args);
     this.on = vi.fn().mockReturnThis();
     this.quit = vi.fn().mockResolvedValue('OK');
-  } as unknown as new (...args: any[]) => any;
+  } as unknown as new (...args: unknown[]) => unknown;
   return { default: RedisClass };
 });
 
 vi.mock('bullmq', () => {
-  const QueueClass = function (this: any, name: string, opts: any) {
+  const QueueClass = function (
+    this: MockedQueueInstance,
+    name: string,
+    opts: Record<string, unknown>,
+  ) {
     mockBullQueueCtor(name, opts);
     this.name = name;
     this.add = vi.fn().mockResolvedValue({ id: 'mock-job' });
     this.getJob = vi.fn().mockResolvedValue(null);
     this.close = vi.fn().mockResolvedValue(undefined);
-  } as unknown as new (...args: any[]) => any;
-  const QueueEventsClass = function (this: any, name: string, opts: any) {
+  } as unknown as new (...args: unknown[]) => unknown;
+  const QueueEventsClass = function (
+    this: MockedQueueEventsInstance,
+    name: string,
+    opts: Record<string, unknown>,
+  ) {
     mockQueueEventsCtor(name, opts);
     this.on = vi.fn();
     this.close = vi.fn().mockResolvedValue(undefined);
-  } as unknown as new (...args: any[]) => any;
-  const WorkerClass = function () {} as unknown as new (...args: any[]) => any;
+  } as unknown as new (...args: unknown[]) => unknown;
+  const WorkerClass = function (this: MockedWorkerInstance) {
+    this.close = mockWorkerClose;
+  } as unknown as new (...args: unknown[]) => unknown;
   return {
     Queue: QueueClass,
     QueueEvents: QueueEventsClass,
@@ -67,6 +101,7 @@ describe('worker/queue.ts — lazy initialization (P2-4)', () => {
     mockRedisCtor.mockClear();
     mockBullQueueCtor.mockClear();
     mockQueueEventsCtor.mockClear();
+    mockWorkerClose.mockClear();
     // Reset the queue module so each test starts fresh.
     vi.resetModules();
   });
@@ -108,5 +143,26 @@ describe('worker/queue.ts — lazy initialization (P2-4)', () => {
   it('exports shutdownQueueSystem as a function', async () => {
     const queueModule = await import('../queue');
     expect(typeof queueModule.shutdownQueueSystem).toBe('function');
+  });
+
+  it('shuts down after constructing the legacy Queue wrapper without undefined workers', async () => {
+    const queueModule = await import('../queue');
+
+    const legacyQueue = new queueModule.Queue('legacy-test-queue');
+
+    await expect(legacyQueue.close()).resolves.toBeUndefined();
+    await expect(queueModule.shutdownQueueSystem(25)).resolves.toBeUndefined();
+  });
+
+  it('removes a closed legacy worker from global shutdown ownership', async () => {
+    const queueModule = await import('../queue');
+    const legacyQueue = new queueModule.Queue('legacy-worker-queue');
+
+    legacyQueue.on('job', async () => {});
+
+    await legacyQueue.close();
+    await queueModule.shutdownQueueSystem(25);
+
+    expect(mockWorkerClose).toHaveBeenCalledTimes(1);
   });
 });

@@ -139,6 +139,28 @@ export class PulseController {
     return this.pulse.getLatestFlowProjection();
   }
 
+  /** Execution matrix. */
+  @Public()
+  @Get('live/execution-matrix')
+  @ApiOperation({
+    summary: 'Latest canonical PULSE execution-matrix artifact for production consumers',
+  })
+  executionMatrix(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getLatestExecutionMatrix();
+  }
+
+  /** Machine readiness. */
+  @Public()
+  @Get('live/machine-readiness')
+  @ApiOperation({
+    summary: 'Canonical PULSE machine-readiness state from runtime artifacts',
+  })
+  machineReadiness(@Req() req: Request): unknown {
+    this.assertInternalAccess(req);
+    return this.pulse.getMachineReadiness();
+  }
+
   /** Convergence. */
   @Public()
   @Get('live/convergence')

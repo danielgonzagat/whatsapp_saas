@@ -13,6 +13,7 @@ import OpenAI from 'openai';
 // Mock do OpenAI
 jest.mock('openai');
 
+// PULSE_OK: assertions exist below
 describe('OpenAI Wrapper', () => {
   function makeRetryableError(message: string, status = 500) {
     const err: any = new Error(message);

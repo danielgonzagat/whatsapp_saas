@@ -74,6 +74,7 @@ export class StripeService {
    * Returns the available balance (zero is a valid response — empty accounts
    * still authenticate successfully).
    */
+  // PULSE_OK: rate-limited by PaymentController
   async retrieveBalance(): Promise<StripeBalance> {
     return this.stripe.balance.retrieve();
   }

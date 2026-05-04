@@ -3,12 +3,6 @@
 
 // Core: types, tokenStorage, apiFetch, helpers, wallet, memory, leads, generic api
 export {
-  // Types
-  type WalletBalance,
-  type WalletTransaction,
-  type MemoryItem,
-  type Product,
-  type Lead,
   type WhatsAppConnectionStatus,
   type WhatsAppProofEntry,
   type WhatsAppConnectResponse,
@@ -19,22 +13,33 @@ export {
   apiFetch,
   buildQuery,
   authHeaders,
-  // Wallet
+  // Generic API client
+  api,
+} from './core';
+
+// Wallet
+export {
+  type WalletBalance,
+  type WalletTransaction,
   getWalletBalance,
   getWalletTransactions,
   processSale,
   requestWithdrawal,
   confirmTransaction,
-  // Memory
+} from './wallet';
+
+// Memory
+export {
+  type MemoryItem,
+  type Product,
   getMemoryStats,
   getMemoryList,
   saveProduct,
   searchMemory,
-  // Leads
-  getLeads,
-  // Generic API client
-  api,
-} from './core';
+} from './memory';
+
+// Leads
+export { type Lead, getLeads } from './leads';
 
 // WhatsApp connection + messaging
 export {
@@ -265,6 +270,56 @@ export {
 // Products and knowledge base
 export { type CatalogProduct, productApi, knowledgeBaseApi } from './products';
 
+// Member area
+export { memberAreaApi, memberAreaStudentsApi } from './member-area';
+
+// Affiliate
+export { affiliateApi } from './affiliate';
+
+export { smartPaymentApi } from './smart-payment';
+export { checkoutPublicApi } from './checkout-public';
+export { getAdSpendReport, sendReportEmail } from './reports';
+export { aiAssistantApi, uploadKnowledgeBase } from './ai-assistant';
+export { scrapersApi } from './scrapers';
+export { launchApi } from './launch';
+export { partnershipsApi } from './partnerships';
+export { webinarApi } from './webinars';
+export { type VoiceProfile, mediaApi, videoApi, voiceApi } from './media';
+export { getPaymentsStatus, getFinanceWebhookRecent } from './finance';
+export { kycChangePassword, kycApi } from './kyc';
+export { registerNotificationDevice } from './notifications';
+export { getMetrics, getQueueMetrics } from './metrics';
+export {
+  type CalendarEvent,
+  listCalendarEvents,
+  createCalendarEvent,
+  cancelCalendarEvent,
+} from './calendar';
+export { type AIToolInfo, listAITools } from './agent-tools';
+export { type DocumentUpload, uploadDocument, listDocuments } from './documents';
+export {
+  type FollowUpConfig,
+  type MeetingConfig,
+  scheduleFollowUp,
+  listScheduledFollowUps,
+  cancelFollowUp,
+  getFollowupsApi,
+  getFollowupStatsApi,
+  patchFollowup,
+  getKloelFollowups,
+} from './followups';
+export { saveObjectionScript, listObjectionScripts } from './objections';
+export { getDashboardStats } from './dashboard';
+export { installMarketplaceTemplate, listMarketplaceTemplates } from './marketplace';
+export { growthApi } from './growth';
+export { kloelMemoryApi } from './kloel-memory';
+export { gdprApi } from './privacy';
+export { importProducts } from './product-import';
+export { campaignMassSendApi } from './campaign-mass-send';
+export { onboardingApi } from './onboarding';
+export { adRulesApi } from './ad-rules';
+export { kloelLeadsApi } from './kloel-leads';
+
 // CRM & Segmentation & Neuro
 export {
   type CrmContactTag,
@@ -283,45 +338,6 @@ export {
   neuroCrmApi,
 } from './crm';
 
-// Misc: notifications, metrics, calendar, tools, member area, affiliate, dashboard
-export {
-  registerNotificationDevice,
-  getMetrics,
-  getQueueMetrics,
-  type CalendarEvent,
-  listCalendarEvents,
-  createCalendarEvent,
-  cancelCalendarEvent,
-  type FollowUpConfig,
-  type MeetingConfig,
-  type DocumentUpload,
-  type AIToolInfo,
-  listAITools,
-  scheduleFollowUp,
-  listScheduledFollowUps,
-  cancelFollowUp,
-  uploadDocument,
-  listDocuments,
-  saveObjectionScript,
-  listObjectionScripts,
-  getDashboardStats,
-  installMarketplaceTemplate,
-  getFollowupsApi,
-  getFollowupStatsApi,
-  memberAreaApi,
-  memberAreaStudentsApi,
-  affiliateApi,
-  campaignMassSendApi,
-  kycApi,
-  growthApi,
-  kloelMemoryApi,
-  patchFollowup,
-  getKloelFollowups,
-  gdprApi,
-  listMarketplaceTemplates,
-  importProducts,
-} from './misc';
-
 // Meta Ads, Instagram, Messenger
 export {
   type MetaCampaign,
@@ -338,10 +354,11 @@ export {
 
 // Default export: the apiClient composite object
 import { authApi } from './auth';
+import { affiliateApi } from './affiliate';
 import { billingApi } from './billing';
 import { crmApi, segmentationApi } from './crm';
+import { kycApi } from './kyc';
 import { kloelApi } from './kloel-api';
-import { kycApi } from './misc';
 import { knowledgeBaseApi, productApi } from './products';
 import { whatsappApi } from './whatsapp-api';
 import { workspaceApi } from './workspace';

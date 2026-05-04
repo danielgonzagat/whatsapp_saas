@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, Patch, Post, Put, UseGuards } from '@nestjs/common';
 import { AdminAction, AdminModule, AdminRole } from '@prisma/client';
 import { Public } from '../../auth/public.decorator';
+import { Idempotent } from '../../common/idempotency.guard';
 import { CurrentAdmin } from '../auth/decorators/current-admin.decorator';
 import { RequireAdminPermission } from '../auth/decorators/admin-permission.decorator';
 import { RequireAdminRole } from '../auth/decorators/admin-role.decorator';
@@ -39,6 +40,7 @@ export class AdminUsersController {
 
   /** Create. */
   @Post()
+  @Idempotent()
   @RequireAdminPermission(AdminModule.IAM, AdminAction.CREATE)
   async create(@Body() dto: CreateAdminUserDto, @CurrentAdmin() admin: AuthenticatedAdmin) {
     return this.users.create({

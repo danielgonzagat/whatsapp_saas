@@ -3,6 +3,7 @@
 import type { FormatItem } from '@/lib/canvas-formats';
 import { useState } from 'react';
 import { MockupMap, SquareSVG } from './MockupSVGs';
+import { colors } from '@/lib/design-tokens';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -24,7 +25,7 @@ export function FormatCard({ item, onClick }: FormatCardProps) {
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        background: h ? '#151517' : '#111113',
+        background: h ? '#151517' : 'colors.background.surface',
         border: `1px solid ${h ? `${c[0]}35` : '#1C1C1F'}`,
         borderRadius: 6,
         padding: 0,
@@ -53,14 +54,14 @@ export function FormatCard({ item, onClick }: FormatCardProps) {
           style={{
             fontSize: 11,
             fontWeight: 500,
-            color: '#E0DDD8',
+            color: 'colors.text.silver',
             fontFamily: S,
             marginBottom: 1,
           }}
         >
           {item.l}
         </p>
-        {item.s && <p style={{ fontSize: 9, color: '#3A3A3F', fontFamily: M }}>{item.s}</p>}
+        {item.s && <p style={{ fontSize: 9, color: 'colors.text.dim', fontFamily: M }}>{item.s}</p>}
       </div>
     </button>
   );

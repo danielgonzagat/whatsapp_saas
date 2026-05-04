@@ -9,6 +9,7 @@ const YOUTUBE_HOSTS = new Set([
 ]);
 
 const VIMEO_HOSTS = new Set(['vimeo.com', 'www.vimeo.com', 'player.vimeo.com']);
+const VIMEO_ID_RE = /^\d+$/;
 
 function coerceToString(value: unknown): string {
   return String(value || '');
@@ -123,11 +124,42 @@ export function toYouTubeEmbedUrl(rawUrl: string): string {
   }
 }
 
+function isValidVimeoId(videoId: string | null): videoId is string {
+  return !!videoId && VIMEO_ID_RE.test(videoId);
+}
+
+function isSafeEmbedUrl(raw: string): boolean {
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== 'https:') {
+      return false;
+    }
+
+    const host = normalizeHost(parsed.hostname);
+    const pathname = parsed.pathname;
+
+    if (host === 'www.youtube.com') {
+      return /^\/embed\/[A-Za-z0-9_-]{11}$/.test(pathname);
+    }
+
+    if (host === 'player.vimeo.com') {
+      return /^\/video\/\d+$/.test(pathname);
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 /** To supported embed url. */
 export function toSupportedEmbedUrl(rawUrl: string): string | null {
   const youtubeUrl = toYouTubeEmbedUrl(rawUrl);
   if (youtubeUrl) {
-    return `${youtubeUrl}?autoplay=1`;
+    const embed = new URL(youtubeUrl);
+    embed.searchParams.set('autoplay', '1');
+    const safe = embed.toString();
+    return isSafeEmbedUrl(safe) ? safe : null;
   }
 
   try {
@@ -138,11 +170,14 @@ export function toSupportedEmbedUrl(rawUrl: string): string | null {
     }
 
     const videoId = extractVimeoId(url.pathname);
-    if (!videoId) {
+    if (!isValidVimeoId(videoId)) {
       return null;
     }
 
-    return `https://player.vimeo.com/video/${videoId}?autoplay=1`;
+    const embed = new URL(`https://player.vimeo.com/video/${videoId}`);
+    embed.searchParams.set('autoplay', '1');
+    const safe = embed.toString();
+    return isSafeEmbedUrl(safe) ? safe : null;
   } catch {
     return null;
   }

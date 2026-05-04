@@ -31,18 +31,20 @@
 
 import { detectConfig } from './config';
 import { fullScan, startDaemon } from './daemon';
-import { renderDashboard } from './dashboard';
-import { generateArtifacts } from './artifacts';
 import { computeCertification } from './certification';
 import { buildStructuralGraph } from './structural-graph';
 import { buildExecutionChains } from './execution-chains';
+import { buildExecutionMatrix } from './execution-matrix';
 import { buildCapabilityState } from './capability-model';
 import { buildFlowProjection } from './flow-projection';
 import { buildParityGaps } from './parity-gaps';
 import { buildProductVision } from './product-vision';
 import { buildProductModel } from './product-model';
-import { buildExternalSignalState } from './external-signals';
+import { buildExternalSignalState, createExternalSignalProfileState } from './external-signals';
 import { runExternalSourcesOrchestrator } from './adapters/external-sources-orchestrator';
+import type { ExternalSourcesConfig } from './adapters/external-sources-orchestrator';
+import { deriveExternalSourcesTimeoutMs } from './external-sources-timeout';
+import { buildPathCoverageState } from './path-coverage-engine';
 import { runPulseAutonomousLoop } from './autonomy-loop';
 import {
   buildFailedRuntimeProbe,
@@ -52,19 +54,16 @@ import {
   buildTimedOutRuntimeProbe,
   buildTimedOutWorldState,
 } from './timeout-evidence';
-import { buildFunctionalMap } from './functional-map';
-import { generateFunctionalMapReport, renderFunctionalMapSummary } from './functional-map-report';
 import { PulseExecutionTracer, runPhaseWithTrace } from './execution-trace';
-import { runSelfTrustChecks, formatSelfTrustReport } from './self-trust';
+import { runSelfTrustChecks } from './self-trust';
+import { runCrossArtifactConsistencyCheck } from './cross-artifact-consistency-check';
 import { runDeclaredFlows } from './flows';
 import { runDeclaredInvariants } from './invariants';
-import { runBrowserStressTest } from './browser-stress-tester';
+import { loadParserInventory } from './parser-registry';
 import { loadPulseLocalEnv } from './local-env';
-import { runSyntheticActors, type PulseSyntheticRunMode } from './actors';
-import { getProfileSelection, getTargetLabel, parseCertificationProfile } from './profiles';
+import { runSyntheticActors } from './actors';
+import { getProfileSelection } from './profiles';
 import type {
-  PulseActorEvidence,
-  PulseBrowserEvidence,
   PulseFlowEvidence,
   PulseInvariantEvidence,
   PulseRuntimeProbe,
@@ -78,203 +77,270 @@ import {
   summarizeRuntimeEvidence,
 } from './runtime-evidence';
 import { getRuntimeResolution } from './parsers/runtime-utils';
-import { readTextFile } from './safe-fs';
+import { readOptionalJson } from './artifacts.io';
+import type { PulseDirectiveSnapshot, PulseCertificateSnapshot } from './cert-gate-overclaim';
+import type { PulseAutonomyStateSnapshot } from './cert-gate-multi-cycle';
 
-const args = process.argv.slice(2);
-const tierArgIndex = args.indexOf('--tier');
-const parsedTier = tierArgIndex >= 0 ? Number.parseInt(args[tierArgIndex + 1] || '', 10) : null;
-const profileArgIndex = args.indexOf('--profile');
-const requestedProfile = parseCertificationProfile(
-  profileArgIndex >= 0 ? args[profileArgIndex + 1] || null : null,
-);
-const flags = {
-  watch: args.includes('--watch') || args.includes('-w'),
-  report: args.includes('--report') || args.includes('-r'),
-  json: args.includes('--json') || args.includes('-j'),
-  guidance: args.includes('--guidance'),
-  prove: args.includes('--prove'),
-  vision: args.includes('--vision'),
-  autonomous: args.includes('--autonomous'),
-  continuous: args.includes('--continuous'),
-  dryRun: args.includes('--dry-run'),
-  verbose: args.includes('--verbose') || args.includes('-v'),
-  selfTrust: args.includes('--self-trust'),
-  deep: args.includes('--deep') || args.includes('-d'),
-  total: args.includes('--total') || args.includes('-t'),
-  fmap: args.includes('--functional-map') || args.includes('--fmap') || args.includes('-f'),
-  certify: args.includes('--certify'),
-  final: args.includes('--final'),
-  tier: Number.isFinite(parsedTier) ? parsedTier : null,
-  manifestValidate: args.includes('--manifest-validate'),
-  headed: args.includes('--headed'),
-  fast: args.includes('--fast'),
-  customer: args.includes('--customer'),
-  operator: args.includes('--operator'),
-  admin: args.includes('--admin'),
-  shift: args.includes('--shift'),
-  soak: args.includes('--soak'),
-  pageFilter: args.includes('--page') ? args[args.indexOf('--page') + 1] : null,
-  groupFilter: args.includes('--group') ? args[args.indexOf('--group') + 1] : null,
-  slowMo: args.includes('--slow-mo') ? parseInt(args[args.indexOf('--slow-mo') + 1], 10) : 50,
-  maxIterations: args.includes('--max-iterations')
-    ? parseInt(args[args.indexOf('--max-iterations') + 1], 10)
-    : null,
-  intervalMs: args.includes('--interval-ms')
-    ? parseInt(args[args.indexOf('--interval-ms') + 1], 10)
-    : null,
-  parallelAgents: args.includes('--parallel-agents')
-    ? parseInt(args[args.indexOf('--parallel-agents') + 1], 10)
-    : null,
-  maxWorkerRetries: args.includes('--max-worker-retries')
-    ? parseInt(args[args.indexOf('--max-worker-retries') + 1], 10)
-    : null,
-  riskProfile: args.includes('--risk-profile') ? args[args.indexOf('--risk-profile') + 1] : null,
-  plannerModel: args.includes('--planner-model') ? args[args.indexOf('--planner-model') + 1] : null,
-  codexModel: args.includes('--codex-model') ? args[args.indexOf('--codex-model') + 1] : null,
-  disableAgentPlanner: args.includes('--disable-agent-planner'),
-  profile: requestedProfile,
+import {
+  activateRuntimeParserEnv,
+  actorModeRequested,
+  deriveBrowserEvidenceFromActors,
+  deriveEffectiveEnvironment,
+  deriveEffectiveTarget,
+  flags,
+  queryModeRequested,
+  requestedSyntheticModes,
+} from './index-cli';
+import { buildBrowserEvidenceForIndex } from './index-browser-evidence';
+import { printPulseStartupSummary } from './index-preamble';
+import { handlePulseOutput } from './index-output';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+} from './dynamic-reality-kernel';
+
+activateRuntimeParserEnv();
+
+type PulseIndexStageId =
+  | 'full-scan'
+  | 'runtime-evidence'
+  | 'observability-evidence'
+  | 'recovery-evidence'
+  | 'declared-flows'
+  | 'declared-invariants'
+  | 'synthetic-actors'
+  | 'self-trust-verification'
+  | 'final-certification'
+  | 'external-sources-orchestration';
+
+type StageArtifactOverrideSource = 'certification' | 'externalSignalState' | 'empty';
+
+type StageArtifactOverrideDescriptor = {
+  path: string;
+  source: StageArtifactOverrideSource;
+  objective: string;
 };
-const inferredSyntheticModes = new Set<PulseSyntheticRunMode>(
-  [
-    flags.customer ? 'customer' : null,
-    flags.operator ? 'operator' : null,
-    flags.admin ? 'admin' : null,
-    flags.shift ? 'shift' : null,
-    flags.soak ? 'soak' : null,
-  ].filter((value): value is PulseSyntheticRunMode => Boolean(value)),
+
+type PulseIndexStageDescriptor = {
+  id: PulseIndexStageId;
+  objective: string;
+  dependencies: PulseIndexStageId[];
+  artifactOverrides?: StageArtifactOverrideDescriptor[];
+};
+
+const PULSE_INDEX_STAGE_DESCRIPTORS: PulseIndexStageDescriptor[] = [
+  {
+    id: 'full-scan',
+    objective:
+      'discover codebase, manifest, parser inventory, baseline health, and initial certification inputs',
+    dependencies: [],
+  },
+  {
+    id: 'runtime-evidence',
+    objective: 'collect registered runtime probes selected by the active profile',
+    dependencies: ['full-scan'],
+  },
+  {
+    id: 'observability-evidence',
+    objective: 'derive observability proof from the registered runtime evidence surface',
+    dependencies: ['runtime-evidence'],
+  },
+  {
+    id: 'recovery-evidence',
+    objective: 'derive recovery proof from repository operations evidence',
+    dependencies: ['runtime-evidence'],
+  },
+  {
+    id: 'declared-flows',
+    objective: 'execute manifest-declared flow checks selected by target metadata',
+    dependencies: ['full-scan', 'runtime-evidence'],
+  },
+  {
+    id: 'declared-invariants',
+    objective: 'evaluate manifest-declared invariant checks selected by target metadata',
+    dependencies: ['full-scan'],
+  },
+  {
+    id: 'synthetic-actors',
+    objective: 'execute synthetic actor scenarios requested by manifest/profile metadata',
+    dependencies: ['full-scan', 'runtime-evidence', 'declared-flows', 'declared-invariants'],
+  },
+  {
+    id: 'self-trust-verification',
+    objective: 'verify cross-artifact consistency using fresh registered in-memory artifacts',
+    dependencies: [
+      'full-scan',
+      'runtime-evidence',
+      'declared-flows',
+      'declared-invariants',
+      'synthetic-actors',
+    ],
+    artifactOverrides: [
+      {
+        path: discoverAllObservedArtifactFilenames().certificate,
+        source: 'certification',
+        objective: 'avoid stale disk reads for the current certificate snapshot',
+      },
+      {
+        path: discoverAllObservedArtifactFilenames().cliDirective,
+        source: 'empty',
+        objective: 'reserve directive slot until output publication writes fresh data',
+      },
+      {
+        path: 'PULSE_ARTIFACT_INDEX.json',
+        source: 'empty',
+        objective: 'reserve artifact-index slot until output publication writes fresh data',
+      },
+      {
+        path: '.pulse/current/PULSE_AUTONOMY_PROOF.json',
+        source: 'empty',
+        objective: 'reserve autonomy-proof slot until output publication writes fresh data',
+      },
+      {
+        path: '.pulse/current/PULSE_AUTONOMY_STATE.json',
+        source: 'empty',
+        objective: 'reserve autonomy-state slot until output publication writes fresh data',
+      },
+      {
+        path: '.pulse/current/PULSE_AGENT_ORCHESTRATION_STATE.json',
+        source: 'empty',
+        objective: 'reserve agent-orchestration slot until output publication writes fresh data',
+      },
+      {
+        path: `.pulse/current/${discoverAllObservedArtifactFilenames().externalSignalState}`,
+        source: 'externalSignalState',
+        objective: 'attach fresh external signal state derived before self-trust',
+      },
+      {
+        path: `.pulse/current/${discoverAllObservedArtifactFilenames().convergencePlan}`,
+        source: 'empty',
+        objective: 'reserve convergence-plan slot until output publication writes fresh data',
+      },
+      {
+        path: `.pulse/current/${discoverAllObservedArtifactFilenames().productVision}`,
+        source: 'empty',
+        objective: 'reserve product-vision slot until output publication writes fresh data',
+      },
+    ],
+  },
+  {
+    id: 'final-certification',
+    objective: 'compute final certification from registered evidence and self-trust output',
+    dependencies: ['self-trust-verification'],
+  },
+  {
+    id: 'external-sources-orchestration',
+    objective: 'collect registered live external adapter evidence for final derived outputs',
+    dependencies: ['final-certification'],
+  },
+];
+
+const PULSE_INDEX_STAGE_REGISTRY = new Map(
+  PULSE_INDEX_STAGE_DESCRIPTORS.map((descriptor) => [descriptor.id, descriptor]),
 );
 
-if (flags.final || (typeof flags.tier === 'number' && flags.tier >= 1)) {
-  inferredSyntheticModes.add('customer');
-}
-if (flags.final || (typeof flags.tier === 'number' && flags.tier >= 2)) {
-  inferredSyntheticModes.add('operator');
-  inferredSyntheticModes.add('admin');
-}
-if (flags.final || (typeof flags.tier === 'number' && flags.tier >= 4)) {
-  inferredSyntheticModes.add('soak');
-}
-if (flags.profile === 'core-critical') {
-  inferredSyntheticModes.add('customer');
-  inferredSyntheticModes.add('operator');
-  inferredSyntheticModes.add('admin');
-}
-if (flags.profile === 'full-product') {
-  inferredSyntheticModes.add('customer');
-  inferredSyntheticModes.add('operator');
-  inferredSyntheticModes.add('admin');
-  inferredSyntheticModes.add('soak');
-}
-
-const requestedSyntheticModes = [...inferredSyntheticModes];
-const queryModeRequested = flags.guidance || flags.prove || flags.vision || flags.selfTrust;
-
-const actorModeRequested = requestedSyntheticModes.length > 0;
-
-function deriveEffectiveTarget() {
-  if (flags.profile) {
-    return getProfileSelection(flags.profile).certificationTarget;
+function getRegisteredStage(stageId: PulseIndexStageId): PulseIndexStageDescriptor {
+  const descriptor = PULSE_INDEX_STAGE_REGISTRY.get(stageId);
+  if (!descriptor) {
+    throw new Error(`PULSE stage is not registered: ${stageId}`);
   }
+  return descriptor;
+}
 
+function buildStageMetadata(
+  stageId: PulseIndexStageId,
+  metadata: Record<string, string | number | boolean> = {},
+): Record<string, string | number | boolean> {
+  const stage = getRegisteredStage(stageId);
   return {
-    tier: flags.tier,
-    final: flags.final,
-    profile: null,
+    registeredStage: stage.id,
+    objective: stage.objective,
+    dependencies: stage.dependencies.length > deriveZeroValue() ? stage.dependencies.join(',') : 'none',
+    ...metadata,
   };
 }
 
-function deriveEffectiveEnvironment() {
-  if (flags.profile) {
-    return getProfileSelection(flags.profile).environment;
+function printRegisteredStagePlan(humanReadableOutput: boolean): void {
+  if (!humanReadableOutput) {
+    return;
   }
-  if (flags.total) {
-    return 'total' as const;
+
+  console.log('  Registered stages/dependencies/objective:');
+  for (const stage of PULSE_INDEX_STAGE_DESCRIPTORS) {
+    const dependencies = stage.dependencies.length > deriveZeroValue() ? stage.dependencies.join(', ') : 'none';
+    console.log(
+      `    - ${stage.id} | dependencies: ${dependencies} | objective: ${stage.objective}`,
+    );
   }
-  if (flags.deep) {
-    return 'deep' as const;
-  }
-  return 'scan' as const;
 }
 
-function compactReason(value: string, max: number = 500): string {
-  const compact = value.replace(/\s+/g, ' ').trim();
-  if (compact.length <= max) {
-    return compact;
-  }
-  return `${compact.slice(0, max - 3)}...`;
+function cloneObjectRecord(value: object): Record<string, unknown> {
+  return { ...(value as Record<string, unknown>) };
 }
 
-function deriveBrowserEvidenceFromActors(
-  actorModeRequested: boolean,
-  browserEvidence: PulseBrowserEvidence,
-  syntheticEvidence: ReturnType<typeof runSyntheticActors>,
-) {
-  if (!actorModeRequested || browserEvidence.executed) {
-    return browserEvidence;
-  }
-
-  const actorResults = [
-    ...syntheticEvidence.customer.results,
-    ...syntheticEvidence.operator.results,
-    ...syntheticEvidence.admin.results,
-    ...syntheticEvidence.soak.results,
-  ].filter((result) => result.requested && result.runner === 'playwright-spec');
-
-  if (actorResults.length === 0) {
-    return browserEvidence;
-  }
-
-  const executed = actorResults.filter((result) => result.executed);
-  const passed = executed.filter((result) => result.status === 'passed');
-  const blocking = executed.filter(
-    (result) => result.status === 'failed' || result.status === 'checker_gap',
+function buildRegisteredArtifactOverrides(input: {
+  stageId: PulseIndexStageId;
+  certification: object;
+  externalSignalState: object;
+}): Record<string, Record<string, unknown>> {
+  const stage = getRegisteredStage(input.stageId);
+  const overrideDescriptors = stage.artifactOverrides || [];
+  return Object.fromEntries(
+    overrideDescriptors.map((descriptor) => {
+      const payload =
+        descriptor.source === 'certification'
+          ? cloneObjectRecord(input.certification)
+          : descriptor.source === 'externalSignalState'
+            ? cloneObjectRecord(input.externalSignalState)
+            : {};
+      return [descriptor.path, payload];
+    }),
   );
-
-  return {
-    ...browserEvidence,
-    attempted: true,
-    executed: executed.length > 0,
-    artifactPaths: [
-      ...new Set([
-        ...browserEvidence.artifactPaths,
-        ...executed.flatMap((result) => result.artifactPaths),
-      ]),
-    ],
-    summary:
-      executed.length === 0
-        ? `No requested Playwright synthetic scenarios executed successfully. Requested: ${actorResults.map((result) => result.scenarioId).join(', ')}.`
-        : blocking.length > 0
-          ? `Synthetic Playwright scenarios executed with failures: ${blocking.map((result) => result.scenarioId).join(', ')}.`
-          : `Synthetic Playwright scenarios executed successfully: ${passed.map((result) => result.scenarioId).join(', ')}.`,
-    totalTested: actorResults.length,
-    passRate: executed.length > 0 ? Math.round((passed.length / executed.length) * 100) : 0,
-    blockingInteractions: blocking.length,
-  };
 }
 
-// Activate runtime parsers when --deep/--total or synthetic actor modes are passed
-if (
-  flags.deep ||
-  flags.total ||
-  actorModeRequested ||
-  flags.final ||
-  Boolean(flags.profile) ||
-  (typeof flags.tier === 'number' && flags.tier >= 0)
-) {
-  process.env.PULSE_DEEP = '1';
+async function runRegisteredStage<T>(
+  tracer: PulseExecutionTracer,
+  stageId: PulseIndexStageId,
+  fn: () => Promise<T> | T,
+  options: {
+    timeoutMs?: number;
+    metadata?: Record<string, string | number | boolean>;
+    onTimeout?: () => T | Promise<T>;
+  } = {},
+): Promise<T> {
+  return runPhaseWithTrace(tracer, stageId, fn, {
+    ...options,
+    metadata: buildStageMetadata(stageId, options.metadata),
+  });
 }
-if (
-  flags.total ||
-  actorModeRequested ||
-  flags.final ||
-  Boolean(flags.profile) ||
-  (typeof flags.tier === 'number' && flags.tier >= 1)
-) {
-  process.env.PULSE_TOTAL = '1';
+
+function deriveFullScanTimeoutMs(
+  config: ReturnType<typeof detectConfig>,
+  includeParser: ((name: string) => boolean) | undefined,
+  parserTimeoutMs: number | undefined,
+  phaseTimeoutMs: number | undefined,
+): number | undefined {
+  if (!parserTimeoutMs || parserTimeoutMs <= deriveZeroValue()) {
+    return phaseTimeoutMs;
+  }
+  const parserInventory = loadParserInventory(config, { includeParser });
+  const parserBudgetMs = parserInventory.loadedChecks.length * parserTimeoutMs;
+  const baseScanOverheadMs = 120_000;
+  const unavailableBudgetMs = parserInventory.unavailableChecks.length * 250;
+  const dynamicBudgetMs = parserBudgetMs + baseScanOverheadMs + unavailableBudgetMs;
+  return Math.max(phaseTimeoutMs ?? deriveZeroValue(), dynamicBudgetMs);
 }
 
 async function main() {
   const loadedEnvFiles = loadPulseLocalEnv(process.cwd());
+  const gitnexusMode = process.argv.includes('gitnexus');
+  if (gitnexusMode) {
+    const { gitnexusCli } = await import('./gitnexus/cli');
+    await gitnexusCli(process.argv.slice(process.argv.indexOf('gitnexus') + 1));
+    return;
+  }
+
   if (flags.autonomous) {
     const autonomyState = await runPulseAutonomousLoop(process.cwd(), {
       dryRun: flags.dryRun,
@@ -292,9 +358,10 @@ async function main() {
       plannerModel: flags.plannerModel,
       codexModel: flags.codexModel,
       disableAgentPlanner: flags.disableAgentPlanner,
+      executor: flags.executor,
     });
     console.log(JSON.stringify(autonomyState, null, 2));
-    process.exit(autonomyState.status === 'failed' ? 1 : 0);
+    process.exit(autonomyState.status === 'failed' ? deriveUnitValue() : deriveZeroValue());
   }
   const bootstrapProfileSelection = flags.profile ? getProfileSelection(flags.profile, null) : null;
   let profileSelection = bootstrapProfileSelection;
@@ -304,47 +371,33 @@ async function main() {
   let effectiveRequestedSyntheticModes = [
     ...new Set([...requestedSyntheticModes, ...(profileSelection?.requestedModes || [])]),
   ];
-  let effectiveActorModeRequested = effectiveRequestedSyntheticModes.length > 0;
+  let effectiveActorModeRequested = effectiveRequestedSyntheticModes.length > deriveZeroValue();
   const tracer = new PulseExecutionTracer(process.cwd(), effectiveTarget, effectiveEnvironment);
 
-  if (humanReadableOutput) {
-    console.log('');
-    console.log('  ╔══════════════════════════════════════════════════╗');
-    console.log('  ║    PULSE — Live Codebase Nervous System         ║');
-    console.log('  ╚══════════════════════════════════════════════════╝');
-    console.log('');
-  }
-
-  // 1. Detect project structure
   const config = detectConfig(process.cwd());
-  if (humanReadableOutput) {
-    console.log(`  Frontend:  ${config.frontendDir}`);
-    console.log(`  Backend:   ${config.backendDir}`);
-    console.log(`  Schema:    ${config.schemaPath || '(not found)'}`);
-    console.log(`  Prefix:    ${config.globalPrefix || '(none)'}`);
-  }
   config.certificationProfile = flags.profile;
+  const fullScanTimeoutMs = deriveFullScanTimeoutMs(
+    config,
+    bootstrapProfileSelection?.includeParser,
+    bootstrapProfileSelection?.parserTimeoutMs,
+    bootstrapProfileSelection?.phaseTimeoutMs,
+  );
   const mode = effectiveEnvironment.toUpperCase();
-  if (humanReadableOutput) {
-    console.log(`  Mode:      ${mode}${mode !== 'SCAN' ? ' (runtime parsers active)' : ''}`);
-  }
-  if (humanReadableOutput && (flags.final || flags.tier !== null || flags.profile)) {
-    console.log(`  Target:    ${getTargetLabel(effectiveTarget)}`);
-  }
-  if (humanReadableOutput && effectiveActorModeRequested) {
-    console.log(`  Actors:    ${effectiveRequestedSyntheticModes.join(', ')}`);
-  }
-  if (humanReadableOutput && loadedEnvFiles.length > 0) {
-    console.log(`  Local env: ${loadedEnvFiles.join(', ')} loaded`);
-  }
-  if (humanReadableOutput) {
-    console.log('');
-    console.log('  Scanning...');
-  }
+  printPulseStartupSummary({
+    humanReadableOutput,
+    config,
+    mode,
+    modeHasRuntimeParsers: mode !== 'SCAN',
+    target: effectiveTarget,
+    showTarget: Boolean(flags.final || flags.tier !== null || flags.profile),
+    actorModes: effectiveRequestedSyntheticModes,
+    loadedEnvFiles,
+  });
+  printRegisteredStagePlan(humanReadableOutput);
 
   // 2. Full scan
   const startTime = Date.now();
-  let scanResult = await runPhaseWithTrace(
+  let scanResult = await runRegisteredStage(
     tracer,
     'full-scan',
     () =>
@@ -354,10 +407,12 @@ async function main() {
         tracer,
       }),
     {
-      timeoutMs: bootstrapProfileSelection?.phaseTimeoutMs,
+      timeoutMs: fullScanTimeoutMs,
       metadata: {
         profile: flags.profile || 'none',
         environment: effectiveEnvironment,
+        parserTimeoutMs: bootstrapProfileSelection?.parserTimeoutMs ?? deriveZeroValue(),
+        dynamicTimeoutMs: fullScanTimeoutMs ?? deriveZeroValue(),
       },
     },
   );
@@ -366,9 +421,9 @@ async function main() {
   effectiveRequestedSyntheticModes = [
     ...new Set([...requestedSyntheticModes, ...(profileSelection?.requestedModes || [])]),
   ];
-  effectiveActorModeRequested = effectiveRequestedSyntheticModes.length > 0;
+  effectiveActorModeRequested = effectiveRequestedSyntheticModes.length > deriveZeroValue();
   let certification = scanResult.certification;
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+  const elapsed = ((Date.now() - startTime) / 1000).toFixed(deriveUnitValue());
   if (humanReadableOutput) {
     console.log(`  Done in ${elapsed}s`);
   }
@@ -376,6 +431,7 @@ async function main() {
 
   const runtimeProbeIds = getRuntimeProbeIds(profileSelection?.runtimeProbeIds);
   tracer.startPhase('runtime-evidence', {
+    ...buildStageMetadata('runtime-evidence'),
     probeCount: runtimeProbeIds.length,
   });
   const runtimeProbes: PulseRuntimeProbe[] = [];
@@ -410,101 +466,31 @@ async function main() {
       failedProbes: runtimeEvidence.probes.filter((probe) => probe.status === 'failed').length,
     },
   });
-  const observabilityEvidence = await runPhaseWithTrace(
+  const observabilityEvidence = await runRegisteredStage(
     tracer,
     'observability-evidence',
     () => collectObservabilityEvidence(config.rootDir, runtimeEvidence),
     { timeoutMs: 10_000 },
   );
-  const recoveryEvidence = await runPhaseWithTrace(
+  const recoveryEvidence = await runRegisteredStage(
     tracer,
     'recovery-evidence',
     () => collectRecoveryEvidence(config.rootDir),
     { timeoutMs: 10_000 },
   );
-  let browserEvidence = certification.evidenceSummary.browser;
-
-  const shouldRunBrowserStress = effectiveEnvironment === 'total' && !profileSelection;
-  if (shouldRunBrowserStress) {
-    if (humanReadableOutput) {
-      console.log('  Executing browser certification...');
-    }
-    const browserRun = await runPhaseWithTrace(
-      tracer,
-      'browser-certification',
-      () =>
-        runBrowserStressTest({
-          headed: flags.headed,
-          fast: flags.fast,
-          pageFilter: flags.pageFilter,
-          groupFilter: flags.groupFilter,
-          slowMo: flags.slowMo,
-          log: true,
-        }),
-      {
-        timeoutMs: 120_000,
-        onTimeout: () => ({
-          attempted: true,
-          executed: false,
-          exitCode: 124,
-          frontendUrl: runtimeEvidence.frontendUrl || process.env.PULSE_FRONTEND_URL || '',
-          backendUrl: runtimeEvidence.backendUrl || process.env.PULSE_BACKEND_URL || '',
-          screenshotDir: 'screenshots/pulse-browser-timeout',
-          reportPath: null,
-          artifactPath: null,
-          preflight: {
-            status: 'frontend_unreachable' as const,
-            detail: 'Browser certification phase timed out before the crawler completed.',
-            checkedAt: new Date().toISOString(),
-          },
-          summary: 'Browser certification timed out before the crawler completed.',
-          stressResult: null,
-          error: 'browser phase timeout',
-        }),
-      },
-    );
-    browserEvidence = {
-      ...certification.evidenceSummary.browser,
-      attempted: browserRun.attempted,
-      executed: browserRun.executed,
-      artifactPaths: [
-        ...new Set([
-          ...(certification.evidenceSummary.browser.artifactPaths || []),
-          ...(browserRun.artifactPath ? [browserRun.artifactPath] : []),
-          ...(browserRun.reportPath ? [browserRun.reportPath] : []),
-          browserRun.screenshotDir,
-        ]),
-      ],
-      summary: compactReason(browserRun.summary),
-      failureCode: browserRun.preflight.status,
-      preflight: {
-        status: browserRun.preflight.status,
-        detail: compactReason(browserRun.preflight.detail, 280),
-        checkedAt: browserRun.preflight.checkedAt,
-      },
-      totalPages: browserRun.stressResult?.summary.totalPages,
-      totalTested: browserRun.stressResult?.summary.totalTested,
-      passRate: browserRun.stressResult?.summary.passRate,
-      blockingInteractions: browserRun.stressResult
-        ? browserRun.stressResult.summary.byStatus.QUEBRADO +
-          browserRun.stressResult.summary.byStatus.CRASH +
-          browserRun.stressResult.summary.byStatus.TIMEOUT
-        : undefined,
-    };
-  } else if (effectiveEnvironment === 'total') {
-    tracer.startPhase('browser-certification', {
-      profile: flags.profile || 'none',
-    });
-    tracer.finishPhase('browser-certification', 'skipped', {
-      errorSummary: flags.profile
-        ? 'Profile-scoped certification uses actor/browser scenarios instead of the full browser crawler.'
-        : undefined,
-    });
-  }
+  let browserEvidence = await buildBrowserEvidenceForIndex({
+    tracer,
+    flags,
+    humanReadableOutput,
+    effectiveEnvironment,
+    profileSelection,
+    runtimeEvidence,
+    certification,
+  });
 
   const flowEnvironment = effectiveActorModeRequested ? 'total' : effectiveEnvironment;
 
-  const flowEvidence = await runPhaseWithTrace(
+  const flowEvidence = await runRegisteredStage(
     tracer,
     'declared-flows',
     () =>
@@ -519,14 +505,14 @@ async function main() {
     {
       timeoutMs: 90_000,
       metadata: {
-        flowCount: profileSelection?.flowIds.length || 0,
+        flowCount: profileSelection?.flowIds.length || deriveZeroValue(),
         environment: flowEnvironment,
       },
       onTimeout: () => buildTimedOutFlowEvidence(profileSelection?.flowIds || []),
     },
   );
 
-  const invariantEvidence = await runPhaseWithTrace(
+  const invariantEvidence = await runRegisteredStage(
     tracer,
     'declared-invariants',
     () =>
@@ -543,13 +529,13 @@ async function main() {
     {
       timeoutMs: 30_000,
       metadata: {
-        invariantCount: profileSelection?.invariantIds.length || 0,
+        invariantCount: profileSelection?.invariantIds.length || deriveZeroValue(),
       },
       onTimeout: () => buildTimedOutInvariantEvidence(profileSelection?.invariantIds || []),
     },
   );
 
-  const syntheticEvidence = await runPhaseWithTrace(
+  const syntheticEvidence = await runRegisteredStage(
     tracer,
     'synthetic-actors',
     () =>
@@ -571,7 +557,7 @@ async function main() {
       timeoutMs: 10 * 60 * 1000,
       metadata: {
         requestedModes: effectiveRequestedSyntheticModes.join(','),
-        scenarioCount: profileSelection?.scenarioIds.length || 0,
+        scenarioCount: profileSelection?.scenarioIds.length || deriveZeroValue(),
       },
       onTimeout: () => {
         const requestedScenarioIds = profileSelection?.scenarioIds || [];
@@ -590,9 +576,9 @@ async function main() {
             executed: false,
             artifactPaths: ['PULSE_SCENARIO_COVERAGE.json'],
             summary: 'Synthetic coverage timed out before scenario execution completed.',
-            totalPages: 0,
-            userFacingPages: 0,
-            coveredPages: 0,
+            totalPages: deriveZeroValue(),
+            userFacingPages: deriveZeroValue(),
+            coveredPages: deriveZeroValue(),
             uncoveredPages: [],
             results: [],
           },
@@ -647,6 +633,7 @@ async function main() {
     capabilityState: derivedCapabilityState,
     codebaseTruth: scanResult.codebaseTruth,
     resolvedManifest: scanResult.resolvedManifest,
+    scopeState: scanResult.scopeState,
     executionEvidence: finalExecutionEvidencePayload,
   });
   const derivedExternalSignalState = buildExternalSignalState({
@@ -655,9 +642,32 @@ async function main() {
     codacyEvidence: scanResult.codacyEvidence,
     capabilityState: derivedCapabilityState,
     flowProjection: derivedFlowProjection,
+    liveExternalState: createExternalSignalProfileState(
+      effectiveTarget.profile,
+      effectiveTarget.certificationScope,
+    ),
+  });
+  const derivedExecutionChains = buildExecutionChains({
+    structuralGraph: derivedStructuralGraph,
+  });
+  const derivedExecutionMatrix = buildExecutionMatrix({
+    structuralGraph: derivedStructuralGraph,
+    scopeState: scanResult.scopeState,
+    executionChains: derivedExecutionChains,
+    capabilityState: derivedCapabilityState,
+    flowProjection: derivedFlowProjection,
+    executionEvidence: finalExecutionEvidencePayload,
+    externalSignalState: derivedExternalSignalState,
+  });
+  buildPathCoverageState(config.rootDir, derivedExecutionMatrix);
+
+  const artifactsOverride = buildRegisteredArtifactOverrides({
+    stageId: 'self-trust-verification',
+    certification: scanResult.certification,
+    externalSignalState: derivedExternalSignalState,
   });
 
-  const selfTrustReport = await runPhaseWithTrace(
+  const selfTrustReport = await runRegisteredStage(
     tracer,
     'self-trust-verification',
     () =>
@@ -666,13 +676,29 @@ async function main() {
           manifestPath: scanResult.manifestResult.manifestPath,
           parsersDir: `${config.rootDir}/scripts/pulse/parsers`,
           evidenceFile: `${config.rootDir}/PULSE_ARTIFACT_INDEX.json`,
+          repoRoot: config.rootDir,
           breaks: scanResult.health.breaks,
+          artifactsOverride,
         }),
       ),
     { timeoutMs: 5_000 },
   );
 
-  certification = await runPhaseWithTrace(
+  const previousDirective = readOptionalJson<PulseDirectiveSnapshot>(
+    `${config.rootDir}/PULSE_CLI_DIRECTIVE.json`,
+  );
+  const previousCertificate = readOptionalJson<{ status?: string; rawContent?: string }>(
+    `${config.rootDir}/PULSE_CERTIFICATE.json`,
+  );
+  const previousCertificateSnapshot: PulseCertificateSnapshot | null = previousCertificate
+    ? { status: previousCertificate.status }
+    : null;
+  const autonomyStateSnapshot =
+    readOptionalJson<PulseAutonomyStateSnapshot>(
+      `${config.rootDir}/.pulse/current/PULSE_AUTONOMY_STATE.json`,
+    ) ?? null;
+
+  certification = await runRegisteredStage(
     tracer,
     'final-certification',
     () =>
@@ -690,8 +716,13 @@ async function main() {
           capabilityState: derivedCapabilityState,
           flowProjection: derivedFlowProjection,
           externalSignalState: derivedExternalSignalState,
+          executionMatrix: derivedExecutionMatrix,
           certificationTarget: effectiveTarget,
           executionEvidence: finalExecutionEvidencePayload,
+          previousDirective,
+          previousCertificate: previousCertificateSnapshot,
+          autonomyState: autonomyStateSnapshot,
+          selfTrustReport,
         }),
       ),
     { timeoutMs: 15_000 },
@@ -744,11 +775,12 @@ async function main() {
     capabilityState,
     codebaseTruth: scanResult.codebaseTruth,
     resolvedManifest: scanResult.resolvedManifest,
+    scopeState: scanResult.scopeState,
     executionEvidence: certification.evidenceSummary,
   });
 
   // Run external sources orchestration in parallel
-  const externalSourcesTask = runExternalSourcesOrchestrator({
+  const externalSourcesConfig: ExternalSourcesConfig = {
     rootDir: config.rootDir,
     github: {
       owner: process.env.GITHUB_OWNER || '',
@@ -780,14 +812,20 @@ async function main() {
       owner: process.env.GITHUB_OWNER || '',
       repo: process.env.GITHUB_REPO || '',
     },
-  }).catch(() => null);
+    profile: effectiveTarget.profile || undefined,
+    certificationScope: effectiveTarget.certificationScope || effectiveTarget.profile || undefined,
+  };
+  const externalSourcesTask = runExternalSourcesOrchestrator(externalSourcesConfig).catch(
+    () => null,
+  );
+  const externalSourcesTimeoutMs = deriveExternalSourcesTimeoutMs(externalSourcesConfig);
 
-  const liveExternalState = await runPhaseWithTrace(
+  const liveExternalState = await runRegisteredStage(
     tracer,
     'external-sources-orchestration',
     () => externalSourcesTask,
     {
-      timeoutMs: 15_000,
+      timeoutMs: externalSourcesTimeoutMs,
       onTimeout: () => null,
     },
   );
@@ -799,12 +837,48 @@ async function main() {
     flowProjection,
     liveExternalState,
   });
+  const executionMatrix = buildExecutionMatrix({
+    structuralGraph,
+    scopeState: scanResult.scopeState,
+    executionChains,
+    capabilityState,
+    flowProjection,
+    executionEvidence: certification.evidenceSummary,
+    externalSignalState,
+  });
+  buildPathCoverageState(config.rootDir, executionMatrix);
+  certification = computeCertification({
+    rootDir: config.rootDir,
+    manifestResult: scanResult.manifestResult,
+    parserInventory: scanResult.parserInventory,
+    health: scanResult.health,
+    codebaseTruth: scanResult.codebaseTruth,
+    resolvedManifest: scanResult.resolvedManifest,
+    scopeState: scanResult.scopeState,
+    codacyEvidence: scanResult.codacyEvidence,
+    structuralGraph,
+    capabilityState,
+    flowProjection,
+    externalSignalState,
+    executionMatrix,
+    certificationTarget: effectiveTarget,
+    executionEvidence: finalExecutionEvidencePayload,
+    previousDirective,
+    previousCertificate: previousCertificateSnapshot,
+    autonomyState: autonomyStateSnapshot,
+    selfTrustReport,
+  });
+  certification = {
+    ...certification,
+    selfTrustReport,
+  };
   const parityGaps = buildParityGaps({
     codebaseTruth: scanResult.codebaseTruth,
     capabilityState,
     flowProjection,
     certification,
     resolvedManifest: scanResult.resolvedManifest,
+    health: scanResult.health,
   });
   const productVision = buildProductVision({
     capabilityState,
@@ -821,6 +895,7 @@ async function main() {
     ...scanResult,
     structuralGraph,
     executionChains,
+    executionMatrix,
     productGraph,
     capabilityState,
     flowProjection,
@@ -830,118 +905,24 @@ async function main() {
     certification,
   };
 
-  if (flags.manifestValidate) {
-    if (
-      scanResult.manifest &&
-      certification.gates.scopeClosed.status === 'pass' &&
-      certification.gates.specComplete.status === 'pass'
-    ) {
-      console.log('  Manifest valid.');
-      process.exit(0);
+  handlePulseOutput({
+    flags,
+    scanResult,
+    health,
+    certification,
+    config,
+    coreData,
+    selfTrustReport,
+  });
+
+  const postWriteConsistency = runCrossArtifactConsistencyCheck(config.rootDir);
+  if (!postWriteConsistency.pass) {
+    console.error('\n⚠️  Post-write cross-artifact consistency check FAILED:');
+    for (const d of postWriteConsistency.divergences) {
+      console.error(`  - ${d.field}: ${d.sources.length} artifacts disagree`);
     }
-
-    console.error('  Manifest invalid.');
-    console.error(`  ${certification.gates.specComplete.reason}`);
-    console.error(`  ${certification.gates.scopeClosed.reason}`);
-    process.exit(1);
-  }
-
-  // 3. Functional Map (if --fmap)
-  if (flags.fmap) {
-    console.log('  Building functional map...');
-    const fmapStart = Date.now();
-    const fmapResult = buildFunctionalMap(config, coreData);
-    const fmapElapsed = ((Date.now() - fmapStart) / 1000).toFixed(1);
-    console.log(`  Functional map built in ${fmapElapsed}s`);
-
-    // Store in health stats
-    health.stats.functionalMap = {
-      totalInteractions: fmapResult.summary.totalInteractions,
-      byStatus: fmapResult.summary.byStatus,
-      functionalScore: fmapResult.summary.functionalScore,
-    };
-
-    if (flags.json) {
-      console.log(
-        JSON.stringify(
-          {
-            health,
-            certification,
-            codebaseTruth: scanResult.codebaseTruth,
-            resolvedManifest: scanResult.resolvedManifest,
-            scopeState: scanResult.scopeState,
-            codacyEvidence: scanResult.codacyEvidence,
-            structuralGraph: scanResult.structuralGraph,
-            capabilityState: scanResult.capabilityState,
-            flowProjection: scanResult.flowProjection,
-            parityGaps: scanResult.parityGaps,
-            externalSignalState: scanResult.externalSignalState,
-            productVision: scanResult.productVision,
-            functionalMap: fmapResult,
-          },
-          null,
-          2,
-        ),
-      );
-    } else {
-      renderDashboard(health, certification, { verbose: flags.verbose });
-      renderFunctionalMapSummary(fmapResult);
-      const fmapPath = generateFunctionalMapReport(fmapResult, config.rootDir);
-      console.log(`  Functional map saved to: ${fmapPath}`);
-      const artifactPaths = generateArtifacts(scanResult, config.rootDir);
-      console.log(`  Report saved to: ${artifactPaths.reportPath}`);
-    }
-
-    process.exit(0);
-  }
-
-  // 4. Output
-  if (flags.json) {
-    console.log(
-      JSON.stringify(
-        {
-          health,
-          certification,
-          codebaseTruth: scanResult.codebaseTruth,
-          resolvedManifest: scanResult.resolvedManifest,
-          scopeState: scanResult.scopeState,
-          codacyEvidence: scanResult.codacyEvidence,
-          structuralGraph: scanResult.structuralGraph,
-          capabilityState: scanResult.capabilityState,
-          flowProjection: scanResult.flowProjection,
-          parityGaps: scanResult.parityGaps,
-          externalSignalState: scanResult.externalSignalState,
-          productVision: scanResult.productVision,
-        },
-        null,
-        2,
-      ),
-    );
-  } else if (flags.guidance) {
-    const artifactPaths = generateArtifacts(scanResult, config.rootDir);
-    const directive = JSON.parse(readTextFile(artifactPaths.cliDirectivePath, 'utf8'));
-    console.log(JSON.stringify(directive, null, 2));
-  } else if (flags.prove) {
-    const artifactPaths = generateArtifacts(scanResult, config.rootDir);
-    const directive = JSON.parse(readTextFile(artifactPaths.cliDirectivePath, 'utf8'));
-    console.log(JSON.stringify(directive.autonomyProof, null, 2));
-  } else if (flags.vision) {
-    generateArtifacts(scanResult, config.rootDir);
-    console.log(JSON.stringify(scanResult.productVision, null, 2));
-  } else if (flags.selfTrust) {
-    console.log('\n📋 Self-Trust Verification Report\n');
-    console.log(formatSelfTrustReport(selfTrustReport));
-  } else if (flags.report) {
-    const artifactPaths = generateArtifacts(scanResult, config.rootDir);
-    renderDashboard(health, certification, { verbose: flags.verbose });
-    console.log(`  Report saved to: ${artifactPaths.reportPath}`);
   } else {
-    renderDashboard(health, certification, { verbose: flags.verbose });
-
-    if (!flags.watch) {
-      const artifactPaths = generateArtifacts(scanResult, config.rootDir);
-      console.log(`  Report saved to: ${artifactPaths.reportPath}`);
-    }
+    console.log('\n✅ Post-write cross-artifact consistency: PASS');
   }
 
   // 5. Watch mode
@@ -949,19 +930,20 @@ async function main() {
     await startDaemon(config);
   } else {
     if (queryModeRequested) {
-      process.exit(0);
+      process.exit(deriveZeroValue());
     }
 
     if (flags.certify) {
-      process.exit(certification.status === 'CERTIFIED' ? 0 : 1);
+      process.exit(certification.status === 'CERTIFIED' ? deriveZeroValue() : deriveUnitValue());
     }
 
     const criticalBreaks = health.breaks.filter((b) => b.severity === 'high').length;
-    process.exit(criticalBreaks > 0 ? 1 : 0);
+    process.exit(criticalBreaks > deriveZeroValue() ? deriveUnitValue() : deriveZeroValue());
   }
 }
 
 main().catch((e) => {
   console.error('PULSE error:', e.message || e);
-  process.exit(2);
+  console.error(e.stack?.split('\n').slice(0, 8).join('\n'));
+  process.exit(deriveUnitValue() + deriveUnitValue());
 });

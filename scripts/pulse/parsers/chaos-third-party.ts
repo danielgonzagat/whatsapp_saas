@@ -1,20 +1,18 @@
-/**
- * PULSE Parser 82: Chaos — Third Party (STATIC)
- * Layer 13: Chaos Engineering
- *
- * STATIC analysis: checks that fallback patterns exist for external dependencies.
- * No live infrastructure required.
- *
- * BREAK TYPES:
- *   CHAOS_STRIPE_NO_FALLBACK (high)  — Stripe calls have no error/catch handling
- *   CHAOS_LLM_NO_FALLBACK (high)     — LLM calls lack timeout or fallback response
- *   CHAOS_WHATSAPP_MSG_LOST (high)   — no WhatsApp disconnect/reconnect handler found
- */
-
 import * as path from 'path';
+import * as ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+
+interface SourceObservation {
+  file: string;
+  line: number;
+  hasOutboundCall: boolean;
+  hasErrorBoundary: boolean;
+  hasTimeoutControl: boolean;
+  hasRecoveryAction: boolean;
+  predicates: string[];
+}
 
 function readSafe(file: string): string {
   try {
@@ -24,124 +22,210 @@ function readSafe(file: string): string {
   }
 }
 
-/** Check chaos third party. */
+function shouldScanFile(file: string): boolean {
+  return !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(file);
+}
+
+function splitIdentifierTokens(value: string): Set<string> {
+  const spaced = value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[^A-Za-z0-9]+/g, ' ')
+    .toLowerCase();
+  return new Set(spaced.split(/\s+/).filter(Boolean));
+}
+
+function hasAnyToken(tokens: Set<string>, values: readonly string[]): boolean {
+  return values.some((value) => tokens.has(value));
+}
+
+function callExpressionName(node: ts.Expression): string | null {
+  if (ts.isIdentifier(node)) {
+    return node.text;
+  }
+  if (ts.isPropertyAccessExpression(node)) {
+    return node.name.text;
+  }
+  return null;
+}
+
+function lineNumber(sourceFile: ts.SourceFile, node: ts.Node): number {
+  return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+}
+
+function sourceObservation(file: string, content: string): SourceObservation {
+  const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+  const allTokens = splitIdentifierTokens(content);
+  const observation: SourceObservation = {
+    file,
+    line: 1,
+    hasOutboundCall: false,
+    hasErrorBoundary: false,
+    hasTimeoutControl: false,
+    hasRecoveryAction: false,
+    predicates: [],
+  };
+
+  const markOutboundCall = (node: ts.Node, predicate: string): void => {
+    const currentLine = lineNumber(sourceFile, node);
+    observation.hasOutboundCall = true;
+    observation.line = Math.min(
+      observation.line === 1 ? currentLine : observation.line,
+      currentLine,
+    );
+    if (!observation.predicates.includes(predicate)) {
+      observation.predicates.push(predicate);
+    }
+  };
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isTryStatement(node) && node.catchClause) {
+      observation.hasErrorBoundary = true;
+    }
+    if (ts.isCatchClause(node)) {
+      observation.hasErrorBoundary = true;
+    }
+    if (ts.isCallExpression(node)) {
+      const name = callExpressionName(node.expression);
+      if (name) {
+        const tokens = splitIdentifierTokens(name);
+        if (
+          hasAnyToken(tokens, ['fetch', 'request', 'send']) ||
+          (hasAnyToken(tokens, ['get', 'post', 'put', 'patch', 'delete']) &&
+            hasAnyToken(allTokens, ['http', 'url', 'endpoint']))
+        ) {
+          markOutboundCall(node, 'outbound-call');
+        }
+        if (hasAnyToken(tokens, ['catch', 'finally'])) {
+          observation.hasErrorBoundary = true;
+        }
+        if (hasAnyToken(tokens, ['timeout', 'abort'])) {
+          observation.hasTimeoutControl = true;
+        }
+        if (hasAnyToken(tokens, ['retry', 'reconnect', 'fallback', 'degrade', 'degraded'])) {
+          observation.hasRecoveryAction = true;
+        }
+      }
+    }
+    if (ts.isNewExpression(node)) {
+      const name = callExpressionName(node.expression);
+      if (name) {
+        const tokens = splitIdentifierTokens(name);
+        if (hasAnyToken(tokens, ['client']) && hasAnyToken(allTokens, ['url', 'endpoint', 'api'])) {
+          markOutboundCall(node, 'dependency-client');
+        }
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+
+  observation.hasTimeoutControl =
+    observation.hasTimeoutControl ||
+    hasAnyToken(allTokens, ['timeout', 'abort', 'signal', 'deadline', 'ttl']);
+  observation.hasRecoveryAction =
+    observation.hasRecoveryAction ||
+    hasAnyToken(allTokens, ['retry', 'backoff', 'fallback', 'degraded', 'reconnect', 'queue']);
+  observation.hasErrorBoundary =
+    observation.hasErrorBoundary || hasAnyToken(allTokens, ['catch', 'error', 'exception']);
+
+  return observation;
+}
+
+function predicateToken(predicates: string[]): string {
+  return predicates
+    .map((predicate) => predicate.replace(/[^a-z0-9]+/gi, '-').toLowerCase())
+    .filter(Boolean)
+    .join('+');
+}
+
+function chaosFinding(input: {
+  observation: SourceObservation;
+  config: PulseConfig;
+  missingPredicate: string;
+  description: string;
+  detail: string;
+}): Break {
+  const token = predicateToken([...input.observation.predicates, input.missingPredicate]);
+  return {
+    type: `diagnostic:chaos-third-party:${token || 'external-dependency-observation'}`,
+    severity: 'high',
+    file: path.relative(input.config.rootDir, input.observation.file),
+    line: input.observation.line,
+    description: input.description,
+    detail: input.detail,
+    source: `syntax-evidence:chaos-third-party;predicates=${[
+      ...input.observation.predicates,
+      input.missingPredicate,
+    ].join(',')}`,
+    surface: 'external-dependency-resilience',
+  };
+}
+
+function appendBreak(target: Break[], entry: Break): void {
+  target.push(entry);
+}
+
+/** Check third-party dependency resilience from dynamic source evidence. */
 export function checkChaosThirdParty(config: PulseConfig): Break[] {
-  const breaks: Break[] = [];
+  const findings: Break[] = [];
+  const files = [...walkFiles(config.backendDir, ['.ts']), ...walkFiles(config.workerDir, ['.ts'])]
+    .filter(shouldScanFile)
+    .sort();
 
-  const backendFiles = walkFiles(config.backendDir, ['.ts']).filter(
-    (f) => !/\.(spec|test)\.ts$|__tests__|__mocks__|dist\//.test(f),
-  );
-  const workerFiles = walkFiles(config.workerDir, ['.ts']).filter(
-    (f) => !/\.(spec|test)\.ts$|__tests__|__mocks__/.test(f),
-  );
+  for (const file of files) {
+    const content = readSafe(file);
+    if (!content) {
+      continue;
+    }
 
-  // ── CHECK 1: Stripe error handling ───────────────────────────────────────────
-  // Find files that interact with Stripe (payment rail)
-  const stripeFiles = backendFiles.filter((f) => {
-    const content = readSafe(f);
-    return /stripe|STRIPE/i.test(content) && /fetch\s*\(|axios\.|httpService/i.test(content);
-  });
+    const observation = sourceObservation(file, content);
+    if (!observation.hasOutboundCall) {
+      continue;
+    }
 
-  const hasStripeFallback = stripeFiles.some((f) => {
-    const content = readSafe(f);
-    // Check for try/catch around Stripe calls, or .catch() chaining
-    return (
-      /try\s*\{[\s\S]{0,1000}stripe[\s\S]{0,500}\}\s*catch/i.test(content) ||
-      /stripe[\s\S]{0,200}\.catch\s*\(/i.test(content) ||
-      /catch\s*\([^)]*\)[\s\S]{0,200}stripe/i.test(content)
-    );
-  });
+    if (!observation.hasErrorBoundary) {
+      appendBreak(
+        findings,
+        chaosFinding({
+          observation,
+          config,
+          missingPredicate: 'error-boundary-not-observed',
+          description: 'External dependency call has no nearby error boundary evidence',
+          detail:
+            'Wrap outbound dependency calls in an explicit error boundary and return an honest degraded state, retry record, or surfaced failure.',
+        }),
+      );
+    }
 
-  if (stripeFiles.length > 0 && !hasStripeFallback) {
-    breaks.push({
-      type: 'CHAOS_STRIPE_NO_FALLBACK',
-      severity: 'high',
-      file: path.relative(config.rootDir, stripeFiles[0]),
-      line: 1,
-      description: 'Stripe payment calls found without error/catch fallback',
-      detail:
-        'Wrap all Stripe HTTP calls in try/catch. On failure, set Order status=PENDING ' +
-        'and enqueue a retry job with exponential backoff instead of failing the request.',
-    });
+    if (!observation.hasTimeoutControl) {
+      appendBreak(
+        findings,
+        chaosFinding({
+          observation,
+          config,
+          missingPredicate: 'timeout-control-not-observed',
+          description: 'External dependency call has no timeout or abort control evidence',
+          detail:
+            'Add a timeout, abort signal, deadline, or equivalent cancellation control so a stalled dependency cannot block the execution path indefinitely.',
+        }),
+      );
+    }
+
+    if (!observation.hasRecoveryAction) {
+      appendBreak(
+        findings,
+        chaosFinding({
+          observation,
+          config,
+          missingPredicate: 'recovery-action-not-observed',
+          description: 'External dependency call has no retry, queue, or degraded-state evidence',
+          detail:
+            'Record a recoverable outcome such as retry scheduling, queue handoff, reconnect behavior, or an explicit degraded-state response.',
+        }),
+      );
+    }
   }
 
-  // ── CHECK 2: LLM timeout and fallback ────────────────────────────────────────
-  // Find files that call OpenAI / Anthropic
-  const llmFiles = backendFiles.filter((f) => {
-    const content = readSafe(f);
-    return /openai|anthropic|completions\.create|chat\.completions/i.test(content);
-  });
-
-  const hasLlmTimeout = llmFiles.some((f) => {
-    const content = readSafe(f);
-    // Check for explicit timeout configuration
-    return /timeout\s*:|max_tokens\s*:|AbortSignal|AbortController|signal\s*:/i.test(content);
-  });
-
-  const hasLlmFallback = llmFiles.some((f) => {
-    const content = readSafe(f);
-    // Check for fallback response / degraded state handling
-    return /fallback|degraded|indispon[íi]vel|catch\s*\([^)]*\)[\s\S]{0,300}(?:return|throw)/i.test(
-      content,
-    );
-  });
-
-  if (llmFiles.length > 0 && !hasLlmTimeout) {
-    breaks.push({
-      type: 'CHAOS_LLM_NO_FALLBACK',
-      severity: 'high',
-      file: path.relative(config.rootDir, llmFiles[0]),
-      line: 1,
-      description: 'LLM calls found without explicit timeout configuration',
-      detail:
-        'Add timeout: <ms> or AbortController signal to LLM API calls. ' +
-        'Without a timeout, a hung LLM request blocks the Node.js event loop indefinitely.',
-    });
-  }
-
-  if (llmFiles.length > 0 && !hasLlmFallback) {
-    breaks.push({
-      type: 'CHAOS_LLM_NO_FALLBACK',
-      severity: 'high',
-      file: path.relative(config.rootDir, llmFiles[0]),
-      line: 1,
-      description: 'LLM calls found without fallback/degraded response handling',
-      detail:
-        'Add a catch block that returns a degraded-state response (e.g., { status: "degraded" }) ' +
-        'instead of propagating the LLM error to the user.',
-    });
-  }
-
-  // ── CHECK 3: WhatsApp disconnect handler ─────────────────────────────────────
-  // Find files that manage WhatsApp sessions and check for disconnect handling
-  const waFiles = [...workerFiles, ...backendFiles].filter((f) => {
-    const content = readSafe(f);
-    return /whatsapp|wppconnect|baileys|puppeteer.*browser/i.test(content);
-  });
-
-  const hasDisconnectHandler = waFiles.some((f) => {
-    const content = readSafe(f);
-    return (
-      /disconnect|DISCONNECTED|onDisconnect|reconnect/i.test(content) &&
-      // Must actually handle it (not just detect the type)
-      /(?:disconnect|DISCONNECTED)[\s\S]{0,500}(?:reconnect|retry|queue|emit|logger|throw)/i.test(
-        content,
-      )
-    );
-  });
-
-  if (waFiles.length > 0 && !hasDisconnectHandler) {
-    breaks.push({
-      type: 'CHAOS_WHATSAPP_MSG_LOST',
-      severity: 'high',
-      file: path.relative(config.rootDir, waFiles[0]),
-      line: 1,
-      description: 'WhatsApp session code found but no disconnect/reconnect handler detected',
-      detail:
-        'Handle DISCONNECTED state: queue unsent messages, trigger reconnection, ' +
-        'and push a WebSocket event to frontend so users see "Conexão perdida" state.',
-    });
-  }
-
-  return breaks;
+  return findings;
 }

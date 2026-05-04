@@ -4,6 +4,8 @@ import type {
   PulseEnvironment,
   PulseManifest,
 } from './types';
+import { deriveSyntheticModesFromManifest, uniqueValues } from './scenario-mode-registry';
+import type { PulseSyntheticRunMode } from './actors/types';
 
 /** Pulse profile selection shape. */
 export interface PulseProfileSelection {
@@ -14,7 +16,7 @@ export interface PulseProfileSelection {
   /** Certification target property. */
   certificationTarget: PulseCertificationTarget;
   /** Requested modes property. */
-  requestedModes: Array<'customer' | 'operator' | 'admin' | 'shift' | 'soak'>;
+  requestedModes: PulseSyntheticRunMode[];
   /** Runtime probe ids property. */
   runtimeProbeIds: string[];
   /** Flow ids property. */
@@ -30,13 +32,6 @@ export interface PulseProfileSelection {
   /** Include parser. */
   includeParser(name: string): boolean;
 }
-
-const DEFAULT_RUNTIME_PROBES = [
-  'backend-health',
-  'auth-session',
-  'frontend-reachability',
-  'db-connectivity',
-] as const;
 
 const CORE_CRITICAL_SKIPPED_PARSERS = [
   'accessibility-tester',
@@ -71,59 +66,46 @@ const CORE_CRITICAL_SKIPPED_PARSERS = [
 
 const CORE_CRITICAL_SKIPPED_SET = new Set<string>(CORE_CRITICAL_SKIPPED_PARSERS);
 
-function unique<T>(values: T[]): T[] {
-  return [...new Set(values)];
+function isFullWorkspaceProfile(profile: PulseCertificationProfile): boolean {
+  return profile === 'full-product' || profile === 'pulse-core-final';
 }
 
 function deriveRequestedModesFromScenarios(
   manifest: PulseManifest | null,
   scenarioIds: string[],
   profile: PulseCertificationProfile,
-): Array<'customer' | 'operator' | 'admin' | 'shift' | 'soak'> {
+): PulseSyntheticRunMode[] {
+  if (profile === 'pulse-core-final') {
+    return [];
+  }
+
+  const derivedModes = deriveSyntheticModesFromManifest(manifest, scenarioIds);
+  if (derivedModes.length > 0) {
+    return derivedModes;
+  }
+
   if (!manifest) {
-    return profile === 'full-product'
+    return isFullWorkspaceProfile(profile)
       ? ['customer', 'operator', 'admin', 'soak']
       : ['customer', 'operator', 'admin'];
   }
 
-  const scenarios = manifest.scenarioSpecs.filter((scenario) => scenarioIds.includes(scenario.id));
-  const modes = new Set<'customer' | 'operator' | 'admin' | 'shift' | 'soak'>();
-
-  for (const scenario of scenarios) {
-    if (scenario.actorKind === 'customer') {
-      modes.add('customer');
-    } else if (scenario.actorKind === 'operator') {
-      modes.add('operator');
-    } else if (scenario.actorKind === 'admin') {
-      modes.add('admin');
-    }
-
-    if (scenario.timeWindowModes.includes('shift')) {
-      modes.add('shift');
-    }
-    if (scenario.timeWindowModes.includes('soak') || scenario.actorKind === 'system') {
-      modes.add('soak');
-    }
-  }
-
-  if (modes.size === 0) {
-    return profile === 'full-product'
-      ? ['customer', 'operator', 'admin', 'soak']
-      : ['customer', 'operator', 'admin'];
-  }
-
-  return [...modes];
+  return [];
 }
 
 function deriveScenarioIds(
   manifest: PulseManifest | null,
   profile: PulseCertificationProfile,
 ): string[] {
+  if (profile === 'pulse-core-final') {
+    return [];
+  }
+
   if (!manifest) {
     return [];
   }
 
-  if (profile === 'full-product') {
+  if (isFullWorkspaceProfile(profile)) {
     return manifest.scenarioSpecs.map((scenario) => scenario.id);
   }
 
@@ -139,7 +121,7 @@ function deriveFlowIds(
     return [];
   }
 
-  if (profile === 'full-product') {
+  if (isFullWorkspaceProfile(profile)) {
     return manifest.flowSpecs.map((spec) => spec.id);
   }
 
@@ -159,7 +141,7 @@ function deriveInvariantIds(
     return [];
   }
 
-  if (profile === 'full-product') {
+  if (isFullWorkspaceProfile(profile)) {
     return manifest.invariantSpecs.map((spec) => spec.id);
   }
 
@@ -173,26 +155,28 @@ function deriveRuntimeProbeIds(
   scenarioIds: string[],
 ): string[] {
   if (!manifest) {
-    return [...DEFAULT_RUNTIME_PROBES];
+    return [];
   }
 
   const selectedScenarios = manifest.scenarioSpecs.filter((scenario) =>
     scenarioIds.includes(scenario.id),
   );
-  const selectedProbeIds = unique(selectedScenarios.flatMap((scenario) => scenario.runtimeProbes));
+  const selectedProbeIds = uniqueValues(
+    selectedScenarios.flatMap((scenario) => scenario.runtimeProbes),
+  );
 
   if (selectedProbeIds.length > 0) {
     return selectedProbeIds;
   }
 
-  if (profile === 'full-product') {
-    const allProbeIds = unique(
+  if (isFullWorkspaceProfile(profile)) {
+    const allProbeIds = uniqueValues(
       manifest.scenarioSpecs.flatMap((scenario) => scenario.runtimeProbes),
     );
-    return allProbeIds.length > 0 ? allProbeIds : [...DEFAULT_RUNTIME_PROBES];
+    return allProbeIds;
   }
 
-  return [...DEFAULT_RUNTIME_PROBES];
+  return [];
 }
 
 /** Parse certification profile. */
@@ -202,7 +186,10 @@ export function parseCertificationProfile(
   if (!value) {
     return null;
   }
-  if (value === 'core-critical' || value === 'full-product') {
+  if (value === 'production-final') {
+    return 'full-product';
+  }
+  if (value === 'core-critical' || value === 'pulse-core-final' || value === 'full-product') {
     return value;
   }
   return null;
@@ -227,6 +214,7 @@ export function getProfileSelection(
         tier: 3,
         final: false,
         profile,
+        certificationScope: profile,
       },
       requestedModes,
       runtimeProbeIds,
@@ -241,6 +229,29 @@ export function getProfileSelection(
     };
   }
 
+  if (profile === 'pulse-core-final') {
+    return {
+      profile,
+      environment: 'total',
+      certificationTarget: {
+        tier: 4,
+        final: true,
+        profile,
+        certificationScope: profile,
+      },
+      requestedModes,
+      runtimeProbeIds,
+      flowIds,
+      invariantIds,
+      scenarioIds,
+      parserTimeoutMs: 90_000,
+      phaseTimeoutMs: 600_000,
+      includeParser(): boolean {
+        return true;
+      },
+    };
+  }
+
   return {
     profile,
     environment: 'total',
@@ -248,14 +259,15 @@ export function getProfileSelection(
       tier: 4,
       final: true,
       profile,
+      certificationScope: profile,
     },
     requestedModes,
     runtimeProbeIds,
     flowIds,
     invariantIds,
     scenarioIds,
-    parserTimeoutMs: 30_000,
-    phaseTimeoutMs: 180_000,
+    parserTimeoutMs: 90_000,
+    phaseTimeoutMs: 600_000,
     includeParser(): boolean {
       return true;
     },

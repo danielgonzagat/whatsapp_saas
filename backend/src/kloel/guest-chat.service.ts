@@ -7,6 +7,7 @@ import { findFirstSequential } from '../common/async-sequence';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wrapper';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 interface GuestConversation {
   messages: { role: 'user' | 'assistant' | 'system'; content: string }[];
@@ -31,6 +32,7 @@ export class GuestChatService implements OnModuleDestroy {
   constructor(
     private readonly configService: ConfigService,
     @Optional() private readonly auditService?: AuditService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
@@ -112,7 +114,7 @@ export class GuestChatService implements OnModuleDestroy {
     const emergencyModels = [
       resolveBackendOpenAIModel('brain', this.configService),
       resolveBackendOpenAIModel('brain_fallback', this.configService),
-      'gpt-4o-mini',
+      resolveBackendOpenAIModel('guest_emergency', this.configService),
     ].filter(Boolean);
 
     try {
@@ -130,6 +132,7 @@ export class GuestChatService implements OnModuleDestroy {
 
       return completion.choices[0]?.message?.content?.trim() || this.unavailableMessage;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'GuestChatService.resolveBackendOpenAIModel');
       this.logger.warn(
         `Guest writer fallback failed (${error instanceof Error ? error.message : 'unknown_error'}). Trying emergency model chain.`,
       );
@@ -146,6 +149,10 @@ export class GuestChatService implements OnModuleDestroy {
         this.trackGuestUsage(sessionId, completion?.usage?.total_tokens, model);
         return completion.choices[0]?.message?.content?.trim();
       } catch (error: unknown) {
+        void this.opsAlert?.alertOnCriticalError(
+          error,
+          'GuestChatService.resolveBackendOpenAIModel',
+        );
         this.logger.warn(
           `Guest emergency model ${model} failed (${error instanceof Error ? error.message : 'unknown_error'}).`,
         );
@@ -216,6 +223,7 @@ export class GuestChatService implements OnModuleDestroy {
       res.write(`data: [DONE]\n\n`);
       res.end();
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'GuestChatService.end');
       this.logger.error(
         `Guest chat error: ${error instanceof Error ? error.message : 'unknown error'}`,
         error instanceof Error ? error.stack : undefined,
@@ -256,6 +264,7 @@ export class GuestChatService implements OnModuleDestroy {
 
       return reply;
     } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'GuestChatService.chatSync');
       this.logger.error(
         `Guest chat sync error: ${error instanceof Error ? error.message : 'unknown error'}`,
         error instanceof Error ? error.stack : undefined,

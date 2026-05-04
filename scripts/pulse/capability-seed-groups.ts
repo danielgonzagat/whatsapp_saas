@@ -1,8 +1,11 @@
 import type { PulseStructuralNode } from './types';
 import { shouldSkipUiSeed } from './capability-ui-seeds';
 
+/** Capability seed group shape. */
 export interface CapabilitySeedGroup {
+  /** Family property. */
   family: string;
+  /** Seed node ids property. */
   seedNodeIds: Set<string>;
 }
 
@@ -24,6 +27,7 @@ function toSortedSeedGroups(grouped: Map<string, Set<string>>): CapabilitySeedGr
     });
 }
 
+/** Build seed groups. */
 export function buildSeedGroups(
   nodes: PulseStructuralNode[],
   apiBackedUiFiles: Set<string>,
@@ -61,6 +65,7 @@ export function buildSeedGroups(
   return toSortedSeedGroups(grouped);
 }
 
+/** Build fallback groups. */
 export function buildFallbackGroups(
   nodes: PulseStructuralNode[],
   visitedByPrimaryCapability: Set<string>,

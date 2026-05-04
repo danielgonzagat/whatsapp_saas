@@ -13,13 +13,14 @@ import {
   UploadedFiles,
   UseGuards,
   UseInterceptors,
+  Optional,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { forEachSequential } from '../common/async-sequence';
-import { type UploadedFileLike, detectUploadedMime } from '../common/file-signature.util';
+import { detectUploadedMime } from '../common/file-signature.util';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { StorageService } from '../common/storage/storage.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
@@ -41,6 +42,12 @@ import {
   buildPdfAnalysisPrompt,
 } from './pdf-processor.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
+import { OpsAlertService } from '../observability/ops-alert.service';
+import {
+  deleteStoredFileIfNeeded as companionDeleteStored,
+  insufficientWalletMessage as companionInsufficientWallet,
+  storeUploadedFile as companionStoreFile,
+} from './__companions__/upload-helpers';
 
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
 const IMAGE___JPEG_PNG_GIF_W_RE = /^(image\/(jpeg|png|gif|webp)|application\/pdf|text\/plain)$/;
@@ -83,35 +90,19 @@ export class UploadController {
     private readonly memoryService: MemoryService,
     private readonly storageService: StorageService,
     private readonly prepaidWalletService: WalletService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   private insufficientWalletMessage() {
-    return 'Saldo insuficiente na wallet prepaid para analisar documentos. Recarregue via PIX ou aguarde a auto-recarga antes de tentar novamente.';
+    return companionInsufficientWallet();
   }
 
   private async storeUploadedFile(file: UploadedFileType, workspaceId: string) {
-    return this.storageService.upload(file.buffer, {
-      filename: `${Date.now()}_${file.originalname}`,
-      mimeType: file.mimetype,
-      folder: `uploads/${workspaceId}`,
-      workspaceId,
-    });
+    return companionStoreFile(this.storageService, file, workspaceId);
   }
 
   private async deleteStoredFileIfNeeded(relativePath?: string) {
-    if (!relativePath) {
-      return;
-    }
-
-    try {
-      await this.storageService.delete(relativePath);
-    } catch (error) {
-      this.logger.error(
-        `Falha ao remover upload parcial ${relativePath}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
-    }
+    return companionDeleteStored(this.storageService, this.logger, this.opsAlert, relativePath);
   }
 
   private estimatePdfAnalysisQuote(text: string, sourceName: string): bigint | undefined {
@@ -123,7 +114,8 @@ export class UploadController {
           { role: 'user', content: buildPdfAnalysisPrompt(text, sourceName) },
         ],
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'UploadController.buildPdfAnalysisPrompt');
       if (error instanceof UnknownProviderPricingModelError) {
         return undefined;
       }
@@ -158,7 +150,8 @@ export class UploadController {
         },
       });
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'UploadController.chargeForUsage');
       if (error instanceof UsagePriceNotFoundError) {
         return false;
       }
@@ -195,7 +188,8 @@ export class UploadController {
           sourceName: input.sourceName,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'UploadController.resolveBackendOpenAIModel');
       if (!(error instanceof UnknownProviderPricingModelError)) {
         throw error;
       }
@@ -220,19 +214,25 @@ export class UploadController {
           sourceName,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'UploadController.refundUsageCharge');
       this.logger.error(
         `Failed to refund upload pdf_analysis workspace=${workspaceId} request=${requestId}: ${
-          error instanceof Error ? error.message : String(error)
+          error instanceof Error
+            ? error instanceof Error
+              ? error.message
+              : String(error)
+            : String(error)
         }`,
       );
     }
   }
 
   /**
-   * Endpoint genérico de upload de arquivos
+   * Endpoint generico de upload de arquivos
    * Suporta: PDF, TXT, imagens, documentos
    */
+  // PULSE_TODO: verify if still needed, no caller detected
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -289,7 +289,7 @@ export class UploadController {
       throw new BadRequestException('Arquivo muito grande. Máximo permitido: 10MB');
     }
 
-    const detectedMime = detectUploadedMime(file as UploadedFileLike);
+    const detectedMime = detectUploadedMime(file);
     if (!detectedMime) {
       throw new BadRequestException('Tipo de arquivo não permitido ou assinatura inválida.');
     }
@@ -351,7 +351,7 @@ export class UploadController {
         return;
       }
       try {
-        const detectedMime = detectUploadedMime(file as UploadedFileLike);
+        const detectedMime = detectUploadedMime(file);
         if (!detectedMime) {
           throw new BadRequestException('Tipo de arquivo não permitido ou assinatura inválida.');
         }
@@ -370,11 +370,12 @@ export class UploadController {
           type: file.mimetype,
           ...result,
         });
-      } catch (error) {
+      } catch (error: unknown) {
+        void this.opsAlert?.alertOnCriticalError(error, 'UploadController.push');
         results.push({
           success: false,
           filename: file.originalname,
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
         });
       }
     });
@@ -401,8 +402,11 @@ export class UploadController {
         }>;
         const textResult = await pdfParse(file.buffer);
         extractedText = textResult.text;
-      } catch (error) {
-        this.logger.error(`Erro ao extrair PDF do upload ${originalname}: ${error.message}`);
+      } catch (error: unknown) {
+        void this.opsAlert?.alertOnCriticalError(error, 'UploadController.pdfParse');
+        this.logger.error(
+          `Erro ao extrair PDF do upload ${originalname}: ${error instanceof Error ? error.message : String(error)}`,
+        );
         throw new BadRequestException(
           'Não foi possível extrair texto do PDF. Verifique se o arquivo é um PDF válido.',
         );
@@ -469,7 +473,8 @@ export class UploadController {
             objections: countAnalysisItems(result.analysis.objections),
           },
         };
-      } catch (error) {
+      } catch (error: unknown) {
+        void this.opsAlert?.alertOnCriticalError(error, 'UploadController.countAnalysisItems');
         await this.deleteStoredFileIfNeeded(stored?.path);
         if (usageCharged) {
           await this.refundPdfAnalysisIfNeeded(

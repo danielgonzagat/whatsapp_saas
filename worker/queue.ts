@@ -171,13 +171,11 @@ function attachDlq(queue: BullQueue) {
           reason: failedReason,
         });
       } catch (err: unknown) {
-        const errInstanceofError =
-          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
         console.error(
           '[DLQ] Falha ao mover job %s da fila %s: %s',
           jobId,
           queue.name,
-          errInstanceofError?.message || err,
+          err instanceof Error ? err.message : String(err),
         );
       }
     })();
@@ -313,7 +311,7 @@ const buildWebhookBody = (
   if (type === 'teams') {
     return buildTeamsBody(payload);
   }
-  return payload as unknown as Record<string, unknown>;
+  return JSON.parse(JSON.stringify(payload)) as Record<string, unknown>;
 };
 
 const resolveFetch = (): typeof globalThis.fetch | undefined =>
@@ -377,11 +375,11 @@ export class Queue {
   private queue: BullQueue;
   private name: string;
   private worker?: Worker;
+  private closed = false;
 
   constructor(name: string) {
     this.name = name;
     this.queue = new BullQueue(name, buildQueueOptions());
-    additionalWorkers.push(); // placeholder; real workers added in on()
     console.log(`📦 [Queue] Criada fila "${name}" com conexão Redis configurada`);
   }
 
@@ -398,7 +396,7 @@ export class Queue {
         async (job: Job) => {
           await callback(job.data);
         },
-        { connection: getConnection() },
+        { connection: getConnection(), lockDuration: 120_000 },
       );
       additionalWorkers.push(this.worker);
       console.log(`👷 [Queue] Worker criado para fila "${this.name}"`);
@@ -406,11 +404,22 @@ export class Queue {
   }
 
   /** Close. */
-  async close() {
+  async close(): Promise<void> {
+    if (this.closed) {
+      return;
+    }
+
     if (this.worker) {
-      await this.worker.close();
+      const worker = this.worker;
+      await worker.close();
+      const workerIndex = additionalWorkers.indexOf(worker);
+      if (workerIndex >= 0) {
+        additionalWorkers.splice(workerIndex, 1);
+      }
+      this.worker = undefined;
     }
     await this.queue.close();
+    this.closed = true;
   }
 }
 

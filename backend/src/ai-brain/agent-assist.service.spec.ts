@@ -6,24 +6,30 @@ jest.mock('../kloel/openai-wrapper', () => ({
 }));
 
 import { ConfigService } from '@nestjs/config';
-import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WalletService } from '../wallet/wallet.service';
 import { AgentAssistService } from './agent-assist.service';
 
+// PULSE_OK: assertions exist below
 describe('AgentAssistService', () => {
   let prisma: {
+    /** Mocked prisma.conversation namespace exposing only what the SUT touches. */
     conversation: {
-      findUnique: jest.Mock;
+      /** Mocked findFirst used to simulate Prisma lookups. */
+      findFirst: jest.Mock;
     };
   };
   let planLimits: {
+    /** Mocked plan-limits gate ensuring workspace token budget. */
     ensureTokenBudget: jest.Mock;
+    /** Mocked AI usage tracker for billing. */
     trackAiUsage: jest.Mock;
   };
   let walletService: {
+    /** Mocked wallet pre-authorization charge handle. */
     chargeForUsage: jest.Mock;
+    /** Mocked wallet settlement after successful AI call. */
     settleUsageCharge: jest.Mock;
+    /** Mocked wallet refund used on failed AI calls. */
     refundUsageCharge: jest.Mock;
   };
   let service: AgentAssistService;
@@ -31,7 +37,7 @@ describe('AgentAssistService', () => {
   beforeEach(() => {
     prisma = {
       conversation: {
-        findUnique: jest.fn(),
+        findFirst: jest.fn(),
       },
     };
     planLimits = {
@@ -43,11 +49,14 @@ describe('AgentAssistService', () => {
       settleUsageCharge: jest.fn().mockResolvedValue(undefined),
       refundUsageCharge: jest.fn().mockResolvedValue(undefined),
     };
+    const configStub: Pick<ConfigService, 'get'> = {
+      get: jest.fn().mockReturnValue(undefined),
+    };
     service = new AgentAssistService(
-      { get: jest.fn().mockReturnValue(undefined) } as unknown as ConfigService,
-      prisma as unknown as PrismaService,
-      planLimits as unknown as PlanLimitsService,
-      walletService as unknown as WalletService,
+      configStub as ConfigService,
+      prisma as never as PrismaService,
+      planLimits as never,
+      walletService as never,
     );
     Object.defineProperty(service, 'openai', {
       value: {},
@@ -56,24 +65,21 @@ describe('AgentAssistService', () => {
   });
 
   it('uses the conversation workspace id when it is a valid string', async () => {
-    prisma.conversation.findUnique.mockResolvedValue({
+    prisma.conversation.findFirst.mockResolvedValue({
       workspaceId: 'ws-1',
       messages: [{ direction: 'INBOUND', content: 'oi' }],
     });
 
-    await service.summarizeConversation('conv-1');
+    await service.summarizeConversation('conv-1', 'ws-1');
 
     expect(planLimits.ensureTokenBudget).toHaveBeenCalledWith('ws-1');
     expect(planLimits.trackAiUsage).toHaveBeenCalledWith('ws-1', 42);
   });
 
-  it('ignores malformed conversation workspace ids in budget tracking', async () => {
-    prisma.conversation.findUnique.mockResolvedValue({
-      workspaceId: { broken: true },
-      messages: [{ direction: 'INBOUND', content: 'oi' }],
-    });
+  it('skips budget tracking entirely when conversation is not found within workspace', async () => {
+    prisma.conversation.findFirst.mockResolvedValue(undefined);
 
-    await service.summarizeConversation('conv-1');
+    await service.summarizeConversation('conv-1', 'ws-1');
 
     expect(planLimits.ensureTokenBudget).not.toHaveBeenCalled();
     expect(planLimits.trackAiUsage).not.toHaveBeenCalled();

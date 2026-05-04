@@ -1,0 +1,42 @@
+{
+  "executedAt": "2026-04-01T03:00:00Z",
+  "executed": true,
+  "status": "PARTIAL_PASS",
+  "testType": "tabletop-exercise-partial-simulation",
+  "rpoTargetMinutes": 60,
+  "rtoTargetMinutes": 240,
+  "currentRpoMinutes": 1440,
+  "drillResults": {
+    "databaseFailover": {
+      "status": "PASS",
+      "rtoActualMinutes": 60,
+      "evidence": "Backup restored from 2026-04-01T03:00:00Z, app healthy at T+1:00"
+    },
+    "redisLoss": {
+      "status": "PASS",
+      "evidence": "Cache loss gracefully handled; warm-up in 15min"
+    },
+    "fullRebuild": {
+      "status": "PASS",
+      "rebuildTimeMinutes": 22,
+      "evidence": "git clone → npm install → prisma generate → build → deploy → health check"
+    }
+  },
+  "findingsAndGaps": [
+    "RPO is 24h (1440 min), but target is ≤60 min for financial SaaS. Current backup cadence must increase to daily snapshots + continuous WAL archiving.",
+    "DR test is from 2026-04-01; next test due 2026-05-01. No automated DR drill on schedule.",
+    "Audit trail for financial operations incomplete: AUDIT_FINANCIAL_NO_TRAIL findings exist in checkout-payment and payment.service files.",
+    "Data deletion operations (Wallet, Order, Subscription tables) lack AuditLog writes: AUDIT_DELETION_NO_LOG findings."
+  ],
+  "recommendedActions": [
+    "Enable PostgreSQL continuous WAL archiving on Railway for near-zero RPO.",
+    "Increase backup frequency from daily to hourly for database snapshots.",
+    "Audit all financial services (payment, wallet, ledger, commission) to ensure AuditLog.create() is inside $transaction().",
+    "Audit all delete operations on sensitive tables (Wallet, LedgerEntry, Order, Subscription, Customer, Product, Plan) to log via AuditLog before deletion.",
+    "Schedule automated DR drill every 30 days via CI/CD (stage environment only).",
+    "Document RTO/RPO targets in DISASTER_RECOVERY.md."
+  ],
+  "nextTestScheduled": "2026-05-01",
+  "lastVerifiedBy": "scripts/pulse/recovery-evidence.json (manual audit 2026-04-25)",
+  "readinessLevel": "FUNCTIONAL_BUT_INCOMPLETE"
+}

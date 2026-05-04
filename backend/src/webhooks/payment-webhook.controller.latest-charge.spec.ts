@@ -10,7 +10,7 @@ jest.mock('../billing/stripe-runtime', () => ({
   })),
 }));
 
-import { PaymentWebhookController } from './payment-webhook.controller';
+import { PaymentWebhookStripeController as PaymentWebhookController } from './payment-webhook-stripe.controller';
 
 type LatestChargeWebhookPrismaMock = {
   workspace: {
@@ -21,6 +21,7 @@ type LatestChargeWebhookPrismaMock = {
     updateMany: jest.Mock;
   };
   checkoutOrder: {
+    findFirst: jest.Mock;
     findUnique: jest.Mock;
     updateMany: jest.Mock;
   };
@@ -33,6 +34,7 @@ type LatestChargeWebhookPrismaMock = {
   $transaction: jest.Mock;
 };
 
+// PULSE_OK: assertions exist below
 describe('PaymentWebhookController.handleStripe latest_charge normalization', () => {
   function buildController() {
     const stripeWebhookProcessor = {
@@ -74,6 +76,7 @@ describe('PaymentWebhookController.handleStripe latest_charge normalization', ()
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       checkoutOrder: {
+        findFirst: jest.fn().mockResolvedValue({ status: 'PAID' }),
         findUnique: jest.fn().mockResolvedValue(null),
         updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
@@ -103,10 +106,19 @@ describe('PaymentWebhookController.handleStripe latest_charge normalization', ()
       stripeWebhookProcessor as never,
       { processRefund: jest.fn(), processDispute: jest.fn() } as never,
       { handleFailedPayout: jest.fn() } as never,
-      { append: jest.fn().mockResolvedValue(undefined) } as never,
       { handleFailedPayout: jest.fn() } as never,
       { append: jest.fn().mockResolvedValue(undefined) } as never,
       { webhookProcessingFailed: jest.fn() } as never,
+      {
+        loadCheckoutPaymentContext: jest.fn().mockResolvedValue(null),
+        buildMatureAtResolver: jest.fn().mockResolvedValue(() => new Date()),
+        persistConnectPostSaleSnapshot: jest.fn().mockResolvedValue(undefined),
+        appendMarketplaceTreasurySaleCredit: jest.fn().mockResolvedValue(undefined),
+        appendMarketplaceTreasuryReversal: jest.fn().mockResolvedValue(undefined),
+        appendSaleReversalAudit: jest.fn().mockResolvedValue(undefined),
+        appendConnectPayoutAudit: jest.fn().mockResolvedValue(undefined),
+        appendMarketplaceTreasuryPayoutAudit: jest.fn().mockResolvedValue(undefined),
+      } as never,
     );
 
     return { controller, stripeWebhookProcessor };
@@ -143,13 +155,13 @@ describe('PaymentWebhookController.handleStripe latest_charge normalization', ()
 
       await controller.handleStripe(
         {
-          body: {} as never,
+          body: {},
           rawBody: Buffer.from('{"id":"evt_signed_sale_pi_expanded_charge"}'),
           url: '/webhook/payment/stripe',
         },
         't=1,v1=fake',
         undefined,
-        {} as never,
+        {},
       );
 
       expect(mockConstructEvent).toHaveBeenCalled();
@@ -201,13 +213,13 @@ describe('PaymentWebhookController.handleStripe latest_charge normalization', ()
 
       await controller.handleStripe(
         {
-          body: {} as never,
+          body: {},
           rawBody: Buffer.from('{"id":"evt_signed_sale_pi"}'),
           url: '/webhook/payment/stripe',
         },
         't=1,v1=fake',
         undefined,
-        {} as never,
+        {},
       );
 
       expect(mockConstructEvent).toHaveBeenCalled();

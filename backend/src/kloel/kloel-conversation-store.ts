@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildTimestampedRuntimeKey } from './kloel-id.util';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 const A_Z0_9_RE = /[^a-z0-9_:-]+/g;
 
@@ -21,6 +22,7 @@ export class KloelConversationStore {
       warn(message: string, error?: unknown): void;
       error(message: string, error?: unknown): void;
     },
+    private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Get conversation history. */
@@ -56,8 +58,9 @@ export class KloelConversationStore {
           content,
         },
       });
-    } catch (error) {
-      this.logger.warn('Erro ao salvar mensagem:', error);
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KloelConversationStore.create');
+      this.logger.warn('Erro ao salvar mensagem:', error); // Intencional: message persistence failure is non-critical.
     }
   }
 
@@ -112,8 +115,9 @@ export class KloelConversationStore {
           metadata: safeMetadata,
         },
       });
-    } catch (error) {
-      this.logger.error('Erro ao salvar memória:', error);
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'KloelConversationStore.upsert');
+      this.logger.error('Erro ao salvar memória:', error); // Intencional: memory persistence failure is non-critical.
     }
   }
 }

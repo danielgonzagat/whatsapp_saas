@@ -1,3 +1,4 @@
+import { PulseArtifactService } from '../../src/pulse/pulse-artifact.service';
 import { PulseService } from '../../src/pulse/pulse.service';
 
 /** Internal async method. */
@@ -169,13 +170,17 @@ export function createService({
   healthCheck?: jest.Mock;
   configGet?: jest.Mock;
 } = {}) {
+  const configService = { get: configGet } as never;
+  const artifacts = new PulseArtifactService(configService);
+
   const service = new PulseService(
     redis as never,
     { check: healthCheck } as never,
-    { get: configGet } as never,
+    configService,
+    artifacts,
   );
 
-  return { service, redis, healthCheck, configGet };
+  return { service, redis, healthCheck, configGet, artifacts };
 }
 
 /** Get internal async method. */

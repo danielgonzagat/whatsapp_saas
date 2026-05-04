@@ -7,8 +7,9 @@ import {
   HttpCode,
   Logger,
   Post,
+  UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type Redis from 'ioredis';
 import { Public } from '../auth/public.decorator';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
@@ -33,6 +34,7 @@ interface WahaWebhookPayload {
  * Event ordering: legacy WAHA events carried event.timestamp for sequencing.
  */
 @Controller('webhooks/whatsapp-api')
+@UseGuards(ThrottlerGuard)
 export class WhatsAppApiWebhookController {
   private readonly logger = new Logger(WhatsAppApiWebhookController.name);
   private readonly ignoredLegacyWebhookLogTtlMs = 15 * 60_000;

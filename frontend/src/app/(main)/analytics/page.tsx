@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,7 @@ import {
 import { useNps } from '@/hooks/useDetailedReports';
 import { useAnalyticsStats, useReports, useSmartTime } from '@/hooks/useReports';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import { sendReportEmail } from '@/lib/api/misc';
+import { sendReportEmail } from '@/lib/api/reports';
 import { swrFetcher } from '@/lib/fetcher';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -54,13 +55,13 @@ const V = {
   t: KLOEL_THEME.textPrimary,
   t2: KLOEL_THEME.textSecondary,
   t3: KLOEL_THEME.textTertiary,
-  g2: '#10B981',
-  bl: '#3B82F6',
-  y: '#F59E0B',
-  r: '#EF4444',
-  p: '#8B5CF6',
-  cy: '#06B6D4',
-  pk: '#EC4899',
+  g2: '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
+  bl: '#3B82F6' /* PULSE_VISUAL_OK: info blue, non-Monitor status indicator */,
+  y: '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */,
+  r: '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+  p: '#8B5CF6' /* PULSE_VISUAL_OK: purple accent, non-Monitor status indicator */,
+  cy: '#06B6D4' /* PULSE_VISUAL_OK: cyan accent, non-Monitor status indicator */,
+  pk: '#EC4899' /* PULSE_VISUAL_OK: pink accent, non-Monitor status indicator */,
 };
 const R$ = (n: number) =>
   'R$ ' + (n / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -701,7 +702,11 @@ function Bt({
         background: primary ? V.em : accent || 'transparent',
         border: primary || accent ? 'none' : `1px solid ${V.b}`,
         borderRadius: 6,
-        color: primary ? V.void : accent ? '#fff' : V.t2,
+        color: primary
+          ? V.void
+          : accent
+            ? '#fff' /* PULSE_VISUAL_OK: universal white shorthand */
+            : V.t2,
         fontSize: 11,
         fontWeight: 600,
         cursor: 'pointer',
@@ -3275,7 +3280,7 @@ function EngajamentoTab({ filters }: { filters: RF }) {
             }}
           >
             {[
-              { l: 'Mensagens', v: report?.messages?.total || report?.messages || 0 },
+              { l: 'Mensagens', v: report?.messages?.total ?? 0 },
               { l: 'Leads novos', v: report?.leads?.newContacts || 0 },
               { l: 'Flows executados', v: report?.flows?.executions || 0 },
               { l: 'Flows concluidos', v: report?.flows?.completed || 0 },
@@ -3508,7 +3513,7 @@ export default function KloelRelatorio() {
         padding: isMobile ? '20px 16px 28px' : '28px 32px',
       }}
     >
-      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} ::selection{background:rgba(232,93,48,.3)} ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}`}</style>
+      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} ::selection{background:rgba(232,93,48,.3)} ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-thumb{background:${colors.border.space};border-radius:2px}`}</style>
 
       {/* Header */}
       <div

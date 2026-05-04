@@ -177,61 +177,80 @@ function addAriaHidden(element) {
   });
 }
 
-for (const sourceFile of sourceFiles) {
+function tryPatchLucide(element, lucideNames) {
+  if (lucideNames.size === 0 || !isLucideElement(element, lucideNames)) {
+    return null;
+  }
+  if (hasAttr(element, 'aria-hidden')) {
+    skipReasons.lucideAlreadyAriaHidden += 1;
+    return 'skipped';
+  }
+  addAriaHidden(element);
+  lucidePatched += 1;
+  return 'patched';
+}
+
+function classifyInlineSvgAttrs(element) {
+  return (
+    (hasAttr(element, 'aria-hidden') && 'inlineSvgAlreadyAriaHidden') ||
+    (hasAttr(element, 'aria-label') && 'inlineSvgHasAriaLabel') ||
+    (getRoleValue(element) === 'img' && 'inlineSvgHasRoleImg') ||
+    null
+  );
+}
+
+function classifyInlineSvgChildren(element) {
+  if (element.getKind() === SyntaxKind.JsxOpeningElement && svgHasTitleChild(element)) {
+    return 'inlineSvgHasTitle';
+  }
+  if (isSoleMeaningfulChildOfInteractive(element)) {
+    return 'inlineSvgSoleChildOfInteractive';
+  }
+  return null;
+}
+
+function classifyInlineSvgSkip(element) {
+  return classifyInlineSvgAttrs(element) ?? classifyInlineSvgChildren(element);
+}
+
+function tryPatchInlineSvg(element) {
+  if (!isSvgElement(element)) {
+    return null;
+  }
+  const skipKey = classifyInlineSvgSkip(element);
+  if (skipKey) {
+    skipReasons[skipKey] += 1;
+    return 'skipped';
+  }
+  addAriaHidden(element);
+  inlineSvgPatched += 1;
+  return 'patched';
+}
+
+function processElement(element, lucideNames) {
+  const lucide = tryPatchLucide(element, lucideNames);
+  if (lucide === 'patched') {
+    return 1;
+  }
+  if (lucide === 'skipped') {
+    return 0;
+  }
+  return tryPatchInlineSvg(element) === 'patched' ? 1 : 0;
+}
+
+function tallyChangedElements(sourceFile, kind, lucideNames) {
+  let count = 0;
+  for (const el of sourceFile.getDescendantsOfKind(kind)) {
+    count += processElement(el, lucideNames);
+  }
+  return count;
+}
+
+function processSourceFile(sourceFile) {
   const lucideNames = collectLucideNames(sourceFile);
-  let changed = 0;
-
-  const process = (element) => {
-    // Lucide check first (they don't have <title> children by default)
-    if (lucideNames.size > 0 && isLucideElement(element, lucideNames)) {
-      if (hasAttr(element, 'aria-hidden')) {
-        skipReasons.lucideAlreadyAriaHidden += 1;
-        return;
-      }
-      addAriaHidden(element);
-      lucidePatched += 1;
-      changed += 1;
-      return;
-    }
-
-    // Inline <svg>
-    if (isSvgElement(element)) {
-      if (hasAttr(element, 'aria-hidden')) {
-        skipReasons.inlineSvgAlreadyAriaHidden += 1;
-        return;
-      }
-      if (hasAttr(element, 'aria-label')) {
-        skipReasons.inlineSvgHasAriaLabel += 1;
-        return;
-      }
-      const role = getRoleValue(element);
-      if (role === 'img') {
-        skipReasons.inlineSvgHasRoleImg += 1;
-        return;
-      }
-      // Only JsxOpeningElement can have <title> children
-      if (element.getKind() === SyntaxKind.JsxOpeningElement) {
-        if (svgHasTitleChild(element)) {
-          skipReasons.inlineSvgHasTitle += 1;
-          return;
-        }
-      }
-      if (isSoleMeaningfulChildOfInteractive(element)) {
-        skipReasons.inlineSvgSoleChildOfInteractive += 1;
-        return;
-      }
-      addAriaHidden(element);
-      inlineSvgPatched += 1;
-      changed += 1;
-    }
-  };
-
-  const openings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxOpeningElement);
-  for (const el of openings) process(el);
-
-  const selfClosings = sourceFile.getDescendantsOfKind(SyntaxKind.JsxSelfClosingElement);
-  for (const el of selfClosings) process(el);
-
+  const changed =
+    tallyChangedElements(sourceFile, SyntaxKind.JsxOpeningElement, lucideNames) +
+    tallyChangedElements(sourceFile, SyntaxKind.JsxSelfClosingElement, lucideNames);
   if (changed > 0) {
     sourceFile.saveSync();
     filesModified += 1;
@@ -240,16 +259,24 @@ for (const sourceFile of sourceFiles) {
   }
 }
 
+for (const sourceFile of sourceFiles) {
+  processSourceFile(sourceFile);
+}
+
+const reportLine = (label, value) => `${label.padEnd(40, ' ')}${value}`;
+
 console.log('');
 console.log('=== Summary ===');
-console.log(`Files modified:                         ${filesModified}`);
-console.log(`Lucide JSX elements patched:            ${lucidePatched}`);
-console.log(`Inline <svg> elements patched:          ${inlineSvgPatched}`);
-console.log(`Skip: lucide already aria-hidden:       ${skipReasons.lucideAlreadyAriaHidden}`);
-console.log(`Skip: inline svg already aria-hidden:   ${skipReasons.inlineSvgAlreadyAriaHidden}`);
-console.log(`Skip: inline svg has <title>:           ${skipReasons.inlineSvgHasTitle}`);
-console.log(`Skip: inline svg has aria-label:        ${skipReasons.inlineSvgHasAriaLabel}`);
-console.log(`Skip: inline svg has role="img":        ${skipReasons.inlineSvgHasRoleImg}`);
+console.log(reportLine('Files modified:', filesModified));
+console.log(reportLine('Lucide JSX elements patched:', lucidePatched));
+console.log(reportLine('Inline svg elements patched:', inlineSvgPatched));
+console.log(reportLine('Skip: lucide already aria-hidden:', skipReasons.lucideAlreadyAriaHidden));
 console.log(
-  `Skip: inline svg sole child of a/btn:   ${skipReasons.inlineSvgSoleChildOfInteractive}`,
+  reportLine('Skip: inline svg already aria-hidden:', skipReasons.inlineSvgAlreadyAriaHidden),
+);
+console.log(reportLine('Skip: inline svg has title child:', skipReasons.inlineSvgHasTitle));
+console.log(reportLine('Skip: inline svg has aria-label:', skipReasons.inlineSvgHasAriaLabel));
+console.log(reportLine('Skip: inline svg has role img:', skipReasons.inlineSvgHasRoleImg));
+console.log(
+  reportLine('Skip: inline svg sole child of a/btn:', skipReasons.inlineSvgSoleChildOfInteractive),
 );

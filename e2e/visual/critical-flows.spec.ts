@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { PNG } from 'pngjs';
-import { chromium, devices, test as base, type Locator, type Page } from '@playwright/test';
+import { chromium, devices, expect, test as base, type Locator, type Page } from '@playwright/test';
 import {
   AUTHENTICATED_ROUTES,
   PUBLIC_ROUTES,
@@ -196,6 +196,8 @@ async function assertExactScreenshot(
     caret: 'hide',
     scale: 'css',
   });
+
+  expect(fs.existsSync(actualPath), `screenshot capture for ${snapshotName} succeeded`).toBe(true);
 
   if (!hasSnapshot) {
     if (!allowSnapshotCreate) {
@@ -472,6 +474,41 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
   });
 
   test.describe('Public routes (no auth required)', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route('**/v1/cookie-consent', async (requestRoute) => {
+        const method = requestRoute.request().method();
+        if (method === 'GET') {
+          await requestRoute.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              success: true,
+              consent: {
+                necessary: true,
+                analytics: false,
+                marketing: false,
+                updatedAt: VISUAL_FIXED_TIME_ISO,
+              },
+            }),
+          });
+        } else {
+          await requestRoute.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              success: true,
+              consent: {
+                necessary: true,
+                analytics: false,
+                marketing: false,
+                updatedAt: VISUAL_FIXED_TIME_ISO,
+              },
+            }),
+          });
+        }
+      });
+    });
+
     for (const route of PUBLIC_ROUTES) {
       for (const viewport of VIEWPORTS) {
         test(`${route.name} @ ${viewport.name}`, async ({ page }) => {
@@ -512,6 +549,12 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
   });
 
   test.describe('Authenticated routes', () => {
+    // Each authenticated visual scenario runs auth bootstrap +
+    // mockVisualAuthApis + page.goto + freeze CSS + readiness probes +
+    // surface stabilisation + full-page screenshot. Cold-start CI workers
+    // routinely overflow 30s — give the describe a 90s budget instead.
+    test.describe.configure({ timeout: 90_000 });
+
     let authContext: E2EAuthContext;
 
     test.beforeEach(async ({ page, request }) => {

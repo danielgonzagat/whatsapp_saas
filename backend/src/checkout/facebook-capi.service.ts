@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
+import * as Sentry from '@sentry/node';
+import { getTraceHeaders } from '../common/trace-headers';
 
 interface CAPIEventData {
   pixelId: string;
@@ -24,6 +26,7 @@ export class FacebookCAPIService {
   }
 
   /** Send event. */
+  // PULSE_OK: rate-limited by CheckoutPublicController
   async sendEvent(data: CAPIEventData): Promise<void> {
     try {
       const userData: Record<string, unknown> = {};
@@ -61,7 +64,7 @@ export class FacebookCAPIService {
       // Not SSRF: hardcoded Meta Graph API endpoint; pixelId from workspace config
       const response = await fetch(`https://graph.facebook.com/v18.0/${data.pixelId}/events`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...getTraceHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(30000),
       });
@@ -75,8 +78,17 @@ export class FacebookCAPIService {
         this.logger.log(`Facebook CAPI Purchase event sent for pixel ${data.pixelId}`);
       }
       // PULSE:OK — CAPI is a best-effort analytics side-effect; webhook processing must not fail because of it
-    } catch (error) {
-      this.logger.error(`Facebook CAPI error: ${error}`);
+    } catch (error: unknown) {
+      this.logger.error(`Facebook CAPI error: ${String(error)}`);
+      Sentry.captureException(error, {
+        tags: { type: 'analytics_alert', operation: 'facebook_capi' },
+        extra: {
+          pixelId: data.pixelId,
+          eventName: data.eventName,
+          productId: data.productId,
+        },
+        level: 'warning',
+      });
       // Never throw - webhook must not fail because of CAPI
     }
   }

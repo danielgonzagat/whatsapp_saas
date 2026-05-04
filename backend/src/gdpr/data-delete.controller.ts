@@ -20,6 +20,7 @@ export class DataDeleteController {
   ) {}
 
   /** Delete data. */
+  // PULSE_TODO: verify if still needed, no caller detected
   @Post('delete')
   @UseGuards(JwtAuthGuard)
   async deleteData(@Req() req: AuthenticatedRequest) {

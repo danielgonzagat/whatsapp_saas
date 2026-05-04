@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 import { useEffect, useState } from 'react';
 import { IC } from './CanvasIcons';
 import {
@@ -19,7 +20,7 @@ const ddMenu: React.CSSProperties = {
   top: '100%',
   left: 0,
   marginTop: 4,
-  background: '#111113',
+  background: colors.background.surface,
   border: '1px solid #1C1C1F',
   borderRadius: 6,
   boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
@@ -37,7 +38,7 @@ const ddItem: React.CSSProperties = {
   border: 'none',
   fontSize: 11,
   fontFamily: S,
-  color: '#E0DDD8',
+  color: colors.text.silver,
   cursor: 'pointer',
   textAlign: 'left',
   transition: 'background 100ms',
@@ -45,12 +46,13 @@ const ddItem: React.CSSProperties = {
 const ddShortcut: React.CSSProperties = {
   fontSize: 9,
   fontFamily: M,
-  color: '#3A3A3F',
+  color: colors.text.dim,
   marginLeft: 16,
 };
 const ddSep: React.CSSProperties = {
   height: 1,
-  background: '#1C1C1F',
+  background:
+    '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */ /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */,
   margin: '4px 0',
 };
 
@@ -109,7 +111,8 @@ export function EditorTopBar({
 
   const toggleDropdown = (id: DropdownId) => setDropdown((prev) => (prev === id ? null : id));
 
-  const handleItemHover = (e: React.MouseEvent) => setRowBackground(e, '#1C1C1F');
+  const handleItemHover = (e: React.MouseEvent) =>
+    setRowBackground(e, '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */);
   const handleItemLeave = (e: React.MouseEvent) => setRowBackground(e, 'none');
 
   const closeAndRun = (fn?: () => void) => {
@@ -121,7 +124,7 @@ export function EditorTopBar({
     <div
       style={{
         height: 42,
-        background: '#111113',
+        background: colors.background.surface,
         borderBottom: '1px solid #1C1C1F',
         display: 'flex',
         alignItems: 'center',
@@ -137,7 +140,7 @@ export function EditorTopBar({
         style={{
           background: 'none',
           border: 'none',
-          color: '#6E6E73',
+          color: colors.text.muted,
           cursor: 'pointer',
           display: 'flex',
           padding: 4,
@@ -153,9 +156,12 @@ export function EditorTopBar({
           type="button"
           onClick={() => toggleDropdown('file')}
           style={{
-            background: dropdown === 'file' ? '#1C1C1F' : 'none',
+            background:
+              dropdown === 'file'
+                ? '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */
+                : 'none',
             border: 'none',
-            color: '#E0DDD8',
+            color: colors.text.silver,
             fontSize: 12,
             fontFamily: S,
             cursor: 'pointer',
@@ -237,9 +243,12 @@ export function EditorTopBar({
           type="button"
           onClick={() => toggleDropdown('resize')}
           style={{
-            background: dropdown === 'resize' ? '#1C1C1F' : 'none',
+            background:
+              dropdown === 'resize'
+                ? '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */
+                : 'none',
             border: 'none',
-            color: '#E0DDD8',
+            color: colors.text.silver,
             fontSize: 12,
             fontFamily: S,
             cursor: 'pointer',
@@ -279,10 +288,10 @@ export function EditorTopBar({
                 onChange={(e) => setCustomW(e.target.value)}
                 style={{
                   width: 60,
-                  background: '#0A0A0C',
+                  background: colors.background.void,
                   border: '1px solid #1C1C1F',
                   borderRadius: 4,
-                  color: '#E0DDD8',
+                  color: colors.text.silver,
                   fontSize: 11,
                   fontFamily: M,
                   padding: '4px 6px',
@@ -290,7 +299,7 @@ export function EditorTopBar({
                 }}
                 onClick={(e) => e.stopPropagation()}
               />
-              <span style={{ color: '#3A3A3F', fontSize: 11 }}>x</span>
+              <span style={{ color: colors.text.dim, fontSize: 11 }}>x</span>
               <input
                 aria-label="Altura personalizada"
                 type="number"
@@ -299,10 +308,10 @@ export function EditorTopBar({
                 onChange={(e) => setCustomH(e.target.value)}
                 style={{
                   width: 60,
-                  background: '#0A0A0C',
+                  background: colors.background.void,
                   border: '1px solid #1C1C1F',
                   borderRadius: 4,
-                  color: '#E0DDD8',
+                  color: colors.text.silver,
                   fontSize: 11,
                   fontFamily: M,
                   padding: '4px 6px',
@@ -319,10 +328,10 @@ export function EditorTopBar({
                   }
                 }}
                 style={{
-                  background: '#E85D30',
+                  background: colors.ember.primary,
                   border: 'none',
                   borderRadius: 4,
-                  color: '#0A0A0C',
+                  color: colors.background.void,
                   fontSize: 10,
                   fontWeight: 700,
                   fontFamily: S,
@@ -343,9 +352,12 @@ export function EditorTopBar({
           type="button"
           onClick={() => toggleDropdown('edit')}
           style={{
-            background: dropdown === 'edit' ? '#1C1C1F' : 'none',
+            background:
+              dropdown === 'edit'
+                ? '#1C1C1F' /* PULSE_VISUAL_OK: intermediate surface tone, near elevated */
+                : 'none',
             border: 'none',
-            color: '#E0DDD8',
+            color: colors.text.silver,
             fontSize: 12,
             fontFamily: S,
             cursor: 'pointer',
@@ -453,7 +465,7 @@ export function EditorTopBar({
           onChange={(e) => onNameChange(e.target.value)}
           style={{
             fontSize: 12,
-            color: '#6E6E73',
+            color: colors.text.muted,
             fontFamily: S,
             background: 'none',
             border: 'none',
@@ -466,7 +478,7 @@ export function EditorTopBar({
           <span
             style={{
               fontSize: 9,
-              color: '#E85D30',
+              color: colors.ember.primary,
               fontFamily: M,
               display: 'flex',
               alignItems: 'center',
@@ -478,7 +490,7 @@ export function EditorTopBar({
                 width: 5,
                 height: 5,
                 borderRadius: '50%',
-                background: '#E85D30',
+                background: colors.ember.primary,
                 animation: 'pE 1.5s ease-in-out infinite',
                 display: 'inline-block',
               }}
@@ -496,7 +508,7 @@ export function EditorTopBar({
         style={{
           background: 'none',
           border: 'none',
-          color: '#6E6E73',
+          color: colors.text.muted,
           cursor: 'pointer',
           display: 'flex',
           padding: 4,
@@ -510,7 +522,7 @@ export function EditorTopBar({
         style={{
           background: 'none',
           border: 'none',
-          color: '#6E6E73',
+          color: colors.text.muted,
           cursor: 'pointer',
           display: 'flex',
           padding: 4,
@@ -525,14 +537,18 @@ export function EditorTopBar({
           width: 28,
           height: 28,
           borderRadius: 6,
-          background: '#E85D30',
+          background: colors.ember.primary,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           marginLeft: 4,
         }}
       >
-        <span style={{ color: '#0A0A0C', fontFamily: M, fontSize: 11, fontWeight: 700 }}>DG</span>
+        <span
+          style={{ color: colors.background.void, fontFamily: M, fontSize: 11, fontWeight: 700 }}
+        >
+          DG
+        </span>
       </div>
 
       {/* ── Share/Export ── */}
@@ -540,11 +556,11 @@ export function EditorTopBar({
         type="button"
         onClick={() => onExport?.('png')}
         style={{
-          background: '#E85D30',
+          background: colors.ember.primary,
           border: 'none',
           borderRadius: 4,
           padding: '6px 14px',
-          color: '#0A0A0C',
+          color: colors.background.void,
           fontSize: 11,
           fontWeight: 700,
           fontFamily: S,

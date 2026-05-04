@@ -89,7 +89,7 @@ describe('KnowledgeBaseService', () => {
     }).compile();
 
     service = module.get<KnowledgeBaseService>(KnowledgeBaseService);
-    htmlToText = Reflect.get(service as object, 'htmlToText') as (html: string) => string;
+    htmlToText = Reflect.get(service, 'htmlToText') as (html: string) => string;
   });
 
   it('should be defined', () => {
@@ -128,7 +128,7 @@ describe('KnowledgeBaseService', () => {
     });
 
     it('charges kb_ingestion before dispatching the ingestion job', async () => {
-      const result = await service.addSource('kb_1', 'TEXT', 'conteudo bruto', {
+      const result = await service.addSource('kb_1', 'TEXT', 'conteudo bruto', undefined, {
         requestId: 'kb-req-1',
       });
 
@@ -171,7 +171,7 @@ describe('KnowledgeBaseService', () => {
       );
 
       await expect(
-        service.addSource('kb_1', 'TEXT', 'conteudo bruto', {
+        service.addSource('kb_1', 'TEXT', 'conteudo bruto', undefined, {
           requestId: 'kb-req-2',
         }),
       ).resolves.toEqual(
@@ -196,7 +196,7 @@ describe('KnowledgeBaseService', () => {
       );
 
       await expect(
-        service.addSource('kb_1', 'TEXT', 'conteudo bruto', {
+        service.addSource('kb_1', 'TEXT', 'conteudo bruto', undefined, {
           requestId: 'kb-req-3',
         }),
       ).rejects.toMatchObject({
@@ -211,7 +211,7 @@ describe('KnowledgeBaseService', () => {
       (memoryQueue.add as jest.Mock).mockRejectedValueOnce(new Error('redis down'));
 
       await expect(
-        service.addSource('kb_1', 'TEXT', 'conteudo bruto', {
+        service.addSource('kb_1', 'TEXT', 'conteudo bruto', undefined, {
           requestId: 'kb-req-4',
         }),
       ).rejects.toThrow('redis down');

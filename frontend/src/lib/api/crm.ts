@@ -173,7 +173,17 @@ export const crmApi = {
     return res;
   },
 
-  listDeals: () => apiFetch<CrmDeal[]>(`/crm/deals`),
+  getContact: (phone: string) =>
+    apiFetch<CrmContact & { deals: CrmDeal[] }>(`/crm/contacts/${encodeURIComponent(phone)}`),
+
+  listDeals: (params?: { pipeline?: string; stage?: string; search?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.pipeline) searchParams.set('pipeline', params.pipeline);
+    if (params?.stage) searchParams.set('stage', params.stage);
+    if (params?.search) searchParams.set('search', params.search);
+    const qs = searchParams.toString();
+    return apiFetch<CrmDeal[]>(`/crm/deals${qs ? `?${qs}` : ''}`);
+  },
 
   createDeal: async (payload: {
     contactId: string;

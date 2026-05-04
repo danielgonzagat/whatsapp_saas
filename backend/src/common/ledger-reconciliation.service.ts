@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import type { Prisma } from '@prisma/client';
 import { forEachSequential } from './async-sequence';
 import { FinancialAlertService } from './financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
 
 /**
  * Ledger reconciliation — enforces invariant I8.
@@ -93,6 +94,7 @@ export class LedgerReconciliationService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly financialAlert?: FinancialAlertService,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Run checkout cron. */
@@ -100,7 +102,11 @@ export class LedgerReconciliationService {
   async runCheckoutCron(): Promise<void> {
     try {
       await this.runReconciliation(24);
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'LedgerReconciliationService.runReconciliation',
+      );
       this.logger.error(
         `ledger_reconciliation_cron_failed: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -117,7 +123,11 @@ export class LedgerReconciliationService {
   async runWalletCron(): Promise<void> {
     try {
       await this.runWalletReconciliation();
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(
+        error,
+        'LedgerReconciliationService.runWalletReconciliation',
+      );
       this.logger.error(
         `wallet_ledger_reconciliation_cron_failed: ${
           error instanceof Error ? error.message : String(error)
@@ -149,7 +159,8 @@ export class LedgerReconciliationService {
       status: string;
       payment?: { status?: string; externalId?: string; gateway?: string } | null;
     };
-    const prismaExt = this.prisma as unknown as Record<string, PrismaDelegate>;
+    const prismaExt = this.prisma as object as Record<string, PrismaDelegate>;
+    // PULSE_OK: bounded by paidAt date range and status filter
     const orders = (await prismaExt.checkoutOrder.findMany({
       where: {
         paidAt: { not: null, gte: since },
@@ -311,7 +322,7 @@ export class LedgerReconciliationService {
       findMany: (...args: unknown[]) => Promise<unknown[]>;
       groupBy: (...args: unknown[]) => Promise<unknown[]>;
     };
-    const prismaExt = this.prisma as unknown as Record<string, PrismaDelegate>;
+    const prismaExt = this.prisma as object as Record<string, PrismaDelegate>;
     const drifts: DriftReport[] = [];
 
     // Read all wallets. Production volumes here are small (one wallet
@@ -367,7 +378,7 @@ export class LedgerReconciliationService {
         const credit = sumByKey.get(`${bucket}:credit`) ?? 0n;
         const debit = sumByKey.get(`${bucket}:debit`) ?? 0n;
         const derived = credit - debit;
-        const stored = BigInt((wallet[`${bucket}BalanceInCents`] as bigint | number | null) ?? 0);
+        const stored = BigInt(wallet[`${bucket}BalanceInCents`] ?? 0);
 
         if (derived !== stored) {
           drifts.push({
@@ -449,7 +460,8 @@ export class LedgerReconciliationService {
           details: input.details as Prisma.JsonObject,
         },
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'LedgerReconciliationService.create');
       this.logger.warn(
         `ledger_reconcile_audit_failed action=${input.action}: ${
           error instanceof Error ? error.message : String(error)

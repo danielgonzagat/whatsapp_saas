@@ -5,104 +5,16 @@ import { ConfigService } from '@nestjs/config';
 import { ConflictException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../auth/email.service';
+import type { PartnershipsPrismaMock } from './__companions__/partnerships.service.spec.companion';
+import { createPartnershipsPrismaMock } from './__companions__/partnerships.service.spec.companion';
 
 describe('PartnershipsService', () => {
   let service: PartnershipsService;
   let emailService: { sendPartnerInviteEmail: jest.Mock };
-  let prisma: {
-    agent: {
-      findMany: jest.Mock;
-      findFirst: jest.Mock;
-      count: jest.Mock;
-      delete: jest.Mock;
-      updateMany: jest.Mock;
-    };
-    collaboratorInvite: {
-      findMany: jest.Mock;
-      create: jest.Mock;
-      count: jest.Mock;
-      updateMany: jest.Mock;
-      findFirst: jest.Mock;
-    };
-    affiliatePartner: {
-      findMany: jest.Mock;
-      findFirst: jest.Mock;
-      create: jest.Mock;
-      updateMany: jest.Mock;
-      delete: jest.Mock;
-    };
-    workspace: {
-      findUnique: jest.Mock;
-    };
-    partnerMessage: {
-      findMany: jest.Mock;
-      create: jest.Mock;
-      count: jest.Mock;
-      groupBy: jest.Mock;
-      updateMany: jest.Mock;
-    };
-    checkoutProductPlan: {
-      findFirst: jest.Mock;
-    };
-    checkoutPlanLink: {
-      findFirst: jest.Mock;
-    };
-    affiliateLink: {
-      findFirst: jest.Mock;
-    };
-    checkoutOrder: {
-      findMany: jest.Mock;
-      findFirst: jest.Mock;
-    };
-  };
+  let prisma: PartnershipsPrismaMock;
 
   beforeEach(async () => {
-    prisma = {
-      agent: {
-        findMany: jest.fn(),
-        findFirst: jest.fn(),
-        count: jest.fn(),
-        delete: jest.fn(),
-        updateMany: jest.fn(),
-      },
-      collaboratorInvite: {
-        findMany: jest.fn(),
-        create: jest.fn(),
-        count: jest.fn(),
-        updateMany: jest.fn(),
-        findFirst: jest.fn(),
-      },
-      affiliatePartner: {
-        findMany: jest.fn(),
-        findFirst: jest.fn(),
-        create: jest.fn(),
-        updateMany: jest.fn(),
-        delete: jest.fn(),
-      },
-      workspace: {
-        findUnique: jest.fn().mockResolvedValue({ name: 'Workspace Teste' }),
-      },
-      partnerMessage: {
-        findMany: jest.fn(),
-        create: jest.fn(),
-        count: jest.fn(),
-        groupBy: jest.fn(),
-        updateMany: jest.fn(),
-      },
-      checkoutProductPlan: {
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
-      checkoutPlanLink: {
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
-      affiliateLink: {
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
-      checkoutOrder: {
-        findMany: jest.fn(),
-        findFirst: jest.fn(),
-      },
-    };
+    prisma = createPartnershipsPrismaMock();
 
     emailService = {
       sendPartnerInviteEmail: jest.fn().mockResolvedValue(true),
@@ -215,11 +127,13 @@ describe('PartnershipsService', () => {
 
     it('deletes non-admin agent successfully', async () => {
       prisma.agent.findFirst.mockResolvedValue({ id: 'a1', role: 'SUPPORT' });
-      prisma.agent.delete.mockResolvedValue({ id: 'a1' });
+      prisma.agent.deleteMany.mockResolvedValue({ count: 1 });
 
       const result = await service.removeCollaborator('a1', 'ws-1');
 
-      expect(prisma.agent.delete).toHaveBeenCalledWith({ where: { id: 'a1' } });
+      expect(prisma.agent.deleteMany).toHaveBeenCalledWith({
+        where: { id: 'a1', workspaceId: 'ws-1' },
+      });
       expect(result.id).toBe('a1');
     });
   });
@@ -487,7 +401,9 @@ describe('PartnershipsService', () => {
         }),
       ).rejects.toThrow(ServiceUnavailableException);
 
-      expect(prisma.affiliatePartner.delete).toHaveBeenCalledWith({ where: { id: 'new-1' } });
+      expect(prisma.affiliatePartner.deleteMany).toHaveBeenCalledWith({
+        where: { id: 'new-1', workspaceId: 'ws-1' },
+      });
     });
   });
 

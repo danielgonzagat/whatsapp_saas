@@ -10,9 +10,13 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DB: ${POSTGRES_DB:-whatsapp_saas_test}
     ports:
-      - "55432:5432"
+      - '55432:5432'
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-whatsapp_saas_test}"]
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-whatsapp_saas_test}',
+        ]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -22,9 +26,9 @@ services:
     container_name: whatsapp_saas_test_redis
     restart: unless-stopped
     ports:
-      - "56379:6379"
+      - '56379:6379'
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 5s
       retries: 20
@@ -43,13 +47,13 @@ services:
       FAKE_WAHA_PHONE: ${FAKE_WAHA_PHONE:-5511999999999@c.us}
       FAKE_WAHA_PUSH_NAME: ${FAKE_WAHA_PUSH_NAME:-Fake WAHA}
     ports:
-      - "3300:3000"
+      - '3300:3000'
     healthcheck:
       test:
         [
-          "CMD",
-          "node",
-          "-e",
+          'CMD',
+          'node',
+          '-e',
           "fetch('http://127.0.0.1:3000/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
       interval: 5s
@@ -68,18 +72,18 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-whatsapp_saas_test}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-test-secret}
-      AUTH_OPTIONAL: "true"
+      AUTH_OPTIONAL: 'true'
       WAHA_API_URL: http://fake-waha:3000
-      WAHA_MULTISESSION: "true"
-      WAHA_USE_WORKSPACE_SESSION: "true"
+      WAHA_MULTISESSION: 'true'
+      WAHA_USE_WORKSPACE_SESSION: 'true'
       WHATSAPP_HOOK_URL: http://backend:3001/webhooks/whatsapp-api
       WHATSAPP_HOOK_EVENTS: message.any,session.status
       WHATSAPP_API_WEBHOOK_SECRET: ${WHATSAPP_API_WEBHOOK_SECRET:-fake-waha-secret}
-      ENABLE_LEGACY_BACKEND_AUTOPILOT: "false"
-      GLOBAL_AUTONOMY_KILL_SWITCH: "false"
-      ENABLE_LEGACY_AUTOPILOT_SCANNER: "false"
+      ENABLE_LEGACY_BACKEND_AUTOPILOT: 'false'
+      GLOBAL_AUTONOMY_KILL_SWITCH: 'false'
+      ENABLE_LEGACY_AUTOPILOT_SCANNER: 'false'
     ports:
-      - "3001:3001"
+      - '3001:3001'
     depends_on:
       postgres:
         condition: service_healthy
@@ -90,9 +94,9 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "node",
-          "-e",
+          'CMD',
+          'node',
+          '-e',
           "fetch('http://127.0.0.1:3001/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
       interval: 10s
@@ -111,11 +115,11 @@ services:
       REDIS_URL: redis://redis:6379
       WAHA_API_URL: http://fake-waha:3000
       JWT_SECRET: ${JWT_SECRET:-test-secret}
-      ENABLE_LEGACY_AUTOPILOT_SCANNER: "false"
-      AUTOPILOT_BYPASS_REACTIVE_COMPLIANCE: "true"
-      AUTOPILOT_BYPASS_REACTIVE_RATELIMITS: "true"
+      ENABLE_LEGACY_AUTOPILOT_SCANNER: 'false'
+      AUTOPILOT_BYPASS_REACTIVE_COMPLIANCE: 'true'
+      AUTOPILOT_BYPASS_REACTIVE_RATELIMITS: 'true'
     ports:
-      - "3003:3003"
+      - '3003:3003'
     depends_on:
       postgres:
         condition: service_healthy
@@ -126,9 +130,9 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "node",
-          "-e",
+          'CMD',
+          'node',
+          '-e',
           "fetch('http://127.0.0.1:3003/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
         ]
       interval: 10s

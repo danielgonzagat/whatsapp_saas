@@ -300,6 +300,10 @@ function identifyFailurePoints(steps: PulseExecutionChainStep[]): Array<{
   return failures;
 }
 
+function dedupArray<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr));
+}
+
 function extractRequiredState(steps: PulseExecutionChainStep[]): string[] {
   const state: string[] = [];
   for (const step of steps) {
@@ -313,12 +317,7 @@ function extractRequiredState(steps: PulseExecutionChainStep[]): string[] {
       state.push('workspace_context_available');
     }
   }
-  // Deduplicate using Map
-  const dedupeMap = new Map<string, boolean>();
-  for (const item of state) {
-    dedupeMap.set(item, true);
-  }
-  return Array.from(dedupeMap.keys());
+  return dedupArray(state);
 }
 
 function buildChainDescription(steps: PulseExecutionChainStep[]): string {
@@ -326,6 +325,7 @@ function buildChainDescription(steps: PulseExecutionChainStep[]): string {
   return `Execution chain: ${roleSequence}`;
 }
 
+/** Build execution chains. */
 export function buildExecutionChains(input: BuildExecutionChainsInput): PulseExecutionChainSet {
   const { structuralGraph } = input;
 
@@ -350,13 +350,9 @@ export function buildExecutionChains(input: BuildExecutionChainsInput): PulseExe
 
   const allPaths = [...uiToDatabase, ...apiToService, ...controllerToEvent];
 
-  // Deduplicate paths
-  const dedupeMap = new Map<string, PulseStructuralNode[]>();
-  for (const p of allPaths) {
-    const key = p.map((n) => n.id).join(':');
-    dedupeMap.set(key, p);
-  }
-  const uniquePaths = Array.from(dedupeMap.values());
+  const uniquePaths = Array.from(
+    new Map(allPaths.map((p) => [p.map((n) => n.id).join(':'), p])).values(),
+  );
 
   const chains = uniquePaths.map((path, i) => buildChainFromPath(path, i, structuralGraph));
 

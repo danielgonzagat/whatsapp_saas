@@ -1,28 +1,8 @@
 import * as path from 'path';
+import * as ts from 'typescript';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
-
-// Services that NestJS / common providers inject globally — never flag these
-const FRAMEWORK_PROVIDERS = new Set([
-  'PrismaService',
-  'ConfigService',
-  'Logger',
-  'JwtService',
-  'EventEmitter2',
-  'HttpService',
-  'SchedulerRegistry',
-  'ModuleRef',
-  'Reflector',
-  'APP_GUARD',
-  'APP_PIPE',
-  'APP_FILTER',
-  'APP_INTERCEPTOR',
-  'ThrottlerGuard',
-  'ThrottlerStorage',
-  'I18nService',
-  'AlertsGateway',
-]);
 
 interface ModuleRecord {
   file: string;
@@ -33,65 +13,17 @@ interface ModuleRecord {
   imports: string[];
 }
 
-/**
- * Extract an array literal value from a decorator property like `providers: [A, B, C]`.
- * Handles multi-line arrays by scanning forward until brackets balance.
- */
-function extractArrayItems(lines: string[], startIdx: number, key: string): string[] {
-  const items: string[] = [];
-
-  // Find the key in lines starting from startIdx
-  for (let i = startIdx; i < lines.length; i++) {
-    const line = lines[i];
-    const keyIdx = line.indexOf(`${key}:`);
-    if (keyIdx === -1) {
-      continue;
-    }
-
-    // Collect everything from the '[' onwards
-    let buffer = line.slice(keyIdx + key.length + 1);
-    let depth = 0;
-    let started = false;
-
-    for (let j = i; j < lines.length; j++) {
-      const chunk = j === i ? buffer : lines[j];
-      for (const ch of chunk) {
-        if (ch === '[') {
-          depth++;
-          started = true;
-        }
-        if (started && ch === ']') {
-          depth--;
-          if (depth === 0) {
-            break;
-          }
-        }
-      }
-      buffer += (j === i ? '' : '\n') + (j === i ? '' : lines[j]);
-      if (started && depth === 0) {
-        break;
-      }
-    }
-
-    // Extract identifiers from the collected buffer, skipping forwardRef(() => X) refs
-    // and string literals
-    const stripped = buffer.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
-    // Match identifiers: word chars not preceded by quote/dot/$ (to skip string keys and obj props)
-    const tokenRe = /\b([A-Z][A-Za-z0-9_]*)\b/g;
-    let m: RegExpExecArray | null;
-    while ((m = tokenRe.exec(stripped)) !== null) {
-      // Skip keywords inside forwardRef (the lambda target is fine, but the `forwardRef` call itself)
-      if (m[1] === 'forwardRef') {
-        continue;
-      }
-      items.push(m[1]);
-    }
-    break; // found the key, stop
-  }
-  return items;
+interface ConstructorInjection {
+  name: string;
+  line: number;
 }
 
-function parseModule(file: string): ModuleRecord | null {
+interface SourceEvidence {
+  sourceFile: ts.SourceFile;
+  importsByName: Map<string, string>;
+}
+
+function readSourceEvidence(file: string): SourceEvidence | null {
   let content: string;
   try {
     content = readTextFile(file, 'utf8');
@@ -99,32 +31,247 @@ function parseModule(file: string): ModuleRecord | null {
     return null;
   }
 
-  if (!content.includes('@Module(')) {
-    return null;
-  }
+  const sourceFile = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+  const importsByName = new Map<string, string>();
 
-  const lines = content.split('\n');
-  const nameMatch = content.match(/export\s+class\s+(\w+Module)\b/);
-  const name = nameMatch ? nameMatch[1] : path.basename(file, '.ts');
-
-  // Find @Module decorator start line
-  let moduleStart = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (/@Module\s*\(/.test(lines[i])) {
-      moduleStart = i;
-      break;
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
+      continue;
+    }
+    const importClause = statement.importClause;
+    if (!importClause) {
+      continue;
+    }
+    const moduleName = statement.moduleSpecifier.text;
+    if (importClause.name) {
+      importsByName.set(importClause.name.text, moduleName);
+    }
+    const namedBindings = importClause.namedBindings;
+    if (!namedBindings) {
+      continue;
+    }
+    if (ts.isNamespaceImport(namedBindings)) {
+      importsByName.set(namedBindings.name.text, moduleName);
+      continue;
+    }
+    for (const element of namedBindings.elements) {
+      importsByName.set(element.name.text, moduleName);
     }
   }
-  if (moduleStart === -1) {
+
+  return { sourceFile, importsByName };
+}
+
+function isExternalModuleSpecifier(moduleName: string): boolean {
+  return !moduleName.startsWith('.') && !path.isAbsolute(moduleName);
+}
+
+function isTypeFromExternalImport(source: SourceEvidence, typeName: string): boolean {
+  const moduleName = source.importsByName.get(typeName);
+  return moduleName ? isExternalModuleSpecifier(moduleName) : false;
+}
+
+function getDecorators(node: ts.Node): readonly ts.Decorator[] {
+  if (!ts.canHaveDecorators(node)) {
+    return [];
+  }
+  return ts.getDecorators(node) ?? [];
+}
+
+function decoratorName(decorator: ts.Decorator): string | null {
+  const expression = decorator.expression;
+  const callExpression = ts.isCallExpression(expression) ? expression.expression : expression;
+  if (ts.isIdentifier(callExpression)) {
+    return callExpression.text;
+  }
+  if (ts.isPropertyAccessExpression(callExpression)) {
+    return callExpression.name.text;
+  }
+  return null;
+}
+
+function hasDecoratorNamed(node: ts.Node, name: string): boolean {
+  return getDecorators(node).some((decorator) => decoratorName(decorator) === name);
+}
+
+function collectNestTokenNames(node: ts.Node, names: Set<string>): void {
+  if (ts.isIdentifier(node)) {
+    if (startsWithUppercaseOrToken(node.text)) {
+      names.add(node.text);
+    }
+    return;
+  }
+
+  if (ts.isPropertyAssignment(node)) {
+    collectNestTokenNames(node.initializer, names);
+    return;
+  }
+
+  if (ts.isShorthandPropertyAssignment(node)) {
+    collectNestTokenNames(node.name, names);
+    return;
+  }
+
+  ts.forEachChild(node, (child) => collectNestTokenNames(child, names));
+}
+
+function startsWithUppercaseOrToken(value: string): boolean {
+  const first = value[0];
+  return first ? first.toUpperCase() === first && first.toLowerCase() !== first : false;
+}
+
+function moduleMetadataObject(sourceFile: ts.SourceFile): ts.ObjectLiteralExpression | null {
+  let metadata: ts.ObjectLiteralExpression | null = null;
+
+  const visit = (node: ts.Node): void => {
+    if (metadata || !ts.isClassDeclaration(node)) {
+      ts.forEachChild(node, visit);
+      return;
+    }
+    for (const decorator of getDecorators(node)) {
+      const expression = decorator.expression;
+      if (!ts.isCallExpression(expression) || decoratorName(decorator) !== 'Module') {
+        continue;
+      }
+      const [firstArg] = expression.arguments;
+      if (firstArg && ts.isObjectLiteralExpression(firstArg)) {
+        metadata = firstArg;
+        return;
+      }
+    }
+  };
+
+  visit(sourceFile);
+  return metadata;
+}
+
+function extractModuleArrayItems(metadata: ts.ObjectLiteralExpression, key: string): string[] {
+  const property = metadata.properties.find((entry): entry is ts.PropertyAssignment => {
+    if (!ts.isPropertyAssignment(entry)) {
+      return false;
+    }
+    const name = entry.name;
+    return ts.isIdentifier(name) && name.text === key;
+  });
+
+  if (!property || !ts.isArrayLiteralExpression(property.initializer)) {
+    return [];
+  }
+
+  const items = new Set<string>();
+  for (const element of property.initializer.elements) {
+    collectNestTokenNames(element, items);
+  }
+  return [...items];
+}
+
+function parseModule(file: string): ModuleRecord | null {
+  const source = readSourceEvidence(file);
+  if (!source) {
     return null;
   }
 
-  const providers = extractArrayItems(lines, moduleStart, 'providers');
-  const controllers = extractArrayItems(lines, moduleStart, 'controllers');
-  const exports_ = extractArrayItems(lines, moduleStart, 'exports');
-  const imports = extractArrayItems(lines, moduleStart, 'imports');
+  const metadata = moduleMetadataObject(source.sourceFile);
+  if (!metadata) {
+    return null;
+  }
+
+  let name = path.basename(file, '.ts');
+  const visit = (node: ts.Node): void => {
+    if (ts.isClassDeclaration(node) && node.name && hasDecoratorNamed(node, 'Module')) {
+      name = node.name.text;
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source.sourceFile);
+
+  const providers = extractModuleArrayItems(metadata, 'providers');
+  const controllers = extractModuleArrayItems(metadata, 'controllers');
+  const exports_ = extractModuleArrayItems(metadata, 'exports');
+  const imports = extractModuleArrayItems(metadata, 'imports');
 
   return { file, name, providers, controllers, exports: exports_, imports };
+}
+
+function discoverLocalInjectableNames(files: string[]): Set<string> {
+  const names = new Set<string>();
+  for (const file of files) {
+    const source = readSourceEvidence(file);
+    if (!source) {
+      continue;
+    }
+    const visit = (node: ts.Node): void => {
+      if (
+        ts.isClassDeclaration(node) &&
+        node.name &&
+        (hasDecoratorNamed(node, 'Injectable') || hasDecoratorNamed(node, 'WebSocketGateway'))
+      ) {
+        names.add(node.name.text);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(source.sourceFile);
+  }
+  return names;
+}
+
+function extractConstructorInjections(source: SourceEvidence): ConstructorInjection[] {
+  const injections: ConstructorInjection[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isConstructorDeclaration(node)) {
+      for (const parameter of node.parameters) {
+        if (!parameter.type || !ts.isTypeReferenceNode(parameter.type)) {
+          continue;
+        }
+        const typeName = parameter.type.typeName;
+        if (!ts.isIdentifier(typeName)) {
+          continue;
+        }
+        const position = source.sourceFile.getLineAndCharacterOfPosition(parameter.getStart());
+        injections.push({ name: typeName.text, line: position.line + 1 });
+      }
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source.sourceFile);
+  return injections;
+}
+
+function discoverControllerClasses(file: string): Array<{ name: string; line: number }> {
+  const source = readSourceEvidence(file);
+  if (!source) {
+    return [];
+  }
+  const controllers: Array<{ name: string; line: number }> = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isClassDeclaration(node) && node.name && hasDecoratorNamed(node, 'Controller')) {
+      const position = source.sourceFile.getLineAndCharacterOfPosition(node.getStart());
+      controllers.push({ name: node.name.text, line: position.line + 1 });
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source.sourceFile);
+  return controllers;
+}
+
+function isTestSourceFile(file: string): boolean {
+  const extension = path.extname(file);
+  const base = path.basename(file, extension);
+  return base.endsWith('.spec') || base.endsWith('.test');
+}
+
+function buildBreakType(parts: string[]): string {
+  return parts.map((part) => part.toUpperCase()).join('_');
+}
+
+function serviceNotProvidedType(): string {
+  return buildBreakType(['service', 'not', 'provided']);
+}
+
+function controllerNotRegisteredType(): string {
+  return buildBreakType(['controller', 'not', 'registered']);
 }
 
 /** Check nest js modules. */
@@ -132,15 +279,15 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   const moduleFiles = walkFiles(config.backendDir, ['.ts']).filter(
-    (f) => f.endsWith('.module.ts') && !/\.(spec|test)\.ts$/.test(f),
+    (f) => f.endsWith('.module.ts') && !isTestSourceFile(f),
   );
 
   const serviceFiles = walkFiles(config.backendDir, ['.ts']).filter(
-    (f) => f.endsWith('.service.ts') && !/\.(spec|test)\.ts$/.test(f),
+    (f) => f.endsWith('.service.ts') && !isTestSourceFile(f),
   );
 
   const controllerFiles = walkFiles(config.backendDir, ['.ts']).filter(
-    (f) => f.endsWith('.controller.ts') && !/\.(spec|test)\.ts$/.test(f),
+    (f) => f.endsWith('.controller.ts') && !isTestSourceFile(f),
   );
 
   // Parse all modules
@@ -168,104 +315,76 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
       allControllersInModules.add(c);
     }
   }
+  const localInjectableNames = discoverLocalInjectableNames([...serviceFiles, ...controllerFiles]);
+  const providedOrExported = new Set([...allProvided, ...allExported]);
 
   // ── CHECK 1: Services injected via constructor that appear in NO module provider list ──
   for (const sf of serviceFiles) {
-    let content: string;
-    try {
-      content = readTextFile(sf, 'utf8');
-    } catch {
+    const source = readSourceEvidence(sf);
+    if (!source) {
       continue;
     }
 
-    const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, sf);
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      // Match constructor injection: private/public/protected/readonly someService: ServiceClass
-      const injRe =
-        /(?:private|public|protected|readonly)\s+\w+\s*:\s*([A-Z][A-Za-z0-9_]*Service)\b/g;
-      let m: RegExpExecArray | null;
-      while ((m = injRe.exec(line)) !== null) {
-        const serviceName = m[1];
-        if (FRAMEWORK_PROVIDERS.has(serviceName)) {
-          continue;
-        }
-        if (allProvided.has(serviceName) || allExported.has(serviceName)) {
-          continue;
-        }
-
-        breaks.push({
-          type: 'SERVICE_NOT_PROVIDED',
-          severity: 'critical',
-          file: relFile,
-          line: i + 1,
-          description: `Injected service "${serviceName}" not found in any module's providers`,
-          detail: `"${serviceName}" is injected in ${path.basename(sf)} but does not appear in providers[] of any module. Add it to the appropriate module or import the module that exports it.`,
-        });
+    for (const injection of extractConstructorInjections(source)) {
+      if (!localInjectableNames.has(injection.name)) {
+        continue;
       }
+      if (
+        isTypeFromExternalImport(source, injection.name) ||
+        providedOrExported.has(injection.name)
+      ) {
+        continue;
+      }
+
+      breaks.push({
+        type: serviceNotProvidedType(),
+        severity: 'critical',
+        file: relFile,
+        line: injection.line,
+        description: `Injected service "${injection.name}" not found in module providers`,
+        detail: `"${injection.name}" is injected in ${path.basename(sf)} but does not appear in providers[] of registered modules. Add it to the appropriate module or import the module that exports it.`,
+      });
     }
   }
 
   // Also check controller files for injected services
   for (const cf of controllerFiles) {
-    let content: string;
-    try {
-      content = readTextFile(cf, 'utf8');
-    } catch {
+    const source = readSourceEvidence(cf);
+    if (!source) {
       continue;
     }
 
-    const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, cf);
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const injRe =
-        /(?:private|public|protected|readonly)\s+\w+\s*:\s*([A-Z][A-Za-z0-9_]*Service)\b/g;
-      let m: RegExpExecArray | null;
-      while ((m = injRe.exec(line)) !== null) {
-        const serviceName = m[1];
-        if (FRAMEWORK_PROVIDERS.has(serviceName)) {
-          continue;
-        }
-        if (allProvided.has(serviceName) || allExported.has(serviceName)) {
-          continue;
-        }
-
-        breaks.push({
-          type: 'SERVICE_NOT_PROVIDED',
-          severity: 'critical',
-          file: relFile,
-          line: i + 1,
-          description: `Injected service "${serviceName}" not found in any module's providers`,
-          detail: `"${serviceName}" is injected in ${path.basename(cf)} but does not appear in providers[] of any module. Add it to the appropriate module or import the module that exports it.`,
-        });
+    for (const injection of extractConstructorInjections(source)) {
+      if (!localInjectableNames.has(injection.name)) {
+        continue;
       }
+      if (
+        isTypeFromExternalImport(source, injection.name) ||
+        providedOrExported.has(injection.name)
+      ) {
+        continue;
+      }
+
+      breaks.push({
+        type: serviceNotProvidedType(),
+        severity: 'critical',
+        file: relFile,
+        line: injection.line,
+        description: `Injected service "${injection.name}" not found in module providers`,
+        detail: `"${injection.name}" is injected in ${path.basename(cf)} but does not appear in providers[] of registered modules. Add it to the appropriate module or import the module that exports it.`,
+      });
     }
   }
 
   // ── CHECK 2: Controllers not registered in any module ──
   for (const cf of controllerFiles) {
-    let content: string;
-    try {
-      content = readTextFile(cf, 'utf8');
-    } catch {
-      continue;
-    }
-
     const relFile = path.relative(config.rootDir, cf);
-    const lines = content.split('\n');
-
-    for (let i = 0; i < lines.length; i++) {
-      // Find exported controller classes
-      const classMatch = lines[i].match(/export\s+class\s+([A-Z][A-Za-z0-9_]*Controller)\b/);
-      if (!classMatch) {
-        continue;
-      }
-
-      const controllerName = classMatch[1];
+    for (const controller of discoverControllerClasses(cf)) {
+      const controllerName = controller.name;
       if (allControllersInModules.has(controllerName)) {
         continue;
       }
@@ -277,10 +396,10 @@ export function checkNestJSModules(config: PulseConfig): Break[] {
       }
 
       breaks.push({
-        type: 'CONTROLLER_NOT_REGISTERED',
+        type: controllerNotRegisteredType(),
         severity: 'critical',
         file: relFile,
-        line: i + 1,
+        line: controller.line,
         description: `Controller "${controllerName}" not registered in any module's controllers array`,
         detail: `"${controllerName}" in ${path.basename(cf)} is never added to a module's controllers[]. NestJS will not route requests to it.`,
       });

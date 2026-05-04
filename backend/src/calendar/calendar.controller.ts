@@ -1,41 +1,55 @@
-import { Body, Controller, Delete, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { CalendarEvent, CalendarService } from './calendar.service';
+import { CreateEventDto } from './dto/create-event.dto';
+import { ListEventsQueryDto } from './dto/list-events-query.dto';
 
-class CreateEventDto {
-  summary: string;
-  description?: string;
-  startTime: string; // ISO string
-  endTime: string; // ISO string
-  attendees?: string[];
-  location?: string;
+function parseDateOrFail(raw: string | undefined, label: string): Date | undefined {
+  if (!raw) {
+    return undefined;
+  }
+  const parsed = new Date(raw);
+  if (isNaN(parsed.getTime())) {
+    throw new BadRequestException(`Invalid ${label}`);
+  }
+  return parsed;
 }
 
 /** Calendar controller. */
 @ApiTags('Calendar')
 @ApiBearerAuth()
+@UseGuards(ThrottlerGuard)
 @Controller('calendar')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class CalendarController {
   constructor(private readonly calendarService: CalendarService) {}
 
   /** List events. */
   @Get('events')
   @ApiOperation({ summary: 'List calendar events' })
-  async listEvents(
-    @Req() req: AuthenticatedRequest,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-  ) {
+  async listEvents(@Req() req: AuthenticatedRequest, @Query() query: ListEventsQueryDto) {
     const workspaceId = resolveWorkspaceId(req);
     return this.calendarService.listEvents(
       workspaceId,
-      startDate ? new Date(startDate) : undefined,
-      endDate ? new Date(endDate) : undefined,
+      parseDateOrFail(query.startDate, 'startDate'),
+      parseDateOrFail(query.endDate, 'endDate'),
     );
   }
 
@@ -48,8 +62,8 @@ export class CalendarController {
     const event: CalendarEvent = {
       summary: dto.summary,
       description: dto.description,
-      startTime: new Date(dto.startTime),
-      endTime: new Date(dto.endTime),
+      startTime: parseDateOrFail(dto.startTime, 'startTime') as Date,
+      endTime: parseDateOrFail(dto.endTime, 'endTime') as Date,
       attendees: dto.attendees,
       location: dto.location,
     };

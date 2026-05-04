@@ -72,7 +72,7 @@ import { redisInProductionValidator } from './redis-env-validator';
         QUEUE_BACKOFF_MS: Joi.number().integer().min(1000).optional(),
         ENFORCE_OPTIN: Joi.string().valid('true', 'false').default('false'),
         AUTOPILOT_ENFORCE_24H: Joi.string().valid('true', 'false').default('false'),
-        SENTRY_DSN: Joi.string().optional(),
+        SENTRY_DSN: Joi.string().allow('').optional(),
         DD_SERVICE: Joi.string().optional(),
         DD_ENV: Joi.string().optional(),
         DD_VERSION: Joi.string().optional(),

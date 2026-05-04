@@ -15,13 +15,15 @@ import {
   usePartnerMessages,
 } from '@/hooks/usePartnerships';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import { affiliateApi, partnershipsApi } from '@/lib/api/misc';
+import { affiliateApi } from '@/lib/api/affiliate';
+import { partnershipsApi } from '@/lib/api/partnerships';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { buildPayUrl } from '@/lib/subdomains';
 import { usePathname, useRouter } from 'next/navigation';
 import { startTransition, useEffect, useRef, useState, useId } from 'react';
 import useSWR from 'swr';
 import { IC } from './ParceriasView.icons';
+import { colors } from '@/lib/design-tokens';
 
 /* ── Local view types (mirrors API shape) ── */
 interface Agent {
@@ -160,7 +162,7 @@ const MONTH_LABELS = [
    ═══════════════════════════════════════════════ */
 
 const ROLES: { value: string; label: string; color: string }[] = [
-  { value: 'admin', label: 'Admin', color: '#E85D30' },
+  { value: 'admin', label: 'Admin', color: 'colors.ember.primary' },
   { value: 'manager', label: 'Manager', color: '#3B82F6' },
   { value: 'support', label: 'Support', color: '#10B981' },
   { value: 'finance', label: 'Finance', color: '#F59E0B' },
@@ -3176,7 +3178,7 @@ function TabChat({
   const { messages: realMsgs, mutate: mutateMsgs } = usePartnerMessages(selectedChat?.id || null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const displayContacts = contacts as PartnerContact[];
+  const displayContacts = contacts as unknown as PartnerContact[];
   const displayMessages: PartnerMessage[] =
     (realMsgs as PartnerMessage[]).length > 0 ? (realMsgs as PartnerMessage[]) : messages;
 

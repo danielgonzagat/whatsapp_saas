@@ -1,0 +1,80 @@
+{
+  "phase": 4,
+  "generatedAt": "2026-04-25T00:00:00Z",
+  "description": "Inventory of adapter status values currently in use across PULSE v3 adapters",
+  "adapters": [
+    {
+      "name": "github",
+      "file": "scripts/pulse/adapters/github-adapter.ts",
+      "currentStatusValues": [],
+      "notes": "Returns PulseSignal[] directly. No status field. Status managed by orchestrator.",
+      "statusManagedBy": "external-sources-orchestrator"
+    },
+    {
+      "name": "github_actions",
+      "file": "scripts/pulse/adapters/github-actions-adapter.ts",
+      "currentStatusValues": [],
+      "notes": "Returns PulseSignal[] directly. No status field. Status managed by orchestrator.",
+      "statusManagedBy": "external-sources-orchestrator"
+    },
+    {
+      "name": "sentry",
+      "file": "scripts/pulse/adapters/sentry-adapter.ts",
+      "currentStatusValues": [],
+      "notes": "Returns PulseSignal[] directly. No status field. Status managed by orchestrator.",
+      "statusManagedBy": "external-sources-orchestrator"
+    },
+    {
+      "name": "datadog",
+      "file": "scripts/pulse/adapters/datadog-adapter.ts",
+      "currentStatusValues": [],
+      "notes": "Returns PulseSignal[] directly. No status field. Status managed by orchestrator.",
+      "statusManagedBy": "external-sources-orchestrator"
+    },
+    {
+      "name": "prometheus",
+      "file": "scripts/pulse/adapters/prometheus-adapter.ts",
+      "currentStatusValues": [],
+      "notes": "Returns PulseSignal[] directly. No status field. Status managed by orchestrator.",
+      "statusManagedBy": "external-sources-orchestrator"
+    },
+    {
+      "name": "codecov",
+      "file": "scripts/pulse/adapters/codecov-adapter.ts",
+      "currentStatusValues": [],
+      "notes": "Returns PulseSignal[] directly. No status field. Status managed by orchestrator.",
+      "statusManagedBy": "external-sources-orchestrator"
+    },
+    {
+      "name": "dependabot",
+      "file": "scripts/pulse/adapters/dependabot-adapter.ts",
+      "currentStatusValues": [],
+      "notes": "Returns PulseSignal[] directly. No status field. Status managed by orchestrator.",
+      "statusManagedBy": "external-sources-orchestrator"
+    },
+    {
+      "name": "orchestrator",
+      "file": "scripts/pulse/adapters/external-sources-orchestrator.ts",
+      "currentStatusValues": ["ready", "not_available", "invalid"],
+      "notes": "Master orchestrator assigns status to each adapter after calling it. Pattern: ready (success), not_available (config missing), invalid (exception thrown).",
+      "usagePattern": "Lines ~211, 224, 234 (GitHub); Lines ~255, 268, 278 (Sentry); Lines ~300, 313, 323 (GitHub Actions); same pattern repeated for each adapter",
+      "missingStatuses": ["stale", "optional_not_configured"],
+      "recommendations": [
+        "stale: When adapter data is older than staleness threshold (e.g., >1h)",
+        "optional_not_configured: Explicitly distinguish optional adapters (e.g., Datadog, Prometheus) from required ones"
+      ]
+    }
+  ],
+  "summary": {
+    "totalAdapters": 8,
+    "adaptersWithDirectStatus": 0,
+    "adaptersUsingOrchestratorStatus": 8,
+    "uniqueStatusValuesInUse": 3,
+    "statusValuesInUse": ["ready", "not_available", "invalid"],
+    "statusValuesDefinedButUnused": ["stale", "optional_not_configured"]
+  },
+  "refactorScope": {
+    "phase4Focus": "Type definition + inventory only (no adapter rewrite)",
+    "futurePhaseOutcome": "Each adapter will be rewritten to explicitly use AdapterStatus type guard; orchestrator will assign from complete set of 5 values"
+  }
+}

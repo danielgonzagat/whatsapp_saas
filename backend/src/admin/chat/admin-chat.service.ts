@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import {
   AdminChatRole,
   type AdminAction,
@@ -10,6 +10,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdminPermissionsService } from '../permissions/admin-permissions.service';
 import { adminErrors } from '../common/admin-api-errors';
 import { ChatToolRegistry } from './chat-tool.registry';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 
 const BUSCAR_PROCURAR_ENCON_RE =
   /(?:buscar|procurar|encontrar)\s+(?:workspace|conta|produtor|cliente)\s+(.+)/i;
@@ -236,6 +237,7 @@ export class AdminChatService {
     private readonly prisma: PrismaService,
     private readonly permissions: AdminPermissionsService,
     private readonly tools: ChatToolRegistry,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** Send message. */
@@ -372,7 +374,8 @@ export class AdminChatService {
     let result: Record<string, unknown>;
     try {
       result = await tool.execute(call.args, { adminUserId, adminRole });
-    } catch (error) {
+    } catch (error: unknown) {
+      void this.opsAlert?.alertOnCriticalError(error, 'AdminChatService.execute');
       this.logger.warn(
         `Tool ${tool.name} threw: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -385,7 +388,7 @@ export class AdminChatService {
           toolArgs: (call.args ?? {}) as Prisma.InputJsonValue,
           toolResult: {
             error: error instanceof Error ? error.message : 'unknown',
-          } as Prisma.InputJsonValue,
+          },
         },
       });
       return;

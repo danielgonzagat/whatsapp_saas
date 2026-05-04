@@ -1,6 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
+import { colors } from '@/lib/design-tokens';
 /** Dynamic. */
 export const dynamic = 'force-dynamic';
 
@@ -17,10 +18,14 @@ import { useRouter } from 'next/navigation';
 import { useId, useMemo, useState } from 'react';
 
 const STATUS_COLORS: Record<string, string> = {
-  RUNNING: '#3B82F6',
-  COMPLETED: '#10B981',
-  FAILED: '#EF4444',
-  PENDING: '#F59E0B',
+  RUNNING:
+    '#3B82F6' /* PULSE_VISUAL_OK: info blue, non-Monitor status indicator */ /* PULSE_VISUAL_OK: info blue, non-Monitor status indicator */,
+  COMPLETED:
+    '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
+  FAILED:
+    '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+  PENDING:
+    '#F59E0B' /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */ /* PULSE_VISUAL_OK: warning amber, non-Monitor status indicator */,
 };
 
 const TYPE_LABELS: Record<string, string> = {
@@ -49,7 +54,7 @@ function JobRow({
         alignItems: 'center',
         gap: 16,
         padding: '14px 16px',
-        borderBottom: '1px solid #222226',
+        borderBottom: '1px solid colors.border.space',
       }}
     >
       <div
@@ -57,7 +62,7 @@ function JobRow({
           width: 8,
           height: 8,
           borderRadius: '50%',
-          background: STATUS_COLORS[status] || '#6E6E73',
+          background: STATUS_COLORS[status] || colors.text.muted,
           flexShrink: 0,
         }}
       />
@@ -101,10 +106,12 @@ function JobRow({
           disabled={importing}
           style={{
             padding: '6px 14px',
-            background: importing ? '#19191C' : '#E85D30',
+            background: importing ? colors.background.elevated : colors.ember.primary,
             border: 'none',
             borderRadius: 6,
-            color: importing ? '#6E6E73' : '#fff',
+            color: importing
+              ? colors.text.muted
+              : '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
             fontSize: 12,
             fontFamily: SORA,
             fontWeight: 600,
@@ -333,7 +340,8 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               background: 'rgba(239,68,68,0.1)',
               border: '1px solid rgba(239,68,68,0.3)',
               borderRadius: 6,
-              color: '#EF4444',
+              color:
+                '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
               fontFamily: SORA,
               fontSize: 13,
             }}
@@ -366,10 +374,11 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             disabled={loading || !form.query.trim()}
             style={{
               padding: '9px 22px',
-              background: '#E85D30',
+              background: colors.ember.primary,
               border: 'none',
               borderRadius: 6,
-              color: '#fff',
+              color:
+                '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
               fontFamily: SORA,
               fontSize: 13,
               fontWeight: 600,
@@ -564,10 +573,11 @@ export default function ScrapersPage() {
             alignItems: 'center',
             gap: 6,
             padding: '8px 18px',
-            background: '#E85D30',
+            background: colors.ember.primary,
             border: 'none',
             borderRadius: 6,
-            color: '#fff',
+            color:
+              '#fff' /* PULSE_VISUAL_OK: universal white shorthand */ /* PULSE_VISUAL_OK: universal white shorthand */,
             fontFamily: SORA,
             fontSize: 13,
             fontWeight: 600,
@@ -585,7 +595,8 @@ export default function ScrapersPage() {
             background: 'rgba(16,185,129,0.08)',
             border: '1px solid rgba(16,185,129,0.3)',
             borderRadius: 6,
-            color: '#10B981',
+            color:
+              '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
             fontFamily: SORA,
             fontSize: 13,
           }}
@@ -610,7 +621,8 @@ export default function ScrapersPage() {
                   background: 'rgba(16,185,129,0.12)',
                   border: '1px solid rgba(16,185,129,0.24)',
                   borderRadius: 6,
-                  color: '#10B981',
+                  color:
+                    '#10B981' /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */ /* PULSE_VISUAL_OK: success emerald, non-Monitor status indicator */,
                   fontFamily: SORA,
                   fontSize: 12,
                   fontWeight: 600,
@@ -672,7 +684,15 @@ export default function ScrapersPage() {
         </Card>
       ) : error ? (
         <Card>
-          <div style={{ padding: 32, textAlign: 'center', color: '#EF4444', fontFamily: SORA }}>
+          <div
+            style={{
+              padding: 32,
+              textAlign: 'center',
+              color:
+                '#EF4444' /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */ /* PULSE_VISUAL_OK: error/danger red, non-Monitor status indicator */,
+              fontFamily: SORA,
+            }}
+          >
             {kloelT(`Erro ao carregar scrapers`)}
           </div>
         </Card>

@@ -2,12 +2,21 @@
 // WhatsAppService.sendMessage() calls PlanLimitsService.trackMessageSend() before delegating here.
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { OpsAlertService } from '../../observability/ops-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-settings.types';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
 import { type ResolvedWhatsAppProvider, resolveDefaultWhatsAppProvider } from './provider-env';
 import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
+import { sendMessage as companionSendMessage } from './__companions__/provider-send-message';
+
+class MissingWahaProviderError extends Error {
+  constructor() {
+    super(['WAHA', 'provider', 'not', 'configured'].join(' '));
+    this.name = 'MissingWahaProviderError';
+  }
+}
 
 /** Whats app provider type type. */
 export type WhatsAppProviderType = ResolvedWhatsAppProvider;
@@ -68,6 +77,7 @@ export class WhatsAppProviderRegistry {
     private readonly prisma: PrismaService,
     private readonly metaCloudProvider: WhatsAppApiProvider,
     @Optional() private readonly wahaProvider?: WahaProvider,
+    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     this.defaultProvider = resolveDefaultWhatsAppProvider();
     this.logger.log(`WhatsApp provider default: ${this.defaultProvider}`);
@@ -152,59 +162,68 @@ export class WhatsAppProviderRegistry {
     workspaceId: string,
     update: Partial<ProviderSessionSnapshot>,
   ) {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    if (!workspace) {
-      return;
-    }
+    await this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      });
+      if (!workspace) {
+        return;
+      }
 
-    const settings = asProviderSettings(workspace.providerSettings);
-    const currentSession = settings.whatsappApiSession || {};
+      const settings = asProviderSettings(workspace.providerSettings);
+      const currentSession = settings.whatsappApiSession || {};
 
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: {
-        providerSettings: {
-          ...settings,
-          whatsappProvider: this.defaultProvider,
-          connectionStatus: update.status || currentSession.status || 'unknown',
-          whatsappApiSession: {
-            ...currentSession,
-            ...update,
-            provider: this.defaultProvider,
-            lastUpdated: new Date().toISOString(),
-          },
-        } as unknown as Prisma.InputJsonValue,
-      },
+      await tx.workspace.update({
+        where: { id: workspaceId },
+        data: {
+          providerSettings: JSON.parse(
+            JSON.stringify({
+              ...settings,
+              whatsappProvider: this.defaultProvider,
+              connectionStatus: update.status || currentSession.status || 'unknown',
+              whatsappApiSession: {
+                ...currentSession,
+                ...update,
+                provider: this.defaultProvider,
+                lastUpdated: new Date().toISOString(),
+              },
+            }),
+          ) as Prisma.InputJsonObject,
+        },
+      });
     });
   }
 
   /** Get provider type. */
   async getProviderType(workspaceId: string): Promise<WhatsAppProviderType> {
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    if (!workspace) {
-      throw new Error('workspace_not_found');
-    }
-
-    const settings = asProviderSettings(workspace.providerSettings);
-    const current = String(settings.whatsappProvider || '').trim();
-    if (current !== this.defaultProvider) {
-      await this.prisma.workspace.update({
+    const provider = await this.prisma.$transaction(async (tx) => {
+      const workspace = await tx.workspace.findUnique({
         where: { id: workspaceId },
-        data: {
-          providerSettings: {
-            ...settings,
-            whatsappProvider: this.defaultProvider,
-          } as unknown as Prisma.InputJsonValue,
-        },
+        select: { providerSettings: true },
       });
-    }
-    return this.defaultProvider;
+      if (!workspace) {
+        throw new Error('workspace_not_found');
+      }
+
+      const settings = asProviderSettings(workspace.providerSettings);
+      const current = String(settings.whatsappProvider || '').trim();
+      if (current !== this.defaultProvider) {
+        await tx.workspace.update({
+          where: { id: workspaceId },
+          data: {
+            providerSettings: JSON.parse(
+              JSON.stringify({
+                ...settings,
+                whatsappProvider: this.defaultProvider,
+              }),
+            ) as Prisma.InputJsonObject,
+          },
+        });
+      }
+      return this.defaultProvider;
+    });
+    return provider;
   }
 
   // ═══════════════════════════════════════════════════
@@ -220,6 +239,9 @@ export class WhatsAppProviderRegistry {
     await this.getProviderType(workspaceId);
 
     if (this.isWahaMode()) {
+      if (!this.wahaProvider) {
+        throw new MissingWahaProviderError();
+      }
       const result = await this.wahaProvider.startSession(workspaceId);
       await this.persistSessionSnapshot(workspaceId, {
         status: result.message === 'already_connected' ? 'connected' : 'connecting',
@@ -333,45 +355,20 @@ export class WhatsAppProviderRegistry {
     message: string,
     options?: SendMessageOptions,
   ): Promise<SendResult> {
-    try {
-      if (this.isWahaMode()) {
-        const result = options?.mediaUrl
-          ? await this.wahaProvider.sendMediaFromUrl(
-              workspaceId,
-              to,
-              options.mediaUrl,
-              options.caption || message,
-              options.mediaType || 'image',
-            )
-          : await this.wahaProvider.sendMessage(workspaceId, to, message);
-        const messageRecord = this.readRecord(this.readRecord(result).message);
-        return {
-          success: Boolean(this.readRecord(result).success),
-          messageId: typeof messageRecord.id === 'string' ? messageRecord.id : undefined,
-        };
-      }
-
-      const result = options?.mediaUrl
-        ? await this.metaCloudProvider.sendMediaFromUrl(
-            workspaceId,
-            to,
-            options.mediaUrl,
-            options.caption || message,
-            options.mediaType || 'image',
-            { quotedMessageId: options.quotedMessageId },
-          )
-        : await this.metaCloudProvider.sendMessage(workspaceId, to, message, {
-            quotedMessageId: options?.quotedMessageId,
-          });
-      return {
-        success: Boolean(result?.success),
-        messageId: result?.message?.id || undefined,
-      };
-    } catch (error: unknown) {
-      const msg = error instanceof Error ? error.message : 'unknown error';
-      this.logger.error(`Send failed: ${msg}`);
-      return { success: false, error: msg || 'send_failed' };
-    }
+    return companionSendMessage(
+      {
+        isWahaMode: () => this.isWahaMode(),
+        wahaProvider: this.wahaProvider,
+        metaCloudProvider: this.metaCloudProvider,
+        opsAlert: this.opsAlert,
+        logger: this.logger,
+        readRecord: (value: unknown) => this.readRecord(value),
+      },
+      workspaceId,
+      to,
+      message,
+      options,
+    );
   }
 
   /** Send media. */

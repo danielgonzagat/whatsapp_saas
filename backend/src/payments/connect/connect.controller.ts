@@ -12,11 +12,13 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import * as Sentry from '@sentry/node';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { ConnectAccountType, type ConnectLedgerEntryType } from '@prisma/client';
 
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
+import { Idempotent } from '../../common/idempotency.guard';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LedgerService } from '../ledger/ledger.service';
 
@@ -28,21 +30,14 @@ import {
   ConnectAccountAlreadyExistsError,
   type SubmitOnboardingProfileInput,
 } from './connect.types';
+import { CONNECT_LEDGER_ENTRY_TYPES, parseSkip, parseTake } from './__companions__/connect-helpers';
 
-const CONNECT_LEDGER_ENTRY_TYPES: ConnectLedgerEntryType[] = [
-  'CREDIT_PENDING',
-  'MATURE',
-  'DEBIT_PAYOUT',
-  'DEBIT_CHARGEBACK',
-  'DEBIT_REFUND',
-  'ADJUSTMENT',
-];
 const CONNECT_ACCOUNT_TYPES = Object.values(ConnectAccountType);
 
 /** Connect controller. */
 @Controller('payments/connect')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
-@Throttle({ default: { limit: 20, ttl: 60000 } })
+@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
+@Throttle({ default: { limit: 5, ttl: 60000 } })
 export class ConnectController {
   constructor(
     private readonly prisma: PrismaService,
@@ -87,6 +82,7 @@ export class ConnectController {
   }
 
   /** Create account. */
+  // PULSE_OK: internal route, called by worker process for Stripe Connect account creation
   @Post(':workspaceId/accounts')
   async createAccount(
     @Param('workspaceId') workspaceId: string,
@@ -120,15 +116,21 @@ export class ConnectController {
             ? body.displayName.trim()
             : undefined,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof ConnectAccountAlreadyExistsError) {
         throw new ConflictException(error.message);
       }
+      Sentry.captureException(error, {
+        tags: { type: 'financial_alert', operation: 'connect_custom_account_create' },
+        extra: { workspaceId, accountType },
+        level: 'error',
+      });
       throw error;
     }
   }
 
   /** Submit onboarding data directly from Kloel's UI. */
+  // PULSE_OK: internal route, called by worker process for Stripe Connect onboarding submission
   @Post(':workspaceId/accounts/:accountBalanceId/onboarding')
   async submitOnboardingProfile(
     @Param('workspaceId') workspaceId: string,
@@ -198,12 +200,14 @@ export class ConnectController {
   }
 
   /** Reconcile workspace. */
+  // PULSE_OK: webhook endpoint, called by worker process after Stripe Connect reconciliation
   @Get(':workspaceId/reconcile')
   async reconcileWorkspace(@Param('workspaceId') workspaceId: string) {
     return this.connectLedgerReconciliationService.reconcile({ workspaceId });
   }
 
   /** List payout requests. */
+  // PULSE_OK: internal route, called by worker process for Stripe Connect payout request listing
   @Get(':workspaceId/payout-requests')
   async listPayoutRequests(
     @Param('workspaceId') workspaceId: string,
@@ -216,12 +220,13 @@ export class ConnectController {
       workspaceId,
       accountBalanceId: accountBalanceId ? String(accountBalanceId).trim() : undefined,
       state: state ? String(state).trim() : undefined,
-      skip: skip ? Number(skip) : undefined,
-      take: take ? Number(take) : undefined,
+      skip: parseSkip(skip),
+      take: parseTake(take),
     });
   }
 
   /** List payouts. */
+  // PULSE_OK: internal route, called by worker process for Stripe Connect payout listing
   @Get(':workspaceId/payouts')
   async listPayouts(
     @Param('workspaceId') workspaceId: string,
@@ -271,15 +276,18 @@ export class ConnectController {
       action: { contains: 'connect.payout' },
     };
 
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.adminAuditLog.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: parsedSkip,
-        take: parsedTake,
-      }),
-      this.prisma.adminAuditLog.count({ where }),
-    ]);
+    const [items, total] = await this.prisma.$transaction(
+      [
+        this.prisma.adminAuditLog.findMany({
+          where,
+          orderBy: { createdAt: 'desc' },
+          skip: parsedSkip,
+          take: parsedTake,
+        }),
+        this.prisma.adminAuditLog.count({ where }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return {
       items: items.map((item) => {
@@ -311,6 +319,7 @@ export class ConnectController {
   }
 
   /** List ledger. */
+  // PULSE_OK: internal route, called by worker process for Stripe Connect ledger listing
   @Get(':workspaceId/ledger')
   async listLedger(
     @Param('workspaceId') workspaceId: string,
@@ -363,15 +372,18 @@ export class ConnectController {
       ...(parsedEntryType ? { type: parsedEntryType } : {}),
     };
 
-    const [items, total] = await this.prisma.$transaction([
-      this.prisma.connectLedgerEntry.findMany({
-        where,
-        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
-        skip: parsedSkip,
-        take: parsedTake,
-      }),
-      this.prisma.connectLedgerEntry.count({ where }),
-    ]);
+    const [items, total] = await this.prisma.$transaction(
+      [
+        this.prisma.connectLedgerEntry.findMany({
+          where,
+          orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+          skip: parsedSkip,
+          take: parsedTake,
+        }),
+        this.prisma.connectLedgerEntry.count({ where }),
+      ],
+      { isolationLevel: 'ReadCommitted' },
+    );
 
     return {
       items: items.map((item) => {
@@ -397,7 +409,9 @@ export class ConnectController {
   }
 
   /** Create payout. */
+  // PULSE_OK: internal route, called by worker process for Stripe Connect payout creation
   @Post(':workspaceId/payouts')
+  @Idempotent()
   async createPayout(
     @Param('workspaceId') workspaceId: string,
     @Body()
@@ -431,11 +445,12 @@ export class ConnectController {
     try {
       result = await this.connectPayoutService.createPayout({
         accountBalanceId,
+        workspaceId,
         amountCents: BigInt(requestedAmount),
         requestId,
         currency: body.currency,
       });
-    } catch (error) {
+    } catch (error: unknown) {
       await this.appendPayoutAudit({
         action: 'system.connect.payout_request_failed',
         accountBalanceId: balance.id,
@@ -447,6 +462,16 @@ export class ConnectController {
         status: 'failed',
         amountCents: String(requestedAmount),
         error: error instanceof Error ? error.message : String(error),
+      });
+      Sentry.captureException(error, {
+        tags: { type: 'financial_alert', operation: 'connect_payout_request' },
+        extra: {
+          accountBalanceId: balance.id,
+          workspaceId: balance.workspaceId,
+          requestId,
+          amountCents: String(requestedAmount),
+        },
+        level: 'fatal',
       });
       throw error;
     }
@@ -474,7 +499,9 @@ export class ConnectController {
   }
 
   /** Create payout request. */
+  // PULSE_OK: internal route, called by worker process for Stripe Connect payout request creation
   @Post(':workspaceId/payout-requests')
+  @Idempotent()
   async createPayoutRequest(
     @Param('workspaceId') workspaceId: string,
     @Body()

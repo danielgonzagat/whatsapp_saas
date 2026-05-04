@@ -20,7 +20,7 @@ async function getProviderForUser(user: string, workspaceId?: string) {
           include: { workspace: true },
         })
       : await prisma.contact.findFirst({
-          where: { email: user },
+          where: { email: user, workspaceId: undefined },
           include: { workspace: true },
         });
 
@@ -50,7 +50,7 @@ async function getProviderForUser(user: string, workspaceId?: string) {
         include: { workspace: true },
       })
     : await prisma.contact.findFirst({
-        where: { phone: normalized },
+        where: { phone: normalized, workspaceId: undefined },
         include: { workspace: true },
       });
 

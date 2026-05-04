@@ -60,6 +60,15 @@ function normalizeRoute(value: string): string {
   );
 }
 
+function extractMetadataArray(metadata: PulseStructuralNode['metadata'], key: string): string[] {
+  const value = metadata[key];
+  return Array.isArray(value) ? value : [];
+}
+
+function getSideEffectNodes(nodes: PulseStructuralNode[], file: string): PulseStructuralNode[] {
+  return nodes.filter((node) => node.role === 'side_effect' && node.file === file);
+}
+
 function buildNode(
   id: string,
   kind: PulseStructuralNode['kind'],
@@ -212,6 +221,8 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
         serviceName: trace.serviceName,
         methodName: trace.methodName,
         prismaModels: unique(trace.prismaModels),
+        serviceCalls: unique(trace.serviceCalls || []),
+        triggers: unique(trace.triggers || []),
       },
     ),
   );
@@ -314,9 +325,7 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
   );
 
   for (const uiNode of uiNodes) {
-    const apiCalls = Array.isArray(uiNode.metadata.apiCalls)
-      ? (uiNode.metadata.apiCalls as string[])
-      : [];
+    const apiCalls = extractMetadataArray(uiNode.metadata, 'apiCalls');
     for (const apiCall of apiCalls) {
       const normalized = normalizeRoute(apiCall);
       const target = apiByPath.get(normalized);
@@ -355,10 +364,17 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
     }
   }
 
+  for (const proxyNode of proxyNodes) {
+    const sideEffects = getSideEffectNodes(nodes, proxyNode.file);
+    for (const sideEffectNode of sideEffects) {
+      edges.push(
+        buildEdge(proxyNode.id, sideEffectNode.id, 'emits', truthMode, 'proxy-side-effect-signal'),
+      );
+    }
+  }
+
   for (const routeNode of routeNodes) {
-    const serviceCalls = Array.isArray(routeNode.metadata.serviceCalls)
-      ? (routeNode.metadata.serviceCalls as string[])
-      : [];
+    const serviceCalls = extractMetadataArray(routeNode.metadata, 'serviceCalls');
     const routeMethodName = String(routeNode.metadata.methodName || '');
     const sameMethodTraces = serviceByFileMethod.get(
       `${routeNode.file}:${routeMethodName}`.toLowerCase(),
@@ -387,9 +403,19 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
   }
 
   for (const serviceNode of serviceNodes) {
-    const prismaModels = Array.isArray(serviceNode.metadata.prismaModels)
-      ? (serviceNode.metadata.prismaModels as string[])
-      : [];
+    const serviceCalls = extractMetadataArray(serviceNode.metadata, 'serviceCalls');
+    for (const serviceCall of serviceCalls) {
+      const target =
+        serviceBySignature.get(serviceCall.toLowerCase()) ||
+        serviceBySignature.get(serviceCall.split('.').shift()?.toLowerCase() || '');
+      if (target && target.id !== serviceNode.id) {
+        edges.push(
+          buildEdge(serviceNode.id, target.id, 'orchestrates', truthMode, 'service-service-call'),
+        );
+      }
+    }
+
+    const prismaModels = extractMetadataArray(serviceNode.metadata, 'prismaModels');
     for (const modelName of prismaModels) {
       const persistenceNode = persistenceByModel.get(String(modelName).toLowerCase());
       if (persistenceNode) {
@@ -405,9 +431,7 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
       }
     }
 
-    const sideEffects = nodes.filter(
-      (node) => node.role === 'side_effect' && node.file === serviceNode.file,
-    );
+    const sideEffects = getSideEffectNodes(nodes, serviceNode.file);
     for (const sideEffectNode of sideEffects) {
       edges.push(
         buildEdge(
@@ -422,9 +446,7 @@ export function buildStructuralGraph(input: BuildStructuralGraphInput): PulseStr
   }
 
   for (const routeNode of routeNodes) {
-    const sideEffects = nodes.filter(
-      (node) => node.role === 'side_effect' && node.file === routeNode.file,
-    );
+    const sideEffects = getSideEffectNodes(nodes, routeNode.file);
     for (const sideEffectNode of sideEffects) {
       edges.push(
         buildEdge(routeNode.id, sideEffectNode.id, 'emits', truthMode, 'route-side-effect-signal'),

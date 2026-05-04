@@ -13,7 +13,7 @@
  * through JSON / HTTP / DB text columns without further escaping.
  */
 
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
+import { createCipheriv, createDecipheriv, createHash, pbkdf2Sync, randomBytes } from 'node:crypto';
 
 const PLUS_RE = /\+/g;
 const SLASH_RE = /\//g;
@@ -26,12 +26,17 @@ const TRAILING_EQUALS_RE = /=+$/;
 const ALGORITHM = 'aes-256-gcm' as const;
 const IV_LENGTH_BYTES = 12;
 
+/** Fixed salt for PBKDF2 key derivation — not secret, just prevents rainbow tables. */
+const PBKDF2_SALT = 'KLOEL_ADMIN_MFA_V2';
+const PBKDF2_ITERATIONS = 210000;
+const PBKDF2_KEY_LEN = 32;
+
 /**
  * Derive a 32-byte AES key from the operator-supplied secret.
  *
  * Accepted shapes (checked in order):
  *   1. 64-char hex → decoded directly (canonical form).
- *   2. Non-empty string of any other length → hashed with SHA-256
+ *   2. Non-empty string of any other length → derived via PBKDF2
  *      into 32 bytes. Deterministic, so the same raw string always
  *      derives the same key, which keeps previously-encrypted
  *      ciphertexts decryptable.
@@ -51,7 +56,21 @@ function decodeKey(raw: string): Buffer {
   if (HEX_64_RE.test(raw)) {
     return Buffer.from(raw, 'hex');
   }
-  // Derive 32 bytes from any other representation.
+  return pbkdf2Sync(raw, PBKDF2_SALT, PBKDF2_ITERATIONS, PBKDF2_KEY_LEN, 'sha256');
+}
+
+/**
+ * Legacy SHA-256 key derivation for decrypting ciphertexts created before the
+ * PBKDF2 migration. Used only as a fallback during decryption; new encryption
+ * always uses decodeKey() (PBKDF2).
+ */
+function decodeKeyLegacy(raw: string): Buffer {
+  if (!raw || raw.trim().length === 0) {
+    throw new Error('ADMIN_MFA_ENCRYPTION_KEY must be a non-empty string');
+  }
+  if (HEX_64_RE.test(raw)) {
+    return Buffer.from(raw, 'hex');
+  }
   return createHash('sha256').update(raw, 'utf8').digest();
 }
 
@@ -78,21 +97,31 @@ export function encryptAdminSecret(plaintext: string, keyHex: string): string {
   return [toBase64Url(iv), toBase64Url(tag), toBase64Url(ct)].join('.');
 }
 
-/** Decrypt admin secret. */
+/** Decrypt admin secret. Tries PBKDF2-derived key first, then legacy SHA-256 for migration. */
 export function decryptAdminSecret(payload: string, keyHex: string): string {
   const parts = payload.split('.');
   if (parts.length !== 3) {
     throw new Error('admin secret ciphertext is malformed');
   }
   const [ivPart, tagPart, ctPart] = parts;
-  const key = decodeKey(keyHex);
   const iv = fromBase64Url(ivPart);
   const tag = fromBase64Url(tagPart);
   const ct = fromBase64Url(ctPart);
-  const decipher = createDecipheriv(ALGORITHM, key, iv);
-  decipher.setAuthTag(tag);
-  const pt = Buffer.concat([decipher.update(ct), decipher.final()]);
-  return pt.toString('utf8');
+
+  // Try PBKDF2-derived key first (new format), fall back to SHA-256 (legacy).
+  const derivations: Array<() => Buffer> = [() => decodeKey(keyHex), () => decodeKeyLegacy(keyHex)];
+  for (const derive of derivations) {
+    try {
+      const key = derive();
+      const decipher = createDecipheriv(ALGORITHM, key, iv);
+      decipher.setAuthTag(tag);
+      const pt = Buffer.concat([decipher.update(ct), decipher.final()]);
+      return pt.toString('utf8');
+    } catch {
+      // Try next derivation
+    }
+  }
+  throw new Error('admin secret decryption failed — key mismatch or malformed ciphertext');
 }
 
 /**

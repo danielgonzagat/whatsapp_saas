@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  BadRequestException,
   NotFoundException,
   Param,
   Patch,
@@ -12,15 +13,15 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { Prisma, TimerType } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { syncAllWorkspaceCheckoutCouponsForProduct } from '../kloel/product-coupon-sync.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutService } from './checkout.service';
-import { type CheckoutOrderStatusValue } from './checkout.service';
 import { CreateBumpDto } from './dto/create-bump.dto';
 import { CreateCouponDto } from './dto/create-coupon.dto';
 import { CreatePixelDto } from './dto/create-pixel.dto';
@@ -28,14 +29,37 @@ import { CreatePlanDto } from './dto/create-plan.dto';
 import { CreateProductDto } from './dto/create-product.dto';
 import { CreateUpsellDto } from './dto/create-upsell.dto';
 import { UpdateConfigDto } from './dto/update-config.dto';
+import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 
 const U0300__U036F_RE = /[\u0300-\u036f]/g;
 const A_Z0_9_RE = /[^a-z0-9]+/g;
 const PATTERN_RE = /^-|-$/g;
 
+function normalizeTimerType(value: unknown): TimerType | undefined {
+  if (typeof value !== 'string' && typeof value !== 'number' && typeof value !== 'boolean') {
+    return undefined;
+  }
+
+  const normalized = String(value).trim().toUpperCase();
+
+  if (normalized === 'COUNTDOWN' || normalized === 'EVERGREEN') {
+    return TimerType.COUNTDOWN;
+  }
+
+  if (normalized === 'EXPIRATION' || normalized === 'FIXED') {
+    return TimerType.EXPIRATION;
+  }
+
+  if (normalized === TimerType.STOCK) {
+    return TimerType.STOCK;
+  }
+
+  return undefined;
+}
+
 /** Checkout controller. */
 @Controller('checkout')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
 @Throttle({ default: { limit: 30, ttl: 60000 } })
 export class CheckoutController {
   constructor(
@@ -121,8 +145,9 @@ export class CheckoutController {
 
   /** List products. */
   @Get('products')
-  listProducts(@Request() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
-    const wsId = workspaceId || req.user?.workspaceId;
+  listProducts(@Request() req: AuthenticatedRequest) {
+    const wsId = req.user?.workspaceId;
+    if (!wsId) throw new BadRequestException('workspaceId missing from token');
     return this.checkoutService.listProducts(wsId);
   }
 
@@ -170,7 +195,7 @@ export class CheckoutController {
       dto.slug || `${product.slug || product.name || 'checkout'}-${dto.name || 'oferta'}`,
     );
     dto.brandName = dto.brandName || product.name;
-    const createdPlan = await this.checkoutService.createPlan(productId, dto);
+    const createdPlan = await this.checkoutService.createPlan(productId, dto, workspaceId);
     await syncAllWorkspaceCheckoutCouponsForProduct(this.prisma, workspaceId, productId);
     return createdPlan;
   }
@@ -197,7 +222,7 @@ export class CheckoutController {
     if (plan.kind !== 'PLAN') {
       throw new NotFoundException('Plano nao encontrado');
     }
-    const deletedPlan = await this.checkoutService.deletePlan(id);
+    const deletedPlan = await this.checkoutService.deletePlan(id, workspaceId);
     await syncAllWorkspaceCheckoutCouponsForProduct(this.prisma, workspaceId, plan.productId);
     return deletedPlan;
   }
@@ -220,7 +245,7 @@ export class CheckoutController {
       dto.slug || `${product.slug || product.name || 'checkout'}-${dto.name || 'layout'}`,
     );
     dto.brandName = dto.brandName || product.name;
-    return this.checkoutService.createCheckout(productId, dto);
+    return this.checkoutService.createCheckout(productId, dto, workspaceId);
   }
 
   /** Duplicate checkout. */
@@ -228,7 +253,7 @@ export class CheckoutController {
   async duplicateCheckout(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyCheckoutOwnership(id, workspaceId);
-    return this.checkoutService.duplicateCheckout(id);
+    return this.checkoutService.duplicateCheckout(id, workspaceId);
   }
 
   /** Sync checkout links. */
@@ -275,10 +300,7 @@ export class CheckoutController {
     const { orderBumps: _orderBumps, upsells: _upsells, pixels: _pixels, ...configDto } = dto;
     const configInput: Prisma.CheckoutConfigUpdateInput = {
       ...configDto,
-      timerType:
-        dto.timerType && Object.values(TimerType).includes(dto.timerType as TimerType)
-          ? (dto.timerType as TimerType)
-          : undefined,
+      timerType: normalizeTimerType(dto.timerType),
       testimonials: dto.testimonials ? toPrismaJsonValue(dto.testimonials) : undefined,
       trustBadges: dto.trustBadges ? toPrismaJsonValue(dto.trustBadges) : undefined,
     };
@@ -378,8 +400,9 @@ export class CheckoutController {
   // ─── Coupons ──────────────────────────────────────────────────────────────
 
   @Get('coupons')
-  listCoupons(@Request() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
-    const wsId = workspaceId || req.user?.workspaceId;
+  listCoupons(@Request() req: AuthenticatedRequest) {
+    const wsId = req.user?.workspaceId;
+    if (!wsId) throw new BadRequestException('workspaceId missing from token');
     return this.checkoutService.listCoupons(wsId);
   }
 
@@ -430,12 +453,12 @@ export class CheckoutController {
   @Get('orders')
   listOrders(
     @Request() req: AuthenticatedRequest,
-    @Query('workspaceId') workspaceId?: string,
     @Query('status') status?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const wsId = workspaceId || req.user?.workspaceId;
+    const wsId = req.user?.workspaceId;
+    if (!wsId) throw new BadRequestException('workspaceId missing from token');
     const clampedPage = page ? Math.max(Number.parseInt(page, 10) || 1, 1) : undefined;
     const clampedLimit = limit
       ? Math.min(Math.max(Number.parseInt(limit, 10) || 20, 1), 100)
@@ -458,10 +481,9 @@ export class CheckoutController {
   updateOrderStatus(
     @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body()
-    body: { status: CheckoutOrderStatusValue; trackingCode?: string; trackingUrl?: string },
+    @Body() dto: UpdateOrderStatusDto,
   ) {
-    const { status, ...extra } = body;
+    const { status, ...extra } = dto;
     return this.checkoutService.updateOrderStatus(
       id,
       req.user?.workspaceId,

@@ -1,93 +1,55 @@
 #!/usr/bin/env node
 
-import { execFileSync } from 'node:child_process';
-import fs from 'node:fs';
+import { existsSync as nodeExistsSync } from 'node:fs';
 import path from 'node:path';
+import {
+  check,
+  daysSince,
+  failures,
+  isTracked,
+  passes,
+  readText,
+  requireFile,
+  requireIncludes,
+  requireRegex,
+  rootDir,
+} from './production-readiness/helpers.mjs';
+import { auditGithubWorkflows } from './production-readiness/github-workflows.mjs';
 
-const rootDir = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
-
-const failures = [];
-const passes = [];
-
-function relative(filePath) {
-  return path.relative(rootDir, filePath) || '.';
+/**
+ * Resolve a repo-relative path against `rootDir` and assert the result lives
+ * under the repo. Returns the absolute, validated path. Used at every site
+ * that previously joined a string segment onto `rootDir`, so the resulting
+ * fs sink only ever sees a path verified to be inside the repo root.
+ */
+function safeRepoPath(relPath) {
+  const normalized = path.isAbsolute(relPath)
+    ? path.normalize(relPath)
+    : path.normalize(`${rootDir}${path.sep}${relPath}`);
+  const resolved = toAbsolutePath(normalized);
+  assertRepoPath(resolved);
+  return resolved;
 }
 
-function readText(filePath) {
-  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-  // Safe: every call site derives filePath from path.join(rootDir, <hardcoded-literal>); rootDir is this script's resolved dirname. No user input.
-  return fs.readFileSync(filePath, 'utf8');
+function toAbsolutePath(normalized) {
+  return path.isAbsolute(normalized)
+    ? normalized
+    : path.normalize(`${process.cwd()}${path.sep}${normalized}`);
 }
 
-function check(ok, title, detail) {
-  if (ok) {
-    passes.push({ title, detail });
-    return;
+function assertRepoPath(resolved) {
+  const boundary = rootDir + path.sep;
+  if (resolved !== rootDir && !resolved.startsWith(boundary)) {
+    throw new Error(`Path traversal detected: ${resolved} is outside repo root`);
   }
-  failures.push({ title, detail });
 }
 
-function isTracked(relPath) {
-  try {
-    execFileSync('git', ['ls-files', '--error-unmatch', relPath], {
-      cwd: rootDir,
-      stdio: 'ignore',
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function requireFile(relPath, title) {
-  const absPath = path.join(rootDir, relPath);
-  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-  // Safe: absPath = path.join(rootDir, <hardcoded relPath>); relPath comes from requiredFiles literal table. No user input.
-  check(fs.existsSync(absPath), title, relPath);
-  return absPath;
-}
-
-function requireIncludes(filePath, needle, title) {
-  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-  // Safe: filePath is always path.join(rootDir, <hardcoded literal>). No user input.
-  if (!fs.existsSync(filePath)) {
-    check(false, title, `missing ${relative(filePath)}`);
-    return;
-  }
-  const content = readText(filePath);
-  check(content.includes(needle), title, `${relative(filePath)} must include "${needle}"`);
-}
-
-function requireRegex(filePath, regex, title, detail) {
-  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-  // Safe: filePath is always path.join(rootDir, <hardcoded literal>). No user input.
-  if (!fs.existsSync(filePath)) {
-    check(false, title, `missing ${relative(filePath)}`);
-    return;
-  }
-  const content = readText(filePath);
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-  // Safe: `regex` comes from call-site literal RegExps defined in this script; `content` is the repo's own tracked file contents. No user input.
-  check(regex.test(content), title, detail || `${relative(filePath)} must match ${regex}`);
-}
-
-function requireNotRegex(filePath, regex, title, detail) {
-  // nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-  // Safe: filePath is always path.join(rootDir, <hardcoded literal>). No user input.
-  if (!fs.existsSync(filePath)) {
-    check(false, title, `missing ${relative(filePath)}`);
-    return;
-  }
-  const content = readText(filePath);
-  // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-  // Safe: `regex` comes from call-site literal RegExps defined in this script; `content` is the repo's own tracked file contents. No user input.
-  check(!regex.test(content), title, detail || `${relative(filePath)} must not match ${regex}`);
-}
-
-function daysSince(isoString) {
-  const parsed = Date.parse(isoString);
-  if (!Number.isFinite(parsed)) return Number.POSITIVE_INFINITY;
-  return (Date.now() - parsed) / (1000 * 60 * 60 * 24);
+/**
+ * Assert that `filePath` resolves inside the repo root, then return whether
+ * the path exists. Throws on traversal attempts.
+ */
+function safeExistsSync(filePath) {
+  return nodeExistsSync(safeRepoPath(filePath));
 }
 
 const requiredFiles = [
@@ -164,7 +126,7 @@ for (const relPath of [
   );
 }
 
-const packageJsonPath = path.join(rootDir, 'package.json');
+const packageJsonPath = safeRepoPath('package.json');
 const packageJson = JSON.parse(readText(packageJsonPath));
 check(
   packageJson.scripts?.['readiness:check'] === 'node scripts/ops/validate-production-readiness.mjs',
@@ -219,10 +181,8 @@ for (const requiredScript of [
   );
 }
 
-const backupManifestPath = path.join(rootDir, '.backup-manifest.json');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: path is path.join(rootDir, '.backup-manifest.json') — hardcoded; no user input.
-if (fs.existsSync(backupManifestPath)) {
+const backupManifestPath = safeRepoPath('.backup-manifest.json');
+if (safeExistsSync(backupManifestPath)) {
   try {
     const manifest = JSON.parse(readText(backupManifestPath));
     const stores = Array.isArray(manifest.stores) ? manifest.stores : [];
@@ -267,10 +227,8 @@ if (fs.existsSync(backupManifestPath)) {
   }
 }
 
-const drLogPath = path.join(rootDir, '.dr-test.log');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: path is path.join(rootDir, '.dr-test.log') — hardcoded; no user input.
-if (fs.existsSync(drLogPath)) {
+const drLogPath = safeRepoPath('.dr-test.log');
+if (safeExistsSync(drLogPath)) {
   const drLog = readText(drLogPath);
   check(
     drLog.includes('Overall: PASS'),
@@ -285,140 +243,14 @@ if (fs.existsSync(drLogPath)) {
   );
 }
 
-const ciWorkflowPath = path.join(rootDir, '.github/workflows/ci-cd.yml');
-requireIncludes(ciWorkflowPath, 'readiness:check', 'CI enforces readiness check');
-requireIncludes(ciWorkflowPath, 'pulse:ci', 'CI enforces PULSE certification');
-requireIncludes(ciWorkflowPath, 'guard:db-push', 'CI blocks prisma db push regressions');
-requireIncludes(ciWorkflowPath, 'format:check', 'CI enforces formatting');
-requireIncludes(ciWorkflowPath, 'seatbelt:check', 'CI enforces the ESLint seatbelt');
-requireIncludes(ciWorkflowPath, 'quality:dead-code', 'CI refreshes Knip dead-code evidence');
-requireIncludes(ciWorkflowPath, 'quality:graph', 'CI refreshes Madge cycle evidence');
-requireIncludes(ciWorkflowPath, 'typecheck', 'CI enforces TypeScript checking');
-requireIncludes(ciWorkflowPath, 'prisma:validate', 'CI validates Prisma schema');
-requireIncludes(ciWorkflowPath, 'ratchet:check', 'CI enforces the quality ratchet');
-requireIncludes(ciWorkflowPath, 'codecov/codecov-action@v5', 'CI uploads coverage to Codecov');
-requireIncludes(ciWorkflowPath, 'coverage:normalize', 'CI normalizes LCOV paths before upload');
-requireIncludes(
-  ciWorkflowPath,
-  'codacy/codacy-coverage-reporter-action@v1.3.0',
-  'CI uploads coverage to Codacy using a pinned official action',
-);
-requireIncludes(ciWorkflowPath, 'upload-artifact', 'CI publishes forensic artifacts');
-requireNotRegex(
-  ciWorkflowPath,
-  /\.github\/workflows\/deploy\.yml/,
-  'CI no longer references the disabled legacy deploy workflow',
-  '.github/workflows/ci-cd.yml must not reference .github/workflows/deploy.yml',
-);
+auditGithubWorkflows();
 
-const stagingWorkflowPath = path.join(rootDir, '.github/workflows/deploy-staging.yml');
-requireIncludes(stagingWorkflowPath, 'workflow_run', 'Staging deploy is chained to CI');
-requireIncludes(
-  stagingWorkflowPath,
-  'environment: staging',
-  'Staging deploy targets the staging environment',
-);
-
-const productionWorkflowPath = path.join(rootDir, '.github/workflows/deploy-production.yml');
-requireIncludes(
-  productionWorkflowPath,
-  'workflow_dispatch',
-  'Production deploy requires manual dispatch',
-);
-requireIncludes(
-  productionWorkflowPath,
-  'environment: production',
-  'Production deploy is bound to the production environment',
-);
-requireIncludes(
-  productionWorkflowPath,
-  'readiness:check',
-  'Production deploy reruns readiness checks',
-);
-
-const nightlyWorkflowPath = path.join(rootDir, '.github/workflows/nightly-ops-audit.yml');
-requireIncludes(nightlyWorkflowPath, 'schedule:', 'Nightly ops audit is scheduled');
-requireIncludes(nightlyWorkflowPath, 'pulse:report', 'Nightly ops audit generates a PULSE report');
-
-const releasePleaseWorkflowPath = path.join(rootDir, '.github/workflows/release-please.yml');
-requireIncludes(
-  releasePleaseWorkflowPath,
-  'googleapis/release-please-action',
-  'Release Please workflow runs the official action',
-);
-requireIncludes(
-  releasePleaseWorkflowPath,
-  'release-please-config.json',
-  'Release Please workflow reads the repo config',
-);
-
-const codeqlWorkflowPath = path.join(rootDir, '.github/workflows/codeql.yml');
-requireIncludes(
-  codeqlWorkflowPath,
-  'github/codeql-action/init',
-  'CodeQL workflow initializes CodeQL',
-);
-requireIncludes(
-  codeqlWorkflowPath,
-  'github/codeql-action/analyze',
-  'CodeQL workflow publishes analysis',
-);
-
-const codacyAnalysisWorkflowPath = path.join(rootDir, '.github/workflows/codacy-analysis.yml');
-requireIncludes(
-  codacyAnalysisWorkflowPath,
-  'codacy/codacy-analysis-cli-action@v4.4.7',
-  'Codacy analysis workflow runs the pinned official action',
-);
-requireIncludes(
-  codacyAnalysisWorkflowPath,
-  'upload: true',
-  'Codacy analysis workflow uploads results to Codacy',
-);
-
-const dependabotAutomergeWorkflowPath = path.join(
-  rootDir,
-  '.github/workflows/dependabot-auto-merge.yml',
-);
-requireIncludes(
-  dependabotAutomergeWorkflowPath,
-  'gh pr review',
-  'Dependabot auto-merge workflow auto-approves eligible PRs',
-);
-requireIncludes(
-  dependabotAutomergeWorkflowPath,
-  '--auto --squash --delete-branch',
-  'Dependabot auto-merge workflow enables auto-merge and branch cleanup',
-);
-
-const legacyDeployWorkflowPath = path.join(rootDir, '.github/workflows/deploy.yml');
-requireIncludes(
-  legacyDeployWorkflowPath,
-  'workflow_dispatch',
-  'Legacy deploy workflow is dispatch-only',
-);
-requireNotRegex(
-  legacyDeployWorkflowPath,
-  /^\s*push:/m,
-  'Legacy deploy workflow is no longer triggered on push',
-  '.github/workflows/deploy.yml must not trigger on push',
-);
-
-const legacyCiWorkflowPath = path.join(rootDir, '.github/workflows/main.yml');
-requireIncludes(legacyCiWorkflowPath, 'workflow_dispatch', 'Legacy CI workflow is dispatch-only');
-requireNotRegex(
-  legacyCiWorkflowPath,
-  /^\s*(push|pull_request):/m,
-  'Legacy CI workflow is no longer triggered automatically',
-  '.github/workflows/main.yml must not trigger on push or pull_request',
-);
-
-const dependabotPath = path.join(rootDir, '.github/dependabot.yml');
+const dependabotPath = safeRepoPath('.github/dependabot.yml');
 for (const keyword of ['github-actions', '/backend', '/frontend', '/worker', '/e2e']) {
   requireIncludes(dependabotPath, keyword, `Dependabot covers ${keyword}`);
 }
 
-const mainTsPath = path.join(rootDir, 'backend/src/main.ts');
+const mainTsPath = safeRepoPath('backend/src/main.ts');
 requireIncludes(mainTsPath, 'helmet(', 'Backend enables Helmet');
 requireIncludes(mainTsPath, 'enableCors', 'Backend enables CORS');
 requireIncludes(
@@ -433,7 +265,7 @@ requireIncludes(
 );
 requireIncludes(mainTsPath, 'ValidationPipe', 'Backend enables global DTO validation');
 
-const appModulePath = path.join(rootDir, 'backend/src/app.module.ts');
+const appModulePath = safeRepoPath('backend/src/app.module.ts');
 requireIncludes(
   appModulePath,
   'SentryModule.forRoot()',
@@ -450,7 +282,7 @@ requireIncludes(
   'Backend wires prompt sanitization middleware',
 );
 
-const paymentWebhookPath = path.join(rootDir, 'backend/src/webhooks/payment-webhook.controller.ts');
+const paymentWebhookPath = safeRepoPath('backend/src/webhooks/payment-webhook.controller.ts');
 requireIncludes(
   paymentWebhookPath,
   'STRIPE_WEBHOOK_SECRET',
@@ -462,14 +294,14 @@ requireIncludes(
   'Payment webhook exposes the Stripe endpoint',
 );
 
-const metricsPath = path.join(rootDir, 'backend/src/metrics/metrics.controller.ts');
+const metricsPath = safeRepoPath('backend/src/metrics/metrics.controller.ts');
 requireIncludes(metricsPath, 'METRICS_TOKEN', 'Metrics endpoint is token-protected');
 
-const diagPath = path.join(rootDir, 'backend/src/app.controller.ts');
+const diagPath = safeRepoPath('backend/src/app.controller.ts');
 requireIncludes(diagPath, 'DIAG_TOKEN', 'Diagnostics endpoint is token-protected');
 requireIncludes(diagPath, "@Get('health')", 'Backend exposes liveness health endpoint');
 
-const rootEnvPath = path.join(rootDir, '.env.example');
+const rootEnvPath = safeRepoPath('.env.example');
 for (const variable of [
   'STRIPE_WEBHOOK_SECRET',
   'METRICS_TOKEN',
@@ -482,7 +314,7 @@ for (const variable of [
   requireIncludes(rootEnvPath, variable, `Root env example documents ${variable}`);
 }
 
-const backendEnvPath = path.join(rootDir, 'backend/.env.example');
+const backendEnvPath = safeRepoPath('backend/.env.example');
 for (const variable of [
   'STRIPE_WEBHOOK_SECRET',
   'METRICS_TOKEN',
@@ -497,7 +329,7 @@ for (const variable of [
   requireIncludes(backendEnvPath, variable, `Backend env example documents ${variable}`);
 }
 
-const frontendEnvPath = path.join(rootDir, 'frontend/.env.example');
+const frontendEnvPath = safeRepoPath('frontend/.env.example');
 for (const variable of [
   'NEXT_PUBLIC_API_URL',
   'BACKEND_URL',
@@ -506,19 +338,19 @@ for (const variable of [
   requireIncludes(frontendEnvPath, variable, `Frontend env example documents ${variable}`);
 }
 
-const claudeSettingsPath = path.join(rootDir, '.claude/settings.json');
+const claudeSettingsPath = safeRepoPath('.claude/settings.json');
 requireIncludes(claudeSettingsPath, 'PreToolUse', 'Claude settings define pre-write hooks');
 requireIncludes(claudeSettingsPath, 'PostToolUse', 'Claude settings define post-write hooks');
 requireIncludes(claudeSettingsPath, 'Stop', 'Claude settings define stop hooks');
 
-const huskyPrePushPath = path.join(rootDir, '.husky/pre-push');
+const huskyPrePushPath = safeRepoPath('.husky/pre-push');
 requireIncludes(
   huskyPrePushPath,
   'prepush:scoped',
   'Husky pre-push hook runs the scoped validator',
 );
 
-const githubSettingsDocPath = path.join(rootDir, 'docs/GITHUB_REPOSITORY_SETTINGS.md');
+const githubSettingsDocPath = safeRepoPath('docs/GITHUB_REPOSITORY_SETTINGS.md');
 for (const keyword of [
   'Secret scanning',
   'Push protection',
@@ -538,10 +370,8 @@ for (const keyword of [
   requireIncludes(githubSettingsDocPath, keyword, `GitHub settings doc covers ${keyword}`);
 }
 
-const mcpConfigPath = path.join(rootDir, '.mcp.json');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: path is path.join(rootDir, '.mcp.json') — hardcoded; no user input.
-if (!fs.existsSync(mcpConfigPath)) {
+const mcpConfigPath = safeRepoPath('.mcp.json');
+if (!safeExistsSync(mcpConfigPath)) {
   check(false, 'Codacy MCP server is configured', 'missing .mcp.json');
 } else {
   const mcpConfig = readText(mcpConfigPath);
@@ -554,10 +384,8 @@ if (!fs.existsSync(mcpConfigPath)) {
   );
 }
 
-const branchProtectionPath = path.join(rootDir, '.github/branch-protection.json');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: path is path.join(rootDir, '.github/branch-protection.json') — hardcoded; no user input.
-if (fs.existsSync(branchProtectionPath)) {
+const branchProtectionPath = safeRepoPath('.github/branch-protection.json');
+if (safeExistsSync(branchProtectionPath)) {
   try {
     const branchProtection = JSON.parse(readText(branchProtectionPath));
     check(
@@ -605,24 +433,18 @@ if (fs.existsSync(branchProtectionPath)) {
   }
 }
 
-const backendPackagePath = path.join(rootDir, 'backend/package.json');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: path is path.join(rootDir, 'backend/package.json') — hardcoded; no user input.
-if (fs.existsSync(backendPackagePath)) {
+const backendPackagePath = safeRepoPath('backend/package.json');
+if (safeExistsSync(backendPackagePath)) {
   const backendPackage = JSON.parse(readText(backendPackagePath));
   check(
-    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-    // Safe: literal anchored regex scanning the repo's own backend/package.json start:prod script string. No user input, no nested quantifiers.
     !/prisma\s+db\s+push/i.test(backendPackage.scripts?.['start:prod'] || ''),
     'Backend production start script no longer uses prisma db push',
     'backend/package.json start:prod must not execute prisma db push',
   );
 }
 
-const rootPackagePath = path.join(rootDir, 'package.json');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: path is path.join(rootDir, 'package.json') — hardcoded; no user input.
-if (fs.existsSync(rootPackagePath)) {
+const rootPackagePath = safeRepoPath('package.json');
+if (safeExistsSync(rootPackagePath)) {
   const rootPackage = JSON.parse(readText(rootPackagePath));
   check(
     rootPackage.scripts?.['railway:backend:build'] ===
@@ -637,10 +459,8 @@ if (fs.existsSync(rootPackagePath)) {
   );
 }
 
-const railwayTomlPath = path.join(rootDir, 'railway.toml');
-// nosemgrep: javascript.lang.security.audit.path-traversal.non-literal-fs-filename.non-literal-fs-filename
-// Safe: path is path.join(rootDir, 'railway.toml') — hardcoded; no user input.
-if (fs.existsSync(railwayTomlPath)) {
+const railwayTomlPath = safeRepoPath('railway.toml');
+if (safeExistsSync(railwayTomlPath)) {
   const railwayToml = readText(railwayTomlPath);
   requireIncludes(
     railwayTomlPath,
@@ -658,15 +478,13 @@ if (fs.existsSync(railwayTomlPath)) {
     'Railway healthcheck uses liveness endpoint',
   );
   check(
-    // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.regex-dos-vulnerability.regex-dos-vulnerability
-    // Safe: literal regex applied to the repo's own railway.toml contents. No user input, no nested quantifiers.
     !/Command\s*=\s*".*\bcd\b/i.test(railwayToml),
     'Railway commands avoid shell builtin cd',
     'railway.toml build/start commands must not depend on shell builtin cd.',
   );
 }
 
-const monitoringDocPath = path.join(rootDir, 'docs/MONITORING_AND_ALERTING.md');
+const monitoringDocPath = safeRepoPath('docs/MONITORING_AND_ALERTING.md');
 for (const keyword of [
   'Sentry',
   'METRICS_TOKEN',
@@ -677,17 +495,17 @@ for (const keyword of [
   requireIncludes(monitoringDocPath, keyword, `Monitoring doc covers ${keyword}`);
 }
 
-const stagingDocPath = path.join(rootDir, 'docs/STAGING_ENVIRONMENT.md');
+const stagingDocPath = safeRepoPath('docs/STAGING_ENVIRONMENT.md');
 for (const keyword of ['Railway', 'Vercel', 'workflow_dispatch', 'staging', 'preview']) {
   requireIncludes(stagingDocPath, keyword, `Staging doc covers ${keyword}`);
 }
 
-const legalDocPath = path.join(rootDir, 'docs/LEGAL_AND_FINANCIAL_COMPLIANCE.md');
+const legalDocPath = safeRepoPath('docs/LEGAL_AND_FINANCIAL_COMPLIANCE.md');
 for (const keyword of ['LGPD', 'Asaas', 'chargeback', 'refund', 'nota fiscal', 'split']) {
   requireIncludes(legalDocPath, keyword, `Compliance doc covers ${keyword}`);
 }
 
-const readinessDocPath = path.join(rootDir, 'docs/PRODUCTION_READINESS.md');
+const readinessDocPath = safeRepoPath('docs/PRODUCTION_READINESS.md');
 for (const keyword of ['readiness:check', 'pulse:ci', 'staging', 'backup', 'monitoring']) {
   requireIncludes(readinessDocPath, keyword, `Production readiness doc covers ${keyword}`);
 }

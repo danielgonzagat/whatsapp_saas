@@ -1,5 +1,11 @@
 name: Deploy Staging
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -12,6 +18,9 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+    # checkov:skip=CKV_GHA_7: git_ref is a controlled operator input that selects
+    # which git ref to deploy to staging; it is read via env var INPUT_GIT_REF and
+    # never interpolated directly into a shell run command.
     inputs:
       git_ref:
         description: Git ref to deploy to staging
@@ -34,7 +43,7 @@ jobs:
         image: pgvector/pgvector:pg15
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
+          POSTGRES_PASSWORD: ${{ secrets.TEST_DB_PASSWORD || 'postgres' }}
           POSTGRES_DB: whatsapp_saas_test
         ports:
           - 5432:5432
@@ -45,16 +54,20 @@ jobs:
           --health-retries 5
 
     env:
-      DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
+      DATABASE_URL: postgresql://postgres:${{ secrets.TEST_DB_PASSWORD || 'postgres' }}@localhost:5432/whatsapp_saas_test
 
     steps:
       - name: Resolve git ref
         id: ref
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          WORKFLOW_RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          INPUT_GIT_REF: ${{ github.event.inputs.git_ref }}
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
-            echo "git_ref=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          if [[ "$EVENT_NAME" == "workflow_run" ]]; then
+            echo "git_ref=$WORKFLOW_RUN_HEAD_SHA" >> "$GITHUB_OUTPUT"
           else
-            echo "git_ref=${{ github.event.inputs.git_ref || 'main' }}" >> "$GITHUB_OUTPUT"
+            echo "git_ref=${INPUT_GIT_REF:-main}" >> "$GITHUB_OUTPUT"
           fi
 
       - uses: actions/checkout@v4
@@ -191,10 +204,13 @@ jobs:
           fi
 
       - name: Publish deployment summary
+        env:
+          GIT_REF_OUTPUT: ${{ steps.ref.outputs.git_ref }}
+          DEPLOYMENT_URL: ${{ steps.vercel.outputs.deployment_url }}
         run: |
           {
             echo "## Staging deploy"
             echo ""
-            echo "- Ref: \`${{ steps.ref.outputs.git_ref }}\`"
-            echo "- Frontend preview: ${{ steps.vercel.outputs.deployment_url }}"
+            echo "- Ref: \`${GIT_REF_OUTPUT}\`"
+            echo "- Frontend preview: ${DEPLOYMENT_URL}"
           } >> "$GITHUB_STEP_SUMMARY"

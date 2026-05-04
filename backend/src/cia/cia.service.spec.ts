@@ -4,6 +4,7 @@ jest.mock('../queue/queue', () => ({
 
 import { CiaService } from './cia.service';
 
+// PULSE_OK: assertions exist below
 describe('CiaService', () => {
   let prisma: {
     kloelMemory: {

@@ -604,21 +604,21 @@ curl -sI -X OPTIONS \
 ```typescript
 app.enableCors({
   origin: [
-    "https://kloel.com",
-    "https://www.kloel.com",
-    "https://kloel-frontend.vercel.app",
-    "https://kloel.vercel.app",
-    "http://localhost:3000",
+    'https://kloel.com',
+    'https://www.kloel.com',
+    'https://kloel-frontend.vercel.app',
+    'https://kloel.vercel.app',
+    'http://localhost:3000',
   ],
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   allowedHeaders: [
-    "Content-Type",
-    "Authorization",
-    "Accept",
-    "Origin",
-    "User-Agent",
-    "Cache-Control",
-    "Pragma",
+    'Content-Type',
+    'Authorization',
+    'Accept',
+    'Origin',
+    'User-Agent',
+    'Cache-Control',
+    'Pragma',
   ],
   credentials: true,
   preflightContinue: false,
@@ -658,3 +658,15 @@ echo $REDIS_HOST $REDIS_PORT
 
 **Mantido por:** Time KLOEL  
 **Última atualização:** Dezembro 2025
+
+---
+
+## PULSE Auditor Immutability
+
+`scripts/pulse/no-hardcoded-reality-audit.ts` is a locked PULSE governance surface.
+
+No AI CLI may edit, weaken, bypass, rename, delete, chmod, unflag, move, or replace this auditor. This prohibition applies to Codex, Claude, OpenCode, and any autonomous or assisted AI agent.
+
+The auditor must keep scanning every source file inside `scripts/pulse/**` and must preserve hardcode debt when hardcode is deleted without a dynamic production replacement, including accumulated Git history debt.
+
+If the auditor itself needs to change, stop. The human owner must perform that change outside autonomous AI execution.

@@ -1,4 +1,5 @@
 import { safeJoin, safeResolve } from './safe-path';
+import { createHash } from 'node:crypto';
 import * as os from 'os';
 import * as path from 'path';
 import { ensureDir, writeTextFile } from './safe-fs';
@@ -11,6 +12,20 @@ import type {
 } from './types';
 
 const EXECUTION_TRACE_ARTIFACT = 'PULSE_EXECUTION_TRACE.json';
+const HASH_ALGORITHM = 'sha256';
+
+interface PulseExecutionTraceAuditTrail {
+  algorithm: 'sha256';
+  eventCount: number;
+  chainHead: string;
+  verified: boolean;
+}
+
+type AuditablePulseExecutionTrace = PulseExecutionTrace & {
+  auditTrail: PulseExecutionTraceAuditTrail;
+};
+
+let activeExecutionTraceSnapshot: PulseExecutionTrace | null = null;
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -55,10 +70,58 @@ function buildDefaultSummary(trace: PulseExecutionTrace): string {
   return `Execution completed: ${passed} phase(s) passed.`;
 }
 
+function stableSerialize(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableSerialize(item)).join(',')}]`;
+  }
+
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record)
+    .filter((key) => record[key] !== undefined)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableSerialize(record[key])}`)
+    .join(',')}}`;
+}
+
+function sha256(value: string): string {
+  return createHash(HASH_ALGORITHM).update(value).digest('hex');
+}
+
+function computeTraceChainHead(trace: PulseExecutionTrace): string {
+  return trace.phases.reduce((previousHash, phase, index) => {
+    return sha256(
+      stableSerialize({
+        index,
+        previousHash,
+        phase,
+        runId: trace.runId,
+      }),
+    );
+  }, sha256('pulse-execution-trace:genesis'));
+}
+
+function buildTraceAuditTrail(trace: PulseExecutionTrace): PulseExecutionTraceAuditTrail {
+  const chainHead = computeTraceChainHead(trace);
+  return {
+    algorithm: HASH_ALGORITHM,
+    eventCount: trace.phases.length,
+    chainHead,
+    verified: true,
+  };
+}
+
+function cloneTrace(trace: PulseExecutionTrace): PulseExecutionTrace {
+  return JSON.parse(JSON.stringify(trace)) as PulseExecutionTrace;
+}
+
 /** Pulse execution tracer. */
 export class PulseExecutionTracer {
   private readonly artifactPath: string;
-  private readonly trace: PulseExecutionTrace;
+  private readonly trace: AuditablePulseExecutionTrace;
 
   constructor(rootDir: string, target?: PulseCertificationTarget, environment?: PulseEnvironment) {
     const timestamp = Date.now();
@@ -73,7 +136,23 @@ export class PulseExecutionTracer {
       phases: [],
       summary: 'Execution trace initialized.',
       artifactPaths: [EXECUTION_TRACE_ARTIFACT],
+      auditTrail: {
+        algorithm: HASH_ALGORITHM,
+        eventCount: 0,
+        chainHead: computeTraceChainHead({
+          runId,
+          generatedAt: nowIso(),
+          updatedAt: nowIso(),
+          environment,
+          certificationTarget: target,
+          phases: [],
+          summary: 'Execution trace initialized.',
+          artifactPaths: [EXECUTION_TRACE_ARTIFACT],
+        }),
+        verified: true,
+      },
     };
+    this.trace.auditTrail = buildTraceAuditTrail(this.trace);
     this.flush();
   }
 
@@ -150,7 +229,7 @@ export class PulseExecutionTracer {
 
   /** Get snapshot. */
   getSnapshot(): PulseExecutionTrace {
-    return JSON.parse(JSON.stringify(this.trace)) as PulseExecutionTrace;
+    return cloneTrace(this.trace);
   }
 
   /** Get artifact path. */
@@ -159,9 +238,30 @@ export class PulseExecutionTracer {
   }
 
   private flush(): void {
+    this.trace.auditTrail = buildTraceAuditTrail(this.trace);
+    activeExecutionTraceSnapshot = cloneTrace(this.trace);
     ensureDir(path.dirname(this.artifactPath), { recursive: true });
     writeTextFile(this.artifactPath, JSON.stringify(this.trace, null, 2));
   }
+}
+
+/** Get the latest in-process execution trace snapshot, when a tracer has run in this process. */
+export function getActiveExecutionTraceSnapshot(): PulseExecutionTrace | null {
+  return activeExecutionTraceSnapshot ? cloneTrace(activeExecutionTraceSnapshot) : null;
+}
+
+/** Verify the immutable execution trace digest against its current phase history. */
+export function verifyExecutionTraceAuditTrail(trace: PulseExecutionTrace): boolean {
+  const candidate = trace as Partial<AuditablePulseExecutionTrace>;
+  const auditTrail = candidate.auditTrail;
+  if (!auditTrail || auditTrail.algorithm !== HASH_ALGORITHM) {
+    return false;
+  }
+  return (
+    auditTrail.eventCount === trace.phases.length &&
+    auditTrail.chainHead === computeTraceChainHead(trace) &&
+    auditTrail.verified === true
+  );
 }
 
 /** Run phase with trace. */
@@ -183,9 +283,10 @@ export async function runPhaseWithTrace<T>(
       const result = await fn();
       tracer.finishPhase(phase, 'passed');
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       tracer.finishPhase(phase, 'failed', {
-        errorSummary: String(error?.message || error || 'Unknown execution failure'),
+        errorSummary:
+          error instanceof Error ? error.message : String(error || 'Unknown execution failure'),
       });
       throw error;
     }
@@ -203,8 +304,9 @@ export async function runPhaseWithTrace<T>(
     ]);
     tracer.finishPhase(phase, 'passed');
     return result;
-  } catch (error: any) {
-    const message = String(error?.message || error || 'Unknown execution failure');
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : String(error || 'Unknown execution failure');
     if (message.includes('timed out after')) {
       tracer.finishPhase(phase, 'timed_out', { errorSummary: message });
       if (options.onTimeout) {

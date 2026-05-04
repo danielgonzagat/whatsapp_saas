@@ -6,15 +6,16 @@
  * Checks whether the main layout and pages use media queries or responsive
  * Tailwind/CSS breakpoints. Missing responsive design on main layout = broken mobile UX.
  *
- * BREAK TYPES:
- *   RESPONSIVE_BROKEN (medium) — main layout has zero media queries or responsive breakpoints
+ * Emits responsive-layout evidence. Diagnostic identity is synthesized
+ * downstream from static signals and predicates.
  */
 
-import { safeJoin, safeResolve } from '../safe-path';
+import { safeJoin } from '../safe-path';
 import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { pathExists, readTextFile } from '../safe-fs';
+import { buildParserDiagnosticBreak } from './diagnostic-break';
 
 function readSafe(file: string): string {
   try {
@@ -24,19 +25,42 @@ function readSafe(file: string): string {
   }
 }
 
+function countOccurrences(content: string, needle: string): number {
+  let count = 0;
+  let offset = 0;
+  while (offset < content.length) {
+    const index = content.indexOf(needle, offset);
+    if (index === -1) {
+      break;
+    }
+    count += 1;
+    offset = index + needle.length;
+  }
+  return count;
+}
+
+function countResponsiveClassPrefixes(content: string): number {
+  const prefixes = ['sm:', 'md:', 'lg:', 'xl:', '2xl:'];
+  return prefixes.reduce((total, prefix) => total + countOccurrences(content, prefix), 0);
+}
+
 /** Count @media queries in a string */
 function countMediaQueries(content: string): number {
-  return (content.match(/@media\b/g) || []).length;
+  return countOccurrences(content, '@media');
 }
 
 /** Count Tailwind responsive prefix usage: sm:, md:, lg:, xl:, 2xl: */
 function countTailwindBreakpoints(content: string): number {
-  return (content.match(/\b(?:sm|md|lg|xl|2xl):/g) || []).length;
+  return countResponsiveClassPrefixes(content);
 }
 
 /** Count CSS-in-JS media queries: "@media" strings in template literals or style objects */
 function countCssInJsMedia(content: string): number {
-  return (content.match(/['"`]@media\b/g) || []).length;
+  return (
+    countOccurrences(content, "'@media") +
+    countOccurrences(content, '"@media') +
+    countOccurrences(content, '`@media')
+  );
 }
 
 /** Check responsive. */
@@ -67,26 +91,39 @@ export function checkResponsive(config: PulseConfig): Break[] {
   }
 
   if (layoutCandidates.length > 0 && !layoutResponsive) {
-    breaks.push({
-      type: 'RESPONSIVE_BROKEN',
-      severity: 'medium',
-      file: path.relative(
-        config.rootDir,
-        layoutCandidates[0] ?? safeJoin(config.frontendDir, 'src', 'app', 'layout.tsx'),
-      ),
-      line: 1,
-      description: 'Main layout has zero @media queries or responsive breakpoints',
-      detail:
-        'The root layout controls the sidebar, header, and grid shell. ' +
-        'Without responsive breakpoints (sm:/md:/lg: or @media), the layout is broken on mobile. ' +
-        'Add flex-col layout for narrow viewports and hide/collapse the sidebar at < 768px.',
-    });
+    const evidenceFile = path.relative(
+      config.rootDir,
+      layoutCandidates[0] ?? safeJoin(config.frontendDir, 'src', 'app', 'layout.tsx'),
+    );
+    breaks.push(
+      buildParserDiagnosticBreak({
+        detector: 'responsive-layout-static-evidence',
+        source: 'static-layout-signal:responsive-tester',
+        truthMode: 'confirmed_static',
+        severity: 'medium',
+        file: evidenceFile,
+        line: 1,
+        summary: 'Main layout has no responsive layout evidence',
+        detail:
+          'The root layout controls the sidebar, header, and grid shell. ' +
+          'No responsive breakpoint evidence was found in candidate layout files. ' +
+          'Expected evidence includes breakpoint classes, media queries, or CSS-in-JS responsive rules.',
+        surface: 'frontend-responsive-layout',
+      }),
+    );
   }
 
   // ── Secondary check: aggregate @media across all frontend files ─────────────
   // If the entire frontend has fewer than 5 @media queries, responsive design is likely absent
   const allFrontendFiles = walkFiles(config.frontendDir, ['.tsx', '.ts', '.css', '.scss']).filter(
-    (f) => !/node_modules|\.next\/|dist\//.test(f),
+    (f) => {
+      const normalized = f.replaceAll('\\', '/');
+      return (
+        !normalized.includes('/node_modules/') &&
+        !normalized.includes('/.next/') &&
+        !normalized.includes('/dist/')
+      );
+    },
   );
 
   let totalMedia = 0;
@@ -101,17 +138,21 @@ export function checkResponsive(config: PulseConfig): Break[] {
   const totalResponsiveSignals = totalMedia + totalTailwind;
 
   if (totalResponsiveSignals < 5) {
-    breaks.push({
-      type: 'RESPONSIVE_BROKEN',
-      severity: 'medium',
-      file: path.relative(config.rootDir, config.frontendDir),
-      line: 1,
-      description: `Frontend has only ${totalResponsiveSignals} responsive breakpoint signals across all files`,
-      detail:
-        `Found ${totalMedia} @media queries and ${totalTailwind} Tailwind breakpoints (sm:/md:/lg:) ` +
-        'across the entire frontend. This strongly suggests the app is not responsive. ' +
-        'Minimum expectation: main layout, sidebar, and data tables should all have mobile breakpoints.',
-    });
+    breaks.push(
+      buildParserDiagnosticBreak({
+        detector: 'responsive-aggregate-static-evidence',
+        source: 'static-layout-signal:responsive-tester',
+        truthMode: 'confirmed_static',
+        severity: 'medium',
+        file: path.relative(config.rootDir, config.frontendDir),
+        line: 1,
+        summary: 'Frontend has sparse responsive breakpoint evidence across scanned files',
+        detail:
+          `Found ${totalMedia} @media queries and ${totalTailwind} Tailwind breakpoints (sm:/md:/lg:) ` +
+          'across the entire frontend. This suggests the app needs responsive proof for layout, sidebar, and data-table surfaces.',
+        surface: 'frontend-responsive-coverage',
+      }),
+    );
   }
 
   return breaks;

@@ -2,6 +2,59 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 import { readTextFile } from '../safe-fs';
+import { calculateDynamicRisk } from '../dynamic-risk-model';
+import { synthesizeDiagnostic } from '../diagnostic-synthesizer';
+import { buildPredicateGraph } from '../predicate-graph';
+import { buildPulseSignalGraph, type PulseSignalEvidence } from '../signal-graph';
+
+function severityFromRisk(riskScore: number, fallback: Break['severity']): Break['severity'] {
+  if (riskScore >= 0.9) return 'critical';
+  if (riskScore >= 0.7) return 'high';
+  if (riskScore >= 0.4) return 'medium';
+  return fallback;
+}
+
+function synthesizePromiseDiagnosticBreak(
+  signal: PulseSignalEvidence,
+  fallback: Break['severity'],
+): Break {
+  const signalGraph = buildPulseSignalGraph([signal]);
+  const predicateGraph = buildPredicateGraph(signalGraph);
+  const risk = calculateDynamicRisk({ predicateGraph });
+  const diagnostic = synthesizeDiagnostic(signalGraph, predicateGraph, risk);
+
+  return {
+    type: diagnostic.id,
+    severity: severityFromRisk(risk.score, fallback),
+    file: signal.location.file,
+    line: signal.location.line,
+    description: diagnostic.title,
+    detail: `${diagnostic.summary}; evidence=${diagnostic.evidenceIds.join(',')}; predicates=${diagnostic.predicateKinds.join(',')}; signal=${signal.detail ?? signal.summary}`,
+    source: `${signal.source};detector=${signal.detector};truthMode=${signal.truthMode};proofMode=${diagnostic.proofMode}`,
+  };
+}
+
+function buildPromiseBreak(input: {
+  file: string;
+  line: number;
+  summary: string;
+  detail: string;
+}): Break {
+  return synthesizePromiseDiagnosticBreak(
+    {
+      source: 'promise-chain-weak-sensor',
+      detector: 'missing-await-checker',
+      truthMode: 'weak_signal',
+      summary: input.summary,
+      detail: input.detail,
+      location: {
+        file: input.file,
+        line: input.line,
+      },
+    },
+    'high',
+  );
+}
 
 /** Check missing await. */
 export function checkMissingAwait(config: PulseConfig): Break[] {
@@ -77,14 +130,14 @@ export function checkMissingAwait(config: PulseConfig): Break[] {
           continue;
         }
 
-        breaks.push({
-          type: 'FLOATING_PROMISE',
-          severity: 'high',
-          file: relFile,
-          line: i + 1,
-          description: '.then() call without .catch() — unhandled promise rejection',
-          detail: `${trimmed.slice(0, 120)} — add .catch(err => this.logger.error(err)) or use async/await with try/catch`,
-        });
+        breaks.push(
+          buildPromiseBreak({
+            file: relFile,
+            line: i + 1,
+            summary: 'Promise chain has no adjacent catch, await, return, or capture evidence',
+            detail: `${trimmed.slice(0, 120)}; syntax sensor needs control-flow confirmation before blocking.`,
+          }),
+        );
       }
     }
   }

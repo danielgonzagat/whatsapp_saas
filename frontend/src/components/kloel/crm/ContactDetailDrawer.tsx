@@ -3,6 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { useCRMMutations, useContact } from '@/hooks/useCRM';
 import { neuroCrmApi } from '@/lib/api/crm';
+import { colors } from '@/lib/design-tokens';
 import {
   Brain,
   Briefcase,
@@ -15,6 +16,7 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { type KeyboardEvent, useCallback, useState } from 'react';
 
 /* ── Types ── */
@@ -23,7 +25,7 @@ interface Deal {
   id?: string;
   title?: string;
   value?: number;
-  stage?: string;
+  stage?: string | { id?: string; name?: string };
   currency?: string;
 }
 
@@ -45,21 +47,21 @@ interface ContactDetailDrawerProps {
 
 /* ── Design tokens ── */
 const C = {
-  bg: '#0A0A0C',
-  surface: '#111113',
-  elevated: '#19191C',
-  border: '#222226',
-  accent: '#E85D30',
-  text: '#E0DDD8',
-  muted: '#6E6E73',
+  bg: colors.background.void,
+  surface: colors.background.surface,
+  elevated: colors.background.elevated,
+  border: colors.border.space,
+  accent: colors.ember.primary,
+  text: colors.text.silver,
+  muted: colors.text.muted,
   sora: "'Sora', sans-serif",
   mono: "'JetBrains Mono', monospace",
 } as const;
 
 const sentimentColors: Record<string, { bg: string; text: string }> = {
-  positive: { bg: 'rgba(52,199,89,0.15)', text: '#34C759' },
-  neutral: { bg: 'rgba(110,110,115,0.15)', text: '#8E8E93' },
-  negative: { bg: 'rgba(255,69,58,0.15)', text: '#FF453A' },
+  positive: { bg: 'rgba(52,199,89,0.15)', text: '#34C759' }, // PULSE_VISUAL_OK: platform sentiment green
+  neutral: { bg: 'rgba(110,110,115,0.15)', text: '#8E8E93' }, // PULSE_VISUAL_OK: platform sentiment gray
+  negative: { bg: 'rgba(255,69,58,0.15)', text: '#FF453A' }, // PULSE_VISUAL_OK: platform sentiment red
 };
 
 function LoadingStrip({
@@ -136,6 +138,7 @@ function ContactDetailLoadingBody() {
 
 /* ── Component ── */
 export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps) {
+  const router = useRouter();
   const { contact: raw, isLoading, mutate } = useContact(phone);
   const { addTag, removeTag } = useCRMMutations();
   const [tagInput, setTagInput] = useState('');
@@ -356,7 +359,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                           display: 'flex',
                         }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.color = '#FF453A';
+                          e.currentTarget.style.color = '#FF453A'; // PULSE_VISUAL_OK: delete hover red
                         }}
                         onMouseLeave={(e) => {
                           e.currentTarget.style.color = C.muted;
@@ -485,7 +488,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                   {neuroLoading ? 'Analisando...' : 'Analisar com IA'}
                 </button>
                 {neuroError && (
-                  <p style={{ fontSize: 12, color: '#FF453A', margin: '0 0 8px' }}>{neuroError}</p>
+                  <p style={{ fontSize: 12, color: '#FF453A', margin: '0 0 8px' }}>{neuroError}</p> // PULSE_VISUAL_OK: error text red
                 )}
                 {neuroResult && (
                   <div
@@ -567,7 +570,11 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                             {deal.title ?? 'Sem titulo'}
                           </div>
                           {deal.stage && (
-                            <div style={{ fontSize: 11, color: C.muted }}>{deal.stage}</div>
+                            <div style={{ fontSize: 11, color: C.muted }}>
+                              {typeof deal.stage === 'string'
+                                ? deal.stage
+                                : (deal.stage.name ?? '')}
+                            </div>
                           )}
                         </div>
                         {deal.value != null && (
@@ -601,15 +608,70 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
             background: C.surface,
           }}
         >
-          <ActionButton
-            icon={<MessageCircle size={14} aria-hidden="true" />}
-            label={kloelT(`Enviar mensagem`)}
-            primary
-          />
-          <ActionButton
-            icon={<Briefcase size={14} aria-hidden="true" />}
-            label={kloelT(`Criar deal`)}
-          />
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              router.push('/whatsapp');
+            }}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              padding: '10px 0',
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: 'none',
+              background: C.accent,
+              color: '#fff',
+              fontFamily: C.sora,
+              transition: 'opacity .15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.85';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
+            }}
+          >
+            <MessageCircle size={14} aria-hidden="true" /> {kloelT(`Enviar mensagem`)}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              router.push('/vendas/pipeline');
+            }}
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              padding: '10px 0',
+              borderRadius: 6,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: `1px solid ${C.border}`,
+              background: 'transparent',
+              color: C.text,
+              fontFamily: C.sora,
+              transition: 'opacity .15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.85';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
+            }}
+          >
+            <Briefcase size={14} aria-hidden="true" /> {kloelT(`Criar deal`)}
+          </button>
         </div>
       </aside>
 
@@ -656,46 +718,5 @@ function InfoRow({ icon, label }: { icon: React.ReactNode; label: string }) {
       <span style={{ color: C.muted, display: 'flex' }}>{icon}</span>
       <span style={{ fontFamily: C.mono }}>{label}</span>
     </div>
-  );
-}
-
-function ActionButton({
-  icon,
-  label,
-  primary,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  primary?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      style={{
-        flex: 1,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 6,
-        padding: '10px 0',
-        borderRadius: 6,
-        fontSize: 13,
-        fontWeight: 600,
-        cursor: 'pointer',
-        border: primary ? 'none' : `1px solid ${C.border}`,
-        background: primary ? C.accent : 'transparent',
-        color: primary ? '#fff' : C.text,
-        fontFamily: C.sora,
-        transition: 'opacity .15s',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.opacity = '0.85';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.opacity = '1';
-      }}
-    >
-      {icon} {label}
-    </button>
   );
 }

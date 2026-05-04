@@ -121,7 +121,7 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
         // Pattern: async function funcName(...) { ... apiFetch(...) ... }
         // Pattern: funcName: async (...) => apiFetch(...)
         const innerFuncRe =
-          /(?:const|let)\s+(\w+)\s*=\s*(?:async\s+)?\([^)]*\)\s*(?::\s*[\w<>\[\]|,\s]+)?\s*=>\s*\{?/g;
+          /(?:const|let)\s+(\w+)\s*=\s*(?:useCallback\s*\(\s*)?(?:async\s+)?\([^)]*\)\s*(?::\s*[\w<>\[\]|,\s]+)?\s*=>\s*\{?/g;
         let innerMatch;
 
         while ((innerMatch = innerFuncRe.exec(hookBody)) !== null) {
@@ -181,6 +181,11 @@ export function buildHookRegistry(config: PulseConfig): HookRegistry {
         // Check if any imported API objects are used in hooks
         for (const apiObj of imported) {
           if (!apiObj.endsWith('Api') && !apiObj.endsWith('api')) {
+            continue;
+          }
+          // Restrict apiObj to a plain JS identifier so the regex source
+          // below is bounded (no metachars, no ReDoS surface).
+          if (!/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(apiObj)) {
             continue;
           }
           // Find methods called on this API object within hook bodies

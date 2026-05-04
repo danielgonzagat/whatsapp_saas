@@ -2,6 +2,7 @@ import { randomInt } from 'node:crypto';
 import { type Job, Worker } from 'bullmq';
 import { prisma } from './db';
 import { connection, flowQueue } from './queue';
+import { isRetryableError, WorkerError } from './src/utils/error-handler';
 import { forEachSequential } from './utils/async-sequence';
 
 /**
@@ -151,23 +152,26 @@ export const campaignWorker = new Worker(
 
       if (!campaign) {
         console.error(`❌ Campaign ${campaignId} not found`);
-        return;
+        throw new WorkerError(`Campaign ${campaignId} not found`, 'CAMPAIGN_NOT_FOUND', false);
       }
+
+      await job.updateProgress(5);
 
       await prisma.campaign.updateMany({
         where: { id: campaignId, workspaceId },
         data: { status: 'RUNNING' },
       });
 
-      // 2. Fetch Audience (supports tags and explicit phones)
+      // 2. Fetch Audience
       const filters = (campaign.filters || {}) as Record<string, unknown>;
       const where = buildAudienceWhere(workspaceId, filters);
 
       const contacts = await prisma.contact.findMany({
-        where,
+        where: { workspaceId, ...where },
         select: { phone: true, name: true, id: true, customFields: true },
       });
 
+      await job.updateProgress(20);
       console.log(`👥 Audience size: ${contacts.length}`);
 
       // 3. Dispatch
@@ -176,20 +180,19 @@ export const campaignWorker = new Worker(
 
       if (isFlowTemplate(template)) {
         const jobs = buildFlowJobs(contacts, template, workspaceId, campaignId);
+        await job.updateProgress(50);
         await flowQueue.addBulk(jobs);
         sentCount = contacts.length;
-
-        // Atribuição básica: marcar último campaignId no contato
         await attributeCampaignToContacts(contacts, workspaceId, campaignId);
       } else {
-        // Direct send via worker (anti-ban + provider routing)
         const jobs = buildDirectSendJobs(contacts, template, workspaceId);
-
+        await job.updateProgress(50);
         await flowQueue.addBulk(jobs);
         sentCount = contacts.length;
-
         await attributeCampaignToContacts(contacts, workspaceId, campaignId);
       }
+
+      await job.updateProgress(90);
 
       // 4. Update Stats / Finish
       await prisma.campaign.updateMany({
@@ -203,6 +206,8 @@ export const campaignWorker = new Worker(
         },
       });
 
+      await job.updateProgress(100);
+
       console.log(`✅ Campaign ${campaignId} dispatched successfully (${sentCount} sent)`);
     } catch (err) {
       console.error('Campaign %s failed: %O', campaignId, err);
@@ -210,12 +215,21 @@ export const campaignWorker = new Worker(
         where: { id: campaignId, workspaceId },
         data: { status: 'CANCELLED' },
       });
+
+      if (!isRetryableError(err)) {
+        throw new WorkerError(
+          err instanceof Error ? err.message : String(err),
+          'CAMPAIGN_PERMANENT',
+          false,
+        );
+      }
+
       throw err;
     }
   },
   {
     connection,
-    concurrency: 5, // Process 5 campaigns in parallel
+    concurrency: 5,
     lockDuration: 60000,
   },
 );

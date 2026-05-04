@@ -1,24 +1,42 @@
 {
   "enabledPlugins": {
     "railway@claude-plugins-official": true,
-    "stripe@claude-plugins-official": true
+    "stripe@claude-plugins-official": true,
+    "sentry@claude-plugins-official": true,
+    "vercel@claude-plugins-official": true
   },
   "hooks": {
     "PreToolUse": [
       {
-        "event": "Write|Edit",
-        "command": "npm run typecheck 2>&1 | head -40"
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm run typecheck 2>&1 | head -40 || true"
+          }
+        ]
       }
     ],
     "PostToolUse": [
       {
-        "event": "Write|Edit",
-        "command": "npx prettier --write ${file} --ignore-unknown 2>/dev/null || true"
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_response.filePath // .tool_input.file_path // empty' | { read -r f; [ -n \"$f\" ] && npx prettier --write \"$f\" --ignore-unknown 2>/dev/null || true; }"
+          }
+        ]
       }
     ],
     "Stop": [
       {
-        "command": "npm run guard:db-push && npm run prisma:validate && npm test"
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npm run guard:db-push && npm run prisma:validate && npm test"
+          }
+        ]
       }
     ]
   }

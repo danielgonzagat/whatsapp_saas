@@ -1,8 +1,10 @@
 import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
+import { WhatsAppWatchdogSessionService } from './whatsapp-watchdog-session.service';
 
 describe('WhatsAppWatchdogService', () => {
   const originalNodeEnv = process.env.NODE_ENV;
   let prisma: {
+    $transaction: jest.Mock;
     workspace: {
       findMany: jest.Mock;
       findUnique: jest.Mock;
@@ -18,12 +20,15 @@ describe('WhatsAppWatchdogService', () => {
     syncSessionConfig: jest.Mock;
     deleteSession: jest.Mock;
   };
-  let catchupService: {
-    triggerCatchup: jest.Mock;
-  };
-  let ciaRuntime: {
-    bootstrap: jest.Mock;
-    ensureBacklogCoverage: jest.Mock;
+  let recovery: {
+    acquireLock: jest.Mock;
+    releaseLock: jest.Mock;
+    attemptReconnect: jest.Mock;
+    shouldAttemptReconnect: jest.Mock;
+    tryBootstrapAutonomy: jest.Mock;
+    maintainConnectedWorkspace: jest.Mock;
+    alertOps: jest.Mock;
+    incReconnectCounter: jest.Mock;
   };
   let redis: {
     set: jest.Mock;
@@ -36,6 +41,7 @@ describe('WhatsAppWatchdogService', () => {
     process.env.NODE_ENV = 'test';
     process.env.WAHA_API_URL = 'https://waha.test';
     prisma = {
+      $transaction: jest.fn((callback: any) => callback(prisma)),
       workspace: {
         findMany: jest.fn(),
         findUnique: jest.fn().mockResolvedValue({
@@ -57,15 +63,15 @@ describe('WhatsAppWatchdogService', () => {
       deleteSession: jest.fn().mockResolvedValue(true),
     };
 
-    catchupService = {
-      triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),
-    };
-
-    ciaRuntime = {
-      bootstrap: jest.fn().mockResolvedValue({ connected: true }),
-      ensureBacklogCoverage: jest.fn().mockResolvedValue({
-        action: 'idle',
-      }),
+    recovery = {
+      acquireLock: jest.fn().mockResolvedValue('lock-token'),
+      releaseLock: jest.fn().mockResolvedValue(true),
+      attemptReconnect: jest.fn().mockResolvedValue(true),
+      shouldAttemptReconnect: jest.fn().mockReturnValue(true),
+      tryBootstrapAutonomy: jest.fn().mockResolvedValue(undefined),
+      maintainConnectedWorkspace: jest.fn().mockResolvedValue(undefined),
+      alertOps: jest.fn().mockResolvedValue(undefined),
+      incReconnectCounter: jest.fn(),
     };
 
     redis = {
@@ -74,13 +80,19 @@ describe('WhatsAppWatchdogService', () => {
       del: jest.fn().mockResolvedValue(1),
     };
 
+    const sessionSvc = new WhatsAppWatchdogSessionService(
+      prisma as never as ConstructorParameters<typeof WhatsAppWatchdogSessionService>[0],
+      providerRegistry as never,
+      recovery as never,
+    );
+
     service = new WhatsAppWatchdogService(
-      prisma as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[0],
-      providerRegistry as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[1],
-      whatsappApi as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[2],
-      catchupService as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[3],
-      ciaRuntime as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[4],
-      redis as unknown as ConstructorParameters<typeof WhatsAppWatchdogService>[5],
+      prisma as never as ConstructorParameters<typeof WhatsAppWatchdogService>[0],
+      providerRegistry as never,
+      whatsappApi as never,
+      recovery as never,
+      sessionSvc,
+      redis as never as ConstructorParameters<typeof WhatsAppWatchdogService>[5],
     );
     service.onModuleInit();
   });
@@ -141,9 +153,8 @@ describe('WhatsAppWatchdogService', () => {
     expect(providerRegistry.startSession).not.toHaveBeenCalled();
     expect(health.connected).toBe(true);
     expect(health.consecutiveFailures).toBe(0);
-    expect(catchupService.triggerCatchup).not.toHaveBeenCalled();
-    expect(ciaRuntime.bootstrap).not.toHaveBeenCalled();
-    expect(ciaRuntime.ensureBacklogCoverage).not.toHaveBeenCalled();
+    expect(recovery.tryBootstrapAutonomy).not.toHaveBeenCalled();
+    expect(recovery.maintainConnectedWorkspace).not.toHaveBeenCalled();
   });
 
   it('does not mark reconnect as connected when WAHA is still waiting for QR', async () => {
@@ -167,7 +178,7 @@ describe('WhatsAppWatchdogService', () => {
     expect(providerRegistry.startSession).not.toHaveBeenCalled();
     expect(health.connected).toBe(true);
     expect(health.consecutiveFailures).toBe(0);
-    expect(catchupService.triggerCatchup).not.toHaveBeenCalled();
+    expect(recovery.tryBootstrapAutonomy).not.toHaveBeenCalled();
   });
 
   it('does not attempt reconnect when a structural NOWEB store failure is persisted', async () => {
@@ -201,9 +212,8 @@ describe('WhatsAppWatchdogService', () => {
     const health = await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
 
     expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
-    expect(catchupService.triggerCatchup).not.toHaveBeenCalled();
-    expect(ciaRuntime.bootstrap).not.toHaveBeenCalled();
-    expect(ciaRuntime.ensureBacklogCoverage).not.toHaveBeenCalled();
+    expect(recovery.tryBootstrapAutonomy).not.toHaveBeenCalled();
+    expect(recovery.maintainConnectedWorkspace).not.toHaveBeenCalled();
     expect(health.connected).toBe(true);
   });
 
@@ -265,7 +275,7 @@ describe('WhatsAppWatchdogService', () => {
     await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
 
     expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
-    expect(ciaRuntime.bootstrap).not.toHaveBeenCalled();
+    expect(recovery.tryBootstrapAutonomy).not.toHaveBeenCalled();
   });
 
   it('skips the watchdog sweep when another instance already holds the global lock', async () => {

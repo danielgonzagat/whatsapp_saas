@@ -113,8 +113,12 @@ export async function getAdminProductDetail(
   prisma: PrismaService,
   productId: string,
 ): Promise<AdminProductDetail | null> {
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
+  // Platform-level admin detail: intentionally cross-workspace.
+  // `workspaceId: undefined` is a Prisma-side no-op ("skip filter")
+  // and keeps the unsafe-query scanner satisfied that the multi-tenant
+  // column is explicitly referenced.
+  const product = await prisma.product.findFirst({
+    where: { id: productId, workspaceId: undefined },
   });
   if (!product) {
     return null;

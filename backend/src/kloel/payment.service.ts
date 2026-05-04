@@ -39,23 +39,39 @@ interface PaymentWebhookPayload {
   workspaceId?: string;
 }
 
+/** Create payment input shape. */
 export interface CreatePaymentInput {
+  /** Workspace id property. */
   workspaceId: string;
+  /** Lead id property. */
   leadId: string;
+  /** Customer name property. */
   customerName: string;
+  /** Customer phone property. */
   customerPhone: string;
+  /** Customer email property. */
   customerEmail?: string;
+  /** Amount property. */
   amount: number;
+  /** Description property. */
   description: string;
+  /** Idempotency key property. */
   idempotencyKey?: string;
 }
 
+/** Create payment result shape. */
 export interface CreatePaymentResult {
+  /** Id property. */
   id: string;
+  /** Invoice url property. */
   invoiceUrl?: string;
+  /** Pix qr code url property. */
   pixQrCodeUrl?: string;
+  /** Pix copy paste property. */
   pixCopyPaste?: string;
+  /** Payment link property. */
   paymentLink?: string;
+  /** Status property. */
   status: string;
 }
 
@@ -110,7 +126,7 @@ export class PaymentService {
     amountInCents: number,
     idempotencyKey: string,
   ): Promise<StripePaymentIntent> {
-    return (await this.stripeService.stripe.paymentIntents.create(
+    return await this.stripeService.stripe.paymentIntents.create(
       {
         amount: amountInCents,
         currency: 'brl',
@@ -132,7 +148,7 @@ export class PaymentService {
       {
         idempotencyKey,
       },
-    )) as StripePaymentIntent;
+    );
   }
 
   private extractPixDetails(paymentIntent: StripePaymentIntent) {
@@ -182,6 +198,22 @@ export class PaymentService {
               pixHostedInstructionsUrl: params.pixData?.hosted_instructions_url || null,
               idempotencyKey: params.idempotencyKey,
             },
+          },
+        });
+
+        await this.auditService.logWithTx(tx, {
+          workspaceId: params.data.workspaceId,
+          action: 'payment.created',
+          resource: 'KloelPayment',
+          resourceId: params.paymentIntent.id,
+          details: {
+            leadId: params.data.leadId,
+            amount: params.data.amount,
+            paymentMethod: 'PIX',
+            externalPaymentId: params.paymentIntent.id,
+            idempotencyKey: params.idempotencyKey,
+            customerName: params.data.customerName,
+            description: params.data.description,
           },
         });
       },
@@ -273,10 +305,10 @@ export class PaymentService {
       if (err instanceof BadRequestException) {
         throw err;
       }
-      const errInstanceofError =
-        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
-      this.logger.error(`Stripe indisponível: ${errInstanceofError?.message}`);
-      this.financialAlert.paymentFailed(errInstanceofError, {
+      const errInstance =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown_error');
+      this.logger.error(`Stripe indisponível: ${errInstance.message}`);
+      this.financialAlert.paymentFailed(errInstance, {
         workspaceId: data.workspaceId,
       });
       throw new ServiceUnavailableException(
@@ -287,9 +319,25 @@ export class PaymentService {
 
   /** Get public payment. */
   async getPublicPayment(paymentId: string) {
+    // Public lookup by externalPaymentId or id (no authenticated workspace
+    // context). We surface workspaceId in the selection for telemetry and
+    // tenant anchoring — it is NOT returned to the unauthenticated caller.
     const sale = await this.prisma.kloelSale.findFirst({
       where: {
         OR: [{ externalPaymentId: paymentId }, { id: paymentId }],
+      },
+      select: {
+        id: true,
+        workspaceId: true,
+        status: true,
+        amount: true,
+        productName: true,
+        paymentMethod: true,
+        paymentLink: true,
+        externalPaymentId: true,
+        createdAt: true,
+        paidAt: true,
+        metadata: true,
       },
     });
 
@@ -362,10 +410,15 @@ export class PaymentService {
 
         await this.auditService.logWithTx(tx, {
           workspaceId,
-          action: 'PAYMENT_CONFIRMED',
+          action: 'payment.status_changed',
           resource: 'KloelSale',
           resourceId: typeof sale.id === 'string' ? sale.id : '',
-          details: { externalPaymentId: payment.id, event },
+          details: {
+            externalPaymentId: payment.id,
+            event,
+            previousStatus: sale.status,
+            newStatus: 'paid',
+          },
         });
       },
       { isolationLevel: 'ReadCommitted' },
