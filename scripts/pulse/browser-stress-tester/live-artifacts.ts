@@ -4,8 +4,12 @@ import type { PulseProductGraph } from '../types.product-graph';
 import type { BehaviorGraph } from '../types.behavior-graph';
 import type { PulseScopeFile, PulseScopeState } from '../types.truth.scope';
 import {
+  deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+  discoverRouteSeparatorFromRuntime,
+  observeStatusTextLengthFromCatalog,
 } from '../dynamic-reality-kernel';
 
 function discoverStorageKeyPatterns(): RegExp {
@@ -104,12 +108,20 @@ function readArtifact<T>(rootDir: string, fileName: string): T | null {
 }
 
 function normalizeRoute(route: string): string | null {
+  const sep = discoverRouteSeparatorFromRuntime();
   const trimmed = route.trim();
   if (!trimmed) {
     return null;
   }
-  const withSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-  return withSlash.replace(/\/{2,}/g, '/').replace(/\/$/, '') || '/';
+  const withSlash = trimmed.startsWith(sep) ? trimmed : `${sep}${trimmed}`;
+  let normalized = withSlash;
+  while (normalized.includes(sep + sep)) {
+    normalized = normalized.split(sep + sep).join(sep);
+  }
+  if (normalized.endsWith(sep) && normalized !== sep) {
+    normalized = normalized.slice(0, -sep.length);
+  }
+  return normalized || sep;
 }
 
 function routeSlugToPath(slug: string): string | null {
@@ -123,7 +135,7 @@ function routeSlugToPath(slug: string): string | null {
     }
     pathSegments.push(token);
   }
-  return normalizeRoute(pathSegments.join('/'));
+  return normalizeRoute(pathSegments.join(discoverRouteSeparatorFromRuntime()));
 }
 
 export function routeCandidateFromArtifactId(artifactId: string): RouteCandidate | null {
@@ -192,7 +204,8 @@ function discoverAuthRoutes(candidates: RouteCandidate[]): BrowserAuthRoutes {
 }
 
 function routeLooksPublic(route: string): boolean {
-  const segments = route.split('/').filter(Boolean);
+  const sep = discoverRouteSeparatorFromRuntime();
+  const segments = route.split(sep).filter(Boolean);
   if (segments.length === deriveZeroValue()) {
     return true;
   }
@@ -202,7 +215,8 @@ function routeLooksPublic(route: string): boolean {
 }
 
 function routeLooksAuthRedirect(route: string): boolean {
-  return route.split('/').some((segment) => /^(login|signin|entrar|auth)$/i.test(segment));
+  const sep = discoverRouteSeparatorFromRuntime();
+  return route.split(sep).some((segment) => /^(login|signin|entrar|auth)$/i.test(segment));
 }
 
 function discoverPagePolicy(manifest: ResolvedManifestOverlay | null): BrowserPageDiscovery {
@@ -226,9 +240,10 @@ function discoverPagePolicy(manifest: ResolvedManifestOverlay | null): BrowserPa
       if (routeLooksAuthRedirect(route)) {
         loginRedirectRoutes.add(route);
       }
+      const statusTextLen = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Unprocessable Entity'));
       const stateBias =
-        moduleEntry.state === 'READY' ? deriveZeroValue() : moduleEntry.state === 'PARTIAL' ? 20 : 40;
-      const criticalBias = moduleEntry.critical ? deriveZeroValue() : 10;
+        moduleEntry.state === 'READY' ? deriveZeroValue() : moduleEntry.state === 'PARTIAL' ? statusTextLen : statusTextLen + statusTextLen;
+      const criticalBias = moduleEntry.critical ? deriveZeroValue() : observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')) + deriveUnitValue();
       routePriority.set(route, index + stateBias + criticalBias + deriveUnitValue());
     }
   }
@@ -311,11 +326,12 @@ function isFrontendScopeFile(file: unknown, relativePath: string): boolean {
     return false;
   }
   const entry = file as Record<string, unknown>;
+  const sep = discoverRouteSeparatorFromRuntime();
   return (
     entry.surface === 'frontend' ||
     entry.surface === 'frontend-admin' ||
-    relativePath.startsWith('frontend/') ||
-    relativePath.startsWith('frontend-admin/')
+    relativePath.startsWith(`frontend${sep}`) ||
+    relativePath.startsWith(`frontend-admin${sep}`)
   );
 }
 
@@ -451,10 +467,11 @@ function discoverRuntimeProbeTargets(
 export function discoverBrowserLiveArtifacts(
   rootDir: string = process.cwd(),
 ): BrowserLiveArtifacts {
-  const productGraph = readArtifact<PulseProductGraph>(rootDir, 'PULSE_PRODUCT_GRAPH.json');
-  const behaviorGraph = readArtifact<BehaviorGraph>(rootDir, 'PULSE_BEHAVIOR_GRAPH.json');
-  const scopeState = readArtifact<PulseScopeState>(rootDir, 'PULSE_SCOPE_STATE.json');
-  const manifest = readArtifact<ResolvedManifestOverlay>(rootDir, 'PULSE_RESOLVED_MANIFEST.json');
+  const artifacts = discoverAllObservedArtifactFilenames();
+  const productGraph = readArtifact<PulseProductGraph>(rootDir, artifacts.productGraph);
+  const behaviorGraph = readArtifact<BehaviorGraph>(rootDir, artifacts.behaviorGraph);
+  const scopeState = readArtifact<PulseScopeState>(rootDir, artifacts.scopeState);
+  const manifest = readArtifact<ResolvedManifestOverlay>(rootDir, artifacts.resolvedManifest);
   const routeCandidates = collectRouteCandidates(productGraph);
 
   return {
@@ -471,8 +488,9 @@ export function getPagePriorityFromArtifacts(route: string, pages: BrowserPageDi
   if (exact !== undefined) {
     return exact;
   }
+  const sep = discoverRouteSeparatorFromRuntime();
   const parent = [...pages.routePriority.entries()]
-    .filter(([root]) => normalized.startsWith(`${root}/`))
+    .filter(([root]) => normalized.startsWith(`${root}${sep}`))
     .sort((a, b) => b[0].length - a[0].length)[0];
   return parent ? parent[deriveUnitValue()] + deriveUnitValue() : 1000;
 }
@@ -500,7 +518,14 @@ export function isLoginRedirectFromArtifacts(url: string, pages: BrowserPageDisc
 }
 
 export function hasUnresolvedDynamicSegment(route: string): boolean {
-  return route.split('/').some((segment) => segment.startsWith(':') || /^\[.+\]$/.test(segment));
+  const sep = discoverRouteSeparatorFromRuntime();
+  return route
+    .split(sep)
+    .some(
+      (segment) =>
+        segment.startsWith(':') ||
+        (segment.startsWith('[') && segment.endsWith(']')),
+    );
 }
 
 export function resolveRuntimeProbeTargetFromArtifacts(
@@ -522,7 +547,8 @@ export function resolveRuntimeProbeTargetFromArtifacts(
     .toLowerCase()
     .split(/[^a-z0-9]+/g)
     .filter((token) => token.length > deriveUnitValue() + deriveUnitValue());
-  const productGraph = readArtifact<PulseProductGraph>(rootDir, 'PULSE_PRODUCT_GRAPH.json');
+  const artifactFilenames = discoverAllObservedArtifactFilenames();
+  const productGraph = readArtifact<PulseProductGraph>(rootDir, artifactFilenames.productGraph);
   const routeCandidates = collectRouteCandidates(productGraph);
   const genericRoute = routeCandidates.find((candidate) =>
     probeTokens.every((token) => candidate.text.includes(token)),
