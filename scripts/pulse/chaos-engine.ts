@@ -311,7 +311,7 @@ function loadArtifactRecords(rootDir: string, artifactName: string): Record<stri
   try {
     const payload = readJsonFile<Record<string, unknown>>(artifactPath);
     const records: Record<string, unknown>[] = [];
-    for (const key of ['nodes', 'signals', 'capabilities']) {
+    for (const key of Object.keys(payload)) {
       const value = payload[key];
       if (Array.isArray(value)) {
         records.push(
