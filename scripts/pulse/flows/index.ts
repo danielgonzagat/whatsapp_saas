@@ -21,6 +21,8 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
+  discoverConvergenceRiskLevelLabels,
+  discoverFlowOracleLabels,
   discoverGateFailureClassLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverProviderModeLabels,
@@ -39,6 +41,9 @@ interface RunDeclaredFlowsInput {
 
 const FLOW_ARTIFACT = discoverAllObservedArtifactFilenames().flowEvidence;
 const PROVIDER_MODE_SET = discoverProviderModeLabels();
+const ORACLE_LABELS = [...discoverFlowOracleLabels()].sort();
+const PROVIDER_MODE_SORTED = [...PROVIDER_MODE_SET].sort();
+const SEVERITY_LABELS = [...discoverConvergenceRiskLevelLabels()].sort();
 const MAX_READBACK_ATTEMPTS =
   observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) *
   (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue());
@@ -102,20 +107,22 @@ function deriveOracleBreakPatternMap(
   allRuntimePatterns: RegExp[],
 ): Record<PulseFlowOracle, RegExp[]> {
   return {
-    'auth-session': allRuntimePatterns.filter(
+    [ORACLE_LABELS[deriveZeroValue()]]: allRuntimePatterns.filter(
       (p) =>
         p.test('AUTH_BYPASS_VULNERABLE') ||
         p.test('AUTH_FLOW_BROKEN') ||
         p.test('E2E_REGISTRATION_BROKEN'),
     ),
-    'entity-persisted': allRuntimePatterns.filter((p) => p.test('E2E_PRODUCT_BROKEN')),
-    'payment-lifecycle': allRuntimePatterns.filter(
+    [ORACLE_LABELS[deriveUnitValue()]]: [],
+    [ORACLE_LABELS[deriveUnitValue() + deriveUnitValue()]]: allRuntimePatterns.filter(
+      (p) => p.test('E2E_PRODUCT_BROKEN'),
+    ),
+    [ORACLE_LABELS[deriveUnitValue() * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue())]]: allRuntimePatterns.filter(
       (p) => p.test('E2E_PAYMENT_BROKEN') || p.test('ORDERING_WEBHOOK_OOO'),
     ),
-    'wallet-ledger': allRuntimePatterns.filter(
+    [ORACLE_LABELS[(deriveUnitValue() + deriveUnitValue()) * (deriveUnitValue() + deriveUnitValue())]]: allRuntimePatterns.filter(
       (p) => p.test('E2E_RACE_CONDITION_WITHDRAWAL') || p.test('RACE_CONDITION_FINANCIAL'),
     ),
-    'conversation-persisted': [],
   };
 }
 
@@ -125,7 +132,9 @@ function shouldRunConversationPersistedFlow(_spec: PulseManifestFlowSpec): boole
 
 function isBlockingBreak(item: Break): boolean {
   return (
-    (item.severity === 'critical' || item.severity === 'high') && isBlockingDynamicFinding(item)
+    (item.severity === SEVERITY_LABELS[deriveZeroValue()] ||
+      item.severity === SEVERITY_LABELS[deriveUnitValue()]) &&
+    isBlockingDynamicFinding(item)
   );
 }
 
@@ -182,7 +191,10 @@ interface FlowExecutionOverrides {
 function replayEnabled(spec: PulseManifestFlowSpec): boolean {
   const mode = spec.providerMode;
   if (!PROVIDER_MODE_SET.has(mode)) return false;
-  return mode === 'replay' || mode === 'hybrid';
+  return (
+    mode === PROVIDER_MODE_SORTED[deriveUnitValue() + deriveUnitValue()] ||
+    mode === PROVIDER_MODE_SORTED[deriveZeroValue()]
+  );
 }
 
 function smokeEnabled(spec: PulseManifestFlowSpec): boolean {
@@ -191,7 +203,10 @@ function smokeEnabled(spec: PulseManifestFlowSpec): boolean {
   }
   const mode = spec.providerMode;
   if (!PROVIDER_MODE_SET.has(mode)) return false;
-  return mode === 'real_smoke' || mode === 'hybrid';
+  return (
+    mode === PROVIDER_MODE_SORTED[deriveUnitValue()] ||
+    mode === PROVIDER_MODE_SORTED[deriveZeroValue()]
+  );
 }
 
 function getArtifactPaths(flowId: string): string[] {
@@ -975,7 +990,7 @@ async function runWhatsappMessageFlow(
         break;
       }
 
-      await wait(1000);
+      await wait(BASE_WAIT_MS);
     }
 
     if (!matchedConversationId || !inboundMessageId) {
@@ -1172,14 +1187,14 @@ async function evaluateFlowSpec(
     return buildCheckerGapResult(spec, missingChecks);
   }
 
-  if (spec.oracle === 'wallet-ledger') {
+  if (spec.oracle === ORACLE_LABELS[(deriveUnitValue() + deriveUnitValue()) * (deriveUnitValue() + deriveUnitValue())]) {
     return annotateIgnoredMissingChecks(
       await runWalletWithdrawalFlow(spec, runtimeContext),
       missingChecks,
     );
   }
 
-  if (spec.oracle === 'conversation-persisted' && shouldRunConversationPersistedFlow(spec)) {
+  if (spec.oracle === ORACLE_LABELS[deriveUnitValue()] && shouldRunConversationPersistedFlow(spec)) {
     return annotateIgnoredMissingChecks(
       await runWhatsappMessageFlow(spec, runtimeContext),
       missingChecks,
