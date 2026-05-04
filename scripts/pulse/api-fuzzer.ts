@@ -130,13 +130,13 @@ function uniqueId(): string {
 }
 
 function uniqueStrings(values: string[]): string[] {
-  return Array.from(new Set(values.filter((value) => value.length > 0)));
+  return Array.from(new Set(values.filter((value) => value.length > deriveZeroValue())));
 }
 
 function parseRouteParameters(routePath: string): string[] {
   const params: string[] = [];
   const routeChars = Array.from(routePath);
-  for (let index = 0; index < routeChars.length; index += 1) {
+  for (let index = deriveZeroValue(); index < routeChars.length; index += deriveUnitValue()) {
     const marker = routeChars[index];
     if (marker !== ':' && marker !== '{') {
       continue;
@@ -145,7 +145,7 @@ function parseRouteParameters(routePath: string): string[] {
     let name = '';
     while (cursor < routeChars.length && isIdentifierChar(routeChars[cursor])) {
       name += routeChars[cursor];
-      cursor += 1;
+      cursor += deriveUnitValue();
     }
     if (name.length > 0) {
       params.push(name);
@@ -183,16 +183,16 @@ function isIdentifierChar(value: string | undefined): boolean {
 }
 
 function extractLeadingIdentifier(value: string): string | null {
-  let cursor = 0;
+  let cursor = deriveZeroValue();
   while (cursor < value.length && value[cursor] === ' ') {
-    cursor += 1;
+    cursor += deriveUnitValue();
   }
   if (!isIdentifierChar(value[cursor]) || (value[cursor] >= '0' && value[cursor] <= '9')) {
     return null;
   }
-  let end = cursor + 1;
+  let end = cursor + deriveUnitValue();
   while (isIdentifierChar(value[end])) {
-    end += 1;
+    end += deriveUnitValue();
   }
   return value.slice(cursor, end);
 }
