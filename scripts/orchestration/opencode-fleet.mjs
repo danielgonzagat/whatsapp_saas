@@ -170,10 +170,21 @@ async function runWithConcurrency(tasks, concurrency, runDir, opts) {
   const results = [];
   const queue = [...tasks];
   const inflight = new Set();
+  // Stagger boot to avoid OpenCode SQLite db-lock cascade when many sessions
+  // initialize simultaneously. Default 8s between spawns; configurable via
+  // OPENCODE_FLEET_STAGGER_MS env or manifest.staggerMs.
+  const staggerMs = Number(opts.staggerMs ?? process.env.OPENCODE_FLEET_STAGGER_MS ?? 8000);
+  let lastSpawnAt = 0;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   async function dispatch() {
     while (queue.length && inflight.size < concurrency) {
+      const elapsed = Date.now() - lastSpawnAt;
+      if (lastSpawnAt > 0 && elapsed < staggerMs) {
+        await sleep(staggerMs - elapsed);
+      }
       const t = queue.shift();
+      lastSpawnAt = Date.now();
       const p = runOne(t, runDir, opts).then((r) => {
         inflight.delete(p);
         results.push(r);
