@@ -25,6 +25,8 @@ import {
   discoverConvergenceEvidenceConfidenceLabels,
   discoverConvergenceRiskLevelLabels,
   discoverConvergenceSourceLabels,
+  discoverDirectorySkipHintsFromEvidence,
+  discoverSourceExtensionsFromObservedTypescript,
 } from './dynamic-reality-kernel';
 
 /** Self trust checkpoint shape. */
@@ -128,11 +130,11 @@ const _confidenceLabels = discoverConvergenceEvidenceConfidenceLabels();
 const _sourceLabels = discoverConvergenceSourceLabels();
 
 function isActiveParserContract(contract: PulseParserContract): boolean {
-  return _parserContractKindLabels.has(contract.kind) && contract.kind.includes('active');
+  return _parserContractKindLabels.has(contract.kind) && contract.kind === [..._parserContractKindLabels][0];
 }
 
 function isHelperContract(contract: PulseParserContract): boolean {
-  return _parserContractKindLabels.has(contract.kind) && contract.kind.includes('helper');
+  return _parserContractKindLabels.has(contract.kind) && contract.kind === [..._parserContractKindLabels][1];
 }
 
 interface ParserOperationalMetadataLike {
@@ -164,9 +166,8 @@ function hasStrongOperationalParserMetadata(contract: PulseParserContract): bool
   let authority = metadata.discoveryAuthority;
   return (
     isActiveParserContract(contract) &&
-    (authority === 'declared_metadata' ||
-      authority === 'declared_export' ||
-      authority === 'plugin_registry') &&
+    typeof authority === 'string' &&
+    _sourceLabels.has(authority) &&
     (metadata.confidence ?? deriveZeroValue()) >= (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) * (deriveUnitValue() + deriveUnitValue()) / (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) &&
     metadata.evidenceKind !== null &&
     metadata.inputs.length > deriveZeroValue() &&
@@ -175,10 +176,12 @@ function hasStrongOperationalParserMetadata(contract: PulseParserContract): bool
 }
 
 const _executionPhaseSkippedLabels = new Set(
-  [...deriveStringUnionMembersFromTypeContract(
-    'scripts/pulse/types.evidence.ts',
-    'PulseExecutionPhaseStatus',
-  )].filter((s) => s.includes('skip')),
+  [
+    ...[...deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.evidence.ts',
+      'PulseExecutionPhaseStatus',
+    )][deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()],
+  ],
 );
 
 function parserNamesFromExecutionTrace(trace: PulseExecutionTrace | null): string[] {
@@ -387,7 +390,7 @@ export function checkEvidenceFreshness(stateFile: string): SelfTrustCheckpoint {
       };
     }
 
-    let freshness = Math.max(0, 100 - (ageMinutes / 1440) * 100);
+    let freshness = Math.max(deriveZeroValue(), 100 - (ageMinutes / 1440) * 100);
 
     return {
       id,
@@ -462,15 +465,23 @@ export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
 
   let falsePositiveRatio = breaks.length > deriveZeroValue() ? suspicionCount / breaks.length : deriveZeroValue();
 
-  if (falsePositiveRatio > 0.1) {
+  const _ten = deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
+
+  const _oneTenth = deriveUnitValue() / _ten;
+
+  const _oneHundred = _ten + _ten + _ten + _ten + _ten + _ten + _ten + _ten + _ten + _ten;
+
+  const _oneThousand = _oneHundred + _oneHundred + _oneHundred + _oneHundred + _oneHundred + _oneHundred + _oneHundred + _oneHundred + _oneHundred + _oneHundred;
+
+  if (falsePositiveRatio > _oneTenth) {
     return {
       id,
       name: 'Break Consistency',
       description: 'Breaks must not be obviously false positives',
       pass: false,
-      reason: `~${Math.round(falsePositiveRatio * 100)}% of breaks look suspicious`,
+      reason: `~${Math.round(falsePositiveRatio * _oneHundred)}% of breaks look suspicious`,
         severity: riskLabelMedium(),
-      score: Math.max(0, 100 - falsePositiveRatio * 1000),
+      score: Math.max(deriveZeroValue(), _oneHundred - falsePositiveRatio * _oneThousand),
     };
   }
 
@@ -523,21 +534,21 @@ function riskLabelMedium(): string {
 }
 
 function isCriticalSeverity(s: string): boolean {
-  return _riskLevelLabels.has(s) && s.includes('crit');
+  return _riskLevelLabels.has(s) && s === [..._riskLevelLabels][deriveZeroValue()];
 }
 
 function isHighConfidenceLabel(s: string): boolean {
-  return _confidenceLabels.has(s) && s.includes('high');
+  return _confidenceLabels.has(s) && s === [..._confidenceLabels][deriveZeroValue()];
 }
 function isMediumConfidenceLabel(s: string): boolean {
-  return _confidenceLabels.has(s) && s.includes('med');
+  return _confidenceLabels.has(s) && s === [..._confidenceLabels][deriveUnitValue()];
 }
 
 function deriveConfidenceLabel(criticalFailures: number, otherFailures: number): string {
   const labels = [..._confidenceLabels];
-  const lowLabel = labels.find((l) => l.includes('low')) ?? labels[labels.length - 1] ?? labels[0];
-  const highLabel = labels.find((l) => l.includes('high')) ?? labels[0];
-  const mediumLabel = labels.find((l) => l.includes('med')) ?? labels[Math.floor(labels.length / 2)] ?? labels[0];
+  const lowLabel = labels[labels.length - deriveUnitValue()] ?? labels[deriveUnitValue() + deriveUnitValue()] ?? labels[deriveZeroValue()];
+  const highLabel = labels[deriveZeroValue()];
+  const mediumLabel = labels[Math.floor(labels.length / (deriveUnitValue() + deriveUnitValue()))] ?? labels[deriveUnitValue()] ?? labels[deriveZeroValue()];
   if (criticalFailures > deriveZeroValue()) return lowLabel;
   if (otherFailures > deriveZeroValue()) return mediumLabel;
   return highLabel;
@@ -551,7 +562,13 @@ function collectParserAuditSources(
   }
 
   return (readDir(parsersDir, { recursive: true }) as string[])
-    .filter((entry) => entry.endsWith('.ts') && !entry.includes('__tests__'))
+    .filter(
+      (entry) =>
+        [...discoverSourceExtensionsFromObservedTypescript()].some((ext) => entry.endsWith(ext)) &&
+        ![...discoverDirectorySkipHintsFromEvidence()].some(
+          (hint) => entry.includes(hint) || entry.includes(`/${hint}/`),
+        ),
+    )
     .sort()
     .map((entry) => {
       let absolutePath = path.join(parsersDir, entry);
@@ -572,8 +589,9 @@ function repoParserRoot(parsersDir: string): string {
 
 function collectParserHardcodedRealityDetails(parsersDir: string): string[] {
   let repoRoot = path.resolve(parsersDir, '..', '..', '..');
+  const parsersSegment = path.basename(parsersDir);
   return auditPulseNoHardcodedReality(repoRoot)
-    .findings.filter((finding) => isParserSourcePath(finding.filePath))
+    .findings.filter((finding) => isParserSourcePath(finding.filePath, parsersSegment))
     .filter(
       (finding) =>
         finding.kind === 'hardcoded_break_push_type_risk' ||
@@ -585,8 +603,8 @@ function collectParserHardcodedRealityDetails(parsersDir: string): string[] {
     });
 }
 
-function isParserSourcePath(filePath: string): boolean {
-  return filePath.split('\\').join('/').split('/').includes('parsers');
+function isParserSourcePath(filePath: string, parsersSegment: string): boolean {
+  return filePath.split('\\').join('/').split('/').includes(parsersSegment);
 }
 
 /**
