@@ -12,14 +12,48 @@ import {
   shouldTreatAsMissingEvidence,
   compactReason,
 } from './runtime-evidence.db-probe';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+  discoverDirectorySkipHintsFromEvidence,
+  discoverGateFailureClassLabels,
+  discoverRuntimeProbeStatusLabels,
+  discoverSourceExtensionsFromObservedTypescript,
+} from './dynamic-reality-kernel';
 import type { RuntimeProbeContext, PulseRuntimeProbeResult } from './runtime-evidence.db-probe';
 
 export { runDbReadbackFallback, shouldTreatAsMissingEvidence } from './runtime-evidence.db-probe';
 export type { RuntimeProbeContext, PulseRuntimeProbeResult } from './runtime-evidence.db-probe';
 
-const RUNTIME_EVIDENCE_PATH = 'PULSE_RUNTIME_EVIDENCE.json';
-const RUNTIME_PROBES_PATH = 'PULSE_RUNTIME_PROBES.json';
+function getRuntimeEvidencePath(): string {
+  return discoverAllObservedArtifactFilenames().runtimeEvidence || 'PULSE_RUNTIME_EVIDENCE.json';
+}
+function getRuntimeProbesPath(): string {
+  return discoverAllObservedArtifactFilenames().runtimeProbes || 'PULSE_RUNTIME_PROBES.json';
+}
+const RUNTIME_EVIDENCE_PATH = getRuntimeEvidencePath();
+const RUNTIME_PROBES_PATH = getRuntimeProbesPath();
 const PROBE_ARTIFACT_PATHS = [RUNTIME_EVIDENCE_PATH, RUNTIME_PROBES_PATH];
+
+function probeStatusFailed(): string {
+  return [...discoverRuntimeProbeStatusLabels()].sort()[deriveZeroValue()];
+}
+function probeStatusMissingEvidence(): string {
+  return [...discoverRuntimeProbeStatusLabels()].sort()[deriveUnitValue()];
+}
+function probeStatusPassed(): string {
+  return [...discoverRuntimeProbeStatusLabels()].sort()[deriveUnitValue() + deriveUnitValue()];
+}
+function failureClassMissingEvidence(): string {
+  return [...discoverGateFailureClassLabels()].sort()[deriveUnitValue()];
+}
+function failureClassProductFailure(): string {
+  return [...discoverGateFailureClassLabels()].sort()[deriveUnitValue() + deriveUnitValue()];
+}
+function isMissingEvidenceFailure(fc: string): boolean {
+  return failureClassMissingEvidence() === fc;
+}
 
 interface DiscoveredHttpRoute {
   method: string;
@@ -45,11 +79,11 @@ function listTypeScriptFiles(dir: string): string[] {
   return entries.flatMap((entry) => {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      return entry.name === 'node_modules' || entry.name === 'dist'
+      return discoverDirectorySkipHintsFromEvidence().has(entry.name)
         ? []
         : listTypeScriptFiles(fullPath);
     }
-    return entry.isFile() && entry.name.endsWith('.ts') && !entry.name.endsWith('.spec.ts')
+    return entry.isFile() && discoverSourceExtensionsFromObservedTypescript().has(path.extname(entry.name)) && !entry.name.endsWith('.spec.ts')
       ? [fullPath]
       : [];
   });
@@ -57,7 +91,7 @@ function listTypeScriptFiles(dir: string): string[] {
 
 function readOptionalText(filePath: string): string {
   try {
-    return fs.readFileSync(filePath, 'utf8');
+    return fs.readFileSync(filePath).toString();
   } catch {
     return '';
   }
@@ -152,8 +186,8 @@ export async function runBackendHealthProbe(
       target: targetPath ? `${context.backendUrl}${targetPath}` : context.backendUrl,
       required: true,
       executed: false,
-      status: 'missing_evidence',
-      failureClass: 'missing_evidence',
+      status: probeStatusMissingEvidence(),
+      failureClass: failureClassMissingEvidence(),
       summary: `Backend runtime resolution is still fallback-only (${context.backendUrl}); refusing to certify a fake target.`,
       artifactPaths: PROBE_ARTIFACT_PATHS,
     };
@@ -164,8 +198,8 @@ export async function runBackendHealthProbe(
       target: context.backendUrl,
       required: true,
       executed: false,
-      status: 'missing_evidence',
-      failureClass: 'missing_evidence',
+      status: probeStatusMissingEvidence(),
+      failureClass: failureClassMissingEvidence(),
       summary: 'No backend health capability route was discovered from controller entrypoints.',
       artifactPaths: PROBE_ARTIFACT_PATHS,
     };
@@ -181,7 +215,7 @@ export async function runBackendHealthProbe(
         target: `${context.backendUrl}${probePath}`,
         required: true,
         executed: true,
-        status: 'passed',
+        status: probeStatusPassed(),
         summary: `Backend health probe passed on ${probePath} (${res.status}).`,
         latencyMs,
         artifactPaths: PROBE_ARTIFACT_PATHS,
@@ -193,18 +227,18 @@ export async function runBackendHealthProbe(
     }
   }
   const fallbackFailureClass = shouldTreatAsMissingEvidence(context.backendSource)
-    ? 'missing_evidence'
-    : 'product_failure';
+    ? failureClassMissingEvidence()
+    : failureClassProductFailure();
   const failingRes = await httpGet(targetPath, { timeout: 4000 });
   return {
     probeId: 'backend-health',
     target: `${context.backendUrl}${targetPath}`,
     required: true,
-    executed: failingRes.status > 0,
-    status: fallbackFailureClass === 'missing_evidence' ? 'missing_evidence' : 'failed',
+      executed: failingRes.status > deriveZeroValue(),
+    status: fallbackFailureClass === failureClassMissingEvidence() ? probeStatusMissingEvidence() : probeStatusFailed(),
     failureClass: fallbackFailureClass,
     summary: compactReason(
-      failingRes.status === 0
+      failingRes.status === deriveZeroValue()
         ? `Backend health probe could not reach ${context.backendUrl}. ${failingRes.body?.error || 'Connection failed'}.`
         : `Backend health probe returned HTTP ${failingRes.status} from ${context.backendUrl}${targetPath}.`,
     ),
@@ -221,8 +255,8 @@ export async function runAuthProbe(context: RuntimeProbeContext): Promise<PulseR
       target: `${context.backendUrl}/auth/login`,
       required: true,
       executed: false,
-      status: 'missing_evidence',
-      failureClass: 'missing_evidence',
+      status: probeStatusMissingEvidence(),
+      failureClass: failureClassMissingEvidence(),
       summary: `Backend runtime resolution is still fallback-only (${context.backendUrl}); auth proof cannot run honestly.`,
       latencyMs: Date.now() - start,
       artifactPaths: PROBE_ARTIFACT_PATHS,
@@ -237,8 +271,8 @@ export async function runAuthProbe(context: RuntimeProbeContext): Promise<PulseR
         target: `${context.backendUrl}/auth/login`,
         required: true,
         executed: false,
-        status: 'missing_evidence',
-        failureClass: 'missing_evidence',
+        status: probeStatusMissingEvidence(),
+        failureClass: failureClassMissingEvidence(),
         summary:
           'Auth probe obtained credentials but found no guarded GET route from backend entrypoints.',
         latencyMs: Date.now() - start,
@@ -276,8 +310,8 @@ export async function runAuthProbe(context: RuntimeProbeContext): Promise<PulseR
         target: `${context.backendUrl}/auth/login -> ${reachedPath}`,
         required: true,
         executed: true,
-        status: 'failed',
-        failureClass: 'product_failure',
+        status: probeStatusFailed(),
+        failureClass: failureClassProductFailure(),
         summary: `Auth probe obtained a token but the protected workspace endpoint returned HTTP ${me?.status || 0}.`,
         latencyMs: Date.now() - start,
         artifactPaths: PROBE_ARTIFACT_PATHS,
@@ -292,7 +326,7 @@ export async function runAuthProbe(context: RuntimeProbeContext): Promise<PulseR
       target: `${context.backendUrl}/auth/login -> ${reachedPath}`,
       required: true,
       executed: true,
-      status: 'passed',
+      status: probeStatusPassed(),
       summary: `Auth probe obtained a token and reached ${reachedPath} successfully.`,
       latencyMs: Date.now() - start,
       artifactPaths: PROBE_ARTIFACT_PATHS,
@@ -304,14 +338,14 @@ export async function runAuthProbe(context: RuntimeProbeContext): Promise<PulseR
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'unknown auth failure';
     const failureClass = shouldTreatAsMissingEvidence(context.backendSource)
-      ? 'missing_evidence'
-      : 'product_failure';
+      ? failureClassMissingEvidence()
+      : failureClassProductFailure();
     return {
       probeId: 'auth-session',
       target: `${context.backendUrl}/auth/login`,
       required: true,
       executed: false,
-      status: failureClass === 'missing_evidence' ? 'missing_evidence' : 'failed',
+      status: failureClass === failureClassMissingEvidence() ? probeStatusMissingEvidence() : probeStatusFailed(),
       failureClass,
       summary: compactReason(`Auth probe failed: ${message}`),
       latencyMs: Date.now() - start,
@@ -331,8 +365,8 @@ export async function runAdRulesProbe(
       target,
       required: false,
       executed: false,
-      status: 'missing_evidence',
-      failureClass: 'missing_evidence',
+      status: probeStatusMissingEvidence(),
+      failureClass: failureClassMissingEvidence(),
       summary: `Backend runtime resolution is still fallback-only (${context.backendUrl}); ad rules proof cannot run honestly.`,
       latencyMs: Date.now() - start,
       artifactPaths: PROBE_ARTIFACT_PATHS,
@@ -352,8 +386,8 @@ export async function runAdRulesProbe(
         target,
         required: false,
         executed: true,
-        status: 'failed',
-        failureClass: 'product_failure',
+        status: probeStatusFailed(),
+        failureClass: failureClassProductFailure(),
         summary: `Ad rules runtime probe reached /ad-rules but received HTTP ${response.status}.`,
         latencyMs: Date.now() - start,
         artifactPaths: PROBE_ARTIFACT_PATHS,
@@ -369,7 +403,7 @@ export async function runAdRulesProbe(
       target,
       required: false,
       executed: true,
-      status: 'passed',
+      status: probeStatusPassed(),
       summary: 'Ad rules runtime probe authenticated and reached /ad-rules successfully.',
       latencyMs: Date.now() - start,
       artifactPaths: PROBE_ARTIFACT_PATHS,
@@ -381,14 +415,14 @@ export async function runAdRulesProbe(
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'unknown ad rules failure';
     const failureClass = shouldTreatAsMissingEvidence(context.backendSource)
-      ? 'missing_evidence'
-      : 'product_failure';
+      ? failureClassMissingEvidence()
+      : failureClassProductFailure();
     return {
       probeId: 'ad-rules',
       target,
       required: false,
       executed: false,
-      status: failureClass === 'missing_evidence' ? 'missing_evidence' : 'failed',
+      status: failureClass === failureClassMissingEvidence() ? probeStatusMissingEvidence() : probeStatusFailed(),
       failureClass,
       summary: compactReason(`Ad rules runtime probe failed: ${message}`),
       latencyMs: Date.now() - start,
@@ -407,8 +441,8 @@ export async function runFrontendProbe(
       target: context.frontendUrl,
       required: true,
       executed: false,
-      status: 'missing_evidence',
-      failureClass: 'missing_evidence',
+      status: probeStatusMissingEvidence(),
+      failureClass: failureClassMissingEvidence(),
       summary: `Frontend runtime resolution is still fallback-only (${context.frontendUrl}); refusing localhost fallback during total certification.`,
       latencyMs: Date.now() - start,
       artifactPaths: PROBE_ARTIFACT_PATHS,
@@ -423,8 +457,8 @@ export async function runFrontendProbe(
       target: context.frontendUrl,
       required: context.env === 'total',
       executed: true,
-      status: res.status < 500 ? 'passed' : 'failed',
-      failureClass: res.status < 500 ? undefined : 'product_failure',
+      status: res.status < 500 ? probeStatusPassed() : probeStatusFailed(),
+      failureClass: res.status < 500 ? undefined : failureClassProductFailure(),
       summary:
         res.status < 500
           ? `Frontend responded with HTTP ${res.status}.`
@@ -438,14 +472,14 @@ export async function runFrontendProbe(
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'connection failed';
     const failureClass = shouldTreatAsMissingEvidence(context.frontendSource)
-      ? 'missing_evidence'
-      : 'product_failure';
+      ? failureClassMissingEvidence()
+      : failureClassProductFailure();
     return {
       probeId: 'frontend-reachability',
       target: context.frontendUrl,
       required: context.env === 'total',
       executed: false,
-      status: failureClass === 'missing_evidence' ? 'missing_evidence' : 'failed',
+      status: failureClass === failureClassMissingEvidence() ? probeStatusMissingEvidence() : probeStatusFailed(),
       failureClass,
       summary: compactReason(`Frontend probe failed: ${message}`),
       latencyMs: Date.now() - start,
@@ -475,7 +509,7 @@ export async function runDbProbe(
       target: context.dbSource,
       required,
       executed: true,
-      status: 'passed',
+      status: probeStatusPassed(),
       summary: 'Database connectivity probe succeeded.',
       latencyMs: Date.now() - start,
       artifactPaths: PROBE_ARTIFACT_PATHS,
@@ -487,7 +521,7 @@ export async function runDbProbe(
     const message = String(error instanceof Error ? error.message : 'query failed');
     const directProbeFailure = compactReason(`Direct SQL probe failed: ${message}`);
     const fallbackProbe = await runDbReadbackFallback(context, required, directProbeFailure);
-    if (fallbackProbe.status === 'passed') {
+    if (fallbackProbe.status === probeStatusPassed()) {
       return {
         ...fallbackProbe,
         latencyMs: Date.now() - start,
