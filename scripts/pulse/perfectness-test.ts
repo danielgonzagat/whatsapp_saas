@@ -18,6 +18,8 @@ import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+  discoverPropertyPassedStatusFromTypeEvidence,
   observeStatusTextLengthFromCatalog,
 } from './dynamic-reality-kernel';
 import type {
@@ -35,11 +37,12 @@ import type {
 
 const _dcps = deriveCatalogPercentScaleFromObservedCatalog();
 const _u = deriveUnitValue();
+const _artifactCatalog = discoverAllObservedArtifactFilenames();
 const ARTIFACT_FILE_NAME = 'PULSE_PERFECTNESS_RESULT.json';
-const PULSE_CERTIFICATE_FILE = 'PULSE_CERTIFICATE.json';
-const PULSE_AUTONOMY_STATE_FILE = 'PULSE_AUTONOMY_STATE.json';
-const PULSE_SANDBOX_STATE_FILE = 'PULSE_SANDBOX_STATE.json';
-const SCENARIO_EVIDENCE_FILE = 'PULSE_SCENARIO_EVIDENCE.json';
+const PULSE_CERTIFICATE_FILE = _artifactCatalog.certificate;
+const PULSE_AUTONOMY_STATE_FILE = _artifactCatalog.autonomyState;
+const PULSE_SANDBOX_STATE_FILE = _artifactCatalog.sandboxState;
+const SCENARIO_EVIDENCE_FILE = _artifactCatalog.scenarioEvidence;
 const REQUIRED_LONG_RUN_HOURS =
   _dcps *
   _dcps *
@@ -536,9 +539,7 @@ function computeScenarioPassRate(pulseDir: string): {
 
   if (evidence?.scenarios?.length) {
     const total = evidence.scenarios.filter((s) => s.executed !== false).length;
-    const passed = evidence.scenarios.filter(
-      (s) => s.passStatus === 'pass' || s.passStatus === 'PASS',
-    ).length;
+    const passed = evidence.scenarios.filter((s) => isPassingStatus(s.passStatus)).length;
     return {
       rate: total > 0 ? Math.round((passed / total) * 100) : 0,
       total,
@@ -564,9 +565,15 @@ function normalizeProofToken(value: string | undefined): string {
     .replace(/[_\s]+/g, '-');
 }
 
+const _passedStatuses = discoverPropertyPassedStatusFromTypeEvidence();
+
 function isPassingStatus(value: string | undefined): boolean {
   const normalized = normalizeProofToken(value);
-  return normalized === 'pass' || normalized === 'passed' || normalized === 'certified';
+  return (
+    _passedStatuses.has(normalized) ||
+    [..._passedStatuses].some((s) => s.startsWith(normalized)) ||
+    normalized === 'certified'
+  );
 }
 
 function isFailingStatus(value: string | undefined): boolean {
