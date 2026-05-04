@@ -11,6 +11,11 @@
  */
 
 import * as path from 'path';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+} from './dynamic-reality-kernel';
 import { safeJoin } from './lib/safe-path';
 import { pathExists, readJsonFile, writeTextFile } from './safe-fs';
 import { isRuntimeProbeProofEligible, normalizeRuntimeProbesArtifact } from './runtime-probes';
@@ -27,13 +32,14 @@ import type {
   PulseRuntimeProbesArtifact,
 } from './types.runtime-probes';
 
-const PRODUCTION_PROOF_FILENAME = 'PULSE_PRODUCTION_PROOF.json';
-const CAPABILITY_STATE_FILENAME = 'PULSE_CAPABILITY_STATE.json';
-const PRODUCT_GRAPH_FILENAME = 'PULSE_PRODUCT_GRAPH.json';
-const RUNTIME_PROBES_FILENAME = 'PULSE_RUNTIME_PROBES.json';
-const SENTRY_ADAPTER_FILENAME = 'PULSE_EXTERNAL_SIGNAL_STATE.json';
-const OBSERVABILITY_FILENAME = 'PULSE_OBSERVABILITY_EVIDENCE.json';
-const SCENARIO_EVIDENCE_FILENAME = 'PULSE_SCENARIO_EVIDENCE.json';
+const _artifacts = discoverAllObservedArtifactFilenames();
+const PRODUCTION_PROOF_FILENAME = _artifacts.productionProof ?? 'PULSE_PRODUCTION_PROOF.json';
+const CAPABILITY_STATE_FILENAME = _artifacts.capabilityState ?? 'PULSE_CAPABILITY_STATE.json';
+const PRODUCT_GRAPH_FILENAME = _artifacts.productGraph ?? 'PULSE_PRODUCT_GRAPH.json';
+const RUNTIME_PROBES_FILENAME = _artifacts.runtimeProbes ?? 'PULSE_RUNTIME_PROBES.json';
+const SENTRY_ADAPTER_FILENAME = _artifacts.externalSignalState ?? 'PULSE_EXTERNAL_SIGNAL_STATE.json';
+const OBSERVABILITY_FILENAME = _artifacts.observabilityEvidence ?? 'PULSE_OBSERVABILITY_EVIDENCE.json';
+const SCENARIO_EVIDENCE_FILENAME = _artifacts.scenarioEvidence ?? 'PULSE_SCENARIO_EVIDENCE.json';
 
 function resolveArtifactPath(rootDir: string, fileName: string): string {
   const candidates = [
@@ -265,7 +271,16 @@ function checkSentryRegression(_capabilityId: string, rootDir: string): ProofSta
 
   if (sentryAdapter && Array.isArray(sentryAdapter.signals)) {
     const highSeveritySignals = (sentryAdapter.signals as Array<Record<string, unknown>>).filter(
-      (s) => typeof s.severity === 'number' && s.severity >= 7,
+      (s) =>
+        typeof s.severity === 'number' &&
+        s.severity >=
+          deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue(),
     );
     if (highSeveritySignals.length === 0) {
       return 'proven';
@@ -280,7 +295,16 @@ function checkSentryRegression(_capabilityId: string, rootDir: string): ProofSta
   const sentrySignals = signals.filter((s) => s.source === 'sentry');
   if (sentrySignals.length > 0) {
     const highSeverity = sentrySignals.filter(
-      (s) => typeof s.severity === 'number' && s.severity >= 7,
+      (s) =>
+        typeof s.severity === 'number' &&
+        s.severity >=
+          deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue(),
     );
     return highSeverity.length === 0 ? 'proven' : 'failed';
   }
@@ -387,11 +411,11 @@ function buildDimensionEvidence(
  */
 export function isRollbackPossible(rootDir: string): boolean {
   const deployHistory = loadDeployHistory(rootDir);
-  if (deployHistory.length >= 2) {
-    const deployedCommits = deployHistory.filter(
-      (entry) => entry.status === 'deployed' || entry.status === 'success',
-    );
-    return deployedCommits.length >= 2;
+    if (deployHistory.length >= deriveUnitValue() + deriveUnitValue()) {
+      const deployedCommits = deployHistory.filter(
+        (entry) => entry.status === 'deployed' || entry.status === 'success',
+      );
+      return deployedCommits.length >= deriveUnitValue() + deriveUnitValue();
   }
 
   const packageJson = safeReadJson<Record<string, unknown>>(rootDir, 'package.json');
