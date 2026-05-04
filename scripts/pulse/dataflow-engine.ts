@@ -1236,7 +1236,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
 
   const outDir = safeJoin(rootDir, '.pulse', 'current');
   ensureDir(outDir, { recursive: true });
-  const outPath = safeJoin(outDir, 'PULSE_DATAFLOW_STATE.json');
+  const outPath = safeJoin(outDir, discoverAllObservedArtifactFilenames().dataflowState);
   writeTextFile(outPath, JSON.stringify(state, null, 2));
 
   return state;
