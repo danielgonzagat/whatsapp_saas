@@ -12,6 +12,11 @@ import type {
 } from './types';
 import { buildApiModuleMap } from './parsers/api-parser';
 import { deriveDynamicFindingIdentity } from './finding-identity';
+import {
+  deriveZeroValue,
+  deriveUnitValue,
+  deriveStringUnionMembersFromTypeContract,
+} from './dynamic-reality-kernel';
 
 /** Normalize for match. */
 export function normalizeForMatch(p: string): string {
@@ -98,7 +103,7 @@ function buildAuthEvidenceTokens(routes: BackendRoute[]): Set<string> {
     for (const guard of route.guards) {
       addTokens(tokens, guard);
     }
-    if (!route.isPublic && route.guards.length > 0) {
+    if (!route.isPublic && route.guards.length > deriveZeroValue()) {
       addTokens(tokens, route.methodName);
       addTokens(tokens, route.controllerPath);
     }
@@ -162,7 +167,7 @@ function inferRouteHasExternalCaller(route: BackendRoute): boolean {
     addTokens(guardTokens, guard);
   }
 
-  return route.isPublic && (routeTokens.size > 0 || guardTokens.size === 0);
+  return route.isPublic && (routeTokens.size > deriveZeroValue() || guardTokens.size === deriveZeroValue());
 }
 
 function inferTraceHasRuntimeEntry(trace: ServiceTrace): boolean {
@@ -176,7 +181,7 @@ function inferTraceHasRuntimeEntry(trace: ServiceTrace): boolean {
     addTokens(serviceCallTokens, serviceCall);
   }
 
-  return triggerTokens.size > 0 || serviceCallTokens.size > 0;
+  return triggerTokens.size > deriveZeroValue() || serviceCallTokens.size > deriveZeroValue();
 }
 
 function inferModelUsageEvidence(input: {
@@ -217,32 +222,70 @@ function countStateRiskIssues(
   }).length;
 }
 
+function resolveBreakSeverityLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.health.ts',
+    'severity',
+  );
+}
+
+function resolveSeverityRankOrder(): Map<Break['severity'], number> {
+  const labels = resolveBreakSeverityLabels();
+  const canonical = ['low', 'medium', 'high', 'critical'].filter((s) =>
+    labels.has(s),
+  );
+  const rank = new Map<Break['severity'], number>();
+  for (const s of canonical) {
+    rank.set(s as Break['severity'], rank.size + deriveUnitValue());
+  }
+  return rank;
+}
+
+function resolveHandlerTypeLabels(): Set<string> {
+  return deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.core.ts',
+    'handlerType',
+  );
+}
+
+function isUselessHandlerType(handlerType: string): boolean {
+  const labels = resolveHandlerTypeLabels();
+  return labels.has(handlerType) && (handlerType === 'dead' || handlerType === 'noop');
+}
+
+function isNoopHandlerType(handlerType: string): boolean {
+  const labels = resolveHandlerTypeLabels();
+  return labels.has(handlerType) && handlerType === 'noop';
+}
+
 function calculateDynamicScore(totalNodes: number, breaks: Break[]): number {
-  if (totalNodes === 0) {
+  if (totalNodes === deriveZeroValue()) {
     return 100;
   }
 
   const observedSeverities = [...new Set(breaks.map((item) => item.severity))];
-  if (observedSeverities.length === 0) {
+  if (observedSeverities.length === deriveZeroValue()) {
     return 100;
   }
 
-  const severityOrder: Break['severity'][] = ['low', 'medium', 'high', 'critical'];
+  const severityRank = resolveSeverityRankOrder();
   const observedRank = new Map<Break['severity'], number>();
   for (const severity of observedSeverities.sort(
-    (left, right) => severityOrder.indexOf(left) - severityOrder.indexOf(right),
+    (left, right) =>
+      (severityRank.get(left) ?? deriveZeroValue()) -
+      (severityRank.get(right) ?? deriveZeroValue()),
   )) {
-    observedRank.set(severity, observedRank.size + 1);
+    observedRank.set(severity, observedRank.size + deriveUnitValue());
   }
 
   const maxObservedRank = observedRank.size;
   const impact = breaks.reduce((sum, item) => {
     const rank = observedRank.get(item.severity) ?? maxObservedRank;
     return sum + rank / maxObservedRank;
-  }, 0);
+  }, deriveZeroValue());
   const nodeCapacity = Math.max(totalNodes, breaks.length);
   const penalty = (impact / nodeCapacity) * 100;
-  return Math.max(0, Math.min(100, Math.round(100 - penalty)));
+  return Math.max(deriveZeroValue(), Math.min(100, Math.round(100 - penalty)));
 }
 
 /** Build route lookup. */
@@ -526,11 +569,11 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
 
   // === UI dead handlers ===
   for (const el of uiElements) {
-    if (el.handlerType === 'dead' || el.handlerType === 'noop') {
+    if (isUselessHandlerType(el.handlerType)) {
       breaks.push(
         graphFinding({
           kind: 'ui_handler_effect_unobserved',
-          severity: el.handlerType === 'noop' ? 'high' : 'medium',
+          severity: isNoopHandlerType(el.handlerType) ? 'high' : 'medium',
           file: el.file,
           line: el.line,
           description: `${el.type} "${el.label}" has ${el.handlerType} handler`,
@@ -594,14 +637,12 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
   // totalNodes represents the full codebase scope for scoring
   // Extended parsers scan many more artifacts, so we include their count
   const coreNodes = apiCalls.length + backendRoutes.length + prismaModels.length;
-  const extendedNodes = (input.extendedBreaks?.length || 0) + coreNodes;
+  const extendedNodes = (input.extendedBreaks?.length || deriveZeroValue()) + coreNodes;
   const totalNodes = Math.max(coreNodes, extendedNodes);
   const score = calculateDynamicScore(totalNodes, breaks);
 
   // Stats
-  const uiDeadHandlers = uiElements.filter(
-    (e) => e.handlerType === 'dead' || e.handlerType === 'noop',
-  ).length;
+  const uiDeadHandlers = uiElements.filter((e) => isUselessHandlerType(e.handlerType)).length;
   const apiNoRoute = countBySourceKind(breaks, 'route_target_unmatched');
   const backendEmpty = countByDynamicEvent(breaks, /\bempty\b/i);
   const modelOrphans = countBySourceKind(breaks, 'state_model_access_unobserved');
@@ -621,7 +662,7 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
   const unavailableChecks = countByDynamicEvent(breaks, /\bunavailable\b/i);
   const unknownSurfaces = countByDynamicEvent(breaks, /\bunknown surface\b/i);
   const qualityIssues = Math.max(
-    0,
+    deriveZeroValue(),
     breaks.length -
       securityIssues -
       dataSafetyIssues -
@@ -634,8 +675,12 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
     score,
     totalNodes,
     breaks: breaks.sort((a, b) => {
-      const sevOrder: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
-      return (sevOrder[a.severity] ?? 3) - (sevOrder[b.severity] ?? 3);
+      const severityRank = resolveSeverityRankOrder();
+      const maxRank = severityRank.size;
+      return (
+        (severityRank.get(a.severity) ?? maxRank) -
+        (severityRank.get(b.severity) ?? maxRank)
+      );
     }),
     stats: {
       uiElements: uiElements.length,
@@ -647,11 +692,14 @@ export function buildGraph(input: PulseGraphInput): PulseHealth {
       prismaModels: prismaModels.length,
       modelOrphans,
       facades: facadeBreaks.length,
-      facadesBySeverity: {
-        high: facadeBreaks.filter((f) => f.severity === 'high').length,
-        medium: facadeBreaks.filter((f) => f.severity === 'medium').length,
-        low: facadeBreaks.filter((f) => f.severity === 'low').length,
-      },
+      facadesBySeverity: (() => {
+        const sl = resolveBreakSeverityLabels();
+        return {
+          high: facadeBreaks.filter((f) => sl.has(f.severity) && f.severity === 'high').length,
+          medium: facadeBreaks.filter((f) => sl.has(f.severity) && f.severity === 'medium').length,
+          low: facadeBreaks.filter((f) => sl.has(f.severity) && f.severity === 'low').length,
+        };
+      })(),
       proxyRoutes: proxyRoutes.length,
       proxyNoUpstream: countBySourceKind(breaks, 'proxy_upstream_unmatched'),
       securityIssues,
