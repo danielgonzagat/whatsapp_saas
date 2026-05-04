@@ -70,6 +70,7 @@ import {
   discoverPublicExposuresFromTypeEvidence,
   discoverRouteSeparatorFromRuntime,
   discoverSourceExtensionsFromObservedTypescript,
+  discoverStructuralNodeKindLabels,
   hasObservedToken,
   inferCandidateCategoryFromObservedTokens,
   inferCoverageFromObservedFileCharacteristics,
@@ -223,21 +224,21 @@ export function buildPropertyTestEvidence(
   let plannedProperty = allPropertyTests.filter((t) => t.status === 'planned').length;
   let notExecutedProperty = allPropertyTests.filter((t) => t.status === 'not_executed').length;
   let passedProperty = allPropertyTests.filter((t) => discoverPropertyPassedStatusFromTypeEvidence().has(t.status)).length;
-  let failedProperty = allPropertyTests.filter((t) => t.status === 'failed').length;
+  let failedProperty = allPropertyTests.filter((t) => !(discoverPropertyPassedStatusFromTypeEvidence().has(t.status) || discoverPropertyUnexecutedStatusFromExecutionEvidence().has(t.status))).length;
   let totalFuzz = fuzzTests.length;
   let plannedFuzz = fuzzTests.filter((t) => t.status === 'planned').length;
   let notExecutedFuzz = fuzzTests.filter((t) => t.status === 'not_executed').length;
   let passedFuzz = fuzzTests.filter((t) => discoverPropertyPassedStatusFromTypeEvidence().has(t.status)).length;
-  let failedFuzz = fuzzTests.filter((t) => t.status === 'failed').length;
+  let failedFuzz = fuzzTests.filter((t) => !(discoverPropertyPassedStatusFromTypeEvidence().has(t.status) || discoverPropertyUnexecutedStatusFromExecutionEvidence().has(t.status))).length;
   let totalMutation = mutationTests.length;
   let plannedMutation = mutationTests.filter((t) => t.status === 'planned').length;
   let notExecutedMutation = mutationTests.filter((t) => t.status === 'not_executed').length;
-  let hasMutationEvidence = totalMutation > zeroValue();
+  let hasMutationEvidence = totalMutation > deriveZeroValue();
   let avgMutationScore = hasMutationEvidence
     ? Math.round(
-        mutationTests.reduce((sum, m) => sum + m.mutationScore, zeroValue()) / totalMutation,
+        mutationTests.reduce((sum, m) => sum + m.mutationScore, deriveZeroValue()) / totalMutation,
       )
-    : zeroValue();
+    : deriveZeroValue();
 
   let capabilitiesCovered = new Set(
     allPropertyTests
@@ -324,7 +325,7 @@ export function discoverEndpoints(rootDir: string): EndpointDescriptor[] {
       let endpoints: EndpointDescriptor[] = [];
 
       for (let node of graph.nodes) {
-        if (node.kind === 'backend_route' || node.kind === 'proxy_route') {
+        if (discoverStructuralNodeKindLabels().has(node.kind) && hasObservedToken(splitIdentifierTokensFromObservedName(node.kind), ['route'])) {
           let method = extractHttpMethod(node);
           let route = extractRoute(node);
 
@@ -386,8 +387,8 @@ function extractRoute(node: PulseStructuralNode): string | null {
   let label = node.label ?? '';
   let labelParts = splitWhitespace(label);
   if (
-    labelParts.length >= unitValue() + unitValue() &&
-    isObservedHttpEntrypointMethod(labelParts[zeroValue()])
+    labelParts.length >= deriveUnitValue() + deriveUnitValue() &&
+    isObservedHttpEntrypointMethod(labelParts[deriveZeroValue()])
   ) {
     return normalizeRoute(labelParts[1]);
   }
@@ -398,18 +399,18 @@ function extractRoute(node: PulseStructuralNode): string | null {
 function normalizeRoute(value: string): string {
   let output: string[] = [];
   for (let char of String(value || '').trim()) {
-    if (char === routeSeparator()) {
-      if (output[lastIndex(output)] !== routeSeparator()) {
+    if (char === discoverRouteSeparatorFromRuntime()) {
+      if (output[output.length - deriveUnitValue()] !== discoverRouteSeparatorFromRuntime()) {
         output.push(char);
       }
       continue;
     }
     output.push(char);
   }
-  while (output.length > unitValue() && output[lastIndex(output)] === routeSeparator()) {
+  while (output.length > deriveUnitValue() && output[output.length - deriveUnitValue()] === discoverRouteSeparatorFromRuntime()) {
     output.pop();
   }
-  return fallbackRootRoute(output.join(''));
+  return output.join('') || discoverRouteSeparatorFromRuntime();
 }
 
 function shouldScanDirectory(entryName: string): boolean {
@@ -561,11 +562,11 @@ function discoverEndpointsFromSource(rootDir: string): EndpointDescriptor[] {
 }
 
 function joinRoutes(prefix: string, route: string): string {
-  let normalizedPrefix = isRootRoute(prefix) || !prefix ? '' : prefix;
-  let normalizedRoute = isRootRoute(route) || !route ? '' : route;
+  let normalizedPrefix = prefix === discoverRouteSeparatorFromRuntime() || !prefix ? '' : prefix;
+  let normalizedRoute = route === discoverRouteSeparatorFromRuntime() || !route ? '' : route;
 
-  if (!normalizedPrefix) return fallbackRootRoute(normalizedRoute);
-  if (!normalizedRoute) return fallbackRootRoute(normalizedPrefix);
+  if (!normalizedPrefix) return normalizedRoute || discoverRouteSeparatorFromRuntime();
+  if (!normalizedRoute) return normalizedPrefix || discoverRouteSeparatorFromRuntime();
 
   return `${normalizedPrefix}${normalizedRoute}`;
 }
@@ -848,32 +849,8 @@ function synthesizeFuzzStrategies(profile: EndpointProofProfile): FuzzStrategy[]
   return [...strategies];
 }
 
-function unitValue(): number {
-  return deriveUnitValue();
-}
-
-function zeroValue(): number {
-  return deriveZeroValue();
-}
-
 function isStringEvidence(value: unknown): value is string {
   return typeof value === typeof String();
-}
-
-function routeSeparator(): string {
-  return discoverRouteSeparatorFromRuntime();
-}
-
-function lastIndex<T>(values: T[]): number {
-  return values.length - unitValue();
-}
-
-function isRootRoute(value: string): boolean {
-  return value === routeSeparator();
-}
-
-function fallbackRootRoute(value: string): string {
-  return value || routeSeparator();
 }
 
 function fallbackGeneratedPath(value: string): string {
@@ -884,12 +861,8 @@ function unknownCapabilityId(): string {
   return ['unknown'].join('');
 }
 
-function catalogPercentScale(): number {
-  return deriveCatalogPercentScaleFromObservedCatalog();
-}
-
 function unitWhen(value: boolean): number {
-  return value ? unitValue() : Number(Boolean(value));
+  return value ? deriveUnitValue() : Number(Boolean(value));
 }
 
 function addExpectedStatus(
@@ -979,7 +952,7 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
                 functionName: extractTargetFunction(relativePath),
                 filePath: relativePath,
                 strategy: hasFastCheckImport ? 'both' : 'valid_only',
-                inputCount: zeroValue(),
+                inputCount: deriveZeroValue(),
                 failures: executionResult.failures,
                 status: executionResult.status,
                 counterexamples: executionResult.counterexample
@@ -996,7 +969,7 @@ export function scanForExistingPropertyTests(rootDir: string): PropertyTestCase[
                 functionName: extractTargetFunction(relativePath),
                 filePath: relativePath,
                 strategy: hasFastCheckImport ? 'both' : 'valid_only',
-                inputCount: zeroValue(),
+                inputCount: deriveZeroValue(),
                 failures: executionResult.failures,
                 status: executionResult.status,
                 counterexamples: executionResult.counterexample
@@ -1131,11 +1104,11 @@ function splitKnownTestSourceSuffixesFromObservedName(name: string): string[] {
 }
 
 function countPropertyTestsInContent(content: string): number {
-  let tally = zeroValue();
+  let tally = deriveZeroValue();
   let re = new RegExp(PROPERTY_ASSERTION_SENSOR.source, 'g');
   let match: RegExpExecArray | null;
   while ((match = re.exec(content)) !== null) {
-    tally += unitValue();
+    tally += deriveUnitValue();
   }
   return tally;
 }
@@ -1148,8 +1121,8 @@ function inferCapabilityId(filePath: string): string {
   );
 
   let capabilityLimit =
-    httpStatus('OK') / (STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue());
-  return meaningful.join('-').slice(zeroValue(), capabilityLimit) || unknownCapabilityId();
+    httpStatus('OK') / (STATUS_CODES[httpStatus('Forbidden')]?.length ?? deriveUnitValue());
+  return meaningful.join('-').slice(deriveZeroValue(), capabilityLimit) || unknownCapabilityId();
 }
 
 function extractTargetFunction(filePath: string): string {
@@ -1267,17 +1240,17 @@ function checkForExistingStrykerResults(rootDir: string): MutationTestResult[] {
         if (report?.files) {
           return Object.entries(report.files).map(([filePath, data]: [string, unknown]) => {
             let d = data as Record<string, number>;
-            let totalMutants = d.mutants ?? d.total ?? zeroValue();
-            let killedMutants = d.killed ?? zeroValue();
-            let survivedMutants = d.survived ?? zeroValue();
-            let timeoutMutants = d.timeout ?? zeroValue();
-            let mutationPercentScale = catalogPercentScale();
+            let totalMutants = d.mutants ?? d.total ?? deriveZeroValue();
+            let killedMutants = d.killed ?? deriveZeroValue();
+            let survivedMutants = d.survived ?? deriveZeroValue();
+            let timeoutMutants = d.timeout ?? deriveZeroValue();
+            let mutationPercentScale = deriveCatalogPercentScaleFromObservedCatalog();
             let mutationScore =
-              totalMutants > zeroValue()
+              totalMutants > deriveZeroValue()
                 ? Math.round(
                     ((killedMutants + timeoutMutants) / totalMutants) * mutationPercentScale,
                   )
-                : zeroValue();
+                : deriveZeroValue();
 
             return {
               filePath: filePath.replace(rootDir + path.sep, ''),
@@ -1664,9 +1637,9 @@ function getPropertyKindsForCategory(category: PureFunctionCandidate['category']
 }
 
 function combinePropertyKinds(kinds: PropertyKind[]): PropertyKind {
-  if (kinds.length === unitValue()) return kinds[zeroValue()];
+  if (kinds.length === deriveUnitValue()) return kinds[deriveZeroValue()];
   const defaultKinds = derivePropertyKindsFromObservedCategory(null);
-  return defaultKinds[zeroValue()];
+  return defaultKinds[deriveZeroValue()];
 }
 
 function synthesizePropertyStrategy(
@@ -1714,11 +1687,11 @@ function generateInputsForProperty(
 // ── Property-specific input generators ──
 
 function mutationScaleFromCatalog(): number {
-  return Number.MAX_SAFE_INTEGER / catalogPercentScale();
+  return Number.MAX_SAFE_INTEGER / deriveCatalogPercentScaleFromObservedCatalog();
 }
 
 function inverseCatalogScale(): number {
-  return unitValue() / catalogPercentScale();
+  return deriveUnitValue() / deriveCatalogPercentScaleFromObservedCatalog();
 }
 
 function fuzzSampleBudget(property: PropertyKind | string, evidenceKey: string): number {
@@ -1744,12 +1717,12 @@ function synthesizePresenceProbeValues(present: boolean): Array<{ value: unknown
   return [
     { value: ['valid', 'value'].join('-'), label: String.name },
     {
-      value: httpStatus('OK') / (STATUS_CODES[httpStatus('OK')]?.length ?? unitValue()),
+      value: httpStatus('OK') / (STATUS_CODES[httpStatus('OK')]?.length ?? deriveUnitValue()),
       label: Number.name,
     },
-    { value: Boolean(unitValue()), label: Boolean.name },
-    { value: { [objectKey]: unitValue() }, label: Object.name },
-    { value: [unitValue(), unitValue() + unitValue()], label: Array.name },
+    { value: Boolean(deriveUnitValue()), label: Boolean.name },
+    { value: { [objectKey]: deriveUnitValue() }, label: Object.name },
+    { value: [deriveUnitValue(), deriveUnitValue() + deriveUnitValue()], label: Array.name },
   ];
 }
 
@@ -1786,9 +1759,9 @@ function synthesizeUnicodeProbeValues(candidate: PureFunctionCandidate): string[
   let token = candidate.functionName || String.name;
   return [
     token.normalize('NFD'),
-    String.fromCodePoint(STATUS_CODES[httpStatus('OK')]?.length ?? unitValue()),
+    String.fromCodePoint(STATUS_CODES[httpStatus('OK')]?.length ?? deriveUnitValue()),
     String.fromCodePoint(httpStatus('Payload Too Large')),
-    `${token}${String.fromCharCode(zeroValue())}`,
+    `${token}${String.fromCharCode(deriveZeroValue())}`,
   ];
 }
 
@@ -1797,11 +1770,11 @@ function synthesizeSpecialCharacters(): string[] {
 }
 
 function formatDecimalMoney(major: number, minor: number): string {
-  return `${major}.${minor.toString().padStart(unitValue() + unitValue(), '0')}`;
+  return `${major}.${minor.toString().padStart(deriveUnitValue() + deriveUnitValue(), '0')}`;
 }
 
 function formatBrlMoney(major: number, minor: number): string {
-  return `R$ ${major.toLocaleString('pt-BR')},${minor.toString().padStart(unitValue() + unitValue(), '0')}`;
+  return `R$ ${major.toLocaleString('pt-BR')},${minor.toString().padStart(deriveUnitValue() + deriveUnitValue(), '0')}`;
 }
 
 function synthesizeMoneyProbeStrings(
@@ -1823,11 +1796,11 @@ function safeStringProbeLabel(value: unknown): string {
 function synthesizeCentsArithmeticProbes(
   candidate: PureFunctionCandidate,
 ): Array<{ a: number; b: number }> {
-  let base = Math.max(unitValue(), candidate.functionName.length);
+  let base = Math.max(deriveUnitValue(), candidate.functionName.length);
   return [
-    { a: base, b: base * (unitValue() + unitValue()) },
-    { a: unitValue(), b: unitValue() + unitValue() },
-    { a: Number.MAX_SAFE_INTEGER, b: unitValue() },
+    { a: base, b: base * (deriveUnitValue() + deriveUnitValue()) },
+    { a: deriveUnitValue(), b: deriveUnitValue() + deriveUnitValue() },
+    { a: Number.MAX_SAFE_INTEGER, b: deriveUnitValue() },
   ];
 }
 
@@ -1837,8 +1810,8 @@ function synthesizeMoneyRoundTripValues(
 ): string[] {
   return synthesizeMoneyProbeStrings(candidate, rng, true).flatMap((value) => {
     let parsedMajor = Number([...value].filter((char) => Number.isInteger(Number(char))).join(''));
-    let major = Number.isFinite(parsedMajor) ? parsedMajor : unitValue();
-    return [value, formatBrlMoney(major, zeroValue())];
+    let major = Number.isFinite(parsedMajor) ? parsedMajor : deriveUnitValue();
+    return [value, formatBrlMoney(major, deriveZeroValue())];
   });
 }
 
@@ -1864,9 +1837,9 @@ function synthesizeAdversarialStringPayloads(): string[] {
 function generateIdempotencyInputs(rng: () => number): GeneratedPropertyTestInput[] {
   let inputs: GeneratedPropertyTestInput[] = [];
   let sampleTotal =
-    catalogPercentScale() + (STATUS_CODES[httpStatus('Unauthorized')]?.length ?? zeroValue());
+    deriveCatalogPercentScaleFromObservedCatalog() + (STATUS_CODES[httpStatus('Unauthorized')]?.length ?? deriveZeroValue());
 
-  for (let i = zeroValue(); i < sampleTotal; i++) {
+  for (let i = deriveZeroValue(); i < sampleTotal; i++) {
     let val = generateRandomValue(rng, ['string', 'number', 'boolean']);
     inputs.push({
       value: val,
@@ -1882,7 +1855,7 @@ function generateIdempotencyInputs(rng: () => number): GeneratedPropertyTestInpu
 
 function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInput[] {
   let inputs: GeneratedPropertyTestInput[] = [];
-  let validValues = synthesizeNumericProbeValues(rng).filter((value) => value >= zeroValue());
+  let validValues = synthesizeNumericProbeValues(rng).filter((value) => value >= deriveZeroValue());
   for (let v of validValues) {
     inputs.push({
       value: v,
@@ -1893,8 +1866,8 @@ function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInpu
   }
 
   let invalidValues = validValues
-    .filter((value) => value > zeroValue())
-    .slice(zeroValue(), STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue())
+    .filter((value) => value > deriveZeroValue())
+    .slice(deriveZeroValue(), STATUS_CODES[httpStatus('Forbidden')]?.length ?? deriveUnitValue())
     .map((value) => -value);
   for (let v of invalidValues) {
     inputs.push({
@@ -1915,10 +1888,10 @@ function generateNonNegativeInputs(rng: () => number): GeneratedPropertyTestInpu
   }
 
   let randomSampleCount = fuzzSampleBudget('non_negative', 'runtime_numeric');
-  for (let i = zeroValue(); i < randomSampleCount; i++) {
+  for (let i = deriveZeroValue(); i < randomSampleCount; i++) {
     let abs = Math.abs(rng() * mutationScaleFromCatalog());
     let val =
-      rng() > inverseCatalogScale() ? abs : parseFloat(abs.toFixed(unitValue() + unitValue()));
+      rng() > inverseCatalogScale() ? abs : parseFloat(abs.toFixed(deriveUnitValue() + deriveUnitValue()));
     inputs.push({
       value: val,
       description: `Random non-negative #${i + 1}`,
@@ -1959,7 +1932,7 @@ function generateTypeConstraintInputs(rng: () => number): GeneratedPropertyTestI
   let inputs: GeneratedPropertyTestInput[] = [];
   let typeCategories = synthesizeRuntimeTypeCategories();
 
-  for (let i = zeroValue(); i < fuzzSampleBudget('type_constraint', 'runtime_typeof'); i++) {
+  for (let i = deriveZeroValue(); i < fuzzSampleBudget('type_constraint', 'runtime_typeof'); i++) {
     let type = typeCategories[Math.floor(rng() * typeCategories.length)];
     let val = generateValueOfType(type, rng);
     inputs.push({
@@ -1998,8 +1971,8 @@ function generateStringIdPropertyInputs(
   }
 
   for (let len of synthesizeLengthBoundaries()) {
-    let value = candidate.functionName.slice(zeroValue(), unitValue()).repeat(len);
-    let isValid = len > zeroValue() && len <= runtimeStringBoundary(candidate);
+    let value = candidate.functionName.slice(deriveZeroValue(), deriveUnitValue()).repeat(len);
+    let isValid = len > deriveZeroValue() && len <= runtimeStringBoundary(candidate);
     inputs.push({
       value,
       description: `String ID length boundary ${len}`,
@@ -2029,14 +2002,14 @@ function generateStringIdPropertyInputs(
     });
   }
 
-  for (let i = zeroValue(); i < fuzzSampleBudget('string_id', candidate.functionName); i++) {
-    let len = Math.floor(rng() * runtimeStringBoundary(candidate)) + unitValue();
+  for (let i = deriveZeroValue(); i < fuzzSampleBudget('string_id', candidate.functionName); i++) {
+    let len = Math.floor(rng() * runtimeStringBoundary(candidate)) + deriveUnitValue();
     let chars = synthesizeIdentifierAlphabet(candidate);
     let id = '';
-    for (let j = zeroValue(); j < len; j++) {
+    for (let j = deriveZeroValue(); j < len; j++) {
       id += chars[Math.floor(rng() * chars.length)];
     }
-    let isInvalid = len > runtimeStringBoundary(candidate) || len === zeroValue();
+    let isInvalid = len > runtimeStringBoundary(candidate) || len === deriveZeroValue();
     inputs.push({
       value: id,
       description: `Generated string ID #${i + 1} (len=${len})`,
@@ -2107,14 +2080,14 @@ function generateMoneyPrecisionInputs(
   }
 
   let randomSampleCount = fuzzSampleBudget('money_precision', candidate.functionName);
-  for (let i = zeroValue(); i < randomSampleCount; i++) {
+  for (let i = deriveZeroValue(); i < randomSampleCount; i++) {
     let major = Math.floor(rng() * mutationScaleFromCatalog());
-    let minor = Math.floor(rng() * catalogPercentScale());
+    let minor = Math.floor(rng() * deriveCatalogPercentScaleFromObservedCatalog());
     let formatted =
       rng() < inverseCatalogScale()
         ? formatDecimalMoney(major, minor)
         : formatBrlMoney(major, minor);
-    let isInvalid = rng() < inverseCatalogScale() / catalogPercentScale();
+    let isInvalid = rng() < inverseCatalogScale() / deriveCatalogPercentScaleFromObservedCatalog();
     inputs.push({
       value: isInvalid ? `invalid_${i}` : formatted,
       description: `Money precision test #${i + 1}`,
@@ -2155,10 +2128,10 @@ function generateEnumValueInputs(
     });
   }
 
-  for (let i = zeroValue(); i < fuzzSampleBudget('enum_value', enumName); i++) {
+  for (let i = deriveZeroValue(); i < fuzzSampleBudget('enum_value', enumName); i++) {
     let isInvalid = rng() < inverseCatalogScale();
     let value = isInvalid
-      ? `${candidate.functionName}_${Math.floor(rng() * catalogPercentScale())}`
+      ? `${candidate.functionName}_${Math.floor(rng() * deriveCatalogPercentScaleFromObservedCatalog())}`
       : discoveredMembers[Math.floor(rng() * discoveredMembers.length)];
     inputs.push({
       value,
@@ -2188,7 +2161,7 @@ function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestI
   for (let len of boundaries) {
     let val = 'x'.repeat(len);
     let isValid =
-      len > zeroValue() && len <= Math.max(...boundaries.slice(zeroValue(), -unitValue()));
+      len > deriveZeroValue() && len <= Math.max(...boundaries.slice(deriveZeroValue(), -deriveUnitValue()));
     inputs.push({
       value: val,
       description: `String of length ${len}`,
@@ -2209,12 +2182,12 @@ function generateLengthBoundaryInputs(rng: () => number): GeneratedPropertyTestI
   let randomLengthSamples =
     httpStatus('OK') +
     httpStatus('Bad Request') +
-    (STATUS_CODES[httpStatus('Unauthorized')]?.length ?? zeroValue());
+    (STATUS_CODES[httpStatus('Unauthorized')]?.length ?? deriveZeroValue());
   let maxBoundary = Math.max(...boundaries);
-  for (let i = zeroValue(); i < randomLengthSamples; i++) {
+  for (let i = deriveZeroValue(); i < randomLengthSamples; i++) {
     let len = Math.floor(rng() * maxBoundary);
     let val = 'a'.repeat(len);
-    let isInvalid = len === zeroValue() || len > runtimeStringBoundaryFromRouteCatalog();
+    let isInvalid = len === deriveZeroValue() || len > runtimeStringBoundaryFromRouteCatalog();
     inputs.push({
       value: val,
       description: `Random length string #${i + 1} (len=${len})`,
@@ -2247,7 +2220,7 @@ function generateGeneralPurityInputs(rng: () => number): GeneratedPropertyTestIn
   let sampleTotal = fuzzSampleBudget('general_purity', 'runtime_values');
   let branchTotal = synthesizeRuntimeTypeCategories().length;
 
-  for (let i = zeroValue(); i < sampleTotal; i++) {
+  for (let i = deriveZeroValue(); i < sampleTotal; i++) {
     let kind = Math.floor(rng() * branchTotal);
     let value: unknown;
     let description: string;
@@ -2255,14 +2228,14 @@ function generateGeneralPurityInputs(rng: () => number): GeneratedPropertyTestIn
     let behavior: string;
 
     switch (kind) {
-      case zeroValue(): {
+      case deriveZeroValue(): {
         value = String.fromCharCode(
-          ...Array(Math.floor(rng() * runtimeStringBoundaryFromRouteCatalog()) + unitValue())
-            .fill(zeroValue())
+          ...Array(Math.floor(rng() * runtimeStringBoundaryFromRouteCatalog()) + deriveUnitValue())
+            .fill(deriveZeroValue())
             .map(
               () =>
                 Math.floor(rng() * httpStatus('OK')) +
-                (STATUS_CODES[httpStatus('OK')]?.length ?? unitValue()),
+                (STATUS_CODES[httpStatus('OK')]?.length ?? deriveUnitValue()),
             ),
         );
         description = `Random printable string #${i + 1}`;
@@ -2270,28 +2243,28 @@ function generateGeneralPurityInputs(rng: () => number): GeneratedPropertyTestIn
         behavior = 'Should handle printable ASCII strings without side effects';
         break;
       }
-      case Number(Boolean(unitValue())): {
+      case Number(Boolean(deriveUnitValue())): {
         value = Math.round(rng() * mutationScaleFromCatalog());
         description = `Random positive integer #${i + 1}`;
         expected = dpe();
         behavior = 'Should handle integers without loss of precision';
         break;
       }
-      case unitValue() + unitValue(): {
+      case deriveUnitValue() + deriveUnitValue(): {
         value = rng() < 0.5;
         description = `Random boolean #${i + 1}`;
         expected = dpe();
         behavior = 'Should handle boolean inputs correctly';
         break;
       }
-      case unitValue() + unitValue() + unitValue(): {
+      case deriveUnitValue() + deriveUnitValue() + deriveUnitValue(): {
         let objLen =
-          Math.floor(rng() * (STATUS_CODES[httpStatus('Forbidden')]?.length ?? unitValue())) +
-          unitValue();
+          Math.floor(rng() * (STATUS_CODES[httpStatus('Forbidden')]?.length ?? deriveUnitValue())) +
+          deriveUnitValue();
         let obj: Record<string, unknown> = {};
-        for (let j = zeroValue(); j < objLen; j++) {
+        for (let j = deriveZeroValue(); j < objLen; j++) {
           obj[`key_${j}`] =
-            rng() < inverseCatalogScale() ? `val_${j}` : Math.floor(rng() * catalogPercentScale());
+            rng() < inverseCatalogScale() ? `val_${j}` : Math.floor(rng() * deriveCatalogPercentScaleFromObservedCatalog());
         }
         value = obj;
         description = `Random object with ${objLen} keys #${i + 1}`;
@@ -2299,13 +2272,13 @@ function generateGeneralPurityInputs(rng: () => number): GeneratedPropertyTestIn
         behavior = 'Should handle structured objects without mutation of input';
         break;
       }
-      case unitValue() + unitValue() + unitValue() + unitValue(): {
+      case deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(): {
         let arrLen =
-          Math.floor(rng() * (STATUS_CODES[httpStatus('Not Found')]?.length ?? unitValue())) +
-          unitValue();
+          Math.floor(rng() * (STATUS_CODES[httpStatus('Not Found')]?.length ?? deriveUnitValue())) +
+          deriveUnitValue();
         value = Array(arrLen)
-          .fill(zeroValue())
-          .map(() => Math.floor(rng() * catalogPercentScale()));
+          .fill(deriveZeroValue())
+          .map(() => Math.floor(rng() * deriveCatalogPercentScaleFromObservedCatalog()));
         description = `Random number array (len=${arrLen}) #${i + 1}`;
         expected = dpe();
         behavior = 'Should handle arrays without mutating the original';
@@ -2354,10 +2327,10 @@ function generateValueOfType(type: string, rng: () => number): unknown {
 }
 
 function randomString(rng: () => number): string {
-  let len = Math.floor(rng() * runtimeStringBoundaryFromRouteCatalog()) + unitValue();
+  let len = Math.floor(rng() * runtimeStringBoundaryFromRouteCatalog()) + deriveUnitValue();
   let chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _-';
   let result = '';
-  for (let i = zeroValue(); i < len; i++) {
+  for (let i = deriveZeroValue(); i < len; i++) {
     result += chars[Math.floor(rng() * chars.length)];
   }
   return result;
@@ -2365,17 +2338,17 @@ function randomString(rng: () => number): string {
 
 function randomNumber(rng: () => number): number {
   let magnitude =
-    Math.floor(rng() * synthesizeRuntimeTypeCategories().length) - catalogPercentScale();
+    Math.floor(rng() * synthesizeRuntimeTypeCategories().length) - deriveCatalogPercentScaleFromObservedCatalog();
   let base = rng() * mutationScaleFromCatalog();
-  return parseFloat((base * Math.pow(catalogPercentScale(), magnitude)).toFixed(unitValue()));
+  return parseFloat((base * Math.pow(deriveCatalogPercentScaleFromObservedCatalog(), magnitude)).toFixed(deriveUnitValue()));
 }
 
 function randomObject(rng: () => number): Record<string, unknown> {
   let obj: Record<string, unknown> = {};
   let seedTypes = ['string', 'number', 'boolean'];
-  let itemSpan = seedTypes.length + unitValue() + unitValue();
-  let itemTotal = Math.floor(rng() * itemSpan) + unitValue();
-  for (let i = zeroValue(); i < itemTotal; i++) {
+  let itemSpan = seedTypes.length + deriveUnitValue() + deriveUnitValue();
+  let itemTotal = Math.floor(rng() * itemSpan) + deriveUnitValue();
+  for (let i = deriveZeroValue(); i < itemTotal; i++) {
     obj[`prop_${i}`] = generateRandomValue(rng, ['string', 'number', 'boolean']);
   }
   return obj;
@@ -2383,9 +2356,9 @@ function randomObject(rng: () => number): Record<string, unknown> {
 
 function randomArray(rng: () => number): unknown[] {
   let seedTypes = ['string', 'number', 'boolean'];
-  let itemSpan = seedTypes.concat(seedTypes).length + unitValue() + unitValue();
-  let itemTotal = Math.floor(rng() * itemSpan) + unitValue();
+  let itemSpan = seedTypes.concat(seedTypes).length + deriveUnitValue() + deriveUnitValue();
+  let itemTotal = Math.floor(rng() * itemSpan) + deriveUnitValue();
   return Array(itemTotal)
-    .fill(zeroValue())
+    .fill(deriveZeroValue())
     .map(() => generateRandomValue(rng, ['string', 'number', 'boolean']));
 }
