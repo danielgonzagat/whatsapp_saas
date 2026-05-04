@@ -43,6 +43,7 @@ import {
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
   discoverRouteSeparatorFromRuntime,
+  discoverSourceExtensionsFromObservedTypescript,
 } from './dynamic-reality-kernel';
 
 // ─── Structural Grammar ─────────────────────────────────────────────────────
@@ -157,11 +158,15 @@ function isConstructorMemberName(name: string): boolean {
   return name === constructorMemberName();
 }
 
+function isNonTestProductionArtifactSourceFile(fileName: string): boolean {
+  return !/\.(spec|test|d)\.(?:ts|tsx|js|jsx)$/.test(fileName) && !/node_modules/.test(fileName);
+}
+
 function mutatingHttpVerbs(): Set<string> {
   return new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 }
 
-function persistentStateMutationShape(): RegExp {
+function persistentStateMutationPattern(): RegExp {
   return /\.(?:create|createMany|update|updateMany|upsert|delete|deleteMany)\s*\(/i;
 }
 
@@ -363,9 +368,8 @@ function rawWorkerDiscoveries(workerDir: string): RawWorkerDiscovery[] {
     return discoveries;
   }
 
-  const files = walkFiles(workerDir, ['.ts']).filter(
-    (f) => !/\.(spec|test|d)\.ts$/.test(f) && !/node_modules/.test(f),
-  );
+  const sourceExtensions = [...discoverSourceExtensionsFromObservedTypescript()];
+  const files = walkFiles(workerDir, sourceExtensions).filter(isNonTestProductionArtifactSourceFile);
 
   for (const file of files) {
     let content: string;
@@ -415,9 +419,8 @@ function nestjsBullMQDiscoveries(dir: string): RawWorkerDiscovery[] {
     return discoveries;
   }
 
-  const files = walkFiles(dir, ['.ts']).filter(
-    (f) => !/\.(spec|test|d)\.ts$/.test(f) && !/node_modules/.test(f),
-  );
+  const sourceExtensions = [...discoverSourceExtensionsFromObservedTypescript()];
+  const files = walkFiles(dir, sourceExtensions).filter(isNonTestProductionArtifactSourceFile);
 
   for (const file of files) {
     let content: string;
@@ -873,15 +876,15 @@ export function discoverEndpoints(config: PulseConfig): HarnessTarget[] {
 export function discoverServices(config: PulseConfig): HarnessTarget[] {
   const targets: HarnessTarget[] = [];
 
-  const files = walkFiles(config.backendDir, ['.ts']).filter(
+  const sourceExtensions = [...discoverSourceExtensionsFromObservedTypescript()];
+  const files = walkFiles(config.backendDir, sourceExtensions).filter(
     (f) =>
-      !/\.(spec|test|d)\.ts$/.test(f) &&
-      !/node_modules/.test(f) &&
-      (/\.service\.ts$/.test(f) ||
-        /\.engine\.ts$/.test(f) ||
-        /\.guard\.ts$/.test(f) ||
-        /\.interceptor\.ts$/.test(f) ||
-        /\.middleware\.ts$/.test(f)),
+      isNonTestProductionArtifactSourceFile(f) &&
+      (/\.service\.(?:ts|tsx|js|jsx)$/.test(f) ||
+        /\.engine\.(?:ts|tsx|js|jsx)$/.test(f) ||
+        /\.guard\.(?:ts|tsx|js|jsx)$/.test(f) ||
+        /\.interceptor\.(?:ts|tsx|js|jsx)$/.test(f) ||
+        /\.middleware\.(?:ts|tsx|js|jsx)$/.test(f)),
   );
 
   for (const file of files) {
@@ -943,7 +946,7 @@ export function discoverServices(config: PulseConfig): HarnessTarget[] {
         prismaModels = collectPrismaModelsFromText(bodyText);
       }
       const hasPersistentMutation =
-        prismaModels.length > 0 && persistentStateMutationShape().test(methodBodyText);
+        prismaModels.length > 0 && persistentStateMutationPattern().test(methodBodyText);
       const requiresAuth = false;
       const requiresTenant = hasPersistentMutation;
       const dependencies = unique([
@@ -1084,9 +1087,8 @@ export function discoverWorkers(config: PulseConfig): HarnessTarget[] {
 export function discoverCrons(config: PulseConfig): HarnessTarget[] {
   const targets: HarnessTarget[] = [];
 
-  const files = walkFiles(config.backendDir, ['.ts']).filter(
-    (f) => !/\.(spec|test|d)\.ts$/.test(f) && !/node_modules/.test(f),
-  );
+  const sourceExtensions = [...discoverSourceExtensionsFromObservedTypescript()];
+  const files = walkFiles(config.backendDir, sourceExtensions).filter(isNonTestProductionArtifactSourceFile);
 
   for (const file of files) {
     let content: string;
@@ -1340,15 +1342,15 @@ function behaviorGraphArtifactPath(): string {
   return `.pulse/current/${ALL_ARTIFACTS.behaviorGraph}`;
 }
 
-function externalCallShape(): RegExp {
+function externalCallSourcePattern(): RegExp {
   return /\b(?:fetch|axios|httpService|request)\s*(?:<[^>]*>)?\s*\(|\.(?:get|post|put|patch|delete)\s*\(\s*['"`]https?:\/\//i;
 }
 
-function infrastructureBoundaryShape(): RegExp {
+function infrastructureBoundarySchemaPattern(): RegExp {
   return /@\s*(?:Processor|Process|Cron|OnQueue\w*)\b|\b(?:new\s+Queue|QueueEvents|EventEmitter|emit|publish|subscribe)\s*\(/i;
 }
 
-function destructiveStateAccessShape(): RegExp {
+function destructiveStateAccessPattern(): RegExp {
   return /\.(?:delete|deleteMany|upsert)\s*\(/i;
 }
 
@@ -1413,7 +1415,7 @@ export function classifyExecutionFeasibility(
 
   const targetSource = rootDir ? readHarnessTargetSource(rootDir, target.filePath) : '';
 
-  if (targetSource && externalCallShape().test(targetSource)) {
+  if (targetSource && externalCallSourcePattern().test(targetSource)) {
     return {
       feasibility: NEEDS_STAGING_FEASIBILITY,
       reason:
@@ -1422,7 +1424,7 @@ export function classifyExecutionFeasibility(
   }
 
   // ── Check 5: queue/event infrastructure boundaries ──
-  if (targetSource && infrastructureBoundaryShape().test(targetSource)) {
+  if (targetSource && infrastructureBoundarySchemaPattern().test(targetSource)) {
     return {
       feasibility: NEEDS_STAGING_FEASIBILITY,
       reason: 'Source contains queue/event infrastructure shape that requires staging services',
@@ -1447,7 +1449,7 @@ export function classifyExecutionFeasibility(
       reason: `Target performs destructive DB writes on: ${behaviorNode.stateAccess.map((s) => s.model).join(', ')}`,
     };
   }
-  if (targetSource && destructiveStateAccessShape().test(targetSource)) {
+  if (targetSource && destructiveStateAccessPattern().test(targetSource)) {
     return {
       feasibility: NEEDS_STAGING_FEASIBILITY,
       reason: 'Source contains destructive persistent-state access that requires sandboxed staging',
