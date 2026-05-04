@@ -35,6 +35,7 @@ import {
   deriveStringUnionMembersFromTypeContract,
   deriveCatalogPercentScaleFromObservedCatalog,
   deriveHttpStatusFromObservedCatalog,
+  inferCandidateCategoryFromObservedTokens,
 } from './dynamic-reality-kernel';
 
 // ===== ts-morph imports =====
@@ -298,6 +299,17 @@ function looksLikeExternalReceiverName(receiver: string): boolean {
   return allTokens.some((t) => receiver.toLowerCase().endsWith(t.toLowerCase()));
 }
 
+let _observedHttpMethods: Set<string> | null = null;
+function discoverObservedHttpMethods(): Set<string> {
+  if (!_observedHttpMethods) {
+    const httpModule = require('node:http');
+    _observedHttpMethods = new Set(
+      (httpModule.METHODS as string[]).map((m) => m.toLowerCase()),
+    );
+  }
+  return _observedHttpMethods;
+}
+
 function looksLikeHttpOperation(operation: string): boolean {
   const httpModule = require('node:http');
   const known = (httpModule.METHODS as string[]).map((m) => m.toLowerCase());
@@ -390,7 +402,7 @@ function decoratorRoles(
   }
 
   const joined = tokens.join('-');
-  if (/^(all|head|options|get|post|put|patch|delete)$/.test(joined)) roles.add(dr.httpRoute);
+  if (discoverObservedHttpMethods().has(joined)) roles.add(dr.httpRoute);
   if (tokens.some((token) => token === 'cron' || token === 'interval' || token === 'timeout')) {
     roles.add(dr.cronJob);
   }
@@ -509,14 +521,7 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
     const name = standaloneName || methodName;
     let params = standaloneParams || methodParams || '';
 
-    if (
-      !name ||
-      name === 'if' ||
-      name === 'for' ||
-      name === 'while' ||
-      name === 'switch' ||
-      name === 'catch'
-    ) {
+    if (!name || requireJsReservedWordSet().has(name)) {
       continue;
     }
 
@@ -810,7 +815,7 @@ function determineKind(
   }
 
   if (/^use[A-Z]/.test(name)) return kinds.lifecycleHook;
-  if (/^validate/i.test(name)) return kinds.validation;
+  if (inferCandidateCategoryFromObservedTokens(name) === 'validation') return kinds.validation;
   return kinds.functionDefinition;
 }
 
