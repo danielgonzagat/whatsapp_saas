@@ -79,7 +79,10 @@ function checkAutoGen(path) {
 }
 
 function escapeMdTable(str) {
-  return String(str).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  return String(str)
+    .replace(/\\/g, '\\\\')
+    .replace(/\|/g, '\\|')
+    .replace(/\n/g, ' ');
 }
 
 function loadJson(path, label) {
