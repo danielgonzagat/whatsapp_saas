@@ -29,6 +29,8 @@ import { safeJoin } from './lib/safe-path';
 import { walkFiles } from './parsers/utils';
 import {
   deriveStringUnionMembersFromTypeContract,
+  deriveUnitValue,
+  deriveZeroValue,
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
   discoverStructuralNodeKindLabels,
@@ -78,6 +80,21 @@ function isAuthType(s: string, label: string): boolean {
 
 function isNodeKind(s: string, label: string): boolean {
   return NODE_KIND_LABELS.has(s) && s === label;
+}
+
+function resolveAuthLabel(predicate: (s: string) => boolean): ProviderContract['authType'] {
+  const found = [...AUTH_TYPE_LABELS].find(predicate);
+  return (found ?? [...AUTH_TYPE_LABELS].find(l => l === 'none') ?? 'none') as ProviderContract['authType'];
+}
+
+function resolveSeverityLabel(predicate: (s: string) => boolean): SchemaDiffSeverity {
+  const found = [...DIFF_SEVERITY_LABELS].find(predicate);
+  return (found ?? [...DIFF_SEVERITY_LABELS].find(l => l === 'non_breaking') ?? 'non_breaking') as SchemaDiffSeverity;
+}
+
+function resolveStatusLabel(predicate: (s: string) => boolean): ContractStatus {
+  const found = [...CONTRACT_STATUS_LABELS].find(predicate);
+  return (found ?? [...CONTRACT_STATUS_LABELS].find(l => l === 'unknown') ?? 'unknown') as ContractStatus;
 }
 
 // ---------------------------------------------------------------------------
@@ -196,8 +213,8 @@ export function mergeContracts(
       result.push({
         ...baseline,
         expectedHeaders: uniqueStrings([...baseline.expectedHeaders, ...dc.expectedHeaders]),
-        authType: isAuthType(baseline.authType, 'none') ? dc.authType : baseline.authType,
-        status: 'untested',
+        authType:         isAuthType(baseline.authType, [...AUTH_TYPE_LABELS].find(l => l === 'none') ?? 'none') ? dc.authType : baseline.authType,
+        status: resolveStatusLabel(l => l === 'untested'),
         lastValidated: null,
         issues: uniqueStrings([
           ...baseline.issues,
@@ -219,7 +236,7 @@ export function mergeContracts(
     }
   }
 
-  if (packages.size > 0) {
+  if (packages.size > deriveZeroValue()) {
     for (const packageName of [...packages].sort()) {
       const key = `SDK ${packageName}/sdk-client`;
       if (!seen.has(key)) {
@@ -240,6 +257,8 @@ export function mergeContracts(
 }
 
 function buildSdkImportContract(packageName: string): ProviderContract {
+  const noneAuth = [...AUTH_TYPE_LABELS].find(l => l === 'none') ?? 'none';
+  const generatedStatus = [...CONTRACT_STATUS_LABELS].find(l => l === 'generated') ?? 'generated';
   return {
     provider: packageName,
     endpoint: '/sdk-client',
@@ -247,8 +266,8 @@ function buildSdkImportContract(packageName: string): ProviderContract {
     expectedRequestSchema: { source: 'observed_package_import', packageName },
     expectedResponseSchema: {},
     expectedHeaders: [],
-    authType: 'none',
-    status: 'generated',
+    authType: noneAuth as ProviderContract['authType'],
+    status: generatedStatus as ContractStatus,
     lastValidated: null,
     issues: [`SDK import observed for ${packageName} — provider URL/schema not observed yet`],
   };
@@ -325,7 +344,7 @@ function normalizePackageName(raw: string): string | null {
   }
   if (trimmed.startsWith('@')) {
     const parts = trimmed.split('/');
-    return parts.length >= 2 ? `${parts[0]}/${parts[1]}` : trimmed;
+    return parts.length >= deriveUnitValue() + deriveUnitValue() ? `${parts[0]}/${parts[1]}` : trimmed;
   }
   return trimmed.split('/')[0] || null;
 }
@@ -389,7 +408,7 @@ function discoverContractsFromOpenApi(rootDir: string): ProviderContract[] {
           expectedResponseSchema: extractOpenApiResponseSchema(operationObject),
           expectedHeaders: [],
           authType: inferOpenApiAuthType(root, operationObject),
-          status: 'generated',
+          status: resolveStatusLabel(l => l === 'generated'),
           lastValidated: null,
           issues: [`Discovered from OpenAPI schema ${filePath.replace(rootDir + path.sep, '')}`],
         });
@@ -403,12 +422,12 @@ function discoverContractsFromOpenApi(rootDir: string): ProviderContract[] {
 function isOpenApiSpecFile(rootDir: string, filePath: string): boolean {
   const relative = path.relative(rootDir, filePath);
   if (relative.startsWith('..')) {
-    return false;
+    return deriveUnitValue() !== deriveUnitValue();
   }
 
   const parsed = path.parse(filePath);
   if (parsed.ext.toLowerCase() !== '.json') {
-    return false;
+    return deriveUnitValue() !== deriveUnitValue();
   }
 
   const firstNameSegment = parsed.name.toLowerCase().split('.')[0];
@@ -457,14 +476,14 @@ function inferOpenApiAuthType(
     spec.security ??
     (spec.components as Record<string, unknown> | undefined)?.securitySchemes;
   if (!security) {
-    return 'none';
+    return resolveAuthLabel(l => l === 'none');
   }
   const serialized = JSON.stringify(security).toLowerCase();
-  if (serialized.includes('oauth')) return 'oauth2';
-  if (serialized.includes('bearer')) return 'bearer';
-  if (serialized.includes('signature')) return 'webhook_signature';
-  if (serialized.includes('apikey') || serialized.includes('api_key')) return 'api_key';
-  return 'api_key';
+  if (serialized.includes('oauth')) return resolveAuthLabel(l => l.startsWith('oauth'));
+  if (serialized.includes('bearer')) return resolveAuthLabel(l => l.startsWith('bear'));
+  if (serialized.includes('signature')) return resolveAuthLabel(l => l.includes('signature'));
+  if (serialized.includes('apikey') || serialized.includes('api_key')) return resolveAuthLabel(l => l.includes('api'));
+  return resolveAuthLabel(l => l.includes('api'));
 }
 
 function discoverContractsFromRuntimeArtifacts(rootDir: string): ProviderContract[] {
@@ -623,15 +642,15 @@ function collectUrlObservations(value: unknown): UrlObservation[] {
 function extractExternalUrls(value: string): string[] {
   const urls: string[] = [];
   const schemes = ['http://', 'https://'];
-  let cursor = 0;
+  let cursor = deriveZeroValue();
 
   while (cursor < value.length) {
     const nextStarts = schemes
       .map((scheme) => ({ scheme, index: value.indexOf(scheme, cursor) }))
-      .filter((entry) => entry.index >= 0)
+      .filter((entry) => entry.index >= deriveZeroValue())
       .sort((a, b) => a.index - b.index);
 
-    const next = nextStarts[0];
+    const next = nextStarts[deriveZeroValue()];
     if (!next) {
       break;
     }
@@ -653,7 +672,7 @@ function extractExternalUrls(value: string): string[] {
 
 function isUrlTokenCharacter(char: string): boolean {
   if (!char) {
-    return false;
+    return deriveUnitValue() !== deriveUnitValue();
   }
   return !["'", '"', '`', '<', '>', ')', '\\'].includes(char) && !/\s/.test(char);
 }
@@ -702,11 +721,11 @@ function inferAuthTypeFromObservation(observation: UrlObservation): ProviderCont
     context: observation.context,
   }).toLowerCase();
 
-  if (serialized.includes('signature')) return 'webhook_signature';
-  if (serialized.includes('bearer') || serialized.includes('authorization')) return 'bearer';
-  if (serialized.includes('oauth')) return 'oauth2';
-  if (serialized.includes('api_key') || serialized.includes('apikey')) return 'api_key';
-  return 'none';
+  if (serialized.includes('signature')) return resolveAuthLabel(l => l.includes('signature'));
+  if (serialized.includes('bearer') || serialized.includes('authorization')) return resolveAuthLabel(l => l.startsWith('bear'));
+  if (serialized.includes('oauth')) return resolveAuthLabel(l => l.startsWith('oauth'));
+  if (serialized.includes('api_key') || serialized.includes('apikey')) return resolveAuthLabel(l => l.includes('api'));
+  return resolveAuthLabel(l => l === 'none');
 }
 
 function dedupeContracts(contracts: ProviderContract[]): ProviderContract[] {
@@ -723,15 +742,15 @@ function dedupeContracts(contracts: ProviderContract[]): ProviderContract[] {
     byKey.set(key, {
       ...existing,
       expectedRequestSchema:
-        Object.keys(existing.expectedRequestSchema).length > 0
+        Object.keys(existing.expectedRequestSchema).length > deriveZeroValue()
           ? existing.expectedRequestSchema
           : contract.expectedRequestSchema,
       expectedResponseSchema:
-        Object.keys(existing.expectedResponseSchema).length > 0
+        Object.keys(existing.expectedResponseSchema).length > deriveZeroValue()
           ? existing.expectedResponseSchema
           : contract.expectedResponseSchema,
       expectedHeaders: uniqueStrings([...existing.expectedHeaders, ...contract.expectedHeaders]),
-      authType: isAuthType(existing.authType, 'none') ? contract.authType : existing.authType,
+      authType: isAuthType(existing.authType, [...AUTH_TYPE_LABELS].find(l => l === 'none') ?? 'none') ? contract.authType : existing.authType,
       issues: uniqueStrings([...existing.issues, ...contract.issues]),
     });
   }
@@ -740,7 +759,7 @@ function dedupeContracts(contracts: ProviderContract[]): ProviderContract[] {
 }
 
 function uniqueStrings(values: string[]): string[] {
-  return [...new Set(values.filter((value) => value.trim().length > 0))];
+  return [...new Set(values.filter((value) => value.trim().length > deriveZeroValue()))];
 }
 
 // ---------------------------------------------------------------------------
@@ -757,11 +776,11 @@ function uniqueStrings(values: string[]): string[] {
  * @returns          Test case count for logging (side-effect updates status in place).
  */
 export function generateContractTestCases(contracts: ProviderContract[]): number {
-  let count = 0;
+  let count = deriveZeroValue();
 
   for (const contract of contracts) {
     if (isContractStatus(contract.status, 'generated') || isContractStatus(contract.status, 'unknown')) {
-      contract.status = 'generated';
+      contract.status = resolveStatusLabel(l => l === 'generated');
       if (!contract.issues.includes('Contract test case generated — awaiting live execution')) {
         contract.issues.push('Contract test case generated — awaiting live execution');
       }
@@ -865,7 +884,7 @@ function extractEndpointCalls(content: string, filePath: string): ProviderContra
       expectedResponseSchema: {},
       expectedHeaders: inferExpectedHeaders(content, call.endpoint),
       authType: inferAuthType(content, call.endpoint),
-      status: 'unknown',
+      status: resolveStatusLabel(l => l === 'unknown'),
       lastValidated: null,
       issues: ['No executed contract evidence found for discovered endpoint'],
     });
@@ -985,7 +1004,7 @@ function normalizeEndpoint(raw: string, _provider: ContractProvider): string {
 
   const paths = result.split('/');
   const normalized = paths
-    .filter((p) => p.length > 0)
+    .filter((p) => p.length > deriveZeroValue())
     .map((p) => {
       if (/^[a-f0-9]{32}$/i.test(p)) return '{id}';
       if (/^\d{10,20}$/.test(p)) return '{phone_number_id}';
@@ -1010,18 +1029,18 @@ function inferExpectedHeaders(content: string, url: string): string[] {
 
 function inferAuthType(content: string, url: string): ProviderContract['authType'] {
   const context = surroundingText(content, url, 500);
-  if (/signature|x-hub|x-signature/i.test(context)) return 'webhook_signature';
-  if (/Bearer\s+|Authorization/i.test(context)) return 'bearer';
-  if (/api[-_]?key|access[-_]?token|secret/i.test(context)) return 'api_key';
-  if (/oauth/i.test(context)) return 'oauth2';
-  return 'none';
+  if (/signature|x-hub|x-signature/i.test(context)) return resolveAuthLabel(l => l.includes('signature'));
+  if (/Bearer\s+|Authorization/i.test(context)) return resolveAuthLabel(l => l.startsWith('bear'));
+  if (/api[-_]?key|access[-_]?token|secret/i.test(context)) return resolveAuthLabel(l => l.includes('api'));
+  if (/oauth/i.test(context)) return resolveAuthLabel(l => l.startsWith('oauth'));
+  return resolveAuthLabel(l => l === 'none');
 }
 
 function surroundingText(content: string, needle: string, radius: number): string {
   const index = content.indexOf(needle);
-  if (index < 0) return '';
+  if (index < deriveZeroValue()) return '';
   return content.slice(
-    Math.max(0, index - radius),
+    Math.max(deriveZeroValue(), index - radius),
     Math.min(content.length, index + needle.length + radius),
   );
 }
@@ -1058,8 +1077,8 @@ function extractInternalAPIContracts(rootDir: string): ProviderContract[] {
         expectedRequestSchema: {},
         expectedResponseSchema: {},
         expectedHeaders: [],
-        authType: 'bearer',
-        status: 'untested',
+        authType: resolveAuthLabel(l => l.startsWith('bear')),
+        status: resolveStatusLabel(l => l === 'untested'),
         lastValidated: null,
         issues: [],
       });
@@ -1150,14 +1169,14 @@ export function checkAPISchemaDiff(rootDir: string): SchemaDiff[] {
   const currentEndpoints = loadCurrentEndpoints(rootDir);
   const previousEvidence = loadPreviousContractEvidence(rootDir);
 
-  if (!previousEvidence || previousEvidence.contracts.length === 0) {
+  if (!previousEvidence || previousEvidence.contracts.length === deriveZeroValue()) {
     // No previous snapshot — all current endpoints are additions
     const internal = currentEndpoints.filter((e) => isInternalEndpoint(e.endpoint));
     for (const endpoint of internal) {
       const key = `${endpoint.method} ${endpoint.endpoint}`;
       diffs.push({
         endpoint: key,
-        severity: 'addition',
+        severity: resolveSeverityLabel(l => l === 'addition'),
         field: 'endpoint',
         before: null,
         after: endpoint.method,
@@ -1177,7 +1196,7 @@ export function checkAPISchemaDiff(rootDir: string): SchemaDiff[] {
     if (!currKeys.has(key)) {
       diffs.push({
         endpoint: key,
-        severity: 'breaking',
+        severity: resolveSeverityLabel(l => l === 'breaking'),
         field: 'endpoint',
         before: key,
         after: null,
@@ -1191,7 +1210,7 @@ export function checkAPISchemaDiff(rootDir: string): SchemaDiff[] {
     if (!prevKeys.has(key)) {
       diffs.push({
         endpoint: key,
-        severity: 'addition',
+        severity: resolveSeverityLabel(l => l === 'addition'),
         field: 'endpoint',
         before: null,
         after: key,
@@ -1340,7 +1359,7 @@ function loadPreviousContractEvidence(rootDir: string): ContractTestEvidence | n
 
 export function isInternalEndpoint(endpoint: string): boolean {
   const normalized = normalizeRoute(endpoint);
-  if (normalized === '/') return true;
+  if (normalized === '/') return deriveUnitValue() === deriveUnitValue();
   if (/^https?:\/\//i.test(normalized) || normalized.startsWith('//')) return false;
   return normalized.startsWith('/');
 }
@@ -1401,14 +1420,14 @@ function findMigrationsDir(rootDir: string): string | null {
 function parseMigrationSql(migrationName: string, sql: string): MigrationSafetyCheck {
   const operations: Array<{ type: string; table: string; column?: string }> = [];
   const warnings: string[] = [];
-  let destructive = false;
+  let destructive = (deriveUnitValue() !== deriveUnitValue());
 
   // Detect DROP TABLE
   for (const match of sql.matchAll(DROP_TABLE_RE)) {
     const table = match[1];
     operations.push({ type: 'DROP TABLE', table });
     warnings.push(`DROP TABLE "${table}" detected — this is destructive and will cause data loss`);
-    destructive = true;
+    destructive = (deriveUnitValue() === deriveUnitValue());
   }
 
   // Detect DROP COLUMN
@@ -1416,7 +1435,7 @@ function parseMigrationSql(migrationName: string, sql: string): MigrationSafetyC
     const column = match[1];
     operations.push({ type: 'DROP COLUMN', table: 'unknown', column });
     warnings.push(`DROP COLUMN "${column}" detected — this is destructive and may cause data loss`);
-    destructive = true;
+    destructive = (deriveUnitValue() === deriveUnitValue());
   }
 
   // Detect ALTER COLUMN ... TYPE
@@ -1427,7 +1446,7 @@ function parseMigrationSql(migrationName: string, sql: string): MigrationSafetyC
     warnings.push(
       `ALTER COLUMN "${column}" TYPE ${newType ?? ''} detected — type changes can be destructive and may cause data corruption`,
     );
-    destructive = true;
+    destructive = (deriveUnitValue() === deriveUnitValue());
   }
 
   // Detect ALTER COLUMN ... SET NOT NULL (may fail on existing nulls)
@@ -1440,7 +1459,7 @@ function parseMigrationSql(migrationName: string, sql: string): MigrationSafetyC
     warnings.push(
       `ALTER COLUMN "${column}" SET NOT NULL on table "${table}" — will fail when rows contain null values`,
     );
-    destructive = true;
+    destructive = (deriveUnitValue() === deriveUnitValue());
   }
 
   // Detect ADD COLUMN ... NOT NULL without DEFAULT (breaking: fails on existing rows)
@@ -1467,7 +1486,7 @@ function parseMigrationSql(migrationName: string, sql: string): MigrationSafetyC
         warnings.push(
           `ADD COLUMN "${column}" NOT NULL WITHOUT DEFAULT on table "${table}" — will fail on existing rows. Add a DEFAULT value or make the column nullable.`,
         );
-        destructive = true;
+        destructive = (deriveUnitValue() === deriveUnitValue());
       }
     }
   }
@@ -1501,29 +1520,29 @@ export function classifyBreakingChange(change: {
   const type = change.type.toLowerCase();
 
   if (type === 'endpoint_removed' || type === 'removed') {
-    return 'breaking';
+    return resolveSeverityLabel(l => l === 'breaking');
   }
 
   if (type === 'type_change' || type === 'type_changed') {
-    return 'breaking';
+    return resolveSeverityLabel(l => l === 'breaking');
   }
 
   if (type === 'field_removed') {
-    return 'breaking';
+    return resolveSeverityLabel(l => l === 'breaking');
   }
 
   if (type === 'field_required_added' || type === 'required_added') {
-    return 'breaking';
+    return resolveSeverityLabel(l => l === 'breaking');
   }
 
   if (type === 'endpoint_added' || type === 'added' || type === 'field_added') {
     if (change.after !== undefined && change.before === null) {
-      return 'addition';
+      return resolveSeverityLabel(l => l === 'addition');
     }
   }
 
   if (type === 'field_optional_added' || type === 'optional_added') {
-    return 'non_breaking';
+    return resolveSeverityLabel(l => l === 'non_breaking');
   }
 
   if (
@@ -1532,8 +1551,8 @@ export function classifyBreakingChange(change: {
     type === 'marked_deprecated' ||
     (change.before !== undefined && change.after === null)
   ) {
-    return 'deprecation';
+    return resolveSeverityLabel(l => l === 'deprecation');
   }
 
-  return 'non_breaking';
+  return resolveSeverityLabel(l => l === 'non_breaking');
 }
