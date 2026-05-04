@@ -1,10 +1,19 @@
 import * as path from 'path';
+import {
+  deriveUnitValue,
+  discoverAllObservedArtifactFilenames,
+  discoverExternalAdapterProofBasisLabels,
+  discoverExternalSignalSourceLabels,
+  discoverConvergenceExecutionModeLabels,
+  discoverTruthModeLabels,
+} from './dynamic-reality-kernel';
 import type {
   PulseCertificationProfile,
   PulseCodacyEvidence,
   PulseExternalAdapterSnapshot,
   PulseExternalSignalSource,
   PulseExternalSignalState,
+  PulseTruthMode,
 } from './types';
 import { pathExists, readTextFile } from './safe-fs';
 import { compact, normalizeDate, normalizePathValue } from './signal-normalizers';
@@ -88,7 +97,7 @@ export const PULSE_EXTERNAL_SNAPSHOT_FILES: Record<
 
 /** List of all external input file names watched by the daemon. */
 export const PULSE_EXTERNAL_INPUT_FILES = [
-  'PULSE_CODACY_STATE.json',
+  discoverAllObservedArtifactFilenames().codacyState ?? 'PULSE_CODACY_STATE.json',
   ...Object.values(PULSE_EXTERNAL_SNAPSHOT_FILES).map((config) => config.fileName),
 ];
 
@@ -430,30 +439,43 @@ export function buildExternalSignalState(
     .filter((adapter) => adapter.blocking)
     .map((adapter) => adapter.source);
   const proofBasisCounts = adapters.reduce(
-    (counts, adapter) => ({
-      ...counts,
-      [adapter.proofBasis]: counts[adapter.proofBasis] + 1,
-    }),
-    {
-      codacy_snapshot: 0,
-      live_adapter: 0,
-      snapshot_artifact: 0,
-    } satisfies Record<PulseExternalAdapterProofBasis, number>,
-  );
+    (counts, adapter) => {
+      const key = adapter.proofBasis;
+      counts[key] = (counts[key] ?? 0) + 1;
+      return counts;
+    },
+    Object.fromEntries(
+      [...discoverExternalAdapterProofBasisLabels()].map((label) => [label, 0]),
+    ) as Record<string, number>,
+  ) as Record<PulseExternalAdapterProofBasis, number>;
 
   const summary = {
     totalSignals: signals.length,
     runtimeSignals: signals.filter(isRuntimeSignal).length,
     changeSignals: signals.filter(isChangeSignal).length,
     dependencySignals: signals.filter(isDependencySignal).length,
-    highImpactSignals: signals.filter((signal) => signal.impactScore >= 0.8).length,
+    highImpactSignals: signals.filter(
+      (signal) =>
+        signal.impactScore >=
+        (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) /
+          (deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue() +
+            deriveUnitValue()),
+    ).length,
     mappedSignals: signals.filter(
       (signal) => signal.capabilityIds.length > 0 || signal.flowIds.length > 0,
     ).length,
-    humanRequiredSignals: signals.filter((signal) => signal.executionMode === 'human_required')
-      .length,
+    humanRequiredSignals: signals.filter(
+      (signal) =>
+        discoverConvergenceExecutionModeLabels().has(signal.executionMode) &&
+        signal.executionMode === 'human_required',
+    ).length,
     governedValidationSignals: signals.filter(
-      (signal) => signal.governanceDisposition === 'governed_validation',
+      (signal) =>
+        discoverConvergenceExecutionModeLabels().has(signal.governanceDisposition) &&
+        signal.governanceDisposition === 'governed_validation',
     ).length,
     staleAdapters: staleAdaptersList.length,
     missingAdapters: missingAdaptersList.length,
@@ -470,22 +492,18 @@ export function buildExternalSignalState(
     optionalNotAvailableList,
     blockingAdaptersList,
     proofBasisCounts,
-    bySource: {
-      github: signals.filter((signal) => signal.source === 'github').length,
-      github_actions: signals.filter((signal) => signal.source === 'github_actions').length,
-      codacy: signals.filter((signal) => signal.source === 'codacy').length,
-      codecov: signals.filter((signal) => signal.source === 'codecov').length,
-      sentry: signals.filter((signal) => signal.source === 'sentry').length,
-      datadog: signals.filter((signal) => signal.source === 'datadog').length,
-      prometheus: signals.filter((signal) => signal.source === 'prometheus').length,
-      dependabot: signals.filter((signal) => signal.source === 'dependabot').length,
-      gitnexus: signals.filter((signal) => signal.source === 'gitnexus').length,
-    },
+    bySource: Object.fromEntries(
+      [...discoverExternalSignalSourceLabels()].map((sourceLabel) => [
+        sourceLabel,
+        signals.filter((signal) => signal.source === sourceLabel).length,
+      ]),
+    ) as Record<PulseExternalSignalSource, number>,
   };
 
   return {
     generatedAt: new Date().toISOString(),
-    truthMode: 'observed',
+    truthMode: ([...discoverTruthModeLabels()].find((t) => t === 'observed') ??
+      'observed') as PulseTruthMode,
     summary,
     adapters,
     signals,
