@@ -572,7 +572,7 @@ function isPassingStatus(value: string | undefined): boolean {
   return (
     _passedStatuses.has(normalized) ||
     [..._passedStatuses].some((s) => s.startsWith(normalized)) ||
-    normalized === 'certified'
+    [..._passedStatuses].some((s) => normalized.startsWith(s))
   );
 }
 
