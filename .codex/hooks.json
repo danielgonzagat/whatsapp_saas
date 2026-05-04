@@ -1,0 +1,40 @@
+{
+  "_comment": "Codex CLI hook config. Mirrors the Claude Code PreToolUse hooks at .claude/settings.json so any AI CLI in this repo enforces the same workspace gates. Single source of truth for rules: scripts/decomp/lib/gate-rules.mjs.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CODEX_PROJECT_DIR:-$PWD}/scripts/decomp/preflight-write-gate.mjs",
+            "timeout": 30,
+            "statusMessage": "Workspace gate (write)"
+          }
+        ]
+      },
+      {
+        "matcher": "^Bash$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CODEX_PROJECT_DIR:-$PWD}/scripts/decomp/preflight-bash-gate.mjs",
+            "timeout": 30,
+            "statusMessage": "Workspace gate (bash)"
+          }
+        ]
+      },
+      {
+        "matcher": "^apply_patch$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ${CODEX_PROJECT_DIR:-$PWD}/scripts/decomp/adapters/apply-patch-gate.mjs",
+            "timeout": 30,
+            "statusMessage": "Workspace gate (apply_patch)"
+          }
+        ]
+      }
+    ]
+  }
+}
