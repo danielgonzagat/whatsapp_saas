@@ -16,22 +16,20 @@ export { buildDoDEngineState } from './__parts__/dod-engine/engine';
 
 // ── Derived gate status labels (dynamic-reality kernel grammar) ─────────────
 
-const OBSERVED_GATE_STATUS_LABELS = [...discoverDoDGateStatusLabels()];
-
 export function resolveObservedGatePassStatusFromKernelGrammar(): string {
-  return OBSERVED_GATE_STATUS_LABELS[deriveZeroValue()];
+  return [...discoverDoDGateStatusLabels()][deriveZeroValue()];
 }
 
 export function resolveObservedGateFailStatusFromKernelGrammar(): string {
-  return OBSERVED_GATE_STATUS_LABELS[deriveUnitValue()];
+  return [...discoverDoDGateStatusLabels()][deriveUnitValue()];
 }
 
 export function resolveObservedGateNotApplicableStatusFromKernelGrammar(): string {
-  return OBSERVED_GATE_STATUS_LABELS[deriveUnitValue() + deriveUnitValue()];
+  return [...discoverDoDGateStatusLabels()][deriveUnitValue() + deriveUnitValue()];
 }
 
 export function resolveObservedGateNotTestedStatusFromKernelGrammar(): string {
-  return OBSERVED_GATE_STATUS_LABELS[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+  return [...discoverDoDGateStatusLabels()][deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
 }
 
 export function hasPassedGateFromKernelEvidence(status: string): boolean {
@@ -52,22 +50,20 @@ export function isGateTestedFromKernelEvidence(status: string): boolean {
 
 // ── Derived overall status labels ───────────────────────────────────────────
 
-const OBSERVED_OVERALL_STATUS_LABELS = [...discoverDoDOverallStatusLabels()];
-
 export function resolveObservedDoneStatusFromKernelGrammar(): string {
-  return OBSERVED_OVERALL_STATUS_LABELS[deriveZeroValue()];
+  return [...discoverDoDOverallStatusLabels()][deriveZeroValue()];
 }
 
 export function resolveObservedPartialStatusFromKernelGrammar(): string {
-  return OBSERVED_OVERALL_STATUS_LABELS[deriveUnitValue()];
+  return [...discoverDoDOverallStatusLabels()][deriveUnitValue()];
 }
 
 export function resolveObservedBlockedStatusFromKernelGrammar(): string {
-  return OBSERVED_OVERALL_STATUS_LABELS[deriveUnitValue() + deriveUnitValue()];
+  return [...discoverDoDOverallStatusLabels()][deriveUnitValue() + deriveUnitValue()];
 }
 
 export function resolveObservedNotStartedStatusFromKernelGrammar(): string {
-  return OBSERVED_OVERALL_STATUS_LABELS[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+  return [...discoverDoDOverallStatusLabels()][deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
 }
 
 export function isDoneStatusFromKernelEvidence(status: string): boolean {
@@ -88,27 +84,24 @@ export function isNotStartedStatusFromKernelEvidence(status: string): boolean {
 
 // ── Derived risk level labels ───────────────────────────────────────────────
 
-const OBSERVED_RISK_LEVEL_LABELS = [...discoverDoDRiskLevelLabels()];
-
 export function resolveObservedCriticalRiskLevelFromKernelGrammar(): string {
-  return OBSERVED_RISK_LEVEL_LABELS[deriveZeroValue()];
+  return [...discoverDoDRiskLevelLabels()][deriveZeroValue()];
 }
 
 export function resolveObservedHighRiskLevelFromKernelGrammar(): string {
-  return OBSERVED_RISK_LEVEL_LABELS[deriveUnitValue()];
+  return [...discoverDoDRiskLevelLabels()][deriveUnitValue()];
 }
 
 export function resolveObservedMediumRiskLevelFromKernelGrammar(): string {
-  return OBSERVED_RISK_LEVEL_LABELS[deriveUnitValue() + deriveUnitValue()];
+  return [...discoverDoDRiskLevelLabels()][deriveUnitValue() + deriveUnitValue()];
 }
 
 export function resolveObservedLowRiskLevelFromKernelGrammar(): string {
-  return OBSERVED_RISK_LEVEL_LABELS[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+  return [...discoverDoDRiskLevelLabels()][deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
 }
 
 export function isBlockerRiskFromKernelEvidence(riskLevel: string): boolean {
-  const labels = discoverDoDRiskLevelLabels();
-  return labels.has(riskLevel) && (
+  return discoverDoDRiskLevelLabels().has(riskLevel) && (
     riskLevel === resolveObservedCriticalRiskLevelFromKernelGrammar() ||
     riskLevel === resolveObservedHighRiskLevelFromKernelGrammar()
   );
@@ -116,27 +109,24 @@ export function isBlockerRiskFromKernelEvidence(riskLevel: string): boolean {
 
 // ── Derived capability classification labels ───────────────────────────────
 
-const OBSERVED_CLASSIFICATION_LABELS = [...discoverDoDCapabilityClassificationLabels()];
-
 export function resolveObservedPhantomClassificationFromKernelGrammar(): string {
-  return OBSERVED_CLASSIFICATION_LABELS[deriveZeroValue()];
+  return [...discoverDoDCapabilityClassificationLabels()][deriveZeroValue()];
 }
 
 export function resolveObservedLatentClassificationFromKernelGrammar(): string {
-  return OBSERVED_CLASSIFICATION_LABELS[deriveUnitValue()];
+  return [...discoverDoDCapabilityClassificationLabels()][deriveUnitValue()];
 }
 
 export function resolveObservedRealClassificationFromKernelGrammar(): string {
-  return OBSERVED_CLASSIFICATION_LABELS[deriveUnitValue() + deriveUnitValue()];
+  return [...discoverDoDCapabilityClassificationLabels()][deriveUnitValue() + deriveUnitValue()];
 }
 
 export function resolveObservedProductionClassificationFromKernelGrammar(): string {
-  return OBSERVED_CLASSIFICATION_LABELS[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
+  return [...discoverDoDCapabilityClassificationLabels()][deriveUnitValue() + deriveUnitValue() + deriveUnitValue()];
 }
 
 export function isClassifiedAsRealOrBetterFromKernelEvidence(classification: string): boolean {
-  const labels = discoverDoDCapabilityClassificationLabels();
-  return labels.has(classification) && (
+  return discoverDoDCapabilityClassificationLabels().has(classification) && (
     classification === resolveObservedRealClassificationFromKernelGrammar() ||
     classification === resolveObservedProductionClassificationFromKernelGrammar()
   );
@@ -149,18 +139,16 @@ export function isClassifiedAsPhantomFromKernelEvidence(classification: string):
 
 // ── Derived requirement mode labels ─────────────────────────────────────────
 
-const OBSERVED_REQUIREMENT_MODE_LABELS = [...discoverDoDRequirementModeLabels()];
-
 export function resolveObservedRequiredModeFromKernelGrammar(): string {
-  return OBSERVED_REQUIREMENT_MODE_LABELS[deriveZeroValue()];
+  return [...discoverDoDRequirementModeLabels()][deriveZeroValue()];
 }
 
 export function resolveObservedOptionalModeFromKernelGrammar(): string {
-  return OBSERVED_REQUIREMENT_MODE_LABELS[deriveUnitValue()];
+  return [...discoverDoDRequirementModeLabels()][deriveUnitValue()];
 }
 
 export function resolveObservedNotRequiredModeFromKernelGrammar(): string {
-  return OBSERVED_REQUIREMENT_MODE_LABELS[deriveUnitValue() + deriveUnitValue()];
+  return [...discoverDoDRequirementModeLabels()][deriveUnitValue() + deriveUnitValue()];
 }
 
 export function isRequiredModeFromKernelEvidence(mode: string): boolean {
@@ -175,10 +163,8 @@ export function isNotRequiredModeFromKernelEvidence(mode: string): boolean {
 
 // ── Derived truth mode labels ───────────────────────────────────────────────
 
-const OBSERVED_TRUTH_MODE_LABELS = [...discoverTruthModeLabels()];
-
 export function resolveObservedInferredTruthFromKernelGrammar(): string {
-  return OBSERVED_TRUTH_MODE_LABELS[deriveZeroValue()];
+  return [...discoverTruthModeLabels()][deriveZeroValue()];
 }
 
 export function isInferredTruthFromKernelEvidence(truthMode: string): boolean {
