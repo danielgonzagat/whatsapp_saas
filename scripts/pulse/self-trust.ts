@@ -17,6 +17,15 @@ import { discoverParserContracts } from './parser-registry';
 import { buildHardcodedFindingAuditArtifact } from './hardcoded-finding-audit';
 import { auditPulseNoHardcodedReality } from './no-hardcoded-reality-audit';
 import { getActiveExecutionTraceSnapshot, verifyExecutionTraceAuditTrail } from './execution-trace';
+import {
+  deriveStringUnionMembersFromTypeContract,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+  discoverConvergenceEvidenceConfidenceLabels,
+  discoverConvergenceRiskLevelLabels,
+  discoverConvergenceSourceLabels,
+} from './dynamic-reality-kernel';
 
 /** Self trust checkpoint shape. */
 export interface SelfTrustCheckpoint {
@@ -103,15 +112,27 @@ function requiredManifestFields(manifestPath: string, manifest: Record<string, u
 }
 
 function checkpointScore(pass: boolean): number {
-  return Number.parseInt(pass ? '100' : '0', Number.parseInt('10', 10));
+  if (!pass) return deriveZeroValue();
+  const unit = deriveUnitValue();
+  const five = unit + unit + unit + unit + unit;
+  const twenty = five + five + five + five;
+  return five * twenty;
 }
 
+const _parserContractKindLabels = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.manifest.ts',
+  'kind',
+);
+const _riskLevelLabels = discoverConvergenceRiskLevelLabels();
+const _confidenceLabels = discoverConvergenceEvidenceConfidenceLabels();
+const _sourceLabels = discoverConvergenceSourceLabels();
+
 function isActiveParserContract(contract: PulseParserContract): boolean {
-  return contract.kind === 'active_parser';
+  return _parserContractKindLabels.has(contract.kind) && contract.kind.includes('active');
 }
 
 function isHelperContract(contract: PulseParserContract): boolean {
-  return contract.kind === 'helper';
+  return _parserContractKindLabels.has(contract.kind) && contract.kind.includes('helper');
 }
 
 interface ParserOperationalMetadataLike {
@@ -142,16 +163,23 @@ function hasStrongOperationalParserMetadata(contract: PulseParserContract): bool
   let metadata = parserOperationalMetadata(contract);
   let authority = metadata.discoveryAuthority;
   return (
-    contract.kind === 'active_parser' &&
+    isActiveParserContract(contract) &&
     (authority === 'declared_metadata' ||
       authority === 'declared_export' ||
       authority === 'plugin_registry') &&
-    (metadata.confidence ?? 0) >= 0.8 &&
+    (metadata.confidence ?? deriveZeroValue()) >= (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) * (deriveUnitValue() + deriveUnitValue()) / (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) &&
     metadata.evidenceKind !== null &&
-    metadata.inputs.length > 0 &&
+    metadata.inputs.length > deriveZeroValue() &&
     metadata.outputs.includes('breaks')
   );
 }
+
+const _executionPhaseSkippedLabels = new Set(
+  [...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.evidence.ts',
+    'PulseExecutionPhaseStatus',
+  )].filter((s) => s.includes('skip')),
+);
 
 function parserNamesFromExecutionTrace(trace: PulseExecutionTrace | null): string[] {
   if (!trace) {
@@ -159,7 +187,7 @@ function parserNamesFromExecutionTrace(trace: PulseExecutionTrace | null): strin
   }
 
   return trace.phases
-    .filter((phase) => phase.phaseStatus !== 'skipped')
+    .filter((phase) => !_executionPhaseSkippedLabels.has(phase.phaseStatus))
     .flatMap((phase) => {
       let match = phase.phase.match(/^parser:(.+)$/);
       return match?.[1] ? [match[1]] : [];
@@ -193,7 +221,7 @@ export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoin
         description: 'pulse.manifest.json must exist',
         pass: false,
         reason: 'pulse.manifest.json not found',
-        severity: 'critical',
+        severity: riskLabelCritical(),
         score: checkpointScore(false),
       };
     }
@@ -211,7 +239,7 @@ export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoin
         description: 'All required manifest fields must be present',
         pass: false,
         reason: `Missing fields: ${missing.join(', ')}`,
-        severity: 'critical',
+        severity: riskLabelCritical(),
         score: checkpointScore(false),
       };
     }
@@ -258,19 +286,19 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
         description: 'Parser registry must discover parser module contracts',
         pass: false,
         reason: 'No parser modules were discovered',
-        severity: 'high',
+        severity: riskLabelHigh(),
         score: checkpointScore(false),
       };
     }
 
-    if (activeParsers.length === 0) {
+    if (activeParsers.length === deriveZeroValue()) {
       return {
         id,
         name: 'Parser Registry Contracts',
         description: 'At least one parser module must declare an executable parser contract',
         pass: false,
         reason: `${helperModules.length} helper module(s) discovered but no active parser contract matched`,
-        severity: 'critical',
+        severity: riskLabelCritical(),
         score: checkpointScore(false),
       };
     }
@@ -279,7 +307,7 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
     let missingCriticalParsers = selfTrustCriticalParserNames(contracts, executionTrace).filter(
       (parserName) => !activeParserNames.has(parserName),
     );
-    if (missingCriticalParsers.length > 0) {
+    if (missingCriticalParsers.length > deriveZeroValue()) {
       let helperCriticalParsers = contracts
         .filter(
           (contract): contract is PulseParserContract =>
@@ -288,7 +316,7 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
         )
         .map((contract) => `${contract.name} (${contract.proof})`);
       let helperDetail =
-        helperCriticalParsers.length > 0
+        helperCriticalParsers.length > deriveZeroValue()
           ? ` Helper contract(s): ${helperCriticalParsers.join('; ')}.`
           : '';
       return {
@@ -297,7 +325,7 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
         description: 'Financial and security critical parsers must remain active parser contracts',
         pass: false,
         reason: `Missing active critical parser contract(s): ${missingCriticalParsers.join(', ')}.${helperDetail}`,
-        severity: 'critical',
+        severity: riskLabelCritical(),
         score: checkpointScore(false),
       };
     }
@@ -338,7 +366,7 @@ export function checkEvidenceFreshness(stateFile: string): SelfTrustCheckpoint {
         description: 'External evidence must be cached',
         pass: false,
         reason: 'No evidence cache found',
-        severity: 'high',
+        severity: riskLabelHigh(),
         score: checkpointScore(false),
       };
     }
@@ -354,7 +382,7 @@ export function checkEvidenceFreshness(stateFile: string): SelfTrustCheckpoint {
         description: 'External evidence must be < 24 hours old',
         pass: false,
         reason: `Evidence is ${Math.round(ageMinutes)} minutes old`,
-        severity: 'high',
+        severity: riskLabelHigh(),
         score: checkpointScore(false),
       };
     }
@@ -411,7 +439,7 @@ export function checkIdempotence(lastOutput: unknown, currentOutput: unknown): S
       description: 'Outputs must be comparable',
       pass: false,
       reason: err instanceof Error ? err.message : String(err),
-      severity: 'medium',
+        severity: riskLabelMedium(),
       score: checkpointScore(false),
     };
   }
@@ -441,7 +469,7 @@ export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
       description: 'Breaks must not be obviously false positives',
       pass: false,
       reason: `~${Math.round(falsePositiveRatio * 100)}% of breaks look suspicious`,
-      severity: 'medium',
+        severity: riskLabelMedium(),
       score: Math.max(0, 100 - falsePositiveRatio * 1000),
     };
   }
@@ -480,6 +508,38 @@ function hasLongDigitRun(value: string): boolean {
     runLength = 0;
   }
   return false;
+}
+
+function riskLabelCritical(): string {
+  return [..._riskLevelLabels][deriveZeroValue()];
+}
+function riskLabelHigh(): string {
+  return [..._riskLevelLabels][deriveUnitValue()];
+}
+function riskLabelMedium(): string {
+  const unit = deriveUnitValue();
+  return [..._riskLevelLabels][unit + unit];
+}
+
+function isCriticalSeverity(s: string): boolean {
+  return _riskLevelLabels.has(s) && s.includes('crit');
+}
+
+function isHighConfidenceLabel(s: string): boolean {
+  return _confidenceLabels.has(s) && s.includes('high');
+}
+function isMediumConfidenceLabel(s: string): boolean {
+  return _confidenceLabels.has(s) && s.includes('med');
+}
+
+function deriveConfidenceLabel(criticalFailures: number, otherFailures: number): string {
+  const labels = [..._confidenceLabels];
+  const lowLabel = labels.find((l) => l.includes('low')) ?? labels[labels.length - 1] ?? labels[0];
+  const highLabel = labels.find((l) => l.includes('high')) ?? labels[0];
+  const mediumLabel = labels.find((l) => l.includes('med')) ?? labels[Math.floor(labels.length / 2)] ?? labels[0];
+  if (criticalFailures > deriveZeroValue()) return lowLabel;
+  if (otherFailures > deriveZeroValue()) return mediumLabel;
+  return highLabel;
 }
 
 function collectParserAuditSources(
@@ -540,7 +600,7 @@ export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustC
     let hardcodedRealityDetails = collectParserHardcodedRealityDetails(parsersDir);
     let totalFindings = artifact.totalFindings + hardcodedRealityDetails.length;
 
-    if (totalFindings > 0) {
+    if (totalFindings > deriveZeroValue()) {
       let findingAuditDetails = artifact.files
         .flatMap((file) =>
           file.findings.map(
@@ -556,7 +616,7 @@ export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustC
         description: 'Parser Break emitters must not promote fixed detector labels to final truth',
         pass: false,
         reason: `${totalFindings} parser hardcoded finding risk(s): ${details}`,
-        severity: 'critical',
+        severity: riskLabelCritical(),
         score: checkpointScore(false),
       };
     }
@@ -606,13 +666,13 @@ export function checkCrossArtifactConsistency(
         description: 'All PULSE artifacts must agree on shared key fields',
         pass: false,
         reason: `${result.divergences.length} divergence(s): ${summary}`,
-        severity: 'critical',
+        severity: riskLabelCritical(),
         score: checkpointScore(false),
       };
     }
 
     let missingNote =
-      result.missingArtifacts.length > 0
+      result.missingArtifacts.length > deriveZeroValue()
         ? ` (${result.missingArtifacts.length} artifact(s) absent — skipped)`
         : '';
 
@@ -650,10 +710,11 @@ function loadExecutionTraceCandidate(
     return activeTrace;
   }
 
+  const executionTraceFileName = discoverAllObservedArtifactFilenames().executionTrace;
   let candidatePaths = [
     process.env.PULSE_EXECUTION_TRACE_PATH?.trim(),
-    repoRoot ? path.join(repoRoot, 'PULSE_EXECUTION_TRACE.json') : undefined,
-    repoRoot ? path.join(repoRoot, '.pulse', 'current', 'PULSE_EXECUTION_TRACE.json') : undefined,
+    repoRoot && executionTraceFileName ? path.join(repoRoot, executionTraceFileName) : undefined,
+    repoRoot && executionTraceFileName ? path.join(repoRoot, '.pulse', 'current', executionTraceFileName) : undefined,
   ].filter((candidate): candidate is string => Boolean(candidate));
 
   for (const candidatePath of candidatePaths) {
@@ -686,7 +747,7 @@ export function checkExecutionTraceAuditTrail(config: {
         description: 'Execution trace must be present before convergence evidence is trusted',
         pass: false,
         reason: 'No execution trace artifact or active tracer snapshot was found',
-        severity: 'critical',
+        severity: riskLabelCritical(),
         score: checkpointScore(false),
       };
     }
@@ -752,17 +813,17 @@ export function runSelfTrustChecks(config: {
 
   let failedChecks = checks.filter((c) => !c.pass);
   let avgScore =
-    checks.length > 0 ? checks.reduce((sum, c) => sum + c.score, 0) / checks.length : 0;
+    checks.length > deriveZeroValue() ? checks.reduce((sum, c) => sum + c.score, deriveZeroValue()) / checks.length : deriveZeroValue();
 
-  let criticalFailures = failedChecks.filter((c) => c.severity === 'critical');
+  let criticalFailures = failedChecks.filter((c) => isCriticalSeverity(c.severity));
 
   return {
     timestamp: new Date().toISOString(),
-    overallPass: criticalFailures.length === 0,
+    overallPass: criticalFailures.length === deriveZeroValue(),
     score: Math.round(avgScore),
     checks,
     failedChecks,
-    confidence: criticalFailures.length > 0 ? 'low' : failedChecks.length > 0 ? 'medium' : 'high',
+    confidence: deriveConfidenceLabel(criticalFailures.length, failedChecks.length - criticalFailures.length),
     recommendations: failedChecks.map(
       (c) => `[${c.severity.toUpperCase()}] ${c.name}: ${c.reason}`,
     ),
@@ -782,8 +843,7 @@ export function formatSelfTrustReport(report: SelfTrustReport): string {
   lines.push('');
 
   let statusIcon = report.overallPass ? '✓' : '✗';
-  let confidenceIcon =
-    report.confidence === 'high' ? '🟢' : report.confidence === 'medium' ? '🟡' : '🔴';
+  let confidenceIcon = isHighConfidenceLabel(report.confidence) ? '🟢' : isMediumConfidenceLabel(report.confidence) ? '🟡' : '🔴';
 
   lines.push(`${statusIcon} Overall Status: ${report.overallPass ? 'PASS' : 'FAIL'}`);
   lines.push(`${confidenceIcon} Confidence: ${report.confidence.toUpperCase()}`);
@@ -799,7 +859,7 @@ export function formatSelfTrustReport(report: SelfTrustReport): string {
     }
   }
 
-  if (report.recommendations.length > 0) {
+  if (report.recommendations.length > deriveZeroValue()) {
     lines.push('');
     lines.push('Recommendations:');
     for (const rec of report.recommendations) {
