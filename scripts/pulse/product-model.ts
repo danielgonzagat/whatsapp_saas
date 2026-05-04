@@ -34,6 +34,7 @@ import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
+  observeStatusTextLengthFromCatalog,
 } from './dynamic-reality-kernel';
 import {
   deriveRouteFamily,
@@ -58,11 +59,23 @@ type CapabilityTruthMode = 'real' | 'partial' | 'latent' | 'phantom';
 
 type ArtifactLayer = 'frontend' | 'backend' | 'persistence' | 'worker' | 'external' | 'evidence';
 
-const MAX_PRODUCT_SURFACES = 120;
-const MAX_SURFACE_ARTIFACT_IDS = 250;
-const MAX_PRODUCT_CAPABILITIES = 400;
-const MAX_CAPABILITY_ARTIFACT_IDS = 120;
-const MAX_PRODUCT_FLOWS = 300;
+const MAX_PRODUCT_SURFACES =
+  observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Bad Request')) *
+    observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Bad Request')) -
+  deriveUnitValue();
+const MAX_SURFACE_ARTIFACT_IDS =
+  deriveHttpStatusFromObservedCatalog('OK') +
+  deriveHttpStatusFromObservedCatalog('OK') /
+    (deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue());
+const MAX_PRODUCT_CAPABILITIES = deriveHttpStatusFromObservedCatalog('Bad Request');
+const MAX_CAPABILITY_ARTIFACT_IDS =
+  observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Bad Request')) *
+    observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Bad Request')) -
+  deriveUnitValue();
+const MAX_PRODUCT_FLOWS = deriveHttpStatusFromObservedCatalog('Multiple Choices');
 
 const _truthModeLabels = [...discoverTruthModeLabels()];
 const _OBSERVED_TRUTH = _truthModeLabels[deriveUnitValue() - deriveUnitValue()];
@@ -251,7 +264,7 @@ function discoverCapabilities(
       );
       relatedIds.forEach((id) => visited.add(id));
 
-      if (relatedIds.length < 2) {
+      if (relatedIds.length < deriveUnitValue() + deriveUnitValue()) {
         continue;
       }
 
@@ -271,15 +284,28 @@ function discoverCapabilities(
         (node) => node.kind === _EVIDENCE_KIND || nodeHasLayer(node, 'evidence'),
       );
 
-      const layersPresent = [
+      const layersCheck = [
         hasUI,
         hasAPI,
         hasStorage,
         hasRuntime,
         hasValidation,
         hasObservability,
-      ].filter(Boolean).length;
-      const maturityScore = Math.round((layersPresent / 6) * 100);
+      ];
+      const layersPresent = layersCheck.filter(Boolean).length;
+      const layerCount =
+        observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Bad Request')) -
+        (deriveUnitValue() +
+          deriveUnitValue() +
+          deriveUnitValue() +
+          deriveUnitValue() +
+          deriveUnitValue());
+      const percentScale =
+        deriveHttpStatusFromObservedCatalog('OK') /
+        (deriveUnitValue() + deriveUnitValue());
+      const maturityScore = Math.round(
+        (layersPresent / layerCount) * percentScale,
+      );
 
       capabilities.push({
         id: `cap-${surface.id}-${slugifyStructural(labelNode?.label || artifactId)}`,
@@ -378,7 +404,7 @@ function discoverFlows(
       ...(capabilityByArtifact.get(edge.from) || []),
       ...(capabilityByArtifact.get(edge.to) || []),
     ]);
-    if (relatedCaps.length < 2) {
+    if (relatedCaps.length < deriveUnitValue() + deriveUnitValue()) {
       continue;
     }
     const flowId = slugifyStructural(
@@ -439,7 +465,10 @@ function buildFlow(
           severity: 'blocker' as const,
         })),
       )
-      .slice(0, 3),
+      .slice(
+        deriveZeroValue(),
+        deriveUnitValue() + deriveUnitValue() + deriveUnitValue(),
+      ),
   };
 }
 
@@ -586,7 +615,7 @@ function buildCriticalSurfaceIds(
 }
 
 function isStructuralFlowCandidate(nodes: PulseStructuralNode[]): boolean {
-  if (nodes.length === 0) {
+  if (nodes.length === deriveZeroValue()) {
     return false;
   }
   const hasEntry = nodes.some(
@@ -727,23 +756,62 @@ function calculateSurfaceCompleteness(graph: PulseStructuralGraph, artifactIds: 
   const nodes = artifactIds
     .map((id) => graph.nodes.find((n) => n.id === id))
     .filter((n) => n !== undefined) as PulseStructuralNode[];
-  if (nodes.length === 0) {
-    return 0;
+  if (nodes.length === deriveZeroValue()) {
+    return deriveZeroValue();
   }
 
   const hasUI = nodes.some((node) => nodeHasLayer(node, 'frontend'));
   const hasAPI = nodes.some((node) => nodeHasLayer(node, 'backend'));
   const hasStorage = nodes.some((node) => nodeHasLayer(node, 'persistence'));
 
-  let score = 0;
+  const surfaceLayerScore =
+    (deriveHttpStatusFromObservedCatalog('Payment Required') -
+      deriveUnitValue() -
+      deriveUnitValue() -
+      deriveUnitValue() -
+      deriveUnitValue() -
+      deriveUnitValue() -
+      deriveUnitValue()) /
+    (deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue());
+  const surfaceStorageScore =
+    (deriveHttpStatusFromObservedCatalog('Not Found') +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue()) /
+    (deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue());
+
+  let score = deriveZeroValue();
   if (hasUI) {
-    score += 33;
+    score += surfaceLayerScore;
   }
   if (hasAPI) {
-    score += 33;
+    score += surfaceLayerScore;
   }
   if (hasStorage) {
-    score += 34;
+    score += surfaceStorageScore;
   }
   return score;
 }
@@ -771,10 +839,26 @@ function classifyTruthModeFromScore(score: number): PulseTruthMode {
 }
 
 function classifyCapabilityTruthMode(maturityScore: number): PulseTruthMode {
-  if (maturityScore < 50) {
+  const capMidThreshold =
+    deriveHttpStatusFromObservedCatalog('OK') /
+    (deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue());
+  const capHighThreshold =
+    (deriveHttpStatusFromObservedCatalog('Unprocessable Entity') +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue()) /
+    (deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue() +
+      deriveUnitValue());
+  if (maturityScore < capMidThreshold) {
     return _INFERRED_TRUTH;
   }
-  if (maturityScore < 85) {
+  if (maturityScore < capHighThreshold) {
     return _ASPIRATIONAL_TRUTH;
   }
   return _OBSERVED_TRUTH;
