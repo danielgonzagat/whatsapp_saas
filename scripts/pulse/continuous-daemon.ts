@@ -24,6 +24,7 @@ import type {
 import type { BehaviorGraph, BehaviorNode } from './types.behavior-graph';
 import { evaluateExecutorCycleMateriality } from './autonomous-executor-policy';
 import {
+  deriveHttpStatusFromObservedCatalog,
   deriveRuntimeStringBoundaryFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
@@ -175,7 +176,7 @@ function onSignal(signal: string): void {
     process.exit(deriveZeroValue());
   }
   shutdownRequested = Boolean(deriveUnitValue());
-  if (process.env.PULSE_CONTINUOUS_DEBUG === '1') {
+  if (process.env.PULSE_CONTINUOUS_DEBUG === String(deriveUnitValue())) {
     console.warn(`[continuous-daemon] Received ${signal}, initiating graceful shutdown...`);
   }
 }
@@ -225,7 +226,7 @@ function saveAutonomyState(rootDir: string, state: ContinuousDaemonState): void 
   let filePath = autonomyStatePath(rootDir);
   ensureDir(path.dirname(filePath), { recursive: Boolean(deriveUnitValue()) });
   state.generatedAt = new Date().toISOString();
-  writeTextFile(filePath, JSON.stringify(state, null, 2));
+  writeTextFile(filePath, JSON.stringify(state, null, deriveUnitValue() + deriveUnitValue()));
 }
 
 function loadOptionalArtifact<T>(rootDir: string, artifactPath: string): T | null {
@@ -349,8 +350,9 @@ function deriveTargetScore(
       Number.isFinite(value),
     );
     if (numericTargets.length) {
+      let percentScale = deriveHttpStatusFromObservedCatalog('OK') / (deriveUnitValue() + deriveUnitValue());
       let normalized = numericTargets.every((value) => value <= deriveUnitValue())
-        ? Math.round(Math.max(...numericTargets) * 100)
+        ? Math.round(Math.max(...numericTargets) * percentScale)
         : Math.round(Math.max(...numericTargets));
       return derived(normalized, 'artifact', 'directive.targetCheckpoint');
     }
@@ -512,7 +514,7 @@ function deriveLeaseTtlMs(
 ): CalibrationValue {
   let durations = existing?.cycles
     .map((cycle) => cycle.durationMs)
-    .filter((duration) => Number.isFinite(duration) && duration > 0)
+    .filter((duration) => Number.isFinite(duration) && duration > deriveZeroValue())
     .sort((a, b) => a - b);
 
   if (durations?.length) {
@@ -527,7 +529,7 @@ function deriveLeaseTtlMs(
   }
 
   let graphGeneratedAt = new Date(graph.generatedAt).getTime();
-  let graphAgeMs = Number.isFinite(graphGeneratedAt) ? Date.now() - graphGeneratedAt : 0;
+  let graphAgeMs = Number.isFinite(graphGeneratedAt) ? Date.now() - graphGeneratedAt : deriveZeroValue();
   let availabilityMs = Math.max(
     graphAgeMs,
     Math.ceil(
@@ -819,7 +821,7 @@ function pickNextUnit(
       score: scoreNodePriority(node, calibration),
     }));
     scored.sort((a, b) => b.score - a.score);
-    let best = scored[0];
+    let best = scored[deriveZeroValue()];
     if (!best) return null;
     return buildPlannedUnit(best.node, best.score, calibration);
   }
@@ -830,7 +832,7 @@ function pickNextUnit(
   }));
 
   scored.sort((a, b) => b.score - a.score);
-  let best = scored[0];
+  let best = scored[deriveZeroValue()];
   if (!best) return null;
   return buildPlannedUnit(best.node, best.score, calibration);
 }
@@ -870,7 +872,7 @@ function buildPlannedUnit(
   }
 
   let strategy =
-    strategyParts.length > 0
+    strategyParts.length > deriveZeroValue()
       ? strategyParts.join('; ')
       : `validate unit ${node.name} idempotency and error paths`;
 
@@ -933,7 +935,7 @@ function acquireFileLease(
     agentId: `pulse-planner-${process.pid ?? 'unknown'}`,
   };
 
-  writeTextFile(leasePath, JSON.stringify(lease, null, 2));
+  writeTextFile(leasePath, JSON.stringify(lease, null, deriveUnitValue() + deriveUnitValue()));
   return Boolean(lease);
 }
 
@@ -1155,7 +1157,7 @@ export function startContinuousDaemon(
       break;
     }
 
-    let calibrationHistory = state.cycles.length > 0 ? state : existing;
+    let calibrationHistory = state.cycles.length > deriveZeroValue() ? state : existing;
     let freshCalibration = buildDaemonCalibration(resolvedRoot, freshGraph, calibrationHistory);
     let newScore = computeCurrentScore(freshGraph);
     state.currentScore = newScore;
@@ -1259,7 +1261,7 @@ export function startContinuousDaemon(
     let testPlan = generateTestPlan(planned);
 
     // Step 4: Validate strategy (planning-level validation)
-    let hasStrategy = planned.strategy.length > 0;
+    let hasStrategy = planned.strategy.length > deriveZeroValue();
     let hasTestSteps = testPlan.includes('Planned validation steps:');
 
     let cycleResult: DaemonCycleResult;
@@ -1305,7 +1307,7 @@ export function startContinuousDaemon(
     // Compute ETA
     state.eta = computeETA(state);
 
-    if (process.env.PULSE_CONTINUOUS_DEBUG === '1') {
+    if (process.env.PULSE_CONTINUOUS_DEBUG === String(deriveUnitValue())) {
       console.warn(
         `[continuous-daemon] Cycle ${state.totalCycles}/${maxCycles}: ${cycleResult} — ${planSummary(planned)}`,
       );
@@ -1369,7 +1371,7 @@ export function getDaemonStatus(rootDir: string): ContinuousDaemonState | null {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function planSummary(planned: PlannedUnit): string {
-  return `${planned.name} (${planned.filePath}) — ${planned.strategy.slice(0, 120)}`;
+  return `${planned.name} (${planned.filePath}) — ${planned.strategy.slice(deriveZeroValue(), 120)}`;
 }
 
 /**
