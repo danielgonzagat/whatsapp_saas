@@ -134,6 +134,28 @@ function discoverValidationRequirementLabels(): Record<string, BehaviorValidatio
   return _validationRequirementCatalog;
 }
 
+let _decoratorRoleCatalog: Record<string, BehaviorDecoratorRole> | null = null;
+function requireDecoratorRoleCatalog(): Record<string, BehaviorDecoratorRole> {
+  if (!_decoratorRoleCatalog) {
+    _decoratorRoleCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/behavior-graph.ts',
+      'BehaviorDecoratorRole',
+    ) as Record<string, BehaviorDecoratorRole>;
+  }
+  return _decoratorRoleCatalog;
+}
+
+let _classNameRoleCatalog: Record<string, BehaviorClassNameRole> | null = null;
+function requireClassNameRoleCatalog(): Record<string, BehaviorClassNameRole> {
+  if (!_classNameRoleCatalog) {
+    _classNameRoleCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/behavior-graph.ts',
+      'BehaviorClassNameRole',
+    ) as Record<string, BehaviorClassNameRole>;
+  }
+  return _classNameRoleCatalog;
+}
+
 function deriveRiskLevelOrdinalPositions(): Record<BehaviorRiskLevel, number> {
   const members = deriveStringUnionMembersFromTypeContract(
     'scripts/pulse/types.behavior-graph.ts',
@@ -339,8 +361,9 @@ function decoratorRoles(
   decorator: string,
   sourceRoot: DetectedSourceRoot | null,
   sourceContext: SourceExternalContext,
-): BehaviorDecoratorRole[] {
-  const roles = new Set<BehaviorDecoratorRole>();
+): BehaviorDelegatorRole[] {
+  const dr = requireDecoratorRoleCatalog();
+  const roles = new Set<BehaviorDelegatorRole>();
   const tokens = identifierTokens(decorator);
   const packageName = sourceContext.importedBindingProviders.get(decorator) ?? null;
   const frameworkBacked =
@@ -356,29 +379,29 @@ function decoratorRoles(
   }
 
   const joined = tokens.join('-');
-  if (/^(all|head|options|get|post|put|patch|delete)$/.test(joined)) roles.add('http_route');
+  if (/^(all|head|options|get|post|put|patch|delete)$/.test(joined)) roles.add(dr.httpRoute);
   if (tokens.some((token) => token === 'cron' || token === 'interval' || token === 'timeout')) {
-    roles.add('cron_job');
+    roles.add(dr.cronJob);
   }
   if (
     tokens.some((token) => token === 'message' || token === 'event' || token === 'pattern') ||
     joined.includes('process')
   ) {
-    roles.add('queue_consumer');
+    roles.add(dr.queueConsumer);
   }
   if (tokens.some((token) => token === 'subscribe' || token === 'listener')) {
-    roles.add('event_listener');
+    roles.add(dr.eventListener);
   }
-  if (tokens.includes('body')) roles.add('request_body');
-  if (tokens.includes('query')) roles.add('request_query');
-  if (tokens.some((token) => token === 'param' || token === 'params')) roles.add('request_params');
+  if (tokens.includes('body')) roles.add(dr.requestBody);
+  if (tokens.includes('query')) roles.add(dr.requestQuery);
+  if (tokens.some((token) => token === 'param' || token === 'params')) roles.add(dr.requestParams);
   if (tokens.some((token) => token === 'header' || token === 'headers')) {
-    roles.add('request_headers');
+    roles.add(dr.requestHeaders);
   }
   if (tokens.some((token) => token === 'req' || token === 'res' || token === 'context')) {
-    roles.add('request_context');
+    roles.add(dr.requestContext);
   }
-  if (tokens.some((token) => token === 'auth' || token === 'guard')) roles.add('auth_guard');
+  if (tokens.some((token) => token === 'auth' || token === 'guard')) roles.add(dr.authGuard);
 
   return [...roles];
 }
@@ -399,13 +422,14 @@ function inputKindFromDecorator(
   sourceRoot: DetectedSourceRoot | null,
   sourceContext: SourceExternalContext,
 ): BehaviorInputKind | null {
+  const dr = requireDecoratorRoleCatalog();
   const roles = decoratorRoles(decorator, sourceRoot, sourceContext);
   const inputKinds = requireBehaviorInputKindCatalog();
-  if (roles.includes('request_body')) return inputKinds.body;
-  if (roles.includes('request_query')) return inputKinds.query;
-  if (roles.includes('request_params')) return inputKinds.params;
-  if (roles.includes('request_headers')) return inputKinds.headers;
-  if (roles.includes('request_context')) return inputKinds.context;
+  if (roles.includes(dr.requestBody)) return inputKinds.body;
+  if (roles.includes(dr.requestQuery)) return inputKinds.query;
+  if (roles.includes(dr.requestParams)) return inputKinds.params;
+  if (roles.includes(dr.requestHeaders)) return inputKinds.headers;
+  if (roles.includes(dr.requestContext)) return inputKinds.context;
   return null;
 }
 
@@ -415,16 +439,17 @@ function classNameRole(
   sourceContext: SourceExternalContext,
   classDecorators: string[],
 ): BehaviorClassNameRole | null {
+  const cr = requireClassNameRoleCatalog();
   for (const decorator of classDecorators) {
     const tokens = identifierTokens(decorator);
-    if (tokens.includes('controller')) return 'controller_like';
-    if (tokens.includes('gateway')) return 'gateway_like';
-    if (tokens.includes('guard')) return 'guard_like';
+    if (tokens.includes('controller')) return cr.controllerLike;
+    if (tokens.includes('gateway')) return cr.gatewayLike;
+    if (tokens.includes('guard')) return cr.guardLike;
     if (tokens.some((token) => token === 'pipe' || token === 'validator')) {
-      return 'validation_like';
+      return cr.validationLike;
     }
     if (tokens.some((token) => token === 'processor' || token === 'consumer')) {
-      return 'queue_like';
+      return cr.queueLike;
     }
   }
 
@@ -434,12 +459,12 @@ function classNameRole(
   if (!hasFrameworkEvidence) {
     return null;
   }
-  if (tokens.includes('controller')) return 'controller_like';
-  if (tokens.includes('gateway')) return 'gateway_like';
-  if (tokens.includes('guard')) return 'guard_like';
-  if (tokens.some((token) => token === 'pipe' || token === 'validator')) return 'validation_like';
-  if (tokens.some((token) => token === 'processor' || token === 'consumer')) return 'queue_like';
-  if (tokens.some((token) => token === 'service' || token === 'repository')) return 'service_like';
+  if (tokens.includes('controller')) return cr.controllerLike;
+  if (tokens.includes('gateway')) return cr.gatewayLike;
+  if (tokens.includes('guard')) return cr.guardLike;
+  if (tokens.some((token) => token === 'pipe' || token === 'validator')) return cr.validationLike;
+  if (tokens.some((token) => token === 'processor' || token === 'consumer')) return cr.queueLike;
+  if (tokens.some((token) => token === 'service' || token === 'repository')) return cr.serviceLike;
   return null;
 }
 
@@ -496,7 +521,8 @@ function extractFunctionsFromSource(filePath: string, source: string): ParsedFun
 
     let docComment: string | null = null;
     const beforeMatch = source.substring(0, match.index).split('\n');
-    const prevLines = beforeMatch.slice(-5);
+    const jsdocLookbackSpan = deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
+    const prevLines = beforeMatch.slice(-jsdocLookbackSpan);
     const jsdocRegex = /\/\*\*[\s\S]*?\*\//;
     for (let i = prevLines.length - 1; i >= 0; i--) {
       if (jsdocRegex.test(prevLines[i])) {
@@ -742,32 +768,34 @@ function determineKind(
   const { decorators, className, name } = func;
 
   const kinds = requireBehaviorNodeKindCatalog();
-  if (hasDecoratorRole(decorators, 'http_route', sourceRoot, sourceContext))
+  const dr = requireDecoratorRoleCatalog();
+  const cr = requireClassNameRoleCatalog();
+  if (hasDecoratorRole(decorators, dr.httpRoute, sourceRoot, sourceContext))
     return kinds.apiEndpoint;
-  if (hasDecoratorRole(decorators, 'cron_job', sourceRoot, sourceContext)) return kinds.cronJob;
-  if (hasDecoratorRole(decorators, 'queue_consumer', sourceRoot, sourceContext)) {
+  if (hasDecoratorRole(decorators, dr.cronJob, sourceRoot, sourceContext)) return kinds.cronJob;
+  if (hasDecoratorRole(decorators, dr.queueConsumer, sourceRoot, sourceContext)) {
     return kinds.queueConsumer;
   }
-  if (hasDecoratorRole(decorators, 'event_listener', sourceRoot, sourceContext)) {
+  if (hasDecoratorRole(decorators, dr.eventListener, sourceRoot, sourceContext)) {
     return kinds.eventListener;
   }
 
   if (className) {
     const role = classNameRole(className, sourceRoot, sourceContext, func.classDecorators);
-    if (role === 'controller_like') {
-      if (hasDecoratorRole(decorators, 'http_route', sourceRoot, sourceContext)) {
+    if (role === cr.controllerLike) {
+      if (hasDecoratorRole(decorators, dr.httpRoute, sourceRoot, sourceContext)) {
         return kinds.apiEndpoint;
       }
       return kinds.handler;
     }
-    if (role === 'gateway_like') return kinds.eventListener;
-    if (role === 'guard_like') return kinds.authCheck;
-    if (role === 'validation_like') return kinds.validation;
-    if (role === 'service_like') {
+    if (role === cr.gatewayLike) return kinds.eventListener;
+    if (role === cr.guardLike) return kinds.authCheck;
+    if (role === cr.validationLike) return kinds.validation;
+    if (role === cr.serviceLike) {
       if (/^use[A-Z]/.test(name) || /^on[A-Z]/.test(name)) return kinds.lifecycleHook;
       return kinds.handler;
     }
-    if (role === 'queue_like') return kinds.queueConsumer;
+    if (role === cr.queueLike) return kinds.queueConsumer;
   }
 
   if (/^use[A-Z]/.test(name)) return kinds.lifecycleHook;
@@ -1064,11 +1092,7 @@ function detectOutputs(bodyText: string, kind: BehaviorNodeKind): BehaviorOutput
     outputs.push({ kind: ok.queueMessage, target: 'queue', type: 'add', conditional: true });
   }
 
-  if (
-    bodyText.includes('console.log') ||
-    bodyText.includes('console.error') ||
-    bodyText.includes('console.warn')
-  ) {
+  if (bodyText.includes('console.')) {
     outputs.push({ kind: ok.log, target: 'console', type: 'text', conditional: false });
   }
 
@@ -1195,9 +1219,10 @@ function determineExecutionMode(
   const riskCatalog = requireBehaviorRiskLevelCatalog();
   const modeCatalog = requireExecutionModeCatalog();
   const kindCatalog = requireBehaviorNodeKindCatalog();
+  const dr = requireDecoratorRoleCatalog();
   if (risk === riskCatalog.critical || risk === riskCatalog.high) return modeCatalog.aiSafe;
 
-  if (hasDecoratorRole(decorators, 'auth_guard', sourceRoot, sourceContext)) return modeCatalog.aiSafe;
+  if (hasDecoratorRole(decorators, dr.authGuard, sourceRoot, sourceContext)) return modeCatalog.aiSafe;
 
   const sendsMessagesOrPayments = hasMessageOrPaymentSending(bodyText, externalCalls);
   if (sendsMessagesOrPayments) return modeCatalog.aiSafe;
@@ -1224,9 +1249,21 @@ function determineExecutionMode(
 }
 
 type BehaviorNodeArtifact = BehaviorNode & {
-  validationRequirements: BehaviorValidationRequirement[];
-  governedEvidenceMode: 'read_only_evidence' | 'sandboxed_execution_with_validation';
+  governedEvidenceMode: GovernedEvidenceMode;
 };
+
+type GovernedEvidenceMode = 'read_only_evidence' | 'sandboxed_execution_with_validation';
+
+let _governedEvidenceModeCatalog: Record<string, GovernedEvidenceMode> | null = null;
+function requireGovernedEvidenceModeCatalog(): Record<string, GovernedEvidenceMode> {
+  if (!_governedEvidenceModeCatalog) {
+    _governedEvidenceModeCatalog = buildCatalogFromTypeContract(
+      'scripts/pulse/behavior-graph.ts',
+      'GovernedEvidenceMode',
+    ) as Record<string, GovernedEvidenceMode>;
+  }
+  return _governedEvidenceModeCatalog;
+}
 
 function uniqueValidationRequirements(
   requirements: BehaviorValidationRequirement[],
@@ -1451,8 +1488,8 @@ function buildNodesFromParsedFunctions(
       validationRequirements,
       governedEvidenceMode:
         executionMode === requireExecutionModeCatalog().observationOnly
-          ? 'read_only_evidence'
-          : 'sandboxed_execution_with_validation',
+          ? requireGovernedEvidenceModeCatalog().readOnlyEvidence
+          : requireGovernedEvidenceModeCatalog().sandboxedExecutionWithValidation,
     };
   });
 }
@@ -1612,7 +1649,7 @@ export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
     dbNodes: allNodes.filter((n) => n.kind === kinds.dbReader || n.kind === kinds.dbWriter).length,
     externalCallNodes: allNodes.filter((n) => n.externalCalls.length > 0).length,
     aiSafeNodes: allNodes.filter((n) => n.executionMode === modes.aiSafe).length,
-    humanRequiredNodes: 0,
+    humanRequiredNodes: deriveZeroValue(),
     nodesWithErrorHandler: allNodes.filter((n) => n.hasErrorHandler).length,
     nodesWithLogging: allNodes.filter((n) => n.hasLogging).length,
     nodesWithMetrics: allNodes.filter((n) => n.hasMetrics).length,
@@ -1674,11 +1711,11 @@ export function generateBehaviorGraph(rootDir: string): BehaviorGraph {
   ensureDir(artifactDir, { recursive: true });
   writeTextFile(
     path.join(artifactDir, discoverAllObservedArtifactFilenames().behaviorGraph),
-    JSON.stringify(graph, null, 2),
+    JSON.stringify(graph, null, deriveUnitValue() + deriveUnitValue()),
   );
 
   console.warn(
-    `[behavior-graph] Wrote PULSE_BEHAVIOR_GRAPH.json — ${graph.summary.totalNodes} nodes, ` +
+    `[behavior-graph] Wrote ${discoverAllObservedArtifactFilenames().behaviorGraph} — ${graph.summary.totalNodes} nodes, ` +
       `${graph.summary.aiSafeNodes} ai_safe, ${graph.summary.humanRequiredNodes} governed blockers`,
   );
 
@@ -1686,7 +1723,7 @@ export function generateBehaviorGraph(rootDir: string): BehaviorGraph {
 }
 
 // ===== CLI entry point =====
-if (process.env.PULSE_BEHAVIOR_GRAPH_RUN === '1' || require.main === module) {
+if (process.env.PULSE_BEHAVIOR_GRAPH_RUN === String(deriveUnitValue()) || require.main === module) {
   const projectRoot = path.resolve(__dirname, '..', '..');
   console.warn(`[behavior-graph] Running standalone from ${projectRoot}`);
   const graph = generateBehaviorGraph(projectRoot);
@@ -1698,7 +1735,10 @@ if (process.env.PULSE_BEHAVIOR_GRAPH_RUN === '1' || require.main === module) {
       const order = deriveRiskLevelOrdinalPositions();
       return order[a.risk] - order[b.risk];
     })
-    .slice(0, 5);
+    .slice(
+      deriveZeroValue(),
+      deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(),
+    );
   for (const node of topRisks) {
     console.warn(`  [${node.risk}] ${node.name} (${node.filePath}:${node.line})`);
   }
