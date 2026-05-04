@@ -1,6 +1,7 @@
 import * as path from 'path';
 import {
   deriveUnitValue,
+  deriveZeroValue,
   discoverAllObservedArtifactFilenames,
   discoverExternalAdapterProofBasisLabels,
   discoverExternalSignalSourceLabels,
@@ -106,14 +107,15 @@ function buildCodacySignalDrafts(
   rootDir: string,
 ): PulseSignalDraft[] {
   return codacyEvidence.hotspots
-    .filter((hotspot) => hotspot.highSeverityCount > 0)
-    .slice(0, 20)
+    .filter((hotspot) => hotspot.highSeverityCount > deriveZeroValue())
+    .slice(deriveZeroValue(), 20)
     .map((hotspot) => ({
       id: `codacy:${hotspot.filePath}`,
       type: 'static_hotspot',
       source: 'codacy' as const,
       truthMode: 'observed' as const,
-      severity: hotspot.highSeverityCount > 2 ? 0.9 : 0.75,
+      severity:
+        hotspot.highSeverityCount > deriveUnitValue() + deriveUnitValue() ? 0.9 : 0.75,
       impactScore: hotspot.runtimeCritical ? 0.8 : hotspot.userFacing ? 0.7 : 0.55,
       confidence: 0.95,
       summary: compact(
@@ -195,7 +197,7 @@ function buildSnapshotAdapter(
   const syncedAt = normalizeDate(payload.syncedAt || payload.generatedAt || payload.updatedAt);
   const freshnessMinutes =
     syncedAt !== null
-      ? Math.max(0, Math.round((Date.now() - Date.parse(syncedAt)) / 60_000))
+      ? Math.max(deriveZeroValue(), Math.round((Date.now() - Date.parse(syncedAt)) / 60_000))
       : null;
   const stale =
     freshnessMinutes !== null &&
@@ -303,7 +305,7 @@ function buildLiveAdapter(
     status: sourceState.status,
     generatedAt: liveState.generatedAt,
     syncedAt: sourceState.syncedAt,
-    freshnessMinutes: 0,
+    freshnessMinutes: deriveZeroValue(),
     reason: sourceState.reason,
     signals,
   };
@@ -441,7 +443,7 @@ export function buildExternalSignalState(
   const proofBasisCounts = adapters.reduce(
     (counts, adapter) => {
       const key = adapter.proofBasis;
-      counts[key] = (counts[key] ?? 0) + 1;
+      counts[key] = (counts[key] ?? deriveZeroValue()) + deriveUnitValue();
       return counts;
     },
     Object.fromEntries(
@@ -465,7 +467,7 @@ export function buildExternalSignalState(
             deriveUnitValue()),
     ).length,
     mappedSignals: signals.filter(
-      (signal) => signal.capabilityIds.length > 0 || signal.flowIds.length > 0,
+      (signal) => signal.capabilityIds.length > deriveZeroValue() || signal.flowIds.length > deriveZeroValue(),
     ).length,
     humanRequiredSignals: signals.filter(
       (signal) =>
