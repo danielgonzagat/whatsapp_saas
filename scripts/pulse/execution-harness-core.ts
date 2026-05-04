@@ -30,10 +30,13 @@ import { safeJoin } from './safe-path';
 import { ensureDir, pathExists, readJsonFile, readTextFile, writeTextFile } from './safe-fs';
 import * as fs from 'node:fs';
 import {
+  deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
+  discoverConvergenceExecutionModeLabels,
   discoverDirectorySkipHintsFromEvidence,
   discoverExternalReceiverTokensFromEvidence,
+  discoverHarnessExecutionFeasibilityLabels,
   discoverHarnessExecutionStatusLabels,
   discoverHarnessTargetKindLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
@@ -134,11 +137,12 @@ function camelToKebab(value: string): string {
 }
 
 function normalizeDiscoveredLocator(value: string): string {
+  const normSep = discoverRouteSeparatorFromRuntime();
   const normalized = String(value || '')
     .trim()
-    .replace(/\/+/g, '/')
+    .replace(/\/+/g, normSep)
     .replace(/\/$/, '');
-  return normalized.length > deriveZeroValue() ? normalized : discoverRouteSeparatorFromRuntime();
+  return normalized.length > deriveZeroValue() ? normalized : normSep;
 }
 
 function parseRouteParameters(locatorText: string): string[] {
@@ -183,6 +187,19 @@ function isInboundDeliveryHarnessKind(kind: HarnessTargetKind): boolean {
 }
 
 const ALL_EXECUTION_STATUS_LABELS = discoverHarnessExecutionStatusLabels();
+const PLANNED_STATUS = [...UNEXECUTED_STATUSES].sort(
+  (a, b) => a.length - b.length,
+)[deriveZeroValue()];
+
+const FEASIBILITY_LABELS = [...discoverHarnessExecutionFeasibilityLabels()].sort(
+  (a, b) => a.length - b.length,
+);
+const EXECUTABLE_FEASIBILITY = FEASIBILITY_LABELS[deriveZeroValue()] as ExecutionFeasibility;
+const NEEDS_STAGING_FEASIBILITY = FEASIBILITY_LABELS[deriveUnitValue()] as ExecutionFeasibility;
+const CANNOT_EXECUTE_FEASIBILITY = FEASIBILITY_LABELS[
+  FEASIBILITY_LABELS.length - deriveUnitValue()
+] as ExecutionFeasibility;
+
 const OBSERVED_HARNESS_STATUSES = new Set(
   [...ALL_EXECUTION_STATUS_LABELS].filter(
     (s) =>
@@ -247,10 +264,11 @@ function isWebhookLikeTarget(target: HarnessTarget): boolean {
 }
 
 function buildFullPath(controllerLocator: string, handlerLocator: string): string {
+  const sep = discoverRouteSeparatorFromRuntime();
   const cp = controllerLocator.replace(/^\/|\/$/g, '');
   const mp = (handlerLocator || '').replace(/^\/|\/$/g, '');
-  const full = mp ? `/${cp}/${mp}` : `/${cp}`;
-  return full.replace(/\/+/g, '/');
+  const full = mp ? `${sep}${cp}${sep}${mp}` : `${sep}${cp}`;
+  return full.replace(/\/+/g, sep);
 }
 
 function formatTimestamp(): string {
@@ -670,7 +688,7 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
 
   // ── 5. Generate governed harness blueprints for executable targets ──
   for (const target of allTargets) {
-    if (target.feasibility !== 'cannot_execute') {
+    if (target.feasibility !== CANNOT_EXECUTE_FEASIBILITY) {
       target.generatedTests = generateTestHarnessCode(target);
     }
   }
@@ -688,9 +706,11 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
       return normalizeHarnessExecutionResult(existing);
     }
     const ZERO = deriveZeroValue();
+    const unexecArr = [...UNEXECUTED_STATUSES].sort((a, b) => b.length - a.length);
+    const notExecStatus = unexecArr.length > ZERO ? unexecArr[ZERO] : [...ALL_EXECUTION_STATUS_LABELS][ZERO];
     return {
       targetId: target.targetId,
-      status: 'not_executed' as const,
+      status: notExecStatus as HarnessExecutionStatus,
       executionTimeMs: ZERO,
       attempts: ZERO,
       error: null,
@@ -714,10 +734,10 @@ export function buildExecutionHarness(rootDir: string): HarnessEvidence {
   const summary = {
     totalTargets: allTargets.length,
     plannedTargets: allTargets.filter((t) =>
-      t.generatedTests.some((test) => test.status === 'planned'),
+      t.generatedTests.some((test) => test.status === PLANNED_STATUS),
     ).length,
     notExecutedTargets: combinedResults.filter(
-      (r) => UNEXECUTED_STATUSES.has(r.status) || r.status === 'not_tested',
+      (r) => UNEXECUTED_STATUSES.has(r.status),
     ).length,
     testedTargets: combinedResults.filter((r) => isObservedHarnessStatus(r.status)).length,
     passedTargets: passedResults.length,
@@ -794,7 +814,7 @@ export function discoverEndpoints(config: PulseConfig): HarnessTarget[] {
         return dotIndex !== -1 ? call.slice(0, dotIndex) : call;
       }),
       fixtures: [],
-      feasibility: 'executable',
+      feasibility: EXECUTABLE_FEASIBILITY,
       feasibilityReason: '',
       generatedTests: [],
       generated: false,
@@ -905,7 +925,7 @@ export function discoverServices(config: PulseConfig): HarnessTarget[] {
         requiresTenant,
         dependencies,
         fixtures: [],
-        feasibility: 'executable',
+        feasibility: EXECUTABLE_FEASIBILITY,
         feasibilityReason: '',
         generatedTests: [],
         generated: false,
@@ -946,7 +966,7 @@ export function discoverWorkers(config: PulseConfig): HarnessTarget[] {
       requiresTenant: false,
       dependencies: [],
       fixtures: [],
-      feasibility: 'needs_staging',
+      feasibility: NEEDS_STAGING_FEASIBILITY,
       feasibilityReason: 'Worker requires queue infrastructure',
       generatedTests: [],
       generated: false,
@@ -974,7 +994,7 @@ export function discoverWorkers(config: PulseConfig): HarnessTarget[] {
       requiresTenant: false,
       dependencies: [],
       fixtures: [],
-      feasibility: 'needs_staging',
+      feasibility: NEEDS_STAGING_FEASIBILITY,
       feasibilityReason: 'Worker requires queue infrastructure',
       generatedTests: [],
       generated: false,
@@ -1003,7 +1023,7 @@ export function discoverWorkers(config: PulseConfig): HarnessTarget[] {
         requiresTenant: false,
         dependencies: [],
         fixtures: [],
-        feasibility: 'needs_staging',
+        feasibility: NEEDS_STAGING_FEASIBILITY,
         feasibilityReason: 'Worker requires queue infrastructure',
         generatedTests: [],
         generated: false,
@@ -1087,7 +1107,7 @@ export function discoverCrons(config: PulseConfig): HarnessTarget[] {
         requiresTenant: false,
         dependencies: [],
         fixtures: [],
-        feasibility: 'executable',
+        feasibility: EXECUTABLE_FEASIBILITY,
         feasibilityReason: '',
         generatedTests: [],
         generated: false,
@@ -1309,7 +1329,7 @@ export function classifyExecutionFeasibility(
   // ── Check 1: no method means we cannot execute ──
   if (!target.methodName || isConstructorMemberName(target.methodName)) {
     return {
-      feasibility: 'cannot_execute',
+      feasibility: CANNOT_EXECUTE_FEASIBILITY,
       reason: 'No callable method or function identified — may be a class scaffold',
     };
   }
@@ -1322,7 +1342,7 @@ export function classifyExecutionFeasibility(
       !target.filePath.toLowerCase().includes('/api/'))
   ) {
     return {
-      feasibility: 'cannot_execute',
+      feasibility: CANNOT_EXECUTE_FEASIBILITY,
       reason: `Target kind "${target.kind}" requires browser interaction or is frontend-only`,
     };
   }
@@ -1333,7 +1353,7 @@ export function classifyExecutionFeasibility(
   // ── Check 3: behavior graph requires governed staging execution ──
   if (behaviorNode && behaviorNode.executionMode === 'human_required') {
     return {
-      feasibility: 'needs_staging',
+      feasibility: NEEDS_STAGING_FEASIBILITY,
       reason: `Behavior graph requires governed staging execution for "${behaviorNode.name}" before this can become observed proof.`,
     };
   }
@@ -1342,7 +1362,7 @@ export function classifyExecutionFeasibility(
   if (behaviorNode?.externalCalls && behaviorNode.externalCalls.length > 0) {
     const upstreamNames = [...new Set(behaviorNode.externalCalls.map((c) => c.provider))];
     return {
-      feasibility: 'needs_staging',
+      feasibility: NEEDS_STAGING_FEASIBILITY,
       reason: `Behavior graph detects external calls to: ${upstreamNames.join(', ')}`,
     };
   }
@@ -1351,7 +1371,7 @@ export function classifyExecutionFeasibility(
 
   if (targetSource && externalCallShape().test(targetSource)) {
     return {
-      feasibility: 'needs_staging',
+      feasibility: NEEDS_STAGING_FEASIBILITY,
       reason:
         'Source contains an outbound HTTP call shape that requires network-controlled staging',
     };
@@ -1360,14 +1380,14 @@ export function classifyExecutionFeasibility(
   // ── Check 5: queue/event infrastructure boundaries ──
   if (targetSource && infrastructureBoundaryShape().test(targetSource)) {
     return {
-      feasibility: 'needs_staging',
+      feasibility: NEEDS_STAGING_FEASIBILITY,
       reason: 'Source contains queue/event infrastructure shape that requires staging services',
     };
   }
 
   if (target.kind === 'worker' || target.kind === 'webhook') {
     return {
-      feasibility: 'needs_staging',
+      feasibility: NEEDS_STAGING_FEASIBILITY,
       reason: `Target kind "${target.kind}" requires queue infrastructure or inbound webhook endpoint`,
     };
   }
@@ -1379,13 +1399,13 @@ export function classifyExecutionFeasibility(
     behaviorNode.stateAccess.some((s) => s.operation === 'delete' || s.operation === 'upsert')
   ) {
     return {
-      feasibility: 'needs_staging',
+      feasibility: NEEDS_STAGING_FEASIBILITY,
       reason: `Target performs destructive DB writes on: ${behaviorNode.stateAccess.map((s) => s.model).join(', ')}`,
     };
   }
   if (targetSource && destructiveStateAccessShape().test(targetSource)) {
     return {
-      feasibility: 'needs_staging',
+      feasibility: NEEDS_STAGING_FEASIBILITY,
       reason: 'Source contains destructive persistent-state access that requires sandboxed staging',
     };
   }
@@ -1396,7 +1416,7 @@ export function classifyExecutionFeasibility(
     : 'no external deps or infrastructure detected';
 
   return {
-    feasibility: 'executable',
+    feasibility: EXECUTABLE_FEASIBILITY,
     reason: `Target is self-contained: ${supports}`,
   };
 }
@@ -1425,22 +1445,21 @@ function readHarnessTargetSource(rootDir: string, sourceLocator: string): string
  * real code behavior before this can become proof.
  */
 export function generateTestHarnessCode(target: HarnessTarget): HarnessGeneratedTest[] {
-  if (target.feasibility === 'cannot_execute') {
+    if (target.feasibility === CANNOT_EXECUTE_FEASIBILITY) {
     return [];
   }
 
   const suiteName = camelToKebab(target.name).replace(/\//g, '_');
-  const executionMode = target.feasibility === 'needs_staging' ? 'governed_validation' : 'ai_safe';
+  const executionMode = target.feasibility === NEEDS_STAGING_FEASIBILITY ? 'governed_validation' : 'ai_safe';
   const terminalReason =
-    target.feasibility === 'needs_staging'
+    target.feasibility === NEEDS_STAGING_FEASIBILITY
       ? target.feasibilityReason
       : `Target is self-contained and can be converted into an ${executionMode} executable probe.`;
 
-  const plannedStatus = [...UNEXECUTED_STATUSES].find((s) => s === 'planned') ?? 'planned';
   return [
     {
-      testName: `[PULSE] ${suiteName} — planned ${executionMode} harness`,
-      status: plannedStatus as HarnessGeneratedTest['status'],
+      testName: `[PULSE] ${suiteName} — ${PLANNED_STATUS} ${executionMode} harness`,
+      status: PLANNED_STATUS as HarnessGeneratedTest['status'],
       framework: target.httpMethod ? 'supertest' : 'jest',
       canRunLocally: false,
       code: buildHarnessBlueprintCode(target, executionMode, terminalReason),
@@ -1475,11 +1494,11 @@ function buildHarnessBlueprintCode(
     expectedEvidence: buildHarnessExpectedEvidence(target),
     structuralSafetyClassification: {
       risk: isCriticalHarnessTarget(target) ? 'high' : 'medium',
-      safeToExecute: target.feasibility !== 'cannot_execute',
+      safeToExecute: target.feasibility !== CANNOT_EXECUTE_FEASIBILITY,
       executionMode,
       protectedSurface: false,
       reason:
-        target.feasibility === 'needs_staging'
+        target.feasibility === NEEDS_STAGING_FEASIBILITY
           ? target.feasibilityReason
           : 'Target has no detected external infrastructure boundary in the harness classifier.',
     },
@@ -1775,13 +1794,13 @@ function buildFeasibilitySummary(targets: HarnessTarget[]): {
 
   for (const t of targets) {
     switch (t.feasibility) {
-      case 'executable':
+      case EXECUTABLE_FEASIBILITY:
         executableTargets++;
         break;
-      case 'needs_staging':
+      case NEEDS_STAGING_FEASIBILITY:
         needsStagingTargets++;
         break;
-      case 'cannot_execute':
+      case CANNOT_EXECUTE_FEASIBILITY:
         cannotExecuteTargets++;
         break;
     }
