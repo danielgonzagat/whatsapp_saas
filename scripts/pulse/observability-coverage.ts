@@ -21,6 +21,7 @@ import {
   discoverSourceExtensionsFromObservedTypescript,
   discoverAllObservedArtifactFilenames,
   deriveStringUnionMembersFromTypeContract,
+  discoverPropertyPassedStatusFromTypeEvidence,
 } from './dynamic-reality-kernel';
 import type {
   CapabilityObservability,
@@ -46,7 +47,7 @@ import type { BehaviorGraph, BehaviorNode } from './types.behavior-graph';
 import type { RuntimeFusionState, RuntimeSignal } from './types.runtime-fusion';
 
 function deriveObservabilityCoverageArtifactStructuralFilename(): string {
-  return 'PULSE_OBSERVABILITY_COVERAGE.json';
+  return discoverAllObservedArtifactFilenames().observabilityCoverage;
 }
 
 function deriveStructuralObservabilityLogFieldTokens(): readonly string[] {
@@ -971,11 +972,12 @@ function findRuntimeProbeEvidence(
   pillar: ObservabilityPillar,
   runtimeContext: ObservabilityRuntimeContext,
 ): PillarScanResult | null {
+  const passedStatusSet = discoverPropertyPassedStatusFromTypeEvidence();
   const probes = runtimeContext.runtimeEvidence?.probes ?? [];
   const matchingProbe = probes.find(
     (probe) =>
       probe.executed &&
-      probe.status === 'passed' &&
+      passedStatusSet.has(probe.status) &&
       (signalMatchesPillar(probe.probeId, pillar) ||
         signalMatchesPillar(probe.target, pillar) ||
         signalMatchesPillar(probe.summary, pillar)),
