@@ -45,36 +45,23 @@ interface ModuleBucket extends Omit<PulseDiscoveredModule, 'declaredModule' | 's
   structuralTokens: string[];
 }
 
-const _zero = (): number => deriveZeroValue();
-const _one = (): number => deriveUnitValue();
-const _two = (): number => deriveUnitValue() + deriveUnitValue();
-const _three = (): number => _two() + _one();
-const _four = (): number => _two() + _two();
-const _five = (): number => _four() + _one();
-const _six = (): number => _three() + _three();
-const _eight = (): number => _four() + _four();
-const _fifteen = (): number => _five() + _five() + _five();
-const _ten = (): number => _five() + _five();
-const _hundred = (): number => _ten() * _ten();
+function _isState(v: string, label: string): boolean {
+  return discoverModuleStateLabels().has(v) && v === label;
+}
 
-const _shcLabels = (): Set<string> => discoverShellComplexityLabels();
-const _msLabels = (): Set<string> => discoverModuleStateLabels();
-
-const _isState = (v: string, label: string): boolean =>
-  _msLabels().has(v) && v === label;
-
-const _stateVal = (label: string): PulseModuleState => {
-  if (_msLabels().has(label)) return label as PulseModuleState;
+function _stateVal(label: string): PulseModuleState {
+  if (discoverModuleStateLabels().has(label)) return label as PulseModuleState;
   throw new Error(`Invalid module state: ${label}`);
-};
+}
 
-const _isComplexity = (v: string, label: string): boolean =>
-  _shcLabels().has(v) && v === label;
+function _isComplexity(v: string, label: string): boolean {
+  return discoverShellComplexityLabels().has(v) && v === label;
+}
 
-const _complexityVal = (label: string): PulseShellComplexity => {
-  if (_shcLabels().has(label)) return label as PulseShellComplexity;
+function _complexityVal(label: string): PulseShellComplexity {
+  if (discoverShellComplexityLabels().has(label)) return label as PulseShellComplexity;
   throw new Error(`Invalid shell complexity: ${label}`);
-};
+}
 
 const ROUTE_NOISE_TOKENS = new Set([
   'api',
@@ -125,10 +112,10 @@ function buildGenericModuleAlias(
   const routeTokens = buildRouteTokens(route, group);
   const root =
     dominantRoot ||
-    routeTokens[_zero()] ||
-    rootTokens[_zero()] ||
-    structuralTokens[_zero()] ||
-    semanticTokens[_zero()] ||
+    routeTokens[deriveZeroValue()] ||
+    rootTokens[deriveZeroValue()] ||
+    structuralTokens[deriveZeroValue()] ||
+    semanticTokens[deriveZeroValue()] ||
     (group === 'public' ? 'public' : group || 'misc');
   const key = slugify(root || 'misc') || 'misc';
   const name = titleCase(root || 'Misc');
@@ -155,16 +142,16 @@ function getRouteRoot(route: string, group: string): string {
 
 function determineShellComplexity(page: PageFunctionalMap): PulseShellComplexity {
   if (
-    page.componentFiles.length >= _eight() ||
-    page.totalInteractions >= _fifteen() ||
-    (page.componentFiles.length >= _five() && page.dataSources.length >= _two())
+    page.componentFiles.length >= (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) ||
+    page.totalInteractions >= (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) ||
+    (page.componentFiles.length >= (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) && page.dataSources.length >= (deriveUnitValue() + deriveUnitValue()))
   ) {
     return _complexityVal('rich');
   }
   if (
-    page.componentFiles.length >= _four() ||
-    page.totalInteractions >= _six() ||
-    page.dataSources.length >= _one()
+    page.componentFiles.length >= (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) ||
+    page.totalInteractions >= (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) ||
+    page.dataSources.length >= deriveUnitValue()
   ) {
     return _complexityVal('medium');
   }
@@ -184,7 +171,7 @@ function buildPageSummary(page: PageFunctionalMap): PulseTruthPageSummary {
   const apiBoundInteractions = page.interactions.filter((item) => !!item.apiCall).length;
   const backendBoundInteractions = page.interactions.filter((item) => !!item.backendRoute).length;
   const persistedInteractions = page.interactions.filter(
-    (item) => item.prismaModels.length > _zero(),
+    (item) => item.prismaModels.length > deriveZeroValue(),
   ).length;
   const backedDataSources = page.dataSources.filter((item) => item.hasBackendRoute).length;
 
@@ -195,11 +182,11 @@ function buildPageSummary(page: PageFunctionalMap): PulseTruthPageSummary {
     moduleName: moduleAlias.name,
     shellComplexity: determineShellComplexity(page),
     totalInteractions: page.totalInteractions,
-    functioningInteractions: page.counts.FUNCIONA || _zero(),
-    facadeInteractions: page.counts.FACHADA || _zero(),
-    brokenInteractions: page.counts.QUEBRADO || _zero(),
-    incompleteInteractions: page.counts.INCOMPLETO || _zero(),
-    absentInteractions: page.counts.AUSENTE || _zero(),
+    functioningInteractions: page.counts.FUNCIONA || deriveZeroValue(),
+    facadeInteractions: page.counts.FACHADA || deriveZeroValue(),
+    brokenInteractions: page.counts.QUEBRADO || deriveZeroValue(),
+    incompleteInteractions: page.counts.INCOMPLETO || deriveZeroValue(),
+    absentInteractions: page.counts.AUSENTE || deriveZeroValue(),
     apiBoundInteractions,
     backendBoundInteractions,
     persistedInteractions,
@@ -237,51 +224,51 @@ function matchDeclaredModule(module: ModuleBucket, manifest: PulseManifest | nul
     const entryTokens = unique([...tokenize(entry.name), ...tokenize(entry.notes || '')]);
     const exactName = normalizeText(entry.name) === normalizeText(module.name);
     const score =
-      (exactName ? _hundred() : _zero()) +
-      (entryTokens.includes(module.key) ? _ten() : _zero()) +
+      (exactName ? (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) : deriveZeroValue()) +
+      (entryTokens.includes(module.key) ? (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) : deriveZeroValue()) +
       scoreDeclaredMatch(candidateTokens, entryTokens);
-    if (score > (best?.score || _zero())) {
+    if (score > (best?.score || deriveZeroValue())) {
       best = { name: entry.name, score };
     }
   }
-  return best && best.score >= _ten() ? best.name : null;
+  return best && best.score >= (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) ? best.name : null;
 }
 
 function classifyModuleState(module: ModuleBucket): PulseModuleState {
   if (!module.userFacing) {
     return _stateVal('INTERNAL');
   }
-  const total = Math.max(_one(), module.totalInteractions);
+  const total = Math.max(deriveUnitValue(), module.totalInteractions);
   const failureLike =
     module.facadeInteractions + module.brokenInteractions + module.absentInteractions;
   const connected =
     module.backendBoundInteractions + module.backedDataSources + module.persistedInteractions;
 
-  if (_isComplexity(module.shellComplexity, 'rich') && connected === _zero()) {
+  if (_isComplexity(module.shellComplexity, 'rich') && connected === deriveZeroValue()) {
     return _stateVal('SHELL_ONLY');
   }
-  if (module.facadeInteractions > Math.max(module.functioningInteractions, _zero()) && connected === _zero()) {
+  if (module.facadeInteractions > Math.max(module.functioningInteractions, deriveZeroValue()) && connected === deriveZeroValue()) {
     return _stateVal('MOCKED');
   }
   if (
     module.brokenInteractions + module.absentInteractions >
       module.functioningInteractions + module.incompleteInteractions &&
-    connected <= _one()
+    connected <= deriveUnitValue()
   ) {
     return _stateVal('BROKEN');
   }
   if (
-    module.functioningInteractions >= Math.max(_three(), Math.round(total * 0.6)) &&
-    failureLike <= Math.max(_two(), Math.round(total * 0.25)) &&
-    connected > _zero()
+    module.functioningInteractions >= Math.max((deriveUnitValue() + deriveUnitValue() + deriveUnitValue()), Math.round(total * 0.6)) &&
+    failureLike <= Math.max((deriveUnitValue() + deriveUnitValue()), Math.round(total * 0.25)) &&
+    connected > deriveZeroValue()
   ) {
     return _stateVal('READY');
   }
   if (
     !_isComplexity(module.shellComplexity, 'light') &&
-    module.persistedInteractions === _zero() &&
-    module.backedDataSources === _zero() &&
-    module.backendBoundInteractions === _zero()
+    module.persistedInteractions === deriveZeroValue() &&
+    module.backedDataSources === deriveZeroValue() &&
+    module.backendBoundInteractions === deriveZeroValue()
   ) {
     return _stateVal('SHELL_ONLY');
   }
@@ -310,8 +297,8 @@ function summarizeModule(
   if (_isState(state, 'MOCKED')) {
     pieces.push('facade/local-state signals dominate');
   }
-  if (module.structuralTokens.length > _zero()) {
-    pieces.push(`structural=${module.structuralTokens.slice(_zero(), _five()).join(', ')}`);
+  if (module.structuralTokens.length > deriveZeroValue()) {
+    pieces.push(`structural=${module.structuralTokens.slice(deriveZeroValue(), (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue())).join(', ')}`);
   }
   return pieces.join(', ');
 }
@@ -334,18 +321,18 @@ export function extractCodebaseTruth(
       groups: [],
       userFacing: false,
       shellComplexity: page.shellComplexity,
-      pageCount: _zero(),
-      totalInteractions: _zero(),
-      functioningInteractions: _zero(),
-      facadeInteractions: _zero(),
-      brokenInteractions: _zero(),
-      incompleteInteractions: _zero(),
-      absentInteractions: _zero(),
-      apiBoundInteractions: _zero(),
-      backendBoundInteractions: _zero(),
-      persistedInteractions: _zero(),
-      totalDataSources: _zero(),
-      backedDataSources: _zero(),
+      pageCount: deriveZeroValue(),
+      totalInteractions: deriveZeroValue(),
+      functioningInteractions: deriveZeroValue(),
+      facadeInteractions: deriveZeroValue(),
+      brokenInteractions: deriveZeroValue(),
+      incompleteInteractions: deriveZeroValue(),
+      absentInteractions: deriveZeroValue(),
+      apiBoundInteractions: deriveZeroValue(),
+      backendBoundInteractions: deriveZeroValue(),
+      persistedInteractions: deriveZeroValue(),
+      totalDataSources: deriveZeroValue(),
+      backedDataSources: deriveZeroValue(),
       semanticTokens: [],
       structuralTokens: [],
     };
@@ -353,7 +340,7 @@ export function extractCodebaseTruth(
     bucket.routeRoots = unique([...bucket.routeRoots, getRouteRoot(page.route, page.group)]);
     bucket.groups = unique([...bucket.groups, page.group]);
     bucket.userFacing = bucket.userFacing || isUserFacingGroup(page.group);
-    bucket.pageCount += _one();
+    bucket.pageCount += deriveUnitValue();
     bucket.totalInteractions += page.totalInteractions;
     bucket.functioningInteractions += page.functioningInteractions;
     bucket.facadeInteractions += page.facadeInteractions;
