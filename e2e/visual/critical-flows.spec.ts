@@ -327,7 +327,15 @@ async function ensureCookieConsentSettled(page: Page) {
     });
   }, VISUAL_COOKIE_CONSENT);
 
-  await page.reload({ waitUntil: 'networkidle' });
+  const bannerGone = await banner
+    .waitFor({ state: 'hidden', timeout: 5_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (bannerGone) {
+    return;
+  }
+
+  await page.reload({ waitUntil: 'domcontentloaded' });
 
   const stillVisible = await banner.isVisible().catch(() => false);
   if (!stillVisible) {
