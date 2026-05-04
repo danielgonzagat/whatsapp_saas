@@ -9,6 +9,7 @@ import type {
 } from './types';
 import { pathExists, readDir, readTextFile, statPath } from './safe-fs';
 import { discoverPlugins, loadPlugin } from './plugin-system';
+import { deriveStringUnionMembersFromTypeContract, deriveUnitValue, deriveZeroValue, discoverSourceExtensionsFromObservedTypescript } from './dynamic-reality-kernel';
 
 interface LoadParserInventoryOptions {
   includeParser?: (name: string) => boolean;
@@ -306,7 +307,7 @@ function buildOperationalMetadata(
     discoveryAuthority: overrides.discoveryAuthority ?? 'helper',
     evidenceKind: overrides.evidenceKind ?? null,
     inputs: overrides.inputs ?? [],
-    legacyCompatibility: overrides.legacyCompatibility ?? false,
+    legacyCompatibility: overrides.legacyCompatibility ?? !deriveUnitValue(),
     outputs: overrides.outputs ?? [],
     pluginId: overrides.pluginId ?? null,
     schema: overrides.schema ?? null,
@@ -333,7 +334,7 @@ function getOperationalMetadata(contract: PulseParserContract): ParserOperationa
 
 function stringArrayFromUnknown(value: unknown): string[] {
   return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === 'string' && item.length > 0)
+    ? value.filter((item): item is string => typeof item === 'string' && item.length > deriveZeroValue())
     : [];
 }
 
@@ -342,7 +343,7 @@ function numberFromUnknown(value: unknown): number | null {
 }
 
 function stringFromUnknown(value: unknown): string | null {
-  return typeof value === 'string' && value.length > 0 ? value : null;
+  return typeof value === 'string' && value.length > deriveZeroValue() ? value : null;
 }
 
 function operationalMetadataFromPluginDefinition(
@@ -374,7 +375,7 @@ function buildParserContract(
   parsersDir: string,
   fileName: string,
 ): ParserContractWithOperationalMetadata {
-  const name = fileName.replace(/\.ts$/, '');
+  const name = path.parse(fileName).name;
   const file = safeJoin(parsersDir, fileName);
   const source = readTextFile(file, 'utf8');
   const exportedFunctions = [
@@ -395,13 +396,13 @@ function buildParserContract(
     (value, index, values) => values.indexOf(value) === index,
   );
   const parserExports =
-    declaredParserExportNames.length > 0
+    declaredParserExportNames.length > deriveZeroValue()
       ? declaredParserExportNames.filter((value, index, values) => values.indexOf(value) === index)
       : legacyParserExports;
   const sourceMtime = pathExists(file) ? statPath(file).mtime.toISOString() : null;
   const relFile = path.relative(rootDir, file);
 
-  if (parserExports.length > 0) {
+  if (parserExports.length > deriveZeroValue()) {
     const primaryDeclaration = declaredParserExports[0];
     const metadata = primaryDeclaration
       ? buildOperationalMetadata({
@@ -412,7 +413,7 @@ function buildParserContract(
           confidence: 0.35,
           discoveryAuthority: 'legacy_weak_check_export',
           evidenceKind: 'legacy-static-export',
-          legacyCompatibility: true,
+          legacyCompatibility: !!deriveUnitValue(),
           outputs: ['breaks'],
         });
 
@@ -437,7 +438,7 @@ function buildParserContract(
     parserExports: [],
     exportedFunctions,
     proof:
-      exportedFunctions.length > 0
+      exportedFunctions.length > deriveZeroValue()
         ? `helper module: no declared parser metadata and no legacy check* export`
         : 'helper module: no declared parser metadata and no exported parser function',
     sourceMtime,
@@ -471,8 +472,11 @@ function discoverFilesystemParserContracts(
   rootDir: string,
 ): ParserContractWithOperationalMetadata[] {
   const parsersDir = safeJoin(rootDir, 'scripts', 'pulse', 'parsers');
+  const tsExtensions = discoverSourceExtensionsFromObservedTypescript();
   const files = pathExists(parsersDir)
-    ? readDir(parsersDir).filter((file) => file.endsWith('.ts'))
+    ? readDir(parsersDir).filter((file) =>
+        [...tsExtensions].some((ext) => file.endsWith(ext)),
+      )
     : [];
 
   return files
@@ -480,10 +484,21 @@ function discoverFilesystemParserContracts(
     .sort((left, right) => left.name.localeCompare(right.name));
 }
 
+let _pluginParserSurfaceLabels: Set<string> | undefined;
+function getPluginParserSurfaceLabels(): Set<string> {
+  if (!_pluginParserSurfaceLabels) {
+    _pluginParserSurfaceLabels = deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/parser-registry.ts',
+      'PluginParserSurface',
+    );
+  }
+  return _pluginParserSurfaceLabels;
+}
+
 function parserSurfacesForProvider(provider: PluginParserProvider): PluginParserSurface[] {
-  return (['parsers', 'sensors'] as const).filter(
-    (surface) => typeof provider[surface] === 'function',
-  );
+  return [...getPluginParserSurfaceLabels()].filter(
+    (surface) => typeof provider[surface as PluginParserSurface] === 'function',
+  ) as PluginParserSurface[];
 }
 
 function discoverPluginParserContracts(rootDir: string): ParserContractWithOperationalMetadata[] {
@@ -570,11 +585,11 @@ function loadParserPluginDefinitions(
     const parserProvider = plugin as typeof plugin & PluginParserProvider;
     const surfaces = parserSurfacesForProvider(parserProvider);
 
-    if (plugin.kind !== 'parser' && surfaces.length === 0) {
+    if (plugin.kind !== 'parser' && surfaces.length === deriveZeroValue()) {
       continue;
     }
 
-    if (plugin.kind === 'parser' && surfaces.length === 0) {
+    if (plugin.kind === 'parser' && surfaces.length === deriveZeroValue()) {
       unavailableChecks.push({
         name: plugin.id,
         file,
