@@ -117,6 +117,32 @@ function canonicalArtifactFilename(): string {
   return discoverAllObservedArtifactFilenames().propertyEvidence;
 }
 
+function derivePlannedStatusLabel(): string {
+  const unexecuted = discoverPropertyUnexecutedStatusFromExecutionEvidence();
+  let label = '';
+  let labelLen = mutationScaleFromCatalog();
+  for (const s of unexecuted) {
+    if (s.length < labelLen) {
+      labelLen = s.length;
+      label = s;
+    }
+  }
+  return label;
+}
+
+function deriveNotExecutedStatusLabel(): string {
+  const unexecuted = discoverPropertyUnexecutedStatusFromExecutionEvidence();
+  let label = '';
+  let labelLen = deriveZeroValue();
+  for (const s of unexecuted) {
+    if (s.length > labelLen) {
+      labelLen = s.length;
+      label = s;
+    }
+  }
+  return label;
+}
+
 let PROPERTY_ASSERTION_SENSOR = /\b(?:fc\.)?assert\s*\(\s*(?:fc\.)?property\s*\(/;
 let PROPERTY_USAGE_SENSOR = /\b(?:fc\.)?property\s*\(/;
 
@@ -221,18 +247,18 @@ export function buildPropertyTestEvidence(
   let generatedTests = generatePropertyTestCases(rootDir);
 
   let totalProperty = allPropertyTests.length;
-  let plannedProperty = allPropertyTests.filter((t) => t.status === 'planned').length;
-  let notExecutedProperty = allPropertyTests.filter((t) => t.status === 'not_executed').length;
+  let plannedProperty = allPropertyTests.filter((t) => t.status === derivePlannedStatusLabel()).length;
+  let notExecutedProperty = allPropertyTests.filter((t) => t.status === deriveNotExecutedStatusLabel()).length;
   let passedProperty = allPropertyTests.filter((t) => discoverPropertyPassedStatusFromTypeEvidence().has(t.status)).length;
   let failedProperty = allPropertyTests.filter((t) => !(discoverPropertyPassedStatusFromTypeEvidence().has(t.status) || discoverPropertyUnexecutedStatusFromExecutionEvidence().has(t.status))).length;
   let totalFuzz = fuzzTests.length;
-  let plannedFuzz = fuzzTests.filter((t) => t.status === 'planned').length;
-  let notExecutedFuzz = fuzzTests.filter((t) => t.status === 'not_executed').length;
+  let plannedFuzz = fuzzTests.filter((t) => t.status === derivePlannedStatusLabel()).length;
+  let notExecutedFuzz = fuzzTests.filter((t) => t.status === deriveNotExecutedStatusLabel()).length;
   let passedFuzz = fuzzTests.filter((t) => discoverPropertyPassedStatusFromTypeEvidence().has(t.status)).length;
   let failedFuzz = fuzzTests.filter((t) => !(discoverPropertyPassedStatusFromTypeEvidence().has(t.status) || discoverPropertyUnexecutedStatusFromExecutionEvidence().has(t.status))).length;
   let totalMutation = mutationTests.length;
-  let plannedMutation = mutationTests.filter((t) => t.status === 'planned').length;
-  let notExecutedMutation = mutationTests.filter((t) => t.status === 'not_executed').length;
+  let plannedMutation = mutationTests.filter((t) => t.status === derivePlannedStatusLabel()).length;
+  let notExecutedMutation = mutationTests.filter((t) => t.status === deriveNotExecutedStatusLabel()).length;
   let hasMutationEvidence = totalMutation > deriveZeroValue();
   let avgMutationScore = hasMutationEvidence
     ? Math.round(
@@ -288,7 +314,7 @@ export function buildPropertyTestEvidence(
       criticalCapabilitiesCovered: criticalCapabilities.size,
       criticalCapabilitiesPlanned: criticalCapabilitiesPlanned.size,
       totalGeneratedTests: generatedTests.length,
-      plannedGeneratedTests: generatedTests.filter((t) => t.status === 'planned').length,
+      plannedGeneratedTests: generatedTests.filter((t) => t.status === derivePlannedStatusLabel()).length,
     },
     propertyTests: allPropertyTests,
     fuzzTests,
@@ -2251,7 +2277,7 @@ function generateGeneralPurityInputs(rng: () => number): GeneratedPropertyTestIn
         break;
       }
       case deriveUnitValue() + deriveUnitValue(): {
-        value = rng() < 0.5;
+        value = rng() < inverseCatalogScale();
         description = `Random boolean #${i + 1}`;
         expected = dpe();
         behavior = 'Should handle boolean inputs correctly';
@@ -2312,7 +2338,7 @@ function generateValueOfType(type: string, rng: () => number): unknown {
     case 'number':
       return randomNumber(rng);
     case 'boolean':
-      return rng() < 0.5;
+      return rng() < inverseCatalogScale();
     case 'object':
       return randomObject(rng);
     case 'array':
