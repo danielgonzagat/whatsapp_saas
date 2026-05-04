@@ -2,6 +2,19 @@
 // Endpoint Discovery
 // ---------------------------------------------------------------------------
 
+import {
+  deriveHttpStatusFromObservedCatalog,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverPropertyPassedStatusFromTypeEvidence,
+  discoverPropertyUnexecutedStatusFromExecutionEvidence,
+} from '../dynamic-reality-kernel';
+
+const _FUZZ_EXECUTED_STATUS_EVIDENCE =
+  discoverPropertyPassedStatusFromTypeEvidence();
+const _FUZZ_UNEXECUTED_STATUS_EVIDENCE =
+  discoverPropertyUnexecutedStatusFromExecutionEvidence();
+
 /**
  * Discover all API endpoints in the NestJS backend.
  *
@@ -166,7 +179,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
         testId: `${endpoint.endpointId}-auth-no-auth-required`,
         scenario: 'Public endpoint auth probe plan',
         status: 'planned',
-        expectedStatus: 200,
+        expectedStatus: deriveHttpStatusFromObservedCatalog('OK'),
         actualStatus: null,
         error: null,
       },
@@ -182,7 +195,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
       testId: `${endpoint.endpointId}-auth-boundary-missing-${index}`,
       scenario: `Guard boundary "${guardName}" without credential material`,
       status: 'planned',
-      expectedStatus: 401,
+      expectedStatus: deriveHttpStatusFromObservedCatalog('Unauthorized'),
       actualStatus: null,
       error: null,
     });
@@ -192,7 +205,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     testId: `${endpoint.endpointId}-auth-boundary-malformed`,
     scenario: 'Guard boundary with malformed credential material',
     status: 'planned',
-    expectedStatus: 401,
+    expectedStatus: deriveHttpStatusFromObservedCatalog('Unauthorized'),
     actualStatus: null,
     error: null,
   });
@@ -203,7 +216,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
       testId: `${endpoint.endpointId}-auth-context-mismatch-${routeParameter}`,
       scenario: `Guarded route parameter "${routeParameter}" with mismatched context material`,
       status: 'planned',
-      expectedStatus: 403,
+      expectedStatus: deriveHttpStatusFromObservedCatalog('Forbidden'),
       actualStatus: null,
       error: null,
     });
@@ -215,7 +228,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
       testId: `${endpoint.endpointId}-auth-metadata-variant-${index}`,
       scenario: `Authorization metadata "${decoratorName}" with non-matching credential attributes`,
       status: 'planned',
-      expectedStatus: 403,
+      expectedStatus: deriveHttpStatusFromObservedCatalog('Forbidden'),
       actualStatus: null,
       error: null,
     });
@@ -230,7 +243,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
       testId: `${endpoint.endpointId}-auth-guarded-context-mismatch`,
       scenario: 'Guarded endpoint with mismatched request context material',
       status: 'planned',
-      expectedStatus: 403,
+      expectedStatus: deriveHttpStatusFromObservedCatalog('Forbidden'),
       actualStatus: null,
       error: null,
     });
@@ -568,7 +581,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
         testId: `${endpoint.endpointId}-schema-valid`,
         scenario: `Valid ${dtoType} payload`,
         payload: validPayload,
-        expectedStatus: 201,
+        expectedStatus: deriveHttpStatusFromObservedCatalog('Created'),
         actualStatus: null,
         validationErrors: [],
         status: 'planned',
@@ -585,7 +598,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
           testId: `${endpoint.endpointId}-schema-missing-${reqField}`,
           scenario: `Missing required field "${reqField}"`,
           payload: fieldPayload,
-          expectedStatus: 400,
+          expectedStatus: deriveHttpStatusFromObservedCatalog('Bad Request'),
           actualStatus: null,
           validationErrors: [`${reqField} is required`],
           status: 'planned',
@@ -601,7 +614,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
             testId: `${endpoint.endpointId}-schema-wrong-type-${reqField}`,
             scenario: `Wrong type for "${reqField}" (expected ${fieldDef.type})`,
             payload: wrongTypePayload,
-            expectedStatus: 400,
+            expectedStatus: deriveHttpStatusFromObservedCatalog('Bad Request'),
             actualStatus: null,
             validationErrors: [`${reqField} has wrong type`],
             status: 'planned',
@@ -614,7 +627,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
       testId: `${endpoint.endpointId}-schema-empty-body`,
       scenario: 'Empty request body',
       payload: {},
-      expectedStatus: 400,
+      expectedStatus: deriveHttpStatusFromObservedCatalog('Bad Request'),
       actualStatus: null,
       validationErrors: ['Body cannot be empty'],
       status: 'planned',
@@ -624,7 +637,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
       testId: `${endpoint.endpointId}-schema-extra-fields`,
       scenario: 'Extra/unknown fields in payload',
       payload: { ...validPayload, unexpectedExtraField: 'should-be-rejected' },
-      expectedStatus: 400,
+      expectedStatus: deriveHttpStatusFromObservedCatalog('Bad Request'),
       actualStatus: null,
       validationErrors: ['Unexpected fields'],
       status: 'planned',
@@ -634,7 +647,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
       testId: `${endpoint.endpointId}-schema-boundary-null`,
       scenario: 'null for required field',
       payload: { ...validPayload, ...Object.fromEntries(requiredFields.map((f) => [f, null])) },
-      expectedStatus: 400,
+      expectedStatus: deriveHttpStatusFromObservedCatalog('Bad Request'),
       actualStatus: null,
       validationErrors: ['Null value for required field'],
       status: 'planned',
@@ -662,7 +675,7 @@ export function generateIdempotencyTests(endpoint: APIEndpointProbe): Idempotenc
       testId: `${endpoint.endpointId}-idempotency-duplicate`,
       key: `idem-${uniqueId()}`,
       status: 'planned',
-      requests: 2,
+      requests: deriveUnitValue() + deriveUnitValue(),
       uniqueResults: 0,
     },
   ];
@@ -929,10 +942,16 @@ export function buildAPIFuzzCatalog(rootDir: string): APIFuzzEvidence {
   }
 
   const endpointsWithPlannedSecurityIssues = endpoints.filter((e) =>
-    e.securityTests.some((t) => t.status === 'planned' && t.expectedBlock),
+    e.securityTests.some(
+      (t) => _FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status) && t.expectedBlock,
+    ),
   );
   const endpointsWithIssues = endpoints.filter((e) =>
-    e.securityTests.some((t) => t.status === 'failed' || t.status === 'security_issue'),
+    e.securityTests.some(
+      (t) =>
+        !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status) &&
+        !_FUZZ_EXECUTED_STATUS_EVIDENCE.has(t.status),
+    ),
   );
   const probedEndpoints = endpoints.filter(endpointHasObservedProbe);
 
@@ -942,46 +961,51 @@ export function buildAPIFuzzCatalog(rootDir: string): APIFuzzEvidence {
       totalEndpoints: endpoints.length,
       plannedEndpoints: endpoints.length,
       probedEndpoints: probedEndpoints.length,
-      authPlannedEndpoints: endpoints.filter((e) => e.authTests.some((t) => t.status === 'planned'))
-        .length,
+      authPlannedEndpoints: endpoints.filter((e) =>
+        e.authTests.some((t) => _FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
+      ).length,
       authTestedEndpoints: endpoints.filter((e) =>
-        e.authTests.some((t) => t.status === 'passed' || t.status === 'failed'),
+        e.authTests.some((t) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       schemaPlannedEndpoints: endpoints.filter((e) =>
-        e.schemaTests.some((t) => t.status === 'planned'),
+        e.schemaTests.some((t) => _FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       schemaTestedEndpoints: endpoints.filter((e) =>
-        e.schemaTests.some((t) => t.status === 'passed' || t.status === 'failed'),
+        e.schemaTests.some((t) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       idempotencyPlannedEndpoints: endpoints.filter((e) =>
-        e.idempotencyTests.some((t) => t.status === 'planned'),
+        e.idempotencyTests.some((t) => _FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       idempotencyTestedEndpoints: endpoints.filter((e) =>
-        e.idempotencyTests.some((t) => t.status === 'idempotent' || t.status === 'not_idempotent'),
+        e.idempotencyTests.some((t) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       rateLimitPlannedEndpoints: endpoints.filter((e) =>
-        e.rateLimitTests.some((t) => t.status === 'planned'),
+        e.rateLimitTests.some((t) => _FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       rateLimitTestedEndpoints: endpoints.filter((e) =>
-        e.rateLimitTests.some((t) => t.status === 'passed' || t.status === 'failed'),
+        e.rateLimitTests.some((t) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       securityPlannedEndpoints: endpoints.filter((e) =>
-        e.securityTests.some((t) => t.status === 'planned'),
+        e.securityTests.some((t) => _FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       securityTestedEndpoints: endpoints.filter((e) =>
-        e.securityTests.some((t) => t.status === 'passed' || t.status === 'failed'),
+        e.securityTests.some((t) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
       endpointsWithIssues: endpointsWithIssues.length,
       endpointsWithPlannedSecurityIssues: endpointsWithPlannedSecurityIssues.length,
       criticalSecurityIssues: endpoints.filter(
         (e) =>
           classifyEndpointRisk(e) === 'critical' &&
-          e.securityTests.some((t) => t.status === 'failed' || t.status === 'security_issue'),
+          e.securityTests.some(
+            (t) =>
+              !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status) &&
+              !_FUZZ_EXECUTED_STATUS_EVIDENCE.has(t.status),
+          ),
       ).length,
       criticalSecurityPlans: endpoints.filter(
         (e) =>
           classifyEndpointRisk(e) === 'critical' &&
-          e.securityTests.some((t) => t.status === 'planned'),
+          e.securityTests.some((t) => _FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(t.status)),
       ).length,
     },
     probes: endpoints,
@@ -997,15 +1021,20 @@ export function buildAPIFuzzCatalog(rootDir: string): APIFuzzEvidence {
 
 function endpointHasObservedProbe(endpoint: APIEndpointProbe): boolean {
   return (
-    endpoint.authTests.some((test) => test.status === 'passed' || test.status === 'failed') ||
-    endpoint.schemaTests.some((test) => test.status === 'passed' || test.status === 'failed') ||
-    endpoint.idempotencyTests.some(
-      (test) => test.status === 'idempotent' || test.status === 'not_idempotent',
+    endpoint.authTests.some(
+      (test) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(test.status),
     ) ||
-    endpoint.rateLimitTests.some((test) => test.status === 'passed' || test.status === 'failed') ||
+    endpoint.schemaTests.some(
+      (test) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(test.status),
+    ) ||
+    endpoint.idempotencyTests.some(
+      (test) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(test.status),
+    ) ||
+    endpoint.rateLimitTests.some(
+      (test) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(test.status),
+    ) ||
     endpoint.securityTests.some(
-      (test) =>
-        test.status === 'passed' || test.status === 'failed' || test.status === 'security_issue',
+      (test) => !_FUZZ_UNEXECUTED_STATUS_EVIDENCE.has(test.status),
     )
   );
 }
@@ -1031,7 +1060,9 @@ function executeLocalFuzzProbes(endpoint: APIEndpointProbe): void {
   }
 
   if (['POST', 'PUT', 'PATCH'].includes(endpoint.method)) {
-    for (const test of endpoint.schemaTests.filter((item) => item.expectedStatus >= 400)) {
+    for (const test of endpoint.schemaTests.filter(
+      (item) => item.expectedStatus >= deriveHttpStatusFromObservedCatalog('Bad Request'),
+    )) {
       const result = executeHttpProbe({
         baseUrl,
         method: endpoint.method,
@@ -1044,16 +1075,20 @@ function executeLocalFuzzProbes(endpoint: APIEndpointProbe): void {
       test.status = result.status;
     }
 
-    for (const test of endpoint.securityTests.filter((item) => item.expectedBlock).slice(0, 3)) {
+    for (const test of endpoint.securityTests.filter((item) => item.expectedBlock).slice(
+      deriveZeroValue(),
+      deriveUnitValue() + deriveUnitValue() + deriveUnitValue(),
+    )) {
       const result = executeHttpProbe({
         baseUrl,
         method: endpoint.method,
         path: endpoint.path,
-        expectedStatus: 400,
+        expectedStatus: deriveHttpStatusFromObservedCatalog('Bad Request'),
         payload: { __pulse_payload: test.payload },
       });
       test.actuallyBlocked =
-        typeof result.actualStatus === 'number' && result.actualStatus >= 400
+        typeof result.actualStatus === 'number' &&
+        result.actualStatus >= deriveHttpStatusFromObservedCatalog('Bad Request')
           ? true
           : result.actualStatus === null
             ? null
@@ -1173,13 +1208,18 @@ function statusMatchesExpectation(actualStatus: number, expectedStatus: number):
     return true;
   }
 
-  if (expectedStatus === 401 && actualStatus === 403) {
+  if (
+    expectedStatus === deriveHttpStatusFromObservedCatalog('Unauthorized') &&
+    actualStatus === deriveHttpStatusFromObservedCatalog('Forbidden')
+  ) {
     return true;
   }
 
   if (
-    expectedStatus === 400 &&
-    (actualStatus === 401 || actualStatus === 403 || actualStatus === 422)
+    expectedStatus === deriveHttpStatusFromObservedCatalog('Bad Request') &&
+    (actualStatus === deriveHttpStatusFromObservedCatalog('Unauthorized') ||
+      actualStatus === deriveHttpStatusFromObservedCatalog('Forbidden') ||
+      actualStatus === deriveHttpStatusFromObservedCatalog('Unprocessable Entity'))
   ) {
     return true;
   }
