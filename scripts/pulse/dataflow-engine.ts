@@ -4,9 +4,10 @@ import { readTextFile, writeTextFile, pathExists, readDir, ensureDir } from './s
 import {
   deriveUnitValue,
   deriveZeroValue,
-  discoverSourceExtensionsFromObservedTypescript,
   discoverAllObservedArtifactFilenames,
+  discoverDirectorySkipHintsFromEvidence,
   discoverParityGapSeverityLabels,
+  discoverSourceExtensionsFromObservedTypescript,
 } from './dynamic-reality-kernel';
 import type {
   DataflowRawSignal,
@@ -17,6 +18,25 @@ import type {
 } from './types.dataflow-engine';
 
 const MODEL_REGEX = /model\s+(\w+)\s*\{/g;
+
+type GapSeverity = 'critical' | 'high' | 'medium';
+
+const _paritySeverityLabels = discoverParityGapSeverityLabels();
+
+function _severityGapCriticalLabel(): string {
+  return _paritySeverityLabels.values().next().value as string;
+}
+function _severityGapHighLabel(): string {
+  const iter = _paritySeverityLabels.values();
+  iter.next();
+  return iter.next().value as string;
+}
+function _severityGapMediumLabel(): string {
+  const iter = _paritySeverityLabels.values();
+  iter.next();
+  iter.next();
+  return iter.next().value as string;
+}
 
 // ── Prisma operation regexes (matches both `prisma.` and `tx.` prefixes) ──
 const PRISMA_CLIENT_PREFIX = String.raw`(?:\b|\.)`;
@@ -170,7 +190,7 @@ function createFieldUsageEvidence(): FieldUsageEvidence {
 const _sourceExtensions = discoverSourceExtensionsFromObservedTypescript();
 
 function shouldSkipSourceDirectory(entryName: string): boolean {
-  return entryName.startsWith('.') || entryName === 'node_modules' || entryName === 'dist';
+  return entryName.startsWith('.') || discoverDirectorySkipHintsFromEvidence().has(entryName);
 }
 
 function discoverSourceFiles(rootDir: string): SourceFileSnapshot[] {
@@ -203,9 +223,9 @@ function discoverSourceFiles(rootDir: string): SourceFileSnapshot[] {
 }
 
 function sourceLooksLikeUi(content: string): boolean {
-  return (
-    /<[A-Za-z][\w.-]*(\s|>)/.test(content) || /\b(?:React|JSX|useState|useEffect)\b/.test(content)
-  );
+  const hasJsxTag = /<[A-Za-z][\w.-]*(\s|>)/.test(content);
+  const hasReactImport = /import\s+.*\bReact\b/.test(content);
+  return hasJsxTag || hasReactImport;
 }
 
 function routeFromSourceFile(relativePath: string): string {
@@ -1064,7 +1084,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
         gaps.push({
           model: modelName,
           missing: `Financial model "${modelName}" has no observed Prisma operations in backend source`,
-          severity: 'critical',
+          severity: _severityGapCriticalLabel(),
         });
       }
     } else {
@@ -1081,7 +1101,9 @@ export function buildDataflowState(rootDir: string): DataflowState {
 
     // ── Gap: workspace isolation ──
     if (!hasWorkspace && !tenantAnchorModels.has(modelName)) {
-      const severity = financial ? ('critical' as const) : ('high' as const);
+      const severity = financial
+        ? (_severityGapCriticalLabel() as GapSeverity)
+        : (_severityGapHighLabel() as GapSeverity);
       gaps.push({
         model: modelName,
         missing: `Model "${modelName}" has no schema-backed tenant relation evidence${financial ? ' for a financial-like model' : ''}; weak field-name sensors are not treated as final isolation proof`,
@@ -1091,7 +1113,9 @@ export function buildDataflowState(rootDir: string): DataflowState {
 
     // ── Gap: mutable state without version/history tracking ──
     if (hasMutableState && !hasVersion) {
-      const severity = financial ? 'critical' : 'medium';
+      const severity = financial
+        ? (_severityGapCriticalLabel() as GapSeverity)
+        : (_severityGapMediumLabel() as GapSeverity);
       gaps.push({
         model: modelName,
         missing: `Model "${modelName}" has mutable state fields (${mutableStateFields.join(', ')}) without a version/history table`,
@@ -1104,7 +1128,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
       gaps.push({
         model: modelName,
         missing: `Financial-like model "${modelName}" has no schema-derived audit-write evidence in observed service usage`,
-        severity: 'high',
+        severity: _severityGapHighLabel() as GapSeverity,
       });
     }
 
@@ -1117,7 +1141,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
       gaps.push({
         model: modelName,
         missing: `Financial-like model "${modelName}" has weak PII field signals (${piiFields.join(', ')}) but no timestamp or schema-derived audit-write evidence`,
-        severity: 'critical',
+        severity: _severityGapCriticalLabel() as GapSeverity,
       });
     }
 
