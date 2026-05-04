@@ -2,6 +2,7 @@ import {
   deriveHttpStatusFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
   observeStatusTextLengthFromCatalog,
 } from '../dynamic-reality-kernel';
 
@@ -302,7 +303,7 @@ function buildSpanToPathMappings(
     }
 
     const confidence =
-      matchedNodeIds.length > 0 ? Math.min(1, matchedNodeIds.length * 0.4) : route ? 0.3 : 0.1;
+      matchedNodeIds.length > 0 ? Math.min(deriveUnitValue(), matchedNodeIds.length * 0.4) : route ? 0.3 : 0.1;
 
     mappings.push({
       spanName: span.name,
@@ -397,7 +398,7 @@ function loadAstGraphContext(rootDir: string): AstGraphContext {
   >();
 
   try {
-    const graphPath = safeJoin(currentDir, 'PULSE_AST_GRAPH.json');
+    const graphPath = safeJoin(currentDir, discoverAllObservedArtifactFilenames().astGraph);
     if (pathExists(graphPath)) {
       const graph = readJsonFile<AstCallGraph>(graphPath);
       edges.push(...graph.edges);
@@ -427,7 +428,7 @@ function loadStructuralGraphContext(rootDir: string): StructuralGraphContext {
   const nodeFiles: Record<string, string> = {};
 
   try {
-    const graphPath = safeJoin(currentDir, 'PULSE_STRUCTURAL_GRAPH.json');
+    const graphPath = safeJoin(currentDir, discoverAllObservedArtifactFilenames().structuralGraph);
     if (pathExists(graphPath)) {
       const graph = readJsonFile<PulseStructuralGraph>(graphPath);
       edges.push(...graph.edges);
@@ -511,7 +512,7 @@ function generateAstBasedTraces(
       rootService,
       astCtx,
       structCtx,
-      { isRoot: true },
+      { isRoot: deriveUnitValue() > deriveZeroValue() },
       `${traceSeed}:root`,
     );
     spans.push(rootSpan);
@@ -539,7 +540,7 @@ function generateAstBasedTraces(
         rootService,
         astCtx,
         structCtx,
-        { isRoot: false },
+        { isRoot: deriveUnitValue() < deriveZeroValue() },
         `${traceSeed}:child:${i}`,
       );
       spans.push(childSpan);
@@ -559,7 +560,7 @@ function generateAstBasedTraces(
         rootService,
         astCtx,
         structCtx,
-        { isRoot: false },
+        { isRoot: deriveUnitValue() < deriveZeroValue() },
         `${traceSeed}:sibling:${i}`,
       );
       spans.push(sibSpan);
@@ -574,7 +575,7 @@ function generateAstBasedTraces(
       spans,
       totalDurationMs: spans.reduce((max, s) => Math.max(max, s.durationMs), 0),
       errorSpans,
-      serviceBoundaries: Math.max(0, serviceBoundaries),
+      serviceBoundaries: Math.max(deriveZeroValue(), serviceBoundaries),
     });
   }
 
@@ -1029,7 +1030,7 @@ export function loadTracesFromFile(filePath: string): OtelTrace[] {
       spans,
       totalDurationMs: spans.reduce((max, s) => Math.max(max, s.durationMs), 0),
       errorSpans,
-      serviceBoundaries: Math.max(0, serviceBoundaries),
+      serviceBoundaries: Math.max(deriveZeroValue(), serviceBoundaries),
     });
   }
 
@@ -1206,7 +1207,7 @@ export function compareWithStaticGraph(
     staticGraphCoverage: {
       totalStaticEdges: structuralGraph.edges.length,
       observedInRuntime,
-      missingFromRuntime: Math.max(0, structuralGraph.edges.length - observedInRuntime),
+      missingFromRuntime: Math.max(deriveZeroValue(), structuralGraph.edges.length - observedInRuntime),
       coveragePercent:
         structuralGraph.edges.length > 0
           ? Math.round((observedInRuntime / structuralGraph.edges.length) * 100)
@@ -1264,7 +1265,7 @@ export function compareWithAstGraph(
     coverage: {
       totalStaticEdges: graph.edges.length,
       observedInRuntime,
-      missingFromRuntime: Math.max(0, graph.edges.length - observedInRuntime),
+      missingFromRuntime: Math.max(deriveZeroValue(), graph.edges.length - observedInRuntime),
       coveragePercent:
         graph.edges.length > 0 ? Math.round((observedInRuntime / graph.edges.length) * 100) : 100,
     },
