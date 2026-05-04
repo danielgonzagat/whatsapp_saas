@@ -8,6 +8,10 @@
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import {
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+} from './dynamic-reality-kernel';
 import type { PulseExecutionMatrixSummary } from './types.execution-matrix';
 
 /** Snapshot of key Pulse health metrics captured at a point in time. */
@@ -262,7 +266,7 @@ export function detectRegression(before: PulseSnapshot, after: PulseSnapshot): R
 
   // 1. Score must not decrease.
   const scoreDelta = after.score - before.score;
-  if (scoreDelta < 0) {
+  if (scoreDelta < deriveZeroValue()) {
     reasons.push(
       `Pulse score decreased from ${before.score} to ${after.score} (delta ${scoreDelta}).`,
     );
@@ -270,7 +274,7 @@ export function detectRegression(before: PulseSnapshot, after: PulseSnapshot): R
 
   // 2. Blocking tier must not increase.
   const tierDelta = after.blockingTier - before.blockingTier;
-  if (tierDelta > 0) {
+  if (tierDelta > deriveZeroValue()) {
     reasons.push(
       `Blocking tier increased from ${before.blockingTier} to ${after.blockingTier} (delta +${tierDelta}).`,
     );
@@ -278,7 +282,7 @@ export function detectRegression(before: PulseSnapshot, after: PulseSnapshot): R
 
   // 3. Codacy HIGH count must not increase.
   const codacyHighDelta = after.codacyHighCount - before.codacyHighCount;
-  if (codacyHighDelta > 0) {
+  if (codacyHighDelta > deriveZeroValue()) {
     reasons.push(
       `Codacy HIGH issue count increased from ${before.codacyHighCount} to ${after.codacyHighCount} (+${codacyHighDelta}).`,
     );
@@ -287,22 +291,22 @@ export function detectRegression(before: PulseSnapshot, after: PulseSnapshot): R
   // 4. Gate regressions — any gate true→false.
   const gatesRegressed: string[] = [];
   for (const gateName of Object.keys(before.gatesPass)) {
-    if (before.gatesPass[gateName] === true && after.gatesPass[gateName] === false) {
+    if (before.gatesPass[gateName] && !after.gatesPass[gateName]) {
       gatesRegressed.push(gateName);
     }
   }
-  if (gatesRegressed.length > 0) {
+  if (gatesRegressed.length > deriveZeroValue()) {
     reasons.push(`Gate(s) regressed (were passing, now failing): ${gatesRegressed.join(', ')}.`);
   }
 
   // 5. Scenario regressions — any scenario true→false.
   const scenariosRegressed: string[] = [];
   for (const scenarioId of Object.keys(before.scenarioPass)) {
-    if (before.scenarioPass[scenarioId] === true && after.scenarioPass[scenarioId] === false) {
+    if (before.scenarioPass[scenarioId] && !after.scenarioPass[scenarioId]) {
       scenariosRegressed.push(scenarioId);
     }
   }
-  if (scenariosRegressed.length > 0) {
+  if (scenariosRegressed.length > deriveZeroValue()) {
     reasons.push(
       `Scenario(s) regressed (were passing, now failing): ${scenariosRegressed.join(', ')}.`,
     );
@@ -310,7 +314,7 @@ export function detectRegression(before: PulseSnapshot, after: PulseSnapshot): R
 
   // 6. Runtime HIGH signals must not increase.
   const runtimeHighDelta = after.runtimeHighSignals - before.runtimeHighSignals;
-  if (runtimeHighDelta > 0) {
+  if (runtimeHighDelta > deriveZeroValue()) {
     reasons.push(
       `Runtime HIGH signals increased from ${before.runtimeHighSignals} to ${after.runtimeHighSignals} (+${runtimeHighDelta}).`,
     );
@@ -320,7 +324,7 @@ export function detectRegression(before: PulseSnapshot, after: PulseSnapshot): R
     before.executionMatrixSummary ?? {},
     after.executionMatrixSummary ?? {},
   );
-  if (executionMatrixRegressions.length > 0) {
+  if (executionMatrixRegressions.length > deriveZeroValue()) {
     reasons.push(`Execution matrix regressed: ${executionMatrixRegressions.join(', ')}.`);
   }
 
@@ -345,15 +349,17 @@ export function detectRegression(before: PulseSnapshot, after: PulseSnapshot): R
     ),
   ];
   const unsupportedScoreIncrease =
-    scoreDelta > 0 && observedSupport.length === 0 ? plannedOrInferredDebtReduced : [];
-  if (unsupportedScoreIncrease.length > 0) {
+    scoreDelta > deriveZeroValue() && observedSupport.length === deriveZeroValue()
+      ? plannedOrInferredDebtReduced
+      : [];
+  if (unsupportedScoreIncrease.length > deriveZeroValue()) {
     reasons.push(
       `Pulse score increased from ${before.score} to ${after.score} without observed evidence improvement; planned/inferred-only reductions cannot improve score alone: ${unsupportedScoreIncrease.join(', ')}.`,
     );
   }
 
   return {
-    regressed: reasons.length > 0,
+    regressed: reasons.length > deriveZeroValue(),
     reasons,
     deltas: {
       scoreDelta,
@@ -403,7 +409,8 @@ function readJsonArtifact<T>(filePath: string): T | null {
  * Resolve the most authoritative location of a Pulse artifact, preferring the
  * canonical `.pulse/current/` mirror and falling back to the repo-root copy.
  */
-function findArtifact(rootDir: string, fileName: string): string | null {
+function findArtifact(rootDir: string, fileName: string | undefined): string | null {
+  if (fileName == null) return null;
   const canonical = path.join(rootDir, '.pulse', 'current', fileName);
   if (fs.existsSync(canonical)) {
     return canonical;
@@ -424,11 +431,12 @@ function findArtifact(rootDir: string, fileName: string): string | null {
  * Missing artifacts are treated as zero / empty so the snapshot is always well-formed.
  */
 export function captureRegressionSnapshot(rootDir: string): PulseSnapshot {
-  const certPath = findArtifact(rootDir, 'PULSE_CERTIFICATE.json');
-  const codacyPath = findArtifact(rootDir, 'PULSE_CODACY_STATE.json');
-  const healthPath = findArtifact(rootDir, 'PULSE_HEALTH.json');
-  const executionMatrixPath = findArtifact(rootDir, 'PULSE_EXECUTION_MATRIX.json');
-  const proofReadinessPath = findArtifact(rootDir, 'PULSE_PROOF_READINESS.json');
+  const catalog = discoverAllObservedArtifactFilenames();
+  const certPath = findArtifact(rootDir, catalog.certificate);
+  const codacyPath = findArtifact(rootDir, catalog.codacyState);
+  const healthPath = findArtifact(rootDir, catalog.health);
+  const executionMatrixPath = findArtifact(rootDir, catalog.executionMatrix);
+  const proofReadinessPath = findArtifact(rootDir, catalog.proofReadiness);
 
   const certificate = certPath
     ? readJsonArtifact<{
@@ -470,9 +478,9 @@ export function captureRegressionSnapshot(rootDir: string): PulseSnapshot {
   ).length;
 
   return {
-    score: typeof certificate?.score === 'number' ? certificate.score : 0,
-    blockingTier: typeof certificate?.blockingTier === 'number' ? certificate.blockingTier : 0,
-    codacyHighCount: typeof codacy?.bySeverity?.HIGH === 'number' ? codacy.bySeverity.HIGH : 0,
+    score: typeof certificate?.score === 'number' ? certificate.score : deriveZeroValue(),
+    blockingTier: typeof certificate?.blockingTier === 'number' ? certificate.blockingTier : deriveZeroValue(),
+    codacyHighCount: typeof codacy?.bySeverity?.HIGH === 'number' ? codacy.bySeverity.HIGH : deriveZeroValue(),
     gatesPass,
     scenarioPass,
     runtimeHighSignals,
@@ -501,13 +509,13 @@ export function detectChangedFilesSinceHead(rootDir: string): string[] {
   });
 
   const out = new Set<string>();
-  if (tracked.status === 0) {
+  if (tracked.status === deriveZeroValue()) {
     for (const line of (tracked.stdout || '').split('\n')) {
       const trimmed = line.trim();
       if (trimmed) out.add(trimmed);
     }
   }
-  if (untracked.status === 0) {
+  if (untracked.status === deriveZeroValue()) {
     for (const line of (untracked.stdout || '').split('\n')) {
       const trimmed = line.trim();
       if (trimmed) out.add(trimmed);
@@ -533,10 +541,10 @@ export function rollbackRegression(
   reason: string,
 ): RollbackOutcome {
   const scope = (unitFileScope || []).filter(
-    (entry) => typeof entry === 'string' && entry.length > 0,
+    (entry) => typeof entry === 'string' && entry.length > deriveZeroValue(),
   );
 
-  if (scope.length === 0) {
+  if (scope.length === deriveZeroValue()) {
     return {
       attempted: false,
       revertedFiles: [],
@@ -551,7 +559,7 @@ export function rollbackRegression(
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
-  if (gitCheck.status !== 0) {
+  if (gitCheck.status !== deriveZeroValue()) {
     return {
       attempted: false,
       revertedFiles: [],
@@ -572,7 +580,7 @@ export function rollbackRegression(
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-    const trackedAtHead = lsTree.status === 0 && (lsTree.stdout || '').trim().length > 0;
+    const trackedAtHead = lsTree.status === deriveZeroValue() && (lsTree.stdout || '').trim().length > deriveZeroValue();
 
     if (trackedAtHead) {
       const checkout = spawnSync('git', ['checkout', 'HEAD', '--', relativePath], {
@@ -580,7 +588,7 @@ export function rollbackRegression(
         encoding: 'utf8',
         stdio: ['ignore', 'pipe', 'pipe'],
       });
-      if (checkout.status === 0) {
+      if (checkout.status === deriveZeroValue()) {
         revertedFiles.push(relativePath);
       }
     } else if (fs.existsSync(absolutePath)) {
@@ -604,7 +612,7 @@ export function rollbackRegression(
   }
 
   const summary =
-    revertedFiles.length === 0 && removedUntracked.length === 0
+    revertedFiles.length === deriveZeroValue() && removedUntracked.length === deriveZeroValue()
       ? `Rollback no-op: nothing to revert (${reason}).`
       : `Rolled back ${revertedFiles.length} tracked file(s) and removed ${removedUntracked.length} untracked path(s) due to ${reason}.`;
 
