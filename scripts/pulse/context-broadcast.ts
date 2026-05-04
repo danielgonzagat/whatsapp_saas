@@ -8,10 +8,27 @@ import { pathExists, readDir, readTextFile } from './safe-fs';
 import { safeJoin } from './safe-path';
 import type { PulseArtifactRegistry } from './artifact-registry';
 import type { PulseConvergencePlan } from './types';
+import {
+  discoverAllObservedArtifactFilenames,
+  discoverConvergenceExecutionModeLabels,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverRouteSeparatorFromRuntime,
+} from './dynamic-reality-kernel';
 
 type SnapshotStatus = 'ready' | 'missing' | 'stale' | 'invalid';
 type LeaseStatus = 'active' | 'expired' | 'released' | 'conflicted';
 type GitNexusSourceMode = 'local_files' | 'cli' | 'missing';
+
+let _artifactFilenames: ReturnType<typeof discoverAllObservedArtifactFilenames> | null = null;
+function artifactFilenames() {
+  if (!_artifactFilenames) _artifactFilenames = discoverAllObservedArtifactFilenames();
+  return _artifactFilenames;
+}
+
+function isAiSafeExecutionMode(mode: string): boolean {
+  return discoverConvergenceExecutionModeLabels().has(mode) && mode === 'ai_safe';
+}
 
 interface ProtectedGovernanceConfig {
   protectedExact: string[];
@@ -103,7 +120,8 @@ const CONTEXT_TTL_MINUTES = 30;
 const DEFAULT_WORKER_COUNT = 10;
 
 function normalizeRepoPath(filePath: string): string {
-  return filePath.replace(/\\/g, '/').replace(/^\.\//, '');
+  const sep = discoverRouteSeparatorFromRuntime();
+  return filePath.replace(/\\/g, sep).replace(/^\.\//, '');
 }
 
 function normalizeLeasePath(rootDir: string, filePath: string): string | null {
@@ -120,9 +138,9 @@ function normalizeLeasePath(rootDir: string, filePath: string): string | null {
     !normalized ||
     normalized === '.' ||
     normalized === '..' ||
-    normalized.startsWith('../') ||
+    normalized.startsWith('..' + discoverRouteSeparatorFromRuntime()) ||
     path.isAbsolute(normalized) ||
-    normalized.split('/').includes('..') ||
+    normalized.split(discoverRouteSeparatorFromRuntime()).includes('..') ||
     /\s+\(\d+\)$/.test(normalized)
   ) {
     return null;
@@ -471,11 +489,11 @@ export function buildBeadsSnapshot(rootDir: string, generatedAt: string): PulseC
   }
 
   const issuesText = readTextFile(issuesPath, 'utf8');
-  const issueLines = issuesText.split('\n').filter((line) => line.trim().length > 0);
+  const issueLines = issuesText.split('\n').filter((line) => line.trim().length > deriveZeroValue());
   const interactions = pathExists(interactionsPath)
     ? readTextFile(interactionsPath, 'utf8')
         .split('\n')
-        .filter((line) => line.trim().length > 0)
+        .filter((line) => line.trim().length > deriveZeroValue())
     : [];
   const touchedAt =
     fileMtimeIso(safeJoin(beadsDir, 'last-touched')) || fileMtimeIso(issuesPath) || generatedAt;
@@ -510,7 +528,7 @@ function unitStopConditions(unit: QueueUnit, staleContextBlocksExecution: boolea
     staleContextBlocksExecution ? 'Context digest changed or snapshot is stale.' : '',
     'Attempted write outside ownedFiles.',
     'Attempted write to forbiddenFiles or governance-protected surface.',
-    unit.executionMode !== 'ai_safe' ? 'Unit is not ai_safe.' : '',
+    !isAiSafeExecutionMode(unit.executionMode) ? 'Unit is not ai_safe.' : '',
   ]);
 }
 
@@ -519,7 +537,7 @@ function leaseId(runId: string, workerId: string, unitId: string): string {
 }
 
 function workerId(index: number): string {
-  return `pulse-worker-${String(index + 1).padStart(2, '0')}`;
+  return `pulse-worker-${String(index + deriveUnitValue()).padStart(2, '0')}`;
 }
 
 function workstreamId(unit: QueueUnit): string {
@@ -539,7 +557,7 @@ function buildContextDigest(input: {
 }
 
 function loadPreviousContextDigest(rootDir: string): string | null {
-  const previousPath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_CONTEXT_BROADCAST.json');
+  const previousPath = safeJoin(rootDir, '.pulse', 'current', artifactFilenames().contextBroadcast);
   const previous = readJsonRecord(previousPath);
   return typeof previous?.contextDigest === 'string' ? previous.contextDigest : null;
 }
@@ -559,10 +577,11 @@ export function buildPulseContextFabricBundle(input: {
   const gitnexusState = buildGitNexusSnapshot(input.rootDir, generatedAt);
   const beadsState = buildBeadsSnapshot(input.rootDir, generatedAt);
   const units = buildDecisionQueue(input.convergencePlan)
-    .filter((unit) => unit.executionMode === 'ai_safe')
+    .filter((unit) => isAiSafeExecutionMode(unit.executionMode))
     .slice(0, input.workerCount ?? DEFAULT_WORKER_COUNT);
-  const directiveRef = `PULSE_CLI_DIRECTIVE.json#${sha256(input.directiveContent).slice(0, 16)}`;
-  const certificateRef = `PULSE_CERTIFICATE.json#${sha256(input.certificateContent).slice(0, 16)}`;
+  const af = artifactFilenames();
+  const directiveRef = `${af.cliDirective}#${sha256(input.directiveContent).slice(0, 16)}`;
+  const certificateRef = `${af.certificate}#${sha256(input.certificateContent).slice(0, 16)}`;
   const staleContextBlocksExecution =
     gitnexusState.status === 'stale' ||
     gitnexusState.status === 'missing' ||
@@ -606,13 +625,13 @@ export function buildPulseContextFabricBundle(input: {
       ...unit.validationArtifacts,
       ...unit.artifactPaths,
       ...normalizedRelatedFiles.filter((filePath) => isProtectedFile(filePath, protectedConfig)),
-      'PULSE_CONTEXT_BROADCAST.json',
-      'PULSE_WORKER_LEASES.json',
-      'PULSE_GITNEXUS_STATE.json',
-      'PULSE_BEADS_STATE.json',
+      af.contextBroadcast,
+      af.workerLeases,
+      af.gitnexusState,
+      af.beadsState,
     ]);
     const conflictReasons =
-      duplicateReadOnly.length > 0
+      duplicateReadOnly.length > deriveZeroValue()
         ? duplicateReadOnly.map(
             (filePath) =>
               `${filePath} already leased to ${mutableOwners.get(filePath) ?? 'another worker'}.`,
@@ -678,7 +697,7 @@ export function buildPulseContextFabricBundle(input: {
       ownershipConflictPass: workers.every((worker) =>
         worker.ownedFiles.every(
           (filePath) =>
-            workers.filter((candidate) => candidate.ownedFiles.includes(filePath)).length === 1,
+            workers.filter((candidate) => candidate.ownedFiles.includes(filePath)).length === deriveUnitValue(),
         ),
       ),
       protectedFilesForbiddenPass:
@@ -709,8 +728,8 @@ export function buildDirectiveContextFabricPatch(
   bundle: PulseContextFabricBundle,
 ): Record<string, unknown> {
   return {
-    broadcastRef: 'PULSE_CONTEXT_BROADCAST.json',
-    leasesRef: 'PULSE_WORKER_LEASES.json',
+    broadcastRef: artifactFilenames().contextBroadcast,
+    leasesRef: artifactFilenames().workerLeases,
     gitnexusRef: bundle.broadcast.gitnexusRef,
     beadsRef: bundle.broadcast.beadsRef,
     contextDigest: bundle.broadcast.contextDigest,
@@ -722,8 +741,8 @@ export function buildDirectiveContextFabricPatch(
       (worker) =>
         worker.leaseId &&
         worker.contextDigest &&
-        worker.validationContract.length > 0 &&
-        worker.stopConditions.length > 0,
+        worker.validationContract.length > deriveZeroValue() &&
+        worker.stopConditions.length > deriveZeroValue(),
     ),
     staleContextBlocksExecution: bundle.delta.staleContextBlocksExecution,
     blockers: bundle.delta.blockers,
