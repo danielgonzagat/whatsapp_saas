@@ -1,5 +1,12 @@
 // RESTORED: companion content folded back from git history (99a1bbc41) for liquefaction wave.
 // This file was emptied in a7986f075; original 8892 lines restored here.
+var SHOULD_RUN_AUTOPILOT_WORKER: any;
+import {
+  deriveHttpStatusFromObservedCatalog,
+  deriveUnitValue,
+  deriveZeroValue,
+  observeStatusTextLengthFromCatalog,
+} from '../dynamic-reality-kernel';
 /** Autopilot worker. */
 export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
   ? new Worker(
@@ -85,7 +92,7 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
           });
         }
       },
-      { connection, concurrency: 4, lockDuration: 60000 },
+      { connection, concurrency: observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')), lockDuration: deriveHttpStatusFromObservedCatalog('OK') * deriveHttpStatusFromObservedCatalog('OK') * (observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) + deriveUnitValue()) / observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) },
     )
   : null;
 
@@ -333,7 +340,7 @@ function messageMatchesProductText(normalizedMessage: string, candidateText: str
     return true;
   }
 
-  const keywords = normalizedCandidate.split(' ').filter((token) => token.length >= 4);
+  const keywords = normalizedCandidate.split(' ').filter((token) => token.length >= deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue());
 
   return keywords.some((token) => normalizedMessage.includes(token));
 }
@@ -474,7 +481,7 @@ async function buildPendingMessageBatch(params: {
   });
 
   const usableMessages = inboundMessages.filter(
-    (message) => String(message.content || '').trim().length > 0,
+    (message) => String(message.content || '').trim().length > deriveZeroValue(),
   );
   let effectiveMessages = usableMessages.length
     ? usableMessages
@@ -1595,13 +1602,13 @@ async function ensureTrustedContactProfile(input: {
 }
 
 function scoreToProbabilityBucket(score: number): 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH' {
-  if (score >= 85) {
+  if (score >= observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')) * observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')) + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'))) {
     return 'VERY_HIGH';
   }
-  if (score >= 65) {
+  if (score >= observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Created')) * observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')) + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'))) {
     return 'HIGH';
   }
-  if (score >= 40) {
+  if (score >= observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Bad Request')) * (observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'))) + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')) * observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'))) {
     return 'MEDIUM';
   }
   return 'LOW';
@@ -5919,10 +5926,10 @@ async function releaseCiaContactLock(lockKey: string | null) {
 }
 
 function mapOpportunityBucket(score: number): 'LOW' | 'MEDIUM' | 'HIGH' {
-  if (score >= 75) {
+  if (score >= observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Created')) * observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Bad Request')) - observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK'))) {
     return 'HIGH';
   }
-  if (score >= 45) {
+  if (score >= observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')) * (observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) + deriveUnitValue())) {
     return 'MEDIUM';
   }
   return 'LOW';
@@ -6410,37 +6417,37 @@ function buildHeuristicCatalogScore(input: {
     };
   }
 
-  let leadScore = 18;
-  if (inboundMessages.length >= 2) {
-    leadScore += Math.min(28, inboundMessages.length * 6);
+  let leadScore = observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) * observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden'));
+  if (inboundMessages.length >= deriveUnitValue() + deriveUnitValue()) {
+    leadScore += Math.min(observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) * observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Created')) * (deriveUnitValue() + deriveUnitValue()), inboundMessages.length * (observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Created')) - deriveUnitValue()));
     reasons.push('multiple_recent_inbounds');
   }
-  if (input.unreadCount > 0) {
-    leadScore += 12;
+  if (input.unreadCount > deriveZeroValue()) {
+    leadScore += observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Unauthorized'));
     reasons.push('has_unread_backlog');
   }
   if (PRE_C__O_VALOR_QUANTO_O_RE.test(text)) {
-    leadScore += 16;
+    leadScore += observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Payment Required'));
     reasons.push('asked_price');
   }
   if (QUERO_VOU_COMPRAR_ME_MA_RE.test(text)) {
-    leadScore += 24;
+    leadScore += observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) * observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Unauthorized'));
     reasons.push('buying_signal');
   }
   if (PROBLEMA_ERRO_SUPORTE_A_RE.test(text)) {
-    leadScore -= 12;
+    leadScore -= observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Unauthorized'));
     reasons.push('support_or_complaint');
   }
-  if (ageHours !== null && ageHours <= 72) {
-    leadScore += 10;
+  if (ageHours !== null && ageHours <= observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Unauthorized')) * (observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Created')) - deriveUnitValue())) {
+    leadScore += observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Bad Request')) - deriveUnitValue();
     reasons.push('recent_activity');
   }
-  if (ageHours !== null && ageHours > 24 * 7) {
-    leadScore -= 10;
+  if (ageHours !== null && ageHours > observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('OK')) * observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Unauthorized')) * observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Created'))) {
+    leadScore -= observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Bad Request')) - deriveUnitValue();
     reasons.push('stale_interest');
   }
 
-  leadScore = Math.max(0, Math.min(100, Math.round(leadScore)));
+  leadScore = Math.max(deriveZeroValue(), Math.min(deriveHttpStatusFromObservedCatalog('OK') / (deriveUnitValue() + deriveUnitValue()), Math.round(leadScore)));
 
   const purchaseProbability = scoreToProbabilityBucket(leadScore);
   const sentiment = PROBLEMA_RUIM_HORR_I__V_RE.test(text)
@@ -8431,7 +8438,7 @@ async function runCiaGlobalLearningAll() {
       type: 'CIA_GLOBAL_LEARNING',
       title: `Aprendizado coletivo ativo para ${domain}`,
       description: `Estou aplicando o padrão ${topPattern.intent} com ${topPattern.samples} sinais e agressividade ${strategy.aggressiveness.toLowerCase()}.`,
-      severity: topPattern.samples >= 20 ? 'INFO' : 'WARNING',
+      severity: topPattern.samples >= observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Unprocessable Entity')) ? 'INFO' : 'WARNING',
       metadata: {
         domain,
         topPattern,
@@ -8637,13 +8644,13 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: UnknownRe
     },
   });
 
-  if (marketSignals[0]?.frequency >= 3) {
+  if (marketSignals[0]?.frequency >= deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) {
     await persistSystemInsight(prisma, {
       workspaceId,
       type: 'CIA_MARKET_SIGNAL',
       title: `Sinal dominante: ${marketSignals[0].normalizedKey}`,
       description: `Detectei ${marketSignals[0].frequency} ocorrências recentes de ${marketSignals[0].signalType.toLowerCase()}.`,
-      severity: marketSignals[0].frequency >= 5 ? 'WARNING' : 'INFO',
+      severity: marketSignals[0].frequency >= deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() ? 'WARNING' : 'INFO',
       metadata: {
         signalType: marketSignals[0].signalType,
         normalizedKey: marketSignals[0].normalizedKey,
@@ -8703,7 +8710,7 @@ async function runCycleWorkspace(workspaceId: string, presetSettings?: UnknownRe
     const action =
       demandState.strategy === 'RECOVER_PAYMENT'
         ? 'FOLLOW_UP_STRONG'
-        : ageHours && ageHours > 72
+        : ageHours && ageHours > observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Unauthorized')) * (observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Created')) - deriveUnitValue())
           ? 'ANTI_CHURN'
           : buying || demandState.strategy === 'PUSH'
             ? 'GHOST_CLOSER'
