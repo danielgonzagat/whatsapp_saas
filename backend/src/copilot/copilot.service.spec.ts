@@ -72,14 +72,20 @@ describe('CopilotService', () => {
     });
 
     it('returns fallback when no openai api key is available', async () => {
-      prisma.contact.findFirst.mockResolvedValue({ id: 'c-1' });
-      prisma.message.findMany.mockResolvedValue([]);
-      prisma.workspace.findUnique.mockResolvedValue({ providerSettings: {} });
+      const saved = process.env.OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+      try {
+        prisma.contact.findFirst.mockResolvedValue({ id: 'c-1' });
+        prisma.message.findMany.mockResolvedValue([]);
+        prisma.workspace.findUnique.mockResolvedValue({ providerSettings: {} });
 
-      const result = await service.suggest({ workspaceId, contactId: 'c-1' });
+        const result = await service.suggest({ workspaceId, contactId: 'c-1' });
 
-      expect(result).toHaveProperty('suggestion');
-      expect(result.suggestion).toContain('Vi sua mensagem');
+        expect(result).toHaveProperty('suggestion');
+        expect(result.suggestion).toContain('Vi sua mensagem');
+      } finally {
+        if (saved) process.env.OPENAI_API_KEY = saved;
+      }
     });
 
     it('calls openai and returns suggestion on success', async () => {
@@ -115,16 +121,22 @@ describe('CopilotService', () => {
     });
 
     it('looks up contact by phone when no contactId provided', async () => {
-      prisma.contact.findUnique.mockResolvedValue({ id: 'c-phone' });
-      prisma.message.findMany.mockResolvedValue([]);
-      prisma.workspace.findUnique.mockResolvedValue({ providerSettings: {} });
+      const saved = process.env.OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+      try {
+        prisma.contact.findUnique.mockResolvedValue({ id: 'c-phone' });
+        prisma.message.findMany.mockResolvedValue([]);
+        prisma.workspace.findUnique.mockResolvedValue({ providerSettings: {} });
 
-      const result = await service.suggest({ workspaceId, phone: '+551199999999' });
+        const result = await service.suggest({ workspaceId, phone: '+551199999999' });
 
-      expect(prisma.contact.findUnique).toHaveBeenCalledWith({
-        where: { workspaceId_phone: { workspaceId, phone: '+551199999999' } },
-      });
-      expect(result.suggestion).toContain('Vi sua mensagem');
+        expect(prisma.contact.findUnique).toHaveBeenCalledWith({
+          where: { workspaceId_phone: { workspaceId, phone: '+551199999999' } },
+        });
+        expect(result.suggestion).toContain('Vi sua mensagem');
+      } finally {
+        if (saved) process.env.OPENAI_API_KEY = saved;
+      }
     });
 
     it('handles empty phone as empty string', async () => {
@@ -152,14 +164,20 @@ describe('CopilotService', () => {
     });
 
     it('returns fallback suggestions when no api key', async () => {
-      prisma.contact.findFirst.mockResolvedValue({ id: 'c-1' });
-      prisma.message.findMany.mockResolvedValue([]);
-      prisma.workspace.findUnique.mockResolvedValue({ providerSettings: {} });
+      const saved = process.env.OPENAI_API_KEY;
+      delete process.env.OPENAI_API_KEY;
+      try {
+        prisma.contact.findFirst.mockResolvedValue({ id: 'c-1' });
+        prisma.message.findMany.mockResolvedValue([]);
+        prisma.workspace.findUnique.mockResolvedValue({ providerSettings: {} });
 
-      const result = await service.suggestMultiple({ workspaceId, contactId: 'c-1' });
+        const result = await service.suggestMultiple({ workspaceId, contactId: 'c-1' });
 
-      expect(result.suggestions).toHaveLength(3);
-      expect(result.suggestions[0]).toContain('Posso te ajudar');
+        expect(result.suggestions).toHaveLength(3);
+        expect(result.suggestions[0]).toContain('Posso te ajudar');
+      } finally {
+        if (saved) process.env.OPENAI_API_KEY = saved;
+      }
     });
 
     it('returns parsed suggestions from openai with context detection', async () => {
