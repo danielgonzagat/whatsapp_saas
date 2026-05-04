@@ -21,6 +21,13 @@ import {
   slugifyStructural,
   titleCaseStructural,
 } from './structural-family';
+import {
+  deriveHttpStatusFromObservedCatalog,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverCapabilityStatusLabels,
+  discoverTruthModeLabels,
+} from './dynamic-reality-kernel';
 
 interface BuildProductVisionInput {
   capabilityState: PulseCapabilityState;
@@ -34,15 +41,18 @@ interface BuildProductVisionInput {
 }
 
 function zero(): number {
-  return Number(false);
+  return deriveZeroValue();
 }
 
 function one(): number {
-  return Number(true);
+  return deriveUnitValue();
 }
 
 function roundToPercentStep(value: number): number {
-  return Math.round(value * 100) / 100;
+  const scale =
+    deriveHttpStatusFromObservedCatalog('OK') /
+    (deriveUnitValue() + deriveUnitValue());
+  return Math.round(value * scale) / scale;
 }
 
 function quotient(numerator: number, denominator: number): number {
