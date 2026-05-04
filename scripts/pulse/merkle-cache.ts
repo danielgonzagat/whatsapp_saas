@@ -2,6 +2,12 @@ import { createHash } from 'crypto';
 import { readFileSync, statSync } from 'fs';
 import * as path from 'path';
 import type { MerkleDag, MerkleNode, MerkleProof } from './types.merkle-cache';
+import {
+  deriveStringUnionMembersFromTypeContract,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+} from './dynamic-reality-kernel';
 import { ensureDir, pathExists, readDir, readJsonFile, writeTextFile } from './safe-fs';
 import { normalizePath } from './scope-state.codacy';
 
@@ -9,6 +15,23 @@ const CACHE_DIR = '.pulse/cache';
 const DAG_FILE = 'merkle-dag.json';
 
 const SKIP_PATTERNS = ['node_modules', 'dist', '.next', '.git', '.pulse'];
+
+const MERKLE_NODE_KINDS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.merkle-cache.ts',
+  'kind',
+);
+const MERKLE_CAP_KIND =
+  [...MERKLE_NODE_KINDS].find((k) => k === 'capability') ?? 'capability';
+const MERKLE_FLOW_KIND =
+  [...MERKLE_NODE_KINDS].find((k) => k === 'flow') ?? 'flow';
+const MERKLE_ROOT_KIND =
+  [...MERKLE_NODE_KINDS].find((k) => k === 'graph_root') ?? 'graph_root';
+const MERKLE_FILE_KIND =
+  [...MERKLE_NODE_KINDS].find((k) => k === 'file') ?? 'file';
+
+function isNonFileMerkleKind(k: string): boolean {
+  return MERKLE_NODE_KINDS.has(k) && k !== MERKLE_FILE_KIND;
+}
 
 interface BuildMerkleDagOptions {
   changedFilePaths?: string[];
@@ -112,7 +135,7 @@ export function buildMerkleDag(
 
     nodes[relPath] = {
       id: relPath,
-      kind: 'file',
+      kind: MERKLE_FILE_KIND,
       contentHash: fileHash.contentHash,
       derivedHash: '', // computed bottom-up later
       children: [],
@@ -164,7 +187,7 @@ export function buildMerkleDag(
 
       nodes[capId] = {
         id: capId,
-        kind: 'capability',
+        kind: MERKLE_CAP_KIND,
         contentHash,
         derivedHash: '',
         children: fileIds,
@@ -176,8 +199,8 @@ export function buildMerkleDag(
       if (changed) changedCount++;
     }
 
-    const capNodes = Object.values(nodes).filter((n) => n.kind === 'capability');
-    const flowId = 'flow:main';
+    const capNodes = Object.values(nodes).filter((n) => n.kind === MERKLE_CAP_KIND);
+    const flowId = `flow:main`;
     const childIds = capNodes.map((n) => n.id);
     const childHashes = childIds
       .map((id) => nodes[id]?.contentHash ?? '')
@@ -192,7 +215,7 @@ export function buildMerkleDag(
 
       nodes[flowId] = {
         id: flowId,
-        kind: 'flow',
+        kind: MERKLE_FLOW_KIND,
         contentHash: flowContentHash,
         derivedHash: '',
         children: childIds,
@@ -209,7 +232,7 @@ export function buildMerkleDag(
   {
     let rootChildren: string[];
     if (structuralGraph) {
-      rootChildren = ['flow:main'];
+      rootChildren = [flowId];
     } else {
       rootChildren = filePaths;
     }
@@ -226,7 +249,7 @@ export function buildMerkleDag(
 
     nodes[rootId] = {
       id: rootId,
-      kind: 'graph_root',
+      kind: MERKLE_ROOT_KIND,
       contentHash: rootContentHash,
       derivedHash: '',
       children: rootChildren,
@@ -256,7 +279,8 @@ export function buildMerkleDag(
 
   const currentDir = path.join(rootDir, '.pulse', 'current');
   ensureDir(currentDir, { recursive: true });
-  const currentPath = path.join(currentDir, 'PULSE_MERKLE_CACHE.json');
+  const merkleCacheFilename = discoverAllObservedArtifactFilenames().merkleCache || 'PULSE_MERKLE_CACHE.json';
+  const currentPath = path.join(currentDir, merkleCacheFilename);
   writeTextFile(currentPath, JSON.stringify(dag, null, 2));
 
   return dag;
@@ -282,7 +306,7 @@ function computeFileHash(
   changedFileSet: Set<string>,
 ): FileHashResult | null {
   const prev = prevNodes[relPath];
-  if (prev && changedFileSet.size > 0 && !changedFileSet.has(relPath)) {
+  if (prev && changedFileSet.size > deriveZeroValue() && !changedFileSet.has(relPath)) {
     return { contentHash: prev.contentHash, reused: true };
   }
 
@@ -335,7 +359,7 @@ export function computeChangedNodes(dag: MerkleDag): string[] {
       affected.add(node.id);
       addAncestors(node.id, parentMap, affected);
     }
-    if (node.kind === 'file') {
+    if (node.kind === MERKLE_FILE_KIND) {
       for (const depId of node.dependsOn) {
         const dep = dag.nodes[depId];
         if (dep?.changed) {
@@ -394,7 +418,7 @@ export function recomputeNode(dag: MerkleDag, nodeId: string, rootDir?: string):
   const previousDerivedHash = node.derivedHash;
   const previousContentHash = node.contentHash;
 
-  if (node.kind === 'file') {
+  if (node.kind === MERKLE_FILE_KIND) {
     try {
       const raw = readFileSync(rootDir ? path.join(rootDir, node.id) : node.id);
       node.contentHash = computeSha256(raw);
@@ -403,7 +427,7 @@ export function recomputeNode(dag: MerkleDag, nodeId: string, rootDir?: string):
     }
   }
 
-  if (node.kind === 'capability' || node.kind === 'flow' || node.kind === 'graph_root') {
+  if (isNonFileMerkleKind(node.kind)) {
     node.contentHash = computeAggregateContentHash(node, dag.nodes);
   }
 
@@ -430,7 +454,7 @@ export function recomputeNode(dag: MerkleDag, nodeId: string, rootDir?: string):
       ancestorPreviousDerivedHash !== anc.derivedHash;
   }
 
-  dag.rootHash = dag.nodes['root']?.derivedHash ?? '';
+  dag.rootHash = dag.nodes[rootId]?.derivedHash ?? '';
   dag.generatedAt = nowISO();
   dag.changedNodes = Object.values(dag.nodes).filter((item) => item.changed).length;
 
@@ -464,7 +488,7 @@ export function verifyDagIntegrity(dag: MerkleDag): { valid: boolean; failures: 
     }
   }
 
-  return { valid: failures.length === 0, failures };
+  return { valid: failures.length === deriveZeroValue(), failures };
 }
 
 /**
@@ -492,7 +516,7 @@ export function getAffectedArtifacts(dag: MerkleDag, changedFilePaths: string[])
     .filter((id) => {
       const node = dag.nodes[id];
       return (
-        node && (node.kind === 'capability' || node.kind === 'flow' || node.kind === 'graph_root')
+        node && isNonFileMerkleKind(node.kind)
       );
     })
     .sort();
@@ -523,7 +547,7 @@ export function generateProof(dag: MerkleDag, nodeId: string): MerkleProof | nul
 
   while (true) {
     const parents = parentMap.get(currentId);
-    if (!parents || parents.length === 0) break;
+    if (!parents || parents.length === deriveZeroValue()) break;
 
     const parentId = parents[0];
     const parent = dag.nodes[parentId];
@@ -565,15 +589,15 @@ export function generateProof(dag: MerkleDag, nodeId: string): MerkleProof | nul
  * @returns Whether the proof is valid.
  */
 export function verifyProof(proof: MerkleProof, rootHash: string): boolean {
-  if (proof.proofPath.length === 0) return false;
-  if (proof.proofPath.length === 1) {
+  if (proof.proofPath.length === deriveZeroValue()) return false;
+  if (proof.proofPath.length === deriveUnitValue()) {
     return proof.derivedHash === rootHash;
   }
 
   let resultHash = proof.derivedHash;
   let cursor = 0;
 
-  for (let level = 0; level < proof.proofPath.length - 1; level++) {
+  for (let level = 0; level < proof.proofPath.length - deriveUnitValue(); level++) {
     const siblingCount = proof.siblingCounts[level] ?? 0;
     const parentContentHash = proof.parentContentHashes[level] ?? '';
 
