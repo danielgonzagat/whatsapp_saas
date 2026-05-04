@@ -12,9 +12,12 @@
 
 import * as path from 'path';
 import {
+  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
+  discoverRuntimeProbeStatusLabels,
+  discoverScenarioStatusLabels,
 } from './dynamic-reality-kernel';
 import { safeJoin } from './lib/safe-path';
 import { pathExists, readJsonFile, writeTextFile } from './safe-fs';
@@ -40,6 +43,32 @@ const RUNTIME_PROBES_FILENAME = _artifacts.runtimeProbes ?? 'PULSE_RUNTIME_PROBE
 const SENTRY_ADAPTER_FILENAME = _artifacts.externalSignalState ?? 'PULSE_EXTERNAL_SIGNAL_STATE.json';
 const OBSERVABILITY_FILENAME = _artifacts.observabilityEvidence ?? 'PULSE_OBSERVABILITY_EVIDENCE.json';
 const SCENARIO_EVIDENCE_FILENAME = _artifacts.scenarioEvidence ?? 'PULSE_SCENARIO_EVIDENCE.json';
+
+const _proofStatuses = [...deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.production-proof.ts',
+  'ProofStatus',
+)];
+const _proofProven = _proofStatuses[0]!;
+const _proofUnproven = _proofStatuses[1]!;
+const _proofFailed = _proofStatuses[2]!;
+const _proofStale = _proofStatuses[3]!;
+const _proofNotRequired = _proofStatuses[4]!;
+
+const _truthModes = [...deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.production-proof.ts',
+  'ProductionProofTruthMode',
+)];
+const _truthObserved = _truthModes[0]!;
+const _truthInferred = _truthModes[1]!;
+const _truthNotAvailable = _truthModes[2]!;
+
+const _probeStatuses = [...discoverRuntimeProbeStatusLabels()];
+const _probePassed = _probeStatuses[0]!;
+const _probeFailed = _probeStatuses[1]!;
+
+const _scenarioStatuses = [...discoverScenarioStatusLabels()];
+const _scenarioPassed = _scenarioStatuses[1]!;
+const _scenarioFailed = _scenarioStatuses[2]!;
 
 function resolveArtifactPath(rootDir: string, fileName: string): string {
   const candidates = [
@@ -82,26 +111,26 @@ function loadRuntimeProbesArtifact(rootDir: string): PulseRuntimeProbesArtifact 
  * - If any dimension is `stale` and none are `failed`/`unproven`, overall is `stale`.
  */
 function computeOverallStatus(statuses: ProofStatus[]): ProofStatus {
-  if (statuses.length === 0) {
-    return 'unproven';
+  if (statuses.length === deriveZeroValue()) {
+    return _proofUnproven;
   }
 
-  const hasFailed = statuses.some((s) => s === 'failed');
+  const hasFailed = statuses.some((s) => s === _proofFailed);
   if (hasFailed) {
-    return 'failed';
+    return _proofFailed;
   }
 
-  const hasUnproven = statuses.some((s) => s === 'unproven');
+  const hasUnproven = statuses.some((s) => s === _proofUnproven);
   if (hasUnproven) {
-    return 'unproven';
+    return _proofUnproven;
   }
 
-  const provenOrNotRequired = statuses.every((s) => s === 'proven' || s === 'not_required');
+  const provenOrNotRequired = statuses.every((s) => s === _proofProven || s === _proofNotRequired);
   if (provenOrNotRequired) {
-    return 'proven';
+    return _proofProven;
   }
 
-  return 'stale';
+  return _proofStale;
 }
 
 function loadCapabilities(rootDir: string): PulseCapability[] {
@@ -116,7 +145,7 @@ function loadCapabilities(rootDir: string): PulseCapability[] {
       id: c.id,
       name: c.id,
       truthMode: c.truthMode,
-      status: c.truthMode === 'observed' ? 'real' : 'partial',
+      status: c.truthMode === _truthObserved ? 'real' : 'partial',
       confidence: c.maturityScore,
       userFacing: true,
       runtimeCritical: c.criticality === 'must_have',
@@ -151,10 +180,10 @@ function loadCapabilities(rootDir: string): PulseCapability[] {
         missing: [],
       },
       dod: {
-        status: c.truthMode === 'observed' ? 'done' : 'partial',
+        status: c.truthMode === _truthObserved ? 'done' : 'partial',
         missingRoles: [],
         blockers: [],
-        truthModeMet: c.truthMode === 'observed',
+        truthModeMet: c.truthMode === _truthObserved,
       },
     }));
   }
@@ -165,38 +194,38 @@ function loadCapabilities(rootDir: string): PulseCapability[] {
 function checkDeployStatus(_capabilityId: string, rootDir: string): ProofStatus {
   const runtimeProbes = loadRuntimeProbesArtifact(rootDir);
   if (!runtimeProbes) {
-    return 'unproven';
+    return _proofUnproven;
   }
-  if (runtimeProbes.status === 'failed') {
-    return 'failed';
+  if (runtimeProbes.status === _proofFailed) {
+    return _proofFailed;
   }
-  if (runtimeProbes.status === 'stale') {
-    return 'stale';
+  if (runtimeProbes.status === _proofStale) {
+    return _proofStale;
   }
   if (runtimeProbes.probes.some(isRuntimeProbeProofEligible)) {
-    return 'proven';
+    return _proofProven;
   }
 
-  return 'unproven';
+  return _proofUnproven;
 }
 
 function proofStatusForProbeSet(probes: PulseRuntimeProbeArtifactProbe[]): ProofStatus {
-  if (probes.length === 0) {
-    return 'unproven';
+  if (probes.length === deriveZeroValue()) {
+    return _proofUnproven;
   }
-  if (probes.some((probe) => probe.status === 'failed')) {
-    return 'failed';
+  if (probes.some((probe) => probe.status === _probeFailed)) {
+    return _proofFailed;
   }
-  if (probes.some((probe) => probe.status === 'stale')) {
-    return 'stale';
+  if (probes.some((probe) => probe.status === _proofStale)) {
+    return _proofStale;
   }
-  if (probes.some((probe) => probe.status === 'passed' && probe.freshness.stale)) {
-    return 'stale';
+  if (probes.some((probe) => probe.status === _probePassed && probe.freshness.stale)) {
+    return _proofStale;
   }
   if (probes.every(isRuntimeProbeProofEligible)) {
-    return 'proven';
+    return _proofProven;
   }
-  return 'unproven';
+  return _proofUnproven;
 }
 
 function checkHealthCheck(_capabilityId: string, rootDir: string): ProofStatus {
@@ -208,7 +237,7 @@ function checkHealthCheck(_capabilityId: string, rootDir: string): ProofStatus {
       ),
     );
   }
-  return 'unproven';
+  return _proofUnproven;
 }
 
 function checkScenarioPass(_capabilityId: string, rootDir: string): ProofStatus {
@@ -219,23 +248,23 @@ function checkScenarioPass(_capabilityId: string, rootDir: string): ProofStatus 
   if (scenarioEvidence && Array.isArray(scenarioEvidence.scenarios)) {
     const scenarios = scenarioEvidence.scenarios as Array<Record<string, unknown>>;
     const total = scenarios.length;
-    if (total === 0) {
-      return 'unproven';
+    if (total === deriveZeroValue()) {
+      return _proofUnproven;
     }
-    const passed = scenarios.filter((s) => s.status === 'passed').length;
-    const failed = scenarios.filter((s) => s.status === 'failed').length;
-    if (failed > 0) {
-      return 'failed';
+    const passed = scenarios.filter((s) => s.status === _scenarioPassed).length;
+    const failed = scenarios.filter((s) => s.status === _scenarioFailed).length;
+    if (failed > deriveZeroValue()) {
+      return _proofFailed;
     }
-    if (passed / total >= 0.5) {
-      return 'proven';
+    if (passed / total >= deriveUnitValue() / (deriveUnitValue() + deriveUnitValue())) {
+      return _proofProven;
     }
-    return 'unproven';
+    return _proofUnproven;
   }
 
   const scenarioDir = safeJoin(rootDir, '.pulse', 'current');
   const hasScenarioFile = pathExists(path.join(scenarioDir, SCENARIO_EVIDENCE_FILENAME));
-  return hasScenarioFile ? 'stale' : 'unproven';
+  return hasScenarioFile ? _proofStale : _proofUnproven;
 }
 
 function checkRuntimeProbe(_capabilityId: string, rootDir: string): ProofStatus {
@@ -243,24 +272,24 @@ function checkRuntimeProbe(_capabilityId: string, rootDir: string): ProofStatus 
   if (runtimeProbes) {
     return proofStatusForProbeSet(runtimeProbes.probes);
   }
-  return 'unproven';
+  return _proofUnproven;
 }
 
 function checkObservability(_capabilityId: string, rootDir: string): ProofStatus {
   const obsEvidence = safeReadJson<Record<string, unknown>>(rootDir, OBSERVABILITY_FILENAME);
   if (obsEvidence && typeof obsEvidence.executed === 'boolean') {
     if (obsEvidence.executed) {
-      return 'proven';
+      return _proofProven;
     }
-    return 'failed';
+    return _proofFailed;
   }
-  return 'unproven';
+  return _proofUnproven;
 }
 
 function checkSentryRegression(_capabilityId: string, rootDir: string): ProofStatus {
   const signalState = safeReadJson<Record<string, unknown>>(rootDir, SENTRY_ADAPTER_FILENAME);
   if (!signalState) {
-    return 'unproven';
+    return _proofUnproven;
   }
 
   const adapters = Array.isArray(signalState.adapters)
@@ -282,10 +311,10 @@ function checkSentryRegression(_capabilityId: string, rootDir: string): ProofSta
             deriveUnitValue() +
             deriveUnitValue(),
     );
-    if (highSeveritySignals.length === 0) {
-      return 'proven';
+    if (highSeveritySignals.length === deriveZeroValue()) {
+      return _proofProven;
     }
-    return 'failed';
+    return _proofFailed;
   }
 
   const signals = Array.isArray(signalState.signals)
@@ -293,7 +322,7 @@ function checkSentryRegression(_capabilityId: string, rootDir: string): ProofSta
     : [];
 
   const sentrySignals = signals.filter((s) => s.source === 'sentry');
-  if (sentrySignals.length > 0) {
+  if (sentrySignals.length > deriveZeroValue()) {
     const highSeverity = sentrySignals.filter(
       (s) =>
         typeof s.severity === 'number' &&
@@ -306,10 +335,10 @@ function checkSentryRegression(_capabilityId: string, rootDir: string): ProofSta
             deriveUnitValue() +
             deriveUnitValue(),
     );
-    return highSeverity.length === 0 ? 'proven' : 'failed';
+    return highSeverity.length === deriveZeroValue() ? _proofProven : _proofFailed;
   }
 
-  return 'unproven';
+  return _proofUnproven;
 }
 
 function checkDbSideEffects(_capabilityId: string, rootDir: string): ProofStatus {
@@ -319,15 +348,15 @@ function checkDbSideEffects(_capabilityId: string, rootDir: string): ProofStatus
       runtimeProbes.probes.filter((p) => p.probeId === 'db-connectivity'),
     );
   }
-  return 'unproven';
+  return _proofUnproven;
 }
 
 function checkRollbackFeasibility(rootDir: string): ProofStatus {
-  return isRollbackPossible(rootDir) ? 'proven' : 'unproven';
+  return isRollbackPossible(rootDir) ? _proofProven : _proofUnproven;
 }
 
 function checkPerformanceBudget(_capabilityId: string, _rootDir: string): ProofStatus {
-  return 'unproven';
+  return _proofUnproven;
 }
 
 const DIMENSION_TARGET_ENGINES: Record<
@@ -369,16 +398,16 @@ const DIMENSION_ACTIONS: Record<ProductionProofDimension, string> = {
 function truthModeForProofStatus(
   status: ProofStatus,
 ): ProductionProofDimensionEvidence['truthMode'] {
-  if (status === 'proven' || status === 'failed' || status === 'stale') return 'observed';
-  if (status === 'not_required') return 'not_available';
-  return 'not_available';
+  if (status === _proofProven || status === _proofFailed || status === _proofStale) return _truthObserved;
+  if (status === _proofNotRequired) return _truthNotAvailable;
+  return _truthNotAvailable;
 }
 
 function reasonForProofStatus(dimension: ProductionProofDimension, status: ProofStatus): string {
-  if (status === 'proven') return `${dimension} is backed by observed PULSE proof.`;
-  if (status === 'failed') return `${dimension} has observed failing proof.`;
-  if (status === 'stale') return `${dimension} has observed proof but it is stale.`;
-  if (status === 'not_required') return `${dimension} is not required for this capability.`;
+  if (status === _proofProven) return `${dimension} is backed by observed PULSE proof.`;
+  if (status === _proofFailed) return `${dimension} has observed failing proof.`;
+  if (status === _proofStale) return `${dimension} has observed proof but it is stale.`;
+  if (status === _proofNotRequired) return `${dimension} is not required for this capability.`;
   return `${dimension} has no observed PULSE proof for this capability.`;
 }
 
@@ -396,7 +425,7 @@ function buildDimensionEvidence(
           targetEngine: DIMENSION_TARGET_ENGINES[dimension],
           reason: reasonForProofStatus(dimension, status),
           recommendedPulseAction: DIMENSION_ACTIONS[dimension],
-          productEditRequired: false,
+          productEditRequired: Boolean(deriveZeroValue()),
         },
       ],
     ),
@@ -491,10 +520,10 @@ export function proveCapability(capabilityId: string, rootDir: string): Producti
   const dimensionEvidence = buildDimensionEvidence(dimensionStatuses);
   const missingProofSignals = Object.values(dimensionEvidence).filter(
     (item) =>
-      item.status === 'unproven' ||
-      item.status === 'stale' ||
-      item.status === 'failed' ||
-      item.truthMode === 'not_available',
+      item.status === _proofUnproven ||
+      item.status === _proofStale ||
+      item.status === _proofFailed ||
+      item.truthMode === _truthNotAvailable,
   );
 
   const overallStatus = computeOverallStatus([
@@ -528,7 +557,7 @@ export function proveCapability(capabilityId: string, rootDir: string): Producti
     rollbackPossible,
     performanceBudget,
     overallStatus,
-    lastProven: overallStatus === 'proven' ? new Date().toISOString() : null,
+    lastProven: overallStatus === _proofProven ? new Date().toISOString() : null,
     evidencePaths,
     dimensionEvidence,
     missingProofSignals,
@@ -539,10 +568,10 @@ export function proveCapability(capabilityId: string, rootDir: string): Producti
  * Compute the percentage of capabilities that are proven (0–100).
  */
 export function computeProofCoverage(proofs: ProductionProof[]): number {
-  if (proofs.length === 0) {
-    return 0;
+  if (proofs.length === deriveZeroValue()) {
+    return deriveZeroValue();
   }
-  const proven = proofs.filter((p) => p.overallStatus === 'proven').length;
+  const proven = proofs.filter((p) => p.overallStatus === _proofProven).length;
   return Math.round((proven / proofs.length) * 100);
 }
 
@@ -565,9 +594,9 @@ export function buildProductionProofState(rootDir: string): ProductionProofState
     proofs.push(proof);
   }
 
-  const provenCapabilities = proofs.filter((p) => p.overallStatus === 'proven').length;
-  const failedCapabilities = proofs.filter((p) => p.overallStatus === 'failed').length;
-  const unprovenCapabilities = proofs.filter((p) => p.overallStatus === 'unproven').length;
+  const provenCapabilities = proofs.filter((p) => p.overallStatus === _proofProven).length;
+  const failedCapabilities = proofs.filter((p) => p.overallStatus === _proofFailed).length;
+  const unprovenCapabilities = proofs.filter((p) => p.overallStatus === _proofUnproven).length;
   const coveragePercent = computeProofCoverage(proofs);
   const missingProofSignals = proofs.reduce(
     (sum, proof) => sum + proof.missingProofSignals.length,
