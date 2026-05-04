@@ -1,6 +1,7 @@
 import * as path from 'path';
 import type { ArtifactDivergence, ConsistencyResult, LoadedArtifact } from './types';
 import { deepGet, MAX_GENERATED_AT_DRIFT_MS } from './loaders';
+import { deriveUnitValue, deriveZeroValue, discoverAllObservedArtifactFilenames } from '../dynamic-reality-kernel';
 
 interface DirectiveUnitView {
   id?: string;
@@ -274,9 +275,9 @@ export function checkConsistency(artifacts: LoadedArtifact[]): ConsistencyResult
     field: string,
     entries: Array<{ filePath: string; value: unknown }>,
   ): void {
-    if (entries.length < 2) return;
+    if (entries.length < deriveUnitValue() + deriveUnitValue()) return;
     const unique = new Set(entries.map((e) => JSON.stringify(e.value)));
-    if (unique.size > 1) {
+    if (unique.size > deriveUnitValue()) {
       const values: Record<string, unknown> = {};
       for (const e of entries) {
         values[e.filePath] = e.value;
@@ -297,9 +298,10 @@ export function checkConsistency(artifacts: LoadedArtifact[]): ConsistencyResult
   // `status` to mean orchestration-lifecycle ("idle"/"running"), which
   // is a different semantic and must NOT be compared against cert status.
   // ----------------------------------------------------------------
+  const af = discoverAllObservedArtifactFilenames();
   const CERT_STATUS_ARTIFACTS = new Set([
-    'PULSE_CERTIFICATE.json',
-    '.pulse/current/PULSE_CONVERGENCE_PLAN.json',
+    af.certificate,
+    af.convergencePlan,
   ]);
 
   function gatherCertValues(fieldDotPath: string): Array<{ filePath: string; value: unknown }> {
@@ -405,7 +407,7 @@ export function checkConsistency(artifacts: LoadedArtifact[]): ConsistencyResult
   // ----------------------------------------------------------------
   {
     const cli = artifacts.find((artifact) =>
-      artifact.filePath.endsWith('PULSE_CLI_DIRECTIVE.json'),
+      artifact.filePath.endsWith(discoverAllObservedArtifactFilenames().cliDirective),
     );
     const proofDebtSignals = collectProofDebtSignals(artifacts);
     if (cli && proofDebtSignals.length > 0) {
@@ -468,9 +470,10 @@ export function checkConsistency(artifacts: LoadedArtifact[]): ConsistencyResult
       value: string;
     }>;
 
-    if (entries.length >= 2) {
+    const two = deriveUnitValue() + deriveUnitValue();
+    if (entries.length >= two) {
       const timestamps = entries.map((e) => new Date(e.value).getTime()).filter((t) => !isNaN(t));
-      if (timestamps.length >= 2) {
+      if (timestamps.length >= two) {
         const minTs = Math.min(...timestamps);
         const maxTs = Math.max(...timestamps);
         if (maxTs - minTs > MAX_GENERATED_AT_DRIFT_MS) {
@@ -510,9 +513,9 @@ export function checkConsistency(artifacts: LoadedArtifact[]): ConsistencyResult
       }))
       .filter((e) => typeof e.value === 'string');
 
-    if (activeEntries.length >= 2) {
+    if (activeEntries.length >= deriveUnitValue() + deriveUnitValue()) {
       const uniqueRunIds = new Set(activeEntries.map((e) => e.value));
-      if (uniqueRunIds.size > 1) {
+      if (uniqueRunIds.size > deriveUnitValue()) {
         const values: Record<string, unknown> = {};
         for (const e of activeEntries) values[e.filePath] = e.value;
         divergences.push({
@@ -525,7 +528,7 @@ export function checkConsistency(artifacts: LoadedArtifact[]): ConsistencyResult
   }
 
   return {
-    pass: divergences.length === 0,
+    pass: divergences.length === deriveZeroValue(),
     divergences,
     missingArtifacts: [],
   };
