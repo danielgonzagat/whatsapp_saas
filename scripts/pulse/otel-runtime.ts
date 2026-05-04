@@ -159,7 +159,7 @@ function nowIso(): string {
 
 function randomHex(len: number): string {
   return crypto
-    .randomBytes(Math.ceil(len / 2))
+    .randomBytes(Math.ceil(len / (deriveUnitValue() + deriveUnitValue())))
     .toString('hex')
     .slice(0, len);
 }
@@ -713,7 +713,7 @@ function buildSpanToPathMappings(
     }
 
     const confidence =
-      matchedNodeIds.length > 0 ? Math.min(1, matchedNodeIds.length * 0.4) : route ? 0.3 : 0.1;
+      matchedNodeIds.length > 0 ? Math.min(deriveUnitValue(), matchedNodeIds.length * 0.4) : route ? 0.3 : 0.1;
 
     mappings.push({
       spanName: span.name,
@@ -1514,7 +1514,7 @@ export function collectRuntimeTraces(
         'Runtime traces are not available because this module does not fetch OTLP over HTTP.',
     );
     traces = [];
-    source = 'not_available';
+    source = OTEL_SOURCE_NOT_AVAILABLE;
     sourceDetails = {
       kind: OTEL_KIND_OTEL_COLLECTOR,
       runtimeObserved: false,
