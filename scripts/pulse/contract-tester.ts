@@ -33,6 +33,9 @@ import {
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
+  discoverNestjsDecoratorNamesFromTypeEvidence,
+  discoverRouteSeparatorFromRuntime,
+  discoverSourceExtensionsFromObservedTypescript,
   discoverStructuralNodeKindLabels,
 } from './dynamic-reality-kernel';
 
@@ -66,6 +69,8 @@ const AUTH_TYPE_LABELS = deriveStringUnionMembersFromTypeContract(
 
 const NODE_KIND_LABELS = discoverStructuralNodeKindLabels();
 
+const NESTJS_DECORATOR_NAMES = discoverNestjsDecoratorNamesFromTypeEvidence();
+
 function isContractStatus(s: string, label: string): boolean {
   return CONTRACT_STATUS_LABELS.has(s) && s === label;
 }
@@ -84,17 +89,26 @@ function isNodeKind(s: string, label: string): boolean {
 
 function resolveAuthLabel(predicate: (s: string) => boolean): ProviderContract['authType'] {
   const found = [...AUTH_TYPE_LABELS].find(predicate);
-  return (found ?? [...AUTH_TYPE_LABELS].find(l => l === 'none') ?? 'none') as ProviderContract['authType'];
+  if (found) return found as ProviderContract['authType'];
+  const fallback = [...AUTH_TYPE_LABELS][0];
+  if (!fallback) throw new Error('resolveAuthLabel: no auth type labels available from type contract');
+  return fallback as ProviderContract['authType'];
 }
 
 function resolveSeverityLabel(predicate: (s: string) => boolean): SchemaDiffSeverity {
   const found = [...DIFF_SEVERITY_LABELS].find(predicate);
-  return (found ?? [...DIFF_SEVERITY_LABELS].find(l => l === 'non_breaking') ?? 'non_breaking') as SchemaDiffSeverity;
+  if (found) return found as SchemaDiffSeverity;
+  const fallback = [...DIFF_SEVERITY_LABELS][0];
+  if (!fallback) throw new Error('resolveSeverityLabel: no severity labels available from type contract');
+  return fallback as SchemaDiffSeverity;
 }
 
 function resolveStatusLabel(predicate: (s: string) => boolean): ContractStatus {
   const found = [...CONTRACT_STATUS_LABELS].find(predicate);
-  return (found ?? [...CONTRACT_STATUS_LABELS].find(l => l === 'unknown') ?? 'unknown') as ContractStatus;
+  if (found) return found as ContractStatus;
+  const fallback = [...CONTRACT_STATUS_LABELS][0];
+  if (!fallback) throw new Error('resolveStatusLabel: no status labels available from type contract');
+  return fallback as ContractStatus;
 }
 
 // ---------------------------------------------------------------------------
@@ -213,7 +227,7 @@ export function mergeContracts(
       result.push({
         ...baseline,
         expectedHeaders: uniqueStrings([...baseline.expectedHeaders, ...dc.expectedHeaders]),
-        authType:         isAuthType(baseline.authType, [...AUTH_TYPE_LABELS].find(l => l === 'none') ?? 'none') ? dc.authType : baseline.authType,
+        authType:         isAuthType(baseline.authType, resolveAuthLabel(l => l === 'none')) ? dc.authType : baseline.authType,
         status: resolveStatusLabel(l => l === 'untested'),
         lastValidated: null,
         issues: uniqueStrings([
@@ -257,8 +271,8 @@ export function mergeContracts(
 }
 
 function buildSdkImportContract(packageName: string): ProviderContract {
-  const noneAuth = [...AUTH_TYPE_LABELS].find(l => l === 'none') ?? 'none';
-  const generatedStatus = [...CONTRACT_STATUS_LABELS].find(l => l === 'generated') ?? 'generated';
+  const noneAuth = resolveAuthLabel(() => true);
+  const generatedStatus = resolveStatusLabel(() => true);
   return {
     provider: packageName,
     endpoint: '/sdk-client',
@@ -290,7 +304,7 @@ export function scanProviderSdkUsage(rootDir: string): string[] {
   const backendDir = findBackendDir(rootDir);
   if (!backendDir) return [];
 
-  const files = walkFiles(backendDir, ['.ts', '.tsx', '.js', '.jsx']);
+  const files = walkFiles(backendDir, [...discoverSourceExtensionsFromObservedTypescript()]);
   for (const filePath of files) {
     let content: string;
     try {
@@ -750,7 +764,7 @@ function dedupeContracts(contracts: ProviderContract[]): ProviderContract[] {
           ? existing.expectedResponseSchema
           : contract.expectedResponseSchema,
       expectedHeaders: uniqueStrings([...existing.expectedHeaders, ...contract.expectedHeaders]),
-      authType: isAuthType(existing.authType, [...AUTH_TYPE_LABELS].find(l => l === 'none') ?? 'none') ? contract.authType : existing.authType,
+      authType: isAuthType(existing.authType, resolveAuthLabel(l => l === 'none')) ? contract.authType : existing.authType,
       issues: uniqueStrings([...existing.issues, ...contract.issues]),
     });
   }
@@ -811,7 +825,7 @@ export function defineProviderContracts(rootDir: string): ProviderContract[] {
   const backendDir = findBackendDir(rootDir);
 
   if (backendDir) {
-    const files = walkFiles(backendDir, ['.ts', '.tsx']);
+    const files = walkFiles(backendDir, [...discoverSourceExtensionsFromObservedTypescript()]);
     for (const filePath of files) {
       let content: string;
       try {
@@ -1047,7 +1061,7 @@ function surroundingText(content: string, needle: string, radius: number): strin
 
 function extractInternalAPIContracts(rootDir: string): ProviderContract[] {
   const contracts: ProviderContract[] = [];
-  const files = walkFiles(rootDir, ['.ts']);
+  const files = walkFiles(rootDir, [...discoverSourceExtensionsFromObservedTypescript()]);
   const seen = new Set<string>();
 
   for (const filePath of files) {
@@ -1093,7 +1107,7 @@ function findControllerPrefix(source: ts.SourceFile): string {
   for (const classDeclaration of classes) {
     for (const decorator of ts.getDecorators(classDeclaration) ?? []) {
       const call = readDecoratorCall(decorator);
-      if (!call || !ts.isIdentifier(call.expression) || call.expression.text !== 'Controller') {
+      if (!call || !ts.isIdentifier(call.expression) || !NESTJS_DECORATOR_NAMES.has(call.expression.text)) {
         continue;
       }
 
@@ -1144,11 +1158,12 @@ function normalizeHttpMethod(value: string): string | null {
 }
 
 function normalizeRoute(route: string): string {
+  const sep = discoverRouteSeparatorFromRuntime();
   return (
     String(route || '')
       .trim()
-      .replace(/\/+/g, '/')
-      .replace(/\/$/, '') || '/'
+      .replace(/\/+/g, sep)
+      .replace(/\/$/, '') || sep
   );
 }
 
@@ -1300,7 +1315,7 @@ function scanEndpointsFromSource(rootDir: string): EndpointDescriptor[] {
   if (!backendDir) return [];
 
   const endpoints: EndpointDescriptor[] = [];
-  const files = walkFiles(backendDir, ['.ts']);
+  const files = walkFiles(backendDir, [...discoverSourceExtensionsFromObservedTypescript()]);
   const seen = new Set<string>();
 
   for (const filePath of files) {
