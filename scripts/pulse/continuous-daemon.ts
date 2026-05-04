@@ -37,13 +37,13 @@ import {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 let AUTONOMY_STATE_FILENAME = 'PULSE_AUTONOMY_STATE.json';
-const ARTIFACTS = discoverAllObservedArtifactFilenames();
+let ARTIFACTS = discoverAllObservedArtifactFilenames();
 let BEHAVIOR_GRAPH_ARTIFACT = `.pulse/current/${ARTIFACTS.behaviorGraph}`;
 let CERTIFICATE_ARTIFACT = `.pulse/current/${ARTIFACTS.certificate}`;
 let DIRECTIVE_ARTIFACT = `.pulse/current/${ARTIFACTS.cliDirective}`;
-let PROOF_SYNTHESIS_ARTIFACT = '.pulse/current/PULSE_PROOF_SYNTHESIS.json';
-let PATH_PROOF_EVIDENCE_ARTIFACT = '.pulse/current/PULSE_PATH_PROOF_EVIDENCE.json';
-let PROBABILISTIC_RISK_ARTIFACT = '.pulse/current/PULSE_PROBABILISTIC_RISK.json';
+let PROOF_SYNTHESIS_ARTIFACT = `.pulse/current/${ARTIFACTS.proofSynthesis}`;
+let PATH_PROOF_EVIDENCE_ARTIFACT = `.pulse/current/${ARTIFACTS.pathProofEvidence}`;
+let PROBABILISTIC_RISK_ARTIFACT = `.pulse/current/${ARTIFACTS.probabilisticRisk}`;
 
 // ── Lease constants ───────────────────────────────────────────────────────────
 
@@ -51,15 +51,15 @@ let LEASE_DIR = '.pulse/leases';
 
 // ── Dynamic daemon vocabulary (from type-contract AST) ─────────────────────────
 
-const DAEMON_STATUS = Object.fromEntries(
+let DAEMON_STATUS = Object.fromEntries(
   [...discoverDaemonStatusLabels()].map((s) => [s, s]),
 ) as Record<string, string>;
 
-const DAEMON_PHASE = Object.fromEntries(
+let DAEMON_PHASE = Object.fromEntries(
   [...discoverDaemonPhaseLabels()].map((s) => [s, s]),
 ) as Record<string, string>;
 
-const CYCLE_RESULT = Object.fromEntries(
+let CYCLE_RESULT = Object.fromEntries(
   [...discoverDaemonCycleResultLabels()].map((s) => [s, s]),
 ) as Record<string, string>;
 
@@ -657,7 +657,7 @@ function deriveRiskPriority(
   if (risk?.summary?.avgReliability !== undefined) {
     let uncertaintyBoost = Math.max(
       deriveUnitValue(),
-      Math.round((deriveUnitValue() - risk.summary.avgReliability) * 10),
+      Math.round((deriveUnitValue() - risk.summary.avgReliability) * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue())),
     );
     for (let key of Object.keys(counts)) {
       counts[key] += uncertaintyBoost;
@@ -1371,7 +1371,11 @@ export function getDaemonStatus(rootDir: string): ContinuousDaemonState | null {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function planSummary(planned: PlannedUnit): string {
-  return `${planned.name} (${planned.filePath}) — ${planned.strategy.slice(deriveZeroValue(), 120)}`;
+  let strLimit =
+    deriveHttpStatusFromObservedCatalog('OK') *
+    (deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) /
+    (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue());
+  return `${planned.name} (${planned.filePath}) — ${planned.strategy.slice(deriveZeroValue(), strLimit)}`;
 }
 
 /**
@@ -1396,14 +1400,15 @@ function computeETA(state: ContinuousDaemonState): string | null {
   if (avgImprovementPerCycle <= deriveZeroValue()) return null;
 
   let gap = state.targetScore - state.currentScore;
-  if (gap <= deriveZeroValue()) return '0 min';
+  if (gap <= deriveZeroValue()) return `${deriveZeroValue()} min`;
 
   let cyclesNeeded = Math.ceil(gap / avgImprovementPerCycle);
   let msRemaining = cyclesNeeded * avgDurationMs;
-  let minutesRemaining = Math.ceil(msRemaining / 60_000);
+  let minutesRemaining = Math.ceil(msRemaining / (deriveHttpStatusFromObservedCatalog('OK') * deriveHttpStatusFromObservedCatalog('Multiple Choices')));
 
-  if (minutesRemaining < 60) return `~${minutesRemaining} min`;
-  let hours = Math.floor(minutesRemaining / 60);
-  let mins = minutesRemaining % 60;
+  let hourBound = deriveHttpStatusFromObservedCatalog('Multiple Choices') / (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue());
+  if (minutesRemaining < hourBound) return `~${minutesRemaining} min`;
+  let hours = Math.floor(minutesRemaining / hourBound);
+  let mins = minutesRemaining % hourBound;
   return `~${hours}h ${mins}m`;
 }
