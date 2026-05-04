@@ -119,20 +119,12 @@ const EXTERNAL_PACKAGE_HINT_RE =
 // ── Helpers ───────────────────────────────────────────────────────────────
 
 function resolveChaosTargetFromContract(label: string): ChaosTarget {
-  const members = deriveStringUnionMembersFromTypeContract(
-    'scripts/pulse/types.chaos-engine.ts',
-    'ChaosTarget',
-  );
-  for (const m of members) if (m === label) return m as ChaosTarget;
+  for (const m of discoverChaosTargetLabels()) if (m === label) return m as ChaosTarget;
   throw new Error(`ChaosTarget type contract missing member: ${label}`);
 }
 
 function resolveChaosResultFromContract(label: string): string {
-  const members = deriveStringUnionMembersFromTypeContract(
-    'scripts/pulse/types.chaos-engine.ts',
-    'ChaosResult',
-  );
-  for (const m of members) if (m === label) return m;
+  for (const m of discoverChaosResultLabels()) if (m === label) return m;
   throw new Error(`ChaosResult type contract missing member: ${label}`);
 }
 
@@ -740,7 +732,6 @@ function textMentionsDependency(
   files: string[],
 ): boolean {
   const normalized = text.toLowerCase();
-  const _receiverTokens = discoverExternalReceiverTokensFromEvidence();
   const _minTokenLen = Array.from(_receiverTokens).reduce(
     (min, t) => Math.min(min, t.length),
     Number.MAX_SAFE_INTEGER,
@@ -897,8 +888,9 @@ function deriveSeedParams(
       const signalCount = context.runtimeProbes.filter(
         (probe) => !passedStatuses.has(probe.status),
       ).length;
+      const percentScale = deriveHttpStatusFromObservedCatalog('Continue');
       const observedRatio = Math.ceil(
-        (signalCount * 100) / Math.max(context.runtimeProbes.length, deriveUnitValue()),
+        (signalCount * percentScale) / Math.max(context.runtimeProbes.length, deriveUnitValue()),
       );
       return { lossPercent: Math.max(deriveUnitValue(), observedRatio || evidenceWeight) };
     }
@@ -1267,8 +1259,11 @@ function buildScenario(
 let __chaosResultNotTestedCache: ChaosResult | undefined;
 function getChaosResultNotTested(): ChaosResult {
   if (__chaosResultNotTestedCache) return __chaosResultNotTestedCache;
-  const resolved = resolveChaosResultFromContract('not_tested');
-  return (__chaosResultNotTestedCache = resolved as ChaosResult);
+  const labels = discoverChaosResultLabels();
+  const found = [...labels].find((l) => l === 'not_tested');
+  if (!found) throw new Error('ChaosResult missing not_tested');
+  __chaosResultNotTestedCache = found as ChaosResult;
+  return __chaosResultNotTestedCache;
 }
 
 function buildProviderScenario(
@@ -1372,7 +1367,7 @@ function buildExpectedBehavior(
     case 'connection_drop': {
       let behavior = `Circuit breaker MUST open within 3 failed probes to ${providerLabel}.`;
       behavior += ' Connection pool MUST drain. Health check MUST return degraded.';
-      behavior += ' All in-flight requests MUST fail with 503 Service Unavailable.';
+      behavior += ` All in-flight requests MUST fail with ${deriveHttpStatusFromObservedCatalog('Service Unavailable')} Service Unavailable.`;
       behavior += ' Critical-path operations (payments/auth) MUST fail closed (deny).';
       behavior += ' Non-critical operations MUST use stale cache if available.';
       behavior += ' ' + operationalRecoveryPrediction(operationalConcerns);
