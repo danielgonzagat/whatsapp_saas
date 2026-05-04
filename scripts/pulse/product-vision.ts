@@ -160,11 +160,11 @@ function stateWeight<State extends string>(status: State, statusOrder: State[]):
 }
 
 function strongestState<State extends string>(statusOrder: State[]): State | undefined {
-  return statusOrder[0];
+  return statusOrder[deriveZeroValue()];
 }
 
 function weakestState<State extends string>(statusOrder: State[]): State | undefined {
-  return statusOrder[statusOrder.length - 1];
+  return statusOrder[statusOrder.length - deriveUnitValue()];
 }
 
 function discoverReadinessBandLabels(): string[] {
@@ -193,7 +193,7 @@ function stateFromCompletion<State extends string>(
 
   for (let index = deriveZeroValue(); index < statusOrder.length - deriveUnitValue(); index += deriveUnitValue()) {
     const current = statusOrder[index];
-    const next = statusOrder[index + 1];
+    const next = statusOrder[index + deriveUnitValue()];
     const boundary = quotient(
       stateWeight(current, statusOrder) + stateWeight(next, statusOrder),
       deriveUnitValue() + deriveUnitValue(),
@@ -318,7 +318,7 @@ function bestStatus(
   capSeq: PulseCapabilityStatus[],
 ): PulseCapabilityStatus {
   const all = [...capStates, ...flowStates];
-  if (all.length === 0) {
+  if (all.length === deriveZeroValue()) {
     return weakestState(capSeq) ?? deriveWeakestCapabilityStatus() as PulseCapabilityStatus;
   }
 
@@ -327,22 +327,22 @@ function bestStatus(
       status: status as PulseCapabilityStatus,
       index: capSeq.indexOf(status as PulseCapabilityStatus),
     }))
-    .filter((entry) => entry.index >= 0)
+    .filter((entry) => entry.index >= deriveZeroValue())
     .sort((left, right) => left.index - right.index);
 
-  const strongest = ranked[0]?.status;
+    const strongest = ranked[deriveZeroValue()]?.status;
   if (!strongest) {
     return weakestState(capSeq) ?? deriveWeakestCapabilityStatus() as PulseCapabilityStatus;
   }
 
-  const weakest = ranked[ranked.length - 1]?.status;
+    const weakest = ranked[ranked.length - deriveUnitValue()]?.status;
   if (
     weakest &&
     strongest === strongestState(capSeq) &&
     weakest === weakestState(capSeq) &&
     capSeq.length > deriveUnitValue()
   ) {
-    return capSeq[1];
+    return capSeq[deriveUnitValue()];
   }
 
   return strongest;
@@ -436,11 +436,8 @@ function runHitsModule(
   entry: BuildProductVisionInput['resolvedManifest']['modules'][number],
   capIds: string[],
 ): boolean {
-  if (flow.capabilityIds.some((capabilityId) => capIds.includes(capabilityId))) {
-    return true;
-  }
-
-  return familiesOverlap(flowFamilies(flow), moduleFamilies(entry));
+  return flow.capabilityIds.some((capabilityId) => capIds.includes(capabilityId))
+    || familiesOverlap(flowFamilies(flow), moduleFamilies(entry));
 }
 
 function buildSurfaceBlockers(
@@ -655,7 +652,7 @@ export function buildProductVision(input: BuildProductVisionInput): PulseProduct
           .map((probeId) => runtimeProbes.find((probe) => probe.probeId === probeId))
           .filter((probe): probe is NonNullable<typeof probe> => Boolean(probe))
           .filter((probe) =>
-            completeRuntimeProbeState ? probe.status !== completeRuntimeProbeState : true,
+            completeRuntimeProbeState ? probe.status !== completeRuntimeProbeState : !deriveZeroValue(),
           )
           .map((probe) => probe.summary || `Runtime probe ${probe.probeId} is not passing.`),
         ...experienceSurfaces.flatMap((surface) =>
