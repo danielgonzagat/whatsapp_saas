@@ -346,7 +346,7 @@ export class ManualSpanTracer {
       traceId,
       rootSpan,
       spans,
-      totalDurationMs: spans.reduce((max, s) => Math.max(max, s.durationMs), 0),
+      totalDurationMs: spans.reduce((max, s) => Math.max(max, s.durationMs), deriveZeroValue()),
       errorSpans,
       serviceBoundaries: Math.max(deriveZeroValue(), serviceBoundaries),
     };
@@ -645,7 +645,7 @@ function extractRouteFromSpan(span: OtelSpan): { method: string | null; path: st
   const attributeEntries = Object.entries(span.attributes);
   const methodValue = attributeEntries.find(([key, value]) => {
     const loweredKey = key.toLowerCase();
-    return loweredKey.includes('method') && typeof value === 'string' && value.length > 0;
+    return loweredKey.includes('method') && typeof value === 'string' && value.length > deriveZeroValue();
   })?.[1];
   const pathValue = attributeEntries.find(([key, value]) => {
     const loweredKey = key.toLowerCase();
@@ -714,7 +714,7 @@ function buildSpanToPathMappings(
     }
 
     const confidence =
-      matchedNodeIds.length > 0 ? Math.min(deriveUnitValue(), matchedNodeIds.length * 0.4) : route ? 0.3 : 0.1;
+      matchedNodeIds.length > deriveZeroValue() ? Math.min(deriveUnitValue(), matchedNodeIds.length * 0.4) : route ? 0.3 : 0.1;
 
     mappings.push({
       spanName: span.name,
@@ -732,14 +732,14 @@ function buildSpanToPathMappings(
 function computeTraceSummary(traces: OtelTrace[]): OtelTraceSummary {
   const serviceMap: Record<string, number> = {};
   const endpointMap: Record<string, number> = {};
-  let totalSpans = 0;
-  let errorTraces = 0;
+  let totalSpans = deriveZeroValue();
+  let errorTraces = deriveZeroValue();
   const durations: number[] = [];
 
   for (const trace of traces) {
     totalSpans += trace.spans.length;
     durations.push(trace.totalDurationMs);
-    if (trace.errorSpans > 0) errorTraces++;
+    if (trace.errorSpans > deriveZeroValue()) errorTraces++;
 
     for (const span of trace.spans) {
       const svc = span.serviceName || 'unknown';
@@ -762,9 +762,9 @@ function computeTraceSummary(traces: OtelTrace[]): OtelTraceSummary {
     totalSpans,
     errorTraces,
     avgDurationMs:
-      traces.length > 0 ? Math.round(durations.reduce((a, b) => a + b, 0) / traces.length) : 0,
-    p95DurationMs: sorted.length > 0 ? sorted[p95Idx] : 0,
-    p99DurationMs: sorted.length > 0 ? sorted[p99Idx] : 0,
+      traces.length > deriveZeroValue() ? Math.round(durations.reduce((a, b) => a + b, deriveZeroValue()) / traces.length) : deriveZeroValue(),
+    p95DurationMs: sorted.length > deriveZeroValue() ? sorted[p95Idx] : deriveZeroValue(),
+    p99DurationMs: sorted.length > deriveZeroValue() ? sorted[p99Idx] : deriveZeroValue(),
     serviceMap,
     endpointMap,
   };
@@ -900,7 +900,7 @@ function generateAstBasedTraces(
     // Pick a root: prefer an AST-resolved HTTP route, fall back to structural evidence.
     let rootName: string;
     let rootService: string;
-    if (httpRoutes.length > 0) {
+    if (httpRoutes.length > deriveZeroValue()) {
       const route = stableChoice(httpRoutes, `${traceSeed}:root-route`);
       rootName = `${route.method} ${route.routePath}`;
       rootService = route.service;
@@ -912,7 +912,7 @@ function generateAstBasedTraces(
     const rootSpan = createManualSpanForTrace(
       traceId,
       null,
-      0,
+      deriveZeroValue(),
       rootName,
       'server',
       rootService,
@@ -982,7 +982,7 @@ function generateAstBasedTraces(
       traceId,
       rootSpan,
       spans,
-      totalDurationMs: spans.reduce((max, s) => Math.max(max, s.durationMs), 0),
+      totalDurationMs: spans.reduce((max, s) => Math.max(max, s.durationMs), deriveZeroValue()),
       errorSpans,
       serviceBoundaries: Math.max(deriveZeroValue(), serviceBoundaries),
     });
@@ -1017,7 +1017,7 @@ function pickAstEdgeFiles(
   structCtx: StructuralGraphContext,
   seed: string,
 ): { fromFile: string; toFile: string } {
-  if (astCtx.edges.length > 0) {
+  if (astCtx.edges.length > deriveZeroValue()) {
     const edge = stableChoice(
       [...astCtx.edges].sort((a, b) => `${a.from}->${a.to}`.localeCompare(`${b.from}->${b.to}`)),
       seed,
@@ -1029,7 +1029,7 @@ function pickAstEdgeFiles(
       toFile: toSym?.filePath || 'unknown.ts',
     };
   }
-  if (structCtx.edges.length > 0) {
+  if (structCtx.edges.length > deriveZeroValue()) {
     const edge = stableChoice(
       [...structCtx.edges].sort((a, b) => `${a.from}->${a.to}`.localeCompare(`${b.from}->${b.to}`)),
       seed,
@@ -1058,7 +1058,7 @@ function buildChildSpanName(
           `${b.httpMethod || ''} ${b.routePath || ''} ${b.filePath}`,
         ),
       );
-    if (routes.length > 0) {
+    if (routes.length > deriveZeroValue()) {
       const r = stableChoice(routes, `${seed}:route`);
       return `${r.httpMethod} ${r.routePath}`;
     }
@@ -1100,7 +1100,7 @@ function buildSiblingSpanName(astCtx: AstGraphContext, seed: string): string {
   const queueOps = ['add', 'process', 'complete', 'fail', 'retry'];
 
   // Prefer a symbol name from the AST
-    if (astCtx.symbols.size > 0 && stableNumber(`${seed}:prefer-symbol`, deriveUnitValue() + deriveUnitValue()) === deriveZeroValue()) {
+    if (astCtx.symbols.size > deriveZeroValue() && stableNumber(`${seed}:prefer-symbol`, deriveUnitValue() + deriveUnitValue()) === deriveZeroValue()) {
     const symbols = [...astCtx.symbols.values()].sort((a, b) =>
       `${a.kind}:${a.name}:${a.filePath}`.localeCompare(`${b.kind}:${b.name}:${b.filePath}`),
     );
@@ -1142,12 +1142,12 @@ function buildStructuralFallbackSpanName(
   const symbols = [...astCtx.symbols.values()].sort((a, b) =>
     `${a.kind}:${a.name}:${a.filePath}`.localeCompare(`${b.kind}:${b.name}:${b.filePath}`),
   );
-  if (symbols.length > 0) {
+  if (symbols.length > deriveZeroValue()) {
     const symbol = stableChoice(symbols, `${seed}:symbol`);
     return `${symbol.kind}:${symbol.name}`;
   }
   const nodeFiles = Object.values(structCtx.nodeFiles).filter(Boolean).sort();
-  if (nodeFiles.length > 0) {
+  if (nodeFiles.length > deriveZeroValue()) {
     const filePath = stableChoice(nodeFiles, `${seed}:file`);
     return `file:${path.basename(filePath, path.extname(filePath))}`;
   }
@@ -1159,7 +1159,7 @@ function inferServiceFromAvailableSymbols(astCtx: AstGraphContext, seed: string)
     .map((symbol) => path.basename(path.dirname(symbol.filePath)))
     .filter(Boolean)
     .sort();
-  return serviceCandidates.length > 0
+  return serviceCandidates.length > deriveZeroValue()
     ? stableChoice(serviceCandidates, `${seed}:service`)
     : 'unknown';
 }
@@ -1439,7 +1439,7 @@ export function loadTracesFromFile(filePath: string): OtelTrace[] {
       traceId,
       rootSpan,
       spans,
-      totalDurationMs: spans.reduce((max, s) => Math.max(max, s.durationMs), 0),
+      totalDurationMs: spans.reduce((max, s) => Math.max(max, s.durationMs), deriveZeroValue()),
       errorSpans,
       serviceBoundaries: Math.max(deriveZeroValue(), serviceBoundaries),
     });
@@ -1545,7 +1545,7 @@ export function collectRuntimeTraces(
     };
   }
 
-  const summary = traces.length > 0 ? computeTraceSummary(traces) : emptyTraceSummary();
+  const summary = traces.length > deriveZeroValue() ? computeTraceSummary(traces) : emptyTraceSummary();
 
   const nodesAndFiles = Object.entries(structCtx.nodeFiles).map(([nodeId, filePath]) => ({
     nodeId,
@@ -1564,9 +1564,9 @@ export function collectRuntimeTraces(
     spanToPathMappings,
     staticGraphCoverage: {
       totalStaticEdges: structCtx.edges.length,
-      observedInRuntime: 0,
+      observedInRuntime: deriveZeroValue(),
       missingFromRuntime: structCtx.edges.length,
-      coveragePercent: 0,
+      coveragePercent: deriveZeroValue(),
     },
     runtimeOnlyEdges: [],
   };
@@ -1619,7 +1619,7 @@ export function compareWithStaticGraph(
   }
 
   const observedInRuntime =
-    staticEdgeSet.size > 0 ? [...staticEdgeSet].filter((e) => runtimeEdgeSet.has(e)).length : 0;
+    staticEdgeSet.size > deriveZeroValue() ? [...staticEdgeSet].filter((e) => runtimeEdgeSet.has(e)).length : deriveZeroValue();
 
   return {
     ...evidence,
@@ -1681,7 +1681,7 @@ export function compareWithAstGraph(
   }
 
   const observedInRuntime =
-    astEdgeSet.size > 0 ? [...astEdgeSet].filter((e) => runtimeEdgeSet.has(e)).length : 0;
+    astEdgeSet.size > deriveZeroValue() ? [...astEdgeSet].filter((e) => runtimeEdgeSet.has(e)).length : deriveZeroValue();
 
   return {
     coverage: {
