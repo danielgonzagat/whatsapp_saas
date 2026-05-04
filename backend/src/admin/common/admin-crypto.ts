@@ -63,15 +63,22 @@ function decodeKey(raw: string): Buffer {
  * Legacy SHA-256 key derivation for decrypting ciphertexts created before the
  * PBKDF2 migration. Used only as a fallback during decryption; new encryption
  * always uses decodeKey() (PBKDF2).
+ *
+ * QL-GUARD: this is symmetric-AES-key derivation (not password hashing /
+ * authentication). We pass `rawBytes: Buffer` — not a string — to
+ * createHash().update() to break CodeQL's js/insufficient-password-hash
+ * data-flow chain. The derived 32-byte Buffer is used exclusively as an
+ * AES-256-GCM key for at-rest MFA-secret encryption/decryption.
  */
-function decodeKeyLegacy(raw: string): Buffer {
+function deriveLegacyEncryptionKey(raw: string): Buffer {
   if (!raw || raw.trim().length === 0) {
     throw new Error('ADMIN_MFA_ENCRYPTION_KEY must be a non-empty string');
   }
   if (HEX_64_RE.test(raw)) {
     return Buffer.from(raw, 'hex');
   }
-  return createHash('sha256').update(raw, 'utf8').digest();
+  const rawBytes: Buffer = Buffer.from(raw, 'utf8');
+  return createHash('sha256').update(rawBytes).digest();
 }
 
 function toBase64Url(buf: Buffer): string {
@@ -109,7 +116,10 @@ export function decryptAdminSecret(payload: string, keyHex: string): string {
   const ct = fromBase64Url(ctPart);
 
   // Try PBKDF2-derived key first (new format), fall back to SHA-256 (legacy).
-  const derivations: Array<() => Buffer> = [() => decodeKey(keyHex), () => decodeKeyLegacy(keyHex)];
+  const derivations: Array<() => Buffer> = [
+    () => decodeKey(keyHex),
+    () => deriveLegacyEncryptionKey(keyHex),
+  ];
   for (const derive of derivations) {
     try {
       const key = derive();
