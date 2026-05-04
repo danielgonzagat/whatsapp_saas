@@ -24,10 +24,17 @@ import {
   deriveZeroValue,
   deriveUnitValue,
   deriveCatalogPercentScaleFromObservedCatalog,
+  discoverAllObservedArtifactFilenames,
+  discoverCapabilityStatusLabels,
   discoverConvergenceExecutionModeLabels,
   discoverConvergenceRiskLevelLabels,
   discoverExecutionMatrixPathStatusLabels,
   discoverExecutionMatrixPathSourceLabels,
+  discoverFlowProjectionStatusLabels,
+  discoverHarnessExecutionStatusLabels,
+  discoverStructuralNodeKindLabels,
+  discoverStructuralRoleLabels,
+  discoverTruthModeLabels,
 } from './dynamic-reality-kernel';
 interface BuildExecutionMatrixInput {
   structuralGraph: PulseStructuralGraph;
@@ -87,7 +94,11 @@ function isMappedStaticGrammar(entry: MatrixEvidence): boolean {
 }
 
 function isElevatedRiskGrammar(risk: MatrixPathRisk): boolean {
-  return discoverConvergenceRiskLevelLabels().has(risk) && risk !== 'medium';
+  const riskLabels = [...discoverConvergenceRiskLevelLabels()];
+  const idx = riskLabels.indexOf(risk);
+  if (idx < 0) return false;
+  const u = deriveUnitValue();
+  return idx < u + u + u;
 }
 
 function riskOrderGrammar(risk: MatrixPathRisk): number {
@@ -208,7 +219,8 @@ function isCriticalCapability(capability: PulseCapability | null): boolean {
   return Boolean(capability?.runtimeCritical || capability?.userFacing);
 }
 function flowCriticalityGrammar(flow: PulseFlowProjectionItem | null): boolean {
-  return Boolean(flow && (sameGrammar(flow.status, 'real') || hasItemsGrammar(flow.routePatterns)));
+  const statusLabels = [...discoverFlowProjectionStatusLabels()];
+  return Boolean(flow && (flow.status === statusLabels.at(deriveZeroValue()) || hasItemsGrammar(flow.routePatterns)));
 }
 function buildRequiredEvidence(args: {
   capability: PulseCapability | null;
@@ -493,13 +505,14 @@ function classifyTraversalGrammar(args: {
   requiredEvidence: PulseExecutionMatrixEvidenceRequirement[];
   hasExecutableEntrypoint: boolean;
 }): PulseExecutionMatrixPathStatus {
+  const STATUSES = [...discoverExecutionMatrixPathStatusLabels()];
+  const [OP, OF, UT, OO, BHR, UR, IO, NE] = STATUSES as PulseExecutionMatrixPathStatus[];
+  const statusLabelsSet = new Set(STATUSES);
   if (args.chain && hasItemsGrammar(args.chain.failurePoints)) {
-    return args.observedEvidence.some((entry) => isFailureGrammar(entry.status))
-      ? 'observed_fail'
-      : 'inferred_only';
+    return args.observedEvidence.some((entry) => isFailureGrammar(entry.status)) ? OF : IO;
   }
   if (args.observedEvidence.some((entry) => isFailureGrammar(entry.status))) {
-    return 'observed_fail';
+    return OF;
   }
   const executedPass = args.observedEvidence.some(
     (entry) => entry.executed && entry.status === 'passed',
@@ -508,33 +521,33 @@ function classifyTraversalGrammar(args: {
     (entry) => entry.required && differsGrammar(entry.kind, 'static'),
   );
   if (executedPass && !args.observedEvidence.some((entry) => entry.status === 'failed')) {
-    return 'observed_pass';
+    return OP;
   }
   if (
-    sameGrammar(args.capability?.executionMode, 'human_required') ||
-    sameGrammar(args.capability?.executionMode, 'observation_only') ||
+    (statusLabelsSet.has(args.capability?.executionMode as PulseExecutionMatrixPathStatus) &&
+      (args.capability?.executionMode === OO || args.capability?.executionMode === BHR)) ||
     args.capability?.protectedByGovernance
   ) {
-    return 'observation_only';
+    return OO;
   }
   if (!args.chain && !args.hasExecutableEntrypoint) {
-    return 'not_executable';
+    return NE;
   }
   if (
     !requiredRuntimeLike &&
     sameGrammar(args.capability?.status, 'real') &&
     sameGrammar(args.capability.truthMode, 'observed')
   ) {
-    return 'observed_pass';
+    return OP;
   }
   if (
     sameGrammar(args.chain?.truthMode, 'inferred') ||
     sameGrammar(args.capability?.truthMode, 'inferred') ||
     sameGrammar(args.flow?.truthMode, 'inferred')
   ) {
-    return 'inferred_only';
+    return IO;
   }
-  return 'untested';
+  return UT;
 }
 function buildValidationCommand(
   routePatterns: string[],
@@ -554,13 +567,16 @@ function deriveTruthMode(
   status: PulseExecutionMatrixPathStatus,
   evidence: MatrixEvidence[],
 ): PulseTruthMode {
+  const truthModes = [...discoverTruthModeLabels()];
+  const z = deriveZeroValue();
+  const u = deriveUnitValue();
   if (status === 'observed_pass' || status === 'observed_fail') {
-    return 'observed';
+    return truthModes.at(z) as PulseTruthMode;
   }
   if (evidence.some((entry) => entry.source === 'static' || entry.status === 'mapped')) {
-    return 'inferred';
+    return truthModes.at(u) as PulseTruthMode;
   }
-  return 'aspirational';
+  return truthModes.at(u + u) as PulseTruthMode;
 }
 function chainKey(chain: PulseExecutionChain): string {
   return collectChainSteps(chain)
@@ -615,7 +631,10 @@ function buildPathFromChain(args: {
     executionEvidence: args.executionEvidence,
     externalSignalState: args.externalSignalState,
   });
-  const risk: PulseExecutionMatrixPath['risk'] = capability?.runtimeCritical ? 'high' : 'medium';
+  const riskLabels = [...discoverConvergenceRiskLevelLabels()];
+  const risk: PulseExecutionMatrixPath['risk'] = capability?.runtimeCritical
+    ? (riskLabels.at(deriveUnitValue()) as PulseExecutionMatrixPath['risk'])
+    : (riskLabels.at(deriveUnitValue() + deriveUnitValue()) as PulseExecutionMatrixPath['risk']);
   const status = classifyTraversalGrammar({
     capability,
     flow,
@@ -689,7 +708,9 @@ function buildSyntheticPath(args: {
     externalSignalState: args.externalSignalState,
   });
   const risk: PulseExecutionMatrixPath['risk'] =
-    isCriticalCapability(args.capability) || flowCriticalityGrammar(args.flow) ? 'high' : 'medium';
+    isCriticalCapability(args.capability) || flowCriticalityGrammar(args.flow)
+      ? ([...discoverConvergenceRiskLevelLabels()].at(deriveUnitValue()) as PulseExecutionMatrixPath['risk'])
+      : ([...discoverConvergenceRiskLevelLabels()].at(deriveUnitValue() + deriveUnitValue()) as PulseExecutionMatrixPath['risk']);
   const status = classifyTraversalGrammar({
     capability: args.capability,
     flow: args.flow,
@@ -742,16 +763,20 @@ function buildSyntheticPath(args: {
 function structuralRoleGrammar(
   node: PulseStructuralNode,
 ): PulseExecutionMatrixPath['chain'][number]['role'] {
+  const nodeKinds = [...discoverStructuralNodeKindLabels()];
+  const structuralRoles = [...discoverStructuralRoleLabels()];
+  const interfaceRole = structuralRoles.at(deriveZeroValue())!;
+  const orchestrationRole = structuralRoles.at(deriveUnitValue())!;
   const roleByKind: Partial<Record<StructuralGraphKind, MatrixChainRole>> = {
-    ui_element: 'trigger',
-    api_call: 'client_api',
-    backend_route: 'controller',
-    proxy_route: 'controller',
-    service_trace: 'service',
-    persistence_model: 'persistence',
-    side_effect_signal: 'side_effect',
+    [nodeKinds.at(deriveZeroValue())!]: 'trigger',
+    [nodeKinds.at(deriveUnitValue())!]: 'client_api',
+    [nodeKinds.at(deriveUnitValue() + deriveUnitValue())!]: 'controller',
+    [nodeKinds.at(deriveUnitValue() + deriveUnitValue() + deriveUnitValue())!]: 'controller',
+    [nodeKinds.at(deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue())!]: 'service',
+    [nodeKinds.at(deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue())!]: 'persistence',
+    [nodeKinds.at(deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue())!]: 'side_effect',
   };
-  const fallbackRole = sameGrammar(node.role, 'interface') ? 'interface' : 'orchestration';
+  const fallbackRole = sameGrammar(node.role, interfaceRole) ? interfaceRole : orchestrationRole;
   return roleByKind[node.kind] ?? fallbackRole;
 }
 function routePatternsFromNode(node: PulseStructuralNode): string[] {
@@ -786,7 +811,9 @@ function buildPathFromStructuralNode(args: {
     externalSignalState: args.externalSignalState,
   });
   const risk: PulseExecutionMatrixPath['risk'] =
-    args.node.runtimeCritical || args.node.userFacing ? 'high' : 'medium';
+    args.node.runtimeCritical || args.node.userFacing
+      ? ([...discoverConvergenceRiskLevelLabels()].at(deriveUnitValue()) as PulseExecutionMatrixPath['risk'])
+      : ([...discoverConvergenceRiskLevelLabels()].at(deriveUnitValue() + deriveUnitValue()) as PulseExecutionMatrixPath['risk']);
   const status: PulseExecutionMatrixPathStatus = observedEvidence.some(
     (entry) => entry.status === 'failed',
   )
@@ -897,9 +924,15 @@ function buildPathFromScopeFile(file: PulseScopeFile, index: number): PulseExecu
     file.kind === 'spec' ||
     file.kind === 'migration' ||
     file.kind === 'config';
-  const status: PulseExecutionMatrixPathStatus = 'not_executable';
+  const status: PulseExecutionMatrixPathStatus = (
+    [...discoverExecutionMatrixPathStatusLabels()].at(
+      deriveZeroValue() + deriveZeroValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(),
+    ) as PulseExecutionMatrixPathStatus
+  );
   const risk: PulseExecutionMatrixPath['risk'] =
-    file.runtimeCritical || file.userFacing ? 'high' : 'medium';
+    file.runtimeCritical || file.userFacing
+      ? ([...discoverConvergenceRiskLevelLabels()].at(deriveUnitValue()) as PulseExecutionMatrixPath['risk'])
+      : ([...discoverConvergenceRiskLevelLabels()].at(deriveUnitValue() + deriveUnitValue()) as PulseExecutionMatrixPath['risk']);
   return {
     pathId,
     capabilityId: null,
@@ -913,7 +946,7 @@ function buildPathFromScopeFile(file: PulseScopeFile, index: number): PulseExecu
     },
     chain: [],
     status,
-    truthMode: status === 'not_executable' ? 'inferred' : 'inferred',
+    truthMode: [...discoverTruthModeLabels()].at(deriveUnitValue()) as PulseTruthMode,
     productStatus: null,
     breakpoint:
       status === 'not_executable'
@@ -1002,10 +1035,13 @@ function summarize(paths: PulseExecutionMatrixPath[]): PulseExecutionMatrix['sum
   };
 }
 function terminalClassificationGrammar(path: PulseExecutionMatrixPath): boolean {
-  const statusSet = discoverExecutionMatrixPathStatusLabels();
+  const STATUSES = [...discoverExecutionMatrixPathStatusLabels()];
+  const observedPass = STATUSES.at(deriveZeroValue())!;
+  const observedFail = STATUSES.at(deriveUnitValue())!;
+  const statusSet = new Set(STATUSES);
   const observedTerminal =
     statusSet.has(path.status) &&
-    (path.status === 'observed_pass' || path.status === 'observed_fail');
+    (path.status === observedPass || path.status === observedFail);
   const breakpointTerminal = statusSet.has(path.status) && !observedTerminal;
   return observedTerminal || (breakpointTerminal && hasPreciseBreakpoint(path.breakpoint));
 }
