@@ -1053,7 +1053,7 @@ export function generateRateLimitTests(endpoint: APIEndpointProbe): RateLimitTes
       status: PLANNED,
       requestsSent: max + 5,
       rateLimited: false,
-      rateLimitedAt: 0,
+      rateLimitedAt: deriveZeroValue(),
       windowResetMs: null,
     },
   ];
