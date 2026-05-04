@@ -17,11 +17,11 @@ type MockedApiKeyRecord = {
 };
 
 type MockedApiKeyDelegate = {
-  findMany: jest.Mock<any>;
-  create: jest.Mock<any>;
-  findFirst: jest.Mock<any>;
-  deleteMany: jest.Mock<any>;
-  update: jest.Mock<any>;
+  findMany: jest.Mock;
+  create: jest.Mock;
+  findFirst: jest.Mock;
+  deleteMany: jest.Mock;
+  update: jest.Mock;
 };
 
 type MockedLogFn = jest.Mock<(args: Record<string, unknown>) => Promise<void>>;
@@ -137,7 +137,7 @@ describe('ApiKeysService', () => {
       // Stored key is a SHA-256 hash
       const callArgs = mockApiKey.create.mock.calls[0][0] as { data: { key: string } };
       const storedKey = callArgs.data.key;
-      expect(storedKey).toMatch(/^[a-f0-9]{64}$/); // SHA-256 hex = 64 chars
+      expect(storedKey).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/); // PBKDF2 salt:hash
     });
 
     it('cada chamada gera uma key diferente', async () => {
@@ -157,15 +157,11 @@ describe('ApiKeysService', () => {
       expect(rawKeys[0]).toMatch(/^sk_live_[a-f0-9]{48}$/);
       expect(rawKeys[1]).toMatch(/^sk_live_[a-f0-9]{48}$/);
 
-      // Stored hashes differ from raw keys
+      // Stored hashes differ from raw keys and use PBKDF2 format
       expect(storedHashes[0]).not.toBe(rawKeys[0]);
       expect(storedHashes[1]).not.toBe(rawKeys[1]);
-
-      // Hashes match their respective raw keys
-      const expectedHash0 = createHash('sha256').update(rawKeys[0]).digest('hex');
-      const expectedHash1 = createHash('sha256').update(rawKeys[1]).digest('hex');
-      expect(storedHashes[0]).toBe(expectedHash0);
-      expect(storedHashes[1]).toBe(expectedHash1);
+      expect(storedHashes[0]).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/);
+      expect(storedHashes[1]).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/);
     });
   });
 
