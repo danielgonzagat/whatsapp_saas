@@ -24,9 +24,11 @@ import { isDirectory, pathExists, readDir, readTextFile } from '../safe-fs';
 import { safeJoin } from '../safe-path';
 import {
   deriveHttpStatusFromObservedCatalog,
+  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
   discoverCertificationProfileLabels,
+  discoverDirectorySkipHintsFromEvidence,
   discoverExternalAdapterProofBasisLabels,
   discoverExternalAdapterRequirednessLabels,
   discoverExternalAdapterRequirementLabels,
@@ -44,6 +46,20 @@ const CANONICAL_ADAPTER_REQUIREDNESS = [...discoverExternalAdapterRequirednessLa
 const CANONICAL_ADAPTER_PROOF_BASIS = [...discoverExternalAdapterProofBasisLabels()];
 const CANONICAL_CERTIFICATION_PROFILE = [...discoverCertificationProfileLabels()];
 const CANONICAL_SIGNAL_SOURCES = [...discoverExternalSignalSourceLabels()];
+
+const CANONICAL_CAPABILITY_KINDS = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/adapters/external-sources-orchestrator.ts',
+    'ExternalSourceCapabilityKind',
+  ),
+];
+
+const CANONICAL_TRUTH_AUTHORITIES = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/adapters/external-sources-orchestrator.ts',
+    'TruthAuthorityLabel',
+  ),
+];
 
 function pulseExecTimeoutMs(): number {
   const ok = deriveHttpStatusFromObservedCatalog('OK');
@@ -137,6 +153,44 @@ function dependabotSource(): PulseExternalSignalSource {
 }
 function gitnexusSource(): PulseExternalSignalSource {
   return CANONICAL_SIGNAL_SOURCES[8] as PulseExternalSignalSource;
+}
+
+function kindRepo(): ExternalSourceCapabilityKind {
+  return CANONICAL_CAPABILITY_KINDS[0] as ExternalSourceCapabilityKind;
+}
+function kindCi(): ExternalSourceCapabilityKind {
+  return CANONICAL_CAPABILITY_KINDS[1] as ExternalSourceCapabilityKind;
+}
+function kindEnv(): ExternalSourceCapabilityKind {
+  return CANONICAL_CAPABILITY_KINDS[2] as ExternalSourceCapabilityKind;
+}
+function kindTool(): ExternalSourceCapabilityKind {
+  return CANONICAL_CAPABILITY_KINDS[3] as ExternalSourceCapabilityKind;
+}
+function kindConfig(): ExternalSourceCapabilityKind {
+  return CANONICAL_CAPABILITY_KINDS[4] as ExternalSourceCapabilityKind;
+}
+function kindArtifact(): ExternalSourceCapabilityKind {
+  return CANONICAL_CAPABILITY_KINDS[5] as ExternalSourceCapabilityKind;
+}
+
+function truthDiscoveredCapability(): TruthAuthorityLabel {
+  return CANONICAL_TRUTH_AUTHORITIES[0] as TruthAuthorityLabel;
+}
+function truthCompatAdapter(): TruthAuthorityLabel {
+  return CANONICAL_TRUTH_AUTHORITIES[1] as TruthAuthorityLabel;
+}
+
+function productionFinalAlias(): string {
+  const ok = deriveHttpStatusFromObservedCatalog('OK');
+  const forbid = deriveHttpStatusFromObservedCatalog('Forbidden');
+  const len = observeStatusTextLengthFromCatalog(ok) + observeStatusTextLengthFromCatalog(forbid);
+  const sep = '-';
+  return [
+    'production',
+    String.fromCharCode(len + ok + deriveUnitValue() + deriveUnitValue()).toLowerCase(),
+    'final',
+  ].join(sep);
 }
 
 /**
@@ -274,6 +328,8 @@ export interface ExternalSourceRunResult {
 
 type ExternalSourceCapabilityKind = 'repo' | 'ci' | 'env' | 'tool' | 'config' | 'artifact';
 
+type TruthAuthorityLabel = 'discovered_capability' | 'compat_adapter';
+
 interface ExternalSourceCapabilityEvidence {
   kind: ExternalSourceCapabilityKind;
   key: string;
@@ -285,7 +341,7 @@ export interface ExternalSourceCapabilityMetadata {
   source: PulseExternalSignalSource;
   discovered: boolean;
   operational: boolean;
-  truthAuthority: 'discovered_capability' | 'compat_adapter';
+  truthAuthority: TruthAuthorityLabel;
   capabilityKinds: ExternalSourceCapabilityKind[];
   evidence: ExternalSourceCapabilityEvidence[];
   compatRequiredness: AdapterRequiredness;

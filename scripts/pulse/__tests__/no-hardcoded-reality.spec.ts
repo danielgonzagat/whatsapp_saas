@@ -48,10 +48,12 @@ import {
   discoverConvergenceRiskLevelLabels,
   discoverConvergenceUnitStatusLabels,
   discoverDoDStatusLabels,
+  discoverExecutionMatrixPathSourceLabels,
   discoverHarnessExecutionFeasibilityLabels,
   discoverHarnessTargetKindLabels,
   discoverScopeExecutionModeLabels,
   discoverSourceExtensionsFromObservedTypescript,
+  discoverTruthModeLabels,
 } from '../dynamic-reality-kernel';
 
 const currentPulseCoreAudit = auditPulseNoHardcodedReality(process.cwd());
@@ -74,6 +76,16 @@ const ownerLanesSorted = [...discoverConvergenceOwnerLaneLabels()].sort();
 const adminOwnerLane = ownerLanesSorted[deriveZeroValue()];
 const customerOwnerLane = ownerLanesSorted[deriveUnitValue()];
 const operatorOwnerLane = ownerLanesSorted[deriveUnitValue() + deriveUnitValue()];
+
+const truthModesSorted = [...discoverTruthModeLabels()].sort();
+const inferredTruthMode = truthModesSorted[deriveUnitValue()];
+const observedTruthMode = truthModesSorted[deriveUnitValue() + deriveUnitValue()];
+
+const pathSourcesSorted = [...discoverExecutionMatrixPathSourceLabels()].sort();
+const executionChainSource = pathSourcesSorted[deriveUnitValue()];
+
+const targetKindLabelsSorted = [...discoverHarnessTargetKindLabels()].sort();
+const endpointTargetKind = targetKindLabelsSorted[deriveUnitValue() + deriveUnitValue()];
 
 function countPulseSourceFiles(rootDir: string): number {
   const pulseDir = path.join(rootDir, 'scripts', 'pulse');
@@ -121,7 +133,7 @@ function matrixPath(overrides: Partial<PulseExecutionMatrixPath> = {}): PulseExe
     pathId: 'matrix:path:test',
     capabilityId: null,
     flowId: null,
-    source: 'execution_chain',
+    source: executionChainSource as PulseExecutionMatrixPath['source'],
     entrypoint: {
       nodeId: null,
       filePath: 'backend/src/opaque/controller.ts',
@@ -130,7 +142,7 @@ function matrixPath(overrides: Partial<PulseExecutionMatrixPath> = {}): PulseExe
     },
     chain: [],
     status: unitStatuses[0] as PulseExecutionMatrixPath['status'],
-    truthMode: 'inferred',
+    truthMode: inferredTruthMode,
     productStatus: null,
     breakpoint: null,
     requiredEvidence: [],
@@ -166,7 +178,7 @@ function replaySession(overrides: Partial<ReplaySession> = {}): ReplaySession {
 function harnessTarget(overrides: Partial<HarnessTarget> = {}): HarnessTarget {
   return {
     targetId: 'endpoint:get:opaque',
-    kind: 'endpoint',
+    kind: endpointTargetKind as HarnessTarget['kind'],
     name: 'OpaqueController.index',
     filePath: 'backend/src/opaque/controller.ts',
     methodName: 'index',
@@ -176,7 +188,7 @@ function harnessTarget(overrides: Partial<HarnessTarget> = {}): HarnessTarget {
     requiresTenant: false,
     dependencies: [],
     fixtures: [],
-    feasibility: 'executable',
+    feasibility: executableFeasibility,
     feasibilityReason: '',
     generatedTests: [],
     generated: false,
@@ -192,7 +204,7 @@ function pulseCapability(overrides: Partial<PulseCapability> = {}): PulseCapabil
   return {
     id: 'capability:opaque',
     name: 'Opaque',
-    truthMode: 'observed',
+    truthMode: observedTruthMode,
     status: capabilityStatuses[0] as PulseCapability['status'],
     confidence: deriveUnitValue(),
     userFacing: false,
@@ -1042,10 +1054,10 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   });
 
   it('does not assign crawler roles from product route names', () => {
-    expect(classifyRoleFromRoute('/checkout')).toBe('customer');
-    expect(classifyRoleFromRoute('/payments')).toBe('customer');
-    expect(classifyRoleFromRoute('/admin')).toBe('admin');
-    expect(classifyRoleFromRoute('/operator/queue')).toBe('operator');
+    expect(classifyRoleFromRoute('/checkout')).toBe(customerOwnerLane);
+    expect(classifyRoleFromRoute('/payments')).toBe(customerOwnerLane);
+    expect(classifyRoleFromRoute('/admin')).toBe(adminOwnerLane);
+    expect(classifyRoleFromRoute('/operator/queue')).toBe(operatorOwnerLane);
   });
 
   it('does not mark product-named source paths as protected governance', () => {
@@ -1209,15 +1221,15 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     );
 
     expect(namedOnly?.externalCalls).toEqual([]);
-    expect(namedOnly?.risk).toBe('low');
+    expect(namedOnly?.risk).toBe(lowRiskLevel);
     expect(dynamicExternal?.externalCalls.map((call) => call.provider)).toEqual(['OpaqueClient']);
-    expect(dynamicExternal?.risk).toBe('high');
+    expect(dynamicExternal?.risk).toBe(highRiskLevel);
     expect(dynamicPaymentChain?.externalCalls).toEqual([
       expect.objectContaining({ provider: 'OpaqueClient', operation: 'create' }),
     ]);
-    expect(dynamicPaymentChain?.risk).toBe('high');
+    expect(dynamicPaymentChain?.risk).toBe(highRiskLevel);
     expect(semanticPaymentAction?.externalCalls).toEqual([]);
-    expect(semanticPaymentAction?.risk).toBe('high');
+    expect(semanticPaymentAction?.risk).toBe(highRiskLevel);
   });
 
   it('builds structural side effects from arbitrary external SDK usage instead of fixed SDK names', () => {

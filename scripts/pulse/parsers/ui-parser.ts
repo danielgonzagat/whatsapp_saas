@@ -19,13 +19,13 @@ import {
 
 function extractLabel(line: string, lines: string[], idx: number): string {
   // Try to find visible text on same line
-  const text = extractBetween(line, '>', '<');
+  let text = extractBetween(line, '>', '<');
   if (text && text.length <= 60) {
     return text.trim();
   }
 
-  for (const attrName of ['label', 'aria-label', 'title', 'placeholder']) {
-    const attrValue = extractQuotedAttribute(line, attrName);
+  for (let attrName of ['label', 'aria-label', 'title', 'placeholder']) {
+    let attrValue = extractQuotedAttribute(line, attrName);
     if (attrValue && attrValue.length <= 60) {
       return attrValue;
     }
@@ -33,7 +33,7 @@ function extractLabel(line: string, lines: string[], idx: number): string {
 
   // Check next 3 lines for text content
       for (let j = deriveUnitValue(); j <= deriveUnitValue() + deriveUnitValue() + deriveUnitValue() && idx + j < lines.length; j++) {
-    const nextLine = lines[idx + j].trim();
+    let nextLine = lines[idx + j].trim();
     // Skip lines that look like CSS/style properties
     if (looksLikeStyleProperty(nextLine)) {
       continue;
@@ -42,7 +42,7 @@ function extractLabel(line: string, lines: string[], idx: number): string {
       continue;
     }
     // Direct text content (not a tag or expression)
-    const nextText = readLeadingText(nextLine, 60);
+    let nextText = readLeadingText(nextLine, 60);
     if (
       nextText &&
       !nextText.includes('=') &&
@@ -52,7 +52,7 @@ function extractLabel(line: string, lines: string[], idx: number): string {
       return nextText.trim();
     }
     // Text inside a tag
-    const insideTag = extractBetween(nextLine, '>', '<');
+    let insideTag = extractBetween(nextLine, '>', '<');
     if (insideTag && insideTag.length <= 60) {
       return insideTag.trim();
     }
@@ -63,7 +63,7 @@ function extractLabel(line: string, lines: string[], idx: number): string {
 
 function extractComponent(lines: string[], idx: number): string | null {
   for (let i = idx; i >= Math.max(deriveZeroValue(), idx - deriveHttpStatusFromObservedCatalog('OK')); i--) {
-    const componentName = readComponentDeclarationName(lines[i]);
+    let componentName = readComponentDeclarationName(lines[i]);
     if (componentName && startsWithUppercase(componentName)) {
       return componentName;
     }
@@ -72,39 +72,39 @@ function extractComponent(lines: string[], idx: number): string | null {
 }
 
 function extractBetween(line: string, open: string, close: string): string | null {
-  const start = line.indexOf(open);
-  if (start < 0) {
+  let start = line.indexOf(open);
+  if (start < deriveZeroValue()) {
     return null;
   }
-  const end = line.indexOf(close, start + open.length);
-  if (end < 0) {
+  let end = line.indexOf(close, start + open.length);
+  if (end < deriveZeroValue()) {
     return null;
   }
   return line.slice(start + open.length, end);
 }
 
 function extractQuotedAttribute(line: string, attrName: string): string | null {
-  const attrIndex = line.indexOf(attrName);
-  if (attrIndex < 0) {
+  let attrIndex = line.indexOf(attrName);
+  if (attrIndex < deriveZeroValue()) {
     return null;
   }
   let cursor = attrIndex + attrName.length;
-  while (line[cursor] === ' ' || line[cursor] === '\t') cursor += 1;
+  while (line[cursor] === ' ' || line[cursor] === '\t') cursor += deriveUnitValue();
   if (line[cursor] !== '=') return null;
-  cursor += 1;
-  while (line[cursor] === ' ' || line[cursor] === '\t') cursor += 1;
-  const quote = line[cursor];
+  cursor += deriveUnitValue();
+  while (line[cursor] === ' ' || line[cursor] === '\t') cursor += deriveUnitValue();
+  let quote = line[cursor];
   if (quote !== '"' && quote !== "'" && quote !== '`') return null;
-  cursor += 1;
-  const start = cursor;
-  while (cursor < line.length && line[cursor] !== quote) cursor += 1;
+  cursor += deriveUnitValue();
+  let start = cursor;
+  while (cursor < line.length && line[cursor] !== quote) cursor += deriveUnitValue();
   return cursor > start ? line.slice(start, cursor) : null;
 }
 
 function looksLikeStyleProperty(line: string): boolean {
-  const property = readLeadingIdentifier(line);
+  let property = readLeadingIdentifier(line);
   if (!property) return false;
-  const afterProperty = line.slice(property.length).trimStart();
+  let afterProperty = line.slice(property.length).trimStart();
   return (
     [
       'background',
@@ -142,16 +142,16 @@ function readLeadingText(line: string, max: number): string | null {
   if (!line || line[0] === '<' || line[0] === '{' || line[0] === '>' || line[0].trim() === '') {
     return null;
   }
-  const boundary = line.indexOf('<');
-  const text = line.slice(0, boundary < 0 ? Math.min(line.length, max) : Math.min(boundary, max));
+  let boundary = line.indexOf('<');
+  let text = line.slice(0, boundary < deriveZeroValue() ? Math.min(line.length, max) : Math.min(boundary, max));
   return text.trim() ? text : null;
 }
 
 function readLeadingIdentifier(line: string): string {
   let output = '';
-  for (const char of line.trimStart()) {
-    const lower = char.toLowerCase();
-    const isLetter = lower >= 'a' && lower <= 'z';
+  for (let char of line.trimStart()) {
+    let lower = char.toLowerCase();
+    let isLetter = lower >= 'a' && lower <= 'z';
     if (isLetter || char === '-') {
       output += char;
       continue;
@@ -162,24 +162,24 @@ function readLeadingIdentifier(line: string): string {
 }
 
 function readComponentDeclarationName(line: string): string | null {
-  const tokens = splitWhitespaceTokens(line);
-  const functionIndex = tokens.indexOf('function');
-  if (functionIndex >= 0) {
-    return stripIdentifierToken(tokens[functionIndex + 1] ?? '');
+  let tokens = splitWhitespaceTokens(line);
+  let functionIndex = tokens.indexOf('function');
+  if (functionIndex >= deriveZeroValue()) {
+    return stripIdentifierToken(tokens[functionIndex + deriveUnitValue()] ?? '');
   }
-  const constIndex = tokens.indexOf('const');
-  if (constIndex >= 0) {
-    return stripIdentifierToken(tokens[constIndex + 1] ?? '');
+  let constIndex = tokens.indexOf('const');
+  if (constIndex >= deriveZeroValue()) {
+    return stripIdentifierToken(tokens[constIndex + deriveUnitValue()] ?? '');
   }
   return null;
 }
 
 function stripIdentifierToken(value: string): string {
   let output = '';
-  for (const char of value) {
-    const lower = char.toLowerCase();
-    const isLetter = lower >= 'a' && lower <= 'z';
-    const isDigit = char >= '0' && char <= '9';
+  for (let char of value) {
+    let lower = char.toLowerCase();
+    let isLetter = lower >= 'a' && lower <= 'z';
+    let isDigit = char >= '0' && char <= '9';
     if (isLetter || isDigit || char === '_') {
       output += char;
       continue;
@@ -190,13 +190,13 @@ function stripIdentifierToken(value: string): string {
 }
 
 function startsWithUppercase(value: string): boolean {
-  return value.length > 0 && value[0] >= 'A' && value[0] <= 'Z';
+  return value.length > deriveZeroValue() && value[deriveZeroValue()] >= 'A' && value[deriveZeroValue()] <= 'Z';
 }
 
 function splitWhitespaceTokens(value: string): string[] {
-  const tokens: string[] = [];
+  let tokens: string[] = [];
   let token = '';
-  for (const char of value) {
+  for (let char of value) {
     if (char === ' ' || char === '\t' || char === '\n' || char === '\r') {
       if (token) {
         tokens.push(token);
@@ -216,8 +216,8 @@ function buildHandlerEvidence(
   handler: string | null,
   resolved: { type: UIElement['handlerType']; apiCalls: string[] },
 ): Pick<UIElement, 'handlerEvidence' | 'handlerPredicates'> {
-  const evidence = new Set<string>();
-  const predicates = new Set<string>();
+  let evidence = new Set<string>();
+  let predicates = new Set<string>();
   if (!handler || handler.trim().length === deriveZeroValue()) {
     predicates.add('handler:missing');
   } else {
@@ -226,7 +226,7 @@ function buildHandlerEvidence(
   predicates.add(`handler:${resolved.type}`);
   if (resolved.apiCalls.length > deriveZeroValue()) {
     predicates.add('api_call:observed');
-    for (const apiCall of resolved.apiCalls) {
+    for (let apiCall of resolved.apiCalls) {
       evidence.add(`api_call:${apiCall}`);
     }
   }
@@ -247,11 +247,11 @@ function buildHandlerEvidence(
  * Handles nested braces: onClick={() => { doSomething() }}
  */
 function findJSXHandlerStart(line: string, eventName: string): number {
-  let searchFrom = 0;
+  let searchFrom = deriveZeroValue();
   while (searchFrom < line.length) {
-    const eventIndex = line.indexOf(eventName, searchFrom);
-    if (eventIndex < 0) {
-      return -1;
+    let eventIndex = line.indexOf(eventName, searchFrom);
+    if (eventIndex < deriveZeroValue()) {
+      return -deriveUnitValue();
     }
 
     let cursor = eventIndex + eventName.length;
@@ -268,16 +268,16 @@ function findJSXHandlerStart(line: string, eventName: string): number {
       cursor++;
     }
     if (line[cursor] === '{') {
-      return cursor + 1;
+      return cursor + deriveUnitValue();
     }
     searchFrom = cursor;
   }
-  return -1;
+  return -deriveUnitValue();
 }
 
 function extractJSXHandler(line: string, eventName: string): string | null {
-  const start = findJSXHandlerStart(line, eventName);
-  if (start < 0) {
+  let start = findJSXHandlerStart(line, eventName);
+  if (start < deriveZeroValue()) {
     return null;
   }
 
@@ -285,10 +285,10 @@ function extractJSXHandler(line: string, eventName: string): string | null {
   let i = start;
 
   while (i < line.length && depth > deriveZeroValue()) {
-    const ch = line[i];
+    let ch = line[i];
     // Skip string literals
     if (ch === '"' || ch === "'" || ch === '`') {
-      const quote = ch;
+      let quote = ch;
       i++;
       while (i < line.length && line[i] !== quote) {
         if (line[i] === '\\') {
@@ -318,7 +318,7 @@ function extractJSXHandler(line: string, eventName: string): string | null {
 
 function expandInlineHandler(handler: string, lines: string[], idx: number): string {
   if (handler.trimEnd().endsWith('=>')) {
-    const expanded = [handler];
+    let expanded = [handler];
     for (let j = idx + deriveUnitValue(); j < Math.min(idx + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Payment Required')) + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length); j++) {
       expanded.push(lines[j]);
       if (isClosingBlockLine(lines[j])) {
@@ -333,7 +333,7 @@ function expandInlineHandler(handler: string, lines: string[], idx: number): str
   }
 
   let depth = deriveZeroValue();
-  for (const ch of handler) {
+  for (let ch of handler) {
     if (ch === '{') {
       depth++;
     }
@@ -346,10 +346,10 @@ function expandInlineHandler(handler: string, lines: string[], idx: number): str
     return handler;
   }
 
-  const expanded = [handler];
+  let expanded = [handler];
   for (let j = idx + deriveUnitValue(); j < Math.min(idx + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Payment Required')) + observeStatusTextLengthFromCatalog(deriveHttpStatusFromObservedCatalog('Forbidden')) + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue(), lines.length); j++) {
     expanded.push(lines[j]);
-    for (const ch of lines[j]) {
+    for (let ch of lines[j]) {
       if (ch === '{') {
         depth++;
       }
@@ -366,11 +366,11 @@ function expandInlineHandler(handler: string, lines: string[], idx: number): str
 }
 
 function isClosingBlockLine(line: string): boolean {
-  const trimmed = line.trimStart();
+  let trimmed = line.trimStart();
   if (!trimmed.startsWith('}')) {
     return false;
   }
-  const afterBlock = trimmed.slice(deriveUnitValue()).trimStart();
+  let afterBlock = trimmed.slice(deriveUnitValue()).trimStart();
   return afterBlock.length === deriveZeroValue() || afterBlock.startsWith(')') || afterBlock.startsWith(',');
 }
 
@@ -393,24 +393,21 @@ const DOM_HANDLER_PROPS = new Set([
   'onSubmit',
 ]);
 
-/**
- * Extract names imported from @/lib/api (functions that make API calls)
- */
 function extractApiImports(fileContent: string): Set<string> {
-  const imports = new Set<string>();
-  const sourceFile = ts.createSourceFile('ui.tsx', fileContent, ts.ScriptTarget.Latest, true);
-  for (const statement of sourceFile.statements) {
+  let imports = new Set<string>();
+  let sourceFile = ts.createSourceFile('ui.tsx', fileContent, ts.ScriptTarget.Latest, true);
+  for (let statement of sourceFile.statements) {
     if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) {
       continue;
     }
     if (!isApiModuleSpecifier(statement.moduleSpecifier.text)) {
       continue;
     }
-    const bindings = statement.importClause?.namedBindings;
+    let bindings = statement.importClause?.namedBindings;
     if (!bindings || !ts.isNamedImports(bindings)) {
       continue;
     }
-    for (const element of bindings.elements) {
+    for (let element of bindings.elements) {
       if (!element.isTypeOnly) {
         imports.add(element.name.text);
       }
@@ -420,31 +417,31 @@ function extractApiImports(fileContent: string): Set<string> {
 }
 
 function isApiModuleSpecifier(value: string): boolean {
-  const normalized = value.split(path.sep).join('/');
+  let normalized = value.split(path.sep).join('/');
   return normalized.includes('/lib/api') || normalized.startsWith('@/lib/api');
 }
 
 function isTestOrSpecFile(filePath: string): boolean {
-  const baseName = path.basename(filePath);
-  const segments = baseName.split('.');
+  let baseName = path.basename(filePath);
+  let segments = baseName.split('.');
   return segments.includes('test') || segments.includes('spec');
 }
 
 function readJsxTagName(line: string): string | null {
-  const tagStart = line.indexOf('<');
-  if (tagStart < 0 || line[tagStart + 1] === '/') {
+  let tagStart = line.indexOf('<');
+  if (tagStart < deriveZeroValue() || line[tagStart + deriveUnitValue()] === '/') {
     return null;
   }
-  let cursor = tagStart + 1;
+  let cursor = tagStart + deriveUnitValue();
   let tagName = '';
   while (cursor < line.length) {
-    const char = line[cursor];
-    const lower = char.toLowerCase();
-    const isLetter = lower >= 'a' && lower <= 'z';
-    const isDigit = char >= '0' && char <= '9';
+    let char = line[cursor];
+    let lower = char.toLowerCase();
+    let isLetter = lower >= 'a' && lower <= 'z';
+    let isDigit = char >= '0' && char <= '9';
     if (isLetter || isDigit || char === '.' || char === '_') {
       tagName += char;
-      cursor += 1;
+      cursor += deriveUnitValue();
       continue;
     }
     break;
@@ -453,47 +450,47 @@ function readJsxTagName(line: string): string | null {
 }
 
 function hasButtonSemantics(line: string): boolean {
-  const tagName = readJsxTagName(line);
+  let tagName = readJsxTagName(line);
   if (!tagName) {
     return false;
   }
-  const lowerTag = tagName.toLowerCase();
+  let lowerTag = tagName.toLowerCase();
   return lowerTag === 'button' || lowerTag.endsWith('button') || lowerTag.endsWith('bt');
 }
 
 function extractActionPropNames(line: string): string[] {
-  const props: string[] = [];
-  let cursor = 0;
+  let props: string[] = [];
+  let cursor = deriveZeroValue();
   while (cursor < line.length) {
-    const onIndex = line.indexOf('on', cursor);
-    if (onIndex < 0) {
+    let onIndex = line.indexOf('on', cursor);
+    if (onIndex < deriveZeroValue()) {
       break;
     }
-    const next = line[onIndex + 2] ?? '';
+    let next = line[onIndex + deriveUnitValue() + deriveUnitValue()] ?? '';
     if (next < 'A' || next > 'Z') {
-      cursor = onIndex + 2;
+      cursor = onIndex + deriveUnitValue() + deriveUnitValue();
       continue;
     }
-    let end = onIndex + 3;
+    let end = onIndex + deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
     while (end < line.length) {
-      const char = line[end];
-      const lower = char.toLowerCase();
-      const isLetter = lower >= 'a' && lower <= 'z';
-      const isDigit = char >= '0' && char <= '9';
+      let char = line[end];
+      let lower = char.toLowerCase();
+      let isLetter = lower >= 'a' && lower <= 'z';
+      let isDigit = char >= '0' && char <= '9';
       if (isLetter || isDigit || char === '_') {
-        end += 1;
+        end += deriveUnitValue();
         continue;
       }
       break;
     }
     let afterName = end;
-    while (line[afterName] === ' ' || line[afterName] === '\t') afterName += 1;
+    while (line[afterName] === ' ' || line[afterName] === '\t') afterName += deriveUnitValue();
     if (line[afterName] !== '=') {
       cursor = end;
       continue;
     }
-    afterName += 1;
-    while (line[afterName] === ' ' || line[afterName] === '\t') afterName += 1;
+    afterName += deriveUnitValue();
+    while (line[afterName] === ' ' || line[afterName] === '\t') afterName += deriveUnitValue();
     if (line[afterName] === '{') {
       props.push(line.slice(onIndex, end));
     }
@@ -503,11 +500,11 @@ function extractActionPropNames(line: string): string[] {
 }
 
 function hasToggleSemantics(line: string): boolean {
-  const tagName = readJsxTagName(line);
+  let tagName = readJsxTagName(line);
   if (!tagName) {
     return false;
   }
-  const lowerTag = tagName.toLowerCase();
+  let lowerTag = tagName.toLowerCase();
   return lowerTag.includes('toggle') || lowerTag.includes('switch') || lowerTag.endsWith('tg');
 }
 
@@ -539,44 +536,44 @@ function buildElement(
 
 /** Parse ui elements. */
 export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry): UIElement[] {
-  const elements: UIElement[] = [];
-  const files = getFrontendSourceDirs(config).flatMap((frontendDir) =>
+  let elements: UIElement[] = [];
+  let files = getFrontendSourceDirs(config).flatMap((frontendDir) =>
     walkFiles(frontendDir, [...discoverSourceExtensionsFromObservedTypescript()].filter(e => e !== ts.Extension.Ts && e !== ts.Extension.Js)),
   );
-  const registry = hookRegistry || new Map();
-  const apiModuleMap = buildApiModuleMap(config);
+  let registry = hookRegistry || new Map();
+  let apiModuleMap = buildApiModuleMap(config);
 
-  for (const file of files) {
+  for (let file of files) {
     if (isTestOrSpecFile(file)) {
       continue;
     }
 
     try {
-      const content = readTextFile(file, 'utf8');
-      const lines = content.split('\n');
-      const relFile = path.relative(config.rootDir, file);
+      let content = readTextFile(file, 'utf8');
+      let lines = content.split('\n');
+      let relFile = path.relative(config.rootDir, file);
 
       // Build hook destructure map for this file (cross-file resolution)
-      const hookDestructures = extractHookDestructures(content);
+      let hookDestructures = extractHookDestructures(content);
 
       // Extract imported API functions
-      const apiImportsInFile = extractApiImports(content);
+      let apiImportsInFile = extractApiImports(content);
       // Check if component has a save handler with API call
-      const saveHandlerApiCalls = extractSaveHandlerApiCalls(
+      let saveHandlerApiCalls = extractSaveHandlerApiCalls(
         content,
         apiModuleMap,
         apiImportsInFile,
       );
-      const hasSaveHandler = saveHandlerApiCalls.length > deriveZeroValue() || componentHasSaveHandler(content);
+      let hasSaveHandler = saveHandlerApiCalls.length > deriveZeroValue() || componentHasSaveHandler(content);
 
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
+      for (let i = deriveZeroValue(); i < lines.length; i++) {
+        let line = lines[i];
 
         // Detect onClick handlers using brace-counting (not regex)
-        const onClickHandler = extractJSXHandler(line, 'onClick');
+        let onClickHandler = extractJSXHandler(line, 'onClick');
         if (onClickHandler) {
-          const handler = expandInlineHandler(onClickHandler.trim(), lines, i);
-          const resolved = resolveHandler({
+          let handler = expandInlineHandler(onClickHandler.trim(), lines, i);
+          let resolved = resolveHandler({
             handlerExpr: handler,
             lines,
             fileContent: content,
@@ -586,8 +583,8 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
             apiImportsInFile,
             apiModuleMap,
           });
-          const label = extractLabel(line, lines, i);
-          const component = extractComponent(lines, i);
+          let label = extractLabel(line, lines, i);
+          let component = extractComponent(lines, i);
 
           elements.push(
             buildElement(
@@ -603,10 +600,10 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
         }
 
         // Detect onSubmit handlers
-        const onSubmitHandler = extractJSXHandler(line, 'onSubmit');
+        let onSubmitHandler = extractJSXHandler(line, 'onSubmit');
         if (onSubmitHandler) {
-          const handler = expandInlineHandler(onSubmitHandler.trim(), lines, i);
-          const resolved = resolveHandler({
+          let handler = expandInlineHandler(onSubmitHandler.trim(), lines, i);
+          let resolved = resolveHandler({
             handlerExpr: handler,
             lines,
             fileContent: content,
@@ -630,18 +627,18 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
           );
         }
 
-        for (const propName of extractActionPropNames(line)) {
+        for (let propName of extractActionPropNames(line)) {
           if (DOM_HANDLER_PROPS.has(propName)) {
             continue;
           }
 
-          const actionHandler = extractJSXHandler(line, propName);
+          let actionHandler = extractJSXHandler(line, propName);
           if (!actionHandler) {
             continue;
           }
 
-          const handler = expandInlineHandler(actionHandler.trim(), lines, i);
-          const resolved = resolveHandler({
+          let handler = expandInlineHandler(actionHandler.trim(), lines, i);
+          let resolved = resolveHandler({
             handlerExpr: handler,
             lines,
             fileContent: content,
@@ -667,10 +664,10 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
 
         // Detect Toggle/Switch
         if (hasToggleSemantics(line)) {
-          const handlerExpr = resolveToggleHandler(line);
+          let handlerExpr = resolveToggleHandler(line);
           if (handlerExpr) {
-            const handler = expandInlineHandler(handlerExpr.trim(), lines, i);
-            const resolved = resolveHandler({
+            let handler = expandInlineHandler(handlerExpr.trim(), lines, i);
+            let resolved = resolveHandler({
               handlerExpr: handler,
               lines,
               fileContent: content,

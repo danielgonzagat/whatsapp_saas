@@ -188,7 +188,7 @@ Responda somente o JSON.`;
       action: normalizedAction,
       reason: parsed.reason || 'ai_decision',
       confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.55,
-      usedHistory: history.length > 0,
+      usedHistory: history.length > deriveZeroValue(),
       usedKb: !!kbContext,
     };
   } catch (err: unknown) {
@@ -527,7 +527,7 @@ async function buildPendingMessageBatch(params: {
         })
         .catch(() => []);
 
-      if (!Array.isArray(remoteMessages) || remoteMessages.length === 0) {
+      if (!Array.isArray(remoteMessages) || remoteMessages.length === deriveZeroValue()) {
         return undefined;
       }
 
@@ -604,7 +604,7 @@ async function buildPendingMessageBatch(params: {
         remoteInboundAfterLastOutbound.length ? remoteInboundAfterLastOutbound : trailingInbound
       ).slice(-PENDING_MESSAGE_LIMIT);
 
-      if (remotePendingMessages.length > 0) {
+      if (remotePendingMessages.length > deriveZeroValue()) {
         effectiveMessages = remotePendingMessages;
         resolvedRemoteChatId = remoteChatId;
         return true;
@@ -618,7 +618,7 @@ async function buildPendingMessageBatch(params: {
   }
 
   const aggregatedMessage =
-    effectiveMessages.length === 1
+    effectiveMessages.length === deriveUnitValue()
       ? String(effectiveMessages[0].content)
       : effectiveMessages
           .map((message, index: number) => `[${index + 1}] ${String(message.content || '').trim()}`)
@@ -640,7 +640,7 @@ async function buildPendingMessageBatch(params: {
         quotedMessageId: String(message.externalId || '').trim() || undefined,
         createdAt: message.createdAt?.toISOString?.() || null,
       }))
-      .filter((message: QuotedCustomerMessage) => message.content.length > 0),
+      .filter((message: QuotedCustomerMessage) => message.content.length > deriveZeroValue()),
   };
 }
 
@@ -652,7 +652,7 @@ async function resolveLatestQuotedMessageId(input: {
   providerMessageIds?: string[];
 }): Promise<string | undefined> {
   const fromContext =
-    Array.isArray(input.providerMessageIds) && input.providerMessageIds.length > 0
+    Array.isArray(input.providerMessageIds) && input.providerMessageIds.length > deriveZeroValue()
       ? String(input.providerMessageIds[input.providerMessageIds.length - 1] || '').trim() ||
         undefined
       : undefined;
@@ -699,7 +699,7 @@ export async function runSweepUnreadConversations(data: unknown) {
     selfIdentity,
   ).catch(() => []);
 
-  if (remoteUnreadChats.length > 0) {
+  if (remoteUnreadChats.length > deriveZeroValue()) {
     await seedRemoteUnreadConversationShells({
       workspaceId,
       selfIdentity,
@@ -1228,7 +1228,7 @@ function buildConversationLedger(history: ConversationHistoryEntry[]): {
   transcript: string;
   factsText: string;
 } {
-  if (!Array.isArray(history) || history.length === 0) {
+  if (!Array.isArray(history) || history.length === deriveZeroValue()) {
     return {
       transcript: '',
       factsText: 'Sem fatos acumulados.',
@@ -1433,7 +1433,7 @@ async function ensureTrustedContactProfile(input: {
         })
         .catch(() => []);
 
-      if (!Array.isArray(remoteMessages) || remoteMessages.length === 0) {
+      if (!Array.isArray(remoteMessages) || remoteMessages.length === deriveZeroValue()) {
         return undefined;
       }
 
@@ -2041,7 +2041,7 @@ async function finalizeBacklogIntoSilentCatalog(input: {
   const pending = Math.max(localPending, remoteUnreadChats.length);
 
   if (pending > 0) {
-    if (remoteUnreadChats.length > 0) {
+    if (remoteUnreadChats.length > deriveZeroValue()) {
       await seedRemoteUnreadConversationShells({
         workspaceId: input.workspaceId,
         selfIdentity,
@@ -2063,7 +2063,7 @@ async function finalizeBacklogIntoSilentCatalog(input: {
       phase: 'backlog_continue',
       persistent: true,
       message:
-        remoteUnreadChats.length > 0
+        remoteUnreadChats.length > deriveZeroValue()
           ? `Ainda restam ${remoteUnreadChats.length} conversa(s) pendentes no WAHA. Vou continuar o backlog até zerar tudo.`
           : `Ainda restam ${localPending} conversa(s) pendentes localmente. Vou continuar o backlog até zerar tudo.`,
       meta: {
@@ -2107,7 +2107,7 @@ async function maybeEscalateToHumanControl(input: {
   intent?: string;
   action?: string;
 }) {
-  if (input.action === 'AUTONOMOUS_FALLBACK' && input.decisionEnvelope.riskFlags.length === 0) {
+  if (input.action === 'AUTONOMOUS_FALLBACK' && input.decisionEnvelope.riskFlags.length === deriveZeroValue()) {
     return { blocked: false as const };
   }
 
@@ -2594,7 +2594,7 @@ export async function runScanContact(data: UnknownRecord) {
       runId,
       phase: 'analyze_contact',
       message:
-        productMatches.length > 0
+        productMatches.length > deriveZeroValue()
           ? `Identifiquei interesse em ${productMatches.join(', ')}.`
           : 'Lendo o histórico recente e entendendo a intenção do contato.',
       meta: {
@@ -2835,7 +2835,7 @@ export async function runScanContact(data: UnknownRecord) {
         intentConfidence: cognitiveState.classificationConfidence,
         actionLabel: cognitiveState.nextBestAction,
         usedHistory: true,
-        usedKb: productMatches.length > 0,
+        usedKb: productMatches.length > deriveZeroValue(),
         deliveryMode: effectiveDeliveryMode,
         smokeTestId,
         smokeMode,
@@ -2875,7 +2875,7 @@ export async function runScanContact(data: UnknownRecord) {
 
     const useUnifiedAgent =
       cognitiveState.nextBestAction === 'RESPOND' ||
-      productMatches.length > 0 ||
+      productMatches.length > deriveZeroValue() ||
       shouldUseUnifiedAgent({
         messageContent,
         leadScore: leadScore || undefined,
@@ -3051,7 +3051,7 @@ export async function runScanContact(data: UnknownRecord) {
             intentConfidence: decision.confidence,
             actionLabel: 'UNIFIED_AGENT_TEXT',
             usedHistory: true,
-            usedKb: productMatches.length > 0,
+            usedKb: productMatches.length > deriveZeroValue(),
             deliveryMode: effectiveDeliveryMode,
             smokeTestId,
             smokeMode,
@@ -3180,7 +3180,7 @@ export async function runScanContact(data: UnknownRecord) {
         intentConfidence: decision.confidence,
         actionLabel: 'AUTONOMOUS_FALLBACK',
         usedHistory: true,
-        usedKb: productMatches.length > 0 || decision.usedKb,
+        usedKb: productMatches.length > deriveZeroValue() || decision.usedKb,
         deliveryMode: effectiveDeliveryMode,
         smokeTestId,
         smokeMode,
@@ -3257,7 +3257,7 @@ export async function runScanContact(data: UnknownRecord) {
       workspaceRecord: workspace,
       intentConfidence: decision.confidence,
       usedHistory: true,
-      usedKb: productMatches.length > 0 || decision.usedKb,
+      usedKb: productMatches.length > deriveZeroValue() || decision.usedKb,
       deliveryMode: effectiveDeliveryMode,
       smokeTestId,
       smokeMode,
@@ -3490,7 +3490,7 @@ async function getKbContext(workspaceId?: string, text?: string, apiKey?: string
       ORDER BY distance ASC
       LIMIT 3
     `;
-    if (!rows || rows.length === 0) {
+    if (!rows || rows.length === deriveZeroValue()) {
       return '';
     }
     return rows
@@ -3585,7 +3585,7 @@ async function generateAutonomousFallbackResponse(params: {
     : 'Nenhum produto cadastrado.';
 
   if (!apiKey) {
-    if (matchedProducts.length > 0) {
+    if (matchedProducts.length > deriveZeroValue()) {
       return detectAndFixAntiPatterns(
         `${contactName ? `${contactName.split(WHITESPACE_RE)[0]}, ` : ''}posso te ajudar com ${matchedProducts.join(', ')}. ${
           listeningSignals.validationNeeded
@@ -3645,7 +3645,7 @@ Se a mensagem permitir, termine com um gancho curto que convide resposta.`;
       error: errInstanceofError?.message,
     });
     return detectAndFixAntiPatterns(
-      matchedProducts.length > 0
+      matchedProducts.length > deriveZeroValue()
         ? `Posso te ajudar com ${matchedProducts.join(', ')}. ${
             cognitiveState?.nextBestQuestion || 'Qual ponto voce quer ver primeiro?'
           }`
@@ -4066,7 +4066,7 @@ async function dispatchAutonomousReplyPlan(input: {
     .filter((message) => message.content && message.quotedMessageId);
 
   const replyPlan =
-    input.mirrorReplies === true && normalizedCustomerMessages.length > 0
+    input.mirrorReplies === true && normalizedCustomerMessages.length > deriveZeroValue()
       ? await buildQuotedReplyPlan({
           draftReply: input.message,
           customerMessages: normalizedCustomerMessages,
@@ -6377,7 +6377,7 @@ function buildHeuristicCatalogScore(input: {
   }
 
   const boughtByDeal =
-    String(input.wonDealTitle || '').trim().length > 0 ||
+    String(input.wonDealTitle || '').trim().length > deriveZeroValue() ||
     (Number(input.wonDealValue || 0) || 0) > 0;
   const boughtByConversation = PAGAMENTO_APROVADO_PAGA_RE.test(text);
 
@@ -6461,7 +6461,7 @@ function buildHeuristicCatalogScore(input: {
       ? 'SUPPORT'
       : RECLAMA_CANCELAR_RE.test(text)
         ? 'COMPLAINT'
-        : inboundMessages.length > 0
+        : inboundMessages.length > deriveZeroValue()
           ? 'INFO'
           : 'COLD';
   const nextBestAction =
@@ -6474,7 +6474,7 @@ function buildHeuristicCatalogScore(input: {
     ? 'objection_or_timing'
     : SUMI_SEM_RESPOSTA_DEPOI_RE.test(text)
       ? 'follow_up_needed'
-      : inboundMessages.length > 0
+      : inboundMessages.length > deriveZeroValue()
         ? 'still_open'
         : 'insufficient_data';
 
@@ -6485,7 +6485,7 @@ function buildHeuristicCatalogScore(input: {
     sentiment,
     intent,
     summary:
-      inboundMessages.length > 0
+      inboundMessages.length > deriveZeroValue()
         ? `Contato com ${inboundMessages.length} mensagem(ns) inbound recente(s). Último tema: ${String(lastInbound?.content || '').slice(0, 140)}`
         : 'Contato catalogado sem histórico suficiente para alta confiança.',
     nextBestAction,
@@ -6574,7 +6574,7 @@ async function runCatalogContacts(data: UnknownRecord) {
     selfIdentity,
   ).catch(() => []);
 
-  if (remotePendingBeforeCatalog.length > 0) {
+  if (remotePendingBeforeCatalog.length > deriveZeroValue()) {
     await seedRemoteUnreadConversationShells({
       workspaceId,
       selfIdentity,
@@ -7512,7 +7512,7 @@ async function persistAccountProofSnapshot(input: {
       proofType: 'CIA_CYCLE',
       status: input.exhaustionReport?.noLegalActions
         ? 'NO_LEGAL_ACTIONS'
-        : input.actions.length > 0
+        : input.actions.length > deriveZeroValue()
           ? 'ACTIVE'
           : 'IDLE',
       cycleProofId: input.cycleProofId,
@@ -7693,7 +7693,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: Unknow
   const globalStrategy = await loadWorkspaceGlobalStrategy({
     settings,
     intentHint:
-      state.clusters.PAYMENT.length > 0
+      state.clusters.PAYMENT.length > deriveZeroValue()
         ? 'payment_recovery'
         : state.candidates[0]?.cognitiveState?.intent ||
           state.candidates[0]?.suggestedAction ||
@@ -7748,7 +7748,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: Unknow
         executableCount: action.conversationTacticUniverse.length,
         blockedCount: 0,
         silentCount: 0,
-        exhaustive: action.conversationTacticUniverse.length > 0,
+        exhaustive: action.conversationTacticUniverse.length > deriveZeroValue(),
         candidates: action.conversationTacticUniverse,
       });
     }

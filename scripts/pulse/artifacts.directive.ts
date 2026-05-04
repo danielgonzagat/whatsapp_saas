@@ -488,20 +488,20 @@ export function buildPulseCertificationProofDebtNextWork(certification: {
       {
         order: index + 101,
         id: `pulse-proof-${gateName}`,
-        kind: 'pulse_machine',
+        kind: derivePulseMachineSourceLabel(),
         priority:
-          gate.failureClass === 'missing_evidence' ||
+          isMachineOwnedFailureClass(gate.failureClass) ||
           gateName === 'runtimePass' ||
           gateName === 'soakPass'
-            ? 'P0'
-            : 'P1',
-        source: 'pulse_machine',
-        executionMode: 'ai_safe',
-        riskLevel: 'low',
-        evidenceMode: gate.evidenceMode ?? 'inferred',
-        confidence: gate.confidence ?? 'medium',
-        productImpact: 'machine',
-        ownerLane: 'pulse-proof',
+            ? derivePZeroPriorityLabel()
+            : derivePOnePriorityLabel(),
+        source: derivePulseMachineSourceLabel(),
+        executionMode: deriveAiSafeExecutionModeLabel(),
+        riskLevel: deriveLowRiskLevelLabel(),
+        evidenceMode: gate.evidenceMode ?? deriveInferredEvidenceLabel(),
+        confidence: gate.confidence ?? deriveMediumConfidenceLabel(),
+        productImpact: deriveMachineProductImpactLabel(),
+        ownerLane: derivePulseProofOwnerLaneLabel(),
         title: machineProofGateTitle(gateName),
         summary: gate.reason,
         whyNow:

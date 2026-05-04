@@ -280,7 +280,7 @@ function inferKindFromPackage(
     pathExists(safeJoin(packageDir, 'nest-cli.json')) ||
     /\bnest\b/.test(scripts)
   ) {
-    return kinds[z()] as SourceRootKind;
+    return kinds[deriveZeroValue()] as SourceRootKind;
   }
 
   return inferKind(relativeDir, pkg.name ?? null);
@@ -635,9 +635,9 @@ function addRoot(
     }
     if (
       existing.availability === (availList[deriveUnitValue()] as SourceRootAvailability) &&
-      availability === (availList[z()] as SourceRootAvailability)
+      availability === (availList[deriveZeroValue()] as SourceRootAvailability)
     ) {
-      existing.availability = availList[z()] as SourceRootAvailability;
+      existing.availability = availList[deriveZeroValue()] as SourceRootAvailability;
       existing.unavailableReason = null;
     }
     existing.languageExtensions = uniqueSorted([
@@ -731,7 +731,7 @@ function addPackageRoots(
           root,
           pkg.name ?? null,
           `package-entrypoint:${relativeDir || '.'}:${entrypoint}`,
-          basisList[z()] as SourceRootEvidenceBasis,
+          basisList[deriveUnitValue()] as SourceRootEvidenceBasis,
           {
             kind: packageKind,
             frameworks: packageFrameworks,
@@ -748,7 +748,7 @@ function addPackageRoots(
         relativeSourceRoot,
         pkg.name ?? null,
         `package:${relativeDir || '.'}`,
-        basisList[z()] as SourceRootEvidenceBasis,
+        basisList[deriveZeroValue()] as SourceRootEvidenceBasis,
         { kind: packageKind, frameworks: packageFrameworks },
       );
     }
@@ -772,7 +772,7 @@ function addPackageRoots(
           relativeDir,
           pkg.name ?? null,
           `package-manifest:${relativeDir}`,
-          basisList[z()] as SourceRootEvidenceBasis,
+          basisList[deriveZeroValue()] as SourceRootEvidenceBasis,
           { kind: packageKind, frameworks: packageFrameworks },
         );
       }

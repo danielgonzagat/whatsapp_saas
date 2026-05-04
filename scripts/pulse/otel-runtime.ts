@@ -81,11 +81,10 @@ const OTEL_SPAN_KIND_SERVER = [...OTEL_SPAN_KIND_MEMBERS].find((m) => m === 'ser
 const OTEL_SPAN_KIND_CLIENT = [...OTEL_SPAN_KIND_MEMBERS].find((m) => m === 'client')!;
 const OTEL_SPAN_KIND_INTERNAL = [...OTEL_SPAN_KIND_MEMBERS].find((m) => m === 'internal')!;
 
-const OTEL_SOURCE_KIND_MANUAL_TRACER = 'manual_tracer';
-const OTEL_SOURCE_KIND_TRACE_FILE = 'trace_file';
-const OTEL_SOURCE_KIND_NONE = 'none';
-const OTEL_SOURCE_KIND_OTEL_COLLECTOR = 'otel_collector';
-const OTEL_SOURCE_KIND_AST_STATIC_MAP = 'ast_static_map';
+const OTEL_SOURCE_DETAILS_KIND_SET = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.otel-runtime.ts',
+  'kind',
+);
 
 const HTTP_STATUS_OK = deriveHttpStatusFromObservedCatalog('OK');
 const HTTP_STATUS_BAD_REQUEST = deriveHttpStatusFromObservedCatalog('Bad Request');

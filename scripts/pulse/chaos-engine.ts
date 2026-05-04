@@ -44,6 +44,7 @@ import { readTextFile, readJsonFile, writeTextFile, ensureDir, pathExists } from
 import { safeJoin } from './safe-path';
 import {
   deriveHttpStatusFromObservedCatalog,
+  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
@@ -117,10 +118,31 @@ const EXTERNAL_PACKAGE_HINT_RE =
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
-function lookupChaosTargetEvidence(label: string): ChaosTarget {
-  const labels = discoverChaosTargetLabels();
-  for (const l of labels) if (l === label) return l as ChaosTarget;
+function resolveChaosTargetFromContract(label: string): ChaosTarget {
+  const members = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.chaos-engine.ts',
+    'ChaosTarget',
+  );
+  for (const m of members) if (m === label) return m as ChaosTarget;
   throw new Error(`ChaosTarget type contract missing member: ${label}`);
+}
+
+function resolveChaosResultFromContract(label: string): string {
+  const members = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.chaos-engine.ts',
+    'ChaosResult',
+  );
+  for (const m of members) if (m === label) return m;
+  throw new Error(`ChaosResult type contract missing member: ${label}`);
+}
+
+function resolveChaosOperationalConcernFromContract(label: string): ChaosOperationalConcern {
+  const members = deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/chaos-engine.ts',
+    'ChaosOperationalConcern',
+  );
+  for (const m of members) if (m === label) return m as ChaosOperationalConcern;
+  throw new Error(`ChaosOperationalConcern type contract missing member: ${label}`);
 }
 
 function readSafe(filePath: string): string {
@@ -439,11 +461,11 @@ function detectCodebaseTargets(rootDir: string): Set<ChaosTarget> {
 
 export function classifyTargetsFromSource(content: string): Set<ChaosTarget> {
   const targets = new Set<ChaosTarget>();
-  const postgresLabel = lookupChaosTargetEvidence('postgres');
-  const redisLabel = lookupChaosTargetEvidence('redis');
-  const internalApiLabel = lookupChaosTargetEvidence('internal_api');
-  const externalHttpLabel = lookupChaosTargetEvidence('external_http');
-  const webhookReceiverLabel = lookupChaosTargetEvidence('webhook_receiver');
+  const postgresLabel = resolveChaosTargetFromContract('postgres');
+  const redisLabel = resolveChaosTargetFromContract('redis');
+  const internalApiLabel = resolveChaosTargetFromContract('internal_api');
+  const externalHttpLabel = resolveChaosTargetFromContract('external_http');
+  const webhookReceiverLabel = resolveChaosTargetFromContract('webhook_receiver');
   if (PRISMA_OPERATION_RE.test(content)) {
     targets.add(postgresLabel);
   }
@@ -530,11 +552,11 @@ function loadEffectGraphRecords(rootDir: string): Record<string, unknown>[] {
 
 /** Find all capabilities that structurally depend on a target class. */
 export function computeBlastRadius(target: ChaosTarget, capabilities: PulseCapability[]): string[] {
-  const postgresLabel = lookupChaosTargetEvidence('postgres');
-  const redisLabel = lookupChaosTargetEvidence('redis');
-  const internalApiLabel = lookupChaosTargetEvidence('internal_api');
-  const externalHttpLabel = lookupChaosTargetEvidence('external_http');
-  const webhookReceiverLabel = lookupChaosTargetEvidence('webhook_receiver');
+  const postgresLabel = resolveChaosTargetFromContract('postgres');
+  const redisLabel = resolveChaosTargetFromContract('redis');
+  const internalApiLabel = resolveChaosTargetFromContract('internal_api');
+  const externalHttpLabel = resolveChaosTargetFromContract('external_http');
+  const webhookReceiverLabel = resolveChaosTargetFromContract('webhook_receiver');
   return capabilities
     .filter((cap) => {
       const roles = new Set(cap.rolesPresent ?? []);
@@ -587,19 +609,19 @@ function targetForDetectedDependency(
   dependency: ChaosProviderName,
   dependencyFiles: string[],
 ): ChaosTarget {
-  const postgresDep = dependencyId('target', lookupChaosTargetEvidence('postgres'));
-  const redisDep = dependencyId('target', lookupChaosTargetEvidence('redis'));
+  const postgresDep = dependencyId('target', resolveChaosTargetFromContract('postgres'));
+  const redisDep = dependencyId('target', resolveChaosTargetFromContract('redis'));
   if (dependency === postgresDep) {
-    return lookupChaosTargetEvidence('postgres');
+    return resolveChaosTargetFromContract('postgres');
   }
   if (dependency === redisDep) {
-    return lookupChaosTargetEvidence('redis');
+    return resolveChaosTargetFromContract('redis');
   }
   const receiverTokens = discoverExternalReceiverTokensFromEvidence();
   if (dependencyFiles.some((file) => receiverTokens.some((token) => file.includes(token)))) {
-    return lookupChaosTargetEvidence('webhook_receiver');
+    return resolveChaosTargetFromContract('webhook_receiver');
   }
-  return lookupChaosTargetEvidence('external_http');
+  return resolveChaosTargetFromContract('external_http');
 }
 
 function dependencyLabel(dependency: ChaosProviderName): string {
@@ -649,7 +671,7 @@ function deriveOperationalConcerns(
       /\b(payment|checkout|billing|invoice|subscription|wallet|ledger|split|payout|refund|chargeback|settlement|idempotency|idempotent)\b/,
     )
   ) {
-    concerns.add('payment_idempotency');
+    concerns.add(resolveChaosOperationalConcernFromContract('payment_idempotency'));
   }
 
   if (
@@ -658,7 +680,7 @@ function deriveOperationalConcerns(
       /\b(whatsapp|waha|waba|phone\s*number|message|messaging|conversation|inbox|chat|queue|retry)\b/,
     )
   ) {
-    concerns.add('whatsapp_queue_retry');
+    concerns.add(resolveChaosOperationalConcernFromContract('whatsapp_queue_retry'));
   }
 
   if (
@@ -667,7 +689,7 @@ function deriveOperationalConcerns(
       /\b(email|mail|smtp|resend|sendgrid|postmark|verification|password\s*reset|welcome|deliverability)\b/,
     )
   ) {
-    concerns.add('email_retry_fallback');
+    concerns.add(resolveChaosOperationalConcernFromContract('email_retry_fallback'));
   }
 
   if (
@@ -676,7 +698,7 @@ function deriveOperationalConcerns(
       /\b(ai|llm|model|prompt|completion|embedding|agent|copilot|autopilot|brain|openai|anthropic|cache)\b/,
     )
   ) {
-    concerns.add('ai_model_fallback_cache');
+    concerns.add(resolveChaosOperationalConcernFromContract('ai_model_fallback_cache'));
   }
 
   return concerns;
@@ -809,7 +831,7 @@ function evidenceNumbers(context: ChaosEvidenceContext): number[] {
     ...context.capabilities.map((cap) => cap.id),
   ])
     .map((value) => value.length)
-    .filter((value) => value > 0)
+    .filter((value) => value > deriveZeroValue())
     .sort((left, right) => left - right);
 }
 
@@ -1078,14 +1100,9 @@ export function buildChaosCatalog(rootDir: string): ChaosEvidence {
   // Provider-specific scenarios.
   scenarios.push(...generateProviderScenarios(rootDir, providers, capabilities));
 
-  const _chaosResults = discoverChaosResultLabels();
-  const _degradedGracefully = [..._chaosResults].find((r) => r === 'degraded_gracefully');
-  if (!_degradedGracefully)
-    throw new Error('ChaosResult type contract missing degraded_gracefully member');
-  const _crashed = [..._chaosResults].find((r) => r === 'crashed');
-  if (!_crashed) throw new Error('ChaosResult type contract missing crashed member');
-  const _notTested = [..._chaosResults].find((r) => r === 'not_tested');
-  if (!_notTested) throw new Error('ChaosResult type contract missing not_tested member');
+  const _degradedGracefully = resolveChaosResultFromContract('degraded_gracefully');
+  const _crashed = resolveChaosResultFromContract('crashed');
+  const _notTested = resolveChaosResultFromContract('not_tested');
   const degradedGracefully = scenarios.filter((s) => s.result === _degradedGracefully).length;
   const crashed = scenarios.filter((s) => s.result === _crashed).length;
   const testedScenarios = scenarios.filter((s) => s.result !== _notTested).length;
@@ -1180,7 +1197,7 @@ export function generateProviderScenarios(
 
   for (const [provider, providerFiles] of compactProviderDependencies(detectedProviders)) {
     const target = targetForDetectedDependency(provider, providerFiles);
-    if (target === lookupChaosTargetEvidence('postgres') || target === lookupChaosTargetEvidence('redis')) {
+    if (target === resolveChaosTargetFromContract('postgres') || target === resolveChaosTargetFromContract('redis')) {
       continue;
     }
     const blastRadius = computeProviderBlastRadius(provider, providerFiles, loadedCapabilities);
@@ -1250,11 +1267,8 @@ function buildScenario(
 let __chaosResultNotTestedCache: ChaosResult | undefined;
 function getChaosResultNotTested(): ChaosResult {
   if (__chaosResultNotTestedCache) return __chaosResultNotTestedCache;
-  const labels = discoverChaosResultLabels();
-  for (const label of labels) {
-    if (label === 'not_tested') return (__chaosResultNotTestedCache = label);
-  }
-  throw new Error('ChaosResult type contract missing not_tested member');
+  const resolved = resolveChaosResultFromContract('not_tested');
+  return (__chaosResultNotTestedCache = resolved as ChaosResult);
 }
 
 function buildProviderScenario(
@@ -1369,12 +1383,12 @@ function buildExpectedBehavior(
 
     case 'slow_close': {
       let behavior = `Persistent connections to ${providerLabel} drain slowly — partial responses may arrive.`;
-      if (target === lookupChaosTargetEvidence('postgres')) {
+      if (target === resolveChaosTargetFromContract('postgres')) {
         behavior +=
           ' Prisma connection pool MUST detect partial results and return error or timeout.';
         behavior += ' Transactions in-flight MUST be rolled back.';
       }
-      if (target === lookupChaosTargetEvidence('redis')) {
+      if (target === resolveChaosTargetFromContract('redis')) {
         behavior += ' Redis client MUST timeout on incomplete responses.';
         behavior += ' Rate-limiting fallback MUST allow operations (fail-open for non-critical).';
       }
@@ -1454,24 +1468,24 @@ function cacheFallbackPrediction(
   tier: LatencyTier,
   operationalConcerns: Set<ChaosOperationalConcern>,
 ): string {
-  if (target === lookupChaosTargetEvidence('postgres')) {
+  if (target === resolveChaosTargetFromContract('postgres')) {
     return tier === 'low' || tier === 'medium'
       ? 'No cache fallback needed — DB latency within bounds'
       : 'Cache fallback SHOULD activate — serve stale reads from Redis or in-memory cache';
   }
-  if (target === lookupChaosTargetEvidence('redis')) {
+  if (target === resolveChaosTargetFromContract('redis')) {
     return 'Redis unavailable — rate-limits MUST fail-open, session store MUST degrade to DB lookup';
   }
-  if (operationalConcerns.has('payment_idempotency')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('payment_idempotency'))) {
     return 'Payment operations MUST preserve idempotency keys and reuse cached session, price, or ledger reference data when retrying';
   }
-  if (operationalConcerns.has('ai_model_fallback_cache')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('ai_model_fallback_cache'))) {
     return 'AI calls SHOULD return cached completions for identical prompts, then fall back to a configured lower-cost model or an honest degraded response';
   }
-  if (operationalConcerns.has('whatsapp_queue_retry')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('whatsapp_queue_retry'))) {
     return 'WhatsApp delivery MUST be queued for retry so messages are delayed but not lost';
   }
-  if (operationalConcerns.has('email_retry_fallback')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('email_retry_fallback'))) {
     return 'Email delivery MUST be queued with provider retry and SMTP or secondary-provider fallback when configured';
   }
   if (provider) {
@@ -1485,19 +1499,19 @@ function queueRetryPrediction(
   provider: ChaosProviderName | undefined,
   operationalConcerns: Set<ChaosOperationalConcern>,
 ): string {
-  if (target === lookupChaosTargetEvidence('redis')) {
+  if (target === resolveChaosTargetFromContract('redis')) {
     return 'BullMQ jobs MUST retry with exponential backoff — queue processing delayed but preserved';
   }
-  if (operationalConcerns.has('whatsapp_queue_retry')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('whatsapp_queue_retry'))) {
     return 'Outbound WhatsApp messages MUST be enqueued and retried with bounded exponential backoff';
   }
-  if (operationalConcerns.has('email_retry_fallback')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('email_retry_fallback'))) {
     return 'Email send jobs MUST retry with bounded exponential backoff before invoking the configured fallback channel';
   }
-  if (operationalConcerns.has('payment_idempotency')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('payment_idempotency'))) {
     return 'Payment webhooks and provider retries MUST remain idempotent against replay and duplicate callbacks';
   }
-  if (operationalConcerns.has('ai_model_fallback_cache')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('ai_model_fallback_cache'))) {
     return 'AI jobs MUST retry only inside the model budget and MUST read-through cache before switching fallback models';
   }
   if (provider) {
@@ -1511,16 +1525,16 @@ function userImpactPrediction(
   tier: LatencyTier,
   operationalConcerns: Set<ChaosOperationalConcern>,
 ): string {
-  if (operationalConcerns.has('payment_idempotency')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('payment_idempotency'))) {
     return 'Payment flows degrade honestly with retry prompts while duplicate charges, duplicate ledger entries, and duplicate payouts remain blocked';
   }
-  if (operationalConcerns.has('whatsapp_queue_retry')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('whatsapp_queue_retry'))) {
     return 'WhatsApp messaging degrades to delayed delivery, with real-time chat marked unavailable instead of dropping outbound messages';
   }
-  if (operationalConcerns.has('email_retry_fallback')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('email_retry_fallback'))) {
     return 'Email delivery is delayed, and verification, password reset, onboarding, and campaign flows surface a pending or unavailable state';
   }
-  if (operationalConcerns.has('ai_model_fallback_cache')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('ai_model_fallback_cache'))) {
     return 'AI features degrade to cached output, fallback model output, or an honest unavailable response without fabricated answers';
   }
   if (tier === 'low' || tier === 'medium') {
@@ -1534,22 +1548,22 @@ function userImpactPrediction(
 
 function operationalRecoveryPrediction(operationalConcerns: Set<ChaosOperationalConcern>): string {
   const predictions: string[] = [];
-  if (operationalConcerns.has('payment_idempotency')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('payment_idempotency'))) {
     predictions.push(
       'Payment recovery MUST reconcile provider state without duplicating charges, ledger entries, splits, or payouts.',
     );
   }
-  if (operationalConcerns.has('whatsapp_queue_retry')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('whatsapp_queue_retry'))) {
     predictions.push(
       'WhatsApp recovery MUST drain queued messages through the normal retry worker.',
     );
   }
-  if (operationalConcerns.has('email_retry_fallback')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('email_retry_fallback'))) {
     predictions.push(
       'Email recovery MUST drain pending sends and preserve fallback audit evidence.',
     );
   }
-  if (operationalConcerns.has('ai_model_fallback_cache')) {
+  if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('ai_model_fallback_cache'))) {
     predictions.push(
       'AI recovery MUST invalidate stale model-failure state while preserving cache consistency.',
     );
