@@ -34,7 +34,10 @@ import {
   deriveZeroValue,
   deriveUnitValue,
   deriveStringUnionMembersFromTypeContract,
+  discoverAllObservedArtifactFilenames,
+  discoverConvergenceExecutionModeLabels,
   discoverConvergenceRiskLevelLabels,
+  discoverExecutionMatrixPathStatusLabels,
   discoverHarnessExecutionStatusLabels,
 } from './dynamic-reality-kernel';
 
@@ -54,6 +57,9 @@ const _PATH_COVERAGE_EXECUTION_MODE_MEMBERS =
 
 const _RISK_LEVEL_MEMBERS = discoverConvergenceRiskLevelLabels();
 const _HARNESS_STATUS_MEMBERS = discoverHarnessExecutionStatusLabels();
+const _MATRIX_PATH_STATUS_MEMBERS = discoverExecutionMatrixPathStatusLabels();
+const _CONVERGENCE_EXECUTION_MODE_MEMBERS = discoverConvergenceExecutionModeLabels();
+const _ARTIFACT_NAMES = discoverAllObservedArtifactFilenames();
 
 // ── Kernel-derived decision helpers ─────────────────────────────────────────
 
@@ -93,6 +99,18 @@ function isEvidenceStatusPassed(s: string) {
 function isEvidenceStatusFailed(s: string) {
   return _HARNESS_STATUS_MEMBERS.has(s) && s === 'failed';
 }
+function isBlockedHumanRequiredMatrixStatus(s: string) {
+  return _MATRIX_PATH_STATUS_MEMBERS.has(s) && s === 'blocked_human_required';
+}
+function isUntestedMatrixStatus(s: string) {
+  return _MATRIX_PATH_STATUS_MEMBERS.has(s) && s === 'untested';
+}
+function isHumanRequiredExecutionMode(m: string) {
+  return _CONVERGENCE_EXECUTION_MODE_MEMBERS.has(m) && m === 'human_required';
+}
+function isObservationOnlyExecutionMode(m: string) {
+  return _CONVERGENCE_EXECUTION_MODE_MEMBERS.has(m) && m === 'observation_only';
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -107,7 +125,7 @@ export function buildPathCoverageState(
   rootDir: string,
   matrixOverride?: PulseExecutionMatrix,
 ): PathCoverageState {
-  const matrixPath = safeJoin(rootDir, '.pulse', 'current', 'PULSE_EXECUTION_MATRIX.json');
+  const matrixPath = safeJoin(rootDir, '.pulse', 'current', _ARTIFACT_NAMES.executionMatrix);
 
   let matrix = matrixOverride;
   let matrixPaths: PulseExecutionMatrixPath[] = matrix?.paths ?? [];
@@ -211,7 +229,7 @@ export function buildPathCoverageState(
 
   const outputDir = safeJoin(rootDir, '.pulse', 'current');
   ensureDir(outputDir, { recursive: true });
-  writeTextFile(safeJoin(outputDir, 'PULSE_PATH_COVERAGE.json'), JSON.stringify(state, null, 2));
+  writeTextFile(safeJoin(outputDir, _ARTIFACT_NAMES.pathCoverage), JSON.stringify(state, null, 2));
   if (matrix) {
     const pathProofPlan = buildPathProofPlan(rootDir, {
       matrix,
@@ -253,9 +271,9 @@ export function classifyPath(mp: PulseExecutionMatrixPath, _rootDir: string): Pa
   }
 
   if (
-    status === 'blocked_human_required' ||
+    isBlockedHumanRequiredMatrixStatus(status) ||
     isInferredOnlyClass(status) ||
-    status === 'untested'
+    isUntestedMatrixStatus(status)
   ) {
     if (canGenerateProbeBlueprint(mp, hasMapped)) {
       return 'probe_blueprint_generated';
@@ -454,7 +472,7 @@ function normalizeCoverageExecutionMode(
   if (isGovernedValidationMode(mode)) {
     return 'governed_validation';
   }
-  if (mode === 'human_required' || mode === 'observation_only') {
+  if (isHumanRequiredExecutionMode(mode) || isObservationOnlyExecutionMode(mode)) {
     return 'governed_validation';
   }
   return isHighOrCriticalRisk(risk) ? 'governed_validation' : 'ai_safe';
@@ -654,11 +672,11 @@ function buildArtifactLinks(
 ): PathCoverageArtifactLink[] {
   const links: PathCoverageArtifactLink[] = [
     {
-      artifactPath: '.pulse/current/PULSE_EXECUTION_MATRIX.json',
+      artifactPath: `.pulse/current/${_ARTIFACT_NAMES.executionMatrix}`,
       relationship: 'source_matrix',
     },
     {
-      artifactPath: '.pulse/current/PULSE_PATH_COVERAGE.json',
+      artifactPath: `.pulse/current/${_ARTIFACT_NAMES.pathCoverage}`,
       relationship: 'coverage_state',
     },
   ];
